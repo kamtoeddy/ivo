@@ -11,78 +11,29 @@ const isJSON = (value: any) => {
 const getDateString = (value: Date | string) =>
   new Date(value).toISOString().substring(0, 10);
 
-const getPeriod = ({
-  start = new Date(),
-  stop,
-  distance = 1,
-  useDistance = false,
-}) => {
-  let otherTime;
+// const getPeriod = ({
+//   start = new Date(),
+//   stop,
+//   distance = 1,
+//   useDistance = false,
+// }) => {
+//   let otherTime;
 
-  if (!start && useDistance) {
-    otherTime = new Date(getDateString(stop || new Date()));
-    start = new Date(otherTime.getTime() - distance * 24 * 60 * 60 * 1000);
-  }
+//   if (!start && useDistance) {
+//     otherTime = new Date(getDateString(stop || new Date()));
+//     start = new Date(otherTime.getTime() - distance * 24 * 60 * 60 * 1000);
+//   }
 
-  if (!stop && useDistance) {
-    otherTime = new Date(getDateString(start));
-    stop = new Date(otherTime.getTime() + distance * 24 * 60 * 60 * 1000);
-  }
+//   if (!stop && useDistance) {
+//     otherTime = new Date(getDateString(start));
+//     stop = new Date(otherTime.getTime() + distance * 24 * 60 * 60 * 1000);
+//   }
 
-  return {
-    start: new Date(getDateString(start)),
-    stop: new Date(getDateString(stop)),
-  };
-};
-
-const getUnique = ({ data = [], key = "id" }) => {
-  const obj = {};
-
-  data.forEach((dt) => (obj[dt[key]] = dt));
-
-  return Object.values(obj);
-};
-
-const array = (
-  value = [],
-  {
-    empty = false,
-    sorted = true,
-    sorter,
-    sortOrder = -1,
-    filter = (data) => false,
-    modifier,
-    unique = true,
-    uniqueKey = "measureUnit",
-  }
-) => {
-  if (!Array.isArray(value))
-    return { valid: false, reasons: ["Expected an array"] };
-
-  let _array = value.filter(filter);
-
-  if (!empty && !_array.length)
-    return { valid: false, reasons: ["Expected a non-empty array"] };
-
-  if (modifier) _array = _array.map(modifier);
-
-  if (unique && _array.length) {
-    _array =
-      typeof _array[0] == "object"
-        ? getUnique({ data: _array, key: uniqueKey })
-        : [...new Set(_array)];
-  }
-
-  if (sorted) {
-    if (!sorter) {
-      if (![-1, 1].includes(sortOrder)) sortOrder = -1;
-      sorter = (a, b) => (a < b ? sortOrder : -sortOrder);
-    }
-    _array = _array.sort(sorter);
-  }
-
-  return { valid: true, valdated: _array };
-};
+//   return {
+//     start: new Date(getDateString(start)),
+//     stop: new Date(getDateString(stop)),
+//   };
+// };
 
 const emailRegex =
   /^[a-z\d]([a-z\d\.-_]*)([a-z\d])@([a-z\d-\.]+)\.([a-z]{2,})(\.[a-z]{2,})?$/;
@@ -90,11 +41,11 @@ const phoneRegex = /^(\+)?([2][3][7])?( )?6([5,6,7,8,9])([0-9]){7}$/;
 
 const dbNameRegex = /^[a-zA-Z_\-\S]+$/;
 
-const email = (value) => (emailRegex.test(value) ? value : false);
-const dbName = (value) => (dbNameRegex.test(value) ? value : false);
-const phone = (value) => (phoneRegex.test(value) ? value : false);
+// const email = (value) => (emailRegex.test(value) ? value : false);
+// const dbName = (value) => (dbNameRegex.test(value) ? value : false);
+// const phone = (value) => (phoneRegex.test(value) ? value : false);
 
-const boolean = (value) => {
+const isBooleanOk = (value: any) => {
   let valid = true,
     reason = "";
 
@@ -105,6 +56,12 @@ const boolean = (value) => {
 
   return { valid, reason };
 };
+
+interface numRangeType {
+  bounds: number[];
+  inclusiveBottom?: boolean;
+  inclusiveTop?: boolean;
+}
 
 const _number = {
   isInRange(value, range) {
@@ -152,7 +109,7 @@ const _number = {
   },
 };
 
-const number = (value, { range } = {}) => {
+const isNumberOK = (value: any, { range } = {}) => {
   let valid = true,
     reason = "";
 
@@ -173,8 +130,8 @@ const number = (value, { range } = {}) => {
   return { valid, reason };
 };
 
-const string = (
-  value,
+const isStringOk = (
+  value: any,
   { maxLength = 150, minLength = 1, enums } = {
     maxLength: 150,
     minLength: 1,
@@ -208,13 +165,12 @@ const string = (
 };
 
 module.exports = {
-  array,
-  boolean,
+  boolean: isBooleanOk,
   dbName,
   email,
   getPeriod,
   isJSON,
-  number,
+  number: isNumberOK,
   phone,
-  string,
+  string: isStringOk,
 };
