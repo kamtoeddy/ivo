@@ -7,7 +7,7 @@ export default function isStringOk(
   let valid = true,
     reason = "";
 
-  if (!["bigint", "boolean", "number", "string"].includes(typeof value)) {
+  if (typeof value !== "string") {
     return { valid: false, reason: "Expected a string" };
   }
 

@@ -5,5 +5,5 @@ export interface looseObject {
 export interface stringPropTypes {
   maxLength?: number;
   minLength?: number;
-  enums?: any[];
+  enums?: string[];
 }
