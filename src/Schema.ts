@@ -55,7 +55,7 @@ export default class Schema {
       throw new ApiError({ message: "Invalid properties", statusCode: 500 });
   }
 
-  _getCreateActions: funcArrayFunc = () => {
+  private _getCreateActions: funcArrayFunc = () => {
     let _actions: looseObjectFunc[] = [];
     const props = this._getProps();
 
@@ -72,7 +72,7 @@ export default class Schema {
    * create props are required or readonly props
    * @returns
    */
-  _getCreateProps: funcArrayStr = () => {
+  private _getCreateProps: funcArrayStr = () => {
     const createProps = [];
     const props = this._getProps();
 
@@ -84,7 +84,7 @@ export default class Schema {
     return this._sort(createProps);
   };
 
-  _getDefaults: funcArrayObj = () => {
+  private _getDefaults: funcArrayObj = () => {
     const defaults: looseObject = {};
     const props = this._getProps();
 
@@ -97,7 +97,7 @@ export default class Schema {
     return defaults;
   };
 
-  _getLinkedUpdates: funcArrayObj = () => {
+  private _getLinkedUpdates: funcArrayObj = () => {
     const _linkedUpdates: looseObject = {};
     const props = this._getProps();
 
@@ -110,7 +110,7 @@ export default class Schema {
     return _linkedUpdates;
   };
 
-  _getProps: funcArrayStr = () => {
+  private _getProps: funcArrayStr = () => {
     const keys = Object.keys(this.baseProps);
 
     const props: string[] = keys.filter((key) => {
@@ -131,7 +131,7 @@ export default class Schema {
     return this._sort(props);
   };
 
-  _getUpdatables: funcArrayStr = () => {
+  private _getUpdatables: funcArrayStr = () => {
     const updatebles = [];
     const props = this._getProps();
 
