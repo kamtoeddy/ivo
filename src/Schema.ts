@@ -5,42 +5,156 @@ import format from "./utils/format";
 
 import { looseObject, stringPropTypes } from "./utils/interfaces";
 
-type looseOjectFunc = (data: any) => looseObject;
+type looseObjectFunc = (...args: any) => looseObject;
 
 type funcArrayObj = () => looseObject;
-type funcArrayFunc = () => looseOjectFunc[];
+type funcArrayFunc = () => looseObjectFunc[];
 type funcArrayStr = () => string[];
+// type propType = () => Array<any> | Boolean | Date | Number | Object | String;
+
+type validationResponse = {
+  messages?: string[];
+  valid: boolean;
+  validated?: any;
+};
+type propValidatorFunc = (...args: any) => validationResponse;
+
+interface basePropsType {
+  [key: string]: {
+    default?: any;
+    onCreate?: looseObjectFunc[];
+    onUpdate?: looseObjectFunc[];
+    readonly?: boolean;
+    required?: boolean;
+    // type: propType;
+    validator?: propValidatorFunc;
+  };
+}
+
+interface initOptionsType {
+  timestamps?: boolean;
+}
 
 export default class Schema {
   [key: string]: any;
 
-  timestamps: boolean = true;
+  protected baseProps: basePropsType = {};
+  protected _options: initOptionsType;
+
+  timestamps: boolean = false;
   createdAt: Date = new Date();
   updatedAt: Date = new Date();
 
   validations: looseObject = {};
 
-  private getCreateActions: funcArrayFunc = () => [];
-  private getCreateProps: funcArrayStr = () => [];
-  private getDefaults: funcArrayObj = () => ({});
-  private getLinkedUpdates: funcArrayObj = () => ({});
-  private getProps: funcArrayStr = () => [];
-  private getUpdatables: funcArrayStr = () => [];
+  protected errors: looseObject = {};
+  protected updated: looseObject = {};
 
-  private errors: looseObject = {};
-  private updated: looseObject = {};
+  constructor(
+    props: basePropsType,
+    options: initOptionsType = { timestamps: false }
+  ) {
+    this.baseProps = props;
+    this._options = options;
 
-  constructor({
-    createdAt = new Date(),
-    timestamps = false,
-    updatedAt = new Date(),
-  } = {}) {
-    this.timestamps = timestamps;
-    this.createdAt = createdAt;
-    this.updatedAt = updatedAt;
+    if (!this._hasEnoughProps())
+      throw new ApiError({ message: "Invalid properties", statusCode: 500 });
   }
 
-  private _addError = ({ field, errors }: { field: string; errors: any[] }) => {
+  _getCreateActions: funcArrayFunc = () => {
+    let _actions: looseObjectFunc[] = [];
+    const props = this._getProps();
+
+    for (let prop of props) {
+      const propActions = this.baseProps[prop]?.onCreate;
+
+      if (propActions?.length) _actions = [..._actions, ...propActions];
+    }
+
+    return _actions;
+  };
+
+  /**
+   * create props are required or readonly props
+   * @returns
+   */
+  _getCreateProps: funcArrayStr = () => {
+    const createProps = [];
+    const props = this._getProps();
+
+    for (let prop of props) {
+      const value = this.baseProps[prop];
+      if (value?.required || value?.readonly) createProps.push(prop);
+    }
+
+    return this._sort(createProps);
+  };
+
+  _getDefaults: funcArrayObj = () => {
+    const defaults: looseObject = {};
+    const props = this._getProps();
+
+    for (let prop of props) {
+      const _default = this.baseProps[prop]?.default;
+
+      if (_default !== undefined) defaults[prop] = _default;
+    }
+
+    return defaults;
+  };
+
+  _getLinkedUpdates: funcArrayObj = () => {
+    const _linkedUpdates: looseObject = {};
+    const props = this._getProps();
+
+    for (let prop of props) {
+      const _updates = this.baseProps[prop]?.onUpdate;
+
+      if (_updates?.length) _linkedUpdates[prop] = _updates;
+    }
+
+    return _linkedUpdates;
+  };
+
+  _getProps: funcArrayStr = () => {
+    const keys = Object.keys(this.baseProps);
+
+    const props: string[] = keys.filter((key) => {
+      const value = this.baseProps[key];
+
+      if (typeof value !== "object") return false;
+
+      return this._hasSomeOf(value, [
+        "default",
+        "onCreate",
+        "onUpdate",
+        "readonly",
+        "required",
+        "validator",
+      ]);
+    });
+
+    return this._sort(props);
+  };
+
+  _getUpdatables: funcArrayStr = () => {
+    const updatebles = [];
+    const props = this._getProps();
+
+    for (let prop of props) {
+      if (!this.baseProps[prop]?.readonly) updatebles.push(prop);
+    }
+
+    return this._sort(updatebles);
+  };
+
+  protected _addError = ({
+    field,
+    errors,
+  }: {
+    field: string;
+    errors: any[];
+  }) => {
     const _error = this.errors?.[field];
 
     if (!_error) return (this.errors[field] = [...errors]);
@@ -48,9 +162,9 @@ export default class Schema {
     this.errors[field] = [...this.errors[field], ...errors];
   };
 
-  private _getCloneObject = (toReset: string[] = []) => {
-    const defaults = this.getDefaults();
-    const props = this.getProps();
+  protected _getCloneObject = (toReset: string[] = []) => {
+    const defaults = this._getDefaults();
+    const props = this._getProps();
 
     return props.reduce((values: looseObject, next) => {
       values[next] = toReset.includes(next)
@@ -60,10 +174,10 @@ export default class Schema {
     }, {});
   };
 
-  private _getCreateObject = () => {
-    const createProps = this.getCreateProps();
-    const defaults = this.getDefaults();
-    const props = this.getProps();
+  protected _getCreateObject = () => {
+    const createProps = this._getCreateProps();
+    const defaults = this._getDefaults();
+    const props = this._getProps();
 
     return props.reduce((values: looseObject, prop) => {
       if (createProps.includes(prop)) {
@@ -84,22 +198,46 @@ export default class Schema {
     }, {});
   };
 
-  private _getDependencies = (prop: string): looseOjectFunc[] =>
-    this.getLinkedUpdates()[prop] ?? [];
+  protected _getDependencies = (prop: string): looseObjectFunc[] =>
+    this._getLinkedUpdates()[prop] ?? [];
 
-  private _isErroneous = () => Object.keys(this.errors).length > 0;
+  _getValidations = (): looseObject => {
+    const validations: looseObject = {};
+    const props = this._getProps();
 
-  private _returnErrors() {
+    for (let prop of props) {
+      const validator = this.baseProps[prop]?.validator;
+
+      if (validator !== undefined) validations[prop] = validator;
+    }
+
+    return validations;
+  };
+
+  protected _isErroneous = () => Object.keys(this.errors).length > 0;
+
+  protected _returnErrors() {
     throw new ApiError({ message: "Validation error", payload: this.errors });
   }
 
-  private _postCreateActions = (data = {}) => {
-    const actions = this.getCreateActions();
+  protected _postCreateActions = (data = {}) => {
+    const actions = this._getCreateActions();
 
     actions.forEach((action) => (data = { ...data, ...action(data) }));
 
     return data;
   };
+
+  protected _hasEnoughProps = () => this._getProps().length > 0;
+
+  protected _hasSomeOf = (obj: looseObject, props: string[]): boolean => {
+    for (let prop of props) if (Object(obj).hasOwnProperty(prop)) return true;
+
+    return false;
+  };
+
+  protected _sort = (data: any[]): any[] =>
+    data.sort((a, b) => (a < b ? -1 : 1));
 
   clone = ({ toReset = [] } = { toReset: [] }) => {
     return this._postCreateActions(this._getCloneObject(toReset));
@@ -123,14 +261,14 @@ export default class Schema {
   };
 
   validate = ({ prop = "", value }: { prop: string; value: any }) => {
-    if (!this.getProps().includes(prop))
+    if (!this._getProps().includes(prop))
       return { valid: false, messages: ["Invalid property"] };
 
     let valid = true,
       messages: string[] = [],
       validated = value;
 
-    const validateFx = this.validations[prop];
+    const validateFx = this._getValidations()[prop];
 
     if (!validateFx && typeof value === "undefined") {
       return { valid: false, messages: ["Invalid value"] };
@@ -172,9 +310,9 @@ export default class Schema {
    */
   update = (changes: looseObject = {}) => {
     const changesProps = Object.keys(changes);
-    const _linkedKeys = Object.keys(this.getLinkedUpdates() ?? {});
+    const _linkedKeys = Object.keys(this._getLinkedUpdates() ?? {});
     const _linkedUpdates: string[] = [];
-    const _updatables = this.getUpdatables();
+    const _updatables = this._getUpdatables();
 
     const toUpdate = changesProps.filter((prop) => {
       if (_linkedKeys.includes(prop)) _linkedUpdates.push(prop);
@@ -239,3 +377,16 @@ export default class Schema {
     return this.updated;
   };
 }
+
+function Model(this: any, { ...values }) {
+  // console.log(this, values);
+  console.log(this, 1);
+  Object.keys(values).forEach((key) => (this[key] = values[key]));
+
+  return this;
+}
+
+export const buildModel = (schema: any) => {
+  Model.call(schema, { ...Object.keys(schema) });
+  return Model;
+};
