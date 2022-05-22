@@ -32,15 +32,15 @@ export default class Schema {
 
   constructor({
     createdAt = new Date(),
-    timestamps = true,
+    timestamps = false,
     updatedAt = new Date(),
-  }) {
+  } = {}) {
     this.timestamps = timestamps;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
   }
 
-  _addError = ({ field, errors }: { field: string; errors: any[] }) => {
+  private _addError = ({ field, errors }: { field: string; errors: any[] }) => {
     const _error = this.errors?.[field];
 
     if (!_error) return (this.errors[field] = [...errors]);
@@ -48,7 +48,7 @@ export default class Schema {
     this.errors[field] = [...this.errors[field], ...errors];
   };
 
-  _getCloneObject = (toReset: string[] = []) => {
+  private _getCloneObject = (toReset: string[] = []) => {
     const defaults = this.getDefaults();
     const props = this.getProps();
 
@@ -60,7 +60,7 @@ export default class Schema {
     }, {});
   };
 
-  _getCreateObject = () => {
+  private _getCreateObject = () => {
     const createProps = this.getCreateProps();
     const defaults = this.getDefaults();
     const props = this.getProps();
@@ -84,16 +84,16 @@ export default class Schema {
     }, {});
   };
 
-  _getDependencies = (prop: string): looseOjectFunc[] =>
+  private _getDependencies = (prop: string): looseOjectFunc[] =>
     this.getLinkedUpdates()[prop] ?? [];
 
-  _isErroneous = () => Object.keys(this.errors).length > 0;
+  private _isErroneous = () => Object.keys(this.errors).length > 0;
 
-  _returnErrors() {
+  private _returnErrors() {
     throw new ApiError({ message: "Validation error", payload: this.errors });
   }
 
-  _postCreateActions = (data = {}) => {
+  private _postCreateActions = (data = {}) => {
     const actions = this.getCreateActions();
 
     actions.forEach((action) => (data = { ...data, ...action(data) }));
