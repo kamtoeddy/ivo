@@ -32,27 +32,21 @@ interface basePropsType {
 }
 
 interface initOptionsType {
-  timestamps?: boolean;
+  timestamp?: boolean;
 }
 
 export default class Schema {
   [key: string]: any;
 
-  protected baseProps: basePropsType = {};
-  protected _options: initOptionsType;
+  private baseProps: basePropsType = {};
+  private _options: initOptionsType;
 
-  timestamps: boolean = false;
-  createdAt: Date = new Date();
-  updatedAt: Date = new Date();
-
-  validations: looseObject = {};
-
-  protected errors: looseObject = {};
-  protected updated: looseObject = {};
+  private errors: looseObject = {};
+  private updated: looseObject = {};
 
   constructor(
     props: basePropsType,
-    options: initOptionsType = { timestamps: false }
+    options: initOptionsType = { timestamp: false }
   ) {
     this.baseProps = props;
     this._options = options;
@@ -148,13 +142,7 @@ export default class Schema {
     return this._sort(updatebles);
   };
 
-  protected _addError = ({
-    field,
-    errors,
-  }: {
-    field: string;
-    errors: any[];
-  }) => {
+  private _addError = ({ field, errors }: { field: string; errors: any[] }) => {
     const _error = this.errors?.[field];
 
     if (!_error) return (this.errors[field] = [...errors]);
@@ -162,7 +150,7 @@ export default class Schema {
     this.errors[field] = [...this.errors[field], ...errors];
   };
 
-  protected _getCloneObject = (toReset: string[] = []) => {
+  private _getCloneObject = (toReset: string[] = []) => {
     const defaults = this._getDefaults();
     const props = this._getProps();
 
@@ -174,7 +162,7 @@ export default class Schema {
     }, {});
   };
 
-  protected _getCreateObject = () => {
+  private _getCreateObject = () => {
     const createProps = this._getCreateProps();
     const defaults = this._getDefaults();
     const props = this._getProps();
@@ -198,7 +186,7 @@ export default class Schema {
     }, {});
   };
 
-  protected _getDependencies = (prop: string): looseObjectFunc[] =>
+  private _getDependencies = (prop: string): looseObjectFunc[] =>
     this._getLinkedUpdates()[prop] ?? [];
 
   _getValidations = (): looseObject => {
@@ -214,13 +202,13 @@ export default class Schema {
     return validations;
   };
 
-  protected _isErroneous = () => Object.keys(this.errors).length > 0;
+  private _isErroneous = () => Object.keys(this.errors).length > 0;
 
-  protected _returnErrors() {
+  private _returnErrors() {
     throw new ApiError({ message: "Validation error", payload: this.errors });
   }
 
-  protected _postCreateActions = (data = {}) => {
+  private _postCreateActions = (data = {}) => {
     const actions = this._getCreateActions();
 
     actions.forEach((action) => (data = { ...data, ...action(data) }));
@@ -228,16 +216,15 @@ export default class Schema {
     return data;
   };
 
-  protected _hasEnoughProps = () => this._getProps().length > 0;
+  private _hasEnoughProps = () => this._getProps().length > 0;
 
-  protected _hasSomeOf = (obj: looseObject, props: string[]): boolean => {
+  private _hasSomeOf = (obj: looseObject, props: string[]): boolean => {
     for (let prop of props) if (Object(obj).hasOwnProperty(prop)) return true;
 
     return false;
   };
 
-  protected _sort = (data: any[]): any[] =>
-    data.sort((a, b) => (a < b ? -1 : 1));
+  private _sort = (data: any[]): any[] => data.sort((a, b) => (a < b ? -1 : 1));
 
   clone = ({ toReset = [] } = { toReset: [] }) => {
     return this._postCreateActions(this._getCloneObject(toReset));
@@ -246,13 +233,8 @@ export default class Schema {
   create = () => {
     let obj = this._getCreateObject();
 
-    if (this.timestamps) {
-      obj = {
-        ...obj,
-        timestamps: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+    if (this._options?.timestamp) {
+      obj = { ...obj, createdAt: new Date(), updatedAt: new Date() };
     }
 
     if (this._isErroneous()) this._returnErrors();
@@ -368,7 +350,7 @@ export default class Schema {
     const canUpdate = Object.keys(this.updated).length;
     if (!canUpdate) throw new ApiError({ message: "Nothing to update" });
 
-    if (this?.timestamps) {
+    if (this._options?.timestamp) {
       const timeNow = new Date();
       this.updated.updatedAt = timeNow;
       if (!this.createdAt) this.updated.createdAt = timeNow;
@@ -378,15 +360,14 @@ export default class Schema {
   };
 }
 
-function Model(this: any, { ...values }) {
-  // console.log(this, values);
-  console.log(this, 1);
+function Model(this: Schema, values: looseObject) {
   Object.keys(values).forEach((key) => (this[key] = values[key]));
 
   return this;
 }
 
-export const buildModel = (schema: any) => {
-  Model.call(schema, { ...Object.keys(schema) });
-  return Model;
+export const makeModel = (schema: Schema) => {
+  return function (args: looseObject) {
+    return Model.call(schema, args);
+  };
 };
