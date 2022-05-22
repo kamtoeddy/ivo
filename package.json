@@ -1,12 +1,19 @@
 {
-  "name": "node-schema",
+  "name": "@blacksocks/node-schema",
   "version": "1.0.0",
   "description": "node shcema builder",
-  "main": "index.js",
-  "dependencies": {},
-  "devDependencies": {},
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "files": [
+    "lib/**/*"
+  ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc",
+    "prepare": "npm run build",
+    "watch": "tsc -w"
+  },
+  "devDependencies": {
+    "typescript": "^4.6.2"
   },
   "repository": {
     "type": "git",

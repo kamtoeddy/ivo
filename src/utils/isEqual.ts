@@ -1,4 +1,4 @@
-const isEqual = (a: any, b: any) => {
+export default function isEqual(a: any, b: any) {
   const typeOf_a = typeof a;
   const typeOf_b = typeof b;
 
@@ -15,6 +15,4 @@ const isEqual = (a: any, b: any) => {
   }
 
   return ref_a === ref_b;
-};
-
-module.exports = isEqual;
+}
