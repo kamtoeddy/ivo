@@ -260,8 +260,8 @@ export default class Schema {
       const result = validateFx(value);
 
       valid = result.valid;
-      const _messages = result?.messages ?? [];
-      messages = [..._messages];
+      const reason = result?.reason ?? "";
+      messages = [reason];
 
       if (result.hasOwnProperty("validated")) validated = result.validated;
     }
