@@ -337,6 +337,8 @@ export default class Schema {
       const isLinked = _linkedKeys.includes(prop),
         isUpdatable = _updatables.includes(prop);
 
+      console.log(prop, isLinked, isUpdatable);
+
       if (!isLinked && !isUpdatable) return;
 
       const {
@@ -349,6 +351,8 @@ export default class Schema {
       });
 
       const hasChanged = !isEqual(this?.[prop], validated);
+
+      console.log(prop, valid, hasChanged, changes[prop], errors);
 
       if (valid && hasChanged) {
         if (isUpdatable) this.updated[prop] = validated;
