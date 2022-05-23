@@ -1,9 +1,7 @@
 import ApiError from "./utils/ApiError";
 import isEqual from "./utils/isEqual";
-import validate from "./validate";
-import format from "./utils/format";
 
-import { looseObject, stringPropTypes } from "./utils/interfaces";
+import { looseObject } from "./utils/interfaces";
 
 type looseObjectFunc = (...args: any) => looseObject;
 
@@ -19,7 +17,7 @@ type validationResponse = {
 };
 type propValidatorFunc = (...args: any) => validationResponse;
 
-interface basePropsType {
+interface propDefinitionType {
   [key: string]: {
     default?: any;
     onCreate?: looseObjectFunc[];
@@ -38,14 +36,14 @@ interface initOptionsType {
 export default class Schema {
   [key: string]: any;
 
-  private baseProps: basePropsType = {};
+  private propDefinitions: propDefinitionType = {};
   private _options: initOptionsType = { timestamp: false };
 
   private errors: looseObject = {};
   private updated: looseObject = {};
 
-  constructor(props: basePropsType, options: initOptionsType) {
-    this.baseProps = props;
+  constructor(propsDefinitions: propDefinitionType, options: initOptionsType) {
+    this.propDefinitions = propsDefinitions;
     this._options = options;
 
     if (!this._hasEnoughProps())
@@ -77,7 +75,11 @@ export default class Schema {
     const props = this._getProps();
 
     for (let prop of props) {
-      const propActions = this.baseProps[prop]?.onCreate;
+      let propActions = this.propDefinitions[prop]?.onCreate ?? [];
+
+      propActions = propActions.filter(
+        (action) => typeof action === "function"
+      );
 
       if (propActions?.length) _actions = [..._actions, ...propActions];
     }
@@ -91,7 +93,9 @@ export default class Schema {
     const props = this._getProps();
 
     return props.reduce((values: looseObject, prop) => {
-      if (createProps.includes(prop)) {
+      const checkLax = this._isLaxProp(prop) && this.hasOwnProperty(prop);
+
+      if (createProps.includes(prop) || checkLax) {
         const {
           valid,
           validated,
@@ -118,8 +122,8 @@ export default class Schema {
     const props = this._getProps();
 
     for (let prop of props) {
-      const value = this.baseProps[prop];
-      if (value?.required || value?.readonly) createProps.push(prop);
+      const propDef = this.propDefinitions[prop];
+      if (propDef?.required || propDef?.readonly) createProps.push(prop);
     }
 
     return this._sort(createProps);
@@ -130,7 +134,7 @@ export default class Schema {
     const props = this._getProps();
 
     for (let prop of props) {
-      const _default = this.baseProps[prop]?.default;
+      const _default = this.propDefinitions[prop]?.default;
 
       if (_default !== undefined) defaults[prop] = _default;
     }
@@ -146,7 +150,9 @@ export default class Schema {
     const props = this._getProps();
 
     for (let prop of props) {
-      const _updates = this.baseProps[prop]?.onUpdate;
+      let _updates = this.propDefinitions[prop]?.onUpdate ?? [];
+
+      _updates = _updates.filter((action) => typeof action === "function");
 
       if (_updates?.length) _linkedUpdates[prop] = _updates;
     }
@@ -155,21 +161,17 @@ export default class Schema {
   };
 
   private _getProps: funcArrayStr = () => {
-    const keys = Object.keys(this.baseProps);
+    let props: string[] = Object.keys(this.propDefinitions);
 
-    const props: string[] = keys.filter((key) => {
-      const value = this.baseProps[key];
+    props = props.filter((prop) => {
+      const propDef = this.propDefinitions[prop];
 
-      if (typeof value !== "object") return false;
+      if (typeof propDef !== "object") return false;
 
-      return this._hasSomeOf(value, [
-        "default",
-        "onCreate",
-        "onUpdate",
-        "readonly",
-        "required",
-        "validator",
-      ]);
+      return (
+        this._hasSomeOf(propDef, ["readonly", "required"]) ||
+        this._isLaxProp(prop)
+      );
     });
 
     return this._sort(props);
@@ -180,13 +182,13 @@ export default class Schema {
     const props = this._getProps();
 
     for (let prop of props) {
-      if (!this.baseProps[prop]?.readonly) updatebles.push(prop);
+      if (!this.propDefinitions[prop]?.readonly) updatebles.push(prop);
     }
 
     return this._sort(updatebles);
   };
 
-  private _hasEnoughProps = () => this._getProps().length > 0;
+  private _hasEnoughProps = (): boolean => this._getProps().length > 0;
 
   private _hasSomeOf = (obj: looseObject, props: string[]): boolean => {
     for (let prop of props) if (Object(obj).hasOwnProperty(prop)) return true;
@@ -196,7 +198,20 @@ export default class Schema {
 
   private _isErroneous = () => Object.keys(this.errors).length > 0;
 
-  private _postCreateActions = (data = {}) => {
+  private _isLaxProp = (prop: string): boolean => {
+    const propDef = this.propDefinitions[prop];
+
+    if (!propDef) return false;
+    const { default: _default, readonly, required, validator } = propDef;
+
+    if (!_default) return false;
+
+    if (validator && !validator(_default).valid) return false;
+
+    return !readonly && !required;
+  };
+
+  private _postCreateActions = (data: looseObject = {}): looseObject => {
     const actions = this._getCreateActions();
 
     actions.forEach((action) => (data = { ...data, ...action(data) }));
@@ -204,7 +219,7 @@ export default class Schema {
     return data;
   };
 
-  private _returnErrors() {
+  private _throwErrors(): void {
     throw new ApiError({ message: "Validation error", payload: this.errors });
   }
 
@@ -221,7 +236,7 @@ export default class Schema {
       obj = { ...obj, createdAt: new Date(), updatedAt: new Date() };
     }
 
-    if (this._isErroneous()) this._returnErrors();
+    if (this._isErroneous()) this._throwErrors();
 
     return this._postCreateActions(obj);
   };
@@ -231,9 +246,9 @@ export default class Schema {
     const props = this._getProps();
 
     for (let prop of props) {
-      const validator = this.baseProps[prop]?.validator;
+      const validator = this.propDefinitions[prop]?.validator;
 
-      if (validator !== undefined) validations[prop] = validator;
+      if (typeof validator === "function") validations[prop] = validator;
     }
 
     return validations;
@@ -264,22 +279,6 @@ export default class Schema {
     }
 
     return { messages, valid, validated };
-  };
-
-  validate_Boolean = (value: any) => {
-    validate;
-    const { valid, reason } = validate.isBooleanOk(value);
-    return { messages: [reason], valid, validated: value };
-  };
-
-  validate_String = (value: any, options: stringPropTypes) => {
-    const { valid, reason } = validate.isStringOk(value, options);
-
-    if (!valid) return { valid, messages: [reason] };
-
-    const validated = format(value, "string", { trim: true, getSub: true });
-
-    return { valid: true, validated };
   };
 
   /**
@@ -340,7 +339,7 @@ export default class Schema {
       dependencies.forEach((cb) => cb(validated));
     });
 
-    if (this._isErroneous()) this._returnErrors();
+    if (this._isErroneous()) this._throwErrors();
 
     // get the number of properties updated
     // and deny update if none was modified

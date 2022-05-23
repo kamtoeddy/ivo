@@ -1,5 +1,24 @@
 import { looseObject } from "./interfaces";
 
+type isAcceptableOptionsType = {
+  toAccept?: any[];
+  toReject?: any[];
+};
+
+export function isAcceptable(
+  value: any,
+  {
+    toAccept = [],
+    toReject = [NaN, null, undefined],
+  }: isAcceptableOptionsType = {
+    toReject: [NaN, null, undefined],
+  }
+): boolean {
+  if (!toAccept?.includes(value) || toReject?.includes(value)) return false;
+
+  return true;
+}
+
 export function makeUnique({
   data = [],
   key = "id",

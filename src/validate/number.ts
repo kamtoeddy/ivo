@@ -1,8 +1,12 @@
-interface numRangeType {
+import { isAcceptable } from "../utils/functions";
+
+type numRangeType = {
   bounds: number[];
   inclusiveBottom?: boolean;
   inclusiveTop?: boolean;
-}
+};
+
+type rangeType = undefined | numRangeType;
 
 function isInRange(value: number, range: numRangeType) {
   const { bounds, inclusiveBottom, inclusiveTop } = range;
@@ -19,9 +23,20 @@ function isInRange(value: number, range: numRangeType) {
   return { valid: true, reason: "" };
 }
 
+function makeRage(range: rangeType): rangeType {
+  if (!range?.bounds) return undefined;
+
+  const { inclusiveBottom, inclusiveTop } = range;
+
+  if (!isAcceptable(inclusiveBottom)) range.inclusiveBottom = true;
+  if (!isAcceptable(inclusiveTop)) range.inclusiveTop = true;
+
+  return range;
+}
+
 export default function isNumberOK(
   value: any,
-  { range }: { range?: numRangeType } = {}
+  { range }: { range?: rangeType } = {}
 ) {
   let valid = true,
     reason = "";
@@ -31,6 +46,10 @@ export default function isNumberOK(
   }
 
   value = Number(value);
+
+  console.log(isAcceptable("undefined", { toAccept: ["yes"] }));
+
+  range = makeRage(range);
 
   if (range) {
     const _isInRange = isInRange(value, range);

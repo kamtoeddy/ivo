@@ -1,0 +1,13 @@
+// do work on init method so it checks if schema definitions are properly ok. Like
+
+// import { validate } from "./lib";
+
+// const schema = new schema({
+//   name: {
+//     validator: (val) => validate.isStringOk(val),
+//   },
+//   salary: {
+//     default: "hey", // here is the incoherence
+//     validator: (val) => validate.isNumberOK(val), // here is the incoherence
+//   },
+// });
