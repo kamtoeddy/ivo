@@ -52,5 +52,5 @@ export default function isArrayOk(
     _array = _array.sort(sorter);
   }
 
-  return { valid: true, valdated: _array };
+  return { valid: true, validated: _array };
 }
