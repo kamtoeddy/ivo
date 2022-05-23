@@ -60,6 +60,8 @@ export default class Schema {
     this.errors[field] = [...this.errors[field], ...errors];
   };
 
+  private _resetErrors = () => (this.errors = {});
+
   private _canInit = (prop: string): boolean => {
     const propDef = this.propDefinitions[prop];
 
@@ -264,10 +266,14 @@ export default class Schema {
   private _sort = (data: any[]): any[] => data.sort((a, b) => (a < b ? -1 : 1));
 
   clone = ({ toReset = [] } = { toReset: [] }) => {
+    this._resetErrors();
+
     return this._postCreateActions(this._getCloneObject(toReset));
   };
 
   create = () => {
+    this._resetErrors();
+
     let obj = this._getCreateObject();
 
     if (this.options?.timestamp) {
@@ -325,6 +331,7 @@ export default class Schema {
    * @returns An object containing validated changes
    */
   update = (changes: looseObject = {}) => {
+    this._resetErrors();
     this.updated = {};
 
     const toUpdate = Object.keys(changes);
@@ -336,8 +343,6 @@ export default class Schema {
     toUpdate.forEach((prop: string) => {
       const isLinked = _linkedKeys.includes(prop),
         isUpdatable = _updatables.includes(prop);
-
-      console.log(prop, isLinked, isUpdatable);
 
       if (!isLinked && !isUpdatable) return;
 
@@ -352,8 +357,6 @@ export default class Schema {
 
       const hasChanged = !isEqual(this?.[prop], validated);
 
-      console.log(prop, valid, hasChanged, changes[prop], errors);
-
       if (valid && hasChanged) {
         if (isUpdatable) this.updated[prop] = validated;
 
@@ -367,7 +370,9 @@ export default class Schema {
         return;
       }
 
-      if (!valid) this._addError({ field: prop, errors });
+      if (!valid) {
+        this._addError({ field: prop, errors });
+      }
     });
 
     if (this._isErroneous()) this._throwErrors();
