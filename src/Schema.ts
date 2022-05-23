@@ -384,11 +384,7 @@ export default class Schema {
     const canUpdate = Object.keys(this.updated).length;
     if (!canUpdate) throw new ApiError({ message: "Nothing to update" });
 
-    if (this.options?.timestamp) {
-      const timeNow = new Date();
-      this.updated.updatedAt = timeNow;
-      if (!this.createdAt) this.updated.createdAt = timeNow;
-    }
+    if (this.options?.timestamp) this.updated.updatedAt = new Date();
 
     return this.updated;
   };
