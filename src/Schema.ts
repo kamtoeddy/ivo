@@ -136,7 +136,8 @@ export default class Schema {
     for (let prop of props) {
       const propDef = this.propDefinitions[prop];
 
-      if (propDef?.required || propDef?.readonly) createProps.push(prop);
+      if (propDef?.required || (propDef?.readonly && this._canInit(prop)))
+        createProps.push(prop);
     }
 
     return this._sort(createProps);
@@ -190,15 +191,27 @@ export default class Schema {
     return this._sort(props);
   };
 
-  private _getUpdatables: funcArrayStr = () => {
+  _getUpdatables: funcArrayStr = () => {
     const updatebles = [];
     const props = this._getProps();
 
     for (let prop of props) {
-      if (!this.propDefinitions[prop]?.readonly) updatebles.push(prop);
+      const readonly = this.propDefinitions[prop]?.readonly;
+      if (!readonly || (readonly && !this._hasChanged(prop)))
+        updatebles.push(prop);
     }
 
     return this._sort(updatebles);
+  };
+
+  private _hasChanged = (prop: string) => {
+    const propDef = this.propDefinitions[prop];
+
+    if (!propDef) return false;
+
+    const { default: _default } = propDef;
+
+    return _default !== this[prop];
   };
 
   private _hasDefault = (prop: string) => {
