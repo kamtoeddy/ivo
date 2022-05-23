@@ -52,6 +52,26 @@ export default class Schema {
       throw new ApiError({ message: "Invalid properties", statusCode: 500 });
   }
 
+  private _addError = ({ field, errors }: { field: string; errors: any[] }) => {
+    const _error = this.errors?.[field];
+
+    if (!_error) return (this.errors[field] = [...errors]);
+
+    this.errors[field] = [...this.errors[field], ...errors];
+  };
+
+  private _getCloneObject = (toReset: string[] = []) => {
+    const defaults = this._getDefaults();
+    const props = this._getProps();
+
+    return props.reduce((values: looseObject, next) => {
+      values[next] = toReset.includes(next)
+        ? defaults[next] ?? this[next]
+        : this[next];
+      return values;
+    }, {});
+  };
+
   private _getCreateActions: funcArrayFunc = () => {
     let _actions: looseObjectFunc[] = [];
     const props = this._getProps();
@@ -63,6 +83,30 @@ export default class Schema {
     }
 
     return _actions;
+  };
+
+  private _getCreateObject = () => {
+    const createProps = this._getCreateProps();
+    const defaults = this._getDefaults();
+    const props = this._getProps();
+
+    return props.reduce((values: looseObject, prop) => {
+      if (createProps.includes(prop)) {
+        const {
+          valid,
+          validated,
+          messages: errors,
+        } = this.validate({ prop, value: this[prop] });
+
+        if (valid) return { ...values, [prop]: validated };
+
+        this._addError({ field: prop, errors });
+      } else {
+        values[prop] = defaults[prop];
+      }
+
+      return values;
+    }, {});
   };
 
   /**
@@ -93,6 +137,9 @@ export default class Schema {
 
     return defaults;
   };
+
+  private _getDependencies = (prop: string): looseObjectFunc[] =>
+    this._getLinkedUpdates()[prop] ?? [];
 
   private _getLinkedUpdates: funcArrayObj = () => {
     const _linkedUpdates: looseObject = {};
@@ -139,71 +186,15 @@ export default class Schema {
     return this._sort(updatebles);
   };
 
-  private _addError = ({ field, errors }: { field: string; errors: any[] }) => {
-    const _error = this.errors?.[field];
+  private _hasEnoughProps = () => this._getProps().length > 0;
 
-    if (!_error) return (this.errors[field] = [...errors]);
+  private _hasSomeOf = (obj: looseObject, props: string[]): boolean => {
+    for (let prop of props) if (Object(obj).hasOwnProperty(prop)) return true;
 
-    this.errors[field] = [...this.errors[field], ...errors];
-  };
-
-  private _getCloneObject = (toReset: string[] = []) => {
-    const defaults = this._getDefaults();
-    const props = this._getProps();
-
-    return props.reduce((values: looseObject, next) => {
-      values[next] = toReset.includes(next)
-        ? defaults[next] ?? this[next]
-        : this[next];
-      return values;
-    }, {});
-  };
-
-  private _getCreateObject = () => {
-    const createProps = this._getCreateProps();
-    const defaults = this._getDefaults();
-    const props = this._getProps();
-
-    return props.reduce((values: looseObject, prop) => {
-      if (createProps.includes(prop)) {
-        const {
-          valid,
-          validated,
-          messages: errors,
-        } = this.validate({ prop, value: this[prop] });
-
-        if (valid) return { ...values, [prop]: validated };
-
-        this._addError({ field: prop, errors });
-      } else {
-        values[prop] = defaults[prop];
-      }
-
-      return values;
-    }, {});
-  };
-
-  private _getDependencies = (prop: string): looseObjectFunc[] =>
-    this._getLinkedUpdates()[prop] ?? [];
-
-  _getValidations = (): looseObject => {
-    const validations: looseObject = {};
-    const props = this._getProps();
-
-    for (let prop of props) {
-      const validator = this.baseProps[prop]?.validator;
-
-      if (validator !== undefined) validations[prop] = validator;
-    }
-
-    return validations;
+    return false;
   };
 
   private _isErroneous = () => Object.keys(this.errors).length > 0;
-
-  private _returnErrors() {
-    throw new ApiError({ message: "Validation error", payload: this.errors });
-  }
 
   private _postCreateActions = (data = {}) => {
     const actions = this._getCreateActions();
@@ -213,13 +204,9 @@ export default class Schema {
     return data;
   };
 
-  private _hasEnoughProps = () => this._getProps().length > 0;
-
-  private _hasSomeOf = (obj: looseObject, props: string[]): boolean => {
-    for (let prop of props) if (Object(obj).hasOwnProperty(prop)) return true;
-
-    return false;
-  };
+  private _returnErrors() {
+    throw new ApiError({ message: "Validation error", payload: this.errors });
+  }
 
   private _sort = (data: any[]): any[] => data.sort((a, b) => (a < b ? -1 : 1));
 
@@ -239,6 +226,19 @@ export default class Schema {
     return this._postCreateActions(obj);
   };
 
+  getValidations = (): looseObject => {
+    const validations: looseObject = {};
+    const props = this._getProps();
+
+    for (let prop of props) {
+      const validator = this.baseProps[prop]?.validator;
+
+      if (validator !== undefined) validations[prop] = validator;
+    }
+
+    return validations;
+  };
+
   validate = ({ prop = "", value }: { prop: string; value: any }) => {
     if (!this._getProps().includes(prop))
       return { valid: false, messages: ["Invalid property"] };
@@ -247,7 +247,7 @@ export default class Schema {
       messages: string[] = [],
       validated = value;
 
-    const validateFx = this._getValidations()[prop];
+    const validateFx = this.getValidations()[prop];
 
     if (!validateFx && typeof value === "undefined") {
       return { valid: false, messages: ["Invalid value"] };
