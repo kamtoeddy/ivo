@@ -27,12 +27,12 @@ export default function isArrayOk(
   } = {}
 ) {
   if (!Array.isArray(value))
-    return { valid: false, reasons: ["Expected an array"] };
+    return { valid: false, reason: "Expected an array" };
 
   let _array = value.filter(filter);
 
   if (!empty && !_array.length)
-    return { valid: false, reasons: ["Expected a non-empty array"] };
+    return { valid: false, reason: "Expected a non-empty array" };
 
   if (modifier) _array = _array.map(modifier);
 
