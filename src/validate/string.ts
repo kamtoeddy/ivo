@@ -28,5 +28,5 @@ export default function isStringOk(
     reason = "unaccepted value";
   }
 
-  return { valid, reason };
+  return { reason, valid, validated: value };
 }

@@ -21,7 +21,7 @@ function isInRange(value: number, range: numRangeType) {
 
 export default function isNumberOK(
   value: any,
-  { range = undefined }: { range?: numRangeType } = {}
+  { range }: { range?: numRangeType } = {}
 ) {
   let valid = true,
     reason = "";
@@ -38,5 +38,5 @@ export default function isNumberOK(
     if (!_isInRange.valid) return _isInRange;
   }
 
-  return { valid, reason };
+  return { reason, valid, validated: value };
 }
