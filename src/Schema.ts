@@ -2,6 +2,7 @@ import ApiError from "./utils/ApiError";
 import isEqual from "./utils/isEqual";
 
 import { looseObject } from "./utils/interfaces";
+import { belongsTo } from "./utils/functions";
 
 type looseObjectFunc = (...args: any) => looseObject;
 
@@ -24,6 +25,7 @@ interface propDefinitionType {
     onUpdate?: looseObjectFunc[];
     readonly?: boolean;
     required?: boolean;
+    shouldInit?: boolean;
     // type: propType;
     validator?: propValidatorFunc;
   };
@@ -37,14 +39,14 @@ export default class Schema {
   [key: string]: any;
 
   private propDefinitions: propDefinitionType = {};
-  private _options: initOptionsType = { timestamp: false };
+  private options: initOptionsType = { timestamp: false };
 
   private errors: looseObject = {};
   private updated: looseObject = {};
 
   constructor(propsDefinitions: propDefinitionType, options: initOptionsType) {
     this.propDefinitions = propsDefinitions;
-    this._options = options;
+    this.options = options;
 
     if (!this._hasEnoughProps())
       throw new ApiError({ message: "Invalid properties", statusCode: 500 });
@@ -56,6 +58,16 @@ export default class Schema {
     if (!_error) return (this.errors[field] = [...errors]);
 
     this.errors[field] = [...this.errors[field], ...errors];
+  };
+
+  private _canInit = (prop: string): boolean => {
+    const propDef = this.propDefinitions[prop];
+
+    if (!propDef) return false;
+
+    if (!this._hasDefault(prop)) return false;
+
+    return belongsTo(propDef?.shouldInit, [true, undefined]);
   };
 
   private _getCloneObject = (toReset: string[] = []) => {
@@ -123,6 +135,7 @@ export default class Schema {
 
     for (let prop of props) {
       const propDef = this.propDefinitions[prop];
+
       if (propDef?.required || propDef?.readonly) createProps.push(prop);
     }
 
@@ -169,7 +182,7 @@ export default class Schema {
       if (typeof propDef !== "object") return false;
 
       return (
-        this._hasSomeOf(propDef, ["readonly", "required"]) ||
+        this._hasSomeOf(propDef, ["default", "readonly", "required"]) ||
         this._isLaxProp(prop)
       );
     });
@@ -188,6 +201,14 @@ export default class Schema {
     return this._sort(updatebles);
   };
 
+  private _hasDefault = (prop: string) => {
+    const propDef = this.propDefinitions[prop];
+
+    if (!propDef) return false;
+
+    return propDef.default !== undefined;
+  };
+
   private _hasEnoughProps = (): boolean => this._getProps().length > 0;
 
   private _hasSomeOf = (obj: looseObject, props: string[]): boolean => {
@@ -202,11 +223,15 @@ export default class Schema {
     const propDef = this.propDefinitions[prop];
 
     if (!propDef) return false;
-    const { default: _default, readonly, required, validator } = propDef;
 
-    if (!_default) return false;
+    if (!this._canInit(prop)) return false;
 
-    if (validator && !validator(_default).valid) return false;
+    // if (!this._hasDefault(prop)) return false;
+
+    // const { default: _default, readonly, required, validator } = propDef;
+    // if (!validator?.(_default).valid) return false;
+
+    const { readonly, required } = propDef;
 
     return !readonly && !required;
   };
@@ -232,7 +257,7 @@ export default class Schema {
   create = () => {
     let obj = this._getCreateObject();
 
-    if (this._options?.timestamp) {
+    if (this.options?.timestamp) {
       obj = { ...obj, createdAt: new Date(), updatedAt: new Date() };
     }
 
@@ -346,7 +371,7 @@ export default class Schema {
     const canUpdate = Object.keys(this.updated).length;
     if (!canUpdate) throw new ApiError({ message: "Nothing to update" });
 
-    if (this._options?.timestamp) {
+    if (this.options?.timestamp) {
       const timeNow = new Date();
       this.updated.updatedAt = timeNow;
       if (!this.createdAt) this.updated.createdAt = timeNow;

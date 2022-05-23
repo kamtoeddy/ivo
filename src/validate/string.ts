@@ -1,3 +1,4 @@
+import { belongsTo } from "../utils/functions";
 import { stringPropTypes } from "../utils/interfaces";
 
 export default function isStringOk(
@@ -23,7 +24,7 @@ export default function isStringOk(
     reason = "too long";
   }
 
-  if (enums && !enums.includes(value)) {
+  if (enums && !belongsTo(value, enums)) {
     valid = false;
     reason = "unaccepted value";
   }

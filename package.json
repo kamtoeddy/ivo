@@ -1,6 +1,6 @@
 {
   "name": "@blacksocks/node-schema",
-  "version": "2.0.6",
+  "version": "2.0.7",
   "description": "node shcema builder",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",

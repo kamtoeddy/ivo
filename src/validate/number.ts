@@ -1,4 +1,4 @@
-import { isAcceptable } from "../utils/functions";
+import { belongsTo } from "../utils/functions";
 
 type numRangeType = {
   bounds: number[];
@@ -7,6 +7,8 @@ type numRangeType = {
 };
 
 type rangeType = undefined | numRangeType;
+
+const bools = [false, true];
 
 function isInRange(value: number, range: numRangeType) {
   const { bounds, inclusiveBottom, inclusiveTop } = range;
@@ -28,8 +30,8 @@ function makeRage(range: rangeType): rangeType {
 
   const { inclusiveBottom, inclusiveTop } = range;
 
-  if (!isAcceptable(inclusiveBottom)) range.inclusiveBottom = true;
-  if (!isAcceptable(inclusiveTop)) range.inclusiveTop = true;
+  if (!belongsTo(inclusiveBottom, bools)) range.inclusiveBottom = true;
+  if (!belongsTo(inclusiveTop, bools)) range.inclusiveTop = true;
 
   return range;
 }
