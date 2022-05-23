@@ -156,7 +156,7 @@ export default class Schema {
     return defaults;
   };
 
-  private _getDependencies = (prop: string): looseObjectFunc[] =>
+  private _getLinkedMethods = (prop: string): looseObjectFunc[] =>
     this._getLinkedUpdates()[prop] ?? [];
 
   private _getLinkedUpdates: funcArrayObj = () => {
@@ -191,7 +191,7 @@ export default class Schema {
     return this._sort(props);
   };
 
-  _getUpdatables: funcArrayStr = () => {
+  private _getUpdatables: funcArrayStr = () => {
     const updatebles = [];
     const props = this._getProps();
 
@@ -307,13 +307,13 @@ export default class Schema {
     }
 
     if (validateFx) {
-      const result = validateFx(value);
+      const { reason, valid: _v, validated: _va } = validateFx(value);
 
-      valid = result.valid;
-      const reason = result?.reason ?? "";
+      valid = _v;
+
       messages = [reason];
 
-      if (result.hasOwnProperty("validated")) validated = result.validated;
+      if (_va) validated = _va;
     }
 
     return { messages, valid, validated };
@@ -325,27 +325,20 @@ export default class Schema {
    * @returns An object containing validated changes
    */
   update = (changes: looseObject = {}) => {
-    const changesProps = Object.keys(changes);
-    const _linkedKeys = Object.keys(this._getLinkedUpdates() ?? {});
-    const _linkedUpdates: string[] = [];
-    const _updatables = this._getUpdatables();
-
-    const toUpdate = changesProps.filter((prop) => {
-      if (_linkedKeys.includes(prop)) _linkedUpdates.push(prop);
-      return _updatables.includes(prop);
-    });
-
-    // reject operation if no valid property to update
-    // or no linked property to update
-    if (!toUpdate.length && !_linkedUpdates.length) {
-      throw new ApiError({ message: "Nothing to update" });
-    }
-
     this.updated = {};
+
+    const toUpdate = Object.keys(changes);
+    const _linkedKeys = Object.keys(this._getLinkedUpdates());
+    const _updatables = this._getUpdatables();
 
     // iterate through validated values and get only changed fields
     // amongst the schema's updatable properties
     toUpdate.forEach((prop: string) => {
+      const isLinked = _linkedKeys.includes(prop),
+        isUpdatable = _updatables.includes(prop);
+
+      if (!isLinked && !isUpdatable) return;
+
       const {
         valid,
         validated,
@@ -355,26 +348,22 @@ export default class Schema {
         value: changes[prop],
       });
 
-      if (valid && !isEqual(this?.[prop], validated))
-        return (this.updated[prop] = validated);
+      const hasChanged = !isEqual(this?.[prop], validated);
+
+      if (valid && hasChanged) {
+        if (isUpdatable) this.updated[prop] = validated;
+
+        if (isLinked) {
+          const methods = this._getLinkedMethods(prop);
+          methods.forEach(
+            (cb) => (this.updated = { ...this.updated, ...cb(validated) })
+          );
+        }
+
+        return;
+      }
 
       if (!valid) this._addError({ field: prop, errors });
-    });
-
-    // iterate through validated values and
-    // linked updates to attach like full name
-    // which depends on first name and last name
-    // full name gets updated only when either gets updated
-    _linkedUpdates.forEach((prop: string) => {
-      const { valid, validated } = this.validate({
-        prop,
-        value: changes[prop],
-      });
-
-      if (!valid) return;
-
-      const dependencies = this._getDependencies(prop);
-      dependencies.forEach((cb) => cb(validated));
     });
 
     if (this._isErroneous()) this._throwErrors();
@@ -392,7 +381,6 @@ export default class Schema {
 
 function Model(this: Schema, values: looseObject) {
   Object.keys(values).forEach((key) => (this[key] = values[key]));
-
   return this;
 }
 
