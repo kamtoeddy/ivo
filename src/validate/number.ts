@@ -47,8 +47,6 @@ export default function isNumberOK(
 
   value = Number(value);
 
-  console.log(isAcceptable("undefined", { toAccept: ["yes"] }));
-
   range = makeRage(range);
 
   if (range) {
