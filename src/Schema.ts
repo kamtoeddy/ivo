@@ -138,7 +138,11 @@ export default class Schema {
     for (let prop of props) {
       const propDef = this.propDefinitions[prop];
 
-      if (propDef?.required || (propDef?.readonly && this._canInit(prop)))
+      if (
+        propDef?.required ||
+        propDef?.readonly ||
+        (propDef?.readonly && this._canInit(prop))
+      )
         createProps.push(prop);
     }
 
