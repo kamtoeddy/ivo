@@ -39,15 +39,12 @@ export default class Schema {
   [key: string]: any;
 
   private baseProps: basePropsType = {};
-  private _options: initOptionsType;
+  private _options: initOptionsType = { timestamp: false };
 
   private errors: looseObject = {};
   private updated: looseObject = {};
 
-  constructor(
-    props: basePropsType,
-    options: initOptionsType = { timestamp: false }
-  ) {
+  constructor(props: basePropsType, options: initOptionsType) {
     this.baseProps = props;
     this._options = options;
 
