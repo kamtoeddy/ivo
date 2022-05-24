@@ -60,14 +60,12 @@ export default class Schema {
     this.errors[field] = [...this.errors[field], ...errors];
   };
 
-  private _resetErrors = () => (this.errors = {});
-
   private _canInit = (prop: string): boolean => {
     const propDef = this.propDefinitions[prop];
 
     if (!propDef) return false;
 
-    if (!this._hasDefault(prop)) return false;
+    if (!propDef.readonly || !this._hasDefault(prop)) return false;
 
     return belongsTo(propDef?.shouldInit, [true, undefined]);
   };
@@ -138,8 +136,7 @@ export default class Schema {
     for (let prop of props) {
       const propDef = this.propDefinitions[prop];
 
-      if (propDef?.required || (propDef?.readonly && this._canInit(prop)))
-        createProps.push(prop);
+      if (propDef?.required || this._canInit(prop)) createProps.push(prop);
     }
 
     return this._sort(createProps);
