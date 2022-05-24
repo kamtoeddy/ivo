@@ -138,11 +138,7 @@ export default class Schema {
     for (let prop of props) {
       const propDef = this.propDefinitions[prop];
 
-      if (
-        propDef?.required ||
-        propDef?.readonly ||
-        (propDef?.readonly && this._canInit(prop))
-      )
+      if (propDef?.required || (propDef?.readonly && this._canInit(prop)))
         createProps.push(prop);
     }
 
@@ -215,9 +211,7 @@ export default class Schema {
 
     if (!propDef) return false;
 
-    const { default: _default } = propDef;
-
-    return _default !== this[prop];
+    return !isEqual(propDef.default, this?.[prop]);
   };
 
   private _hasDefault = (prop: string) => {
@@ -263,21 +257,20 @@ export default class Schema {
     return data;
   };
 
-  private _throwErrors(): void {
-    throw new ApiError({ message: "Validation error", payload: this.errors });
+  private _throwErrors(message: string = "Validation Error"): void {
+    const payload = this.errors;
+    this.errors = {};
+
+    throw new ApiError({ message, payload });
   }
 
   private _sort = (data: any[]): any[] => data.sort((a, b) => (a < b ? -1 : 1));
 
   clone = ({ toReset = [] } = { toReset: [] }) => {
-    this._resetErrors();
-
     return this._postCreateActions(this._getCloneObject(toReset));
   };
 
   create = () => {
-    this._resetErrors();
-
     let obj = this._getCreateObject();
 
     if (this.options?.timestamp) {
@@ -335,7 +328,6 @@ export default class Schema {
    * @returns An object containing validated changes
    */
   update = (changes: looseObject = {}) => {
-    this._resetErrors();
     this.updated = {};
 
     const toUpdate = Object.keys(changes);
@@ -359,7 +351,7 @@ export default class Schema {
         value: changes[prop],
       });
 
-      const hasChanged = !isEqual(this?.[prop], validated);
+      const hasChanged = !isEqual(this[prop], validated);
 
       if (valid && hasChanged) {
         if (isUpdatable) this.updated[prop] = validated;
@@ -384,7 +376,7 @@ export default class Schema {
     // get the number of properties updated
     // and deny update if none was modified
     const canUpdate = Object.keys(this.updated).length;
-    if (!canUpdate) throw new ApiError({ message: "Nothing to update" });
+    if (!canUpdate) this._throwErrors("Nothing to update");
 
     if (this.options?.timestamp) this.updated.updatedAt = new Date();
 

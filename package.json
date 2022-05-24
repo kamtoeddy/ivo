@@ -1,6 +1,6 @@
 {
   "name": "@blacksocks/node-schema",
-  "version": "2.1.2",
+  "version": "2.1.3",
   "description": "node shcema builder",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -20,6 +20,7 @@
     "url": "git+https://github.com/kamtoeddy/node-schema.git"
   },
   "keywords": [
+    "clean architecture",
     "node",
     "schema"
   ],
