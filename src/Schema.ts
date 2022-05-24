@@ -352,7 +352,7 @@ export default class Schema {
         if (isLinked) {
           const methods = this._getLinkedMethods(prop);
           methods.forEach(
-            (cb) => (this.updated = { ...this.updated, ...cb(validated) })
+            (cb) => (this.updated = { ...this.updated, ...cb(this) })
           );
         }
 
