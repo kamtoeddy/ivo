@@ -65,7 +65,10 @@ export default class Schema {
 
     if (!propDef) return false;
 
-    if (!propDef.readonly || !this._hasDefault(prop)) return false;
+    const { readonly, required } = propDef;
+
+    if (!readonly && !required) return false;
+    // if (!readonly && !required && !this._hasDefault(prop)) return false;
 
     return belongsTo(propDef?.shouldInit, [true, undefined]);
   };
@@ -133,11 +136,7 @@ export default class Schema {
     const createProps = [];
     const props = this._getProps();
 
-    for (let prop of props) {
-      const propDef = this.propDefinitions[prop];
-
-      if (propDef?.required || this._canInit(prop)) createProps.push(prop);
-    }
+    for (let prop of props) if (this._canInit(prop)) createProps.push(prop);
 
     return this._sort(createProps);
   };
@@ -216,7 +215,7 @@ export default class Schema {
 
     if (!propDef) return false;
 
-    return propDef.default !== undefined;
+    return !isEqual(propDef.default, undefined);
   };
 
   private _hasEnoughProps = (): boolean => this._getProps().length > 0;
@@ -234,16 +233,13 @@ export default class Schema {
 
     if (!propDef) return false;
 
-    if (!this._canInit(prop)) return false;
+    if (!this._hasDefault(prop)) return false;
 
-    // if (!this._hasDefault(prop)) return false;
+    const { readonly, required, shouldInit } = propDef;
 
-    // const { default: _default, readonly, required, validator } = propDef;
-    // if (!validator?.(_default).valid) return false;
+    if (readonly || required) return false;
 
-    const { readonly, required } = propDef;
-
-    return !readonly && !required;
+    return belongsTo(shouldInit, [true, undefined]);
   };
 
   private _postCreateActions = (data: looseObject = {}): looseObject => {
