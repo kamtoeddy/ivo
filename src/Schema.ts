@@ -288,7 +288,10 @@ export default class Schema {
     return validations;
   };
 
-  validate = ({ prop = "", value }: { prop: string; value: any }) => {
+  validate = (
+    { prop = "", value }: { prop: string; value: any },
+    context: looseObject = this
+  ) => {
     if (!this._getProps().includes(prop))
       return { valid: false, messages: ["Invalid property"] };
 
@@ -303,7 +306,7 @@ export default class Schema {
     }
 
     if (validateFx) {
-      const { reason, valid: _v, validated: _va } = validateFx(value);
+      const { reason, valid: _v, validated: _va } = validateFx(value, context);
 
       valid = _v;
 
@@ -326,6 +329,7 @@ export default class Schema {
     const toUpdate = Object.keys(changes);
     const _linkedKeys = Object.keys(this._getLinkedUpdates());
     const _updatables = this._getUpdatables();
+    let context = { ...this, ...this.updated };
 
     // iterate through validated values and get only changed fields
     // amongst the schema's updatable properties
@@ -339,33 +343,32 @@ export default class Schema {
         valid,
         validated,
         messages: errors,
-      } = this.validate({
-        prop,
-        value: changes[prop],
-      });
+      } = this.validate(
+        {
+          prop,
+          value: changes[prop],
+        },
+        context
+      );
 
       const hasChanged = !isEqual(this[prop], validated);
 
       if (valid && hasChanged) {
         if (isUpdatable) this.updated[prop] = validated;
 
-        if (isLinked) {
+        context = { ...context, ...this.updated };
+
+        if (!isLinked) {
           const methods = this._getLinkedMethods(prop);
           methods.forEach(
-            (cb) =>
-              (this.updated = {
-                ...this.updated,
-                ...cb({ ...this, ...this.updated }),
-              })
+            (cb) => (this.updated = { ...this.updated, ...cb(context) })
           );
         }
 
         return;
       }
 
-      if (!valid) {
-        this._addError({ field: prop, errors });
-      }
+      if (!valid) this._addError({ field: prop, errors });
     });
 
     if (this._isErroneous()) this._throwErrors();
