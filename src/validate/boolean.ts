@@ -2,10 +2,10 @@ export default function isBooleanOk(value: any) {
   let valid = true,
     reason = "";
 
-  if (![false, true].includes(value)) {
+  if (typeof value !== "boolean") {
     valid = false;
     reason = "Expected a boolean";
   }
 
-  return { valid, reason };
+  return { reason, valid, validated: valid ? value : undefined };
 }

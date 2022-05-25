@@ -25,6 +25,7 @@ interface propDefinitionType {
     onUpdate?: looseObjectFunc[];
     readonly?: boolean;
     required?: boolean;
+    sideEffect: boolean;
     shouldInit?: boolean;
     // type: propType;
     validator?: propValidatorFunc;
@@ -83,6 +84,14 @@ export default class Schema {
         : this[next];
       return values;
     }, {});
+  };
+
+  private _getContext = (): looseObject => {
+    let context: looseObject = {};
+
+    this._getProps().forEach((prop) => (context[prop] = this[prop]));
+
+    return { ...context, ...this.updated };
   };
 
   private _getCreateActions: funcArrayFunc = () => {
@@ -154,8 +163,13 @@ export default class Schema {
     return defaults;
   };
 
-  private _getLinkedMethods = (prop: string): looseObjectFunc[] =>
-    this._getLinkedUpdates()[prop] ?? [];
+  private _getLinkedMethods = (prop: string): looseObjectFunc[] => {
+    const methods = this._isSideEffect(prop)
+      ? this.propDefinitions[prop]?.onUpdate
+      : this._getLinkedUpdates()[prop];
+
+    return methods ?? [];
+  };
 
   private _getLinkedUpdates: funcArrayObj = () => {
     const _linkedUpdates: looseObject = {};
@@ -164,7 +178,7 @@ export default class Schema {
     for (let prop of props) {
       let _updates = this.propDefinitions[prop]?.onUpdate ?? [];
 
-      _updates = _updates.filter((action) => typeof action === "function");
+      _updates = _updates.filter((action) => this._isFunction(action));
 
       if (_updates?.length) _linkedUpdates[prop] = _updates;
     }
@@ -228,6 +242,8 @@ export default class Schema {
 
   private _isErroneous = () => Object.keys(this.errors).length > 0;
 
+  private _isFunction = (obj: any): boolean => typeof obj === "function";
+
   private _isLaxProp = (prop: string): boolean => {
     const propDef = this.propDefinitions[prop];
 
@@ -240,6 +256,24 @@ export default class Schema {
     if (readonly || required) return false;
 
     return belongsTo(shouldInit, [true, undefined]);
+  };
+
+  private _isProp = (prop: string): boolean => this._getProps().includes(prop);
+
+  private _isSideEffect = (prop: string): boolean => {
+    const propDef = this.propDefinitions[prop];
+
+    if (!propDef) return false;
+
+    const { sideEffect, onUpdate, validator } = propDef;
+
+    if (!this._isFunction(validator)) return false;
+
+    const methods = onUpdate?.filter((method) => this._isFunction(method));
+
+    if (!methods?.length) return false;
+
+    return sideEffect === true;
   };
 
   private _postCreateActions = (data: looseObject = {}): looseObject => {
@@ -288,25 +322,30 @@ export default class Schema {
     return validations;
   };
 
-  validate = (
-    { prop = "", value }: { prop: string; value: any },
-    context: looseObject = this
-  ) => {
-    if (!this._getProps().includes(prop))
+  validate = ({ prop = "", value }: { prop: string; value: any }) => {
+    const isSideEffect = this._isSideEffect(prop);
+
+    if (!this._isProp(prop) && !isSideEffect)
       return { valid: false, messages: ["Invalid property"] };
 
     let valid = true,
       messages: string[] = [],
       validated = value;
 
-    const validateFx = this.getValidations()[prop];
+    const validateFx = isSideEffect
+      ? this.propDefinitions[prop].validator
+      : this.getValidations()[prop];
 
     if (!validateFx && typeof value === "undefined") {
       return { valid: false, messages: ["Invalid value"] };
     }
 
     if (validateFx) {
-      const { reason, valid: _v, validated: _va } = validateFx(value, context);
+      const {
+        reason,
+        valid: _v,
+        validated: _va,
+      } = validateFx(value, this._getContext());
 
       valid = _v;
 
@@ -329,39 +368,38 @@ export default class Schema {
     const toUpdate = Object.keys(changes);
     const _linkedKeys = Object.keys(this._getLinkedUpdates());
     const _updatables = this._getUpdatables();
-    let context = { ...this, ...this.updated };
 
     // iterate through validated values and get only changed fields
     // amongst the schema's updatable properties
     toUpdate.forEach((prop: string) => {
       const isLinked = _linkedKeys.includes(prop),
+        isSideEffect = this._isSideEffect(prop),
         isUpdatable = _updatables.includes(prop);
 
-      if (!isLinked && !isUpdatable) return;
+      if (!isSideEffect && !isLinked && !isUpdatable) return;
 
       const {
         valid,
         validated,
         messages: errors,
-      } = this.validate(
-        {
-          prop,
-          value: changes[prop],
-        },
-        context
-      );
+      } = this.validate({
+        prop,
+        value: changes[prop],
+      });
 
       const hasChanged = !isEqual(this[prop], validated);
 
-      if (valid && hasChanged) {
+      console.log(prop, valid, typeof validated, hasChanged, isSideEffect);
+
+      if ((valid && !isSideEffect && hasChanged) || (valid && isSideEffect)) {
         if (isUpdatable) this.updated[prop] = validated;
 
-        context = { ...context, ...this.updated };
-
-        if (!isLinked) {
+        if (isLinked || isSideEffect) {
           const methods = this._getLinkedMethods(prop);
+
           methods.forEach(
-            (cb) => (this.updated = { ...this.updated, ...cb(context) })
+            (cb) =>
+              (this.updated = { ...this.updated, ...cb(this._getContext()) })
           );
         }
 
