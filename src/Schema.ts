@@ -389,17 +389,17 @@ export default class Schema {
 
       const hasChanged = !isEqual(this[prop], validated);
 
-      console.log(prop, valid, typeof validated, hasChanged, isSideEffect);
-
       if ((valid && !isSideEffect && hasChanged) || (valid && isSideEffect)) {
         if (isUpdatable) this.updated[prop] = validated;
 
         if (isLinked || isSideEffect) {
           const methods = this._getLinkedMethods(prop);
+          const context = this._getContext();
+
+          if (isSideEffect) context[prop] = validated;
 
           methods.forEach(
-            (cb) =>
-              (this.updated = { ...this.updated, ...cb(this._getContext()) })
+            (cb) => (this.updated = { ...this.updated, ...cb(context) })
           );
         }
 
