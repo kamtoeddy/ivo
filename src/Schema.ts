@@ -33,6 +33,7 @@ interface propDefinitionType {
 }
 
 interface initOptionsType {
+  extensionOf?: looseObject;
   timestamp?: boolean;
 }
 
@@ -40,17 +41,29 @@ export default class Schema {
   [key: string]: any;
 
   private propDefinitions: propDefinitionType = {};
-  private options: initOptionsType = { timestamp: false };
+  private options: initOptionsType = { extensionOf: {}, timestamp: false };
 
   private errors: looseObject = {};
   private updated: looseObject = {};
 
-  constructor(propsDefinitions: propDefinitionType, options: initOptionsType) {
-    this.propDefinitions = propsDefinitions;
+  constructor(
+    propDefinitions: propDefinitionType,
+    options: initOptionsType = { timestamp: false }
+  ) {
+    this.propDefinitions = propDefinitions;
     this.options = options;
 
     if (!this._hasEnoughProps())
       throw new ApiError({ message: "Invalid properties", statusCode: 500 });
+
+    const { extensionOf } = this.options;
+
+    if (extensionOf) {
+      this.propDefinitions = {
+        ...extensionOf.propDefinitions,
+        ...this.propDefinitions,
+      };
+    }
   }
 
   private _addError = ({ field, errors }: { field: string; errors: any[] }) => {
