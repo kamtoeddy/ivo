@@ -81,9 +81,16 @@ export default class Schema {
     return props.reduce((values: looseObject, next) => {
       values[next] = toReset.includes(next)
         ? defaults[next] ?? this[next]
-        : this[next];
+        : this[next] ?? defaults[next];
+
       return values;
-    }, {});
+    }, this._getConfigProps());
+  };
+
+  private _getConfigProps = (): looseObject => {
+    return this.options?.timestamp
+      ? { createdAt: new Date(), updatedAt: new Date() }
+      : {};
   };
 
   private _getContext = (): looseObject => {
@@ -134,7 +141,7 @@ export default class Schema {
       }
 
       return values;
-    }, {});
+    }, this._getConfigProps());
   };
 
   /**
@@ -299,10 +306,6 @@ export default class Schema {
 
   create = () => {
     let obj = this._getCreateObject();
-
-    if (this.options?.timestamp) {
-      obj = { ...obj, createdAt: new Date(), updatedAt: new Date() };
-    }
 
     if (this._isErroneous()) this._throwErrors();
 
