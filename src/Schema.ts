@@ -221,6 +221,19 @@ export default class Schema {
     return this._sort(updatebles);
   };
 
+  private _getValidations = (): looseObject => {
+    const validations: looseObject = {};
+    const props = this._getProps();
+
+    for (let prop of props) {
+      const validator = this.propDefinitions[prop]?.validator;
+
+      if (typeof validator === "function") validations[prop] = validator;
+    }
+
+    return validations;
+  };
+
   private _hasChanged = (prop: string) => {
     const propDef = this.propDefinitions[prop];
 
@@ -316,19 +329,6 @@ export default class Schema {
     return this._postCreateActions(obj);
   };
 
-  getValidations = (): looseObject => {
-    const validations: looseObject = {};
-    const props = this._getProps();
-
-    for (let prop of props) {
-      const validator = this.propDefinitions[prop]?.validator;
-
-      if (typeof validator === "function") validations[prop] = validator;
-    }
-
-    return validations;
-  };
-
   validate = ({ prop = "", value }: { prop: string; value: any }) => {
     const isSideEffect = this._isSideEffect(prop);
 
@@ -341,7 +341,7 @@ export default class Schema {
 
     const validateFx = isSideEffect
       ? this.propDefinitions[prop].validator
-      : this.getValidations()[prop];
+      : this._getValidations()[prop];
 
     if (!validateFx && typeof value === "undefined") {
       return { valid: false, messages: ["Invalid value"] };
