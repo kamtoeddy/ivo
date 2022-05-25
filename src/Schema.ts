@@ -78,19 +78,15 @@ export default class Schema {
     const defaults = this._getDefaults();
     const props = this._getProps();
 
-    return props.reduce((values: looseObject, next) => {
-      values[next] = toReset.includes(next)
-        ? defaults[next] ?? this[next]
-        : this[next] ?? defaults[next];
+    return this._useConfigProps(
+      props.reduce((values: looseObject, next) => {
+        values[next] = toReset.includes(next)
+          ? defaults[next] ?? this[next]
+          : this[next] ?? defaults[next];
 
-      return values;
-    }, this._getConfigProps());
-  };
-
-  private _getConfigProps = (): looseObject => {
-    return this.options?.timestamp
-      ? { createdAt: new Date(), updatedAt: new Date() }
-      : {};
+        return values;
+      }, {})
+    );
   };
 
   private _getContext = (): looseObject => {
@@ -123,25 +119,27 @@ export default class Schema {
     const defaults = this._getDefaults();
     const props = this._getProps();
 
-    return props.reduce((values: looseObject, prop) => {
-      const checkLax = this._isLaxProp(prop) && this.hasOwnProperty(prop);
+    return this._useConfigProps(
+      props.reduce((values: looseObject, prop) => {
+        const checkLax = this._isLaxProp(prop) && this.hasOwnProperty(prop);
 
-      if (createProps.includes(prop) || checkLax) {
-        const {
-          valid,
-          validated,
-          messages: errors,
-        } = this.validate({ prop, value: this[prop] });
+        if (createProps.includes(prop) || checkLax) {
+          const {
+            valid,
+            validated,
+            messages: errors,
+          } = this.validate({ prop, value: this[prop] });
 
-        if (valid) return { ...values, [prop]: validated };
+          if (valid) return { ...values, [prop]: validated };
 
-        this._addError({ field: prop, errors });
-      } else {
-        values[prop] = defaults[prop];
-      }
+          this._addError({ field: prop, errors });
+        } else {
+          values[prop] = defaults[prop];
+        }
 
-      return values;
-    }, this._getConfigProps());
+        return values;
+      }, {})
+    );
   };
 
   /**
@@ -299,6 +297,12 @@ export default class Schema {
   }
 
   private _sort = (data: any[]): any[] => data.sort((a, b) => (a < b ? -1 : 1));
+
+  private _useConfigProps = (obj: looseObject): looseObject => {
+    return this.options?.timestamp
+      ? { ...obj, createdAt: new Date(), updatedAt: new Date() }
+      : obj;
+  };
 
   clone = ({ toReset = [] } = { toReset: [] }) => {
     return this._postCreateActions(this._getCloneObject(toReset));
