@@ -141,13 +141,13 @@ const adminSchema = new Schema(
 | Property   | Type     | Description                                                                                                                                                                         |
 | ---------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | default    | any      | A value of any type you wish to use for a given property                                                                                                                            |
-| onCreate   | array    | An array of **synchronous** fuctions you want to be executed when an instance of your model gets created. Default **[ ]**                                                           |
-| onUpdate   | array    | An array of **synchronous** fuctions you want to be executed when a particular property of your instance get updated. Default **[ ]**                                               |
+| onCreate   | array    | An array of **synchronous** functions you want to be executed when an instance of your model gets created. Default **[ ]**                                                          |
+| onUpdate   | array    | An array of **synchronous** functions you want to be executed when a particular property of your instance get updated. Default **[ ]**                                              |
 | readonly   | boolean  | If true will be required at initialization and will never allow updates. If true with shouldInit: false, will not be initialized but allowed to update only once. Default **false** |
 | required   | boolean  | Specifies a property that must be initialised. Default **false**                                                                                                                    |
 | sideEffect | boolean  | Used with onUpdate to modify other properties but is not attached to instances of your model. Default **false**                                                                     |
 | shouldInit | boolean  | Tells node-schema whether or not a property should be initialized. Default **false**                                                                                                |
-| validator  | function | An **synchronous** fuction used to validated the value of a property. Must return {reason:string, valid: boolean, validated: undefined or any}. Default **null**                    |
+| validator  | function | An **synchronous** function used to validated the value of a property. Must return {reason:string, valid: boolean, validated: undefined or any}. Default **null**                   |
 
 # Properties of a model
 
