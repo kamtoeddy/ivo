@@ -178,7 +178,7 @@ validate.isStringOk(val, {
 });
 ```
 
-- **each returns** {reason,valid,validated}
+- **each returns** { reason, valid, validated}
 
 ```typescript
 // each returns an object with this structure:
