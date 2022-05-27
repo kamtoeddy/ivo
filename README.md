@@ -72,17 +72,27 @@ const user = new UserModel({
 }).create();
 
 console.log(user); // { id: 1, name: "James Spader", password: "AbsdivinnnBbnkl-adjfbjj", role: "app-user"}
+
+const db = require("db-of-choice"); // use db of your choice
+
+await db.insert(user);
 ```
 
 # Updating instances
 
 ```javascript
+const user = await db.query({ id: 1 });
+
+if (!user) return null;
+
 const userUpdate = new UserModel(user).update({
   id: 2,
   name: "Raymond Reddington",
 });
 
 console.log(userUpdate); // { name: "Harold Cooper"}
+
+db.update({ id: 1 }, userUpdate);
 ```
 
 # Properties of the _Schema_ class
