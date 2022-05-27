@@ -30,6 +30,8 @@ import { makeModel, Schema } from "@blacksocks/node-schema";
 
 # Defining a model
 
+A
+
 ```javascript
 const userSchema = new Schema({
     id: {
@@ -57,6 +59,8 @@ const userSchema = new Schema({
 const UserModel = makeModel(userSchema;);
 ```
 
+> N.B: Node-schema will throw an error if the no property is defined or if none of the properties defined are valid.
+
 # Creating an instance
 
 ```javascript
@@ -73,7 +77,10 @@ console.log(user); // { id: 1, name: "James Spader", password: "AbsdivinnnBbnkl-
 # Updating instances
 
 ```javascript
-const userUpdate = new UserModel(user).update({ id: 2, name: "Harold Cooper" });
+const userUpdate = new UserModel(user).update({
+  id: 2,
+  name: "Raymond Reddington",
+});
 
 console.log(userUpdate); // { name: "Harold Cooper"}
 ```
@@ -163,11 +170,37 @@ validate.isStringOk(val, {
 
 - **each returns** {reason,valid,validated}
 
-- reason: **string**
-  - the reason the validation failed
-- valid: **boolean**
-  - tells if data was valid or not
-- validated: **any**
-  - the validated values passed which could have been formated in the custom validator (i.e made ready for the db)
+```typescript
+// each returns an object with this structure:
+validationResults: {
+  reason: string, // the reason the validation failed e.g. Invalid name
+  valid: boolean, // tells if data was valid or not
+  validated: undefined | any // the validated values passed which could have been formated in the custom validator (i.e made ready for the db)
+}
+```
 
-> N.B: Every validator, even your custom validators are expected to return an object that has that structure.
+> N.B: Every validator, even your custom validators are expected to return an object that respects the above structure.
+
+# Structure of ApiError
+
+As stated earlier, the create and update methods may throw errors. They will, if the data passed are invalid.
+
+1. ### With model({...values}).create()
+
+   - This will happen if any of the values passed were invalid
+
+1. ### With model({...values}).update({...updates})
+   - This will happen if any of the updates passed were invalid,
+   - if none of the values passed are different from the actual values
+
+```typescript
+ApiError: {
+  message: string, // e.g. Validation Error
+  payload: {
+    [key]: string[] // e.g. name: ["Invalid name", "too long"]
+  },
+  statusCode: number // e.g. 400
+}
+```
+
+## Happy coding! 😎
