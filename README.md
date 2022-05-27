@@ -30,8 +30,6 @@ import { makeModel, Schema } from "@blacksocks/node-schema";
 
 # Defining a model
 
-A
-
 ```javascript
 const userSchema = new Schema({
     id: {
