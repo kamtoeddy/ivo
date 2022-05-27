@@ -88,7 +88,7 @@ const userUpdate = new UserModel(user).update({
   name: "Raymond Reddington",
 });
 
-console.log(userUpdate); // { name: "Harold Cooper"}
+console.log(userUpdate); // { name: "Raymond Reddington"}
 
 db.update({ id: 1 }, userUpdate);
 ```
