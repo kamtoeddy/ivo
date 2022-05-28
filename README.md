@@ -247,7 +247,7 @@ console.log(validate.isArrayOk(invalids, options)); // { reason: "Expected a non
 | filter    | function | Function to filter the array. Default: **(data) => false**                              |
 | modifier  | function | Function to modify (format) individual values. Default: **undefined**                   |
 | sorted    | boolean  | Whether array should be sorted. Default: **true**                                       |
-| sorter    | function | Function to modify (format) individual values. Default: **undefined**                   |
+| sorter    | function | Function to sort values. Default: **undefined**                   |
 | sortOrder | number   | Number used to do comparison check when sorted: true and sorter: undefined              |
 | unique    | boolean  | Whether array should contain unique values. Default: **true**                           |
 | uniqueKey | string   | A key(property) on objects in array used as unique criteria. e.g: "id". Default: **""** |
