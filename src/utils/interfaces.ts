@@ -9,6 +9,7 @@ export interface datePropTypes {
 }
 
 export interface stringPropTypes {
+  match?: RegExp;
   maxLength?: number;
   minLength?: number;
   enums?: string[];

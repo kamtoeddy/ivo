@@ -5,31 +5,30 @@ type funcModifier = (data: any) => any;
 type funcSorter = (a: any, b: any) => number;
 
 export default function isArrayOk(
-  value: any[] = [],
+  arr: any[] = [],
   {
     empty = false,
     sorted = true,
-    sorter,
-    sortOrder = -1,
     filter = (data) => false,
     modifier,
+    sorter,
+    sortOrder = -1,
     unique = true,
-    uniqueKey = "measureUnit",
+    uniqueKey = "",
   }: {
     empty?: boolean;
+    filter?: funcFilter;
+    modifier?: funcModifier;
     sorted?: boolean;
+    sorter?: funcSorter;
     sortOrder?: number;
     unique?: boolean;
     uniqueKey?: string;
-    filter?: funcFilter;
-    modifier?: funcModifier;
-    sorter?: funcSorter;
   } = {}
 ) {
-  if (!Array.isArray(value))
-    return { valid: false, reason: "Expected an array" };
+  if (!Array.isArray(arr)) return { valid: false, reason: "Expected an array" };
 
-  let _array = value.filter(filter);
+  let _array = arr.filter(filter);
 
   if (!empty && !_array.length)
     return { valid: false, reason: "Expected a non-empty array" };
@@ -38,7 +37,7 @@ export default function isArrayOk(
 
   if (unique && _array.length) {
     _array =
-      typeof _array[0] == "object"
+      typeof _array[0] === "object"
         ? makeUnique({ data: _array, key: uniqueKey })
         : [...new Set(_array)];
   }

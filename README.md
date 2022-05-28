@@ -32,29 +32,29 @@ import { makeModel, Schema } from "@blacksocks/node-schema";
 
 ```javascript
 const userSchema = new Schema({
-    id: {
-        readonly: true,
-        validator: validateId
-     },
-     name: {
-        required: true,
-        validator: validateName
-     },
-     password: {
-        required: true,
-        validator: validatePassword
-     },
-     role: {
-        required: true,
-        validator: validateRole
-     },
-     isBlocked: {
-        default: false,
-        validator: validateBoolean
-     },
+  id: {
+    readonly: true,
+    validator: validateId,
+  },
+  name: {
+    required: true,
+    validator: validateName,
+  },
+  password: {
+    required: true,
+    validator: validatePassword,
+  },
+  role: {
+    required: true,
+    validator: validateRole,
+  },
+  isBlocked: {
+    default: false,
+    validator: validateboolean,
+  },
 });
 
-const UserModel = makeModel(userSchema;);
+const UserModel = makeModel(userSchema);
 ```
 
 > N.B: Node-schema will throw an error if the no property is defined or if none of the properties defined are valid.
@@ -90,7 +90,7 @@ const userUpdate = new UserModel(user).update({
 
 console.log(userUpdate); // { name: "Raymond Reddington"}
 
-db.update({ id: 1 }, userUpdate);
+await db.update({ id: 1 }, userUpdate);
 ```
 
 # Properties of the _Schema_ class
@@ -144,7 +144,7 @@ const adminSchema = new Schema(
 | readonly   | boolean  | If true will be required at initialization and will never allow updates. If true with shouldInit: false, will not be initialized but allowed to update only once. Default **false** |
 | required   | boolean  | Specifies a property that must be initialised. Default **false**                                                                                                                    |
 | sideEffect | boolean  | Used with onUpdate to modify other properties but is not attached to instances of your model. Default **false**                                                                     |
-| shouldInit | boolean  | Tells node-schema whether or not a property should be initialized. Default **false**                                                                                                |
+| shouldInit | boolean  | Tells node-schema whether or not a property should be initialized. Default **true**                                                                                                 |
 | validator  | function | An **synchronous** function used to validated the value of a property. Must return {reason:string, valid: boolean, validated: undefined or any}. Default **null**                   |
 
 # Properties of a model
@@ -158,28 +158,9 @@ const adminSchema = new Schema(
 
 # Built-in validation helper
 
-Node-schema has some built-in validators. Feel free to use or build you own validators based on these.
-
-```javascript
-const { validate } = require("@blacksocks/node-schema");
-
-validate.isBooleanOk(val);
-
-validate.isNumberOK(val, {
-  range: { bounds: [10, 50.5], inclusiveBottom: false },
-});
-
-validate.isStringOk(val, {
-  maxLength: 20,
-  minLength: 3,
-  enums: ["admin", "app-user", "moderator"],
-});
-```
-
-- **each returns** { reason, valid, validated}
+Node-schema has some built-in validators. Feel free to use or build you own validators based on these. Each returns an object with the following structure:
 
 ```typescript
-// each returns an object with this structure:
 validationResults: {
   reason: string, // the reason the validation failed e.g. Invalid name
   valid: boolean, // tells if data was valid or not
@@ -188,6 +169,136 @@ validationResults: {
 ```
 
 > N.B: Every validator, even your custom validators are expected to return an object that respects the above structure.
+
+## validate.isArrayOk
+
+You could validate an array of values of your choice. An array of primitives, objects, arrays, etc.
+
+```javascript
+const { validate } = require("@blacksocks/node-schema");
+
+const options = {
+  empty: false,
+  sorted: true,
+  filter: (genre) => typeof genre === "string" && genre?.trim(),
+  modifier: (genre) => genre?.trim().toLowerCase(),
+};
+
+const movieGenres = ["action", "horror", "comedy", "Horror", "crime"];
+
+console.log(validate.isArrayOk(movieGenres, options)); // { reason: "", valid: true, validated: ["action", "comedy", "crime", "horror"] }
+
+const invalids = ["   ", [], null, 144];
+
+console.log(validate.isArrayOk(invalids, options)); // { reason: "Expected a non-empty array", valid: false, validated: undefined }
+```
+
+### Parameters
+
+| Position | Property | Type   | Descriptio                                                                 |
+| -------- | -------- | ------ | -------------------------------------------------------------------------- |
+| 1        | arr      | any[]  | The array you wish to validate                                             |
+| 2        | options  | object | The options you want to apply for the validation. See its properties below |
+
+### Options
+
+| Property  | Type     | Description                                                                             |
+| --------- | -------- | --------------------------------------------------------------------------------------- |
+| empty     | boolean  | Whether array could be empty. Default: **false**                                        |
+| filter    | function | Function to filter the array. Default: **(data) => false**                              |
+| modifier  | function | Function to modify (format) individual values. Default: **undefined**                   |
+| sorted    | boolean  | Whether array should be sorted. Default: **true**                                       |
+| sorter    | function | Function to modify (format) individual values. Default: **undefined**                   |
+| sortOrder | number   | Number used to do comparison check when sorted: true and sorter: undefined              |
+| unique    | boolean  | Whether array should contain unique values. Default: **true**                           |
+| uniqueKey | string   | A key(property) on objects in array used as unique criteria. e.g: "id". Default: **""** |
+
+## validate.isBooleanOk
+
+To validate boolean values
+
+```javascript
+const { validate } = require("@blacksocks/node-schema");
+
+console.log(validate.isBooleanOk("true")); // { reason: "Expected a boolean", valid: false, validated: undefined }
+
+console.log(validate.isBooleanOk(false)); // { reason: "", valid: true, validated: false }
+```
+
+## validate.isNumberOK
+
+To validate numbers. Especially within a range
+
+```javascript
+const { validate } = require("@blacksocks/node-schema");
+
+const options = {
+  range: {
+    bounds: [10, 10.5],
+    isInclusiveBottom: false,
+  },
+};
+console.log(validate.isNumberOk(10, options)); // { reason: "too small", valid: false, validated: undefined }
+
+console.log(validate.isNumberOk(10.01, options)); // { reason: "", valid: true, validated: 10.01 }
+
+console.log(validate.isNumberOk("10.01", options)); // { reason: "Expected a number", valid: false, validated: undefined }
+```
+
+### Parameters
+
+| Position | Property | Type   | Descriptio                                                                 |
+| -------- | -------- | ------ | -------------------------------------------------------------------------- |
+| 1        | num      | any    | The value you wish to validate                                             |
+| 2        | options  | object | The options you want to apply for the validation. See its properties below |
+
+### Options
+
+| Property              | Type     | Description                                                    |
+| --------------------- | -------- | -------------------------------------------------------------- |
+| range                 | object   | Object describing the range of values that will pass the check |
+| range.bounds          | number[] | The lower and upper bounds. Default: **[-Infinity, Infinity]** |
+| range.inclusiveBottom | boolean  | Whether the lower bound should be accepted. Default: **true**  |
+| range.inclusiveTop    | boolean  | Whether the upper bound should be accepted. Default: **true**  |
+
+## validate.isStringOk
+
+To validate strings
+
+```javascript
+const { validate } = require("@blacksocks/node-schema");
+
+console.log(
+  validate.isStringOk("dbj jkdbvjkbv", { match: /^[a-zA-Z_\-\S]+$/ })
+); // { reason: "Unacceptable value", valid: false, validated: undefined }
+
+validate.isStringOk("Hello World!", {
+  maxLength: 20,
+  minLength: 3,
+}); // { reason: "", valid: true, validated: "Hello World!" }
+
+console.log(
+  validate.isStringOk("pineapple", {
+    enums: ["apple", "banana", "watermelon"],
+  })
+); // { reason: "Unacceptable value", valid: false, validated: undefined }
+```
+
+### Parameters
+
+| Position | Property | Type   | Descriptio                                                                 |
+| -------- | -------- | ------ | -------------------------------------------------------------------------- |
+| 1        | str      | any    | The value you wish to validate                                             |
+| 2        | options  | object | The options you want to apply for the validation. See its properties below |
+
+### Options
+
+| Property  | Type     | Description                                                                      |
+| --------- | -------- | -------------------------------------------------------------------------------- |
+| match     | RegExp   | A regular expression the string is expected to match. Default: **undefined**     |
+| maxLength | number   | The maximum number of characters the string is expected to have. Default: **30** |
+| minLength | number   | The minimum number of characters the string is expected to have. Default: **1**  |
+| enums     | string[] | The set of values the string is expected to belong to. Default: **undefined**    |
 
 # Structure of ApiError
 

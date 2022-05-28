@@ -37,25 +37,25 @@ function makeRage(range: rangeType): rangeType {
 }
 
 export default function isNumberOK(
-  value: any,
+  num: any,
   { range }: { range?: rangeType } = {}
 ) {
   let valid = true,
     reason = "";
 
-  if (isNaN(value) || value === "") {
-    return { valid: false, reason: "Invalid data type" };
+  if (isNaN(num) || num === "") {
+    return { valid: false, reason: "Expected a number" };
   }
 
-  value = Number(value);
+  num = Number(num);
 
   range = makeRage(range);
 
   if (range) {
-    const _isInRange = isInRange(value, range);
+    const _isInRange = isInRange(num, range);
 
     if (!_isInRange.valid) return _isInRange;
   }
 
-  return { reason, valid, validated: value };
+  return { reason, valid, validated: num };
 }
