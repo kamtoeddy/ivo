@@ -12,7 +12,7 @@ type funcArrayStr = () => string[];
 // type propType = () => Array<any> | Boolean | Date | Number | Object | String;
 
 type validationResponse = {
-  messages?: string[];
+  reason?: string;
   valid: boolean;
   validated?: any;
 };
@@ -137,15 +137,14 @@ export default class Schema {
         const checkLax = this._isLaxProp(prop) && this.hasOwnProperty(prop);
 
         if (createProps.includes(prop) || checkLax) {
-          const {
-            valid,
-            validated,
-            messages: errors,
-          } = this.validate({ prop, value: this[prop] });
+          const { reason, valid, validated } = this.validate({
+            prop,
+            value: this[prop],
+          });
 
           if (valid) return { ...values, [prop]: validated };
 
-          this._addError({ field: prop, errors });
+          this._addError({ field: prop, errors: [reason] });
         } else {
           values[prop] = defaults[prop];
         }
@@ -247,6 +246,22 @@ export default class Schema {
     return validations;
   };
 
+  private _handleCreateActions = (data: looseObject = {}): looseObject => {
+    const actions = this._getCreateActions();
+
+    for (const cb of actions) {
+      const extra = cb(data);
+
+      if (!extra || typeof extra !== "object") continue;
+
+      Object.keys(extra).forEach((_prop) => {
+        if (this._isProp(_prop)) data[_prop] = extra[_prop];
+      });
+    }
+
+    return data;
+  };
+
   private _hasChanged = (prop: string) => {
     const propDef = this.propDefinitions[prop];
 
@@ -307,14 +322,6 @@ export default class Schema {
     return sideEffect === true;
   };
 
-  private _postCreateActions = (data: looseObject = {}): looseObject => {
-    const actions = this._getCreateActions();
-
-    actions.forEach((action) => (data = { ...data, ...action(data) }));
-
-    return data;
-  };
-
   private _throwErrors(message: string = "Validation Error"): void {
     const payload = this.errors;
     this.errors = {};
@@ -331,7 +338,7 @@ export default class Schema {
   };
 
   clone = ({ toReset = [] } = { toReset: [] }) => {
-    return this._postCreateActions(this._getCloneObject(toReset));
+    return this._handleCreateActions(this._getCloneObject(toReset));
   };
 
   create = () => {
@@ -339,42 +346,26 @@ export default class Schema {
 
     if (this._isErroneous()) this._throwErrors();
 
-    return this._postCreateActions(obj);
+    return this._handleCreateActions(obj);
   };
 
   validate = ({ prop = "", value }: { prop: string; value: any }) => {
     const isSideEffect = this._isSideEffect(prop);
 
     if (!this._isProp(prop) && !isSideEffect)
-      return { valid: false, messages: ["Invalid property"] };
+      return { valid: false, reason: "Invalid property" };
 
-    let valid = true,
-      messages: string[] = [],
-      validated = value;
-
-    const validateFx = isSideEffect
+    const validator = isSideEffect
       ? this.propDefinitions[prop].validator
       : this._getValidations()[prop];
 
-    if (!validateFx && typeof value === "undefined") {
-      return { valid: false, messages: ["Invalid value"] };
+    if (!validator && isEqual(value, "undefined")) {
+      return { valid: false, reason: "Invalid value" };
     }
 
-    if (validateFx) {
-      const {
-        reason,
-        valid: _v,
-        validated: _va,
-      } = validateFx(value, this._getContext());
+    if (validator) return validator(value, this._getContext());
 
-      valid = _v;
-
-      messages = [reason];
-
-      if (_va) validated = _va;
-    }
-
-    return { messages, valid, validated };
+    return { reason: "", valid: true, validated: value };
   };
 
   /**
@@ -398,11 +389,7 @@ export default class Schema {
 
       if (!isSideEffect && !isLinked && !isUpdatable) return;
 
-      const {
-        valid,
-        validated,
-        messages: errors,
-      } = this.validate({
+      const { reason, valid, validated } = this.validate({
         prop,
         value: changes[prop],
       });
@@ -418,15 +405,21 @@ export default class Schema {
 
           if (isSideEffect) context[prop] = validated;
 
-          methods.forEach(
-            (cb) => (this.updated = { ...this.updated, ...cb(context) })
-          );
+          for (const cb of methods) {
+            const extra = cb(context);
+
+            if (!extra || typeof extra !== "object") continue;
+
+            Object.keys(extra).forEach((_prop) => {
+              if (this._isProp(_prop)) this.updated[_prop] = extra[_prop];
+            });
+          }
         }
 
         return;
       }
 
-      if (!valid) this._addError({ field: prop, errors });
+      this._addError({ field: prop, errors: [reason] });
     });
 
     if (this._isErroneous()) this._throwErrors();

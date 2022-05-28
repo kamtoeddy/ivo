@@ -147,6 +147,45 @@ const adminSchema = new Schema(
 | shouldInit | boolean  | Tells node-schema whether or not a property should be initialized. Default **true**                                                                                                 |
 | validator  | function | An **synchronous** function used to validated the value of a property. Must return {reason:string, valid: boolean, validated: undefined or any}. Default **null**                   |
 
+## More on the onCreate & onUpdate properties
+
+These are arrays of **synchronous** methods which will get called at creation or update of the property they're defined on respectively. Each properly defined method has access to its context ( an object composed of all the properties and values of the instance ) and is expected to return an object which will be attached to the instance at creation or the updated values during an update. See the example below:
+
+```javascript
+const { makeModel, Schema } = require("@blacksocks/node-schema");
+
+const userSchema = new Schema({
+  firstName: {
+    required: true,
+    onCreate: [onNameChange],
+    onUpdate: [onNameChange],
+    validator: validateName,
+  },
+  lastName: {
+    required: true,
+    onCreate: [onNameChange],
+    onUpdate: [onNameChange],
+    validator: validateName,
+  },
+  fullName: {
+    default: "",
+    validator: validateName,
+  },
+});
+
+const UserModel = makeModel(userSchema);
+
+function onNameChange(context) {
+  const { firstName, lastName } = context;
+
+  const fullName = `${firstName} ${lastName}`;
+
+  return { name };
+}
+```
+
+> N.B All methods passed to these arrays should be synchronous and must return an object with valid properties
+
 # Properties of a model
 
 | Property | Type     | Description                       |
@@ -172,7 +211,7 @@ validationResults: {
 
 ## validate.isArrayOk
 
-You could validate an array of values of your choice. An array of primitives, objects, arrays, etc.
+You could validate an array of values of your choice. An array of primitives or objects.
 
 ```javascript
 const { validate } = require("@blacksocks/node-schema");
@@ -184,7 +223,7 @@ const options = {
   modifier: (genre) => genre?.trim().toLowerCase(),
 };
 
-const movieGenres = ["action", "horror", "comedy", "Horror", "crime"];
+const movieGenres = ["action", null, "horror", 1, "comedy", "Horror", "crime"];
 
 console.log(validate.isArrayOk(movieGenres, options)); // { reason: "", valid: true, validated: ["action", "comedy", "crime", "horror"] }
 
@@ -195,7 +234,7 @@ console.log(validate.isArrayOk(invalids, options)); // { reason: "Expected a non
 
 ### Parameters
 
-| Position | Property | Type   | Descriptio                                                                 |
+| Position | Property | Type   | Description                                                                |
 | -------- | -------- | ------ | -------------------------------------------------------------------------- |
 | 1        | arr      | any[]  | The array you wish to validate                                             |
 | 2        | options  | object | The options you want to apply for the validation. See its properties below |
@@ -247,7 +286,7 @@ console.log(validate.isNumberOk("10.01", options)); // { reason: "Expected a num
 
 ### Parameters
 
-| Position | Property | Type   | Descriptio                                                                 |
+| Position | Property | Type   | Description                                                                |
 | -------- | -------- | ------ | -------------------------------------------------------------------------- |
 | 1        | num      | any    | The value you wish to validate                                             |
 | 2        | options  | object | The options you want to apply for the validation. See its properties below |
@@ -286,7 +325,7 @@ console.log(
 
 ### Parameters
 
-| Position | Property | Type   | Descriptio                                                                 |
+| Position | Property | Type   | Description                                                                |
 | -------- | -------- | ------ | -------------------------------------------------------------------------- |
 | 1        | str      | any    | The value you wish to validate                                             |
 | 2        | options  | object | The options you want to apply for the validation. See its properties below |
