@@ -180,7 +180,7 @@ function onNameChange(context) {
 
   const fullName = `${firstName} ${lastName}`;
 
-  return { name };
+  return { fullName };
 }
 ```
 
