@@ -4,7 +4,7 @@
 
 Node-schema's purpose is to help you define and validate your data at creation and during updates. Hence, Node-schema gives you the flexibility of using the database of your choice.
 
-> N.B: Do not forget to handle errors that might be thrown by the create and update methods. See the structure of the error **@ApiError** below.
+> N.B: Do not forget to handle errors that might be thrown by the create and update methods.See the structure of the error [**ApiError**](#structure-of-apierror) below.
 
 # Installation
 
@@ -247,7 +247,7 @@ console.log(validate.isArrayOk(invalids, options)); // { reason: "Expected a non
 | filter    | function | Function to filter the array. Default: **(data) => false**                              |
 | modifier  | function | Function to modify (format) individual values. Default: **undefined**                   |
 | sorted    | boolean  | Whether array should be sorted. Default: **true**                                       |
-| sorter    | function | Function to sort values. Default: **undefined**                   |
+| sorter    | function | Function to sort values. Default: **undefined**                                         |
 | sortOrder | number   | Number used to do comparison check when sorted: true and sorter: undefined              |
 | unique    | boolean  | Whether array should contain unique values. Default: **true**                           |
 | uniqueKey | string   | A key(property) on objects in array used as unique criteria. e.g: "id". Default: **""** |
@@ -308,7 +308,7 @@ To validate strings
 const { validate } = require("@blacksocks/node-schema");
 
 console.log(
-  validate.isStringOk("dbj jkdbvjkbv", { match: /^[a-zA-Z_\-\S]+$/ })
+  validate.isStringOk("dbj jkdbZvjkbv", { match: /^[a-zA-Z_\-\S]+$/ })
 ); // { reason: "Unacceptable value", valid: false, validated: undefined }
 
 validate.isStringOk("Hello World!", {
