@@ -62,7 +62,7 @@ const UserModel = makeModel(userSchema);
 # Creating an instance
 
 ```javascript
-const user = new UserModel({
+const user = await new UserModel({
   id: 1,
   name: "James Spader",
   password: "AbsdivinnnBbnkl-adjfbjj",
@@ -83,7 +83,7 @@ const user = await db.query({ id: 1 });
 
 if (!user) return null;
 
-const userUpdate = new UserModel(user).update({
+const userUpdate = await new UserModel(user).update({
   id: 2,
   name: "Raymond Reddington",
 });
@@ -139,17 +139,17 @@ const adminSchema = new Schema(
 | Property   | Type     | Description                                                                                                                                                                         |
 | ---------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | default    | any      | A value of any type you wish to use for a given property                                                                                                                            |
-| onCreate   | array    | An array of **synchronous** functions you want to be executed when an instance of your model gets created. Default **[ ]**                                                          |
-| onUpdate   | array    | An array of **synchronous** functions you want to be executed when a particular property of your instance get updated. Default **[ ]**                                              |
+| onCreate   | array    | An array of functions(async / sync) you want to be executed when an instance of your model gets created. Default **[ ]**                                                            |
+| onUpdate   | array    | An array of functions(async / sync) you want to be executed when a particular property of your instance get updated. Default **[ ]**                                                |
 | readonly   | boolean  | If true will be required at initialization and will never allow updates. If true with shouldInit: false, will not be initialized but allowed to update only once. Default **false** |
 | required   | boolean  | Specifies a property that must be initialised. Default **false**                                                                                                                    |
 | sideEffect | boolean  | Used with onUpdate to modify other properties but is not attached to instances of your model. Default **false**                                                                     |
 | shouldInit | boolean  | Tells node-schema whether or not a property should be initialized. Default **true**                                                                                                 |
-| validator  | function | An **synchronous** function used to validated the value of a property. Must return {reason:string, valid: boolean, validated: undefined or any}. Default **null**                   |
+| validator  | function | A function(async / sync) used to validated the value of a property. Must return {reason:string, valid: boolean, validated: undefined or any}. Default **null**                      |
 
 ## More on the onCreate & onUpdate properties
 
-These are arrays of **synchronous** methods which will get called at creation or update of the property they're defined on respectively. Each properly defined method has access to its context ( an object composed of all the properties and values of the instance ) and is expected to return an object which will be attached to the instance at creation or the updated values during an update. See the example below:
+These are arrays of sync/async functions which will get called at creation or update of the property they're defined on respectively. Each properly defined method has access to its context ( an object composed of all the properties and values of the instance ) and is expected to return an object which will be attached to the instance at creation or the updated values during an update. See the example below:
 
 ```javascript
 const { makeModel, Schema } = require("@blacksocks/node-schema");
@@ -184,16 +184,18 @@ function onNameChange(context) {
 }
 ```
 
-> N.B All methods passed to these arrays should be synchronous and must return an object with valid properties
+> N.B All functions(async / sync), passed to these arrays must return an object with valid properties of the model.
 
 # Properties of a model
 
-| Property | Type     | Description                       |
-| -------- | -------- | --------------------------------- |
-| clone    | function | To clone an instance              |
-| create   | function | To create an instance             |
-| update   | function | To update an instance             |
-| validate | function | Calls the validator of a property |
+These methods are async because custom validators could be async as well.
+
+| Property | Type     | Description                                           |
+| -------- | -------- | ----------------------------------------------------- |
+| clone    | function | Async function to copy an instance                    |
+| create   | function | Async function to create an instance                  |
+| update   | function | Async function to update an instance                  |
+| validate | function | Async function that calls the validator of a property |
 
 # Built-in validation helper
 
