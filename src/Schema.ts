@@ -4,7 +4,7 @@ import isEqual from "./utils/isEqual";
 import { looseObject } from "./utils/interfaces";
 import { belongsTo } from "./utils/functions";
 
-type looseObjectFunc = (...args: any) => looseObject;
+type looseObjectFunc = (...args: any) => Promise<looseObject>;
 
 type funcArrayObj = () => looseObject;
 type funcArrayFunc = () => looseObjectFunc[];
@@ -127,31 +127,34 @@ export default class Schema {
     return _actions;
   };
 
-  private _getCreateObject = () => {
+  private _getCreateObject = async () => {
     const createProps = this._getCreateProps();
     const defaults = this._getDefaults();
     const props = this._getProps();
 
-    return this._useConfigProps(
-      props.reduce((values: looseObject, prop) => {
-        const checkLax = this._isLaxProp(prop) && this.hasOwnProperty(prop);
+    const obj: looseObject = {};
 
-        if (createProps.includes(prop) || checkLax) {
-          const { reason, valid, validated } = this.validate({
-            prop,
-            value: this[prop],
-          });
+    for (let prop of props) {
+      const checkLax = this._isLaxProp(prop) && this.hasOwnProperty(prop);
 
-          if (valid) return { ...values, [prop]: validated };
+      if (createProps.includes(prop) || checkLax) {
+        const { reason, valid, validated } = await this.validate({
+          prop,
+          value: this[prop],
+        });
 
-          this._addError({ field: prop, errors: [reason] });
-        } else {
-          values[prop] = defaults[prop];
+        if (valid) {
+          obj[prop] = validated;
+          continue;
         }
 
-        return values;
-      }, {})
-    );
+        this._addError({ field: prop, errors: [reason] });
+      } else {
+        obj[prop] = defaults[prop];
+      }
+    }
+
+    return this._useConfigProps(obj);
   };
 
   /**
@@ -246,11 +249,11 @@ export default class Schema {
     return validations;
   };
 
-  private _handleCreateActions = (data: looseObject = {}): looseObject => {
+  private _handleCreateActions = async (data: looseObject = {}) => {
     const actions = this._getCreateActions();
 
     for (const cb of actions) {
-      const extra = cb(data);
+      const extra = await cb(data);
 
       if (!extra || typeof extra !== "object") continue;
 
@@ -337,19 +340,19 @@ export default class Schema {
       : obj;
   };
 
-  clone = ({ toReset = [] } = { toReset: [] }) => {
+  clone = async ({ toReset = [] } = { toReset: [] }) => {
     return this._handleCreateActions(this._getCloneObject(toReset));
   };
 
-  create = () => {
-    let obj = this._getCreateObject();
+  create = async () => {
+    let obj = await this._getCreateObject();
 
     if (this._isErroneous()) this._throwErrors();
 
     return this._handleCreateActions(obj);
   };
 
-  validate = ({ prop = "", value }: { prop: string; value: any }) => {
+  validate = async ({ prop = "", value }: { prop: string; value: any }) => {
     const isSideEffect = this._isSideEffect(prop);
 
     if (!this._isProp(prop) && !isSideEffect)
@@ -373,7 +376,7 @@ export default class Schema {
    * @param {object} changes Object holding the opdated values
    * @returns An object containing validated changes
    */
-  update = (changes: looseObject = {}) => {
+  update = async (changes: looseObject = {}) => {
     this.updated = {};
 
     const toUpdate = Object.keys(changes);
@@ -382,14 +385,15 @@ export default class Schema {
 
     // iterate through validated values and get only changed fields
     // amongst the schema's updatable properties
-    toUpdate.forEach((prop: string) => {
+
+    for (let prop of toUpdate) {
       const isLinked = _linkedKeys.includes(prop),
         isSideEffect = this._isSideEffect(prop),
         isUpdatable = _updatables.includes(prop);
 
       if (!isSideEffect && !isLinked && !isUpdatable) return;
 
-      const { reason, valid, validated } = this.validate({
+      const { reason, valid, validated } = await this.validate({
         prop,
         value: changes[prop],
       });
@@ -406,7 +410,7 @@ export default class Schema {
           if (isSideEffect) context[prop] = validated;
 
           for (const cb of methods) {
-            const extra = cb(context);
+            const extra = await cb(context);
 
             if (!extra || typeof extra !== "object") continue;
 
@@ -416,11 +420,11 @@ export default class Schema {
           }
         }
 
-        return;
+        continue;
       }
 
       this._addError({ field: prop, errors: [reason] });
-    });
+    }
 
     if (this._isErroneous()) this._throwErrors();
 
