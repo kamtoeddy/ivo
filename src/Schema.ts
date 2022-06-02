@@ -391,7 +391,7 @@ export default class Schema {
         isSideEffect = this._isSideEffect(prop),
         isUpdatable = _updatables.includes(prop);
 
-      if (!isSideEffect && !isLinked && !isUpdatable) return;
+      if (!isSideEffect && !isLinked && !isUpdatable) continue;
 
       const { reason, valid, validated } = await this.validate({
         prop,
