@@ -1,5 +1,5 @@
 {
-  "name": "cleanSchema",
+  "name": "clean-schema",
   "version": "1.0.0",
   "description": "schema builder",
   "main": "lib/index.js",
