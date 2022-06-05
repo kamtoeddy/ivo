@@ -1,7 +1,7 @@
 {
-  "name": "@blacksocks/node-schema",
-  "version": "2.3.1",
-  "description": "node shcema builder",
+  "name": "cleanSchema",
+  "version": "1.0.0",
+  "description": "schema builder",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "files": [
@@ -17,7 +17,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/kamtoeddy/node-schema.git"
+    "url": "git+https://github.com/kamtoeddy/cleanSchema.git"
   },
   "keywords": [
     "clean architecture",
@@ -27,7 +27,7 @@
   "author": "blacksocks",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/kamtoeddy/node-schema/issues"
+    "url": "https://github.com/kamtoeddy/cleanSchema/issues"
   },
-  "homepage": "https://github.com/kamtoeddy/node-schema#readme"
+  "homepage": "https://github.com/kamtoeddy/cleanSchema#readme"
 }
