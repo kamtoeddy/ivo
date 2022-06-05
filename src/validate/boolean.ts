@@ -1,4 +1,4 @@
-export default function isBooleanOk(value: any) {
+export function isBooleanOk(value: any) {
   let valid = true,
     reason = "";
 

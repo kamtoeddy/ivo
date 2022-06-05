@@ -4,7 +4,7 @@ type funcFilter = (data: any) => boolean;
 type funcModifier = (data: any) => any;
 type funcSorter = (a: any, b: any) => number;
 
-export default async function isArrayOk(
+export async function isArrayOk(
   arr: any[] = [],
   {
     empty = false,
@@ -33,7 +33,17 @@ export default async function isArrayOk(
   if (!empty && !_array.length)
     return { valid: false, reason: "Expected a non-empty array" };
 
-  if (modifier) _array = await Promise.all(_array.map(modifier));
+  if (modifier) {
+    const copy = [];
+
+    for (let dt of _array) {
+      let res = await modifier(dt);
+
+      copy.push(res);
+    }
+
+    _array = [...copy];
+  }
 
   if (unique && _array.length) {
     _array =

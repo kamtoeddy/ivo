@@ -36,10 +36,7 @@ function makeRage(range: rangeType): rangeType {
   return range;
 }
 
-export default function isNumberOK(
-  num: any,
-  { range }: { range?: rangeType } = {}
-) {
+export function isNumberOK(num: any, { range }: { range?: rangeType } = {}) {
   let valid = true,
     reason = "";
 

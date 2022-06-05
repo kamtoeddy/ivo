@@ -1,7 +1,7 @@
 import { belongsTo } from "../utils/functions";
 import { stringPropTypes } from "../utils/interfaces";
 
-export default function isStringOk(
+export function isStringOk(
   str: any,
   { match, maxLength = 30, minLength = 1, enums }: stringPropTypes = {}
 ) {

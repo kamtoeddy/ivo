@@ -1,7 +1,5 @@
-import isArrayOk from "./array.js";
-import isBooleanOk from "./boolean.js";
-import isJSON from "./json.js";
-import isNumberOK from "./number.js";
-import isStringOk from "./string.js";
-
-export default { isArrayOk, isBooleanOk, isJSON, isNumberOK, isStringOk };
+export { isArrayOk } from "./array.js";
+export { isBooleanOk } from "./boolean.js";
+export { isJSON } from "./json.js";
+export { isNumberOK } from "./number.js";
+export { isStringOk } from "./string.js";

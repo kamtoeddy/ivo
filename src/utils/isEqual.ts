@@ -1,4 +1,4 @@
-export default function isEqual(a: any, b: any) {
+export function isEqual(a: any, b: any) {
   const typeOf_a = typeof a;
   const typeOf_b = typeof b;
 

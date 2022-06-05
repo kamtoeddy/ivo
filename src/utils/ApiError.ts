@@ -6,7 +6,7 @@ type apiErrorProps = {
   statusCode?: number;
 };
 
-export default class ApiError extends Error {
+export class ApiError extends Error {
   payload?: looseObject;
   statusCode: number;
 

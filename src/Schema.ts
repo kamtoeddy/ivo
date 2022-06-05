@@ -1,5 +1,5 @@
-import ApiError from "./utils/ApiError";
-import isEqual from "./utils/isEqual";
+import { ApiError } from "./utils/ApiError";
+import { isEqual } from "./utils/isEqual";
 
 import { looseObject } from "./utils/interfaces";
 import { belongsTo } from "./utils/functions";
@@ -37,7 +37,7 @@ interface initOptionsType {
   timestamp?: boolean;
 }
 
-export default class Schema {
+export class Schema {
   [key: string]: any;
 
   private propDefinitions: propDefinitionType = {};
