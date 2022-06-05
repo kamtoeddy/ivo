@@ -11,21 +11,21 @@ Node-schema's purpose is to help you define and validate your data at creation a
 First install [Node.js](http://nodejs.org/) Then:
 
 ```bash
-$ npm i @blacksocks/node-schema
+$ npm i clean-schema
 
 or
 
-$ npm install @blacksocks/node-schema
+$ npm install clean-schema
 ```
 
 # Importing
 
 ```javascript
 // Using Nodejs `require`
-const { makeModel, Schema } = require("@blacksocks/node-schema");
+const { makeModel, Schema } = require("clean-schema");
 
 // Using ES6 imports
-import { makeModel, Schema } from "@blacksocks/node-schema";
+import { makeModel, Schema } from "clean-schema";
 ```
 
 # Defining a model
@@ -93,6 +93,8 @@ console.log(userUpdate); // { name: "Raymond Reddington"}
 await db.update({ id: 1 }, userUpdate);
 ```
 
+The id did not update because it's a readonly property.
+
 # Properties of the _Schema_ class
 
 The Schema constructor accepts 2 properties:
@@ -152,7 +154,7 @@ const adminSchema = new Schema(
 These are arrays of sync/async functions which will get called at creation or update of the property they're defined on respectively. Each properly defined method has access to its context ( an object composed of all the properties and values of the instance ) and is expected to return an object which will be attached to the instance at creation or the updated values during an update. See the example below:
 
 ```javascript
-const { makeModel, Schema } = require("@blacksocks/node-schema");
+const { makeModel, Schema } = require("clean-schema");
 
 const userSchema = new Schema({
   firstName: {
@@ -216,7 +218,7 @@ validationResults: {
 You could validate an array of values of your choice. An array of primitives or objects.
 
 ```javascript
-const { validate } = require("@blacksocks/node-schema");
+const { validate } = require("clean-schema");
 
 const options = {
   empty: false,
@@ -259,7 +261,7 @@ console.log(validate.isArrayOk(invalids, options)); // { reason: "Expected a non
 To validate boolean values
 
 ```javascript
-const { validate } = require("@blacksocks/node-schema");
+const { validate } = require("clean-schema");
 
 console.log(validate.isBooleanOk("true")); // { reason: "Expected a boolean", valid: false, validated: undefined }
 
@@ -271,7 +273,7 @@ console.log(validate.isBooleanOk(false)); // { reason: "", valid: true, validate
 To validate numbers. Especially within a range
 
 ```javascript
-const { validate } = require("@blacksocks/node-schema");
+const { validate } = require("clean-schema");
 
 const options = {
   range: {
@@ -307,7 +309,7 @@ console.log(validate.isNumberOk("10.01", options)); // { reason: "Expected a num
 To validate strings
 
 ```javascript
-const { validate } = require("@blacksocks/node-schema");
+const { validate } = require("clean-schema");
 
 console.log(
   validate.isStringOk("dbj jkdbZvjkbv", { match: /^[a-zA-Z_\-\S]+$/ })

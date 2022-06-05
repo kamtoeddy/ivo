@@ -4,7 +4,7 @@ type funcFilter = (data: any) => boolean;
 type funcModifier = (data: any) => any;
 type funcSorter = (a: any, b: any) => number;
 
-export default function isArrayOk(
+export default async function isArrayOk(
   arr: any[] = [],
   {
     empty = false,
@@ -28,12 +28,12 @@ export default function isArrayOk(
 ) {
   if (!Array.isArray(arr)) return { valid: false, reason: "Expected an array" };
 
-  let _array = arr.filter(filter);
+  let _array = await Promise.all(arr.filter(filter));
 
   if (!empty && !_array.length)
     return { valid: false, reason: "Expected a non-empty array" };
 
-  if (modifier) _array = _array.map(modifier);
+  if (modifier) _array = await Promise.all(_array.map(modifier));
 
   if (unique && _array.length) {
     _array =
@@ -48,7 +48,7 @@ export default function isArrayOk(
 
       sorter = (a, b) => (a < b ? sortOrder : -sortOrder);
     }
-    _array = _array.sort(sorter);
+    _array = await Promise.all(_array.sort(sorter));
   }
 
   return { reason: "", valid: true, validated: _array };
