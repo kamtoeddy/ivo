@@ -423,7 +423,7 @@ export default class Schema {
         continue;
       }
 
-      this._addError({ field: prop, errors: [reason] });
+      if (!valid) this._addError({ field: prop, errors: [reason] });
     }
 
     if (this._isErroneous()) this._throwErrors();
