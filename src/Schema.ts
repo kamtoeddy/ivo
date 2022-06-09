@@ -79,27 +79,29 @@ export class Schema {
 
     if (!propDef) return false;
 
-    const { readonly, required } = propDef;
+    const { readonly, required, shouldInit } = propDef;
 
     if (!readonly && !required) return false;
     // if (!readonly && !required && !this._hasDefault(prop)) return false;
 
-    return belongsTo(propDef?.shouldInit, [true, undefined]);
+    return belongsTo(shouldInit, [true, undefined]);
   };
 
-  private _getCloneObject = (toReset: string[] = []) => {
+  private _getCloneObject = async (toReset: string[] = []) => {
     const defaults = this._getDefaults();
     const props = this._getProps();
 
-    return this._useConfigProps(
-      props.reduce((values: looseObject, next) => {
-        values[next] = toReset.includes(next)
-          ? defaults[next] ?? this[next]
-          : this[next] ?? defaults[next];
+    let obj: looseObject = props.reduce((values: looseObject, next) => {
+      values[next] = toReset.includes(next)
+        ? defaults[next] ?? this[next]
+        : this[next] ?? defaults[next];
 
-        return values;
-      }, {})
-    );
+      return values;
+    }, {});
+
+    obj = await this._useSideInitProps(obj);
+
+    return this._useConfigProps(obj);
   };
 
   private _getContext = (): looseObject => {
@@ -132,12 +134,13 @@ export class Schema {
     const defaults = this._getDefaults();
     const props = this._getProps();
 
-    const obj: looseObject = {};
+    let obj: looseObject = {};
 
     for (let prop of props) {
       const checkLax = this._isLaxProp(prop) && this.hasOwnProperty(prop);
+      const isSideInit = this._isSideInit(prop) && this.hasOwnProperty(prop);
 
-      if (createProps.includes(prop) || checkLax) {
+      if (createProps.includes(prop) || checkLax || isSideInit) {
         const { reason, valid, validated } = await this.validate({
           prop,
           value: this[prop],
@@ -145,14 +148,17 @@ export class Schema {
 
         if (valid) {
           obj[prop] = validated;
+
           continue;
         }
 
         this._addError({ field: prop, errors: [reason] });
-      } else {
-        obj[prop] = defaults[prop];
       }
+
+      obj[prop] = defaults[prop];
     }
+
+    obj = await this._useSideInitProps(obj);
 
     return this._useConfigProps(obj);
   };
@@ -221,6 +227,20 @@ export class Schema {
     });
 
     return this._sort(props);
+  };
+
+  private _getSideEffects: funcArrayStr = () => {
+    let props: string[] = Object.keys(this.propDefinitions);
+
+    props = props.filter((prop) => {
+      const propDef = this.propDefinitions[prop];
+
+      if (typeof propDef !== "object") return false;
+
+      return this._isSideEffect(prop);
+    });
+
+    return props;
   };
 
   private _getUpdatables: funcArrayStr = () => {
@@ -325,6 +345,16 @@ export class Schema {
     return sideEffect === true;
   };
 
+  private _isSideInit = (prop: string): boolean => {
+    const propDef = this.propDefinitions[prop];
+
+    if (!propDef) return false;
+
+    const { shouldInit } = propDef;
+
+    return this._isSideEffect(prop) && shouldInit === true;
+  };
+
   private _throwErrors(message: string = "Validation Error"): void {
     const payload = this.errors;
     this.errors = {};
@@ -340,8 +370,46 @@ export class Schema {
       : obj;
   };
 
+  private _useSideInitProps = async (obj: looseObject) => {
+    const sideEffectProps = this._getSideEffects();
+
+    for (let prop of sideEffectProps) {
+      if (!this._isSideInit(prop) || !this.hasOwnProperty(prop)) continue;
+
+      const { reason, valid, validated } = await this.validate({
+        prop,
+        value: this[prop],
+      });
+
+      if (valid) {
+        const methods = this._getLinkedMethods(prop);
+        const context = this._getContext();
+
+        context[prop] = validated;
+
+        for (const cb of methods) {
+          const extra = await cb(context);
+
+          if (!extra || typeof extra !== "object") continue;
+
+          Object.keys(extra).forEach((_prop) => {
+            if (this._isProp(_prop)) obj[_prop] = extra[_prop];
+          });
+        }
+
+        continue;
+      }
+
+      this._addError({ field: prop, errors: [reason] });
+    }
+
+    return obj;
+  };
+
   clone = async ({ toReset = [] } = { toReset: [] }) => {
-    return this._handleCreateActions(this._getCloneObject(toReset));
+    const cloned = await this._getCloneObject(toReset);
+
+    return this._handleCreateActions(cloned);
   };
 
   create = async () => {
@@ -378,6 +446,7 @@ export class Schema {
    */
   update = async (changes: looseObject = {}) => {
     this.updated = {};
+    const updated: looseObject = {};
 
     const toUpdate = Object.keys(changes);
     const _linkedKeys = Object.keys(this._getLinkedUpdates());
@@ -386,12 +455,32 @@ export class Schema {
     // iterate through validated values and get only changed fields
     // amongst the schema's updatable properties
 
-    for (let prop of toUpdate) {
-      const isLinked = _linkedKeys.includes(prop),
-        isSideEffect = this._isSideEffect(prop),
-        isUpdatable = _updatables.includes(prop);
+    const updatables = toUpdate.filter((prop) => _updatables.includes(prop));
+    const linkedOrSideEffects = toUpdate.filter(
+      (prop) => _linkedKeys.includes(prop) || this._isSideEffect(prop)
+    );
 
-      if (!isSideEffect && !isLinked && !isUpdatable) continue;
+    for (let prop of updatables) {
+      const { reason, valid, validated } = await this.validate({
+        prop,
+        value: changes[prop],
+      });
+
+      const hasChanged = !isEqual(this[prop], validated);
+
+      if (valid && hasChanged) {
+        updated[prop] = validated;
+        continue;
+      }
+
+      if (!valid) this._addError({ field: prop, errors: [reason] });
+    }
+
+    for (let prop of linkedOrSideEffects) {
+      const isLinked = _linkedKeys.includes(prop),
+        isSideEffect = this._isSideEffect(prop);
+
+      if (!isSideEffect && !isLinked) continue;
 
       const { reason, valid, validated } = await this.validate({
         prop,
@@ -401,8 +490,6 @@ export class Schema {
       const hasChanged = !isEqual(this[prop], validated);
 
       if ((valid && !isSideEffect && hasChanged) || (valid && isSideEffect)) {
-        if (isUpdatable) this.updated[prop] = validated;
-
         if (isLinked || isSideEffect) {
           const methods = this._getLinkedMethods(prop);
           const context = this._getContext();
@@ -415,7 +502,7 @@ export class Schema {
             if (!extra || typeof extra !== "object") continue;
 
             Object.keys(extra).forEach((_prop) => {
-              if (this._isProp(_prop)) this.updated[_prop] = extra[_prop];
+              if (this._isProp(_prop)) updated[_prop] = extra[_prop];
             });
           }
         }
@@ -430,8 +517,11 @@ export class Schema {
 
     // get the number of properties updated
     // and deny update if none was modified
-    const canUpdate = Object.keys(this.updated).length;
-    if (!canUpdate) this._throwErrors("Nothing to update");
+
+    const updatedKeys = this._sort(Object.keys(updated));
+    if (!updatedKeys.length) this._throwErrors("Nothing to update");
+
+    updatedKeys.forEach((key) => (this.updated[key] = updated[key]));
 
     if (this.options?.timestamp) this.updated.updatedAt = new Date();
 
