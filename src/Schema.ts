@@ -446,7 +446,6 @@ export class Schema {
    */
   update = async (changes: looseObject = {}) => {
     this.updated = {};
-    const updated: looseObject = {};
 
     const toUpdate = Object.keys(changes);
     const _linkedKeys = Object.keys(this._getLinkedUpdates());
@@ -469,7 +468,7 @@ export class Schema {
       const hasChanged = !isEqual(this[prop], validated);
 
       if (valid && hasChanged) {
-        updated[prop] = validated;
+        this.updated[prop] = validated;
         continue;
       }
 
@@ -502,7 +501,7 @@ export class Schema {
             if (!extra || typeof extra !== "object") continue;
 
             Object.keys(extra).forEach((_prop) => {
-              if (this._isProp(_prop)) updated[_prop] = extra[_prop];
+              if (this._isProp(_prop)) this.updated[_prop] = extra[_prop];
             });
           }
         }
@@ -518,8 +517,11 @@ export class Schema {
     // get the number of properties updated
     // and deny update if none was modified
 
-    const updatedKeys = this._sort(Object.keys(updated));
+    const updatedKeys = this._sort(Object.keys(this.updated));
     if (!updatedKeys.length) this._throwErrors("Nothing to update");
+
+    const updated: looseObject = { ...this.updated };
+    this.updated = {};
 
     updatedKeys.forEach((key) => (this.updated[key] = updated[key]));
 
