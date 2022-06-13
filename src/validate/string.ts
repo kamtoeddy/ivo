@@ -33,5 +33,5 @@ export function isStringOk(
     reason = "Unacceptable value";
   }
 
-  return { reason, valid, validated: str };
+  return { reason, valid, validated: valid ? str : undefined };
 }

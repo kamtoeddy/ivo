@@ -54,5 +54,5 @@ export function isNumberOK(num: any, { range }: { range?: rangeType } = {}) {
     if (!_isInRange.valid) return _isInRange;
   }
 
-  return { reason, valid, validated: num };
+  return { reason, valid, validated: valid ? num : undefined };
 }
