@@ -2,7 +2,7 @@
 
 # Foreword
 
-Node-schema's purpose is to help you define and validate your data at creation and during updates. Hence, Node-schema gives you the flexibility of using the database of your choice.
+Clean-schema's purpose is to help you define and validate your data at creation and during updates. Hence, clean-schema gives you the flexibility of using the database of your choice.
 
 > N.B: Do not forget to handle errors that might be thrown by the create and update methods.See the structure of the error [**ApiError**](#structure-of-apierror) below.
 
@@ -57,7 +57,7 @@ const userSchema = new Schema({
 const UserModel = makeModel(userSchema);
 ```
 
-> N.B: Node-schema will throw an error if the no property is defined or if none of the properties defined are valid.
+> N.B: Clean-schema will throw an error if the no property is defined or if none of the properties defined are valid.
 
 # Creating an instance
 
@@ -110,7 +110,7 @@ The Schema constructor accepts 2 properties:
        - The schema object your current schema inherits from
        - default: null
     1. **timestamp**
-       - boolean which tells node-schema whether or not to add createdAt and updatedAt to instances of your model
+       - boolean which tells clean-schema whether or not to add createdAt and updatedAt to instances of your model
        - default: false
 
 ```javascript
@@ -146,7 +146,7 @@ const adminSchema = new Schema(
 | readonly   | boolean  | If true will be required at initialization and will never allow updates. If true with shouldInit: false, will not be initialized but allowed to update only once. Default **false** |
 | required   | boolean  | Specifies a property that must be initialised. Default **false**                                                                                                                    |
 | sideEffect | boolean  | Used with onUpdate to modify other properties but is not attached to instances of your model. Default **false**                                                                     |
-| shouldInit | boolean  | Tells node-schema whether or not a property should be initialized. Default **true**                                                                                                 |
+| shouldInit | boolean  | Tells clean-schema whether or not a property should be initialized. Default **true**                                                                                                |
 | validator  | function | A function(async / sync) used to validated the value of a property. Must return {reason:string, valid: boolean, validated: undefined or any}. Default **null**                      |
 
 ## More on the onCreate & onUpdate properties
@@ -201,7 +201,7 @@ These methods are async because custom validators could be async as well.
 
 # Built-in validation helper
 
-Node-schema has some built-in validators. Feel free to use or build you own validators based on these. Each returns an object with the following structure:
+clean-schema has some built-in validators. Feel free to use or build you own validators based on these. Each returns an object with the following structure:
 
 ```typescript
 validationResults: {
