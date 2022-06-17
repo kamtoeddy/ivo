@@ -3,7 +3,7 @@ import { stringPropTypes } from "../utils/interfaces";
 
 export function isStringOk(
   str: any,
-  { match, maxLength = 30, minLength = 1, enums }: stringPropTypes = {}
+  { match, maxLength = 128, minLength = 1, enums }: stringPropTypes = {}
 ) {
   let valid = true,
     reason = "";

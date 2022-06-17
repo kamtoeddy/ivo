@@ -336,12 +336,12 @@ console.log(
 
 ### Options
 
-| Property  | Type     | Description                                                                      |
-| --------- | -------- | -------------------------------------------------------------------------------- |
-| match     | RegExp   | A regular expression the string is expected to match. Default: **undefined**     |
-| maxLength | number   | The maximum number of characters the string is expected to have. Default: **30** |
-| minLength | number   | The minimum number of characters the string is expected to have. Default: **1**  |
-| enums     | string[] | The set of values the string is expected to belong to. Default: **undefined**    |
+| Property  | Type     | Description                                                                       |
+| --------- | -------- | --------------------------------------------------------------------------------- |
+| match     | RegExp   | A regular expression the string is expected to match. Default: **undefined**      |
+| maxLength | number   | The maximum number of characters the string is expected to have. Default: **128** |
+| minLength | number   | The minimum number of characters the string is expected to have. Default: **1**   |
+| enums     | string[] | The set of values the string is expected to belong to. Default: **undefined**     |
 
 # Structure of ApiError
 
