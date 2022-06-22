@@ -3,18 +3,10 @@ import { stringPropTypes } from "../utils/interfaces";
 
 export function isStringOk(
   str: any,
-  { match, maxLength = 128, minLength = 1, enums }: stringPropTypes = {}
+  { match, maxLength = 40, minLength = 1, enums }: stringPropTypes = {}
 ) {
   let valid = true,
     reason = "";
-
-  if (typeof str !== "string") {
-    return { valid: false, reason: "Expected a string" };
-  }
-
-  if (match && !match.test(str)) {
-    return { valid: false, reason: "Unacceptable value" };
-  }
 
   str = String(str).trim();
 
@@ -26,6 +18,10 @@ export function isStringOk(
   if (str.length > maxLength) {
     valid = false;
     reason = "too long";
+  }
+
+  if (match && !match.test(str)) {
+    return { valid: false, reason: "Unacceptable value" };
   }
 
   if (enums && !belongsTo(str, enums)) {
