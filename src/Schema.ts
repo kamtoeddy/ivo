@@ -409,7 +409,7 @@ export class Schema {
     return this._handleCreateActions(obj);
   };
 
-  extend = (parent: Schema, options: extensionOptions) => {
+  extend = (parent: Schema, options: extensionOptions = { remove: [] }) => {
     this.propDefinitions = {
       ...parent.propDefinitions,
       ...this.propDefinitions,
