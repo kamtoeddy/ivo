@@ -9,13 +9,13 @@ type looseObjectFunc = (...args: any) => Promise<looseObject>;
 type funcArrayObj = () => looseObject;
 type funcArrayFunc = () => looseObjectFunc[];
 type funcArrayStr = () => string[];
-// type propType = () => Array<any> | Boolean | Date | Number | Object | String;
 
 type validationResponse = {
   reason?: string;
   valid: boolean;
   validated?: any;
 };
+
 type propValidatorFunc = (...args: any) => validationResponse;
 
 interface propDefinitionType {
@@ -27,7 +27,6 @@ interface propDefinitionType {
     required?: boolean;
     sideEffect: boolean;
     shouldInit?: boolean;
-    // type: propType;
     validator?: propValidatorFunc;
   };
 }
@@ -442,11 +441,6 @@ export class Schema {
     return { reason: "", valid: true, validated: value };
   };
 
-  /**
-   * Function to validate schemas during an update operation
-   * @param {object} changes Object holding the opdated values
-   * @returns An object containing validated changes
-   */
   update = async (changes: looseObject = {}) => {
     this.updated = {};
 
@@ -526,7 +520,7 @@ export class Schema {
     const updated: looseObject = { ...this.updated };
     this.updated = {};
 
-    updatedKeys.forEach((key) => (this.updated[key] = updated[key]));
+    updatedKeys.forEach((key: string) => (this.updated[key] = updated[key]));
 
     if (this.options?.timestamp) this.updated.updatedAt = new Date();
 
