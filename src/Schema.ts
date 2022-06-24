@@ -32,38 +32,32 @@ interface propDefinitionType {
   };
 }
 
-interface initOptionsType {
-  extensionOf?: looseObject;
+interface options {
   timestamp?: boolean;
+}
+
+interface extensionOptions {
+  remove?: string[];
 }
 
 export class Schema {
   [key: string]: any;
 
   private propDefinitions: propDefinitionType = {};
-  private options: initOptionsType = { extensionOf: {}, timestamp: false };
+  private options: options = { timestamp: false };
 
   private errors: looseObject = {};
   private updated: looseObject = {};
 
   constructor(
     propDefinitions: propDefinitionType,
-    options: initOptionsType = { timestamp: false }
+    options: options = { timestamp: false }
   ) {
     this.propDefinitions = propDefinitions;
     this.options = options;
 
     if (!this._hasEnoughProps())
       throw new ApiError({ message: "Invalid properties", statusCode: 500 });
-
-    const { extensionOf } = this.options;
-
-    if (extensionOf) {
-      this.propDefinitions = {
-        ...extensionOf.propDefinitions,
-        ...this.propDefinitions,
-      };
-    }
   }
 
   private _addError = ({ field, errors }: { field: string; errors: any[] }) => {
@@ -163,10 +157,6 @@ export class Schema {
     return this._useConfigProps(obj);
   };
 
-  /**
-   * create props are required or readonly props
-   * @returns
-   */
   private _getCreateProps: funcArrayStr = () => {
     const createProps = [];
     const props = this._getProps();
@@ -418,6 +408,19 @@ export class Schema {
     if (this._isErroneous()) this._throwErrors();
 
     return this._handleCreateActions(obj);
+  };
+
+  extend = (parent: Schema, options: extensionOptions) => {
+    this.propDefinitions = {
+      ...parent.propDefinitions,
+      ...this.propDefinitions,
+    };
+
+    const { remove } = options;
+
+    remove?.forEach((prop) => delete this.propDefinitions[prop]);
+
+    return this;
   };
 
   validate = async ({ prop = "", value }: { prop: string; value: any }) => {

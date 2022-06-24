@@ -4,6 +4,10 @@ export function belongsTo(value: any, values: any[]): boolean {
   return values.includes(value);
 }
 
+export const isOfType = (v: any, _type: string) => typeof v === _type;
+
+export const isFunction = (v: any) => isOfType(v, "function");
+
 export function makeUnique({
   data = [],
   key = "id",
@@ -13,15 +17,7 @@ export function makeUnique({
 }) {
   const obj: looseObject = {};
 
-  data.forEach((dt: looseObject) => setProperty(obj, getProperty(dt, key), dt));
+  data.forEach((dt: looseObject) => (obj[dt[key]] = dt));
 
   return Object.values(obj);
-}
-
-export function getProperty<O, K extends keyof O>(obj: O, key: K) {
-  return obj[key];
-}
-
-export function setProperty<O, K extends keyof O>(obj: O, key: K, value: O[K]) {
-  obj[key] = value;
 }
