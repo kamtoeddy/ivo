@@ -5,7 +5,8 @@ export function isStringOk(
   str: any,
   { match, maxLength = 40, minLength = 1, enums }: stringPropTypes = {}
 ) {
-  if (!str) return { valid: false, reason: "Unacceptable value" };
+  if (belongsTo(str, [null, undefined]))
+    return { valid: false, reason: "Unacceptable value" };
 
   let valid = true,
     reason = "";
@@ -16,13 +17,11 @@ export function isStringOk(
 
   if (str.length > maxLength) return { valid: false, reason: "too long" };
 
-  if (match && !match.test(str)) {
+  if (match && !match.test(str))
     return { valid: false, reason: "Unacceptable value" };
-  }
 
-  if (enums && !belongsTo(str, enums)) {
+  if (enums && !belongsTo(str, enums))
     return { valid: false, reason: "Unacceptable value" };
-  }
 
   return { reason, valid, validated: valid ? str : undefined };
 }
