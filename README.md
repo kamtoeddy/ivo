@@ -106,18 +106,12 @@ The Schema constructor accepts 2 properties:
 - options
   - This is optional
   - An object composed of the following optional properties:
-    1. **extensionOf**
-       - The schema object your current schema inherits from
-       - default: null
     1. **timestamp**
        - boolean which tells clean-schema whether or not to add createdAt and updatedAt to instances of your model
        - default: false
 
 ```javascript
-const adminSchema = new Schema(
-  { ...definitions },
-  { extensionOf: userSchema, timestamp: true }
-);
+const adminSchema = new Schema({ ...definitions }, { timestamp: true });
 ```
 
 # Properties of a _definition object_
@@ -132,10 +126,7 @@ const definitions = {
   },
 };
 
-const adminSchema = new Schema(
-  { ...definitions },
-  { extensionOf: userSchema, timestamp: true }
-);
+const userSchema = new Schema({ ...definitions });
 ```
 
 | Property   | Type     | Description                                                                                                                                                                         |
@@ -148,6 +139,28 @@ const adminSchema = new Schema(
 | sideEffect | boolean  | Used with onUpdate to modify other properties but is not attached to instances of your model. Default **false**                                                                     |
 | shouldInit | boolean  | Tells clean-schema whether or not a property should be initialized. Default **true**                                                                                                |
 | validator  | function | A function(async / sync) used to validated the value of a property. Must return {reason:string, valid: boolean, validated: undefined or any}. Default **null**                      |
+
+## Schema Inheritance
+
+For any schema that inherits from another, call the extend method on the schema before creating the model the extend method takes 2 arguments:
+
+1. parent: the schema to inherit from
+1. options: an options object with
+   - remove: an array of properties to ignore from the parent schema. To override a property, you just do it in the property definitions
+
+```javascript
+const definitions = {
+  securePass: {
+    required: true,
+    validator: validateId,
+  },
+};
+
+const adminSchema = new Schema(
+  { ...definitions },
+  {  timestamp: true }
+)extend(userSchema,{remove:["dob"]})
+```
 
 ## More on the onCreate & onUpdate properties
 
