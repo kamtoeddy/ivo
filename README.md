@@ -12,10 +12,6 @@ First install [Node.js](http://nodejs.org/) Then:
 
 ```bash
 $ npm i clean-schema
-
-or
-
-$ npm install clean-schema
 ```
 
 # Importing
@@ -142,7 +138,7 @@ const userSchema = new Schema({ ...definitions });
 
 ## Schema Inheritance
 
-For any schema that inherits from another, call the extend method on the schema before creating the model the extend method takes 2 arguments:
+For any schema that inherits from another, call the extend method on the schema before creating the model. The extend method takes 2 arguments:
 
 1. parent: the schema to inherit from
 1. options: an options object with
@@ -156,10 +152,10 @@ const definitions = {
   },
 };
 
-const adminSchema = new Schema(
-  { ...definitions },
-  {  timestamp: true }
-)extend(userSchema,{remove:["dob"]})
+const adminSchema = new Schema({ ...definitions }, { timestamp: true }).extend(
+  userSchema,
+  { remove: ["dob"] }
+);
 ```
 
 ## More on the onCreate & onUpdate properties
