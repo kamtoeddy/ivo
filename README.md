@@ -366,9 +366,10 @@ As stated earlier, the create and update methods may throw errors. They will, if
 
 ```typescript
 ApiError: {
+  _isError: boolean, // always true
   message: string, // e.g. Validation Error
   payload: {
-    [key]: string[] // e.g. name: ["Invalid name", "too long"]
+    [key: string]: string[] // e.g. name: ["Invalid name", "too long"]
   },
   statusCode: number // e.g. 400
 }

@@ -45,7 +45,7 @@ export class Schema {
   private propDefinitions: propDefinitionType = {};
   private options: options = { timestamp: false };
 
-  private errors: looseObject = {};
+  private error = new ApiError({ message: "Validation Error" });
   private updated: looseObject = {};
 
   constructor(
@@ -58,14 +58,6 @@ export class Schema {
     if (!this._hasEnoughProps())
       throw new ApiError({ message: "Invalid properties", statusCode: 500 });
   }
-
-  private _addError = ({ field, errors }: { field: string; errors: any[] }) => {
-    const _error = this.errors?.[field];
-
-    if (!_error) return (this.errors[field] = [...errors]);
-
-    this.errors[field] = [...this.errors[field], ...errors];
-  };
 
   private _canInit = (prop: string): boolean => {
     const propDef = this.propDefinitions[prop];
@@ -145,7 +137,7 @@ export class Schema {
           continue;
         }
 
-        this._addError({ field: prop, errors: [reason] });
+        this.error.add(prop, reason);
       }
 
       obj[prop] = defaults[prop];
@@ -298,7 +290,7 @@ export class Schema {
     return false;
   };
 
-  private _isErroneous = () => Object.keys(this.errors).length > 0;
+  private _isErroneous = () => Object.keys(this.error.payload).length > 0;
 
   private _isFunction = (obj: any): boolean => typeof obj === "function";
 
@@ -344,11 +336,14 @@ export class Schema {
     return this._isSideEffect(prop) && shouldInit === true;
   };
 
-  private _throwErrors(message: string = "Validation Error"): void {
-    const payload = this.errors;
-    this.errors = {};
+  private _throwErrors(message?: string): void {
+    const err = { ...this.error };
 
-    throw new ApiError({ message, payload });
+    if (message) err.setMessage(message);
+
+    this.error.clear();
+
+    throw err;
   }
 
   private _sort = (data: any[]): any[] => data.sort((a, b) => (a < b ? -1 : 1));
@@ -389,7 +384,7 @@ export class Schema {
         continue;
       }
 
-      this._addError({ field: prop, errors: [reason] });
+      this.error.add(prop, reason);
     }
 
     return obj;
@@ -469,7 +464,7 @@ export class Schema {
         continue;
       }
 
-      if (!valid) this._addError({ field: prop, errors: [reason] });
+      if (!valid) this.error.add(prop, reason);
     }
 
     for (let prop of linkedOrSideEffects) {
@@ -506,7 +501,7 @@ export class Schema {
         continue;
       }
 
-      if (!valid) this._addError({ field: prop, errors: [reason] });
+      if (!valid) this.error.add(prop, reason);
     }
 
     if (this._isErroneous()) this._throwErrors();
