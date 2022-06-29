@@ -1,7 +1,7 @@
 {
   "name": "clean-schema",
-  "version": "1.0.17",
-  "description": "schema builder",
+  "version": "1.0.18",
+  "description": "schema builder for javascript environments",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "files": [
@@ -17,17 +17,18 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/kamtoeddy/cleanSchema.git"
+    "url": "git+https://github.com/kamtoeddy/clean-schema.git"
   },
   "keywords": [
     "clean architecture",
     "node",
-    "schema"
+    "schema",
+    "data validation layer"
   ],
   "author": "blacksocks",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/kamtoeddy/cleanSchema/issues"
+    "url": "https://github.com/kamtoeddy/clean-schema/issues"
   },
-  "homepage": "https://github.com/kamtoeddy/cleanSchema#readme"
+  "homepage": "https://github.com/kamtoeddy/clean-schema#readme"
 }
