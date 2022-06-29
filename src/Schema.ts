@@ -481,24 +481,20 @@ export class Schema {
       const hasChanged = !isEqual(this[prop], validated);
 
       if ((valid && !isSideEffect && hasChanged) || (valid && isSideEffect)) {
-        if (isLinked || isSideEffect) {
-          const methods = this._getLinkedMethods(prop);
-          const context = this._getContext();
+        const methods = this._getLinkedMethods(prop);
+        const context = this._getContext();
 
-          if (isSideEffect) context[prop] = validated;
+        if (isSideEffect) context[prop] = validated;
 
-          for (const cb of methods) {
-            const extra = await cb(context);
+        for (const cb of methods) {
+          const extra = await cb(context);
 
-            if (!extra || typeof extra !== "object") continue;
+          if (!extra || typeof extra !== "object") continue;
 
-            Object.keys(extra).forEach((_prop) => {
-              if (this._isProp(_prop)) this.updated[_prop] = extra[_prop];
-            });
-          }
+          Object.keys(extra).forEach((_prop) => {
+            if (this._isProp(_prop)) this.updated[_prop] = extra[_prop];
+          });
         }
-
-        continue;
       }
 
       if (!valid) this.error.add(prop, reason);
