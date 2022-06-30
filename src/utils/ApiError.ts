@@ -1,7 +1,6 @@
 import { ApiErrorProps, ErrorPayload } from "./interfaces";
 
 export class ApiError extends Error {
-  _isError = true;
   name = "ApiError";
   payload: ErrorPayload;
   statusCode: number;
@@ -12,17 +11,39 @@ export class ApiError extends Error {
     this.statusCode = statusCode;
   }
 
+  private _has = (field: string) => this.payload.hasOwnProperty(field);
+
   add(field: string, value: string | string[]) {
     const toAdd = Array.isArray(value) ? [...value] : [value];
 
-    if (!this.payload[field]) return (this.payload[field] = toAdd);
+    this.payload[field] = this._has(field)
+      ? [...this.payload[field], ...toAdd]
+      : toAdd;
 
-    this.payload[field] = [...this.payload[field], ...toAdd];
+    return this;
   }
 
-  clear = () => (this.payload = {});
+  clear = () => {
+    this.payload = {};
+    return this;
+  };
 
-  remove = (field: string) => delete this.payload?.[field];
+  getInfo = () => {
+    return {
+      _isError: true,
+      message: this.message,
+      payload: this.payload,
+      statusCode: this.statusCode,
+    };
+  };
 
-  setMessage = (message: string) => (this.message = message);
+  remove = (field: string) => {
+    delete this.payload?.[field];
+    return this;
+  };
+
+  setMessage = (message: string) => {
+    this.message = message;
+    return this;
+  };
 }
