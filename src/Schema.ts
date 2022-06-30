@@ -339,11 +339,11 @@ export class Schema {
   private _throwErrors(message?: string): void {
     const err = { ...this.error };
 
-    if (message) err.setMessage(message);
-
     this.error.clear();
 
-    throw err;
+    if (message) err.setMessage(message);
+
+    throw new ApiError(err.getInfo());
   }
 
   private _sort = (data: any[]): any[] => data.sort((a, b) => (a < b ? -1 : 1));
