@@ -336,14 +336,14 @@ export class Schema {
     return this._isSideEffect(prop) && shouldInit === true;
   };
 
-  private _throwErrors(message?: string): void {
-    const err = { ...this.error };
+  private _throwErrors(_message?: string): void {
+    let err = new ApiError(this.error.getInfo());
 
     this.error.clear();
 
-    if (message) err.setMessage(message);
+    if (_message) err.setMessage(_message);
 
-    throw new ApiError(err.getInfo());
+    throw err;
   }
 
   private _sort = (data: any[]): any[] => data.sort((a, b) => (a < b ? -1 : 1));
