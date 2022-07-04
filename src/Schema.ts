@@ -4,11 +4,7 @@ import { isEqual } from "./utils/isEqual";
 import { looseObject } from "./utils/interfaces";
 import { belongsTo } from "./utils/functions";
 
-type looseObjectFunc = (...args: any) => Promise<looseObject>;
-
-type funcArrayObj = () => looseObject;
-type funcArrayFunc = () => looseObjectFunc[];
-type funcArrayStr = () => string[];
+type fxLooseObject = (...args: any) => Promise<looseObject>;
 
 type validationResponse = {
   reason?: string;
@@ -21,8 +17,9 @@ type propValidatorFunc = (...args: any) => validationResponse;
 interface propDefinitionType {
   [key: string]: {
     default?: any;
-    onCreate?: looseObjectFunc[];
-    onUpdate?: looseObjectFunc[];
+    dependent?: boolean;
+    onCreate?: fxLooseObject[];
+    onUpdate?: fxLooseObject[];
     readonly?: boolean;
     required?: boolean;
     sideEffect: boolean;
@@ -66,10 +63,19 @@ export class Schema {
 
     const { readonly, required, shouldInit } = propDef;
 
+    if (this._isDependentProp(prop)) return false;
+
     if (!readonly && !required) return false;
-    // if (!readonly && !required && !this._hasDefault(prop)) return false;
 
     return belongsTo(shouldInit, [true, undefined]);
+  };
+
+  private _isDependentProp = (prop: string): boolean => {
+    const propDef = this.propDefinitions[prop];
+
+    if (!propDef) return false;
+
+    return propDef?.dependent === true;
   };
 
   private _getCloneObject = async (toReset: string[] = []) => {
@@ -97,8 +103,8 @@ export class Schema {
     return { ...context, ...this.updated };
   };
 
-  private _getCreateActions: funcArrayFunc = () => {
-    let _actions: looseObjectFunc[] = [];
+  private _getCreateActions = () => {
+    let _actions: fxLooseObject[] = [];
     const props = this._getProps();
 
     for (let prop of props) {
@@ -148,7 +154,7 @@ export class Schema {
     return this._useConfigProps(obj);
   };
 
-  private _getCreateProps: funcArrayStr = () => {
+  private _getCreateProps = () => {
     const createProps = [];
     const props = this._getProps();
 
@@ -157,7 +163,7 @@ export class Schema {
     return this._sort(createProps);
   };
 
-  private _getDefaults: funcArrayObj = () => {
+  private _getDefaults = () => {
     const defaults: looseObject = {};
     const props = this._getProps();
 
@@ -170,7 +176,7 @@ export class Schema {
     return defaults;
   };
 
-  private _getLinkedMethods = (prop: string): looseObjectFunc[] => {
+  private _getLinkedMethods = (prop: string): fxLooseObject[] => {
     const methods = this._isSideEffect(prop)
       ? this.propDefinitions[prop]?.onUpdate
       : this._getLinkedUpdates()[prop];
@@ -178,7 +184,7 @@ export class Schema {
     return methods ?? [];
   };
 
-  private _getLinkedUpdates: funcArrayObj = () => {
+  private _getLinkedUpdates = () => {
     const _linkedUpdates: looseObject = {};
     const props = this._getProps();
 
@@ -193,7 +199,7 @@ export class Schema {
     return _linkedUpdates;
   };
 
-  private _getProps: funcArrayStr = () => {
+  private _getProps = () => {
     let props: string[] = Object.keys(this.propDefinitions);
 
     props = props.filter((prop) => {
@@ -202,6 +208,7 @@ export class Schema {
       if (typeof propDef !== "object") return false;
 
       return (
+        this._isDependentProp(prop) ||
         this._hasSomeOf(propDef, ["default", "readonly", "required"]) ||
         this._isLaxProp(prop)
       );
@@ -210,7 +217,7 @@ export class Schema {
     return this._sort(props);
   };
 
-  private _getSideEffects: funcArrayStr = () => {
+  private _getSideEffects = () => {
     let props: string[] = Object.keys(this.propDefinitions);
 
     props = props.filter((prop) => {
@@ -224,12 +231,15 @@ export class Schema {
     return props;
   };
 
-  private _getUpdatables: funcArrayStr = () => {
+  private _getUpdatables = () => {
     const updatebles = [];
     const props = this._getProps();
 
     for (let prop of props) {
       const readonly = this.propDefinitions[prop]?.readonly;
+
+      if (this._isDependentProp(prop)) continue;
+
       if (!readonly || (readonly && !this._hasChanged(prop)))
         updatebles.push(prop);
     }
@@ -258,9 +268,17 @@ export class Schema {
 
       if (!extra || typeof extra !== "object") continue;
 
-      Object.keys(extra).forEach((_prop) => {
-        if (this._isProp(_prop)) data[_prop] = extra[_prop];
-      });
+      const _props = Object.keys(extra);
+
+      for (let _prop of _props) {
+        if (!this._isProp(_prop)) continue;
+
+        const _value = extra[_prop];
+
+        data[_prop] = _value;
+
+        await this._resolveLinkedValue(data, _prop, _value);
+      }
     }
 
     return data;
@@ -299,13 +317,21 @@ export class Schema {
 
     if (!propDef) return false;
 
-    if (!this._hasDefault(prop)) return false;
+    if (!this._hasDefault(prop) || this._isDependentProp(prop)) return false;
 
     const { readonly, required, shouldInit } = propDef;
 
     if (readonly || required) return false;
 
     return belongsTo(shouldInit, [true, undefined]);
+  };
+
+  private _isLinkedProp = (prop: string): boolean => {
+    let _updates = this.propDefinitions[prop]?.onUpdate ?? [];
+
+    _updates = _updates.filter((action) => this._isFunction(action));
+
+    return _updates.length > 0;
   };
 
   private _isProp = (prop: string): boolean => this._getProps().includes(prop);
@@ -334,6 +360,56 @@ export class Schema {
     const { shouldInit } = propDef;
 
     return this._isSideEffect(prop) && shouldInit === true;
+  };
+
+  private _resolveLinkedValue = async (
+    contextObject: looseObject = {},
+    prop: string,
+    value: any
+  ) => {
+    const isLinked = this._isLinkedProp(prop),
+      isSideEffect = this._isSideEffect(prop);
+
+    if (!isSideEffect && !isLinked) return {};
+
+    const { reason, valid, validated } = await this.validate({
+      prop,
+      value,
+    });
+
+    if (!valid) {
+      this.error.add(prop, reason);
+      return {};
+    }
+
+    const hasChanged = !isEqual(this[prop], validated);
+
+    if ((valid && !isSideEffect && hasChanged) || (valid && isSideEffect)) {
+      const methods = this._getLinkedMethods(prop);
+      const context = { ...this._getContext(), ...contextObject };
+
+      if (isSideEffect) context[prop] = validated;
+
+      for (const cb of methods) {
+        const extra = await cb(context);
+
+        if (!extra || typeof extra !== "object") continue;
+
+        const _props = Object.keys(extra);
+
+        for (let _prop of _props) {
+          if (!this._isProp(_prop)) continue;
+
+          const _value = extra[_prop];
+
+          contextObject[_prop] = _value;
+
+          if (this._isLinkedProp(_prop) || this._isSideEffect(_prop)) {
+            await this._resolveLinkedValue(contextObject, _prop, _value);
+          }
+        }
+      }
+    }
   };
 
   private _throwErrors(_message?: string): void {
@@ -448,7 +524,9 @@ export class Schema {
 
     const updatables = toUpdate.filter((prop) => _updatables.includes(prop));
     const linkedOrSideEffects = toUpdate.filter(
-      (prop) => _linkedKeys.includes(prop) || this._isSideEffect(prop)
+      (prop) =>
+        !this._isDependentProp(prop) &&
+        (this._isLinkedProp(prop) || this._isSideEffect(prop))
     );
 
     for (let prop of updatables) {
@@ -468,36 +546,38 @@ export class Schema {
     }
 
     for (let prop of linkedOrSideEffects) {
-      const isLinked = _linkedKeys.includes(prop),
-        isSideEffect = this._isSideEffect(prop);
+      await this._resolveLinkedValue(this.updated, prop, changes[prop]);
 
-      if (!isSideEffect && !isLinked) continue;
+      // const isLinked = _linkedKeys.includes(prop),
+      //   isSideEffect = this._isSideEffect(prop);
 
-      const { reason, valid, validated } = await this.validate({
-        prop,
-        value: changes[prop],
-      });
+      // if (!isSideEffect && !isLinked) continue;
 
-      const hasChanged = !isEqual(this[prop], validated);
+      // const { reason, valid, validated } = await this.validate({
+      //   prop,
+      //   value: changes[prop],
+      // });
 
-      if ((valid && !isSideEffect && hasChanged) || (valid && isSideEffect)) {
-        const methods = this._getLinkedMethods(prop);
-        const context = this._getContext();
+      // const hasChanged = !isEqual(this[prop], validated);
 
-        if (isSideEffect) context[prop] = validated;
+      // if ((valid && !isSideEffect && hasChanged) || (valid && isSideEffect)) {
+      //   const methods = this._getLinkedMethods(prop);
+      //   const context = this._getContext();
 
-        for (const cb of methods) {
-          const extra = await cb(context);
+      //   if (isSideEffect) context[prop] = validated;
 
-          if (!extra || typeof extra !== "object") continue;
+      //   for (const cb of methods) {
+      //     const extra = await cb(context);
 
-          Object.keys(extra).forEach((_prop) => {
-            if (this._isProp(_prop)) this.updated[_prop] = extra[_prop];
-          });
-        }
-      }
+      //     if (!extra || typeof extra !== "object") continue;
 
-      if (!valid) this.error.add(prop, reason);
+      //     Object.keys(extra).forEach((_prop) => {
+      //       if (this._isProp(_prop)) this.updated[_prop] = extra[_prop];
+      //     });
+      //   }
+      // }
+
+      // if (!valid) this.error.add(prop, reason);
     }
 
     if (this._isErroneous()) this._throwErrors();
