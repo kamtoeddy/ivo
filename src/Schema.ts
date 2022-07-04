@@ -43,6 +43,8 @@ export class Schema {
   private options: options = { timestamp: false };
 
   private error = new ApiError({ message: "Validation Error" });
+
+  private context: looseObject = {};
   private updated: looseObject = {};
 
   constructor(
@@ -96,11 +98,9 @@ export class Schema {
   };
 
   private _getContext = (): looseObject => {
-    let context: looseObject = {};
+    this._getProps().forEach((prop) => (this.context[prop] = this[prop]));
 
-    this._getProps().forEach((prop) => (context[prop] = this[prop]));
-
-    return { ...context, ...this.updated };
+    return { ...this.context, ...this.updated };
   };
 
   private _getCreateActions = () => {
@@ -207,6 +207,8 @@ export class Schema {
 
       if (typeof propDef !== "object") return false;
 
+      if (this._isSideEffect(prop)) return false;
+
       return (
         this._isDependentProp(prop) ||
         this._hasSomeOf(propDef, [
@@ -268,7 +270,7 @@ export class Schema {
     for (const cb of actions) {
       const extra = await cb(data);
 
-      if (!extra || typeof extra !== "object") continue;
+      if (typeof extra !== "object") continue;
 
       const _props = Object.keys(extra);
 
@@ -283,15 +285,17 @@ export class Schema {
       }
     }
 
+    this.context = {};
+
     return data;
   };
 
-  private _hasChanged = (prop: string, context: looseObject = this) => {
+  private _hasChanged = (prop: string) => {
     const propDef = this.propDefinitions[prop];
 
     if (!propDef) return false;
 
-    return !isEqual(propDef.default, context?.[prop]);
+    return !isEqual(propDef.default, this._getContext()?.[prop]);
   };
 
   private _hasDefault = (prop: string) => {
@@ -364,10 +368,22 @@ export class Schema {
     return this._isSideEffect(prop) && shouldInit === true;
   };
 
-  private _isUpdatable = (prop: string, context: looseObject = this) => {
+  private _isUpdatable = (prop: string) => {
+    if (!this._isProp(prop)) return false;
+
     const readonly = this.propDefinitions[prop]?.readonly;
 
-    return !readonly || (readonly && !this._hasChanged(prop, context));
+    return !readonly || (readonly && !this._hasChanged(prop));
+  };
+
+  private _isUpdatableInCTX = (
+    prop: string,
+    value: any,
+    context: looseObject = this._getContext()
+  ) => {
+    if (!this._isProp(prop)) return false;
+
+    return !isEqual(value, context?.[prop]);
   };
 
   private _resolveLinkedValue = async (
@@ -378,46 +394,42 @@ export class Schema {
     const isLinked = this._isLinkedProp(prop),
       isSideEffect = this._isSideEffect(prop);
 
-    if (!this._isUpdatable(prop, contextObject) || (!isSideEffect && !isLinked))
-      return {};
+    if (!isSideEffect && !isLinked) return;
 
     const { reason, valid, validated } = await this.validate({
       prop,
       value,
     });
 
-    if (!valid) {
-      this.error.add(prop, reason);
-      return {};
-    }
+    if (!valid) return this.error.add(prop, reason);
 
     const hasChanged = !isEqual(this[prop], validated);
 
-    if ((valid && !isSideEffect && hasChanged) || (valid && isSideEffect)) {
-      const methods = this._getLinkedMethods(prop);
-      const context = { ...this._getContext(), ...contextObject };
+    if (!isSideEffect && !hasChanged) return;
 
-      if (isSideEffect) context[prop] = validated;
+    if (isSideEffect) this.context[prop] = validated;
 
-      for (const cb of methods) {
-        const extra = await cb(context);
+    const context = { ...this._getContext(), ...contextObject };
 
-        if (typeof extra !== "object") continue;
+    const methods = this._getLinkedMethods(prop);
 
-        const _props = Object.keys(extra);
+    for (const cb of methods) {
+      const extra = await cb(context);
 
-        for (let _prop of _props) {
-          const _value = extra[_prop];
+      if (typeof extra !== "object") continue;
 
-          if (!this._isProp(_prop) || !this._isUpdatable(_prop, context))
-            continue;
+      const _props = Object.keys(extra);
 
-          contextObject[_prop] = _value;
+      for (let _prop of _props) {
+        const _value = extra[_prop];
+        const isSideEffect = this._isSideEffect(_prop);
 
-          if (this._isLinkedProp(_prop) || this._isSideEffect(_prop)) {
-            await this._resolveLinkedValue(contextObject, _prop, _value);
-          }
-        }
+        if (!isSideEffect && !this._isUpdatableInCTX(_prop, _value, context))
+          continue;
+
+        if (!isSideEffect) contextObject[_prop] = _value;
+
+        await this._resolveLinkedValue(contextObject, _prop, _value);
       }
     }
   };
@@ -460,7 +472,7 @@ export class Schema {
         for (const cb of methods) {
           const extra = await cb(context);
 
-          if (!extra || typeof extra !== "object") continue;
+          if (typeof extra !== "object") continue;
 
           Object.keys(extra).forEach((_prop) => {
             if (this._isProp(_prop)) obj[_prop] = extra[_prop];
@@ -526,13 +538,10 @@ export class Schema {
     this.updated = {};
 
     const toUpdate = Object.keys(changes);
-    const _linkedKeys = Object.keys(this._getLinkedUpdates());
-    const _updatables = this._getUpdatables();
 
     // iterate through validated values and get only changed fields
     // amongst the schema's updatable properties
-
-    const updatables = toUpdate.filter((prop) => _updatables.includes(prop));
+    const updatables = toUpdate.filter((prop) => this._isUpdatable(prop));
     const linkedOrSideEffects = toUpdate.filter(
       (prop) =>
         !this._isDependentProp(prop) &&
@@ -555,40 +564,8 @@ export class Schema {
       if (!valid) this.error.add(prop, reason);
     }
 
-    for (let prop of linkedOrSideEffects) {
+    for (let prop of linkedOrSideEffects)
       await this._resolveLinkedValue(this.updated, prop, changes[prop]);
-
-      // const isLinked = _linkedKeys.includes(prop),
-      //   isSideEffect = this._isSideEffect(prop);
-
-      // if (!isSideEffect && !isLinked) continue;
-
-      // const { reason, valid, validated } = await this.validate({
-      //   prop,
-      //   value: changes[prop],
-      // });
-
-      // const hasChanged = !isEqual(this[prop], validated);
-
-      // if ((valid && !isSideEffect && hasChanged) || (valid && isSideEffect)) {
-      //   const methods = this._getLinkedMethods(prop);
-      //   const context = this._getContext();
-
-      //   if (isSideEffect) context[prop] = validated;
-
-      //   for (const cb of methods) {
-      //     const extra = await cb(context);
-
-      //     if (!extra || typeof extra !== "object") continue;
-
-      //     Object.keys(extra).forEach((_prop) => {
-      //       if (this._isProp(_prop)) this.updated[_prop] = extra[_prop];
-      //     });
-      //   }
-      // }
-
-      // if (!valid) this.error.add(prop, reason);
-    }
 
     if (this._isErroneous()) this._throwErrors();
 
@@ -599,6 +576,8 @@ export class Schema {
     if (!updatedKeys.length) this._throwErrors("Nothing to update");
 
     const updated: looseObject = { ...this.updated };
+
+    this.context = {};
     this.updated = {};
 
     updatedKeys.forEach((key: string) => (this.updated[key] = updated[key]));
