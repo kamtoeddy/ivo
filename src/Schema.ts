@@ -209,7 +209,12 @@ export class Schema {
 
       return (
         this._isDependentProp(prop) ||
-        this._hasSomeOf(propDef, ["default", "readonly", "required"]) ||
+        this._hasSomeOf(propDef, [
+          "default",
+          "dependent",
+          "readonly",
+          "required",
+        ]) ||
         this._isLaxProp(prop)
       );
     });
@@ -236,12 +241,9 @@ export class Schema {
     const props = this._getProps();
 
     for (let prop of props) {
-      const readonly = this.propDefinitions[prop]?.readonly;
-
       if (this._isDependentProp(prop)) continue;
 
-      if (!readonly || (readonly && !this._hasChanged(prop)))
-        updatebles.push(prop);
+      if (this._isUpdatable(prop)) updatebles.push(prop);
     }
 
     return this._sort(updatebles);
@@ -284,12 +286,12 @@ export class Schema {
     return data;
   };
 
-  private _hasChanged = (prop: string) => {
+  private _hasChanged = (prop: string, context: looseObject = this) => {
     const propDef = this.propDefinitions[prop];
 
     if (!propDef) return false;
 
-    return !isEqual(propDef.default, this?.[prop]);
+    return !isEqual(propDef.default, context?.[prop]);
   };
 
   private _hasDefault = (prop: string) => {
@@ -362,6 +364,12 @@ export class Schema {
     return this._isSideEffect(prop) && shouldInit === true;
   };
 
+  private _isUpdatable = (prop: string, context: looseObject = this) => {
+    const readonly = this.propDefinitions[prop]?.readonly;
+
+    return !readonly || (readonly && !this._hasChanged(prop, context));
+  };
+
   private _resolveLinkedValue = async (
     contextObject: looseObject = {},
     prop: string,
@@ -370,7 +378,8 @@ export class Schema {
     const isLinked = this._isLinkedProp(prop),
       isSideEffect = this._isSideEffect(prop);
 
-    if (!isSideEffect && !isLinked) return {};
+    if (!this._isUpdatable(prop, contextObject) || (!isSideEffect && !isLinked))
+      return {};
 
     const { reason, valid, validated } = await this.validate({
       prop,
@@ -393,14 +402,15 @@ export class Schema {
       for (const cb of methods) {
         const extra = await cb(context);
 
-        if (!extra || typeof extra !== "object") continue;
+        if (typeof extra !== "object") continue;
 
         const _props = Object.keys(extra);
 
         for (let _prop of _props) {
-          if (!this._isProp(_prop)) continue;
-
           const _value = extra[_prop];
+
+          if (!this._isProp(_prop) || !this._isUpdatable(_prop, context))
+            continue;
 
           contextObject[_prop] = _value;
 
