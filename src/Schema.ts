@@ -45,18 +45,16 @@ interface IValidateProps {
   value: any;
 }
 
+type ModelBuildMethod = (values: looseObject) => Model;
 type ModelCreateMethod = () => Promise<looseObject>;
 type ModelCloneMethod = (options?: ICloneOptions) => Promise<looseObject>;
-type ModelExtendMethod = (
-  parent: AbstactSchema,
-  options: extensionOptions
-) => AbstactSchema;
 type ModelValidateMethod = (
   props: IValidateProps
 ) => Promise<IValidateResponse>;
 type ModelUpdateMethod = (changed: looseObject) => Promise<looseObject>;
 
 interface IModel {
+  // build?: ModelBuildMethod;
   create: ModelCreateMethod;
   clone: ModelCloneMethod;
   validate: ModelValidateMethod;
@@ -540,8 +538,15 @@ export class Schema extends AbstactSchema {
 }
 
 class Model extends AbstactSchema implements IModel {
-  constructor(schema: Schema) {
+  constructor(schema: Schema, values: looseObject) {
     super(schema.getPropDefinitions, schema.getOptions);
+    this.setValues(values);
+  }
+
+  private setValues(values: looseObject) {
+    Object.keys(values).forEach((key) => {
+      if (this._isProp(key)) this[key] = values[key];
+    });
   }
 
   clone = async (options: ICloneOptions = { toReset: [] }) => {
@@ -633,10 +638,7 @@ class Model extends AbstactSchema implements IModel {
 }
 
 export const makeModel = (schema: Schema) => {
-  const model = new Model(schema);
-  return function Model(values: looseObject) {
-    Object.keys(values).forEach((key) => (model[key] = values[key]));
-
-    return model;
+  return function Builder(values: looseObject) {
+    return new Model(schema, values);
   };
 };

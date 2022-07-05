@@ -125,16 +125,17 @@ const definitions = {
 const userSchema = new Schema({ ...definitions });
 ```
 
-| Property   | Type     | Description                                                                                                                                                                         |
-| ---------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| default    | any      | A value of any type you wish to use for a given property                                                                                                                            |
-| onCreate   | array    | An array of functions(async / sync) you want to be executed when an instance of your model gets created. Default **[ ]**                                                            |
-| onUpdate   | array    | An array of functions(async / sync) you want to be executed when a particular property of your instance get updated. Default **[ ]**                                                |
-| readonly   | boolean  | If true will be required at initialization and will never allow updates. If true with shouldInit: false, will not be initialized but allowed to update only once. Default **false** |
-| required   | boolean  | Specifies a property that must be initialised. Default **false**                                                                                                                    |
-| sideEffect | boolean  | Used with onUpdate to modify other properties but is not attached to instances of your model. Default **false**                                                                     |
-| shouldInit | boolean  | Tells clean-schema whether or not a property should be initialized. Default **true**                                                                                                |
-| validator  | function | A function(async / sync) used to validated the value of a property. Must return {reason:string, valid: boolean, validated: undefined or any}. Default **null**                      |
+| Property   | Type     | Description                                                                                                                                                                                        |
+| ---------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| default    | any      | A value of any type you wish to use for a given property. Default **undefined**                                                                                                                    |
+| dependent  | boolean  | If set to true, clean-schema will prevent any external modification of the property; making it's value soley dependent on another property via the onCreate / onUpdate handlers. Default **false** |
+| onCreate   | array    | An array of functions(async / sync) you want to be executed when an instance of your model gets created. Default **[ ]**                                                                           |
+| onUpdate   | array    | An array of functions(async / sync) you want to be executed when a particular property of your instance get updated. Default **[ ]**                                                               |
+| readonly   | boolean  | If true will be required at initialization and will never allow updates. If true with shouldInit: false, will not be initialized but allowed to update only once. Default **false**                |
+| required   | boolean  | Specifies a property that must be initialised. Default **false**                                                                                                                                   |
+| sideEffect | boolean  | Used with onUpdate to modify other properties but is not attached to instances of your model. Default **false**                                                                                    |
+| shouldInit | boolean  | Tells clean-schema whether or not a property should be initialized. Default **true**                                                                                                               |
+| validator  | function | A function(async / sync) used to validated the value of a property. Must return {reason:string, valid: boolean, validated: undefined or any}. Default **null**                                     |
 
 ## Schema Inheritance
 
