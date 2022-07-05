@@ -15,14 +15,14 @@ function isInRange(value: number, range: numRangeType) {
   const [min, max] = bounds;
 
   if ((inclusiveBottom && value < min) || (!inclusiveBottom && value <= min)) {
-    return { valid: false, reason: "too small" };
+    return { valid: false, reasons: ["too small"] };
   }
 
   if ((inclusiveTop && value > max) || (!inclusiveTop && value >= max)) {
-    return { valid: false, reason: "too large" };
+    return { valid: false, reasons: ["too large"] };
   }
 
-  return { valid: true, reason: "" };
+  return { valid: true, reasons: [] };
 }
 
 function makeRage(range: rangeType): rangeType {
@@ -38,10 +38,10 @@ function makeRage(range: rangeType): rangeType {
 
 export function isNumberOK(num: any, { range }: { range?: rangeType } = {}) {
   let valid = true,
-    reason = "";
+    reasons: string[] = [];
 
   if (isNaN(num) || num === "") {
-    return { valid: false, reason: "Expected a number" };
+    return { valid: false, reasons: ["Expected a number"] };
   }
 
   num = Number(num);
@@ -54,5 +54,5 @@ export function isNumberOK(num: any, { range }: { range?: rangeType } = {}) {
     if (!_isInRange.valid) return _isInRange;
   }
 
-  return { reason, valid, validated: valid ? num : undefined };
+  return { reasons, valid, validated: valid ? num : undefined };
 }

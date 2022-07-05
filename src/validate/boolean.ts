@@ -1,11 +1,11 @@
 export function isBooleanOk(value: any) {
   let valid = true,
-    reason = "";
+    reasons: string[] = [];
 
   if (typeof value !== "boolean") {
     valid = false;
-    reason = "Expected a boolean";
+    reasons = ["Expected a boolean"];
   }
 
-  return { reason, valid, validated: valid ? value : undefined };
+  return { reasons, valid, validated: valid ? value : undefined };
 }

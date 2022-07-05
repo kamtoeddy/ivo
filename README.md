@@ -58,7 +58,7 @@ const UserModel = makeModel(userSchema);
 # Creating an instance
 
 ```javascript
-const user = await new UserModel({
+const user = await UserModel({
   id: 1,
   name: "James Spader",
   password: "AbsdivinnnBbnkl-adjfbjj",
@@ -79,7 +79,7 @@ const user = await db.query({ id: 1 });
 
 if (!user) return null;
 
-const userUpdate = await new UserModel(user).update({
+const userUpdate = await UserModel(user).update({
   id: 2,
   name: "Raymond Reddington",
 });
@@ -215,7 +215,7 @@ clean-schema has some built-in validators. Feel free to use or build you own val
 
 ```typescript
 validationResults: {
-  reason: string, // the reason the validation failed e.g. Invalid name
+  reasons?: string[], // the reason the validation failed e.g. Invalid name
   valid: boolean, // tells if data was valid or not
   validated: undefined | any // the validated values passed which could have been formated in the custom validator (i.e made ready for the db)
 }
@@ -239,11 +239,11 @@ const options = {
 
 const movieGenres = ["action", null, "horror", 1, "comedy", "Horror", "crime"];
 
-console.log(validate.isArrayOk(movieGenres, options)); // { reason: "", valid: true, validated: ["action", "comedy", "crime", "horror"] }
+console.log(validate.isArrayOk(movieGenres, options)); // { reasons: [], valid: true, validated: ["action", "comedy", "crime", "horror"] }
 
 const invalids = ["   ", [], null, 144];
 
-console.log(validate.isArrayOk(invalids, options)); // { reason: "Expected a non-empty array", valid: false, validated: undefined }
+console.log(validate.isArrayOk(invalids, options)); // { reasons: ["Expected a non-empty array"], valid: false, validated: undefined }
 ```
 
 ### Parameters
@@ -273,9 +273,9 @@ To validate boolean values
 ```javascript
 const { validate } = require("clean-schema");
 
-console.log(validate.isBooleanOk("true")); // { reason: "Expected a boolean", valid: false, validated: undefined }
+console.log(validate.isBooleanOk("true")); // { reasons: ["Expected a boolean"], valid: false, validated: undefined }
 
-console.log(validate.isBooleanOk(false)); // { reason: "", valid: true, validated: false }
+console.log(validate.isBooleanOk(false)); // { reasons: [], valid: true, validated: false }
 ```
 
 ## validate.isNumberOK
@@ -291,11 +291,11 @@ const options = {
     isInclusiveBottom: false,
   },
 };
-console.log(validate.isNumberOk(10, options)); // { reason: "too small", valid: false, validated: undefined }
+console.log(validate.isNumberOk(10, options)); // { reasons: ["too small"], valid: false, validated: undefined }
 
-console.log(validate.isNumberOk(10.01, options)); // { reason: "", valid: true, validated: 10.01 }
+console.log(validate.isNumberOk(10.01, options)); // { reasons: [], valid: true, validated: 10.01 }
 
-console.log(validate.isNumberOk("10.01", options)); // { reason: "Expected a number", valid: false, validated: undefined }
+console.log(validate.isNumberOk("10.01", options)); // { reasons: ["Expected a number"], valid: false, validated: undefined }
 ```
 
 ### Parameters
@@ -323,18 +323,18 @@ const { validate } = require("clean-schema");
 
 console.log(
   validate.isStringOk("dbj jkdbZvjkbv", { match: /^[a-zA-Z_\-\S]+$/ })
-); // { reason: "Unacceptable value", valid: false, validated: undefined }
+); // { reasons: ["Unacceptable value"], valid: false, validated: undefined }
 
 validate.isStringOk("Hello World!", {
   maxLength: 20,
   minLength: 3,
-}); // { reason: "", valid: true, validated: "Hello World!" }
+}); // { reasons: [], valid: true, validated: "Hello World!" }
 
 console.log(
   validate.isStringOk("pineapple", {
     enums: ["apple", "banana", "watermelon"],
   })
-); // { reason: "Unacceptable value", valid: false, validated: undefined }
+); // { reasons: ["Unacceptable value"], valid: false, validated: undefined }
 ```
 
 ### Parameters

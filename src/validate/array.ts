@@ -26,12 +26,13 @@ export async function isArrayOk(
     uniqueKey?: string;
   } = {}
 ) {
-  if (!Array.isArray(arr)) return { valid: false, reason: "Expected an array" };
+  if (!Array.isArray(arr))
+    return { valid: false, reasons: ["Expected an array"] };
 
   let _array = await Promise.all(arr.filter(filter));
 
   if (!empty && !_array.length)
-    return { valid: false, reason: "Expected a non-empty array" };
+    return { valid: false, reasons: ["Expected a non-empty array"] };
 
   if (modifier) {
     const copy = [];
@@ -61,5 +62,5 @@ export async function isArrayOk(
     _array = await Promise.all(_array.sort(sorter));
   }
 
-  return { reason: "", valid: true, validated: _array };
+  return { reasons: [], valid: true, validated: _array };
 }

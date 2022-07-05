@@ -9,19 +9,19 @@ export function isStringOk(
     return { valid: false, reason: "Unacceptable value" };
 
   let valid = true,
-    reason = "";
+    reasons: string[] = [];
 
   str = String(str).trim();
 
-  if (str.length < minLength) return { valid: false, reason: "too short" };
+  if (str.length < minLength) return { valid: false, reasons: ["too short"] };
 
-  if (str.length > maxLength) return { valid: false, reason: "too long" };
+  if (str.length > maxLength) return { valid: false, reasons: ["too long"] };
 
   if (match && !match.test(str))
-    return { valid: false, reason: "Unacceptable value" };
+    return { valid: false, reasons: ["Unacceptable value"] };
 
   if (enums && !belongsTo(str, enums))
-    return { valid: false, reason: "Unacceptable value" };
+    return { valid: false, reasons: ["Unacceptable value"] };
 
-  return { reason, valid, validated: valid ? str : undefined };
+  return { reasons, valid, validated: valid ? str : undefined };
 }

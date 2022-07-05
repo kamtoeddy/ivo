@@ -7,7 +7,7 @@ import { belongsTo } from "./utils/functions";
 type fxLooseObject = (...args: any) => Promise<looseObject>;
 
 interface IValidateResponse {
-  reason?: string;
+  reasons?: string[];
   valid: boolean;
   validated?: any;
 }
@@ -163,7 +163,7 @@ class AbstractSchema {
       const isSideInit = this._isSideInit(prop) && this.hasOwnProperty(prop);
 
       if (createProps.includes(prop) || checkLax || isSideInit) {
-        const { reason, valid, validated } = await this.validate({
+        const { reasons, valid, validated } = await this.validate({
           prop,
           value: this[prop],
         });
@@ -174,7 +174,7 @@ class AbstractSchema {
           continue;
         }
 
-        this.error.add(prop, reason);
+        this.error.add(prop, reasons);
       }
 
       obj[prop] = defaults[prop];
@@ -415,12 +415,12 @@ class AbstractSchema {
 
     if (!isSideEffect && !isLinked) return;
 
-    const { reason, valid, validated } = await this.validate({
+    const { reasons, valid, validated } = await this.validate({
       prop,
       value,
     });
 
-    if (!valid) return this.error.add(prop, reason);
+    if (!valid) return this.error.add(prop, reasons);
 
     const hasChanged = !isEqual(this[prop], validated);
 
@@ -567,19 +567,19 @@ class Model extends AbstractSchema implements IModel {
     const isSideEffect = this._isSideEffect(prop);
 
     if (!this._isProp(prop) && !isSideEffect)
-      return { valid: false, reason: "Invalid property" };
+      return { valid: false, reasons: ["Invalid property"] };
 
     const validator = isSideEffect
       ? this._propDefinitions[prop].validator
       : this._getValidations()[prop];
 
     if (!validator && isEqual(value, "undefined")) {
-      return { valid: false, reason: "Invalid value" };
+      return { valid: false, reasons: ["Invalid value"] };
     }
 
     if (validator) return validator(value, this._getContext());
 
-    return { reason: "", valid: true, validated: value };
+    return { reasons: [""], valid: true, validated: value };
   };
 
   update = async (changes: Record<string, any>) => {
@@ -597,10 +597,15 @@ class Model extends AbstractSchema implements IModel {
     );
 
     for (let prop of updatables) {
-      const { reason, valid, validated } = await this.validate({
+      const { reasons, valid, validated } = await this.validate({
         prop,
         value: changes[prop],
       });
+
+      if (!valid) {
+        this.error.add(prop, reasons);
+        continue;
+      }
 
       const hasChanged = !isEqual(this[prop], validated);
 
@@ -608,8 +613,6 @@ class Model extends AbstractSchema implements IModel {
         this.updated[prop] = validated;
         continue;
       }
-
-      if (!valid) this.error.add(prop, reason);
     }
 
     for (let prop of linkedOrSideEffects)
