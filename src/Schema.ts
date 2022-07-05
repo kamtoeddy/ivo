@@ -6,13 +6,13 @@ import { belongsTo } from "./utils/functions";
 
 type fxLooseObject = (...args: any) => Promise<looseObject>;
 
-type validationResponse = {
+interface IValidateResponse {
   reason?: string;
   valid: boolean;
   validated?: any;
-};
+}
 
-type propValidatorFunc = (...args: any) => validationResponse;
+type PropValidatorFunc = (...args: any) => IValidateResponse;
 
 interface propDefinitionType {
   [key: string]: {
@@ -24,7 +24,7 @@ interface propDefinitionType {
     required?: boolean;
     sideEffect: boolean;
     shouldInit?: boolean;
-    validator?: propValidatorFunc;
+    validator?: PropValidatorFunc;
   };
 }
 
@@ -36,30 +36,65 @@ interface extensionOptions {
   remove?: string[];
 }
 
-export class Schema {
+interface ICloneOptions {
+  toReset?: string[];
+}
+
+interface IValidateProps {
+  prop: string;
+  value: any;
+}
+
+type ModelCreateMethod = () => Promise<looseObject>;
+type ModelCloneMethod = (options?: ICloneOptions) => Promise<looseObject>;
+type ModelExtendMethod = (
+  parent: AbstactSchema,
+  options: extensionOptions
+) => AbstactSchema;
+type ModelValidateMethod = (
+  props: IValidateProps
+) => Promise<IValidateResponse>;
+type ModelUpdateMethod = (changed: looseObject) => Promise<looseObject>;
+
+interface IModel {
+  create: ModelCreateMethod;
+  clone: ModelCloneMethod;
+  validate: ModelValidateMethod;
+  update: ModelUpdateMethod;
+}
+
+class AbstactSchema {
   [key: string]: any;
 
-  private propDefinitions: propDefinitionType = {};
-  private options: options = { timestamp: false };
+  protected _propDefinitions: propDefinitionType = {};
+  protected _options: options = { timestamp: false };
 
-  private error = new ApiError({ message: "Validation Error" });
+  protected error = new ApiError({ message: "Validation Error" });
 
-  private context: looseObject = {};
-  private updated: looseObject = {};
+  protected context: looseObject = {};
+  protected updated: looseObject = {};
 
   constructor(
     propDefinitions: propDefinitionType,
     options: options = { timestamp: false }
   ) {
-    this.propDefinitions = propDefinitions;
-    this.options = options;
+    this._propDefinitions = propDefinitions;
+    this._options = options;
 
     if (!this._hasEnoughProps())
       throw new ApiError({ message: "Invalid properties", statusCode: 500 });
   }
 
-  private _canInit = (prop: string): boolean => {
-    const propDef = this.propDefinitions[prop];
+  public get getPropDefinitions() {
+    return this._propDefinitions;
+  }
+
+  public get getOptions() {
+    return this._options;
+  }
+
+  protected _canInit = (prop: string): boolean => {
+    const propDef = this._propDefinitions[prop];
 
     if (!propDef) return false;
 
@@ -72,15 +107,15 @@ export class Schema {
     return belongsTo(shouldInit, [true, undefined]);
   };
 
-  private _isDependentProp = (prop: string): boolean => {
-    const propDef = this.propDefinitions[prop];
+  protected _isDependentProp = (prop: string): boolean => {
+    const propDef = this._propDefinitions[prop];
 
     if (!propDef) return false;
 
     return propDef?.dependent === true;
   };
 
-  private _getCloneObject = async (toReset: string[] = []) => {
+  protected _getCloneObject = async (toReset: string[] = []) => {
     const defaults = this._getDefaults();
     const props = this._getProps();
 
@@ -97,18 +132,18 @@ export class Schema {
     return this._useConfigProps(obj);
   };
 
-  private _getContext = (): looseObject => {
+  protected _getContext = (): looseObject => {
     this._getProps().forEach((prop) => (this.context[prop] = this[prop]));
 
     return { ...this.context, ...this.updated };
   };
 
-  private _getCreateActions = () => {
+  protected _getCreateActions = () => {
     let _actions: fxLooseObject[] = [];
     const props = this._getProps();
 
     for (let prop of props) {
-      let propActions = this.propDefinitions[prop]?.onCreate ?? [];
+      let propActions = this._propDefinitions[prop]?.onCreate ?? [];
 
       propActions = propActions.filter(
         (action) => typeof action === "function"
@@ -120,7 +155,7 @@ export class Schema {
     return _actions;
   };
 
-  private _getCreateObject = async () => {
+  protected _getCreateObject = async () => {
     const createProps = this._getCreateProps();
     const defaults = this._getDefaults();
     const props = this._getProps();
@@ -154,7 +189,7 @@ export class Schema {
     return this._useConfigProps(obj);
   };
 
-  private _getCreateProps = () => {
+  protected _getCreateProps = () => {
     const createProps = [];
     const props = this._getProps();
 
@@ -163,12 +198,12 @@ export class Schema {
     return this._sort(createProps);
   };
 
-  private _getDefaults = () => {
+  protected _getDefaults = () => {
     const defaults: looseObject = {};
     const props = this._getProps();
 
     for (let prop of props) {
-      const _default = this.propDefinitions[prop]?.default;
+      const _default = this._propDefinitions[prop]?.default;
 
       if (_default !== undefined) defaults[prop] = _default;
     }
@@ -176,20 +211,20 @@ export class Schema {
     return defaults;
   };
 
-  private _getLinkedMethods = (prop: string): fxLooseObject[] => {
+  protected _getLinkedMethods = (prop: string): fxLooseObject[] => {
     const methods = this._isSideEffect(prop)
-      ? this.propDefinitions[prop]?.onUpdate
+      ? this._propDefinitions[prop]?.onUpdate
       : this._getLinkedUpdates()[prop];
 
     return methods ?? [];
   };
 
-  private _getLinkedUpdates = () => {
+  protected _getLinkedUpdates = () => {
     const _linkedUpdates: looseObject = {};
     const props = this._getProps();
 
     for (let prop of props) {
-      let _updates = this.propDefinitions[prop]?.onUpdate ?? [];
+      let _updates = this._propDefinitions[prop]?.onUpdate ?? [];
 
       _updates = _updates.filter((action) => this._isFunction(action));
 
@@ -199,11 +234,11 @@ export class Schema {
     return _linkedUpdates;
   };
 
-  private _getProps = () => {
-    let props: string[] = Object.keys(this.propDefinitions);
+  protected _getProps = () => {
+    let props: string[] = Object.keys(this._propDefinitions);
 
     props = props.filter((prop) => {
-      const propDef = this.propDefinitions[prop];
+      const propDef = this._propDefinitions[prop];
 
       if (typeof propDef !== "object") return false;
 
@@ -224,11 +259,11 @@ export class Schema {
     return this._sort(props);
   };
 
-  private _getSideEffects = () => {
-    let props: string[] = Object.keys(this.propDefinitions);
+  protected _getSideEffects = () => {
+    let props: string[] = Object.keys(this._propDefinitions);
 
     props = props.filter((prop) => {
-      const propDef = this.propDefinitions[prop];
+      const propDef = this._propDefinitions[prop];
 
       if (typeof propDef !== "object") return false;
 
@@ -238,25 +273,12 @@ export class Schema {
     return props;
   };
 
-  private _getUpdatables = () => {
-    const updatebles = [];
-    const props = this._getProps();
-
-    for (let prop of props) {
-      if (this._isDependentProp(prop)) continue;
-
-      if (this._isUpdatable(prop)) updatebles.push(prop);
-    }
-
-    return this._sort(updatebles);
-  };
-
-  private _getValidations = (): looseObject => {
+  protected _getValidations = (): looseObject => {
     const validations: looseObject = {};
     const props = this._getProps();
 
     for (let prop of props) {
-      const validator = this.propDefinitions[prop]?.validator;
+      const validator = this._propDefinitions[prop]?.validator;
 
       if (typeof validator === "function") validations[prop] = validator;
     }
@@ -264,7 +286,7 @@ export class Schema {
     return validations;
   };
 
-  private _handleCreateActions = async (data: looseObject = {}) => {
+  protected _handleCreateActions = async (data: looseObject = {}) => {
     const actions = this._getCreateActions();
 
     for (const cb of actions) {
@@ -290,36 +312,36 @@ export class Schema {
     return data;
   };
 
-  private _hasChanged = (prop: string) => {
-    const propDef = this.propDefinitions[prop];
+  protected _hasChanged = (prop: string) => {
+    const propDef = this._propDefinitions[prop];
 
     if (!propDef) return false;
 
     return !isEqual(propDef.default, this._getContext()?.[prop]);
   };
 
-  private _hasDefault = (prop: string) => {
-    const propDef = this.propDefinitions[prop];
+  protected _hasDefault = (prop: string) => {
+    const propDef = this._propDefinitions[prop];
 
     if (!propDef) return false;
 
     return !isEqual(propDef.default, undefined);
   };
 
-  private _hasEnoughProps = (): boolean => this._getProps().length > 0;
+  protected _hasEnoughProps = (): boolean => this._getProps().length > 0;
 
-  private _hasSomeOf = (obj: looseObject, props: string[]): boolean => {
+  protected _hasSomeOf = (obj: looseObject, props: string[]): boolean => {
     for (let prop of props) if (Object(obj).hasOwnProperty(prop)) return true;
 
     return false;
   };
 
-  private _isErroneous = () => Object.keys(this.error.payload).length > 0;
+  protected _isErroneous = () => Object.keys(this.error.payload).length > 0;
 
-  private _isFunction = (obj: any): boolean => typeof obj === "function";
+  protected _isFunction = (obj: any): boolean => typeof obj === "function";
 
-  private _isLaxProp = (prop: string): boolean => {
-    const propDef = this.propDefinitions[prop];
+  protected _isLaxProp = (prop: string): boolean => {
+    const propDef = this._propDefinitions[prop];
 
     if (!propDef) return false;
 
@@ -332,18 +354,19 @@ export class Schema {
     return belongsTo(shouldInit, [true, undefined]);
   };
 
-  private _isLinkedProp = (prop: string): boolean => {
-    let _updates = this.propDefinitions[prop]?.onUpdate ?? [];
+  protected _isLinkedProp = (prop: string): boolean => {
+    let _updates = this._propDefinitions[prop]?.onUpdate ?? [];
 
     _updates = _updates.filter((action) => this._isFunction(action));
 
     return _updates.length > 0;
   };
 
-  private _isProp = (prop: string): boolean => this._getProps().includes(prop);
+  protected _isProp = (prop: string): boolean =>
+    this._getProps().includes(prop);
 
-  private _isSideEffect = (prop: string): boolean => {
-    const propDef = this.propDefinitions[prop];
+  protected _isSideEffect = (prop: string): boolean => {
+    const propDef = this._propDefinitions[prop];
 
     if (!propDef) return false;
 
@@ -358,8 +381,8 @@ export class Schema {
     return sideEffect === true;
   };
 
-  private _isSideInit = (prop: string): boolean => {
-    const propDef = this.propDefinitions[prop];
+  protected _isSideInit = (prop: string): boolean => {
+    const propDef = this._propDefinitions[prop];
 
     if (!propDef) return false;
 
@@ -368,15 +391,15 @@ export class Schema {
     return this._isSideEffect(prop) && shouldInit === true;
   };
 
-  private _isUpdatable = (prop: string) => {
+  protected _isUpdatable = (prop: string) => {
     if (!this._isProp(prop)) return false;
 
-    const readonly = this.propDefinitions[prop]?.readonly;
+    const readonly = this._propDefinitions[prop]?.readonly;
 
     return !readonly || (readonly && !this._hasChanged(prop));
   };
 
-  private _isUpdatableInCTX = (
+  protected _isUpdatableInCTX = (
     prop: string,
     value: any,
     context: looseObject = this._getContext()
@@ -386,7 +409,7 @@ export class Schema {
     return !isEqual(value, context?.[prop]);
   };
 
-  private _resolveLinkedValue = async (
+  protected _resolveLinkedValue = async (
     contextObject: looseObject = {},
     prop: string,
     value: any
@@ -434,7 +457,7 @@ export class Schema {
     }
   };
 
-  private _throwErrors(_message?: string): void {
+  protected _throwErrors(_message?: string): void {
     let err = new ApiError(this.error.getInfo());
 
     this.error.clear();
@@ -444,15 +467,16 @@ export class Schema {
     throw err;
   }
 
-  private _sort = (data: any[]): any[] => data.sort((a, b) => (a < b ? -1 : 1));
+  protected _sort = (data: any[]): any[] =>
+    data.sort((a, b) => (a < b ? -1 : 1));
 
-  private _useConfigProps = (obj: looseObject): looseObject => {
-    return this.options?.timestamp
+  protected _useConfigProps = (obj: looseObject): looseObject => {
+    return this._options?.timestamp
       ? { ...obj, createdAt: new Date(), updatedAt: new Date() }
       : obj;
   };
 
-  private _useSideInitProps = async (obj: looseObject) => {
+  protected _useSideInitProps = async (obj: looseObject) => {
     const sideEffectProps = this._getSideEffects();
 
     for (let prop of sideEffectProps) {
@@ -487,8 +511,42 @@ export class Schema {
 
     return obj;
   };
+}
 
-  clone = async ({ toReset = [] } = { toReset: [] }) => {
+export class Schema extends AbstactSchema {
+  constructor(
+    propDefinitions: propDefinitionType,
+    options: options = { timestamp: false }
+  ) {
+    super(propDefinitions, options);
+  }
+
+  private _useExtensionOptions = (options: extensionOptions) => {
+    const { remove } = options;
+
+    remove?.forEach((prop) => delete this._propDefinitions?.[prop]);
+  };
+
+  extend = (parent: Schema, options: extensionOptions = { remove: [] }) => {
+    this._propDefinitions = {
+      ...parent.getPropDefinitions,
+      ...this._propDefinitions,
+    };
+
+    this._useExtensionOptions(options);
+
+    return this;
+  };
+}
+
+class Model extends AbstactSchema implements IModel {
+  constructor(schema: Schema) {
+    super(schema.getPropDefinitions, schema.getOptions);
+  }
+
+  clone = async (options: ICloneOptions = { toReset: [] }) => {
+    const { toReset } = options;
+
     const cloned = await this._getCloneObject(toReset);
 
     return this._handleCreateActions(cloned);
@@ -502,27 +560,14 @@ export class Schema {
     return this._handleCreateActions(obj);
   };
 
-  extend = (parent: Schema, options: extensionOptions = { remove: [] }) => {
-    this.propDefinitions = {
-      ...parent.propDefinitions,
-      ...this.propDefinitions,
-    };
-
-    const { remove } = options;
-
-    remove?.forEach((prop) => delete this.propDefinitions[prop]);
-
-    return this;
-  };
-
-  validate = async ({ prop = "", value }: { prop: string; value: any }) => {
+  validate = async ({ prop = "", value }: IValidateProps) => {
     const isSideEffect = this._isSideEffect(prop);
 
     if (!this._isProp(prop) && !isSideEffect)
       return { valid: false, reason: "Invalid property" };
 
     const validator = isSideEffect
-      ? this.propDefinitions[prop].validator
+      ? this._propDefinitions[prop].validator
       : this._getValidations()[prop];
 
     if (!validator && isEqual(value, "undefined")) {
@@ -571,7 +616,6 @@ export class Schema {
 
     // get the number of properties updated
     // and deny update if none was modified
-
     const updatedKeys = this._sort(Object.keys(this.updated));
     if (!updatedKeys.length) this._throwErrors("Nothing to update");
 
@@ -582,19 +626,17 @@ export class Schema {
 
     updatedKeys.forEach((key: string) => (this.updated[key] = updated[key]));
 
-    if (this.options?.timestamp) this.updated.updatedAt = new Date();
+    if (this.getOptions?.timestamp) this.updated.updatedAt = new Date();
 
     return this.updated;
   };
 }
 
-function Model(this: Schema, values: looseObject) {
-  Object.keys(values).forEach((key) => (this[key] = values[key]));
-  return this;
-}
-
 export const makeModel = (schema: Schema) => {
-  return function (args: looseObject) {
-    return Model.call(schema, args);
+  const model = new Model(schema);
+  return function Model(values: looseObject) {
+    Object.keys(values).forEach((key) => (model[key] = values[key]));
+
+    return model;
   };
 };
