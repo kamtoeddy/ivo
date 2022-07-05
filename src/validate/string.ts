@@ -6,7 +6,7 @@ export function isStringOk(
   { match, maxLength = 40, minLength = 1, enums }: stringPropTypes = {}
 ) {
   if (belongsTo(str, [null, undefined]))
-    return { valid: false, reason: "Unacceptable value" };
+    return { valid: false, reasons: ["Unacceptable value"] };
 
   let valid = true,
     reasons: string[] = [];
