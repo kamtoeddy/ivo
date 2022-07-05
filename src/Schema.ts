@@ -45,23 +45,21 @@ interface IValidateProps {
   value: any;
 }
 
-type ModelBuildMethod = (values: looseObject) => Model;
 type ModelCreateMethod = () => Promise<looseObject>;
 type ModelCloneMethod = (options?: ICloneOptions) => Promise<looseObject>;
 type ModelValidateMethod = (
   props: IValidateProps
 ) => Promise<IValidateResponse>;
-type ModelUpdateMethod = (changed: looseObject) => Promise<looseObject>;
+type ModelUpdateMethod = (changed: Record<string, any>) => Promise<looseObject>;
 
 interface IModel {
-  // build?: ModelBuildMethod;
   create: ModelCreateMethod;
   clone: ModelCloneMethod;
   validate: ModelValidateMethod;
   update: ModelUpdateMethod;
 }
 
-class AbstactSchema {
+class AbstractSchema {
   [key: string]: any;
 
   protected _propDefinitions: propDefinitionType = {};
@@ -511,7 +509,7 @@ class AbstactSchema {
   };
 }
 
-export class Schema extends AbstactSchema {
+export class Schema extends AbstractSchema {
   constructor(
     propDefinitions: propDefinitionType,
     options: options = { timestamp: false }
@@ -537,13 +535,13 @@ export class Schema extends AbstactSchema {
   };
 }
 
-class Model extends AbstactSchema implements IModel {
-  constructor(schema: Schema, values: looseObject) {
+class Model extends AbstractSchema implements IModel {
+  constructor(schema: Schema, values: Record<string, any>) {
     super(schema.getPropDefinitions, schema.getOptions);
     this.setValues(values);
   }
 
-  private setValues(values: looseObject) {
+  private setValues(values: Record<string, any>) {
     Object.keys(values).forEach((key) => {
       if (this._isProp(key)) this[key] = values[key];
     });
@@ -584,10 +582,10 @@ class Model extends AbstactSchema implements IModel {
     return { reason: "", valid: true, validated: value };
   };
 
-  update = async (changes: looseObject = {}) => {
+  update = async (changes: Record<string, any>) => {
     this.updated = {};
 
-    const toUpdate = Object.keys(changes);
+    const toUpdate = Object.keys(changes ?? {});
 
     // iterate through validated values and get only changed fields
     // amongst the schema's updatable properties
@@ -638,7 +636,7 @@ class Model extends AbstactSchema implements IModel {
 }
 
 export const makeModel = (schema: Schema) => {
-  return function Builder(values: looseObject) {
+  return function Builder(values: Record<string, any>) {
     return new Model(schema, values);
   };
 };
