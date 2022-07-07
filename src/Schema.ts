@@ -59,7 +59,7 @@ interface IModel {
   update: ModelUpdateMethod;
 }
 
-class AbstractSchema {
+abstract class SchemaCore {
   [key: string]: any;
 
   protected _propDefinitions: propDefinitionType = {};
@@ -509,7 +509,7 @@ class AbstractSchema {
   };
 }
 
-export class Schema extends AbstractSchema {
+export class Schema extends SchemaCore {
   constructor(
     propDefinitions: propDefinitionType,
     options: options = { timestamp: false }
@@ -535,10 +535,16 @@ export class Schema extends AbstractSchema {
   };
 }
 
-class Model extends AbstractSchema implements IModel {
+class Model extends SchemaCore implements IModel {
   constructor(schema: Schema, values: Record<string, any>) {
     super(schema.getPropDefinitions, schema.getOptions);
     this.setValues(values);
+  }
+
+  static build(schema: Schema) {
+    return function Builder(values: Record<string, any>) {
+      return new Model(schema, values);
+    };
   }
 
   private setValues(values: Record<string, any>) {
@@ -638,8 +644,4 @@ class Model extends AbstractSchema implements IModel {
   };
 }
 
-export const makeModel = (schema: Schema) => {
-  return function Builder(values: Record<string, any>) {
-    return new Model(schema, values);
-  };
-};
+export const makeModel = Model.build;
