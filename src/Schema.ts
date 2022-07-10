@@ -629,7 +629,10 @@ class Model extends SchemaCore implements IModel {
     // get the number of properties updated
     // and deny update if none was modified
     const updatedKeys = this._sort(Object.keys(this.updated));
-    if (!updatedKeys.length) this._throwErrors("Nothing to update");
+    if (!updatedKeys.length) {
+      this.error.statusCode = 304;
+      this._throwErrors("Nothing to update");
+    }
 
     const updated: looseObject = { ...this.updated };
 
