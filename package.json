@@ -1,6 +1,6 @@
 {
   "name": "clean-schema",
-  "version": "1.0.31",
+  "version": "1.0.32",
   "description": "schema builder for javascript environments",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
