@@ -1,32 +1,32 @@
+import { asArray } from "../utils/asArray";
 import { looseObject } from "../utils/interfaces";
 import { isEqual } from "../utils/isEqual";
 import {
-  extensionOptions,
+  IExtensionOptions,
   ICloneOptions,
   IModel,
+  ISchemaOptions,
   IValidateProps,
-  options,
   propDefinitionType,
 } from "./interfaces";
 import { SchemaCore } from "./SchemaCore";
 
 export class Schema extends SchemaCore {
-  constructor(
-    propDefinitions: propDefinitionType,
-    options: options = { timestamp: false }
-  ) {
+  constructor(propDefinitions: propDefinitionType, options: ISchemaOptions) {
     super(propDefinitions, options);
   }
 
-  private _useExtensionOptions = (options: extensionOptions) => {
-    const { remove } = options;
+  private _useExtensionOptions = (options: IExtensionOptions) => {
+    let { remove } = options;
+
+    remove = asArray(options.remove);
 
     remove?.forEach((prop) => delete this._propDefinitions?.[prop]);
   };
 
-  extend = (parent: Schema, options: extensionOptions = { remove: [] }) => {
+  extend = (parent: Schema, options: IExtensionOptions = { remove: [] }) => {
     this._propDefinitions = {
-      ...parent.getPropDefinitions,
+      ...parent.propDefinitions,
       ...this._propDefinitions,
     };
 
@@ -38,7 +38,7 @@ export class Schema extends SchemaCore {
 
 class Model extends SchemaCore implements IModel {
   constructor(schema: Schema, values: Record<string, any>) {
-    super(schema.getPropDefinitions, schema.getOptions);
+    super(schema.propDefinitions, schema.options);
     this.setValues(values);
   }
 
@@ -139,7 +139,9 @@ class Model extends SchemaCore implements IModel {
 
     updatedKeys.forEach((key: string) => (this.updated[key] = updated[key]));
 
-    if (this.getOptions?.timestamp) this.updated.updatedAt = new Date();
+    if (this._helper.withTimestamp()) {
+      this.updated[this._helper.getUpdateKey()] = new Date();
+    }
 
     return this.updated;
   };

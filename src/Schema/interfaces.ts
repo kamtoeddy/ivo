@@ -24,12 +24,26 @@ export interface propDefinitionType {
   };
 }
 
-export interface options {
-  timestamp?: boolean;
+interface IOptionsTimestamp {
+  createdAt?: string;
+  updatedAt?: string;
 }
 
-export interface extensionOptions {
-  remove?: string[];
+export interface ITimestamp {
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ISchemaOptions {
+  timestamp?: boolean | IOptionsTimestamp;
+}
+
+export interface Private_ISchemaOptions {
+  timestamp: ITimestamp;
+}
+
+export interface IExtensionOptions {
+  remove?: string | string[];
 }
 
 export interface ICloneOptions {

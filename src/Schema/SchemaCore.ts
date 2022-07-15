@@ -2,35 +2,40 @@ import { ApiError } from "../utils/ApiError";
 import { belongsTo } from "../utils/functions";
 import { looseObject } from "../utils/interfaces";
 import { isEqual } from "../utils/isEqual";
-import { fxLooseObject, options, propDefinitionType } from "./interfaces";
+import {
+  fxLooseObject,
+  ISchemaOptions,
+  Private_ISchemaOptions,
+  propDefinitionType,
+} from "./interfaces";
+import { SchemaOptions } from "./SchemaOptions";
 
 export abstract class SchemaCore {
   [key: string]: any;
 
   protected _propDefinitions: propDefinitionType = {};
-  protected _options: options = { timestamp: false };
+  protected _options: ISchemaOptions;
+  protected _helper: SchemaOptions;
 
   protected error = new ApiError({ message: "Validation Error" });
 
   protected context: looseObject = {};
   protected updated: looseObject = {};
 
-  constructor(
-    propDefinitions: propDefinitionType,
-    options: options = { timestamp: false }
-  ) {
+  constructor(propDefinitions: propDefinitionType, options: ISchemaOptions) {
     this._propDefinitions = propDefinitions;
     this._options = options;
+    this._helper = new SchemaOptions(this._makeOptions(options));
 
     if (!this._hasEnoughProps())
       throw new ApiError({ message: "Invalid properties", statusCode: 500 });
   }
 
-  public get getPropDefinitions() {
+  public get propDefinitions() {
     return this._propDefinitions;
   }
 
-  public get getOptions() {
+  public get options() {
     return this._options;
   }
 
@@ -329,7 +334,7 @@ export abstract class SchemaCore {
 
     const { shouldInit } = propDef;
 
-    return this._isSideEffect(prop) && shouldInit !== false;
+    return this._isSideEffect(prop) && belongsTo(shouldInit, [true, undefined]);
   };
 
   protected _isUpdatable = (prop: string) => {
@@ -349,6 +354,48 @@ export abstract class SchemaCore {
 
     return !isEqual(value, context?.[prop]);
   };
+
+  private _makeOptions(options: ISchemaOptions): Private_ISchemaOptions {
+    if (!options) return { timestamp: { createdAt: "", updatedAt: "" } };
+
+    const { timestamp } = options;
+
+    let createdAt = "createdAt",
+      updatedAt = "updatedAt";
+
+    if (typeof timestamp === "boolean") {
+      let _timestamp = timestamp
+        ? { createdAt, updatedAt }
+        : { createdAt: "", updatedAt: "" };
+
+      return { ...options, timestamp: _timestamp };
+    }
+
+    const _error = new ApiError({
+      message: "Invalid schema options",
+      statusCode: 500,
+    });
+
+    const custom_createdAt = timestamp?.createdAt;
+    const custom_updatedAt = timestamp?.updatedAt;
+
+    [custom_createdAt, custom_updatedAt].forEach((value) => {
+      if (value && this._isProp(value)) {
+        _error.add(value, `'${value}' already belong to your schema`);
+      }
+    });
+
+    if (custom_createdAt === custom_updatedAt) {
+      _error.add("timestamp", `createdAt & updatedAt cannot be same`);
+    }
+
+    if (_error.isPayloadLoaded()) throw _error;
+
+    if (custom_createdAt) createdAt = custom_createdAt;
+    if (custom_updatedAt) updatedAt = custom_updatedAt;
+
+    return { ...options, timestamp: { createdAt, updatedAt } };
+  }
 
   protected _resolveLinkedValue = async (
     contextObject: looseObject = {},
@@ -411,10 +458,15 @@ export abstract class SchemaCore {
   protected _sort = (data: any[]): any[] =>
     data.sort((a, b) => (a < b ? -1 : 1));
 
-  protected _useConfigProps = (obj: looseObject): looseObject => {
-    return this._options?.timestamp
-      ? { ...obj, createdAt: new Date(), updatedAt: new Date() }
-      : obj;
+  protected _useConfigProps = (obj: looseObject, asUpdate = false) => {
+    const withTimestamp = this._helper.withTimestamp();
+
+    if (!withTimestamp) return obj;
+
+    const createdAt = this._helper.getCreateKey(),
+      updatedAt = this._helper.getUpdateKey();
+
+    return { ...obj, [createdAt]: new Date(), [updatedAt]: new Date() };
   };
 
   protected _useSideInitProps = async (obj: looseObject) => {

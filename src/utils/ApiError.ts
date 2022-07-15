@@ -13,14 +13,12 @@ export class ApiError extends Error {
 
   private _has = (field: string) => this.payload.hasOwnProperty(field);
 
-  add(field: string, value?: string | string[]) {
-    if (!value) return this;
-
-    const toAdd = Array.isArray(value) ? [...value] : [value];
+  add(field: string, value: string | string[]) {
+    value = Array.isArray(value) ? [...value] : [value];
 
     this.payload[field] = this._has(field)
-      ? [...this.payload[field], ...toAdd]
-      : toAdd;
+      ? [...this.payload[field], ...value]
+      : value;
 
     return this;
   }
@@ -38,6 +36,8 @@ export class ApiError extends Error {
       statusCode: this.statusCode,
     };
   };
+
+  isPayloadLoaded = () => Object.keys(this.payload).length > 0;
 
   remove = (field: string) => {
     delete this.payload?.[field];
