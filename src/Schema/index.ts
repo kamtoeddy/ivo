@@ -6,7 +6,6 @@ import {
   ICloneOptions,
   IModel,
   ISchemaOptions,
-  IValidateProps,
   propDefinitionType,
 } from "./interfaces";
 import { SchemaCore } from "./SchemaCore";
@@ -68,25 +67,6 @@ class Model extends SchemaCore implements IModel {
     if (this._isErroneous()) this._throwErrors();
 
     return this._handleCreateActions(obj);
-  };
-
-  validate = async ({ prop = "", value }: IValidateProps) => {
-    const isSideEffect = this._isSideEffect(prop);
-
-    if (!this._isProp(prop) && !isSideEffect)
-      return { valid: false, reasons: ["Invalid property"] };
-
-    const validator = isSideEffect
-      ? this._propDefinitions[prop].validator
-      : this._getValidations()[prop];
-
-    if (!validator && isEqual(value, "undefined")) {
-      return { valid: false, reasons: ["Invalid value"] };
-    }
-
-    if (validator) return validator(value, this._getContext());
-
-    return { reasons: [""], valid: true, validated: value };
   };
 
   update = async (changes: Record<string, any>) => {

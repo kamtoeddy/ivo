@@ -56,12 +56,15 @@ export interface IValidateProps {
 }
 
 export type ModelCreateMethod = () => Promise<looseObject>;
+
 export type ModelCloneMethod = (
   options?: ICloneOptions
 ) => Promise<looseObject>;
+
 export type ModelValidateMethod = (
   props: IValidateProps
 ) => Promise<IValidateResponse>;
+
 export type ModelUpdateMethod = (
   changed: Record<string, any>
 ) => Promise<looseObject>;
@@ -69,6 +72,5 @@ export type ModelUpdateMethod = (
 export interface IModel {
   create: ModelCreateMethod;
   clone: ModelCloneMethod;
-  validate: ModelValidateMethod;
   update: ModelUpdateMethod;
 }

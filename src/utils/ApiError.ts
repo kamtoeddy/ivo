@@ -11,6 +11,10 @@ export class ApiError extends Error {
     this.statusCode = statusCode;
   }
 
+  get isPayloadLoaded() {
+    return Object.keys(this.payload).length > 0;
+  }
+
   private _has = (field: string) => this.payload.hasOwnProperty(field);
 
   add(field: string, value: string | string[]) {
@@ -36,8 +40,6 @@ export class ApiError extends Error {
       statusCode: this.statusCode,
     };
   };
-
-  isPayloadLoaded = () => Object.keys(this.payload).length > 0;
 
   remove = (field: string) => {
     delete this.payload?.[field];

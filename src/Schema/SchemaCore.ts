@@ -5,6 +5,7 @@ import { isEqual } from "../utils/isEqual";
 import {
   fxLooseObject,
   ISchemaOptions,
+  IValidateProps,
   Private_ISchemaOptions,
   propDefinitionType,
 } from "./interfaces";
@@ -27,8 +28,7 @@ export abstract class SchemaCore {
     this._options = options;
     this._helper = new SchemaOptions(this._makeOptions(options));
 
-    if (!this._hasEnoughProps())
-      throw new ApiError({ message: "Invalid properties", statusCode: 500 });
+    this._checkPropDefinitions();
   }
 
   public get propDefinitions() {
@@ -53,12 +53,20 @@ export abstract class SchemaCore {
     return belongsTo(shouldInit, [true, undefined]);
   };
 
-  protected _isDependentProp = (prop: string): boolean => {
-    const propDef = this._propDefinitions[prop];
+  protected _checkPropDefinitions = () => {
+    const error = new ApiError({
+      message: "Invalid properties",
+      statusCode: 500,
+    });
 
-    if (!propDef) return false;
+    let props: string[] = Object.keys(this._propDefinitions);
 
-    return propDef?.dependent === true;
+    for (let prop of props) {
+      if (!this._isDefinitionOk(prop) && !this._isSideEffect(prop))
+        error.add(prop, []);
+    }
+
+    if (error.isPayloadLoaded) throw error;
   };
 
   protected _getCloneObject = async (toReset: string[] = []) => {
@@ -183,24 +191,7 @@ export abstract class SchemaCore {
   protected _getProps = () => {
     let props: string[] = Object.keys(this._propDefinitions);
 
-    props = props.filter((prop) => {
-      const propDef = this._propDefinitions[prop];
-
-      if (typeof propDef !== "object") return false;
-
-      if (this._isSideEffect(prop)) return false;
-
-      return (
-        this._isDependentProp(prop) ||
-        this._hasSomeOf(propDef, [
-          "default",
-          "dependent",
-          "readonly",
-          "required",
-        ]) ||
-        this._isLaxProp(prop)
-      );
-    });
+    props = props.filter((prop) => this._isDefinitionOk(prop));
 
     return this._sort(props);
   };
@@ -274,12 +265,35 @@ export abstract class SchemaCore {
     return !isEqual(propDef.default, undefined);
   };
 
-  protected _hasEnoughProps = (): boolean => this._getProps().length > 0;
-
   protected _hasSomeOf = (obj: looseObject, props: string[]): boolean => {
     for (let prop of props) if (Object(obj).hasOwnProperty(prop)) return true;
 
     return false;
+  };
+
+  protected _isDefinitionOk = (prop: string) => {
+    const propDef = this._propDefinitions[prop];
+
+    if (this._isSideEffect(prop) || typeof propDef !== "object") return false;
+
+    return (
+      this._isDependentProp(prop) ||
+      this._hasSomeOf(propDef, [
+        "default",
+        "dependent",
+        "readonly",
+        "required",
+      ]) ||
+      this._isLaxProp(prop)
+    );
+  };
+
+  protected _isDependentProp = (prop: string): boolean => {
+    const propDef = this._propDefinitions[prop];
+
+    if (!propDef) return false;
+
+    return propDef?.dependent === true;
   };
 
   protected _isErroneous = () => Object.keys(this.error.payload).length > 0;
@@ -389,7 +403,7 @@ export abstract class SchemaCore {
       _error.add("timestamp", `createdAt & updatedAt cannot be same`);
     }
 
-    if (_error.isPayloadLoaded()) throw _error;
+    if (_error.isPayloadLoaded) throw _error;
 
     if (custom_createdAt) createdAt = custom_createdAt;
     if (custom_updatedAt) updatedAt = custom_updatedAt;
@@ -503,5 +517,24 @@ export abstract class SchemaCore {
     }
 
     return obj;
+  };
+
+  protected validate = async ({ prop = "", value }: IValidateProps) => {
+    const isSideEffect = this._isSideEffect(prop);
+
+    if (!this._isProp(prop) && !isSideEffect)
+      return { valid: false, reasons: ["Invalid property"] };
+
+    const validator = isSideEffect
+      ? this._propDefinitions[prop].validator
+      : this._getValidations()[prop];
+
+    if (!validator && isEqual(value, "undefined")) {
+      return { valid: false, reasons: ["Invalid value"] };
+    }
+
+    if (validator) return validator(value, this._getContext());
+
+    return { reasons: [""], valid: true, validated: value };
   };
 }
