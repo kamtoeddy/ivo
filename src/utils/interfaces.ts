@@ -20,7 +20,7 @@ export interface looseObject {
 
 export interface stringPropTypes {
   enums?: string[];
-  match?: RegExp;
   maxLength?: number;
   minLength?: number;
+  regExp?: RegExp;
 }

@@ -25,7 +25,7 @@ console.log(validate.isArrayOk(invalids, options)); // { reasons: ["Expected a n
 
 | Position | Property | Type   | Description                                                                |
 | -------- | -------- | ------ | -------------------------------------------------------------------------- |
-| 1        | arr      | any[]  | The array you wish to validate                                             |
+| 1        | value    | any[]  | The array you wish to validate                                             |
 | 2        | options  | object | The options you want to apply for the validation. See its properties below |
 
 ### Options

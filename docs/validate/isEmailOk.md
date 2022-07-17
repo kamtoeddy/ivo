@@ -14,4 +14,4 @@ validate.isEmailOk(" john@doe.com"); // { reasons: [], valid: true, validated: "
 
 | Position | Property | Type | Description                    |
 | -------- | -------- | ---- | ------------------------------ |
-| 1        | str      | any  | The value you wish to validate |
+| 1        | value    | any  | The value you wish to validate |

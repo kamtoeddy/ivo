@@ -22,7 +22,7 @@ console.log(validate.isNumberOk("10.01", options)); // { reasons: ["Expected a n
 
 | Position | Property | Type   | Description                                                                |
 | -------- | -------- | ------ | -------------------------------------------------------------------------- |
-| 1        | num      | any    | The value you wish to validate                                             |
+| 1        | value    | any    | The value you wish to validate                                             |
 | 2        | options  | object | The options you want to apply for the validation. See its properties below |
 
 ### Options
