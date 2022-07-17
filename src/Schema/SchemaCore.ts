@@ -55,18 +55,23 @@ export abstract class SchemaCore {
 
   protected _checkPropDefinitions = () => {
     const error = new ApiError({
-      message: "Invalid properties",
+      message: "Invalid Schema",
       statusCode: 500,
     });
 
     let props: string[] = Object.keys(this._propDefinitions);
 
+    const invalidProps = [];
+
     for (let prop of props) {
       if (!this._isDefinitionOk(prop) && !this._isSideEffect(prop))
-        error.add(prop, []);
+        invalidProps.push(prop);
     }
 
-    if (error.isPayloadLoaded) throw error;
+    if (invalidProps.length) {
+      error.add("Invalid properties", invalidProps);
+      throw error;
+    }
   };
 
   protected _getCloneObject = async (toReset: string[] = []) => {
@@ -278,12 +283,7 @@ export abstract class SchemaCore {
 
     return (
       this._isDependentProp(prop) ||
-      this._hasSomeOf(propDef, [
-        "default",
-        "dependent",
-        "readonly",
-        "required",
-      ]) ||
+      this._hasSomeOf(propDef, ["default", "readonly", "required"]) ||
       this._isLaxProp(prop)
     );
   };

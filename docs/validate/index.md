@@ -1,4 +1,4 @@
-# Built-in validation helper
+# Built-in validation helpers
 
 clean-schema has some built-in validators. Feel free to use or build you own validators based on these. Each returns an object with the following structure:
 

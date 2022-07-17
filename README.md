@@ -85,45 +85,6 @@ console.log(userUpdate); // { name: "Raymond Reddington"}
 await db.update({ id: 1 }, userUpdate);
 ```
 
-## More on the onCreate & onUpdate properties
-
-These are arrays of sync/async functions which will get called at creation or update of the property they're defined on respectively. Each properly defined method has access to its context ( an object composed of all the properties and values of the instance ) and is expected to return an object which will be attached to the instance at creation or the updated values during an update. See the example below:
-
-```javascript
-const { makeModel, Schema } = require("clean-schema");
-
-const userSchema = new Schema({
-  firstName: {
-    required: true,
-    onCreate: [onNameChange],
-    onUpdate: [onNameChange],
-    validator: validateName,
-  },
-  lastName: {
-    required: true,
-    onCreate: [onNameChange],
-    onUpdate: [onNameChange],
-    validator: validateName,
-  },
-  fullName: {
-    default: "",
-    validator: validateName,
-  },
-});
-
-const UserModel = makeModel(userSchema);
-
-function onNameChange(context) {
-  const { firstName, lastName } = context;
-
-  const fullName = `${firstName} ${lastName}`;
-
-  return { fullName };
-}
-```
-
-> N.B All functions(async / sync), passed to these arrays must return an object with valid properties of the model.
-
 # Properties of a model
 
 These methods are async because custom validators could be async as well.
@@ -133,5 +94,20 @@ These methods are async because custom validators could be async as well.
 | clone    | function | Async function to copy an instance   |
 | create   | function | Async function to create an instance |
 | update   | function | Async function to update an instance |
+
+## Docs
+
+- Schema
+  - [Defining Properties](./docs/schema/definition.md#defining-a-schema)
+  - [Definitions](./docs/schema/definition.md#definitions)
+  - [The validation context](./docs/schema/definition.md#the-validation-context)
+  - [onCreate & onUpdate handlers](./docs/schema/definition.md#oncreate--onupdate-handlers)
+  - [Options](./docs/schema/definition.md#options)
+- [Helper Validators](./docs/validate/index.md#built-in-validation-helpers)
+  - [isArrayOk](./docs/validate/isArrayOk.md)
+  - [isBooleanOk](./docs/validate/isBooleanOk.md)
+  - [isNumberOk](./docs/validate/isNumberOk.md)
+  - [isStringOk](./docs/validate/isStringOk.md)
+- [ApiError](./docs/api-error.md#structure-of-apierror)
 
 ## Happy coding! 😎
