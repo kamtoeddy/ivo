@@ -6,15 +6,17 @@ The Schema constructor accepts 2 arguments:
 1. options (optional)
 
 ```javascript
-const adminSchema = new Schema(definitions, options);
+const userSchema = new Schema(definitions, options);
 ```
-
-## Definitions
 
 ```javascript
 const { makeModel, Schema } = require("clean-schema");
 
 const userSchema = new Schema({
+  dob: {
+    required: true,
+    validator: validateDob,
+  },
   firstName: {
     required: true,
     onCreate: [onNameChange],
@@ -56,7 +58,27 @@ function onNameChange(context) {
 | shouldInit | boolean  | Tells clean-schema whether or not a property should be initialized. Default **true**                                                                                                                                                                                                      |
 | validator  | function | A function(async / sync) used to validated the value of a property. [See interface](#validator-interface). Default **null**                                                                                                                                                               |
 
-## The validation context
+## Inheritance
+
+Below is an example of how you can make a schema inherit from another:
+
+```javascript
+const { makeModel, Schema } = require("clean-schema");
+
+const adminSchema = new Schema(
+  {
+    extraPermissions: {
+      required: true,
+      validator: validateExtraPermissions,
+    },
+  },
+  { timestamp: { createdAt: "created_at" } }
+).extend(userSchema, { remove: ["dob"] });
+
+const AdminModel = makeModel(adminSchema);
+```
+
+## The Validation Context
 
 This is an object comprized of values of the instance being manipulated ( created / updated ) plus any side effect values defined in your schema.
 
@@ -109,12 +131,12 @@ If timestamp is set to true, you'll automatically have the `createdAt` and `upda
 
 ```javascript
 // override both
-const adminSchema = new Schema(definitions, {
+const transactionSchema = new Schema(definitions, {
   timestamp: { createdAt: "created_at", updatedAt: "updated_at" },
 });
 
 // or one
-const adminSchema = new Schema(definitions, {
+const transactionSchema = new Schema(definitions, {
   timestamp: { createdAt: "created_at" },
 });
 ```

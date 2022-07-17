@@ -1,0 +1,41 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.1.2] - 17-07-2022
+
+### Added
+
+- Changelog
+
+## [1.1.1] - 17-07-2022
+
+### Added
+
+- Possibility to use custom regular expression with [validator.isEmailOk](./validate/isEmailOk.md)
+
+### Fixed
+
+- Internal mechanism in charge of data manipulation which would cause bugs
+
+## [1.1.0] - 17-07-2022
+
+### Changed
+
+- Imporved details of invalid schema error for onCreate & onUpdate methods
+
+## [1.0.35] - 16-07-2022
+
+### Added
+
+- Built-in validator for emails [validator.isEmailOk](./validate/isEmailOk.md)
+- Improved details of invalid schema error
+
+## [1.0.34] - 15-07-2022
+
+### Added
+
+- Possibility to override built in property names for timestamps
