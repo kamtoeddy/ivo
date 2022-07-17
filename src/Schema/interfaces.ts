@@ -35,6 +35,8 @@ export type PropDefinitionRule =
   | "shouldInit"
   | "validator";
 
+export type LifeCycleRule = "onCreate" | "onUpdate";
+
 interface IOptionsTimestamp {
   createdAt?: string;
   updatedAt?: string;

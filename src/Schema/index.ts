@@ -80,7 +80,7 @@ class Model extends SchemaCore implements IModel {
     const linkedOrSideEffects = toUpdate.filter(
       (prop) =>
         !this._isDependentProp(prop) &&
-        (this._isLinkedProp(prop) || this._isSideEffect(prop))
+        (this._isLinkedUpdate(prop) || this._isSideEffect(prop))
     );
 
     for (let prop of updatables) {
