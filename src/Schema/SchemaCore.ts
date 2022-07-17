@@ -7,14 +7,15 @@ import {
   ISchemaOptions,
   IValidateProps,
   Private_ISchemaOptions,
-  propDefinitionType,
+  PropDefinitionRule,
+  PropDefinitionRules,
 } from "./interfaces";
 import { SchemaOptions } from "./SchemaOptions";
 
 export abstract class SchemaCore {
   [key: string]: any;
 
-  protected _propDefinitions: propDefinitionType = {};
+  protected _propDefinitions: PropDefinitionRules = {};
   protected _options: ISchemaOptions;
   protected _helper: SchemaOptions;
 
@@ -23,7 +24,7 @@ export abstract class SchemaCore {
   protected context: looseObject = {};
   protected updated: looseObject = {};
 
-  constructor(propDefinitions: propDefinitionType, options: ISchemaOptions) {
+  constructor(propDefinitions: PropDefinitionRules, options: ISchemaOptions) {
     this._propDefinitions = propDefinitions;
     this._options = options;
     this._helper = new SchemaOptions(this._makeOptions(options));
@@ -61,17 +62,12 @@ export abstract class SchemaCore {
 
     let props: string[] = Object.keys(this._propDefinitions);
 
-    const invalidProps = [];
-
     for (let prop of props) {
-      if (!this._isDefinitionOk(prop) && !this._isSideEffect(prop))
-        invalidProps.push(prop);
+      const isDefOk = this.__isPropDefinitionOk(prop);
+      if (!isDefOk.valid) error.add(prop, isDefOk.reasons!);
     }
 
-    if (invalidProps.length) {
-      error.add("Invalid properties", invalidProps);
-      throw error;
-    }
+    if (error.isPayloadLoaded) throw error;
   };
 
   protected _getCloneObject = async (toReset: string[] = []) => {
@@ -98,20 +94,18 @@ export abstract class SchemaCore {
   };
 
   protected _getCreateActions = () => {
-    let _actions: fxLooseObject[] = [];
+    let actions: fxLooseObject[] = [];
     const props = this._getProps();
 
     for (let prop of props) {
-      let propActions = this._propDefinitions[prop]?.onCreate ?? [];
+      let _actions = this._getDefinitionValue(prop, "onCreate") ?? [];
 
-      propActions = propActions.filter(
-        (action) => typeof action === "function"
-      );
+      _actions = _actions.filter((action: any) => this._isFunction(action));
 
-      if (propActions?.length) _actions = [..._actions, ...propActions];
+      if (_actions?.length) actions = [...actions, ..._actions];
     }
 
-    return _actions;
+    return actions;
   };
 
   protected _getCreateObject = async () => {
@@ -170,6 +164,10 @@ export abstract class SchemaCore {
     return defaults;
   };
 
+  protected _getDefinitionValue = (prop: string, rule: PropDefinitionRule) => {
+    return this._propDefinitions[prop]?.[rule];
+  };
+
   protected _getLinkedMethods = (prop: string): fxLooseObject[] => {
     const methods = this._isSideEffect(prop)
       ? this._propDefinitions[prop]?.onUpdate
@@ -196,7 +194,9 @@ export abstract class SchemaCore {
   protected _getProps = () => {
     let props: string[] = Object.keys(this._propDefinitions);
 
-    props = props.filter((prop) => this._isDefinitionOk(prop));
+    props = props.filter(
+      (prop) => this._isPropDefinitionOk(prop) && !this._isSideEffect(prop)
+    );
 
     return this._sort(props);
   };
@@ -215,6 +215,9 @@ export abstract class SchemaCore {
     return props;
   };
 
+  protected _getValidator = (prop: string) =>
+    this._propDefinitions[prop]?.validator;
+
   protected _getValidations = (): looseObject => {
     const validations: looseObject = {};
     const props = this._getProps();
@@ -224,6 +227,8 @@ export abstract class SchemaCore {
 
       if (typeof validator === "function") validations[prop] = validator;
     }
+
+    console.log(validations);
 
     return validations;
   };
@@ -270,49 +275,161 @@ export abstract class SchemaCore {
     return !isEqual(propDef.default, undefined);
   };
 
-  protected _hasSomeOf = (obj: looseObject, props: string[]): boolean => {
-    for (let prop of props) if (Object(obj).hasOwnProperty(prop)) return true;
+  protected _has = (prop: string, props: string | string[]): boolean => {
+    if (!this._isPropDefinitionObjectOk(prop).valid) return false;
+
+    const propDef = this._propDefinitions[prop];
+
+    if (!Array.isArray(props)) props = [props];
+
+    for (let _prop of props)
+      if (Object(propDef).hasOwnProperty(_prop)) return true;
 
     return false;
   };
 
-  protected _isDefinitionOk = (prop: string) => {
+  protected _hasHandlersFor = (
+    prop: string,
+    type: "onCreate" | "onUpdate" = "onUpdate",
+    _number = 1
+  ) => {
     const propDef = this._propDefinitions[prop];
 
-    if (this._isSideEffect(prop) || typeof propDef !== "object") return false;
-
-    return (
-      this._isDependentProp(prop) ||
-      this._hasSomeOf(propDef, ["default", "readonly", "required"]) ||
-      this._isLaxProp(prop)
+    const methods = propDef?.[type]?.filter((method) =>
+      this._isFunction(method)
     );
+
+    return methods && methods?.length >= _number;
   };
 
-  protected _isDependentProp = (prop: string): boolean => {
+  protected _isValidatorOk = (prop: string) => {
     const propDef = this._propDefinitions[prop];
 
-    if (!propDef) return false;
-
-    return propDef?.dependent === true;
+    return this._isFunction(propDef?.validator);
   };
 
-  protected _isErroneous = () => Object.keys(this.error.payload).length > 0;
+  protected __isPropDefinitionOk = (prop: string) => {
+    const isPopDefOk = this._isPropDefinitionObjectOk(prop);
+
+    if (!isPopDefOk.valid) return isPopDefOk;
+
+    const dependentDef = this.__isDependentProp(prop);
+
+    if (this._has(prop, "depnedent") && !dependentDef.valid)
+      return dependentDef;
+
+    const sideEffectDef = this.__isSideEffect(prop);
+
+    if (this._has(prop, "sideEffect") && !sideEffectDef.valid)
+      return sideEffectDef;
+
+    if (this._has(prop, "validator") && !this._isValidatorOk(prop))
+      return { reasons: ["Invalid validator"], valid: false };
+
+    // if (prop === "nestedTest") {
+    //   console.log(
+    //     !this._has(prop, ["default", "readonly", "required"]),
+    //     !this._isLaxProp(prop),
+
+    //   );
+    // }
+
+    if (
+      this._getDefinitionValue(prop, "shouldInit") === false &&
+      !this._has(prop, "default")
+    ) {
+      return {
+        reasons: [
+          "A property that should not be initialized must have a default value other than 'undefined'",
+        ],
+        valid: false,
+      };
+    }
+
+    if (
+      !this._has(prop, ["default", "readonly", "required"]) &&
+      !this._isDependentProp(prop) &&
+      !this._isLaxProp(prop) &&
+      !this._isSideEffect(prop)
+    ) {
+      return {
+        reasons: [
+          "A property should at least be readonly, required, or have a default value",
+        ],
+        valid: false,
+      };
+    }
+
+    //   return (
+    //   this._isDependentProp(prop) ||
+    //   (this._has(prop, ["default", "readonly", "required"]) &&
+    //     !this._has(prop, ["sideEffect"])) ||
+
+    // );
+
+    return { valid: true };
+  };
+
+  protected _isPropDefinitionOk = (prop: string): boolean =>
+    this.__isPropDefinitionOk(prop).valid;
+
+  protected __isDependentProp = (prop: string) => {
+    const reasons: string[] = [];
+
+    const isPopDefOk = this._isPropDefinitionObjectOk(prop);
+
+    if (!isPopDefOk.valid) reasons.concat(isPopDefOk.reasons!);
+
+    const propDef = this._propDefinitions[prop];
+
+    const { dependent, sideEffect } = propDef;
+
+    if (sideEffect) reasons.push("Dependent props cannot be sideEffect");
+
+    if (!dependent)
+      reasons.push("Dependent props must have dependent as 'true'");
+
+    return { reasons, valid: reasons.length === 0 };
+  };
+
+  protected _isDependentProp = (prop: string): boolean =>
+    this.__isDependentProp(prop).valid;
+
+  protected _isErroneous = () => this.error.isPayloadLoaded;
 
   protected _isFunction = (obj: any): boolean => typeof obj === "function";
 
-  protected _isLaxProp = (prop: string): boolean => {
+  protected __isLaxProp = (prop: string) => {
+    const reasons: string[] = [];
+
+    const isPopDefOk = this._isPropDefinitionObjectOk(prop);
+
+    if (!isPopDefOk.valid) reasons.concat(isPopDefOk.reasons!);
+
+    const hasDefaultValue = this._hasDefault(prop),
+      isDependent = this._isDependentProp(prop);
+
+    if (!hasDefaultValue) reasons.push("No default value");
+
     const propDef = this._propDefinitions[prop];
 
-    if (!propDef) return false;
+    const { readonly, required, sideEffect } = propDef;
 
-    if (!this._hasDefault(prop) || this._isDependentProp(prop)) return false;
+    if (isDependent || readonly || required || sideEffect) {
+      reasons.push(
+        "dependent, readonly, required and sideEffect should not be 'true'"
+      );
+    }
 
-    const { readonly, required, shouldInit } = propDef;
+    const shouldInit = belongsTo(propDef?.shouldInit, [true, undefined]);
 
-    if (readonly || required) return false;
+    if (!shouldInit) reasons.push("shouldInit must be true");
 
-    return belongsTo(shouldInit, [true, undefined]);
+    return { reasons, valid: reasons.length === 0 };
   };
+
+  protected _isLaxProp = (prop: string): boolean =>
+    this.__isLaxProp(prop).valid;
 
   protected _isLinkedProp = (prop: string): boolean => {
     let _updates = this._propDefinitions[prop]?.onUpdate ?? [];
@@ -325,21 +442,43 @@ export abstract class SchemaCore {
   protected _isProp = (prop: string): boolean =>
     this._getProps().includes(prop);
 
-  protected _isSideEffect = (prop: string): boolean => {
+  protected _isPropDefinitionObjectOk = (prop: string) => {
     const propDef = this._propDefinitions[prop];
 
-    if (!propDef) return false;
-
-    const { sideEffect, onUpdate, validator } = propDef;
-
-    if (!this._isFunction(validator)) return false;
-
-    const methods = onUpdate?.filter((method) => this._isFunction(method));
-
-    if (!methods?.length) return false;
-
-    return sideEffect === true;
+    return !propDef || typeof propDef === "object"
+      ? { valid: true }
+      : {
+          reasons: ["Property definitions must be an object"],
+          valid: false,
+        };
   };
+
+  protected __isSideEffect = (prop: string) => {
+    const reasons: string[] = [];
+
+    const isPopDefOk = this._isPropDefinitionObjectOk(prop);
+
+    if (!isPopDefOk.valid) reasons.concat(isPopDefOk.reasons!);
+
+    if (this._has(prop, ["default", "readonly", "required"]))
+      reasons.push(
+        "SideEffects cannot have default, readonly, required as 'true'"
+      );
+
+    if (!this._isValidatorOk(prop)) reasons.push("Invalid validator");
+
+    if (!this._hasHandlersFor(prop, "onUpdate"))
+      reasons.push("Insufficient onUpdate handlers");
+
+    const { sideEffect } = this._propDefinitions[prop];
+
+    if (!sideEffect === true) reasons.push("sideEffect should be 'true'");
+
+    return { reasons, valid: reasons.length === 0 };
+  };
+
+  protected _isSideEffect = (prop: string): boolean =>
+    this.__isSideEffect(prop).valid;
 
   protected _isSideInit = (prop: string): boolean => {
     const propDef = this._propDefinitions[prop];
@@ -489,7 +628,7 @@ export abstract class SchemaCore {
     for (let prop of sideEffectProps) {
       if (!this._isSideInit(prop) || !this.hasOwnProperty(prop)) continue;
 
-      const { reason, valid, validated } = await this.validate({
+      const { reasons, valid, validated } = await this.validate({
         prop,
         value: this[prop],
       });
@@ -513,7 +652,7 @@ export abstract class SchemaCore {
         continue;
       }
 
-      this.error.add(prop, reason);
+      this.error.add(prop, reasons);
     }
 
     return obj;
@@ -525,9 +664,7 @@ export abstract class SchemaCore {
     if (!this._isProp(prop) && !isSideEffect)
       return { valid: false, reasons: ["Invalid property"] };
 
-    const validator = isSideEffect
-      ? this._propDefinitions[prop].validator
-      : this._getValidations()[prop];
+    const validator = this._getValidator(prop);
 
     if (!validator && isEqual(value, "undefined")) {
       return { valid: false, reasons: ["Invalid value"] };
@@ -535,6 +672,6 @@ export abstract class SchemaCore {
 
     if (validator) return validator(value, this._getContext());
 
-    return { reasons: [""], valid: true, validated: value };
+    return { reasons: [], valid: true, validated: value };
   };
 }

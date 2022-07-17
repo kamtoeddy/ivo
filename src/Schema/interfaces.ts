@@ -10,7 +10,7 @@ export interface IValidateResponse {
 
 export type PropValidatorFunc = (...args: any) => IValidateResponse;
 
-export interface propDefinitionType {
+export interface PropDefinitionRules {
   [key: string]: {
     default?: any;
     dependent?: boolean;
@@ -18,11 +18,22 @@ export interface propDefinitionType {
     onUpdate?: fxLooseObject[];
     readonly?: boolean;
     required?: boolean;
-    sideEffect: boolean;
+    sideEffect?: boolean;
     shouldInit?: boolean;
     validator?: PropValidatorFunc;
   };
 }
+
+export type PropDefinitionRule =
+  | "default"
+  | "dependent"
+  | "onCreate"
+  | "onUpdate"
+  | "readonly"
+  | "required"
+  | "sideEffect"
+  | "shouldInit"
+  | "validator";
 
 interface IOptionsTimestamp {
   createdAt?: string;

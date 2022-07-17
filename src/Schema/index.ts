@@ -6,12 +6,12 @@ import {
   ICloneOptions,
   IModel,
   ISchemaOptions,
-  propDefinitionType,
+  PropDefinitionRules,
 } from "./interfaces";
 import { SchemaCore } from "./SchemaCore";
 
 export class Schema extends SchemaCore {
-  constructor(propDefinitions: propDefinitionType, options: ISchemaOptions) {
+  constructor(propDefinitions: PropDefinitionRules, options: ISchemaOptions) {
     super(propDefinitions, options);
   }
 
