@@ -13,6 +13,7 @@ import { SchemaCore } from "./SchemaCore";
 export class Schema extends SchemaCore {
   constructor(propDefinitions: PropDefinitionRules, options: ISchemaOptions) {
     super(propDefinitions, options);
+    this._checkPropDefinitions();
   }
 
   private _useExtensionOptions = (options: IExtensionOptions) => {
@@ -38,6 +39,12 @@ export class Schema extends SchemaCore {
 class Model extends SchemaCore implements IModel {
   constructor(schema: Schema, values: Record<string, any>) {
     super(schema.propDefinitions, schema.options);
+
+    // this order of assignment is key
+    this.props = this._getProps();
+    this.defaults = this._getDefaults();
+    this.linkedUpdates = this._getLinkedUpdates();
+
     this.setValues(values);
   }
 
@@ -49,7 +56,7 @@ class Model extends SchemaCore implements IModel {
 
   private setValues(values: Record<string, any>) {
     Object.keys(values).forEach((key) => {
-      if (this._isProp(key)) this[key] = values[key];
+      if (this._isProp(key)) this.values[key] = values[key];
     });
   }
 
@@ -119,11 +126,7 @@ class Model extends SchemaCore implements IModel {
 
     updatedKeys.forEach((key: string) => (this.updated[key] = updated[key]));
 
-    if (this._helper.withTimestamp()) {
-      this.updated[this._helper.getUpdateKey()] = new Date();
-    }
-
-    return this.updated;
+    return this._useConfigProps(this.updated, true);
   };
 }
 

@@ -12,5 +12,7 @@ export class SchemaOptions {
   getCreateKey = () => this.keys.createdAt;
   getUpdateKey = () => this.keys.updatedAt;
 
-  withTimestamp = () => !!(this.keys.createdAt || this.keys.updatedAt);
+  get withTimestamp() {
+    return !!(this.keys.createdAt || this.keys.updatedAt);
+  }
 }

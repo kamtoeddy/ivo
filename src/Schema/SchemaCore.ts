@@ -27,12 +27,15 @@ export abstract class SchemaCore {
   protected context: looseObject = {};
   protected updated: looseObject = {};
 
+  protected defaults: looseObject = {};
+  protected linkedUpdates: looseObject = {};
+  protected props: string[] = [];
+  protected values: looseObject = {};
+
   constructor(propDefinitions: PropDefinitionRules, options: ISchemaOptions) {
     this._propDefinitions = propDefinitions;
     this._options = options;
     this._helper = new SchemaOptions(this._makeOptions(options));
-
-    this._checkPropDefinitions();
   }
 
   public get propDefinitions() {
@@ -67,20 +70,17 @@ export abstract class SchemaCore {
 
     for (let prop of props) {
       const isDefOk = this.__isPropDefinitionOk(prop);
-      if (!isDefOk.valid) error.add(prop, isDefOk.reasons!);
+      if (!isDefOk.valid) error.add(prop, isDefOk.reasons);
     }
 
     if (error.isPayloadLoaded) throw error;
   };
 
   protected _getCloneObject = async (toReset: string[] = []) => {
-    const defaults = this._getDefaults();
-    const props = this._getProps();
-
-    let obj: looseObject = props.reduce((values: looseObject, next) => {
+    let obj: looseObject = this.props.reduce((values: looseObject, next) => {
       values[next] = toReset.includes(next)
-        ? defaults[next] ?? this[next]
-        : this[next] ?? defaults[next];
+        ? this.defaults[next] ?? this.values[next]
+        : this.values[next] ?? this.defaults[next];
 
       return values;
     }, {});
@@ -91,19 +91,18 @@ export abstract class SchemaCore {
   };
 
   protected _getContext = (): looseObject => {
-    this._getProps().forEach((prop) => (this.context[prop] = this[prop]));
+    this.props.forEach((prop) => (this.context[prop] = this.values[prop]));
 
     return { ...this.context, ...this.updated };
   };
 
   protected _getCreateActions = () => {
     let actions: fxLooseObject[] = [];
-    const props = this._getProps();
 
-    for (let prop of props) {
-      let _actions = this._getDefinitionValue(prop, "onCreate") ?? [];
-
-      _actions = _actions.filter((action: any) => this._isFunction(action));
+    for (let prop of this.props) {
+      const _actions = (this._getHandlers(prop, "onCreate") ?? []).map(
+        (dt) => dt.method
+      );
 
       if (_actions?.length) actions = [...actions, ..._actions];
     }
@@ -113,19 +112,17 @@ export abstract class SchemaCore {
 
   protected _getCreateObject = async () => {
     const createProps = this._getCreateProps();
-    const defaults = this._getDefaults();
-    const props = this._getProps();
 
     let obj: looseObject = {};
 
-    for (let prop of props) {
+    for (let prop of this.props) {
       const checkLax = this._isLaxProp(prop) && this.hasOwnProperty(prop);
       const isSideInit = this._isSideInit(prop) && this.hasOwnProperty(prop);
 
       if (createProps.includes(prop) || checkLax || isSideInit) {
         const { reasons, valid, validated } = await this.validate({
           prop,
-          value: this[prop],
+          value: this.values[prop],
         });
 
         if (valid) {
@@ -137,7 +134,7 @@ export abstract class SchemaCore {
         this.error.add(prop, reasons);
       }
 
-      obj[prop] = defaults[prop];
+      obj[prop] = this.defaults[prop];
     }
 
     obj = await this._useSideInitProps(obj);
@@ -147,18 +144,17 @@ export abstract class SchemaCore {
 
   protected _getCreateProps = () => {
     const createProps = [];
-    const props = this._getProps();
 
-    for (let prop of props) if (this._canInit(prop)) createProps.push(prop);
+    for (let prop of this.props)
+      if (this._canInit(prop)) createProps.push(prop);
 
     return this._sort(createProps);
   };
 
   protected _getDefaults = () => {
     const defaults: looseObject = {};
-    const props = this._getProps();
 
-    for (let prop of props) {
+    for (let prop of this.props) {
       const _default = this._propDefinitions[prop]?.default;
 
       if (_default !== undefined) defaults[prop] = _default;
@@ -188,16 +184,15 @@ export abstract class SchemaCore {
   protected _getLinkedMethods = (prop: string): fxLooseObject[] => {
     const methods = this._isSideEffect(prop)
       ? this._propDefinitions[prop]?.onUpdate
-      : this._getLinkedUpdates()[prop];
+      : this.linkedUpdates?.[prop];
 
     return methods ?? [];
   };
 
   protected _getLinkedUpdates = () => {
     const _linkedUpdates: looseObject = {};
-    const props = this._getProps();
 
-    for (let prop of props) {
+    for (let prop of this.props) {
       let _updates = this._propDefinitions[prop]?.onUpdate ?? [];
 
       _updates = _updates.filter((action) => this._isFunction(action));
@@ -359,24 +354,15 @@ export abstract class SchemaCore {
   protected _isLaxProp = (prop: string): boolean =>
     this.__isLaxProp(prop).valid;
 
-  // protected _isLinkedProp = (prop: string): boolean => {
-  //   let _updates = this._propDefinitions[prop]?.onUpdate ?? [];
-
-  //   _updates = _updates.filter((action) => this._isFunction(action));
-
-  //   return _updates.length > 0;
-  // };
-
   protected _isLinkedUpdate = (prop: string): boolean =>
     (this._getHandlers(prop, "onUpdate")?.length ?? 0) > 0;
 
-  protected _isProp = (prop: string): boolean =>
-    this._getProps().includes(prop);
+  protected _isProp = (prop: string): boolean => this.props.includes(prop);
 
   protected _isPropDefinitionObjectOk = (prop: string) => {
     const propDef = this._propDefinitions[prop];
 
-    return !propDef || typeof propDef === "object"
+    return propDef && typeof propDef === "object"
       ? { valid: true }
       : {
           reasons: ["Property definitions must be an object"],
@@ -562,7 +548,7 @@ export abstract class SchemaCore {
 
     if (!valid) return this.error.add(prop, reasons);
 
-    const hasChanged = !isEqual(this[prop], validated);
+    const hasChanged = !isEqual(this.values[prop], validated);
 
     if (!isSideEffect && !hasChanged) return;
 
@@ -606,15 +592,27 @@ export abstract class SchemaCore {
   protected _sort = (data: any[]): any[] =>
     data.sort((a, b) => (a < b ? -1 : 1));
 
-  protected _useConfigProps = (obj: looseObject, asUpdate = false) => {
-    const withTimestamp = this._helper.withTimestamp();
+  protected _sortKeys = (obj: looseObject): looseObject => {
+    const keys = this._sort(Object.keys(obj));
 
-    if (!withTimestamp) return obj;
+    return keys.reduce((prev, next) => {
+      prev[next] = obj[next];
+
+      return prev;
+    }, {});
+  };
+
+  protected _useConfigProps = (obj: looseObject, asUpdate = false) => {
+    if (!this._helper.withTimestamp) return obj;
 
     const createdAt = this._helper.getCreateKey(),
       updatedAt = this._helper.getUpdateKey();
 
-    return { ...obj, [createdAt]: new Date(), [updatedAt]: new Date() };
+    const results = asUpdate
+      ? { ...obj, [updatedAt]: new Date() }
+      : { ...obj, [createdAt]: new Date(), [updatedAt]: new Date() };
+
+    return this._sortKeys(results);
   };
 
   protected _useSideInitProps = async (obj: looseObject) => {
