@@ -1,5 +1,6 @@
-export { isArrayOk } from "./array.js";
-export { isBooleanOk } from "./boolean.js";
-export { isJSON } from "./json.js";
-export { isNumberOK } from "./number.js";
-export { isStringOk } from "./string.js";
+export { isArrayOk } from "./array";
+export { isBooleanOk } from "./boolean";
+export { isEmailOk } from "./email";
+export { isJSON } from "./json";
+export { isNumberOK } from "./number";
+export { isStringOk } from "./string";

@@ -106,6 +106,7 @@ These methods are async because custom validators could be async as well.
 - [Helper Validators](./docs/validate/index.md#built-in-validation-helpers)
   - [isArrayOk](./docs/validate/isArrayOk.md)
   - [isBooleanOk](./docs/validate/isBooleanOk.md)
+  - [isEmailOk](./docs/validate/isEmailOk.md)
   - [isNumberOk](./docs/validate/isNumberOk.md)
   - [isStringOk](./docs/validate/isStringOk.md)
 - [ApiError](./docs/api-error.md#structure-of-apierror)

@@ -3,7 +3,7 @@ import { stringPropTypes } from "../utils/interfaces";
 
 export function isStringOk(
   str: any,
-  { match, maxLength = 40, minLength = 1, enums }: stringPropTypes = {}
+  { enums, match, maxLength = 40, minLength = 1 }: stringPropTypes = {}
 ) {
   if (belongsTo(str, [null, undefined]))
     return { valid: false, reasons: ["Unacceptable value"] };
