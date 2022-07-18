@@ -4,7 +4,8 @@ All notable changes to this project will be documented in this file.
 
 # 1.1.3 / 18-07-2022
 
-- [Fix] Schema options still accepting values defined on the schema
+- [Deprecated] Changed schema options.timestamp to timestamps
+- [Fix] Schema options still accepting timestamps with keys already on schema
 - [Docs] Updated docs of how to use [validator.isEmailOk](./validate/isEmailOk.md)
 
 # 1.1.2 / 17-07-2022

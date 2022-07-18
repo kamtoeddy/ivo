@@ -491,19 +491,21 @@ export abstract class SchemaCore {
   };
 
   private _makeOptions(options: ISchemaOptions): Private_ISchemaOptions {
-    if (!options) return { timestamp: { createdAt: "", updatedAt: "" } };
+    if (!options) return { timestamps: { createdAt: "", updatedAt: "" } };
 
-    const { timestamp } = options;
+    let { timestamp, timestamps } = options;
+
+    timestamps = timestamps ?? timestamp;
 
     let createdAt = "createdAt",
       updatedAt = "updatedAt";
 
-    if (!timestamp || timestamp === true) {
-      let _timestamp = timestamp
+    if (!timestamps || timestamps === true) {
+      let _timestamp = timestamps
         ? { createdAt, updatedAt }
         : { createdAt: "", updatedAt: "" };
 
-      return { ...options, timestamp: _timestamp };
+      return { ...options, timestamps: _timestamp };
     }
 
     const _error = new ApiError({
@@ -511,8 +513,8 @@ export abstract class SchemaCore {
       statusCode: 500,
     });
 
-    const custom_createdAt = timestamp?.createdAt;
-    const custom_updatedAt = timestamp?.updatedAt;
+    const custom_createdAt = timestamps?.createdAt;
+    const custom_updatedAt = timestamps?.updatedAt;
 
     const _props = this._getProps();
 
@@ -531,7 +533,7 @@ export abstract class SchemaCore {
     if (custom_createdAt) createdAt = custom_createdAt;
     if (custom_updatedAt) updatedAt = custom_updatedAt;
 
-    return { ...options, timestamp: { createdAt, updatedAt } };
+    return { ...options, timestamps: { createdAt, updatedAt } };
   }
 
   protected _resolveLinkedValue = async (
@@ -606,7 +608,7 @@ export abstract class SchemaCore {
   };
 
   protected _useConfigProps = (obj: looseObject, asUpdate = false) => {
-    if (!this._helper.withTimestamp) return obj;
+    if (!this._helper.withTimestamps) return obj;
 
     const createdAt = this._helper.getCreateKey(),
       updatedAt = this._helper.getUpdateKey();

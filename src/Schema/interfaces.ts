@@ -49,10 +49,11 @@ export interface ITimestamp {
 
 export interface ISchemaOptions {
   timestamp?: boolean | IOptionsTimestamp;
+  timestamps?: boolean | IOptionsTimestamp;
 }
 
 export interface Private_ISchemaOptions {
-  timestamp: ITimestamp;
+  timestamps: ITimestamp;
 }
 
 export interface IExtensionOptions {

@@ -4,15 +4,15 @@ export class SchemaOptions {
   private keys: ITimestamp;
 
   constructor(config: Private_ISchemaOptions) {
-    const { timestamp } = config;
+    const { timestamps } = config;
 
-    this.keys = timestamp;
+    this.keys = timestamps;
   }
 
   getCreateKey = () => this.keys.createdAt;
   getUpdateKey = () => this.keys.updatedAt;
 
-  get withTimestamp() {
+  get withTimestamps() {
     return !!(this.keys.createdAt || this.keys.updatedAt);
   }
 }
