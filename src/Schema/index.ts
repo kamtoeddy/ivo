@@ -63,10 +63,10 @@ class Model extends SchemaCore implements IModel {
     });
   }
 
-  clone = async (options: ICloneOptions = { toReset: [] }) => {
-    const { toReset } = options;
+  clone = async (options: ICloneOptions = { reset: [] }) => {
+    const { reset } = options;
 
-    const cloned = await this._getCloneObject(toReset);
+    const cloned = await this._getCloneObject(reset);
 
     return this._handleCreateActions(cloned);
   };
@@ -104,12 +104,9 @@ class Model extends SchemaCore implements IModel {
         continue;
       }
 
-      const hasChanged = !isEqual(this[prop], validated);
+      const hasChanged = !isEqual(this.values[prop], validated);
 
-      if (valid && hasChanged) {
-        this.updated[prop] = validated;
-        continue;
-      }
+      if (valid && hasChanged) this.updated[prop] = validated;
     }
 
     for (let prop of linkedOrSideEffects)

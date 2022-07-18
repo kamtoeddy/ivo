@@ -65,7 +65,7 @@ export interface IExtensionOptions {
 }
 
 export interface ICloneOptions {
-  toReset?: string[];
+  reset?: string[];
 }
 
 export interface IValidateProps {

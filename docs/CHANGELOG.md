@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+# 1.1.8 / 19-07-2022
+
+- [Fix] non readonly|required not being initialized
+- [Fix] updates not working properly
+
 # 1.1.7 / 18-07-2022
 
 - [Added] Updated type definitions of onCreate/onUpdate handlers for typescript

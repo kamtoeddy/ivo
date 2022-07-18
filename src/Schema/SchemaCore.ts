@@ -53,13 +53,12 @@ export abstract class SchemaCore {
   }
 
   protected _canInit = (prop: string): boolean => {
+    if (this._isDependentProp(prop)) return false;
+
     const propDef = this._propDefinitions[prop];
 
     if (!propDef) return false;
-
     const { readonly, required, shouldInit } = propDef;
-
-    if (this._isDependentProp(prop)) return false;
 
     if (!readonly && !required) return false;
 
@@ -82,9 +81,9 @@ export abstract class SchemaCore {
     if (error.isPayloadLoaded) throw error;
   };
 
-  protected _getCloneObject = async (toReset: string[] = []) => {
+  protected _getCloneObject = async (reset: string[] = []) => {
     let obj: looseObject = this.props.reduce((values: looseObject, next) => {
-      values[next] = toReset.includes(next)
+      values[next] = reset.includes(next)
         ? this.defaults[next] ?? this.values[next]
         : this.values[next] ?? this.defaults[next];
 
@@ -122,8 +121,10 @@ export abstract class SchemaCore {
     let obj: looseObject = {};
 
     for (let prop of this.props) {
-      const checkLax = this._isLaxProp(prop) && this.hasOwnProperty(prop);
-      const isSideInit = this._isSideInit(prop) && this.hasOwnProperty(prop);
+      const checkLax =
+        this._isLaxProp(prop) && this.values.hasOwnProperty(prop);
+      const isSideInit =
+        this._isSideInit(prop) && this.values.hasOwnProperty(prop);
 
       if (createProps.includes(prop) || checkLax || isSideInit) {
         const { reasons, valid, validated } = await this.validate({
@@ -629,7 +630,8 @@ export abstract class SchemaCore {
     const sideEffectProps = this._getSideEffects();
 
     for (let prop of sideEffectProps) {
-      if (!this._isSideInit(prop) || !this.hasOwnProperty(prop)) continue;
+      if (!this._isSideInit(prop) || !this.values.hasOwnProperty(prop))
+        continue;
 
       const { reasons, valid, validated } = await this.validate({
         prop,
