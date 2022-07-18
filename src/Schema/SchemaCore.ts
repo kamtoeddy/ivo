@@ -13,7 +13,8 @@ import {
 } from "./interfaces";
 import { SchemaOptions } from "./SchemaOptions";
 
-const defaultOptions: ISchemaOptions = { timestamps: false };
+export const defaultOptions: ISchemaOptions = { timestamps: false };
+
 const lifeCycleRules: LifeCycleRule[] = ["onCreate", "onUpdate"];
 
 export abstract class SchemaCore {

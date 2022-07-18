@@ -8,10 +8,13 @@ import {
   ISchemaOptions,
   PropDefinitionRules,
 } from "./interfaces";
-import { SchemaCore } from "./SchemaCore";
+import { defaultOptions, SchemaCore } from "./SchemaCore";
 
 export class Schema extends SchemaCore {
-  constructor(propDefinitions: PropDefinitionRules, options: ISchemaOptions) {
+  constructor(
+    propDefinitions: PropDefinitionRules,
+    options: ISchemaOptions = defaultOptions
+  ) {
     super(propDefinitions, options);
     this._checkPropDefinitions();
   }

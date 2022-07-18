@@ -2,9 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+# 1.1.5 / 18-07-2022
+
+- [Fix] Fixed issue with clean-schema requiring options parameter on Schema constructor
+
 # 1.1.4 / 18-07-2022
 
-- [Fix] Fixed issue with clean-schema requiring options parameter
+- [Fix] Fixed issue with clean-schema requiring options parameter on SchemaCore constructor
 
 # 1.1.3 / 18-07-2022
 
