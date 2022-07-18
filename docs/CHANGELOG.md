@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# 1.1.4 / 18-07-2022
+
+- [Fix] Fixed issue with clean-schema requiring options parameter
+
 # 1.1.3 / 18-07-2022
 
 - [Deprecated] Changed schema options.timestamp to timestamps

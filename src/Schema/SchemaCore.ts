@@ -13,6 +13,7 @@ import {
 } from "./interfaces";
 import { SchemaOptions } from "./SchemaOptions";
 
+const defaultOptions: ISchemaOptions = { timestamps: false };
 const lifeCycleRules: LifeCycleRule[] = ["onCreate", "onUpdate"];
 
 export abstract class SchemaCore {
@@ -32,7 +33,10 @@ export abstract class SchemaCore {
   protected props: string[] = [];
   protected values: looseObject = {};
 
-  constructor(propDefinitions: PropDefinitionRules, options: ISchemaOptions) {
+  constructor(
+    propDefinitions: PropDefinitionRules,
+    options: ISchemaOptions = defaultOptions
+  ) {
     this._propDefinitions = propDefinitions;
     this._options = options;
 
