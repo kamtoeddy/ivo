@@ -1,6 +1,8 @@
 import { looseObject } from "../utils/interfaces";
 
-export type fxLooseObject = (...args: any) => Promise<looseObject>;
+export type fxLooseObject = (
+  ...args: any
+) => looseObject | Promise<looseObject>;
 
 export interface IValidateResponse {
   reasons?: string[];

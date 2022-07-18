@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# 1.1.7 / 18-07-2022
+
+- [Added] Updated type definitions of onCreate/onUpdate handlers for typescript
+
 # 1.1.6 / 18-07-2022
 
 - [Added] Updated type definitions for typescript support
