@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# 1.1.6 / 18-07-2022
+
+- [Added] Updated type definitions for ts support
+
 # 1.1.5 / 18-07-2022
 
 - [Fix] Fixed issue with clean-schema requiring options parameter on Schema constructor

@@ -8,7 +8,9 @@ export interface IValidateResponse {
   validated?: any;
 }
 
-export type PropValidatorFunc = (...args: any) => IValidateResponse;
+export type PropValidatorFunc = (
+  ...args: any
+) => IValidateResponse | Promise<IValidateResponse>;
 
 export interface PropDefinitionRules {
   [key: string]: {
