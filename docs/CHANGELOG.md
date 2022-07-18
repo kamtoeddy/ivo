@@ -1,0 +1,31 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+# 1.1.3 / 18-07-2022
+
+- [Fix] Schema options still accepting values defined on the schema
+- [Docs] Updated docs of how to use [validator.isEmailOk](./validate/isEmailOk.md)
+
+# 1.1.2 / 17-07-2022
+
+- [Docs] Added Changelog
+
+# 1.1.1 / 17-07-2022
+
+- [Added] Possibility to use custom regular expression with [validator.isEmailOk](./validate/isEmailOk.md)
+
+- [Fix] Internal mechanism in charge of data manipulation which would cause bugs
+
+# 1.1.0 / 17-07-2022
+
+- [Docs] Imporved details of invalid schema error for onCreate & onUpdate methods
+
+# 1.0.35 / 16-07-2022
+
+- [Added] Built-in validator for emails [validator.isEmailOk](./validate/isEmailOk.md)
+- [Docs] Improved details of invalid schema error
+
+# 1.0.34 / 15-07-2022
+
+- [Added] Possibility to override built in property names for timestamps

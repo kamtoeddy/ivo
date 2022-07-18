@@ -12,6 +12,7 @@ validate.isEmailOk(" john@doe.com"); // { reasons: [], valid: true, validated: "
 
 ### Parameters
 
-| Position | Property | Type | Description                    |
-| -------- | -------- | ---- | ------------------------------ |
-| 1        | value    | any  | The value you wish to validate |
+| Position | Property    | Type   | Description                                       |
+| -------- | ----------- | ------ | ------------------------------------------------- |
+| 1        | value       | any    | The value you wish to validate                    |
+| 2        | customRegEx | RegExp | The custom regular expression that should be used |

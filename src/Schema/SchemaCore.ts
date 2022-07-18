@@ -18,11 +18,11 @@ const lifeCycleRules: LifeCycleRule[] = ["onCreate", "onUpdate"];
 export abstract class SchemaCore {
   [key: string]: any;
 
-  protected _propDefinitions: PropDefinitionRules = {};
-  protected _options: ISchemaOptions;
-  protected _helper: SchemaOptions;
-
   protected error = new ApiError({ message: "Validation Error" });
+
+  protected _helper: SchemaOptions;
+  protected _options: ISchemaOptions;
+  protected _propDefinitions: PropDefinitionRules = {};
 
   protected context: looseObject = {};
   protected updated: looseObject = {};
@@ -35,15 +35,16 @@ export abstract class SchemaCore {
   constructor(propDefinitions: PropDefinitionRules, options: ISchemaOptions) {
     this._propDefinitions = propDefinitions;
     this._options = options;
-    this._helper = new SchemaOptions(this._makeOptions(options));
-  }
 
-  public get propDefinitions() {
-    return this._propDefinitions;
+    this._helper = new SchemaOptions(this._makeOptions(options));
   }
 
   public get options() {
     return this._options;
+  }
+
+  public get propDefinitions() {
+    return this._propDefinitions;
   }
 
   protected _canInit = (prop: string): boolean => {
@@ -497,7 +498,7 @@ export abstract class SchemaCore {
     let createdAt = "createdAt",
       updatedAt = "updatedAt";
 
-    if (typeof timestamp === "boolean") {
+    if (!timestamp || timestamp === true) {
       let _timestamp = timestamp
         ? { createdAt, updatedAt }
         : { createdAt: "", updatedAt: "" };
@@ -513,8 +514,10 @@ export abstract class SchemaCore {
     const custom_createdAt = timestamp?.createdAt;
     const custom_updatedAt = timestamp?.updatedAt;
 
+    const _props = this._getProps();
+
     [custom_createdAt, custom_updatedAt].forEach((value) => {
-      if (value && this._isProp(value)) {
+      if (value && _props?.includes(value)) {
         _error.add(value, `'${value}' already belong to your schema`);
       }
     });
