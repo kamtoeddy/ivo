@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# 1.1.9 / 19-07-2022
+
+- [Fix] invalid properties crashing create & updates properly
+
 # 1.1.8 / 19-07-2022
 
 - [Fix] non readonly|required not being initialized

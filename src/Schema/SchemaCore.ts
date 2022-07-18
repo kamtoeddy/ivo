@@ -308,7 +308,7 @@ export abstract class SchemaCore {
 
     const isPopDefOk = this._isPropDefinitionObjectOk(prop);
 
-    if (!isPopDefOk.valid) reasons = reasons.concat(isPopDefOk.reasons!);
+    if (!isPopDefOk.valid) return isPopDefOk;
 
     const propDef = this._propDefinitions[prop];
 
@@ -334,7 +334,7 @@ export abstract class SchemaCore {
 
     const isPopDefOk = this._isPropDefinitionObjectOk(prop);
 
-    if (!isPopDefOk.valid) reasons = reasons.concat(isPopDefOk.reasons!);
+    if (!isPopDefOk.valid) return isPopDefOk;
 
     const hasDefaultValue = this._hasDefault(prop),
       isDependent = this._isDependentProp(prop);
@@ -387,12 +387,12 @@ export abstract class SchemaCore {
     const dependentDef = this.__isDependentProp(prop);
 
     if (this._has(prop, "dependent") && !dependentDef.valid)
-      reasons = reasons.concat(dependentDef.reasons);
+      reasons = reasons.concat(dependentDef.reasons!);
 
     const sideEffectDef = this.__isSideEffect(prop);
 
     if (this._has(prop, "sideEffect") && !sideEffectDef.valid)
-      reasons = reasons.concat(sideEffectDef.reasons);
+      reasons = reasons.concat(sideEffectDef.reasons!);
 
     if (this._has(prop, "validator") && !this._isValidatorOk(prop))
       reasons.push("Invalid validator");
@@ -440,7 +440,7 @@ export abstract class SchemaCore {
 
     const isPopDefOk = this._isPropDefinitionObjectOk(prop);
 
-    if (!isPopDefOk.valid) reasons = reasons.concat(isPopDefOk.reasons!);
+    if (!isPopDefOk.valid) return isPopDefOk;
 
     if (this._has(prop, ["default", "readonly", "required"]))
       reasons.push(
@@ -475,7 +475,7 @@ export abstract class SchemaCore {
   protected _isUpdatable = (prop: string) => {
     if (!this._isProp(prop)) return false;
 
-    const readonly = this._propDefinitions[prop]?.readonly;
+    const readonly = this._propDefinitions?.[prop]?.readonly;
 
     return !readonly || (readonly && !this._hasChanged(prop));
   };
