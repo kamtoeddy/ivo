@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# 1.1.11 / 19-07-2022
+
+- [Fix] error: Exported variable 'YourModel' has or is using name 'Model' from external module "clean-schema" but cannot be named.
+
 # 1.1.10 / 19-07-2022
 
 - [Added] generics for typescript
