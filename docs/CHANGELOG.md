@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# 1.1.10 / 19-07-2022
+
+- [Added] generics for typescript
+
 # 1.1.9 / 19-07-2022
 
 - [Fix] invalid properties crashing create & updates properly

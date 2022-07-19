@@ -1,16 +1,15 @@
 import { asArray } from "../utils/asArray";
-import { looseObject } from "../utils/interfaces";
+import { ILooseObject } from "../utils/interfaces";
 import { isEqual } from "../utils/isEqual";
 import {
   IExtensionOptions,
   ICloneOptions,
-  IModel,
   ISchemaOptions,
   PropDefinitionRules,
 } from "./interfaces";
 import { defaultOptions, SchemaCore } from "./SchemaCore";
 
-export class Schema extends SchemaCore {
+export class Schema extends SchemaCore<Schema> {
   constructor(
     propDefinitions: PropDefinitionRules,
     options: ISchemaOptions = defaultOptions
@@ -39,8 +38,8 @@ export class Schema extends SchemaCore {
   };
 }
 
-class Model extends SchemaCore implements IModel {
-  constructor(schema: Schema, values: Record<string, any>) {
+class Model<T extends ILooseObject> extends SchemaCore<T> {
+  constructor(schema: Schema, values: Partial<T>) {
     super(schema.propDefinitions, schema.options);
 
     // this order of assignment is key
@@ -51,16 +50,16 @@ class Model extends SchemaCore implements IModel {
     this.setValues(values);
   }
 
-  static build(schema: Schema) {
-    return function Builder(values: Record<string, any>) {
-      return new Model(schema, values);
-    };
+  private setValues(values: Partial<T>) {
+    Object.keys(values).forEach((key) => {
+      if (this._isProp(key)) this.values[key as keyof T] = values[key];
+    });
   }
 
-  private setValues(values: Record<string, any>) {
-    Object.keys(values).forEach((key) => {
-      if (this._isProp(key)) this.values[key] = values[key];
-    });
+  static build<U extends ILooseObject>(schema: Schema) {
+    return function Builder(values: Partial<U>) {
+      return new Model(schema, values);
+    };
   }
 
   clone = async (options: ICloneOptions = { reset: [] }) => {
@@ -79,7 +78,7 @@ class Model extends SchemaCore implements IModel {
     return this._handleCreateActions(obj);
   };
 
-  update = async (changes: Record<string, any>) => {
+  update = async (changes: Partial<T>) => {
     this.updated = {};
 
     const toUpdate = Object.keys(changes ?? {});
@@ -106,7 +105,8 @@ class Model extends SchemaCore implements IModel {
 
       const hasChanged = !isEqual(this.values[prop], validated);
 
-      if (valid && hasChanged) this.updated[prop] = validated;
+      if (valid && hasChanged)
+        this.updated[prop as keyof Partial<T>] = validated;
     }
 
     for (let prop of linkedOrSideEffects)
@@ -119,12 +119,14 @@ class Model extends SchemaCore implements IModel {
     const updatedKeys = this._sort(Object.keys(this.updated));
     if (!updatedKeys.length) this._throwErrors("Nothing to update");
 
-    const updated: looseObject = { ...this.updated };
+    const updated: T = { ...this.updated } as T;
 
-    this.context = {};
+    this.context = {} as T;
     this.updated = {};
 
-    updatedKeys.forEach((key: string) => (this.updated[key] = updated[key]));
+    updatedKeys.forEach(
+      (key: string) => (this.updated[key as keyof T] = updated[key])
+    );
 
     return this._useConfigProps(this.updated, true);
   };

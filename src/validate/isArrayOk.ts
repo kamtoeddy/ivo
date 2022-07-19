@@ -1,4 +1,4 @@
-import { makeUnique } from "../utils/functions";
+import { getUniqueBy } from "../utils/getUniqueBy";
 
 type funcFilter = (data: any) => boolean;
 type funcModifier = (data: any) => any;
@@ -8,7 +8,7 @@ export async function isArrayOk(
   arr: any[] = [],
   {
     empty = false,
-    sorted = true,
+    sorted = false,
     filter = (data) => false,
     modifier,
     sorter,
@@ -47,10 +47,9 @@ export async function isArrayOk(
   }
 
   if (unique && _array.length) {
-    _array =
-      typeof _array[0] === "object"
-        ? makeUnique({ data: _array, key: uniqueKey })
-        : [...new Set(_array)];
+    const asObject = typeof _array[0] === "object" && uniqueKey;
+
+    _array = asObject ? getUniqueBy(_array, uniqueKey) : getUniqueBy(_array);
   }
 
   if (sorted) {

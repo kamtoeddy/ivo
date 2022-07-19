@@ -1,8 +1,8 @@
-import { looseObject } from "../utils/interfaces";
+import { ILooseObject } from "../utils/interfaces";
 
 export type fxLooseObject = (
   ...args: any
-) => looseObject | Promise<looseObject>;
+) => ILooseObject | Promise<ILooseObject>;
 
 export interface IValidateResponse {
   reasons?: string[];
@@ -73,11 +73,11 @@ export interface IValidateProps {
   value: any;
 }
 
-export type ModelCreateMethod = () => Promise<looseObject>;
+export type ModelCreateMethod<T extends ILooseObject> = () => Promise<T>;
 
 export type ModelCloneMethod = (
   options?: ICloneOptions
-) => Promise<looseObject>;
+) => Promise<ILooseObject>;
 
 export type ModelValidateMethod = (
   props: IValidateProps
@@ -85,10 +85,10 @@ export type ModelValidateMethod = (
 
 export type ModelUpdateMethod = (
   changed: Record<string, any>
-) => Promise<looseObject>;
+) => Promise<ILooseObject>;
 
-export interface IModel {
-  create: ModelCreateMethod;
-  clone: ModelCloneMethod;
-  update: ModelUpdateMethod;
-}
+// export interface IModel {
+//   create<>: ModelCreateMethod<T>;
+//   clone: ModelCloneMethod;
+//   update: ModelUpdateMethod;
+// }

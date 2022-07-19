@@ -1,6 +1,6 @@
 import { ApiError } from "../utils/ApiError";
 import { belongsTo } from "../utils/functions";
-import { looseObject } from "../utils/interfaces";
+import { ILooseObject } from "../utils/interfaces";
 import { isEqual } from "../utils/isEqual";
 import {
   fxLooseObject,
@@ -17,8 +17,8 @@ export const defaultOptions: ISchemaOptions = { timestamps: false };
 
 const lifeCycleRules: LifeCycleRule[] = ["onCreate", "onUpdate"];
 
-export abstract class SchemaCore {
-  [key: string]: any;
+export abstract class SchemaCore<T extends ILooseObject> {
+  // [key: string]: any;
 
   protected error = new ApiError({ message: "Validation Error" });
 
@@ -26,13 +26,13 @@ export abstract class SchemaCore {
   protected _options: ISchemaOptions;
   protected _propDefinitions: PropDefinitionRules = {};
 
-  protected context: looseObject = {};
-  protected updated: looseObject = {};
+  protected context: T = {} as T;
+  protected updated: Partial<T> = {};
 
-  protected defaults: looseObject = {};
-  protected linkedUpdates: looseObject = {};
+  protected defaults: Partial<T> = {};
+  protected linkedUpdates: ILooseObject = {};
   protected props: string[] = [];
-  protected values: looseObject = {};
+  protected values: Partial<T> = {};
 
   constructor(
     propDefinitions: PropDefinitionRules,
@@ -82,23 +82,27 @@ export abstract class SchemaCore {
   };
 
   protected _getCloneObject = async (reset: string[] = []) => {
-    let obj: looseObject = this.props.reduce((values: looseObject, next) => {
-      values[next] = reset.includes(next)
-        ? this.defaults[next] ?? this.values[next]
-        : this.values[next] ?? this.defaults[next];
+    let obj: T = this.props.reduce((values: T, next) => {
+      values[next as keyof T] = (
+        reset.includes(next)
+          ? this.defaults[next] ?? this.values[next]
+          : this.values[next] ?? this.defaults[next]
+      )!;
 
       return values;
-    }, {});
+    }, {} as T);
 
     obj = await this._useSideInitProps(obj);
 
-    return this._useConfigProps(obj);
+    return this._useConfigProps(obj) as T;
   };
 
-  protected _getContext = (): looseObject => {
-    this.props.forEach((prop) => (this.context[prop] = this.values[prop]));
+  protected _getContext = (): T => {
+    this.props.forEach(
+      (prop) => (this.context[prop as keyof T] = this.values[prop]!)
+    );
 
-    return { ...this.context, ...this.updated };
+    return { ...this.context, ...this.updated } as T;
   };
 
   protected _getCreateActions = () => {
@@ -118,7 +122,7 @@ export abstract class SchemaCore {
   protected _getCreateObject = async () => {
     const createProps = this._getCreateProps();
 
-    let obj: looseObject = {};
+    let obj: T = {} as T;
 
     for (let prop of this.props) {
       const checkLax =
@@ -133,7 +137,7 @@ export abstract class SchemaCore {
         });
 
         if (valid) {
-          obj[prop] = validated;
+          obj[prop as keyof T] = validated;
 
           continue;
         }
@@ -141,12 +145,12 @@ export abstract class SchemaCore {
         this.error.add(prop, reasons);
       }
 
-      obj[prop] = this.defaults[prop];
+      obj[prop as keyof T] = this.defaults[prop]!;
     }
 
     obj = await this._useSideInitProps(obj);
 
-    return this._useConfigProps(obj);
+    return this._useConfigProps(obj) as T;
   };
 
   protected _getCreateProps = () => {
@@ -159,12 +163,12 @@ export abstract class SchemaCore {
   };
 
   protected _getDefaults = () => {
-    const defaults: looseObject = {};
+    const defaults: Partial<T> = {};
 
     for (let prop of this.props) {
       const _default = this._propDefinitions[prop]?.default;
 
-      if (_default !== undefined) defaults[prop] = _default;
+      if (_default !== undefined) defaults[prop as keyof T] = _default;
     }
 
     return defaults;
@@ -197,7 +201,7 @@ export abstract class SchemaCore {
   };
 
   protected _getLinkedUpdates = () => {
-    const _linkedUpdates: looseObject = {};
+    const _linkedUpdates: ILooseObject = {};
 
     for (let prop of this.props) {
       let _updates = this._propDefinitions[prop]?.onUpdate ?? [];
@@ -237,7 +241,7 @@ export abstract class SchemaCore {
   protected _getValidator = (prop: string) =>
     this._propDefinitions[prop]?.validator;
 
-  protected _handleCreateActions = async (data: looseObject = {}) => {
+  protected _handleCreateActions = async (data: T = {} as T) => {
     const actions = this._getCreateActions();
 
     for (const cb of actions) {
@@ -252,13 +256,13 @@ export abstract class SchemaCore {
 
         const _value = extra[_prop];
 
-        data[_prop] = _value;
+        data[_prop as keyof Partial<T>] = _value;
 
         await this._resolveLinkedValue(data, _prop, _value);
       }
     }
 
-    this.context = {};
+    this.context = {} as T;
 
     return data;
   };
@@ -279,7 +283,15 @@ export abstract class SchemaCore {
     return !isEqual(propDef.default, undefined);
   };
 
-  protected _has = (
+  protected _hasHandlersFor = (
+    prop: string,
+    type: "onCreate" | "onUpdate" = "onUpdate",
+    _number = 1
+  ) => {
+    return this._getHandlers(prop, type)?.length ?? 0 >= _number;
+  };
+
+  protected _hasProp = (
     prop: string,
     rules: PropDefinitionRule | PropDefinitionRule[]
   ): boolean => {
@@ -293,14 +305,6 @@ export abstract class SchemaCore {
       if (Object(propDef).hasOwnProperty(_prop)) return true;
 
     return false;
-  };
-
-  protected _hasHandlersFor = (
-    prop: string,
-    type: "onCreate" | "onUpdate" = "onUpdate",
-    _number = 1
-  ) => {
-    return this._getHandlers(prop, type)?.length ?? 0 >= _number;
   };
 
   protected __isDependentProp = (prop: string) => {
@@ -386,19 +390,19 @@ export abstract class SchemaCore {
 
     const dependentDef = this.__isDependentProp(prop);
 
-    if (this._has(prop, "dependent") && !dependentDef.valid)
+    if (this._hasProp(prop, "dependent") && !dependentDef.valid)
       reasons = reasons.concat(dependentDef.reasons!);
 
     const sideEffectDef = this.__isSideEffect(prop);
 
-    if (this._has(prop, "sideEffect") && !sideEffectDef.valid)
+    if (this._hasProp(prop, "sideEffect") && !sideEffectDef.valid)
       reasons = reasons.concat(sideEffectDef.reasons!);
 
-    if (this._has(prop, "validator") && !this._isValidatorOk(prop))
+    if (this._hasProp(prop, "validator") && !this._isValidatorOk(prop))
       reasons.push("Invalid validator");
 
     for (let rule of lifeCycleRules) {
-      if (!this._has(prop, rule)) continue;
+      if (!this._hasProp(prop, rule)) continue;
 
       const invalidHandlers = this._getHandlers(prop, rule, false);
 
@@ -413,14 +417,14 @@ export abstract class SchemaCore {
 
     if (
       this._getDefinitionValue(prop, "shouldInit") === false &&
-      !this._has(prop, "default")
+      !this._hasProp(prop, "default")
     )
       reasons.push(
         "A property that should not be initialized must have a default value other than 'undefined'"
       );
 
     if (
-      !this._has(prop, ["default", "readonly", "required"]) &&
+      !this._hasProp(prop, ["default", "readonly", "required"]) &&
       !this._isDependentProp(prop) &&
       !this._isLaxProp(prop) &&
       !this._isSideEffect(prop)
@@ -442,7 +446,7 @@ export abstract class SchemaCore {
 
     if (!isPopDefOk.valid) return isPopDefOk;
 
-    if (this._has(prop, ["default", "readonly", "required"]))
+    if (this._hasProp(prop, ["default", "readonly", "required"]))
       reasons.push(
         "SideEffects cannot have default, readonly, required as 'true'"
       );
@@ -483,7 +487,7 @@ export abstract class SchemaCore {
   protected _isUpdatableInCTX = (
     prop: string,
     value: any,
-    context: looseObject = this._getContext()
+    context: ILooseObject = this._getContext()
   ) => {
     if (!this._isProp(prop)) return false;
 
@@ -543,7 +547,7 @@ export abstract class SchemaCore {
   }
 
   protected _resolveLinkedValue = async (
-    contextObject: looseObject = {},
+    contextObject: ILooseObject = {},
     prop: string,
     value: any
   ) => {
@@ -563,7 +567,7 @@ export abstract class SchemaCore {
 
     if (!isSideEffect && !hasChanged) return;
 
-    if (isSideEffect) this.context[prop] = validated;
+    if (isSideEffect) this.context[prop as keyof T] = validated;
 
     const context = { ...this._getContext(), ...contextObject };
 
@@ -603,7 +607,7 @@ export abstract class SchemaCore {
   protected _sort = (data: any[]): any[] =>
     data.sort((a, b) => (a < b ? -1 : 1));
 
-  protected _sortKeys = (obj: looseObject): looseObject => {
+  protected _sortKeys = (obj: Partial<T>): Partial<T> => {
     const keys = this._sort(Object.keys(obj));
 
     return keys.reduce((prev, next) => {
@@ -613,7 +617,7 @@ export abstract class SchemaCore {
     }, {});
   };
 
-  protected _useConfigProps = (obj: looseObject, asUpdate = false) => {
+  protected _useConfigProps = (obj: T | Partial<T>, asUpdate = false) => {
     if (!this._helper.withTimestamps) return obj;
 
     const createdAt = this._helper.getCreateKey(),
@@ -626,7 +630,7 @@ export abstract class SchemaCore {
     return this._sortKeys(results);
   };
 
-  protected _useSideInitProps = async (obj: looseObject) => {
+  protected _useSideInitProps = async (obj: T) => {
     const sideEffectProps = this._getSideEffects();
 
     for (let prop of sideEffectProps) {
@@ -635,14 +639,14 @@ export abstract class SchemaCore {
 
       const { reasons, valid, validated } = await this.validate({
         prop,
-        value: this[prop],
+        value: this.values?.[prop],
       });
 
       if (valid) {
         const methods = this._getLinkedMethods(prop);
         const context = this._getContext();
 
-        context[prop] = validated;
+        context[prop as keyof T] = validated;
 
         for (const cb of methods) {
           const extra = await cb(context);
@@ -650,7 +654,7 @@ export abstract class SchemaCore {
           if (typeof extra !== "object") continue;
 
           Object.keys(extra).forEach((_prop) => {
-            if (this._isProp(_prop)) obj[_prop] = extra[_prop];
+            if (this._isProp(_prop)) obj[_prop as keyof T] = extra[_prop];
           });
         }
 

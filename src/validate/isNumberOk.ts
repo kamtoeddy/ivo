@@ -36,7 +36,7 @@ function makeRage(range: rangeType): rangeType {
   return range;
 }
 
-export function isNumberOK(num: any, { range }: { range?: rangeType } = {}) {
+export function isNumberOk(num: any, { range }: { range?: rangeType } = {}) {
   let valid = true,
     reasons: string[] = [];
 

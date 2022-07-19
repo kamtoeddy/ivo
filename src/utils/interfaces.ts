@@ -14,9 +14,7 @@ export interface datePropTypes {
   enums?: Date[];
 }
 
-export interface looseObject {
-  [key: string]: any;
-}
+export type ILooseObject = Record<string, any>;
 
 export interface stringPropTypes {
   enums?: string[];
