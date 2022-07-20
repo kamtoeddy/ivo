@@ -506,19 +506,17 @@ export abstract class SchemaCore<T extends ILooseObject> {
   private _makeOptions(options: ISchemaOptions): Private_ISchemaOptions {
     if (!options) return { timestamps: { createdAt: "", updatedAt: "" } };
 
-    let { timestamp, timestamps } = options;
-
-    timestamps = timestamps ?? timestamp;
+    let { timestamps } = options;
 
     let createdAt = "createdAt",
       updatedAt = "updatedAt";
 
     if (!timestamps || timestamps === true) {
-      let _timestamp = timestamps
+      let _timestamps = timestamps
         ? { createdAt, updatedAt }
         : { createdAt: "", updatedAt: "" };
 
-      return { ...options, timestamps: _timestamp };
+      return { ...options, timestamps: _timestamps };
     }
 
     const _error = new ApiError({

@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 - [Added] Possibility to pass a string/string[] as options when cloning an entity.
 - [Docs] Updated docs on structure of validator functions.
 - [Docs] Updated some errors in docs.
+- [Removed] Schema options.timestamp so only options.timestamps is supported.
 
 # 1.1.11 / 19-07-2022
 

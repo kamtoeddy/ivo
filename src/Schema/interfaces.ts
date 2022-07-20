@@ -52,7 +52,6 @@ export interface ITimestamp {
 }
 
 export interface ISchemaOptions {
-  timestamp?: boolean | IOptionsTimestamp;
   timestamps?: boolean | IOptionsTimestamp;
 }
 
