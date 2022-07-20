@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# 1.2.0 / 20-07-2022
+
+- [Removed] Schema options.timestamp so only options.timestamps is supported.
+
 # 1.1.12 / 20-07-2022
 
 - [Added] Possibility to pass a string/string[] as options when cloning an entity.
