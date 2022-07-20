@@ -16,9 +16,7 @@ export class Schema extends SchemaCore<Schema> {
   }
 
   private _useExtensionOptions = (options: IExtensionOptions) => {
-    let { remove } = options;
-
-    remove = asArray(options.remove);
+    const remove = asArray(options.remove);
 
     remove?.forEach((prop) => delete this._propDefinitions?.[prop]);
   };

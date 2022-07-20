@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+# 1.1.12 / 20-07-2022
+
+- [Added] Possibility to pass a string/string[] as options when cloning an entity.
+- [Docs] Updated docs on structure of validator functions.
+- [Docs] Updated some errors in docs.
+
 # 1.1.11 / 19-07-2022
 
 - [Fix] error: Exported variable 'YourModel' has or is using name 'Model' from external module "clean-schema" but cannot be named.

@@ -1,4 +1,5 @@
 import { Schema } from ".";
+import { asArray } from "../utils/asArray";
 import { ILooseObject } from "../utils/interfaces";
 import { isEqual } from "../utils/isEqual";
 import { ICloneOptions } from "./interfaces";
@@ -29,9 +30,7 @@ export class Model<T extends ILooseObject> extends SchemaCore<T> {
   }
 
   clone = async (options: ICloneOptions = { reset: [] }) => {
-    const { reset } = options;
-
-    const cloned = await this._getCloneObject(reset);
+    const cloned = await this._getCloneObject(asArray(options.reset));
 
     return this._handleCreateActions(cloned);
   };

@@ -1,4 +1,5 @@
 import { ApiError } from "../utils/ApiError";
+import { asArray } from "../utils/asArray";
 import { belongsTo } from "../utils/functions";
 import { ILooseObject } from "../utils/interfaces";
 import { isEqual } from "../utils/isEqual";
@@ -81,7 +82,9 @@ export abstract class SchemaCore<T extends ILooseObject> {
     if (error.isPayloadLoaded) throw error;
   };
 
-  protected _getCloneObject = async (reset: string[] = []) => {
+  protected _getCloneObject = async (reset: string | string[] = []) => {
+    reset = asArray(reset);
+
     let obj: T = this.props.reduce((values: T, next) => {
       values[next as keyof T] = (
         reset.includes(next)

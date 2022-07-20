@@ -123,21 +123,21 @@ interface ITimestamp {
 }
 
 options: {
-  timestamp: boolean | ITimestamp;
+  timestamps: boolean | ITimestamp;
 }
 ```
 
-If timestamp is set to true, you'll automatically have the `createdAt` and `updatedAt` properties attached to instances of your model at creation, cloning & update. But you can override the options and use your own properties like in the example below. Default **false**
+If timestamps is set to true, you'll automatically have the `createdAt` and `updatedAt` properties attached to instances of your model at creation, cloning & update. But you can override the options and use your own properties like in the example below. Default **false**
 
 ```javascript
 // override both
 const transactionSchema = new Schema(definitions, {
-  timestamp: { createdAt: "created_at", updatedAt: "updated_at" },
+  timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
 });
 
 // or one
 const transactionSchema = new Schema(definitions, {
-  timestamp: { createdAt: "created_at" },
+  timestamps: { createdAt: "created_at" },
 });
 ```
 
@@ -146,7 +146,7 @@ const transactionSchema = new Schema(definitions, {
 Validator functions are expected to have the structure below
 
 ```typescript
-const validator = (valueToValidate: any, validationContext) => {
+const validator = (valueToValidate: any, ...args?, validationContext) => {
   // validation logic here
 
 return {

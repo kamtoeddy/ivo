@@ -67,7 +67,7 @@ const userSchema = new Schema(
         validate.isStringOk(value, { enums: ["admin", "app-user"] }),
     },
   },
-  { timestamp: true }
+  { timestamps: true }
 );
 
 function onNameChange(context) {
@@ -75,7 +75,7 @@ function onNameChange(context) {
 
   const name = `${firstName} ${lastName}`;
 
-  return { fullName };
+  return { name };
 }
 
 const UserModel = makeModel(userSchema);
