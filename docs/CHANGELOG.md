@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# 1.2.1 / 21-07-2022
+
+- [Fix] Side effect properties not being initialised.
+
 # 1.2.0 / 20-07-2022
 
 - [Removed] Schema options.timestamp so only options.timestamps is supported.

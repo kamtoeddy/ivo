@@ -19,7 +19,8 @@ export class Model<T extends ILooseObject> extends SchemaCore<T> {
 
   private setValues(values: Partial<T>) {
     Object.keys(values).forEach((key) => {
-      if (this._isProp(key)) this.values[key as keyof T] = values[key];
+      if (this._isProp(key) || this._isSideEffect(key))
+        this.values[key as keyof T] = values[key];
     });
   }
 
