@@ -1,34 +1,49 @@
 {
-  "name": "clean-schema",
-  "version": "1.2.2",
+  "author": "blacksocks",
+  "bugs": {
+    "url": "https://github.com/kamtoeddy/clean-schema/issues"
+  },
   "description": "schema builder for javascript environments",
-  "main": "lib/index.js",
-  "types": "lib/index.d.ts",
+  "devDependencies": {
+    "@types/jest": "^28.1.6",
+    "jest": "^28.1.3",
+    "ts-jest": "^28.0.7",
+    "typescript": "^4.6.2"
+  },
   "files": [
     "lib/**/*"
   ],
-  "scripts": {
-    "build": "tsc",
-    "prepare": "npm run build",
-    "watch": "tsc -w"
-  },
-  "devDependencies": {
-    "typescript": "^4.6.2"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/kamtoeddy/clean-schema.git"
-  },
+  "homepage": "https://github.com/kamtoeddy/clean-schema#readme",
   "keywords": [
     "clean architecture",
     "node",
     "schema",
+    "data definition layer",
     "data validation layer"
   ],
-  "author": "blacksocks",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/kamtoeddy/clean-schema/issues"
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "transform": {
+      "node_modules/variables/.+\\.(j|t)sx?$": "ts-jest"
+    },
+    "transformIgnorePatterns": [
+      "node_modules/(?!variables/.*)"
+    ]
   },
-  "homepage": "https://github.com/kamtoeddy/clean-schema#readme"
+  "license": "ISC",
+  "main": "lib/index.js",
+  "name": "clean-schema",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kamtoeddy/clean-schema.git"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "jest --watchAll",
+    "prepare": "npm run build",
+    "watch": "tsc -w"
+  },
+  "types": "lib/index.d.ts",
+  "version": "1.2.3"
 }
