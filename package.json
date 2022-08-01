@@ -41,7 +41,7 @@
   "scripts": {
     "build": "tsc",
     "test": "jest --watchAll",
-    "prepare": "npm run build",
+    "preparee": "npm run build",
     "watch": "tsc -w"
   },
   "types": "lib/index.d.ts",
