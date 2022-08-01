@@ -12,7 +12,7 @@ describe("Testing User Schema", () => {
       lastName: "Smith ",
     }).create();
 
-    console.log(user);
+    // console.log(user);
   });
 
   it("should initialise with properties assigned", () => {
