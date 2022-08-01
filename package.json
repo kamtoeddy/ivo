@@ -41,6 +41,7 @@
   "scripts": {
     "build": "tsc",
     "test": "jest --watchAll",
+    "test:ci": "jest",
     "prepare": "npm run build",
     "watch": "tsc -w"
   },
