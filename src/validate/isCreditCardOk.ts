@@ -1,5 +1,5 @@
 const failResponse = {
-  reasons: ["Invalid credit card"],
+  reasons: ["Invalid card number"],
   valid: false,
   validated: undefined,
 };

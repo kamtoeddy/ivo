@@ -25,8 +25,8 @@ describe("Testing isCreditCardOk", () => {
 
     falsyValues.forEach((value) => {
       expect(isCreditCardOk(value)).toMatchObject({
-        reasons: ["Invalid credit card"],
-        valid: false,
+        reasons: ["Invalid card number"],
+        valid: "false",
         validated: undefined,
       });
     });
