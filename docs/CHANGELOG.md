@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+# 1.2.3 / 21-08-2022
+
+- [Added] built-in validator validate.isCreditCardOk
+- [Added] CI pipeline via github actions
+- [Docs] Added docs for isCreditCardOk
+
 # 1.2.2 / 21-07-2022
 
 - [Docs] Updated link to changelog in README.md
