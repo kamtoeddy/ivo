@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+# 1.2.4 / 21-08-2022
+
+- [Clean up] Stopped typescript from transpiling tests
+- [Docs] added link to validate.isCreditCardOk in readme.md
+
 # 1.2.3 / 21-08-2022
 
 - [Added] built-in validator validate.isCreditCardOk
