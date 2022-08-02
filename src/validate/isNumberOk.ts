@@ -1,16 +1,16 @@
 import { belongsTo } from "../utils/functions";
 
-type numRangeType = {
+export interface NumberRangeType {
   bounds: number[];
   inclusiveBottom?: boolean;
   inclusiveTop?: boolean;
-};
+}
 
-type rangeType = undefined | numRangeType;
+export type RangeType = undefined | NumberRangeType;
 
 const bools = [false, true];
 
-function isInRange(value: number, range: numRangeType) {
+function isInRange(value: number, range: NumberRangeType) {
   const { bounds, inclusiveBottom, inclusiveTop } = range;
   const [min, max] = bounds;
 
@@ -25,7 +25,7 @@ function isInRange(value: number, range: numRangeType) {
   return { valid: true, reasons: [] };
 }
 
-function makeRage(range: rangeType): rangeType {
+function makeRage(range: RangeType): RangeType {
   if (!range?.bounds) return undefined;
 
   const { inclusiveBottom, inclusiveTop } = range;
@@ -36,12 +36,16 @@ function makeRage(range: rangeType): rangeType {
   return range;
 }
 
-export function isNumberOk(num: any, { range }: { range?: rangeType } = {}) {
+export function isNumberOk(num: any, { range }: { range?: RangeType } = {}) {
   let valid = true,
     reasons: string[] = [];
 
-  if (isNaN(num) || num === "") {
-    return { valid: false, reasons: ["Expected a number"] };
+  if (!["number", "string"].includes(typeof num) || isNaN(num)) {
+    return {
+      valid: false,
+      reasons: ["Expected a number"],
+      validated: undefined,
+    };
   }
 
   num = Number(num);

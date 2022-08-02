@@ -1,7 +1,7 @@
 import { belongsTo } from "../utils/functions";
 import { isEqual } from "../utils/isEqual";
 
-describe("belongs to", () => {
+describe("Belongs to", () => {
   it("should return true if value passed is in array supplied else false", () => {
     const values = [1, "hey", null, undefined, false];
 
