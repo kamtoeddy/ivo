@@ -2,7 +2,7 @@
 
 Clean-schema's purpose is to help you define and validate your data at creation and during updates. Hence, clean-schema gives you the flexibility of using the database of your choice.
 
-> N.B: Do not forget to handle errors that might be thrown by the create and update methods. [See the structure of the error **ApiError**](./docs/api-error.md#structure-of-apierror).
+> N.B: Do not forget to handle errors that might be thrown by the create and update methods. [See the structure of the error](./docs/api-error.md#structure-of-apierror).
 
 # Installation
 
