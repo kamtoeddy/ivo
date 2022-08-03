@@ -15,11 +15,11 @@ function isInRange(value: number, range: NumberRangeType) {
   const [min, max] = bounds;
 
   if ((inclusiveBottom && value < min) || (!inclusiveBottom && value <= min)) {
-    return { valid: false, reasons: ["too small"] };
+    return { valid: false, reasons: ["too small"], validated: undefined };
   }
 
   if ((inclusiveTop && value > max) || (!inclusiveTop && value >= max)) {
-    return { valid: false, reasons: ["too large"] };
+    return { valid: false, reasons: ["too large"], validated: undefined };
   }
 
   return { valid: true, reasons: [] };

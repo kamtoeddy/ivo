@@ -130,10 +130,8 @@ export abstract class SchemaCore<T extends ILooseObject> {
     for (let prop of this.props) {
       const checkLax =
         this._isLaxProp(prop) && this.values.hasOwnProperty(prop);
-      const isSideInit =
-        this._isSideInit(prop) && this.values.hasOwnProperty(prop);
 
-      if (createProps.includes(prop) || checkLax || isSideInit) {
+      if (createProps.includes(prop) || checkLax) {
         const { reasons, valid, validated } = await this.validate({
           prop,
           value: this.values[prop],
@@ -195,7 +193,7 @@ export abstract class SchemaCore<T extends ILooseObject> {
       .filter((data) => data.valid === valid);
   };
 
-  protected _getLinkedMethods = (prop: string): fxLooseObject[] => {
+  protected _getLinkedActions = (prop: string): fxLooseObject[] => {
     const methods = this._isSideEffect(prop)
       ? this._propDefinitions[prop]?.onUpdate
       : this.linkedUpdates?.[prop];
@@ -259,7 +257,7 @@ export abstract class SchemaCore<T extends ILooseObject> {
 
         const _value = extra[_prop];
 
-        data[_prop as keyof Partial<T>] = _value;
+        data[_prop as keyof T] = _value;
 
         await this._resolveLinkedValue(data, _prop, _value);
       }
@@ -572,7 +570,7 @@ export abstract class SchemaCore<T extends ILooseObject> {
 
     const context = { ...this._getContext(), ...contextObject };
 
-    const methods = this._getLinkedMethods(prop);
+    const methods = this._getLinkedActions(prop);
 
     for (const cb of methods) {
       const extra = await cb(context);
@@ -631,32 +629,37 @@ export abstract class SchemaCore<T extends ILooseObject> {
     return this._sortKeys(results);
   };
 
-  protected _useSideInitProps = async (obj: T) => {
-    const sideEffectProps = this._getSideEffects();
+  protected _useSideInitProps = async (data: T) => {
+    const sideEffectProps = Object.keys(this.values).filter(this._isSideInit);
 
     for (let prop of sideEffectProps) {
-      if (!this._isSideInit(prop) || !this.values.hasOwnProperty(prop))
-        continue;
-
       const { reasons, valid, validated } = await this.validate({
         prop,
         value: this.values?.[prop],
       });
 
       if (valid) {
-        const methods = this._getLinkedMethods(prop);
-        const context = this._getContext();
+        const actions = this._getLinkedActions(prop);
+        const context = { ...this._getContext(), ...data };
 
         context[prop as keyof T] = validated;
 
-        for (const cb of methods) {
+        for (const cb of actions) {
           const extra = await cb(context);
 
           if (typeof extra !== "object") continue;
 
-          Object.keys(extra).forEach((_prop) => {
-            if (this._isProp(_prop)) obj[_prop as keyof T] = extra[_prop];
-          });
+          const _props = Object.keys(extra);
+
+          for (let _prop of _props) {
+            if (!this._isProp(_prop)) continue;
+
+            const _value = extra[_prop];
+
+            data[_prop as keyof T] = _value;
+
+            await this._resolveLinkedValue(data, _prop, _value);
+          }
         }
 
         continue;
@@ -665,7 +668,7 @@ export abstract class SchemaCore<T extends ILooseObject> {
       this.error.add(prop, reasons);
     }
 
-    return obj;
+    return data;
   };
 
   protected validate = async ({ prop = "", value }: IValidateProps) => {

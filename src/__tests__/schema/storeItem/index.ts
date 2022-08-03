@@ -2,6 +2,7 @@ import { Schema } from "../../../schema";
 import { makeModel } from "../../../schema/model";
 import { IStoreItem } from "./interfaces";
 import {
+  onQuantitiesChange,
   validateOtherUnits,
   validatePrice,
   validateQuantities,
@@ -16,7 +17,7 @@ const storeItemSchema = new Schema(
     price: { required: true, validator: validatePrice },
     quantities: {
       sideEffect: true,
-      onUpdate: [],
+      onUpdate: [onQuantitiesChange],
       validator: validateQuantities,
     },
     quantity: { default: 0, validator: validateQuantity },
@@ -31,4 +32,4 @@ const storeItemSchema = new Schema(
 
 const StoreItem = makeModel<IStoreItem>(storeItemSchema);
 
-export default { StoreItem, storeItemSchema };
+export { StoreItem, storeItemSchema };
