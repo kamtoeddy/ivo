@@ -1,9 +1,9 @@
-import { stringPropTypes } from "../../../utils/interfaces";
+import { IStringOptions } from "../../../utils/interfaces";
 import { isStringOk } from "../../../validate";
 import { IUser } from "../interface";
 
 export const validate_String =
-  (message?: string, options: stringPropTypes = {}) =>
+  (message?: string, options: IStringOptions = {}) =>
   (value: any) => {
     const { reasons, valid, validated } = isStringOk(value, options);
 

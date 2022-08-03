@@ -16,7 +16,7 @@ export interface datePropTypes {
 
 export type ILooseObject = Record<string, any>;
 
-export interface stringPropTypes {
+export interface IStringOptions {
   enums?: string[];
   maxLength?: number;
   minLength?: number;

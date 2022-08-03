@@ -1,11 +1,18 @@
 import { getUniqueBy } from "../utils/getUniqueBy";
 
-type funcFilter = (data: any) => boolean;
-type funcModifier = (data: any) => any;
-type funcSorter = (a: any, b: any) => number;
+export interface IArrayOptions {
+  empty?: boolean;
+  filter?: (data: any) => boolean;
+  modifier?: (data: any) => any;
+  sorted?: boolean;
+  sorter?: (a: any, b: any) => number;
+  sortOrder?: number;
+  unique?: boolean;
+  uniqueKey?: string;
+}
 
 export async function isArrayOk(
-  arr: any[] = [],
+  arr: any[],
   {
     empty = false,
     sorted = false,
@@ -15,16 +22,7 @@ export async function isArrayOk(
     sortOrder = -1,
     unique = true,
     uniqueKey = "",
-  }: {
-    empty?: boolean;
-    filter?: funcFilter;
-    modifier?: funcModifier;
-    sorted?: boolean;
-    sorter?: funcSorter;
-    sortOrder?: number;
-    unique?: boolean;
-    uniqueKey?: string;
-  } = {}
+  }: IArrayOptions = {}
 ) {
   if (!Array.isArray(arr))
     return { valid: false, reasons: ["Expected an array"] };
