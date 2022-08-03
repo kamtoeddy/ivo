@@ -11,9 +11,9 @@ describe("Testing schema of StoreItem", () => {
       price: 5,
       measureUnit: "bottle",
       otherMeasureUnits: [
-        { coefficient: 12, name: "crate" },
         { coefficient: 24, name: "crate24" },
         { coefficient: 5, name: "tray" },
+        { coefficient: 12, name: "crate" },
       ],
       quantity: 100,
       quantities: [{ quantity: 1, name: "crate24" }],

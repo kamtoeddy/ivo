@@ -58,11 +58,11 @@ export class Model<T extends ILooseObject> extends SchemaCore<T> {
         (this._isLinkedUpdate(prop) || this._isSideEffect(prop))
     );
 
-    const updatePromises = updatables.map((prop) =>
+    const validations = updatables.map((prop) =>
       this.validate({ prop, value: changes[prop] })
     );
 
-    const results = await Promise.all(updatePromises);
+    const results = await Promise.all(validations);
 
     updatables.forEach((prop, index) => {
       const { reasons, valid, validated } = results[index];

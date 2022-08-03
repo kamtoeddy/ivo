@@ -7,6 +7,7 @@ import {
   fxLooseObject,
   ISchemaOptions,
   IValidateProps,
+  IValidateResponse,
   LifeCycleRule,
   Private_ISchemaOptions,
   PropDefinitionRule,
@@ -123,44 +124,35 @@ export abstract class SchemaCore<T extends ILooseObject> {
   };
 
   protected _getCreateObject = async () => {
-    const createProps = this._getCreateProps();
-
     let obj: T = {} as T;
 
-    for (let prop of this.props) {
-      const checkLax =
+    const validations = this.props.map((prop) => {
+      const isLaxInit =
         this._isLaxProp(prop) && this.values.hasOwnProperty(prop);
 
-      if (createProps.includes(prop) || checkLax) {
-        const { reasons, valid, validated } = await this.validate({
-          prop,
-          value: this.values[prop],
-        });
+      if (this._canInit(prop) || isLaxInit)
+        return this.validate({ prop, value: this.values[prop] });
 
-        if (valid) {
-          obj[prop as keyof T] = validated;
+      return {
+        reasons: [],
+        valid: true,
+        validated: this.defaults[prop],
+      } as IValidateResponse;
+    });
 
-          continue;
-        }
+    const results = await Promise.all(validations);
 
-        this.error.add(prop, reasons);
-      }
+    this.props.forEach((prop, index) => {
+      const { reasons, valid, validated } = results[index];
 
-      obj[prop as keyof T] = this.defaults[prop]!;
-    }
+      if (valid) return (obj[prop as keyof T] = validated);
+
+      this.error.add(prop, reasons);
+    });
 
     obj = await this._useSideInitProps(obj);
 
     return this._useConfigProps(obj) as T;
-  };
-
-  protected _getCreateProps = () => {
-    const createProps = [];
-
-    for (let prop of this.props)
-      if (this._canInit(prop)) createProps.push(prop);
-
-    return this._sort(createProps);
   };
 
   protected _getDefaults = () => {

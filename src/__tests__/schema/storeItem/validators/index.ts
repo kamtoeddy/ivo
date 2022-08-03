@@ -37,8 +37,10 @@ export const validateOtherUnit = (value: any) => {
 export const validateOtherUnits = async (value: any) => {
   return await isArrayOk(value, {
     empty: true,
+    sorted: true,
     filter: (v) => validateOtherUnit(v).valid,
     modifier: (v) => validateOtherUnit(v).validated,
+    sorter: (a, b) => (a.name < b.name ? -1 : 1),
     uniqueKey: "name",
   });
 };
