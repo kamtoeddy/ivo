@@ -4,27 +4,29 @@ export type fxLooseObject = (
   ...args: any
 ) => ILooseObject | Promise<ILooseObject>;
 
-export interface IValidateResponse {
+export interface ValidatorResponse {
   reasons?: string[];
   valid: boolean;
   validated?: any;
 }
 
-export type PropValidatorFunc = (
+export type Validator = (
   ...args: any
-) => IValidateResponse | Promise<IValidateResponse>;
+) => ValidatorResponse | Promise<ValidatorResponse>;
+
+export type NonEmptyArray<T> = [T, ...T[]];
 
 export interface PropDefinitionRules {
   [key: string]: {
     default?: any;
     dependent?: boolean;
-    onCreate?: fxLooseObject[];
-    onUpdate?: fxLooseObject[];
+    onCreate?: NonEmptyArray<fxLooseObject>;
+    onUpdate?: NonEmptyArray<fxLooseObject>;
     readonly?: boolean;
     required?: boolean;
     sideEffect?: boolean;
     shouldInit?: boolean;
-    validator?: PropValidatorFunc;
+    validator?: Validator;
   };
 }
 
@@ -80,7 +82,7 @@ export type ModelCloneMethod = (
 
 export type ModelValidateMethod = (
   props: IValidateProps
-) => Promise<IValidateResponse>;
+) => Promise<ValidatorResponse>;
 
 export type ModelUpdateMethod = (
   changed: Record<string, any>

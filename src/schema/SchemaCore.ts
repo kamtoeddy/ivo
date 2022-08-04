@@ -7,11 +7,12 @@ import {
   fxLooseObject,
   ISchemaOptions,
   IValidateProps,
-  IValidateResponse,
+  ValidatorResponse,
   LifeCycleRule,
   Private_ISchemaOptions,
   PropDefinitionRule,
   PropDefinitionRules,
+  NonEmptyArray,
 } from "./interfaces";
 import { SchemaOptions } from "./SchemaOptions";
 
@@ -137,7 +138,7 @@ export abstract class SchemaCore<T extends ILooseObject> {
         reasons: [],
         valid: true,
         validated: this.defaults[prop],
-      } as IValidateResponse;
+      } as ValidatorResponse;
     });
 
     const results = await Promise.all(validations);
@@ -199,7 +200,9 @@ export abstract class SchemaCore<T extends ILooseObject> {
     for (let prop of this.props) {
       let _updates = this._propDefinitions[prop]?.onUpdate ?? [];
 
-      _updates = _updates.filter((action) => this._isFunction(action));
+      _updates = _updates.filter((action) =>
+        this._isFunction(action)
+      ) as NonEmptyArray<fxLooseObject>;
 
       if (_updates?.length) _linkedUpdates[prop] = _updates;
     }
