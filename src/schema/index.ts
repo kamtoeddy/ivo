@@ -1,7 +1,7 @@
 import { asArray } from "../utils/asArray";
 import {
-  IExtensionOptions,
-  ISchemaOptions,
+  SchemaExtensionOptions,
+  SchemaOptions,
   PropDefinitionRules,
 } from "./interfaces";
 import { defaultOptions, SchemaCore } from "./SchemaCore";
@@ -9,19 +9,22 @@ import { defaultOptions, SchemaCore } from "./SchemaCore";
 export class Schema extends SchemaCore<Schema> {
   constructor(
     propDefinitions: PropDefinitionRules,
-    options: ISchemaOptions = defaultOptions
+    options: SchemaOptions = defaultOptions
   ) {
     super(propDefinitions, options);
     this._checkPropDefinitions();
   }
 
-  private _useExtensionOptions = (options: IExtensionOptions) => {
+  private _useExtensionOptions = (options: SchemaExtensionOptions) => {
     const remove = asArray(options.remove);
 
     remove?.forEach((prop) => delete this._propDefinitions?.[prop]);
   };
 
-  extend = (parent: Schema, options: IExtensionOptions = { remove: [] }) => {
+  extend = (
+    parent: Schema,
+    options: SchemaExtensionOptions = { remove: [] }
+  ) => {
     this._propDefinitions = {
       ...parent.propDefinitions,
       ...this._propDefinitions,

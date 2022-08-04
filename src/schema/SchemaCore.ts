@@ -5,46 +5,40 @@ import { ILooseObject } from "../utils/interfaces";
 import { isEqual } from "../utils/isEqual";
 import {
   fxLooseObject,
-  ISchemaOptions,
-  IValidateProps,
-  ValidatorResponse,
   LifeCycleRule,
   Private_ISchemaOptions,
   PropDefinitionRule,
   PropDefinitionRules,
-  NonEmptyArray,
+  SchemaOptions,
+  ValidatorResponse,
 } from "./interfaces";
-import { SchemaOptions } from "./SchemaOptions";
+import { SchemaOptionsHelper } from "./SchemaOptionsHelper";
 
-export const defaultOptions: ISchemaOptions = { timestamps: false };
+export const defaultOptions: SchemaOptions = { timestamps: false };
 
 const lifeCycleRules: LifeCycleRule[] = ["onCreate", "onUpdate"];
 
 export abstract class SchemaCore<T extends ILooseObject> {
-  // [key: string]: any;
-
   protected error = new ApiError({ message: "Validation Error" });
 
-  protected _helper: SchemaOptions;
-  protected _options: ISchemaOptions;
+  protected _helper: SchemaOptionsHelper;
+  protected _options: SchemaOptions;
   protected _propDefinitions: PropDefinitionRules = {};
 
   protected context: T = {} as T;
-  protected updated: Partial<T> = {};
-
   protected defaults: Partial<T> = {};
-  protected linkedUpdates: ILooseObject = {};
   protected props: string[] = [];
+  protected updated: Partial<T> = {};
   protected values: Partial<T> = {};
 
   constructor(
     propDefinitions: PropDefinitionRules,
-    options: ISchemaOptions = defaultOptions
+    options: SchemaOptions = defaultOptions
   ) {
     this._propDefinitions = propDefinitions;
     this._options = options;
 
-    this._helper = new SchemaOptions(this._makeOptions(options));
+    this._helper = new SchemaOptionsHelper(this._makeOptions(options));
   }
 
   public get options() {
@@ -97,7 +91,7 @@ export abstract class SchemaCore<T extends ILooseObject> {
       return values;
     }, {} as T);
 
-    obj = await this._useSideInitProps(obj);
+    obj = await this._useSideInitProps(obj, "onCreate");
 
     return this._useConfigProps(obj) as T;
   };
@@ -114,9 +108,7 @@ export abstract class SchemaCore<T extends ILooseObject> {
     let actions: fxLooseObject[] = [];
 
     for (let prop of this.props) {
-      const _actions = (this._getHandlers(prop, "onCreate") ?? []).map(
-        (dt) => dt.method
-      );
+      const _actions = this._getListeners(prop, "onCreate");
 
       if (_actions?.length) actions = [...actions, ..._actions];
     }
@@ -151,7 +143,7 @@ export abstract class SchemaCore<T extends ILooseObject> {
       this.error.add(prop, reasons);
     });
 
-    obj = await this._useSideInitProps(obj);
+    obj = await this._useSideInitProps(obj, "onCreate");
 
     return this._useConfigProps(obj) as T;
   };
@@ -172,42 +164,33 @@ export abstract class SchemaCore<T extends ILooseObject> {
     return this._propDefinitions[prop]?.[rule];
   };
 
-  protected _getHandlers = (
+  protected _getDetailedListeners = (
     prop: string,
-    type: LifeCycleRule,
+    lifeCycle: LifeCycleRule,
     valid = true
   ) => {
     const propDef = this._propDefinitions[prop];
 
-    return propDef?.[type]
-      ?.map((method, index) => {
-        return { index, method, valid: this._isFunction(method) };
-      })
-      .filter((data) => data.valid === valid);
+    // listeners for side effects only exist
+    // in the onUpdate array & this._isSideEffect
+    // cannot be called here
+    lifeCycle = propDef.sideEffect ? "onUpdate" : lifeCycle;
+
+    return (
+      propDef?.[lifeCycle]
+        ?.map((listener, index) => ({
+          index,
+          listener,
+          valid: this._isFunction(listener),
+        }))
+        .filter((data) => data.valid === valid) ?? []
+    );
   };
 
-  protected _getLinkedActions = (prop: string): fxLooseObject[] => {
-    const methods = this._isSideEffect(prop)
-      ? this._propDefinitions[prop]?.onUpdate
-      : this.linkedUpdates?.[prop];
-
-    return methods ?? [];
-  };
-
-  protected _getLinkedUpdates = () => {
-    const _linkedUpdates: ILooseObject = {};
-
-    for (let prop of this.props) {
-      let _updates = this._propDefinitions[prop]?.onUpdate ?? [];
-
-      _updates = _updates.filter((action) =>
-        this._isFunction(action)
-      ) as NonEmptyArray<fxLooseObject>;
-
-      if (_updates?.length) _linkedUpdates[prop] = _updates;
-    }
-
-    return _linkedUpdates;
+  protected _getListeners = (prop: string, lifeCycle: LifeCycleRule) => {
+    return this._getDetailedListeners(prop, lifeCycle, true).map(
+      (dt) => dt.listener
+    );
   };
 
   protected _getProps = () => {
@@ -254,7 +237,7 @@ export abstract class SchemaCore<T extends ILooseObject> {
 
         data[_prop as keyof T] = _value;
 
-        await this._resolveLinkedValue(data, _prop, _value);
+        await this._resolveLinkedValue(data, _prop, _value, "onCreate");
       }
     }
 
@@ -284,7 +267,7 @@ export abstract class SchemaCore<T extends ILooseObject> {
     type: "onCreate" | "onUpdate" = "onUpdate",
     _number = 1
   ) => {
-    return this._getHandlers(prop, type)?.length ?? 0 >= _number;
+    return this._getListeners(prop, type)?.length ?? 0 >= _number;
   };
 
   protected _hasProp = (
@@ -361,9 +344,6 @@ export abstract class SchemaCore<T extends ILooseObject> {
   protected _isLaxProp = (prop: string): boolean =>
     this.__isLaxProp(prop).valid;
 
-  protected _isLinkedUpdate = (prop: string): boolean =>
-    (this._getHandlers(prop, "onUpdate")?.length ?? 0) > 0;
-
   protected _isProp = (prop: string): boolean => this.props.includes(prop);
 
   protected _isPropDefinitionObjectOk = (prop: string) => {
@@ -400,13 +380,13 @@ export abstract class SchemaCore<T extends ILooseObject> {
     for (let rule of lifeCycleRules) {
       if (!this._hasProp(prop, rule)) continue;
 
-      const invalidHandlers = this._getHandlers(prop, rule, false);
+      const invalidHandlers = this._getDetailedListeners(prop, rule, false);
 
       if (!invalidHandlers?.length) continue;
 
       reasons = reasons.concat(
         invalidHandlers.map(
-          (dt) => `'${dt.method}' @${rule}[${dt.index}] is not a function`
+          (dt) => `'${dt.listener}' @${rule}[${dt.index}] is not a function`
         )
       );
     }
@@ -475,6 +455,8 @@ export abstract class SchemaCore<T extends ILooseObject> {
   protected _isUpdatable = (prop: string) => {
     if (!this._isProp(prop)) return false;
 
+    if (this._isDependentProp(prop)) return false;
+
     const readonly = this._propDefinitions?.[prop]?.readonly;
 
     return !readonly || (readonly && !this._hasChanged(prop));
@@ -496,7 +478,7 @@ export abstract class SchemaCore<T extends ILooseObject> {
     return this._isFunction(propDef?.validator);
   };
 
-  private _makeOptions(options: ISchemaOptions): Private_ISchemaOptions {
+  private _makeOptions(options: SchemaOptions): Private_ISchemaOptions {
     if (!options) return { timestamps: { createdAt: "", updatedAt: "" } };
 
     let { timestamps } = options;
@@ -543,12 +525,13 @@ export abstract class SchemaCore<T extends ILooseObject> {
   protected _resolveLinkedValue = async (
     contextObject: ILooseObject = {},
     prop: string,
-    value: any
+    value: any,
+    lifeCycle: LifeCycleRule
   ) => {
-    const isLinked = this._isLinkedUpdate(prop),
+    const listeners = this._getListeners(prop, lifeCycle),
       isSideEffect = this._isSideEffect(prop);
 
-    if (!isSideEffect && !isLinked) return;
+    if (!listeners.length) return;
 
     const { reasons, valid, validated } = await this.validate({
       prop,
@@ -565,9 +548,7 @@ export abstract class SchemaCore<T extends ILooseObject> {
 
     const context = { ...this._getContext(), ...contextObject };
 
-    const methods = this._getLinkedActions(prop);
-
-    for (const cb of methods) {
+    for (const cb of listeners) {
       const extra = await cb(context);
 
       if (typeof extra !== "object") continue;
@@ -583,7 +564,7 @@ export abstract class SchemaCore<T extends ILooseObject> {
 
         if (!isSideEffect) contextObject[_prop] = _value;
 
-        await this._resolveLinkedValue(contextObject, _prop, _value);
+        await this._resolveLinkedValue(contextObject, _prop, _value, lifeCycle);
       }
     }
   };
@@ -624,7 +605,7 @@ export abstract class SchemaCore<T extends ILooseObject> {
     return this._sortKeys(results);
   };
 
-  protected _useSideInitProps = async (data: T) => {
+  protected _useSideInitProps = async (data: T, lifeCycle: LifeCycleRule) => {
     const sideEffectProps = Object.keys(this.values).filter(this._isSideInit);
 
     for (let prop of sideEffectProps) {
@@ -634,12 +615,12 @@ export abstract class SchemaCore<T extends ILooseObject> {
       });
 
       if (valid) {
-        const actions = this._getLinkedActions(prop);
+        const listeners = this._getListeners(prop, lifeCycle);
         const context = { ...this._getContext(), ...data };
 
         context[prop as keyof T] = validated;
 
-        for (const cb of actions) {
+        for (const cb of listeners) {
           const extra = await cb(context);
 
           if (typeof extra !== "object") continue;
@@ -653,7 +634,7 @@ export abstract class SchemaCore<T extends ILooseObject> {
 
             data[_prop as keyof T] = _value;
 
-            await this._resolveLinkedValue(data, _prop, _value);
+            await this._resolveLinkedValue(data, _prop, _value, lifeCycle);
           }
         }
 
@@ -666,7 +647,13 @@ export abstract class SchemaCore<T extends ILooseObject> {
     return data;
   };
 
-  protected validate = async ({ prop = "", value }: IValidateProps) => {
+  protected validate = async ({
+    prop = "",
+    value,
+  }: {
+    prop: string;
+    value: any;
+  }) => {
     const isSideEffect = this._isSideEffect(prop);
 
     if (!this._isProp(prop) && !isSideEffect)

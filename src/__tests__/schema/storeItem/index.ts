@@ -3,6 +3,7 @@ import { makeModel } from "../../../schema/model";
 import { IStoreItem } from "./interfaces";
 import {
   onQuantitiesChange,
+  onQuantityChange,
   validateOtherUnits,
   validatePrice,
   validateQuantities,
@@ -17,10 +18,17 @@ const storeItemSchema = new Schema(
     price: { required: true, validator: validatePrice },
     quantities: {
       sideEffect: true,
+      onCreate: [onQuantitiesChange],
       onUpdate: [onQuantitiesChange],
       validator: validateQuantities,
     },
-    quantity: { default: 0, validator: validateQuantity },
+    quantity: {
+      default: 0,
+      onCreate: [onQuantityChange],
+      onUpdate: [onQuantityChange],
+      validator: validateQuantity,
+    },
+    quantityChangeCounter: { default: 0, dependent: true },
     measureUnit: {
       required: true,
       validator: validateString("Invalid measure unit"),

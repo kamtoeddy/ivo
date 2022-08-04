@@ -12,7 +12,6 @@ export class Model<T extends ILooseObject> extends SchemaCore<T> {
     // this order of assignment is key
     this.props = this._getProps();
     this.defaults = this._getDefaults();
-    this.linkedUpdates = this._getLinkedUpdates();
 
     this.setValues(values);
   }
@@ -52,10 +51,8 @@ export class Model<T extends ILooseObject> extends SchemaCore<T> {
     // iterate through validated values and get only changed fields
     // amongst the schema's updatable properties
     const updatables = toUpdate.filter((prop) => this._isUpdatable(prop));
-    const linkedOrSideEffects = toUpdate.filter(
-      (prop) =>
-        !this._isDependentProp(prop) &&
-        (this._isLinkedUpdate(prop) || this._isSideEffect(prop))
+    const propsWithUpdateListeners = toUpdate.filter((prop) =>
+      this._hasHandlersFor(prop, "onUpdate")
     );
 
     const validations = updatables.map((prop) =>
@@ -74,8 +71,13 @@ export class Model<T extends ILooseObject> extends SchemaCore<T> {
       if (valid && hasChanged) this.updated[prop as keyof T] = validated;
     });
 
-    for (let prop of linkedOrSideEffects)
-      await this._resolveLinkedValue(this.updated, prop, changes[prop]);
+    for (let prop of propsWithUpdateListeners)
+      await this._resolveLinkedValue(
+        this.updated,
+        prop,
+        changes[prop],
+        "onUpdate"
+      );
 
     if (this._isErroneous()) this._throwErrors();
 

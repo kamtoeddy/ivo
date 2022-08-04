@@ -1,6 +1,6 @@
 import { ITimestamp, Private_ISchemaOptions } from "./interfaces";
 
-export class SchemaOptions {
+export class SchemaOptionsHelper {
   private keys: ITimestamp;
 
   constructor(config: Private_ISchemaOptions) {

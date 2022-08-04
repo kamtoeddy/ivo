@@ -12,6 +12,7 @@ export interface IStoreItem {
   id: string;
   name: string;
   price: number;
+  quantityChangeCounter?: number;
   quantities?: IOtherQuantity[];
   quantity?: number;
   measureUnit: string;

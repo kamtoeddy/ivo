@@ -53,7 +53,7 @@ export interface ITimestamp {
   updatedAt: string;
 }
 
-export interface ISchemaOptions {
+export interface SchemaOptions {
   timestamps?: boolean | IOptionsTimestamp;
 }
 
@@ -61,35 +61,10 @@ export interface Private_ISchemaOptions {
   timestamps: ITimestamp;
 }
 
-export interface IExtensionOptions {
+export interface SchemaExtensionOptions {
   remove?: string | string[];
 }
 
 export interface ICloneOptions {
   reset?: string | string[];
 }
-
-export interface IValidateProps {
-  prop: string;
-  value: any;
-}
-
-export type ModelCreateMethod<T extends ILooseObject> = () => Promise<T>;
-
-export type ModelCloneMethod = (
-  options?: ICloneOptions
-) => Promise<ILooseObject>;
-
-export type ModelValidateMethod = (
-  props: IValidateProps
-) => Promise<ValidatorResponse>;
-
-export type ModelUpdateMethod = (
-  changed: Record<string, any>
-) => Promise<ILooseObject>;
-
-// export interface IModel {
-//   create<>: ModelCreateMethod<T>;
-//   clone: ModelCloneMethod;
-//   update: ModelUpdateMethod;
-// }

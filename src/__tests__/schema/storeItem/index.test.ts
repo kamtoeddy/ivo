@@ -35,8 +35,16 @@ describe("Testing schema of StoreItem", () => {
   it("should update the relevant properties", async () => {
     const update = await StoreItem(storeItem).update({
       name: "Castel",
+      quantities: [
+        { name: "crate", quantity: 2 },
+        { name: "tray", quantity: 5 },
+      ],
     });
 
-    expect(update).toMatchObject({ name: "Castel" });
+    expect(update).toMatchObject<Partial<IStoreItem>>({
+      name: "Castel",
+      quantityChangeCounter: 3,
+      quantity: 173,
+    });
   });
 });
