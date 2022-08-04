@@ -1,9 +1,9 @@
 import { belongsTo } from "../utils/functions";
-import { stringPropTypes } from "../utils/interfaces";
+import { IStringOptions } from "../utils/interfaces";
 
 export function isStringOk(
   str: any,
-  { enums, maxLength = 40, minLength = 1, regExp }: stringPropTypes = {}
+  { enums, maxLength = 40, minLength = 1, regExp }: IStringOptions = {}
 ) {
   if (belongsTo(str, [null, undefined]))
     return { valid: false, reasons: ["Unacceptable value"] };
