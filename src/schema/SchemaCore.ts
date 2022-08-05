@@ -16,7 +16,7 @@ import { SchemaOptionsHelper } from "./SchemaOptionsHelper";
 
 export const defaultOptions: SchemaOptions = { timestamps: false };
 
-const lifeCycleRules: LifeCycleRule[] = ["onCreate", "onUpdate"];
+const lifeCycleRules: LifeCycleRule[] = ["onChange", "onCreate", "onUpdate"];
 
 export abstract class SchemaCore<T extends ILooseObject> {
   protected error = new ApiError({ message: "Validation Error" });
@@ -104,11 +104,11 @@ export abstract class SchemaCore<T extends ILooseObject> {
     return { ...this.context, ...this.updated } as T;
   };
 
-  protected _getCreateActions = () => {
+  protected _getCreateListeners = () => {
     let actions: fxLooseObject[] = [];
 
     for (let prop of this.props) {
-      const _actions = this._getListeners(prop, "onCreate");
+      const _actions = this._getAllListeners(prop, "onCreate");
 
       if (_actions?.length) actions = [...actions, ..._actions];
     }
@@ -171,11 +171,6 @@ export abstract class SchemaCore<T extends ILooseObject> {
   ) => {
     const propDef = this._propDefinitions[prop];
 
-    // listeners for side effects only exist
-    // in the onUpdate array & this._isSideEffect
-    // cannot be called here
-    lifeCycle = propDef.sideEffect ? "onUpdate" : lifeCycle;
-
     return (
       propDef?.[lifeCycle]
         ?.map((listener, index) => ({
@@ -187,10 +182,24 @@ export abstract class SchemaCore<T extends ILooseObject> {
     );
   };
 
-  protected _getListeners = (prop: string, lifeCycle: LifeCycleRule) => {
+  protected _getListenersOnly = (prop: string, lifeCycle: LifeCycleRule) => {
     return this._getDetailedListeners(prop, lifeCycle, true).map(
       (dt) => dt.listener
     );
+  };
+
+  protected _getAllListeners = (prop: string, lifeCycle: LifeCycleRule) => {
+    const onChange = this._getListenersOnly(prop, "onChange");
+
+    if (this._isSideEffect(prop)) return onChange;
+
+    const others = this._getListenersOnly(prop, lifeCycle);
+
+    return [...others, ...onChange];
+  };
+
+  protected _getListeners = (prop: string, lifeCycle: LifeCycleRule) => {
+    return this._getListenersOnly(prop, lifeCycle);
   };
 
   protected _getProps = () => {
@@ -221,9 +230,9 @@ export abstract class SchemaCore<T extends ILooseObject> {
     this._propDefinitions[prop]?.validator;
 
   protected _handleCreateActions = async (data: T = {} as T) => {
-    const actions = this._getCreateActions();
+    const listeners = this._getCreateListeners();
 
-    for (const cb of actions) {
+    for (const cb of listeners) {
       const extra = await cb(data);
 
       if (typeof extra !== "object") continue;
@@ -264,7 +273,7 @@ export abstract class SchemaCore<T extends ILooseObject> {
 
   protected _hasHandlersFor = (
     prop: string,
-    type: "onCreate" | "onUpdate" = "onUpdate",
+    type: LifeCycleRule = "onUpdate",
     _number = 1
   ) => {
     return this._getListeners(prop, type)?.length ?? 0 >= _number;
@@ -297,10 +306,10 @@ export abstract class SchemaCore<T extends ILooseObject> {
 
     const { dependent, sideEffect } = propDef;
 
-    if (sideEffect) reasons.push("Dependent props cannot be sideEffect");
+    if (sideEffect) reasons.push("Dependent properties cannot be sideEffect");
 
     if (!dependent)
-      reasons.push("Dependent props must have dependent as 'true'");
+      reasons.push("Dependent properties must have dependent as 'true'");
 
     return { reasons, valid: reasons.length === 0 };
   };
@@ -422,19 +431,34 @@ export abstract class SchemaCore<T extends ILooseObject> {
 
     if (!isPopDefOk.valid) return isPopDefOk;
 
-    if (this._hasProp(prop, ["default", "readonly", "required"]))
+    if (this._hasProp(prop, "default"))
       reasons.push(
-        "SideEffects cannot have default, readonly, required as 'true'"
+        "SideEffects cannot have default values as they do not exist on instances of your model"
       );
+
+    if (this._hasProp(prop, "dependent"))
+      reasons.push("SideEffects cannot be dependent");
+
+    if (this._hasProp(prop, ["readonly", "required"]))
+      reasons.push("SideEffects cannot be readonly nor required");
 
     if (!this._isValidatorOk(prop)) reasons.push("Invalid validator");
 
-    if (!this._hasHandlersFor(prop, "onUpdate"))
-      reasons.push("SideEffects must have at least on onUpdate handler");
+    if (!this._hasHandlersFor(prop, "onChange"))
+      reasons.push("SideEffects must have at least one onChange listener");
+
+    if (this._hasHandlersFor(prop, "onCreate"))
+      reasons.push("SideEffects do not support onCreate listeners");
+
+    if (this._hasHandlersFor(prop, "onUpdate"))
+      reasons.push(
+        "SideEffects do not support onUpdate listeners any more. Use onChange instead"
+      );
 
     const { sideEffect } = this._propDefinitions[prop];
 
-    if (!sideEffect === true) reasons.push("sideEffect should be 'true'");
+    if (!sideEffect === true)
+      reasons.push("SideEffects must have sideEffect as'true'");
 
     return { reasons, valid: reasons.length === 0 };
   };
@@ -528,7 +552,7 @@ export abstract class SchemaCore<T extends ILooseObject> {
     value: any,
     lifeCycle: LifeCycleRule
   ) => {
-    const listeners = this._getListeners(prop, lifeCycle),
+    const listeners = this._getAllListeners(prop, lifeCycle),
       isSideEffect = this._isSideEffect(prop);
 
     if (!listeners.length) return;
@@ -615,7 +639,7 @@ export abstract class SchemaCore<T extends ILooseObject> {
       });
 
       if (valid) {
-        const listeners = this._getListeners(prop, lifeCycle);
+        const listeners = this._getListeners(prop, "onChange");
         const context = { ...this._getContext(), ...data };
 
         context[prop as keyof T] = validated;

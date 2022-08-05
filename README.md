@@ -14,7 +14,7 @@ $ npm i clean-schema
 
 # Importing
 
-```javascript
+```js
 // Using Nodejs `require`
 const { makeModel, Schema } = require("clean-schema");
 
@@ -24,7 +24,7 @@ import { makeModel, Schema } from "clean-schema";
 
 # Defining a model
 
-```javascript
+```js
 const { makeModel, Schema, validate } = require("clean-schema");
 
 const userSchema = new Schema(
@@ -83,7 +83,7 @@ const UserModel = makeModel(userSchema);
 
 # Creating an instance
 
-```javascript
+```js
 const user = await UserModel({
   firstName: "James",
   id: 1,
@@ -105,7 +105,7 @@ await db.insert(user);
 
 # Updating instances
 
-```javascript
+```js
 const user = await db.query({ id: 1 });
 
 if (!user) return null;
@@ -139,7 +139,7 @@ These methods are async because custom validators could be async as well.
   - [Defining Properties](./docs/schema/definition.md#defining-a-schema)
   - [Inheritance](./docs/schema/definition.md#inheritance)
   - [The Validation Context](./docs/schema/definition.md#the-validation-context)
-  - [onCreate & onUpdate handlers](./docs/schema/definition.md#oncreate--onupdate-handlers)
+  - [onCreate & onUpdate listeners](./docs/schema/definition.md#oncreate--onupdate-handlers)
   - [Options](./docs/schema/definition.md#options)
 - [Helper Validators](./docs/validate/index.md#built-in-validation-helpers)
   - [isArrayOk](./docs/validate/isArrayOk.md)

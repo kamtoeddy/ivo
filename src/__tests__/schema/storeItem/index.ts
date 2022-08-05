@@ -18,14 +18,14 @@ const storeItemSchema = new Schema(
     price: { required: true, validator: validatePrice },
     quantities: {
       sideEffect: true,
-      onCreate: [onQuantitiesChange],
-      onUpdate: [onQuantitiesChange],
+      onChange: [onQuantitiesChange],
       validator: validateQuantities,
     },
     quantity: {
       default: 0,
-      onCreate: [onQuantityChange],
-      onUpdate: [onQuantityChange],
+      onChange: [onQuantityChange],
+      // onCreate: [onQuantityChange],
+      // onUpdate: [onQuantityChange],
       validator: validateQuantity,
     },
     quantityChangeCounter: { default: 0, dependent: true },

@@ -2,94 +2,108 @@
 
 All notable changes to this project will be documented in this file.
 
-# 1.2.4 / 21-08-2022
+# v1.3.0 <small><sup>05-08-2022</sup></small>
+
+- [Added] added onChange property for both create & update events
+- [Docs] updated docs for v1.2.5 & v1.2.6
+- [Removed] support for onUpdate rule on side effect properties
+
+# v1.2.6 <small><sup>04-08-2022</sup></small>
+
+- [Update] added check for non-empty array for onCreate and onUpdate listeners
+
+# v1.2.5 <small><sup>03-08-2022</sup></small>
+
+- [Update] did parallellization of schema validation at creation & updates
+
+# v1.2.4 <small><sup>21-08-2022</sup></small>
 
 - [Clean up] Stopped typescript from transpiling tests
 - [Docs] added link to validate.isCreditCardOk in readme.md
 
-# 1.2.3 / 21-08-2022
+# v1.2.3 <small><sup>21-08-2022</sup></small>
 
 - [Added] built-in validator validate.isCreditCardOk
 - [Added] CI pipeline via github actions
 - [Docs] Added docs for isCreditCardOk
 
-# 1.2.2 / 21-07-2022
+# v1.2.2 <small><sup>21-07-2022</sup></small>
 
 - [Docs] Updated link to changelog in README.md
 
-# 1.2.1 / 21-07-2022
+# v1.2.1 <small><sup>21-07-2022</sup></small>
 
 - [Fix] Side effect properties not being initialised
 
-# 1.2.0 / 20-07-2022
+# v1.2.0 <small><sup>20-07-2022</sup></small>
 
 - [Removed] Schema options.timestamp so only options.timestamps is supported
 
-# 1.1.12 / 20-07-2022
+# v1.1.12 <small><sup>20-07-2022</sup></small>
 
 - [Added] Possibility to pass a string/string[] as options when cloning an entity
 - [Docs] Updated docs on structure of validator functions
 - [Docs] Updated some errors in docs
 - [Removed] Schema options.timestamp so only options.timestamps is supported
 
-# 1.1.11 / 19-07-2022
+# v1.1.11 <small><sup>19-07-2022</sup></small>
 
 - [Fix] error: Exported variable 'YourModel' has or is using name 'Model' from external module "clean-schema" but cannot be named
 
-# 1.1.10 / 19-07-2022
+# v1.1.10 <small><sup>19-07-2022</sup></small>
 
 - [Added] generics for typescript
 
-# 1.1.9 / 19-07-2022
+# v1.1.9 <small><sup>19-07-2022</sup></small>
 
 - [Fix] invalid properties crashing create & updates properly
 
-# 1.1.8 / 19-07-2022
+# v1.1.8 <small><sup>19-07-2022</sup></small>
 
 - [Fix] non readonly|required not being initialized
 - [Fix] updates not working properly
 
-# 1.1.7 / 18-07-2022
+# v1.1.7 <small><sup>18-07-2022</sup></small>
 
-- [Added] Updated type definitions of onCreate/onUpdate handlers for typescript
+- [Added] Updated type definitions of onCreate/onUpdate listeners for typescript
 
-# 1.1.6 / 18-07-2022
+# v1.1.6 <small><sup>18-07-2022</sup></small>
 
 - [Added] Updated type definitions for typescript support
 
-# 1.1.5 / 18-07-2022
+# v1.1.5 <small><sup>18-07-2022</sup></small>
 
 - [Fix] Fixed issue with clean-schema requiring options parameter on Schema constructor
 
-# 1.1.4 / 18-07-2022
+# v1.1.4 <small><sup>18-07-2022</sup></small>
 
 - [Fix] Fixed issue with clean-schema requiring options parameter on SchemaCore constructor
 
-# 1.1.3 / 18-07-2022
+# v1.1.3 <small><sup>18-07-2022</sup></small>
 
 - [Deprecated] Changed schema options.timestamp to timestamps
 - [Fix] Schema options still accepting timestamps with keys already on schema
 - [Docs] Updated docs of how to use [validator.isEmailOk](./validate/isEmailOk.md)
 
-# 1.1.2 / 17-07-2022
+# v1.1.2 <small><sup>17-07-2022</sup></small>
 
 - [Docs] Added Changelog
 
-# 1.1.1 / 17-07-2022
+# v1.1.1 <small><sup>17-07-2022</sup></small>
 
 - [Added] Possibility to use custom regular expression with [validator.isEmailOk](./validate/isEmailOk.md)
 
 - [Fix] Internal mechanism in charge of data manipulation which would cause bugs
 
-# 1.1.0 / 17-07-2022
+# v1.1.0 <small><sup>17-07-2022</sup></small>
 
 - [Docs] Imporved details of invalid schema error for onCreate & onUpdate methods
 
-# 1.0.35 / 16-07-2022
+# v1.0.35 <small><sup>16-07-2022</sup></small>
 
 - [Added] Built-in validator for emails [validator.isEmailOk](./validate/isEmailOk.md)
 - [Docs] Improved details of invalid schema error
 
-# 1.0.34 / 15-07-2022
+# v1.0.34 <small><sup>15-07-2022</sup></small>
 
 - [Added] Possibility to override built in property names for timestamps

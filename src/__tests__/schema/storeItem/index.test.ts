@@ -1,5 +1,5 @@
 import { StoreItem } from ".";
-import { IOtherQuantity, IStoreItem } from "./interfaces";
+import { IStoreItem } from "./interfaces";
 
 describe("Testing schema of StoreItem", () => {
   let storeItem: IStoreItem;

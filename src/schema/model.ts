@@ -51,8 +51,9 @@ export class Model<T extends ILooseObject> extends SchemaCore<T> {
     // iterate through validated values and get only changed fields
     // amongst the schema's updatable properties
     const updatables = toUpdate.filter((prop) => this._isUpdatable(prop));
-    const propsWithUpdateListeners = toUpdate.filter((prop) =>
-      this._hasHandlersFor(prop, "onUpdate")
+    const propsWithUpdateListeners = toUpdate.filter(
+      (prop) =>
+        this._hasHandlersFor(prop, "onUpdate") || this._isSideEffect(prop)
     );
 
     const validations = updatables.map((prop) =>

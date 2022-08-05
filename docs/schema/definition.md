@@ -5,11 +5,11 @@ The Schema constructor accepts 2 arguments:
 1. definitions (required)
 1. options (optional)
 
-```javascript
+```js
 const userSchema = new Schema(definitions, options);
 ```
 
-```javascript
+```js
 const { makeModel, Schema } = require("clean-schema");
 
 const userSchema = new Schema({
@@ -49,9 +49,10 @@ function onNameChange(context) {
 | Property   | Type     | Description                                                                                                                                                                                                                                                                               |
 | ---------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | default    | any      | A value of any type you wish to use for a given property. Default **undefined**                                                                                                                                                                                                           |
-| dependent  | boolean  | If set to true, clean-schema will prevent any external modification of the property; making it's value soley dependent on another property via the onCreate / onUpdate handlers. Default **false**                                                                                        |
-| onCreate   | array    | An array of functions(async / sync) you want to be executed when an instance of your model gets created. Default **[ ]**                                                                                                                                                                  |
-| onUpdate   | array    | An array of functions(async / sync) you want to be executed when a particular property of your instance get updated. Default **[ ]**                                                                                                                                                      |
+| dependent  | boolean  | If set to true, clean-schema will prevent any external modification of the property; making it's value solely dependent on another property via the onCreate / onUpdate handlers. Default **false**                                                                                       |
+| onChange   | array    | An array of functions(async / sync) you want to execute everytime an instance of your model gets created or updated. **`NB:`** `These listeners(onChange) are always executed after onCreate & onUpdate listeners of the same property.` Default **[ ]**                                  |
+| onCreate   | array    | An array of functions(async / sync) you want to execute everytime an instance of your model gets created. Default **[ ]**                                                                                                                                                                 |
+| onUpdate   | array    | An array of functions(async / sync) you want to execute everytime the property definedo on get updated. Default **[ ]**                                                                                                                                                                   |
 | readonly   | boolean  | If true will be required at initialization and will never allow updates. If true with shouldInit: false, will not be initialized but allowed to update only once. Default **false**                                                                                                       |
 | required   | boolean  | Specifies a property that must be initialised. Default **false**                                                                                                                                                                                                                          |
 | sideEffect | boolean  | Used with onUpdate to modify other properties but is not attached to instances of your model. Must have a validator, must have at least one onUpdate handler. onCreate handlers are ignored because the onUpdate handlers are used both at creation and during updates. Default **false** |
@@ -62,7 +63,7 @@ function onNameChange(context) {
 
 Below is an example of how you can make a schema inherit from another:
 
-```javascript
+```js
 const { makeModel, Schema } = require("clean-schema");
 
 const adminSchema = new Schema(
@@ -82,11 +83,11 @@ const AdminModel = makeModel(adminSchema);
 
 This is an object comprized of values of the instance being manipulated ( created / updated ) plus any side effect values defined in your schema.
 
-## onCreate & onUpdate handlers
+## onCreate & onUpdate listeners
 
-These handlers are expected to have the structure below
+These listeners are expected to have the structure of the `onComplete function` below
 
-```javascript
+```js
 const transactionSchema = new Schema({
   completedAt: {
     default: "",
@@ -116,7 +117,7 @@ Clean schema considers a property to be properly defined if it is `dependent`, `
 
 ## Options
 
-```typescript
+```ts
 interface ITimestamp {
   createdAt?: string;
   updatedAt?: string;
@@ -129,7 +130,7 @@ options: {
 
 If timestamps is set to true, you'll automatically have the `createdAt` and `updatedAt` properties attached to instances of your model at creation, cloning & update. But you can override the options and use your own properties like in the example below. Default **false**
 
-```javascript
+```js
 // override both
 const transactionSchema = new Schema(definitions, {
   timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
@@ -145,7 +146,7 @@ const transactionSchema = new Schema(definitions, {
 
 Validator functions are expected to have the structure below
 
-```typescript
+```ts
 const validator = (valueToValidate: any, ...args?, validationContext) => {
   // validation logic here
 

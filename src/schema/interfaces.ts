@@ -20,6 +20,7 @@ export interface PropDefinitionRules {
   [key: string]: {
     default?: any;
     dependent?: boolean;
+    onChange?: NonEmptyArray<fxLooseObject>;
     onCreate?: NonEmptyArray<fxLooseObject>;
     onUpdate?: NonEmptyArray<fxLooseObject>;
     readonly?: boolean;
@@ -33,6 +34,7 @@ export interface PropDefinitionRules {
 export type PropDefinitionRule =
   | "default"
   | "dependent"
+  | "onChange"
   | "onCreate"
   | "onUpdate"
   | "readonly"
@@ -41,7 +43,7 @@ export type PropDefinitionRule =
   | "shouldInit"
   | "validator";
 
-export type LifeCycleRule = "onCreate" | "onUpdate";
+export type LifeCycleRule = "onChange" | "onCreate" | "onUpdate";
 
 interface IOptionsTimestamp {
   createdAt?: string;
