@@ -53,24 +53,32 @@ export class Model<T extends ILooseObject> extends SchemaCore<T> {
     const updatables = toUpdate.filter((prop) => this._isUpdatable(prop));
     const propsWithUpdateListeners = toUpdate.filter(
       (prop) =>
-        this._hasHandlersFor(prop, "onUpdate") || this._isSideEffect(prop)
+        (!updatables.includes(prop) &&
+          this._getAllListeners(prop, "onUpdate").length) ||
+        this._isSideEffect(prop)
     );
 
-    const validations = updatables.map((prop) =>
-      this.validate({ prop, value: changes[prop] })
-    );
+    const validations = updatables.map(async (prop) => {
+      const validationResults = await this.validate(prop, changes[prop]);
+
+      return { prop, validationResults };
+    });
 
     const results = await Promise.all(validations);
 
-    updatables.forEach((prop, index) => {
-      const { reasons, valid, validated } = results[index];
+    for (const { prop, validationResults } of results) {
+      const { reasons, valid, validated } = validationResults;
 
       if (!valid) return this.error.add(prop, reasons);
 
       const hasChanged = !isEqual(this.values[prop], validated);
 
-      if (valid && hasChanged) this.updated[prop as keyof T] = validated;
-    });
+      if (!valid || !hasChanged) continue;
+
+      this.updated[prop as keyof T] = validated;
+
+      await this._resolveLinkedValue(this.updated, prop, validated, "onUpdate");
+    }
 
     for (let prop of propsWithUpdateListeners)
       await this._resolveLinkedValue(

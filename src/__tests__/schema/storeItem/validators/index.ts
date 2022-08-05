@@ -81,9 +81,9 @@ export const validateQuantities = async (value: any, ctx: IStoreItem) => {
   });
 };
 
-export const onQuantityChange = ({ quantityChangeCounter }: IStoreItem) => ({
-  quantityChangeCounter: quantityChangeCounter! + 1,
-});
+export const onQuantityChange = ({ quantityChangeCounter }: IStoreItem) => {
+  return { quantityChangeCounter: quantityChangeCounter! + 1 };
+};
 
 const getMeasureUnit = (
   otherMeasureUnits: IOtherMeasureUnit[],

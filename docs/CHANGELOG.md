@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# v1.3.1 <small><sup>05-08-2022</sup></small>
+
+- [Added] extra checks to ensure proper validation during updates
+
 # v1.3.0 <small><sup>05-08-2022</sup></small>
 
 - [Added] added onChange property for both create & update events

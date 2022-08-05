@@ -124,7 +124,7 @@ export abstract class SchemaCore<T extends ILooseObject> {
         this._isLaxProp(prop) && this.values.hasOwnProperty(prop);
 
       if (this._canInit(prop) || isLaxInit)
-        return this.validate({ prop, value: this.values[prop] });
+        return this.validate(prop, this.values[prop]);
 
       return {
         reasons: [],
@@ -182,24 +182,20 @@ export abstract class SchemaCore<T extends ILooseObject> {
     );
   };
 
-  protected _getListenersOnly = (prop: string, lifeCycle: LifeCycleRule) => {
-    return this._getDetailedListeners(prop, lifeCycle, true).map(
-      (dt) => dt.listener
-    );
-  };
-
   protected _getAllListeners = (prop: string, lifeCycle: LifeCycleRule) => {
-    const onChange = this._getListenersOnly(prop, "onChange");
+    const onChange = this._getListeners(prop, "onChange");
 
     if (this._isSideEffect(prop)) return onChange;
 
-    const others = this._getListenersOnly(prop, lifeCycle);
+    const others = this._getListeners(prop, lifeCycle);
 
     return [...others, ...onChange];
   };
 
   protected _getListeners = (prop: string, lifeCycle: LifeCycleRule) => {
-    return this._getListenersOnly(prop, lifeCycle);
+    return this._getDetailedListeners(prop, lifeCycle, true).map(
+      (dt) => dt.listener
+    );
   };
 
   protected _getProps = () => {
@@ -269,14 +265,6 @@ export abstract class SchemaCore<T extends ILooseObject> {
     if (!propDef) return false;
 
     return !isEqual(propDef.default, undefined);
-  };
-
-  protected _hasHandlersFor = (
-    prop: string,
-    type: LifeCycleRule = "onUpdate",
-    _number = 1
-  ) => {
-    return this._getListeners(prop, type)?.length ?? 0 >= _number;
   };
 
   protected _hasProp = (
@@ -444,13 +432,13 @@ export abstract class SchemaCore<T extends ILooseObject> {
 
     if (!this._isValidatorOk(prop)) reasons.push("Invalid validator");
 
-    if (!this._hasHandlersFor(prop, "onChange"))
+    if (!this._getListeners(prop, "onChange").length)
       reasons.push("SideEffects must have at least one onChange listener");
 
-    if (this._hasHandlersFor(prop, "onCreate"))
+    if (this._getListeners(prop, "onCreate").length)
       reasons.push("SideEffects do not support onCreate listeners");
 
-    if (this._hasHandlersFor(prop, "onUpdate"))
+    if (this._getListeners(prop, "onUpdate").length)
       reasons.push(
         "SideEffects do not support onUpdate listeners any more. Use onChange instead"
       );
@@ -557,10 +545,7 @@ export abstract class SchemaCore<T extends ILooseObject> {
 
     if (!listeners.length) return;
 
-    const { reasons, valid, validated } = await this.validate({
-      prop,
-      value,
-    });
+    const { reasons, valid, validated } = await this.validate(prop, value);
 
     if (!valid) return this.error.add(prop, reasons);
 
@@ -633,10 +618,10 @@ export abstract class SchemaCore<T extends ILooseObject> {
     const sideEffectProps = Object.keys(this.values).filter(this._isSideInit);
 
     for (let prop of sideEffectProps) {
-      const { reasons, valid, validated } = await this.validate({
+      const { reasons, valid, validated } = await this.validate(
         prop,
-        value: this.values?.[prop],
-      });
+        this.values?.[prop]
+      );
 
       if (valid) {
         const listeners = this._getListeners(prop, "onChange");
@@ -671,13 +656,7 @@ export abstract class SchemaCore<T extends ILooseObject> {
     return data;
   };
 
-  protected validate = async ({
-    prop = "",
-    value,
-  }: {
-    prop: string;
-    value: any;
-  }) => {
+  protected validate = async (prop = "", value: any) => {
     const isSideEffect = this._isSideEffect(prop);
 
     if (!this._isProp(prop) && !isSideEffect)
