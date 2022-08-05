@@ -6,7 +6,7 @@ For any schema that inherits from another, call the extend method on the schema 
 1. options: an options object with
    - remove: an array of properties to ignore from the parent schema. To override a property, you just do it in the property definitions
 
-```javascript
+```js
 const definitions = {
   securePass: {
     required: true,
