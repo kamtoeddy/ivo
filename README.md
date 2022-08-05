@@ -139,7 +139,7 @@ These methods are async because custom validators could be async as well.
   - [Defining Properties](./docs/schema/definition.md#defining-a-schema)
   - [Inheritance](./docs/schema/definition.md#inheritance)
   - [The Validation Context](./docs/schema/definition.md#the-validation-context)
-  - [onCreate & onUpdate listeners](./docs/schema/definition.md#oncreate--onupdate-handlers)
+  - [onChange, onCreate & onUpdate listeners](./docs/schema/definition.md#onchange-oncreate--onupdate-listeners)
   - [Options](./docs/schema/definition.md#options)
 - [Helper Validators](./docs/validate/index.md#built-in-validation-helpers)
   - [isArrayOk](./docs/validate/isArrayOk.md)

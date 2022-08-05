@@ -83,7 +83,7 @@ const AdminModel = makeModel(adminSchema);
 
 This is an object comprized of values of the instance being manipulated ( created / updated ) plus any side effect values defined in your schema.
 
-## onCreate & onUpdate listeners
+## onChange, onCreate & onUpdate listeners
 
 These listeners are expected to have the structure of the `onComplete function` below
 
