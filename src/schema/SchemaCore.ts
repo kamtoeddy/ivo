@@ -4,7 +4,7 @@ import { belongsTo } from "../utils/functions";
 import { ObjectType } from "../utils/interfaces";
 import { isEqual } from "../utils/isEqual";
 import {
-  fxLooseObject,
+  fxObjectType,
   LifeCycleRule,
   Private_ISchemaOptions,
   PropDefinitionRule,
@@ -105,7 +105,7 @@ export abstract class SchemaCore<T extends ObjectType> {
   };
 
   protected _getCreateListeners = () => {
-    let actions: fxLooseObject[] = [];
+    let actions: fxObjectType[] = [];
 
     for (let prop of this.props) {
       const _actions = this._getAllListeners(prop, "onCreate");

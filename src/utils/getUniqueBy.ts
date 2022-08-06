@@ -16,12 +16,16 @@ export const getSubObject = (obj: ObjectType, sampleSub: ObjectType) => {
 
 type FindByOptions = { fromBack?: boolean };
 
-type IFindBy = (list: any[], determinant: any, options?: FindByOptions) => any;
+type IFindBy = <T>(
+  list: T[],
+  determinant: any,
+  options?: FindByOptions
+) => T | undefined;
 
-export const findBy: IFindBy = (
-  list = [],
-  determinant,
-  options = { fromBack: false }
+export const findBy: IFindBy = <T>(
+  list: T[] = [],
+  determinant: any,
+  options: FindByOptions = { fromBack: false }
 ) => {
   const { fromBack } = options;
   const detType = typeof determinant;
@@ -33,19 +37,19 @@ export const findBy: IFindBy = (
   if (Array.isArray(determinant))
     return list.find((dt) => {
       const [key, value] = determinant;
-      const dt_val = getDeepValue(dt, key);
+      const dt_val = getDeepValue(dt as ObjectType, key);
 
       return isEqual(dt_val, value);
     });
 
   if (detType === "object")
     return list.find((dt) => {
-      const sub = getSubObject(dt, determinant);
+      const sub = getSubObject(dt as ObjectType, determinant);
 
       return isEqual(determinant, sub);
     });
 
-  return list.find((dt) => getDeepValue(dt, determinant));
+  return list.find((dt) => getDeepValue(dt as ObjectType, determinant));
 };
 
 type GetUniqueByOptions = { backwards?: boolean };
