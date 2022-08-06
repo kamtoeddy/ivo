@@ -1,8 +1,8 @@
-import { IStringOptions } from "../../../../utils/interfaces";
-import { IOtherMeasureUnit, IStoreItem } from "../interfaces";
+import { IStringOptions } from "../../../../lib";
+import { IOtherMeasureUnit, IOtherQuantity, IStoreItem } from "./interfaces";
 
-import { isArrayOk, isNumberOk, isStringOk } from "../../../../validate";
-import { findBy } from "../../../../utils/getUniqueBy";
+import { isArrayOk, isNumberOk, isStringOk } from "../../../../lib/validate";
+import { findBy } from "../../../utils/getUniqueBy";
 
 export const validateString = (
   errorMessage = "",
@@ -35,7 +35,7 @@ export const validateOtherUnit = (value: any) => {
 };
 
 export const validateOtherUnits = async (value: any) => {
-  return await isArrayOk(value, {
+  return await isArrayOk<IOtherMeasureUnit>(value, {
     empty: true,
     sorted: true,
     filter: (v) => validateOtherUnit(v).valid,
@@ -73,7 +73,7 @@ export const validateOtherQuantity = (value: any, ctx: IStoreItem) => {
 };
 
 export const validateQuantities = async (value: any, ctx: IStoreItem) => {
-  return isArrayOk(value, {
+  return isArrayOk<IOtherQuantity>(value, {
     empty: true,
     unique: false,
     filter: (v) => validateOtherQuantity(v, ctx).valid,

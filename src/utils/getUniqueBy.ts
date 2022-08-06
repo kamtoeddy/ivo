@@ -1,12 +1,12 @@
-import { ILooseObject } from "./interfaces";
+import { ObjectType } from "./interfaces";
 import { isEqual } from "./isEqual";
 
-export const getDeepValue = (data: ILooseObject, key: string): any => {
+export const getDeepValue = (data: ObjectType, key: string): any => {
   return key.split(".").reduce((prev, next) => prev?.[next], data);
 };
 
-export const getSubObject = (obj: ILooseObject, sampleSub: ILooseObject) => {
-  const _obj: ILooseObject = {},
+export const getSubObject = (obj: ObjectType, sampleSub: ObjectType) => {
+  const _obj: ObjectType = {},
     keys = Object.keys(sampleSub);
 
   keys.forEach((key) => (_obj[key] = getDeepValue(obj, key)));
@@ -16,12 +16,16 @@ export const getSubObject = (obj: ILooseObject, sampleSub: ILooseObject) => {
 
 type FindByOptions = { fromBack?: boolean };
 
-type IFindBy = (list: any[], determinant: any, options?: FindByOptions) => any;
+type IFindBy = <T>(
+  list: T[],
+  determinant: any,
+  options?: FindByOptions
+) => T | undefined;
 
-export const findBy: IFindBy = (
-  list = [],
-  determinant,
-  options = { fromBack: false }
+export const findBy: IFindBy = <T>(
+  list: T[] = [],
+  determinant: any,
+  options: FindByOptions = { fromBack: false }
 ) => {
   const { fromBack } = options;
   const detType = typeof determinant;
@@ -33,25 +37,25 @@ export const findBy: IFindBy = (
   if (Array.isArray(determinant))
     return list.find((dt) => {
       const [key, value] = determinant;
-      const dt_val = getDeepValue(dt, key);
+      const dt_val = getDeepValue(dt as ObjectType, key);
 
       return isEqual(dt_val, value);
     });
 
   if (detType === "object")
     return list.find((dt) => {
-      const sub = getSubObject(dt, determinant);
+      const sub = getSubObject(dt as ObjectType, determinant);
 
       return isEqual(determinant, sub);
     });
 
-  return list.find((dt) => getDeepValue(dt, determinant));
+  return list.find((dt) => getDeepValue(dt as ObjectType, determinant));
 };
 
 type GetUniqueByOptions = { backwards?: boolean };
 
-const getUnique = (list: any[]) => {
-  list = list.map((dt) => {
+const getUnique = <T>(list: T[]) => {
+  let _list = list.map((dt) => {
     try {
       return JSON.stringify(dt);
     } catch (err) {
@@ -59,21 +63,19 @@ const getUnique = (list: any[]) => {
     }
   });
 
-  list = Array.from(new Set(list));
+  _list = Array.from(new Set(_list));
 
-  list = list.map((dt) => {
+  return _list.map((dt) => {
     try {
-      return JSON.parse(dt);
+      return JSON.parse(dt as string) as T;
     } catch (err) {
-      return dt;
+      return dt as T;
     }
   });
-
-  return list;
 };
 
-export const getUniqueBy = (
-  list: any[],
+export const getUniqueBy = <T>(
+  list: T[],
   key?: string,
   { backwards }: GetUniqueByOptions = { backwards: false }
 ) => {
@@ -81,9 +83,9 @@ export const getUniqueBy = (
 
   if (!key) return getUnique(list);
 
-  let obj: ILooseObject = {};
+  let obj: ObjectType = {};
 
-  list.forEach((dt) => (obj[getDeepValue(dt, key)] = dt));
+  list.forEach((dt) => (obj[getDeepValue(dt as ObjectType, key)] = dt));
 
-  return Object.values(obj);
+  return Object.values(obj) as T[];
 };

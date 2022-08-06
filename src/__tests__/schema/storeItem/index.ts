@@ -1,5 +1,4 @@
-import { Schema } from "../../../schema";
-import { makeModel } from "../../../schema/model";
+import { makeModel, Schema } from "../../../../lib";
 import { IStoreItem } from "./interfaces";
 import {
   onQuantitiesChange,
@@ -27,6 +26,13 @@ const storeItemSchema = new Schema(
       // onCreate: [onQuantityChange],
       // onUpdate: [onQuantityChange],
       validator: validateQuantity,
+    },
+    _readOnlyNoInit: { default: "", readonly: true, shouldInit: false },
+    _dependentReadOnly: { default: 0, readonly: true, dependent: true },
+    _sideEffectForDependentReadOnly: {
+      sideEffect: true,
+      onChange: [() => ({ _dependentReadOnly: 1 })],
+      validator: (dt) => ({ valid: true }),
     },
     quantityChangeCounter: { default: 0, dependent: true },
     measureUnit: {

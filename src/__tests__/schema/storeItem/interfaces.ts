@@ -9,6 +9,9 @@ export interface IOtherMeasureUnit {
 }
 
 export interface IStoreItem {
+  _readOnlyNoInit?: any;
+  _dependentReadOnly?: any;
+  _sideEffectForDependentReadOnly?: any;
   id: string;
   name: string;
   price: number;
@@ -17,4 +20,8 @@ export interface IStoreItem {
   quantity?: number;
   measureUnit: string;
   otherMeasureUnits?: IOtherMeasureUnit[];
+}
+
+export interface IStoreItemChild extends IStoreItem {
+  childID: string;
 }

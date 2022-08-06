@@ -1,8 +1,6 @@
-import { ILooseObject } from "../utils/interfaces";
+import { ObjectType } from "../utils/interfaces";
 
-export type fxLooseObject = (
-  ...args: any
-) => ILooseObject | Promise<ILooseObject>;
+export type fxObjectType = (...args: any) => ObjectType | Promise<ObjectType>;
 
 export interface ValidatorResponse {
   reasons?: string[];
@@ -20,9 +18,9 @@ export interface PropDefinitionRules {
   [key: string]: {
     default?: any;
     dependent?: boolean;
-    onChange?: NonEmptyArray<fxLooseObject>;
-    onCreate?: NonEmptyArray<fxLooseObject>;
-    onUpdate?: NonEmptyArray<fxLooseObject>;
+    onChange?: NonEmptyArray<fxObjectType>;
+    onCreate?: NonEmptyArray<fxObjectType>;
+    onUpdate?: NonEmptyArray<fxObjectType>;
     readonly?: boolean;
     required?: boolean;
     sideEffect?: boolean;
@@ -62,11 +60,10 @@ export interface SchemaOptions {
 export interface Private_ISchemaOptions {
   timestamps: ITimestamp;
 }
+export interface SchemaCloneOptions {
+  reset?: string | string[];
+}
 
 export interface SchemaExtensionOptions {
   remove?: string | string[];
-}
-
-export interface ICloneOptions {
-  reset?: string | string[];
 }
