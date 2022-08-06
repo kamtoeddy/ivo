@@ -1,8 +1,8 @@
-import { ApiErrorProps, ErrorPayload } from "./interfaces";
+import { ApiErrorProps, PayloadType } from "./interfaces";
 
 export class ApiError extends Error {
   name = "ApiError";
-  payload: ErrorPayload;
+  payload: PayloadType;
   statusCode: number;
 
   constructor({ message, payload = {}, statusCode = 400 }: ApiErrorProps) {

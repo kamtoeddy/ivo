@@ -1,11 +1,11 @@
 import { Schema } from ".";
 import { asArray } from "../utils/asArray";
-import { ILooseObject } from "../utils/interfaces";
+import { ObjectType } from "../utils/interfaces";
 import { isEqual } from "../utils/isEqual";
-import { ICloneOptions } from "./interfaces";
+import { SchemaCloneOptions } from "./interfaces";
 import { SchemaCore } from "./SchemaCore";
 
-export class Model<T extends ILooseObject> extends SchemaCore<T> {
+export class Model<T extends ObjectType> extends SchemaCore<T> {
   constructor(schema: Schema, values: Partial<T>) {
     super(schema.propDefinitions, schema.options);
 
@@ -23,13 +23,13 @@ export class Model<T extends ILooseObject> extends SchemaCore<T> {
     });
   }
 
-  static build<U extends ILooseObject>(schema: Schema) {
+  static build<U extends ObjectType>(schema: Schema) {
     return function Builder(values: Partial<U>) {
       return new Model(schema, values);
     };
   }
 
-  clone = async (options: ICloneOptions = { reset: [] }) => {
+  clone = async (options: SchemaCloneOptions = { reset: [] }) => {
     const cloned = await this._getCloneObject(asArray(options.reset));
 
     return this._handleCreateActions(cloned);
@@ -69,11 +69,14 @@ export class Model<T extends ILooseObject> extends SchemaCore<T> {
     for (const { prop, validationResults } of results) {
       const { reasons, valid, validated } = validationResults;
 
-      if (!valid) return this.error.add(prop, reasons);
+      if (!valid) {
+        this.error.add(prop, reasons);
+        continue;
+      }
 
       const hasChanged = !isEqual(this.values[prop], validated);
 
-      if (!valid || !hasChanged) continue;
+      if (!hasChanged) continue;
 
       this.updated[prop as keyof T] = validated;
 

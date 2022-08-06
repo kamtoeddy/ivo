@@ -1,18 +1,8 @@
 import { getUniqueBy } from "../utils/getUniqueBy";
+import { IArrayOptions } from "../utils/interfaces";
 
-export interface IArrayOptions {
-  empty?: boolean;
-  filter?: (data: any) => boolean;
-  modifier?: (data: any) => any;
-  sorted?: boolean;
-  sorter?: (a: any, b: any) => number;
-  sortOrder?: number;
-  unique?: boolean;
-  uniqueKey?: string;
-}
-
-export async function isArrayOk(
-  arr: any[],
+export async function isArrayOk<T>(
+  arr: T[],
   {
     empty = false,
     sorted = false,
@@ -22,7 +12,7 @@ export async function isArrayOk(
     sortOrder = -1,
     unique = true,
     uniqueKey = "",
-  }: IArrayOptions = {}
+  }: IArrayOptions<T> = {}
 ) {
   if (!Array.isArray(arr))
     return { valid: false, reasons: ["Expected an array"] };

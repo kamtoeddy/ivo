@@ -1,12 +1,12 @@
-import { ILooseObject } from "./interfaces";
+import { ObjectType } from "./interfaces";
 import { isEqual } from "./isEqual";
 
-export const getDeepValue = (data: ILooseObject, key: string): any => {
+export const getDeepValue = (data: ObjectType, key: string): any => {
   return key.split(".").reduce((prev, next) => prev?.[next], data);
 };
 
-export const getSubObject = (obj: ILooseObject, sampleSub: ILooseObject) => {
-  const _obj: ILooseObject = {},
+export const getSubObject = (obj: ObjectType, sampleSub: ObjectType) => {
+  const _obj: ObjectType = {},
     keys = Object.keys(sampleSub);
 
   keys.forEach((key) => (_obj[key] = getDeepValue(obj, key)));
@@ -81,7 +81,7 @@ export const getUniqueBy = (
 
   if (!key) return getUnique(list);
 
-  let obj: ILooseObject = {};
+  let obj: ObjectType = {};
 
   list.forEach((dt) => (obj[getDeepValue(dt, key)] = dt));
 

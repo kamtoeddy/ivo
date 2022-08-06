@@ -1,20 +1,23 @@
 export interface ApiErrorProps {
   message: string;
-  payload?: ErrorPayload;
+  payload?: PayloadType;
   statusCode?: number;
 }
 
-export interface ErrorPayload {
-  [key: string]: string[];
+export interface IArrayOptions<T> {
+  empty?: boolean;
+  filter?: (data: T) => boolean;
+  modifier?: (data: T) => any;
+  sorted?: boolean;
+  sorter?: (a: T, b: T) => number;
+  sortOrder?: number;
+  unique?: boolean;
+  uniqueKey?: string;
 }
 
-export interface datePropTypes {
-  max?: number;
-  min?: number;
-  enums?: Date[];
-}
+export type PayloadType = Record<number | string, string[]>;
 
-export type ILooseObject = Record<string, any>;
+export type ObjectType = Record<number | string, any>;
 
 export interface IStringOptions {
   enums?: string[];

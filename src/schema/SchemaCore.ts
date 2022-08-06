@@ -1,7 +1,7 @@
 import { ApiError } from "../utils/ApiError";
 import { asArray } from "../utils/asArray";
 import { belongsTo } from "../utils/functions";
-import { ILooseObject } from "../utils/interfaces";
+import { ObjectType } from "../utils/interfaces";
 import { isEqual } from "../utils/isEqual";
 import {
   fxLooseObject,
@@ -18,7 +18,7 @@ export const defaultOptions: SchemaOptions = { timestamps: false };
 
 const lifeCycleRules: LifeCycleRule[] = ["onChange", "onCreate", "onUpdate"];
 
-export abstract class SchemaCore<T extends ILooseObject> {
+export abstract class SchemaCore<T extends ObjectType> {
   protected error = new ApiError({ message: "Validation Error" });
 
   protected _helper: SchemaOptionsHelper;
@@ -477,7 +477,7 @@ export abstract class SchemaCore<T extends ILooseObject> {
   protected _isUpdatableInCTX = (
     prop: string,
     value: any,
-    context: ILooseObject = this._getContext()
+    context: ObjectType = this._getContext()
   ) => {
     if (!this._isProp(prop)) return false;
 
@@ -535,7 +535,7 @@ export abstract class SchemaCore<T extends ILooseObject> {
   }
 
   protected _resolveLinkedValue = async (
-    contextObject: ILooseObject = {},
+    contextObject: ObjectType = {},
     prop: string,
     value: any,
     lifeCycle: LifeCycleRule
