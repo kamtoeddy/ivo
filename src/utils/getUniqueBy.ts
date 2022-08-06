@@ -54,8 +54,8 @@ export const findBy: IFindBy = <T>(
 
 type GetUniqueByOptions = { backwards?: boolean };
 
-const getUnique = (list: any[]) => {
-  list = list.map((dt) => {
+const getUnique = <T>(list: T[]) => {
+  let _list = list.map((dt) => {
     try {
       return JSON.stringify(dt);
     } catch (err) {
@@ -63,21 +63,19 @@ const getUnique = (list: any[]) => {
     }
   });
 
-  list = Array.from(new Set(list));
+  _list = Array.from(new Set(_list));
 
-  list = list.map((dt) => {
+  return _list.map((dt) => {
     try {
-      return JSON.parse(dt);
+      return JSON.parse(dt as string) as T;
     } catch (err) {
-      return dt;
+      return dt as T;
     }
   });
-
-  return list;
 };
 
-export const getUniqueBy = (
-  list: any[],
+export const getUniqueBy = <T>(
+  list: T[],
   key?: string,
   { backwards }: GetUniqueByOptions = { backwards: false }
 ) => {
@@ -87,7 +85,7 @@ export const getUniqueBy = (
 
   let obj: ObjectType = {};
 
-  list.forEach((dt) => (obj[getDeepValue(dt, key)] = dt));
+  list.forEach((dt) => (obj[getDeepValue(dt as ObjectType, key)] = dt));
 
-  return Object.values(obj);
+  return Object.values(obj) as T[];
 };
