@@ -34,14 +34,11 @@ export class ApiError extends Error {
     return this;
   };
 
-  getInfo = () => {
-    return {
-      _isError: true,
-      message: this.message,
-      payload: this.payload,
-      statusCode: this.statusCode,
-    };
-  };
+  getInfo = () => ({
+    message: this.message,
+    payload: this.payload,
+    statusCode: this.statusCode,
+  });
 
   remove = (field: string) => {
     delete this.payload?.[field];
