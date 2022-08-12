@@ -19,14 +19,12 @@ const userSchema = new Schema({
   },
   firstName: {
     required: true,
-    onCreate: [onNameChange],
-    onUpdate: [onNameChange],
+    onChange: onNameChange,
     validator: validateName,
   },
   lastName: {
     required: true,
-    onCreate: [onNameChange],
-    onUpdate: [onNameChange],
+    onChange: onNameChange,
     validator: validateName,
   },
   fullName: {
@@ -40,9 +38,7 @@ const UserModel = makeModel(userSchema);
 function onNameChange(context) {
   const { firstName, lastName } = context;
 
-  const fullName = `${firstName} ${lastName}`;
-
-  return { fullName };
+  return { fullName: `${firstName} ${lastName}` };
 }
 ```
 
@@ -50,9 +46,9 @@ function onNameChange(context) {
 | ---------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | default    | any      | A value of any type you wish to use for a given property. Default **undefined**                                                                                                                                                                                                           |
 | dependent  | boolean  | If set to true, clean-schema will prevent any external modification of the property; making it's value solely dependent on another property via the onCreate / onUpdate handlers. Default **false**                                                                                       |
-| onChange   | array    | An array of functions(async / sync) you want to execute everytime an instance of your model gets created or updated. **`NB:`** `These listeners(onChange) are always executed after onCreate & onUpdate listeners of the same property.` Default **[ ]**                                  |
-| onCreate   | array    | An array of functions(async / sync) you want to execute everytime an instance of your model gets created. Default **[ ]**                                                                                                                                                                 |
-| onUpdate   | array    | An array of functions(async / sync) you want to execute everytime the property definedo on get updated. Default **[ ]**                                                                                                                                                                   |
+| onChange   | array    | A function or array of functions(async / sync) you want to execute everytime an instance of your model gets created or updated. **`NB:`** `These listeners(onChange) are always executed after onCreate & onUpdate listeners of the same property.` Default **[ ]**                       |
+| onCreate   | array    | A function or array of functions(async / sync) you want to execute everytime an instance of your model gets created. Default **[ ]**                                                                                                                                                      |
+| onUpdate   | array    | A function or array of functions(async / sync) you want to execute everytime the property definedo on get updated. Default **[ ]**                                                                                                                                                        |
 | readonly   | boolean  | If true will be required at initialization and will never allow updates. If true with shouldInit: false, will not be initialized but allowed to update only once. Default **false**                                                                                                       |
 | required   | boolean  | Specifies a property that must be initialised. Default **false**                                                                                                                                                                                                                          |
 | sideEffect | boolean  | Used with onUpdate to modify other properties but is not attached to instances of your model. Must have a validator, must have at least one onUpdate handler. onCreate handlers are ignored because the onUpdate handlers are used both at creation and during updates. Default **false** |
@@ -73,8 +69,8 @@ const adminSchema = new Schema(
       validator: validateExtraPermissions,
     },
   },
-  { timestamp: { createdAt: "created_at" } }
-).extend(userSchema, { remove: ["dob"] });
+  { timestamps: { createdAt: "created_at" } }
+).extend(userSchema, { remove: "dob" });
 
 const AdminModel = makeModel(adminSchema);
 ```
@@ -83,7 +79,7 @@ const AdminModel = makeModel(adminSchema);
 
 This is an object comprized of values of the instance being manipulated ( created / updated ) plus any side effect values defined in your schema.
 
-## onChange, onCreate & onUpdate listeners
+## Life Cycle listeners
 
 These listeners are expected to have the structure of the `onComplete function` below
 
@@ -98,7 +94,7 @@ const transactionSchema = new Schema({
     default: false,
     readonly: true,
     shouldInit: false,
-    onUpdate: [onComplete],
+    onUpdate: onComplete,
     validator: (val) => validateBoolean(val),
   },
 });

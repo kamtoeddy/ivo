@@ -14,13 +14,15 @@ export type Validator = (
 
 export type NonEmptyArray<T> = [T, ...T[]];
 
+export type LifeCycleType = fxObjectType | NonEmptyArray<fxObjectType>;
+
 export interface PropDefinitionRules {
   [key: string]: {
     default?: any;
     dependent?: boolean;
-    onChange?: NonEmptyArray<fxObjectType>;
-    onCreate?: NonEmptyArray<fxObjectType>;
-    onUpdate?: NonEmptyArray<fxObjectType>;
+    onChange?: LifeCycleType;
+    onCreate?: LifeCycleType;
+    onUpdate?: LifeCycleType;
     readonly?: boolean;
     required?: boolean;
     sideEffect?: boolean;

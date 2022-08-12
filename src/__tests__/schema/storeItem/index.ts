@@ -22,7 +22,7 @@ const storeItemSchema = new Schema(
     },
     quantity: {
       default: 0,
-      onChange: [onQuantityChange],
+      onChange: onQuantityChange,
       // onCreate: [onQuantityChange],
       // onUpdate: [onQuantityChange],
       validator: validateQuantity,
