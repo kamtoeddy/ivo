@@ -171,8 +171,10 @@ export abstract class SchemaCore<T extends ObjectType> {
   ) => {
     const propDef = this._propDefinitions[prop];
 
+    const listeners = asArray(propDef?.[lifeCycle]);
+
     return (
-      propDef?.[lifeCycle]
+      listeners
         ?.map((listener, index) => ({
           index,
           listener,

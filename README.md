@@ -31,12 +31,16 @@ const userSchema = new Schema(
   {
     firstName: {
       required: true,
-      onChange: [onNameChange],
+      onChange: onNameChange,
       validator: validateName,
+    },
+    fullName: {
+      default: "",
+      dependent: true,
     },
     isBlocked: {
       default: false,
-      validator: validateboolean,
+      validator: validateBoolean,
     },
     id: {
       readonly: true,
@@ -44,17 +48,13 @@ const userSchema = new Schema(
     },
     lastName: {
       required: true,
-      onChange: [onNameChange],
+      onChange: onNameChange,
       validator: validateName,
     },
     lastSeen: {
       default: "",
-      shouldInit: false,
     },
-    name: {
-      default: "",
-      dependent: true,
-    },
+    shouldInit: false,
     password: {
       required: true,
       validator: validatePassword,
@@ -71,9 +71,7 @@ const userSchema = new Schema(
 function onNameChange(context) {
   const { firstName, lastName } = context;
 
-  const name = `${firstName} ${lastName}`;
-
-  return { name };
+  return { fullName: `${firstName} ${lastName}` };
 }
 
 const UserModel = makeModel(userSchema);
@@ -135,11 +133,11 @@ await db.update({ id: 1 }, userUpdate);
 
 These methods are async because custom validators could be async as well.
 
-| Property | Type     | Description                          |
-| -------- | -------- | ------------------------------------ |
-| clone    | function | Async function to copy an instance   |
-| create   | function | Async function to create an instance |
-| update   | function | Async function to update an instance |
+| Property | Type     | Description                        |
+| -------- | -------- | ---------------------------------- |
+| clone    | function | Async method to copy an instance   |
+| create   | function | Async method to create an instance |
+| update   | function | Async method to update an instance |
 
 ## Docs
 
