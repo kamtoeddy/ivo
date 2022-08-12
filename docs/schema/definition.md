@@ -19,14 +19,12 @@ const userSchema = new Schema({
   },
   firstName: {
     required: true,
-    onCreate: [onNameChange],
-    onUpdate: [onNameChange],
+    onChange: [onNameChange],
     validator: validateName,
   },
   lastName: {
     required: true,
-    onCreate: [onNameChange],
-    onUpdate: [onNameChange],
+    onChange: [onNameChange],
     validator: validateName,
   },
   fullName: {
@@ -73,7 +71,7 @@ const adminSchema = new Schema(
       validator: validateExtraPermissions,
     },
   },
-  { timestamp: { createdAt: "created_at" } }
+  { timestamps: { createdAt: "created_at" } }
 ).extend(userSchema, { remove: ["dob"] });
 
 const AdminModel = makeModel(adminSchema);
@@ -83,7 +81,7 @@ const AdminModel = makeModel(adminSchema);
 
 This is an object comprized of values of the instance being manipulated ( created / updated ) plus any side effect values defined in your schema.
 
-## onChange, onCreate & onUpdate listeners
+## Life Cycle listeners
 
 These listeners are expected to have the structure of the `onComplete function` below
 

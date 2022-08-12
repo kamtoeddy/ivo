@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# v1.3.4 <small><sup>12-08-2022</sup></small>
+
+- [Docs] Updated docs
+
 # v1.3.3 <small><sup>09-08-2022</sup></small>
 
 - [Removed] removed \_isError from ApiError

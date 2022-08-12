@@ -31,8 +31,7 @@ const userSchema = new Schema(
   {
     firstName: {
       required: true,
-      onCreate: [onNameChange],
-      onUpdate: [onNameChange],
+      onChange: [onNameChange],
       validator: validateName,
     },
     isBlocked: {
@@ -45,8 +44,7 @@ const userSchema = new Schema(
     },
     lastName: {
       required: true,
-      onCreate: [onNameChange],
-      onUpdate: [onNameChange],
+      onChange: [onNameChange],
       validator: validateName,
     },
     lastSeen: {
@@ -95,7 +93,17 @@ const user = await UserModel({
 }).create();
 
 console.log(user);
-// { createdAt: new Date(), firstName: "James", isBlocked: false, id: 1, lastName: "Spader", lastSeen: "", name: "James Spader", password: "au_34ibUv^T-adjInFjj", role: "app-user", updatedAt: new Date(),
+//  {
+//   createdAt: new Date(),
+//   firstName: "James",
+//   isBlocked: false,
+//   id: 1,
+//   lastName: "Spader",
+//   lastSeen: "",
+//   name: "James Spader",
+//   password: "au_34ibUv^T-adjInFjj",
+//   role: "app-user",
+//   updatedAt: new Date(),
 // };
 
 const db = require("db-of-choice"); // use db of your choice
@@ -139,7 +147,7 @@ These methods are async because custom validators could be async as well.
   - [Defining Properties](./docs/schema/definition.md#defining-a-schema)
   - [Inheritance](./docs/schema/definition.md#inheritance)
   - [The Validation Context](./docs/schema/definition.md#the-validation-context)
-  - [onChange, onCreate & onUpdate listeners](./docs/schema/definition.md#onchange-oncreate--onupdate-listeners)
+  - [Life Cycle listeners](./docs/schema/definition.md#life-cycle-listeners)
   - [Options](./docs/schema/definition.md#options)
 - [Helper Validators](./docs/validate/index.md#built-in-validation-helpers)
   - [isArrayOk](./docs/validate/isArrayOk.md)
