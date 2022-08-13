@@ -82,6 +82,7 @@ const UserModel = makeModel(userSchema);
 ```js
 const user = await UserModel({
   firstName: "James",
+  fullName: "Mr. James",
   id: 1,
   lastName: "Spader",
   lastSeen: new Date(),
@@ -94,11 +95,11 @@ console.log(user);
 //  {
 //   createdAt: new Date(),
 //   firstName: "James",
-//   isBlocked: false,
+//   fullName: "James Spader",
 //   id: 1,
+//   isBlocked: false,
 //   lastName: "Spader",
 //   lastSeen: "",
-//   name: "James Spader",
 //   password: "au_34ibUv^T-adjInFjj",
 //   role: "app-user",
 //   updatedAt: new Date(),
@@ -119,11 +120,13 @@ if (!user) return null;
 const userUpdate = await UserModel(user).update({
   lastSeen: new Date(),
   id: 2,
-  name: "Raymond Reddington",
+  age: 34,
+  fullName: "Raymond Reddington",
 });
 
+// age is ignored because it is not a valid property
+// fullName is ignored because it is dependent
 // id is ignored because it is readonly
-// name is ignored because it is dependent
 console.log(userUpdate); // { lastSeen: new Date(), updatedAt: new Date() }
 
 await db.update({ id: 1 }, userUpdate);
