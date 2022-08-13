@@ -53,8 +53,8 @@ const userSchema = new Schema(
     },
     lastSeen: {
       default: "",
+      shouldInit: false,
     },
-    shouldInit: false,
     password: {
       required: true,
       validator: validatePassword,
