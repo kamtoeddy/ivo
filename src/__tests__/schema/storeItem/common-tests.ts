@@ -6,9 +6,7 @@ export const CommonInheritanceTest = (
   describe(`Testing schema behaviours that should be common in parent & child schemas for @${schemaName}`, () => {
     let item: any;
 
-    beforeAll(async () => {
-      item = await Model(initialValues).create();
-    });
+    beforeAll(async () => (item = await Model(initialValues).create()));
 
     // creation
     it("should have been created properly", () => {
@@ -26,13 +24,13 @@ export const CommonInheritanceTest = (
       });
     });
 
-    it("should accept not dependent properties at creation", async () => {
+    it("should not accept dependent properties at creation", async () => {
       expect(item).toMatchObject({
         _dependentReadOnly: 0,
       });
     });
 
-    it("should accept not readOnly properties with blocked initialization at creation", async () => {
+    it("should not accept readOnly properties with blocked initialization at creation", async () => {
       expect(item).toMatchObject({
         _readOnlyNoInit: "",
       });
@@ -128,5 +126,91 @@ export const CommonInheritanceTest = (
     });
 
     // clone
+    it("should clone properly", async () => {
+      const clonedItem = await Model(item).clone();
+
+      expect(clonedItem).toMatchObject({
+        id: "1",
+        name: "beer",
+        price: 5,
+        measureUnit: "bottle",
+        otherMeasureUnits: [
+          { coefficient: 12, name: "crate" },
+          { coefficient: 24, name: "crate24" },
+          { coefficient: 5, name: "tray" },
+        ],
+        quantity: 100,
+      });
+    });
+
+    it("should respect clone reset option for property with default value", async () => {
+      const clone1 = await Model(item).clone({ reset: "quantity" });
+      const clone2 = await Model(item).clone({ reset: ["quantity"] });
+      const expectedResult = {
+        id: "1",
+        name: "beer",
+        price: 5,
+        measureUnit: "bottle",
+        otherMeasureUnits: [
+          { coefficient: 12, name: "crate" },
+          { coefficient: 24, name: "crate24" },
+          { coefficient: 5, name: "tray" },
+        ],
+        quantity: 0,
+      };
+
+      for (let clonedItem of [clone1, clone2])
+        expect(clonedItem).toMatchObject(expectedResult);
+    });
+
+    it("should respect clone reset option for property without default value", async () => {
+      const clone1 = await Model(item).clone({ reset: "measureUnit" });
+      const clone2 = await Model(item).clone({ reset: ["measureUnit"] });
+      const expectedResult = {
+        id: "1",
+        name: "beer",
+        price: 5,
+        measureUnit: "bottle",
+        otherMeasureUnits: [
+          { coefficient: 12, name: "crate" },
+          { coefficient: 24, name: "crate24" },
+          { coefficient: 5, name: "tray" },
+        ],
+        quantity: 100,
+      };
+
+      for (let clonedItem of [clone1, clone2])
+        expect(clonedItem).toMatchObject(expectedResult);
+    });
+  });
+
+  describe(`Testing schema @${schemaName} initialized with sideffect`, () => {
+    let item: any;
+
+    beforeAll(async () => {
+      item = await Model({
+        ...initialValues,
+        quantities: [
+          { quantity: 1, name: "crate24" },
+          { quantity: 1, name: "tray" },
+        ],
+      }).create();
+    });
+
+    // creation
+    it("should have been created properly", () => {
+      expect(item).toMatchObject({
+        id: "1",
+        name: "beer",
+        price: 5,
+        measureUnit: "bottle",
+        otherMeasureUnits: [
+          { coefficient: 12, name: "crate" },
+          { coefficient: 24, name: "crate24" },
+          { coefficient: 5, name: "tray" },
+        ],
+        quantity: 129,
+      });
+    });
   });
 };

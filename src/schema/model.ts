@@ -30,17 +30,15 @@ export class Model<T extends ObjectType> extends SchemaCore<T> {
   }
 
   clone = async (options: SchemaCloneOptions = { reset: [] }) => {
-    const cloned = await this._getCloneObject(asArray(options.reset));
-
-    return this._handleCreateActions(cloned);
+    return this._getCloneObject(asArray(options.reset).filter(this._isProp));
   };
 
   create = async () => {
-    let obj = await this._getCreateObject();
+    const obj = await this._getCreateObject();
 
     if (this._isErroneous()) this._throwErrors();
 
-    return this._handleCreateActions(obj);
+    return obj;
   };
 
   update = async (changes: Partial<T>) => {
@@ -83,24 +81,21 @@ export class Model<T extends ObjectType> extends SchemaCore<T> {
       await this._resolveLinkedValue(this.updated, prop, validated, "onUpdate");
     }
 
-    for (let prop of propsWithUpdateListeners)
-      await this._resolveLinkedValue(
-        this.updated,
-        prop,
-        changes[prop],
-        "onUpdate"
-      );
+    await this._resolveLinked(
+      propsWithUpdateListeners,
+      this.updated,
+      changes,
+      "onUpdate"
+    );
 
     if (this._isErroneous()) this._throwErrors();
 
-    // get the number of properties updated
-    // and deny update if none was modified
     const updatedKeys = this._sort(Object.keys(this.updated));
     if (!updatedKeys.length) this._throwErrors("Nothing to update");
 
     const updated: T = { ...this.updated } as T;
 
-    this.context = {} as T;
+    this._resetContext();
     this.updated = {};
 
     updatedKeys.forEach(
