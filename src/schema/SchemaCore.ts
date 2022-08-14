@@ -49,6 +49,26 @@ export abstract class SchemaCore<T extends ObjectType> {
     return this._propDefinitions;
   }
 
+  // context methods
+  protected _getContext = (): T => {
+    this.props.forEach(
+      (prop) => (this.context[prop as keyof T] = this.values[prop]!)
+    );
+
+    return { ...this.context, ...this.updated } as T;
+  };
+
+  // error methods
+  protected _throwErrors(_message?: string): void {
+    let err = new ApiError(this.error.getInfo());
+
+    this.error.clear();
+
+    if (_message) err.setMessage(_message);
+
+    throw err;
+  }
+
   protected _canInit = (prop: string): boolean => {
     if (this._isDependentProp(prop)) return false;
 
@@ -94,14 +114,6 @@ export abstract class SchemaCore<T extends ObjectType> {
     obj = await this._useSideInitProps(obj, "onCreate");
 
     return this._useConfigProps(obj) as T;
-  };
-
-  protected _getContext = (): T => {
-    this.props.forEach(
-      (prop) => (this.context[prop as keyof T] = this.values[prop]!)
-    );
-
-    return { ...this.context, ...this.updated } as T;
   };
 
   protected _getCreateListeners = () => {
@@ -580,16 +592,6 @@ export abstract class SchemaCore<T extends ObjectType> {
     }
   };
 
-  protected _throwErrors(_message?: string): void {
-    let err = new ApiError(this.error.getInfo());
-
-    this.error.clear();
-
-    if (_message) err.setMessage(_message);
-
-    throw err;
-  }
-
   protected _sort = (data: any[]): any[] =>
     data.sort((a, b) => (a < b ? -1 : 1));
 
@@ -665,10 +667,6 @@ export abstract class SchemaCore<T extends ObjectType> {
       return { valid: false, reasons: ["Invalid property"] };
 
     const validator = this._getValidator(prop);
-
-    if (!validator && isEqual(value, "undefined")) {
-      return { valid: false, reasons: ["Invalid value"] };
-    }
 
     if (validator) return validator(value, this._getContext());
 

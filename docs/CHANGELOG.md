@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# v1.3.5 <small><sup>14-08-2022</sup></small>
+
+- [Update] Performance optimizations
+
 # v1.3.4 <small><sup>12-08-2022</sup></small>
 
 - [Added] Support for single life cycle listeners
