@@ -1,8 +1,7 @@
 import { StoreItem } from ".";
 import { CommonInheritanceTest } from "./common-tests";
 import { IStoreItem } from "./interfaces";
-
-CommonInheritanceTest("StoreItem", StoreItem, {
+const initialValues = {
   id: "1",
   name: "beer",
   price: 5,
@@ -15,5 +14,6 @@ CommonInheritanceTest("StoreItem", StoreItem, {
     { coefficient: 12, name: "crate" },
   ],
   quantity: 100,
-  // quantities: [{ quantity: 1, name: "crate24" }],
-});
+};
+
+CommonInheritanceTest("StoreItem", StoreItem, initialValues);

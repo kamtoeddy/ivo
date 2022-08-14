@@ -51,11 +51,21 @@ export abstract class SchemaCore<T extends ObjectType> {
 
   // context methods
   protected _getContext = (): T => {
-    this.props.forEach(
-      (prop) => (this.context[prop as keyof T] = this.values[prop]!)
-    );
+    const data = this.props.reduce((prev, prop) => {
+      prev[prop as keyof T] = this.values[prop]!;
 
-    return { ...this.context, ...this.updated } as T;
+      return prev;
+    }, {} as T);
+
+    this._updateContext({ ...data, ...this.updated });
+
+    return this.context;
+  };
+
+  protected _resetContext = () => (this.context = {} as T);
+
+  protected _updateContext = (updates: Partial<T>) => {
+    this.context = { ...this.context, ...updates };
   };
 
   // error methods
@@ -98,10 +108,16 @@ export abstract class SchemaCore<T extends ObjectType> {
     if (error.isPayloadLoaded) throw error;
   };
 
-  protected _getCloneObject = async (reset: string | string[] = []) => {
-    reset = asArray(reset);
+  protected _getCloneObject = async (reset: string[] = []) => {
+    const linkedProps = this._getCreatePropsWithListeners().filter(
+      (prop) => !reset.includes(prop)
+    );
 
-    let obj: T = this.props.reduce((values: T, next) => {
+    const createProps = this.props.filter(
+      (prop) => !linkedProps.includes(prop)
+    );
+
+    let obj: T = createProps.reduce((values: T, next) => {
       values[next as keyof T] = (
         reset.includes(next)
           ? this.defaults[next] ?? this.values[next]
@@ -111,27 +127,35 @@ export abstract class SchemaCore<T extends ObjectType> {
       return values;
     }, {} as T);
 
+    await this._resolveLinked(linkedProps, obj, this.values, "onCreate");
+
     obj = await this._useSideInitProps(obj, "onCreate");
 
     return this._useConfigProps(obj) as T;
   };
 
-  protected _getCreateListeners = () => {
-    let actions: fxObjectType[] = [];
+  protected _getCreatePropsWithListeners = () => {
+    let actions = [];
 
     for (let prop of this.props) {
       const _actions = this._getAllListeners(prop, "onCreate");
 
-      if (_actions?.length) actions = [...actions, ..._actions];
+      if (_actions?.length) actions.push(prop);
     }
 
     return actions;
   };
 
   protected _getCreateObject = async () => {
-    let obj: T = {} as T;
+    let obj = {} as T;
 
-    const validations = this.props.map((prop) => {
+    const linkedProps = this._getCreatePropsWithListeners();
+
+    const createProps = this.props.filter(
+      (prop) => !linkedProps.includes(prop)
+    );
+
+    const validations = createProps.map((prop) => {
       const isLaxInit =
         this._isLaxProp(prop) && this.values.hasOwnProperty(prop);
 
@@ -147,13 +171,15 @@ export abstract class SchemaCore<T extends ObjectType> {
 
     const results = await Promise.all(validations);
 
-    this.props.forEach((prop, index) => {
+    createProps.forEach((prop, index) => {
       const { reasons, valid, validated } = results[index];
 
       if (valid) return (obj[prop as keyof T] = validated);
 
       this.error.add(prop, reasons);
     });
+
+    await this._resolveLinked(linkedProps, obj, this.values, "onCreate");
 
     obj = await this._useSideInitProps(obj, "onCreate");
 
@@ -238,32 +264,6 @@ export abstract class SchemaCore<T extends ObjectType> {
 
   protected _getValidator = (prop: string) =>
     this._propDefinitions[prop]?.validator;
-
-  protected _handleCreateActions = async (data: T = {} as T) => {
-    const listeners = this._getCreateListeners();
-
-    for (const cb of listeners) {
-      const extra = await cb(data);
-
-      if (typeof extra !== "object") continue;
-
-      const _props = Object.keys(extra);
-
-      for (let _prop of _props) {
-        if (!this._isProp(_prop)) continue;
-
-        const _value = extra[_prop];
-
-        data[_prop as keyof T] = _value;
-
-        await this._resolveLinkedValue(data, _prop, _value, "onCreate");
-      }
-    }
-
-    this.context = {} as T;
-
-    return data;
-  };
 
   protected _hasChanged = (prop: string) => {
     const propDef = this._propDefinitions[prop];
@@ -548,6 +548,19 @@ export abstract class SchemaCore<T extends ObjectType> {
     return { ...options, timestamps: { createdAt, updatedAt } };
   }
 
+  protected _resolveLinked = async (
+    props: string[],
+    context: Partial<T>,
+    values: Partial<T>,
+    lifeCycle: LifeCycleRule
+  ) => {
+    const listenersUpdates = props.map((prop) => {
+      return this._resolveLinkedValue(context, prop, values[prop], lifeCycle);
+    });
+
+    await Promise.all(listenersUpdates);
+  };
+
   protected _resolveLinkedValue = async (
     contextObject: ObjectType = {},
     prop: string,
@@ -565,9 +578,10 @@ export abstract class SchemaCore<T extends ObjectType> {
 
     const hasChanged = !isEqual(this.values[prop], validated);
 
-    if (!isSideEffect && !hasChanged) return;
+    if (lifeCycle === "onUpdate" && !isSideEffect && !hasChanged) return;
 
-    if (isSideEffect) this.context[prop as keyof T] = validated;
+    if (isSideEffect) this._updateContext({ [prop]: validated } as Partial<T>);
+    else contextObject[prop] = validated;
 
     const context = { ...this._getContext(), ...contextObject };
 
