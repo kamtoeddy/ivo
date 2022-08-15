@@ -16,17 +16,29 @@ export class Model<T extends ObjectType> extends SchemaCore<T> {
     this.setValues(values);
   }
 
+  static build<U extends ObjectType>(schema: Schema) {
+    return function Builder(values: Partial<U>) {
+      return new Model(schema, values);
+    };
+  }
+
+  private _getDefaults = () => {
+    const defaults: Partial<T> = {};
+
+    for (let prop of this.props) {
+      const _default = this._propDefinitions[prop]?.default;
+
+      if (!isEqual(_default, undefined)) defaults[prop as keyof T] = _default;
+    }
+
+    return defaults;
+  };
+
   private setValues(values: Partial<T>) {
     Object.keys(values).forEach((key) => {
       if (this._isProp(key) || this._isSideEffect(key))
         this.values[key as keyof T] = values[key];
     });
-  }
-
-  static build<U extends ObjectType>(schema: Schema) {
-    return function Builder(values: Partial<U>) {
-      return new Model(schema, values);
-    };
   }
 
   clone = async (options: SchemaCloneOptions = { reset: [] }) => {

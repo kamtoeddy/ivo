@@ -143,6 +143,29 @@ export const CommonInheritanceTest = (
       });
     });
 
+    it("should clone properly with side effects", async () => {
+      const clonedItem = await Model({
+        ...item,
+        quantities: [
+          { quantity: 1, name: "crate24" },
+          { quantity: 1, name: "tray" },
+        ],
+      }).clone();
+
+      expect(clonedItem).toMatchObject({
+        id: "1",
+        name: "beer",
+        price: 5,
+        measureUnit: "bottle",
+        otherMeasureUnits: [
+          { coefficient: 12, name: "crate" },
+          { coefficient: 24, name: "crate24" },
+          { coefficient: 5, name: "tray" },
+        ],
+        quantity: 129,
+      });
+    });
+
     it("should respect clone reset option for property with default value", async () => {
       const clone1 = await Model(item).clone({ reset: "quantity" });
       const clone2 = await Model(item).clone({ reset: ["quantity"] });
