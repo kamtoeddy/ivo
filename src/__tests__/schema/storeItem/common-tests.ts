@@ -41,6 +41,14 @@ export const CommonInheritanceTest = (
       });
     });
 
+    it("should throw error if required readOnly field is not set at creation", async () => {
+      const { id, ...testData1 } = testData;
+
+      const createWithoutReadonly = async () => await Model(testData1).create();
+
+      await expect(createWithoutReadonly()).rejects.toThrow("Validation Error");
+    });
+
     it("should not accept dependent properties at creation", () => {
       expect(item).toMatchObject({
         _dependentReadOnly: 0,
@@ -51,10 +59,11 @@ export const CommonInheritanceTest = (
       expect(item).toMatchObject({ _readOnlyNoInit: "" });
     });
 
-    it("should accept lax readOnly properties at creation", () => {
+    it("should accept only set lax readOnly properties at creation", () => {
       expect(item).toMatchObject({
         _readOnlyLax1: "lax1 set",
         _readOnlyLax2: "",
+        _readOnlyNoInit: "",
       });
     });
 
