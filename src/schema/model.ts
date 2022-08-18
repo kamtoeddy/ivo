@@ -35,12 +35,19 @@ export class Model<T extends ObjectType> extends SchemaCore<T> {
   };
 
   private setValues(values: Partial<T>) {
-    Object.keys(values).forEach((key) => {
-      if (this._isProp(key) || this._isSideEffect(key))
-        this.values[key as keyof T] = values[key];
-    });
-  }
+    const keys = Object.keys(values).filter(
+      (key) =>
+        this._helper.isTimestampKey(key) ||
+        this._isProp(key) ||
+        this._isSideEffect(key)
+    );
 
+    this._sort(keys).forEach(
+      (key) => (this.values[key as keyof T] = values[key])
+    );
+
+    console.log("values", this.values);
+  }
   clone = async (options: SchemaCloneOptions = { reset: [] }) => {
     return this._getCloneObject(asArray(options.reset).filter(this._isProp));
   };
