@@ -45,8 +45,6 @@ export class Model<T extends ObjectType> extends SchemaCore<T> {
     this._sort(keys).forEach(
       (key) => (this.values[key as keyof T] = values[key])
     );
-
-    console.log("values", this.values);
   }
   clone = async (options: SchemaCloneOptions = { reset: [] }) => {
     return this._getCloneObject(asArray(options.reset).filter(this._isProp));
