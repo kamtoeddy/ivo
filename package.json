@@ -47,5 +47,5 @@
     "prepare": "npm run build"
   },
   "types": "lib/index.d.ts",
-  "version": "1.3.5"
+  "version": "1.3.6"
 }

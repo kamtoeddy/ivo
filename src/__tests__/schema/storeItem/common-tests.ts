@@ -1,12 +1,27 @@
+export const commonTestData = {
+  id: "1",
+  name: "beer",
+  price: 5,
+  measureUnit: "bottle",
+  _dependentReadOnly: 100,
+  _readOnlyNoInit: [],
+  otherMeasureUnits: [
+    { coefficient: 24, name: "crate24" },
+    { coefficient: 5, name: "tray" },
+    { coefficient: 12, name: "crate" },
+  ],
+  quantity: 100,
+};
+
 export const CommonInheritanceTest = (
   schemaName = "",
   Model: any,
-  initialValues = {}
+  testData = commonTestData
 ) => {
   describe(`Testing schema behaviours that should be common in parent & child schemas for @${schemaName}`, () => {
     let item: any;
 
-    beforeAll(async () => (item = await Model(initialValues).create()));
+    beforeAll(async () => (item = await Model(testData).create()));
 
     // creation
     it("should have been created properly", () => {
@@ -23,6 +38,18 @@ export const CommonInheritanceTest = (
         quantity: 100,
       });
     });
+
+    // it("should accept lax readOnly properties at creation", async () => {
+    //   expect(item).toMatchObject({
+    //     _readOnlyNoInit: "",
+    //   });
+    // });
+
+    // it("should not accept readOnly properties with blocked initialization at creation", async () => {
+    //   expect(item).toMatchObject({
+    //     _readOnlyNoInit: "",
+    //   });
+    // });
 
     it("should not accept dependent properties at creation", async () => {
       expect(item).toMatchObject({
@@ -83,6 +110,15 @@ export const CommonInheritanceTest = (
       });
     });
 
+    it("should not update dependent properties", async () => {
+      const updateReadOnlyProperty = async () =>
+        await Model(item).update({ quantityChangeCounter: 0 });
+
+      await expect(updateReadOnlyProperty()).rejects.toThrow(
+        "Nothing to update"
+      );
+    });
+
     it("should update dependent properties on side effects", async () => {
       const update = await Model(item).update({
         _sideEffectForDependentReadOnly: "haha",
@@ -105,15 +141,6 @@ export const CommonInheritanceTest = (
       };
 
       await expect(updateToFail()).rejects.toThrow("Nothing to update");
-    });
-
-    it("should not update dependent properties", async () => {
-      const updateReadOnlyProperty = async () =>
-        await Model(item).update({ quantityChangeCounter: 0 });
-
-      await expect(updateReadOnlyProperty()).rejects.toThrow(
-        "Nothing to update"
-      );
     });
 
     it("should not update readonly properties that have changed", async () => {
@@ -212,7 +239,7 @@ export const CommonInheritanceTest = (
 
     beforeAll(async () => {
       item = await Model({
-        ...initialValues,
+        ...testData,
         quantities: [
           { quantity: 1, name: "crate24" },
           { quantity: 1, name: "tray" },
