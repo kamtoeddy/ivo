@@ -85,7 +85,9 @@ export abstract class SchemaCore<T extends ObjectType> {
     if (!propDef) return false;
     const { readonly, required, shouldInit } = propDef;
 
-    if (!readonly && !required) return false;
+    if (required) return true;
+
+    if (readonly === "lax" || (readonly && shouldInit === false)) return false;
 
     return belongsTo(shouldInit, [true, undefined]);
   };
@@ -317,15 +319,14 @@ export abstract class SchemaCore<T extends ObjectType> {
 
     const { readonly, required, sideEffect } = propDef;
 
-    if (isDependent || readonly || required || sideEffect) {
-      reasons.push(
-        "dependent, readonly, required and sideEffect should not be 'true'"
-      );
+    if (isDependent || required || sideEffect) {
+      reasons.push("dependent, required and sideEffect should not be 'true'");
     }
 
     const shouldInit = belongsTo(propDef?.shouldInit, [true, undefined]);
 
-    if (!shouldInit) reasons.push("shouldInit must be true");
+    if (readonly !== "lax" || !shouldInit)
+      reasons.push("shouldInit must be true or undefined");
 
     return { reasons, valid: reasons.length === 0 };
   };

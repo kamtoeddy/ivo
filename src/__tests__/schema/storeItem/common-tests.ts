@@ -4,6 +4,8 @@ export const commonTestData = {
   price: 5,
   measureUnit: "bottle",
   _dependentReadOnly: 100,
+  _readOnlyLax1: "lax1 set",
+  _readOnlyLaxNoInit: [],
   _readOnlyNoInit: [],
   otherMeasureUnits: [
     { coefficient: 24, name: "crate24" },
@@ -39,27 +41,20 @@ export const CommonInheritanceTest = (
       });
     });
 
-    // it("should accept lax readOnly properties at creation", async () => {
-    //   expect(item).toMatchObject({
-    //     _readOnlyNoInit: "",
-    //   });
-    // });
-
-    // it("should not accept readOnly properties with blocked initialization at creation", async () => {
-    //   expect(item).toMatchObject({
-    //     _readOnlyNoInit: "",
-    //   });
-    // });
-
-    it("should not accept dependent properties at creation", async () => {
+    it("should not accept dependent properties at creation", () => {
       expect(item).toMatchObject({
         _dependentReadOnly: 0,
       });
     });
 
-    it("should not accept readOnly properties with blocked initialization at creation", async () => {
+    it("should not accept readOnly properties with blocked initialization at creation", () => {
+      expect(item).toMatchObject({ _readOnlyNoInit: "" });
+    });
+
+    it("should accept lax readOnly properties at creation", () => {
       expect(item).toMatchObject({
-        _readOnlyNoInit: "",
+        _readOnlyLax1: "lax1 set",
+        _readOnlyLax2: "",
       });
     });
 
@@ -110,6 +105,44 @@ export const CommonInheritanceTest = (
       });
     });
 
+    it("should update lax properties not initialized at creation", async () => {
+      const update = await Model(item).update({
+        _readOnlyLax2: "haha",
+      });
+
+      expect(update).toMatchObject({
+        _readOnlyLax2: "haha",
+      });
+
+      const updateReadOnlyProperty = async () =>
+        await Model({ ...item, ...update }).update({
+          _readOnlyLax2: "lax1 set again",
+        });
+
+      await expect(updateReadOnlyProperty()).rejects.toThrow(
+        "Nothing to update"
+      );
+    });
+
+    it("should update lax properties with blocked initialization at creation", async () => {
+      const update = await Model(item).update({
+        _readOnlyLaxNoInit: "haha",
+      });
+
+      expect(update).toMatchObject({
+        _readOnlyLaxNoInit: "haha",
+      });
+
+      const updateReadOnlyProperty = async () =>
+        await Model({ ...item, ...update }).update({
+          _readOnlyLaxNoInit: "lax1 set again",
+        });
+
+      await expect(updateReadOnlyProperty()).rejects.toThrow(
+        "Nothing to update"
+      );
+    });
+
     it("should not update dependent properties", async () => {
       const updateReadOnlyProperty = async () =>
         await Model(item).update({ quantityChangeCounter: 0 });
@@ -145,7 +178,7 @@ export const CommonInheritanceTest = (
 
     it("should not update readonly properties that have changed", async () => {
       const updateReadOnlyProperty = async () =>
-        await Model(item).update({ id: "2" });
+        await Model(item).update({ id: "2", _readOnlyLax1: "lax1 set again" });
 
       await expect(updateReadOnlyProperty()).rejects.toThrow(
         "Nothing to update"
