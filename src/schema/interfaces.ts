@@ -23,7 +23,7 @@ export interface PropDefinitionRules {
     onChange?: LifeCycleType;
     onCreate?: LifeCycleType;
     onUpdate?: LifeCycleType;
-    readonly?: boolean;
+    readonly?: boolean | "lax";
     required?: boolean;
     sideEffect?: boolean;
     shouldInit?: boolean;

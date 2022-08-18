@@ -11,6 +11,8 @@ export class SchemaOptionsHelper {
 
   getCreateKey = () => this.keys.createdAt;
   getUpdateKey = () => this.keys.updatedAt;
+  isTimestampKey = (key: string) =>
+    [this.keys.createdAt, this.keys.updatedAt].includes(key);
 
   get withTimestamps() {
     return !!(this.keys.createdAt || this.keys.updatedAt);
