@@ -23,13 +23,11 @@ const storeItemSchema = new Schema(
     quantity: {
       default: 0,
       onChange: onQuantityChange,
-      // onCreate: [onQuantityChange],
-      // onUpdate: [onQuantityChange],
       validator: validateQuantity,
     },
+    _laxProp: { default: "", validator: validateString("Invalid lax prop") },
     _readOnlyLax1: { default: "", readonly: "lax" },
     _readOnlyLax2: { default: "", readonly: "lax" },
-    _readOnlyLaxNoInit: { default: "", readonly: "lax", shouldInit: false },
     _readOnlyNoInit: { default: "", readonly: true, shouldInit: false },
     _dependentReadOnly: { default: 0, readonly: true, dependent: true },
     _sideEffectForDependentReadOnly: {

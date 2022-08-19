@@ -133,25 +133,6 @@ export const CommonInheritanceTest = (
       );
     });
 
-    it("should update lax properties with blocked initialization at creation", async () => {
-      const update = await Model(item).update({
-        _readOnlyLaxNoInit: "haha",
-      });
-
-      expect(update).toMatchObject({
-        _readOnlyLaxNoInit: "haha",
-      });
-
-      const updateReadOnlyProperty = async () =>
-        await Model({ ...item, ...update }).update({
-          _readOnlyLaxNoInit: "lax1 set again",
-        });
-
-      await expect(updateReadOnlyProperty()).rejects.toThrow(
-        "Nothing to update"
-      );
-    });
-
     it("should not update dependent properties", async () => {
       const updateReadOnlyProperty = async () =>
         await Model(item).update({ quantityChangeCounter: 0 });

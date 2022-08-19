@@ -87,9 +87,7 @@ export abstract class SchemaCore<T extends ObjectType> {
 
     if (required) return true;
 
-    if (readonly === "lax" || (readonly && shouldInit === false)) return false;
-
-    return belongsTo(shouldInit, [true, undefined]);
+    return readonly === true && belongsTo(shouldInit, [true, undefined]);
   };
 
   protected _checkPropDefinitions = () => {
@@ -159,8 +157,9 @@ export abstract class SchemaCore<T extends ObjectType> {
       const isLaxInit =
         this._isLaxProp(prop) && this.values.hasOwnProperty(prop);
 
-      if (this._canInit(prop) || isLaxInit)
-        return this.validate(prop, this.values[prop]);
+      const canInit = this._canInit(prop);
+
+      if (canInit || isLaxInit) return this.validate(prop, this.values[prop]);
 
       return {
         reasons: [],
@@ -325,7 +324,7 @@ export abstract class SchemaCore<T extends ObjectType> {
 
     const shouldInit = belongsTo(propDef?.shouldInit, [true, undefined]);
 
-    if (readonly !== "lax" || !shouldInit)
+    if (readonly !== "lax" && !shouldInit)
       reasons.push("shouldInit must be true or undefined");
 
     return { reasons, valid: reasons.length === 0 };

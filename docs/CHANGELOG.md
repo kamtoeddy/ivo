@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# v1.3.7 <small><sup>19-08-2022</sup></small>
+
+- [Fixed] lax properties behaving as required
+
 # v1.3.6 <small><sup>18-08-2022</sup></small>
 
 - [Added] possibility to use readonly as "lax"
