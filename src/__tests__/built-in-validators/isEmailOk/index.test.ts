@@ -1,4 +1,4 @@
 import { isEmailOk } from "../../../validate";
-import { isEmailOkTest } from "../../common-tests/isEmailOk";
+import { isEmailOkTest } from ".";
 
 isEmailOkTest({ isEmailOk });

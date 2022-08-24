@@ -7,7 +7,7 @@ import {
 import { belongsTo } from "../../utils/functions";
 import { isEqual } from "../../utils/isEqual";
 
-import { commonUtilTests } from "../common-tests/utils";
+import { commonUtilTests } from ".";
 
 commonUtilTests({
   belongsTo,

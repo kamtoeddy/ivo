@@ -1,4 +1,4 @@
 import { isArrayOk } from "../../../validate";
-import { isArrayOkTest } from "../../common-tests/isArrayOk";
+import { isArrayOkTest } from ".";
 
 isArrayOkTest({ isArrayOk });
