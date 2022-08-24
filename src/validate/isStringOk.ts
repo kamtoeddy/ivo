@@ -15,10 +15,10 @@ export function isStringOk(
   str = String(str).trim();
 
   if (str.length < minLength)
-    return { valid: false, validated, reasons: ["too short"] };
+    return { valid: false, validated, reasons: ["Too short"] };
 
   if (str.length > maxLength)
-    return { valid: false, validated, reasons: ["too long"] };
+    return { valid: false, validated, reasons: ["Too long"] };
 
   if (regExp && !regExp.test(str))
     return { valid: false, validated, reasons: ["Unacceptable value"] };
