@@ -43,6 +43,7 @@
   "scripts": {
     "build": "tsc",
     "test": "tsc & jest --verbose --watchAll",
+    "test-c": "tsc & jest --verbose --watchAll --coverage",
     "test:ci": "tsc & jest --verbose",
     "prepare": "npm run build"
   },

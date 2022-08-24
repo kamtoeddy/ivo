@@ -6,7 +6,7 @@ export async function isArrayOk<T>(
   {
     empty = false,
     sorted = false,
-    filter = (data) => false,
+    filter = () => false,
     modifier,
     sorter,
     sortOrder = -1,
