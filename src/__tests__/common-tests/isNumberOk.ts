@@ -32,7 +32,6 @@ export const isNumberOkTest = ({ isNumberOk }: { isNumberOk: Function }) => {
       }
 
       // falsy values
-
       const falsyValues = [false, true, "hey", NaN, null, undefined, [], {}];
 
       for (let value of falsyValues) {
@@ -88,31 +87,35 @@ export const isNumberOkTest = ({ isNumberOk }: { isNumberOk: Function }) => {
 
       pairsToPass.forEach(([num, range]) => {
         expect(isNumberOk(num, { range })).toMatchObject({
+          reasons: [],
           valid: true,
+          validated: num,
         });
       });
 
       // falsy values
-      const pairsToFail: [number, any][] = [
-        [-1, zero_Twelve],
-        [12.01, zero_Twelve],
+      const pairsToFail: [number, any, string][] = [
+        [-1, zero_Twelve, "Too small"],
+        [12.01, zero_Twelve, "Too large"],
 
         // exclusive top & bottom
-        [0, zero_Twelve_Ex],
-        [12, zero_Twelve_Ex],
+        [0, zero_Twelve_Ex, "Too small"],
+        [12, zero_Twelve_Ex, "Too large"],
 
         // exclusive bottom
-        [-1, zero_Twelve_ExBottom],
-        [0, zero_Twelve_ExBottom],
+        [-1, zero_Twelve_ExBottom, "Too small"],
+        [0, zero_Twelve_ExBottom, "Too small"],
 
         // exclusive top
-        [12, zero_Twelve_ExTop],
-        [12.01, zero_Twelve_ExTop],
+        [12, zero_Twelve_ExTop, "Too large"],
+        [12.01, zero_Twelve_ExTop, "Too large"],
       ];
 
-      pairsToFail.forEach(([num, range]) => {
+      pairsToFail.forEach(([num, range, error]) => {
         expect(isNumberOk(num, { range })).toMatchObject({
+          reasons: [error],
           valid: false,
+          validated: undefined,
         });
       });
     });
