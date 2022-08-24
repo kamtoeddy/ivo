@@ -598,7 +598,7 @@ export abstract class SchemaCore<T extends ObjectType> {
   };
 
   protected _useConfigProps = (obj: T | Partial<T>, asUpdate = false) => {
-    if (!this._helper.withTimestamps) return obj;
+    if (!this._helper.withTimestamps) return this._sortKeys(obj);
 
     const createdAt = this._helper.getCreateKey(),
       updatedAt = this._helper.getUpdateKey();

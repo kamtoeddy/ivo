@@ -46,6 +46,7 @@ export class Model<T extends ObjectType> extends SchemaCore<T> {
       (key) => (this.values[key as keyof T] = values[key])
     );
   }
+
   clone = async (options: SchemaCloneOptions = { reset: [] }) => {
     return this._getCloneObject(asArray(options.reset).filter(this._isProp));
   };
@@ -107,17 +108,10 @@ export class Model<T extends ObjectType> extends SchemaCore<T> {
 
     if (this._isErroneous()) this._throwErrors();
 
-    const updatedKeys = this._sort(Object.keys(this.updated));
-    if (!updatedKeys.length) this._throwErrors("Nothing to update");
-
-    const updated: T = { ...this.updated } as T;
+    if (!Object.keys(this.updated).length)
+      this._throwErrors("Nothing to update");
 
     this._resetContext();
-    this.updated = {};
-
-    updatedKeys.forEach(
-      (key: string) => (this.updated[key as keyof T] = updated[key])
-    );
 
     return this._useConfigProps(this.updated, true);
   };
