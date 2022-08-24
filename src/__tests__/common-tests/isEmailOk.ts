@@ -25,5 +25,33 @@ export const isEmailOkTest = ({ isEmailOk }: { isEmailOk: Function }) => {
         });
       }
     });
+
+    it("should respect custom regular expression", () => {
+      const regExp = /\w+@\w.\w/;
+
+      const truthy = [
+        "example@gmail.com",
+        "james71@hotmail.co.uk",
+        " james71@hotmail.co.uk",
+      ];
+
+      for (const value of truthy) {
+        expect(isEmailOk(value, regExp)).toMatchObject({
+          reasons: [],
+          valid: true,
+          validated: value.trim(),
+        });
+      }
+
+      const falsy = [1, null, false, "", "@gmail.com", "james71@..uk"];
+
+      for (const value of falsy) {
+        expect(isEmailOk(value)).toMatchObject({
+          reasons: ["Invalid email"],
+          valid: false,
+          validated: undefined,
+        });
+      }
+    });
   });
 };
