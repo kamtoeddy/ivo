@@ -9,7 +9,7 @@ export class Model<T extends ObjectType> extends SchemaCore<T> {
   constructor(schema: Schema, values: Partial<T>) {
     super(schema.propDefinitions, schema.options);
 
-    // this order of assignment is key
+    // this order of assignment is precious
     this.props = this._getProps();
     this.defaults = this._getDefaults();
 
@@ -64,47 +64,17 @@ export class Model<T extends ObjectType> extends SchemaCore<T> {
 
     const toUpdate = Object.keys(changes ?? {});
 
-    // iterate through validated values and get only changed fields
-    // amongst the schema's updatable properties
     const updatables = toUpdate.filter((prop) => this._isUpdatable(prop));
-    const propsWithUpdateListeners = toUpdate.filter(
+    const linkedProps = toUpdate.filter(
       (prop) =>
         (!updatables.includes(prop) &&
           this._getAllListeners(prop, "onUpdate").length) ||
         this._isSideEffect(prop)
     );
 
-    const validations = updatables.map(async (prop) => {
-      const validationResults = await this.validate(prop, changes[prop]);
+    await this._resolveLinked(updatables, this.updated, changes, "onUpdate");
 
-      return { prop, validationResults };
-    });
-
-    const results = await Promise.all(validations);
-
-    for (const { prop, validationResults } of results) {
-      const { reasons, valid, validated } = validationResults;
-
-      if (!valid) {
-        this.error.add(prop, reasons);
-        continue;
-      }
-
-      const hasChanged = !isEqual(this.values[prop], validated);
-
-      if (!hasChanged) continue;
-
-      this.updated[prop as keyof T] = validated;
-
-      await this._resolveLinkedValue(this.updated, prop, validated, "onUpdate");
-    }
-
-    await this._resolveLinked(
-      propsWithUpdateListeners,
-      this.updated,
-      changes,
-      "onUpdate"
-    );
+    await this._resolveLinked(linkedProps, this.updated, changes, "onUpdate");
 
     if (this._isErroneous()) this._throwErrors();
 

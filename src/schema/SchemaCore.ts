@@ -153,30 +153,25 @@ export abstract class SchemaCore<T extends ObjectType> {
       (prop) => !linkedProps.includes(prop)
     );
 
-    const validations = createProps.map((prop) => {
+    const validations = createProps.map(async (prop) => {
       const isLaxInit =
         this._isLaxProp(prop) && this.values.hasOwnProperty(prop);
 
-      const canInit = this._canInit(prop);
+      if (!this._canInit(prop) && !isLaxInit) {
+        return (obj[prop as keyof T] = this.defaults[prop]!);
+      }
 
-      if (canInit || isLaxInit) return this.validate(prop, this.values[prop]);
-
-      return {
-        reasons: [],
-        valid: true,
-        validated: this.defaults[prop],
-      } as ValidatorResponse;
-    });
-
-    const results = await Promise.all(validations);
-
-    createProps.forEach((prop, index) => {
-      const { reasons, valid, validated } = results[index];
+      const { reasons, valid, validated } = await this.validate(
+        prop,
+        this.values[prop]
+      );
 
       if (valid) return (obj[prop as keyof T] = validated);
 
       this.error.add(prop, reasons);
     });
+
+    await Promise.all(validations);
 
     await this._resolveLinked(linkedProps, obj, this.values, "onCreate");
 
@@ -251,14 +246,6 @@ export abstract class SchemaCore<T extends ObjectType> {
 
   protected _getValidator = (prop: string) =>
     this._propDefinitions[prop]?.validator;
-
-  protected _hasChanged = (prop: string) => {
-    const propDef = this._propDefinitions[prop];
-
-    if (!propDef) return false;
-
-    return !isEqual(propDef.default, this._getContext()?.[prop]);
-  };
 
   protected _hasProp = (
     prop: string,
@@ -461,9 +448,11 @@ export abstract class SchemaCore<T extends ObjectType> {
 
     if (this._isDependentProp(prop)) return false;
 
-    const readonly = this._propDefinitions?.[prop]?.readonly;
+    const { default: _default, readonly } = this._propDefinitions?.[prop];
 
-    return !readonly || (readonly && !this._hasChanged(prop));
+    return (
+      !readonly || (readonly && isEqual(_default, this._getContext()?.[prop]))
+    );
   };
 
   protected _isUpdatableInCTX = (
@@ -548,18 +537,21 @@ export abstract class SchemaCore<T extends ObjectType> {
     const listeners = this._getAllListeners(prop, lifeCycle),
       isSideEffect = this._isSideEffect(prop);
 
-    if (!listeners.length) return;
-
     const { reasons, valid, validated } = await this.validate(prop, value);
 
     if (!valid) return this.error.add(prop, reasons);
 
-    const hasChanged = !isEqual(this.values[prop], validated);
-
-    if (lifeCycle === "onUpdate" && !isSideEffect && !hasChanged) return;
+    if (
+      lifeCycle === "onUpdate" &&
+      !isSideEffect &&
+      !this._isUpdatableInCTX(prop, validated, this.values)
+    )
+      return;
 
     if (isSideEffect) this._updateContext({ [prop]: validated } as Partial<T>);
     else contextObject[prop] = validated;
+
+    if (!listeners.length) return;
 
     const context = { ...this._getContext(), ...contextObject };
 
