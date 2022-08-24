@@ -1,26 +1,36 @@
 import { getUniqueBy } from "../utils/getUniqueBy";
 import { IArrayOptions } from "../utils/interfaces";
 
+const validated = undefined;
+
+const getOrder = (sortOrder: any) => {
+  if (!["asc", "desc"].includes(sortOrder)) return -1;
+
+  return sortOrder === "asc" ? -1 : 1;
+};
+
 export async function isArrayOk<T>(
   arr: T[],
   {
     empty = false,
     sorted = false,
-    filter = () => false,
+    filter,
     modifier,
     sorter,
-    sortOrder = -1,
+    sortOrder = "asc",
     unique = true,
     uniqueKey = "",
   }: IArrayOptions<T> = {}
 ) {
   if (!Array.isArray(arr))
-    return { valid: false, reasons: ["Expected an array"] };
+    return { valid: false, validated, reasons: ["Expected an array"] };
 
-  let _array = await Promise.all(arr.filter(filter));
+  let _array = [...arr];
+
+  if (filter) _array = await Promise.all(arr.filter(filter));
 
   if (!empty && !_array.length)
-    return { valid: false, reasons: ["Expected a non-empty array"] };
+    return { valid: false, validated, reasons: ["Expected a non-empty array"] };
 
   if (modifier) {
     const copy = [];
@@ -34,17 +44,14 @@ export async function isArrayOk<T>(
     _array = [...copy];
   }
 
-  if (unique && _array.length) {
-    const asObject = typeof _array[0] === "object" && uniqueKey;
+  if (unique && _array.length)
+    _array = uniqueKey ? getUniqueBy(_array, uniqueKey) : getUniqueBy(_array);
 
-    _array = asObject ? getUniqueBy(_array, uniqueKey) : getUniqueBy(_array);
-  }
-
-  if (sorted) {
+  if (sorted || sorter) {
     if (!sorter) {
-      if (![-1, 1].includes(sortOrder)) sortOrder = -1;
+      const order = getOrder(sortOrder);
 
-      sorter = (a, b) => (a < b ? sortOrder : -sortOrder);
+      sorter = (a, b) => (a < b ? order : -order);
     }
     _array = await Promise.all(_array.sort(sorter));
   }

@@ -10,7 +10,7 @@ export interface IArrayOptions<T> {
   modifier?: (data: T) => any;
   sorted?: boolean;
   sorter?: (a: T, b: T) => number;
-  sortOrder?: number;
+  sortOrder?: "asc" | "desc";
   unique?: boolean;
   uniqueKey?: string;
 }
