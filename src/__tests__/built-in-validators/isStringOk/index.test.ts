@@ -1,4 +1,4 @@
 import { isStringOk } from "../../../validate";
-import { isStringOkTest } from "../../common-tests/isStringOk";
+import { isStringOkTest } from ".";
 
 isStringOkTest({ isStringOk });

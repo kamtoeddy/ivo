@@ -1,4 +1,4 @@
 import { isNumberOk } from "../../../../lib/validate";
-import { isNumberOkTest } from "../../common-tests/isNumberOk";
+import { isNumberOkTest } from ".";
 
 isNumberOkTest({ isNumberOk });

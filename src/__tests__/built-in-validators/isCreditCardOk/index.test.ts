@@ -1,4 +1,4 @@
 import { isCreditCardOk } from "../../../validate";
-import { isCreditCardOkTest } from "../../common-tests/isCreditCardOk";
+import { isCreditCardOkTest } from ".";
 
 isCreditCardOkTest({ isCreditCardOk });

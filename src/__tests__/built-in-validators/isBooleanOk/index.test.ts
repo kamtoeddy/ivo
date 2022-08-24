@@ -1,4 +1,4 @@
 import { isBooleanOk } from "../../../validate";
-import { isBooleanOkTest } from "../../common-tests/isBooleanOk";
+import { isBooleanOkTest } from ".";
 
 isBooleanOkTest({ isBooleanOk });
