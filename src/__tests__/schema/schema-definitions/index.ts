@@ -23,6 +23,14 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
     it("should reject if property definition has no property", () => {
       expect(fx({})).toThrow("Invalid Schema");
+
+      try {
+        fx({})();
+      } catch (err: any) {
+        expect(err.payload).toMatchObject({
+          "schema properties": ["Insufficient Schema properties"],
+        });
+      }
     });
   });
 };
