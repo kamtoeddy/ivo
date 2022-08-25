@@ -335,7 +335,7 @@ export abstract class SchemaCore<T extends ObjectType> {
   protected _isPropDefinitionObjectOk = (prop: string) => {
     const propDef = this._propDefinitions[prop];
 
-    return propDef && typeof propDef === "object"
+    return propDef && typeof propDef === "object" && !Array.isArray(propDef)
       ? { valid: true }
       : {
           reasons: ["Property definitions must be an object"],
