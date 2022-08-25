@@ -14,5 +14,5 @@ export function isEqual(a: any, b: any) {
     ref_b = JSON.stringify(ref_b);
   }
 
-  return ref_a === ref_b;
+  return ref_a == ref_b;
 }
