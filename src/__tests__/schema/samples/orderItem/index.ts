@@ -1,4 +1,4 @@
-import { makeModel, Schema } from "../../../../lib";
+import { makeModel, Schema } from "../../../../../lib";
 import { storeItemSchema } from "../storeItem";
 import { validatePrice } from "../storeItem/validators";
 import { IOrderItem } from "./interfaces";

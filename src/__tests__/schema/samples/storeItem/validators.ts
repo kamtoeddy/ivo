@@ -1,8 +1,8 @@
-import { IStringOptions } from "../../../../lib";
+import { IStringOptions } from "../../../../../lib";
 import { IOtherMeasureUnit, IOtherQuantity, IStoreItem } from "./interfaces";
 
-import { isArrayOk, isNumberOk, isStringOk } from "../../../../lib/validate";
-import { findBy } from "../utils";
+import { isArrayOk, isNumberOk, isStringOk } from "../../../../../lib/validate";
+import { findBy } from "../../utils";
 
 export const validateString = (
   errorMessage = "",

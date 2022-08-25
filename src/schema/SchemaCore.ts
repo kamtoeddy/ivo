@@ -96,7 +96,17 @@ export abstract class SchemaCore<T extends ObjectType> {
       statusCode: 500,
     });
 
+    if (
+      !this.propDefinitions ||
+      typeof this._propDefinitions !== "object" ||
+      Array.isArray(this.propDefinitions)
+    )
+      throw error;
+
     let props: string[] = Object.keys(this._propDefinitions);
+
+    if (!props.length)
+      throw error.add("schema properties", "Insufficient Schema properties");
 
     for (let prop of props) {
       const isDefOk = this.__isPropDefinitionOk(prop);

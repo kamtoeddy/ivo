@@ -115,7 +115,7 @@ await db.insert(user);
 ```js
 const user = await db.query({ id: 1 });
 
-if (!user) return null;
+if (!user) throw new Error("User not found");
 
 const userUpdate = await UserModel(user).update({
   lastSeen: new Date(),
