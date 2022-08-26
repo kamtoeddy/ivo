@@ -1,4 +1,4 @@
-import { asArray } from "../utils/asArray";
+import { toArray } from "../utils/toArray";
 import {
   SchemaExtensionOptions,
   SchemaOptions,
@@ -16,7 +16,7 @@ export class Schema extends SchemaCore<Schema> {
   }
 
   private _useExtensionOptions = (options: SchemaExtensionOptions) => {
-    const remove = asArray(options.remove);
+    const remove = toArray(options.remove);
 
     remove?.forEach((prop) => delete this._propDefinitions?.[prop]);
   };

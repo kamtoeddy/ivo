@@ -1,5 +1,5 @@
 import { Schema } from ".";
-import { asArray } from "../utils/asArray";
+import { toArray } from "../utils/toArray";
 import { ObjectType } from "../utils/interfaces";
 import { isEqual } from "../utils/isEqual";
 import { SchemaCloneOptions } from "./interfaces";
@@ -48,7 +48,7 @@ export class Model<T extends ObjectType> extends SchemaCore<T> {
   }
 
   clone = async (options: SchemaCloneOptions = { reset: [] }) => {
-    return this._getCloneObject(asArray(options.reset).filter(this._isProp));
+    return this._getCloneObject(toArray(options.reset).filter(this._isProp));
   };
 
   create = async () => {

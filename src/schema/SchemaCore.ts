@@ -1,5 +1,5 @@
 import { ApiError } from "../utils/ApiError";
-import { asArray } from "../utils/asArray";
+import { toArray } from "../utils/toArray";
 import { belongsTo } from "../utils/functions";
 import { ObjectType } from "../utils/interfaces";
 import { isEqual } from "../utils/isEqual";
@@ -201,7 +201,7 @@ export abstract class SchemaCore<T extends ObjectType> {
   ) => {
     const propDef = this._propDefinitions[prop];
 
-    const listeners = asArray(propDef?.[lifeCycle]);
+    const listeners = toArray(propDef?.[lifeCycle]);
 
     return (
       listeners
