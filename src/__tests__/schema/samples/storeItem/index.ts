@@ -42,7 +42,7 @@ const storeItemSchema = new Schema(
     },
     otherMeasureUnits: { default: [], validator: validateOtherUnits },
   },
-  { timestamps: true }
+  { timestamps: { createdAt: "c_At", updatedAt: "u_At" } }
 );
 
 const StoreItem = makeModel<IStoreItem>(storeItemSchema);
