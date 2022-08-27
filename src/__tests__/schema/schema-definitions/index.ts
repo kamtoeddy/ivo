@@ -63,5 +63,25 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
         });
       }
     });
+
+    it("should reject readonly + validator & no default", () => {
+      try {
+        fx({ age: { readonly: true, shouldInit: false, validator: isNaN } })();
+      } catch (err: any) {
+        expect(err.payload.age).toContain(
+          "A property that should not be initialized must have a default value other than 'undefined'"
+        );
+      }
+    });
+
+    it("should reject readonly(lax) + validator & no default", () => {
+      try {
+        fx({ age: { readonly: "lax", validator: isNaN } })();
+      } catch (err: any) {
+        expect(err.payload.age).toContain(
+          "A property that should not be initialized must have a default value other than 'undefined'"
+        );
+      }
+    });
   });
 };

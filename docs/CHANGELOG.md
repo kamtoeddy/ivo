@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 # v1.3.11 <small><sup>27-08-2022</sup></small>
 
+- [Update] enforced definition checks for readonly(lax) + validator & no default
 - [Update] isCreditCardOk now validates strings to be trimmed
 - [Docs] updated docs on isNumberOk for string parsing
 - [Docs] updated docs on isArrayOk (options.sortOrder)
