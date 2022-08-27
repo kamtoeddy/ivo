@@ -1,5 +1,5 @@
 import { storeItemSchema } from ".";
-import { makeModel, Schema } from "../../../../../dist";
+import { Schema } from "../../../../../dist";
 import { IStoreItemChild } from "./interfaces";
 import { validateString } from "./validators";
 
@@ -10,6 +10,6 @@ const storeItemChildSchema = new Schema(
   { timestamps: true }
 ).extend(storeItemSchema);
 
-const StoreItemChild = makeModel<IStoreItemChild>(storeItemChildSchema);
+const StoreItemChild = storeItemChildSchema.getModel<IStoreItemChild>();
 
 export { StoreItemChild };

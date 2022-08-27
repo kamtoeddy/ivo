@@ -1,4 +1,4 @@
-import { makeModel, Schema } from "../../../../../dist";
+import { Schema } from "../../../../../dist";
 import { storeItemSchema } from "../storeItem";
 import { validatePrice } from "../storeItem/validators";
 import { IOrderItem } from "./interfaces";
@@ -17,4 +17,4 @@ const orderItemSchema = new Schema(
   ],
 });
 
-export const OrderItem = makeModel<IOrderItem>(orderItemSchema);
+export const OrderItem = orderItemSchema.getModel<IOrderItem>();
