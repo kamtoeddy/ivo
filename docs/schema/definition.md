@@ -10,7 +10,7 @@ const userSchema = new Schema(definitions, options);
 ```
 
 ```js
-const { makeModel, Schema } = require("clean-schema");
+const { Schema } = require("clean-schema");
 
 const userSchema = new Schema({
   dob: {
@@ -33,7 +33,7 @@ const userSchema = new Schema({
   },
 });
 
-const UserModel = makeModel(userSchema);
+const UserModel = userSchema.getModel(userSchema);
 
 function onNameChange(context) {
   const { firstName, lastName } = context;
@@ -60,7 +60,7 @@ function onNameChange(context) {
 Below is an example of how you can make a schema inherit from another:
 
 ```js
-const { makeModel, Schema } = require("clean-schema");
+const { Schema } = require("clean-schema");
 
 const adminSchema = new Schema(
   {
@@ -72,7 +72,7 @@ const adminSchema = new Schema(
   { timestamps: { createdAt: "created_at" } }
 ).extend(userSchema, { remove: "dob" });
 
-const AdminModel = makeModel(adminSchema);
+const AdminModel = adminSchema.getModel();
 ```
 
 ## The Validation Context
