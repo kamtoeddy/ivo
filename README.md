@@ -16,16 +16,16 @@ $ npm i clean-schema
 
 ```js
 // Using Nodejs `require`
-const { makeModel, Schema } = require("clean-schema");
+const { Schema } = require("clean-schema");
 
 // Using ES6 imports
-import { makeModel, Schema } from "clean-schema";
+import { Schema } from "clean-schema";
 ```
 
 # Defining a model
 
 ```js
-const { makeModel, Schema, validate } = require("clean-schema");
+const { Schema, validate } = require("clean-schema");
 
 const userSchema = new Schema(
   {
@@ -74,7 +74,7 @@ function onNameChange(context) {
   return { fullName: `${firstName} ${lastName}` };
 }
 
-const UserModel = makeModel(userSchema);
+const UserModel = userSchema.getModel();
 ```
 
 # Creating an instance

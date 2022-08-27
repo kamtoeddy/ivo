@@ -1,4 +1,4 @@
-import { makeModel, Schema } from "../../../../../dist";
+import { Schema } from "../../../../../dist";
 import { IStoreItem } from "./interfaces";
 import {
   onQuantitiesChange,
@@ -45,6 +45,6 @@ const storeItemSchema = new Schema(
   { timestamps: { createdAt: "c_At", updatedAt: "u_At" } }
 );
 
-const StoreItem = makeModel<IStoreItem>(storeItemSchema);
+const StoreItem = storeItemSchema.getModel<IStoreItem>();
 
 export { StoreItem, storeItemSchema };

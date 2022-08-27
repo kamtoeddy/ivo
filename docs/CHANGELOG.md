@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# v1.4.0 <small><sup>27-08-2022</sup></small>
+
+- [Change] replaced makeModel by schema.getModel\<I>() method
+
 # v1.3.11 <small><sup>27-08-2022</sup></small>
 
 - [Update] enforced definition checks for readonly(lax) + validator & no default
