@@ -10,21 +10,21 @@ export function isStringOk(
     validated = undefined;
 
   if (belongsTo(str, [null, undefined]))
-    return { valid: false, validated, reasons: ["Unacceptable value"] };
+    return { reasons: ["Unacceptable value"], valid: false, validated };
 
   str = String(str).trim();
 
   if (str.length < minLength)
-    return { valid: false, validated, reasons: ["Too short"] };
+    return { reasons: ["Too short"], valid: false, validated };
 
   if (str.length > maxLength)
-    return { valid: false, validated, reasons: ["Too long"] };
+    return { reasons: ["Too long"], valid: false, validated };
 
   if (regExp && !regExp.test(str))
-    return { valid: false, validated, reasons: ["Unacceptable value"] };
+    return { reasons: ["Unacceptable value"], valid: false, validated };
 
   if (enums && !belongsTo(str, enums))
-    return { valid: false, validated, reasons: ["Unacceptable value"] };
+    return { reasons: ["Unacceptable value"], valid: false, validated };
 
   return { reasons, valid, validated: str };
 }

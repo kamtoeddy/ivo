@@ -1,4 +1,4 @@
-import { isCreditCardOk } from "../../../../lib/validate";
+import { isCreditCardOk } from "../../../../dist/validate";
 import { isCreditCardOkTest } from ".";
 
 isCreditCardOkTest({ isCreditCardOk });

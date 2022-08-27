@@ -27,7 +27,7 @@ const isCheckSumOk = (values: number[]) => {
 };
 
 export const isCreditCardOk = (value: any) => {
-  const _value = String(value);
+  const _value = String(value).trim();
 
   if (_value.length !== 16) return failResponse;
 
@@ -37,5 +37,7 @@ export const isCreditCardOk = (value: any) => {
 
   if (!isCheckSumOk(singleDigits)) return failResponse;
 
-  return { reasons: [], valid: true, validated: value };
+  const validated = typeof value === "number" ? value : _value;
+
+  return { reasons: [], valid: true, validated };
 };

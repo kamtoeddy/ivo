@@ -15,7 +15,7 @@ console.log(validate.isNumberOk(10, options)); // { reasons: ["too small"], vali
 
 console.log(validate.isNumberOk(10.01, options)); // { reasons: [], valid: true, validated: 10.01 }
 
-console.log(validate.isNumberOk("10.01", options)); // { reasons: ["Expected a number"], valid: false, validated: undefined }
+console.log(validate.isNumberOk("10.05", options)); // { reasons: [], valid: true, validated: 10.05 }
 ```
 
 ### Parameters

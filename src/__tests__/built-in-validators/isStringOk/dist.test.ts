@@ -1,4 +1,4 @@
-import { isStringOk } from "../../../../lib/validate";
+import { isStringOk } from "../../../../dist/validate";
 import { isStringOkTest } from ".";
 
 isStringOkTest({ isStringOk });

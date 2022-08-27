@@ -1,6 +1,5 @@
 import { ApiError } from "../utils/ApiError";
-import { toArray } from "../utils/toArray";
-import { belongsTo } from "../utils/functions";
+import { belongsTo, toArray } from "../utils/functions";
 import { ObjectType } from "../utils/interfaces";
 import { isEqual } from "../utils/isEqual";
 import {
@@ -9,7 +8,6 @@ import {
   PropDefinitionRule,
   PropDefinitionRules,
   SchemaOptions,
-  ValidatorResponse,
 } from "./interfaces";
 import { SchemaOptionsHelper } from "./SchemaOptionsHelper";
 
@@ -68,7 +66,7 @@ export abstract class SchemaCore<T extends ObjectType> {
 
   // error methods
   protected _throwErrors(_message?: string): void {
-    let err = new ApiError(this.error.getInfo());
+    const err = new ApiError(this.error.getInfo());
 
     this.error.clear();
 
@@ -143,15 +141,12 @@ export abstract class SchemaCore<T extends ObjectType> {
   };
 
   protected _getCreatePropsWithListeners = () => {
-    let actions = [];
+    let listeners = [];
 
-    for (let prop of this.props) {
-      const _actions = this._getAllListeners(prop, "onCreate");
+    for (let prop of this.props)
+      if (this._getAllListeners(prop, "onCreate")?.length) listeners.push(prop);
 
-      if (_actions?.length) actions.push(prop);
-    }
-
-    return actions;
+    return listeners;
   };
 
   protected _getCreateObject = async () => {
@@ -190,18 +185,15 @@ export abstract class SchemaCore<T extends ObjectType> {
     return this._useConfigProps(obj) as T;
   };
 
-  protected _getDefinitionValue = (prop: string, rule: PropDefinitionRule) => {
-    return this._propDefinitions[prop]?.[rule];
-  };
+  protected _getDefinitionValue = (prop: string, rule: PropDefinitionRule) =>
+    this._propDefinitions[prop]?.[rule];
 
   protected _getDetailedListeners = (
     prop: string,
     lifeCycle: LifeCycleRule,
     valid = true
   ) => {
-    const propDef = this._propDefinitions[prop];
-
-    const listeners = toArray(propDef?.[lifeCycle]);
+    const listeners = toArray(this._getDefinitionValue(prop, lifeCycle));
 
     return (
       listeners
@@ -230,34 +222,18 @@ export abstract class SchemaCore<T extends ObjectType> {
     );
   };
 
-  protected _getProps = () => {
-    let props: string[] = Object.keys(this._propDefinitions);
-
-    props = props.filter(
+  protected _getProps = (): string[] => {
+    const props = Object.keys(this._propDefinitions).filter(
       (prop) => this._isPropDefinitionOk(prop) && !this._isSideEffect(prop)
     );
 
     return this._sort(props);
   };
 
-  protected _getSideEffects = () => {
-    let props: string[] = Object.keys(this._propDefinitions);
-
-    props = props.filter((prop) => {
-      const propDef = this._propDefinitions[prop];
-
-      if (typeof propDef !== "object") return false;
-
-      return this._isSideEffect(prop);
-    });
-
-    return props;
-  };
-
   protected _getValidator = (prop: string) =>
     this._propDefinitions[prop]?.validator;
 
-  protected _hasProp = (
+  protected _hasAny = (
     prop: string,
     rules: PropDefinitionRule | PropDefinitionRule[]
   ): boolean => {
@@ -265,9 +241,7 @@ export abstract class SchemaCore<T extends ObjectType> {
 
     const propDef = this._propDefinitions[prop];
 
-    if (!Array.isArray(rules)) rules = [rules];
-
-    for (let _prop of rules)
+    for (let _prop of toArray(rules))
       if (Object(propDef).hasOwnProperty(_prop)) return true;
 
     return false;
@@ -315,9 +289,8 @@ export abstract class SchemaCore<T extends ObjectType> {
 
     const { readonly, required, sideEffect } = propDef;
 
-    if (isDependent || required || sideEffect) {
+    if (isDependent || required || sideEffect)
       reasons.push("dependent, required and sideEffect should not be 'true'");
-    }
 
     const shouldInit = belongsTo(propDef?.shouldInit, [true, undefined]);
 
@@ -352,19 +325,19 @@ export abstract class SchemaCore<T extends ObjectType> {
 
     const dependentDef = this.__isDependentProp(prop);
 
-    if (this._hasProp(prop, "dependent") && !dependentDef.valid)
+    if (this._hasAny(prop, "dependent") && !dependentDef.valid)
       reasons = reasons.concat(dependentDef.reasons!);
 
     const sideEffectDef = this.__isSideEffect(prop);
 
-    if (this._hasProp(prop, "sideEffect") && !sideEffectDef.valid)
+    if (this._hasAny(prop, "sideEffect") && !sideEffectDef.valid)
       reasons = reasons.concat(sideEffectDef.reasons!);
 
-    if (this._hasProp(prop, "validator") && !this._isValidatorOk(prop))
+    if (this._hasAny(prop, "validator") && !this._isValidatorOk(prop))
       reasons.push("Invalid validator");
 
     for (let rule of lifeCycleRules) {
-      if (!this._hasProp(prop, rule)) continue;
+      if (!this._hasAny(prop, rule)) continue;
 
       const invalidHandlers = this._getDetailedListeners(prop, rule, false);
 
@@ -378,15 +351,16 @@ export abstract class SchemaCore<T extends ObjectType> {
     }
 
     if (
-      this._getDefinitionValue(prop, "shouldInit") === false &&
-      !this._hasProp(prop, "default")
+      (this._getDefinitionValue(prop, "readonly") === "lax" ||
+        this._getDefinitionValue(prop, "shouldInit") === false) &&
+      !this._hasAny(prop, "default")
     )
       reasons.push(
         "A property that should not be initialized must have a default value other than 'undefined'"
       );
 
     if (
-      !this._hasProp(prop, ["default", "readonly", "required"]) &&
+      !this._hasAny(prop, ["default", "readonly", "required"]) &&
       !this._isDependentProp(prop) &&
       !this._isLaxProp(prop) &&
       !this._isSideEffect(prop)
@@ -408,15 +382,15 @@ export abstract class SchemaCore<T extends ObjectType> {
 
     if (!isPopDefOk.valid) return isPopDefOk;
 
-    if (this._hasProp(prop, "default"))
+    if (this._hasAny(prop, "default"))
       reasons.push(
         "SideEffects cannot have default values as they do not exist on instances of your model"
       );
 
-    if (this._hasProp(prop, "dependent"))
+    if (this._hasAny(prop, "dependent"))
       reasons.push("SideEffects cannot be dependent");
 
-    if (this._hasProp(prop, ["readonly", "required"]))
+    if (this._hasAny(prop, ["readonly", "required"]))
       reasons.push("SideEffects cannot be readonly nor required");
 
     if (!this._isValidatorOk(prop)) reasons.push("Invalid validator");
@@ -454,9 +428,7 @@ export abstract class SchemaCore<T extends ObjectType> {
   };
 
   protected _isUpdatable = (prop: string) => {
-    if (!this._isProp(prop)) return false;
-
-    if (this._isDependentProp(prop)) return false;
+    if (!this._isProp(prop) || this._isDependentProp(prop)) return false;
 
     const { default: _default, readonly } = this._propDefinitions?.[prop];
 
@@ -470,9 +442,7 @@ export abstract class SchemaCore<T extends ObjectType> {
     value: any,
     context: ObjectType = this._getContext()
   ) => {
-    if (!this._isProp(prop)) return false;
-
-    return !isEqual(value, context?.[prop]);
+    return !this._isProp(prop) ? false : !isEqual(value, context?.[prop]);
   };
 
   protected _isValidatorOk = (prop: string) => {
@@ -508,14 +478,12 @@ export abstract class SchemaCore<T extends ObjectType> {
     const _props = this._getProps();
 
     [custom_createdAt, custom_updatedAt].forEach((value) => {
-      if (value && _props?.includes(value)) {
+      if (value && _props?.includes(value))
         _error.add(value, `'${value}' already belong to your schema`);
-      }
     });
 
-    if (custom_createdAt === custom_updatedAt) {
+    if (custom_createdAt === custom_updatedAt)
       _error.add("timestamp", `createdAt & updatedAt cannot be same`);
-    }
 
     if (_error.isPayloadLoaded) throw _error;
 

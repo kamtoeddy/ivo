@@ -1,4 +1,4 @@
-import { isEmailOk } from "../../../../lib/validate";
+import { isEmailOk } from "../../../../dist/validate";
 import { isEmailOkTest } from ".";
 
 isEmailOkTest({ isEmailOk });

@@ -1,4 +1,4 @@
-import { makeModel, Schema } from "../../../../../lib";
+import { makeModel, Schema } from "../../../../../dist";
 import { IStoreItem } from "./interfaces";
 import {
   onQuantitiesChange,

@@ -4,16 +4,21 @@ export const isCreditCardOkTest = ({
   isCreditCardOk: Function;
 }) => {
   describe("Testing isCreditCardOk", () => {
-    it("should tell whether a character is a valid credit card number", () => {
-      const truthyvalues = [5420596721435293, "5420596721435293"];
+    const truthyValues = [
+      [5420596721435293, 5420596721435293],
+      ["5420596721435293", "5420596721435293"],
+      ["5420596721435293 ", "5420596721435293"],
+      ["5420596721435293 ", "5420596721435293"],
+    ];
 
-      truthyvalues.forEach((value) => {
-        expect(isCreditCardOk(value)).toMatchObject({
+    it("should tell whether a character is a valid credit card number", () => {
+      for (const [value, validated] of truthyValues) {
+        expect(isCreditCardOk(value)).toEqual({
           reasons: [],
           valid: true,
-          validated: value,
+          validated,
         });
-      });
+      }
 
       // falsy tests
       const falsyValues = [
@@ -27,11 +32,17 @@ export const isCreditCardOkTest = ({
       ];
 
       falsyValues.forEach((value) => {
-        expect(isCreditCardOk(value)).toMatchObject({
+        expect(isCreditCardOk(value)).toEqual({
           reasons: ["Invalid card number"],
           valid: false,
           validated: undefined,
         });
+      });
+    });
+
+    it("should validated value should be of same type as input value", () => {
+      truthyValues.forEach(([value]) => {
+        expect(typeof isCreditCardOk(value).validated).toBe(typeof value);
       });
     });
   });
