@@ -27,7 +27,7 @@ const isCheckSumOk = (values: number[]) => {
 };
 
 export const isCreditCardOk = (value: any) => {
-  const _value = String(value);
+  const _value = String(value).trim();
 
   if (_value.length !== 16) return failResponse;
 

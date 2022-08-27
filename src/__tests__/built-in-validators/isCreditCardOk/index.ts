@@ -5,7 +5,11 @@ export const isCreditCardOkTest = ({
 }) => {
   describe("Testing isCreditCardOk", () => {
     it("should tell whether a character is a valid credit card number", () => {
-      const truthyvalues = [5420596721435293, "5420596721435293"];
+      const truthyvalues = [
+        5420596721435293,
+        "5420596721435293",
+        "5420596721435293 ",
+      ];
 
       truthyvalues.forEach((value) => {
         expect(isCreditCardOk(value)).toMatchObject({
