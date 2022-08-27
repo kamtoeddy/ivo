@@ -1,5 +1,5 @@
 import { Schema } from ".";
-import { toArray } from "../utils/toArray";
+import { toArray } from "../utils/functions";
 import { ObjectType } from "../utils/interfaces";
 import { isEqual } from "../utils/isEqual";
 import { SchemaCloneOptions } from "./interfaces";

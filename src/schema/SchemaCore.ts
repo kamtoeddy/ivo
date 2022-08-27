@@ -1,6 +1,5 @@
 import { ApiError } from "../utils/ApiError";
-import { toArray } from "../utils/toArray";
-import { belongsTo } from "../utils/functions";
+import { belongsTo, toArray } from "../utils/functions";
 import { ObjectType } from "../utils/interfaces";
 import { isEqual } from "../utils/isEqual";
 import {
@@ -9,7 +8,6 @@ import {
   PropDefinitionRule,
   PropDefinitionRules,
   SchemaOptions,
-  ValidatorResponse,
 } from "./interfaces";
 import { SchemaOptionsHelper } from "./SchemaOptionsHelper";
 

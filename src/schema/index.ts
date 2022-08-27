@@ -1,4 +1,4 @@
-import { toArray } from "../utils/toArray";
+import { toArray } from "../utils/functions";
 import {
   SchemaExtensionOptions,
   SchemaOptions,

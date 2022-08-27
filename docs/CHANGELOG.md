@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+# v1.3.11 <small><sup>27-08-2022</sup></small>
+
+- [Docs] updated docs on isArrayOk (options.sortOrder)
+- [Docs] updated changelog
+
+# v1.3.10 <small><sup>25-08-2022</sup></small>
+
+- [Update] critical tests & cleanups
+
+# v1.3.9 <small><sup>24-08-2022</sup></small>
+
+- [Update] critical tests & cleanups
+
+# v1.3.8 <small><sup>24-08-2022</sup></small>
+
+- [Update] critical tests & cleanups
+
 # v1.3.7 <small><sup>19-08-2022</sup></small>
 
 - [Fixed] lax properties behaving as required
