@@ -19,6 +19,12 @@ export type PayloadType = Record<number | string, string[]>;
 
 export type ObjectType = Record<number | string, any>;
 
+export interface NumberRangeType {
+  bounds: number[];
+  inclusiveBottom?: boolean;
+  inclusiveTop?: boolean;
+}
+
 export interface IStringOptions {
   enums?: string[];
   maxLength?: number;

@@ -1,28 +1,18 @@
-import { belongsTo } from "../utils/functions";
-
-export interface NumberRangeType {
-  bounds: number[];
-  inclusiveBottom?: boolean;
-  inclusiveTop?: boolean;
-}
+import { NumberRangeType } from "../utils/interfaces";
 
 export type RangeType = undefined | NumberRangeType;
-
-const bools = [false, true];
 
 function isInRange(value: number, range: NumberRangeType) {
   const { bounds, inclusiveBottom, inclusiveTop } = range;
   const [min, max] = bounds;
 
-  if ((inclusiveBottom && value < min) || (!inclusiveBottom && value <= min)) {
-    return { valid: false, reasons: ["Too small"], validated: undefined };
-  }
+  if ((inclusiveBottom && value < min) || (!inclusiveBottom && value <= min))
+    return { reasons: ["Too small"], valid: false, validated: undefined };
 
-  if ((inclusiveTop && value > max) || (!inclusiveTop && value >= max)) {
-    return { valid: false, reasons: ["Too large"], validated: undefined };
-  }
+  if ((inclusiveTop && value > max) || (!inclusiveTop && value >= max))
+    return { reasons: ["Too large"], valid: false, validated: undefined };
 
-  return { valid: true, reasons: [] };
+  return { reasons: [], valid: true, validated: value };
 }
 
 function makeRage(range: RangeType): RangeType {
@@ -30,8 +20,8 @@ function makeRage(range: RangeType): RangeType {
 
   const { inclusiveBottom, inclusiveTop } = range;
 
-  if (!belongsTo(inclusiveBottom, bools)) range.inclusiveBottom = true;
-  if (!belongsTo(inclusiveTop, bools)) range.inclusiveTop = true;
+  if (typeof inclusiveBottom !== "boolean") range.inclusiveBottom = true;
+  if (typeof inclusiveTop !== "boolean") range.inclusiveTop = true;
 
   return range;
 }
@@ -42,8 +32,8 @@ export function isNumberOk(num: any, { range }: { range?: RangeType } = {}) {
 
   if (!["number", "string"].includes(typeof num) || isNaN(num)) {
     return {
-      valid: false,
       reasons: ["Expected a number"],
+      valid: false,
       validated: undefined,
     };
   }
@@ -58,5 +48,5 @@ export function isNumberOk(num: any, { range }: { range?: RangeType } = {}) {
     if (!_isInRange.valid) return _isInRange;
   }
 
-  return { reasons, valid, validated: valid ? num : undefined };
+  return { reasons, valid, validated: num };
 }
