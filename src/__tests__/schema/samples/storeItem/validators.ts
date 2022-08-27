@@ -1,7 +1,11 @@
-import { IStringOptions } from "../../../../../lib";
+import { IStringOptions } from "../../../../../dist";
 import { IOtherMeasureUnit, IOtherQuantity, IStoreItem } from "./interfaces";
 
-import { isArrayOk, isNumberOk, isStringOk } from "../../../../../lib/validate";
+import {
+  isArrayOk,
+  isNumberOk,
+  isStringOk,
+} from "../../../../../dist/validate";
 import { findBy } from "../../utils";
 
 export const validateString = (

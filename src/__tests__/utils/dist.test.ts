@@ -3,9 +3,9 @@ import {
   getUnique,
   getUniqueBy,
   serialize,
-} from "../../../lib/utils/getUniqueBy";
-import { belongsTo } from "../../../lib/utils/functions";
-import { isEqual } from "../../../lib/utils/isEqual";
+} from "../../../dist/utils/getUniqueBy";
+import { belongsTo } from "../../../dist/utils/functions";
+import { isEqual } from "../../../dist/utils/isEqual";
 
 import { commonUtilTests } from ".";
 

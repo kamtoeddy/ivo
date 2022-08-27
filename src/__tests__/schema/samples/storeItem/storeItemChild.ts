@@ -1,5 +1,5 @@
 import { storeItemSchema } from ".";
-import { makeModel, Schema } from "../../../../../lib";
+import { makeModel, Schema } from "../../../../../dist";
 import { IStoreItemChild } from "./interfaces";
 import { validateString } from "./validators";
 

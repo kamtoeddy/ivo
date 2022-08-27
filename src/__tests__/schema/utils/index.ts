@@ -1,5 +1,5 @@
-import { isEqual, ObjectType } from "../../../../lib";
-import { getDeepValue } from "../../../../lib/utils/getUniqueBy";
+import { isEqual, ObjectType } from "../../../../dist";
+import { getDeepValue } from "../../../../dist/utils/getUniqueBy";
 
 type FindByOptions = { fromBack?: boolean };
 
