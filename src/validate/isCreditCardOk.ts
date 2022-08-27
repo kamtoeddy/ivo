@@ -37,5 +37,7 @@ export const isCreditCardOk = (value: any) => {
 
   if (!isCheckSumOk(singleDigits)) return failResponse;
 
-  return { reasons: [], valid: true, validated: value };
+  const validated = typeof value === "number" ? value : _value;
+
+  return { reasons: [], valid: true, validated };
 };
