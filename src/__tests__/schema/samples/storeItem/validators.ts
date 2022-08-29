@@ -38,8 +38,8 @@ export const validateOtherUnit = (value: any) => {
   return { reasons: [], valid: true, validated: { coefficient, name } };
 };
 
-export const validateOtherUnits = async (value: any) => {
-  return await isArrayOk<IOtherMeasureUnit>(value, {
+export const validateOtherUnits = (value: any) => {
+  return isArrayOk<IOtherMeasureUnit>(value, {
     empty: true,
     sorted: true,
     filter: (v) => validateOtherUnit(v).valid,
