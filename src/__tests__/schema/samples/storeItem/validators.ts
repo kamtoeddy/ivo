@@ -8,6 +8,14 @@ import {
 } from "../../../../../dist/validate";
 import { findBy } from "../../utils";
 
+export const validateName = (val: any) => {
+  let { valid, validated } = isStringOk(val);
+
+  if (!valid) return { valid: false };
+
+  return { valid, validated };
+};
+
 export const validateString = (
   errorMessage = "",
   options: IStringOptions = {}
@@ -15,7 +23,7 @@ export const validateString = (
   return (val: any) => {
     let { reasons, valid, validated } = isStringOk(val, options);
 
-    if (!valid && errorMessage) reasons = [errorMessage];
+    if (!valid && errorMessage) reasons = [errorMessage, ...reasons!];
 
     return { reasons, valid, validated };
   };
@@ -28,11 +36,7 @@ export const validateOtherUnit = (value: any) => {
   );
   const { valid: validName, validated: name } = isStringOk(value?.name);
 
-  if (!validCoeff || !validName)
-    return {
-      reason: "Invalid other unit",
-      valid: false,
-    };
+  if (!validCoeff || !validName) return { valid: false };
 
   return { valid: true, validated: { coefficient, name } };
 };
@@ -61,8 +65,7 @@ export const validateOtherQuantity = (value: any, ctx: IStoreItem) => {
     range: { bounds: [0], inclusiveBottom: false },
   });
 
-  if (!mu || !validQty)
-    return { reason: "Invalid other quantity", valid: false };
+  if (!mu || !validQty) return { valid: false };
 
   return { valid: true, validated: { name: value.name, quantity } };
 };

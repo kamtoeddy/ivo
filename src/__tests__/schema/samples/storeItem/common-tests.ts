@@ -287,7 +287,53 @@ export const CommonInheritanceTest = (
     });
   });
 
-  // describe(`Testing schema @${schemaName} for user defined validation errors`,()=>{
+  describe(`Testing schema @${schemaName} for user defined validation errors`, () => {
+    it("should respect user defined error messages at creation", () => {
+      const failToCreate = async () => {
+        try {
+          await Model({ ...commonTestData, name: "", _laxProp: [] }).create();
+        } catch (err: any) {
+          expect(err.message).toBe("Validation Error");
+          expect(err.payload).toMatchObject({
+            _laxProp: ["Invalid lax prop", "Too short"],
+            name: [],
+          });
+        }
+      };
 
-  // })
+      failToCreate();
+    });
+
+    it("should respect user defined error messages during cloning", () => {
+      const failToClone = async () => {
+        try {
+          await Model(commonTestData).clone({ name: "", _laxProp: [] });
+        } catch (err: any) {
+          expect(err.message).toBe("Validation Error");
+          expect(err.payload).toMatchObject({
+            _laxProp: ["Invalid lax prop", "Too short"],
+            name: [],
+          });
+        }
+      };
+
+      failToClone();
+    });
+
+    it("should respect user defined error messages during updates", () => {
+      const failToUpdate = async () => {
+        try {
+          await Model(commonTestData).update({ name: "", _laxProp: [] });
+        } catch (err: any) {
+          expect(err.message).toBe("Validation Error");
+          expect(err.payload).toMatchObject({
+            _laxProp: ["Invalid lax prop", "Too short"],
+            name: [],
+          });
+        }
+      };
+
+      failToUpdate();
+    });
+  });
 };

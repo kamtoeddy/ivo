@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+# v1.4.2 <small><sup>31-08-2022</sup></small>
+
+- [Added] possibility to return single reason from validators
+- [Added] tests for user defined validation errors
+
 # v1.4.1 <small><sup>27-08-2022</sup></small>
 
 - [Update] did cleanups

@@ -3,6 +3,7 @@ import { IStoreItem } from "./interfaces";
 import {
   onQuantitiesChange,
   onQuantityChange,
+  validateName,
   validateOtherUnits,
   validatePrice,
   validateQuantities,
@@ -13,7 +14,7 @@ import {
 const storeItemSchema = new Schema(
   {
     id: { readonly: true, validator: validateString("Invalid id") },
-    name: { required: true, validator: validateString("Invalid name") },
+    name: { required: true, validator: validateName },
     price: { required: true, validator: validatePrice },
     quantities: {
       sideEffect: true,
