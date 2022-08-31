@@ -14,9 +14,9 @@ const definitions = {
   },
 };
 
-const options = { timestamp: true };
+const options = { timestamps: true };
 
 const adminSchema = new Schema(definitions, options).extend(userSchema, {
-  remove: ["dob"],
+  remove: "dob",
 });
 ```
