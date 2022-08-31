@@ -1,3 +1,4 @@
+import { makeResponse } from "../schema/SchemaUtils";
 import { NumberRangeType } from "../utils/interfaces";
 
 export type RangeType = undefined | NumberRangeType;
@@ -7,12 +8,12 @@ function isInRange(value: number, range: NumberRangeType) {
   const [min, max] = bounds;
 
   if ((inclusiveBottom && value < min) || (!inclusiveBottom && value <= min))
-    return { reasons: ["Too small"], valid: false, validated: undefined };
+    return { reason: "Too small", valid: false };
 
   if ((inclusiveTop && value > max) || (!inclusiveTop && value >= max))
-    return { reasons: ["Too large"], valid: false, validated: undefined };
+    return { reason: "Too large", valid: false };
 
-  return { reasons: [], valid: true, validated: value };
+  return { valid: true, validated: value };
 }
 
 function makeRage(range: RangeType): RangeType {
@@ -27,15 +28,14 @@ function makeRage(range: RangeType): RangeType {
 }
 
 export function isNumberOk(num: any, { range }: { range?: RangeType } = {}) {
-  let valid = true,
-    reasons: string[] = [];
+  let valid = true;
 
   if (!["number", "string"].includes(typeof num) || isNaN(num)) {
-    return {
-      reasons: ["Expected a number"],
+    return makeResponse({
+      reason: "Expected a number",
       valid: false,
       validated: undefined,
-    };
+    });
   }
 
   num = Number(num);
@@ -45,8 +45,8 @@ export function isNumberOk(num: any, { range }: { range?: RangeType } = {}) {
   if (range) {
     const _isInRange = isInRange(num, range);
 
-    if (!_isInRange.valid) return _isInRange;
+    if (!_isInRange.valid) return makeResponse(_isInRange);
   }
 
-  return { reasons, valid, validated: num as number };
+  return makeResponse<number>({ valid, validated: num });
 }

@@ -30,12 +30,11 @@ export const validateOtherUnit = (value: any) => {
 
   if (!validCoeff || !validName)
     return {
-      reasons: ["Invalid other unit"],
+      reason: "Invalid other unit",
       valid: false,
-      validated: undefined,
     };
 
-  return { reasons: [], valid: true, validated: { coefficient, name } };
+  return { valid: true, validated: { coefficient, name } };
 };
 
 export const validateOtherUnits = (value: any) => {
@@ -63,17 +62,9 @@ export const validateOtherQuantity = (value: any, ctx: IStoreItem) => {
   });
 
   if (!mu || !validQty)
-    return {
-      reasons: ["Invalid other quantity"],
-      valid: false,
-      validated: undefined,
-    };
+    return { reason: "Invalid other quantity", valid: false };
 
-  return {
-    reasons: [],
-    valid: true,
-    validated: { name: value.name, quantity },
-  };
+  return { valid: true, validated: { name: value.name, quantity } };
 };
 
 export const validateQuantities = async (value: any, ctx: IStoreItem) => {

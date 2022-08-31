@@ -56,7 +56,7 @@ function onNameChange(context) {
 | required   | boolean                 | Specifies a property that must be initialised. Default **false**                                                                                                                                                                                                                          |
 | sideEffect | boolean                 | Used with onUpdate to modify other properties but is not attached to instances of your model. Must have a validator, must have at least one onUpdate handler. onCreate handlers are ignored because the onUpdate handlers are used both at creation and during updates. Default **false** |
 | shouldInit | boolean                 | Tells clean-schema whether or not a property should be initialized. Default **true**                                                                                                                                                                                                      |
-| validator  | function                | A function(async / sync) used to validated the value of a property. [See interface](#validators). Default **null**                                                                                                                                                                        |
+| validator  | function                | A function(async / sync) used to validated the value of a property. [See interface](../validate/index.md#validators). Default **null**                                                                                                                                                    |
 
 ## The Operation Context
 
@@ -115,19 +115,4 @@ let transactionSchema = new Schema(definitions, {
 let transactionSchema = new Schema(definitions, {
   timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
 });
-```
-
-## Validators
-
-Validators are expected to behave as below
-
-```ts
-const validator = (valueToValidate: any, ...args?, validationContext) => {
-  // validation logic here
-
-return {
-  reasons?: string[],
-  valid: boolean,
-  validated?: any,}
-};
 ```

@@ -1,8 +1,10 @@
-const failResponse = {
-  reasons: ["Invalid card number"],
+import { makeResponse } from "../schema/SchemaUtils";
+
+const failResponse = makeResponse({
+  reason: "Invalid card number",
   valid: false,
   validated: undefined,
-};
+});
 
 const isEven = (num: number) => num % 2 === 0;
 
@@ -39,5 +41,5 @@ export const isCreditCardOk = (value: any) => {
 
   const validated = typeof value === "number" ? value : _value;
 
-  return { reasons: [], valid: true, validated };
+  return makeResponse<string | number>({ valid: true, validated });
 };

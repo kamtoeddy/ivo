@@ -150,7 +150,7 @@ These methods are async because custom validators could be async as well.
   - [The Operation Context](./docs/schema/definition.md#the-operation-context)
   - [Life Cycle listeners](./docs/schema/definition.md#life-cycle-listeners)
   - [Options](./docs/schema/definition.md#options)
-- [Helper Validators](./docs/validate/index.md#built-in-validation-helpers)
+- [Validators](./docs/validate/index.md#validators)
   - [isArrayOk](./docs/validate/isArrayOk.md)
   - [isBooleanOk](./docs/validate/isBooleanOk.md)
   - [isCreditCardOk](./docs/validate/isCreditCardOk.md)

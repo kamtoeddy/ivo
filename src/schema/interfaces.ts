@@ -2,15 +2,22 @@ import { ObjectType } from "../utils/interfaces";
 
 export type fxObjectType = (...args: any) => ObjectType | Promise<ObjectType>;
 
-export interface ValidatorResponse {
+export interface ValidatorResponse<T = any> {
+  reasons?: string[];
+  valid: boolean;
+  validated?: T;
+}
+
+export type ResponseInput = {
+  reason?: string;
   reasons?: string[];
   valid: boolean;
   validated?: any;
-}
+};
 
 export type Validator = (
   ...args: any
-) => ValidatorResponse | Promise<ValidatorResponse>;
+) => ResponseInput | Promise<ResponseInput>;
 
 export type NonEmptyArray<T> = [T, ...T[]];
 

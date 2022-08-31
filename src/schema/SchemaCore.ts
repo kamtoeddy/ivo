@@ -9,7 +9,7 @@ import {
   PropDefinitionRules,
   SchemaOptions,
 } from "./interfaces";
-import { SchemaOptionsHelper } from "./SchemaOptionsHelper";
+import { makeResponse, SchemaOptionsHelper } from "./SchemaUtils";
 
 export const defaultOptions: SchemaOptions = { timestamps: false };
 
@@ -162,9 +162,8 @@ export abstract class SchemaCore<T extends ObjectType> {
       const isLaxInit =
         this._isLaxProp(prop) && this.values.hasOwnProperty(prop);
 
-      if (!this._canInit(prop) && !isLaxInit) {
+      if (!this._canInit(prop) && !isLaxInit)
         return (obj[prop as keyof T] = this.defaults[prop]!);
-      }
 
       const { reasons, valid, validated } = await this.validate(
         prop,
@@ -592,8 +591,9 @@ export abstract class SchemaCore<T extends ObjectType> {
 
     const validator = this._getValidator(prop);
 
-    if (validator) return validator(value, this._getContext());
+    if (validator)
+      return makeResponse<any>(await validator(value, this._getContext()));
 
-    return { reasons: [], valid: true, validated: value };
+    return makeResponse<any>({ valid: true, validated: value });
   };
 }
