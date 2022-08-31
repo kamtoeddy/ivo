@@ -9,7 +9,7 @@ import {
   PropDefinitionRules,
   SchemaOptions,
 } from "./interfaces";
-import { SchemaOptionsHelper } from "./SchemaOptionsHelper";
+import { makeResponse, SchemaOptionsHelper } from "./SchemaUtils";
 
 export const defaultOptions: SchemaOptions = { timestamps: false };
 
@@ -47,9 +47,9 @@ export abstract class SchemaCore<T extends ObjectType> {
   }
 
   // context methods
-  protected _getContext = (): T => {
-    const data = this.props.reduce((prev, prop) => {
-      prev[prop as keyof T] = this.values[prop]!;
+  protected _getContext = () => {
+    const data = this.props.reduce((prev, prop: keyof T) => {
+      prev[prop] = this.values[prop]!;
 
       return prev;
     }, {} as T);
@@ -162,9 +162,8 @@ export abstract class SchemaCore<T extends ObjectType> {
       const isLaxInit =
         this._isLaxProp(prop) && this.values.hasOwnProperty(prop);
 
-      if (!this._canInit(prop) && !isLaxInit) {
+      if (!this._canInit(prop) && !isLaxInit)
         return (obj[prop as keyof T] = this.defaults[prop]!);
-      }
 
       const { reasons, valid, validated } = await this.validate(
         prop,
@@ -547,8 +546,6 @@ export abstract class SchemaCore<T extends ObjectType> {
         if (!isSideEffect && !this._isUpdatableInCTX(_prop, _value, context))
           continue;
 
-        if (!isSideEffect) contextObject[_prop] = _value;
-
         await this._resolveLinkedValue(contextObject, _prop, _value, lifeCycle);
       }
     }
@@ -594,8 +591,9 @@ export abstract class SchemaCore<T extends ObjectType> {
 
     const validator = this._getValidator(prop);
 
-    if (validator) return validator(value, this._getContext());
+    if (validator)
+      return makeResponse<any>(await validator(value, this._getContext()));
 
-    return { reasons: [], valid: true, validated: value };
+    return makeResponse<any>({ valid: true, validated: value });
   };
 }

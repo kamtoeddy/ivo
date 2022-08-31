@@ -30,9 +30,9 @@ console.log(
 
 ### Options
 
-| Property  | Type     | Description                                                                      |
-| --------- | -------- | -------------------------------------------------------------------------------- |
-| enums     | string[] | The set of values the string is expected to belong to. Default: **undefined**    |
-| maxLength | number   | The maximum number of characters the string is expected to have. Default: **40** |
-| minLength | number   | The minimum number of characters the string is expected to have. Default: **1**  |
-| regExp    | RegExp   | A regular expression the string is expected to match. Default: **undefined**     |
+| Property  | Type      | Description                                                                      |
+| --------- | --------- | -------------------------------------------------------------------------------- |
+| enums     | string[ ] | The set of values the string is expected to belong to. Default: **undefined**    |
+| maxLength | number    | The maximum number of characters the string is expected to have. Default: **40** |
+| minLength | number    | The minimum number of characters the string is expected to have. Default: **1**  |
+| regExp    | RegExp    | A regular expression the string is expected to match. Default: **undefined**     |

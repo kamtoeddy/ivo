@@ -1,7 +1,6 @@
+import { makeResponse } from "../schema/SchemaUtils";
 import { getUniqueBy } from "../utils/getUniqueBy";
 import { IArrayOptions } from "../utils/interfaces";
-
-const validated = undefined;
 
 const getOrder = (sortOrder: any) => {
   if (!["asc", "desc"].includes(sortOrder)) return -1;
@@ -23,14 +22,14 @@ export async function isArrayOk<T>(
   }: IArrayOptions<T> = {}
 ) {
   if (!Array.isArray(arr))
-    return { valid: false, validated, reasons: ["Expected an array"] };
+    return makeResponse({ reason: "Expected an array", valid: false });
 
   let _array = [...arr];
 
   if (filter) _array = await Promise.all(arr.filter(filter));
 
   if (!empty && !_array.length)
-    return { valid: false, validated, reasons: ["Expected a non-empty array"] };
+    return makeResponse({ reason: "Expected a non-empty array", valid: false });
 
   if (modifier) {
     const copy = [];
@@ -56,5 +55,5 @@ export async function isArrayOk<T>(
     _array = await Promise.all(_array.sort(sorter));
   }
 
-  return { reasons: [], valid: true, validated: _array };
+  return makeResponse<T[]>({ valid: true, validated: _array });
 }

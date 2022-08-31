@@ -48,7 +48,7 @@ const userSchema = new Schema(
     },
     lastName: {
       required: true,
-      onChange: onNameChange,
+      onChange: [onNameChange],
       validator: validateName,
     },
     lastSeen: {
@@ -146,11 +146,11 @@ These methods are async because custom validators could be async as well.
 
 - Schema
   - [Defining Properties](./docs/schema/definition.md#defining-a-schema)
-  - [Inheritance](./docs/schema/definition.md#inheritance)
-  - [The Validation Context](./docs/schema/definition.md#the-validation-context)
+  - [Inheritance](./docs/schema/inheritance.md)
+  - [The Operation Context](./docs/schema/definition.md#the-operation-context)
   - [Life Cycle listeners](./docs/schema/definition.md#life-cycle-listeners)
   - [Options](./docs/schema/definition.md#options)
-- [Helper Validators](./docs/validate/index.md#built-in-validation-helpers)
+- [Validators](./docs/validate/index.md#validators)
   - [isArrayOk](./docs/validate/isArrayOk.md)
   - [isBooleanOk](./docs/validate/isBooleanOk.md)
   - [isCreditCardOk](./docs/validate/isCreditCardOk.md)

@@ -27,9 +27,9 @@ console.log(validate.isNumberOk("10.05", options)); // { reasons: [], valid: tru
 
 ### Options
 
-| Property              | Type     | Description                                                    |
-| --------------------- | -------- | -------------------------------------------------------------- |
-| range                 | object   | Object describing the range of values that will pass the check |
-| range.bounds          | number[] | The lower and upper bounds. Default: **[-Infinity, Infinity]** |
-| range.inclusiveBottom | boolean  | Whether the lower bound should be accepted. Default: **true**  |
-| range.inclusiveTop    | boolean  | Whether the upper bound should be accepted. Default: **true**  |
+| Property              | Type      | Description                                                    |
+| --------------------- | --------- | -------------------------------------------------------------- |
+| range                 | object    | Object describing the range of values that will pass the check |
+| range.bounds          | number[ ] | The lower and upper bounds. Default: **[-Infinity, Infinity]** |
+| range.inclusiveBottom | boolean   | Whether the lower bound should be accepted. Default: **true**  |
+| range.inclusiveTop    | boolean   | Whether the upper bound should be accepted. Default: **true**  |

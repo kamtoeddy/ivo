@@ -1,11 +1,8 @@
+import { makeResponse } from "../schema/SchemaUtils";
+
 export function isBooleanOk(value: any) {
-  let valid = true,
-    reasons: string[] = [];
+  if (typeof value !== "boolean")
+    return makeResponse({ reason: "Expected a boolean", valid: false });
 
-  if (typeof value !== "boolean") {
-    valid = false;
-    reasons = ["Expected a boolean"];
-  }
-
-  return { reasons, valid, validated: valid ? value : undefined };
+  return makeResponse<boolean>({ valid: true, validated: value });
 }
