@@ -26,5 +26,5 @@ export function isStringOk(
   if (enums && !belongsTo(str, enums))
     return { reasons: ["Unacceptable value"], valid: false, validated };
 
-  return { reasons, valid, validated: str };
+  return { reasons, valid, validated: str as string };
 }

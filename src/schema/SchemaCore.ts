@@ -47,9 +47,9 @@ export abstract class SchemaCore<T extends ObjectType> {
   }
 
   // context methods
-  protected _getContext = (): T => {
-    const data = this.props.reduce((prev, prop) => {
-      prev[prop as keyof T] = this.values[prop]!;
+  protected _getContext = () => {
+    const data = this.props.reduce((prev, prop: keyof T) => {
+      prev[prop] = this.values[prop]!;
 
       return prev;
     }, {} as T);
@@ -546,8 +546,6 @@ export abstract class SchemaCore<T extends ObjectType> {
 
         if (!isSideEffect && !this._isUpdatableInCTX(_prop, _value, context))
           continue;
-
-        if (!isSideEffect) contextObject[_prop] = _value;
 
         await this._resolveLinkedValue(contextObject, _prop, _value, lifeCycle);
       }

@@ -32,8 +32,8 @@ const storeItemSchema = new Schema(
     _dependentReadOnly: { default: 0, readonly: true, dependent: true },
     _sideEffectForDependentReadOnly: {
       sideEffect: true,
-      onChange: [() => ({ _dependentReadOnly: 1 })],
-      validator: (dt) => ({ valid: true }),
+      onChange: [badHandler, () => ({ _dependentReadOnly: 1 })],
+      validator: () => ({ valid: true }),
     },
     quantityChangeCounter: { default: 0, dependent: true },
     measureUnit: {
@@ -44,6 +44,15 @@ const storeItemSchema = new Schema(
   },
   { timestamps: { createdAt: "c_At", updatedAt: "u_At" } }
 );
+
+// this type of handler should not affect the next
+// operation context
+function badHandler({ quantity, _dependentReadOnly }: any) {
+  _dependentReadOnly = 1;
+  quantity = 10000;
+
+  return {};
+}
 
 const StoreItem = storeItemSchema.getModel<IStoreItem>();
 

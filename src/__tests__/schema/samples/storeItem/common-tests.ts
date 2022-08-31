@@ -264,8 +264,8 @@ export const CommonInheritanceTest = (
       item = await Model({
         ...testData,
         quantities: [
-          { quantity: 1, name: "crate24" },
-          { quantity: 1, name: "tray" },
+          { name: "crate24", quantity: 1 },
+          { name: "tray", quantity: 1 },
         ],
       }).create();
     });
