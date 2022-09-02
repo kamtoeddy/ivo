@@ -20,7 +20,7 @@ export abstract class SchemaCore<T extends ObjectType> {
   protected error = new ApiError({ message: "Validation Error" });
 
   protected _helper: SchemaOptionsHelper;
-  protected _options: SchemaOptions<T>;
+  protected _options: SchemaOptions;
   protected _propDefinitions = {} as PropDefinitionRules<T>;
 
   protected context: T = {} as T;
@@ -31,7 +31,7 @@ export abstract class SchemaCore<T extends ObjectType> {
 
   constructor(
     propDefinitions: PropDefinitionRules<T>,
-    options: SchemaOptions<T> = defaultOptions
+    options: SchemaOptions = defaultOptions
   ) {
     this._propDefinitions = propDefinitions;
     this._options = options;
@@ -452,7 +452,7 @@ export abstract class SchemaCore<T extends ObjectType> {
     return this._isFunction(propDef?.validator);
   };
 
-  private _makeOptions(options: SchemaOptions<T>): Private_ISchemaOptions {
+  private _makeOptions(options: SchemaOptions): Private_ISchemaOptions {
     if (!options) return { timestamps: { createdAt: "", updatedAt: "" } };
 
     let { timestamps } = options;

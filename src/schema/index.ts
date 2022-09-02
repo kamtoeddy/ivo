@@ -13,7 +13,7 @@ import { defaultOptions, SchemaCore } from "./SchemaCore";
 export class Schema<T extends ObjectType> extends SchemaCore<T> {
   constructor(
     propDefinitions: PropDefinitionRules<T>,
-    options: SchemaOptions<T> = defaultOptions
+    options: SchemaOptions = defaultOptions
   ) {
     super(propDefinitions, options);
     this._checkPropDefinitions();

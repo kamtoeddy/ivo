@@ -9,8 +9,6 @@ export interface IOtherMeasureUnit {
 }
 
 export interface IStoreItem {
-  c_At?: string;
-  u_At?: string;
   _laxProp: string;
   _readOnlyLax1: string;
   _readOnlyLax2: string;
@@ -27,8 +25,6 @@ export interface IStoreItem {
   otherMeasureUnits?: IOtherMeasureUnit[];
 }
 
-export interface IStoreItemChild extends Omit<IStoreItem, "c_At" | "u_At"> {
+export interface IStoreItemChild extends IStoreItem {
   childID: string;
-  createdAt?: string;
-  updatedAt?: string;
 }
