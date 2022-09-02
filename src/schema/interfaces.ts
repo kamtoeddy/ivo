@@ -1,6 +1,8 @@
 import { ObjectType } from "../utils/interfaces";
 
-export type fxObjectType = (...args: any) => ObjectType | Promise<ObjectType>;
+export type Listener = (
+  ctx: any
+) => Partial<ObjectType> | Promise<Partial<ObjectType>>;
 
 export interface ValidatorResponse<T = any> {
   reasons?: string[];
@@ -21,15 +23,13 @@ export type Validator = (
 
 export type NonEmptyArray<T> = [T, ...T[]];
 
-export type LifeCycleType = fxObjectType | NonEmptyArray<fxObjectType>;
-
 export interface PropDefinitionRules {
   [key: string]: {
     default?: any;
     dependent?: boolean;
-    onChange?: LifeCycleType;
-    onCreate?: LifeCycleType;
-    onUpdate?: LifeCycleType;
+    onChange?: Listener | NonEmptyArray<Listener>;
+    onCreate?: Listener | NonEmptyArray<Listener>;
+    onUpdate?: Listener | NonEmptyArray<Listener>;
     readonly?: boolean | "lax";
     required?: boolean;
     sideEffect?: boolean;
