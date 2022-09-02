@@ -1,5 +1,4 @@
 import { CommonInheritanceTest, commonTestData } from "./common-tests";
-import { IStoreItemChild } from "./interfaces";
 import { StoreItemChild } from "./storeItemChild";
 
 const testData = { ...commonTestData, childID: "1" };
@@ -7,7 +6,7 @@ const testData = { ...commonTestData, childID: "1" };
 CommonInheritanceTest("StoreItemChild", StoreItemChild, testData);
 
 describe("Testing non-inherited properties for StoreItemChild", () => {
-  let item: IStoreItemChild;
+  let item: any;
 
   beforeAll(async () => {
     item = await StoreItemChild(testData).create();
