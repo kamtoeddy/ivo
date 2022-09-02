@@ -11,7 +11,7 @@ import {
   validateString,
 } from "./validators";
 
-const storeItemSchema = new Schema(
+const storeItemSchema = new Schema<IStoreItem>(
   {
     id: { readonly: true, validator: validateString("Invalid id") },
     name: { required: true, validator: validateName },
