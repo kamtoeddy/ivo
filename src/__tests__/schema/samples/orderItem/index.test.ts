@@ -22,7 +22,7 @@ describe("Testing schema of Orderitem (inherited schema)", () => {
   });
 
   it("should have been created properly", () => {
-    expect(orderItem).toMatchObject<IOrderItem>({
+    expect(orderItem).toMatchObject<Partial<IOrderItem>>({
       id: "1",
       name: "beer",
       costPrice: 5,

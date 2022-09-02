@@ -21,7 +21,7 @@ export abstract class SchemaCore<T extends ObjectType> {
 
   protected _helper: SchemaOptionsHelper;
   protected _options: SchemaOptions<T>;
-  protected _propDefinitions: PropDefinitionRules<T> = {};
+  protected _propDefinitions = {} as PropDefinitionRules<T>;
 
   protected context: T = {} as T;
   protected defaults: Partial<T> = {};
@@ -185,6 +185,8 @@ export abstract class SchemaCore<T extends ObjectType> {
     return this._useConfigProps(obj) as T;
   };
 
+  protected _getDefinition = (prop: string) => this._propDefinitions[prop]!;
+
   protected _getDefinitionValue = (prop: string, rule: PropDefinitionRule) =>
     this._propDefinitions[prop]?.[rule];
 
@@ -254,9 +256,7 @@ export abstract class SchemaCore<T extends ObjectType> {
 
     if (!isPopDefOk.valid) return isPopDefOk;
 
-    const propDef = this._propDefinitions[prop];
-
-    const { dependent, sideEffect } = propDef;
+    const { dependent, sideEffect } = this._getDefinition(prop);
 
     if (sideEffect) reasons.push("Dependent properties cannot be sideEffect");
 
@@ -280,7 +280,7 @@ export abstract class SchemaCore<T extends ObjectType> {
 
     if (!isPopDefOk.valid) return isPopDefOk;
 
-    const propDef = this._propDefinitions[prop];
+    const propDef = this._getDefinition(prop);
 
     const hasDefaultValue = !isEqual(propDef.default, undefined),
       isDependent = this._isDependentProp(prop);
@@ -407,7 +407,7 @@ export abstract class SchemaCore<T extends ObjectType> {
         "SideEffects do not support onUpdate listeners any more. Use onChange instead"
       );
 
-    const { sideEffect } = this._propDefinitions[prop];
+    const { sideEffect } = this._getDefinition(prop);
 
     if (!sideEffect === true)
       reasons.push("SideEffects must have sideEffect as'true'");
@@ -431,7 +431,7 @@ export abstract class SchemaCore<T extends ObjectType> {
   protected _isUpdatable = (prop: string) => {
     if (!this._isProp(prop) || this._isDependentProp(prop)) return false;
 
-    const { default: _default, readonly } = this._propDefinitions?.[prop];
+    const { default: _default, readonly } = this._getDefinition(prop);
 
     return (
       !readonly || (readonly && isEqual(_default, this._getContext()?.[prop]))

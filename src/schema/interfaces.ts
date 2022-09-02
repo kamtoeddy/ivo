@@ -22,8 +22,8 @@ export type Validator<T> = (
 
 export type NonEmptyArray<T> = [T, ...T[]];
 
-export interface PropDefinitionRules<T> {
-  [key: string]: {
+export type PropDefinitionRules<T> = {
+  [K in keyof T]?: {
     default?: any;
     dependent?: boolean;
     onChange?: Listener<T> | NonEmptyArray<Listener<T>>;
@@ -35,7 +35,7 @@ export interface PropDefinitionRules<T> {
     shouldInit?: boolean;
     validator?: Validator<T>;
   };
-}
+};
 
 export type PropDefinitionRule =
   | "default"
