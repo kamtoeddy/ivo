@@ -67,7 +67,7 @@ export abstract class SchemaCore<T extends ObjectType> {
 
   // error methods
   protected _throwErrors(_message?: string): void {
-    const err = new ApiError(this.error.getInfo());
+    const err = new ApiError(this.error.summary);
 
     this.error.clear();
 
