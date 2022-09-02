@@ -52,8 +52,8 @@ export type PropDefinitionRule =
 export type LifeCycleRule = "onChange" | "onCreate" | "onUpdate";
 
 interface IOptionsTimestamp<T> {
-  createdAt?: string;
-  updatedAt?: string;
+  createdAt?: StringKeys<T>;
+  updatedAt?: StringKeys<T>;
 }
 
 export interface ITimestamp {
