@@ -6,43 +6,46 @@ import {
   SchemaOptions,
   PropDefinitionRules,
   SchemaCloneOptions,
+  StringKeys,
 } from "./interfaces";
 import { defaultOptions, SchemaCore } from "./SchemaCore";
 
-export class Schema extends SchemaCore<Schema> {
+export class Schema<T extends ObjectType> extends SchemaCore<T> {
   constructor(
-    propDefinitions: PropDefinitionRules,
-    options: SchemaOptions = defaultOptions
+    propDefinitions: PropDefinitionRules<T>,
+    options: SchemaOptions<T> = defaultOptions
   ) {
     super(propDefinitions, options);
     this._checkPropDefinitions();
   }
 
-  private _useExtensionOptions = (options: SchemaExtensionOptions) => {
-    const remove = toArray(options.remove);
+  private _useExtensionOptions = <T extends ObjectType>(
+    options: SchemaExtensionOptions<T>
+  ) => {
+    const remove = toArray(options?.remove ?? []);
 
     remove?.forEach((prop) => delete this._propDefinitions?.[prop]);
 
     return this;
   };
 
-  extend = (
-    parent: Schema,
-    options: SchemaExtensionOptions = { remove: [] }
+  extend = <U extends ObjectType>(
+    parent: Schema<U>,
+    options: SchemaExtensionOptions<U> = { remove: [] }
   ) => {
     this._propDefinitions = {
       ...parent.propDefinitions,
       ...this._propDefinitions,
-    };
+    } as PropDefinitionRules<T>;
 
     return this._useExtensionOptions(options);
   };
 
-  getModel = <T extends ObjectType>() => Model.build<T>(this);
+  getModel = () => Model.build<T>(this);
 }
 
 class Model<T extends ObjectType> extends SchemaCore<T> {
-  constructor(schema: Schema, values: Partial<T>) {
+  constructor(schema: Schema<T>, values: Partial<T>) {
     super(schema.propDefinitions, schema.options);
 
     // this order of assignment is precious
@@ -52,8 +55,8 @@ class Model<T extends ObjectType> extends SchemaCore<T> {
     this.setValues(values);
   }
 
-  static build<U extends ObjectType>(schema: Schema) {
-    return function Builder(values: Partial<U>) {
+  static build<U extends ObjectType>(schema: Schema<U>) {
+    return function Builder(values: Partial<U>): Model<U> {
       return new Model(schema, values);
     };
   }
@@ -64,7 +67,7 @@ class Model<T extends ObjectType> extends SchemaCore<T> {
     for (let prop of this.props) {
       const _default = this._propDefinitions[prop]?.default;
 
-      if (!isEqual(_default, undefined)) defaults[prop as keyof T] = _default;
+      if (!isEqual(_default, undefined)) defaults[prop] = _default;
     }
 
     return defaults;
@@ -76,14 +79,12 @@ class Model<T extends ObjectType> extends SchemaCore<T> {
         this._helper.isTimestampKey(key) ||
         this._isProp(key) ||
         this._isSideEffect(key)
-    );
+    ) as StringKeys<T>[];
 
-    this._sort(keys).forEach(
-      (key) => (this.values[key as keyof T] = values[key])
-    );
+    this._sort(keys).forEach((key) => (this.values[key] = values[key]));
   }
 
-  clone = async (options: SchemaCloneOptions = { reset: [] }) => {
+  clone = async (options: SchemaCloneOptions<T> = { reset: [] }) => {
     return this._getCloneObject(toArray(options.reset).filter(this._isProp));
   };
 
@@ -98,7 +99,7 @@ class Model<T extends ObjectType> extends SchemaCore<T> {
   update = async (changes: Partial<T>) => {
     this.updated = {};
 
-    const toUpdate = Object.keys(changes ?? {});
+    const toUpdate = Object.keys(changes ?? {}) as StringKeys<T>[];
 
     const updatables = toUpdate.filter((prop) => this._isUpdatable(prop));
     const linkedProps = toUpdate.filter(

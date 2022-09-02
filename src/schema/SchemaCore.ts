@@ -8,10 +8,11 @@ import {
   PropDefinitionRule,
   PropDefinitionRules,
   SchemaOptions,
+  StringKeys,
 } from "./interfaces";
 import { makeResponse, SchemaOptionsHelper } from "./SchemaUtils";
 
-export const defaultOptions: SchemaOptions = { timestamps: false };
+export const defaultOptions = { timestamps: false };
 
 const lifeCycleRules: LifeCycleRule[] = ["onChange", "onCreate", "onUpdate"];
 
@@ -19,18 +20,18 @@ export abstract class SchemaCore<T extends ObjectType> {
   protected error = new ApiError({ message: "Validation Error" });
 
   protected _helper: SchemaOptionsHelper;
-  protected _options: SchemaOptions;
-  protected _propDefinitions: PropDefinitionRules = {};
+  protected _options: SchemaOptions<T>;
+  protected _propDefinitions: PropDefinitionRules<T> = {};
 
   protected context: T = {} as T;
   protected defaults: Partial<T> = {};
-  protected props: string[] = [];
+  protected props: StringKeys<T>[] = [];
   protected updated: Partial<T> = {};
   protected values: Partial<T> = {};
 
   constructor(
-    propDefinitions: PropDefinitionRules,
-    options: SchemaOptions = defaultOptions
+    propDefinitions: PropDefinitionRules<T>,
+    options: SchemaOptions<T> = defaultOptions
   ) {
     this._propDefinitions = propDefinitions;
     this._options = options;
@@ -66,7 +67,7 @@ export abstract class SchemaCore<T extends ObjectType> {
 
   // error methods
   protected _throwErrors(_message?: string): void {
-    const err = new ApiError(this.error.getInfo());
+    const err = new ApiError(this.error.summary);
 
     this.error.clear();
 
@@ -124,7 +125,7 @@ export abstract class SchemaCore<T extends ObjectType> {
     );
 
     const obj = createProps.reduce((values: T, next) => {
-      values[next as keyof T] = (
+      values[next] = (
         reset.includes(next)
           ? this.defaults[next] ?? this.values[next]
           : this.values[next] ?? this.defaults[next]
@@ -163,14 +164,14 @@ export abstract class SchemaCore<T extends ObjectType> {
         this._isLaxProp(prop) && this.values.hasOwnProperty(prop);
 
       if (!this._canInit(prop) && !isLaxInit)
-        return (obj[prop as keyof T] = this.defaults[prop]!);
+        return (obj[prop] = this.defaults[prop]!);
 
       const { reasons, valid, validated } = await this.validate(
         prop,
         this.values[prop]
       );
 
-      if (valid) return (obj[prop as keyof T] = validated);
+      if (valid) return (obj[prop] = validated);
 
       this.error.add(prop, reasons);
     });
@@ -221,7 +222,7 @@ export abstract class SchemaCore<T extends ObjectType> {
     );
   };
 
-  protected _getProps = (): string[] => {
+  protected _getProps = (): StringKeys<T>[] => {
     const props = Object.keys(this._propDefinitions).filter(
       (prop) => this._isPropDefinitionOk(prop) && !this._isSideEffect(prop)
     );
@@ -302,7 +303,8 @@ export abstract class SchemaCore<T extends ObjectType> {
   protected _isLaxProp = (prop: string): boolean =>
     this.__isLaxProp(prop).valid;
 
-  protected _isProp = (prop: string): boolean => this.props.includes(prop);
+  protected _isProp = (prop: string) =>
+    this.props.includes(prop as StringKeys<T>);
 
   protected _isPropDefinitionObjectOk = (prop: string) => {
     const propDef = this._propDefinitions[prop];
@@ -450,7 +452,7 @@ export abstract class SchemaCore<T extends ObjectType> {
     return this._isFunction(propDef?.validator);
   };
 
-  private _makeOptions(options: SchemaOptions): Private_ISchemaOptions {
+  private _makeOptions(options: SchemaOptions<T>): Private_ISchemaOptions {
     if (!options) return { timestamps: { createdAt: "", updatedAt: "" } };
 
     let { timestamps } = options;
@@ -477,7 +479,7 @@ export abstract class SchemaCore<T extends ObjectType> {
     const _props = this._getProps();
 
     [custom_createdAt, custom_updatedAt].forEach((value) => {
-      if (value && _props?.includes(value))
+      if (value && _props?.includes(value as StringKeys<T>))
         _error.add(value, `'${value}' already belong to your schema`);
     });
 
@@ -493,7 +495,7 @@ export abstract class SchemaCore<T extends ObjectType> {
   }
 
   protected _resolveLinked = async (
-    props: string[],
+    props: StringKeys<T>[],
     context: Partial<T>,
     values: Partial<T>,
     lifeCycle: LifeCycleRule
@@ -506,8 +508,8 @@ export abstract class SchemaCore<T extends ObjectType> {
   };
 
   protected _resolveLinkedValue = async (
-    contextObject: ObjectType = {},
-    prop: string,
+    contextObject: Partial<T> = {},
+    prop: StringKeys<T>,
     value: any,
     lifeCycle: LifeCycleRule
   ) => {
@@ -546,7 +548,12 @@ export abstract class SchemaCore<T extends ObjectType> {
         if (!isSideEffect && !this._isUpdatableInCTX(_prop, _value, context))
           continue;
 
-        await this._resolveLinkedValue(contextObject, _prop, _value, lifeCycle);
+        await this._resolveLinkedValue(
+          contextObject,
+          _prop as StringKeys<T>,
+          _value,
+          lifeCycle
+        );
       }
     }
   };
@@ -578,7 +585,9 @@ export abstract class SchemaCore<T extends ObjectType> {
   };
 
   protected _useSideInitProps = async (data: T) => {
-    const sideEffectProps = Object.keys(this.values).filter(this._isSideInit);
+    const sideEffectProps = Object.keys(this.values).filter(
+      this._isSideInit
+    ) as StringKeys<T>[];
 
     await this._resolveLinked(sideEffectProps, data, this.values, "onCreate");
   };

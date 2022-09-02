@@ -1,9 +1,3 @@
-export interface ApiErrorProps {
-  message: string;
-  payload?: PayloadType;
-  statusCode?: number;
-}
-
 export interface IArrayOptions<T> {
   empty?: boolean;
   filter?: (data: T) => boolean;
@@ -14,8 +8,16 @@ export interface IArrayOptions<T> {
   unique?: boolean;
   uniqueKey?: string;
 }
+export type PayloadKey = number | string;
 
-export type PayloadType = Record<number | string, string[]>;
+export type ErrorPayload = Record<PayloadKey, string[]>;
+export type InputPayload = Record<PayloadKey, string | string[]>;
+
+export interface ApiErrorProps {
+  message: string;
+  payload?: InputPayload;
+  statusCode?: number;
+}
 
 export type ObjectType = Record<number | string, any>;
 

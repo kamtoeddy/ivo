@@ -1,6 +1,5 @@
 import { storeItemSchema } from ".";
 import { Schema } from "../../../../../dist";
-import { IStoreItemChild } from "./interfaces";
 import { validateString } from "./validators";
 
 const storeItemChildSchema = new Schema(
@@ -10,6 +9,6 @@ const storeItemChildSchema = new Schema(
   { timestamps: true }
 ).extend(storeItemSchema);
 
-const StoreItemChild = storeItemChildSchema.getModel<IStoreItemChild>();
+const StoreItemChild = storeItemChildSchema.getModel();
 
 export { StoreItemChild };

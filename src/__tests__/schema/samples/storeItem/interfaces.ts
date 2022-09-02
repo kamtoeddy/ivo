@@ -9,6 +9,8 @@ export interface IOtherMeasureUnit {
 }
 
 export interface IStoreItem {
+  c_At?: string;
+  u_At?: string;
   _readOnlyNoInit?: any;
   _dependentReadOnly?: any;
   _sideEffectForDependentReadOnly?: any;

@@ -1,13 +1,19 @@
-import { ApiErrorProps, PayloadType } from "./interfaces";
+import { sortKeys, toArray } from "./functions";
+import {
+  ApiErrorProps,
+  ErrorPayload,
+  InputPayload,
+  PayloadKey,
+} from "./interfaces";
 
 export class ApiError extends Error {
   name = "ApiError";
-  payload: PayloadType;
+  payload: ErrorPayload = {};
   statusCode: number;
 
   constructor({ message, payload = {}, statusCode = 400 }: ApiErrorProps) {
     super(message);
-    this.payload = payload;
+    this._setPayload(payload);
     this.statusCode = statusCode;
   }
 
@@ -15,16 +21,32 @@ export class ApiError extends Error {
     return Object.keys(this.payload).length > 0;
   }
 
-  private _has = (field: string) => this.payload.hasOwnProperty(field);
+  get summary() {
+    return {
+      message: this.message,
+      payload: sortKeys(this.payload),
+      statusCode: this.statusCode,
+    };
+  }
 
-  add(field: string, value?: string | string[]) {
-    if (!value) value = [];
+  private _has = (field: PayloadKey) => this.payload.hasOwnProperty(field);
 
-    value = Array.isArray(value) ? [...value] : [value];
+  private _setPayload = (payload: InputPayload) => {
+    Object.entries(payload).forEach(([key, value]) => {
+      this.add(key, value);
+    });
 
-    this.payload[field] = this._has(field)
-      ? [...this.payload[field], ...value]
-      : value;
+    this.payload = sortKeys(this.payload);
+  };
+
+  add(field: PayloadKey, value?: string | string[]) {
+    if (value) {
+      value = toArray(value);
+
+      this.payload[field] = this._has(field)
+        ? [...this.payload[field], ...value]
+        : value;
+    }
 
     return this;
   }
@@ -34,13 +56,7 @@ export class ApiError extends Error {
     return this;
   };
 
-  getInfo = () => ({
-    message: this.message,
-    payload: this.payload,
-    statusCode: this.statusCode,
-  });
-
-  remove = (field: string) => {
+  remove = (field: PayloadKey) => {
     delete this.payload?.[field];
     return this;
   };

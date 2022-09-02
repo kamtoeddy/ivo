@@ -55,6 +55,6 @@ function badHandler({ quantity, _dependentReadOnly }: any) {
   return {};
 }
 
-const StoreItem = storeItemSchema.getModel<IStoreItem>();
+const StoreItem = storeItemSchema.getModel();
 
 export { StoreItem, storeItemSchema };

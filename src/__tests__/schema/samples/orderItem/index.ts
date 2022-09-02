@@ -3,7 +3,7 @@ import { storeItemSchema } from "../storeItem";
 import { validatePrice } from "../storeItem/validators";
 import { IOrderItem } from "./interfaces";
 
-const orderItemSchema = new Schema(
+const orderItemSchema = new Schema<IOrderItem>(
   {
     costPrice: { readonly: true, validator: validatePrice },
     price: { readonly: true, validator: validatePrice },
@@ -17,4 +17,4 @@ const orderItemSchema = new Schema(
   ],
 });
 
-export const OrderItem = orderItemSchema.getModel<IOrderItem>();
+export const OrderItem = orderItemSchema.getModel();

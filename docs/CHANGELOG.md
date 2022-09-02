@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+# v1.4.3 <small><sup>2-09-2022</sup></small>
+
+- [Updated] overall typescript support
+- [Updated] ApiError
+- [Added] typescript interfaces for listeners & validators
+
 # v1.4.2 <small><sup>31-08-2022</sup></small>
 
 - [Added] possibility to return single reason from validators
