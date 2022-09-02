@@ -307,7 +307,7 @@ export abstract class SchemaCore<T extends ObjectType> {
     this.props.includes(prop as StringKeys<T>);
 
   protected _isPropDefinitionObjectOk = (prop: string) => {
-    const propDef = this._propDefinitions[prop];
+    const propDef = this._getDefinition(prop);
 
     return propDef && typeof propDef === "object" && !Array.isArray(propDef)
       ? { valid: true }

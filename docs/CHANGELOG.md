@@ -2,7 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
-# v1.4.3 <small><sup>2-09-2022</sup></small>
+# v1.4.4 <small><sup>02-09-2022</sup></small>
+
+- [Updated] typescript support
+
+# v1.4.3 <small><sup>02-09-2022</sup></small>
 
 - [Updated] overall typescript support
 - [Updated] ApiError
