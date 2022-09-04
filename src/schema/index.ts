@@ -82,38 +82,34 @@ class Model<T extends ObjectType> extends SchemaCore<T> {
     ) as StringKeys<T>[];
 
     sort(keys).forEach((key) => (this.values[key] = values[key]));
+
+    this._initContext();
   }
 
   clone = async (options: SchemaCloneOptions<T> = { reset: [] }) => {
     return this._getCloneObject(toArray(options.reset).filter(this._isProp));
   };
 
-  create = async () => {
-    const obj = await this._getCreateObject();
-
-    if (this._isErroneous()) this._throwErrors();
-
-    return obj;
-  };
+  create = async () => this._getCreateObject();
 
   update = async (changes: Partial<T>) => {
     this.updated = {};
 
-    const toUpdate = Object.keys(changes ?? {}) as StringKeys<T>[];
+    const toUpdate = Object.keys(changes ?? {}).filter((prop) =>
+      this._isUpdatable(prop)
+    ) as StringKeys<T>[];
 
-    const updatables = toUpdate.filter((prop) => this._isUpdatable(prop));
-    const linkedProps = toUpdate.filter(
-      (prop) =>
-        (!updatables.includes(prop) &&
-          this._getAllListeners(prop, "onUpdate").length) ||
-        this._isSideEffect(prop)
-    );
-
-    await this._resolveLinked(updatables, this.updated, changes, "onUpdate");
-
-    await this._resolveLinked(linkedProps, this.updated, changes, "onUpdate");
+    await this._validateAndSetAll(this.updated, toUpdate);
 
     if (this._isErroneous()) this._throwErrors();
+
+    const linkedProps = toUpdate.filter((prop) => !this._isSideEffect(prop));
+    const sideEffects = toUpdate.filter(this._isSideEffect);
+
+    await this._resolveLinked(linkedProps, this.updated, "onUpdate");
+    await this._resolveLinked(sideEffects, this.updated, "onUpdate");
+
+    await this._useSideEffects(this.updated);
 
     if (!Object.keys(this.updated).length)
       this._throwErrors("Nothing to update");

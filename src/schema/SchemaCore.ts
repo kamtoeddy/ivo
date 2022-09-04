@@ -4,6 +4,7 @@ import { ObjectType } from "../utils/interfaces";
 import { isEqual } from "../utils/isEqual";
 import {
   LifeCycleRule,
+  Listener,
   Private_ISchemaOptions,
   PropDefinitionRule,
   PropDefinitionRules,
@@ -48,17 +49,9 @@ export abstract class SchemaCore<T extends ObjectType> {
   }
 
   // context methods
-  protected _getContext = () => {
-    const data = this.props.reduce((prev, prop: keyof T) => {
-      prev[prop] = this.values[prop]!;
+  protected _getContext = () => this.context;
 
-      return prev;
-    }, {} as T);
-
-    this._updateContext({ ...data, ...this.updated });
-
-    return this.context;
-  };
+  protected _initContext = () => (this.context = { ...this.values } as T);
 
   protected _resetContext = () => (this.context = {} as T);
 
@@ -115,30 +108,36 @@ export abstract class SchemaCore<T extends ObjectType> {
     if (error.isPayloadLoaded) throw error;
   };
 
-  protected _getCloneObject = async (reset: string[] = []) => {
-    const linkedProps = this._getCreatePropsWithListeners().filter(
-      (prop) => !reset.includes(prop)
-    );
+  protected _getCloneObject = async (reset: StringKeys<T>[] = []) => {
+    const data = {} as T;
 
-    const createProps = this.props.filter(
-      (prop) => !linkedProps.includes(prop)
-    );
+    const validations = this.props.map(async (prop) => {
+      if (reset.includes(prop)) return (data[prop] = this.defaults[prop]!);
 
-    const obj = createProps.reduce((values: T, next) => {
-      values[next] = (
-        reset.includes(next)
-          ? this.defaults[next] ?? this.values[next]
-          : this.values[next] ?? this.defaults[next]
-      )!;
+      const isLaxInit =
+        this._isLaxProp(prop) && this.values.hasOwnProperty(prop);
 
-      return values;
-    }, {} as T);
+      if (this._isSideEffect(prop) && !this._isSideInit(prop)) return;
 
-    await this._resolveLinked(linkedProps, obj, this.values, "onCreate");
+      if (!this._canInit(prop) && !isLaxInit)
+        return (data[prop] = this.defaults[prop]!);
 
-    await this._useSideInitProps(obj);
+      await this._validateAndSet(data, prop, this.values[prop]);
+    });
 
-    return this._useConfigProps(obj) as T;
+    await Promise.all(validations);
+
+    if (this._isErroneous()) this._throwErrors();
+
+    const linkedProps = Object.keys(this.values).filter(
+      (p) => !this._isSideEffect(p)
+    ) as StringKeys<T>[];
+
+    await this._resolveLinked(linkedProps, data, "onCreate");
+
+    await this._useSideEffects(data, this._isSideInit);
+
+    return this._useConfigProps(data) as T;
   };
 
   protected _getCreatePropsWithListeners = () => {
@@ -151,38 +150,38 @@ export abstract class SchemaCore<T extends ObjectType> {
   };
 
   protected _getCreateObject = async () => {
-    const obj = {} as T;
+    const data = {} as T;
 
-    const linkedProps = this._getCreatePropsWithListeners();
+    const sideEffects = Object.keys(this.values).filter(
+      this._isSideInit
+    ) as StringKeys<T>[];
 
-    const createProps = this.props.filter(
-      (prop) => !linkedProps.includes(prop)
-    );
+    const props = [...this.props, ...sideEffects];
 
-    const validations = createProps.map(async (prop) => {
+    const validations = props.map(async (prop) => {
+      const isSideEffect = this._isSideEffect(prop);
+      if (isSideEffect && !this._isSideInit(prop)) return;
+
       const isLaxInit =
         this._isLaxProp(prop) && this.values.hasOwnProperty(prop);
 
-      if (!this._canInit(prop) && !isLaxInit)
-        return (obj[prop] = this.defaults[prop]!);
+      if (!isSideEffect && !this._canInit(prop) && !isLaxInit)
+        return (data[prop] = this.defaults[prop]!);
 
-      const { reasons, valid, validated } = await this.validate(
-        prop,
-        this.values[prop]
-      );
-
-      if (valid) return (obj[prop] = validated);
-
-      this.error.add(prop, reasons);
+      await this._validateAndSet(data, prop, this.values[prop]);
     });
 
     await Promise.all(validations);
 
-    await this._resolveLinked(linkedProps, obj, this.values, "onCreate");
+    if (this._isErroneous()) this._throwErrors();
 
-    await this._useSideInitProps(obj);
+    const linkedProps = this._getCreatePropsWithListeners();
 
-    return this._useConfigProps(obj) as T;
+    await this._resolveLinked(linkedProps, data, "onCreate");
+
+    await this._resolveLinked(sideEffects, data, "onCreate");
+
+    return this._useConfigProps(data) as T;
   };
 
   protected _getDefinition = (prop: string) => this._propDefinitions[prop]!;
@@ -221,7 +220,7 @@ export abstract class SchemaCore<T extends ObjectType> {
   protected _getListeners = (prop: string, lifeCycle: LifeCycleRule) => {
     return this._getDetailedListeners(prop, lifeCycle, true).map(
       (dt) => dt.listener
-    );
+    ) as Listener<T>[];
   };
 
   protected _getProps = (): StringKeys<T>[] => {
@@ -429,7 +428,12 @@ export abstract class SchemaCore<T extends ObjectType> {
   };
 
   protected _isUpdatable = (prop: string) => {
-    if (!this._isProp(prop) || this._isDependentProp(prop)) return false;
+    if (
+      !this._isProp(prop) ||
+      !this._isSideEffect(prop) ||
+      this._isDependentProp(prop)
+    )
+      return false;
 
     const { default: _default, readonly } = this._getDefinition(prop);
 
@@ -497,49 +501,38 @@ export abstract class SchemaCore<T extends ObjectType> {
   protected _resolveLinked = async (
     props: StringKeys<T>[],
     context: Partial<T>,
-    values: Partial<T>,
     lifeCycle: LifeCycleRule
   ) => {
     const listenersUpdates = props.map((prop) => {
-      return this._resolveLinkedValue(context, prop, values[prop], lifeCycle);
+      return this._resolveLinkedProps(context, prop, lifeCycle);
     });
 
     await Promise.all(listenersUpdates);
   };
 
-  protected _resolveLinkedValue = async (
-    contextObject: Partial<T> = {},
+  protected _resolveLinkedProps = async (
+    operationData: Partial<T> = {},
     prop: StringKeys<T>,
-    value: any,
     lifeCycle: LifeCycleRule
   ) => {
-    const listeners = this._getAllListeners(prop, lifeCycle),
-      isSideEffect = this._isSideEffect(prop);
-
-    const { reasons, valid, validated } = await this.validate(prop, value);
-
-    if (!valid) return this.error.add(prop, reasons);
+    const listeners = this._getAllListeners(prop, lifeCycle);
 
     if (
-      lifeCycle === "onUpdate" &&
-      !isSideEffect &&
-      !this._isUpdatableInCTX(prop, validated, this.values)
+      !listeners.length ||
+      (lifeCycle === "onUpdate" &&
+        !this._isSideEffect(prop) &&
+        !this._isUpdatableInCTX(prop, operationData[prop], this.values))
     )
       return;
 
-    if (isSideEffect) this._updateContext({ [prop]: validated } as Partial<T>);
-    else contextObject[prop] = validated;
+    const context = { ...this._getContext(), ...operationData };
 
-    if (!listeners.length) return;
-
-    const context = { ...this._getContext(), ...contextObject };
-
-    for (const cb of listeners) {
-      const extra = await cb(context);
+    for (const listener of listeners) {
+      const extra = await listener(context);
 
       if (typeof extra !== "object") continue;
 
-      const _props = Object.keys(extra);
+      const _props = Object.keys(extra) as StringKeys<T>[];
 
       for (let _prop of _props) {
         const _value = extra[_prop];
@@ -548,12 +541,9 @@ export abstract class SchemaCore<T extends ObjectType> {
         if (!isSideEffect && !this._isUpdatableInCTX(_prop, _value, context))
           continue;
 
-        await this._resolveLinkedValue(
-          contextObject,
-          _prop as StringKeys<T>,
-          _value,
-          lifeCycle
-        );
+        await this._validateAndSet(operationData, _prop, _value);
+
+        await this._resolveLinkedProps(operationData, _prop, lifeCycle);
       }
     }
   };
@@ -571,15 +561,20 @@ export abstract class SchemaCore<T extends ObjectType> {
     return sortKeys(results);
   };
 
-  protected _useSideInitProps = async (data: T) => {
-    const sideEffectProps = Object.keys(this.values).filter(
-      this._isSideInit
+  protected _useSideEffects = async (
+    operationData: Partial<T>,
+    condition?: (prop: string) => boolean
+  ) => {
+    const props = Object.keys(this.values).filter(
+      this._isSideEffect
     ) as StringKeys<T>[];
 
-    await this._resolveLinked(sideEffectProps, data, this.values, "onCreate");
+    const sideEffectProps = condition ? props.filter(condition) : props;
+
+    await this._resolveLinked(sideEffectProps, operationData, "onChange");
   };
 
-  protected validate = async (prop = "", value: any) => {
+  protected _validate = async (prop = "", value: any) => {
     const isSideEffect = this._isSideEffect(prop);
 
     if (!this._isProp(prop) && !isSideEffect)
@@ -591,5 +586,30 @@ export abstract class SchemaCore<T extends ObjectType> {
       return makeResponse<any>(await validator(value, this._getContext()));
 
     return makeResponse<any>({ valid: true, validated: value });
+  };
+
+  protected _validateAndSet = async (
+    operationData: Partial<T> = {},
+    prop: StringKeys<T>,
+    value: any
+  ) => {
+    const { reasons, valid, validated } = await this._validate(prop, value);
+
+    if (!valid) return this.error.add(prop, reasons);
+
+    if (!this._isSideEffect(prop)) operationData[prop] = validated;
+
+    this._updateContext({ [prop]: validated } as Partial<T>);
+  };
+
+  protected _validateAndSetAll = async (
+    operationData: Partial<T> = {},
+    props: StringKeys<T>[]
+  ) => {
+    const validations = props.map((prop) => {
+      return this._validateAndSet(operationData, prop, this.values[prop]);
+    });
+
+    await Promise.all(validations);
   };
 }
