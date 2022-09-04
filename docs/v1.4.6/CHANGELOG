@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 # v1.4.6 <small><sup>04-09-2022</sup></small>
 
+- [Fixed] life cycle listeners being executed even on invalid operations
 - [Docs] updated docs folder structure and readme
 
 # v1.4.5 <small><sup>02-09-2022</sup></small>

@@ -53,8 +53,6 @@ export abstract class SchemaCore<T extends ObjectType> {
 
   protected _initContext = () => (this.context = { ...this.values } as T);
 
-  protected _resetContext = () => (this.context = {} as T);
-
   protected _updateContext = (updates: Partial<T>) =>
     (this.context = { ...this.context, ...updates });
 
@@ -72,9 +70,8 @@ export abstract class SchemaCore<T extends ObjectType> {
   protected _canInit = (prop: string): boolean => {
     if (this._isDependentProp(prop)) return false;
 
-    const propDef = this._propDefinitions[prop];
+    const propDef = this._getDefinition(prop);
 
-    if (!propDef) return false;
     const { readonly, required, shouldInit } = propDef;
 
     if (required) return true;
@@ -201,10 +198,10 @@ export abstract class SchemaCore<T extends ObjectType> {
   protected _getDefinition = (prop: string) => this._propDefinitions[prop]!;
 
   protected _getDefinitionValue = (prop: string, rule: PropDefinitionRule) =>
-    this._propDefinitions[prop]?.[rule];
+    this._getDefinition(prop)?.[rule];
 
   protected _getDefaultValue = (prop: string) => {
-    const value = this._propDefinitions[prop]?.default;
+    const value = this._getDefinition(prop)?.default;
 
     return isEqual(value, undefined) ? this.values[prop] : value;
   };
@@ -252,7 +249,7 @@ export abstract class SchemaCore<T extends ObjectType> {
   };
 
   protected _getValidator = (prop: string) =>
-    this._propDefinitions[prop]?.validator;
+    this._getDefinition(prop)?.validator;
 
   protected _hasAny = (
     prop: string,
@@ -260,10 +257,8 @@ export abstract class SchemaCore<T extends ObjectType> {
   ): boolean => {
     if (!this._isPropDefinitionObjectOk(prop).valid) return false;
 
-    const propDef = this._propDefinitions[prop];
-
     for (let _prop of toArray(rules))
-      if (Object(propDef).hasOwnProperty(_prop)) return true;
+      if (this._getDefinition(prop)?.hasOwnProperty(_prop)) return true;
 
     return false;
   };
@@ -438,7 +433,7 @@ export abstract class SchemaCore<T extends ObjectType> {
     this.__isSideEffect(prop).valid;
 
   protected _isSideInit = (prop: string): boolean => {
-    const propDef = this._propDefinitions[prop];
+    const propDef = this._getDefinition(prop);
 
     if (!propDef) return false;
 

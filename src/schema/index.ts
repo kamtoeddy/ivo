@@ -117,8 +117,6 @@ class Model<T extends ObjectType> extends SchemaCore<T> {
     if (!Object.keys(this.updated).length)
       this._throwErrors("Nothing to update");
 
-    this._resetContext();
-
     return this._useConfigProps(this.updated, true);
   };
 }

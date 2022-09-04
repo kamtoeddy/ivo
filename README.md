@@ -147,8 +147,8 @@ These methods are async because custom validators could be async as well.
 - Schema
   - [Defining Properties](./docs/v1.4.6/schema/definition.md#defining-a-schema)
   - [Inheritance](./docs/v1.4.6/schema/inheritance.md)
-  - [The Operation Context](./docs/v1.4.6/schema/definition.md#the-operation-context)
-  - [Life Cycle listeners](./docs/v1.4.6/schema/definition.md#life-cycle-listeners)
+  - [The Operation Context](./docs/v1.4.6/schema/life-cycles.md#the-operation-context)
+  - [Life Cycle listeners](./docs/v1.4.6/schema/life-cycles.md#life-cycle-listeners)
   - [Options](./docs/v1.4.6/schema/definition.md#options)
 - [Validators](./docs/v1.4.6/validate/index.md#validators)
   - [isArrayOk](./docs/v1.4.6/validate/isArrayOk.md)

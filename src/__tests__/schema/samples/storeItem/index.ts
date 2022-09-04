@@ -51,8 +51,6 @@ const storeItemSchema = new Schema<IStoreItem>(
 function badHandler({ quantity, _dependentReadOnly }: any) {
   _dependentReadOnly = 1;
   quantity = 10000;
-
-  return {};
 }
 
 const StoreItem = storeItemSchema.getModel();
