@@ -117,7 +117,7 @@ export abstract class SchemaCore<T extends ObjectType> {
 
     const props = [...this.props, ...sideEffects];
 
-    const validations = props.map(async (prop) => {
+    const validations = props.map((prop) => {
       const isSideEffect = sideEffects.includes(prop);
 
       if (isSideEffect && !this._isSideInit(prop)) return;
@@ -138,7 +138,7 @@ export abstract class SchemaCore<T extends ObjectType> {
         return this._updateContext({ [prop]: data[prop] as any } as Partial<T>);
       }
 
-      await this._validateAndSet(data, prop, this.values[prop]);
+      return this._validateAndSet(data, prop, this.values[prop]);
     });
 
     await Promise.all(validations);
@@ -172,7 +172,7 @@ export abstract class SchemaCore<T extends ObjectType> {
 
     const props = [...this.props, ...sideEffects];
 
-    const validations = props.map(async (prop) => {
+    const validations = props.map((prop) => {
       const isSideEffect = sideEffects.includes(prop);
       if (isSideEffect && !this._isSideInit(prop)) return;
 
@@ -182,7 +182,7 @@ export abstract class SchemaCore<T extends ObjectType> {
       if (!isSideEffect && !this._canInit(prop) && !isLaxInit)
         return (data[prop] = this.defaults[prop]!);
 
-      await this._validateAndSet(data, prop, this.values[prop]);
+      return this._validateAndSet(data, prop, this.values[prop]);
     });
 
     await Promise.all(validations);
@@ -448,12 +448,9 @@ export abstract class SchemaCore<T extends ObjectType> {
   };
 
   protected _isUpdatable = (prop: string) => {
-    if (
-      !this._isProp(prop) ||
-      !this._isSideEffect(prop) ||
-      this._isDependentProp(prop)
-    )
-      return false;
+    if (this._isSideEffect(prop)) return true;
+
+    if (!this._isProp(prop) || this._isDependentProp(prop)) return false;
 
     const { default: _default, readonly } = this._getDefinition(prop);
 
@@ -470,11 +467,8 @@ export abstract class SchemaCore<T extends ObjectType> {
     return !this._isProp(prop) ? false : !isEqual(value, context?.[prop]);
   };
 
-  protected _isValidatorOk = (prop: string) => {
-    const propDef = this._propDefinitions[prop];
-
-    return this._isFunction(propDef?.validator);
-  };
+  protected _isValidatorOk = (prop: string) =>
+    this._isFunction(this._getDefinition(prop)?.validator);
 
   private _makeOptions(options: SchemaOptions): Private_ISchemaOptions {
     if (!options) return { timestamps: { createdAt: "", updatedAt: "" } };
@@ -607,16 +601,5 @@ export abstract class SchemaCore<T extends ObjectType> {
     if (!this._isSideEffect(prop)) operationData[prop] = validated;
 
     this._updateContext({ [prop]: validated } as Partial<T>);
-  };
-
-  protected _validateAndSetAll = async (
-    operationData: Partial<T> = {},
-    props: StringKeys<T>[]
-  ) => {
-    const validations = props.map((prop) => {
-      return this._validateAndSet(operationData, prop, this.values[prop]);
-    });
-
-    await Promise.all(validations);
   };
 }

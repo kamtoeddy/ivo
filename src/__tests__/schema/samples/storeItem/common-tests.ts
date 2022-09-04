@@ -68,112 +68,112 @@ export const CommonInheritanceTest = (
     });
 
     // update
-    // it("should update the relevant properties", async () => {
-    //   const update = await Model(item).update({
-    //     name: "Castel",
-    //     quantity: 10,
-    //   });
+    it("should update the relevant properties", async () => {
+      const update = await Model(item).update({
+        name: "Castel",
+        quantity: 10,
+      });
 
-    //   expect(update).toMatchObject({
-    //     name: "Castel",
-    //     quantityChangeCounter: 2,
-    //     quantity: 10,
-    //   });
-    // });
+      expect(update).toMatchObject({
+        name: "Castel",
+        quantityChangeCounter: 2,
+        quantity: 10,
+      });
+    });
 
-    // it("should update on side effects", async () => {
-    //   const update = await Model(item).update({
-    //     quantities: [
-    //       { quantity: 1, name: "crate24" },
-    //       { name: "crate", quantity: 2 },
-    //       { name: "tray", quantity: 5 },
-    //     ],
-    //   });
+    it("should update on side effects", async () => {
+      const update = await Model(item).update({
+        quantities: [
+          { quantity: 1, name: "crate24" },
+          { name: "crate", quantity: 2 },
+          { name: "tray", quantity: 5 },
+        ],
+      });
 
-    //   expect(update).toMatchObject({
-    //     quantityChangeCounter: 2,
-    //     quantity: 173,
-    //   });
-    // });
+      expect(update).toMatchObject({
+        quantityChangeCounter: 2,
+        quantity: 173,
+      });
+    });
 
-    // it("should update the relevant properties & on side effects", async () => {
-    //   const update = await Model(item).update({
-    //     name: "Castel",
-    //     quantity: 10,
-    //     quantities: [
-    //       { quantity: 1, name: "crate24" },
-    //       { name: "crate", quantity: 2 },
-    //       { name: "tray", quantity: 5 },
-    //     ],
-    //   });
+    it("should update the relevant properties & on side effects", async () => {
+      const update = await Model(item).update({
+        name: "Castel",
+        quantity: 10,
+        quantities: [
+          { quantity: 1, name: "crate24" },
+          { name: "crate", quantity: 2 },
+          { name: "tray", quantity: 5 },
+        ],
+      });
 
-    //   expect(update).toMatchObject({
-    //     name: "Castel",
-    //     quantityChangeCounter: 3,
-    //     quantity: 83,
-    //   });
-    // });
+      expect(update).toMatchObject({
+        name: "Castel",
+        quantityChangeCounter: 3,
+        quantity: 83,
+      });
+    });
 
-    // it("should update lax properties not initialized at creation", async () => {
-    //   const update = await Model(item).update({
-    //     _readOnlyLax2: "haha",
-    //   });
+    it("should update lax properties not initialized at creation", async () => {
+      const update = await Model(item).update({
+        _readOnlyLax2: "haha",
+      });
 
-    //   expect(update).toMatchObject({
-    //     _readOnlyLax2: "haha",
-    //   });
+      expect(update).toMatchObject({
+        _readOnlyLax2: "haha",
+      });
 
-    //   const updateReadOnlyProperty = async () =>
-    //     await Model({ ...item, ...update }).update({
-    //       _readOnlyLax2: "lax1 set again",
-    //     });
+      const updateReadOnlyProperty = async () =>
+        await Model({ ...item, ...update }).update({
+          _readOnlyLax2: "lax1 set again",
+        });
 
-    //   await expect(updateReadOnlyProperty()).rejects.toThrow(
-    //     "Nothing to update"
-    //   );
-    // });
+      await expect(updateReadOnlyProperty()).rejects.toThrow(
+        "Nothing to update"
+      );
+    });
 
-    // it("should not update dependent properties", async () => {
-    //   const updateReadOnlyProperty = async () =>
-    //     await Model(item).update({ quantityChangeCounter: 0 });
+    it("should not update dependent properties", async () => {
+      const updateReadOnlyProperty = async () =>
+        await Model(item).update({ quantityChangeCounter: 0 });
 
-    //   await expect(updateReadOnlyProperty()).rejects.toThrow(
-    //     "Nothing to update"
-    //   );
-    // });
+      await expect(updateReadOnlyProperty()).rejects.toThrow(
+        "Nothing to update"
+      );
+    });
 
-    // it("should update dependent properties on side effects", async () => {
-    //   const update = await Model(item).update({
-    //     _sideEffectForDependentReadOnly: "haha",
-    //   });
+    it("should update dependent properties on side effects", async () => {
+      const update = await Model(item).update({
+        _sideEffectForDependentReadOnly: "haha",
+      });
 
-    //   expect(update).toMatchObject({
-    //     _dependentReadOnly: 1,
-    //   });
-    // });
+      expect(update).toMatchObject({
+        _dependentReadOnly: 1,
+      });
+    });
 
-    // it("should not update readonly dependent properties that have changed", async () => {
-    //   const update = await Model(item).update({
-    //     _sideEffectForDependentReadOnly: "haha",
-    //   });
+    it("should not update readonly dependent properties that have changed", async () => {
+      const update = await Model(item).update({
+        _sideEffectForDependentReadOnly: "haha",
+      });
 
-    //   const updateToFail = async () => {
-    //     await Model({ ...item, ...update }).update({
-    //       _sideEffectForDependentReadOnly: "haha",
-    //     });
-    //   };
+      const updateToFail = async () => {
+        await Model({ ...item, ...update }).update({
+          _sideEffectForDependentReadOnly: "haha",
+        });
+      };
 
-    //   await expect(updateToFail()).rejects.toThrow("Nothing to update");
-    // });
+      await expect(updateToFail()).rejects.toThrow("Nothing to update");
+    });
 
-    // it("should not update readonly properties that have changed", async () => {
-    //   const updateReadOnlyProperty = async () =>
-    //     await Model(item).update({ id: "2", _readOnlyLax1: "lax1 set again" });
+    it("should not update readonly properties that have changed", async () => {
+      const updateReadOnlyProperty = async () =>
+        await Model(item).update({ id: "2", _readOnlyLax1: "lax1 set again" });
 
-    //   await expect(updateReadOnlyProperty()).rejects.toThrow(
-    //     "Nothing to update"
-    //   );
-    // });
+      await expect(updateReadOnlyProperty()).rejects.toThrow(
+        "Nothing to update"
+      );
+    });
 
     // clone
     it("should clone properly", async () => {
@@ -320,20 +320,20 @@ export const CommonInheritanceTest = (
       failToClone();
     });
 
-    // it("should respect user defined error messages during updates", () => {
-    //   const failToUpdate = async () => {
-    //     try {
-    //       await Model(commonTestData).update({ name: "", _laxProp: [] });
-    //     } catch (err: any) {
-    //       expect(err.message).toBe("Validation Error");
-    //       expect(err.payload).toMatchObject({
-    //         _laxProp: ["Invalid lax prop", "Too short"],
-    //         name: [],
-    //       });
-    //     }
-    //   };
+    it("should respect user defined error messages during updates", () => {
+      const failToUpdate = async () => {
+        try {
+          await Model(commonTestData).update({ name: "", _laxProp: [] });
+        } catch (err: any) {
+          expect(err.message).toBe("Validation Error");
+          expect(err.payload).toMatchObject({
+            _laxProp: ["Invalid lax prop", "Too short"],
+            name: [],
+          });
+        }
+      };
 
-    //   failToUpdate();
-    // });
+      failToUpdate();
+    });
   });
 };

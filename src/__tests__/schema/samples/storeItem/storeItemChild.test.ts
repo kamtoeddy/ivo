@@ -18,13 +18,13 @@ describe("Testing non-inherited properties for StoreItemChild", () => {
   });
 
   // updates
-  // it("should have the correct properties after updates", async () => {
-  //   const update = await StoreItemChild(item).update({
-  //     childID: "12",
-  //     name: "Guiness ",
-  //   } as { childID: unknown });
+  it("should have the correct properties after updates", async () => {
+    const update = await StoreItemChild(item).update({
+      childID: "12",
+      name: "Guiness ",
+    } as { childID: unknown });
 
-  //   expect(update.childID).toBe(undefined);
-  //   expect(update).toMatchObject({ name: "Guiness" });
-  // });
+    expect(update.childID).toBe(undefined);
+    expect(update).toMatchObject({ name: "Guiness" });
+  });
 });

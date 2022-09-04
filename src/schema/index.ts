@@ -99,7 +99,11 @@ class Model<T extends ObjectType> extends SchemaCore<T> {
       this._isUpdatable(prop)
     ) as StringKeys<T>[];
 
-    await this._validateAndSetAll(this.updated, toUpdate);
+    const validations = toUpdate.map((prop) => {
+      return this._validateAndSet(this.updated, prop, changes[prop]);
+    });
+
+    await Promise.all(validations);
 
     if (this._isErroneous()) this._throwErrors();
 
@@ -107,6 +111,7 @@ class Model<T extends ObjectType> extends SchemaCore<T> {
     const sideEffects = toUpdate.filter(this._isSideEffect);
 
     await this._resolveLinked(linkedProps, this.updated, "onUpdate");
+
     await this._resolveLinked(sideEffects, this.updated, "onUpdate");
 
     if (!Object.keys(this.updated).length)
