@@ -568,19 +568,6 @@ export abstract class SchemaCore<T extends ObjectType> {
     return sortKeys(results);
   };
 
-  protected _useSideEffects = async (
-    operationData: Partial<T>,
-    condition?: (prop: string) => boolean
-  ) => {
-    const props = Object.keys(this.values).filter(
-      this._isSideEffect
-    ) as StringKeys<T>[];
-
-    const sideEffectProps = condition ? props.filter(condition) : props;
-
-    await this._resolveLinked(sideEffectProps, operationData, "onChange");
-  };
-
   protected _validate = async (prop = "", value: any) => {
     const isSideEffect = this._isSideEffect(prop);
 

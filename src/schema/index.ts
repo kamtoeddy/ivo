@@ -109,8 +109,6 @@ class Model<T extends ObjectType> extends SchemaCore<T> {
     await this._resolveLinked(linkedProps, this.updated, "onUpdate");
     await this._resolveLinked(sideEffects, this.updated, "onUpdate");
 
-    await this._useSideEffects(this.updated);
-
     if (!Object.keys(this.updated).length)
       this._throwErrors("Nothing to update");
 
