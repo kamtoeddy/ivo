@@ -42,11 +42,12 @@
   },
   "scripts": {
     "build": "tsc",
+    "clean-up": "rm -rf coverage dist",
     "test": "tsc & jest --verbose --watchAll",
     "test-c": "tsc & jest --verbose --watchAll --coverage",
     "test:ci": "tsc & jest --verbose",
-    "prepare": "npm run build"
+    "prepare": "npm run clean-up && npm run build"
   },
   "types": "dist/index.d.ts",
-  "version": "1.4.5"
+  "version": "1.4.6"
 }

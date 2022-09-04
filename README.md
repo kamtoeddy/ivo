@@ -1,8 +1,8 @@
 # Foreword
 
-Clean-schema's purpose is to help you define and validate your data at creation and during updates. Hence, clean-schema gives you the flexibility of using the database of your choice.
+Clean-schema's purpose is to help you ensure that the data going to your database is always consistent. It provides an interface for you to clearly define the behaviour of your entities at creation and during updates together with the flexibility of using the database of your choice.
 
-> N.B: Do not forget to handle errors that might be thrown by the create and update methods. [See the structure of the error](./docs/api-error.md#structure-of-apierror).
+> N.B: Do not forget to handle errors that might be thrown by the create, clone and update methods. [See the structure of the error](./docs/v1.4.6/api-error.md#structure-of-apierror).
 
 # Installation
 
@@ -145,19 +145,19 @@ These methods are async because custom validators could be async as well.
 ## Docs
 
 - Schema
-  - [Defining Properties](./docs/schema/definition.md#defining-a-schema)
-  - [Inheritance](./docs/schema/inheritance.md)
-  - [The Operation Context](./docs/schema/definition.md#the-operation-context)
-  - [Life Cycle listeners](./docs/schema/definition.md#life-cycle-listeners)
-  - [Options](./docs/schema/definition.md#options)
-- [Validators](./docs/validate/index.md#validators)
-  - [isArrayOk](./docs/validate/isArrayOk.md)
-  - [isBooleanOk](./docs/validate/isBooleanOk.md)
-  - [isCreditCardOk](./docs/validate/isCreditCardOk.md)
-  - [isEmailOk](./docs/validate/isEmailOk.md)
-  - [isNumberOk](./docs/validate/isNumberOk.md)
-  - [isStringOk](./docs/validate/isStringOk.md)
-- [ApiError](./docs/api-error.md#structure-of-apierror)
-- [Changelog](./docs/CHANGELOG.md)
+  - [Defining Properties](./docs/v1.4.6/schema/definition.md#defining-a-schema)
+  - [Inheritance](./docs/v1.4.6/schema/inheritance.md)
+  - [The Operation Context](./docs/v1.4.6/schema/definition.md#the-operation-context)
+  - [Life Cycle listeners](./docs/v1.4.6/schema/definition.md#life-cycle-listeners)
+  - [Options](./docs/v1.4.6/schema/definition.md#options)
+- [Validators](./docs/v1.4.6/validate/index.md#validators)
+  - [isArrayOk](./docs/v1.4.6/validate/isArrayOk.md)
+  - [isBooleanOk](./docs/v1.4.6/validate/isBooleanOk.md)
+  - [isCreditCardOk](./docs/v1.4.6/validate/isCreditCardOk.md)
+  - [isEmailOk](./docs/v1.4.6/validate/isEmailOk.md)
+  - [isNumberOk](./docs/v1.4.6/validate/isNumberOk.md)
+  - [isStringOk](./docs/v1.4.6/validate/isStringOk.md)
+- [ApiError](./docs/v1.4.6/api-error.md)
+- [Changelog](./docs/v1.4.6/CHANGELOG)
 
 ## Happy coding! 😎
