@@ -1,4 +1,6 @@
-export type Listener<T> = (ctx: T) => Partial<T> | Promise<Partial<T>>;
+export type Listener<T> = (
+  ctx: T
+) => Partial<T> | Promise<Partial<T>> | void | Promise<void>;
 
 export type StringKeys<T> = Extract<keyof T, string>;
 

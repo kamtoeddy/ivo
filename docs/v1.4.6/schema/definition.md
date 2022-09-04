@@ -58,38 +58,6 @@ function onNameChange(context) {
 | shouldInit | boolean                 | Tells clean-schema whether or not a property should be initialized. Default **true**                                                                                                                                                                                                      |
 | validator  | function                | A function(async / sync) used to validated the value of a property. [See interface](../validate/index.md#validators). Default **null**                                                                                                                                                    |
 
-## The Operation Context
-
-This is an object comprized of values of the instance during a life cycle operation ( cloning, creation or update ) plus any side effect values (if present during the operation) defined in your schema.
-
-## Life Cycle listeners
-
-These are functions that are invoked during a life cycle operation an recieve the [operation context](#the-operation-context) as only parameter. They are expected to have the structure of the `onComplete function` below
-
-```js
-const transactionSchema = new Schema({
-  completedAt: {
-    default: "",
-    readonly: true,
-    dependent: true,
-  },
-  isComplete: {
-    default: false,
-    readonly: true,
-    shouldInit: false,
-    onUpdate: onComplete,
-    validator: (val) => validateBoolean(val),
-  },
-});
-
-// destructuring isComplete from the validation context
-function onComplete({ isComplete }) {
-  return { completedAt: isComplete ? new Date() : "" };
-}
-```
-
-> If the handler does not return an object with the schema's properties or side effect properties, the value returned is simply ignored.
-
 ## Options
 
 ```ts

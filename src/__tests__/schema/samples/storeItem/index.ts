@@ -13,8 +13,23 @@ import {
 
 const storeItemSchema = new Schema<IStoreItem>(
   {
+    _dependentReadOnly: { default: 0, readonly: true, dependent: true },
+    _laxProp: { default: "", validator: validateString("Invalid lax prop") },
+    _readOnlyLax1: { default: "", readonly: "lax" },
+    _readOnlyLax2: { default: "", readonly: "lax" },
+    _readOnlyNoInit: { default: "", readonly: true, shouldInit: false },
+    _sideEffectForDependentReadOnly: {
+      sideEffect: true,
+      onChange: [badHandler, () => ({ _dependentReadOnly: 1 })],
+      validator: () => ({ valid: true }),
+    },
     id: { readonly: true, validator: validateString("Invalid id") },
     name: { required: true, validator: validateName },
+    measureUnit: {
+      required: true,
+      validator: validateString("Invalid measure unit"),
+    },
+    otherMeasureUnits: { default: [], validator: validateOtherUnits },
     price: { required: true, validator: validatePrice },
     quantities: {
       sideEffect: true,
@@ -26,22 +41,7 @@ const storeItemSchema = new Schema<IStoreItem>(
       onChange: onQuantityChange,
       validator: validateQuantity,
     },
-    _laxProp: { default: "", validator: validateString("Invalid lax prop") },
-    _readOnlyLax1: { default: "", readonly: "lax" },
-    _readOnlyLax2: { default: "", readonly: "lax" },
-    _readOnlyNoInit: { default: "", readonly: true, shouldInit: false },
-    _dependentReadOnly: { default: 0, readonly: true, dependent: true },
-    _sideEffectForDependentReadOnly: {
-      sideEffect: true,
-      onChange: [badHandler, () => ({ _dependentReadOnly: 1 })],
-      validator: () => ({ valid: true }),
-    },
     quantityChangeCounter: { default: 0, dependent: true },
-    measureUnit: {
-      required: true,
-      validator: validateString("Invalid measure unit"),
-    },
-    otherMeasureUnits: { default: [], validator: validateOtherUnits },
   },
   { timestamps: { createdAt: "c_At", updatedAt: "u_At" } }
 );
@@ -51,8 +51,6 @@ const storeItemSchema = new Schema<IStoreItem>(
 function badHandler({ quantity, _dependentReadOnly }: any) {
   _dependentReadOnly = 1;
   quantity = 10000;
-
-  return {};
 }
 
 const StoreItem = storeItemSchema.getModel();

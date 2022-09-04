@@ -1,4 +1,4 @@
-import { toArray } from "../utils/functions";
+import { sort, toArray } from "../utils/functions";
 import { ObjectType } from "../utils/interfaces";
 import { isEqual } from "../utils/isEqual";
 import {
@@ -65,7 +65,7 @@ class Model<T extends ObjectType> extends SchemaCore<T> {
     const defaults: Partial<T> = {};
 
     for (let prop of this.props) {
-      const _default = this._propDefinitions[prop]?.default;
+      const { default: _default } = this._getDefinition(prop);
 
       if (!isEqual(_default, undefined)) defaults[prop] = _default;
     }
@@ -81,44 +81,41 @@ class Model<T extends ObjectType> extends SchemaCore<T> {
         this._isSideEffect(key)
     ) as StringKeys<T>[];
 
-    this._sort(keys).forEach((key) => (this.values[key] = values[key]));
+    sort(keys).forEach((key) => (this.values[key] = values[key]));
+
+    this._initContext();
   }
 
   clone = async (options: SchemaCloneOptions<T> = { reset: [] }) => {
     return this._getCloneObject(toArray(options.reset).filter(this._isProp));
   };
 
-  create = async () => {
-    const obj = await this._getCreateObject();
-
-    if (this._isErroneous()) this._throwErrors();
-
-    return obj;
-  };
+  create = async () => this._getCreateObject();
 
   update = async (changes: Partial<T>) => {
     this.updated = {};
 
-    const toUpdate = Object.keys(changes ?? {}) as StringKeys<T>[];
+    const toUpdate = Object.keys(changes ?? {}).filter((prop) =>
+      this._isUpdatable(prop)
+    ) as StringKeys<T>[];
 
-    const updatables = toUpdate.filter((prop) => this._isUpdatable(prop));
-    const linkedProps = toUpdate.filter(
-      (prop) =>
-        (!updatables.includes(prop) &&
-          this._getAllListeners(prop, "onUpdate").length) ||
-        this._isSideEffect(prop)
-    );
+    const validations = toUpdate.map((prop) => {
+      return this._validateAndSet(this.updated, prop, changes[prop]);
+    });
 
-    await this._resolveLinked(updatables, this.updated, changes, "onUpdate");
-
-    await this._resolveLinked(linkedProps, this.updated, changes, "onUpdate");
+    await Promise.all(validations);
 
     if (this._isErroneous()) this._throwErrors();
 
+    const linkedProps = toUpdate.filter((prop) => !this._isSideEffect(prop));
+    const sideEffects = toUpdate.filter(this._isSideEffect);
+
+    await this._resolveLinked(linkedProps, this.updated, "onUpdate");
+
+    await this._resolveLinked(sideEffects, this.updated, "onUpdate");
+
     if (!Object.keys(this.updated).length)
       this._throwErrors("Nothing to update");
-
-    this._resetContext();
 
     return this._useConfigProps(this.updated, true);
   };

@@ -307,11 +307,11 @@ export const CommonInheritanceTest = (
     it("should respect user defined error messages during cloning", () => {
       const failToClone = async () => {
         try {
-          await Model(commonTestData).clone({ name: "", _laxProp: [] });
+          await Model(testData).clone({ reset: ["name", "_laxProp"] });
         } catch (err: any) {
           expect(err.message).toBe("Validation Error");
           expect(err.payload).toMatchObject({
-            _laxProp: ["Invalid lax prop", "Too short"],
+            _laxProp: ["Invalid lax prop", "Unacceptable value"],
             name: [],
           });
         }
