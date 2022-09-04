@@ -122,14 +122,21 @@ export abstract class SchemaCore<T extends ObjectType> {
 
       if (isSideEffect && !this._isSideInit(prop)) return;
 
-      if (!isSideEffect && reset.includes(prop))
-        return (data[prop] = this.defaults[prop]!);
+      if (!isSideEffect && reset.includes(prop)) {
+        data[prop] = this._getDefaultValue(prop);
+
+        return this._updateContext({ [prop]: data[prop] as any } as Partial<T>);
+      }
 
       const isLaxInit =
-        this._isLaxProp(prop) && this.values.hasOwnProperty(prop);
+        this._isLaxProp(prop) &&
+        !isEqual(this.values[prop], this.defaults[prop]);
 
-      if (!isSideEffect && !this._canInit(prop) && !isLaxInit)
-        return (data[prop] = this.defaults[prop]!);
+      if (!isSideEffect && !this._canInit(prop) && !isLaxInit) {
+        data[prop] = this._getDefaultValue(prop);
+
+        return this._updateContext({ [prop]: data[prop] as any } as Partial<T>);
+      }
 
       await this._validateAndSet(data, prop, this.values[prop]);
     });
@@ -195,6 +202,12 @@ export abstract class SchemaCore<T extends ObjectType> {
 
   protected _getDefinitionValue = (prop: string, rule: PropDefinitionRule) =>
     this._propDefinitions[prop]?.[rule];
+
+  protected _getDefaultValue = (prop: string) => {
+    const value = this._propDefinitions[prop]?.default;
+
+    return isEqual(value, undefined) ? this.values[prop] : value;
+  };
 
   protected _getDetailedListeners = (
     prop: string,

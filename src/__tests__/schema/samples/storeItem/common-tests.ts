@@ -177,88 +177,84 @@ export const CommonInheritanceTest = (
 
     // clone
     it("should clone properly", async () => {
-      try {
-        const clonedItem = await Model(item).clone();
-      } catch (err: any) {
-        console.log("err:", err.summary);
-      }
+      const clonedItem = await Model(item).clone();
 
-      // expect(clonedItem).toMatchObject({
-      //   id: "1",
-      //   name: "beer",
-      //   price: 5,
-      //   measureUnit: "bottle",
-      //   otherMeasureUnits: [
-      //     { coefficient: 12, name: "crate" },
-      //     { coefficient: 24, name: "crate24" },
-      //     { coefficient: 5, name: "tray" },
-      //   ],
-      //   quantity: 100,
-      // });
+      expect(clonedItem).toMatchObject({
+        id: "1",
+        name: "beer",
+        price: 5,
+        measureUnit: "bottle",
+        otherMeasureUnits: [
+          { coefficient: 12, name: "crate" },
+          { coefficient: 24, name: "crate24" },
+          { coefficient: 5, name: "tray" },
+        ],
+        quantity: 100,
+      });
     });
 
-    // it("should clone properly with side effects", async () => {
-    //   const clonedItem = await Model({
-    //     ...item,
-    //     quantities: [
-    //       { quantity: 1, name: "crate24" },
-    //       { quantity: 1, name: "tray" },
-    //     ],
-    //   }).clone();
+    it("should clone properly with side effects", async () => {
+      const clonedItem = await Model({
+        ...item,
+        quantities: [
+          { quantity: 1, name: "crate24" },
+          { quantity: 1, name: "tray" },
+        ],
+      }).clone();
 
-    //   expect(clonedItem).toMatchObject({
-    //     id: "1",
-    //     name: "beer",
-    //     price: 5,
-    //     measureUnit: "bottle",
-    //     otherMeasureUnits: [
-    //       { coefficient: 12, name: "crate" },
-    //       { coefficient: 24, name: "crate24" },
-    //       { coefficient: 5, name: "tray" },
-    //     ],
-    //     quantity: 129,
-    //   });
-    // });
+      expect(clonedItem).toMatchObject({
+        id: "1",
+        name: "beer",
+        price: 5,
+        measureUnit: "bottle",
+        otherMeasureUnits: [
+          { coefficient: 12, name: "crate" },
+          { coefficient: 24, name: "crate24" },
+          { coefficient: 5, name: "tray" },
+        ],
+        quantity: 129,
+      });
+    });
 
-    // it("should respect clone reset option for property with default value", async () => {
-    //   const clone1 = await Model(item).clone({ reset: "quantity" });
-    //   const clone2 = await Model(item).clone({ reset: ["quantity"] });
-    //   const expectedResult = {
-    //     id: "1",
-    //     name: "beer",
-    //     price: 5,
-    //     measureUnit: "bottle",
-    //     otherMeasureUnits: [
-    //       { coefficient: 12, name: "crate" },
-    //       { coefficient: 24, name: "crate24" },
-    //       { coefficient: 5, name: "tray" },
-    //     ],
-    //     quantity: 0,
-    //   };
+    it("should respect clone reset option for property with default value", async () => {
+      const clone1 = await Model(item).clone({ reset: "quantity" });
+      const clone2 = await Model(item).clone({ reset: ["quantity"] });
+      const expectedResult = {
+        id: "1",
+        name: "beer",
+        price: 5,
+        measureUnit: "bottle",
+        otherMeasureUnits: [
+          { coefficient: 12, name: "crate" },
+          { coefficient: 24, name: "crate24" },
+          { coefficient: 5, name: "tray" },
+        ],
+        quantity: 0,
+      };
 
-    //   for (let clonedItem of [clone1, clone2])
-    //     expect(clonedItem).toMatchObject(expectedResult);
-    // });
+      for (let clonedItem of [clone1, clone2])
+        expect(clonedItem).toMatchObject(expectedResult);
+    });
 
-    // it("should respect clone reset option for property without default value", async () => {
-    //   const clone1 = await Model(item).clone({ reset: "measureUnit" });
-    //   const clone2 = await Model(item).clone({ reset: ["measureUnit"] });
-    //   const expectedResult = {
-    //     id: "1",
-    //     name: "beer",
-    //     price: 5,
-    //     measureUnit: "bottle",
-    //     otherMeasureUnits: [
-    //       { coefficient: 12, name: "crate" },
-    //       { coefficient: 24, name: "crate24" },
-    //       { coefficient: 5, name: "tray" },
-    //     ],
-    //     quantity: 100,
-    //   };
+    it("should respect clone reset option for property without default value", async () => {
+      const clone1 = await Model(item).clone({ reset: "measureUnit" });
+      const clone2 = await Model(item).clone({ reset: ["measureUnit"] });
+      const expectedResult = {
+        id: "1",
+        name: "beer",
+        price: 5,
+        measureUnit: "bottle",
+        otherMeasureUnits: [
+          { coefficient: 12, name: "crate" },
+          { coefficient: 24, name: "crate24" },
+          { coefficient: 5, name: "tray" },
+        ],
+        quantity: 100,
+      };
 
-    //   for (let clonedItem of [clone1, clone2])
-    //     expect(clonedItem).toMatchObject(expectedResult);
-    // });
+      for (let clonedItem of [clone1, clone2])
+        expect(clonedItem).toMatchObject(expectedResult);
+    });
   });
 
   describe(`Testing schema @${schemaName} initialized with sideffect`, () => {
@@ -308,21 +304,21 @@ export const CommonInheritanceTest = (
       failToCreate();
     });
 
-    // it("should respect user defined error messages during cloning", () => {
-    //   const failToClone = async () => {
-    //     try {
-    //       await Model(commonTestData).clone({ name: "", _laxProp: [] });
-    //     } catch (err: any) {
-    //       expect(err.message).toBe("Validation Error");
-    //       expect(err.payload).toMatchObject({
-    //         _laxProp: ["Invalid lax prop", "Too short"],
-    //         name: [],
-    //       });
-    //     }
-    //   };
+    it("should respect user defined error messages during cloning", () => {
+      const failToClone = async () => {
+        try {
+          await Model(testData).clone({ reset: ["name", "_laxProp"] });
+        } catch (err: any) {
+          expect(err.message).toBe("Validation Error");
+          expect(err.payload).toMatchObject({
+            _laxProp: ["Invalid lax prop", "Unacceptable value"],
+            name: [],
+          });
+        }
+      };
 
-    //   failToClone();
-    // });
+      failToClone();
+    });
 
     // it("should respect user defined error messages during updates", () => {
     //   const failToUpdate = async () => {
