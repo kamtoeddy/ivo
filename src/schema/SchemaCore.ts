@@ -111,15 +111,24 @@ export abstract class SchemaCore<T extends ObjectType> {
   protected _getCloneObject = async (reset: StringKeys<T>[] = []) => {
     const data = {} as T;
 
-    const validations = this.props.map(async (prop) => {
-      if (reset.includes(prop)) return (data[prop] = this.defaults[prop]!);
+    const sideEffects = Object.keys(this.values).filter(
+      this._isSideInit
+    ) as StringKeys<T>[];
+
+    const props = [...this.props, ...sideEffects];
+
+    const validations = props.map(async (prop) => {
+      const isSideEffect = sideEffects.includes(prop);
+
+      if (isSideEffect && !this._isSideInit(prop)) return;
+
+      if (!isSideEffect && reset.includes(prop))
+        return (data[prop] = this.defaults[prop]!);
 
       const isLaxInit =
         this._isLaxProp(prop) && this.values.hasOwnProperty(prop);
 
-      if (this._isSideEffect(prop) && !this._isSideInit(prop)) return;
-
-      if (!this._canInit(prop) && !isLaxInit)
+      if (!isSideEffect && !this._canInit(prop) && !isLaxInit)
         return (data[prop] = this.defaults[prop]!);
 
       await this._validateAndSet(data, prop, this.values[prop]);
@@ -129,13 +138,11 @@ export abstract class SchemaCore<T extends ObjectType> {
 
     if (this._isErroneous()) this._throwErrors();
 
-    const linkedProps = Object.keys(this.values).filter(
-      (p) => !this._isSideEffect(p)
-    ) as StringKeys<T>[];
+    const linkedProps = this._getCreatePropsWithListeners();
 
     await this._resolveLinked(linkedProps, data, "onCreate");
 
-    await this._useSideEffects(data, this._isSideInit);
+    await this._resolveLinked(sideEffects, data, "onCreate");
 
     return this._useConfigProps(data) as T;
   };
@@ -159,7 +166,7 @@ export abstract class SchemaCore<T extends ObjectType> {
     const props = [...this.props, ...sideEffects];
 
     const validations = props.map(async (prop) => {
-      const isSideEffect = this._isSideEffect(prop);
+      const isSideEffect = sideEffects.includes(prop);
       if (isSideEffect && !this._isSideInit(prop)) return;
 
       const isLaxInit =

@@ -176,22 +176,26 @@ export const CommonInheritanceTest = (
     // });
 
     // clone
-    // it("should clone properly", async () => {
-    //   const clonedItem = await Model(item).clone();
+    it("should clone properly", async () => {
+      try {
+        const clonedItem = await Model(item).clone();
+      } catch (err: any) {
+        console.log("err:", err.summary);
+      }
 
-    //   expect(clonedItem).toMatchObject({
-    //     id: "1",
-    //     name: "beer",
-    //     price: 5,
-    //     measureUnit: "bottle",
-    //     otherMeasureUnits: [
-    //       { coefficient: 12, name: "crate" },
-    //       { coefficient: 24, name: "crate24" },
-    //       { coefficient: 5, name: "tray" },
-    //     ],
-    //     quantity: 100,
-    //   });
-    // });
+      // expect(clonedItem).toMatchObject({
+      //   id: "1",
+      //   name: "beer",
+      //   price: 5,
+      //   measureUnit: "bottle",
+      //   otherMeasureUnits: [
+      //     { coefficient: 12, name: "crate" },
+      //     { coefficient: 24, name: "crate24" },
+      //     { coefficient: 5, name: "tray" },
+      //   ],
+      //   quantity: 100,
+      // });
+    });
 
     // it("should clone properly with side effects", async () => {
     //   const clonedItem = await Model({
