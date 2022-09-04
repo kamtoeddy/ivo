@@ -1,4 +1,4 @@
-import { toArray } from "../utils/functions";
+import { sort, toArray } from "../utils/functions";
 import { ObjectType } from "../utils/interfaces";
 import { isEqual } from "../utils/isEqual";
 import {
@@ -65,7 +65,7 @@ class Model<T extends ObjectType> extends SchemaCore<T> {
     const defaults: Partial<T> = {};
 
     for (let prop of this.props) {
-      const _default = this._propDefinitions[prop]?.default;
+      const { default: _default } = this._getDefinition(prop);
 
       if (!isEqual(_default, undefined)) defaults[prop] = _default;
     }
@@ -81,7 +81,7 @@ class Model<T extends ObjectType> extends SchemaCore<T> {
         this._isSideEffect(key)
     ) as StringKeys<T>[];
 
-    this._sort(keys).forEach((key) => (this.values[key] = values[key]));
+    sort(keys).forEach((key) => (this.values[key] = values[key]));
   }
 
   clone = async (options: SchemaCloneOptions<T> = { reset: [] }) => {

@@ -1,5 +1,5 @@
 import { ApiError } from "../utils/ApiError";
-import { belongsTo, toArray } from "../utils/functions";
+import { belongsTo, sort, sortKeys, toArray } from "../utils/functions";
 import { ObjectType } from "../utils/interfaces";
 import { isEqual } from "../utils/isEqual";
 import {
@@ -229,7 +229,7 @@ export abstract class SchemaCore<T extends ObjectType> {
       (prop) => this._isPropDefinitionOk(prop) && !this._isSideEffect(prop)
     );
 
-    return this._sort(props);
+    return sort(props);
   };
 
   protected _getValidator = (prop: string) =>
@@ -558,21 +558,8 @@ export abstract class SchemaCore<T extends ObjectType> {
     }
   };
 
-  protected _sort = (data: any[]): any[] =>
-    data.sort((a, b) => (a < b ? -1 : 1));
-
-  protected _sortKeys = (obj: Partial<T>): Partial<T> => {
-    const keys = this._sort(Object.keys(obj));
-
-    return keys.reduce((prev, next) => {
-      prev[next] = obj[next];
-
-      return prev;
-    }, {});
-  };
-
   protected _useConfigProps = (obj: T | Partial<T>, asUpdate = false) => {
-    if (!this._helper.withTimestamps) return this._sortKeys(obj);
+    if (!this._helper.withTimestamps) return sortKeys(obj);
 
     const createdAt = this._helper.getCreateKey(),
       updatedAt = this._helper.getUpdateKey();
@@ -581,7 +568,7 @@ export abstract class SchemaCore<T extends ObjectType> {
       ? { ...obj, [updatedAt]: new Date() }
       : { ...obj, [createdAt]: new Date(), [updatedAt]: new Date() };
 
-    return this._sortKeys(results);
+    return sortKeys(results);
   };
 
   protected _useSideInitProps = async (data: T) => {
