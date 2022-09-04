@@ -1,5 +1,5 @@
 export type Listener<T> = (
-  ctx: T
+  ctx: Readonly<T>
 ) => Partial<T> | Promise<Partial<T>> | void | Promise<void>;
 
 export type StringKeys<T> = Extract<keyof T, string>;
@@ -19,7 +19,7 @@ export type ResponseInput = {
 
 export type Validator<T> = (
   value: any,
-  ctx: T
+  ctx: Readonly<T>
 ) => ResponseInput | Promise<ResponseInput>;
 
 export type NonEmptyArray<T> = [T, ...T[]];

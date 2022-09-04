@@ -23,7 +23,10 @@ const storeItemSchema = new Schema<IStoreItem>(
       onChange: [badHandler, () => ({ _dependentReadOnly: 1 })],
       validator: () => ({ valid: true }),
     },
-    id: { readonly: true, validator: validateString("Invalid id") },
+    id: {
+      readonly: true,
+      validator: validateString("Invalid id"),
+    },
     name: { required: true, validator: validateName },
     measureUnit: {
       required: true,
@@ -48,9 +51,9 @@ const storeItemSchema = new Schema<IStoreItem>(
 
 // this type of handler should not affect the next
 // operation context
-function badHandler({ quantity, _dependentReadOnly }: any) {
-  _dependentReadOnly = 1;
-  quantity = 10000;
+function badHandler(ctx: any) {
+  ctx._dependentReadOnly = 1;
+  ctx.quantity = 10000;
 }
 
 const StoreItem = storeItemSchema.getModel();

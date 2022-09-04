@@ -534,9 +534,9 @@ export abstract class SchemaCore<T extends ObjectType> {
     )
       return;
 
-    const context = { ...this._getContext(), ...operationData };
-
     for (const listener of listeners) {
+      const context = { ...this._getContext(), ...operationData };
+
       const extra = await listener(context);
 
       if (typeof extra !== "object") continue;
