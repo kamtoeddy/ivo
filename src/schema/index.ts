@@ -13,6 +13,14 @@ export class Schema<T extends ObjectType> extends SchemaCore<T> {
     this._checkPropDefinitions();
   }
 
+  get options() {
+    return this._options;
+  }
+
+  get propDefinitions() {
+    return this._propDefinitions;
+  }
+
   private _useExtensionOptions = <T extends ObjectType>(
     options: ns.ExtensionOptions<T>
   ) => {

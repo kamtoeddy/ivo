@@ -38,14 +38,6 @@ export abstract class SchemaCore<T extends ObjectType> {
     this._helper = new SchemaOptionsHelper(this._makeOptions(options));
   }
 
-  public get options() {
-    return this._options;
-  }
-
-  public get propDefinitions() {
-    return this._propDefinitions;
-  }
-
   // context methods
   protected _getContext = () => this.context;
 
@@ -84,9 +76,9 @@ export abstract class SchemaCore<T extends ObjectType> {
     });
 
     if (
-      !this.propDefinitions ||
+      !this._propDefinitions ||
       typeof this._propDefinitions !== "object" ||
-      Array.isArray(this.propDefinitions)
+      Array.isArray(this._propDefinitions)
     )
       throw error;
 
@@ -120,7 +112,7 @@ export abstract class SchemaCore<T extends ObjectType> {
       if (!isSideEffect && reset.includes(prop)) {
         data[prop] = this._getDefaultValue(prop);
 
-        return this._updateContext({ [prop]: data[prop] as any } as Partial<T>);
+        return this._updateContext({ [prop]: data[prop] as any } as T);
       }
 
       const isLaxInit =
@@ -130,7 +122,7 @@ export abstract class SchemaCore<T extends ObjectType> {
       if (!isSideEffect && !this._canInit(prop) && !isLaxInit) {
         data[prop] = this._getDefaultValue(prop);
 
-        return this._updateContext({ [prop]: data[prop] as any } as Partial<T>);
+        return this._updateContext({ [prop]: data[prop] as any } as T);
       }
 
       return this._validateAndSet(data, prop, this.values[prop]);
@@ -597,6 +589,6 @@ export abstract class SchemaCore<T extends ObjectType> {
 
     if (!this._isSideEffect(prop)) operationData[prop] = validated;
 
-    this._updateContext({ [prop]: validated } as Partial<T>);
+    this._updateContext({ [prop]: validated } as T);
   };
 }
