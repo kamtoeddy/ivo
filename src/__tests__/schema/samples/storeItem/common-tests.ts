@@ -25,45 +25,60 @@ export const CommonInheritanceTest = (
 
     beforeAll(async () => (item = await Model(testData).create()));
 
-    // creation
-    it("should have been created properly", () => {
-      expect(item).toMatchObject({
-        id: "1",
-        name: "beer",
-        price: 5,
-        measureUnit: "bottle",
-        otherMeasureUnits: [
-          { coefficient: 12, name: "crate" },
-          { coefficient: 24, name: "crate24" },
-          { coefficient: 5, name: "tray" },
-        ],
-        quantity: 100,
+    describe("create", () => {
+      it("should create properly with right values", () => {
+        expect(item).toMatchObject({
+          id: "1",
+          name: "beer",
+          price: 5,
+          measureUnit: "bottle",
+          otherMeasureUnits: [
+            { coefficient: 12, name: "crate" },
+            { coefficient: 24, name: "crate24" },
+            { coefficient: 5, name: "tray" },
+          ],
+          quantity: 100,
+        });
       });
-    });
 
-    it("should throw error if required readOnly field is not set at creation", async () => {
-      const { id, ...testData1 } = testData;
+      it("should reject missing readonly field", async () => {
+        const { id, ...testData1 } = testData;
 
-      const createWithoutReadonly = async () => await Model(testData1).create();
+        const createWithoutReadonly = async () =>
+          await Model(testData1).create();
 
-      await expect(createWithoutReadonly()).rejects.toThrow("Validation Error");
-    });
-
-    it("should not accept dependent properties at creation", () => {
-      expect(item).toMatchObject({
-        _dependentReadOnly: 0,
+        await expect(createWithoutReadonly()).rejects.toThrow(
+          "Validation Error"
+        );
       });
-    });
 
-    it("should not accept readOnly properties with blocked initialization at creation", () => {
-      expect(item).toMatchObject({ _readOnlyNoInit: "" });
-    });
+      it("should reject missing required field", async () => {
+        const { name, ...testData1 } = testData;
 
-    it("should accept only set lax readOnly properties at creation", () => {
-      expect(item).toMatchObject({
-        _readOnlyLax1: "lax1 set",
-        _readOnlyLax2: "",
-        _readOnlyNoInit: "",
+        const createWithoutReadonly = async () =>
+          await Model(testData1).create();
+
+        await expect(createWithoutReadonly()).rejects.toThrow(
+          "Validation Error"
+        );
+      });
+
+      it("should reject dependent properties", () => {
+        expect(item).toMatchObject({
+          _dependentReadOnly: 0,
+        });
+      });
+
+      it("should reject readonly(true) + shouldInit(false)", () => {
+        expect(item).toMatchObject({ _readOnlyNoInit: "" });
+      });
+
+      it("should accept provided lax readonly properties", () => {
+        expect(item).toMatchObject({
+          _readOnlyLax1: "lax1 set",
+          _readOnlyLax2: "",
+          _readOnlyNoInit: "",
+        });
       });
     });
 

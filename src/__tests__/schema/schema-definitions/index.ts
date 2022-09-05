@@ -81,10 +81,10 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
     });
 
     // describe("lax props", () => {
-    //   it("should reject sideEffect & no onChange listeners", () => {
+    //   it("should reject readonly(lax) & shouldInit(false)", () => {
     //     try {
     //       fx({
-    //         age: { sideEffect: true, validator: () => ({ valid: true }) },
+    //         age: { readonly: "lax", shouldInit: false },
     //       })();
     //     } catch (err: any) {
     //       expect(err.payload).toEqual(
@@ -97,25 +97,10 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
     //       );
     //     }
     //   });
-
-    //   it("should reject sideEffect & no validator ", () => {
-    //     try {
-    //       fx({ age: { sideEffect: true, onChange: [() => {}] } })();
-    //     } catch (err: any) {
-    //       expect(err.payload).toEqual(
-    //         expect.objectContaining({
-    //           age: expect.arrayContaining([
-    //             "Invalid validator",
-    //             "A property should at least be readonly, required, or have a default value",
-    //           ]),
-    //         })
-    //       );
-    //     }
-    //   });
     // });
 
     describe("readonly", () => {
-      it("should reject readonly + validator & no default", () => {
+      it("should reject readonly & no default", () => {
         try {
           fx({
             age: { readonly: true, shouldInit: false, validator: isNaN },
@@ -127,7 +112,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
         }
       });
 
-      it("should reject readonly(lax) + validator & no default", () => {
+      it("should reject readonly(lax) & no default", () => {
         try {
           fx({ age: { readonly: "lax", validator: isNaN } })();
         } catch (err: any) {
@@ -136,7 +121,99 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           );
         }
       });
+
+      it("should reject readonly(lax) & !shouldInit(undefined)", () => {
+        const values = [false, true];
+
+        for (const shouldInit of values)
+          try {
+            fx({ age: { readonly: "lax", shouldInit } })();
+          } catch (err: any) {
+            expect(err.payload).toEqual(
+              expect.objectContaining({
+                age: expect.arrayContaining([
+                  "lax properties cannot have initialization blocked",
+                ]),
+              })
+            );
+          }
+      });
     });
+
+    // describe("required", () => {
+    //   it("should reject readonly + validator & no default", () => {
+    //     try {
+    //       fx({
+    //         age: { readonly: true, shouldInit: false, validator: isNaN },
+    //       })();
+    //     } catch (err: any) {
+    //       expect(err.payload.age).toContain(
+    //         "A property that should not be initialized must have a default value other than 'undefined'"
+    //       );
+    //     }
+    //   });
+
+    //   it("should reject readonly(lax) + validator & no default", () => {
+    //     try {
+    //       fx({ age: { readonly: "lax", validator: isNaN } })();
+    //     } catch (err: any) {
+    //       expect(err.payload.age).toContain(
+    //         "A property that should not be initialized must have a default value other than 'undefined'"
+    //       );
+    //     }
+    //   });
+
+    //   it("should reject readonly(lax) & !shouldInit(undefined)", () => {
+    //     const values = [false, true];
+
+    //     for (const shouldInit of values)
+    //       try {
+    //         fx({ age: { readonly: "lax", shouldInit } })();
+    //       } catch (err: any) {
+    //         expect(err.payload).toEqual(
+    //           expect.objectContaining({
+    //             age: expect.arrayContaining([
+    //               "lax properties cannot have initialization blocked",
+    //             ]),
+    //           })
+    //         );
+    //       }
+    //   });
+
+    //   it("should reject required(ctx)=>boolean & !shouldInit(undefined)", () => {
+    //     const values = [false, true];
+
+    //     for (const shouldInit of values)
+    //       try {
+    //         fx({ age: { readonly: "lax", shouldInit } })();
+    //       } catch (err: any) {
+    //         expect(err.payload).toEqual(
+    //           expect.objectContaining({
+    //             age: expect.arrayContaining([
+    //               "lax properties cannot have initialization blocked",
+    //             ]),
+    //           })
+    //         );
+    //       }
+    //   });
+
+    //   it("should reject required(ctx)=>boolean & !shouldInit(undefined)", () => {
+    //     const values = [false, true];
+
+    //     for (const shouldInit of values)
+    //       try {
+    //         fx({ age: { readonly: "lax", shouldInit } })();
+    //       } catch (err: any) {
+    //         expect(err.payload).toEqual(
+    //           expect.objectContaining({
+    //             age: expect.arrayContaining([
+    //               "lax properties cannot have initialization blocked",
+    //             ]),
+    //           })
+    //         );
+    //       }
+    //   });
+    // });
 
     describe("sideEffect", () => {
       it("should reject sideEffect & no onChange listeners", () => {
