@@ -158,6 +158,6 @@ These methods are async because custom validators could be async as well.
   - [isNumberOk](./docs/v1.4.6/validate/isNumberOk.md)
   - [isStringOk](./docs/v1.4.6/validate/isStringOk.md)
 - [ApiError](./docs/v1.4.6/api-error.md)
-- [Changelog](./docs/v1.4.7/CHANGELOG.md#changelog)
+- [Changelog](./docs/v1.4.10/CHANGELOG.md#changelog)
 
 ## Happy coding! 😎
