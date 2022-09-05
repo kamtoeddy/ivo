@@ -1,0 +1,1 @@
+Used with onUpdate to modify other properties but is not attached to instances of your model. Must have a validator, must have at least one onUpdate handler. onCreate handlers are ignored because the onUpdate handlers are used both at creation and during updates. Default **false**
