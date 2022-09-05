@@ -60,7 +60,7 @@ These methods are async because custom validators could be async as well.
 | Property   | Type                    | Description                                                                                                               |
 | ---------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------- |
 | default    | any \| function         | the default value of a propterty. [more](./defaults.md)                                                                   |
-| dependent  | boolean                 | to block the direct modification of a property. [more](./dependents.md)                                                   |
+| dependent  | boolean                 | to block the direct modification of a property. [more](./dependents.md#dependent-properties)                              |
 | onChange   | function \| function[ ] | executed at creation `(unless shouldInit === false)`, during cloning and updates [more](../life-cycles.md#onchange)       |
 | onCreate   | function \| function[ ] | executed at creation & during cloning `(unless shouldInit === false)` [more](../life-cycles.md#oncreate)                  |
 | onUpdate   | function \| function[ ] | executed during updates [more](../life-cycles.md#onupdate)                                                                |

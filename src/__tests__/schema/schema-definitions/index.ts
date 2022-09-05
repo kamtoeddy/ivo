@@ -4,7 +4,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
     () =>
       new Schema(definition);
 
-  describe("Invalid Schema definitions", () => {
+  describe("Schema definitions", () => {
     it("should reject if property definitions is not an object", () => {
       const values = [
         null,
@@ -33,55 +33,143 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
       }
     });
 
-    it("should reject if property definition is not an object", () => {
-      const values = [
-        null,
-        undefined,
-        new Number(),
-        new String(),
-        Symbol(),
-        2,
-        -10,
-        true,
-        [],
-      ];
+    describe("dependent", () => {
+      it("should reject dependent & no default", () => {
+        try {
+          fx({ age: { dependent: true } })();
+        } catch (err: any) {
+          expect(err.payload).toEqual(
+            expect.objectContaining({
+              age: expect.arrayContaining([
+                "Dependent properties must have a default value",
+              ]),
+            })
+          );
+        }
+      });
 
-      for (const value of values)
-        expect(fx({ name: value })).toThrow("Invalid Schema");
+      it("should reject dependent & shouldInit", () => {
+        const values = [false, true];
+
+        for (const shouldInit of values)
+          try {
+            fx({ age: { dependent: true, shouldInit } })();
+          } catch (err: any) {
+            expect(err.payload).toEqual(
+              expect.objectContaining({
+                age: expect.arrayContaining([
+                  "Dependent properties cannot have shouldInit rule",
+                ]),
+              })
+            );
+          }
+      });
+
+      it("should reject dependent & + required", () => {
+        try {
+          fx({ age: { dependent: true, required: true } })();
+        } catch (err: any) {
+          expect(err.payload).toEqual(
+            expect.objectContaining({
+              age: expect.arrayContaining([
+                "Dependent properties cannot be required",
+              ]),
+            })
+          );
+        }
+      });
     });
 
-    it("should reject if sideEffect property has no validator or onChange listeners", () => {
-      try {
-        fx({ age: { sideEffect: true } })();
-      } catch (err: any) {
-        expect(err.payload).toMatchObject({
-          age: [
-            "Invalid validator",
-            "SideEffects must have at least one onChange listener",
-            "A property should at least be readonly, required, or have a default value",
-          ],
-        });
-      }
+    // describe("lax props", () => {
+    //   it("should reject sideEffect & no onChange listeners", () => {
+    //     try {
+    //       fx({
+    //         age: { sideEffect: true, validator: () => ({ valid: true }) },
+    //       })();
+    //     } catch (err: any) {
+    //       expect(err.payload).toEqual(
+    //         expect.objectContaining({
+    //           age: expect.arrayContaining([
+    //             "SideEffects must have at least one onChange listener",
+    //             "A property should at least be readonly, required, or have a default value",
+    //           ]),
+    //         })
+    //       );
+    //     }
+    //   });
+
+    //   it("should reject sideEffect & no validator ", () => {
+    //     try {
+    //       fx({ age: { sideEffect: true, onChange: [() => {}] } })();
+    //     } catch (err: any) {
+    //       expect(err.payload).toEqual(
+    //         expect.objectContaining({
+    //           age: expect.arrayContaining([
+    //             "Invalid validator",
+    //             "A property should at least be readonly, required, or have a default value",
+    //           ]),
+    //         })
+    //       );
+    //     }
+    //   });
+    // });
+
+    describe("readonly", () => {
+      it("should reject readonly + validator & no default", () => {
+        try {
+          fx({
+            age: { readonly: true, shouldInit: false, validator: isNaN },
+          })();
+        } catch (err: any) {
+          expect(err.payload.age).toContain(
+            "A property that should not be initialized must have a default value other than 'undefined'"
+          );
+        }
+      });
+
+      it("should reject readonly(lax) + validator & no default", () => {
+        try {
+          fx({ age: { readonly: "lax", validator: isNaN } })();
+        } catch (err: any) {
+          expect(err.payload.age).toContain(
+            "A property that should not be initialized must have a default value other than 'undefined'"
+          );
+        }
+      });
     });
 
-    it("should reject readonly + validator & no default", () => {
-      try {
-        fx({ age: { readonly: true, shouldInit: false, validator: isNaN } })();
-      } catch (err: any) {
-        expect(err.payload.age).toContain(
-          "A property that should not be initialized must have a default value other than 'undefined'"
-        );
-      }
-    });
+    describe("sideEffect", () => {
+      it("should reject sideEffect & no onChange listeners", () => {
+        try {
+          fx({
+            age: { sideEffect: true, validator: () => ({ valid: true }) },
+          })();
+        } catch (err: any) {
+          expect(err.payload).toEqual(
+            expect.objectContaining({
+              age: expect.arrayContaining([
+                "SideEffects must have at least one onChange listener",
+                "A property should at least be readonly, required, or have a default value",
+              ]),
+            })
+          );
+        }
+      });
 
-    it("should reject readonly(lax) + validator & no default", () => {
-      try {
-        fx({ age: { readonly: "lax", validator: isNaN } })();
-      } catch (err: any) {
-        expect(err.payload.age).toContain(
-          "A property that should not be initialized must have a default value other than 'undefined'"
-        );
-      }
+      it("should reject sideEffect & no validator ", () => {
+        try {
+          fx({ age: { sideEffect: true, onChange: [() => {}] } })();
+        } catch (err: any) {
+          expect(err.payload).toEqual(
+            expect.objectContaining({
+              age: expect.arrayContaining([
+                "Invalid validator",
+                "A property should at least be readonly, required, or have a default value",
+              ]),
+            })
+          );
+        }
+      });
     });
   });
 };

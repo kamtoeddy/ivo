@@ -136,7 +136,7 @@ await db.update({ id: 1 }, userUpdate);
 
 - [Defining a schema](./docs/v1.4.10/schema/definition/index.md#defining-a-schema)
   - [default values](./docs/v1.4.10/schema/definition/defaults.md#default-values)
-  - [dependent properties]()
+  - [dependent properties](./docs/v1.4.10/schema/definition/dependents.md#dependent-properties)
   - [readonly properties]()
   - [required properties]()
   - [side effects]()

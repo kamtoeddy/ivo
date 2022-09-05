@@ -262,7 +262,22 @@ export abstract class SchemaCore<T extends ObjectType> {
 
     if (!isPopDefOk.valid) return isPopDefOk;
 
-    const { dependent, sideEffect } = this._getDefinition(prop);
+    const {
+      default: _default,
+      dependent,
+      sideEffect,
+      shouldInit,
+      required,
+    } = this._getDefinition(prop);
+
+    if (isEqual(_default, undefined))
+      reasons.push("Dependent properties must have a default value");
+
+    if (!isEqual(required, undefined))
+      reasons.push("Dependent properties cannot be required");
+
+    if (!isEqual(shouldInit, undefined))
+      reasons.push("Dependent properties cannot have shouldInit rule");
 
     if (sideEffect) reasons.push("Dependent properties cannot be sideEffect");
 
