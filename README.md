@@ -145,11 +145,11 @@ These methods are async because custom validators could be async as well.
 ## Docs
 
 - Schema
-  - [Defining Properties](./docs/v1.4.6/schema/definition.md#defining-a-schema)
+  - [Defining Properties](./docs/v1.4.7/schema/definition.md#defining-a-schema)
   - [Inheritance](./docs/v1.4.6/schema/inheritance.md)
   - [The Operation Context](./docs/v1.4.6/schema/life-cycles.md#the-operation-context)
   - [Life Cycle listeners](./docs/v1.4.6/schema/life-cycles.md#life-cycle-listeners)
-  - [Options](./docs/v1.4.6/schema/definition.md#options)
+  - [Options](./docs/v1.4.7/schema/definition.md#options)
 - [Validators](./docs/v1.4.6/validate/index.md#validators)
   - [isArrayOk](./docs/v1.4.6/validate/isArrayOk.md)
   - [isBooleanOk](./docs/v1.4.6/validate/isBooleanOk.md)
@@ -158,6 +158,6 @@ These methods are async because custom validators could be async as well.
   - [isNumberOk](./docs/v1.4.6/validate/isNumberOk.md)
   - [isStringOk](./docs/v1.4.6/validate/isStringOk.md)
 - [ApiError](./docs/v1.4.6/api-error.md)
-- [Changelog](./docs/v1.4.6/CHANGELOG)
+- [Changelog](./docs/v1.4.7/CHANGELOG#changelog)
 
 ## Happy coding! 😎

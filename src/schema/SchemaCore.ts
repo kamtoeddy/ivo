@@ -3,26 +3,24 @@ import { belongsTo, sort, sortKeys, toArray } from "../utils/functions";
 import { ObjectType } from "../utils/interfaces";
 import { isEqual } from "../utils/isEqual";
 import {
-  LifeCycleRule,
-  Listener,
+  LifeCycle,
   Private_ISchemaOptions,
   PropDefinitionRule,
-  PropDefinitionRules,
-  SchemaOptions,
+  Schema as ns,
   StringKeys,
 } from "./interfaces";
 import { makeResponse, SchemaOptionsHelper } from "./SchemaUtils";
 
 export const defaultOptions = { timestamps: false };
 
-const lifeCycleRules: LifeCycleRule[] = ["onChange", "onCreate", "onUpdate"];
+const lifeCycleRules: LifeCycle.Rule[] = ["onChange", "onCreate", "onUpdate"];
 
 export abstract class SchemaCore<T extends ObjectType> {
   protected error = new ApiError({ message: "Validation Error" });
 
   protected _helper: SchemaOptionsHelper;
-  protected _options: SchemaOptions;
-  protected _propDefinitions = {} as PropDefinitionRules<T>;
+  protected _options: ns.Options;
+  protected _propDefinitions = {} as ns.PropertyDefinitions<T>;
 
   protected context: T = {} as T;
   protected defaults: Partial<T> = {};
@@ -31,8 +29,8 @@ export abstract class SchemaCore<T extends ObjectType> {
   protected values: Partial<T> = {};
 
   constructor(
-    propDefinitions: PropDefinitionRules<T>,
-    options: SchemaOptions = defaultOptions
+    propDefinitions: ns.PropertyDefinitions<T>,
+    options: ns.Options = defaultOptions
   ) {
     this._propDefinitions = propDefinitions;
     this._options = options;
@@ -177,7 +175,7 @@ export abstract class SchemaCore<T extends ObjectType> {
         this._isLaxProp(prop) && this.values.hasOwnProperty(prop);
 
       if (!isSideEffect && !this._canInit(prop) && !isLaxInit)
-        return (data[prop] = this.defaults[prop]!);
+        return (data[prop] = this._getDefaultValue(prop));
 
       return this._validateAndSet(data, prop, this.values[prop]);
     });
@@ -200,15 +198,17 @@ export abstract class SchemaCore<T extends ObjectType> {
   protected _getDefinitionValue = (prop: string, rule: PropDefinitionRule) =>
     this._getDefinition(prop)?.[rule];
 
-  protected _getDefaultValue = (prop: string) => {
+  protected _getDefaultValue = (prop: string, alternate = true) => {
     const value = this._getDefinition(prop)?.default;
 
-    return isEqual(value, undefined) ? this.values[prop] : value;
+    if (alternate && isEqual(value, undefined)) return this.values[prop];
+
+    return typeof value === "function" ? value(this._getContext()) : value;
   };
 
   protected _getDetailedListeners = (
     prop: string,
-    lifeCycle: LifeCycleRule,
+    lifeCycle: LifeCycle.Rule,
     valid = true
   ) => {
     const listeners = toArray(this._getDefinitionValue(prop, lifeCycle));
@@ -224,7 +224,7 @@ export abstract class SchemaCore<T extends ObjectType> {
     );
   };
 
-  protected _getAllListeners = (prop: string, lifeCycle: LifeCycleRule) => {
+  protected _getAllListeners = (prop: string, lifeCycle: LifeCycle.Rule) => {
     const onChange = this._getListeners(prop, "onChange");
 
     if (this._isSideEffect(prop)) return onChange;
@@ -234,10 +234,10 @@ export abstract class SchemaCore<T extends ObjectType> {
     return [...others, ...onChange];
   };
 
-  protected _getListeners = (prop: string, lifeCycle: LifeCycleRule) => {
+  protected _getListeners = (prop: string, lifeCycle: LifeCycle.Rule) => {
     return this._getDetailedListeners(prop, lifeCycle, true).map(
       (dt) => dt.listener
-    ) as Listener<T>[];
+    ) as LifeCycle.Listener<T>[];
   };
 
   protected _getProps = (): StringKeys<T>[] => {
@@ -447,7 +447,9 @@ export abstract class SchemaCore<T extends ObjectType> {
 
     if (!this._isProp(prop) || this._isDependentProp(prop)) return false;
 
-    const { default: _default, readonly } = this._getDefinition(prop);
+    const { readonly } = this._getDefinition(prop);
+
+    const _default = this._getDefaultValue(prop, false);
 
     return (
       !readonly || (readonly && isEqual(_default, this._getContext()?.[prop]))
@@ -465,7 +467,7 @@ export abstract class SchemaCore<T extends ObjectType> {
   protected _isValidatorOk = (prop: string) =>
     this._isFunction(this._getDefinition(prop)?.validator);
 
-  private _makeOptions(options: SchemaOptions): Private_ISchemaOptions {
+  private _makeOptions(options: ns.Options): Private_ISchemaOptions {
     if (!options) return { timestamps: { createdAt: "", updatedAt: "" } };
 
     let { timestamps } = options;
@@ -510,7 +512,7 @@ export abstract class SchemaCore<T extends ObjectType> {
   protected _resolveLinked = async (
     props: StringKeys<T>[],
     context: Partial<T>,
-    lifeCycle: LifeCycleRule
+    lifeCycle: LifeCycle.Rule
   ) => {
     const listenersUpdates = props.map((prop) => {
       return this._resolveLinkedProps(context, prop, lifeCycle);
@@ -522,7 +524,7 @@ export abstract class SchemaCore<T extends ObjectType> {
   protected _resolveLinkedProps = async (
     operationData: Partial<T> = {},
     prop: StringKeys<T>,
-    lifeCycle: LifeCycleRule
+    lifeCycle: LifeCycle.Rule
   ) => {
     const listeners = this._getAllListeners(prop, lifeCycle);
 
@@ -534,9 +536,9 @@ export abstract class SchemaCore<T extends ObjectType> {
     )
       return;
 
-    const context = { ...this._getContext(), ...operationData };
-
     for (const listener of listeners) {
+      const context = { ...this._getContext(), ...operationData };
+
       const extra = await listener(context);
 
       if (typeof extra !== "object") continue;

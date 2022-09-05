@@ -1,26 +1,20 @@
 import { sort, toArray } from "../utils/functions";
 import { ObjectType } from "../utils/interfaces";
 import { isEqual } from "../utils/isEqual";
-import {
-  SchemaExtensionOptions,
-  SchemaOptions,
-  PropDefinitionRules,
-  SchemaCloneOptions,
-  StringKeys,
-} from "./interfaces";
+import { Schema as ns, StringKeys } from "./interfaces";
 import { defaultOptions, SchemaCore } from "./SchemaCore";
 
 export class Schema<T extends ObjectType> extends SchemaCore<T> {
   constructor(
-    propDefinitions: PropDefinitionRules<T>,
-    options: SchemaOptions = defaultOptions
+    propDefinitions: ns.PropertyDefinitions<T>,
+    options: ns.Options = defaultOptions
   ) {
     super(propDefinitions, options);
     this._checkPropDefinitions();
   }
 
   private _useExtensionOptions = <T extends ObjectType>(
-    options: SchemaExtensionOptions<T>
+    options: ns.ExtensionOptions<T>
   ) => {
     const remove = toArray(options?.remove ?? []);
 
@@ -31,12 +25,12 @@ export class Schema<T extends ObjectType> extends SchemaCore<T> {
 
   extend = <U extends ObjectType>(
     parent: Schema<U>,
-    options: SchemaExtensionOptions<U> = { remove: [] }
+    options: ns.ExtensionOptions<U> = { remove: [] }
   ) => {
     this._propDefinitions = {
       ...parent.propDefinitions,
       ...this._propDefinitions,
-    } as PropDefinitionRules<T>;
+    } as ns.PropertyDefinitions<T>;
 
     return this._useExtensionOptions(options);
   };
@@ -65,7 +59,7 @@ class Model<T extends ObjectType> extends SchemaCore<T> {
     const defaults: Partial<T> = {};
 
     for (let prop of this.props) {
-      const { default: _default } = this._getDefinition(prop);
+      const _default = this._getDefaultValue(prop);
 
       if (!isEqual(_default, undefined)) defaults[prop] = _default;
     }
@@ -86,7 +80,7 @@ class Model<T extends ObjectType> extends SchemaCore<T> {
     this._initContext();
   }
 
-  clone = async (options: SchemaCloneOptions<T> = { reset: [] }) => {
+  clone = async (options: ns.CloneOptions<T> = { reset: [] }) => {
     return this._getCloneObject(toArray(options.reset).filter(this._isProp));
   };
 
