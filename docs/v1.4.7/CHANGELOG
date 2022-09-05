@@ -2,7 +2,9 @@
 
 All notable changes to this project will be documented in this file.
 
-# v1.4.7 <small><sup>04-09-2022</sup></small>
+# v1.4.7 <small><sup>05-09-2022</sup></small>
+
+- [Added] Support for default setters
 
 - [Fixed] context being modifiable by life cycle handlers
 

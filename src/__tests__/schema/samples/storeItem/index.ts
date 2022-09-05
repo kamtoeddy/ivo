@@ -13,7 +13,11 @@ import {
 
 const storeItemSchema = new Schema<IStoreItem>(
   {
-    _dependentReadOnly: { default: 0, readonly: true, dependent: true },
+    _dependentReadOnly: {
+      default: () => 0,
+      readonly: true,
+      dependent: true,
+    },
     _laxProp: { default: "", validator: validateString("Invalid lax prop") },
     _readOnlyLax1: { default: "", readonly: "lax" },
     _readOnlyLax2: { default: "", readonly: "lax" },
@@ -25,6 +29,7 @@ const storeItemSchema = new Schema<IStoreItem>(
     },
     id: {
       readonly: true,
+      onChange: (ctx) => ({}),
       validator: validateString("Invalid id"),
     },
     name: { required: true, validator: validateName },
