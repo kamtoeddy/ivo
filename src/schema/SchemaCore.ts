@@ -359,6 +359,12 @@ export abstract class SchemaCore<T extends ObjectType> {
       if (!readonlyDef.valid) reasons.push(readonlyDef.reason!);
     }
 
+    if (this._hasAny(prop, "required")) {
+      const requiredDef = this.__isRequired(prop);
+
+      if (!requiredDef.valid) reasons.push(requiredDef.reason!);
+    }
+
     if (this._hasAny(prop, "sideEffect")) {
       const sideEffectDef = this.__isSideEffect(prop);
 
@@ -424,10 +430,11 @@ export abstract class SchemaCore<T extends ObjectType> {
         valid,
       };
 
-    if (this._hasAny(prop, "required"))
+    if (readonly === true && this._hasAny(prop, "required"))
       return {
         valid,
-        reason: "Readonly properties are required by default",
+        reason:
+          "Strictly readonly properties are required. Remove the required rule",
       };
 
     if (
@@ -461,13 +468,7 @@ export abstract class SchemaCore<T extends ObjectType> {
   protected _isReadonly = (prop: string) => this.__isReadonly(prop).valid;
 
   protected __isRequired = (prop: string) => {
-    const {
-      default: _default,
-      dependent,
-      readonly,
-      required,
-      shouldInit,
-    } = this._getDefinition(prop);
+    const { default: _default, required } = this._getDefinition(prop);
 
     const valid = false;
 
@@ -477,12 +478,29 @@ export abstract class SchemaCore<T extends ObjectType> {
         reason: "Required properties must have required as 'true'",
       };
 
-    if (this._hasAny(prop, "readonly") && dependent)
-      return { valid, reason: "Required properties cannot be dependent" };
+    if (required === true && !isEqual(_default, undefined))
+      return {
+        valid,
+        reason:
+          "Strictly required properties cannot have a default value or setter",
+      };
 
-    return {
-      valid: readonly === true && belongsTo(shouldInit, [true, undefined]),
-    };
+    if (required === true && this._hasAny(prop, "dependent"))
+      return {
+        valid,
+        reason: "Strictly required properties cannot be dependent",
+      };
+
+    if (required === true && this._hasAny(prop, "readonly"))
+      return {
+        valid,
+        reason: "Strictly required properties cannot be readonly",
+      };
+
+    if (!this._isValidatorOk(prop))
+      return { valid, reason: "Required properties must have a validator" };
+
+    return { valid: true };
   };
 
   protected _canInit = (prop: string) => {

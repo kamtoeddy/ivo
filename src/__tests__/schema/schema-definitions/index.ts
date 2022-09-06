@@ -12,7 +12,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
     expect(fx).not.toThrow();
   };
 
-  const validator = () => {};
+  const validator = () => ({ valid: true });
 
   describe("Schema definitions", () => {
     it("should reject if property definitions is not an object", () => {
@@ -317,7 +317,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               expect(err.payload).toEqual(
                 expect.objectContaining({
                   propertyName: expect.arrayContaining([
-                    "Readonly properties are required by default",
+                    "Strictly readonly properties are required. Remove the required rule",
                   ]),
                 })
               );
@@ -388,19 +388,103 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
     });
 
     describe("required", () => {
-      // it("should reject required & no validator", () => {
-      //   const toFail = fx({ propertyName: { required: true } });
-      //   expectFailure(toFail);
-      //   try {
-      //     toFail();
-      //   } catch (err: any) {
-      //     expect(err.payload).toEqual(
-      //       expect.objectContaining({
-      //         propertyName: ["Required properties must have a validator"],
-      //       })
-      //     );
-      //   }
-      // });
+      describe("valid", () => {
+        it("should allow required + validator", () => {
+          const toPass = fx({ propertyName: { required: true, validator } });
+
+          expectNoFailure(toPass);
+
+          toPass();
+        });
+      });
+
+      describe("invalid", () => {
+        it("should reject required & no validator", () => {
+          const toFail = fx({ propertyName: { required: true } });
+
+          expectFailure(toFail);
+
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toEqual(
+              expect.objectContaining({
+                propertyName: expect.arrayContaining([
+                  "Required properties must have a validator",
+                ]),
+              })
+            );
+          }
+        });
+
+        it("should reject required(true) + default", () => {
+          const toFail = fx({
+            propertyName: { default: "", required: true, validator },
+          });
+
+          expectFailure(toFail);
+
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toEqual(
+              expect.objectContaining({
+                propertyName: expect.arrayContaining([
+                  "Strictly required properties cannot have a default value or setter",
+                ]),
+              })
+            );
+          }
+        });
+
+        it("should reject required(true) + readonly(true)", () => {
+          const values = [false, true];
+
+          for (const readonly of values) {
+            const toFail = fx({
+              propertyName: { readonly, required: true, validator },
+            });
+
+            expectFailure(toFail);
+
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err.payload).toMatchObject(
+                expect.objectContaining({
+                  propertyName: expect.arrayContaining([
+                    "Strictly required properties cannot be readonly",
+                  ]),
+                })
+              );
+            }
+          }
+        });
+
+        it("should reject required(true) + readonly(true)", () => {
+          const values = [false, true];
+
+          for (const dependent of values) {
+            const toFail = fx({
+              propertyName: { dependent, required: true, validator },
+            });
+
+            expectFailure(toFail);
+
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err.payload).toMatchObject(
+                expect.objectContaining({
+                  propertyName: expect.arrayContaining([
+                    "Strictly required properties cannot be dependent",
+                  ]),
+                })
+              );
+            }
+          }
+        });
+      });
     });
 
     describe("shouldInit", () => {
