@@ -80,7 +80,10 @@ export abstract class SchemaCore<T extends ObjectType> {
       if (!isDefOk.valid) error.add(prop, isDefOk.reasons);
     }
 
-    if (error.isPayloadLoaded) throw error;
+    if (error.isPayloadLoaded) {
+      // console.log(error);
+      throw error;
+    }
   };
 
   protected _getCloneObject = async (reset: StringKeys<T>[] = []) => {
@@ -332,20 +335,29 @@ export abstract class SchemaCore<T extends ObjectType> {
 
     if (!isPopDefOk.valid) reasons = reasons.concat(isPopDefOk.reasons!);
 
-    const dependentDef = this.__isDependentProp(prop);
+    if (this._hasAny(prop, "dependent")) {
+      const dependentDef = this.__isDependentProp(prop);
 
-    if (this._hasAny(prop, "dependent") && !dependentDef.valid)
-      reasons = reasons.concat(dependentDef.reasons!);
+      if (!dependentDef.valid) reasons = reasons.concat(dependentDef.reasons!);
+    }
 
-    const readonlyDef = this.__isReadonly(prop);
+    if (this._hasAny(prop, "readonly")) {
+      const readonlyDef = this.__isReadonly(prop);
 
-    if (this._hasAny(prop, "readonly") && !readonlyDef.valid)
-      reasons = reasons.concat(readonlyDef.reasons!);
+      if (!readonlyDef.valid) reasons = reasons.concat(readonlyDef.reasons!);
+    }
 
-    const sideEffectDef = this.__isSideEffect(prop);
+    if (this._hasAny(prop, "sideEffect")) {
+      const sideEffectDef = this.__isSideEffect(prop);
 
-    if (this._hasAny(prop, "sideEffect") && !sideEffectDef.valid)
-      reasons = reasons.concat(sideEffectDef.reasons!);
+      if (!sideEffectDef.valid)
+        reasons = reasons.concat(sideEffectDef.reasons!);
+    }
+
+    if (this._hasAny(prop, "shouldInit") && !this._hasAny(prop, "default"))
+      reasons.push(
+        "A property with initialization blocked must have a default value"
+      );
 
     if (this._hasAny(prop, "validator") && !this._isValidatorOk(prop))
       reasons.push("Invalid validator");
@@ -359,20 +371,11 @@ export abstract class SchemaCore<T extends ObjectType> {
 
       reasons = reasons.concat(
         invalidHandlers.map(
-          (dt) => `'${dt.listener}' @${rule}[${dt.index}] is not a function`
+          (dt) =>
+            `'${dt.listener}' @${rule}[${dt.index}] is not a valid listener`
         )
       );
     }
-
-    const { readonly, shouldInit } = this._getDefinition(prop);
-
-    if (
-      (readonly === "lax" || shouldInit === false) &&
-      !this._hasAny(prop, "default")
-    )
-      reasons.push(
-        "A property that should not be initialized must have a default value other than 'undefined'"
-      );
 
     if (
       !this._hasAny(prop, ["default", "readonly", "required"]) &&
@@ -397,7 +400,7 @@ export abstract class SchemaCore<T extends ObjectType> {
 
     let reasons: string[] = [];
 
-    if (this._hasAny(prop, ["required"]))
+    if (this._hasAny(prop, "required"))
       reasons.push("readonly properties are required by default");
 
     const {
@@ -408,8 +411,7 @@ export abstract class SchemaCore<T extends ObjectType> {
     } = this._getDefinition(prop);
 
     if (
-      readonly === "lax" &&
-      (dependent === true || shouldInit === false) &&
+      (readonly === "lax" || dependent === true || shouldInit === false) &&
       isEqual(_default, undefined)
     )
       reasons.push(
@@ -429,6 +431,20 @@ export abstract class SchemaCore<T extends ObjectType> {
   };
 
   protected _isReadonly = (prop: string) => this.__isReadonly(prop).valid;
+
+  protected __isRequired = (prop: string) => {
+    const {
+      default: _default,
+      dependent,
+      readonly,
+      required,
+      shouldInit,
+    } = this._getDefinition(prop);
+
+    if (!isEqual(required, undefined)) return true;
+
+    return readonly === true && belongsTo(shouldInit, [true, undefined]);
+  };
 
   protected _isRequired = (prop: string): boolean => {
     if (this._isDependentProp(prop)) return false;
