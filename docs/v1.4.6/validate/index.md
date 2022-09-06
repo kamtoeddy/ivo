@@ -10,11 +10,7 @@ interface IValidationResults {
   validated?: any; // the validated values passed which could have been formated in the custom validator (i.e made ready for the db)
 }
 
-const validator = (
-  valueToValidate: any,
-  ...args,
-  validationContext
-): IValidationResults => {
+const validator = (value: any, validationContext): IValidationResults => {
   // validation logic here
 
   if (valid) return { valid, validated };

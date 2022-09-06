@@ -95,14 +95,14 @@ class Model<T extends ObjectType> extends SchemaCore<T> {
   create = async () => this._getCreateObject();
 
   update = async (changes: Partial<T>) => {
-    this.updated = {};
+    const updated = {};
 
     const toUpdate = Object.keys(changes ?? {}).filter((prop) =>
       this._isUpdatable(prop)
     ) as StringKeys<T>[];
 
     const validations = toUpdate.map((prop) => {
-      return this._validateAndSet(this.updated, prop, changes[prop]);
+      return this._validateAndSet(updated, prop, changes[prop]);
     });
 
     await Promise.all(validations);
@@ -112,13 +112,12 @@ class Model<T extends ObjectType> extends SchemaCore<T> {
     const linkedProps = toUpdate.filter((prop) => !this._isSideEffect(prop));
     const sideEffects = toUpdate.filter(this._isSideEffect);
 
-    await this._resolveLinked(linkedProps, this.updated, "onUpdate");
+    await this._resolveLinked(linkedProps, updated, "onUpdate");
 
-    await this._resolveLinked(sideEffects, this.updated, "onUpdate");
+    await this._resolveLinked(sideEffects, updated, "onUpdate");
 
-    if (!Object.keys(this.updated).length)
-      this._throwErrors("Nothing to update");
+    if (!Object.keys(updated).length) this._throwErrors("Nothing to update");
 
-    return this._useConfigProps(this.updated, true);
+    return this._useConfigProps(updated, true);
   };
 }

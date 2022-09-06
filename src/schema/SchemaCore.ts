@@ -1,4 +1,4 @@
-import { ApiError } from "../utils/ApiError";
+import { ErrorTool, SchemaError } from "../utils/SchemaError";
 import { belongsTo, sort, sortKeys, toArray } from "../utils/functions";
 import { ObjectType } from "../utils/interfaces";
 import { isEqual } from "../utils/isEqual";
@@ -16,7 +16,7 @@ export const defaultOptions = { timestamps: false };
 const lifeCycleRules: LifeCycle.Rule[] = ["onChange", "onCreate", "onUpdate"];
 
 export abstract class SchemaCore<T extends ObjectType> {
-  protected error = new ApiError({ message: "Validation Error" });
+  protected error = new ErrorTool({ message: "Validation Error" });
 
   protected _helper: SchemaOptionsHelper;
   protected _options: ns.Options;
@@ -25,7 +25,6 @@ export abstract class SchemaCore<T extends ObjectType> {
   protected context: T = {} as T;
   protected defaults: Partial<T> = {};
   protected props: StringKeys<T>[] = [];
-  protected updated: Partial<T> = {};
   protected values: Partial<T> = {};
 
   constructor(
@@ -48,41 +47,41 @@ export abstract class SchemaCore<T extends ObjectType> {
 
   // error methods
   protected _throwErrors(_message?: string): void {
-    const err = new ApiError(this.error.summary);
+    if (_message) this.error.setMessage(_message);
 
-    this.error.clear();
+    const err = new SchemaError(this.error.summary);
 
-    if (_message) err.setMessage(_message);
+    this.error.reset();
 
     throw err;
   }
 
   protected _checkPropDefinitions = () => {
-    const error = new ApiError({
-      message: "Invalid Schema",
-      statusCode: 500,
-    });
+    this.error.setMessage("Invalid Schema");
+    this.error.statusCode = 500;
 
     if (
       !this._propDefinitions ||
       typeof this._propDefinitions !== "object" ||
       Array.isArray(this._propDefinitions)
     )
-      throw error;
+      this._throwErrors();
 
     let props: string[] = Object.keys(this._propDefinitions);
 
-    if (!props.length)
-      throw error.add("schema properties", "Insufficient Schema properties");
+    if (!props.length) {
+      this.error.add("schema properties", "Insufficient Schema properties");
+      this._throwErrors();
+    }
 
     for (let prop of props) {
       const isDefOk = this.__isPropDefinitionOk(prop);
-      if (!isDefOk.valid) error.add(prop, isDefOk.reasons!);
+      if (!isDefOk.valid) this.error.add(prop, isDefOk.reasons!);
     }
 
-    if (error.isPayloadLoaded) {
-      // console.log(error);
-      throw error;
+    if (this._isErroneous()) {
+      // console.log(new SchemaError(this.error.summary));
+      this._throwErrors();
     }
   };
 
@@ -613,7 +612,7 @@ export abstract class SchemaCore<T extends ObjectType> {
       return { ...options, timestamps: _timestamps };
     }
 
-    const _error = new ApiError({
+    const _error = new ErrorTool({
       message: "Invalid schema options",
       statusCode: 500,
     });

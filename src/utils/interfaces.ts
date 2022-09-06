@@ -13,7 +13,13 @@ export type PayloadKey = number | string;
 export type ErrorPayload = Record<PayloadKey, string[]>;
 export type InputPayload = Record<PayloadKey, string | string[]>;
 
-export interface ApiErrorProps {
+export interface SchemaErrorProps {
+  message: string;
+  payload?: ErrorPayload;
+  statusCode?: number;
+}
+
+export interface ErrorToolProps {
   message: string;
   payload?: InputPayload;
   statusCode?: number;
