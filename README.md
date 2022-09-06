@@ -22,7 +22,7 @@ const { Schema } = require("clean-schema");
 import { Schema } from "clean-schema";
 ```
 
-# Defining a model
+# Defining an entity's schema
 
 ```js
 const { Schema, validate } = require("clean-schema");
