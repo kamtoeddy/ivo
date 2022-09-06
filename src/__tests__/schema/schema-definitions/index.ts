@@ -105,24 +105,202 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
       });
     });
 
-    // describe("lax props", () => {
-    //   it("should reject readonly(lax) & shouldInit(false)", () => {
-    //     try {
-    //       fx({
-    //         propertyName: { readonly: "lax", shouldInit: false },
-    //       })();
-    //     } catch (err: any) {
-    //       expect(err.payload).toEqual(
-    //         expect.objectContaining({
-    //           propertyName: expect.arrayContaining([
-    //             "SideEffects must have at least one onChange listener",
-    //             "A property should at least be readonly, required, or have a default value",
-    //           ]),
-    //         })
-    //       );
-    //     }
-    //   });
-    // });
+    describe("lax props", () => {
+      describe("valid", () => {
+        it("should allow default alone", () => {
+          const toPass = fx({ propertyName: { default: "" } });
+
+          expectNoFailure(toPass);
+
+          toPass();
+        });
+
+        it("should allow default + validator", () => {
+          const toPass = fx({
+            propertyName: { default: "", validtor: () => ({ valid: true }) },
+          });
+
+          expectNoFailure(toPass);
+
+          toPass();
+        });
+
+        it("should allow default + (onChange | onChange[])", () => {
+          const values = [() => {}, [() => {}], [() => {}, () => {}]];
+
+          for (const onChange of values) {
+            const toPass = fx({
+              dependent: { default: "", dependent: true },
+              propertyName: { default: "", onChange },
+            });
+
+            expectNoFailure(toPass);
+
+            toPass();
+          }
+        });
+
+        it("should allow default + (onCreate | onCreate[])", () => {
+          const values = [() => {}, [() => {}], [() => {}, () => {}]];
+
+          for (const onCreate of values) {
+            const toPass = fx({
+              dependent: { default: "", dependent: true },
+              propertyName: { default: "", onCreate },
+            });
+
+            expectNoFailure(toPass);
+
+            toPass();
+          }
+        });
+
+        it("should allow default + (onUpdate | onUpdate[])", () => {
+          const values = [() => {}, [() => {}], [() => {}, () => {}]];
+
+          for (const onUpdate of values) {
+            const toPass = fx({
+              dependent: { default: "", dependent: true },
+              propertyName: { default: "", onUpdate },
+            });
+
+            expectNoFailure(toPass);
+
+            toPass();
+          }
+        });
+
+        it("should allow default + onChange + onCreate + onUpdate + validator", () => {
+          const toPass = fx({
+            propertyName: {
+              default: "",
+              onChange: () => ({}),
+              onCreate: [() => ({})],
+              onUpdate: () => ({}),
+              validtor: () => ({ valid: true }),
+            },
+          });
+
+          expectNoFailure(toPass);
+
+          toPass();
+        });
+      });
+
+      describe("invalid", () => {
+        it("should reject no default", () => {
+          const toFail = fx({
+            propertyName: { validator: () => ({ valid: true }) },
+          });
+
+          expectFailure(toFail);
+
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toEqual(
+              expect.objectContaining({
+                propertyName: expect.arrayContaining([
+                  "Lax properties must have a default value nor setter",
+                ]),
+              })
+            );
+          }
+        });
+
+        it("should reject dependent", () => {
+          const values = [false, true];
+
+          for (const dependent of values) {
+            const toFail = fx({ propertyName: { dependent } });
+
+            expectFailure(toFail);
+
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err.payload).toEqual(
+                expect.objectContaining({
+                  propertyName: expect.arrayContaining([
+                    "Lax properties cannot be dependent",
+                  ]),
+                })
+              );
+            }
+          }
+        });
+
+        it("should reject sideEffect", () => {
+          const values = [false, true];
+
+          for (const sideEffect of values) {
+            const toFail = fx({ propertyName: { sideEffect } });
+
+            expectFailure(toFail);
+
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err.payload).toEqual(
+                expect.objectContaining({
+                  propertyName: expect.arrayContaining([
+                    "Lax properties cannot be side effects",
+                  ]),
+                })
+              );
+            }
+          }
+        });
+
+        it("should reject default + invalid onChange", () => {
+          const values = [false, 1, "", undefined, true, null];
+
+          for (const onChange of values) {
+            const toFail = fx({ propertyName: { default: "", onChange } });
+
+            expectFailure(toFail);
+
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err.payload.propertyName.length).toBe(1);
+            }
+          }
+        });
+
+        it("should reject default + invalid onCreate", () => {
+          const values = [false, 1, "", undefined, true, null];
+
+          for (const onCreate of values) {
+            const toFail = fx({ propertyName: { default: "", onCreate } });
+
+            expectFailure(toFail);
+
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err.payload.propertyName.length).toBe(1);
+            }
+          }
+        });
+
+        it("should reject default + invalid onUpdate", () => {
+          const values = [false, 1, "", undefined, true, null];
+
+          for (const onUpdate of values) {
+            const toFail = fx({ propertyName: { default: "", onUpdate } });
+
+            expectFailure(toFail);
+
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err.payload.propertyName.length).toBe(1);
+            }
+          }
+        });
+      });
+    });
 
     describe("readonly", () => {
       describe("valid", () => {

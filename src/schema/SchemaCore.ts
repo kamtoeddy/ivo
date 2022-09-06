@@ -292,22 +292,26 @@ export abstract class SchemaCore<T extends ObjectType> {
 
     if (!isPopDefOk.valid) return isPopDefOk;
 
-    const propDef = this._getDefinition(prop);
+    const { default: _default, readonly } = this._getDefinition(prop);
 
-    const hasDefaultValue = !isEqual(propDef.default, undefined),
-      isDependent = this._isDependentProp(prop);
+    if (isEqual(_default, undefined))
+      reasons.push("Lax properties must have a default value nor setter");
 
-    if (!hasDefaultValue) reasons.push("No default value");
+    if (this._hasAny(prop, "dependent"))
+      reasons.push("Lax properties cannot be dependent");
 
-    const { readonly, required, sideEffect } = propDef;
+    if (this._hasAny(prop, "required"))
+      reasons.push("Lax properties cannot be required");
 
-    if (isDependent || required || sideEffect)
-      reasons.push("dependent, required and sideEffect should not be 'true'");
+    if (this._hasAny(prop, "sideEffect"))
+      reasons.push("Lax properties cannot be side effects");
 
-    const shouldInit = belongsTo(propDef?.shouldInit, [true, undefined]);
-
-    if (readonly !== "lax" && !shouldInit)
-      reasons.push("lax properties cannot have initialization blocked");
+    // only readonly(lax) are lax props
+    if (
+      (this._hasAny(prop, "readonly") && readonly !== "lax") ||
+      this._hasAny(prop, "shouldInit")
+    )
+      reasons.push("Lax properties cannot have initialization blocked");
 
     return { reasons, valid: reasons.length === 0 };
   };
@@ -362,6 +366,7 @@ export abstract class SchemaCore<T extends ObjectType> {
     if (this._hasAny(prop, "validator") && !this._isValidatorOk(prop))
       reasons.push("Invalid validator");
 
+    // onChange, onCreate & onUpdate
     for (let rule of lifeCycleRules) {
       if (!this._hasAny(prop, rule)) continue;
 
@@ -371,8 +376,7 @@ export abstract class SchemaCore<T extends ObjectType> {
 
       reasons = reasons.concat(
         invalidHandlers.map(
-          (dt) =>
-            `'${dt.listener}' @${rule}[${dt.index}] is not a valid listener`
+          (dt) => `'${dt.listener}' @${rule}[${dt.index}] is not a function`
         )
       );
     }
@@ -380,12 +384,16 @@ export abstract class SchemaCore<T extends ObjectType> {
     if (
       !this._hasAny(prop, ["default", "readonly", "required"]) &&
       !this._isDependentProp(prop) &&
-      !this._isLaxProp(prop) &&
       !this._isSideEffect(prop)
-    )
+    ) {
+      const laxDef = this.__isLaxProp(prop);
+
+      if (!laxDef.valid) reasons = reasons.concat(laxDef.reasons!);
+
       reasons.push(
         "A property should at least be readonly, required, or have a default value"
       );
+    }
 
     return { reasons, valid: reasons.length === 0 };
   };
