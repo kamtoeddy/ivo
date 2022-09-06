@@ -77,7 +77,7 @@ export abstract class SchemaCore<T extends ObjectType> {
 
     for (let prop of props) {
       const isDefOk = this.__isPropDefinitionOk(prop);
-      if (!isDefOk.valid) error.add(prop, isDefOk.reasons);
+      if (!isDefOk.valid) error.add(prop, isDefOk.reasons!);
     }
 
     if (error.isPayloadLoaded) {
@@ -247,12 +247,6 @@ export abstract class SchemaCore<T extends ObjectType> {
   };
 
   protected __isDependentProp = (prop: string) => {
-    let reasons: string[] = [];
-
-    const isPopDefOk = this._isPropDefinitionObjectOk(prop);
-
-    if (!isPopDefOk.valid) return isPopDefOk;
-
     const {
       default: _default,
       dependent,
@@ -261,21 +255,33 @@ export abstract class SchemaCore<T extends ObjectType> {
       required,
     } = this._getDefinition(prop);
 
+    const valid = false;
+
+    if (dependent !== true)
+      return {
+        valid,
+        reason: "Dependent properties must have dependent as 'true'",
+      };
+
     if (isEqual(_default, undefined))
-      reasons.push("Dependent properties must have a default value");
+      return {
+        valid,
+        reason: "Dependent properties must have a default value",
+      };
 
     if (!isEqual(required, undefined))
-      reasons.push("Dependent properties cannot be required");
+      return { valid, reason: "Dependent properties cannot be required" };
 
     if (!isEqual(shouldInit, undefined))
-      reasons.push("Dependent properties cannot have shouldInit rule");
+      return {
+        valid,
+        reason: "Dependent properties cannot have shouldInit rule",
+      };
 
-    if (sideEffect) reasons.push("Dependent properties cannot be sideEffect");
+    if (sideEffect)
+      return { valid, reason: "Dependent properties cannot be sideEffect" };
 
-    if (!dependent)
-      reasons.push("Dependent properties must have dependent as 'true'");
-
-    return { reasons, valid: reasons.length === 0 };
+    return { valid: true };
   };
 
   protected _isDependentProp = (prop: string): boolean =>
@@ -286,34 +292,36 @@ export abstract class SchemaCore<T extends ObjectType> {
   protected _isFunction = (obj: any): boolean => typeof obj === "function";
 
   protected __isLaxProp = (prop: string) => {
-    let reasons: string[] = [];
-
-    const isPopDefOk = this._isPropDefinitionObjectOk(prop);
-
-    if (!isPopDefOk.valid) return isPopDefOk;
+    let valid = false;
 
     const { default: _default, readonly } = this._getDefinition(prop);
 
     if (isEqual(_default, undefined))
-      reasons.push("Lax properties must have a default value nor setter");
+      return {
+        valid,
+        reason: "Lax properties must have a default value nor setter",
+      };
 
     if (this._hasAny(prop, "dependent"))
-      reasons.push("Lax properties cannot be dependent");
+      return { valid, reason: "Lax properties cannot be dependent" };
 
     if (this._hasAny(prop, "required"))
-      reasons.push("Lax properties cannot be required");
+      return { valid, reason: "Lax properties cannot be required" };
 
     if (this._hasAny(prop, "sideEffect"))
-      reasons.push("Lax properties cannot be side effects");
+      return { valid, reason: "Lax properties cannot be side effects" };
 
     // only readonly(lax) are lax props
     if (
       (this._hasAny(prop, "readonly") && readonly !== "lax") ||
       this._hasAny(prop, "shouldInit")
     )
-      reasons.push("Lax properties cannot have initialization blocked");
+      return {
+        valid,
+        reason: "Lax properties cannot have initialization blocked",
+      };
 
-    return { reasons, valid: reasons.length === 0 };
+    return { valid: true };
   };
 
   protected _isLaxProp = (prop: string) => this.__isLaxProp(prop).valid;
@@ -333,29 +341,28 @@ export abstract class SchemaCore<T extends ObjectType> {
   };
 
   protected __isPropDefinitionOk = (prop: string) => {
-    let reasons: string[] = [];
-
     const isPopDefOk = this._isPropDefinitionObjectOk(prop);
 
-    if (!isPopDefOk.valid) reasons = reasons.concat(isPopDefOk.reasons!);
+    if (!isPopDefOk.valid) isPopDefOk;
+
+    let reasons: string[] = [];
 
     if (this._hasAny(prop, "dependent")) {
       const dependentDef = this.__isDependentProp(prop);
 
-      if (!dependentDef.valid) reasons = reasons.concat(dependentDef.reasons!);
+      if (!dependentDef.valid) reasons.push(dependentDef.reason!);
     }
 
     if (this._hasAny(prop, "readonly")) {
       const readonlyDef = this.__isReadonly(prop);
 
-      if (!readonlyDef.valid) reasons = reasons.concat(readonlyDef.reasons!);
+      if (!readonlyDef.valid) reasons.push(readonlyDef.reason!);
     }
 
     if (this._hasAny(prop, "sideEffect")) {
       const sideEffectDef = this.__isSideEffect(prop);
 
-      if (!sideEffectDef.valid)
-        reasons = reasons.concat(sideEffectDef.reasons!);
+      if (!sideEffectDef.valid) reasons.push(sideEffectDef.reason!);
     }
 
     if (this._hasAny(prop, "shouldInit") && !this._hasAny(prop, "default"))
@@ -388,29 +395,20 @@ export abstract class SchemaCore<T extends ObjectType> {
     ) {
       const laxDef = this.__isLaxProp(prop);
 
-      if (!laxDef.valid) reasons = reasons.concat(laxDef.reasons!);
+      if (!laxDef.valid) reasons.push(laxDef.reason!);
 
       reasons.push(
         "A property should at least be readonly, required, or have a default value"
       );
     }
 
-    return { reasons, valid: reasons.length === 0 };
+    return { reasons, valid: reasons.length ? false : true };
   };
 
   protected _isPropDefinitionOk = (prop: string): boolean =>
     this.__isPropDefinitionOk(prop).valid;
 
   protected __isReadonly = (prop: string) => {
-    const isPopDefOk = this._isPropDefinitionObjectOk(prop);
-
-    if (!isPopDefOk.valid) return isPopDefOk;
-
-    let reasons: string[] = [];
-
-    if (this._hasAny(prop, "required"))
-      reasons.push("readonly properties are required by default");
-
     const {
       default: _default,
       dependent,
@@ -418,24 +416,46 @@ export abstract class SchemaCore<T extends ObjectType> {
       shouldInit,
     } = this._getDefinition(prop);
 
+    const valid = false;
+
+    if (!belongsTo(readonly, [true, "lax"]))
+      return {
+        reason: "Readonly properties are either true | 'lax'",
+        valid,
+      };
+
+    if (this._hasAny(prop, "required"))
+      return {
+        valid,
+        reason: "Readonly properties are required by default",
+      };
+
     if (
       (readonly === "lax" || dependent === true || shouldInit === false) &&
       isEqual(_default, undefined)
     )
-      reasons.push(
-        "readonly properties must have a default value or a default setter"
-      );
+      return {
+        valid,
+        reason:
+          "readonly properties must have a default value or a default setter",
+      };
 
     if (readonly === "lax" && !isEqual(shouldInit, undefined))
-      reasons.push("lax properties cannot have initialization blocked");
+      return {
+        valid,
+        reason: "Lax properties cannot have initialization blocked",
+      };
 
     if (
       !belongsTo(readonly, [true, "lax"]) ||
       belongsTo(readonly, [false, undefined])
     )
-      reasons.push("readonly properties have readonly true | 'lax'");
+      return {
+        valid,
+        reason: "Readonly properties have readonly true | 'lax'",
+      };
 
-    return { reasons, valid: reasons.length === 0 };
+    return { valid: true };
   };
 
   protected _isReadonly = (prop: string) => this.__isReadonly(prop).valid;
@@ -467,42 +487,48 @@ export abstract class SchemaCore<T extends ObjectType> {
   };
 
   protected __isSideEffect = (prop: string) => {
-    let reasons: string[] = [];
-
-    const isPopDefOk = this._isPropDefinitionObjectOk(prop);
-
-    if (!isPopDefOk.valid) return isPopDefOk;
+    const valid = false;
 
     if (this._hasAny(prop, "default"))
-      reasons.push(
-        "SideEffects cannot have default values as they do not exist on instances of your model"
-      );
+      return {
+        valid,
+        reason:
+          "SideEffects cannot have default values as they do not exist on instances of your model",
+      };
 
     if (this._hasAny(prop, "dependent"))
-      reasons.push("SideEffects cannot be dependent");
+      return { valid, reason: "SideEffects cannot be dependent" };
 
     if (this._hasAny(prop, ["readonly", "required"]))
-      reasons.push("SideEffects cannot be readonly nor required");
+      return { valid, reason: "SideEffects cannot be readonly nor required" };
 
-    if (!this._isValidatorOk(prop)) reasons.push("Invalid validator");
+    if (!this._isValidatorOk(prop))
+      return { valid, reason: "Invalid validator" };
 
     if (!this._getListeners(prop, "onChange").length)
-      reasons.push("SideEffects must have at least one onChange listener");
+      return {
+        valid,
+        reason: "SideEffects must have at least one onChange listener",
+      };
 
-    if (this._getListeners(prop, "onCreate").length)
-      reasons.push("SideEffects do not support onCreate listeners");
+    if (this._hasAny(prop, "onCreate"))
+      return {
+        valid,
+        reason:
+          "SideEffects do not support onCreate listeners. Use onChange & shouldInit(false) instead",
+      };
 
-    if (this._getListeners(prop, "onUpdate").length)
-      reasons.push(
-        "SideEffects do not support onUpdate listeners any more. Use onChange instead"
-      );
+    if (this._hasAny(prop, "onUpdate"))
+      return {
+        valid,
+        reason:
+          "SideEffects do not support onUpdate listeners. Use onChange instead",
+      };
 
-    const { sideEffect } = this._getDefinition(prop);
+    if (!this._getDefinition(prop)?.sideEffect === true)
+      return { valid, reason: "SideEffects must have sideEffect as'true'" };
 
-    if (!sideEffect === true)
-      reasons.push("SideEffects must have sideEffect as'true'");
-
-    return { reasons, valid: reasons.length === 0 };
+    return { valid: true };
   };
 
   protected _isSideEffect = (prop: string): boolean =>

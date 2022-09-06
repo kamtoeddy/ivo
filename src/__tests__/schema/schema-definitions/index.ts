@@ -12,6 +12,8 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
     expect(fx).not.toThrow();
   };
 
+  const validator = () => {};
+
   describe("Schema definitions", () => {
     it("should reject if property definitions is not an object", () => {
       const values = [
@@ -66,7 +68,9 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
         const values = [false, true];
 
         for (const shouldInit of values) {
-          const toFail = fx({ propertyName: { dependent: true, shouldInit } });
+          const toFail = fx({
+            propertyName: { default: "", dependent: true, shouldInit },
+          });
 
           expectFailure(toFail);
 
@@ -86,7 +90,12 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
       it("should reject dependent & required", () => {
         const toFail = fx({
-          propertyName: { dependent: true, required: true },
+          propertyName: {
+            default: "",
+            dependent: true,
+            required: true,
+            validator,
+          },
         });
 
         expectFailure(toFail);
@@ -208,50 +217,6 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           }
         });
 
-        it("should reject dependent", () => {
-          const values = [false, true];
-
-          for (const dependent of values) {
-            const toFail = fx({ propertyName: { dependent } });
-
-            expectFailure(toFail);
-
-            try {
-              toFail();
-            } catch (err: any) {
-              expect(err.payload).toEqual(
-                expect.objectContaining({
-                  propertyName: expect.arrayContaining([
-                    "Lax properties cannot be dependent",
-                  ]),
-                })
-              );
-            }
-          }
-        });
-
-        it("should reject sideEffect", () => {
-          const values = [false, true];
-
-          for (const sideEffect of values) {
-            const toFail = fx({ propertyName: { sideEffect } });
-
-            expectFailure(toFail);
-
-            try {
-              toFail();
-            } catch (err: any) {
-              expect(err.payload).toEqual(
-                expect.objectContaining({
-                  propertyName: expect.arrayContaining([
-                    "Lax properties cannot be side effects",
-                  ]),
-                })
-              );
-            }
-          }
-        });
-
         it("should reject default + invalid onChange", () => {
           const values = [false, 1, "", undefined, true, null];
 
@@ -316,6 +281,28 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
       });
 
       describe("invalid", () => {
+        it("should reject !readonly(true | 'lax')", () => {
+          const values = [1, "", null, undefined, false];
+
+          for (const readonly of values) {
+            const toFail = fx({ propertyName: { readonly } });
+
+            expectFailure(toFail);
+
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err.payload).toEqual(
+                expect.objectContaining({
+                  propertyName: expect.arrayContaining([
+                    "Readonly properties are either true | 'lax'",
+                  ]),
+                })
+              );
+            }
+          }
+        });
+
         it("should reject readonly & required", () => {
           const values = [true, false];
 
@@ -330,7 +317,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               expect(err.payload).toEqual(
                 expect.objectContaining({
                   propertyName: expect.arrayContaining([
-                    "readonly properties are required by default",
+                    "Readonly properties are required by default",
                   ]),
                 })
               );
@@ -368,7 +355,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           } catch (err: any) {
             expect.objectContaining({
               propertyName: expect.arrayContaining([
-                "readonly properties must have a default value or a default setter",
+                "Readonly properties must have a default value or a default setter",
               ]),
             });
           }
@@ -379,7 +366,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
           for (const shouldInit of values) {
             const toFail = fx({
-              propertyName: { readonly: "lax", shouldInit },
+              propertyName: { default: "", readonly: "lax", shouldInit },
             });
 
             expectFailure(toFail);
@@ -390,7 +377,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               expect(err.payload).toEqual(
                 expect.objectContaining({
                   propertyName: expect.arrayContaining([
-                    "lax properties cannot have initialization blocked",
+                    "Lax properties cannot have initialization blocked",
                   ]),
                 })
               );
@@ -434,7 +421,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
     describe("sideEffect", () => {
       it("should reject sideEffect & no onChange listeners", () => {
-        const toFail = fx({ propertyName: { sideEffect: true } });
+        const toFail = fx({ propertyName: { sideEffect: true, validator } });
 
         expectFailure(toFail);
 
@@ -452,7 +439,9 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
       });
 
       it("should reject sideEffect & no validator ", () => {
-        const toFail = fx({ propertyName: { sideEffect: true } });
+        const toFail = fx({
+          propertyName: { sideEffect: true, onChange: validator },
+        });
 
         expectFailure(toFail);
 
