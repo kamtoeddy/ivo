@@ -461,8 +461,8 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           }
         });
 
-        it("should reject required(true) + readonly(true)", () => {
-          const values = [false, true];
+        it("should reject required(true) + dependent", () => {
+          const values = [false, true, undefined];
 
           for (const dependent of values) {
             const toFail = fx({
