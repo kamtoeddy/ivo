@@ -110,7 +110,7 @@ export abstract class SchemaCore<T extends ObjectType> {
         this._isLaxProp(prop) &&
         !isEqual(this.values[prop], this.defaults[prop]);
 
-      if (!isSideEffect && !this._isRequired(prop) && !isLaxInit) {
+      if (!isSideEffect && !this._canInit(prop) && !isLaxInit) {
         data[prop] = this._getDefaultValue(prop);
 
         return this._updateContext({ [prop]: data[prop] as any } as T);
@@ -157,7 +157,7 @@ export abstract class SchemaCore<T extends ObjectType> {
       const isLaxInit =
         this._isLaxProp(prop) && this.values.hasOwnProperty(prop);
 
-      if (!isSideEffect && !this._isRequired(prop) && !isLaxInit)
+      if (!isSideEffect && !this._canInit(prop) && !isLaxInit)
         return (data[prop] = this._getDefaultValue(prop));
 
       return this._validateAndSet(data, prop, this.values[prop]);
@@ -469,21 +469,31 @@ export abstract class SchemaCore<T extends ObjectType> {
       shouldInit,
     } = this._getDefinition(prop);
 
-    if (!isEqual(required, undefined)) return true;
+    const valid = false;
 
-    return readonly === true && belongsTo(shouldInit, [true, undefined]);
+    if (required !== true)
+      return {
+        valid,
+        reason: "Required properties must have required as 'true'",
+      };
+
+    if (this._hasAny(prop, "readonly") && dependent)
+      return { valid, reason: "Required properties cannot be dependent" };
+
+    return {
+      valid: readonly === true && belongsTo(shouldInit, [true, undefined]),
+    };
   };
 
-  protected _isRequired = (prop: string): boolean => {
+  protected _canInit = (prop: string) => {
     if (this._isDependentProp(prop)) return false;
 
-    const propDef = this._getDefinition(prop);
+    const { readonly, required, shouldInit } = this._getDefinition(prop);
 
-    const { readonly, required, shouldInit } = propDef;
-
-    if (!isEqual(required, undefined)) return true;
-
-    return readonly === true && belongsTo(shouldInit, [true, undefined]);
+    return (
+      required === true ||
+      (readonly === true && belongsTo(shouldInit, [true, undefined]))
+    );
   };
 
   protected __isSideEffect = (prop: string) => {
