@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 # v1.4.10 <small><sup>05-09-2022</sup></small>
 
 - [Docs] made docs more comprehensive
+- [Removed] removed ApiError from dist exports
 
 # v1.4.6 <small><sup>04-09-2022</sup></small>
 
