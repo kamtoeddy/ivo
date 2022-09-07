@@ -505,6 +505,52 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
     describe("sideEffect", () => {
       describe("valid", () => {
+        let User: any;
+
+        beforeAll(() => {
+          User = new Schema({
+            dependentSideNoInit: {
+              default: "",
+              dependent: true,
+            },
+            dependentSideInit: {
+              default: false,
+              dependent: true,
+              validator: validateBoolean,
+            },
+            sideNoInit: {
+              sideEffect: true,
+              shouldInit: false,
+              onChange: () => ({ dependentSideNoInit: "changed" }),
+              validator: validateBoolean,
+            },
+            sideInit: {
+              sideEffect: true,
+              onChange: onSideInitChange,
+              validator: validateBoolean,
+            },
+          }).getModel();
+
+          function onSideInitChange({ sideInit }: any) {
+            return { dependentSideInit: sideInit ? true : false };
+          }
+
+          function validateBoolean(value: any) {
+            if (![false, true].includes(value))
+              return { valid: false, reason: `${value} is not a boolean` };
+            return { valid: true };
+          }
+        });
+
+        it("should respect sideInits & sideNoInit", async () => {
+          const user = await User({ sideInit: true, name: "Peter" }).create();
+
+          expect(user).toEqual({
+            dependentSideNoInit: "",
+            dependentSideInit: true,
+          });
+        });
+
         it("should allow onChange + validator", () => {
           const toPass = fx({
             propertyName: { sideEffect: true, onChange: validator, validator },

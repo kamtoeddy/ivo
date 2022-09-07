@@ -14,7 +14,7 @@ Example:
 const { Schema } = require("clean-schema");
 
 // definition
-const userSchema = new Schema({
+const User = new Schema({
   blockUser: {
     sideEffect: true,
     onChange: makeBlocked,
@@ -25,9 +25,7 @@ const userSchema = new Schema({
     dependent: true,
     validator: validateBoolean,
   },
-});
-
-const User = userSchema.getModel();
+}).getModel();
 
 function makeBlocked({ blockUser }) {
   return { isBlocked: blockUser ? true : false };
