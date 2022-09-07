@@ -1,4 +1,4 @@
-import { makeResponse } from "../schema/SchemaUtils";
+import { makeResponse } from "../schema/utils";
 
 export function isBooleanOk(value: any) {
   if (typeof value !== "boolean")

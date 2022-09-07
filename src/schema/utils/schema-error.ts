@@ -1,11 +1,11 @@
-import { sortKeys, toArray } from "./functions";
+import { sortKeys, toArray } from "../../utils/functions";
 import {
-  SchemaErrorProps,
   ErrorPayload,
+  ErrorToolProps,
   InputPayload,
   PayloadKey,
-  ErrorToolProps,
-} from "./interfaces";
+  SchemaErrorProps,
+} from "../../utils/interfaces";
 
 export class SchemaError extends Error {
   name = "SchemaError";
@@ -37,11 +37,11 @@ export class ErrorTool extends Error {
   }
 
   get summary() {
-    return {
+    return new SchemaError({
       message: this.message,
       payload: sortKeys(this.payload),
       statusCode: this.statusCode,
-    };
+    });
   }
 
   private _has = (field: PayloadKey) => this.payload.hasOwnProperty(field);

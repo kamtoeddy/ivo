@@ -1,4 +1,4 @@
-import { makeResponse } from "../schema/SchemaUtils";
+import { makeResponse } from "../schema/utils";
 
 const failResponse = makeResponse({
   reason: "Invalid card number",

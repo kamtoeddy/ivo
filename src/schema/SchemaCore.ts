@@ -1,4 +1,3 @@
-import { ErrorTool, SchemaError } from "../utils/SchemaError";
 import { belongsTo, sort, sortKeys, toArray } from "../utils/functions";
 import { ObjectType } from "../utils/interfaces";
 import { isEqual } from "../utils/isEqual";
@@ -9,7 +8,9 @@ import {
   Schema as ns,
   StringKeys,
 } from "./interfaces";
-import { makeResponse, SchemaOptionsHelper } from "./SchemaUtils";
+import { OptionsTool } from "./utils/options-tool";
+import { makeResponse } from "./utils";
+import { ErrorTool, SchemaError } from "./utils/schema-error";
 
 export const defaultOptions = { timestamps: false };
 
@@ -18,7 +19,7 @@ const lifeCycleRules: LifeCycle.Rule[] = ["onChange", "onCreate", "onUpdate"];
 export abstract class SchemaCore<T extends ObjectType> {
   protected error = new ErrorTool({ message: "Validation Error" });
 
-  protected _helper: SchemaOptionsHelper;
+  protected _helper: OptionsTool;
   protected _options: ns.Options;
   protected _propDefinitions = {} as ns.PropertyDefinitions<T>;
 
@@ -34,7 +35,7 @@ export abstract class SchemaCore<T extends ObjectType> {
     this._propDefinitions = propDefinitions;
     this._options = options;
 
-    this._helper = new SchemaOptionsHelper(this._makeOptions(options));
+    this._helper = new OptionsTool(this._makeOptions(options));
   }
 
   // context methods
@@ -49,11 +50,11 @@ export abstract class SchemaCore<T extends ObjectType> {
   protected _throwErrors(_message?: string): void {
     if (_message) this.error.setMessage(_message);
 
-    const err = new SchemaError(this.error.summary);
+    const errorToThrow = this.error.summary;
 
     this.error.reset();
 
-    throw err;
+    throw errorToThrow;
   }
 
   protected _checkPropDefinitions = () => {
@@ -80,7 +81,7 @@ export abstract class SchemaCore<T extends ObjectType> {
     }
 
     if (this._isErroneous()) {
-      // console.log(new SchemaError(this.error.summary));
+      // console.log(this.error.summary);
       this._throwErrors();
     }
   };
