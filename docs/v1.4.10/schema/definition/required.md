@@ -2,7 +2,7 @@
 
 A property with `required === true` is one that must be initialised at creation and cloning. It must have a validator and cannot have a default value (nor setter)
 
-Out of the box, required is **`false`**
+> Out of the box, required is **`false`**
 
 Example:
 

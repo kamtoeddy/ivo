@@ -45,8 +45,6 @@ function onNameChange(context) {
 }
 ```
 
-# Properties of a schema
-
 # Properties of a model
 
 These methods are async because custom validators could be async as well.

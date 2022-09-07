@@ -504,40 +504,69 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
     });
 
     describe("sideEffect", () => {
-      it("should reject sideEffect & no onChange listeners", () => {
-        const toFail = fx({ propertyName: { sideEffect: true, validator } });
+      describe("valid", () => {
+        it("should allow onChange + validator", () => {
+          const toPass = fx({
+            propertyName: { sideEffect: true, onChange: validator, validator },
+          });
 
-        expectFailure(toFail);
+          expectNoFailure(toPass);
 
-        try {
-          toFail();
-        } catch (err: any) {
-          expect(err.payload).toEqual(
-            expect.objectContaining({
-              propertyName: expect.arrayContaining([
-                "SideEffects must have at least one onChange listener",
-              ]),
-            })
-          );
-        }
-      });
-
-      it("should reject sideEffect & no validator ", () => {
-        const toFail = fx({
-          propertyName: { sideEffect: true, onChange: validator },
+          toPass();
         });
 
-        expectFailure(toFail);
+        it("should allow onChange + shouldInit + validator", () => {
+          const toPass = fx({
+            propertyName: {
+              sideEffect: true,
+              shouldInit: true,
+              onChange: validator,
+              validator,
+            },
+          });
 
-        try {
-          toFail();
-        } catch (err: any) {
-          expect(err.payload).toEqual(
-            expect.objectContaining({
-              propertyName: expect.arrayContaining(["Invalid validator"]),
-            })
-          );
-        }
+          expectNoFailure(toPass);
+
+          toPass();
+        });
+      });
+
+      describe("valid", () => {
+        it("should reject sideEffect & no onChange listeners", () => {
+          const toFail = fx({ propertyName: { sideEffect: true, validator } });
+
+          expectFailure(toFail);
+
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toEqual(
+              expect.objectContaining({
+                propertyName: expect.arrayContaining([
+                  "SideEffects must have at least one onChange listener",
+                ]),
+              })
+            );
+          }
+        });
+
+        it("should reject sideEffect & no validator ", () => {
+          const toFail = fx({
+            propertyName: { sideEffect: true, onChange: validator },
+          });
+
+          expectFailure(toFail);
+
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toEqual(
+              expect.objectContaining({
+                propertyName: expect.arrayContaining(["Invalid validator"]),
+              })
+            );
+          }
+        });
       });
     });
   });

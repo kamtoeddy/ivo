@@ -10,7 +10,7 @@ import {
 } from "./interfaces";
 import { OptionsTool } from "./utils/options-tool";
 import { makeResponse } from "./utils";
-import { ErrorTool, SchemaError } from "./utils/schema-error";
+import { ErrorTool } from "./utils/schema-error";
 
 export const defaultOptions = { timestamps: false };
 
@@ -416,7 +416,10 @@ export abstract class SchemaCore<T extends ObjectType> {
       if (!sideEffectDef.valid) reasons.push(sideEffectDef.reason!);
     }
 
-    if (this._hasAny(prop, "shouldInit") && !this._hasAny(prop, "default"))
+    if (
+      this._hasAny(prop, "shouldInit") &&
+      !this._hasAny(prop, ["default", "sideEffect"])
+    )
       reasons.push(
         "A property with initialization blocked must have a default value"
       );
@@ -558,6 +561,12 @@ export abstract class SchemaCore<T extends ObjectType> {
   protected __isSideEffect = (prop: string) => {
     const valid = false;
 
+    if (!this._getDefinition(prop)?.sideEffect === true)
+      return { valid, reason: "SideEffects must have sideEffect as'true'" };
+
+    if (!this._isValidatorOk(prop))
+      return { valid, reason: "Invalid validator" };
+
     if (this._hasAny(prop, "default"))
       return {
         valid,
@@ -570,9 +579,6 @@ export abstract class SchemaCore<T extends ObjectType> {
 
     if (this._hasAny(prop, ["readonly", "required"]))
       return { valid, reason: "SideEffects cannot be readonly nor required" };
-
-    if (!this._isValidatorOk(prop))
-      return { valid, reason: "Invalid validator" };
 
     if (!this._getListeners(prop, "onChange").length)
       return {
@@ -593,9 +599,6 @@ export abstract class SchemaCore<T extends ObjectType> {
         reason:
           "SideEffects do not support onUpdate listeners. Use onChange instead",
       };
-
-    if (!this._getDefinition(prop)?.sideEffect === true)
-      return { valid, reason: "SideEffects must have sideEffect as'true'" };
 
     return { valid: true };
   };
