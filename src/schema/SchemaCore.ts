@@ -14,6 +14,9 @@ import { ErrorTool, SchemaError } from "./utils/schema-error";
 
 export const defaultOptions = { timestamps: false };
 
+type OptionsKey = StringKey<ns.Options>;
+
+const allowedOptions: OptionsKey[] = ["timestamps"];
 const lifeCycleRules: LifeCycle.Rule[] = ["onChange", "onCreate", "onUpdate"];
 
 export abstract class SchemaCore<T extends ObjectType> {
@@ -34,11 +37,12 @@ export abstract class SchemaCore<T extends ObjectType> {
     options: ns.Options = defaultOptions
   ) {
     this._propDefinitions = propDefinitions;
-    this._checkPropDefinitions();
-
     this._options = options;
 
-    this.optionsTool = new OptionsTool(this._makeOptions(options));
+    this._checkPropDefinitions();
+    this._checkOptions();
+
+    this.optionsTool = new OptionsTool(this._makeTimestamps());
   }
 
   // context methods
@@ -50,7 +54,7 @@ export abstract class SchemaCore<T extends ObjectType> {
     (this.context = { ...this.context, ...updates });
 
   // error methods
-  protected _throwError(_message?: string): void {
+  protected _throwError(_message?: string): never {
     if (_message) this.error.setMessage(_message);
 
     const errorToThrow = this.error.summary;
@@ -59,6 +63,56 @@ export abstract class SchemaCore<T extends ObjectType> {
 
     throw errorToThrow;
   }
+
+  protected _canInit = (prop: string) => {
+    if (this._isDependentProp(prop)) return false;
+
+    const { readonly, required, shouldInit } = this._getDefinition(prop);
+
+    return (
+      required === true ||
+      (readonly === true && belongsTo(shouldInit, [true, undefined]))
+    );
+  };
+
+  protected _checkOptions = () => {
+    this.error.setMessage("Invalid Schema");
+    this.error.statusCode = 500;
+
+    if (
+      !this._options ||
+      typeof this._options !== "object" ||
+      Array.isArray(this._options)
+    ) {
+      this.error.add("schema options", "Must be an object");
+      this._throwError();
+    }
+
+    let options = Object.keys(this._options) as OptionsKey[];
+
+    if (!options.length) {
+      this.error.add("schema options", "Cannot be empty");
+      this._throwError();
+    }
+
+    for (let option of options)
+      if (!allowedOptions.includes(option)) {
+        this.error.add(option, "Invalid option");
+        this._throwError();
+      }
+
+    if (this._options.hasOwnProperty("timestamps")) {
+      const ts_valid = this._isTimestampsOk();
+
+      if (ts_valid.valid) {
+      } else {
+        this.error.add("timestamps", ts_valid.reason!);
+        this._throwError();
+      }
+    }
+
+    this.error.reset();
+  };
 
   protected _checkPropDefinitions = () => {
     this.error.setMessage("Invalid Schema");
@@ -83,13 +137,8 @@ export abstract class SchemaCore<T extends ObjectType> {
       if (!isDefOk.valid) this.error.add(prop, isDefOk.reasons!);
     }
 
-    if (this._isErroneous()) {
-      // console.log(this.error.summary);
-
-      this._throwError();
-    } else {
-      this.error.reset();
-    }
+    if (this._isErroneous()) this._throwError();
+    else this.error.reset();
   };
 
   protected _getCloneObject = async (reset: StringKey<T>[] = []) => {
@@ -506,17 +555,6 @@ export abstract class SchemaCore<T extends ObjectType> {
     return { valid: true };
   };
 
-  protected _canInit = (prop: string) => {
-    if (this._isDependentProp(prop)) return false;
-
-    const { readonly, required, shouldInit } = this._getDefinition(prop);
-
-    return (
-      required === true ||
-      (readonly === true && belongsTo(shouldInit, [true, undefined]))
-    );
-  };
-
   protected __isSideEffect = (prop: string) => {
     const valid = false;
 
@@ -575,6 +613,44 @@ export abstract class SchemaCore<T extends ObjectType> {
     return this._isSideEffect(prop) && belongsTo(shouldInit, [true, undefined]);
   };
 
+  private _isTimestampsOk() {
+    const { timestamps } = this._options,
+      valid = false;
+
+    const ts_type = typeof timestamps;
+
+    if (ts_type === "boolean") return { valid: true };
+
+    if (
+      ts_type !== "object" ||
+      (ts_type === "object" && (!timestamps || Array.isArray(timestamps)))
+    )
+      return {
+        valid,
+        reason: "should be 'boolean' or 'non null object'",
+      };
+
+    if (!Object.keys(timestamps!).length)
+      return { valid, reason: "cannot be an empty object" };
+
+    const { createdAt, updatedAt } = timestamps as {
+      createdAt: "";
+      updatedAt: "";
+    };
+
+    const _props = this.props as string[];
+
+    for (const ts_key of [createdAt, updatedAt]) {
+      if (ts_key && _props?.includes(ts_key))
+        return { valid, reason: `'${ts_key}' already belongs to your schema` };
+    }
+
+    if (createdAt === updatedAt)
+      return { valid, reason: "createdAt & updatedAt cannot be same" };
+
+    return { valid: true };
+  }
+
   protected _isUpdatable = (prop: string) => {
     if (this._isSideEffect(prop)) return true;
 
@@ -600,7 +676,9 @@ export abstract class SchemaCore<T extends ObjectType> {
   protected _isValidatorOk = (prop: string) =>
     this._isFunction(this._getDefinition(prop)?.validator);
 
-  private _makeOptions(options: ns.Options): Private_ISchemaOptions {
+  private _makeTimestamps(): Private_ISchemaOptions {
+    const options = this._options;
+
     if (!options) return { timestamps: { createdAt: "", updatedAt: "" } };
 
     let { timestamps } = options;
@@ -616,25 +694,8 @@ export abstract class SchemaCore<T extends ObjectType> {
       return { ...options, timestamps: _timestamps };
     }
 
-    const _error = new ErrorTool({
-      message: "Invalid schema options",
-      statusCode: 500,
-    });
-
     const custom_createdAt = timestamps?.createdAt;
     const custom_updatedAt = timestamps?.updatedAt;
-
-    const _props = this.props as string[];
-
-    [custom_createdAt, custom_updatedAt].forEach((value) => {
-      if (value && _props?.includes(value as StringKey<T>))
-        _error.add(value, `'${value}' already belong to your schema`);
-    });
-
-    if (custom_createdAt === custom_updatedAt)
-      _error.add("timestamp", `createdAt & updatedAt cannot be same`);
-
-    if (_error.isPayloadLoaded) throw _error;
 
     if (custom_createdAt) createdAt = custom_createdAt;
     if (custom_updatedAt) updatedAt = custom_updatedAt;
@@ -730,9 +791,11 @@ export abstract class SchemaCore<T extends ObjectType> {
     prop: StringKey<T>,
     value: any
   ) => {
-    const { reasons, valid, validated } = await this._validate(prop, value);
+    let { reasons, valid, validated } = await this._validate(prop, value);
 
     if (!valid) return this.error.add(prop, reasons);
+
+    if (isEqual(validated, undefined)) validated = value;
 
     if (!this._isSideEffect(prop)) operationData[prop] = validated;
 

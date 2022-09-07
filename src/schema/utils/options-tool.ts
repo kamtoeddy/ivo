@@ -1,20 +1,23 @@
-import { ITimestamp, Private_ISchemaOptions } from "../interfaces";
+import { ITimestamp, Private_ISchemaOptions, StringKey } from "../interfaces";
+
+type TimestampKey = StringKey<ITimestamp>;
 
 export class OptionsTool {
-  private keys: ITimestamp;
+  private ts_keys: TimestampKey[];
+  private timestamps: ITimestamp;
 
   constructor(config: Private_ISchemaOptions) {
     const { timestamps } = config;
 
-    this.keys = timestamps;
+    this.timestamps = timestamps;
+    this.ts_keys = Object.keys(timestamps) as TimestampKey[];
   }
 
-  getCreateKey = () => this.keys.createdAt;
-  getUpdateKey = () => this.keys.updatedAt;
-  isTimestampKey = (key: string) =>
-    [this.keys.createdAt, this.keys.updatedAt].includes(key);
+  getCreateKey = () => this.timestamps.createdAt;
+  getUpdateKey = () => this.timestamps.updatedAt;
+  isTimestampKey = (key: string) => this.ts_keys.includes(key as TimestampKey);
 
   get withTimestamps() {
-    return !!(this.keys.createdAt || this.keys.updatedAt);
+    return !!(this.timestamps.createdAt || this.timestamps.updatedAt);
   }
 }
