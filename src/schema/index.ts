@@ -67,6 +67,12 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     super(schema.propDefinitions, schema.options);
   }
 
+  clone = async (options: ns.CloneOptions<T> = { reset: [] }) => {
+    return this._getCloneObject(toArray(options.reset).filter(this._isProp));
+  };
+
+  create = async () => this._getCreateObject();
+
   setValues(values: Partial<T>) {
     const keys = Object.keys(values).filter(
       (key) =>
@@ -80,12 +86,6 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     sort(keys).forEach((key) => (this.values[key] = values[key]));
     this._initContext();
   }
-
-  clone = async (options: ns.CloneOptions<T> = { reset: [] }) => {
-    return this._getCloneObject(toArray(options.reset).filter(this._isProp));
-  };
-
-  create = async () => this._getCreateObject();
 
   update = async (changes: Partial<T>) => {
     const updated = {};
