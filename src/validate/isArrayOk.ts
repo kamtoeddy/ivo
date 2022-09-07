@@ -1,4 +1,4 @@
-import { makeResponse } from "../schema/SchemaUtils";
+import { makeResponse } from "../schema/utils";
 import { getUniqueBy } from "../utils/getUniqueBy";
 import { IArrayOptions } from "../utils/interfaces";
 

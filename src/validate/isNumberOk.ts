@@ -1,4 +1,4 @@
-import { makeResponse } from "../schema/SchemaUtils";
+import { makeResponse } from "../schema/utils";
 import { NumberRangeType } from "../utils/interfaces";
 
 export type RangeType = undefined | NumberRangeType;

@@ -1,4 +1,4 @@
-export type StringKeys<T> = Extract<keyof T, string>;
+export type StringKey<T> = Extract<keyof T, string>;
 
 export namespace Schema {
   export type PropertyDefinitions<T> = {
@@ -24,11 +24,11 @@ export namespace Schema {
 
   // options
   export interface CloneOptions<T> {
-    reset?: StringKeys<T> | StringKeys<T>[];
+    reset?: StringKey<T> | StringKey<T>[];
   }
 
   export interface ExtensionOptions<T> {
-    remove?: StringKeys<T> | StringKeys<T>[];
+    remove?: StringKey<T> | StringKey<T>[];
   }
 
   export interface Options {

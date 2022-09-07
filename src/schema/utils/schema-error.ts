@@ -1,20 +1,35 @@
-import { sortKeys, toArray } from "./functions";
+import { sortKeys, toArray } from "../../utils/functions";
 import {
-  ApiErrorProps,
   ErrorPayload,
+  ErrorToolProps,
   InputPayload,
   PayloadKey,
-} from "./interfaces";
+  SchemaErrorProps,
+} from "../../utils/interfaces";
 
-export class ApiError extends Error {
-  name = "ApiError";
+export class SchemaError extends Error {
+  name = "SchemaError";
   payload: ErrorPayload = {};
   statusCode: number;
 
-  constructor({ message, payload = {}, statusCode = 400 }: ApiErrorProps) {
+  constructor({ message, payload = {}, statusCode = 400 }: SchemaErrorProps) {
     super(message);
-    this._setPayload(payload);
+    this.payload = payload;
     this.statusCode = statusCode;
+  }
+}
+
+export class ErrorTool extends Error {
+  payload: ErrorPayload = {};
+  statusCode: number;
+  private _initMessage: string;
+  private _initStatusCode: number;
+
+  constructor({ message, payload = {}, statusCode = 400 }: ErrorToolProps) {
+    super(message);
+    this._initMessage = message;
+    this._initStatusCode = this.statusCode = statusCode;
+    this._setPayload(payload);
   }
 
   get isPayloadLoaded() {
@@ -22,11 +37,11 @@ export class ApiError extends Error {
   }
 
   get summary() {
-    return {
+    return new SchemaError({
       message: this.message,
       payload: sortKeys(this.payload),
       statusCode: this.statusCode,
-    };
+    });
   }
 
   private _has = (field: PayloadKey) => this.payload.hasOwnProperty(field);
@@ -35,8 +50,6 @@ export class ApiError extends Error {
     Object.entries(payload).forEach(([key, value]) => {
       this.add(key, value);
     });
-
-    this.payload = sortKeys(this.payload);
   };
 
   add(field: PayloadKey, value?: string | string[]) {
@@ -51,13 +64,16 @@ export class ApiError extends Error {
     return this;
   }
 
-  clear = () => {
-    this.payload = {};
+  remove = (field: PayloadKey) => {
+    delete this.payload?.[field];
     return this;
   };
 
-  remove = (field: PayloadKey) => {
-    delete this.payload?.[field];
+  reset = () => {
+    this.message = this._initMessage;
+    this.payload = {};
+    this.statusCode = this._initStatusCode;
+
     return this;
   };
 

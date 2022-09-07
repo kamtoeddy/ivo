@@ -15,6 +15,9 @@ describe("Testing non-inherited properties for StoreItemChild", () => {
   // creation
   it("should have the correct properties at creation", () => {
     expect(item).toMatchObject({ childID: "1" });
+
+    expect(item).toHaveProperty("createdAt");
+    expect(item).toHaveProperty("updatedAt");
   });
 
   // updates
@@ -26,5 +29,6 @@ describe("Testing non-inherited properties for StoreItemChild", () => {
 
     expect(update.childID).toBe(undefined);
     expect(update).toMatchObject({ name: "Guiness" });
+    expect(update).toHaveProperty("updatedAt");
   });
 });

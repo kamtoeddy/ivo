@@ -1,4 +1,4 @@
-import { makeResponse } from "../schema/SchemaUtils";
+import { makeResponse } from "../schema/utils";
 import { belongsTo } from "../utils/functions";
 import { IStringOptions } from "../utils/interfaces";
 
