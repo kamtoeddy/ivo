@@ -23,4 +23,4 @@ const validator = (value: any, validationContext): IValidationResults => {
 
 ## Built-in validation helpers
 
-clean-schema has some built-in validators. Feel free to use or build you own validators based on these. Each returns an object with the following structure:
+Clean-schema has some built-in validators. Feel free to use or build you own validators based on these. Each returns an object with the following structure:
