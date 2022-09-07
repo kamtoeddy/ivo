@@ -33,3 +33,5 @@ function onNameChange(context) {
   return { fullName: `${firstName} ${lastName}` };
 }
 ```
+
+## Required Error

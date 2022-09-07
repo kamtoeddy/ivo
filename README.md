@@ -135,10 +135,11 @@ await db.update({ id: 1 }, userUpdate);
 ## Docs
 
 - [Defining a schema](./docs/v1.4.10/schema/definition/index.md#defining-a-schema)
+  - [constant properties](./docs/v1.5.0/schema/definition/constants.md#constant-properties)
   - [default values](./docs/v1.4.10/schema/definition/defaults.md#default-values)
   - [dependent properties](./docs/v1.4.10/schema/definition/dependents.md#dependent-properties)
   - [readonly properties](./docs/v1.4.10/schema/definition/readonly.md#readonly-properties)
-  - [required properties](./docs/v1.4.10/schema/definition/required.md#required-properties)
+  - [required properties](./docs/v1.5.0/schema/definition/required.md#required-properties)
   - [side effects](./docs/v1.4.10/schema/definition/side-effects.md#side-effect-properties)
   - [validators]()
 - [Inheritance](./docs/v1.4.6/schema/inheritance.md)
