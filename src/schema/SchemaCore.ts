@@ -17,9 +17,6 @@ export const defaultOptions = { timestamps: false };
 const lifeCycleRules: LifeCycle.Rule[] = ["onChange", "onCreate", "onUpdate"];
 
 export abstract class SchemaCore<T extends ObjectType> {
-  protected error = new ErrorTool({ message: "Validation Error" });
-
-  protected _helper: OptionsTool;
   protected _options: ns.Options;
   protected _propDefinitions = {} as ns.PropertyDefinitions<T>;
 
@@ -27,6 +24,10 @@ export abstract class SchemaCore<T extends ObjectType> {
   protected defaults: Partial<T> = {};
   protected props: StringKey<T>[] = [];
   protected values: Partial<T> = {};
+
+  // helpers
+  protected error = new ErrorTool({ message: "Validation Error" });
+  protected optionsTool: OptionsTool;
 
   constructor(
     propDefinitions: ns.PropertyDefinitions<T>,
@@ -37,7 +38,7 @@ export abstract class SchemaCore<T extends ObjectType> {
 
     this._options = options;
 
-    this._helper = new OptionsTool(this._makeOptions(options));
+    this.optionsTool = new OptionsTool(this._makeOptions(options));
   }
 
   // context methods
@@ -698,10 +699,10 @@ export abstract class SchemaCore<T extends ObjectType> {
   };
 
   protected _useConfigProps = (obj: T | Partial<T>, asUpdate = false) => {
-    if (!this._helper.withTimestamps) return sortKeys(obj);
+    if (!this.optionsTool.withTimestamps) return sortKeys(obj);
 
-    const createdAt = this._helper.getCreateKey(),
-      updatedAt = this._helper.getUpdateKey();
+    const createdAt = this.optionsTool.getCreateKey(),
+      updatedAt = this.optionsTool.getUpdateKey();
 
     const results = asUpdate
       ? { ...obj, [updatedAt]: new Date() }

@@ -76,7 +76,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
   setValues(values: Partial<T>) {
     const keys = Object.keys(values).filter(
       (key) =>
-        this._helper.isTimestampKey(key) ||
+        this.optionsTool.isTimestampKey(key) ||
         this._isProp(key) ||
         this._isSideEffect(key)
     ) as StringKey<T>[];
