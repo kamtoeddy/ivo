@@ -1,4 +1,4 @@
-import { belongsTo, sort, sortKeys, toArray } from "../utils/functions";
+import { belongsTo, sortKeys, toArray } from "../utils/functions";
 import { ObjectType } from "../utils/interfaces";
 import { isEqual } from "../utils/isEqual";
 import {
