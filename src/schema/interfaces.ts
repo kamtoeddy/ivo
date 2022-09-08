@@ -57,7 +57,6 @@ export namespace Schema {
     onUpdate?: LifeCycles.Listener<T> | NonEmptyArray<LifeCycles.Listener<T>>;
     readonly?: boolean | "lax";
     required?: boolean;
-    sideEffect?: boolean;
     shouldInit?: boolean;
     validator?: Validator<T, K>;
   };
