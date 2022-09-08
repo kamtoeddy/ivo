@@ -118,6 +118,9 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     const linkedProps = toUpdate.filter((prop) => !this._isSideEffect(prop));
     const sideEffects = toUpdate.filter(this._isSideEffect);
 
+    if (!Object.keys(updated).length && !sideEffects.length)
+      this._throwError("Nothing to update");
+
     await this._resolveLinked(updated, linkedProps, "onUpdate");
 
     await this._resolveLinked(updated, sideEffects, "onUpdate");

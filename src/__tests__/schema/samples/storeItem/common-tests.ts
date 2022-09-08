@@ -178,6 +178,18 @@ export const CommonInheritanceTest = (
         });
       });
 
+      it("should ignore properties that have not changed", () => {
+        const toFail = () =>
+          Model(item).update({
+            name: "beer",
+            price: 5,
+            measureUnit: "bottle",
+            quantity: 100,
+          });
+
+        expect(toFail).rejects.toThrow("Nothing to update");
+      });
+
       it("should update on side effects", async () => {
         const update = await Model(item).update({
           quantities: [
