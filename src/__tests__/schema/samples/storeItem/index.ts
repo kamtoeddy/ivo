@@ -17,6 +17,7 @@ const storeItemSchema = new Schema<IStoreItem>(
       default: () => 0,
       // default: () => "",
       // validator: () => true,
+      // validator: () => ({valid:true}),
       readonly: true,
       dependent: true,
     },

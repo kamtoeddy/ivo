@@ -345,6 +345,26 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           }
         });
 
+        it("should reject readonly(lax) + dependent", () => {
+          const toFail = fx({
+            propertyName: { default: "", readonly: "lax", dependent: true },
+          });
+
+          expectFailure(toFail);
+
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toEqual(
+              expect.objectContaining({
+                propertyName: expect.arrayContaining([
+                  "Readonly(lax) properties cannot be dependent",
+                ]),
+              })
+            );
+          }
+        });
+
         it("should reject readonly(lax) & no default", () => {
           const toFail = fx({ propertyName: { readonly: "lax" } });
 

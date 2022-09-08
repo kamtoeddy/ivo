@@ -21,7 +21,7 @@ const lifeCycleRules: LifeCycles.Rule[] = ["onChange", "onCreate", "onUpdate"];
 
 export abstract class SchemaCore<T extends ObjectType> {
   protected _options: ns.Options;
-  protected _propDefinitions = {} as ns.InternalDefinitions<T>;
+  protected _propDefinitions = {} as ns.Definitions<T>;
 
   protected context: T = {} as T;
   protected defaults: Partial<T> = {};
@@ -33,7 +33,7 @@ export abstract class SchemaCore<T extends ObjectType> {
   protected optionsTool: OptionsTool;
 
   constructor(
-    propDefinitions: ns.InternalDefinitions<T>,
+    propDefinitions: ns.Definitions<T>,
     options: ns.Options = defaultOptions
   ) {
     this._propDefinitions = propDefinitions;
@@ -491,6 +491,9 @@ export abstract class SchemaCore<T extends ObjectType> {
         reason:
           "Strictly readonly properties are required. Remove the required rule",
       };
+
+    if (readonly === "lax" && !isEqual(dependent, undefined))
+      return { valid, reason: "Readonly(lax) properties cannot be dependent" };
 
     if (
       (readonly === "lax" || dependent === true || shouldInit === false) &&

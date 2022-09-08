@@ -4,19 +4,20 @@ export namespace Schema {
   export type PropertyDefinitions<T> = {
     [K in keyof T]?:
       | Constant<T, K>
-      | DefinitionRule<T, K>
+      | Property<T, K>
       | Dependent<T, K>
+      | Readonly<T, K>
+      | ReadonlyNoInit<T, K>
+      | RequiredReadonly<T, K>
+      | Required<T, K>
       | SideEffect<T, K>;
   };
 
-  export type InternalDefinitions<T> = {
-    [K in keyof T]?: {
+  export type Definitions<T> = {
+    [K in keyof T]?: Listenable<T> & {
       constant?: any;
       default?: any;
       dependent?: boolean;
-      onChange?: LifeCycles.Listener<T> | NonEmptyArray<LifeCycles.Listener<T>>;
-      onCreate?: LifeCycles.Listener<T> | NonEmptyArray<LifeCycles.Listener<T>>;
-      onUpdate?: LifeCycles.Listener<T> | NonEmptyArray<LifeCycles.Listener<T>>;
       readonly?: boolean | "lax";
       required?: boolean;
       sideEffect?: boolean;
@@ -26,6 +27,12 @@ export namespace Schema {
     };
   };
 
+  type Listenable<T> = {
+    onChange?: LifeCycles.Listener<T> | NonEmptyArray<LifeCycles.Listener<T>>;
+    onCreate?: LifeCycles.Listener<T> | NonEmptyArray<LifeCycles.Listener<T>>;
+    onUpdate?: LifeCycles.Listener<T> | NonEmptyArray<LifeCycles.Listener<T>>;
+  };
+
   type Constant<T, K extends keyof T> = {
     constant: boolean;
     default?: undefined;
@@ -33,13 +40,40 @@ export namespace Schema {
     value: T[K] | Setter<T, K>;
   };
 
-  type Dependent<T, K extends keyof T> = {
+  type Dependent<T, K extends keyof T> = Listenable<T> & {
     default: T[K] | Setter<T, K>;
     dependent: true;
-    onChange?: LifeCycles.Listener<T> | NonEmptyArray<LifeCycles.Listener<T>>;
-    onCreate?: LifeCycles.Listener<T> | NonEmptyArray<LifeCycles.Listener<T>>;
-    onUpdate?: LifeCycles.Listener<T> | NonEmptyArray<LifeCycles.Listener<T>>;
-    readonly?: boolean | "lax";
+    readonly?: boolean;
+    validator?: Validator<T, K>;
+  };
+
+  type Property<T, K extends keyof T> = Listenable<T> & {
+    default: T[K] | Setter<T, K>;
+    readonly?: "lax";
+    shouldInit?: boolean;
+    validator?: Validator<T, K>;
+  };
+
+  type Readonly<T, K extends keyof T> = Listenable<T> & {
+    default: T[K] | Setter<T, K>;
+    readonly: "lax";
+    validator: Validator<T, K>;
+  };
+
+  type ReadonlyNoInit<T, K extends keyof T> = Listenable<T> & {
+    default: T[K] | Setter<T, K>;
+    readonly: true;
+    shouldInit: false;
+    validator?: Validator<T, K>;
+  };
+
+  type RequiredReadonly<T, K extends keyof T> = Listenable<T> & {
+    readonly: true;
+    validator: Validator<T, K>;
+  };
+
+  type Required<T, K extends keyof T> = Listenable<T> & {
+    required: true;
     validator: Validator<T, K>;
   };
 
@@ -48,17 +82,6 @@ export namespace Schema {
     onChange: LifeCycles.Listener<T> | NonEmptyArray<LifeCycles.Listener<T>>;
     shouldInit?: boolean;
     validator: Validator<T, K>;
-  };
-
-  export type DefinitionRule<T, K extends keyof T> = {
-    default?: T[K] | Setter<T, K>;
-    onChange?: LifeCycles.Listener<T> | NonEmptyArray<LifeCycles.Listener<T>>;
-    onCreate?: LifeCycles.Listener<T> | NonEmptyArray<LifeCycles.Listener<T>>;
-    onUpdate?: LifeCycles.Listener<T> | NonEmptyArray<LifeCycles.Listener<T>>;
-    readonly?: boolean | "lax";
-    required?: boolean;
-    shouldInit?: boolean;
-    validator?: Validator<T, K>;
   };
 
   // options
