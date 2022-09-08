@@ -1,5 +1,6 @@
 import { sort, toArray } from "../utils/functions";
 import { ObjectType } from "../utils/interfaces";
+import { isEqual } from "../utils/isEqual";
 import { Schema as ns, StringKey } from "./interfaces";
 import { defaultOptions, SchemaCore } from "./SchemaCore";
 
@@ -88,14 +89,25 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
   }
 
   update = async (changes: Partial<T>) => {
-    const updated = {};
+    const updated = {} as Partial<T>;
 
     const toUpdate = Object.keys(changes ?? {}).filter((prop) =>
       this._isUpdatable(prop)
     ) as StringKey<T>[];
 
-    const validations = toUpdate.map((prop) => {
-      return this._validateAndSet(updated, prop, changes[prop]);
+    const validations = toUpdate.map(async (prop) => {
+      const value = changes[prop];
+      let { reasons, valid, validated } = await this._validate(prop, value);
+
+      if (!valid) return this.error.add(prop, reasons);
+
+      if (isEqual(validated, undefined)) validated = value;
+
+      if (isEqual(validated, this.values[prop])) return;
+
+      if (!this._isSideEffect(prop)) updated[prop] = validated;
+
+      this._updateContext({ [prop]: validated } as T);
     });
 
     await Promise.all(validations);
@@ -104,6 +116,9 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
 
     const linkedProps = toUpdate.filter((prop) => !this._isSideEffect(prop));
     const sideEffects = toUpdate.filter(this._isSideEffect);
+
+    if (!Object.keys(updated).length && !sideEffects.length)
+      this._throwError("Nothing to update");
 
     await this._resolveLinked(linkedProps, updated, "onUpdate");
 
