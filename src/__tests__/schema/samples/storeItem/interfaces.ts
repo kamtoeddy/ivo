@@ -13,7 +13,7 @@ export interface IStoreItem {
   _readOnlyLax1: string;
   _readOnlyLax2: string;
   _readOnlyNoInit?: any;
-  _dependentReadOnly?: any;
+  _dependentReadOnly?: number;
   _sideEffectForDependentReadOnly?: any;
   id: string;
   name: string;

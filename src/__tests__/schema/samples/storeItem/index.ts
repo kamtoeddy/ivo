@@ -45,7 +45,7 @@ const storeItemSchema = new Schema<IStoreItem>(
       validator: validateQuantities,
     },
     quantity: {
-      default: 0,
+      default: () => 0,
       onChange: onQuantityChange,
       validator: validateQuantity,
     },
