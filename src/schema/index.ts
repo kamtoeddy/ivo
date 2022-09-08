@@ -77,7 +77,6 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     const keys = Object.keys(values).filter(
       (key) =>
         this.optionsTool.isTimestampKey(key) ||
-        !this._isConstant(key) ||
         this._isProp(key) ||
         this._isSideEffect(key)
     ) as StringKey<T>[];
@@ -85,6 +84,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     this.values = {};
 
     sort(keys).forEach((key) => (this.values[key] = values[key]));
+
     this._initContext();
   }
 
@@ -106,9 +106,9 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     const linkedProps = toUpdate.filter((prop) => !this._isSideEffect(prop));
     const sideEffects = toUpdate.filter(this._isSideEffect);
 
-    await this._resolveLinked(linkedProps, updated, "onUpdate");
+    await this._resolveLinked(updated, linkedProps, "onUpdate");
 
-    await this._resolveLinked(sideEffects, updated, "onUpdate");
+    await this._resolveLinked(updated, sideEffects, "onUpdate");
 
     if (!Object.keys(updated).length) this._throwError("Nothing to update");
 

@@ -57,7 +57,7 @@ These methods are async because custom validators could be async as well.
 
 | Property      | Type                    | Description                                                                                                                                                              |
 | ------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| constant      | boolean                 | use with **`value`** rule to specify a property with a forever constant value. [more](./constants.md#constant-properties)                                                |
+| constant      | boolean                 | use with **`value`** rule to specify a property with a forever constant value. [more](./constants.md#constant-properties-v150)                                           |
 | default       | any \| function         | the default value of a propterty. [more](../../../v1.4.10/schema/definition/defaults.md#default-values)                                                                  |
 | dependent     | boolean                 | to block the direct modification of a property. [more](../../../v1.4.10/schema/definition/dependents.md#dependent-properties)                                            |
 | onChange      | function \| function[ ] | executed at creation `(unless shouldInit === false)`, during cloning and updates [more](../../../v1.4.10/schema/definition/../life-cycles.md#onchange)                   |
@@ -65,11 +65,11 @@ These methods are async because custom validators could be async as well.
 | onUpdate      | function \| function[ ] | executed during updates [more](../../../v1.4.10/schema/definition/../life-cycles.md#onupdate)                                                                            |
 | readonly      | boolean \| 'lax'        | a propterty whose value should not change [more](../../../v1.4.10/schema/definition/readonly.md#readonly-properties)                                                     |
 | required      | boolean \| function     | a property that must be set during an operation [more](./required.md#required-properties)                                                                                |
-| requiredError | any \| function         | a property that must be set at creation [more](./required.md#required-error)                                                                                             |
+| requiredError | any \| function         | the error message to use when using a callable required property [more](./required.md#required-error-v150)                                                               |
 | sideEffect    | boolean                 | a property used to modify other properties but don't appear on instances of your model [more](../../../v1.4.10/schema/definition/side-effects.md#side-effect-properties) |
 | shouldInit    | boolean                 | Tells clean-schema whether or not a property should be initialized. Default **true**                                                                                     |
 | validator     | function                | A function (async / sync) used to validated the value of a property. [more](../../../v1.4.6/validate/index.md#validators)                                                |
-| value         | any \| function         | value or setter of constant property. [more](./constants.md#value)                                                                                                       |
+| value         | any \| function         | value or setter of constant property. [more](./constants.md#constant-properties-v150`)                                                                                   |
 
 ## Options
 

@@ -34,4 +34,4 @@ function onNameChange(context) {
 }
 ```
 
-## Required Error
+## Required Error (v.1.5.0)

@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-# v1.5.0 <small><sup>08-09-2022</sup></small>
+# v1.5.0 <small><sup>09-09-2022</sup></small>
 
 - [Added] constant properties
 - [Added] callable required properties

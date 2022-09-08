@@ -15,9 +15,6 @@ const storeItemSchema = new Schema<IStoreItem>(
   {
     _dependentReadOnly: {
       default: () => 0,
-      // default: () => "",
-      // validator: () => true,
-      // validator: () => ({valid:true}),
       readonly: true,
       dependent: true,
     },
@@ -48,9 +45,7 @@ const storeItemSchema = new Schema<IStoreItem>(
       validator: validateQuantities,
     },
     quantity: {
-      default: 0,
-      // validator: () => true,
-      // default: 0,
+      default: () => 0,
       onChange: onQuantityChange,
       validator: validateQuantity,
     },

@@ -1,8 +1,8 @@
-## Constant Properties
+## Constant Properties (v1.5.0)
 
-> **`undefined`** is used as default value for all properties out of the box.
+This type of property is set at creation or cloning and never changes. It requires # rules: **`constant`** & [**`value`**](#value) and [**`onCreate`**](../../../v1.4.10/schema/life-cycles.md#oncreate) which is optional.
 
-## Value
+constant must be true and value is either an fixed value or a setter (sync function returns generated value)
 
 Example:
 
@@ -16,11 +16,11 @@ const userSchema = new Schema({
   },
   id: {
     constant: true,
-    value: () => "",
+    value: (ctx) => `${ctx.userName}-${Date.now}`,
   },
-  initialFollowersCount: {
-    constant: true,
-    value: 0,
+  userName: {
+    required: true,
+    validator: validateUserName,
   },
 });
 ```

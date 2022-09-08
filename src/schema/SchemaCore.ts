@@ -152,6 +152,9 @@ export abstract class SchemaCore<T extends ObjectType> {
     const props = [...Array.from(this.props), ...sideEffects];
 
     const validations = props.map((prop) => {
+      if (this._isConstant(prop))
+        return (data[prop] = this._getValueBy(prop, "value"));
+
       const isSideEffect = sideEffects.includes(prop);
 
       if (isSideEffect && !this._isSideInit(prop)) return;
@@ -181,9 +184,9 @@ export abstract class SchemaCore<T extends ObjectType> {
 
     const linkedProps = this._getCreatePropsWithListeners();
 
-    await this._resolveLinked(linkedProps, data, "onCreate");
+    await this._resolveLinked(data, linkedProps, "onCreate");
 
-    await this._resolveLinked(sideEffects, data, "onCreate");
+    await this._resolveLinked(data, sideEffects, "onCreate");
 
     return this._useConfigProps(data) as T;
   };
@@ -228,9 +231,9 @@ export abstract class SchemaCore<T extends ObjectType> {
 
     const linkedProps = this._getCreatePropsWithListeners();
 
-    await this._resolveLinked(linkedProps, data, "onCreate");
+    await this._resolveLinked(data, linkedProps, "onCreate");
 
-    await this._resolveLinked(sideEffects, data, "onCreate");
+    await this._resolveLinked(data, sideEffects, "onCreate");
 
     return this._useConfigProps(data) as T;
   };
@@ -722,6 +725,8 @@ export abstract class SchemaCore<T extends ObjectType> {
   }
 
   protected _isUpdatable = (prop: string) => {
+    if (this._isConstant(prop)) return false;
+
     if (this._isSideEffect(prop)) return true;
 
     if (!this._isProp(prop) || this._isDependentProp(prop)) return false;
@@ -740,7 +745,9 @@ export abstract class SchemaCore<T extends ObjectType> {
     value: any,
     context: ObjectType = this._getContext()
   ) => {
-    return !this._isProp(prop) ? false : !isEqual(value, context?.[prop]);
+    return this._isConstant(prop) || !this._isProp(prop)
+      ? false
+      : !isEqual(value, context?.[prop]);
   };
 
   protected _isValidatorOk = (prop: string) =>
@@ -774,12 +781,12 @@ export abstract class SchemaCore<T extends ObjectType> {
   }
 
   protected _resolveLinked = async (
+    operationData: Partial<T>,
     props: StringKey<T>[],
-    context: Partial<T>,
     lifeCycle: LifeCycles.Rule
   ) => {
     const listenersUpdates = props.map((prop) => {
-      return this._resolveLinkedProps(context, prop, lifeCycle);
+      return this._resolveLinkedProps(operationData, prop, lifeCycle);
     });
 
     await Promise.all(listenersUpdates);

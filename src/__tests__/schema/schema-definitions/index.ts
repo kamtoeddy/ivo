@@ -53,19 +53,50 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           User = new Schema({
             id: {
               constant: true,
-              value: () => "id",
+              onCreate: ({ laxProp }: any) => ({ laxProp: laxProp + 2 }),
+              value: (ctx: any) => (ctx?.id === "id" ? "id-2" : "id"),
             },
             parentId: {
               constant: true,
               value: "parent id",
             },
+            laxProp: {
+              default: 0,
+              onUpdate: ({ laxProp }: any) => {
+                if (laxProp === "update id") return { id: "new id" };
+              },
+            },
           }).getModel();
 
-          user = await User({ id: 2, parentId: [] }).create();
+          user = await User({ id: 2, parentId: [], laxProp: 2 }).create();
         });
 
         it("should set constants at creation", () => {
-          expect(user).toEqual({ id: "id", parentId: "parent id" });
+          expect(user).toEqual({ id: "id", parentId: "parent id", laxProp: 4 });
+        });
+
+        it("should set constants during cloning", async () => {
+          const clone = await User(user).clone({
+            reset: ["id", "parent", "laxProp"],
+          });
+
+          expect(clone).toEqual({
+            id: "id-2",
+            parentId: "parent id",
+            laxProp: 2,
+          });
+        });
+
+        it("should not set constants via listeners", async () => {
+          const update = await User(user).update({ laxProp: "update id" });
+
+          expect(update).toEqual({ laxProp: "update id" });
+        });
+
+        it("should ignore constants during updates", () => {
+          const toFail = User(user).update({ id: 25 });
+
+          expect(toFail).rejects.toThrow("Nothing to update");
         });
 
         it("should accept constant(true) & value(any | ()=>any)", () => {
