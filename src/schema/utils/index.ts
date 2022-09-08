@@ -6,7 +6,7 @@ export const makeResponse = <T = undefined>({
   reasons,
   valid,
   validated,
-}: ResponseInput): ValidatorResponse<T> => {
+}: ResponseInput<T>): ValidatorResponse<T> => {
   if (valid) return { reasons: [], valid, validated };
 
   if (reasons) reasons = [...toArray(reasons)];

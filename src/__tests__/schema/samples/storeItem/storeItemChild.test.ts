@@ -25,7 +25,7 @@ describe("Testing non-inherited properties for StoreItemChild", () => {
     const update = await StoreItemChild(item).update({
       childID: "12",
       name: "Guiness ",
-    } as { childID: unknown });
+    } as any);
 
     expect(update.childID).toBe(undefined);
     expect(update).toMatchObject({ name: "Guiness" });

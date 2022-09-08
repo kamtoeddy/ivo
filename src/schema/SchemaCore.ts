@@ -2,7 +2,7 @@ import { belongsTo, sortKeys, toArray } from "../utils/functions";
 import { ObjectType } from "../utils/interfaces";
 import { isEqual } from "../utils/isEqual";
 import {
-  LifeCycle,
+  LifeCycles,
   Private_ISchemaOptions,
   PropDefinitionRule,
   Schema as ns,
@@ -17,11 +17,11 @@ export const defaultOptions = { timestamps: false };
 type OptionsKey = StringKey<ns.Options>;
 
 const allowedOptions: OptionsKey[] = ["timestamps"];
-const lifeCycleRules: LifeCycle.Rule[] = ["onChange", "onCreate", "onUpdate"];
+const lifeCycleRules: LifeCycles.Rule[] = ["onChange", "onCreate", "onUpdate"];
 
 export abstract class SchemaCore<T extends ObjectType> {
   protected _options: ns.Options;
-  protected _propDefinitions = {} as ns.PropertyDefinitions<T>;
+  protected _propDefinitions = {} as ns.InternalDefinitions<T>;
 
   protected context: T = {} as T;
   protected defaults: Partial<T> = {};
@@ -33,7 +33,7 @@ export abstract class SchemaCore<T extends ObjectType> {
   protected optionsTool: OptionsTool;
 
   constructor(
-    propDefinitions: ns.PropertyDefinitions<T>,
+    propDefinitions: ns.InternalDefinitions<T>,
     options: ns.Options = defaultOptions
   ) {
     this._propDefinitions = propDefinitions;
@@ -246,7 +246,7 @@ export abstract class SchemaCore<T extends ObjectType> {
 
   protected _getDetailedListeners = (
     prop: string,
-    lifeCycle: LifeCycle.Rule,
+    lifeCycle: LifeCycles.Rule,
     valid = true
   ) => {
     const listeners = toArray(this._getDefinitionValue(prop, lifeCycle));
@@ -262,7 +262,7 @@ export abstract class SchemaCore<T extends ObjectType> {
     );
   };
 
-  protected _getAllListeners = (prop: string, lifeCycle: LifeCycle.Rule) => {
+  protected _getAllListeners = (prop: string, lifeCycle: LifeCycles.Rule) => {
     const onChange = this._getListeners(prop, "onChange");
 
     if (this._isSideEffect(prop)) return onChange;
@@ -272,10 +272,10 @@ export abstract class SchemaCore<T extends ObjectType> {
     return [...others, ...onChange];
   };
 
-  protected _getListeners = (prop: string, lifeCycle: LifeCycle.Rule) => {
+  protected _getListeners = (prop: string, lifeCycle: LifeCycles.Rule) => {
     return this._getDetailedListeners(prop, lifeCycle, true).map(
       (dt) => dt.listener
-    ) as LifeCycle.Listener<T>[];
+    ) as LifeCycles.Listener<T>[];
   };
 
   protected _getValidator = (prop: string) =>
@@ -562,7 +562,7 @@ export abstract class SchemaCore<T extends ObjectType> {
     const valid = false;
 
     if (!this._getDefinition(prop)?.sideEffect === true)
-      return { valid, reason: "SideEffects must have sideEffect as'true'" };
+      return { valid, reason: "SideEffects must have sideEffect as 'true'" };
 
     if (!this._isValidatorOk(prop))
       return { valid, reason: "Invalid validator" };
@@ -709,7 +709,7 @@ export abstract class SchemaCore<T extends ObjectType> {
   protected _resolveLinked = async (
     props: StringKey<T>[],
     context: Partial<T>,
-    lifeCycle: LifeCycle.Rule
+    lifeCycle: LifeCycles.Rule
   ) => {
     const listenersUpdates = props.map((prop) => {
       return this._resolveLinkedProps(context, prop, lifeCycle);
@@ -721,7 +721,7 @@ export abstract class SchemaCore<T extends ObjectType> {
   protected _resolveLinkedProps = async (
     operationData: Partial<T> = {},
     prop: StringKey<T>,
-    lifeCycle: LifeCycle.Rule
+    lifeCycle: LifeCycles.Rule
   ) => {
     const listeners = this._getAllListeners(prop, lifeCycle);
 
