@@ -34,4 +34,29 @@ function onNameChange(context) {
 }
 ```
 
-## Required Error (v.1.5.0)
+## Required By (v.1.5.0)
+
+Such a property is required depending on the context of the operation
+
+Example:
+
+```js
+const { Schema } = require("clean-schema");
+
+const bookSchema = new Schema({
+  bookId: {
+    required: true,
+    validator: validateBookId,
+  },
+  isPublished: {
+    default: false,
+    validator: validateBoolean,
+  },
+  price: {
+    default: null,
+    required: (ctx) => ctx.price == null && ctx.isPublished,
+    requiredError: "A price is required to publish a book!",
+    validator: validatePrice,
+  },
+});
+```
