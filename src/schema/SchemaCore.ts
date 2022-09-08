@@ -25,6 +25,7 @@ export abstract class SchemaCore<T extends ObjectType> {
 
   protected context: T = {} as T;
   protected defaults: Partial<T> = {};
+  protected constantProps: StringKey<T>[] = [];
   protected props: StringKey<T>[] = [];
   protected values: Partial<T> = {};
 
@@ -206,6 +207,9 @@ export abstract class SchemaCore<T extends ObjectType> {
     const props = [...Array.from(this.props), ...sideEffects];
 
     const validations = props.map((prop) => {
+      if (this._isConstant(prop))
+        return (data[prop] = this._getValueBy(prop, "value"));
+
       const isSideEffect = sideEffects.includes(prop);
       if (isSideEffect && !this._isSideInit(prop)) return;
 
@@ -237,9 +241,13 @@ export abstract class SchemaCore<T extends ObjectType> {
     this._getDefinition(prop)?.[rule];
 
   protected _getDefaultValue = (prop: string, alternate = true) => {
-    const value = this._getDefinition(prop)?.default;
+    const value = this._getValueBy(prop, "default");
 
-    if (alternate && isEqual(value, undefined)) return this.values[prop];
+    return alternate && isEqual(value, undefined) ? this.values[prop] : value;
+  };
+
+  protected _getValueBy = (prop: string, rule: PropDefinitionRule) => {
+    const value = this._getDefinition(prop)?.[rule];
 
     return typeof value === "function" ? value(this._getContext()) : value;
   };
@@ -290,6 +298,56 @@ export abstract class SchemaCore<T extends ObjectType> {
 
     return false;
   };
+
+  protected __isConstantProp = (prop: string) => {
+    const { constant, value } = this._getDefinition(prop);
+
+    const valid = false;
+
+    if (constant !== true)
+      return {
+        valid,
+        reason: "Constant properties must have constant as 'true'",
+      };
+
+    if (!this._hasAny(prop, "value"))
+      return {
+        valid,
+        reason: "Constant properties must have a value or setter",
+      };
+
+    if (isEqual(value, undefined))
+      return {
+        valid,
+        reason: "Constant properties cannot have 'undefined' as value",
+      };
+
+    if (
+      this._hasAny(prop, [
+        "default",
+        "dependent",
+        "onChange",
+        "onUpdate",
+        "readonly",
+        "required",
+        "sideEffect",
+        "shouldInit",
+        "validator",
+      ])
+    )
+      return {
+        valid,
+        reason:
+          "Constant properties can only have ('constant' & 'value') or 'onCreate'",
+      };
+
+    this.constantProps.push(prop as StringKey<T>);
+
+    return { valid: true };
+  };
+
+  protected _isConstant = (prop: string) =>
+    this.constantProps.includes(prop as StringKey<T>);
 
   protected __isDependentProp = (prop: string) => {
     const {
@@ -392,6 +450,12 @@ export abstract class SchemaCore<T extends ObjectType> {
 
     let reasons: string[] = [];
 
+    if (this._hasAny(prop, "constant")) {
+      const constantDef = this.__isConstantProp(prop);
+
+      if (!constantDef.valid) reasons.push(constantDef.reason!);
+    }
+
     if (this._hasAny(prop, "dependent")) {
       const dependentDef = this.__isDependentProp(prop);
 
@@ -443,7 +507,7 @@ export abstract class SchemaCore<T extends ObjectType> {
     }
 
     if (
-      !this._hasAny(prop, ["default", "readonly", "required"]) &&
+      !this._hasAny(prop, ["constant", "default", "readonly", "required"]) &&
       !this._isDependentProp(prop) &&
       !this._isSideEffect(prop)
     ) {

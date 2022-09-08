@@ -45,6 +45,155 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
       }
     });
 
+    describe("constant", () => {
+      describe("valid", () => {
+        let User: any, user: any;
+
+        beforeAll(async () => {
+          User = new Schema({
+            id: {
+              constant: true,
+              value: () => "id",
+            },
+            parentId: {
+              constant: true,
+              value: "parent id",
+            },
+          }).getModel();
+
+          user = await User({ id: 2, parentId: [] }).create();
+        });
+
+        it("should set constants at creation", () => {
+          expect(user).toEqual({ id: "id", parentId: "parent id" });
+        });
+
+        it("should accept constant(true) & value(any | ()=>any)", () => {
+          const values = ["", "value", 1, null, false, true, {}, [], () => 1];
+
+          for (const value of values) {
+            const toPass = fx({ propertyName: { constant: true, value } });
+
+            expectNoFailure(toPass);
+
+            toPass();
+          }
+        });
+
+        it("should accept constant & value + onCreate(function | function[])", () => {
+          const values = [() => ({}), [() => ({})], [() => ({}), () => ({})]];
+
+          for (const onCreate of values) {
+            const toPass = fx({
+              propertyName: { constant: true, value: "", onCreate },
+            });
+
+            expectNoFailure(toPass);
+
+            toPass();
+          }
+        });
+      });
+
+      describe("invalid", () => {
+        it("should reject constant(!true)", () => {
+          const values = [1, "", null, undefined, false, {}, []];
+
+          for (const value of values) {
+            const toFail = fx({
+              propertyName: { constant: value, value: "" },
+            });
+
+            expectFailure(toFail);
+
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err.payload).toEqual(
+                expect.objectContaining({
+                  propertyName: expect.arrayContaining([
+                    "Constant properties must have constant as 'true'",
+                  ]),
+                })
+              );
+            }
+          }
+        });
+
+        it("should reject constant & no value", () => {
+          const toFail = fx({ propertyName: { constant: true } });
+
+          expectFailure(toFail);
+
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toEqual(
+              expect.objectContaining({
+                propertyName: expect.arrayContaining([
+                  "Constant properties must have a value or setter",
+                ]),
+              })
+            );
+          }
+        });
+
+        it("should reject constant & value(undefined)", () => {
+          const toFail = fx({
+            propertyName: { constant: true, value: undefined },
+          });
+
+          expectFailure(toFail);
+
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toEqual(
+              expect.objectContaining({
+                propertyName: expect.arrayContaining([
+                  "Constant properties cannot have 'undefined' as value",
+                ]),
+              })
+            );
+          }
+        });
+
+        it("should reject (constant & value) + any other rule", () => {
+          const rules = [
+            "default",
+            "dependent",
+            "onChange",
+            "onUpdate",
+            "readonly",
+            "required",
+            "sideEffect",
+            "shouldInit",
+            "validator",
+          ];
+
+          for (const rule of rules) {
+            const toFail = fx({
+              propertyName: { constant: true, value: "", [rule]: true },
+            });
+
+            expectFailure(toFail);
+
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err.payload).toEqual(
+                expect.objectContaining({
+                  propertyName: expect.arrayContaining([
+                    "Constant properties can only have ('constant' & 'value') or 'onCreate'",
+                  ]),
+                })
+              );
+            }
+          }
+        });
+      });
+    });
+
     describe("dependent", () => {
       it("should reject dependent & no default", () => {
         const toFail = fx({ propertyName: { dependent: true } });
