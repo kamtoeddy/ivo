@@ -96,6 +96,9 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
       this._isUpdatable(prop)
     ) as StringKey<T>[];
 
+    const linkedProps: StringKey<T>[] = [];
+    const sideEffects: StringKey<T>[] = [];
+
     const validations = toUpdate.map(async (prop) => {
       const value = changes[prop];
       let { reasons, valid, validated } = await this._validate(prop, value);
@@ -106,7 +109,11 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
 
       if (isEqual(validated, this.values[prop])) return;
 
-      if (!this._isSideEffect(prop)) updated[prop] = validated;
+      if (this._isSideEffect(prop)) sideEffects.push(prop);
+      else {
+        updated[prop] = validated;
+        linkedProps.push(prop);
+      }
 
       this._updateContext({ [prop]: validated } as T);
     });
@@ -114,9 +121,6 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     await Promise.all(validations);
 
     if (this._isErroneous()) this._throwError();
-
-    const linkedProps = toUpdate.filter((prop) => !this._isSideEffect(prop));
-    const sideEffects = toUpdate.filter(this._isSideEffect);
 
     if (!Object.keys(updated).length && !sideEffects.length)
       this._throwError("Nothing to update");
