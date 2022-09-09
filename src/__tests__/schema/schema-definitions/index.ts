@@ -853,7 +853,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             },
             priceReadonly: {
               default: null,
-              // readonly: true,
+              readonly: true,
               required(ctx: any) {
                 return ctx.price == 101 && ctx.priceReadonly == null;
               },
@@ -964,10 +964,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
         it("should pass if condition is met during updates of readonly", async () => {
           const toPass = () =>
-            Book.update(
-              { bookId: 1, isPublished: false, price: null },
-              { price: 101, priceReadonly: 201 }
-            );
+            Book.update(book, { price: 101, priceReadonly: 201 });
 
           expectNoFailure(toPass);
 
@@ -999,11 +996,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
         });
 
         it("should reject if condition is not met during updates of readonly", async () => {
-          const toFail = () =>
-            Book.update(
-              { bookId: 1, isPublished: false, price: null },
-              { price: 101 }
-            );
+          const toFail = () => Book.update(book, { price: 101 });
 
           expectPromiseFailure(toFail, "Validation Error");
 
@@ -1020,20 +1013,20 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           }
         });
 
-        // it("should not update callable readonly prop that has changed readonly", async () => {
-        //   const toFail = () =>
-        //     Book.update(
-        //       {
-        //         bookId: 1,
-        //         isPublished: false,
-        //         price: null,
-        //         priceReadonly: 201,
-        //       },
-        //       { priceReadonly: 101 }
-        //     );
+        it("should not update callable readonly prop that has changed", async () => {
+          const toFail = () =>
+            Book.update(
+              {
+                bookId: 1,
+                isPublished: false,
+                price: null,
+                priceReadonly: 201,
+              },
+              { priceReadonly: 101 }
+            );
 
-        //   expectPromiseFailure(toFail, "Nothing to update");
-        // });
+          expectPromiseFailure(toFail, "Nothing to update");
+        });
 
         it("should accept requiredBy + default(any | function)", () => {
           const values = ["", () => ""];

@@ -166,7 +166,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
   private _handleRequiredBy = () => {
     for (const prop of this.propsRequiredBy) {
       const isRequired = this._getValueBy(prop, "required");
-      if (isRequired)
+      if (isRequired && this._isUpdatable(prop))
         return this.error.add(prop, this._getValueBy(prop, "requiredError"));
     }
   };

@@ -31,7 +31,6 @@ export abstract class SchemaCore<T extends ObjectType> {
   protected dependents: StringKey<T>[] = [];
   protected props: StringKey<T>[] = [];
   protected propsRequiredBy: StringKey<T>[] = [];
-  protected readonlyProps: StringKey<T>[] = [];
   protected requiredProps: StringKey<T>[] = [];
   protected sideEffects: StringKey<T>[] = [];
 
@@ -77,7 +76,11 @@ export abstract class SchemaCore<T extends ObjectType> {
 
     const { readonly, shouldInit } = this._getDefinition(prop);
 
-    return readonly === true && belongsTo(shouldInit, [true, undefined]);
+    return (
+      readonly === true &&
+      belongsTo(shouldInit, [true, undefined]) &&
+      !this._isRequiredBy(prop)
+    );
   };
 
   protected _checkOptions = () => {
@@ -511,13 +514,8 @@ export abstract class SchemaCore<T extends ObjectType> {
         reason: "Readonly properties have readonly true | 'lax'",
       };
 
-    this.readonlyProps.push(prop as StringKey<T>);
-
     return { valid: true };
   };
-
-  protected _isReadonly = (prop: string) =>
-    this.readonlyProps.includes(prop as StringKey<T>);
 
   protected __isRequiredCommon = (prop: string) => {
     const valid = false;
