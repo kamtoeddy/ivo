@@ -14,7 +14,7 @@ import {
 const storeItemSchema = new Schema<IStoreItem>(
   {
     _dependentReadOnly: {
-      default: () => 0,
+      default: setDependentReadOnly,
       readonly: true,
       dependent: true,
     },
@@ -59,6 +59,12 @@ const storeItemSchema = new Schema<IStoreItem>(
 function badHandler(ctx: any) {
   ctx._dependentReadOnly = 1;
   ctx.quantity = 10000;
+}
+
+function setDependentReadOnly(ctx: any) {
+  ctx._laxProp = 25; // to not affect operation ctx
+
+  return 0;
 }
 
 const StoreItem = storeItemSchema.getModel();
