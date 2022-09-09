@@ -226,6 +226,68 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
     });
 
     describe("dependent", () => {
+      describe("valid", () => {
+        it("should accept dependent & default(any | function)", () => {
+          const values = ["", 1, false, true, null, {}, []];
+
+          for (const value of values) {
+            const toPass = fx({
+              propertyName: { default: value, dependent: true },
+            });
+
+            expectNoFailure(toPass);
+
+            toPass();
+          }
+        });
+
+        it("should accept life cycle listeners", () => {
+          const lifeCycles = ["onCreate", "onChange", "onUpdate"];
+          const values = [() => {}, () => ({}), [() => {}, () => ({})]];
+
+          for (const lifeCycle of lifeCycles) {
+            for (const value of values) {
+              const toPass = fx({
+                propertyName: {
+                  default: value,
+                  dependent: true,
+                  [lifeCycle]: value,
+                },
+              });
+
+              expectNoFailure(toPass);
+
+              toPass();
+            }
+          }
+        });
+
+        it("should accept requiredBy", () => {
+          const toPass = fx({
+            propertyName: {
+              default: "",
+              dependent: true,
+              required: () => true,
+              validator,
+            },
+          });
+
+          expectNoFailure(toPass);
+
+          toPass();
+        });
+
+        it("should accept validator", () => {
+          const toPass = fx({
+            propertyName: { default: "", dependent: true, validator },
+          });
+
+          expectNoFailure(toPass);
+
+          toPass();
+        });
+      });
+
       it("should reject dependent & no default", () => {
         const toFail = fx({ propertyName: { dependent: true } });
 
@@ -268,6 +330,31 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
         }
       });
 
+      it("should reject dependent & readonly(lax)", () => {
+        const toFail = fx({
+          propertyName: {
+            default: "",
+            dependent: true,
+            readonly: "lax",
+            validator,
+          },
+        });
+
+        expectFailure(toFail);
+
+        try {
+          toFail();
+        } catch (err: any) {
+          expect(err.payload).toEqual(
+            expect.objectContaining({
+              propertyName: expect.arrayContaining([
+                "Dependent properties cannot be readonly 'lax'",
+              ]),
+            })
+          );
+        }
+      });
+
       it("should reject dependent & required", () => {
         const toFail = fx({
           propertyName: {
@@ -286,7 +373,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           expect(err.payload).toEqual(
             expect.objectContaining({
               propertyName: expect.arrayContaining([
-                "Dependent properties cannot be required",
+                "Dependent properties cannot be strictly required",
               ]),
             })
           );
@@ -591,6 +678,21 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
       describe("valid", () => {
         it("should allow required + validator", () => {
           const toPass = fx({ propertyName: { required: true, validator } });
+
+          expectNoFailure(toPass);
+
+          toPass();
+        });
+
+        it("should accept requiredBy + default & dependent(true)", () => {
+          const toPass = fx({
+            propertyName: {
+              default: "",
+              dependent: true,
+              required: () => true,
+              validator,
+            },
+          });
 
           expectNoFailure(toPass);
 

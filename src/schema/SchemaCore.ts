@@ -25,9 +25,16 @@ export abstract class SchemaCore<T extends ObjectType> {
 
   protected context: T = {} as T;
   protected defaults: Partial<T> = {};
-  protected constantProps: StringKey<T>[] = [];
-  protected props: StringKey<T>[] = [];
   protected values: Partial<T> = {};
+
+  // props
+  protected constants: StringKey<T>[] = [];
+  protected dependents: StringKey<T>[] = [];
+  protected props: StringKey<T>[] = [];
+  protected propsRequiredBy: StringKey<T>[] = [];
+  protected readonlyProps: StringKey<T>[] = [];
+  protected requiredProps: StringKey<T>[] = [];
+  protected sideEffects: StringKey<T>[] = [];
 
   // helpers
   protected error = new ErrorTool({ message: "Validation Error" });
@@ -67,13 +74,11 @@ export abstract class SchemaCore<T extends ObjectType> {
 
   protected _canInit = (prop: string) => {
     if (this._isDependentProp(prop)) return false;
+    if (this._isRequired(prop)) return true;
 
-    const { readonly, required, shouldInit } = this._getDefinition(prop);
+    const { readonly, shouldInit } = this._getDefinition(prop);
 
-    return (
-      required === true ||
-      (readonly === true && belongsTo(shouldInit, [true, undefined]))
-    );
+    return readonly === true && belongsTo(shouldInit, [true, undefined]);
   };
 
   protected _checkOptions = () => {
@@ -344,13 +349,13 @@ export abstract class SchemaCore<T extends ObjectType> {
           "Constant properties can only have ('constant' & 'value') or 'onCreate'",
       };
 
-    this.constantProps.push(prop as StringKey<T>);
+    this.constants.push(prop as StringKey<T>);
 
     return { valid: true };
   };
 
   protected _isConstant = (prop: string) =>
-    this.constantProps.includes(prop as StringKey<T>);
+    this.constants.includes(prop as StringKey<T>);
 
   protected __isDependentProp = (prop: string) => {
     const {
@@ -358,6 +363,7 @@ export abstract class SchemaCore<T extends ObjectType> {
       dependent,
       sideEffect,
       shouldInit,
+      readonly,
       required,
     } = this._getDefinition(prop);
 
@@ -375,8 +381,14 @@ export abstract class SchemaCore<T extends ObjectType> {
         reason: "Dependent properties must have a default value",
       };
 
-    if (!isEqual(required, undefined))
-      return { valid, reason: "Dependent properties cannot be required" };
+    if (!isEqual(required, undefined) && typeof required !== "function")
+      return {
+        valid,
+        reason: "Dependent properties cannot be strictly required",
+      };
+
+    if (readonly === "lax")
+      return { valid, reason: "Dependent properties cannot be readonly 'lax'" };
 
     if (!isEqual(shouldInit, undefined))
       return {
@@ -387,11 +399,13 @@ export abstract class SchemaCore<T extends ObjectType> {
     if (sideEffect)
       return { valid, reason: "Dependent properties cannot be sideEffect" };
 
+    this.dependents.push(prop as StringKey<T>);
+
     return { valid: true };
   };
 
-  protected _isDependentProp = (prop: string): boolean =>
-    this.__isDependentProp(prop).valid;
+  protected _isDependentProp = (prop: string) =>
+    this.dependents.includes(prop as StringKey<T>);
 
   protected _isErroneous = () => this.error.isPayloadLoaded;
 
@@ -587,23 +601,37 @@ export abstract class SchemaCore<T extends ObjectType> {
         reason: "Readonly properties have readonly true | 'lax'",
       };
 
+    this.readonlyProps.push(prop as StringKey<T>);
+
     return { valid: true };
   };
 
-  protected _isReadonly = (prop: string) => this.__isReadonly(prop).valid;
+  protected _isReadonly = (prop: string) =>
+    this.readonlyProps.includes(prop as StringKey<T>);
 
   protected __isRequired = (prop: string) => {
     const { default: _default, required } = this._getDefinition(prop);
 
     const valid = false;
 
-    if (required !== true)
+    const requiredType = typeof required;
+
+    if (required !== true && requiredType !== "function")
       return {
         valid,
         reason: "Required properties must have required as 'true'",
       };
 
-    if (required === true && !isEqual(_default, undefined))
+    const hasDefault = !isEqual(_default, undefined);
+
+    // if (requiredType === "function" && !hasDefault)
+    //   return {
+    //     valid,
+    //     reason:
+    //       "Strictly required properties cannot have a default value or setter",
+    //   };
+
+    if (required === true && hasDefault)
       return {
         valid,
         reason:
@@ -625,8 +653,15 @@ export abstract class SchemaCore<T extends ObjectType> {
     if (!this._isValidatorOk(prop))
       return { valid, reason: "Required properties must have a validator" };
 
+    if (requiredType === "function")
+      this.propsRequiredBy.push(prop as StringKey<T>);
+    else this.requiredProps.push(prop as StringKey<T>);
+
     return { valid: true };
   };
+
+  protected _isRequired = (prop: string) =>
+    this.requiredProps.includes(prop as StringKey<T>);
 
   protected __isSideEffect = (prop: string) => {
     const valid = false;
@@ -670,11 +705,13 @@ export abstract class SchemaCore<T extends ObjectType> {
           "SideEffects do not support onUpdate listeners. Use onChange instead",
       };
 
+    this.sideEffects.push(prop as StringKey<T>);
+
     return { valid: true };
   };
 
   protected _isSideEffect = (prop: string): boolean =>
-    this.__isSideEffect(prop).valid;
+    this.sideEffects.includes(prop as StringKey<T>);
 
   protected _isSideInit = (prop: string): boolean => {
     const propDef = this._getDefinition(prop);
@@ -735,9 +772,7 @@ export abstract class SchemaCore<T extends ObjectType> {
 
     const _default = this._getDefaultValue(prop, false);
 
-    return (
-      !readonly || (readonly && isEqual(_default, this._getContext()?.[prop]))
-    );
+    return !readonly || (readonly && isEqual(_default, this.values[prop]));
   };
 
   protected _isUpdatableInCTX = (
