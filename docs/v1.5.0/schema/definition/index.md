@@ -49,11 +49,12 @@ function onNameChange(context) {
 
 These methods are async because custom validators could be async as well.
 
-| Property | Type     | Description                        |
-| -------- | -------- | ---------------------------------- |
-| clone    | function | Async method to copy an instance   |
-| create   | function | Async method to create an instance |
-| update   | function | Async method to update an instance |
+| Property | Type     | Description                                                             |
+| -------- | -------- | ----------------------------------------------------------------------- |
+| clone    | function | Async method to copy an instance                                        |
+| create   | function | Async method to create an instance                                      |
+| update   | function | Async method to update an instance                                      |
+| validate | function | Async method used to validate a property based onthe validator provided |
 
 | Property      | Type                    | Description                                                                                                                                                              |
 | ------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |

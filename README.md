@@ -80,7 +80,7 @@ const UserModel = userSchema.getModel();
 # Creating an instance
 
 ```js
-const user = await UserModel({
+const user = await UserModel.create({
   firstName: "James",
   fullName: "Mr. James",
   id: 1,
@@ -89,7 +89,7 @@ const user = await UserModel({
   name: "John Doe",
   password: "au_34ibUv^T-adjInFjj",
   role: "app-user",
-}).create();
+});
 
 console.log(user);
 //  {
@@ -117,7 +117,7 @@ const user = await db.query({ id: 1 });
 
 if (!user) throw new Error("User not found");
 
-const userUpdate = await UserModel(user).update({
+const userUpdate = await UserModel.update(user, {
   lastSeen: new Date(),
   id: 2,
   age: 34,
