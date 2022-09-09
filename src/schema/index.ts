@@ -74,6 +74,16 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     return !readonly || (readonly && isEqual(_default, this.values[prop]));
   };
 
+  private _isUpdatableInCTX = (
+    prop: string,
+    value: any,
+    context: ObjectType = this._getContext()
+  ) => {
+    return this._isConstant(prop) || !this._isProp(prop)
+      ? false
+      : !isEqual(value, context?.[prop]);
+  };
+
   private _resolveLinked = async (
     operationData: Partial<T>,
     props: StringKey<T>[],

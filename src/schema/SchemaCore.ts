@@ -676,17 +676,7 @@ export abstract class SchemaCore<T extends ObjectType> {
     return { valid: true };
   }
 
-  protected _isUpdatableInCTX = (
-    prop: string,
-    value: any,
-    context: ObjectType = this._getContext()
-  ) => {
-    return this._isConstant(prop) || !this._isProp(prop)
-      ? false
-      : !isEqual(value, context?.[prop]);
-  };
-
-  protected _isValidatorOk = (prop: string) =>
+  private _isValidatorOk = (prop: string) =>
     this._isFunction(this._getDefinition(prop)?.validator);
 
   private _makeTimestamps(): Private_ISchemaOptions {
