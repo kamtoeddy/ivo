@@ -1,4 +1,4 @@
-type TypeOf<T> = Exclude<T, undefined>;
+export type TypeOf<T> = Exclude<T, undefined>;
 
 type PropertyType<T, K> = K extends keyof T ? TypeOf<T[K]> : K;
 
@@ -128,7 +128,7 @@ export namespace LifeCycles {
   ) => Partial<T> | Promise<Partial<T>> | void | Promise<void>;
 }
 
-export interface ValidatorResponse<T = any> {
+export interface ValidatorResponse<T extends Exclude<any, undefined>> {
   reasons?: string[];
   valid: boolean;
   validated?: T;
@@ -157,6 +157,7 @@ export type PropDefinitionRule =
   | "onUpdate"
   | "readonly"
   | "required"
+  | "requiredError"
   | "sideEffect"
   | "shouldInit"
   | "validator"

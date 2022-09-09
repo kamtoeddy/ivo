@@ -9,7 +9,7 @@ describe("Testing non-inherited properties for StoreItemChild", () => {
   let item: any;
 
   beforeAll(async () => {
-    item = await StoreItemChild(testData).create();
+    item = await StoreItemChild.create(testData);
   });
 
   // creation
@@ -22,7 +22,7 @@ describe("Testing non-inherited properties for StoreItemChild", () => {
 
   // updates
   it("should have the correct properties after updates", async () => {
-    const update = await StoreItemChild(item).update({
+    const update = await StoreItemChild.update(item, {
       childID: "12",
       name: "Guiness ",
     } as any);
