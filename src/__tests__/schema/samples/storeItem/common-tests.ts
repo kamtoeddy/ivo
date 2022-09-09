@@ -23,7 +23,7 @@ export const CommonInheritanceTest = (
   describe(`behaviour shared via inheritance for '${schemaName}'`, () => {
     let item: any;
 
-    beforeAll(async () => (item = await Model(testData).create()));
+    beforeAll(async () => (item = await Model.create(testData)));
 
     describe("create", () => {
       it("should create properly with right values", () => {
@@ -44,8 +44,7 @@ export const CommonInheritanceTest = (
       it("should reject missing readonly field", async () => {
         const { id, ...testData1 } = testData;
 
-        const createWithoutReadonly = async () =>
-          await Model(testData1).create();
+        const createWithoutReadonly = async () => await Model.create(testData1);
 
         await expect(createWithoutReadonly()).rejects.toThrow(
           "Validation Error"
@@ -55,8 +54,7 @@ export const CommonInheritanceTest = (
       it("should reject missing required field", async () => {
         const { name, ...testData1 } = testData;
 
-        const createWithoutReadonly = async () =>
-          await Model(testData1).create();
+        const createWithoutReadonly = async () => await Model.create(testData1);
 
         await expect(createWithoutReadonly()).rejects.toThrow(
           "Validation Error"
@@ -84,7 +82,7 @@ export const CommonInheritanceTest = (
 
     describe("clone", () => {
       it("should clone properly", async () => {
-        const clonedItem = await Model(item).clone();
+        const clonedItem = await Model.clone(item);
 
         expect(clonedItem).toMatchObject({
           id: "1",
@@ -101,13 +99,13 @@ export const CommonInheritanceTest = (
       });
 
       it("should clone properly with side effects", async () => {
-        const clonedItem = await Model({
+        const clonedItem = await Model.clone({
           ...item,
           quantities: [
             { quantity: 1, name: "crate24" },
             { quantity: 1, name: "tray" },
           ],
-        }).clone();
+        });
 
         expect(clonedItem).toMatchObject({
           id: "1",
@@ -124,8 +122,8 @@ export const CommonInheritanceTest = (
       });
 
       it("should respect clone reset option for property with default value", async () => {
-        const clone1 = await Model(item).clone({ reset: "quantity" });
-        const clone2 = await Model(item).clone({ reset: ["quantity"] });
+        const clone1 = await Model.clone(item, { reset: "quantity" });
+        const clone2 = await Model.clone(item, { reset: ["quantity"] });
         const expectedResult = {
           id: "1",
           name: "beer",
@@ -144,8 +142,8 @@ export const CommonInheritanceTest = (
       });
 
       it("should respect clone reset option for property without default value", async () => {
-        const clone1 = await Model(item).clone({ reset: "measureUnit" });
-        const clone2 = await Model(item).clone({ reset: ["measureUnit"] });
+        const clone1 = await Model.clone(item, { reset: "measureUnit" });
+        const clone2 = await Model.clone(item, { reset: ["measureUnit"] });
         const expectedResult = {
           id: "1",
           name: "beer",
@@ -166,7 +164,7 @@ export const CommonInheritanceTest = (
 
     describe("update", () => {
       it("should update the relevant properties", async () => {
-        const update = await Model(item).update({
+        const update = await Model.update(item, {
           name: "Castel",
           quantity: 10,
         });
@@ -178,8 +176,20 @@ export const CommonInheritanceTest = (
         });
       });
 
+      it("should ignore properties that have not changed", () => {
+        const toFail = () =>
+          Model.update(item, {
+            name: "beer",
+            price: 5,
+            measureUnit: "bottle",
+            quantity: 100,
+          });
+
+        expect(toFail).rejects.toThrow("Nothing to update");
+      });
+
       it("should update on side effects", async () => {
-        const update = await Model(item).update({
+        const update = await Model.update(item, {
           quantities: [
             { quantity: 1, name: "crate24" },
             { name: "crate", quantity: 2 },
@@ -194,7 +204,7 @@ export const CommonInheritanceTest = (
       });
 
       it("should update the relevant properties & on side effects", async () => {
-        const update = await Model(item).update({
+        const update = await Model.update(item, {
           name: "Castel",
           quantity: 10,
           quantities: [
@@ -212,7 +222,7 @@ export const CommonInheritanceTest = (
       });
 
       it("should update lax properties not initialized at creation", async () => {
-        const update = await Model(item).update({
+        const update = await Model.update(item, {
           _readOnlyLax2: "haha",
         });
 
@@ -221,9 +231,12 @@ export const CommonInheritanceTest = (
         });
 
         const updateReadOnlyProperty = async () =>
-          await Model({ ...item, ...update }).update({
-            _readOnlyLax2: "lax1 set again",
-          });
+          await Model.update(
+            { ...item, ...update },
+            {
+              _readOnlyLax2: "lax1 set again",
+            }
+          );
 
         await expect(updateReadOnlyProperty()).rejects.toThrow(
           "Nothing to update"
@@ -232,7 +245,7 @@ export const CommonInheritanceTest = (
 
       it("should not update dependent properties", async () => {
         const updateReadOnlyProperty = async () =>
-          await Model(item).update({ quantityChangeCounter: 0 });
+          await Model.update(item, { quantityChangeCounter: 0 });
 
         await expect(updateReadOnlyProperty()).rejects.toThrow(
           "Nothing to update"
@@ -240,7 +253,7 @@ export const CommonInheritanceTest = (
       });
 
       it("should update dependent properties on side effects", async () => {
-        const update = await Model(item).update({
+        const update = await Model.update(item, {
           _sideEffectForDependentReadOnly: "haha",
         });
 
@@ -250,14 +263,17 @@ export const CommonInheritanceTest = (
       });
 
       it("should not update readonly dependent properties that have changed", async () => {
-        const update = await Model(item).update({
+        const update = await Model.update(item, {
           _sideEffectForDependentReadOnly: "haha",
         });
 
         const updateToFail = async () => {
-          await Model({ ...item, ...update }).update({
-            _sideEffectForDependentReadOnly: "haha",
-          });
+          await Model.update(
+            { ...item, ...update },
+            {
+              _sideEffectForDependentReadOnly: "haha",
+            }
+          );
         };
 
         await expect(updateToFail()).rejects.toThrow("Nothing to update");
@@ -265,7 +281,7 @@ export const CommonInheritanceTest = (
 
       it("should not update readonly properties that have changed", async () => {
         const updateReadOnlyProperty = async () =>
-          await Model(item).update({
+          await Model.update(item, {
             id: "2",
             _readOnlyLax1: "lax1 set again",
           });
@@ -281,13 +297,13 @@ export const CommonInheritanceTest = (
     let item: any;
 
     beforeAll(async () => {
-      item = await Model({
+      item = await Model.create({
         ...testData,
         quantities: [
           { name: "crate24", quantity: 1 },
           { name: "tray", quantity: 1 },
         ],
-      }).create();
+      });
     });
 
     // creation
@@ -311,7 +327,7 @@ export const CommonInheritanceTest = (
     it("should respect user defined error messages at creation", () => {
       const failToCreate = async () => {
         try {
-          await Model({ ...commonTestData, name: "", _laxProp: [] }).create();
+          await Model.create({ ...commonTestData, name: "", _laxProp: [] });
         } catch (err: any) {
           expect(err.message).toBe("Validation Error");
           expect(err.payload).toMatchObject({
@@ -327,7 +343,7 @@ export const CommonInheritanceTest = (
     it("should respect user defined error messages during cloning", () => {
       const failToClone = async () => {
         try {
-          await Model(testData).clone({ reset: ["name", "_laxProp"] });
+          await Model.clone(testData, { reset: ["name", "_laxProp"] });
         } catch (err: any) {
           expect(err.message).toBe("Validation Error");
           expect(err.payload).toMatchObject({
@@ -343,7 +359,7 @@ export const CommonInheritanceTest = (
     it("should respect user defined error messages during updates", () => {
       const failToUpdate = async () => {
         try {
-          await Model(commonTestData).update({ name: "", _laxProp: [] });
+          await Model.update(commonTestData, { name: "", _laxProp: [] });
         } catch (err: any) {
           expect(err.message).toBe("Validation Error");
           expect(err.payload).toMatchObject({

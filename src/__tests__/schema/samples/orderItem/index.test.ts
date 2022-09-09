@@ -5,7 +5,7 @@ describe("Testing schema of Orderitem (inherited schema)", () => {
   let orderItem: IOrderItem;
 
   beforeAll(async () => {
-    orderItem = await OrderItem({
+    orderItem = await OrderItem.create({
       id: "1",
       name: "beer",
       costPrice: 5,
@@ -18,7 +18,7 @@ describe("Testing schema of Orderitem (inherited schema)", () => {
       ],
       quantity: 100,
       // quantities: [{ quantity: 1, name: "crate24" }],
-    }).create();
+    });
   });
 
   it("should have been created properly", () => {

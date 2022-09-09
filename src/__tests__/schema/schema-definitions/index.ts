@@ -8,6 +8,10 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
     expect(fx).toThrow(message);
   };
 
+  const expectPromiseFailure = (fx: Function, message = "Invalid Schema") => {
+    expect(fx).rejects.toThrow(message);
+  };
+
   const expectNoFailure = (fx: Function) => {
     expect(fx).not.toThrow();
   };
@@ -68,7 +72,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             },
           }).getModel();
 
-          user = await User({ id: 2, parentId: [], laxProp: 2 }).create();
+          user = await User.create({ id: 2, parentId: [], laxProp: 2 });
         });
 
         it("should set constants at creation", () => {
@@ -76,7 +80,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
         });
 
         it("should set constants during cloning", async () => {
-          const clone = await User(user).clone({
+          const clone = await User.clone(user, {
             reset: ["id", "parent", "laxProp"],
           });
 
@@ -88,13 +92,13 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
         });
 
         it("should not set constants via listeners", async () => {
-          const update = await User(user).update({ laxProp: "update id" });
+          const update = await User.update(user, { laxProp: "update id" });
 
           expect(update).toEqual({ laxProp: "update id" });
         });
 
         it("should ignore constants during updates", () => {
-          const toFail = User(user).update({ id: 25 });
+          const toFail = User.update(user, { id: 25 });
 
           expect(toFail).rejects.toThrow("Nothing to update");
         });
@@ -226,30 +230,104 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
     });
 
     describe("dependent", () => {
-      it("should reject dependent & no default", () => {
-        const toFail = fx({ propertyName: { dependent: true } });
+      describe("valid", () => {
+        it("should accept dependent & default(any | function)", () => {
+          const values = ["", 1, false, true, null, {}, []];
 
-        expectFailure(toFail);
+          for (const value of values) {
+            const toPass = fx({
+              propertyName: { default: value, dependent: true },
+            });
 
-        try {
-          toFail();
-        } catch (err: any) {
-          expect(err.payload).toEqual(
-            expect.objectContaining({
-              propertyName: expect.arrayContaining([
-                "Dependent properties must have a default value",
-              ]),
-            })
-          );
-        }
+            expectNoFailure(toPass);
+
+            toPass();
+          }
+        });
+
+        it("should accept life cycle listeners", () => {
+          const lifeCycles = ["onCreate", "onChange", "onUpdate"];
+          const values = [() => {}, () => ({}), [() => {}, () => ({})]];
+
+          for (const lifeCycle of lifeCycles) {
+            for (const value of values) {
+              const toPass = fx({
+                propertyName: {
+                  default: value,
+                  dependent: true,
+                  [lifeCycle]: value,
+                },
+              });
+
+              expectNoFailure(toPass);
+
+              toPass();
+            }
+          }
+        });
+
+        it("should accept validator", () => {
+          const toPass = fx({
+            propertyName: { default: "", dependent: true, validator },
+          });
+
+          expectNoFailure(toPass);
+
+          toPass();
+        });
       });
 
-      it("should reject dependent & shouldInit", () => {
-        const values = [false, true];
+      describe("invalid", () => {
+        it("should reject dependent & no default", () => {
+          const toFail = fx({ propertyName: { dependent: true } });
 
-        for (const shouldInit of values) {
+          expectFailure(toFail);
+
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toEqual(
+              expect.objectContaining({
+                propertyName: expect.arrayContaining([
+                  "Dependent properties must have a default value",
+                ]),
+              })
+            );
+          }
+        });
+
+        it("should reject dependent & shouldInit", () => {
+          const values = [false, true];
+
+          for (const shouldInit of values) {
+            const toFail = fx({
+              propertyName: { default: "", dependent: true, shouldInit },
+            });
+
+            expectFailure(toFail);
+
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err.payload).toEqual(
+                expect.objectContaining({
+                  propertyName: expect.arrayContaining([
+                    "Dependent properties cannot have shouldInit rule",
+                  ]),
+                })
+              );
+            }
+          }
+        });
+
+        it("should reject dependent & readonly(lax)", () => {
           const toFail = fx({
-            propertyName: { default: "", dependent: true, shouldInit },
+            propertyName: {
+              default: "",
+              dependent: true,
+              readonly: "lax",
+              validator,
+            },
           });
 
           expectFailure(toFail);
@@ -260,37 +338,37 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             expect(err.payload).toEqual(
               expect.objectContaining({
                 propertyName: expect.arrayContaining([
-                  "Dependent properties cannot have shouldInit rule",
+                  "Dependent properties cannot be readonly 'lax'",
                 ]),
               })
             );
           }
-        }
-      });
-
-      it("should reject dependent & required", () => {
-        const toFail = fx({
-          propertyName: {
-            default: "",
-            dependent: true,
-            required: true,
-            validator,
-          },
         });
 
-        expectFailure(toFail);
+        it("should reject dependent & required", () => {
+          const toFail = fx({
+            propertyName: {
+              default: "",
+              dependent: true,
+              required: true,
+              validator,
+            },
+          });
 
-        try {
-          toFail();
-        } catch (err: any) {
-          expect(err.payload).toEqual(
-            expect.objectContaining({
-              propertyName: expect.arrayContaining([
-                "Dependent properties cannot be required",
-              ]),
-            })
-          );
-        }
+          expectFailure(toFail);
+
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toEqual(
+              expect.objectContaining({
+                propertyName: expect.arrayContaining([
+                  "Dependent properties cannot be strictly required",
+                ]),
+              })
+            );
+          }
+        });
       });
     });
 
@@ -458,6 +536,22 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
           toPass();
         });
+
+        it("should allow readonly(true) + requiredBy", () => {
+          const toPass = fx({
+            propertyName: {
+              default: "",
+              readonly: true,
+              required: () => true,
+              requiredError: "",
+              validator,
+            },
+          });
+
+          expectNoFailure(toPass);
+
+          toPass();
+        });
       });
 
       describe("invalid", () => {
@@ -497,7 +591,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               expect(err.payload).toEqual(
                 expect.objectContaining({
                   propertyName: expect.arrayContaining([
-                    "Strictly readonly properties are required. Remove the required rule",
+                    "Strictly readonly properties are required. Either use a callable required + readonly(true) or remove the required rule",
                   ]),
                 })
               );
@@ -677,11 +771,449 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               expect(err.payload).toMatchObject(
                 expect.objectContaining({
                   propertyName: expect.arrayContaining([
-                    "Strictly required properties cannot be dependent",
+                    "Required properties cannot be dependent",
                   ]),
                 })
               );
             }
+          }
+        });
+
+        it("should reject required(true) + requiredError", () => {
+          const values = ["", () => ""];
+
+          for (const requiredError of values) {
+            const toFail = fx({
+              propertyName: { required: true, requiredError, validator },
+            });
+
+            expectFailure(toFail);
+
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err.payload).toMatchObject(
+                expect.objectContaining({
+                  propertyName: expect.arrayContaining([
+                    "Strictly required properties cannot have a requiredError",
+                  ]),
+                })
+              );
+            }
+          }
+        });
+
+        it("should reject required(true) + shouldInit", () => {
+          const values = [false, true, () => "", [], {}];
+
+          for (const shouldInit of values) {
+            const toFail = fx({
+              propertyName: { required: true, shouldInit, validator },
+            });
+
+            expectFailure(toFail);
+
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err.payload).toMatchObject(
+                expect.objectContaining({
+                  propertyName: expect.arrayContaining([
+                    "Required properties cannot have a initialization blocked",
+                  ]),
+                })
+              );
+            }
+          }
+        });
+      });
+    });
+
+    describe("requiredBy", () => {
+      describe("valid", () => {
+        let Book: any, book: any;
+
+        beforeAll(async () => {
+          Book = new Schema({
+            bookId: {
+              required: true,
+              validator,
+            },
+            isPublished: {
+              default: false,
+              validator,
+            },
+            price: {
+              default: null,
+              required(ctx: any) {
+                return ctx.isPublished && ctx.price == null;
+              },
+              requiredError: "A price is required to publish a book!",
+              validator: validatePrice,
+            },
+            priceReadonly: {
+              default: null,
+              readonly: true,
+              required(ctx: any) {
+                return ctx.price == 101 && ctx.priceReadonly == null;
+              },
+              requiredError: "A priceReadonly is required when price is 101!",
+              validator: validatePrice,
+            },
+          }).getModel();
+
+          function validatePrice(price: any) {
+            const validated = Number(price),
+              valid = !isNaN(price) && validated;
+            return { valid, validated };
+          }
+
+          book = await Book.create({ bookId: 1 });
+        });
+
+        it("should create normally", () => {
+          expect(book).toEqual({
+            bookId: 1,
+            isPublished: false,
+            price: null,
+            priceReadonly: null,
+          });
+        });
+
+        it("should pass if condition is met at creation", async () => {
+          const toPass = () =>
+            Book.create({ bookId: 1, isPublished: true, price: 2000 });
+
+          expectNoFailure(toPass);
+
+          const data = await toPass();
+
+          expect(data).toEqual({
+            bookId: 1,
+            isPublished: true,
+            price: 2000,
+            priceReadonly: null,
+          });
+        });
+
+        it("should reject if condition is not met at creation", async () => {
+          const toFail = () => Book.create({ bookId: 1, isPublished: true });
+
+          expectPromiseFailure(toFail, "Validation Error");
+
+          try {
+            await toFail();
+          } catch (err: any) {
+            expect(err.payload).toEqual(
+              expect.objectContaining({
+                price: expect.arrayContaining([
+                  "A price is required to publish a book!",
+                ]),
+              })
+            );
+          }
+        });
+
+        it("should pass if condition is met during cloning", async () => {
+          const toPass = () =>
+            Book.clone({ bookId: 1, isPublished: true, price: 2000 });
+
+          expectNoFailure(toPass);
+
+          const data = await toPass();
+
+          expect(data).toEqual({
+            bookId: 1,
+            isPublished: true,
+            price: 2000,
+            priceReadonly: null,
+          });
+        });
+
+        it("should reject if condition is not met during cloning", async () => {
+          const toFail = () => Book.clone({ bookId: 1, isPublished: true });
+
+          expectPromiseFailure(toFail, "Validation Error");
+
+          try {
+            await toFail();
+          } catch (err: any) {
+            expect(err.payload).toEqual(
+              expect.objectContaining({
+                price: expect.arrayContaining([
+                  "A price is required to publish a book!",
+                ]),
+              })
+            );
+          }
+        });
+
+        it("should pass if condition is met during updates", async () => {
+          const toPass = () =>
+            Book.update(
+              { bookId: 1, isPublished: false, price: null },
+              { isPublished: true, price: 20 }
+            );
+
+          expectNoFailure(toPass);
+
+          const data = await toPass();
+
+          expect(data).toEqual({ isPublished: true, price: 20 });
+        });
+
+        it("should pass if condition is met during updates of readonly", async () => {
+          const toPass = () =>
+            Book.update(book, { price: 101, priceReadonly: 201 });
+
+          expectNoFailure(toPass);
+
+          const data = await toPass();
+
+          expect(data).toEqual({ price: 101, priceReadonly: 201 });
+        });
+
+        it("should reject if condition is not met during updates", async () => {
+          const toFail = () =>
+            Book.update(
+              { bookId: 1, isPublished: false, price: null },
+              { isPublished: true }
+            );
+
+          expectPromiseFailure(toFail, "Validation Error");
+
+          try {
+            await toFail();
+          } catch (err: any) {
+            expect(err.payload).toEqual(
+              expect.objectContaining({
+                price: expect.arrayContaining([
+                  "A price is required to publish a book!",
+                ]),
+              })
+            );
+          }
+        });
+
+        it("should reject if condition is not met during updates of readonly", async () => {
+          const toFail = () => Book.update(book, { price: 101 });
+
+          expectPromiseFailure(toFail, "Validation Error");
+
+          try {
+            await toFail();
+          } catch (err: any) {
+            expect(err.payload).toEqual(
+              expect.objectContaining({
+                priceReadonly: expect.arrayContaining([
+                  "A priceReadonly is required when price is 101!",
+                ]),
+              })
+            );
+          }
+        });
+
+        it("should not update callable readonly prop that has changed", async () => {
+          const toFail = () =>
+            Book.update(
+              {
+                bookId: 1,
+                isPublished: false,
+                price: null,
+                priceReadonly: 201,
+              },
+              { priceReadonly: 101 }
+            );
+
+          expectPromiseFailure(toFail, "Nothing to update");
+        });
+
+        it("should accept requiredBy + default(any | function)", () => {
+          const values = ["", () => ""];
+
+          for (const value of values) {
+            const toPass = fx({
+              propertyName: {
+                default: value,
+                required: () => true,
+                requiredError: "",
+                validator,
+              },
+            });
+
+            expectNoFailure(toPass);
+
+            toPass();
+          }
+        });
+
+        it("should accept requiredBy + readonly", () => {
+          const toPass = fx({
+            propertyName: {
+              default: "",
+              readonly: true,
+              required: () => true,
+              requiredError: "",
+              validator,
+            },
+          });
+
+          expectNoFailure(toPass);
+
+          toPass();
+        });
+
+        it("should accept requiredBy + requiredError(string | function)", () => {
+          const values = ["", () => ""];
+
+          for (const requiredError of values) {
+            const toPass = fx({
+              propertyName: {
+                default: "",
+                required: () => true,
+                requiredError,
+                validator,
+              },
+            });
+
+            expectNoFailure(toPass);
+
+            toPass();
+          }
+        });
+
+        it("should reject required(true) + shouldInit", () => {
+          const values = [false, true, () => "", [], {}];
+
+          for (const shouldInit of values) {
+            const toFail = fx({
+              propertyName: {
+                default: "",
+                required: () => true,
+                requiredError: "",
+                shouldInit,
+                validator,
+              },
+            });
+
+            expectFailure(toFail);
+
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err.payload).toMatchObject(
+                expect.objectContaining({
+                  propertyName: expect.arrayContaining([
+                    "Required properties cannot have a initialization blocked",
+                  ]),
+                })
+              );
+            }
+          }
+        });
+      });
+
+      describe("invalid", () => {
+        it("should reject requiredBy & no default", () => {
+          const toFail = fx({
+            propertyName: {
+              required: () => true,
+              requiredError: "",
+              validator,
+            },
+          });
+
+          expectFailure(toFail);
+
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toMatchObject(
+              expect.objectContaining({
+                propertyName: expect.arrayContaining([
+                  "Callable required properties must have a default value or setter",
+                ]),
+              })
+            );
+          }
+        });
+
+        it("should reject requiredBy & no requiredError", () => {
+          const toFail = fx({
+            propertyName: {
+              default: "",
+              required: () => true,
+              validator,
+            },
+          });
+
+          expectFailure(toFail);
+
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toMatchObject(
+              expect.objectContaining({
+                propertyName: expect.arrayContaining([
+                  "Callable required properties must have a requiredError or setter",
+                ]),
+              })
+            );
+          }
+        });
+
+        it("should reject requiredBy + requiredError(!string & !function)", () => {
+          const values = [1, {}, [], false, true, undefined];
+
+          for (const requiredError of values) {
+            const toFail = fx({
+              propertyName: {
+                default: "",
+                required: () => true,
+                requiredError,
+                validator,
+              },
+            });
+
+            expectFailure(toFail);
+
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err.payload).toMatchObject(
+                expect.objectContaining({
+                  propertyName: expect.arrayContaining([
+                    "RequiredError must be a string or setter",
+                  ]),
+                })
+              );
+            }
+          }
+        });
+
+        it("should reject requiredBy + default & dependent(true)", () => {
+          const toFail = fx({
+            propertyName: {
+              default: "",
+              dependent: true,
+              required: () => true,
+              requiredError: "",
+              validator,
+            },
+          });
+
+          expectFailure(toFail);
+
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toMatchObject(
+              expect.objectContaining({
+                propertyName: expect.arrayContaining([
+                  "Required properties cannot be dependent",
+                ]),
+              })
+            );
           }
         });
       });
@@ -743,7 +1275,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
         });
 
         it("should respect sideInits & sideNoInit", async () => {
-          const user = await User({ sideInit: true, name: "Peter" }).create();
+          const user = await User.create({ sideInit: true, name: "Peter" });
 
           expect(user).toEqual({
             dependentSideNoInit: "",
@@ -777,7 +1309,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
         });
       });
 
-      describe("valid", () => {
+      describe("invalid", () => {
         it("should reject sideEffect & no onChange listeners", () => {
           const toFail = fx({ propertyName: { sideEffect: true, validator } });
 
@@ -900,7 +1432,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           beforeAll(async () => {
             Model = new Schema(validSchema, { timestamps: true }).getModel();
 
-            entity = await Model(inputValue).create();
+            entity = await Model.create(inputValue);
           });
 
           it("should populate createdAt & updatedAt at creation", () => {
@@ -911,7 +1443,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           });
 
           it("should populate createdAt & updatedAt during cloning", async () => {
-            const clone = await Model(entity).clone({ reset: "propertyName2" });
+            const clone = await Model.clone(entity, { reset: "propertyName2" });
 
             expect(clone).toMatchObject({
               propertyName1: "value1",
@@ -923,7 +1455,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           });
 
           it("should populate updatedAt during updates", async () => {
-            const updates = await Model(entity).update({ propertyName2: 20 });
+            const updates = await Model.update(entity, { propertyName2: 20 });
 
             expect(updates).toMatchObject({ propertyName2: 20 });
 
@@ -940,7 +1472,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               timestamps: { createdAt: "c_At" },
             }).getModel();
 
-            entity = await Model(inputValue).create();
+            entity = await Model.create(inputValue);
           });
 
           it("should populate c_At & updatedAt at creation", () => {
@@ -952,7 +1484,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           });
 
           it("should populate c_At & updatedAt during cloning", async () => {
-            const clone = await Model(entity).clone({ reset: "propertyName2" });
+            const clone = await Model.clone(entity, { reset: "propertyName2" });
 
             expect(clone).toMatchObject({
               propertyName1: "value1",
@@ -965,7 +1497,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           });
 
           it("should populate updatedAt during updates", async () => {
-            const updates = await Model(entity).update({ propertyName2: 20 });
+            const updates = await Model.update(entity, { propertyName2: 20 });
 
             expect(updates).toMatchObject({ propertyName2: 20 });
 
@@ -983,7 +1515,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               timestamps: { updatedAt: "u_At" },
             }).getModel();
 
-            entity = await Model(inputValue).create();
+            entity = await Model.create(inputValue);
           });
 
           it("should populate createdAt & u_At at creation", () => {
@@ -995,7 +1527,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           });
 
           it("should populate createdAt & u_At during cloning", async () => {
-            const clone = await Model(entity).clone({ reset: "propertyName2" });
+            const clone = await Model.clone(entity, { reset: "propertyName2" });
 
             expect(clone).toMatchObject({
               propertyName1: "value1",
@@ -1008,7 +1540,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           });
 
           it("should populate u_At during updates", async () => {
-            const updates = await Model(entity).update({ propertyName2: 20 });
+            const updates = await Model.update(entity, { propertyName2: 20 });
 
             expect(updates).toMatchObject({ propertyName2: 20 });
 
@@ -1026,7 +1558,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               timestamps: { createdAt: "c_At", updatedAt: "u_At" },
             }).getModel();
 
-            entity = await Model(inputValue).create();
+            entity = await Model.create(inputValue);
           });
 
           it("should populate c_At & u_At at creation", () => {
@@ -1039,7 +1571,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           });
 
           it("should populate c_At & u_At during cloning", async () => {
-            const clone = await Model(entity).clone({ reset: "propertyName2" });
+            const clone = await Model.clone(entity, { reset: "propertyName2" });
 
             expect(clone).toMatchObject({
               propertyName1: "value1",
@@ -1053,7 +1585,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           });
 
           it("should populate u_At during updates", async () => {
-            const updates = await Model(entity).update({ propertyName2: 20 });
+            const updates = await Model.update(entity, { propertyName2: 20 });
 
             expect(updates).toMatchObject({ propertyName2: 20 });
 

@@ -171,7 +171,7 @@ All notable changes to this project will be documented in this file.
 
 - [Deprecated] Changed schema options.timestamp to timestamps
 - [Fix] Schema options still accepting timestamps with keys already on schema
-- [Docs] Updated docs of how to use [validator.isEmailOk](./validate/isEmailOk.md)
+- [Docs] Updated docs of how to use [validator.isEmailOk](../v1.4.6/validate/isEmailOk.md#validateisemailok)
 
 # v1.1.2 <small><sup>17-07-2022</sup></small>
 
@@ -179,7 +179,7 @@ All notable changes to this project will be documented in this file.
 
 # v1.1.1 <small><sup>17-07-2022</sup></small>
 
-- [Added] Possibility to use custom regular expression with [validator.isEmailOk](./validate/isEmailOk.md)
+- [Added] Possibility to use custom regular expression with [validator.isEmailOk](../v1.4.6/validate/isEmailOk.md#validateisemailok)
 
 - [Fix] Internal mechanism in charge of data manipulation which would cause bugs
 
@@ -189,7 +189,7 @@ All notable changes to this project will be documented in this file.
 
 # v1.0.35 <small><sup>16-07-2022</sup></small>
 
-- [Added] Built-in validator for emails [validator.isEmailOk](./validate/isEmailOk.md)
+- [Added] Built-in validator for emails [validator.isEmailOk](../v1.4.6/validate/isEmailOk.md#validateisemailok)
 - [Docs] Improved details of invalid schema error
 
 # v1.0.34 <small><sup>15-07-2022</sup></small>
