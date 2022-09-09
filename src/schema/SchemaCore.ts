@@ -499,10 +499,7 @@ export abstract class SchemaCore<T extends ObjectType> {
         reason: "Lax properties cannot have initialization blocked",
       };
 
-    if (
-      !belongsTo(readonly, [true, "lax"]) ||
-      belongsTo(readonly, [false, undefined])
-    )
+    if (!belongsTo(readonly, [true, "lax"]))
       return {
         valid,
         reason: "Readonly properties have readonly true | 'lax'",
