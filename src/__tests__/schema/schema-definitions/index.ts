@@ -8,6 +8,10 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
     expect(fx).toThrow(message);
   };
 
+  const expectPromiseFailure = (fx: Function, message = "Invalid Schema") => {
+    expect(fx).rejects.toThrow(message);
+  };
+
   const expectNoFailure = (fx: Function) => {
     expect(fx).not.toThrow();
   };
@@ -259,26 +263,6 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
               toPass();
             }
-          }
-        });
-
-        it("should accept requiredBy + requiredError", () => {
-          const values = ["", () => ""];
-
-          for (const requiredError of values) {
-            const toPass = fx({
-              propertyName: {
-                default: "",
-                dependent: true,
-                required: () => true,
-                requiredError,
-                validator,
-              },
-            });
-
-            expectNoFailure(toPass);
-
-            toPass();
           }
         });
 
@@ -552,6 +536,22 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
           toPass();
         });
+
+        it("should allow readonly(true) + requiredBy", () => {
+          const toPass = fx({
+            propertyName: {
+              default: "",
+              readonly: true,
+              required: () => true,
+              requiredError: "",
+              validator,
+            },
+          });
+
+          expectNoFailure(toPass);
+
+          toPass();
+        });
       });
 
       describe("invalid", () => {
@@ -591,7 +591,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               expect(err.payload).toEqual(
                 expect.objectContaining({
                   propertyName: expect.arrayContaining([
-                    "Strictly readonly properties are required. Remove the required rule",
+                    "Strictly readonly properties are required. Either use a callable required + readonly(true) or remove the required rule",
                   ]),
                 })
               );
@@ -690,22 +690,6 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
           toPass();
         });
-
-        it("should accept requiredBy + default & dependent(true)", () => {
-          const toPass = fx({
-            propertyName: {
-              default: "",
-              dependent: true,
-              required: () => true,
-              requiredError: "",
-              validator,
-            },
-          });
-
-          expectNoFailure(toPass);
-
-          toPass();
-        });
       });
 
       describe("invalid", () => {
@@ -787,7 +771,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               expect(err.payload).toMatchObject(
                 expect.objectContaining({
                   propertyName: expect.arrayContaining([
-                    "Strictly required properties cannot be dependent",
+                    "Required properties cannot be dependent",
                   ]),
                 })
               );
@@ -795,125 +779,356 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           }
         });
 
-        describe("requiredBy", () => {
-          describe("valid", () => {
-            it("should accept requiredBy + default(any | function)", () => {
-              const values = ["", () => ""];
+        it("should reject required(true) + requiredError", () => {
+          const values = ["", () => ""];
 
-              for (const value of values) {
-                const toPass = fx({
-                  propertyName: {
-                    default: value,
-                    required: () => true,
-                    requiredError: "",
-                    validator,
-                  },
-                });
-
-                expectNoFailure(toPass);
-
-                toPass();
-              }
+          for (const requiredError of values) {
+            const toFail = fx({
+              propertyName: { required: true, requiredError, validator },
             });
 
-            it("should accept requiredBy + requiredError(string | function)", () => {
-              const values = ["", () => ""];
+            expectFailure(toFail);
 
-              for (const requiredError of values) {
-                const toPass = fx({
-                  propertyName: {
-                    default: "",
-                    required: () => true,
-                    requiredError,
-                    validator,
-                  },
-                });
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err.payload).toMatchObject(
+                expect.objectContaining({
+                  propertyName: expect.arrayContaining([
+                    "Strictly required properties cannot have a requiredError",
+                  ]),
+                })
+              );
+            }
+          }
+        });
 
-                expectNoFailure(toPass);
+        it("should reject required(true) + shouldInit", () => {
+          const values = [false, true, () => "", [], {}];
 
-                toPass();
-              }
+          for (const shouldInit of values) {
+            const toFail = fx({
+              propertyName: { required: true, shouldInit, validator },
             });
+
+            expectFailure(toFail);
+
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err.payload).toMatchObject(
+                expect.objectContaining({
+                  propertyName: expect.arrayContaining([
+                    "Required properties cannot have a initialization blocked",
+                  ]),
+                })
+              );
+            }
+          }
+        });
+      });
+    });
+
+    describe("requiredBy", () => {
+      describe("valid", () => {
+        let Book: any, book: any;
+
+        beforeAll(async () => {
+          Book = new Schema({
+            bookId: {
+              required: true,
+              validator,
+            },
+            isPublished: {
+              default: false,
+              validator,
+            },
+            price: {
+              default: null,
+              required(ctx: any) {
+                return ctx.isPublished && ctx.price == null;
+              },
+              requiredError: "A price is required to publish a book!",
+              validator(price: any) {
+                const validated = Number(price),
+                  valid = !isNaN(price) && validated;
+                return { valid, validated };
+              },
+            },
+          }).getModel();
+
+          book = await Book.create({ bookId: 1 });
+        });
+
+        it("should create normally", () => {
+          expect(book).toEqual({ bookId: 1, isPublished: false, price: null });
+        });
+
+        it("should pass if condition is met at creation", async () => {
+          const toPass = () =>
+            Book.create({ bookId: 1, isPublished: true, price: 2000 });
+
+          expectNoFailure(toPass);
+
+          const data = await toPass();
+
+          expect(data).toEqual({ bookId: 1, isPublished: true, price: 2000 });
+        });
+
+        it("should reject if condition is not met at creation", async () => {
+          const toFail = () => Book.create({ bookId: 1, isPublished: true });
+
+          expectPromiseFailure(toFail, "Validation Error");
+
+          try {
+            await toFail();
+          } catch (err: any) {
+            expect(err.payload).toEqual(
+              expect.objectContaining({
+                price: expect.arrayContaining([
+                  "A price is required to publish a book!",
+                ]),
+              })
+            );
+          }
+        });
+
+        it("should pass if condition is met during cloning", async () => {
+          const toPass = () =>
+            Book.clone({ bookId: 1, isPublished: true, price: 2000 });
+
+          expectNoFailure(toPass);
+
+          const data = await toPass();
+
+          expect(data).toEqual({ bookId: 1, isPublished: true, price: 2000 });
+        });
+
+        it("should reject if condition is not met during cloning", async () => {
+          const toFail = () => Book.clone({ bookId: 1, isPublished: true });
+
+          expectPromiseFailure(toFail, "Validation Error");
+
+          try {
+            const data = await toFail();
+          } catch (err: any) {
+            expect(err.payload).toEqual(
+              expect.objectContaining({
+                price: expect.arrayContaining([
+                  "A price is required to publish a book!",
+                ]),
+              })
+            );
+          }
+        });
+
+        it("should pass if condition is met during updates", async () => {
+          const toPass = () =>
+            Book.update(
+              { bookId: 1, isPublished: false, price: null },
+              { isPublished: true, price: 20 }
+            );
+
+          expectNoFailure(toPass);
+
+          const data = await toPass();
+
+          expect(data).toEqual({ isPublished: true, price: 20 });
+        });
+
+        it("should reject if condition is not met during updates", async () => {
+          const toFail = () =>
+            Book.update(
+              { bookId: 1, isPublished: false, price: null },
+              { isPublished: true }
+            );
+
+          expectPromiseFailure(toFail, "Validation Error");
+
+          try {
+            await toFail();
+          } catch (err: any) {
+            expect(err.payload).toEqual(
+              expect.objectContaining({
+                price: expect.arrayContaining([
+                  "A price is required to publish a book!",
+                ]),
+              })
+            );
+          }
+        });
+
+        it("should accept requiredBy + default(any | function)", () => {
+          const values = ["", () => ""];
+
+          for (const value of values) {
+            const toPass = fx({
+              propertyName: {
+                default: value,
+                required: () => true,
+                requiredError: "",
+                validator,
+              },
+            });
+
+            expectNoFailure(toPass);
+
+            toPass();
+          }
+        });
+
+        it("should accept requiredBy + requiredError(string | function)", () => {
+          const values = ["", () => ""];
+
+          for (const requiredError of values) {
+            const toPass = fx({
+              propertyName: {
+                default: "",
+                required: () => true,
+                requiredError,
+                validator,
+              },
+            });
+
+            expectNoFailure(toPass);
+
+            toPass();
+          }
+        });
+
+        it("should reject required(true) + shouldInit", () => {
+          const values = [false, true, () => "", [], {}];
+
+          for (const shouldInit of values) {
+            const toFail = fx({
+              propertyName: {
+                default: "",
+                required: () => true,
+                requiredError: "",
+                shouldInit,
+                validator,
+              },
+            });
+
+            expectFailure(toFail);
+
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err.payload).toMatchObject(
+                expect.objectContaining({
+                  propertyName: expect.arrayContaining([
+                    "Required properties cannot have a initialization blocked",
+                  ]),
+                })
+              );
+            }
+          }
+        });
+      });
+
+      describe("invalid", () => {
+        it("should reject requiredBy & no default", () => {
+          const toFail = fx({
+            propertyName: {
+              required: () => true,
+              requiredError: "",
+              validator,
+            },
           });
 
-          describe("invalid", () => {
-            it("should reject requiredBy & no default", () => {
-              const toFail = fx({
-                propertyName: {
-                  required: () => true,
-                  requiredError: "",
-                  validator,
-                },
-              });
+          expectFailure(toFail);
 
-              expectFailure(toFail);
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toMatchObject(
+              expect.objectContaining({
+                propertyName: expect.arrayContaining([
+                  "Callable required properties must have a default value or setter",
+                ]),
+              })
+            );
+          }
+        });
 
-              try {
-                toFail();
-              } catch (err: any) {
-                expect(err.payload).toMatchObject(
-                  expect.objectContaining({
-                    propertyName: expect.arrayContaining([
-                      "Callable required properties must have a default value or setter",
-                    ]),
-                  })
-                );
-              }
-            });
-
-            it("should reject requiredBy & no requiredError", () => {
-              const toFail = fx({
-                propertyName: {
-                  default: "",
-                  required: () => true,
-                  validator,
-                },
-              });
-
-              expectFailure(toFail);
-
-              try {
-                toFail();
-              } catch (err: any) {
-                expect(err.payload).toMatchObject(
-                  expect.objectContaining({
-                    propertyName: expect.arrayContaining([
-                      "Callable required properties must have a requiredError or setter",
-                    ]),
-                  })
-                );
-              }
-            });
-
-            it("should reject required(true) + requiredError(!string & !function)", () => {
-              const values = [1, {}, [], false, true, undefined];
-
-              for (const requiredError of values) {
-                const toFail = fx({
-                  propertyName: {
-                    default: "",
-                    required: () => true,
-                    requiredError,
-                    validator,
-                  },
-                });
-
-                expectFailure(toFail);
-
-                try {
-                  toFail();
-                } catch (err: any) {
-                  expect(err.payload).toMatchObject(
-                    expect.objectContaining({
-                      propertyName: expect.arrayContaining([
-                        "RequiredError must be a string or setter",
-                      ]),
-                    })
-                  );
-                }
-              }
-            });
+        it("should reject requiredBy & no requiredError", () => {
+          const toFail = fx({
+            propertyName: {
+              default: "",
+              required: () => true,
+              validator,
+            },
           });
+
+          expectFailure(toFail);
+
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toMatchObject(
+              expect.objectContaining({
+                propertyName: expect.arrayContaining([
+                  "Callable required properties must have a requiredError or setter",
+                ]),
+              })
+            );
+          }
+        });
+
+        it("should reject requiredBy + requiredError(!string & !function)", () => {
+          const values = [1, {}, [], false, true, undefined];
+
+          for (const requiredError of values) {
+            const toFail = fx({
+              propertyName: {
+                default: "",
+                required: () => true,
+                requiredError,
+                validator,
+              },
+            });
+
+            expectFailure(toFail);
+
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err.payload).toMatchObject(
+                expect.objectContaining({
+                  propertyName: expect.arrayContaining([
+                    "RequiredError must be a string or setter",
+                  ]),
+                })
+              );
+            }
+          }
+        });
+
+        it("should reject requiredBy + default & dependent(true)", () => {
+          const toFail = fx({
+            propertyName: {
+              default: "",
+              dependent: true,
+              required: () => true,
+              requiredError: "",
+              validator,
+            },
+          });
+
+          expectFailure(toFail);
+
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toMatchObject(
+              expect.objectContaining({
+                propertyName: expect.arrayContaining([
+                  "Required properties cannot be dependent",
+                ]),
+              })
+            );
+          }
         });
       });
     });

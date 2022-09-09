@@ -163,6 +163,14 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     return sortKeys(results);
   };
 
+  private _handleRequiredBy = () => {
+    for (const prop of this.propsRequiredBy) {
+      const isRequired = this._getValueBy(prop, "required");
+      if (isRequired)
+        return this.error.add(prop, this._getValueBy(prop, "requiredError"));
+    }
+  };
+
   clone = async (options: ns.CloneOptions<T> = { reset: [] }) => {
     const reset = toArray(options.reset).filter(this._isProp);
 
@@ -192,7 +200,15 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
         this._isLaxProp(prop) &&
         !isEqual(this.values[prop], this.defaults[prop]);
 
-      if (!isSideEffect && !this._canInit(prop) && !isLaxInit) {
+      const isRequiredInit =
+        this._isRequiredBy(prop) && this.values.hasOwnProperty(prop);
+
+      if (
+        !isSideEffect &&
+        !this._canInit(prop) &&
+        !isLaxInit &&
+        !isRequiredInit
+      ) {
         data[prop] = this._getDefaultValue(prop);
 
         return this._updateContext({ [prop]: data[prop] as any } as T);
@@ -202,6 +218,8 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     });
 
     await Promise.all(validations);
+
+    this._handleRequiredBy();
 
     if (this._isErroneous()) this._throwError();
 
@@ -224,22 +242,38 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     const props = [...Array.from(this.props), ...sideEffects];
 
     const validations = props.map((prop) => {
-      if (this._isConstant(prop))
-        return (data[prop] = this._getValueBy(prop, "value"));
+      if (this._isConstant(prop)) {
+        data[prop] = this._getValueBy(prop, "value");
+
+        return this._updateContext({ [prop]: data[prop] } as T);
+      }
 
       const isSideEffect = sideEffects.includes(prop);
       if (isSideEffect && !this._isSideInit(prop)) return;
 
-      const isLaxInit =
-        this._isLaxProp(prop) && this.values.hasOwnProperty(prop);
+      const isProvided = this.values.hasOwnProperty(prop);
 
-      if (!isSideEffect && !this._canInit(prop) && !isLaxInit)
-        return (data[prop] = this._getDefaultValue(prop));
+      const isLaxInit = this._isLaxProp(prop) && isProvided;
+
+      const isRequiredInit = this._isRequiredBy(prop) && isProvided;
+
+      if (
+        !isSideEffect &&
+        !this._canInit(prop) &&
+        !isLaxInit &&
+        !isRequiredInit
+      ) {
+        data[prop] = this._getDefaultValue(prop);
+
+        return this._updateContext({ [prop]: data[prop] } as T);
+      }
 
       return this._validateAndSet(data, prop, this.values[prop]);
     });
 
     await Promise.all(validations);
+
+    this._handleRequiredBy();
 
     if (this._isErroneous()) this._throwError();
 
@@ -297,6 +331,8 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     });
 
     await Promise.all(validations);
+
+    this._handleRequiredBy();
 
     if (this._isErroneous()) this._throwError();
 

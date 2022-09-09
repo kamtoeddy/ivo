@@ -386,7 +386,12 @@ export abstract class SchemaCore<T extends ObjectType> {
     }
 
     if (this._hasAny(prop, "required")) {
-      const requiredDef = this.__isRequired(prop);
+      const { required } = this._getDefinition(prop);
+
+      const requiredDef =
+        typeof required === "function"
+          ? this.__isRequiredBy(prop)
+          : this.__isRequired(prop);
 
       if (!requiredDef.valid) reasons.push(requiredDef.reason!);
     }
@@ -462,6 +467,7 @@ export abstract class SchemaCore<T extends ObjectType> {
       default: _default,
       dependent,
       readonly,
+      required,
       shouldInit,
     } = this._getDefinition(prop);
 
@@ -473,11 +479,11 @@ export abstract class SchemaCore<T extends ObjectType> {
         valid,
       };
 
-    if (readonly === true && this._hasAny(prop, "required"))
+    if (this._hasAny(prop, "required") && typeof required != "function")
       return {
         valid,
         reason:
-          "Strictly readonly properties are required. Remove the required rule",
+          "Strictly readonly properties are required. Either use a callable required + readonly(true) or remove the required rule",
       };
 
     if (readonly === "lax" && !isEqual(dependent, undefined))
@@ -513,7 +519,70 @@ export abstract class SchemaCore<T extends ObjectType> {
   protected _isReadonly = (prop: string) =>
     this.readonlyProps.includes(prop as StringKey<T>);
 
+  protected __isRequiredCommon = (prop: string) => {
+    const valid = false;
+
+    if (this._hasAny(prop, "dependent"))
+      return {
+        valid,
+        reason: "Required properties cannot be dependent",
+      };
+
+    if (this._hasAny(prop, "shouldInit"))
+      return {
+        valid,
+        reason: "Required properties cannot have a initialization blocked",
+      };
+
+    if (!this._isValidatorOk(prop))
+      return { valid, reason: "Required properties must have a validator" };
+
+    return { valid: true };
+  };
+
   protected __isRequired = (prop: string) => {
+    const { required } = this._getDefinition(prop);
+
+    const valid = false;
+
+    if (required !== true)
+      return {
+        valid,
+        reason: "Required properties must have required as 'true'",
+      };
+
+    if (this._hasAny(prop, "default"))
+      return {
+        valid,
+        reason:
+          "Strictly required properties cannot have a default value or setter",
+      };
+
+    if (this._hasAny(prop, "readonly"))
+      return {
+        valid,
+        reason: "Strictly required properties cannot be readonly",
+      };
+
+    if (this._hasAny(prop, "requiredError"))
+      return {
+        valid,
+        reason: "Strictly required properties cannot have a requiredError",
+      };
+
+    const isRequiredCommon = this.__isRequiredCommon(prop);
+
+    if (!isRequiredCommon.valid) return isRequiredCommon;
+
+    this.requiredProps.push(prop as StringKey<T>);
+
+    return { valid: true };
+  };
+
+  protected _isRequired = (prop: string) =>
+    this.requiredProps.includes(prop as StringKey<T>);
+
+  protected __isRequiredBy = (prop: string) => {
     const {
       default: _default,
       required,
@@ -524,59 +593,37 @@ export abstract class SchemaCore<T extends ObjectType> {
 
     const requiredType = typeof required;
 
-    if (required !== true && requiredType !== "function")
+    if (requiredType !== "function")
       return {
         valid,
-        reason: "Required properties must have required as 'true'",
+        reason: "Callable required properties must have required as a function",
       };
 
-    const hasDefault = !isEqual(_default, undefined);
-
-    if (requiredType === "function" && !hasDefault)
+    if (isEqual(_default, undefined))
       return {
         valid,
         reason:
           "Callable required properties must have a default value or setter",
       };
 
-    if (requiredType === "function" && isEqual(requiredError, undefined))
+    if (isEqual(requiredError, undefined))
       return {
         valid,
         reason:
           "Callable required properties must have a requiredError or setter",
       };
 
-    if (required === true && hasDefault)
-      return {
-        valid,
-        reason:
-          "Strictly required properties cannot have a default value or setter",
-      };
+    const isRequiredCommon = this.__isRequiredCommon(prop);
 
-    if (required === true && this._hasAny(prop, "dependent"))
-      return {
-        valid,
-        reason: "Strictly required properties cannot be dependent",
-      };
+    if (!isRequiredCommon.valid) return isRequiredCommon;
 
-    if (required === true && this._hasAny(prop, "readonly"))
-      return {
-        valid,
-        reason: "Strictly required properties cannot be readonly",
-      };
-
-    if (!this._isValidatorOk(prop))
-      return { valid, reason: "Required properties must have a validator" };
-
-    if (requiredType === "function")
-      this.propsRequiredBy.push(prop as StringKey<T>);
-    else this.requiredProps.push(prop as StringKey<T>);
+    this.propsRequiredBy.push(prop as StringKey<T>);
 
     return { valid: true };
   };
 
-  protected _isRequired = (prop: string) =>
-    this.requiredProps.includes(prop as StringKey<T>);
+  protected _isRequiredBy = (prop: string) =>
+    this.propsRequiredBy.includes(prop as StringKey<T>);
 
   protected __isSideEffect = (prop: string) => {
     const valid = false;

@@ -86,11 +86,9 @@ export namespace Schema {
 
   type RequiredBy<T, K extends keyof T> = Listenable<T> & {
     default: TypeOf<T[K]> | Setter<T, PropertyType<T, K>>;
-    dependent?: true;
     required: Setter<T, boolean>;
     requiredError: string | Setter<T, string>;
     readonly?: true;
-    shouldInit?: false;
     validator: Validator<T, K>;
   };
 
