@@ -61,9 +61,9 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
   };
 
   private _isUpdatable = (prop: string) => {
-    if (this._isConstant(prop)) return false;
-
     if (this._isSideEffect(prop)) return true;
+
+    if (this._isConstant(prop)) return false;
 
     if (!this._isProp(prop) || this._isDependentProp(prop)) return false;
 

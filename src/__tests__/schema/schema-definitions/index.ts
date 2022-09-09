@@ -849,19 +849,35 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 return ctx.isPublished && ctx.price == null;
               },
               requiredError: "A price is required to publish a book!",
-              validator(price: any) {
-                const validated = Number(price),
-                  valid = !isNaN(price) && validated;
-                return { valid, validated };
+              validator: validatePrice,
+            },
+            priceReadonly: {
+              default: null,
+              // readonly: true,
+              required(ctx: any) {
+                return ctx.price == 101 && ctx.priceReadonly == null;
               },
+              requiredError: "A priceReadonly is required when price is 101!",
+              validator: validatePrice,
             },
           }).getModel();
+
+          function validatePrice(price: any) {
+            const validated = Number(price),
+              valid = !isNaN(price) && validated;
+            return { valid, validated };
+          }
 
           book = await Book.create({ bookId: 1 });
         });
 
         it("should create normally", () => {
-          expect(book).toEqual({ bookId: 1, isPublished: false, price: null });
+          expect(book).toEqual({
+            bookId: 1,
+            isPublished: false,
+            price: null,
+            priceReadonly: null,
+          });
         });
 
         it("should pass if condition is met at creation", async () => {
@@ -872,7 +888,12 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
           const data = await toPass();
 
-          expect(data).toEqual({ bookId: 1, isPublished: true, price: 2000 });
+          expect(data).toEqual({
+            bookId: 1,
+            isPublished: true,
+            price: 2000,
+            priceReadonly: null,
+          });
         });
 
         it("should reject if condition is not met at creation", async () => {
@@ -901,7 +922,12 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
           const data = await toPass();
 
-          expect(data).toEqual({ bookId: 1, isPublished: true, price: 2000 });
+          expect(data).toEqual({
+            bookId: 1,
+            isPublished: true,
+            price: 2000,
+            priceReadonly: null,
+          });
         });
 
         it("should reject if condition is not met during cloning", async () => {
@@ -910,7 +936,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           expectPromiseFailure(toFail, "Validation Error");
 
           try {
-            const data = await toFail();
+            await toFail();
           } catch (err: any) {
             expect(err.payload).toEqual(
               expect.objectContaining({
@@ -936,6 +962,20 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           expect(data).toEqual({ isPublished: true, price: 20 });
         });
 
+        it("should pass if condition is met during updates of readonly", async () => {
+          const toPass = () =>
+            Book.update(
+              { bookId: 1, isPublished: false, price: null },
+              { price: 101, priceReadonly: 201 }
+            );
+
+          expectNoFailure(toPass);
+
+          const data = await toPass();
+
+          expect(data).toEqual({ price: 101, priceReadonly: 201 });
+        });
+
         it("should reject if condition is not met during updates", async () => {
           const toFail = () =>
             Book.update(
@@ -958,6 +998,43 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           }
         });
 
+        it("should reject if condition is not met during updates of readonly", async () => {
+          const toFail = () =>
+            Book.update(
+              { bookId: 1, isPublished: false, price: null },
+              { price: 101 }
+            );
+
+          expectPromiseFailure(toFail, "Validation Error");
+
+          try {
+            await toFail();
+          } catch (err: any) {
+            expect(err.payload).toEqual(
+              expect.objectContaining({
+                priceReadonly: expect.arrayContaining([
+                  "A priceReadonly is required when price is 101!",
+                ]),
+              })
+            );
+          }
+        });
+
+        // it("should not update callable readonly prop that has changed readonly", async () => {
+        //   const toFail = () =>
+        //     Book.update(
+        //       {
+        //         bookId: 1,
+        //         isPublished: false,
+        //         price: null,
+        //         priceReadonly: 201,
+        //       },
+        //       { priceReadonly: 101 }
+        //     );
+
+        //   expectPromiseFailure(toFail, "Nothing to update");
+        // });
+
         it("should accept requiredBy + default(any | function)", () => {
           const values = ["", () => ""];
 
@@ -975,6 +1052,22 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
             toPass();
           }
+        });
+
+        it("should accept requiredBy + readonly", () => {
+          const toPass = fx({
+            propertyName: {
+              default: "",
+              readonly: true,
+              required: () => true,
+              requiredError: "",
+              validator,
+            },
+          });
+
+          expectNoFailure(toPass);
+
+          toPass();
         });
 
         it("should accept requiredBy + requiredError(string | function)", () => {
