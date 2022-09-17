@@ -108,11 +108,17 @@ export abstract class SchemaCore<T extends ObjectType> {
         this._throwError();
       }
 
+    if (this._options.hasOwnProperty("errors")) {
+      if (!["silent", "throw"].includes(this._options.errors!)) {
+        this.error.add("errors", "should be 'silent' or 'throws'");
+        this._throwError();
+      }
+    }
+
     if (this._options.hasOwnProperty("timestamps")) {
       const ts_valid = this._isTimestampsOk();
 
-      if (ts_valid.valid) {
-      } else {
+      if (!ts_valid.valid) {
         this.error.add("timestamps", ts_valid.reason!);
         this._throwError();
       }

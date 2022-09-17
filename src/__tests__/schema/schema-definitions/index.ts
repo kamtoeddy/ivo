@@ -1421,6 +1421,30 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           }
         });
       });
+
+      describe("invalid", () => {
+        it("should reject anything other than ('silent' | 'throw')", () => {
+          const values = ["silence", 1, null, false, true, "throws", [], {}];
+
+          for (const errors of values) {
+            const toFail = fx(validSchema, { errors });
+
+            expectFailure(toFail);
+
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err.payload).toEqual(
+                expect.objectContaining({
+                  errors: expect.arrayContaining([
+                    "should be 'silent' or 'throws'",
+                  ]),
+                })
+              );
+            }
+          }
+        });
+      });
     });
 
     describe("timestamps", () => {
