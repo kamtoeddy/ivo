@@ -11,11 +11,14 @@ import {
 import { OptionsTool } from "./utils/options-tool";
 import { ErrorTool } from "./utils/schema-error";
 
-export const defaultOptions = { timestamps: false };
+export const defaultOptions = {
+  errors: "silent",
+  timestamps: false,
+} as ns.Options;
 
 type OptionsKey = StringKey<ns.Options>;
 
-const allowedOptions: OptionsKey[] = ["timestamps"];
+const allowedOptions: OptionsKey[] = ["errors", "timestamps"];
 const lifeCycleRules: LifeCycles.Rule[] = ["onChange", "onCreate", "onUpdate"];
 
 export abstract class SchemaCore<T extends ObjectType> {
@@ -63,11 +66,7 @@ export abstract class SchemaCore<T extends ObjectType> {
   protected _throwError(_message?: string): never {
     if (_message) this.error.setMessage(_message);
 
-    const errorToThrow = this.error.summary;
-
-    this.error.reset();
-
-    throw errorToThrow;
+    return this.error.throw();
   }
 
   protected _canInit = (prop: string) => {

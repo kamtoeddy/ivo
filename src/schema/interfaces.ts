@@ -107,6 +107,7 @@ export namespace Schema {
   }
 
   export interface Options {
+    errors?: "silent" | "throw";
     timestamps?:
       | boolean
       | {

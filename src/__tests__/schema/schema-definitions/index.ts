@@ -1407,6 +1407,22 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
       }
     });
 
+    describe("errors", () => {
+      describe("valid", () => {
+        it("should allow 'silent' | 'throw'", () => {
+          const values = ["silent", "throw"];
+
+          for (const errors of values) {
+            const toPass = fx(validSchema, { errors });
+
+            expectNoFailure(toPass);
+
+            toPass();
+          }
+        });
+      });
+    });
+
     describe("timestamps", () => {
       describe("valid", () => {
         it("should allow true | false", () => {
