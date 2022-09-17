@@ -1,8 +1,6 @@
 export type TypeOf<T> = Exclude<T, undefined>;
 
-type PropertyType<T, K> = K extends keyof T ? TypeOf<T[K]> : K;
-
-type Setter<T, K> = (ctx: Readonly<T>) => K;
+type Setter<K, T> = (ctx: Readonly<T>) => K extends keyof T ? TypeOf<T[K]> : K;
 
 export type StringKey<T> = Extract<keyof T, string>;
 
@@ -44,59 +42,59 @@ export namespace Schema {
   type Constant<T, K extends keyof T> = {
     constant: true;
     onCreate?: LifeCycles.Listener<T> | NonEmptyArray<LifeCycles.Listener<T>>;
-    value: TypeOf<T[K]> | Setter<T, PropertyType<T, K>>;
+    value: TypeOf<T[K]> | Setter<K, T>;
   };
 
   type Dependent<T, K extends keyof T> = Listenable<T> & {
-    default: TypeOf<T[K]> | Setter<T, PropertyType<T, K>>;
+    default: TypeOf<T[K]> | Setter<K, T>;
     dependent: true;
     readonly?: true;
-    validator?: Validator<T, K>;
+    validator?: Validator<K, T>;
   };
 
   type Property<T, K extends keyof T> = Listenable<T> & {
-    default: TypeOf<T[K]> | Setter<T, PropertyType<T, K>>;
+    default: TypeOf<T[K]> | Setter<K, T>;
     readonly?: "lax";
     shouldInit?: true;
-    validator?: Validator<T, K>;
+    validator?: Validator<K, T>;
   };
 
   type Readonly<T, K extends keyof T> = Listenable<T> & {
-    default: TypeOf<T[K]> | Setter<T, PropertyType<T, K>>;
+    default: TypeOf<T[K]> | Setter<K, T>;
     readonly: "lax";
-    validator: Validator<T, K>;
+    validator: Validator<K, T>;
   };
 
   type ReadonlyNoInit<T, K extends keyof T> = Listenable<T> & {
-    default: TypeOf<T[K]> | Setter<T, PropertyType<T, K>>;
+    default: TypeOf<T[K]> | Setter<K, T>;
     readonly: true;
     shouldInit: false;
-    validator?: Validator<T, K>;
+    validator?: Validator<K, T>;
   };
 
   type RequiredReadonly<T, K extends keyof T> = Listenable<T> & {
     readonly: true;
-    validator: Validator<T, K>;
+    validator: Validator<K, T>;
   };
 
   type Required<T, K extends keyof T> = Listenable<T> & {
     required: true;
-    validator: Validator<T, K>;
+    validator: Validator<K, T>;
   };
 
   type RequiredBy<T, K extends keyof T> = Listenable<T> & {
-    default: TypeOf<T[K]> | Setter<T, PropertyType<T, K>>;
+    default: TypeOf<T[K]> | Setter<K, T>;
     required: Setter<T, boolean>;
     requiredError: string | Setter<T, string>;
     readonly?: true;
-    validator: Validator<T, K>;
+    validator: Validator<K, T>;
   };
 
   type SideEffect<T, K extends keyof T> = {
     sideEffect: true;
     onChange: LifeCycles.Listener<T> | NonEmptyArray<LifeCycles.Listener<T>>;
     shouldInit?: false;
-    validator: Validator<T, K>;
+    validator: Validator<K, T>;
   };
 
   // options
@@ -139,7 +137,7 @@ export type ResponseInput<T> = {
   validated?: T;
 };
 
-type Validator<T, K extends keyof T> = (
+type Validator<K extends keyof T, T> = (
   value: any,
   ctx: Readonly<T>
 ) => ResponseInput<T[K]> | Promise<ResponseInput<T[K]>>;
