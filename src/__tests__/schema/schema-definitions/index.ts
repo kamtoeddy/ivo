@@ -1422,17 +1422,30 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
     });
 
     describe("errors", () => {
+      it("should allow 'silent' | 'throw'", () => {
+        const values = ["silent", "throw"];
+
+        for (const errors of values) {
+          const toPass = fx(validSchema, { errors });
+
+          expectNoFailure(toPass);
+
+          toPass();
+        }
+      });
+
       describe("valid", () => {
-        it("should allow 'silent' | 'throw'", () => {
-          const values = ["silent", "throw"];
+        let silentModel: any, modelToThrow: any;
 
-          for (const errors of values) {
-            const toPass = fx(validSchema, { errors });
+        beforeAll(() => {
+          const definition = {
+            lax: { default: "" },
+            readonly: { default: "" },
+            required: { default: "" },
+          };
 
-            expectNoFailure(toPass);
-
-            toPass();
-          }
+          silentModel = new Schema(definition).getModel();
+          modelToThrow = new Schema(definition, { errors: "throw" }).getModel();
         });
       });
 
