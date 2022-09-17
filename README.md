@@ -2,8 +2,6 @@
 
 Clean-schema's purpose is to help you ensure that the data going to your database is always consistent. It provides an interface for you to clearly define the behaviour of your entities at creation and during updates together with the flexibility of using the database of your choice.
 
-> N.B: Do not forget to handle errors that might be thrown by the create, clone and update methods. [See the structure of the error](./docs/v1.4.10/schema-error.md#structure-of-schema-error).
-
 # Installation
 
 First install [Node.js](http://nodejs.org/) Then:
@@ -141,14 +139,14 @@ await db.update({ id: 1 }, userUpdate);
   - [readonly properties](./docs/v1.4.10/schema/definition/readonly.md#readonly-properties)
   - [required properties](./docs/v1.5.0/schema/definition/required.md#required-properties)
   - [side effects](./docs/v1.5.0/schema/definition/side-effects.md#side-effect-properties)
-  - [validators]()
+  - [validators](./docs/v1.4.6/validate/index.md#validators)
 - [Inheritance](./docs/v1.4.6/schema/inheritance.md)
-- [The Operation Context](./docs/v1.4.6/schema/life-cycles.md#the-operation-context)
-- [Life Cycles & Listeners](./docs/v1.4.6/schema/life-cycles.md#life-cycle-listeners)
+- [The Operation Context](./docs/v1.4.10/schema/life-cycles.md#the-operation-context)
+- [Life Cycles & Listeners](./docs/v1.4.10/schema/life-cycles.md#life-cycle-listeners)
   - [onChange](./docs/v1.4.10/schema/life-cycles.md#onchange)
   - [onCreate](./docs/v1.4.10/schema/life-cycles.md#oncreate)
   - [onUpdate](./docs/v1.4.10/schema/life-cycles.md#onupdate)
-- [Options](./docs/v1.4.7/schema/definition.md#options)
+- [Options](./docs/v1.4.7/schema/definitions.md#options)
 - [Validators](./docs/v1.4.6/validate/index.md#validators)
   - [isArrayOk](./docs/v1.4.6/validate/isArrayOk.md)
   - [isBooleanOk](./docs/v1.4.6/validate/isBooleanOk.md)
@@ -156,7 +154,6 @@ await db.update({ id: 1 }, userUpdate);
   - [isEmailOk](./docs/v1.4.6/validate/isEmailOk.md)
   - [isNumberOk](./docs/v1.4.6/validate/isNumberOk.md)
   - [isStringOk](./docs/v1.4.6/validate/isStringOk.md)
-- [Schema Error](./docs/v1.4.10/schema-error.md#structure-of-schema-error)
 - [Changelog](./docs/v2.0.0/CHANGELOG.md#changelog)
 
 ## Happy coding! 😎
