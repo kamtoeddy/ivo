@@ -5,7 +5,6 @@ All notable changes to this project will be documented in this file.
 # v2.0.0 <small><sup>18-09-2022</sup></small>
 
 - [Added] Schema.options.errors
-- [Added] onError & onSuccess life cycles
 - [Changed] the results of create, clone & update operations
 
 # v1.5.0 <small><sup>09-09-2022</sup></small>
