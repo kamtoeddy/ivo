@@ -80,7 +80,7 @@ const UserModel = userSchema.getModel();
 # Creating an instance
 
 ```js
-const user = await UserModel.create({
+const { data: user, error } = await UserModel.create({
   firstName: "James",
   fullName: "Mr. James",
   id: 1,
@@ -117,7 +117,7 @@ const user = await db.query({ id: 1 });
 
 if (!user) throw new Error("User not found");
 
-const userUpdate = await UserModel.update(user, {
+const { data, error } = await UserModel.update(user, {
   lastSeen: new Date(),
   id: 2,
   age: 34,
@@ -127,7 +127,7 @@ const userUpdate = await UserModel.update(user, {
 // age is ignored because it is not a valid property
 // fullName is ignored because it is dependent
 // id is ignored because it is readonly
-console.log(userUpdate); // { lastSeen: new Date(), updatedAt: new Date() }
+console.log(data); // { lastSeen: new Date(), updatedAt: new Date() }
 
 await db.update({ id: 1 }, userUpdate);
 ```
@@ -157,6 +157,6 @@ await db.update({ id: 1 }, userUpdate);
   - [isNumberOk](./docs/v1.4.6/validate/isNumberOk.md)
   - [isStringOk](./docs/v1.4.6/validate/isStringOk.md)
 - [Schema Error](./docs/v1.4.10/schema-error.md#structure-of-schema-error)
-- [Changelog](./docs/v1.5.1/CHANGELOG.md#changelog)
+- [Changelog](./docs/v2.0.0/CHANGELOG.md#changelog)
 
 ## Happy coding! 😎
