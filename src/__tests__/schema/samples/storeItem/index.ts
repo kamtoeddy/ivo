@@ -51,7 +51,7 @@ const storeItemSchema = new Schema<IStoreItem>(
     },
     quantityChangeCounter: { default: 0, dependent: true },
   },
-  { timestamps: { createdAt: "c_At", updatedAt: "u_At" } }
+  { errors: "throw", timestamps: { createdAt: "c_At", updatedAt: "u_At" } }
 );
 
 // this type of handler should not affect the next

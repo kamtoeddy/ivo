@@ -6,7 +6,7 @@ const storeItemChildSchema = new Schema(
   {
     childID: { readonly: true, validator: validateString("Invalid child id") },
   },
-  { timestamps: true }
+  { errors: "throw", timestamps: true }
 ).extend(storeItemSchema);
 
 const StoreItemChild = storeItemChildSchema.getModel();

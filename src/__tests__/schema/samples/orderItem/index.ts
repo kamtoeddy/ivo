@@ -8,7 +8,7 @@ const orderItemSchema = new Schema<IOrderItem>(
     costPrice: { readonly: true, validator: validatePrice },
     price: { readonly: true, validator: validatePrice },
   },
-  { timestamps: true }
+  { errors: "throw", timestamps: true }
 ).extend(storeItemSchema, {
   remove: [
     "_readOnlyNoInit",

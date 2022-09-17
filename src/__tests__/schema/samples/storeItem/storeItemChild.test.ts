@@ -9,7 +9,7 @@ describe("Testing non-inherited properties for StoreItemChild", () => {
   let item: any;
 
   beforeAll(async () => {
-    item = await StoreItemChild.create(testData);
+    item = (await StoreItemChild.create(testData)).data;
   });
 
   // creation
@@ -22,12 +22,12 @@ describe("Testing non-inherited properties for StoreItemChild", () => {
 
   // updates
   it("should have the correct properties after updates", async () => {
-    const update = await StoreItemChild.update(item, {
+    const { data: update } = await StoreItemChild.update(item, {
       childID: "12",
       name: "Guiness ",
     } as any);
 
-    expect(update.childID).toBe(undefined);
+    expect(update!.childID).toBe(undefined);
     expect(update).toMatchObject({ name: "Guiness" });
     expect(update).toHaveProperty("updatedAt");
   });

@@ -54,25 +54,28 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
         let User: any, user: any;
 
         beforeAll(async () => {
-          User = new Schema({
-            id: {
-              constant: true,
-              onCreate: ({ laxProp }: any) => ({ laxProp: laxProp + 2 }),
-              value: (ctx: any) => (ctx?.id === "id" ? "id-2" : "id"),
-            },
-            parentId: {
-              constant: true,
-              value: "parent id",
-            },
-            laxProp: {
-              default: 0,
-              onUpdate: ({ laxProp }: any) => {
-                if (laxProp === "update id") return { id: "new id" };
+          User = new Schema(
+            {
+              id: {
+                constant: true,
+                onCreate: ({ laxProp }: any) => ({ laxProp: laxProp + 2 }),
+                value: (ctx: any) => (ctx?.id === "id" ? "id-2" : "id"),
+              },
+              parentId: {
+                constant: true,
+                value: "parent id",
+              },
+              laxProp: {
+                default: 0,
+                onUpdate: ({ laxProp }: any) => {
+                  if (laxProp === "update id") return { id: "new id" };
+                },
               },
             },
-          }).getModel();
+            { errors: "throw" }
+          ).getModel();
 
-          user = await User.create({ id: 2, parentId: [], laxProp: 2 });
+          user = (await User.create({ id: 2, parentId: [], laxProp: 2 })).data;
         });
 
         it("should set constants at creation", () => {
@@ -80,7 +83,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
         });
 
         it("should set constants during cloning", async () => {
-          const clone = await User.clone(user, {
+          const { data: clone } = await User.clone(user, {
             reset: ["id", "parent", "laxProp"],
           });
 
@@ -92,7 +95,9 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
         });
 
         it("should not set constants via listeners", async () => {
-          const update = await User.update(user, { laxProp: "update id" });
+          const { data: update } = await User.update(user, {
+            laxProp: "update id",
+          });
 
           expect(update).toEqual({ laxProp: "update id" });
         });
@@ -834,33 +839,36 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
         let Book: any, book: any;
 
         beforeAll(async () => {
-          Book = new Schema({
-            bookId: {
-              required: true,
-              validator,
-            },
-            isPublished: {
-              default: false,
-              validator,
-            },
-            price: {
-              default: null,
-              required(ctx: any) {
-                return ctx.isPublished && ctx.price == null;
+          Book = new Schema(
+            {
+              bookId: {
+                required: true,
+                validator,
               },
-              requiredError: "A price is required to publish a book!",
-              validator: validatePrice,
-            },
-            priceReadonly: {
-              default: null,
-              readonly: true,
-              required(ctx: any) {
-                return ctx.price == 101 && ctx.priceReadonly == null;
+              isPublished: {
+                default: false,
+                validator,
               },
-              requiredError: "A priceReadonly is required when price is 101!",
-              validator: validatePrice,
+              price: {
+                default: null,
+                required(ctx: any) {
+                  return ctx.isPublished && ctx.price == null;
+                },
+                requiredError: "A price is required to publish a book!",
+                validator: validatePrice,
+              },
+              priceReadonly: {
+                default: null,
+                readonly: true,
+                required(ctx: any) {
+                  return ctx.price == 101 && ctx.priceReadonly == null;
+                },
+                requiredError: "A priceReadonly is required when price is 101!",
+                validator: validatePrice,
+              },
             },
-          }).getModel();
+            { errors: "throw" }
+          ).getModel();
 
           function validatePrice(price: any) {
             const validated = Number(price),
@@ -868,7 +876,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             return { valid, validated };
           }
 
-          book = await Book.create({ bookId: 1 });
+          book = (await Book.create({ bookId: 1 })).data;
         });
 
         it("should create normally", () => {
@@ -886,7 +894,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
           expectNoFailure(toPass);
 
-          const data = await toPass();
+          const { data } = await toPass();
 
           expect(data).toEqual({
             bookId: 1,
@@ -920,7 +928,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
           expectNoFailure(toPass);
 
-          const data = await toPass();
+          const { data } = await toPass();
 
           expect(data).toEqual({
             bookId: 1,
@@ -957,7 +965,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
           expectNoFailure(toPass);
 
-          const data = await toPass();
+          const { data } = await toPass();
 
           expect(data).toEqual({ isPublished: true, price: 20 });
         });
@@ -968,7 +976,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
           expectNoFailure(toPass);
 
-          const data = await toPass();
+          const { data } = await toPass();
 
           expect(data).toEqual({ price: 101, priceReadonly: 201 });
         });
@@ -1240,28 +1248,31 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
         let User: any;
 
         beforeAll(() => {
-          User = new Schema({
-            dependentSideNoInit: {
-              default: "",
-              dependent: true,
+          User = new Schema(
+            {
+              dependentSideNoInit: {
+                default: "",
+                dependent: true,
+              },
+              dependentSideInit: {
+                default: false,
+                dependent: true,
+                validator: validateBoolean,
+              },
+              sideNoInit: {
+                sideEffect: true,
+                shouldInit: false,
+                onChange: () => ({ dependentSideNoInit: "changed" }),
+                validator: validateBoolean,
+              },
+              sideInit: {
+                sideEffect: true,
+                onChange: onSideInitChange,
+                validator: validateBoolean,
+              },
             },
-            dependentSideInit: {
-              default: false,
-              dependent: true,
-              validator: validateBoolean,
-            },
-            sideNoInit: {
-              sideEffect: true,
-              shouldInit: false,
-              onChange: () => ({ dependentSideNoInit: "changed" }),
-              validator: validateBoolean,
-            },
-            sideInit: {
-              sideEffect: true,
-              onChange: onSideInitChange,
-              validator: validateBoolean,
-            },
-          }).getModel();
+            { errors: "throw" }
+          ).getModel();
 
           function onSideInitChange({ sideInit }: any) {
             return { dependentSideInit: sideInit ? true : false };
@@ -1275,7 +1286,10 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
         });
 
         it("should respect sideInits & sideNoInit", async () => {
-          const user = await User.create({ sideInit: true, name: "Peter" });
+          const { data: user } = await User.create({
+            sideInit: true,
+            name: "Peter",
+          });
 
           expect(user).toEqual({
             dependentSideNoInit: "",
@@ -1472,7 +1486,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           beforeAll(async () => {
             Model = new Schema(validSchema, { timestamps: true }).getModel();
 
-            entity = await Model.create(inputValue);
+            entity = (await Model.create(inputValue)).data;
           });
 
           it("should populate createdAt & updatedAt at creation", () => {
@@ -1483,7 +1497,9 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           });
 
           it("should populate createdAt & updatedAt during cloning", async () => {
-            const clone = await Model.clone(entity, { reset: "propertyName2" });
+            const { data: clone } = await Model.clone(entity, {
+              reset: "propertyName2",
+            });
 
             expect(clone).toMatchObject({
               propertyName1: "value1",
@@ -1495,7 +1511,9 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           });
 
           it("should populate updatedAt during updates", async () => {
-            const updates = await Model.update(entity, { propertyName2: 20 });
+            const { data: updates } = await Model.update(entity, {
+              propertyName2: 20,
+            });
 
             expect(updates).toMatchObject({ propertyName2: 20 });
 
@@ -1512,7 +1530,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               timestamps: { createdAt: "c_At" },
             }).getModel();
 
-            entity = await Model.create(inputValue);
+            entity = (await Model.create(inputValue)).data;
           });
 
           it("should populate c_At & updatedAt at creation", () => {
@@ -1524,7 +1542,9 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           });
 
           it("should populate c_At & updatedAt during cloning", async () => {
-            const clone = await Model.clone(entity, { reset: "propertyName2" });
+            const { data: clone } = await Model.clone(entity, {
+              reset: "propertyName2",
+            });
 
             expect(clone).toMatchObject({
               propertyName1: "value1",
@@ -1537,7 +1557,9 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           });
 
           it("should populate updatedAt during updates", async () => {
-            const updates = await Model.update(entity, { propertyName2: 20 });
+            const { data: updates } = await Model.update(entity, {
+              propertyName2: 20,
+            });
 
             expect(updates).toMatchObject({ propertyName2: 20 });
 
@@ -1555,7 +1577,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               timestamps: { updatedAt: "u_At" },
             }).getModel();
 
-            entity = await Model.create(inputValue);
+            entity = (await Model.create(inputValue)).data;
           });
 
           it("should populate createdAt & u_At at creation", () => {
@@ -1567,7 +1589,9 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           });
 
           it("should populate createdAt & u_At during cloning", async () => {
-            const clone = await Model.clone(entity, { reset: "propertyName2" });
+            const { data: clone } = await Model.clone(entity, {
+              reset: "propertyName2",
+            });
 
             expect(clone).toMatchObject({
               propertyName1: "value1",
@@ -1580,7 +1604,9 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           });
 
           it("should populate u_At during updates", async () => {
-            const updates = await Model.update(entity, { propertyName2: 20 });
+            const { data: updates } = await Model.update(entity, {
+              propertyName2: 20,
+            });
 
             expect(updates).toMatchObject({ propertyName2: 20 });
 
@@ -1598,7 +1624,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               timestamps: { createdAt: "c_At", updatedAt: "u_At" },
             }).getModel();
 
-            entity = await Model.create(inputValue);
+            entity = (await Model.create(inputValue)).data;
           });
 
           it("should populate c_At & u_At at creation", () => {
@@ -1611,7 +1637,9 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           });
 
           it("should populate c_At & u_At during cloning", async () => {
-            const clone = await Model.clone(entity, { reset: "propertyName2" });
+            const { data: clone } = await Model.clone(entity, {
+              reset: "propertyName2",
+            });
 
             expect(clone).toMatchObject({
               propertyName1: "value1",
@@ -1625,7 +1653,9 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           });
 
           it("should populate u_At during updates", async () => {
-            const updates = await Model.update(entity, { propertyName2: 20 });
+            const { data: updates } = await Model.update(entity, {
+              propertyName2: 20,
+            });
 
             expect(updates).toMatchObject({ propertyName2: 20 });
 
