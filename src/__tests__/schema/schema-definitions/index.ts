@@ -1659,6 +1659,8 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 { lax: false, required: "" }
               );
 
+            expectPromiseFailure(toFail, "Validation Error");
+
             try {
               await toFail();
             } catch (err: any) {
@@ -1673,8 +1675,6 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 })
               );
             }
-
-            expectPromiseFailure(toFail, "Validation Error");
           });
 
           it("should reject on nothing to update", async () => {

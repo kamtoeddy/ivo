@@ -63,7 +63,7 @@ export abstract class SchemaCore<T extends ObjectType> {
     (this.context = { ...this.context, ...updates });
 
   // error methods
-  protected _throwError(_message?: string): never {
+  private _throwError(_message?: string): never {
     if (_message) this.error.setMessage(_message);
 
     return this.error.throw();

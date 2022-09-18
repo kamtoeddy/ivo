@@ -4,6 +4,7 @@ import { isEqual } from "../utils/isEqual";
 import { LifeCycles, Schema as ns, StringKey } from "./interfaces";
 import { defaultOptions, SchemaCore } from "./SchemaCore";
 import { makeResponse } from "./utils";
+import { ErrorTool } from "./utils/schema-error";
 
 export class Schema<T extends ObjectType> extends SchemaCore<T> {
   constructor(
@@ -86,11 +87,12 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
 
   private _resolveLinked = async (
     operationData: Partial<T>,
+    error: ErrorTool,
     props: StringKey<T>[],
     lifeCycle: LifeCycles.Rule
   ) => {
     const listenersUpdates = props.map((prop) => {
-      return this._resolveLinkedProps(operationData, prop, lifeCycle);
+      return this._resolveLinkedProps(operationData, error, prop, lifeCycle);
     });
 
     await Promise.all(listenersUpdates);
@@ -98,6 +100,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
 
   private _resolveLinkedProps = async (
     operationData: Partial<T> = {},
+    error: ErrorTool,
     prop: StringKey<T>,
     lifeCycle: LifeCycles.Rule
   ) => {
@@ -127,21 +130,22 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
         if (!isSideEffect && !this._isUpdatableInCTX(_prop, _value, context))
           continue;
 
-        await this._validateAndSet(operationData, _prop, _value);
+        await this._validateAndSet(operationData, error, _prop, _value);
 
-        await this._resolveLinkedProps(operationData, _prop, lifeCycle);
+        await this._resolveLinkedProps(operationData, error, _prop, lifeCycle);
       }
     }
   };
 
   private _validateAndSet = async (
     operationData: Partial<T> = {},
+    error: ErrorTool,
     prop: StringKey<T>,
     value: any
   ) => {
     let { reasons, valid, validated } = await this.validate(prop, value);
 
-    if (!valid) return this.error.add(prop, reasons);
+    if (!valid) return error.add(prop, reasons);
 
     if (isEqual(validated, undefined)) validated = value;
 
@@ -163,29 +167,25 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     return sortKeys(results);
   };
 
-  private _handleRequiredBy = () => {
+  private _handleRequiredBy = (error: ErrorTool) => {
     for (const prop of this.propsRequiredBy) {
       const isRequired = this._getValueBy(prop, "required");
       if (isRequired && this._isUpdatable(prop))
-        return this.error.add(prop, this._getValueBy(prop, "requiredError"));
+        return error.add(prop, this._getValueBy(prop, "requiredError"));
     }
   };
 
-  private _handleError = (message?: string) => {
-    if (this._options.errors === "throw") return this._throwError(message);
-
-    if (message) this.error.setMessage(message);
-
-    const error = this.error.summary;
-    this.error.reset();
-
-    return { data: undefined, error };
+  private _handleError = (error: ErrorTool) => {
+    return this._options.errors === "throw"
+      ? error.throw()
+      : { data: undefined, error: error.summary };
   };
 
   clone = async (options: ns.CloneOptions<T> = { reset: [] }) => {
     const reset = toArray(options.reset).filter(this._isProp);
 
     const data = {} as T;
+    const error = new ErrorTool({ message: "Validation Error" });
 
     const sideEffects = Object.keys(this.values).filter(
       this._isSideInit
@@ -226,26 +226,27 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
         return this._updateContext({ [prop]: data[prop] as any } as T);
       }
 
-      return this._validateAndSet(data, prop, this.values[prop]);
+      return this._validateAndSet(data, error, prop, this.values[prop]);
     });
 
     await Promise.all(validations);
 
-    this._handleRequiredBy();
+    this._handleRequiredBy(error);
 
-    if (this._isErroneous()) return this._handleError();
+    if (error.isPayloadLoaded) return this._handleError(error);
 
     const linkedProps = this._getCreatePropsWithListeners();
 
-    await this._resolveLinked(data, linkedProps, "onCreate");
+    await this._resolveLinked(data, error, linkedProps, "onCreate");
 
-    await this._resolveLinked(data, sideEffects, "onCreate");
+    await this._resolveLinked(data, error, sideEffects, "onCreate");
 
     return { data: this._useConfigProps(data) as T, error: undefined };
   };
 
   create = async () => {
     const data = {} as T;
+    const error = new ErrorTool({ message: "Validation Error" });
 
     const sideEffects = Object.keys(this.values).filter(
       this._isSideInit
@@ -280,20 +281,20 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
         return this._updateContext({ [prop]: data[prop] } as T);
       }
 
-      return this._validateAndSet(data, prop, this.values[prop]);
+      return this._validateAndSet(data, error, prop, this.values[prop]);
     });
 
     await Promise.all(validations);
 
-    this._handleRequiredBy();
+    this._handleRequiredBy(error);
 
-    if (this._isErroneous()) return this._handleError();
+    if (error.isPayloadLoaded) return this._handleError(error);
 
     const linkedProps = this._getCreatePropsWithListeners();
 
-    await this._resolveLinked(data, linkedProps, "onCreate");
+    await this._resolveLinked(data, error, linkedProps, "onCreate");
 
-    await this._resolveLinked(data, sideEffects, "onCreate");
+    await this._resolveLinked(data, error, sideEffects, "onCreate");
 
     return { data: this._useConfigProps(data) as T, error: undefined };
   };
@@ -314,6 +315,8 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
   }
 
   update = async (changes: Partial<T>) => {
+    const error = new ErrorTool({ message: "Validation Error" });
+
     const updated = {} as Partial<T>;
 
     const toUpdate = Object.keys(changes ?? {}).filter((prop) =>
@@ -327,7 +330,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
       const value = changes[prop];
       let { reasons, valid, validated } = await this.validate(prop, value);
 
-      if (!valid) return this.error.add(prop, reasons);
+      if (!valid) return error.add(prop, reasons);
 
       if (isEqual(validated, undefined)) validated = value;
 
@@ -344,19 +347,19 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
 
     await Promise.all(validations);
 
-    this._handleRequiredBy();
+    this._handleRequiredBy(error);
 
-    if (this._isErroneous()) return this._handleError();
+    if (error.isPayloadLoaded) return this._handleError(error);
 
     if (!Object.keys(updated).length && !sideEffects.length)
-      return this._handleError("Nothing to update");
+      return this._handleError(error.setMessage("Nothing to update"));
 
-    await this._resolveLinked(updated, linkedProps, "onUpdate");
+    await this._resolveLinked(updated, error, linkedProps, "onUpdate");
 
-    await this._resolveLinked(updated, sideEffects, "onUpdate");
+    await this._resolveLinked(updated, error, sideEffects, "onUpdate");
 
     if (!Object.keys(updated).length)
-      return this._handleError("Nothing to update");
+      return this._handleError(error.setMessage("Nothing to update"));
 
     return { data: this._useConfigProps(updated, true), error: undefined };
   };
