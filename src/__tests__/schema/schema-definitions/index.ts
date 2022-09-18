@@ -1435,10 +1435,16 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
       });
 
       describe("valid", () => {
-        let silentModel: any, modelToThrow: any;
+        let silentModel: any,
+          modelToThrow: any,
+          models: any[] = [];
 
         beforeAll(() => {
-          const validator = (value: any) => ({ valid: value ? true : false });
+          const validator = (value: any) => {
+            return value
+              ? { valid: true }
+              : { reason: "Invalid value", valid: false };
+          };
 
           const definition = {
             lax: { default: "lax-default", validator },
@@ -1452,33 +1458,249 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
           silentModel = new Schema(definition).getModel();
           modelToThrow = new Schema(definition, { errors: "throw" }).getModel();
+
+          models = [silentModel, modelToThrow];
+        });
+
+        describe("silent & throw with valid data", () => {
+          for (const model of models) {
+            // create
+            it("should create normally", async () => {
+              const { data } = await model.create({
+                readonly: "lax",
+                required: true,
+              });
+
+              expect(data).toEqual({
+                lax: "lax-default",
+                readonly: "lax",
+                required: true,
+              });
+            });
+
+            // clone
+            it("should clone normally", async () => {
+              const { data } = await model.clone({
+                readonly: "lax",
+                required: true,
+              });
+
+              expect(data).toEqual({
+                lax: "lax-default",
+                readonly: "lax",
+                required: true,
+              });
+            });
+
+            // update
+            it("should update normally", async () => {
+              const { data } = await model.update(
+                {
+                  lax: "lax-default",
+                  readonly: "lax",
+                  required: true,
+                },
+                { required: "required" }
+              );
+
+              expect(data).toEqual({ required: "required" });
+            });
+          }
         });
 
         describe("silent", () => {
-          it("should create normally", async () => {
-            const { data } = await silentModel.create({
+          // create
+          it("should reject invalid props on create", async () => {
+            const { error } = await silentModel.create({
+              lax: false,
               readonly: "lax",
-              required: true,
+              required: "",
             });
 
-            expect(data).toEqual({
-              lax: "lax-default",
-              readonly: "lax",
-              required: true,
-            });
+            expect(error).toEqual(
+              expect.objectContaining({
+                message: "Validation Error",
+                payload: {
+                  lax: ["Invalid value"],
+                  required: ["Invalid value"],
+                },
+                statusCode: 400,
+              })
+            );
           });
 
-          it("should clone normally", async () => {
-            const { data } = await silentModel.clone({
+          // clone
+          it("should reject invalid props on clone", async () => {
+            const { error } = await silentModel.clone({
+              lax: false,
               readonly: "lax",
-              required: true,
+              required: "",
             });
 
-            expect(data).toEqual({
-              lax: "lax-default",
-              readonly: "lax",
-              required: true,
-            });
+            expect(error).toEqual(
+              expect.objectContaining({
+                message: "Validation Error",
+                payload: {
+                  lax: ["Invalid value"],
+                  required: ["Invalid value"],
+                },
+                statusCode: 400,
+              })
+            );
+          });
+
+          // update
+          it("should reject invalid props on update", async () => {
+            const { error } = await silentModel.update(
+              {
+                lax: "lax-default",
+                readonly: "lax",
+                required: true,
+              },
+              { lax: false, required: "" }
+            );
+
+            expect(error).toEqual(
+              expect.objectContaining({
+                message: "Validation Error",
+                payload: {
+                  lax: ["Invalid value"],
+                  required: ["Invalid value"],
+                },
+                statusCode: 400,
+              })
+            );
+          });
+
+          it("should reject on nothing to update", async () => {
+            const { error } = await silentModel.update(
+              {
+                lax: "lax-default",
+                readonly: "lax",
+                required: true,
+              },
+              { readonly: "New val" }
+            );
+
+            expect(error).toEqual(
+              expect.objectContaining({
+                message: "Nothing to update",
+                payload: {},
+                statusCode: 400,
+              })
+            );
+          });
+        });
+
+        describe("throw", () => {
+          // create
+          it("should reject invalid props on create", async () => {
+            const toFail = () =>
+              modelToThrow.create({
+                lax: false,
+                readonly: "lax",
+                required: "",
+              });
+
+            expectPromiseFailure(toFail, "Validation Error");
+
+            try {
+              await toFail();
+            } catch (err: any) {
+              expect(err).toEqual(
+                expect.objectContaining({
+                  message: "Validation Error",
+                  payload: {
+                    lax: ["Invalid value"],
+                    required: ["Invalid value"],
+                  },
+                  statusCode: 400,
+                })
+              );
+            }
+          });
+
+          // clone
+          it("should reject invalid props on clone", async () => {
+            const toFail = () =>
+              modelToThrow.clone({
+                lax: false,
+                readonly: "lax",
+                required: "",
+              });
+
+            expectPromiseFailure(toFail, "Validation Error");
+
+            try {
+              await toFail();
+            } catch (err: any) {
+              expect(err).toEqual(
+                expect.objectContaining({
+                  message: "Validation Error",
+                  payload: {
+                    lax: ["Invalid value"],
+                    required: ["Invalid value"],
+                  },
+                  statusCode: 400,
+                })
+              );
+            }
+          });
+
+          // update
+          it("should reject invalid props on update", async () => {
+            const toFail = () =>
+              modelToThrow.update(
+                {
+                  lax: "lax-default",
+                  readonly: "lax",
+                  required: true,
+                },
+                { lax: false, required: "" }
+              );
+
+            try {
+              await toFail();
+            } catch (err: any) {
+              expect(err).toEqual(
+                expect.objectContaining({
+                  message: "Validation Error",
+                  payload: {
+                    lax: ["Invalid value"],
+                    required: ["Invalid value"],
+                  },
+                  statusCode: 400,
+                })
+              );
+            }
+
+            expectPromiseFailure(toFail, "Validation Error");
+          });
+
+          it("should reject on nothing to update", async () => {
+            const toFail = () =>
+              modelToThrow.update(
+                {
+                  lax: "lax-default",
+                  readonly: "lax",
+                  required: true,
+                },
+                { readonly: "New val" }
+              );
+
+            expectPromiseFailure(toFail, "Nothing to update");
+
+            try {
+              await toFail();
+            } catch (err: any) {
+              expect(err).toEqual(
+                expect.objectContaining({
+                  message: "Nothing to update",
+                  payload: {},
+                  statusCode: 400,
+                })
+              );
+            }
           });
         });
       });

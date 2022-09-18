@@ -52,13 +52,12 @@ export class ErrorTool extends Error {
   };
 
   add(field: PayloadKey, value?: string | string[]) {
-    if (value) {
-      value = toArray(value);
+    if (!value) value = [];
+    else value = toArray(value);
 
-      this.payload[field] = this._has(field)
-        ? [...this.payload[field], ...value]
-        : value;
-    }
+    this.payload[field] = this._has(field)
+      ? [...this.payload[field], ...value]
+      : value;
 
     return this;
   }
