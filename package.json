@@ -15,10 +15,7 @@
   ],
   "homepage": "https://github.com/kamtoeddy/clean-schema#readme",
   "keywords": [
-    "clean architecture",
     "schema",
-    "DDD",
-    "Domain Driven Design",
     "data definition",
     "data validation"
   ],

@@ -125,7 +125,7 @@ export namespace LifeCycles {
   ) => Partial<T> | Promise<Partial<T>> | void | Promise<void>;
 }
 
-export interface ValidatorResponse<T extends Exclude<any, undefined>> {
+export interface ValidatorResponse<T> {
   reasons?: string[];
   valid: boolean;
   validated?: T;
@@ -135,7 +135,7 @@ export type ResponseInput<T> = {
   reason?: string;
   reasons?: string[];
   valid: boolean;
-  validated?: T;
+  validated?: TypeOf<T>;
 };
 
 type Validator<K extends keyof T, T> = (
