@@ -620,6 +620,43 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
         }
       });
 
+      describe("onDelete", () => {
+        let Model: any,
+          propChangeMap: any = {};
+
+        beforeAll(() => {
+          const onDelete =
+            (prop = "") =>
+            () =>
+              (propChangeMap[prop] = true);
+          const validator = () => ({ valid: false });
+
+          Model = new Schema({
+            prop1: { required: true, onDelete: onDelete("prop1"), validator },
+            prop2: { required: true, onDelete: onDelete("prop2"), validator },
+            prop3: { required: true, onDelete: onDelete("prop3"), validator },
+          }).getModel();
+        });
+
+        beforeEach(() => (propChangeMap = {}));
+
+        // creation
+        it("should trigger all onDelete listeners but for sideEffects", async () => {
+          await Model.delete({
+            prop1: true,
+            prop2: true,
+            prop3: true,
+            prop4: true,
+          });
+
+          expect(propChangeMap).toEqual({
+            prop1: true,
+            prop2: true,
+            prop3: true,
+          });
+        });
+      });
+
       describe("onFailure", () => {
         let Model: any,
           propChangeMap: any = {};

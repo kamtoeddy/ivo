@@ -348,17 +348,35 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     return { data: this._useConfigProps(data) as T, error: undefined };
   };
 
-  setValues(values: Partial<T>) {
+  delete = async (values: Partial<T>) => {
+    const _values = this._getValues(values, false) as Readonly<T>;
+
+    const cleanups = this.props.map(async (prop) => {
+      const listeners = this._getListeners(prop, "onDelete");
+
+      for (const listener of listeners) await listener({ ..._values });
+    });
+
+    await Promise.all(cleanups);
+  };
+
+  private _getValues(values: Partial<T>, allowSideEffects = true) {
     const keys = this._getKeysAsProps(values).filter(
       (key) =>
         this.optionsTool.isTimestampKey(key) ||
         this._isProp(key) ||
-        this._isSideEffect(key)
+        (allowSideEffects && this._isSideEffect(key))
     );
 
-    this.values = {};
+    const _values = {} as Partial<T>;
 
-    sort(keys).forEach((key) => (this.values[key] = values[key]));
+    sort(keys).forEach((key) => (_values[key] = values[key]));
+
+    return _values;
+  }
+
+  setValues(values: Partial<T>) {
+    this.values = this._getValues(values);
 
     this._initContext();
   }
@@ -445,6 +463,8 @@ class Model<T extends ObjectType> {
   clone = this.modelTool.clone;
 
   create = this.modelTool.create;
+
+  delete = this.modelTool.delete;
 
   update = this.modelTool.update;
 
