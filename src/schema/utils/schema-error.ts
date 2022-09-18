@@ -8,7 +8,6 @@ import {
 } from "../../utils/interfaces";
 
 export class SchemaError extends Error {
-  name = "SchemaError";
   payload: ErrorPayload = {};
   statusCode: number;
 
@@ -37,11 +36,11 @@ export class ErrorTool extends Error {
   }
 
   get summary() {
-    return new SchemaError({
+    return {
       message: this.message,
       payload: sortKeys(this.payload),
       statusCode: this.statusCode,
-    });
+    };
   }
 
   private _has = (field: PayloadKey) => this.payload.hasOwnProperty(field);
@@ -53,13 +52,12 @@ export class ErrorTool extends Error {
   };
 
   add(field: PayloadKey, value?: string | string[]) {
-    if (value) {
-      value = toArray(value);
+    if (!value) value = [];
+    else value = toArray(value);
 
-      this.payload[field] = this._has(field)
-        ? [...this.payload[field], ...value]
-        : value;
-    }
+    this.payload[field] = this._has(field)
+      ? [...this.payload[field], ...value]
+      : value;
 
     return this;
   }
@@ -80,5 +78,12 @@ export class ErrorTool extends Error {
   setMessage = (message: string) => {
     this.message = message;
     return this;
+  };
+
+  throw = () => {
+    const summary = this.summary;
+    this.reset();
+
+    throw new SchemaError(summary);
   };
 }

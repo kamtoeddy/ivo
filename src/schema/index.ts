@@ -171,6 +171,17 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     }
   };
 
+  private _handleError = (message?: string) => {
+    if (this._options.errors === "throw") return this._throwError(message);
+
+    if (message) this.error.setMessage(message);
+
+    const error = this.error.summary;
+    this.error.reset();
+
+    return { data: undefined, error };
+  };
+
   clone = async (options: ns.CloneOptions<T> = { reset: [] }) => {
     const reset = toArray(options.reset).filter(this._isProp);
 
@@ -198,6 +209,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
 
       const isLaxInit =
         this._isLaxProp(prop) &&
+        this.values.hasOwnProperty(prop) &&
         !isEqual(this.values[prop], this.defaults[prop]);
 
       const isRequiredInit =
@@ -221,7 +233,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
 
     this._handleRequiredBy();
 
-    if (this._isErroneous()) this._throwError();
+    if (this._isErroneous()) return this._handleError();
 
     const linkedProps = this._getCreatePropsWithListeners();
 
@@ -229,7 +241,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
 
     await this._resolveLinked(data, sideEffects, "onCreate");
 
-    return this._useConfigProps(data) as T;
+    return { data: this._useConfigProps(data) as T, error: undefined };
   };
 
   create = async () => {
@@ -275,7 +287,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
 
     this._handleRequiredBy();
 
-    if (this._isErroneous()) this._throwError();
+    if (this._isErroneous()) return this._handleError();
 
     const linkedProps = this._getCreatePropsWithListeners();
 
@@ -283,7 +295,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
 
     await this._resolveLinked(data, sideEffects, "onCreate");
 
-    return this._useConfigProps(data) as T;
+    return { data: this._useConfigProps(data) as T, error: undefined };
   };
 
   setValues(values: Partial<T>) {
@@ -334,18 +346,19 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
 
     this._handleRequiredBy();
 
-    if (this._isErroneous()) this._throwError();
+    if (this._isErroneous()) return this._handleError();
 
     if (!Object.keys(updated).length && !sideEffects.length)
-      this._throwError("Nothing to update");
+      return this._handleError("Nothing to update");
 
     await this._resolveLinked(updated, linkedProps, "onUpdate");
 
     await this._resolveLinked(updated, sideEffects, "onUpdate");
 
-    if (!Object.keys(updated).length) this._throwError("Nothing to update");
+    if (!Object.keys(updated).length)
+      return this._handleError("Nothing to update");
 
-    return this._useConfigProps(updated, true);
+    return { data: this._useConfigProps(updated, true), error: undefined };
   };
 
   validate = async <K extends StringKey<T>>(prop: K, value: any) => {

@@ -23,7 +23,7 @@ export const CommonInheritanceTest = (
   describe(`behaviour shared via inheritance for '${schemaName}'`, () => {
     let item: any;
 
-    beforeAll(async () => (item = await Model.create(testData)));
+    beforeAll(async () => (item = (await Model.create(testData)).data));
 
     describe("create", () => {
       it("should create properly with right values", () => {
@@ -82,7 +82,7 @@ export const CommonInheritanceTest = (
 
     describe("clone", () => {
       it("should clone properly", async () => {
-        const clonedItem = await Model.clone(item);
+        const { data: clonedItem } = await Model.clone(item);
 
         expect(clonedItem).toMatchObject({
           id: "1",
@@ -99,7 +99,7 @@ export const CommonInheritanceTest = (
       });
 
       it("should clone properly with side effects", async () => {
-        const clonedItem = await Model.clone({
+        const { data: clonedItem } = await Model.clone({
           ...item,
           quantities: [
             { quantity: 1, name: "crate24" },
@@ -122,8 +122,11 @@ export const CommonInheritanceTest = (
       });
 
       it("should respect clone reset option for property with default value", async () => {
-        const clone1 = await Model.clone(item, { reset: "quantity" });
-        const clone2 = await Model.clone(item, { reset: ["quantity"] });
+        const { data: clone1 } = await Model.clone(item, { reset: "quantity" });
+        const { data: clone2 } = await Model.clone(item, {
+          reset: ["quantity"],
+        });
+
         const expectedResult = {
           id: "1",
           name: "beer",
@@ -142,8 +145,13 @@ export const CommonInheritanceTest = (
       });
 
       it("should respect clone reset option for property without default value", async () => {
-        const clone1 = await Model.clone(item, { reset: "measureUnit" });
-        const clone2 = await Model.clone(item, { reset: ["measureUnit"] });
+        const { data: clone1 } = await Model.clone(item, {
+          reset: "measureUnit",
+        });
+        const { data: clone2 } = await Model.clone(item, {
+          reset: ["measureUnit"],
+        });
+
         const expectedResult = {
           id: "1",
           name: "beer",
@@ -169,7 +177,7 @@ export const CommonInheritanceTest = (
           quantity: 10,
         });
 
-        expect(update).toMatchObject({
+        expect(update.data).toMatchObject({
           name: "Castel",
           quantityChangeCounter: 2,
           quantity: 10,
@@ -197,7 +205,7 @@ export const CommonInheritanceTest = (
           ],
         });
 
-        expect(update).toMatchObject({
+        expect(update.data).toMatchObject({
           quantityChangeCounter: 2,
           quantity: 173,
         });
@@ -214,7 +222,7 @@ export const CommonInheritanceTest = (
           ],
         });
 
-        expect(update).toMatchObject({
+        expect(update.data).toMatchObject({
           name: "Castel",
           quantityChangeCounter: 3,
           quantity: 83,
@@ -222,7 +230,7 @@ export const CommonInheritanceTest = (
       });
 
       it("should update lax properties not initialized at creation", async () => {
-        const update = await Model.update(item, {
+        const { data: update } = await Model.update(item, {
           _readOnlyLax2: "haha",
         });
 
@@ -253,7 +261,7 @@ export const CommonInheritanceTest = (
       });
 
       it("should update dependent properties on side effects", async () => {
-        const update = await Model.update(item, {
+        const { data: update } = await Model.update(item, {
           _sideEffectForDependentReadOnly: "haha",
         });
 
@@ -263,7 +271,7 @@ export const CommonInheritanceTest = (
       });
 
       it("should not update readonly dependent properties that have changed", async () => {
-        const update = await Model.update(item, {
+        const { data: update } = await Model.update(item, {
           _sideEffectForDependentReadOnly: "haha",
         });
 
@@ -297,13 +305,15 @@ export const CommonInheritanceTest = (
     let item: any;
 
     beforeAll(async () => {
-      item = await Model.create({
-        ...testData,
-        quantities: [
-          { name: "crate24", quantity: 1 },
-          { name: "tray", quantity: 1 },
-        ],
-      });
+      item = (
+        await Model.create({
+          ...testData,
+          quantities: [
+            { name: "crate24", quantity: 1 },
+            { name: "tray", quantity: 1 },
+          ],
+        })
+      ).data;
     });
 
     // creation

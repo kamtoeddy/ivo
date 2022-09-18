@@ -5,20 +5,22 @@ describe("Testing schema of Orderitem (inherited schema)", () => {
   let orderItem: IOrderItem;
 
   beforeAll(async () => {
-    orderItem = await OrderItem.create({
-      id: "1",
-      name: "beer",
-      costPrice: 5,
-      price: 5,
-      measureUnit: "bottle",
-      otherMeasureUnits: [
-        { coefficient: 24, name: "crate24" },
-        { coefficient: 5, name: "tray" },
-        { coefficient: 12, name: "crate" },
-      ],
-      quantity: 100,
-      // quantities: [{ quantity: 1, name: "crate24" }],
-    });
+    orderItem = (
+      await OrderItem.create({
+        id: "1",
+        name: "beer",
+        costPrice: 5,
+        price: 5,
+        measureUnit: "bottle",
+        otherMeasureUnits: [
+          { coefficient: 24, name: "crate24" },
+          { coefficient: 5, name: "tray" },
+          { coefficient: 12, name: "crate" },
+        ],
+        quantity: 100,
+        // quantities: [{ quantity: 1, name: "crate24" }],
+      })
+    ).data!;
   });
 
   it("should have been created properly", () => {
