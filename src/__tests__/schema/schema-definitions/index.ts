@@ -1438,14 +1438,48 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
         let silentModel: any, modelToThrow: any;
 
         beforeAll(() => {
+          const validator = (value: any) => ({ valid: value ? true : false });
+
           const definition = {
-            lax: { default: "" },
-            readonly: { default: "" },
-            required: { default: "" },
+            lax: { default: "lax-default", validator },
+            readonly: {
+              readonly: "lax",
+              default: "readonly-default",
+              validator,
+            },
+            required: { required: true, validator },
           };
 
           silentModel = new Schema(definition).getModel();
           modelToThrow = new Schema(definition, { errors: "throw" }).getModel();
+        });
+
+        describe("silent", () => {
+          it("should create normally", async () => {
+            const { data } = await silentModel.create({
+              readonly: "lax",
+              required: true,
+            });
+
+            expect(data).toEqual({
+              lax: "lax-default",
+              readonly: "lax",
+              required: true,
+            });
+          });
+
+          it("should clone normally", async () => {
+            const { data } = await silentModel.clone({
+              readonly: "lax",
+              required: true,
+            });
+
+            expect(data).toEqual({
+              lax: "lax-default",
+              readonly: "lax",
+              required: true,
+            });
+          });
         });
       });
 

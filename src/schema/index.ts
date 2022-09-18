@@ -209,6 +209,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
 
       const isLaxInit =
         this._isLaxProp(prop) &&
+        this.values.hasOwnProperty(prop) &&
         !isEqual(this.values[prop], this.defaults[prop]);
 
       const isRequiredInit =

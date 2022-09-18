@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 - [Added] Schema.options.errors
 - [Changed] the results of create, clone & update operations
+- [Fixed] lax properties being required during cloning
 
 # v1.5.0 <small><sup>09-09-2022</sup></small>
 
