@@ -181,7 +181,12 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
       : { data: undefined, error: error.summary };
   };
 
-  clone = async (options: ns.CloneOptions<T> = { reset: [] }) => {
+  clone = async (
+    values: Partial<T>,
+    options: ns.CloneOptions<T> = { reset: [] }
+  ) => {
+    this.setValues(values);
+
     const reset = toArray(options.reset).filter(this._isProp);
 
     const data = {} as T;
@@ -244,7 +249,9 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     return { data: this._useConfigProps(data) as T, error: undefined };
   };
 
-  create = async () => {
+  create = async (values: Partial<T>) => {
+    this.setValues(values);
+
     const data = {} as T;
     const error = new ErrorTool({ message: "Validation Error" });
 
@@ -314,9 +321,10 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     this._initContext();
   }
 
-  update = async (changes: Partial<T>) => {
-    const error = new ErrorTool({ message: "Validation Error" });
+  update = async (values: Partial<T>, changes: Partial<T>) => {
+    this.setValues(values);
 
+    const error = new ErrorTool({ message: "Validation Error" });
     const updated = {} as Partial<T>;
 
     const toUpdate = Object.keys(changes ?? {}).filter((prop) =>
@@ -383,26 +391,11 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
 class Model<T extends ObjectType> {
   constructor(private modelTool: ModelTool<T>) {}
 
-  clone = async (
-    values: Partial<T>,
-    options: ns.CloneOptions<T> = { reset: [] }
-  ) => {
-    this.modelTool.setValues(values);
+  clone = this.modelTool.clone;
 
-    return this.modelTool.clone(options);
-  };
+  create = this.modelTool.create;
 
-  create = async (values: Partial<T>) => {
-    this.modelTool.setValues(values);
-
-    return this.modelTool.create();
-  };
-
-  update = async (values: Partial<T>, changes: Partial<T>) => {
-    this.modelTool.setValues(values);
-
-    return this.modelTool.update(changes);
-  };
+  update = this.modelTool.update;
 
   validate = this.modelTool.validate;
 }
