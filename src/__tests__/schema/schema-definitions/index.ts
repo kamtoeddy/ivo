@@ -726,6 +726,112 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           expect(propChangeMap).toEqual({});
         });
       });
+
+      describe("onSuccess", () => {
+        let Model: any,
+          initialData = {
+            dependent: "",
+            lax: "changed",
+            readonly: "changed",
+            readonlyLax: "",
+            required: "changed",
+          },
+          propChangeMap: any = {};
+
+        beforeAll(() => {
+          const onSuccess =
+            (prop = "") =>
+            () =>
+              (propChangeMap[prop] = true);
+          const validator = () => ({ valid: true });
+
+          Model = new Schema({
+            dependent: {
+              default: "",
+              dependent: true,
+              onSuccess: onSuccess("dependent"),
+            },
+            lax: { default: "", onSuccess: onSuccess("lax"), validator },
+            readonly: {
+              readonly: true,
+              onSuccess: onSuccess("readonly"),
+              validator,
+            },
+            readonlyLax: {
+              default: "",
+              readonly: "lax",
+              onSuccess: onSuccess("readonlyLax"),
+              onChange: () => ({ dependent: true }),
+              validator,
+            },
+            required: {
+              required: true,
+              onSuccess: onSuccess("required"),
+              validator,
+            },
+          }).getModel();
+        });
+
+        beforeEach(() => (propChangeMap = {}));
+
+        // creation
+        it("should call onSuccess listeners at creation", async () => {
+          const { error } = await Model.create({
+            required: true,
+            readonly: true,
+          });
+
+          expect(error).toBeUndefined();
+          expect(propChangeMap).toEqual({
+            dependent: true,
+            lax: true,
+            readonly: true,
+            readonlyLax: true,
+            required: true,
+          });
+        });
+
+        // cloning
+        it("should call onSuccess listeners during cloning", async () => {
+          const { error } = await Model.clone({
+            required: true,
+            readonly: true,
+          });
+
+          expect(error).toBeUndefined();
+          expect(propChangeMap).toEqual({
+            dependent: true,
+            lax: true,
+            readonly: true,
+            readonlyLax: true,
+            required: true,
+          });
+        });
+
+        // updates
+        it("should call onSuccess listeners during updates with lax props", async () => {
+          const { error } = await Model.update(initialData, {
+            lax: true,
+          });
+
+          expect(error).toBeUndefined();
+          expect(propChangeMap).toEqual({
+            lax: true,
+          });
+        });
+
+        it("should call onSuccess listeners during updates with readonlyLax & dependent", async () => {
+          const { error } = await Model.update(initialData, {
+            readonlyLax: true,
+          });
+
+          expect(error).toBeUndefined();
+          expect(propChangeMap).toEqual({
+            dependent: true,
+            readonlyLax: true,
+          });
+        });
+      });
     });
 
     describe("readonly", () => {

@@ -201,6 +201,18 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     await Promise.all(cleanups);
   };
 
+  private _handleSuccess = async (data: Partial<T>) => {
+    const props = this._getKeysAsProps(data);
+
+    const successOperations = props.map(async (prop) => {
+      const listeners = this._getListeners(prop, "onSuccess");
+
+      for (const listener of listeners) await listener(this._getContext());
+    });
+
+    await Promise.all(successOperations);
+  };
+
   clone = async (
     values: Partial<T>,
     options: ns.CloneOptions<T> = { reset: [] }
@@ -269,6 +281,8 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
 
     await this._resolveLinked(data, error, sideEffects, "onCreate");
 
+    await this._handleSuccess(data);
+
     return { data: this._useConfigProps(data) as T, error: undefined };
   };
 
@@ -328,6 +342,8 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     await this._resolveLinked(data, error, linkedProps, "onCreate");
 
     await this._resolveLinked(data, error, sideEffects, "onCreate");
+
+    await this._handleSuccess(data);
 
     return { data: this._useConfigProps(data) as T, error: undefined };
   };
@@ -401,6 +417,8 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
       await this._handleFailure(updated, error, sideEffects);
       return this._handleError(error.setMessage("Nothing to update"));
     }
+
+    await this._handleSuccess(updated);
 
     return { data: this._useConfigProps(updated, true), error: undefined };
   };
