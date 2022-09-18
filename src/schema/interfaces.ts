@@ -102,6 +102,9 @@ export namespace Schema {
   type SideEffect<T, K extends keyof T> = {
     sideEffect: true;
     onChange: LifeCycles.Listener<T> | NonEmptyArray<LifeCycles.Listener<T>>;
+    onFailure?:
+      | LifeCycles.VoidListener<T>
+      | NonEmptyArray<LifeCycles.VoidListener<T>>;
     shouldInit?: false;
     validator: Validator<K, T>;
   };

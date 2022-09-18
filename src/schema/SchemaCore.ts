@@ -39,7 +39,13 @@ const allRules = [
 
 const allowedOptions: OptionsKey[] = ["errors", "timestamps"];
 const constantRules = ["constant", "onCreate", "value"];
-const sideEffectRules = ["sideEffect", "onChange", "shouldInit", "validator"];
+const sideEffectRules = [
+  "sideEffect",
+  "onChange",
+  "onFailure",
+  "shouldInit",
+  "validator",
+];
 
 const lifeCycleRules: LifeCycles.Rule[] = [
   "onChange",
@@ -436,7 +442,7 @@ export abstract class SchemaCore<T extends ObjectType> {
 
       reasons = reasons.concat(
         invalidHandlers.map(
-          (dt) => `'${dt.listener}' @${rule}[${dt.index}] is not a function`
+          (dt) => `The listener for '${rule}' @[${dt.index}] is not a function`
         )
       );
     }

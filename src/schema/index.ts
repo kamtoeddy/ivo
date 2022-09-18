@@ -176,16 +176,21 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     }
   };
 
-  private _handleError = async (data: Partial<T>, error: ErrorTool) => {
-    await this._handleFailure(data, error);
-
+  private _handleError = (error: ErrorTool) => {
     return this._options.errors === "throw"
       ? error.throw()
       : { data: undefined, error: error.summary };
   };
 
-  private _handleFailure = async (data: Partial<T>, error: ErrorTool) => {
-    const props = this._getKeysAsProps({ ...data, ...error.payload });
+  private _handleFailure = async (
+    data: Partial<T>,
+    error: ErrorTool,
+    sideEffects: StringKey<T>[] = []
+  ) => {
+    const props = [
+      ...this._getKeysAsProps({ ...data, ...error.payload }),
+      ...sideEffects,
+    ];
 
     const cleanups = props.map(async (prop) => {
       const listeners = this._getListeners(prop, "onFailure");
@@ -253,7 +258,10 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
 
     this._handleRequiredBy(error);
 
-    if (error.isPayloadLoaded) return this._handleError(data, error);
+    if (error.isPayloadLoaded) {
+      await this._handleFailure(data, error, sideEffects);
+      return this._handleError(error);
+    }
 
     const linkedProps = this._getCreatePropsWithListeners();
 
@@ -310,7 +318,10 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
 
     this._handleRequiredBy(error);
 
-    if (error.isPayloadLoaded) return this._handleError(data, error);
+    if (error.isPayloadLoaded) {
+      await this._handleFailure(data, error, sideEffects);
+      return this._handleError(error);
+    }
 
     const linkedProps = this._getCreatePropsWithListeners();
 
@@ -372,17 +383,24 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
 
     this._handleRequiredBy(error);
 
-    if (error.isPayloadLoaded) return this._handleError(updated, error);
+    if (error.isPayloadLoaded) {
+      await this._handleFailure(updated, error, sideEffects);
+      return this._handleError(error);
+    }
 
-    if (!Object.keys(updated).length && !sideEffects.length)
-      return this._handleError(updated, error.setMessage("Nothing to update"));
+    if (!Object.keys(updated).length && !sideEffects.length) {
+      await this._handleFailure(updated, error, sideEffects);
+      return this._handleError(error.setMessage("Nothing to update"));
+    }
 
     await this._resolveLinked(updated, error, linkedProps, "onUpdate");
 
     await this._resolveLinked(updated, error, sideEffects, "onUpdate");
 
-    if (!Object.keys(updated).length)
-      return this._handleError(updated, error.setMessage("Nothing to update"));
+    if (!Object.keys(updated).length) {
+      await this._handleFailure(updated, error, sideEffects);
+      return this._handleError(error.setMessage("Nothing to update"));
+    }
 
     return { data: this._useConfigProps(updated, true), error: undefined };
   };
