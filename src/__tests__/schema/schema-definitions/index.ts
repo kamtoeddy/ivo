@@ -49,6 +49,28 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
       }
     });
 
+    it("should reject if a property's definition is an empty object", () => {
+      const toFail = fx({ emptyProp: {} });
+      expectFailure(toFail);
+
+      try {
+        toFail();
+      } catch (err: any) {
+        expect(err).toEqual(
+          expect.objectContaining({
+            message: "Invalid Schema",
+            payload: {
+              emptyProp: [
+                "Lax properties must have a default value nor setter",
+                "A property should at least be readonly, required, or have a default value",
+              ],
+            },
+            statusCode: 500,
+          })
+        );
+      }
+    });
+
     describe("constant", () => {
       describe("valid", () => {
         let User: any, user: any;
