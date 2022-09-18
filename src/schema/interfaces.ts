@@ -36,6 +36,15 @@ export namespace Schema {
   type Listenable<T> = {
     onChange?: LifeCycles.Listener<T> | NonEmptyArray<LifeCycles.Listener<T>>;
     onCreate?: LifeCycles.Listener<T> | NonEmptyArray<LifeCycles.Listener<T>>;
+    onDelete?:
+      | LifeCycles.VoidListener<T>
+      | NonEmptyArray<LifeCycles.VoidListener<T>>;
+    onFailure?:
+      | LifeCycles.FailureListener<T>
+      | NonEmptyArray<LifeCycles.FailureListener<T>>;
+    onSuccess?:
+      | LifeCycles.VoidListener<T>
+      | NonEmptyArray<LifeCycles.VoidListener<T>>;
     onUpdate?: LifeCycles.Listener<T> | NonEmptyArray<LifeCycles.Listener<T>>;
   };
 
@@ -118,11 +127,23 @@ export namespace Schema {
 }
 
 export namespace LifeCycles {
-  export type Rule = "onChange" | "onCreate" | "onUpdate";
+  export type Rule =
+    | "onChange"
+    | "onCreate"
+    | "onDelete"
+    | "onFailure"
+    | "onSuccess"
+    | "onUpdate";
 
   export type Listener<T> = (
     ctx: Readonly<T>
   ) => Partial<T> | Promise<Partial<T>> | void | Promise<void>;
+
+  export type FailureListener<T> = (
+    ctx: Readonly<Partial<T>>
+  ) => void | Promise<void>;
+
+  export type VoidListener<T> = (ctx: Readonly<T>) => void | Promise<void>;
 }
 
 export interface ValidatorResponse<T> {
@@ -151,6 +172,9 @@ export type PropDefinitionRule =
   | "dependent"
   | "onChange"
   | "onCreate"
+  | "onDelete"
+  | "onFailure"
+  | "onSuccess"
   | "onUpdate"
   | "readonly"
   | "required"
