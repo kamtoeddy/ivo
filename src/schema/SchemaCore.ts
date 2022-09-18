@@ -19,7 +19,14 @@ export const defaultOptions = {
 type OptionsKey = StringKey<ns.Options>;
 
 const allowedOptions: OptionsKey[] = ["errors", "timestamps"];
-const lifeCycleRules: LifeCycles.Rule[] = ["onChange", "onCreate", "onUpdate"];
+const lifeCycleRules: LifeCycles.Rule[] = [
+  "onChange",
+  "onCreate",
+  "onDelete",
+  "onFailure",
+  "onSuccess",
+  "onUpdate",
+];
 
 export abstract class SchemaCore<T extends ObjectType> {
   protected _options: ns.Options;
@@ -38,7 +45,6 @@ export abstract class SchemaCore<T extends ObjectType> {
   protected sideEffects: StringKey<T>[] = [];
 
   // helpers
-  protected error = new ErrorTool({ message: "Validation Error" });
   protected optionsTool: OptionsTool;
 
   constructor(
@@ -55,19 +61,12 @@ export abstract class SchemaCore<T extends ObjectType> {
   }
 
   // context methods
-  protected _getContext = () => this.context;
+  protected _getContext = () => ({ ...this.context });
 
   protected _initContext = () => (this.context = { ...this.values } as T);
 
   protected _updateContext = (updates: Partial<T>) =>
     (this.context = { ...this.context, ...updates });
-
-  // error methods
-  private _throwError(_message?: string): never {
-    if (_message) this.error.setMessage(_message);
-
-    return this.error.throw();
-  }
 
   protected _canInit = (prop: string) => {
     if (this._isDependentProp(prop)) return false;
@@ -83,75 +82,56 @@ export abstract class SchemaCore<T extends ObjectType> {
   };
 
   protected _checkOptions = () => {
-    this.error.setMessage("Invalid Schema");
-    this.error.statusCode = 500;
+    const error = new ErrorTool({ message: "Invalid Schema", statusCode: 500 });
 
     if (
       !this._options ||
       typeof this._options !== "object" ||
       Array.isArray(this._options)
-    ) {
-      this.error.add("schema options", "Must be an object");
-      this._throwError();
-    }
+    )
+      error.add("schema options", "Must be an object").throw();
 
     let options = Object.keys(this._options) as OptionsKey[];
 
-    if (!options.length) {
-      this.error.add("schema options", "Cannot be empty");
-      this._throwError();
-    }
+    if (!options.length) error.add("schema options", "Cannot be empty").throw();
 
     for (let option of options)
-      if (!allowedOptions.includes(option)) {
-        this.error.add(option, "Invalid option");
-        this._throwError();
-      }
+      if (!allowedOptions.includes(option))
+        error.add(option, "Invalid option").throw();
 
     if (this._options.hasOwnProperty("errors")) {
-      if (!["silent", "throw"].includes(this._options.errors!)) {
-        this.error.add("errors", "should be 'silent' or 'throws'");
-        this._throwError();
-      }
+      if (!["silent", "throw"].includes(this._options.errors!))
+        error.add("errors", "should be 'silent' or 'throws'").throw();
     }
 
     if (this._options.hasOwnProperty("timestamps")) {
       const ts_valid = this._isTimestampsOk();
 
-      if (!ts_valid.valid) {
-        this.error.add("timestamps", ts_valid.reason!);
-        this._throwError();
-      }
+      if (!ts_valid.valid) error.add("timestamps", ts_valid.reason!).throw();
     }
-
-    this.error.reset();
   };
 
   protected _checkPropDefinitions = () => {
-    this.error.setMessage("Invalid Schema");
-    this.error.statusCode = 500;
+    const error = new ErrorTool({ message: "Invalid Schema", statusCode: 500 });
 
     if (
       !this._propDefinitions ||
       typeof this._propDefinitions !== "object" ||
       Array.isArray(this._propDefinitions)
     )
-      this._throwError();
+      error.throw();
 
     let props: string[] = Object.keys(this._propDefinitions);
 
-    if (!props.length) {
-      this.error.add("schema properties", "Insufficient Schema properties");
-      this._throwError();
-    }
+    if (!props.length)
+      error.add("schema properties", "Insufficient Schema properties").throw();
 
     for (let prop of props) {
       const isDefOk = this.__isPropDefinitionOk(prop);
-      if (!isDefOk.valid) this.error.add(prop, isDefOk.reasons!);
+      if (!isDefOk.valid) error.add(prop, isDefOk.reasons!);
     }
 
-    if (this._isErroneous()) this._throwError();
-    else this.error.reset();
+    if (error.isPayloadLoaded) error.throw();
   };
 
   protected _getDefinition = (prop: string) => this._propDefinitions[prop]!;
@@ -186,7 +166,10 @@ export abstract class SchemaCore<T extends ObjectType> {
     );
   };
 
-  protected _getAllListeners = (prop: string, lifeCycle: LifeCycles.Rule) => {
+  protected _getOperationListeners = (
+    prop: string,
+    lifeCycle: LifeCycles.Rule
+  ) => {
     const onChange = this._getListeners(prop, "onChange");
 
     if (this._isSideEffect(prop)) return onChange;
@@ -204,6 +187,9 @@ export abstract class SchemaCore<T extends ObjectType> {
 
   protected _getValidator = (prop: string) =>
     this._getDefinition(prop)?.validator;
+
+  protected _getKeysAsProps = (data: any) =>
+    Object.keys(data) as StringKey<T>[];
 
   protected _hasAny = (
     prop: string,
@@ -314,8 +300,6 @@ export abstract class SchemaCore<T extends ObjectType> {
 
   protected _isDependentProp = (prop: string) =>
     this.dependents.includes(prop as StringKey<T>);
-
-  protected _isErroneous = () => this.error.isPayloadLoaded;
 
   protected _isFunction = (obj: any): boolean => typeof obj === "function";
 
@@ -428,7 +412,7 @@ export abstract class SchemaCore<T extends ObjectType> {
     if (this._hasAny(prop, "validator") && !this._isValidatorOk(prop))
       reasons.push("Invalid validator");
 
-    // onChange, onCreate & onUpdate
+    // onChange, onCreate, onDelete, onFailure, onSuccess & onUpdate
     for (let rule of lifeCycleRules) {
       if (!this._hasAny(prop, rule)) continue;
 

@@ -56,7 +56,8 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     const listeners = [];
 
     for (let prop of Array.from(this.props))
-      if (this._getAllListeners(prop, "onCreate")?.length) listeners.push(prop);
+      if (this._getOperationListeners(prop, "onCreate")?.length)
+        listeners.push(prop);
 
     return listeners;
   };
@@ -104,7 +105,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     prop: StringKey<T>,
     lifeCycle: LifeCycles.Rule
   ) => {
-    const listeners = this._getAllListeners(prop, lifeCycle);
+    const listeners = this._getOperationListeners(prop, lifeCycle);
 
     if (
       !listeners.length ||
@@ -121,7 +122,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
 
       if (typeof extra !== "object") continue;
 
-      const _props = Object.keys(extra) as StringKey<T>[];
+      const _props = this._getKeysAsProps(extra);
 
       for (let _prop of _props) {
         const _value = extra[_prop];
@@ -175,10 +176,24 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     }
   };
 
-  private _handleError = (error: ErrorTool) => {
+  private _handleError = async (data: Partial<T>, error: ErrorTool) => {
+    await this._handleFailure(data, error);
+
     return this._options.errors === "throw"
       ? error.throw()
       : { data: undefined, error: error.summary };
+  };
+
+  private _handleFailure = async (data: Partial<T>, error: ErrorTool) => {
+    const props = this._getKeysAsProps({ ...data, ...error.payload });
+
+    const cleanups = props.map(async (prop) => {
+      const listeners = this._getListeners(prop, "onFailure");
+
+      for (const listener of listeners) await listener(this._getContext());
+    });
+
+    await Promise.all(cleanups);
   };
 
   clone = async (
@@ -192,9 +207,9 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     const data = {} as T;
     const error = new ErrorTool({ message: "Validation Error" });
 
-    const sideEffects = Object.keys(this.values).filter(
+    const sideEffects = this._getKeysAsProps(this.values).filter(
       this._isSideInit
-    ) as StringKey<T>[];
+    );
 
     const props = [...Array.from(this.props), ...sideEffects];
 
@@ -238,7 +253,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
 
     this._handleRequiredBy(error);
 
-    if (error.isPayloadLoaded) return this._handleError(error);
+    if (error.isPayloadLoaded) return this._handleError(data, error);
 
     const linkedProps = this._getCreatePropsWithListeners();
 
@@ -255,9 +270,9 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     const data = {} as T;
     const error = new ErrorTool({ message: "Validation Error" });
 
-    const sideEffects = Object.keys(this.values).filter(
+    const sideEffects = this._getKeysAsProps(this.values).filter(
       this._isSideInit
-    ) as StringKey<T>[];
+    );
 
     const props = [...Array.from(this.props), ...sideEffects];
 
@@ -295,7 +310,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
 
     this._handleRequiredBy(error);
 
-    if (error.isPayloadLoaded) return this._handleError(error);
+    if (error.isPayloadLoaded) return this._handleError(data, error);
 
     const linkedProps = this._getCreatePropsWithListeners();
 
@@ -307,12 +322,12 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
   };
 
   setValues(values: Partial<T>) {
-    const keys = Object.keys(values).filter(
+    const keys = this._getKeysAsProps(values).filter(
       (key) =>
         this.optionsTool.isTimestampKey(key) ||
         this._isProp(key) ||
         this._isSideEffect(key)
-    ) as StringKey<T>[];
+    );
 
     this.values = {};
 
@@ -327,9 +342,9 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     const error = new ErrorTool({ message: "Validation Error" });
     const updated = {} as Partial<T>;
 
-    const toUpdate = Object.keys(changes ?? {}).filter((prop) =>
+    const toUpdate = this._getKeysAsProps(changes ?? {}).filter((prop) =>
       this._isUpdatable(prop)
-    ) as StringKey<T>[];
+    );
 
     const linkedProps: StringKey<T>[] = [];
     const sideEffects: StringKey<T>[] = [];
@@ -357,17 +372,17 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
 
     this._handleRequiredBy(error);
 
-    if (error.isPayloadLoaded) return this._handleError(error);
+    if (error.isPayloadLoaded) return this._handleError(updated, error);
 
     if (!Object.keys(updated).length && !sideEffects.length)
-      return this._handleError(error.setMessage("Nothing to update"));
+      return this._handleError(updated, error.setMessage("Nothing to update"));
 
     await this._resolveLinked(updated, error, linkedProps, "onUpdate");
 
     await this._resolveLinked(updated, error, sideEffects, "onUpdate");
 
     if (!Object.keys(updated).length)
-      return this._handleError(error.setMessage("Nothing to update"));
+      return this._handleError(updated, error.setMessage("Nothing to update"));
 
     return { data: this._useConfigProps(updated, true), error: undefined };
   };
