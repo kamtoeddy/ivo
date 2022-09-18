@@ -220,11 +220,14 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           }
         });
 
-        it("should reject (constant & value) + any other rule", () => {
+        it("should reject (constant & value) + any other rule(!onCreate)", () => {
           const rules = [
             "default",
             "dependent",
             "onChange",
+            "onDelete",
+            "onFailure",
+            "onSuccess",
             "onUpdate",
             "readonly",
             "required",
@@ -551,6 +554,10 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
         });
       });
     });
+
+    // describe("onFailure",()=>{
+
+    // })
 
     describe("readonly", () => {
       describe("valid", () => {
@@ -1329,11 +1336,11 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           toPass();
         });
 
-        it("should allow onChange + shouldInit + validator", () => {
+        it("should allow onChange + shouldInit(false) + validator", () => {
           const toPass = fx({
             propertyName: {
               sideEffect: true,
-              shouldInit: true,
+              shouldInit: false,
               onChange: validator,
               validator,
             },
@@ -1379,6 +1386,77 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 propertyName: expect.arrayContaining(["Invalid validator"]),
               })
             );
+          }
+        });
+
+        it("should reject shouldInit(!false)", () => {
+          const values = [true, null, [], {}, "", 25];
+
+          for (const shouldInit of values) {
+            const toFail = fx({
+              propertyName: {
+                sideEffect: true,
+                shouldInit,
+                onChange: validator,
+                validator,
+              },
+            });
+
+            expectFailure(toFail);
+
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err.payload).toEqual(
+                expect.objectContaining({
+                  propertyName: expect.arrayContaining([
+                    "To block the initialization of side effects shouldInit must be 'false'",
+                  ]),
+                })
+              );
+            }
+          }
+        });
+
+        it("should reject any non sideEffect rule", () => {
+          const values = [
+            "constant",
+            "default",
+            "dependent",
+            "onCreate",
+            "onDelete",
+            "onFailure",
+            "onSuccess",
+            "onUpdate",
+            "readonly",
+            "required",
+            "requiredError",
+            "value",
+          ];
+
+          for (const rule of values) {
+            const toFail = fx({
+              propertyName: {
+                sideEffect: true,
+                [rule]: true,
+                onChange: validator,
+                validator,
+              },
+            });
+
+            expectFailure(toFail);
+
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err.payload).toEqual(
+                expect.objectContaining({
+                  propertyName: expect.arrayContaining([
+                    "SideEffects properties can only have ('sideEffect' + 'onChange' + 'validator') or 'shouldInit'",
+                  ]),
+                })
+              );
+            }
           }
         });
       });

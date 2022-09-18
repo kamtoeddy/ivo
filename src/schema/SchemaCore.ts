@@ -18,7 +18,29 @@ export const defaultOptions = {
 
 type OptionsKey = StringKey<ns.Options>;
 
+const allRules = [
+  "constant",
+  "default",
+  "dependent",
+  "onChange",
+  "onCreate",
+  "onDelete",
+  "onFailure",
+  "onSuccess",
+  "onUpdate",
+  "readonly",
+  "required",
+  "requiredError",
+  "sideEffect",
+  "shouldInit",
+  "validator",
+  "value",
+] as PropDefinitionRule[];
+
 const allowedOptions: OptionsKey[] = ["errors", "timestamps"];
+const constantRules = ["constant", "onCreate", "value"];
+const sideEffectRules = ["sideEffect", "onChange", "shouldInit", "validator"];
+
 const lifeCycleRules: LifeCycles.Rule[] = [
   "onChange",
   "onCreate",
@@ -224,19 +246,11 @@ export abstract class SchemaCore<T extends ObjectType> {
         reason: "Constant properties cannot have 'undefined' as value",
       };
 
-    if (
-      this._hasAny(prop, [
-        "default",
-        "dependent",
-        "onChange",
-        "onUpdate",
-        "readonly",
-        "required",
-        "sideEffect",
-        "shouldInit",
-        "validator",
-      ])
-    )
+    const unAcceptedRules = allRules.filter(
+      (rule) => !constantRules.includes(rule)
+    );
+
+    if (this._hasAny(prop, unAcceptedRules))
       return {
         valid,
         reason:
@@ -615,24 +629,13 @@ export abstract class SchemaCore<T extends ObjectType> {
   protected __isSideEffect = (prop: string) => {
     const valid = false;
 
-    if (!this._getDefinition(prop)?.sideEffect === true)
+    const { sideEffect, shouldInit } = this._getDefinition(prop);
+
+    if (sideEffect !== true)
       return { valid, reason: "SideEffects must have sideEffect as 'true'" };
 
     if (!this._isValidatorOk(prop))
       return { valid, reason: "Invalid validator" };
-
-    if (this._hasAny(prop, "default"))
-      return {
-        valid,
-        reason:
-          "SideEffects cannot have default values as they do not exist on instances of your model",
-      };
-
-    if (this._hasAny(prop, "dependent"))
-      return { valid, reason: "SideEffects cannot be dependent" };
-
-    if (this._hasAny(prop, ["readonly", "required"]))
-      return { valid, reason: "SideEffects cannot be readonly nor required" };
 
     if (!this._getListeners(prop, "onChange").length)
       return {
@@ -640,18 +643,22 @@ export abstract class SchemaCore<T extends ObjectType> {
         reason: "SideEffects must have at least one onChange listener",
       };
 
-    if (this._hasAny(prop, "onCreate"))
+    if (this._hasAny(prop, "shouldInit") && shouldInit !== false)
       return {
         valid,
         reason:
-          "SideEffects do not support onCreate listeners. Use onChange & shouldInit(false) instead",
+          "To block the initialization of side effects shouldInit must be 'false'",
       };
 
-    if (this._hasAny(prop, "onUpdate"))
+    const unAcceptedRules = allRules.filter(
+      (rule) => !sideEffectRules.includes(rule)
+    );
+
+    if (this._hasAny(prop, unAcceptedRules))
       return {
         valid,
         reason:
-          "SideEffects do not support onUpdate listeners. Use onChange instead",
+          "SideEffects properties can only have ('sideEffect' + 'onChange' + 'validator') or 'shouldInit'",
       };
 
     this.sideEffects.push(prop as StringKey<T>);
