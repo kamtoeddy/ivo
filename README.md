@@ -127,7 +127,7 @@ const { data, error } = await UserModel.update(user, {
 // id is ignored because it is readonly
 console.log(data); // { lastSeen: new Date(), updatedAt: new Date() }
 
-await db.update({ id: 1 }, userUpdate);
+await db.update({ id: 1 }, data);
 ```
 
 ## Docs
@@ -138,9 +138,9 @@ await db.update({ id: 1 }, userUpdate);
   - [dependent properties](./docs/v1.4.10/schema/definition/dependents.md#dependent-properties)
   - [readonly properties](./docs/v1.4.10/schema/definition/readonly.md#readonly-properties)
   - [required properties](./docs/v1.5.0/schema/definition/required.md#required-properties)
-  - [side effects](./docs/v1.5.0/schema/definition/side-effects.md#side-effect-properties)
+  - [side effects](./docs/v2.1.0/schema/definition/side-effects.md#side-effect-properties)
   - [validators](./docs/v1.4.6/validate/index.md#validators)
-- [Inheritance](./docs/v1.4.6/schema/inheritance.md)
+- [Inheritance](./docs/v1.4.6/schema/inheritance.md#schema-inheritance)
 - [The Operation Context](./docs/v2.1.0/schema/definition/life-cycles.md#the-operation-context)
 - [Life Cycles & Listeners](./docs/v2.1.0/schema/definition/life-cycles.md#life-cycle-listeners)
   - [onChange](./docs/v2.1.0/schema/definition/life-cycles.md#onchange)
