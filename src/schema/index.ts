@@ -253,6 +253,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
         this._isRequiredBy(prop) && this.values.hasOwnProperty(prop);
 
       if (
+        !this._isDependentProp(prop) &&
         !isSideEffect &&
         !this._canInit(prop) &&
         !isLaxInit &&
@@ -260,7 +261,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
       ) {
         data[prop] = this._getDefaultValue(prop);
 
-        return this._updateContext({ [prop]: data[prop] as any } as T);
+        return this._updateContext({ [prop]: data[prop] } as T);
       }
 
       return this._validateAndSet(data, error, prop, this.values[prop]);
