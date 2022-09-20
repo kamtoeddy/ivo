@@ -127,25 +127,28 @@ const { data, error } = await UserModel.update(user, {
 // id is ignored because it is readonly
 console.log(data); // { lastSeen: new Date(), updatedAt: new Date() }
 
-await db.update({ id: 1 }, userUpdate);
+await db.update({ id: 1 }, data);
 ```
 
 ## Docs
 
-- [Defining a schema](./docs/v1.4.10/schema/definition/index.md#defining-a-schema)
+- [Defining a schema](./docs/v2.1.0/schema/definition/index.md#defining-a-schema)
   - [constant properties](./docs/v1.5.0/schema/definition/constants.md#constant-properties-v150)
   - [default values](./docs/v1.4.10/schema/definition/defaults.md#default-values)
   - [dependent properties](./docs/v1.4.10/schema/definition/dependents.md#dependent-properties)
   - [readonly properties](./docs/v1.4.10/schema/definition/readonly.md#readonly-properties)
   - [required properties](./docs/v1.5.0/schema/definition/required.md#required-properties)
-  - [side effects](./docs/v1.5.0/schema/definition/side-effects.md#side-effect-properties)
+  - [side effects](./docs/v2.1.0/schema/definition/side-effects.md#side-effect-properties)
   - [validators](./docs/v1.4.6/validate/index.md#validators)
-- [Inheritance](./docs/v1.4.6/schema/inheritance.md)
-- [The Operation Context](./docs/v1.4.10/schema/life-cycles.md#the-operation-context)
-- [Life Cycles & Listeners](./docs/v1.4.10/schema/life-cycles.md#life-cycle-listeners)
-  - [onChange](./docs/v1.4.10/schema/life-cycles.md#onchange)
-  - [onCreate](./docs/v1.4.10/schema/life-cycles.md#oncreate)
-  - [onUpdate](./docs/v1.4.10/schema/life-cycles.md#onupdate)
+- [Inheritance](./docs/v1.4.6/schema/inheritance.md#schema-inheritance)
+- [The Operation Context](./docs/v2.1.0/schema/definition/life-cycles.md#the-operation-context)
+- [Life Cycles & Listeners](./docs/v2.1.0/schema/definition/life-cycles.md#life-cycle-listeners)
+  - [onChange](./docs/v2.1.0/schema/definition/life-cycles.md#onchange)
+  - [onCreate](./docs/v2.1.0/schema/definition/life-cycles.md#oncreate)
+  - [onDelete](./docs/v2.1.0/schema/definition/life-cycles.md#ondelete)
+  - [onFailure](./docs/v2.1.0/schema/definition/life-cycles.md#onfailure)
+  - [onSuccess](./docs/v2.1.0/schema/definition/life-cycles.md#onsuccess)
+  - [onUpdate](./docs/v2.1.0/schema/definition/life-cycles.md#onupdate)
 - [Options](./docs/v1.4.7/schema/definitions.md#options)
 - [Validators](./docs/v1.4.6/validate/index.md#validators)
   - [isArrayOk](./docs/v1.4.6/validate/isArrayOk.md)
@@ -154,6 +157,6 @@ await db.update({ id: 1 }, userUpdate);
   - [isEmailOk](./docs/v1.4.6/validate/isEmailOk.md)
   - [isNumberOk](./docs/v1.4.6/validate/isNumberOk.md)
   - [isStringOk](./docs/v1.4.6/validate/isStringOk.md)
-- [Changelog](./docs/v2.0.1/CHANGELOG.md#changelog)
+- [Changelog](./docs/v2.1.0/CHANGELOG.md#changelog)
 
 ## Happy coding! 😎

@@ -51,6 +51,18 @@ A function or array of functions(async / sync) you want to execute every time an
 
 A function or array of functions(async / sync) you want to execute every time an instance of your model gets created. Default **[ ]**
 
+## onDelete
+
+A void function or array of void functions(async / sync) you want to execute every time an instance of your model gets deleted. That is; every time the **`model.delete`** method is invoked. These listeners have access to a context without sideEffects even if passed to the delete method of the model. Default **[ ]**
+
+## onFailure
+
+A void function or array of void functions(async / sync) you want to execute every time the **`create`**, **`clone`** & **`update`** operations are unsuccessful. Default **[ ]**
+
+## onSuccess
+
+A void function or array of void functions(async / sync) you want to execute every time the **`create`**, **`clone`** & **`update`** operations are successful. Default **[ ]**
+
 ## onUpdate
 
 A function or array of functions(async / sync) you want to execute every time the property defined on get updated. Default **[ ]**

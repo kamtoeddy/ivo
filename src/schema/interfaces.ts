@@ -7,15 +7,16 @@ export type StringKey<T> = Extract<keyof T, string>;
 export namespace Schema {
   export type PropertyDefinitions<T> = {
     [K in keyof T]?:
-      | Constant<T, K>
-      | Property<T, K>
-      | Dependent<T, K>
-      | Readonly<T, K>
-      | ReadonlyNoInit<T, K>
-      | RequiredReadonly<T, K>
-      | Required<T, K>
-      | RequiredBy<T, K>
-      | SideEffect<T, K>;
+      | Constant<K, T>
+      | Dependent<K, T>
+      | Property<K, T>
+      | Readonly<K, T>
+      | ReadonlyNoInit<K, T>
+      | Required<K, T>
+      | RequiredBy<K, T>
+      | RequiredReadonly<K, T>
+      | RequiredSideEffect<K, T>
+      | SideEffect<K, T>;
   };
 
   export type Definitions<T> = {
@@ -36,64 +37,87 @@ export namespace Schema {
   type Listenable<T> = {
     onChange?: LifeCycles.Listener<T> | NonEmptyArray<LifeCycles.Listener<T>>;
     onCreate?: LifeCycles.Listener<T> | NonEmptyArray<LifeCycles.Listener<T>>;
+    onDelete?:
+      | LifeCycles.VoidListener<T>
+      | NonEmptyArray<LifeCycles.VoidListener<T>>;
+    onFailure?:
+      | LifeCycles.VoidListener<T>
+      | NonEmptyArray<LifeCycles.VoidListener<T>>;
+    onSuccess?:
+      | LifeCycles.VoidListener<T>
+      | NonEmptyArray<LifeCycles.VoidListener<T>>;
     onUpdate?: LifeCycles.Listener<T> | NonEmptyArray<LifeCycles.Listener<T>>;
   };
 
-  type Constant<T, K extends keyof T> = {
+  type Constant<K extends keyof T, T> = {
     constant: true;
     onCreate?: LifeCycles.Listener<T> | NonEmptyArray<LifeCycles.Listener<T>>;
     value: TypeOf<T[K]> | Setter<K, T>;
   };
 
-  type Dependent<T, K extends keyof T> = Listenable<T> & {
+  type Dependent<K extends keyof T, T> = Listenable<T> & {
     default: TypeOf<T[K]> | Setter<K, T>;
     dependent: true;
     readonly?: true;
     validator?: Validator<K, T>;
   };
 
-  type Property<T, K extends keyof T> = Listenable<T> & {
+  type Property<K extends keyof T, T> = Listenable<T> & {
     default: TypeOf<T[K]> | Setter<K, T>;
     readonly?: "lax";
     shouldInit?: true;
     validator?: Validator<K, T>;
   };
 
-  type Readonly<T, K extends keyof T> = Listenable<T> & {
+  type Readonly<K extends keyof T, T> = Listenable<T> & {
     default: TypeOf<T[K]> | Setter<K, T>;
     readonly: "lax";
     validator: Validator<K, T>;
   };
 
-  type ReadonlyNoInit<T, K extends keyof T> = Listenable<T> & {
+  type ReadonlyNoInit<K extends keyof T, T> = Listenable<T> & {
     default: TypeOf<T[K]> | Setter<K, T>;
     readonly: true;
     shouldInit: false;
     validator?: Validator<K, T>;
   };
 
-  type RequiredReadonly<T, K extends keyof T> = Listenable<T> & {
+  type RequiredReadonly<K extends keyof T, T> = Listenable<T> & {
     readonly: true;
     validator: Validator<K, T>;
   };
 
-  type Required<T, K extends keyof T> = Listenable<T> & {
+  type Required<K extends keyof T, T> = Listenable<T> & {
     required: true;
     validator: Validator<K, T>;
   };
 
-  type RequiredBy<T, K extends keyof T> = Listenable<T> & {
+  type RequiredBy<K extends keyof T, T> = Listenable<T> & {
     default: TypeOf<T[K]> | Setter<K, T>;
-    required: Setter<T, boolean>;
-    requiredError: string | Setter<T, string>;
+    required: Setter<boolean, T>;
+    requiredError: string | Setter<string, T>;
     readonly?: true;
     validator: Validator<K, T>;
   };
 
-  type SideEffect<T, K extends keyof T> = {
+  type SideEffect<K extends keyof T, T> = {
     sideEffect: true;
     onChange: LifeCycles.Listener<T> | NonEmptyArray<LifeCycles.Listener<T>>;
+    onFailure?:
+      | LifeCycles.VoidListener<T>
+      | NonEmptyArray<LifeCycles.VoidListener<T>>;
     shouldInit?: false;
+    validator: Validator<K, T>;
+  };
+
+  type RequiredSideEffect<K extends keyof T, T> = {
+    sideEffect: true;
+    onChange: LifeCycles.Listener<T> | NonEmptyArray<LifeCycles.Listener<T>>;
+    onFailure?:
+      | LifeCycles.VoidListener<T>
+      | NonEmptyArray<LifeCycles.VoidListener<T>>;
+    required: Setter<boolean, T>;
+    requiredError: string | Setter<string, T>;
     validator: Validator<K, T>;
   };
 
@@ -118,11 +142,19 @@ export namespace Schema {
 }
 
 export namespace LifeCycles {
-  export type Rule = "onChange" | "onCreate" | "onUpdate";
+  export type Rule =
+    | "onChange"
+    | "onCreate"
+    | "onDelete"
+    | "onFailure"
+    | "onSuccess"
+    | "onUpdate";
 
   export type Listener<T> = (
     ctx: Readonly<T>
   ) => Partial<T> | Promise<Partial<T>> | void | Promise<void>;
+
+  export type VoidListener<T> = (ctx: Readonly<T>) => void | Promise<void>;
 }
 
 export interface ValidatorResponse<T> {
@@ -151,6 +183,9 @@ export type PropDefinitionRule =
   | "dependent"
   | "onChange"
   | "onCreate"
+  | "onDelete"
+  | "onFailure"
+  | "onSuccess"
   | "onUpdate"
   | "readonly"
   | "required"
