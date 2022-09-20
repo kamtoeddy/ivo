@@ -61,7 +61,6 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             message: "Invalid Schema",
             payload: {
               emptyProp: [
-                "Lax properties must have a default value nor setter",
                 "A property should at least be readonly, required, or have a default value",
               ],
             },
@@ -498,7 +497,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             expect(err.payload).toEqual(
               expect.objectContaining({
                 propertyName: expect.arrayContaining([
-                  "Lax properties must have a default value nor setter",
+                  "A property should at least be readonly, required, or have a default value",
                 ]),
               })
             );
@@ -1784,7 +1783,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           });
 
           // updates
-          it("should clone normally", async () => {
+          it("should update normally", async () => {
             const { data } = await RequiredSideEffect.update(
               {
                 dependent: true,
