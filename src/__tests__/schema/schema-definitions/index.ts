@@ -1487,6 +1487,35 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           }
         });
 
+        it("should reject requiredError & required(!function)", () => {
+          const values = [undefined, true, [], {}, false, 2, ""];
+
+          for (const required of values) {
+            const toFail = fx({
+              propertyName: {
+                default: true,
+                required,
+                requiredError: () => "",
+                validator,
+              },
+            });
+
+            expectFailure(toFail);
+
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err.payload).toEqual(
+                expect.objectContaining({
+                  propertyName: expect.arrayContaining([
+                    "RequiredError can only be used with a callable required rule",
+                  ]),
+                })
+              );
+            }
+          }
+        });
+
         it("should reject requiredBy & no requiredError", () => {
           const toFail = fx({
             propertyName: {
@@ -1663,6 +1692,22 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           toPass();
         });
 
+        it("should allow requiredBy + requiredError", () => {
+          const toPass = fx({
+            propertyName: {
+              sideEffect: true,
+              onChange: validator,
+              required: () => true,
+              requiredError: () => "",
+              validator,
+            },
+          });
+
+          expectNoFailure(toPass);
+
+          toPass();
+        });
+
         it("should allow onChange + shouldInit(false) + validator", () => {
           const toPass = fx({
             propertyName: {
@@ -1676,6 +1721,99 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           expectNoFailure(toPass);
 
           toPass();
+        });
+
+        describe("RequiredSideEffect", () => {
+          let RequiredSideEffect: any;
+
+          beforeAll(() => {
+            RequiredSideEffect = new Schema({
+              dependent: { default: "", dependent: true },
+              laxProp: { default: "" },
+              sideEffect: {
+                sideEffect: true,
+                onChange,
+                required: ({ sideEffect, dependent }: any) => {
+                  return dependent === "" && sideEffect === undefined;
+                },
+                requiredError: () => "SideEffect is required",
+                validator,
+              },
+            }).getModel();
+
+            function onChange({ sideEffect }: any) {
+              return { dependent: sideEffect };
+            }
+          });
+
+          // creation
+          it("should create normally", async () => {
+            const { data } = await RequiredSideEffect.create({
+              sideEffect: true,
+              laxProp: "laxProp",
+            });
+
+            expect(data).toEqual({ dependent: true, laxProp: "laxProp" });
+          });
+
+          // cloning
+          it("should clone normally", async () => {
+            const { data } = await RequiredSideEffect.clone({
+              sideEffect: "cloned",
+              dependent: true,
+              laxProp: "laxProp",
+            });
+
+            expect(data).toEqual({ dependent: "cloned", laxProp: "laxProp" });
+          });
+
+          it("should require during cloning", async () => {
+            const { data, error } = await RequiredSideEffect.clone({
+              dependent: "",
+              laxProp: "laxProp",
+            });
+
+            expect(data).toBe(undefined);
+            expect(error).toEqual(
+              expect.objectContaining({
+                message: "Validation Error",
+                payload: { sideEffect: ["SideEffect is required"] },
+                statusCode: 400,
+              })
+            );
+          });
+
+          // updates
+          it("should clone normally", async () => {
+            const { data } = await RequiredSideEffect.update(
+              {
+                dependent: true,
+                laxProp: "laxProp",
+              },
+              { sideEffect: "updated" }
+            );
+
+            expect(data).toEqual({ dependent: "updated" });
+          });
+
+          it("should require during updates", async () => {
+            const { data, error } = await RequiredSideEffect.update(
+              {
+                dependent: "",
+                laxProp: "laxProp",
+              },
+              { laxProp: 2 }
+            );
+
+            expect(data).toBe(undefined);
+            expect(error).toEqual(
+              expect.objectContaining({
+                message: "Validation Error",
+                payload: { sideEffect: ["SideEffect is required"] },
+                statusCode: 400,
+              })
+            );
+          });
         });
       });
 
@@ -1745,6 +1883,58 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           }
         });
 
+        it("should reject requiredBy + shouldInit", () => {
+          const toFail = fx({
+            propertyName: {
+              sideEffect: true,
+              shouldInit: false,
+              onChange: validator,
+              required: () => true,
+              requiredError: () => "",
+              validator,
+            },
+          });
+
+          expectFailure(toFail);
+
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toEqual(
+              expect.objectContaining({
+                propertyName: expect.arrayContaining([
+                  "Required sideEffects cannot have initialization blocked",
+                ]),
+              })
+            );
+          }
+        });
+
+        it("should reject required(true)", () => {
+          const toFail = fx({
+            propertyName: {
+              sideEffect: true,
+              onChange: validator,
+              required: true,
+              validator,
+            },
+          });
+
+          expectFailure(toFail);
+
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toEqual(
+              expect.objectContaining({
+                propertyName: expect.arrayContaining([
+                  "Callable required properties must have required as a function",
+                ]),
+              })
+            );
+          }
+        });
+
         it("should reject any non sideEffect rule", () => {
           const values = [
             "constant",
@@ -1755,8 +1945,6 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             "onSuccess",
             "onUpdate",
             "readonly",
-            "required",
-            "requiredError",
             "value",
           ];
 

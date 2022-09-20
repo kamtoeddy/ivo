@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-# v2.1.0 <small><sup>19-09-2022</sup></small>
+# v2.1.0 <small><sup>20-09-2022</sup></small>
 
 - [Added] mode.delete method
 - [Added] onDelete, onFailure & onSuccess life cycles

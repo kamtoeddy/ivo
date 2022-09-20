@@ -43,6 +43,8 @@ const sideEffectRules = [
   "sideEffect",
   "onChange",
   "onFailure",
+  "required",
+  "requiredError",
   "shouldInit",
   "validator",
 ];
@@ -409,8 +411,12 @@ export abstract class SchemaCore<T extends ObjectType> {
     }
 
     if (this._hasAny(prop, "requiredError")) {
-      const { requiredError } = this._getDefinition(prop);
+      const { required, requiredError } = this._getDefinition(prop);
 
+      if (typeof required != "function")
+        reasons.push(
+          "RequiredError can only be used with a callable required rule"
+        );
       if (!belongsTo(typeof requiredError, ["string", "function"]))
         reasons.push("RequiredError must be a string or setter");
     }
@@ -606,7 +612,9 @@ export abstract class SchemaCore<T extends ObjectType> {
         reason: "Callable required properties must have required as a function",
       };
 
-    if (isEqual(_default, undefined))
+    const hasSideEffect = this._hasAny(prop, "sideEffect");
+
+    if (isEqual(_default, undefined) && !hasSideEffect)
       return {
         valid,
         reason:
@@ -620,9 +628,11 @@ export abstract class SchemaCore<T extends ObjectType> {
           "Callable required properties must have a requiredError or setter",
       };
 
-    const isRequiredCommon = this.__isRequiredCommon(prop);
+    if (!hasSideEffect) {
+      const isRequiredCommon = this.__isRequiredCommon(prop);
 
-    if (!isRequiredCommon.valid) return isRequiredCommon;
+      if (!isRequiredCommon.valid) return isRequiredCommon;
+    }
 
     this.propsRequiredBy.push(prop as StringKey<T>);
 
@@ -631,6 +641,20 @@ export abstract class SchemaCore<T extends ObjectType> {
 
   protected _isRequiredBy = (prop: string) =>
     this.propsRequiredBy.includes(prop as StringKey<T>);
+
+  protected __isSideEffectRequiredBy = (prop: string) => {
+    if (this._hasAny(prop, "shouldInit"))
+      return {
+        valid: false,
+        reason: "Required sideEffects cannot have initialization blocked",
+      };
+
+    const isRequiredBy = this.__isRequiredBy(prop);
+
+    if (!isRequiredBy.valid) return isRequiredBy;
+
+    return { valid: true };
+  };
 
   protected __isSideEffect = (prop: string) => {
     const valid = false;
@@ -649,7 +673,19 @@ export abstract class SchemaCore<T extends ObjectType> {
         reason: "SideEffects must have at least one onChange listener",
       };
 
-    if (this._hasAny(prop, "shouldInit") && shouldInit !== false)
+    const hasRequired = this._hasAny(prop, "required");
+
+    if (hasRequired) {
+      const isRequiredBy = this.__isSideEffectRequiredBy(prop);
+
+      if (!isRequiredBy.valid) return isRequiredBy;
+    }
+
+    if (
+      !hasRequired &&
+      this._hasAny(prop, "shouldInit") &&
+      shouldInit !== false
+    )
       return {
         valid,
         reason:
