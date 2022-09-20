@@ -4,7 +4,7 @@ Use if you have a usecase(s) for properties you want to manipulate at the level 
 
 It's validator is required and must have at least one [onChange listener](./life-cycles.md#onchange). Side effects only support onChange listeners as **`onChange = onCreate + onUpdate`** but initialization can be blocked (**`shouldInit === false`**)
 
-Cannot be dependent, defaulted, required nor readonly
+Cannot be dependent, defaulted, readonly nor strictly required but can be (requiredBy + requiredError)
 
 > Out of the box, sideEffect is **`false`**
 

@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 - [Added] mode.delete method
 - [Added] onDelete, onFailure & onSuccess life cycles
+- [Updated] sideEffects can now be requiredBy
 - [Fixed] dependent props not being set during cloning
 
 # v2.0.1 <small><sup>18-09-2022</sup></small>
