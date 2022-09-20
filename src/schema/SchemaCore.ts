@@ -69,8 +69,10 @@ export abstract class SchemaCore<T extends ObjectType> {
   // props
   protected constants: StringKey<T>[] = [];
   protected dependents: StringKey<T>[] = [];
+  protected laxProps: StringKey<T>[] = [];
   protected props: StringKey<T>[] = [];
   protected propsRequiredBy: StringKey<T>[] = [];
+  protected readonlyProps: StringKey<T>[] = [];
   protected requiredProps: StringKey<T>[] = [];
   protected sideEffects: StringKey<T>[] = [];
 
@@ -129,10 +131,9 @@ export abstract class SchemaCore<T extends ObjectType> {
       if (!allowedOptions.includes(option))
         error.add(option, "Invalid option").throw();
 
-    if (this._options.hasOwnProperty("errors")) {
+    if (this._options.hasOwnProperty("errors"))
       if (!["silent", "throw"].includes(this._options.errors!))
         error.add("errors", "should be 'silent' or 'throws'").throw();
-    }
 
     if (this._options.hasOwnProperty("timestamps")) {
       const ts_valid = this._isTimestampsOk();
@@ -323,42 +324,10 @@ export abstract class SchemaCore<T extends ObjectType> {
   protected _isDependentProp = (prop: string) =>
     this.dependents.includes(prop as StringKey<T>);
 
-  protected _isFunction = (obj: any): boolean => typeof obj === "function";
+  protected _isFunction = (obj: any) => typeof obj === "function";
 
-  protected __isLaxProp = (prop: string) => {
-    let valid = false;
-
-    const { default: _default, readonly } = this._getDefinition(prop);
-
-    if (isEqual(_default, undefined))
-      return {
-        valid,
-        reason: "Lax properties must have a default value nor setter",
-      };
-
-    if (this._hasAny(prop, "dependent"))
-      return { valid, reason: "Lax properties cannot be dependent" };
-
-    if (this._hasAny(prop, "required"))
-      return { valid, reason: "Lax properties cannot be required" };
-
-    if (this._hasAny(prop, "sideEffect"))
-      return { valid, reason: "Lax properties cannot be side effects" };
-
-    // only readonly(lax) are lax props
-    if (
-      (this._hasAny(prop, "readonly") && readonly !== "lax") ||
-      this._hasAny(prop, "shouldInit")
-    )
-      return {
-        valid,
-        reason: "Lax properties cannot have initialization blocked",
-      };
-
-    return { valid: true };
-  };
-
-  protected _isLaxProp = (prop: string) => this.__isLaxProp(prop).valid;
+  protected _isLaxProp = (prop: string) =>
+    this.laxProps.includes(prop as StringKey<T>);
 
   protected _isProp = (prop: string) =>
     this.props.includes(prop as StringKey<T>);
@@ -453,15 +422,17 @@ export abstract class SchemaCore<T extends ObjectType> {
       );
     }
 
+    this._registerIfLax(prop);
+
     if (
-      !this._hasAny(prop, ["constant", "default", "readonly", "required"]) &&
+      !this._hasAny(prop, "default") &&
+      !this._isConstant(prop) &&
       !this._isDependentProp(prop) &&
+      !this._isLaxProp(prop) &&
+      !this._isReadonly(prop) &&
+      !this._isRequired(prop) &&
       !this._isSideEffect(prop)
     ) {
-      const laxDef = this.__isLaxProp(prop);
-
-      if (!laxDef.valid) reasons.push(laxDef.reason!);
-
       reasons.push(
         "A property should at least be readonly, required, or have a default value"
       );
@@ -529,8 +500,13 @@ export abstract class SchemaCore<T extends ObjectType> {
         reason: "Readonly properties have readonly true | 'lax'",
       };
 
+    this.readonlyProps.push(prop as StringKey<T>);
+
     return { valid: true };
   };
+
+  protected _isReadonly = (prop: string) =>
+    this.readonlyProps.includes(prop as StringKey<T>);
 
   protected __isRequiredCommon = (prop: string) => {
     const valid = false;
@@ -708,10 +684,10 @@ export abstract class SchemaCore<T extends ObjectType> {
     return { valid: true };
   };
 
-  protected _isSideEffect = (prop: string): boolean =>
+  protected _isSideEffect = (prop: string) =>
     this.sideEffects.includes(prop as StringKey<T>);
 
-  protected _isSideInit = (prop: string): boolean => {
+  protected _isSideInit = (prop: string) => {
     const propDef = this._getDefinition(prop);
 
     if (!propDef) return false;
@@ -719,6 +695,32 @@ export abstract class SchemaCore<T extends ObjectType> {
     const { shouldInit } = propDef;
 
     return this._isSideEffect(prop) && belongsTo(shouldInit, [true, undefined]);
+  };
+
+  protected _registerIfLax = (prop: string) => {
+    const { default: _default, readonly } = this._getDefinition(prop);
+
+    // Lax properties must have a default value nor setter
+    if (isEqual(_default, undefined)) return;
+
+    // Lax properties cannot be dependent
+    if (this._hasAny(prop, "dependent")) return;
+
+    // Lax properties cannot be required
+    if (this._hasAny(prop, "required")) return;
+
+    // Lax properties cannot be side effects
+    if (this._hasAny(prop, "sideEffect")) return;
+
+    // only readonly(lax) are lax props &
+    // Lax properties cannot have initialization blocked
+    if (
+      (this._hasAny(prop, "readonly") && readonly !== "lax") ||
+      this._hasAny(prop, "shouldInit")
+    )
+      return;
+
+    this.laxProps.push(prop as StringKey<T>);
   };
 
   private _isTimestampsOk() {
