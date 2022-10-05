@@ -168,6 +168,20 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             toPass();
           }
         });
+
+        it("should accept constant & value + onSuccess(function | function[])", () => {
+          const values = [() => ({}), [() => ({})], [() => ({}), () => ({})]];
+
+          for (const onSuccess of values) {
+            const toPass = fx({
+              propertyName: { constant: true, value: "", onSuccess },
+            });
+
+            expectNoFailure(toPass);
+
+            toPass();
+          }
+        });
       });
 
       describe("invalid", () => {
@@ -239,7 +253,6 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             "dependent",
             "onChange",
             "onFailure",
-            "onSuccess",
             "onUpdate",
             "readonly",
             "required",
@@ -261,7 +274,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               expect(err.payload).toEqual(
                 expect.objectContaining({
                   propertyName: expect.arrayContaining([
-                    "Constant properties can only have ('constant' & 'value') or 'onCreate'",
+                    "Constant properties can only have ('constant' & 'value') or 'onCreate' | 'onDelete' | 'onSuccess'",
                   ]),
                 })
               );
