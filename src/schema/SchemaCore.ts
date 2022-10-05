@@ -38,7 +38,13 @@ const allRules = [
 ] as PropDefinitionRule[];
 
 const allowedOptions: OptionsKey[] = ["errors", "timestamps"];
-const constantRules = ["constant", "onCreate", "onDelete", "value"];
+const constantRules = [
+  "constant",
+  "onCreate",
+  "onDelete",
+  "onSuccess",
+  "value",
+];
 const sideEffectRules = [
   "sideEffect",
   "onChange",
@@ -263,7 +269,7 @@ export abstract class SchemaCore<T extends ObjectType> {
       return {
         valid,
         reason:
-          "Constant properties can only have ('constant' & 'value') or 'onCreate'",
+          "Constant properties can only have ('constant' & 'value') or 'onCreate' | 'onDelete' | 'onSuccess'",
       };
 
     this.constants.push(prop as StringKey<T>);
