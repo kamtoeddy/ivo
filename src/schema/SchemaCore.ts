@@ -38,7 +38,7 @@ const allRules = [
 ] as PropDefinitionRule[];
 
 const allowedOptions: OptionsKey[] = ["errors", "timestamps"];
-const constantRules = ["constant", "onCreate", "value"];
+const constantRules = ["constant", "onCreate", "onDelete", "value"];
 const sideEffectRules = [
   "sideEffect",
   "onChange",
