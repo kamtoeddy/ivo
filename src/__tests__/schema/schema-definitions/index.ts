@@ -154,6 +154,20 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             toPass();
           }
         });
+
+        it("should accept constant & value + onDelete(function | function[])", () => {
+          const values = [() => ({}), [() => ({})], [() => ({}), () => ({})]];
+
+          for (const onDelete of values) {
+            const toPass = fx({
+              propertyName: { constant: true, value: "", onDelete },
+            });
+
+            expectNoFailure(toPass);
+
+            toPass();
+          }
+        });
       });
 
       describe("invalid", () => {
@@ -224,7 +238,6 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             "default",
             "dependent",
             "onChange",
-            "onDelete",
             "onFailure",
             "onSuccess",
             "onUpdate",
@@ -631,6 +644,11 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           const validator = () => ({ valid: false });
 
           Model = new Schema({
+            constant: {
+              constant: true,
+              value: "constant",
+              onDelete: onDelete("constant"),
+            },
             prop1: { required: true, onDelete: onDelete("prop1"), validator },
             prop2: { required: true, onDelete: onDelete("prop2"), validator },
             prop3: { required: true, onDelete: onDelete("prop3"), validator },
@@ -639,9 +657,9 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
         beforeEach(() => (propChangeMap = {}));
 
-        // creation
         it("should trigger all onDelete listeners but for sideEffects", async () => {
           await Model.delete({
+            constant: true,
             prop1: true,
             prop2: true,
             prop3: true,
@@ -649,6 +667,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           });
 
           expect(propChangeMap).toEqual({
+            constant: true,
             prop1: true,
             prop2: true,
             prop3: true,
