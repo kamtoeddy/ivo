@@ -2,6 +2,12 @@ export type TypeOf<T> = Exclude<T, undefined>;
 
 type Setter<K, T> = (ctx: Readonly<T>) => K extends keyof T ? TypeOf<T[K]> : K;
 
+type Promisable<T> = T | Promise<T>;
+
+type AsyncSetter<K, T> = (
+  ctx: Readonly<T>
+) => Promisable<K extends keyof T ? TypeOf<T[K]> : K>;
+
 export type StringKey<T> = Extract<keyof T, string>;
 
 export namespace Schema {
@@ -52,31 +58,31 @@ export namespace Schema {
   type Constant<K extends keyof T, T> = {
     constant: true;
     onCreate?: LifeCycles.Listener<T> | NonEmptyArray<LifeCycles.Listener<T>>;
-    value: TypeOf<T[K]> | Setter<K, T>;
+    value: TypeOf<T[K]> | Setter<K, T> | AsyncSetter<K, T>;
   };
 
   type Dependent<K extends keyof T, T> = Listenable<T> & {
-    default: TypeOf<T[K]> | Setter<K, T>;
+    default: TypeOf<T[K]> | Setter<K, T> | AsyncSetter<K, T>;
     dependent: true;
     readonly?: true;
     validator?: Validator<K, T>;
   };
 
   type Property<K extends keyof T, T> = Listenable<T> & {
-    default: TypeOf<T[K]> | Setter<K, T>;
+    default: TypeOf<T[K]> | Setter<K, T> | AsyncSetter<K, T>;
     readonly?: "lax";
     shouldInit?: true;
     validator?: Validator<K, T>;
   };
 
   type Readonly<K extends keyof T, T> = Listenable<T> & {
-    default: TypeOf<T[K]> | Setter<K, T>;
+    default: TypeOf<T[K]> | Setter<K, T> | AsyncSetter<K, T>;
     readonly: "lax";
     validator: Validator<K, T>;
   };
 
   type ReadonlyNoInit<K extends keyof T, T> = Listenable<T> & {
-    default: TypeOf<T[K]> | Setter<K, T>;
+    default: TypeOf<T[K]> | Setter<K, T> | AsyncSetter<K, T>;
     readonly: true;
     shouldInit: false;
     validator?: Validator<K, T>;
@@ -93,7 +99,7 @@ export namespace Schema {
   };
 
   type RequiredBy<K extends keyof T, T> = Listenable<T> & {
-    default: TypeOf<T[K]> | Setter<K, T>;
+    default: TypeOf<T[K]> | Setter<K, T> | AsyncSetter<K, T>;
     required: Setter<boolean, T>;
     requiredError: string | Setter<string, T>;
     readonly?: true;

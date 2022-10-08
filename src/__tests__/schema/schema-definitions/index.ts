@@ -86,6 +86,10 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 constant: true,
                 value: "parent id",
               },
+              // asyncConstant: {
+              //   constant: true,
+              //   value: "parent id",
+              // },
               laxProp: {
                 default: 0,
                 onUpdate: ({ laxProp }: any) => {
@@ -104,9 +108,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
         });
 
         it("should set constants during cloning", async () => {
-          const { data: clone } = await User.clone(user, {
-            reset: ["id", "parent", "laxProp"],
-          });
+          const { data: clone } = await User.clone(user, { reset: "laxProp" });
 
           expect(clone).toEqual({
             id: "id-2",
