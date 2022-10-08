@@ -74,7 +74,7 @@ These methods are async because custom validators could be async as well.
 | sideEffect    | boolean                 | a property used to modify other properties but don't appear on instances of your model [more](../../../v1.5.0/schema/definition/side-effects.md#side-effect-properties) |
 | shouldInit    | boolean                 | Tells clean-schema whether or not a property should be initialized. Default **true**                                                                                    |
 | validator     | function                | A function (async / sync) used to validated the value of a property. [more](../../../v1.4.6/validate/index.md#validators)                                               |
-| value         | any \| function         | value or setter of constant property. [more](./constants.md#constant-properties-v150`)                                                                                  |
+| value         | any \| function         | value or setter of constant property. [more](../../../v1.5.0/schema/definition/constants.md#constant-properties-v150`)                                                  |
 
 # Options
 
