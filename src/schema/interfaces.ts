@@ -2,6 +2,12 @@ export type TypeOf<T> = Exclude<T, undefined>;
 
 type Setter<K, T> = (ctx: Readonly<T>) => K extends keyof T ? TypeOf<T[K]> : K;
 
+type Promisable<T> = Awaited<T | Promise<T>>;
+
+type AsyncSetter<K, T> = (
+  ctx: Readonly<T>
+) => Promisable<K extends keyof T ? TypeOf<T[K]> : K>;
+
 export type StringKey<T> = Extract<keyof T, string>;
 
 export namespace Schema {
@@ -52,7 +58,7 @@ export namespace Schema {
   type Constant<K extends keyof T, T> = {
     constant: true;
     onCreate?: LifeCycles.Listener<T> | NonEmptyArray<LifeCycles.Listener<T>>;
-    value: TypeOf<T[K]> | Setter<K, T>;
+    value: TypeOf<T[K]> | Setter<K, T> | AsyncSetter<K, T>;
   };
 
   type Dependent<K extends keyof T, T> = Listenable<T> & {

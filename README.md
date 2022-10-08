@@ -133,7 +133,7 @@ await db.update({ id: 1 }, data);
 ## Docs
 
 - [Defining a schema](./docs/v2.1.0/schema/definition/index.md#defining-a-schema)
-  - [constant properties](./docs/v1.5.0/schema/definition/constants.md#constant-properties-v150)
+  - [constant properties](./docs/v2.4.0/schema/definition/constants.md#constant-properties-v150)
   - [default values](./docs/v1.4.10/schema/definition/defaults.md#default-values)
   - [dependent properties](./docs/v1.4.10/schema/definition/dependents.md#dependent-properties)
   - [readonly properties](./docs/v1.4.10/schema/definition/readonly.md#readonly-properties)
@@ -157,6 +157,6 @@ await db.update({ id: 1 }, data);
   - [isEmailOk](./docs/v1.4.6/validate/isEmailOk.md)
   - [isNumberOk](./docs/v1.4.6/validate/isNumberOk.md)
   - [isStringOk](./docs/v1.4.6/validate/isStringOk.md)
-- [Changelog](./docs/v2.3.0/CHANGELOG.md#changelog)
+- [Changelog](./docs/v2.4.0/CHANGELOG.md#changelog)
 
 ## Happy coding! 😎

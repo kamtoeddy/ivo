@@ -77,15 +77,13 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
         beforeAll(async () => {
           User = new Schema(
             {
+              asyncConstant: { constant: true, value: asyncSetter },
               id: {
                 constant: true,
                 onCreate: ({ laxProp }: any) => ({ laxProp: laxProp + 2 }),
                 value: (ctx: any) => (ctx?.id === "id" ? "id-2" : "id"),
               },
-              parentId: {
-                constant: true,
-                value: "parent id",
-              },
+              parentId: { constant: true, value: "parent id" },
               laxProp: {
                 default: 0,
                 onUpdate: ({ laxProp }: any) => {
@@ -96,19 +94,29 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             { errors: "throw" }
           ).getModel();
 
+          function asyncSetter() {
+            return new Promise((res, rej) => {
+              setTimeout(() => res(20), 500);
+            });
+          }
+
           user = (await User.create({ id: 2, parentId: [], laxProp: 2 })).data;
         });
 
         it("should set constants at creation", () => {
-          expect(user).toEqual({ id: "id", parentId: "parent id", laxProp: 4 });
+          expect(user).toEqual({
+            asyncConstant: 20,
+            id: "id",
+            parentId: "parent id",
+            laxProp: 4,
+          });
         });
 
         it("should set constants during cloning", async () => {
-          const { data: clone } = await User.clone(user, {
-            reset: ["id", "parent", "laxProp"],
-          });
+          const { data: clone } = await User.clone(user, { reset: "laxProp" });
 
           expect(clone).toEqual({
+            asyncConstant: 20,
             id: "id-2",
             parentId: "parent id",
             laxProp: 2,

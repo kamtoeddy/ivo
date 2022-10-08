@@ -230,9 +230,12 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
 
     const props = [...Array.from(this.props), ...sideEffects];
 
-    const validations = props.map((prop) => {
-      if (this._isConstant(prop))
-        return (data[prop] = this._getValueBy(prop, "value"));
+    const validations = props.map(async (prop) => {
+      if (this._isConstant(prop)) {
+        data[prop] = await this._getConstantValue(prop);
+
+        return this._updateContext({ [prop]: data[prop] as any } as T);
+      }
 
       const isSideEffect = sideEffects.includes(prop);
 
@@ -299,10 +302,9 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
 
     const props = [...Array.from(this.props), ...sideEffects];
 
-    const validations = props.map((prop) => {
+    const validations = props.map(async (prop) => {
       if (this._isConstant(prop)) {
-        data[prop] = this._getValueBy(prop, "value");
-
+        data[prop] = await this._getConstantValue(prop);
         return this._updateContext({ [prop]: data[prop] } as T);
       }
 
