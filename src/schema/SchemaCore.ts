@@ -179,6 +179,9 @@ export abstract class SchemaCore<T extends ObjectType> {
     return alternate && isEqual(value, undefined) ? this.values[prop] : value;
   };
 
+  protected _getConstantValue = async (prop: string) =>
+    this._getValueBy(prop, "value");
+
   protected _getValueBy = (prop: string, rule: PropDefinitionRule) => {
     const value = this._getDefinition(prop)?.[rule];
 
