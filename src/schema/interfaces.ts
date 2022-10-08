@@ -62,27 +62,27 @@ export namespace Schema {
   };
 
   type Dependent<K extends keyof T, T> = Listenable<T> & {
-    default: TypeOf<T[K]> | Setter<K, T> | AsyncSetter<K, T>;
+    default: TypeOf<T[K]> | Setter<K, T>;
     dependent: true;
     readonly?: true;
     validator?: Validator<K, T>;
   };
 
   type Property<K extends keyof T, T> = Listenable<T> & {
-    default: TypeOf<T[K]> | Setter<K, T> | AsyncSetter<K, T>;
+    default: TypeOf<T[K]> | Setter<K, T>;
     readonly?: "lax";
     shouldInit?: true;
     validator?: Validator<K, T>;
   };
 
   type Readonly<K extends keyof T, T> = Listenable<T> & {
-    default: TypeOf<T[K]> | Setter<K, T> | AsyncSetter<K, T>;
+    default: TypeOf<T[K]> | Setter<K, T>;
     readonly: "lax";
     validator: Validator<K, T>;
   };
 
   type ReadonlyNoInit<K extends keyof T, T> = Listenable<T> & {
-    default: TypeOf<T[K]> | Setter<K, T> | AsyncSetter<K, T>;
+    default: TypeOf<T[K]> | Setter<K, T>;
     readonly: true;
     shouldInit: false;
     validator?: Validator<K, T>;
@@ -99,7 +99,7 @@ export namespace Schema {
   };
 
   type RequiredBy<K extends keyof T, T> = Listenable<T> & {
-    default: TypeOf<T[K]> | Setter<K, T> | AsyncSetter<K, T>;
+    default: TypeOf<T[K]> | Setter<K, T>;
     required: Setter<boolean, T>;
     requiredError: string | Setter<string, T>;
     readonly?: true;

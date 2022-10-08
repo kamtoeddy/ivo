@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 # v2.4.0 <small><sup>08-10-2022</sup></small>
 
-- [Updated] made it possible to have async setter functions for constants and default values
+- [Updated] made it possible to have async setter functions for constants values
 - [Docs] Updated broken link to details of constant properties in `v2.1.0`
 
 # v2.3.0 <small><sup>05-10-2022</sup></small>
