@@ -55,7 +55,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
   private _getCreatePropsWithListeners = () => {
     const listeners = [];
 
-    for (let prop of Array.from(this.props))
+    for (let prop of this.props)
       if (this._getOperationListeners(prop, "onCreate")?.length)
         listeners.push(prop);
 
@@ -228,7 +228,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
       this._isSideInit
     );
 
-    const props = [...Array.from(this.props), ...sideEffects];
+    const props = [...this.props, ...sideEffects];
 
     const validations = props.map(async (prop) => {
       if (this._isConstant(prop)) {
@@ -300,7 +300,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
       this._isSideInit
     );
 
-    const props = [...Array.from(this.props), ...sideEffects];
+    const props = [...this.props, ...sideEffects];
 
     const validations = props.map(async (prop) => {
       if (this._isConstant(prop)) {
