@@ -82,9 +82,9 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
   private _isUpdatableInCTX = (
     prop: string,
     value: any,
-    context: ObjectType = this._getContext()
+    context: ObjectType
   ) => {
-    return this._isConstant(prop) || !this._isProp(prop)
+    return !this._isProp(prop) || this._isConstant(prop)
       ? false
       : !isEqual(value, context?.[prop]);
   };
