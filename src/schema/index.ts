@@ -65,15 +65,18 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
   private _isUpdatable = (prop: string) => {
     if (this._isSideEffect(prop)) return true;
 
-    if (this._isConstant(prop)) return false;
-
-    if (!this._isProp(prop) || this._isDependentProp(prop)) return false;
+    if (
+      !this._isProp(prop) ||
+      this._isConstant(prop) ||
+      this._isDependentProp(prop)
+    )
+      return false;
 
     const { readonly } = this._getDefinition(prop);
 
-    const _default = this._getDefaultValue(prop, false);
-
-    return !readonly || (readonly && isEqual(_default, this.values[prop]));
+    return (
+      !readonly || (readonly && isEqual(this.defaults[prop], this.values[prop]))
+    );
   };
 
   private _isUpdatableInCTX = (
@@ -244,7 +247,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
       if (!isSideEffect && reset.includes(prop)) {
         data[prop] = this._getDefaultValue(prop);
 
-        return this._updateContext({ [prop]: data[prop] as any } as T);
+        return this._updateContext({ [prop]: data[prop] } as T);
       }
 
       const isLaxInit =
