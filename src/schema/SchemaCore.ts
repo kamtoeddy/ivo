@@ -173,19 +173,23 @@ export abstract class SchemaCore<T extends ObjectType> {
 
   protected _getDefinition = (prop: string) => this._propDefinitions[prop]!;
 
-  protected _getDefaultValue = (prop: string, alternate = true) => {
-    const value = this._getValueBy(prop, "default");
+  protected _getDefaultValue = (prop: string) => {
+    const _default = this._getDefinition(prop)?.default;
 
-    return alternate && isEqual(value, undefined) ? this.values[prop] : value;
+    const value = this._isFunction(_default)
+      ? _default(this._getContext())
+      : this.defaults[prop];
+
+    return isEqual(value, undefined) ? this.values[prop] : value;
   };
 
   protected _getConstantValue = async (prop: string) =>
     this._getValueBy(prop, "value");
 
   protected _getValueBy = (prop: string, rule: PropDefinitionRule) => {
-    const value = this._getDefinition(prop)?.[rule];
+    const _default = this._getDefinition(prop)?.[rule];
 
-    return typeof value === "function" ? value(this._getContext()) : value;
+    return this._isFunction(_default) ? _default(this._getContext()) : _default;
   };
 
   protected _getDetailedListeners = (
@@ -801,7 +805,7 @@ export abstract class SchemaCore<T extends ObjectType> {
   }
 
   private _setDefaultOf = (prop: StringKey<T>) => {
-    const _default = this._getDefaultValue(prop);
+    const _default = this._getValueBy(prop, "default");
 
     if (!isEqual(_default, undefined)) this.defaults[prop] = _default;
   };
