@@ -62,7 +62,7 @@ function badHandler(ctx: any) {
 }
 
 function setDependentReadOnly(ctx: any) {
-  ctx._laxProp = 25; // to not affect operation ctx
+  // ctx._laxProp = "25"; // to not affect operation ctx
 
   return 0;
 }

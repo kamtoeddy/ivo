@@ -182,7 +182,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
   private _handleError = (error: ErrorTool) => {
     return this._options.errors === "throw"
       ? error.throw()
-      : { data: undefined, error: error.summary };
+      : { data: undefined, error: error.summary, handleSuccess: undefined };
   };
 
   private _handleFailure = async (
@@ -204,16 +204,25 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     await Promise.all(cleanups);
   };
 
-  private _handleSuccess = async (data: Partial<T>) => {
+  private _makeHandleSuccess = (data: Partial<T>) => {
     const props = this._getKeysAsProps(data);
 
-    const successOperations = props.map(async (prop) => {
-      const listeners = this._getListeners(prop, "onSuccess");
+    let successListeners = [] as LifeCycles.Listener<T>[];
 
-      for (const listener of listeners) await listener(this._getContext());
-    });
+    for (const prop of props)
+      successListeners = successListeners.concat(
+        this._getListeners(prop, "onSuccess")
+      );
 
-    await Promise.all(successOperations);
+    const ctx = this._getContext();
+
+    return async () => {
+      const successOperations = successListeners.map(async (listener) => {
+        await listener(ctx);
+      });
+
+      await Promise.all(successOperations);
+    };
   };
 
   clone = async (
@@ -288,9 +297,13 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
 
     await this._resolveLinked(data, error, sideEffects, "onCreate");
 
-    await this._handleSuccess(data);
+    const handleSuccess = this._makeHandleSuccess(data);
 
-    return { data: this._useConfigProps(data) as T, error: undefined };
+    return {
+      data: this._useConfigProps(data) as T,
+      error: undefined,
+      handleSuccess,
+    };
   };
 
   create = async (values: Partial<T>) => {
@@ -349,9 +362,13 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
 
     await this._resolveLinked(data, error, sideEffects, "onCreate");
 
-    await this._handleSuccess(data);
+    const handleSuccess = this._makeHandleSuccess(data);
 
-    return { data: this._useConfigProps(data) as T, error: undefined };
+    return {
+      data: this._useConfigProps(data) as T,
+      error: undefined,
+      handleSuccess,
+    };
   };
 
   delete = async (values: Partial<T>) => {
@@ -442,9 +459,13 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
       return this._handleError(error.setMessage("Nothing to update"));
     }
 
-    await this._handleSuccess(updated);
+    const handleSuccess = this._makeHandleSuccess(updated);
 
-    return { data: this._useConfigProps(updated, true), error: undefined };
+    return {
+      data: this._useConfigProps(updated, true),
+      error: undefined,
+      handleSuccess,
+    };
   };
 
   validate = async <K extends StringKey<T>>(prop: K, value: any) => {

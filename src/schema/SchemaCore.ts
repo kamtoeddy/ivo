@@ -99,7 +99,7 @@ export abstract class SchemaCore<T extends ObjectType> {
   }
 
   // context methods
-  protected _getContext = () => ({ ...this.context });
+  protected _getContext = () => Object.freeze({ ...this.context });
 
   protected _initContext = () => (this.context = { ...this.values } as T);
 
