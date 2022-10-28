@@ -78,7 +78,11 @@ const UserModel = userSchema.getModel();
 # Creating an instance
 
 ```js
-const { data: user, error } = await UserModel.create({
+const {
+  data: user,
+  error,
+  handleSuccess,
+} = await UserModel.create({
   firstName: "James",
   fullName: "Mr. James",
   id: 1,
@@ -103,6 +107,8 @@ console.log(user);
 //   updatedAt: new Date(),
 // };
 
+await handleSuccess?.();
+
 const db = require("db-of-choice"); // use db of your choice
 
 await db.insert(user);
@@ -115,7 +121,7 @@ const user = await db.query({ id: 1 });
 
 if (!user) throw new Error("User not found");
 
-const { data, error } = await UserModel.update(user, {
+const { data, error, handleSuccess } = await UserModel.update(user, {
   lastSeen: new Date(),
   id: 2,
   age: 34,
@@ -126,6 +132,8 @@ const { data, error } = await UserModel.update(user, {
 // fullName is ignored because it is dependent
 // id is ignored because it is readonly
 console.log(data); // { lastSeen: new Date(), updatedAt: new Date() }
+
+await handleSuccess?.();
 
 await db.update({ id: 1 }, data);
 ```
@@ -141,14 +149,14 @@ await db.update({ id: 1 }, data);
   - [side effects](./docs/v2.1.0/schema/definition/side-effects.md#side-effect-properties)
   - [validators](./docs/v1.4.6/validate/index.md#validators)
 - [Inheritance](./docs/v1.4.6/schema/inheritance.md#schema-inheritance)
-- [The Operation Context](./docs/v2.1.0/schema/definition/life-cycles.md#the-operation-context)
-- [Life Cycles & Listeners](./docs/v2.1.0/schema/definition/life-cycles.md#life-cycle-listeners)
-  - [onChange](./docs/v2.1.0/schema/definition/life-cycles.md#onchange)
-  - [onCreate](./docs/v2.1.0/schema/definition/life-cycles.md#oncreate)
-  - [onDelete](./docs/v2.1.0/schema/definition/life-cycles.md#ondelete)
-  - [onFailure](./docs/v2.1.0/schema/definition/life-cycles.md#onfailure)
-  - [onSuccess](./docs/v2.1.0/schema/definition/life-cycles.md#onsuccess)
-  - [onUpdate](./docs/v2.1.0/schema/definition/life-cycles.md#onupdate)
+- [The Operation Context](./docs/v2.5.0/schema/definition/life-cycles.md#the-operation-context)
+- [Life Cycles & Listeners](./docs/v2.5.0/schema/definition/life-cycles.md#life-cycle-listeners)
+  - [onChange](./docs/v2.5.0/schema/definition/life-cycles.md#onchange)
+  - [onCreate](./docs/v2.5.0/schema/definition/life-cycles.md#oncreate)
+  - [onDelete](./docs/v2.5.0/schema/definition/life-cycles.md#ondelete)
+  - [onFailure](./docs/v2.5.0/schema/definition/life-cycles.md#onfailure)
+  - [onSuccess](./docs/v2.5.0/schema/definition/life-cycles.md#onsuccess)
+  - [onUpdate](./docs/v2.5.0/schema/definition/life-cycles.md#onupdate)
 - [Options](./docs/v1.4.7/schema/definitions.md#options)
 - [Validators](./docs/v1.4.6/validate/index.md#validators)
   - [isArrayOk](./docs/v1.4.6/validate/isArrayOk.md)
@@ -157,6 +165,6 @@ await db.update({ id: 1 }, data);
   - [isEmailOk](./docs/v1.4.6/validate/isEmailOk.md)
   - [isNumberOk](./docs/v1.4.6/validate/isNumberOk.md)
   - [isStringOk](./docs/v1.4.6/validate/isStringOk.md)
-- [Changelog](./docs/v2.4.2/CHANGELOG.md#changelog)
+- [Changelog](./docs/v2.5.0/CHANGELOG.md#changelog)
 
 ## Happy coding! 😎
