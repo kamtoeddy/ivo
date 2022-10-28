@@ -297,12 +297,10 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
 
     await this._resolveLinked(data, error, sideEffects, "onCreate");
 
-    const handleSuccess = this._makeHandleSuccess(data);
-
     return {
       data: this._useConfigProps(data) as T,
       error: undefined,
-      handleSuccess,
+      handleSuccess: this._makeHandleSuccess(data),
     };
   };
 
@@ -362,22 +360,22 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
 
     await this._resolveLinked(data, error, sideEffects, "onCreate");
 
-    const handleSuccess = this._makeHandleSuccess(data);
-
     return {
       data: this._useConfigProps(data) as T,
       error: undefined,
-      handleSuccess,
+      handleSuccess: this._makeHandleSuccess(data),
     };
   };
 
   delete = async (values: Partial<T>) => {
-    const _values = this._getValues(values, false) as Readonly<T>;
+    const _values = Object.freeze(
+      this._getValues(values, false)
+    ) as Readonly<T>;
 
     const cleanups = this.props.map(async (prop) => {
       const listeners = this._getListeners(prop, "onDelete");
 
-      for (const listener of listeners) await listener({ ..._values });
+      for (const listener of listeners) await listener(_values);
     });
 
     await Promise.all(cleanups);
@@ -459,12 +457,10 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
       return this._handleError(error.setMessage("Nothing to update"));
     }
 
-    const handleSuccess = this._makeHandleSuccess(updated);
-
     return {
       data: this._useConfigProps(updated, true),
       error: undefined,
-      handleSuccess,
+      handleSuccess: this._makeHandleSuccess(updated),
     };
   };
 
