@@ -852,10 +852,12 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
         // creation
         it("should call onSuccess listeners at creation", async () => {
-          const { error } = await Model.create({
+          const { error, handleSuccess } = await Model.create({
             required: true,
             readonly: true,
           });
+
+          await handleSuccess();
 
           expect(error).toBeUndefined();
           expect(propChangeMap).toEqual({
@@ -869,10 +871,12 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
         // cloning
         it("should call onSuccess listeners during cloning", async () => {
-          const { error } = await Model.clone({
+          const { error, handleSuccess } = await Model.clone({
             required: true,
             readonly: true,
           });
+
+          await handleSuccess();
 
           expect(error).toBeUndefined();
           expect(propChangeMap).toEqual({
@@ -886,9 +890,11 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
         // updates
         it("should call onSuccess listeners during updates with lax props", async () => {
-          const { error } = await Model.update(initialData, {
+          const { error, handleSuccess } = await Model.update(initialData, {
             lax: true,
           });
+
+          await handleSuccess();
 
           expect(error).toBeUndefined();
           expect(propChangeMap).toEqual({
@@ -897,9 +903,11 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
         });
 
         it("should call onSuccess listeners during updates with readonlyLax & dependent", async () => {
-          const { error } = await Model.update(initialData, {
+          const { error, handleSuccess } = await Model.update(initialData, {
             readonlyLax: true,
           });
+
+          await handleSuccess();
 
           expect(error).toBeUndefined();
           expect(propChangeMap).toEqual({
