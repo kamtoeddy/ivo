@@ -9,7 +9,7 @@ const invalidResponse = makeResponse({
   validated: undefined,
 });
 
-export const isEmailOk = (value: string, customRegExp: RegExp) => {
+export const isEmailOk = (value: any, customRegExp?: RegExp) => {
   if (typeof value !== "string") return invalidResponse;
 
   const validated = value?.trim();
