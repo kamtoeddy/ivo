@@ -165,6 +165,6 @@ await db.update({ id: 1 }, data);
   - [isEmailOk](./docs/v1.4.6/validate/isEmailOk.md)
   - [isNumberOk](./docs/v1.4.6/validate/isNumberOk.md)
   - [isStringOk](./docs/v1.4.6/validate/isStringOk.md)
-- [Changelog](./docs/v2.5.1/CHANGELOG.md#changelog)
+- [Changelog](./docs/v2.5.2/CHANGELOG.md#changelog)
 
 ## Happy coding! 😎

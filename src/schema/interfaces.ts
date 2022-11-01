@@ -71,7 +71,7 @@ export namespace Schema {
   type Property<K extends keyof T, T> = Listenable<T> & {
     default: TypeOf<T[K]> | Setter<K, T>;
     readonly?: "lax";
-    shouldInit?: true;
+    shouldInit?: false;
     validator?: Validator<K, T>;
   };
 
