@@ -57,8 +57,11 @@ const storeItemSchema = new Schema<IStoreItem>(
 // this type of handler should not affect the next
 // operation context
 function badHandler(ctx: any) {
-  ctx._dependentReadOnly = 1;
-  ctx.quantity = 10000;
+  try {
+    ctx._dependentReadOnly = 1;
+    ctx.otherMeasureUnits = null;
+    ctx.quantity = 10000;
+  } catch (err: any) {}
 }
 
 const StoreItem = storeItemSchema.getModel();

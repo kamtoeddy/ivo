@@ -99,12 +99,13 @@ export abstract class SchemaCore<T extends ObjectType> {
   }
 
   // context methods
-  protected _getContext = () => Object.freeze({ ...this.context });
+  protected _getContext = () => Object.freeze(Object.assign({}, this.context));
 
   protected _initContext = () => (this.context = { ...this.values } as T);
 
-  protected _updateContext = (updates: Partial<T>) =>
-    (this.context = { ...this.context, ...updates });
+  protected _updateContext = (updates: Partial<T>) => {
+    this.context = { ...this.context, ...updates };
+  };
 
   protected _canInit = (prop: string) => {
     if (this._isDependentProp(prop)) return false;

@@ -119,7 +119,10 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
       return;
 
     for (const listener of listeners) {
-      const context = { ...this._getContext(), ...operationData };
+      const context = Object.freeze({
+        ...this._getContext(),
+        ...operationData,
+      });
 
       const extra = await listener(context);
 
