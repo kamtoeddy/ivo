@@ -653,6 +653,155 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
         }
       });
 
+      describe("life cycle readonly ctx", () => {
+        const rules = [
+          "onChange",
+          "onCreate",
+          "onDelete",
+          "onFailure",
+          "onSuccess",
+          "onUpdate",
+        ];
+
+        let Model: any,
+          propChangeMap: any = {};
+
+        const validData = { constant: 1, prop1: "1", prop2: "2", prop3: "3" };
+        const allProps = ["constant", "prop1", "prop2", "prop3"],
+          props = ["prop1", "prop2", "prop3"];
+
+        beforeAll(() => {
+          const handle =
+            (rule = "", prop = "") =>
+            (ctx: any) => {
+              try {
+                ctx[prop] = 1;
+              } catch (err) {
+                if (!propChangeMap[rule]) propChangeMap[rule] = {};
+
+                propChangeMap[rule][prop] = true;
+              }
+            };
+          const validator = (value: any) => ({ valid: !!value });
+
+          Model = new Schema({
+            constant: {
+              constant: true,
+              value: "constant",
+              onCreate: handle("onCreate", "constant"),
+              onDelete: handle("onDelete", "constant"),
+              onSuccess: handle("onSuccess", "constant"),
+            },
+            prop1: {
+              required: true,
+              onChange: handle("onChange", "prop1"),
+              onCreate: handle("onCreate", "prop1"),
+              onDelete: handle("onDelete", "prop1"),
+              onFailure: handle("onFailure", "prop1"),
+              onSuccess: handle("onSuccess", "prop1"),
+              onUpdate: handle("onUpdate", "prop1"),
+              validator,
+            },
+            prop2: {
+              required: true,
+              onChange: handle("onChange", "prop2"),
+              onCreate: handle("onCreate", "prop2"),
+              onDelete: handle("onDelete", "prop2"),
+              onFailure: handle("onFailure", "prop2"),
+              onSuccess: handle("onSuccess", "prop2"),
+              onUpdate: handle("onUpdate", "prop2"),
+              validator,
+            },
+            prop3: {
+              required: true,
+              onChange: handle("onChange", "prop3"),
+              onCreate: handle("onCreate", "prop3"),
+              onDelete: handle("onDelete", "prop3"),
+              onFailure: handle("onFailure", "prop3"),
+              onSuccess: handle("onSuccess", "prop3"),
+              onUpdate: handle("onUpdate", "prop3"),
+              validator,
+            },
+          }).getModel();
+        });
+
+        beforeEach(() => (propChangeMap = {}));
+
+        it("should reject listeners that try to mutate the onChange, onCreate & onSuccess ctx", async () => {
+          const { handleSuccess } = await Model.create(validData);
+
+          await handleSuccess?.();
+
+          for (const prop of allProps)
+            expect(propChangeMap.onCreate[prop]).toBe(true);
+
+          expect(propChangeMap.onSuccess.constant).toBe(true);
+
+          for (const prop of props)
+            for (const rule of ["onChange", "onSuccess"])
+              expect(propChangeMap[rule][prop]).toBe(true);
+        });
+
+        it("should reject listeners that try to mutate the onChange, onCreate & onSuccess ctx (clone)", async () => {
+          await Model.clone(validData);
+
+          for (const prop of allProps)
+            expect(propChangeMap.onCreate[prop]).toBe(true);
+
+          for (const prop of props)
+            expect(propChangeMap.onChange[prop]).toBe(true);
+        });
+
+        it("should reject listeners that try to mutate the onDelete ctx", async () => {
+          await Model.delete(validData);
+
+          for (const prop of allProps)
+            expect(propChangeMap.onDelete[prop]).toBe(true);
+        });
+
+        it("should reject listeners that try to mutate the onFailure(clone) ctx", async () => {
+          await Model.clone({ prop1: "", prop2: "", prop3: "" });
+
+          for (const prop of props)
+            for (const rule of rules) {
+              const result = rule == "onFailure" ? true : undefined;
+
+              expect(propChangeMap?.[rule]?.[prop]).toBe(result);
+            }
+        });
+
+        it("should reject listeners that try to mutate the onFailure(create) ctx", async () => {
+          await Model.create({ prop1: "", prop2: "", prop3: "" });
+
+          for (const prop of props)
+            for (const rule of rules) {
+              const result = rule == "onFailure" ? true : undefined;
+
+              expect(propChangeMap?.[rule]?.[prop]).toBe(result);
+            }
+        });
+
+        it("should reject listeners that try to mutate the onFailure(update) ctx", async () => {
+          await Model.update(validData, { prop1: "", prop2: "", prop3: "" });
+
+          for (const prop of props)
+            for (const rule of rules) {
+              const result = rule == "onFailure" ? true : undefined;
+
+              expect(propChangeMap?.[rule]?.[prop]).toBe(result);
+            }
+        });
+
+        it("should reject listeners that try to mutate the onUpdate & onChange ctx", async () => {
+          await Model.update(validData, { prop1: "2", prop2: "3", prop3: "4" });
+
+          for (const prop of props) {
+            expect(propChangeMap.onUpdate[prop]).toBe(true);
+            expect(propChangeMap.onChange[prop]).toBe(true);
+          }
+        });
+      });
+
       describe("onDelete", () => {
         let Model: any,
           propChangeMap: any = {};

@@ -119,7 +119,10 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
       return;
 
     for (const listener of listeners) {
-      const context = { ...this._getContext(), ...operationData };
+      const context = Object.freeze({
+        ...this._getContext(),
+        ...operationData,
+      });
 
       const extra = await listener(context);
 
@@ -368,14 +371,14 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
   };
 
   delete = async (values: Partial<T>) => {
-    const _values = Object.freeze(
-      this._getValues(values, false)
+    const ctx = Object.freeze(
+      Object.assign({}, this._getValues(values, false))
     ) as Readonly<T>;
 
     const cleanups = this.props.map(async (prop) => {
       const listeners = this._getListeners(prop, "onDelete");
 
-      for (const listener of listeners) await listener(_values);
+      for (const listener of listeners) await listener(ctx);
     });
 
     await Promise.all(cleanups);
