@@ -203,7 +203,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     const createdAt = this.optionsTool.getCreateKey(),
       updatedAt = this.optionsTool.getUpdateKey();
 
-    const results = asUpdate
+    let results = asUpdate
       ? { ...obj, [updatedAt]: new Date() }
       : { ...obj, [createdAt]: new Date(), [updatedAt]: new Date() };
 
