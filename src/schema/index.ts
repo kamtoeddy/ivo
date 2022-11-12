@@ -32,6 +32,42 @@ export class Schema<T extends ObjectType> extends SchemaCore<T> {
     return this;
   };
 
+  private _useExtension = <T extends ObjectType, OutputType>(
+    propDefinitions: ns.PropertyDefinitions<T>,
+    options: ns.ExtensionOptions<T>
+  ) => {
+    const remove = toArray(options?.remove ?? []);
+
+    remove?.forEach((prop) => delete propDefinitions?.[prop]);
+
+    return propDefinitions as ns.PropertyDefinitions<OutputType>;
+  };
+
+  // extend = <U extends ObjectType>(
+  //   parent: Schema<U>,
+  //   options: ns.ExtensionOptions<U> = { remove: [] }
+  // ) => {
+  //   type NewType = U & T;
+
+  //   const propDefinitions = {
+  //     ...parent.propDefinitions,
+  //     ...this._propDefinitions,
+  //   } as ns.PropertyDefinitions<NewType>;
+
+  //   const toOmit = toArray(options?.remove ?? []);
+
+  //   type ToOmit = typeof toOmit[number];
+
+  //   type ExtendendType = Omit<U, ToOmit> & T;
+
+  //   const propDef = this._useExtension<NewType, ExtendendType>(
+  //     propDefinitions,
+  //     options
+  //   );
+
+  //   return new Schema(propDef, this._options);
+  // };
+
   extend = <U extends ObjectType>(
     parent: Schema<U>,
     options: ns.ExtensionOptions<U> = { remove: [] }
@@ -234,7 +270,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
   ) => {
     this.setValues(values);
 
-    const reset = toArray(options.reset).filter(this._isProp);
+    const reset = toArray(options?.reset ?? []).filter(this._isProp);
 
     const data = {} as T;
     const error = new ErrorTool({ message: "Validation Error" });
