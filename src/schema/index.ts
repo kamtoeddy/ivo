@@ -1,7 +1,7 @@
 import { sort, sortKeys, toArray } from "../utils/functions";
 import { ObjectType } from "../utils/interfaces";
 import { isEqual } from "../utils/isEqual";
-import { LifeCycles, Schema as ns, StringKey } from "./interfaces";
+import { LifeCycles, Schema as ns, SpreadKeys, StringKey } from "./interfaces";
 import { defaultOptions, SchemaCore } from "./SchemaCore";
 import { makeResponse } from "./utils";
 import { ErrorTool } from "./utils/schema-error";
@@ -27,45 +27,53 @@ export class Schema<T extends ObjectType> extends SchemaCore<T> {
   ) => {
     const remove = toArray(options?.remove ?? []);
 
-    remove?.forEach((prop) => delete this._propDefinitions?.[prop]);
+    remove?.forEach(
+      (prop) => delete this._propDefinitions?.[prop as StringKey<T>]
+    );
 
     return this;
   };
 
-  private _useExtension = <T extends ObjectType, OutputType>(
-    propDefinitions: ns.PropertyDefinitions<T>,
-    options: ns.ExtensionOptions<T>
-  ) => {
-    const remove = toArray(options?.remove ?? []);
+  // private _useExtension = <T extends ObjectType, OutputType>(
+  //   propDefinitions: ns.PropertyDefinitions<T>,
+  //   options: ns.ExtensionOptions<T>
+  // ) => {
+  //   const remove = toArray(options?.remove ?? []);
 
-    remove?.forEach((prop) => delete propDefinitions?.[prop]);
+  //   remove?.forEach((prop) => delete propDefinitions?.[prop as StringKey<T>]);
 
-    return propDefinitions as ns.PropertyDefinitions<OutputType>;
-  };
+  //   return propDefinitions as ns.PropertyDefinitions<OutputType>;
+  // };
+
+  // private removeProps<T extends ObjectType, U extends keyof T>(
+  //   obj: T,
+  //   prop?: U | U[]
+  // ) {
+  //   const remove = toArray(prop ?? []);
+
+  //   remove?.forEach((prop) => delete obj?.[prop as StringKey<T>]);
+
+  //   return obj as Omit<T, U>;
+  // }
 
   // extend = <U extends ObjectType>(
   //   parent: Schema<U>,
-  //   options: ns.ExtensionOptions<U> = { remove: [] }
+  //   options: { remove?: keyof U | (keyof U)[] } = { remove: [] }
   // ) => {
-  //   type NewType = U & T;
+  //   const { remove } = options;
 
-  //   const propDefinitions = {
-  //     ...parent.propDefinitions,
-  //     ...this._propDefinitions,
-  //   } as ns.PropertyDefinitions<NewType>;
-
-  //   const toOmit = toArray(options?.remove ?? []);
-
-  //   type ToOmit = typeof toOmit[number];
-
-  //   type ExtendendType = Omit<U, ToOmit> & T;
-
-  //   const propDef = this._useExtension<NewType, ExtendendType>(
-  //     propDefinitions,
-  //     options
+  //   const propDef = this.removeProps(
+  //     parent.propDefinitions as ns.PropertyDefinitions<U>,
+  //     remove
   //   );
 
-  //   return new Schema(propDef, this._options);
+  //   return new Schema(
+  //     {
+  //       ...propDef,
+  //       ...this._propDefinitions,
+  //     } as ns.PropertyDefinitions<typeof propDef & T>,
+  //     this._options
+  //   );
   // };
 
   extend = <U extends ObjectType>(

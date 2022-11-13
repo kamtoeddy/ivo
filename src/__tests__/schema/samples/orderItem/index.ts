@@ -11,8 +11,8 @@ const orderItemSchema = new Schema<IOrderItem>(
   { errors: "throw", timestamps: true }
 ).extend(storeItemSchema, {
   remove: [
-    "_readOnlyNoInit",
     "_dependentReadOnly",
+    "_readOnlyNoInit",
     "_sideEffectForDependentReadOnly",
   ],
 });
