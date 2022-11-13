@@ -5,7 +5,7 @@ import { validateString } from "./validators";
 const storeItemChildSchema = new Schema(
   {
     childID: { readonly: true, validator: validateString("Invalid child id") },
-    sideEffect: {
+    sideEffectProp: {
       sideEffect: true,
       onChange: () => ({}),
       validator: validateString("Invalid child id"),

@@ -1,8 +1,10 @@
+import { ObjectType } from "../utils/interfaces";
+
 export type TypeOf<T> = Exclude<T, undefined>;
 
 type Setter<K, T> = (ctx: Readonly<T>) => K extends keyof T ? TypeOf<T[K]> : K;
 
-type SpreadKeys<T> = {
+export type SpreadKeys<T> = {
   [K in keyof T]: T[K];
 };
 
@@ -131,18 +133,21 @@ export namespace Schema {
     validator: Validator<K, T>;
   };
 
-  type SideEffectType<K extends keyof T, T> =
-    | SideEffect<K, T>
-    | RequiredSideEffect<K, T>;
+  type IsSideEffectType<T, K extends keyof T> = Exclude<
+    T[K],
+    undefined
+  > extends { sideEffect?: infer I }
+    ? K
+    : never;
 
   type SideEffects<T> = {
-    [K in keyof PropertyDefinitions<T>]: PropertyDefinitions<T>[K] extends SideEffectType<
-      K,
-      T
-    >
-      ? K
+    [K in keyof PropertyDefinitions<T>]: Exclude<
+      PropertyDefinitions<T>[K],
+      undefined
+    > extends {}
+      ? IsSideEffectType<Exclude<PropertyDefinitions<T>, undefined>, K>
       : never;
-  }[keyof PropertyDefinitions<T>];
+  }[keyof T];
 
   export type RealProps<T> = SpreadKeys<Omit<T, SideEffects<T>>>;
 

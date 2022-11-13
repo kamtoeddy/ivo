@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-# v2.5.4 <small><sup>xx-xx-2022</sup></small>
+# v-next <small><sup>[x][x]-[x][x]-202[x]</sup></small>
 
 - [Updated] typings of payload returned by create, clone & update methods
 - [Updated] typings of extended schemas
