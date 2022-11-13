@@ -2,6 +2,10 @@ export type TypeOf<T> = Exclude<T, undefined>;
 
 type Setter<K, T> = (ctx: Readonly<T>) => K extends keyof T ? TypeOf<T[K]> : K;
 
+type SpreadKeys<T> = {
+  [K in keyof T]: T[K];
+};
+
 type Promisable<T> = T | Promise<T>;
 
 type AsyncSetter<K, T> = (
@@ -126,6 +130,21 @@ export namespace Schema {
     requiredError: string | Setter<string, T>;
     validator: Validator<K, T>;
   };
+
+  type SideEffectType<K extends keyof T, T> =
+    | SideEffect<K, T>
+    | RequiredSideEffect<K, T>;
+
+  type SideEffects<T> = {
+    [K in keyof PropertyDefinitions<T>]: PropertyDefinitions<T>[K] extends SideEffectType<
+      K,
+      T
+    >
+      ? K
+      : never;
+  }[keyof PropertyDefinitions<T>];
+
+  export type RealProps<T> = SpreadKeys<Omit<T, SideEffects<T>>>;
 
   // options
   export interface CloneOptions<T> {

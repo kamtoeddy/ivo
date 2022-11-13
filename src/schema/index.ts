@@ -197,8 +197,9 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     this._updateContext({ [prop]: validated } as T);
   };
 
-  private _useConfigProps = (obj: T | Partial<T>, asUpdate = false) => {
-    if (!this.optionsTool.withTimestamps) return sortKeys(obj);
+  private _useConfigProps = (obj: Partial<T>, asUpdate = false) => {
+    if (!this.optionsTool.withTimestamps)
+      return sortKeys(obj) as ns.RealProps<T>;
 
     const createdAt = this.optionsTool.getCreateKey(),
       updatedAt = this.optionsTool.getUpdateKey();
@@ -207,7 +208,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
       ? { ...obj, [updatedAt]: new Date() }
       : { ...obj, [createdAt]: new Date(), [updatedAt]: new Date() };
 
-    return sortKeys(results);
+    return sortKeys(results) as ns.RealProps<T>;
   };
 
   private _handleRequiredBy = (error: ErrorTool) => {
@@ -337,7 +338,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     await this._resolveLinked(data, error, sideEffects, "onCreate");
 
     return {
-      data: this._useConfigProps(data) as T,
+      data: this._useConfigProps(data),
       error: undefined,
       handleSuccess: this._makeHandleSuccess(data),
     };
@@ -400,7 +401,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     await this._resolveLinked(data, error, sideEffects, "onCreate");
 
     return {
-      data: this._useConfigProps(data) as T,
+      data: this._useConfigProps(data),
       error: undefined,
       handleSuccess: this._makeHandleSuccess(data),
     };
@@ -497,7 +498,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     }
 
     return {
-      data: this._useConfigProps(updated, true),
+      data: this._useConfigProps(updated, true) as Partial<ns.RealProps<T>>,
       error: undefined,
       handleSuccess: this._makeHandleSuccess(updated),
     };

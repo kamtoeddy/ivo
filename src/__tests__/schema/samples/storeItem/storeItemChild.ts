@@ -5,6 +5,11 @@ import { validateString } from "./validators";
 const storeItemChildSchema = new Schema(
   {
     childID: { readonly: true, validator: validateString("Invalid child id") },
+    sideEffect: {
+      sideEffect: true,
+      onChange: () => ({}),
+      validator: validateString("Invalid child id"),
+    },
   },
   { errors: "throw", timestamps: true }
 ).extend(storeItemSchema);

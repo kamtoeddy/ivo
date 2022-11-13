@@ -66,4 +66,8 @@ function badHandler(ctx: any) {
 
 const StoreItem = storeItemSchema.getModel();
 
+// const {data} = await StoreItem.create({})
+
+// data
+
 export { StoreItem, storeItemSchema };
