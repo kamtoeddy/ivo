@@ -133,13 +133,17 @@ export namespace Schema {
     validator: Validator<K, T>;
   };
 
+  type IsSideEffect<T, K extends keyof T> = Exclude<T[K], undefined> extends {
+    sideEffect?: boolean;
+  }
+    ? K
+    : never;
+
   // *********************** //
-  // ******** Help! ******* //
+  // ******** Help! ******** //
   // *********************** //
   type SideEffects<T> = {
-    [K in keyof T]: PropertyDefinitions<T>[K] extends { sideEffect: true }
-      ? K
-      : never;
+    [K in keyof T]: IsSideEffect<PropertyDefinitions<T>, K>;
   }[keyof T];
 
   export type RealProps<T> = SpreadKeys<Omit<T, SideEffects<T>>>;
