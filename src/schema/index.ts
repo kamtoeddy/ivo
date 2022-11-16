@@ -206,7 +206,8 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
   };
 
   private _useConfigProps = (obj: Partial<T>, asUpdate = false) => {
-    if (!this.optionsTool.withTimestamps) return sortKeys(obj);
+    if (!this.optionsTool.withTimestamps)
+      return sortKeys(obj) as ns.RealProps<T>;
 
     const createdAt = this.optionsTool.getCreateKey(),
       updatedAt = this.optionsTool.getUpdateKey();
@@ -215,7 +216,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
       ? { ...obj, [updatedAt]: new Date() }
       : { ...obj, [createdAt]: new Date(), [updatedAt]: new Date() };
 
-    return sortKeys(results);
+    return sortKeys(results) as ns.RealProps<T>;
   };
 
   private _handleRequiredBy = (error: ErrorTool) => {
