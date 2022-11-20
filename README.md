@@ -4,8 +4,6 @@ Clean-schema's purpose is to help you ensure that the data going to your databas
 
 # Installation
 
-First install [Node.js](http://nodejs.org/) Then:
-
 ```bash
 $ npm i clean-schema
 ```
@@ -165,6 +163,6 @@ await db.update({ id: 1 }, data);
   - [onUpdate](./docs/v2.5.0/schema/definition/life-cycles.md#onupdate)
 - [Options](./docs/v1.4.7/schema/definitions.md#options)
 
-- [Changelog](./docs/v2.5.3/CHANGELOG.md#changelog)
+- [Changelog](./docs/v2.5.4/CHANGELOG.md#changelog)
 
 ## Happy coding! 😎
