@@ -148,6 +148,12 @@ await db.update({ id: 1 }, data);
   - [required properties](./docs/v1.5.0/schema/definition/required.md#required-properties)
   - [side effects](./docs/v2.1.0/schema/definition/side-effects.md#side-effect-properties)
   - [validators](./docs/v1.4.6/validate/index.md#validators)
+    - [isArrayOk](./docs/v1.4.6/validate/isArrayOk.md)
+    - [isBooleanOk](./docs/v1.4.6/validate/isBooleanOk.md)
+    - [isCreditCardOk](./docs/v1.4.6/validate/isCreditCardOk.md)
+    - [isEmailOk](./docs/v1.4.6/validate/isEmailOk.md)
+    - [isNumberOk](./docs/v1.4.6/validate/isNumberOk.md)
+    - [isStringOk](./docs/v1.4.6/validate/isStringOk.md)
 - [Inheritance](./docs/v1.4.6/schema/inheritance.md#schema-inheritance)
 - [The Operation Context](./docs/v2.5.0/schema/definition/life-cycles.md#the-operation-context)
 - [Life Cycles & Listeners](./docs/v2.5.0/schema/definition/life-cycles.md#life-cycle-listeners)
@@ -158,13 +164,7 @@ await db.update({ id: 1 }, data);
   - [onSuccess](./docs/v2.5.0/schema/definition/life-cycles.md#onsuccess)
   - [onUpdate](./docs/v2.5.0/schema/definition/life-cycles.md#onupdate)
 - [Options](./docs/v1.4.7/schema/definitions.md#options)
-- [Validators](./docs/v1.4.6/validate/index.md#validators)
-  - [isArrayOk](./docs/v1.4.6/validate/isArrayOk.md)
-  - [isBooleanOk](./docs/v1.4.6/validate/isBooleanOk.md)
-  - [isCreditCardOk](./docs/v1.4.6/validate/isCreditCardOk.md)
-  - [isEmailOk](./docs/v1.4.6/validate/isEmailOk.md)
-  - [isNumberOk](./docs/v1.4.6/validate/isNumberOk.md)
-  - [isStringOk](./docs/v1.4.6/validate/isStringOk.md)
+
 - [Changelog](./docs/v2.5.3/CHANGELOG.md#changelog)
 
 ## Happy coding! 😎
