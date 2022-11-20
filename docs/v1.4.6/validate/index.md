@@ -23,4 +23,11 @@ const validator = (value: any, validationContext): IValidationResults => {
 
 ## Built-in validation helpers
 
-Clean-schema has some built-in validators. Feel free to use or build you own validators based on these. Each returns an object with the following structure:
+Clean-schema has some built-in validators. Feel free to use or build you own validators based on these:
+
+- [isArrayOk](./docs/v1.4.6/validate/isArrayOk.md)
+- [isBooleanOk](./docs/v1.4.6/validate/isBooleanOk.md)
+- [isCreditCardOk](./docs/v1.4.6/validate/isCreditCardOk.md)
+- [isEmailOk](./docs/v1.4.6/validate/isEmailOk.md)
+- [isNumberOk](./docs/v1.4.6/validate/isNumberOk.md)
+- [isStringOk](./docs/v1.4.6/validate/isStringOk.md)
