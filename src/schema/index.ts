@@ -131,6 +131,8 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
       const _props = this._getKeysAsProps(extra);
 
       for (let _prop of _props) {
+        if (this._isReadonly(_prop) && !this._isUpdatable(_prop)) continue;
+
         const _value = extra[_prop];
         const isSideEffect = this._isSideEffect(_prop);
 

@@ -1094,6 +1094,26 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
           toPass();
         });
+
+        describe("behaviour", () => {
+          let Model: any;
+
+          beforeAll(() => {
+            Model = new Schema({
+              age: { readonly: true, default: null },
+              name: {
+                default: "Default Name",
+                onChange: () => ({ age: 12 }),
+              },
+            }).getModel();
+          });
+
+          it("should not modify readonly props that have changed via life cycle listeners", async () => {
+            const { data } = await Model.create({ age: 25 });
+
+            expect(data).toMatchObject({ age: 25, name: "Default Name" });
+          });
+        });
       });
 
       describe("invalid", () => {
