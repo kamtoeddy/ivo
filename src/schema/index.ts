@@ -62,6 +62,54 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     return listeners;
   };
 
+  private _getValues(values: Partial<T>, allowSideEffects = true) {
+    const keys = this._getKeysAsProps(values).filter(
+      (key) =>
+        this.optionsTool.isTimestampKey(key) ||
+        this._isProp(key) ||
+        (allowSideEffects && this._isSideEffect(key))
+    );
+
+    const _values = {} as Partial<T>;
+
+    sort(keys).forEach((key) => (_values[key] = values[key]));
+
+    return _values;
+  }
+
+  private _handleError = (error: ErrorTool) => {
+    return this._options.errors === "throw"
+      ? error.throw()
+      : { data: undefined, error: error.summary, handleSuccess: undefined };
+  };
+
+  private _handleFailure = async (
+    data: Partial<T>,
+    error: ErrorTool,
+    sideEffects: StringKey<T>[] = []
+  ) => {
+    const props = [
+      ...this._getKeysAsProps({ ...data, ...error.payload }),
+      ...sideEffects,
+    ];
+
+    const cleanups = props.map(async (prop) => {
+      const listeners = this._getListeners(prop, "onFailure");
+
+      for (const listener of listeners) await listener(this._getContext());
+    });
+
+    await Promise.all(cleanups);
+  };
+
+  private _handleRequiredBy = (error: ErrorTool) => {
+    for (const prop of this.propsRequiredBy) {
+      const isRequired = this._getValueBy(prop, "required");
+      if (isRequired && this._isUpdatable(prop))
+        return error.add(prop, this._getValueBy(prop, "requiredError"));
+    }
+  };
+
   private _isUpdatable = (prop: string) => {
     if (this._isSideEffect(prop)) return true;
 
@@ -87,6 +135,27 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     return !this._isProp(prop) || this._isConstant(prop)
       ? false
       : !isEqual(value, context?.[prop]);
+  };
+
+  private _makeHandleSuccess = (data: Partial<T>) => {
+    const props = this._getKeysAsProps(data);
+
+    let successListeners = [] as LifeCycles.Listener<T>[];
+
+    for (const prop of props)
+      successListeners = successListeners.concat(
+        this._getListeners(prop, "onSuccess")
+      );
+
+    const ctx = this._getContext();
+
+    return async () => {
+      const successOperations = successListeners.map(async (listener) => {
+        await listener(ctx);
+      });
+
+      await Promise.all(successOperations);
+    };
   };
 
   private _resolveLinked = async (
@@ -176,60 +245,6 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
       : { ...obj, [createdAt]: new Date(), [updatedAt]: new Date() };
 
     return sortKeys(results);
-  };
-
-  private _handleRequiredBy = (error: ErrorTool) => {
-    for (const prop of this.propsRequiredBy) {
-      const isRequired = this._getValueBy(prop, "required");
-      if (isRequired && this._isUpdatable(prop))
-        return error.add(prop, this._getValueBy(prop, "requiredError"));
-    }
-  };
-
-  private _handleError = (error: ErrorTool) => {
-    return this._options.errors === "throw"
-      ? error.throw()
-      : { data: undefined, error: error.summary, handleSuccess: undefined };
-  };
-
-  private _handleFailure = async (
-    data: Partial<T>,
-    error: ErrorTool,
-    sideEffects: StringKey<T>[] = []
-  ) => {
-    const props = [
-      ...this._getKeysAsProps({ ...data, ...error.payload }),
-      ...sideEffects,
-    ];
-
-    const cleanups = props.map(async (prop) => {
-      const listeners = this._getListeners(prop, "onFailure");
-
-      for (const listener of listeners) await listener(this._getContext());
-    });
-
-    await Promise.all(cleanups);
-  };
-
-  private _makeHandleSuccess = (data: Partial<T>) => {
-    const props = this._getKeysAsProps(data);
-
-    let successListeners = [] as LifeCycles.Listener<T>[];
-
-    for (const prop of props)
-      successListeners = successListeners.concat(
-        this._getListeners(prop, "onSuccess")
-      );
-
-    const ctx = this._getContext();
-
-    return async () => {
-      const successOperations = successListeners.map(async (listener) => {
-        await listener(ctx);
-      });
-
-      await Promise.all(successOperations);
-    };
   };
 
   clone = async (
@@ -387,21 +402,6 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
 
     await Promise.all(cleanups);
   };
-
-  private _getValues(values: Partial<T>, allowSideEffects = true) {
-    const keys = this._getKeysAsProps(values).filter(
-      (key) =>
-        this.optionsTool.isTimestampKey(key) ||
-        this._isProp(key) ||
-        (allowSideEffects && this._isSideEffect(key))
-    );
-
-    const _values = {} as Partial<T>;
-
-    sort(keys).forEach((key) => (_values[key] = values[key]));
-
-    return _values;
-  }
 
   setValues(values: Partial<T>) {
     this.values = this._getValues(values);
