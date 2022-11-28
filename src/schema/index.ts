@@ -199,16 +199,23 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
 
       const _props = this._getKeysAsProps(extra);
 
-      const resolvedHandles = _props.map(async (_prop) => {
-        const _value = extra[_prop];
-        const isSideEffect = this._isSideEffect(_prop);
+      const resolvedHandles = _props.map(async (prop) => {
+        const _value = extra[prop];
+        const isSideEffect = this._isSideEffect(prop);
 
-        if (!isSideEffect && !this._isUpdatableInCTX(_prop, _value, context))
+        if (
+          this._isReadonly(prop) &&
+          !this._isDependentProp(prop) &&
+          !this._isUpdatable(prop)
+        )
           return;
 
-        await this._validateAndSet(operationData, error, _prop, _value);
+        if (!isSideEffect && !this._isUpdatableInCTX(prop, _value, context))
+          return;
 
-        await this._resolveLinkedProps(operationData, error, _prop, lifeCycle);
+        await this._validateAndSet(operationData, error, prop, _value);
+
+        await this._resolveLinkedProps(operationData, error, prop, lifeCycle);
       });
 
       await Promise.all(resolvedHandles);

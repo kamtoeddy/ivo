@@ -1095,34 +1095,35 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           toPass();
         });
 
-        // describe("behaviour", () => {
-        //   let Model: any;
+        describe("behaviour", () => {
+          let Model: any;
 
-        //   beforeAll(() => {
-        //     Model = new Schema({
-        //       age: { readonly: true, default: null },
-        //       name: {
-        //         default: "Default Name",
-        //         onChange: () => ({ age: 12 }),
-        //       },
-        //     }).getModel();
-        //   });
+          beforeAll(() => {
+            Model = new Schema({
+              age: { readonly: true, default: null },
+              name: {
+                default: "Default Name",
+                onChange: () => ({ age: 12 }),
+                // onUpdate: () => ({ age: 12 }),
+              },
+            }).getModel();
+          });
 
-        //   it("should not modify readonly props that have changed via life cycle listeners at creation", async () => {
-        //     const { data } = await Model.create({ age: 25 });
+          it("should not modify readonly props that have changed via life cycle listeners at creation", async () => {
+            const { data } = await Model.create({ age: 25 });
 
-        //     expect(data).toMatchObject({ age: 25, name: "Default Name" });
-        //   });
+            expect(data).toMatchObject({ age: 25, name: "Default Name" });
+          });
 
-        //   it("should not modify readonly props that have changed via life cycle listeners during updates", async () => {
-        //     const { data } = await Model.update(
-        //       { age: null, name: "Default Name" },
-        //       { age: 25, name: "YoYo" }
-        //     );
+          // it("should not modify readonly props that have changed via life cycle listeners during updates", async () => {
+          //   const { data } = await Model.update(
+          //     { age: null, name: "Default Name" },
+          //     { age: 25, name: "YoYo" }
+          //   );
 
-        //     expect(data).toMatchObject({ age: 25, name: "YoYo" });
-        //   });
-        // });
+          //   expect(data).toMatchObject({ age: 25, name: "YoYo" });
+          // });
+        });
       });
 
       describe("invalid", () => {
