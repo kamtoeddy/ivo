@@ -120,10 +120,11 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     )
       return false;
 
-    const { readonly } = this._getDefinition(prop);
+    const isReadonly = this._isReadonly(prop);
 
     return (
-      !readonly || (readonly && isEqual(this.defaults[prop], this.values[prop]))
+      !isReadonly ||
+      (isReadonly && isEqual(this.defaults[prop], this.values[prop]))
     );
   };
 
@@ -132,9 +133,8 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     value: any,
     context: ObjectType
   ) => {
-    return !this._isProp(prop) || this._isConstant(prop)
-      ? false
-      : !isEqual(value, context?.[prop]);
+    if (!this._isProp(prop) || this._isConstant(prop)) return false;
+    return !isEqual(value, context?.[prop]);
   };
 
   private _makeHandleSuccess = (data: Partial<T>) => {
@@ -207,6 +207,13 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
           this._isReadonly(prop) &&
           !this._isDependentProp(prop) &&
           !this._isUpdatable(prop)
+        )
+          return;
+
+        if (
+          lifeCycle === "onUpdate" &&
+          this._isReadonly(prop) &&
+          !isEqual(context[prop], this.values[prop])
         )
           return;
 

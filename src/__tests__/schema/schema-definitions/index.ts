@@ -1115,14 +1115,14 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             expect(data).toMatchObject({ age: 25, name: "Default Name" });
           });
 
-          // it("should not modify readonly props that have changed via life cycle listeners during updates", async () => {
-          //   const { data } = await Model.update(
-          //     { age: null, name: "Default Name" },
-          //     { age: 25, name: "YoYo" }
-          //   );
+          it("should not modify readonly props that have changed via life cycle listeners during updates", async () => {
+            const { data } = await Model.update(
+              { age: null, name: "Default Name" },
+              { age: 25, name: "YoYo" }
+            );
 
-          //   expect(data).toMatchObject({ age: 25, name: "YoYo" });
-          // });
+            expect(data).toMatchObject({ age: 25, name: "YoYo" });
+          });
         });
       });
 
