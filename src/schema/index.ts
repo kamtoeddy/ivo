@@ -118,7 +118,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     )
       return;
 
-    for (const listener of listeners) {
+    const handles = listeners.map(async (listener) => {
       const context = Object.freeze({
         ...this._getContext(),
         ...operationData,
@@ -126,24 +126,26 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
 
       const extra = await listener(context);
 
-      if (typeof extra !== "object") continue;
+      if (typeof extra !== "object") return;
 
       const _props = this._getKeysAsProps(extra);
 
-      for (let _prop of _props) {
-        if (this._isReadonly(_prop) && !this._isUpdatable(_prop)) continue;
-
+      const resolvedHandles = _props.map(async (_prop) => {
         const _value = extra[_prop];
         const isSideEffect = this._isSideEffect(_prop);
 
         if (!isSideEffect && !this._isUpdatableInCTX(_prop, _value, context))
-          continue;
+          return;
 
         await this._validateAndSet(operationData, error, _prop, _value);
 
         await this._resolveLinkedProps(operationData, error, _prop, lifeCycle);
-      }
-    }
+      });
+
+      await Promise.all(resolvedHandles);
+    });
+
+    await Promise.all(handles);
   };
 
   private _validateAndSet = async (
