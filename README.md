@@ -163,6 +163,6 @@ await db.update({ id: 1 }, data);
   - [onUpdate](./docs/v2.5.0/schema/definition/life-cycles.md#onupdate)
 - [Options](./docs/v1.4.7/schema/definitions.md#options)
 
-- [Changelog](./docs/v2.5.4/CHANGELOG.md#changelog)
+- [Changelog](./docs/v2.5.5/CHANGELOG.md#changelog)
 
 ## Happy coding! 😎
