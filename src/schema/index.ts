@@ -217,6 +217,19 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     await Promise.all(handles);
   };
 
+  private _useConfigProps = (obj: T | Partial<T>, asUpdate = false) => {
+    if (!this.optionsTool.withTimestamps) return sortKeys(obj);
+
+    const createdAt = this.optionsTool.getCreateKey(),
+      updatedAt = this.optionsTool.getUpdateKey();
+
+    const results = asUpdate
+      ? { ...obj, [updatedAt]: new Date() }
+      : { ...obj, [createdAt]: new Date(), [updatedAt]: new Date() };
+
+    return sortKeys(results);
+  };
+
   private _validateAndSet = async (
     operationData: Partial<T> = {},
     error: ErrorTool,
@@ -232,19 +245,6 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     if (!this._isSideEffect(prop)) operationData[prop] = validated;
 
     this._updateContext({ [prop]: validated } as T);
-  };
-
-  private _useConfigProps = (obj: T | Partial<T>, asUpdate = false) => {
-    if (!this.optionsTool.withTimestamps) return sortKeys(obj);
-
-    const createdAt = this.optionsTool.getCreateKey(),
-      updatedAt = this.optionsTool.getUpdateKey();
-
-    const results = asUpdate
-      ? { ...obj, [updatedAt]: new Date() }
-      : { ...obj, [createdAt]: new Date(), [updatedAt]: new Date() };
-
-    return sortKeys(results);
   };
 
   clone = async (
