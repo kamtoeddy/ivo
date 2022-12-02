@@ -1,6 +1,8 @@
 # Foreword
 
-Clean-schema's purpose is to help you ensure that the data going to your database is always consistent. It provides an interface for you to clearly define the behaviour of your entities at creation and during updates together with the flexibility of using the database of your choice.
+Clean-schema is an event-driven schema validator whose purpose is to help you ensure that the data going to your database is always consistent.
+
+It provides an interface for you to clearly define the behaviour of your entities and their properites at creation and during updates together with the flexibility of using the database of your choice.
 
 # Installation
 
@@ -163,6 +165,6 @@ await db.update({ id: 1 }, data);
   - [onUpdate](./docs/v2.5.0/schema/definition/life-cycles.md#onupdate)
 - [Options](./docs/v1.4.7/schema/definitions.md#options)
 
-- [Changelog](./docs/v2.5.5/CHANGELOG.md#changelog)
+- [Changelog](./docs/v2.5.6/CHANGELOG.md#changelog)
 
 ## Happy coding! 😎

@@ -93,10 +93,14 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
       ...sideEffects,
     ];
 
+    const ctx = this._getContext();
+
     const cleanups = props.map(async (prop) => {
       const listeners = this._getListeners(prop, "onFailure");
 
-      for (const listener of listeners) await listener(this._getContext());
+      const _cleanups = listeners.map(async (listener) => await listener(ctx));
+
+      await Promise.all(_cleanups);
     });
 
     await Promise.all(cleanups);
@@ -150,9 +154,9 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     const ctx = this._getContext();
 
     return async () => {
-      const successOperations = successListeners.map(async (listener) => {
-        await listener(ctx);
-      });
+      const successOperations = successListeners.map(
+        async (listener) => await listener(ctx)
+      );
 
       await Promise.all(successOperations);
     };
