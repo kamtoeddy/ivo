@@ -41,6 +41,33 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
 
           expect(data).toEqual({ ...validData, id: 1 });
         });
+
+        it("should set values properly during cloning", async () => {
+          const cloned = { ...validData, id: 1 };
+
+          const { data, error } = await User.clone(cloned);
+
+          expect(error).toBeUndefined();
+
+          expect(data).toEqual(cloned);
+        });
+
+        it("should set values properly during deletion", async () => {
+          expectNoFailure(
+            async () => await User.delete({ ...validData, id: 1 })
+          );
+        });
+
+        it("should set values properly during updates", async () => {
+          const user = { ...validData, id: 1 };
+          const name = "Mike";
+
+          const { data, error } = await User.update(user, { name });
+
+          expect(error).toBeUndefined();
+
+          expect(data).toEqual({ name });
+        });
       });
 
       // describe("invalid", () => {
