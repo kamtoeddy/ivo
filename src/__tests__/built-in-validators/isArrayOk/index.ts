@@ -62,6 +62,18 @@ export const isArrayOkTest = ({ isArrayOk }: { isArrayOk: Function }) => {
       });
     });
 
+    it("should sort 'asc' if invalid sortOrder is provided", async () => {
+      const values = [1, 0, 18, 7, -20];
+      const sorted = [-20, 0, 1, 7, 18];
+      const res = await isArrayOk(values, { sorted: true, sortedOrder: "yoo" });
+
+      expect(res).toMatchObject({
+        reasons: [],
+        valid: true,
+        validated: sorted,
+      });
+    });
+
     it("should respect filter", async () => {
       const filter = (v: any) => (isNaN(v) ? false : true);
 

@@ -62,6 +62,11 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     return listeners;
   };
 
+  private _areValuesOk = (values: any) => values && typeof values == "object";
+
+  private _handleInvalidData = () =>
+    this._handleError(new ErrorTool({ message: "Invalid Data" }));
+
   private _getValues(values: Partial<T>, allowSideEffects = true) {
     const keys = this._getKeysAsProps(values).filter(
       (key) =>
@@ -269,6 +274,8 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     values: Partial<T>,
     options: ns.CloneOptions<T> = { reset: [] }
   ) => {
+    if (!this._areValuesOk(values)) return this._handleInvalidData();
+
     this.setValues(values);
 
     const reset = toArray(options.reset).filter(this._isProp);
@@ -345,6 +352,8 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
   };
 
   create = async (values: Partial<T>) => {
+    if (!this._areValuesOk(values)) return this._handleInvalidData();
+
     this.setValues(values);
 
     const data = {} as T;
@@ -408,6 +417,8 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
   };
 
   delete = async (values: Partial<T>) => {
+    if (!this._areValuesOk(values)) return this._handleInvalidData();
+
     const ctx = Object.freeze(
       Object.assign({}, this._getValues(values, false))
     ) as Readonly<T>;
@@ -415,7 +426,9 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     const cleanups = this.props.map(async (prop) => {
       const listeners = this._getListeners(prop, "onDelete");
 
-      for (const listener of listeners) await listener(ctx);
+      const _cleanups = listeners.map(async (listener) => await listener(ctx));
+
+      await Promise.all(_cleanups);
     });
 
     await Promise.all(cleanups);
@@ -428,6 +441,8 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
   }
 
   update = async (values: Partial<T>, changes: Partial<T>) => {
+    if (!this._areValuesOk(values)) return this._handleInvalidData();
+
     this.setValues(values);
 
     const error = new ErrorTool({ message: "Validation Error" });
