@@ -415,7 +415,9 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     const cleanups = this.props.map(async (prop) => {
       const listeners = this._getListeners(prop, "onDelete");
 
-      for (const listener of listeners) await listener(ctx);
+      const _cleanups = listeners.map(async (listener) => await listener(ctx));
+
+      await Promise.all(_cleanups);
     });
 
     await Promise.all(cleanups);
