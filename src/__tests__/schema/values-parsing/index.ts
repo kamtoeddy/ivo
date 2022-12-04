@@ -180,58 +180,58 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
         });
       });
 
-      // describe("invalid data", () => {
-      //   it("should reject invalid data during cloning", async () => {
-      //     for (const val of invalidData) {
-      //       const operation = async () => await User.clone(val);
+      describe("invalid data", () => {
+        it("should reject invalid data during cloning", async () => {
+          for (const val of invalidData) {
+            const operation = async () => await User.clone(val);
 
-      //       expectNoFailure(operation);
+            expectPromiseFailure(operation, "Invalid Data");
 
-      //       const { data, error } = await operation();
+            try {
+              await operation();
+            } catch (err: any) {
+              expect(err).toMatchObject(INVALID_DATA_ERROR);
+            }
+          }
+        });
 
-      //       expect(data).toBeUndefined();
+        //   it("should reject invalid data at creation", async () => {
+        //     for (const val of invalidData) {
+        //       const operation = async () => await User.create(val);
 
-      //       expect(error).toEqual(INVALID_DATA_ERROR);
-      //     }
-      //   });
+        //       expectNoFailure(operation);
 
-      //   it("should reject invalid data at creation", async () => {
-      //     for (const val of invalidData) {
-      //       const operation = async () => await User.create(val);
+        //       const { data, error } = await operation();
 
-      //       expectNoFailure(operation);
+        //       expect(data).toBeUndefined();
 
-      //       const { data, error } = await operation();
+        //       expect(error).toEqual(INVALID_DATA_ERROR);
+        //     }
+        //   });
 
-      //       expect(data).toBeUndefined();
+        //   it("should reject invalid data during deletion", async () => {
+        //     for (const val of invalidData) {
+        //       const operation = async () => await User.delete(val);
 
-      //       expect(error).toEqual(INVALID_DATA_ERROR);
-      //     }
-      //   });
+        //       expectNoFailure(operation);
+        //     }
+        //   });
 
-      //   it("should reject invalid data during deletion", async () => {
-      //     for (const val of invalidData) {
-      //       const operation = async () => await User.delete(val);
+        //   it("should reject invalid data during updates", async () => {
+        //     for (const val of invalidData) {
+        //       const operation = async () =>
+        //         await User.update(val, { name: "yoo" });
 
-      //       expectNoFailure(operation);
-      //     }
-      //   });
+        //       expectNoFailure(operation);
 
-      //   it("should reject invalid data during updates", async () => {
-      //     for (const val of invalidData) {
-      //       const operation = async () =>
-      //         await User.update(val, { name: "yoo" });
+        //       const { data, error } = await operation();
 
-      //       expectNoFailure(operation);
+        //       expect(data).toBeUndefined();
 
-      //       const { data, error } = await operation();
-
-      //       expect(data).toBeUndefined();
-
-      //       expect(error).toEqual(INVALID_DATA_ERROR);
-      //     }
-      //   });
-      // });
+        //       expect(error).toEqual(INVALID_DATA_ERROR);
+        //     }
+        //   });
+      });
     });
   });
 };
