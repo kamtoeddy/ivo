@@ -274,6 +274,8 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     values: Partial<T>,
     options: ns.CloneOptions<T> = { reset: [] }
   ) => {
+    if (!this._areValuesOk(values)) return this._handleInvalidData();
+
     this.setValues(values);
 
     const reset = toArray(options.reset).filter(this._isProp);

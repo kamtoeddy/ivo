@@ -39,14 +39,6 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
       });
 
       describe("valid data", () => {
-        it("should set values properly at creation", async () => {
-          const { data, error } = await User.create(validData);
-
-          expect(error).toBeUndefined();
-
-          expect(data).toEqual({ ...validData, id: 1 });
-        });
-
         it("should set values properly during cloning", async () => {
           const cloned = { ...validData, id: 1 };
 
@@ -55,6 +47,14 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
           expect(error).toBeUndefined();
 
           expect(data).toEqual(cloned);
+        });
+
+        it("should set values properly at creation", async () => {
+          const { data, error } = await User.create(validData);
+
+          expect(error).toBeUndefined();
+
+          expect(data).toEqual({ ...validData, id: 1 });
         });
 
         it("should set values properly during deletion", async () => {
@@ -76,6 +76,20 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
       });
 
       describe("invalid data", () => {
+        it("should reject invalid data during cloning", async () => {
+          for (const val of invalidData) {
+            const operation = async () => await User.clone(val);
+
+            expectNoFailure(operation);
+
+            const { data, error } = await operation();
+
+            expect(data).toBeUndefined();
+
+            expect(error).toEqual(INVALID_DATA_ERROR);
+          }
+        });
+
         it("should reject invalid data at creation", async () => {
           for (const val of invalidData) {
             const operation = async () => await User.create(val);
