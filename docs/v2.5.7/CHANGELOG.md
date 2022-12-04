@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 # v2.5.7 <small><sup>04-12-2022</sup></small>
 
+- [Added] Validation checks for values passed to clone, create, delete and update methods of models
 - [Updated] Improved performance resolving onDelete listeners
 
 # v2.5.6 <small><sup>02-12-2022</sup></small>
