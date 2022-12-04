@@ -195,19 +195,19 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
           }
         });
 
-        //   it("should reject invalid data at creation", async () => {
-        //     for (const val of invalidData) {
-        //       const operation = async () => await User.create(val);
+        it("should reject invalid data at creation", async () => {
+          for (const val of invalidData) {
+            const operation = async () => await User.create(val);
 
-        //       expectNoFailure(operation);
+            expectPromiseFailure(operation, "Invalid Data");
 
-        //       const { data, error } = await operation();
-
-        //       expect(data).toBeUndefined();
-
-        //       expect(error).toEqual(INVALID_DATA_ERROR);
-        //     }
-        //   });
+            try {
+              await operation();
+            } catch (err: any) {
+              expect(err).toMatchObject(INVALID_DATA_ERROR);
+            }
+          }
+        });
 
         //   it("should reject invalid data during deletion", async () => {
         //     for (const val of invalidData) {
