@@ -62,6 +62,11 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     return listeners;
   };
 
+  private _areValuesOk = (values: any) => values && typeof values == "object";
+
+  private _handleInvalidData = () =>
+    this._handleError(new ErrorTool({ message: "Invalid Data" }));
+
   private _getValues(values: Partial<T>, allowSideEffects = true) {
     const keys = this._getKeysAsProps(values).filter(
       (key) =>
@@ -345,6 +350,8 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
   };
 
   create = async (values: Partial<T>) => {
+    if (!this._areValuesOk(values)) return this._handleInvalidData();
+
     this.setValues(values);
 
     const data = {} as T;

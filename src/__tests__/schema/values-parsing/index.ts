@@ -19,8 +19,13 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
   const validator = () => ({ valid: true });
 
   describe("Values Parsing", () => {
+    const INVALID_DATA_ERROR = {
+      message: "Invalid Data",
+      payload: {},
+      statusCode: 400,
+    };
     const validData = { age: 15, name: "Frank" };
-    const invalidValues = [1, -10, 0, false, true, "", "true", undefined, null];
+    const invalidData = [1, -10, 0, false, true, "", "true", undefined, null];
 
     describe("with silent errors", () => {
       let User: any;
@@ -70,9 +75,21 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
         });
       });
 
-      // describe("invalid data", () => {
+      describe("invalid data", () => {
+        it("should reject invalid data at creation", async () => {
+          for (const val of invalidData) {
+            const operation = async () => await User.create(val);
 
-      // });
+            expectNoFailure(operation);
+
+            const { data, error } = await operation();
+
+            expect(data).toBeUndefined();
+
+            expect(error).toEqual(INVALID_DATA_ERROR);
+          }
+        });
+      });
     });
 
     // describe("with thrown errors", () => {
