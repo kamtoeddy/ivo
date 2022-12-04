@@ -33,7 +33,7 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
         }).getModel();
       });
 
-      describe("valid", () => {
+      describe("valid data", () => {
         it("should set values properly at creation", async () => {
           const { data, error } = await User.create(validData);
 
@@ -70,7 +70,7 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
         });
       });
 
-      // describe("invalid", () => {
+      // describe("invalid data", () => {
 
       // });
     });
