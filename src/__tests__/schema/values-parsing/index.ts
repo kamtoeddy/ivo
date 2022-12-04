@@ -103,6 +103,21 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
             expect(error).toEqual(INVALID_DATA_ERROR);
           }
         });
+
+        it("should reject invalid data during updates", async () => {
+          for (const val of invalidData) {
+            const operation = async () =>
+              await User.update(val, { name: "yoo" });
+
+            expectNoFailure(operation);
+
+            const { data, error } = await operation();
+
+            expect(data).toBeUndefined();
+
+            expect(error).toEqual(INVALID_DATA_ERROR);
+          }
+        });
       });
     });
 

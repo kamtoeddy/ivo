@@ -439,6 +439,8 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
   }
 
   update = async (values: Partial<T>, changes: Partial<T>) => {
+    if (!this._areValuesOk(values)) return this._handleInvalidData();
+
     this.setValues(values);
 
     const error = new ErrorTool({ message: "Validation Error" });
