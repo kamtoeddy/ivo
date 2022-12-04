@@ -417,6 +417,8 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
   };
 
   delete = async (values: Partial<T>) => {
+    if (!this._areValuesOk(values)) return this._handleInvalidData();
+
     const ctx = Object.freeze(
       Object.assign({}, this._getValues(values, false))
     ) as Readonly<T>;
