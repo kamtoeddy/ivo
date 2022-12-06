@@ -2560,7 +2560,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               expect(err.payload).toEqual(
                 expect.objectContaining({
                   errors: expect.arrayContaining([
-                    "should be 'silent' or 'throws'",
+                    "should be 'silent' or 'throw'",
                   ]),
                 })
               );
