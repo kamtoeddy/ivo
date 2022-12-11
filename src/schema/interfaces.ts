@@ -41,7 +41,9 @@ export namespace Schema {
   };
 
   type Listenable<T> = {
-    onChange?: LifeCycles.Listener<T> | NonEmptyArray<LifeCycles.Listener<T>>;
+    onChange?:
+      | LifeCycles.ChangeListener<T>
+      | NonEmptyArray<LifeCycles.ChangeListener<T>>;
     onCreate?: LifeCycles.Listener<T> | NonEmptyArray<LifeCycles.Listener<T>>;
     onDelete?:
       | LifeCycles.VoidListener<T>
@@ -108,7 +110,9 @@ export namespace Schema {
 
   type SideEffect<K extends keyof T, T> = {
     sideEffect: true;
-    onChange: LifeCycles.Listener<T> | NonEmptyArray<LifeCycles.Listener<T>>;
+    onChange:
+      | LifeCycles.ChangeListener<T>
+      | NonEmptyArray<LifeCycles.ChangeListener<T>>;
     onFailure?:
       | LifeCycles.VoidListener<T>
       | NonEmptyArray<LifeCycles.VoidListener<T>>;
@@ -118,7 +122,9 @@ export namespace Schema {
 
   type RequiredSideEffect<K extends keyof T, T> = {
     sideEffect: true;
-    onChange: LifeCycles.Listener<T> | NonEmptyArray<LifeCycles.Listener<T>>;
+    onChange:
+      | LifeCycles.ChangeListener<T>
+      | NonEmptyArray<LifeCycles.ChangeListener<T>>;
     onFailure?:
       | LifeCycles.VoidListener<T>
       | NonEmptyArray<LifeCycles.VoidListener<T>>;
@@ -160,6 +166,11 @@ export namespace LifeCycles {
 
   export type Listener<T> = (
     ctx: Readonly<T>
+  ) => Partial<T> | Promise<Partial<T>> | void | Promise<void>;
+
+  export type ChangeListener<T> = (
+    ctx: Readonly<T>,
+    lifeCycle: LifeCycle
   ) => Partial<T> | Promise<Partial<T>> | void | Promise<void>;
 
   export type SuccessListener<T> = (
