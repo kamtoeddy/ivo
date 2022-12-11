@@ -140,7 +140,7 @@ await db.update({ id: 1 }, data);
 
 ## Docs
 
-- [Defining a schema](./docs/v2.5.9/schema/definition/index.md#defining-a-schema)
+- [Defining a schema](./docs/v2.5.10/schema/definition/index.md#defining-a-schema)
   - [constant properties](./docs/v1.5.0/schema/definition/constants.md#constant-properties-v150)
   - [default values](./docs/v1.4.10/schema/definition/defaults.md#default-values)
   - [dependent properties](./docs/v1.4.10/schema/definition/dependents.md#dependent-properties)
@@ -156,15 +156,15 @@ await db.update({ id: 1 }, data);
     - [isStringOk](./docs/v1.4.6/validate/isStringOk.md)
 - [Inheritance](./docs/v1.4.6/schema/inheritance.md#schema-inheritance)
 - [The Operation Context](./docs/v2.5.0/schema/definition/life-cycles.md#the-operation-context)
-- [Life Cycles & Listeners](./docs/v2.5.9/schema/definition/life-cycles.md#life-cycle-listeners)
-  - [onChange](./docs/v2.5.9/schema/definition/life-cycles.md#onchange)
-  - [onCreate](./docs/v2.5.9/schema/definition/life-cycles.md#oncreate)
-  - [onDelete](./docs/v2.5.9/schema/definition/life-cycles.md#ondelete)
-  - [onFailure](./docs/v2.5.9/schema/definition/life-cycles.md#onfailure)
-  - [onSuccess](./docs/v2.5.9/schema/definition/life-cycles.md#onsuccess)
-  - [onUpdate](./docs/v2.5.9/schema/definition/life-cycles.md#onupdate)
+- [Life Cycles & Listeners](./docs/v2.5.10/schema/definition/life-cycles.md#life-cycle-listeners)
+  - [onChange](./docs/v2.5.10/schema/definition/life-cycles.md#onchange)
+  - [onCreate](./docs/v2.5.10/schema/definition/life-cycles.md#oncreate)
+  - [onDelete](./docs/v2.5.10/schema/definition/life-cycles.md#ondelete)
+  - [onFailure](./docs/v2.5.10/schema/definition/life-cycles.md#onfailure)
+  - [onSuccess](./docs/v2.5.10/schema/definition/life-cycles.md#onsuccess)
+  - [onUpdate](./docs/v2.5.10/schema/definition/life-cycles.md#onupdate)
 - [Options](./docs/v1.4.7/schema/definitions.md#options)
 
-- [Changelog](./docs/v2.5.9/CHANGELOG.md#changelog)
+- [Changelog](./docs/v2.5.10/CHANGELOG.md#changelog)
 
 ## Happy coding! 😎
