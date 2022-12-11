@@ -50,8 +50,8 @@ export namespace Schema {
       | LifeCycles.VoidListener<T>
       | NonEmptyArray<LifeCycles.VoidListener<T>>;
     onSuccess?:
-      | LifeCycles.VoidListener<T>
-      | NonEmptyArray<LifeCycles.VoidListener<T>>;
+      | LifeCycles.SuccessListener<T>
+      | NonEmptyArray<LifeCycles.SuccessListener<T>>;
     onUpdate?: LifeCycles.Listener<T> | NonEmptyArray<LifeCycles.Listener<T>>;
   };
 
@@ -156,10 +156,16 @@ export namespace LifeCycles {
     | "onSuccess"
     | "onUpdate";
 
+  export type LifeCycle = "onCreate" | "onUpdate";
+
   export type Listener<T> = (
     ctx: Readonly<T>
   ) => Partial<T> | Promise<Partial<T>> | void | Promise<void>;
 
+  export type SuccessListener<T> = (
+    ctx: Readonly<T>,
+    lifeCycle: LifeCycle
+  ) => void | Promise<void>;
   export type VoidListener<T> = (ctx: Readonly<T>) => void | Promise<void>;
 }
 
