@@ -146,21 +146,24 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     return !isEqual(value, context?.[prop]);
   };
 
-  private _makeHandleSuccess = (data: Partial<T>) => {
+  private _makeHandleSuccess = (
+    data: Partial<T>,
+    lifeCycle: LifeCycles.LifeCycle
+  ) => {
     const props = this._getKeysAsProps(data);
 
-    let successListeners = [] as LifeCycles.Listener<T>[];
+    let successListeners = [] as LifeCycles.SuccessListener<T>[];
 
     for (const prop of props)
       successListeners = successListeners.concat(
-        this._getListeners(prop, "onSuccess")
+        this._getListeners(prop, "onSuccess") as LifeCycles.SuccessListener<T>[]
       );
 
     const ctx = this._getContext();
 
     return async () => {
       const successOperations = successListeners.map(
-        async (listener) => await listener(ctx)
+        async (listener) => await listener(ctx, lifeCycle)
       );
 
       await Promise.all(successOperations);
@@ -347,7 +350,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     return {
       data: this._useConfigProps(data) as T,
       error: undefined,
-      handleSuccess: this._makeHandleSuccess(data),
+      handleSuccess: this._makeHandleSuccess(data, "onCreate"),
     };
   };
 
@@ -412,7 +415,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     return {
       data: this._useConfigProps(data) as T,
       error: undefined,
-      handleSuccess: this._makeHandleSuccess(data),
+      handleSuccess: this._makeHandleSuccess(data, "onCreate"),
     };
   };
 
@@ -500,7 +503,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     return {
       data: this._useConfigProps(updated, true),
       error: undefined,
-      handleSuccess: this._makeHandleSuccess(updated),
+      handleSuccess: this._makeHandleSuccess(updated, "onUpdate"),
     };
   };
 

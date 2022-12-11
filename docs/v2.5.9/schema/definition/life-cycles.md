@@ -61,7 +61,7 @@ A void function or array of void functions(async / sync) you want to execute eve
 
 ## onSuccess
 
-A void function or array of void functions(async / sync) you want to execute every time the **`create`**, **`clone`** & **`update`** operations are successful. Listeners for this event should expect the operation's context object as only parameter. Default **[ ]**
+A void function or array of void functions(async / sync) you want to execute every time the **`create`**, **`clone`** & **`update`** operations are successful. Listeners for this event should expect the operation's context object & the concerned lifeCycle (`onCreate` | `onUpdate`) as first & second parameters respectively. Default **[ ]**
 
 As from `v2.5.0`, these listeners have to be triggered manually by invoking the handleSuccess method of the operation's results object returned by the create, clone & update methods of your models.
 
