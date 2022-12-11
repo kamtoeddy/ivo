@@ -53,13 +53,18 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
   }
 
   private _getCreatePropsWithListeners = () => {
-    const listeners = [];
+    const props = [];
 
-    for (let prop of this.props)
-      if (this._getOperationListeners(prop, "onCreate")?.length)
-        listeners.push(prop);
+    for (let prop of this.props) {
+      const { listeners, onChangeListeners } = this._getOperationListeners(
+        prop,
+        "onCreate"
+      );
 
-    return listeners;
+      if (listeners.length || onChangeListeners.length) props.push(prop);
+    }
+
+    return props;
   };
 
   private _areValuesOk = (values: any) => values && typeof values == "object";
@@ -170,6 +175,16 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     };
   };
 
+  private _prepareListeners = (
+    listeners: LifeCycles.ChangeListener<T>[],
+    lifeCycle: LifeCycles.LifeCycle
+  ) => {
+    const prepared = listeners.map(
+      (listener) => async (ctx: Readonly<T>) => await listener(ctx, lifeCycle)
+    );
+    return prepared;
+  };
+
   private _resolveLinked = async (
     operationData: Partial<T>,
     error: ErrorTool,
@@ -189,25 +204,34 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     prop: StringKey<T>,
     lifeCycle: LifeCycles.Rule
   ) => {
-    const listeners = this._getOperationListeners(prop, lifeCycle);
+    const { listeners, onChangeListeners } = this._getOperationListeners(
+      prop,
+      lifeCycle
+    );
 
     if (
-      !listeners.length ||
+      (!listeners.length && !onChangeListeners.length) ||
       (lifeCycle === "onUpdate" &&
         !this._isSideEffect(prop) &&
         !this._isUpdatableInCTX(prop, operationData[prop], this.values))
     )
       return;
 
-    const handles = listeners.map(async (listener) => {
-      const context = Object.freeze({
-        ...this._getContext(),
-        ...operationData,
-      });
+    const isChangeLifeCycle = this._isChangeLifeCycle(lifeCycle);
 
+    const context = Object.freeze({ ...this._getContext(), ...operationData });
+
+    let prepared = isChangeLifeCycle
+      ? this._prepareListeners(
+          onChangeListeners,
+          lifeCycle as LifeCycles.LifeCycle
+        )
+      : [];
+
+    const handles = [...listeners, ...prepared].map(async (listener) => {
       const extra = await listener(context);
 
-      if (typeof extra !== "object") return;
+      if (!isChangeLifeCycle || typeof extra !== "object") return;
 
       const _props = this._getKeysAsProps(extra);
 
@@ -343,9 +367,12 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
 
     const linkedProps = this._getCreatePropsWithListeners();
 
-    await this._resolveLinked(data, error, linkedProps, "onCreate");
-
-    await this._resolveLinked(data, error, sideEffects, "onCreate");
+    await this._resolveLinked(
+      data,
+      error,
+      [...linkedProps, ...sideEffects],
+      "onCreate"
+    );
 
     return {
       data: this._useConfigProps(data) as T,
@@ -408,9 +435,12 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
 
     const linkedProps = this._getCreatePropsWithListeners();
 
-    await this._resolveLinked(data, error, linkedProps, "onCreate");
-
-    await this._resolveLinked(data, error, sideEffects, "onCreate");
+    await this._resolveLinked(
+      data,
+      error,
+      [...linkedProps, ...sideEffects],
+      "onCreate"
+    );
 
     return {
       data: this._useConfigProps(data) as T,
@@ -491,9 +521,12 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
       return this._handleError(error.setMessage("Nothing to update"));
     }
 
-    await this._resolveLinked(updated, error, linkedProps, "onUpdate");
-
-    await this._resolveLinked(updated, error, sideEffects, "onUpdate");
+    await this._resolveLinked(
+      updated,
+      error,
+      [...linkedProps, ...sideEffects],
+      "onUpdate"
+    );
 
     if (!Object.keys(updated).length) {
       await this._handleFailure(updated, error, sideEffects);

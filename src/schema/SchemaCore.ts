@@ -215,13 +215,15 @@ export abstract class SchemaCore<T extends ObjectType> {
     prop: string,
     lifeCycle: LifeCycles.Rule
   ) => {
-    const onChange = this._getListeners(prop, "onChange");
+    const onChangeListeners = this._isChangeLifeCycle(lifeCycle)
+      ? this._getListeners(prop, "onChange")
+      : ([] as LifeCycles.ChangeListener<T>[]);
 
-    if (this._isSideEffect(prop)) return onChange;
+    if (this._isSideEffect(prop)) return { listeners: [], onChangeListeners };
 
-    const others = this._getListeners(prop, lifeCycle);
+    const listeners = this._getListeners(prop, lifeCycle);
 
-    return [...others, ...onChange];
+    return { listeners, onChangeListeners };
   };
 
   protected _getListeners = (prop: string, lifeCycle: LifeCycles.Rule) => {
@@ -245,6 +247,9 @@ export abstract class SchemaCore<T extends ObjectType> {
 
     return false;
   };
+
+  protected _isChangeLifeCycle = (lifeCycle: LifeCycles.Rule) =>
+    ["onCreate", "onUpdate"].includes(lifeCycle);
 
   protected __isConstantProp = (prop: string) => {
     const { constant, value } = this._getDefinition(prop);
