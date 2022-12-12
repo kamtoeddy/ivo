@@ -1,7 +1,7 @@
 export interface IArrayOptions<T> {
   empty?: boolean;
-  filter?: (data: T) => boolean;
-  modifier?: (data: T) => any;
+  filter?: (data: T) => boolean | Promise<boolean>;
+  modifier?: (data: T) => any | Promise<any>;
   sorted?: boolean;
   sorter?: (a: T, b: T) => number;
   sortOrder?: "asc" | "desc";
