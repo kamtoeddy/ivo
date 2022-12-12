@@ -26,8 +26,8 @@ const validator = (value: any, validationContext): IValidationResults => {
 Clean-schema has some built-in validators. Feel free to use or build you own validators based on these:
 
 - [isArrayOk](./isArrayOk.md)
-- [isBooleanOk](./isBooleanOk.md)
-- [isCreditCardOk](./isCreditCardOk.md)
-- [isEmailOk](./isEmailOk.md)
-- [isNumberOk](./isNumberOk.md)
-- [isStringOk](./isStringOk.md)
+- [isBooleanOk](../../v1.4.6/validate/isBooleanOk.md)
+- [isCreditCardOk](../../v1.4.6/validate/isCreditCardOk.md)
+- [isEmailOk](../../v1.4.6/validate/isEmailOk.md)
+- [isNumberOk](../../v1.4.6/validate/isNumberOk.md)
+- [isStringOk](../../v1.4.6/validate/isStringOk.md)

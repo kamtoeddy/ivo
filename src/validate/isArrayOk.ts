@@ -31,17 +31,7 @@ export async function isArrayOk<T>(
   if (!empty && !_array.length)
     return makeResponse({ reason: "Expected a non-empty array", valid: false });
 
-  if (modifier) {
-    const copy = [];
-
-    for (let dt of _array) {
-      let res = await modifier(dt);
-
-      copy.push(res);
-    }
-
-    _array = [...copy];
-  }
+  if (modifier) _array = await Promise.all(_array.map(modifier));
 
   if (unique && _array.length)
     _array = uniqueKey ? getUniqueBy(_array, uniqueKey) : getUniqueBy(_array);
