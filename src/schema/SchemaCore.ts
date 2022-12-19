@@ -111,7 +111,9 @@ export abstract class SchemaCore<T extends ObjectType> {
     if (this._isDependentProp(prop)) return false;
     if (this._isRequired(prop)) return true;
 
-    const { readonly, shouldInit } = this._getDefinition(prop);
+    const { readonly } = this._getDefinition(prop);
+
+    const shouldInit = this._getValueBy(prop, "shouldInit");
 
     return (
       readonly === true &&

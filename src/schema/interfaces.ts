@@ -34,7 +34,7 @@ export namespace Schema {
       required?: boolean | Function;
       requiredError?: string | Function;
       sideEffect?: boolean;
-      shouldInit?: boolean;
+      shouldInit?: false | Setter<boolean, T>;
       validator?: Function;
       value?: any;
     };
@@ -73,7 +73,7 @@ export namespace Schema {
   type Property<K extends keyof T, T> = Listenable<T> & {
     default: TypeOf<T[K]> | Setter<K, T>;
     readonly?: "lax";
-    shouldInit?: false;
+    shouldInit?: false | Setter<boolean, T>;
     validator?: Validator<K, T>;
   };
 
@@ -86,7 +86,7 @@ export namespace Schema {
   type ReadonlyNoInit<K extends keyof T, T> = Listenable<T> & {
     default: TypeOf<T[K]> | Setter<K, T>;
     readonly: true;
-    shouldInit: false;
+    shouldInit: false | Setter<boolean, T>;
     validator?: Validator<K, T>;
   };
 
@@ -116,7 +116,7 @@ export namespace Schema {
     onFailure?:
       | LifeCycles.VoidListener<T>
       | NonEmptyArray<LifeCycles.VoidListener<T>>;
-    shouldInit?: false;
+    shouldInit?: false | Setter<boolean, T>;
     validator: Validator<K, T>;
   };
 
