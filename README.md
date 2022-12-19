@@ -140,7 +140,7 @@ await db.update({ id: 1 }, data);
 
 ## Docs
 
-- [Defining a schema](./docs/v2.5.10/schema/definition/index.md#defining-a-schema)
+- [Defining a schema](./docs/v2.5.12/schema/definition/index.md#defining-a-schema)
   - [constant properties](./docs/v1.5.0/schema/definition/constants.md#constant-properties-v150)
   - [default values](./docs/v1.4.10/schema/definition/defaults.md#default-values)
   - [dependent properties](./docs/v1.4.10/schema/definition/dependents.md#dependent-properties)
@@ -165,6 +165,6 @@ await db.update({ id: 1 }, data);
   - [onUpdate](./docs/v2.5.10/schema/definition/life-cycles.md#onupdate)
 - [Options](./docs/v1.4.7/schema/definitions.md#options)
 
-- [Changelog](./docs/v2.5.11/CHANGELOG.md#changelog)
+- [Changelog](./docs/v2.5.12/CHANGELOG.md#changelog)
 
 ## Happy coding! 😎

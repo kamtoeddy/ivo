@@ -1824,18 +1824,124 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
     });
 
     describe("shouldInit", () => {
-      it("should reject shouldInit(false) & no default", () => {
-        try {
-          fx({ propertyName: { shouldInit: false } })();
-        } catch (err: any) {
-          expect(err.payload).toEqual(
-            expect.objectContaining({
-              propertyName: expect.arrayContaining([
-                "A property with initialization blocked must have a default value",
-              ]),
-            })
-          );
-        }
+      describe("valid", () => {
+        let TestSchema: any;
+
+        beforeAll(async () => {
+          TestSchema = new Schema(
+            {
+              env: { default: "dev" },
+              isBlocked: {
+                shouldInit: (ctx: any) => ctx.env == "test",
+                default: false,
+              },
+              laxProp: { default: 0 },
+            },
+            { errors: "throw" }
+          ).getModel();
+        });
+
+        it("should respect default rules", async () => {
+          const { data } = await TestSchema.create({ isBlocked: true });
+
+          expect(data).toMatchObject({
+            env: "dev",
+            isBlocked: false,
+            laxProp: 0,
+          });
+        });
+
+        it("should respect callable should init when condition passes during cloning", async () => {
+          const { data } = await TestSchema.clone({
+            env: "test",
+            isBlocked: "yes",
+          });
+
+          expect(data).toMatchObject({
+            env: "test",
+            isBlocked: "yes",
+            laxProp: 0,
+          });
+        });
+
+        it("should respect callable should init when condition passes at creation", async () => {
+          const { data } = await TestSchema.create({
+            env: "test",
+            isBlocked: "yes",
+          });
+
+          expect(data).toMatchObject({
+            env: "test",
+            isBlocked: "yes",
+            laxProp: 0,
+          });
+        });
+
+        it("should accept shouldInit(false) + default", () => {
+          const fxn = fx({
+            propertyName: { shouldInit: false, default: true },
+          });
+
+          expectNoFailure(fxn);
+
+          fxn();
+        });
+
+        it("should accept shouldInit: () => boolean + default", () => {
+          const values = [() => true, () => false];
+
+          for (const shouldInit of values) {
+            const fxn = fx({
+              propertyName: { shouldInit, default: true },
+            });
+
+            expectNoFailure(fxn);
+
+            fxn();
+          }
+        });
+      });
+
+      describe("invalid", () => {
+        it("should reject shouldInit(false) & no default", () => {
+          const fxn = fx({ propertyName: { shouldInit: false } });
+
+          expectFailure(fxn);
+
+          try {
+            fxn();
+          } catch (err: any) {
+            expect(err.payload).toEqual(
+              expect.objectContaining({
+                propertyName: expect.arrayContaining([
+                  "A property with initialization blocked must have a default value",
+                ]),
+              })
+            );
+          }
+        });
+
+        it("should reject shouldInit !(boolean | () => boolean)", () => {
+          const values = [undefined, 1, {}, null, [], "yes", "false", "true"];
+
+          for (const shouldInit of values) {
+            const fxn = fx({ propertyName: { shouldInit, default: true } });
+
+            expectFailure(fxn);
+
+            try {
+              fxn();
+            } catch (err: any) {
+              expect(err.payload).toEqual(
+                expect.objectContaining({
+                  propertyName: expect.arrayContaining([
+                    "The initialization of a property can only be blocked if the 'shouldinit' rule is set to 'false' or a function that returns a boolean",
+                  ]),
+                })
+              );
+            }
+          }
+        });
       });
     });
 

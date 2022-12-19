@@ -415,13 +415,19 @@ export abstract class SchemaCore<T extends ObjectType> {
       if (!sideEffectDef.valid) reasons.push(sideEffectDef.reason!);
     }
 
-    if (
-      this._hasAny(prop, "shouldInit") &&
-      !this._hasAny(prop, ["default", "sideEffect"])
-    )
-      reasons.push(
-        "A property with initialization blocked must have a default value"
-      );
+    if (this._hasAny(prop, "shouldInit")) {
+      const { shouldInit } = this._getDefinition(prop);
+
+      if (!["boolean", "function"].includes(typeof shouldInit))
+        reasons.push(
+          "The initialization of a property can only be blocked if the 'shouldinit' rule is set to 'false' or a function that returns a boolean"
+        );
+
+      if (!this._hasAny(prop, ["default", "sideEffect"]))
+        reasons.push(
+          "A property with initialization blocked must have a default value"
+        );
+    }
 
     if (this._hasAny(prop, "validator") && !this._isValidatorOk(prop))
       reasons.push("Invalid validator");
@@ -717,7 +723,11 @@ export abstract class SchemaCore<T extends ObjectType> {
   };
 
   protected _registerIfLax = (prop: string) => {
-    const { default: _default, readonly } = this._getDefinition(prop);
+    const {
+      default: _default,
+      readonly,
+      shouldInit,
+    } = this._getDefinition(prop);
 
     // Lax properties must have a default value nor setter
     if (isEqual(_default, undefined)) return;
@@ -735,7 +745,7 @@ export abstract class SchemaCore<T extends ObjectType> {
     // Lax properties cannot have initialization blocked
     if (
       (this._hasAny(prop, "readonly") && readonly !== "lax") ||
-      this._hasAny(prop, "shouldInit")
+      (this._hasAny(prop, "shouldInit") && typeof shouldInit != "function")
     )
       return;
 
