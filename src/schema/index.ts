@@ -411,6 +411,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
       const isRequiredInit = this._isRequiredBy(prop) && isProvided;
 
       if (
+        !this._getValueBy(prop, "shouldInit") &&
         !isSideEffect &&
         !this._canInit(prop) &&
         !isLaxInit &&

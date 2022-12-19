@@ -1825,6 +1825,45 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
     describe("shouldInit", () => {
       describe("valid", () => {
+        let TestSchema: any;
+
+        beforeAll(async () => {
+          TestSchema = new Schema(
+            {
+              env: { default: "dev" },
+              isBlocked: {
+                shouldInit: (ctx: any) => ctx.env == "test",
+                default: false,
+              },
+              laxProp: { default: 0 },
+            },
+            { errors: "throw" }
+          ).getModel();
+        });
+
+        it("should respect default rules", async () => {
+          const { data } = await TestSchema.create({ isBlocked: true });
+
+          expect(data).toMatchObject({
+            env: "dev",
+            isBlocked: false,
+            laxProp: 0,
+          });
+        });
+
+        it("should respect callable should init when condition passes at creation", async () => {
+          const { data } = await TestSchema.create({
+            env: "test",
+            isBlocked: "yes",
+          });
+
+          expect(data).toMatchObject({
+            env: "test",
+            isBlocked: "yes",
+            laxProp: 0,
+          });
+        });
+
         it("should accept shouldInit(false) + default", () => {
           const fxn = fx({
             propertyName: { shouldInit: false, default: true },
