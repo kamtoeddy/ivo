@@ -417,13 +417,19 @@ export abstract class SchemaCore<T extends ObjectType> {
       if (!sideEffectDef.valid) reasons.push(sideEffectDef.reason!);
     }
 
-    if (
-      this._hasAny(prop, "shouldInit") &&
-      !this._hasAny(prop, ["default", "sideEffect"])
-    )
-      reasons.push(
-        "A property with initialization blocked must have a default value"
-      );
+    if (this._hasAny(prop, "shouldInit")) {
+      const { shouldInit } = this._getDefinition(prop);
+
+      if (!["boolean", "function"].includes(typeof shouldInit))
+        reasons.push(
+          "The initialization of a property can only be blocked if the 'shouldinit' rule is set to 'false' or a function that returns a boolean"
+        );
+
+      if (!this._hasAny(prop, ["default", "sideEffect"]))
+        reasons.push(
+          "A property with initialization blocked must have a default value"
+        );
+    }
 
     if (this._hasAny(prop, "validator") && !this._isValidatorOk(prop))
       reasons.push("Invalid validator");

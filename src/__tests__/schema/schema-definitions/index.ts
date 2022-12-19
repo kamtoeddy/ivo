@@ -1834,6 +1834,20 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
           fxn();
         });
+
+        it("should accept shouldInit: () => boolean + default", () => {
+          const values = [() => true, () => false];
+
+          for (const shouldInit of values) {
+            const fxn = fx({
+              propertyName: { shouldInit, default: true },
+            });
+
+            expectNoFailure(fxn);
+
+            fxn();
+          }
+        });
       });
 
       describe("invalid", () => {
@@ -1852,6 +1866,28 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 ]),
               })
             );
+          }
+        });
+
+        it("should reject shouldInit !(boolean | () => boolean)", () => {
+          const values = [undefined, 1, {}, null, [], "yes", "false", "true"];
+
+          for (const shouldInit of values) {
+            const fxn = fx({ propertyName: { shouldInit, default: true } });
+
+            expectFailure(fxn);
+
+            try {
+              fxn();
+            } catch (err: any) {
+              expect(err.payload).toEqual(
+                expect.objectContaining({
+                  propertyName: expect.arrayContaining([
+                    "The initialization of a property can only be blocked if the 'shouldinit' rule is set to 'false' or a function that returns a boolean",
+                  ]),
+                })
+              );
+            }
           }
         });
       });
