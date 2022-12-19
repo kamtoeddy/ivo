@@ -1824,18 +1824,40 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
     });
 
     describe("shouldInit", () => {
-      it("should reject shouldInit(false) & no default", () => {
-        try {
-          fx({ propertyName: { shouldInit: false } })();
-        } catch (err: any) {
-          expect(err.payload).toEqual(
-            expect.objectContaining({
-              propertyName: expect.arrayContaining([
-                "A property with initialization blocked must have a default value",
-              ]),
-            })
-          );
-        }
+      // describe("valid",()=>{
+      //   it("should reject shouldInit(false) + default", () => {
+      //     try {
+      //       fx({ propertyName: { shouldInit: false, default:true } })();
+      //     } catch (err: any) {
+      //       expect(err.payload).toEqual(
+      //         expect.objectContaining({
+      //           propertyName: expect.arrayContaining([
+      //             "A property with initialization blocked must have a default value",
+      //           ]),
+      //         })
+      //       );
+      //     }
+      //   });
+      // })
+
+      describe("invalid", () => {
+        it("should reject shouldInit(false) & no default", () => {
+          const fxn = fx({ propertyName: { shouldInit: false } });
+
+          expectFailure(fxn);
+
+          try {
+            fxn();
+          } catch (err: any) {
+            expect(err.payload).toEqual(
+              expect.objectContaining({
+                propertyName: expect.arrayContaining([
+                  "A property with initialization blocked must have a default value",
+                ]),
+              })
+            );
+          }
+        });
       });
     });
 
