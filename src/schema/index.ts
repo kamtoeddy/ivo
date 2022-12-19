@@ -342,6 +342,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
         this._isRequiredBy(prop) && this.values.hasOwnProperty(prop);
 
       if (
+        !this._getValueBy(prop, "shouldInit") &&
         !this._isDependentProp(prop) &&
         !isSideEffect &&
         !this._canInit(prop) &&

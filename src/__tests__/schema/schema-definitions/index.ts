@@ -1851,6 +1851,19 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           });
         });
 
+        it("should respect callable should init when condition passes during cloning", async () => {
+          const { data } = await TestSchema.clone({
+            env: "test",
+            isBlocked: "yes",
+          });
+
+          expect(data).toMatchObject({
+            env: "test",
+            isBlocked: "yes",
+            laxProp: 0,
+          });
+        });
+
         it("should respect callable should init when condition passes at creation", async () => {
           const { data } = await TestSchema.create({
             env: "test",
