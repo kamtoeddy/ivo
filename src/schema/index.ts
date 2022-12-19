@@ -333,21 +333,25 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
         return this._updateContext({ [prop]: data[prop] } as T);
       }
 
+      const isLax = this._isLaxProp(prop);
+
+      const isProvided = this.values.hasOwnProperty(prop);
+
       const isLaxInit =
-        this._isLaxProp(prop) &&
-        this.values.hasOwnProperty(prop) &&
-        !isEqual(this.values[prop], this.defaults[prop]);
+        isLax && isProvided && !isEqual(this.values[prop], this.defaults[prop]);
 
       const isRequiredInit =
         this._isRequiredBy(prop) && this.values.hasOwnProperty(prop);
 
       if (
-        !this._getValueBy(prop, "shouldInit") &&
-        !this._isDependentProp(prop) &&
-        !isSideEffect &&
-        !this._canInit(prop) &&
-        !isLaxInit &&
-        !isRequiredInit
+        (isLax &&
+          this._hasAny(prop, "shouldInit") &&
+          !this._getValueBy(prop, "shouldInit")) ||
+        (!this._isDependentProp(prop) &&
+          !isSideEffect &&
+          !this._canInit(prop) &&
+          !isLaxInit &&
+          !isRequiredInit)
       ) {
         data[prop] = this._getDefaultValue(prop);
 
@@ -407,16 +411,17 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
 
       const isProvided = this.values.hasOwnProperty(prop);
 
-      const isLaxInit = this._isLaxProp(prop) && isProvided;
+      const isLax = this._isLaxProp(prop);
+
+      const isLaxInit = isLax && isProvided;
 
       const isRequiredInit = this._isRequiredBy(prop) && isProvided;
 
       if (
-        !this._getValueBy(prop, "shouldInit") &&
-        !isSideEffect &&
-        !this._canInit(prop) &&
-        !isLaxInit &&
-        !isRequiredInit
+        (isLax &&
+          this._hasAny(prop, "shouldInit") &&
+          !this._getValueBy(prop, "shouldInit")) ||
+        (!isSideEffect && !this._canInit(prop) && !isLaxInit && !isRequiredInit)
       ) {
         data[prop] = this._getDefaultValue(prop);
 

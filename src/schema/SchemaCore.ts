@@ -111,9 +111,7 @@ export abstract class SchemaCore<T extends ObjectType> {
     if (this._isDependentProp(prop)) return false;
     if (this._isRequired(prop)) return true;
 
-    const { readonly } = this._getDefinition(prop);
-
-    const shouldInit = this._getValueBy(prop, "shouldInit");
+    const { readonly, shouldInit } = this._getDefinition(prop);
 
     return (
       readonly === true &&
@@ -725,7 +723,11 @@ export abstract class SchemaCore<T extends ObjectType> {
   };
 
   protected _registerIfLax = (prop: string) => {
-    const { default: _default, readonly } = this._getDefinition(prop);
+    const {
+      default: _default,
+      readonly,
+      shouldInit,
+    } = this._getDefinition(prop);
 
     // Lax properties must have a default value nor setter
     if (isEqual(_default, undefined)) return;
@@ -743,7 +745,7 @@ export abstract class SchemaCore<T extends ObjectType> {
     // Lax properties cannot have initialization blocked
     if (
       (this._hasAny(prop, "readonly") && readonly !== "lax") ||
-      this._hasAny(prop, "shouldInit")
+      (this._hasAny(prop, "shouldInit") && typeof shouldInit != "function")
     )
       return;
 
