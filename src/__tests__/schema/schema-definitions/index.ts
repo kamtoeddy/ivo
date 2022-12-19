@@ -1824,21 +1824,17 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
     });
 
     describe("shouldInit", () => {
-      // describe("valid",()=>{
-      //   it("should reject shouldInit(false) + default", () => {
-      //     try {
-      //       fx({ propertyName: { shouldInit: false, default:true } })();
-      //     } catch (err: any) {
-      //       expect(err.payload).toEqual(
-      //         expect.objectContaining({
-      //           propertyName: expect.arrayContaining([
-      //             "A property with initialization blocked must have a default value",
-      //           ]),
-      //         })
-      //       );
-      //     }
-      //   });
-      // })
+      describe("valid", () => {
+        it("should accept shouldInit(false) + default", () => {
+          const fxn = fx({
+            propertyName: { shouldInit: false, default: true },
+          });
+
+          expectNoFailure(fxn);
+
+          fxn();
+        });
+      });
 
       describe("invalid", () => {
         it("should reject shouldInit(false) & no default", () => {
