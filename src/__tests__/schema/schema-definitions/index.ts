@@ -1947,7 +1947,11 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
     describe("sideEffect", () => {
       describe("valid", () => {
-        let User: any;
+        const defaultMap = {
+          sideInit: { hasChanged: false, newValue: undefined },
+          sideNoInit: { hasChanged: false, newValue: undefined },
+        };
+        let User: any, successMap: any;
 
         beforeAll(() => {
           User = new Schema(
@@ -1961,15 +1965,17 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 dependent: true,
                 validator: validateBoolean,
               },
+              sideInit: {
+                sideEffect: true,
+                onChange: onSideInitChange,
+                onSuccess: onSuccess("sideInit"),
+                validator: validateBoolean,
+              },
               sideNoInit: {
                 sideEffect: true,
                 shouldInit: false,
                 onChange: () => ({ dependentSideNoInit: "changed" }),
-                validator: validateBoolean,
-              },
-              sideInit: {
-                sideEffect: true,
-                onChange: onSideInitChange,
+                onSuccess: onSuccess("sideNoInit"),
                 validator: validateBoolean,
               },
             },
@@ -1980,12 +1986,19 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             return { dependentSideInit: sideInit ? true : false };
           }
 
+          function onSuccess(prop: keyof typeof defaultMap) {
+            return (ctx: any) =>
+              (successMap[prop] = { hasChanged: true, newValue: ctx[prop] });
+          }
+
           function validateBoolean(value: any) {
             if (![false, true].includes(value))
               return { valid: false, reason: `${value} is not a boolean` };
             return { valid: true };
           }
         });
+
+        beforeEach(() => (successMap = { ...defaultMap }));
 
         it("should respect sideInits & sideNoInit", async () => {
           const { data: user } = await User.create({
@@ -2072,6 +2085,21 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
             toPass();
           }
+        });
+
+        it("should respect onSuccess of sideInits & sideNoInit at creation", async () => {
+          const sideInit = false;
+          const { handleSuccess } = await User.create({
+            sideInit,
+            name: "Peter",
+          });
+
+          await handleSuccess();
+
+          expect(successMap).toEqual({
+            sideInit: { hasChanged: true, newValue: sideInit },
+            sideNoInit: { hasChanged: false, newValue: undefined },
+          });
         });
 
         describe("RequiredSideEffect", () => {

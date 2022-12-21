@@ -156,11 +156,17 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     lifeCycle: LifeCycles.LifeCycle
   ) => {
     const ctx = this._getContext();
+    const successFulSideEffects = this._getKeysAsProps(ctx).filter(
+      this._isSideEffect
+    );
+
     const props = this._getKeysAsProps(data);
+
+    const successProps = [...props, ...successFulSideEffects];
 
     let successListeners = [] as LifeCycles.SuccessListener<T>[];
 
-    for (const prop of props)
+    for (const prop of successProps)
       successListeners = successListeners.concat(
         this._getListeners(prop, "onSuccess") as LifeCycles.SuccessListener<T>[]
       );
