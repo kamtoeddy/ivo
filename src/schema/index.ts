@@ -155,7 +155,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     data: Partial<T>,
     lifeCycle: LifeCycles.LifeCycle
   ) => {
-    const ctx = this._getContext();
+    const ctx = this._getFinalContext();
     const successFulSideEffects = this._getKeysAsProps(ctx).filter(
       this._isSideEffect
     );
