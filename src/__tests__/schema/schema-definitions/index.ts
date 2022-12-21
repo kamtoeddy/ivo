@@ -2121,6 +2121,25 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           });
         });
 
+        it("should respect onSuccess of sideInits & sideNoInit during updates", async () => {
+          const sideInit = false,
+            sideNoInit = true;
+          const { handleSuccess } = await User.update(
+            {
+              dependentSideNoInit: "",
+              dependentSideInit: false,
+            },
+            { sideInit, sideNoInit, name: "Peter" }
+          );
+
+          await handleSuccess();
+
+          expect(successMap).toEqual({
+            sideInit: { hasChanged: true, newValue: sideInit },
+            sideNoInit: { hasChanged: true, newValue: sideNoInit },
+          });
+        });
+
         describe("RequiredSideEffect", () => {
           let RequiredSideEffect: any;
 
