@@ -535,7 +535,10 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
         linkedProps.push(prop);
       }
 
-      this._updateContext({ [prop]: validated } as T);
+      const validCtxUpdate = { [prop]: validated } as T;
+
+      this._updateContext(validCtxUpdate);
+      this._updateFinalContext(validCtxUpdate);
     });
 
     await Promise.all(validations);
