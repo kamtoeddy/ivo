@@ -155,6 +155,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     data: Partial<T>,
     lifeCycle: LifeCycles.LifeCycle
   ) => {
+    const ctx = this._getContext();
     const props = this._getKeysAsProps(data);
 
     let successListeners = [] as LifeCycles.SuccessListener<T>[];
@@ -163,8 +164,6 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
       successListeners = successListeners.concat(
         this._getListeners(prop, "onSuccess") as LifeCycles.SuccessListener<T>[]
       );
-
-    const ctx = this._getContext();
 
     return async () => {
       const successOperations = successListeners.map(
