@@ -501,7 +501,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
   setValues(values: Partial<T>) {
     this.values = this._getValues(values);
 
-    this._initContext();
+    this._initContexts();
   }
 
   update = async (values: Partial<T>, changes: Partial<T>) => {
