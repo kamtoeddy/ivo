@@ -328,7 +328,10 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
       if (this._isConstant(prop)) {
         data[prop] = await this._getConstantValue(prop);
 
-        return this._updateContext({ [prop]: data[prop] as any } as T);
+        const validCtxUpdate = { [prop]: data[prop] as any } as T;
+
+        this._updateFinalContext(validCtxUpdate);
+        return this._updateContext(validCtxUpdate);
       }
 
       const isSideEffect = sideEffects.includes(prop);
@@ -338,7 +341,10 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
       if (!isSideEffect && reset.includes(prop)) {
         data[prop] = this._getDefaultValue(prop);
 
-        return this._updateContext({ [prop]: data[prop] } as T);
+        const validCtxUpdate = { [prop]: data[prop] } as T;
+
+        this._updateFinalContext(validCtxUpdate);
+        return this._updateContext(validCtxUpdate);
       }
 
       const isLax = this._isLaxProp(prop);
@@ -363,7 +369,10 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
       ) {
         data[prop] = this._getDefaultValue(prop);
 
-        return this._updateContext({ [prop]: data[prop] } as T);
+        const validCtxUpdate = { [prop]: data[prop] } as T;
+
+        this._updateFinalContext(validCtxUpdate);
+        return this._updateContext(validCtxUpdate);
       }
 
       return this._validateAndSet(data, error, prop, this.values[prop]);
@@ -411,7 +420,11 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     const validations = props.map(async (prop) => {
       if (this._isConstant(prop)) {
         data[prop] = await this._getConstantValue(prop);
-        return this._updateContext({ [prop]: data[prop] } as T);
+
+        const validCtxUpdate = { [prop]: data[prop] as any } as T;
+
+        this._updateFinalContext(validCtxUpdate);
+        return this._updateContext(validCtxUpdate);
       }
 
       const isSideEffect = sideEffects.includes(prop);
@@ -433,7 +446,10 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
       ) {
         data[prop] = this._getDefaultValue(prop);
 
-        return this._updateContext({ [prop]: data[prop] } as T);
+        const validCtxUpdate = { [prop]: data[prop] as any } as T;
+
+        this._updateFinalContext(validCtxUpdate);
+        return this._updateContext(validCtxUpdate);
       }
 
       return this._validateAndSet(data, error, prop, this.values[prop]);
