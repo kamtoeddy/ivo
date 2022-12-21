@@ -2055,6 +2055,25 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           toPass();
         });
 
+        it("should allow onChange + onSuccess + validator", () => {
+          const values = [[], () => ({})];
+
+          for (const onSuccess of values) {
+            const toPass = fx({
+              propertyName: {
+                sideEffect: true,
+                onChange: validator,
+                onSuccess,
+                validator,
+              },
+            });
+
+            expectNoFailure(toPass);
+
+            toPass();
+          }
+        });
+
         describe("RequiredSideEffect", () => {
           let RequiredSideEffect: any;
 
@@ -2274,7 +2293,6 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             "dependent",
             "onCreate",
             "onDelete",
-            "onSuccess",
             "onUpdate",
             "readonly",
             "value",

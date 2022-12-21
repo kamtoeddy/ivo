@@ -49,6 +49,7 @@ const sideEffectRules = [
   "sideEffect",
   "onChange",
   "onFailure",
+  "onSuccess",
   "required",
   "requiredError",
   "shouldInit",
