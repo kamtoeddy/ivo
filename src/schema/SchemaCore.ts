@@ -701,8 +701,9 @@ export abstract class SchemaCore<T extends ObjectType> {
     if (this._hasAny(prop, unAcceptedRules))
       return {
         valid,
-        reason:
-          "SideEffects properties can only have ('sideEffect' + 'onChange' + 'validator') or 'shouldInit'",
+        reason: `SideEffects properties can only have (${sideEffectRules.join(
+          ", "
+        )}) as rules`,
       };
 
     this.sideEffects.push(prop as StringKey<T>);

@@ -2316,7 +2316,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               expect(err.payload).toEqual(
                 expect.objectContaining({
                   propertyName: expect.arrayContaining([
-                    "SideEffects properties can only have ('sideEffect' + 'onChange' + 'validator') or 'shouldInit'",
+                    "SideEffects properties can only have (sideEffect, onChange, onFailure, onSuccess, required, requiredError, shouldInit, validator) as rules",
                   ]),
                 })
               );
