@@ -163,8 +163,8 @@ await db.update({ id: 1 }, data);
   - [onFailure](./docs/v2.5.10/schema/definition/life-cycles.md#onfailure)
   - [onSuccess](./docs/v2.5.10/schema/definition/life-cycles.md#onsuccess)
   - [onUpdate](./docs/v2.5.10/schema/definition/life-cycles.md#onupdate)
-- [Options](./docs/v1.4.7/schema/definitions.md#options)
+- [Options](./docs/v2.0.0/schema/definition/index.md#options)
 
-- [Changelog](./docs/v2.5.12/CHANGELOG.md#changelog)
+- [Changelog](./docs/v2.5.13/CHANGELOG.md#changelog)
 
 ## Happy coding! 😎
