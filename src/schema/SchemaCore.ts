@@ -70,6 +70,7 @@ export abstract class SchemaCore<T extends ObjectType> {
   protected _propDefinitions = {} as ns.Definitions<T>;
 
   protected context: T = {} as T;
+  protected finalContext: T = {} as T;
   protected defaults: Partial<T> = {};
   protected values: Partial<T> = {};
 
@@ -102,10 +103,19 @@ export abstract class SchemaCore<T extends ObjectType> {
   // context methods
   protected _getContext = () => Object.freeze(Object.assign({}, this.context));
 
-  protected _initContext = () => (this.context = { ...this.values } as T);
+  protected _initContext = () => {
+    this.context = { ...this.values } as T;
+    this.finalContext = {} as T;
+  };
 
   protected _updateContext = (updates: Partial<T>) => {
     this.context = { ...this.context, ...updates };
+  };
+  protected _getFinalContext = () =>
+    Object.freeze(Object.assign({}, this.finalContext));
+
+  protected _updateFinalContext = (updates: Partial<T>) => {
+    this.finalContext = { ...this.finalContext, ...updates };
   };
 
   protected _canInit = (prop: string) => {

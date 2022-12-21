@@ -2087,10 +2087,29 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           }
         });
 
+        // it("should respect onSuccess of sideInits & sideNoInit during cloning", async () => {
+        //   const sideInit = false;
+        //   const { handleSuccess } = await User.clone({
+        //     sideInit,
+        //     sideNoInit: true,
+        //     name: "Peter",
+        //     dependentSideNoInit: "",
+        //     dependentSideInit: false,
+        //   });
+
+        //   await handleSuccess();
+
+        //   expect(successMap).toEqual({
+        //     sideInit: { hasChanged: true, newValue: sideInit },
+        //     sideNoInit: { hasChanged: false, newValue: undefined },
+        //   });
+        // });
+
         it("should respect onSuccess of sideInits & sideNoInit at creation", async () => {
           const sideInit = false;
           const { handleSuccess } = await User.create({
             sideInit,
+            sideNoInit: true,
             name: "Peter",
           });
 

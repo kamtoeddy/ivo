@@ -299,7 +299,10 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
 
     if (!this._isSideEffect(prop)) operationData[prop] = validated;
 
-    this._updateContext({ [prop]: validated } as T);
+    const validCtxUpdate = { [prop]: validated } as T;
+
+    this._updateContext(validCtxUpdate);
+    this._updateFinalContext(validCtxUpdate);
   };
 
   clone = async (
