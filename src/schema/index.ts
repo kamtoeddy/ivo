@@ -69,9 +69,6 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
 
   private _areValuesOk = (values: any) => values && typeof values == "object";
 
-  private _handleInvalidData = () =>
-    this._handleError(new ErrorTool({ message: "Invalid Data" }));
-
   private _getValues(values: Partial<T>, allowSideEffects = true) {
     const keys = this._getKeysAsProps(values).filter(
       (key) =>
@@ -115,6 +112,9 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
 
     await Promise.all(cleanups);
   };
+
+  private _handleInvalidData = () =>
+    this._handleError(new ErrorTool({ message: "Invalid Data" }));
 
   private _handleRequiredBy = (error: ErrorTool) => {
     for (const prop of this.propsRequiredBy) {
