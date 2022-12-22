@@ -101,16 +101,6 @@ export abstract class SchemaCore<T extends ObjectType> {
   }
 
   // context methods
-  protected _AddConstatntsToFinalContext = () => {
-    const contstants = this._getKeysAsProps(this.context).filter(
-      this._isConstant
-    );
-    if (contstants.length)
-      contstants.forEach((prop) =>
-        this._updateFinalContext({ [prop]: this.context[prop] } as T)
-      );
-  };
-
   protected _getContext = () => Object.freeze(Object.assign({}, this.context));
 
   protected _getFinalContext = () =>
@@ -119,6 +109,14 @@ export abstract class SchemaCore<T extends ObjectType> {
   protected _initContexts = () => {
     this.context = { ...this.values } as T;
     this.finalContext = {} as T;
+
+    const contstants = this._getKeysAsProps(this.context).filter(
+      this._isConstant
+    );
+    if (contstants.length)
+      contstants.forEach((prop) =>
+        this._updateFinalContext({ [prop]: this.context[prop] } as T)
+      );
   };
 
   protected _updateContext = (updates: Partial<T>) => {
