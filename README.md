@@ -165,6 +165,6 @@ await db.update({ id: 1 }, data);
   - [onUpdate](./docs/v2.5.10/schema/definition/life-cycles.md#onupdate)
 - [Options](./docs/v2.0.0/schema/definition/index.md#options)
 
-- [Changelog](./docs/v2.5.14/CHANGELOG.md#changelog)
+- [Changelog](./docs/v2.5.15/CHANGELOG.md#changelog)
 
 ## Happy coding! 😎
