@@ -1965,6 +1965,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 dependent: true,
                 validator: validateBoolean,
               },
+              name: { default: "" },
               sideInit: {
                 sideEffect: true,
                 onChange: onSideInitChange,
@@ -2009,6 +2010,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           expect(user).toEqual({
             dependentSideNoInit: "",
             dependentSideInit: true,
+            name: "Peter",
           });
         });
 
@@ -2087,56 +2089,106 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           }
         });
 
-        it("should respect onSuccess of sideInits & sideNoInit during cloning", async () => {
-          const sideInit = false;
-          const { handleSuccess } = await User.clone({
-            sideInit,
-            sideNoInit: true,
-            name: "Peter",
-            dependentSideNoInit: "",
-            dependentSideInit: false,
-          });
-
-          await handleSuccess();
-
-          expect(successMap).toEqual({
-            sideInit: { hasChanged: true, newValue: sideInit },
-            sideNoInit: { hasChanged: false, newValue: undefined },
-          });
-        });
-
-        it("should respect onSuccess of sideInits & sideNoInit at creation", async () => {
-          const sideInit = false;
-          const { handleSuccess } = await User.create({
-            sideInit,
-            sideNoInit: true,
-            name: "Peter",
-          });
-
-          await handleSuccess();
-
-          expect(successMap).toEqual({
-            sideInit: { hasChanged: true, newValue: sideInit },
-            sideNoInit: { hasChanged: false, newValue: undefined },
-          });
-        });
-
-        it("should respect onSuccess of sideInits & sideNoInit during updates", async () => {
-          const sideInit = false,
-            sideNoInit = true;
-          const { handleSuccess } = await User.update(
-            {
+        describe("onSuccess", () => {
+          it("should no trigger onSuccess listeners of sideEffects when not provided during cloning", async () => {
+            const { handleSuccess } = await User.clone({
+              name: "Peter",
               dependentSideNoInit: "",
               dependentSideInit: false,
-            },
-            { sideInit, sideNoInit, name: "Peter" }
-          );
+            });
 
-          await handleSuccess();
+            await handleSuccess();
 
-          expect(successMap).toEqual({
-            sideInit: { hasChanged: true, newValue: sideInit },
-            sideNoInit: { hasChanged: true, newValue: sideNoInit },
+            expect(successMap).toEqual({
+              sideInit: { hasChanged: false, newValue: undefined },
+              sideNoInit: { hasChanged: false, newValue: undefined },
+            });
+          });
+
+          it("should no trigger onSuccess listeners of sideEffects when not provided at creation", async () => {
+            const { handleSuccess } = await User.create({
+              name: "Peter",
+              dependentSideNoInit: "",
+              dependentSideInit: false,
+            });
+
+            await handleSuccess();
+
+            expect(successMap).toEqual({
+              sideInit: { hasChanged: false, newValue: undefined },
+              sideNoInit: { hasChanged: false, newValue: undefined },
+            });
+          });
+
+          it("should no trigger onSuccess listeners of sideEffects when not provided during updates", async () => {
+            const { handleSuccess } = await User.update(
+              {
+                name: "Peter",
+                dependentSideNoInit: "",
+                dependentSideInit: false,
+              },
+              { name: "John" }
+            );
+
+            await handleSuccess();
+
+            expect(successMap).toEqual({
+              sideInit: { hasChanged: false, newValue: undefined },
+              sideNoInit: { hasChanged: false, newValue: undefined },
+            });
+          });
+
+          it("should respect onSuccess of sideInits & sideNoInit during cloning", async () => {
+            const sideInit = false;
+            const { handleSuccess } = await User.clone({
+              sideInit,
+              sideNoInit: true,
+              name: "Peter",
+              dependentSideNoInit: "",
+              dependentSideInit: false,
+            });
+
+            await handleSuccess();
+
+            expect(successMap).toEqual({
+              sideInit: { hasChanged: true, newValue: sideInit },
+              sideNoInit: { hasChanged: false, newValue: undefined },
+            });
+          });
+
+          it("should respect onSuccess of sideInits & sideNoInit at creation", async () => {
+            const sideInit = false;
+            const { handleSuccess } = await User.create({
+              sideInit,
+              sideNoInit: true,
+              name: "Peter",
+            });
+
+            await handleSuccess();
+
+            expect(successMap).toEqual({
+              sideInit: { hasChanged: true, newValue: sideInit },
+              sideNoInit: { hasChanged: false, newValue: undefined },
+            });
+          });
+
+          it("should respect onSuccess of sideInits & sideNoInit during updates", async () => {
+            const sideInit = false,
+              sideNoInit = true;
+            const { handleSuccess } = await User.update(
+              {
+                dependentSideNoInit: "",
+                dependentSideInit: false,
+              },
+              { sideInit, sideNoInit, name: "Peter" }
+            );
+
+            await handleSuccess();
+
+            expect(successMap).toEqual({
+              sideInit: { hasChanged: true, newValue: sideInit },
+              sideNoInit: { hasChanged: true, newValue: sideNoInit },
+            });
           });
         });
 

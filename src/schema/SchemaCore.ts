@@ -103,9 +103,11 @@ export abstract class SchemaCore<T extends ObjectType> {
   // context methods
   protected _getContext = () => Object.freeze(Object.assign({}, this.context));
 
+  protected _getFinalContext = () =>
+    Object.freeze(Object.assign({}, this.finalContext));
+
   protected _initContexts = () => {
     this.context = { ...this.values } as T;
-
     this.finalContext = {} as T;
 
     const contstants = this._getKeysAsProps(this.context).filter(
@@ -120,8 +122,6 @@ export abstract class SchemaCore<T extends ObjectType> {
   protected _updateContext = (updates: Partial<T>) => {
     this.context = { ...this.context, ...updates };
   };
-  protected _getFinalContext = () =>
-    Object.freeze(Object.assign({}, this.finalContext));
 
   protected _updateFinalContext = (updates: Partial<T>) => {
     this.finalContext = { ...this.finalContext, ...updates };
