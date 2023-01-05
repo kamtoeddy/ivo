@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 # v2.5.14 <small><sup>22-12-2022</sup></small>
 
-[Fixed] problem of constants not being assigned to finalContext
+- [Fixed] problem of constants not being assigned to finalContext
 
 # v2.5.13 <small><sup>22-12-2022</sup></small>
 

@@ -4,15 +4,16 @@ All notable changes to this project will be documented in this file.
 
 # v2.5.16 <small><sup>05-01-2022</sup></small>
 
-[Fix] fixed problem of context of operation of onSuccess listeners missing some values.
+- [Fix] fixed problem of context of operation of onSuccess listeners missing some values
+- [Fix] fixed problem of model allowing default timestamp values(`createdAt` & `updatedAt`) to be set as values when `schema.options.timestamps` config is in default mode
 
 # v2.5.15 <small><sup>22-12-2022</sup></small>
 
-[Updated] performance enhancements
+- [Updated] performance enhancements
 
 # v2.5.14 <small><sup>22-12-2022</sup></small>
 
-[Fix] fixed problem of constants not being assigned to finalContext
+- [Fix] fixed problem of constants not being assigned to finalContext
 
 # v2.5.13 <small><sup>22-12-2022</sup></small>
 
