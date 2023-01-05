@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 # v2.5.16 <small><sup>05-01-2022</sup></small>
 
-[Fix] fixed problem of context of operation of onSuccess listeners missing some values
+[Fix] fixed problem of context of operation of onSuccess listeners missing some values.
 
 # v2.5.15 <small><sup>22-12-2022</sup></small>
 
