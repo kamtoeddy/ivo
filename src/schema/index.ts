@@ -72,7 +72,8 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
   private _getValues(values: Partial<T>, allowSideEffects = true) {
     const keys = this._getKeysAsProps(values).filter(
       (key) =>
-        this.optionsTool.isTimestampKey(key) ||
+        (this.optionsTool.withTimestamps &&
+          this.optionsTool.isTimestampKey(key)) ||
         this._isProp(key) ||
         (allowSideEffects && this._isSideEffect(key))
     );
