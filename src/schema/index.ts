@@ -72,7 +72,8 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
   private _getValues(values: Partial<T>, allowSideEffects = true) {
     const keys = this._getKeysAsProps(values).filter(
       (key) =>
-        this.optionsTool.isTimestampKey(key) ||
+        (this.optionsTool.withTimestamps &&
+          this.optionsTool.isTimestampKey(key)) ||
         this._isProp(key) ||
         (allowSideEffects && this._isSideEffect(key))
     );
@@ -155,9 +156,10 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     data: Partial<T>,
     lifeCycle: LifeCycles.LifeCycle
   ) => {
-    const ctx = this._getFinalContext();
+    const ctx = this._getContext();
+    const finalCtx = this._getFinalContext();
 
-    const successFulSideEffects = this._getKeysAsProps(ctx).filter(
+    const successFulSideEffects = this._getKeysAsProps(finalCtx).filter(
       this._isSideEffect
     );
 

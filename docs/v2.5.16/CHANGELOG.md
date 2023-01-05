@@ -2,9 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+# v2.5.16 <small><sup>05-01-2022</sup></small>
+
+- [Fix] fixed problem of context of operation of onSuccess listeners missing some values
+- [Fix] fixed problem of model allowing default timestamp values(`createdAt` & `updatedAt`) to be set as values when `schema.options.timestamps` config is in default mode
+
+# v2.5.15 <small><sup>22-12-2022</sup></small>
+
+- [Updated] performance enhancements
+
 # v2.5.14 <small><sup>22-12-2022</sup></small>
 
-- [Fixed] problem of constants not being assigned to finalContext
+- [Fix] fixed problem of constants not being assigned to finalContext
 
 # v2.5.13 <small><sup>22-12-2022</sup></small>
 
@@ -43,7 +52,7 @@ All notable changes to this project will be documented in this file.
 # v2.5.5 <small><sup>28-11-2022</sup></small>
 
 - [Updated] Improved performance by making execution of life cycle listeners further parallel
-- [Fixed] bug with readonly properties being modified vialife cycle listeners after having changed
+- [Fix] fixed bug with readonly properties being modified vialife cycle listeners after having changed
 
 # v2.5.4 <small><sup>20-11-2022</sup></small>
 
@@ -55,11 +64,11 @@ All notable changes to this project will be documented in this file.
 
 # v2.5.2 <small><sup>01-11-2022</sup></small>
 
-- [Fixed] type errors with shouldInit rule
+- [Fix] fixed type errors with shouldInit rule
 
 # v2.5.1 <small><sup>01-11-2022</sup></small>
 
-- [Fixed] type errors with validate.isEmailOk
+- [Fix] fixed type errors with validate.isEmailOk
 
 # v2.5.0 <small><sup>28-10-2022</sup></small>
 
@@ -67,7 +76,7 @@ All notable changes to this project will be documented in this file.
 
 # v2.4.2 <small><sup>16-10-2022</sup></small>
 
-- [Fixed] readonly lax properties with callable defaults that return dynamic values not being readonly
+- [Fix] fixed readonly lax properties with callable defaults that return dynamic values not being readonly
 
 # v2.4.1 <small><sup>13-10-2022</sup></small>
 
@@ -95,7 +104,7 @@ All notable changes to this project will be documented in this file.
 - [Added] mode.delete method
 - [Added] onDelete, onFailure & onSuccess life cycles
 - [Updated] sideEffects can now be requiredBy
-- [Fixed] dependent props not being set during cloning
+- [Fix] fixed dependent props not being set during cloning
 
 # v2.0.1 <small><sup>18-09-2022</sup></small>
 
@@ -105,7 +114,7 @@ All notable changes to this project will be documented in this file.
 
 - [Added] Schema.options.errors
 - [Changed] the results of create, clone & update operations
-- [Fixed] lax properties being required during cloning
+- [Fix] fixed lax properties being required during cloning
 
 # v1.5.0 <small><sup>09-09-2022</sup></small>
 
@@ -115,7 +124,7 @@ All notable changes to this project will be documented in this file.
 
 # v1.4.11 <small><sup>08-09-2022</sup></small>
 
-- [Fixed] model.update not ignoring properties that haven't changed
+- [Fix] fixed model.update not ignoring properties that haven't changed
 
 # v1.4.10 <small><sup>07-09-2022</sup></small>
 
@@ -124,12 +133,12 @@ All notable changes to this project will be documented in this file.
 
 # v1.4.6 <small><sup>04-09-2022</sup></small>
 
-- [Fixed] life cycle listeners being executed even on invalid operations
+- [Fix] fixed life cycle listeners being executed even on invalid operations
 - [Docs] updated docs folder structure and readme
 
 # v1.4.5 <small><sup>02-09-2022</sup></small>
 
-- [Fixed] custom timestamp values being limited to provided interface
+- [Fix] fixed custom timestamp values being limited to provided interface
 
 # v1.4.4 <small><sup>02-09-2022</sup></small>
 
@@ -176,7 +185,7 @@ All notable changes to this project will be documented in this file.
 
 # v1.3.7 <small><sup>19-08-2022</sup></small>
 
-- [Fixed] lax properties behaving as required
+- [Fix] fixed lax properties behaving as required
 
 # v1.3.6 <small><sup>18-08-2022</sup></small>
 

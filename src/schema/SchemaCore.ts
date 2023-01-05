@@ -113,6 +113,7 @@ export abstract class SchemaCore<T extends ObjectType> {
     const contstants = this._getKeysAsProps(this.context).filter(
       this._isConstant
     );
+
     if (contstants.length)
       contstants.forEach((prop) =>
         this._updateFinalContext({ [prop]: this.context[prop] } as T)
