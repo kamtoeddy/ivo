@@ -1,6 +1,6 @@
 # Foreword
 
-Clean-schema is an event-driven schema validator whose purpose is to help you ensure that the data going to your database is always consistent.
+Clean-schema is a user story focused event-driven schema validator whose purpose is to help you ensure that the data going to your database is always consistent.
 
 It provides an interface for you to clearly define the behaviour of your entities and their properites at creation and during updates together with the flexibility of using the database of your choice.
 
@@ -32,31 +32,16 @@ const userSchema = new Schema(
       onChange: onNameChange,
       validator: validateName,
     },
-    fullName: {
-      default: "",
-      dependent: true,
-    },
-    isBlocked: {
-      default: false,
-      validator: validateBoolean,
-    },
-    id: {
-      readonly: true,
-      validator: validateId,
-    },
+    fullName: { default: "", dependent: true },
+    isBlocked: { default: false, validator: validateBoolean },
+    id: { readonly: true, validator: validateId },
     lastName: {
       required: true,
       onChange: [onNameChange],
       validator: validateName,
     },
-    lastSeen: {
-      default: "",
-      shouldInit: false,
-    },
-    password: {
-      required: true,
-      validator: validatePassword,
-    },
+    lastSeen: { default: "", shouldInit: false },
+    password: { required: true, validator: validatePassword },
     role: {
       required: true,
       validator: (value) =>
@@ -78,6 +63,8 @@ const UserModel = userSchema.getModel();
 # Creating an instance
 
 ```js
+const db = require("db-of-choice"); // use db of your choice
+
 const {
   data: user,
   error,
@@ -107,11 +94,9 @@ console.log(user);
 //   updatedAt: new Date(),
 // };
 
-await handleSuccess?.();
-
-const db = require("db-of-choice"); // use db of your choice
-
 await db.insert(user);
+
+await handleSuccess?.();
 ```
 
 # Updating instances
@@ -133,9 +118,9 @@ const { data, error, handleSuccess } = await UserModel.update(user, {
 // id is ignored because it is readonly
 console.log(data); // { lastSeen: new Date(), updatedAt: new Date() }
 
-await handleSuccess?.();
-
 await db.update({ id: 1 }, data);
+
+await handleSuccess?.();
 ```
 
 ## Docs
@@ -147,13 +132,13 @@ await db.update({ id: 1 }, data);
   - [readonly properties](./docs/v1.4.10/schema/definition/readonly.md#readonly-properties)
   - [required properties](./docs/v1.5.0/schema/definition/required.md#required-properties)
   - [side effects](./docs/v2.1.0/schema/definition/side-effects.md#side-effect-properties)
-  - [validators](./docs/v2.5.11/validate/index.md#validators)
-    - [isArrayOk](./docs/v2.5.11/validate/isArrayOk.md)
-    - [isBooleanOk](./docs/v1.4.6/validate/isBooleanOk.md)
-    - [isCreditCardOk](./docs/v1.4.6/validate/isCreditCardOk.md)
-    - [isEmailOk](./docs/v1.4.6/validate/isEmailOk.md)
-    - [isNumberOk](./docs/v1.4.6/validate/isNumberOk.md)
-    - [isStringOk](./docs/v1.4.6/validate/isStringOk.md)
+  - [validators](./docs/v2.6.0/validate/index.md#validators)
+    - [isArrayOk](./docs/v2.6.0/validate/isArrayOk.md)
+    - [isBooleanOk](./docs/v2.6.0/validate/isBooleanOk.md)
+    - [isCreditCardOk](./docs/v2.6.0/validate/isCreditCardOk.md)
+    - [isEmailOk](./docs/v2.6.0/validate/isEmailOk.md)
+    - [isNumberOk](./docs/v2.6.0/validate/isNumberOk.md)
+    - [isStringOk](./docs/v2.6.0/validate/isStringOk.md)
 - [Inheritance](./docs/v1.4.6/schema/inheritance.md#schema-inheritance)
 - [The Operation Context](./docs/v2.5.0/schema/definition/life-cycles.md#the-operation-context)
 - [Life Cycles & Listeners](./docs/v2.5.10/schema/definition/life-cycles.md#life-cycle-listeners)
@@ -165,6 +150,6 @@ await db.update({ id: 1 }, data);
   - [onUpdate](./docs/v2.5.10/schema/definition/life-cycles.md#onupdate)
 - [Options](./docs/v2.0.0/schema/definition/index.md#options)
 
-- [Changelog](./docs/v2.5.16/CHANGELOG.md#changelog)
+- [Changelog](./docs/v2.6.0/CHANGELOG.md#changelog)
 
 ## Happy coding! 😎
