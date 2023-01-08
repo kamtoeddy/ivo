@@ -144,12 +144,7 @@ export namespace Schema {
 
   export interface Options {
     errors?: "silent" | "throw";
-    timestamps?:
-      | boolean
-      | {
-          createdAt?: string;
-          updatedAt?: string;
-        };
+    timestamps?: boolean | { createdAt?: string; updatedAt?: string };
   }
 }
 
@@ -180,18 +175,13 @@ export namespace LifeCycles {
   export type VoidListener<T> = (ctx: Readonly<T>) => void | Promise<void>;
 }
 
-export interface ValidatorResponse<T> {
-  reasons?: string[];
-  valid: boolean;
-  validated?: T;
-}
+export type ValidatorResponse<T> =
+  | { valid: true; validated: T }
+  | { reasons: string[]; valid: false };
 
-export type ResponseInput<T> = {
-  reason?: string;
-  reasons?: string[];
-  valid: boolean;
-  validated?: TypeOf<T>;
-};
+export type ResponseInput<T> =
+  | { valid: true; validated?: TypeOf<T> }
+  | { reason?: string; reasons?: string[]; valid: false };
 
 type Validator<K extends keyof T, T> = (
   value: any,

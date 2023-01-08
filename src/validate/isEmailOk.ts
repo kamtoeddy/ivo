@@ -6,7 +6,6 @@ let emailRegExp =
 const invalidResponse = makeResponse({
   reason: "Invalid email",
   valid: false,
-  validated: undefined,
 });
 
 export const isEmailOk = (value: any, customRegExp?: RegExp) => {

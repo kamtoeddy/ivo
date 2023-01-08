@@ -1,9 +1,13 @@
+import { ResponseInput } from "../schema/interfaces";
 import { makeResponse } from "../schema/utils";
 import { NumberRangeType } from "../utils/interfaces";
 
 export type RangeType = undefined | NumberRangeType;
 
-function isInRange(value: number, range: NumberRangeType) {
+function isInRange(
+  value: number,
+  range: NumberRangeType
+): ResponseInput<number> {
   const { bounds, inclusiveBottom, inclusiveTop } = range;
   const [min, max] = bounds;
 
@@ -30,13 +34,8 @@ function makeRage(range: RangeType): RangeType {
 export function isNumberOk(num: any, { range }: { range?: RangeType } = {}) {
   let valid = true;
 
-  if (!["number", "string"].includes(typeof num) || isNaN(num)) {
-    return makeResponse({
-      reason: "Expected a number",
-      valid: false,
-      validated: undefined,
-    });
-  }
+  if (!["number", "string"].includes(typeof num) || isNaN(num))
+    return makeResponse({ reason: "Expected a number", valid: false });
 
   num = Number(num);
 

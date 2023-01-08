@@ -9,11 +9,11 @@ import {
 import { findBy } from "../../utils";
 
 export const validateName = (val: any) => {
-  let { valid, validated } = isStringOk(val);
+  const isValid = isStringOk(val);
 
-  if (!valid) return { valid: false };
+  if (!isValid.valid) return { valid: false };
 
-  return { valid, validated };
+  return { valid: true, validated: isValid.validated };
 };
 
 export const validateString = (
@@ -21,24 +21,30 @@ export const validateString = (
   options: IStringOptions = {}
 ) => {
   return (val: any) => {
-    let { reasons, valid, validated } = isStringOk(val, options);
+    const isValid = isStringOk(val, options);
 
-    if (!valid && errorMessage) reasons = [errorMessage, ...reasons!];
+    if (!isValid.valid && errorMessage)
+      isValid.reasons = [errorMessage, ...isValid.reasons];
 
-    return { reasons, valid, validated };
+    return isValid;
   };
 };
 
 export const validateOtherUnit = (value: any) => {
-  const { valid: validCoeff, validated: coefficient } = isNumberOk(
-    value?.coefficient,
-    { range: { bounds: [0], inclusiveBottom: false } }
-  );
-  const { valid: validName, validated: name } = isStringOk(value?.name);
+  const isValidCoeff = isNumberOk(value?.coefficient, {
+    range: { bounds: [0], inclusiveBottom: false },
+  });
+  const isValidName = isStringOk(value?.name);
 
-  if (!validCoeff || !validName) return { valid: false };
+  if (!isValidCoeff.valid || !isValidName.valid) return { valid: false };
 
-  return { valid: true, validated: { coefficient, name } };
+  return {
+    valid: true,
+    validated: {
+      coefficient: isValidCoeff.validated,
+      name: isValidName.validated,
+    },
+  };
 };
 
 export const validateOtherUnits = (value: any) => {
@@ -61,13 +67,16 @@ export const validateQuantity = (value: any) =>
 export const validateOtherQuantity = (value: any, ctx: IStoreItem) => {
   const mu = getMeasureUnit(ctx.otherMeasureUnits!, value?.name);
 
-  const { valid: validQty, validated: quantity } = isNumberOk(value?.quantity, {
+  const isValidQty = isNumberOk(value?.quantity, {
     range: { bounds: [0], inclusiveBottom: false },
   });
 
-  if (!mu || !validQty) return { valid: false };
+  if (!mu || !isValidQty.valid) return { valid: false };
 
-  return { valid: true, validated: { name: value.name, quantity } };
+  return {
+    valid: true,
+    validated: { name: value.name, quantity: isValidQty.validated },
+  };
 };
 
 export const validateQuantities = async (value: any, ctx: IStoreItem) => {

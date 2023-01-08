@@ -1,19 +1,23 @@
 import { toArray } from "../../utils/functions";
-import { ResponseInput, TypeOf, ValidatorResponse } from "../interfaces";
+import { ResponseInput, ValidatorResponse, TypeOf } from "../interfaces";
 
-export const makeResponse = <T = undefined>({
-  reason,
-  reasons,
-  valid,
-  validated,
-}: ResponseInput<T>): ValidatorResponse<TypeOf<T>> => {
-  if (valid)
+export const makeResponse = <T = undefined>(
+  input: ResponseInput<T>
+): ValidatorResponse<TypeOf<T>> => {
+  if (input.valid) {
+    const { valid, validated } = input;
+
     return { reasons: [], valid, validated } as ValidatorResponse<TypeOf<T>>;
+  }
 
-  if (reasons) reasons = [...toArray(reasons)];
+  let { reason, reasons, valid } = input as any;
+
+  if (reasons) reasons = toArray(reasons);
   else reasons = [];
 
   if (reason) reasons = [...reasons, ...toArray(reason)];
 
-  return { reasons, valid, validated: undefined };
+  return { reasons, valid, validated: undefined } as ValidatorResponse<
+    TypeOf<T>
+  >;
 };
