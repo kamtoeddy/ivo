@@ -525,14 +525,17 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     const sideEffects: StringKey<T>[] = [];
 
     const validations = toUpdate.map(async (prop) => {
-      const value = changes[prop];
+      const value = changes[prop] as Exclude<
+        T[Extract<keyof T, string>],
+        undefined
+      >;
       const isValid = await this.validate(prop, value);
 
       if (!isValid.valid) return error.add(prop, isValid.reasons);
 
       let { validated } = isValid;
 
-      if (isEqual(validated, undefined)) validated = value!;
+      if (isEqual(validated, undefined)) validated = value;
 
       if (isEqual(validated, this.values[prop])) return;
 
