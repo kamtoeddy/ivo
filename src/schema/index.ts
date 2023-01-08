@@ -294,9 +294,11 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     prop: StringKey<T>,
     value: any
   ) => {
-    let { reasons, valid, validated } = await this.validate(prop, value);
+    const isValid = await this.validate(prop, value);
 
-    if (!valid) return error.add(prop, reasons);
+    if (!isValid.valid) return error.add(prop, isValid.reasons);
+
+    let { validated } = isValid;
 
     if (isEqual(validated, undefined)) validated = value;
 
@@ -523,10 +525,15 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     const sideEffects: StringKey<T>[] = [];
 
     const validations = toUpdate.map(async (prop) => {
-      const value = changes[prop];
-      let { reasons, valid, validated } = await this.validate(prop, value);
+      const value = changes[prop] as Exclude<
+        T[Extract<keyof T, string>],
+        undefined
+      >;
+      const isValid = await this.validate(prop, value);
 
-      if (!valid) return error.add(prop, reasons);
+      if (!isValid.valid) return error.add(prop, isValid.reasons);
+
+      let { validated } = isValid;
 
       if (isEqual(validated, undefined)) validated = value;
 
@@ -582,7 +589,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
       this._isConstant(prop) ||
       (!this._isProp(prop) && !this._isSideEffect(prop))
     )
-      return { valid: false, reasons: ["Invalid property"] };
+      return makeResponse<T[K]>({ valid: false, reason: "Invalid property" });
 
     const validator = this._getValidator(prop);
 

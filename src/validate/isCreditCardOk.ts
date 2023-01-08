@@ -3,7 +3,6 @@ import { makeResponse } from "../schema/utils";
 const failResponse = makeResponse({
   reason: "Invalid card number",
   valid: false,
-  validated: undefined,
 });
 
 const isEven = (num: number) => num % 2 === 0;
