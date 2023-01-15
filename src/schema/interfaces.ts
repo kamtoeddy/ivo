@@ -2,11 +2,9 @@ export type TypeOf<T> = Exclude<T, undefined>;
 
 type Setter<K, T> = (ctx: Readonly<T>) => K extends keyof T ? TypeOf<T[K]> : K;
 
-type Promisable<T> = T | Promise<T>;
-
 type AsyncSetter<K, T> = (
   ctx: Readonly<T>
-) => Promisable<K extends keyof T ? TypeOf<T[K]> : K>;
+) => Awaited<K extends keyof T ? TypeOf<T[K]> : K>;
 
 export type StringKey<T> = Extract<keyof T, string>;
 
