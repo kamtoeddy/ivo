@@ -150,6 +150,6 @@ await handleSuccess?.();
   - [onUpdate](./docs/v2.5.10/schema/definition/life-cycles.md#onupdate)
 - [Options](./docs/v2.0.0/schema/definition/index.md#options)
 
-- [Changelog](./docs/v2.6.0/CHANGELOG.md#changelog)
+- [Changelog](./docs/v2.7.0/CHANGELOG.md#changelog)
 
 ## Happy coding! 😎
