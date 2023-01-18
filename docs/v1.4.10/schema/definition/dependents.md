@@ -2,7 +2,7 @@
 
 If set to **`true`**, any external attempt to modify the of the said property will be ignored; making it's value solely modifiable via the life cycle listeners and side effects.
 
-One such property `must` have a [default value or setter](./defaults.md#default-values) and can be used in combination with other rules like [**readonly**](./readonly.md#readonly-properties), [**life cycle listeners**](../life-cycles.md#life-cycle-listeners), **shouldInit**, etc. but **`cannot be required`**.
+One such property `must` have a [default value or setter](./defaults.md#default-values) and can be used in combination with other rules like [**readonly**](./readonly.md#readonly-properties), [**life cycle listeners**](../life-cycles.md#life-cycle-listeners), etc. but **`cannot be required`**.
 
 > Out of the box, dependent is assumed to be **`false`** for every property
 
