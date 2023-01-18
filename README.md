@@ -27,19 +27,16 @@ const { Schema, validate } = require("clean-schema");
 
 const userSchema = new Schema(
   {
-    firstName: {
-      required: true,
-      onChange: onNameChange,
-      validator: validateName,
+    firstName: { required: true, validator: validateName },
+    fullName: {
+      default: "",
+      dependent: true,
+      dependsOn: ["firstName", "lastName"],
+      resolver: generateFullName,
     },
-    fullName: { default: "", dependent: true },
     isBlocked: { default: false, validator: validateBoolean },
     id: { readonly: true, validator: validateId },
-    lastName: {
-      required: true,
-      onChange: [onNameChange],
-      validator: validateName,
-    },
+    lastName: { required: true, validator: validateName },
     lastSeen: { default: "", shouldInit: false },
     password: { required: true, validator: validatePassword },
     role: {
@@ -51,7 +48,7 @@ const userSchema = new Schema(
   { timestamps: true }
 );
 
-function onNameChange(context) {
+function generateFullName(context) {
   const { firstName, lastName } = context;
 
   return { fullName: `${firstName} ${lastName}` };
@@ -128,10 +125,10 @@ await handleSuccess?.();
 - [Defining a schema](./docs/v2.5.12/schema/definition/index.md#defining-a-schema)
   - [constant properties](./docs/v1.5.0/schema/definition/constants.md#constant-properties-v150)
   - [default values](./docs/v1.4.10/schema/definition/defaults.md#default-values)
-  - [dependent properties](./docs/v1.4.10/schema/definition/dependents.md#dependent-properties)
+  - [dependent properties](./docs/v2.7.0/schema/definition/dependents.md#dependent-properties)
   - [readonly properties](./docs/v1.4.10/schema/definition/readonly.md#readonly-properties)
   - [required properties](./docs/v1.5.0/schema/definition/required.md#required-properties)
-  - [side effects](./docs/v2.1.0/schema/definition/side-effects.md#side-effect-properties)
+  - [side effects](./docs/v2.7.0/schema/definition/side-effects.md#side-effect-properties)
   - [validators](./docs/v2.6.0/validate/index.md#validators)
     - [isArrayOk](./docs/v2.6.0/validate/isArrayOk.md)
     - [isBooleanOk](./docs/v2.6.0/validate/isBooleanOk.md)
