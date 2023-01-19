@@ -368,6 +368,28 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             toPass();
           }
         });
+
+        it("should allow a dependent prop to depend on another dependent prop", () => {
+          const toPass = fx({
+            dependentProp1: {
+              default: "",
+              dependent: true,
+              dependsOn: "prop",
+              resolver,
+            },
+            dependentProp2: {
+              default: "",
+              dependent: true,
+              dependsOn: "dependentProp1",
+              resolver,
+            },
+            prop: { default: "" },
+          });
+
+          expectNoFailure(toPass);
+
+          toPass();
+        });
       });
 
       describe("invalid", () => {
