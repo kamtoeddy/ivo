@@ -49,7 +49,6 @@ const constantRules = [
 ];
 const sideEffectRules = [
   "sideEffect",
-  "onChange",
   "onFailure",
   "onSuccess",
   "required",
@@ -744,12 +743,6 @@ export abstract class SchemaCore<T extends ObjectType> {
 
     if (!this._isValidatorOk(prop))
       return { valid, reason: "Invalid validator" };
-
-    if (!this._getListeners(prop, "onChange").length)
-      return {
-        valid,
-        reason: "SideEffects must have at least one onChange listener",
-      };
 
     const hasRequired = this._hasAny(prop, "required");
 
