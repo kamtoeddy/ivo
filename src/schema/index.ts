@@ -117,11 +117,17 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
   private _handleInvalidData = () =>
     this._handleError(new ErrorTool({ message: "Invalid Data" }));
 
-  private _handleRequiredBy = (error: ErrorTool) => {
+  private _handleRequiredBy = (
+    error: ErrorTool,
+    lifeCycle: LifeCycles.LifeCycle
+  ) => {
     for (const prop of this.propsRequiredBy) {
-      const isRequired = this._getValueBy(prop, "required");
+      const isRequired = this._getValueBy(prop, "required", lifeCycle);
       if (isRequired && this._isUpdatable(prop))
-        return error.add(prop, this._getValueBy(prop, "requiredError"));
+        return error.add(
+          prop,
+          this._getValueBy(prop, "requiredError", lifeCycle)
+        );
     }
   };
 
@@ -365,7 +371,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
       if (
         (isLax &&
           this._hasAny(prop, "shouldInit") &&
-          !this._getValueBy(prop, "shouldInit")) ||
+          !this._getValueBy(prop, "shouldInit", "onCreate")) ||
         (!this._isDependentProp(prop) &&
           !isSideEffect &&
           !this._canInit(prop) &&
@@ -385,7 +391,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
 
     await Promise.all(validations);
 
-    this._handleRequiredBy(error);
+    this._handleRequiredBy(error, "onCreate");
 
     if (error.isPayloadLoaded) {
       await this._handleFailure(data, error, sideEffects);
@@ -446,7 +452,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
       if (
         (isLax &&
           this._hasAny(prop, "shouldInit") &&
-          !this._getValueBy(prop, "shouldInit")) ||
+          !this._getValueBy(prop, "shouldInit", "onCreate")) ||
         (!isSideEffect && !this._canInit(prop) && !isLaxInit && !isRequiredInit)
       ) {
         data[prop] = this._getDefaultValue(prop);
@@ -462,7 +468,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
 
     await Promise.all(validations);
 
-    this._handleRequiredBy(error);
+    this._handleRequiredBy(error, "onCreate");
 
     if (error.isPayloadLoaded) {
       await this._handleFailure(data, error, sideEffects);
@@ -553,7 +559,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
 
     await Promise.all(validations);
 
-    this._handleRequiredBy(error);
+    this._handleRequiredBy(error, "onUpdate");
 
     if (error.isPayloadLoaded) {
       await this._handleFailure(updated, error, sideEffects);

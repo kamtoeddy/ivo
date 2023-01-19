@@ -206,12 +206,18 @@ export abstract class SchemaCore<T extends ObjectType> {
   };
 
   protected _getConstantValue = async (prop: string) =>
-    this._getValueBy(prop, "value");
+    this._getValueBy(prop, "value", "onCreate");
 
-  protected _getValueBy = (prop: string, rule: PropDefinitionRule) => {
+  protected _getValueBy = (
+    prop: string,
+    rule: PropDefinitionRule,
+    lifeCycle: LifeCycles.LifeCycle
+  ) => {
     const _default = this._getDefinition(prop)?.[rule];
 
-    return this._isFunction(_default) ? _default(this._getContext()) : _default;
+    return this._isFunction(_default)
+      ? _default(this._getContext(), lifeCycle)
+      : _default;
   };
 
   protected _getDetailedListeners = (
@@ -488,7 +494,7 @@ export abstract class SchemaCore<T extends ObjectType> {
 
     if (valid && !this._isSideEffect(prop)) {
       this.props.push(prop as StringKey<T>);
-      this._setDefaultOf(prop as StringKey<T>);
+      this._setDefaultOf(prop as StringKey<T>, "onCreate");
     }
 
     return { reasons, valid };
@@ -842,8 +848,11 @@ export abstract class SchemaCore<T extends ObjectType> {
     return { ...options, timestamps: { createdAt, updatedAt } };
   }
 
-  private _setDefaultOf = (prop: StringKey<T>) => {
-    const _default = this._getValueBy(prop, "default");
+  private _setDefaultOf = (
+    prop: StringKey<T>,
+    lifeCycle: LifeCycles.LifeCycle
+  ) => {
+    const _default = this._getValueBy(prop, "default", lifeCycle);
 
     if (!isEqual(_default, undefined)) this.defaults[prop] = _default;
   };
