@@ -259,10 +259,12 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           const rules = [
             "default",
             "dependent",
+            "dependsOn",
             "onChange",
             "onFailure",
             "onUpdate",
             "readonly",
+            "resolver",
             "required",
             "sideEffect",
             "shouldInit",
@@ -299,7 +301,12 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
           for (const value of values) {
             const toPass = fx({
-              propertyName: { default: value, dependent: true },
+              dependentProp: {
+                default: value,
+                dependent: true,
+                dependsOn: "prop",
+              },
+              prop: { default: "" },
             });
 
             expectNoFailure(toPass);
@@ -315,11 +322,13 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           for (const lifeCycle of lifeCycles) {
             for (const value of values) {
               const toPass = fx({
-                propertyName: {
+                dependentProp: {
                   default: value,
                   dependent: true,
+                  dependsOn: "prop",
                   [lifeCycle]: value,
                 },
+                prop: { default: "" },
               });
 
               expectNoFailure(toPass);
@@ -328,111 +337,155 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             }
           }
         });
-
-        it("should accept validator", () => {
-          const toPass = fx({
-            propertyName: { default: "", dependent: true, validator },
-          });
-
-          expectNoFailure(toPass);
-
-          toPass();
-        });
       });
 
-      // describe("invalid", () => {
-      //   it("should reject dependent & no default", () => {
-      //     const toFail = fx({ propertyName: { dependent: true } });
+      describe("invalid", () => {
+        it("should reject dependent + dependsOn & no default", () => {
+          const toFail = fx({
+            dependentProp: { dependent: true, dependsOn: "prop" },
+            prop: { default: "" },
+          });
 
-      //     expectFailure(toFail);
+          expectFailure(toFail);
 
-      //     try {
-      //       toFail();
-      //     } catch (err: any) {
-      //       expect(err.payload).toEqual(
-      //         expect.objectContaining({
-      //           propertyName: expect.arrayContaining([
-      //             "Dependent properties must have a default value",
-      //           ]),
-      //         })
-      //       );
-      //     }
-      //   });
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toEqual(
+              expect.objectContaining({
+                dependentProp: expect.arrayContaining([
+                  "Dependent properties must have a default value",
+                ]),
+              })
+            );
+          }
+        });
 
-      //   it("should reject dependent & shouldInit", () => {
-      //     const values = [false, true];
+        it("should reject dependent + default & no dependsOn", () => {
+          const toFail = fx({ propertyName: { dependent: true, default: "" } });
 
-      //     for (const shouldInit of values) {
-      //       const toFail = fx({
-      //         propertyName: { default: "", dependent: true, shouldInit },
-      //       });
+          expectFailure(toFail);
 
-      //       expectFailure(toFail);
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toEqual(
+              expect.objectContaining({
+                propertyName: expect.arrayContaining([
+                  "Dependent properties must depend on atleast one property",
+                ]),
+              })
+            );
+          }
+        });
 
-      //       try {
-      //         toFail();
-      //       } catch (err: any) {
-      //         expect(err.payload).toEqual(
-      //           expect.objectContaining({
-      //             propertyName: expect.arrayContaining([
-      //               "Dependent properties cannot have shouldInit rule",
-      //             ]),
-      //           })
-      //         );
-      //       }
-      //     }
-      //   });
+        it("should reject dependent & shouldInit", () => {
+          const values = [false, true];
 
-      //   it("should reject dependent & readonly(lax)", () => {
-      //     const toFail = fx({
-      //       propertyName: {
-      //         default: "",
-      //         dependent: true,
-      //         readonly: "lax",
-      //         validator,
-      //       },
-      //     });
+          for (const shouldInit of values) {
+            const toFail = fx({
+              dependentProp: { dependent: true, dependsOn: "prop", shouldInit },
+              prop: { default: "" },
+            });
 
-      //     expectFailure(toFail);
+            expectFailure(toFail);
 
-      //     try {
-      //       toFail();
-      //     } catch (err: any) {
-      //       expect(err.payload).toEqual(
-      //         expect.objectContaining({
-      //           propertyName: expect.arrayContaining([
-      //             "Dependent properties cannot be readonly 'lax'",
-      //           ]),
-      //         })
-      //       );
-      //     }
-      //   });
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err.payload).toEqual(
+                expect.objectContaining({
+                  dependentProp: expect.arrayContaining([
+                    "Dependent properties cannot have shouldInit rule",
+                  ]),
+                })
+              );
+            }
+          }
+        });
 
-      //   it("should reject dependent & required", () => {
-      //     const toFail = fx({
-      //       propertyName: {
-      //         default: "",
-      //         dependent: true,
-      //         required: true,
-      //         validator,
-      //       },
-      //     });
+        it("should reject dependent & readonly(lax)", () => {
+          const toFail = fx({
+            dependentProp: {
+              default: "",
+              dependent: true,
+              dependsOn: "prop",
+              readonly: "lax",
+            },
+            prop: { default: "" },
+          });
 
-      //     expectFailure(toFail);
+          expectFailure(toFail);
 
-      //     try {
-      //       toFail();
-      //     } catch (err: any) {
-      //       expect(err.payload).toEqual(
-      //         expect.objectContaining({
-      //           propertyName: expect.arrayContaining([
-      //             "Dependent properties cannot be strictly required",
-      //           ]),
-      //         })
-      //       );
-      //     }
-      //   });
-      // });
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toEqual(
+              expect.objectContaining({
+                dependentProp: expect.arrayContaining([
+                  "Dependent properties cannot be readonly 'lax'",
+                ]),
+              })
+            );
+          }
+        });
+
+        // it("should reject dependent & validator", () => {
+        //   const values = [null, "", 1, true, false, undefined, validator];
+
+        //   for (const validator of values) {
+        //     const toFail = fx({
+        //       dependentProp: {
+        //         default: "",
+        //         dependent: true,
+        //         dependsOn: "prop",
+        //         validator,
+        //       },
+        //       prop: { default: "" },
+        //     });
+
+        //     expectFailure(toFail);
+
+        //     try {
+        //       toFail();
+        //     } catch (err: any) {
+        //       expect(err.payload).toEqual(
+        //         expect.objectContaining({
+        //           propertyName: expect.arrayContaining([
+        //             "Dependent properties cannot be validated",
+        //           ]),
+        //         })
+        //       );
+        //     }
+        //   }
+        // });
+
+        it("should reject dependent & required", () => {
+          const toFail = fx({
+            dependentProp: {
+              default: "",
+              dependent: true,
+              dependsOn: "prop",
+              required: true,
+            },
+            prop: { default: "" },
+          });
+
+          expectFailure(toFail);
+
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toEqual(
+              expect.objectContaining({
+                dependentProp: expect.arrayContaining([
+                  "Dependent properties cannot be strictly required",
+                ]),
+              })
+            );
+          }
+        });
+      });
     });
 
     describe("lax props", () => {
@@ -460,8 +513,12 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
           for (const onChange of values) {
             const toPass = fx({
-              dependent: { default: "", dependent: true },
-              propertyName: { default: "", onChange },
+              dependentProp: {
+                default: "",
+                dependent: true,
+                dependsOn: "prop",
+              },
+              prop: { default: "", onChange },
             });
 
             expectNoFailure(toPass);
@@ -475,8 +532,12 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
           for (const onCreate of values) {
             const toPass = fx({
-              dependent: { default: "", dependent: true },
-              propertyName: { default: "", onCreate },
+              dependentProp: {
+                default: "",
+                dependent: true,
+                dependsOn: "prop",
+              },
+              prop: { default: "", onCreate },
             });
 
             expectNoFailure(toPass);
@@ -490,8 +551,12 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
           for (const onUpdate of values) {
             const toPass = fx({
-              dependent: { default: "", dependent: true },
-              propertyName: { default: "", onUpdate },
+              dependentProp: {
+                default: "value",
+                dependent: true,
+                dependsOn: "prop",
+              },
+              prop: { default: "", onUpdate },
             });
 
             expectNoFailure(toPass);
@@ -974,6 +1039,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             dependent: {
               default: "",
               dependent: true,
+              dependsOn: "readonly",
               onSuccess: onSuccess("dependent"),
             },
             lax: { default: "", onSuccess: onSuccess("lax"), validator },
@@ -1071,7 +1137,13 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
       describe("valid", () => {
         it("should allow readonly(true) + dependent + default", () => {
           const toPass = fx({
-            propertyName: { readonly: true, dependent: true, default: "" },
+            dependentProp: {
+              default: "value",
+              dependent: true,
+              dependsOn: "prop",
+              readonly: true,
+            },
+            prop: { default: "" },
           });
 
           expectNoFailure(toPass);
@@ -1173,7 +1245,12 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
         it("should reject readonly(true) + dependent & no default", () => {
           const toFail = fx({
-            propertyName: { readonly: true, dependent: true },
+            dependentProp: {
+              dependent: true,
+              default: "",
+              dependsOn: "prop",
+            },
+            prop: { default: "" },
           });
 
           expectFailure(toFail);
@@ -1183,7 +1260,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           } catch (err: any) {
             expect(err.payload).toEqual(
               expect.objectContaining({
-                propertyName: expect.arrayContaining([
+                dependentProp: expect.arrayContaining([
                   "Dependent properties must have a default value",
                 ]),
               })
@@ -1193,7 +1270,13 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
         it("should reject readonly(lax) + dependent", () => {
           const toFail = fx({
-            propertyName: { default: "", readonly: "lax", dependent: true },
+            dependentProp: {
+              dependent: true,
+              default: "",
+              dependsOn: "prop",
+              readonly: "lax",
+            },
+            prop: { default: "" },
           });
 
           expectFailure(toFail);
@@ -1203,7 +1286,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           } catch (err: any) {
             expect(err.payload).toEqual(
               expect.objectContaining({
-                propertyName: expect.arrayContaining([
+                dependentProp: expect.arrayContaining([
                   "Readonly(lax) properties cannot be dependent",
                 ]),
               })
@@ -1332,7 +1415,12 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
           for (const dependent of values) {
             const toFail = fx({
-              propertyName: { dependent, required: true, validator },
+              dependentProp: {
+                dependent,
+                default: "",
+                dependsOn: "prop",
+              },
+              prop: { default: "" },
             });
 
             expectFailure(toFail);
@@ -1342,7 +1430,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             } catch (err: any) {
               expect(err.payload).toMatchObject(
                 expect.objectContaining({
-                  propertyName: expect.arrayContaining([
+                  dependentProp: expect.arrayContaining([
                     "Required properties cannot be dependent",
                   ]),
                 })
@@ -1797,13 +1885,15 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
         it("should reject requiredBy + default & dependent(true)", () => {
           const toFail = fx({
-            propertyName: {
-              default: "",
+            dependentProp: {
+              default: "value",
               dependent: true,
+              dependsOn: "prop",
               required: () => true,
               requiredError: "",
               validator,
             },
+            prop: { default: "" },
           });
 
           expectFailure(toFail);
@@ -1813,7 +1903,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           } catch (err: any) {
             expect(err.payload).toMatchObject(
               expect.objectContaining({
-                propertyName: expect.arrayContaining([
+                dependentProp: expect.arrayContaining([
                   "Required properties cannot be dependent",
                 ]),
               })
@@ -1959,33 +2049,30 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               dependentSideNoInit: {
                 default: "",
                 dependent: true,
+                dependsOn: "sideNoInit",
+                resolver: () => "changed",
               },
               dependentSideInit: {
                 default: false,
                 dependent: true,
-                validator: validateBoolean,
+                dependsOn: "sideInit",
+                resolver: (ctx: any) => (ctx.sideInit ? true : false),
               },
               name: { default: "" },
               sideInit: {
                 sideEffect: true,
-                onChange: onSideInitChange,
                 onSuccess: onSuccess("sideInit"),
                 validator: validateBoolean,
               },
               sideNoInit: {
                 sideEffect: true,
                 shouldInit: false,
-                onChange: () => ({ dependentSideNoInit: "changed" }),
                 onSuccess: onSuccess("sideNoInit"),
                 validator: validateBoolean,
               },
             },
             { errors: "throw" }
           ).getModel();
-
-          function onSideInitChange({ sideInit }: any) {
-            return { dependentSideInit: sideInit ? true : false };
-          }
 
           function onSuccess(prop: keyof typeof defaultMap) {
             return (ctx: any) =>
@@ -2197,11 +2284,15 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
           beforeAll(() => {
             RequiredSideEffect = new Schema({
-              dependent: { default: "", dependent: true },
+              dependent: {
+                default: "",
+                dependent: true,
+                dependsOn: "sideEffect",
+                resolver: (ctx: any) => ctx.sideEffect,
+              },
               laxProp: { default: "" },
               sideEffect: {
                 sideEffect: true,
-                onChange,
                 required: ({ sideEffect, dependent }: any) => {
                   return dependent === "" && sideEffect === undefined;
                 },
@@ -2209,10 +2300,6 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 validator,
               },
             }).getModel();
-
-            function onChange({ sideEffect }: any) {
-              return { dependent: sideEffect };
-            }
           });
 
           // creation
@@ -2409,10 +2496,12 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             "constant",
             "default",
             "dependent",
+            "dependsOn",
             "onCreate",
             "onDelete",
             "onUpdate",
             "readonly",
+            "resolver",
             "value",
           ];
 

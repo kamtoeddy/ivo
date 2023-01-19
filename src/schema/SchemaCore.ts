@@ -326,6 +326,7 @@ export abstract class SchemaCore<T extends ObjectType> {
     const {
       default: _default,
       dependent,
+      dependsOn,
       sideEffect,
       shouldInit,
       readonly,
@@ -345,6 +346,15 @@ export abstract class SchemaCore<T extends ObjectType> {
         valid,
         reason: "Dependent properties must have a default value",
       };
+
+    if (isEqual(dependsOn, undefined) || !dependsOn?.length)
+      return {
+        valid,
+        reason: "Dependent properties must depend on atleast one property",
+      };
+
+    if (toArray(dependsOn).includes(prop))
+      return { valid, reason: "A property cannot depend on itself" };
 
     if (!isEqual(required, undefined) && typeof required !== "function")
       return {
