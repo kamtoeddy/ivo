@@ -108,27 +108,19 @@ export namespace Schema {
 
   type SideEffect<K extends keyof T, T> = {
     sideEffect: true;
-    onChange:
-      | LifeCycles.ChangeListener<T>
-      | NonEmptyArray<LifeCycles.ChangeListener<T>>;
     onFailure?:
       | LifeCycles.VoidListener<T>
       | NonEmptyArray<LifeCycles.VoidListener<T>>;
+    onSuccess?:
+      | LifeCycles.SuccessListener<T>
+      | NonEmptyArray<LifeCycles.SuccessListener<T>>;
     shouldInit?: false | Setter<boolean, T>;
     validator: Validator<K, T>;
   };
 
-  type RequiredSideEffect<K extends keyof T, T> = {
-    sideEffect: true;
-    onChange:
-      | LifeCycles.ChangeListener<T>
-      | NonEmptyArray<LifeCycles.ChangeListener<T>>;
-    onFailure?:
-      | LifeCycles.VoidListener<T>
-      | NonEmptyArray<LifeCycles.VoidListener<T>>;
+  type RequiredSideEffect<K extends keyof T, T> = SideEffect<K, T> & {
     required: Setter<boolean, T>;
     requiredError: string | Setter<string, T>;
-    validator: Validator<K, T>;
   };
 
   // options
