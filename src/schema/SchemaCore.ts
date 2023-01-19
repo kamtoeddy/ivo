@@ -75,6 +75,7 @@ export abstract class SchemaCore<T extends ObjectType> {
   protected finalContext: T = {} as T;
   protected defaults: Partial<T> = {};
   protected values: Partial<T> = {};
+  protected dependencyMap: ns.DependencyMap<T> = {};
 
   // props
   protected constants: StringKey<T>[] = [];
@@ -129,6 +130,21 @@ export abstract class SchemaCore<T extends ObjectType> {
   protected _updateFinalContext = (updates: Partial<T>) => {
     this.finalContext = { ...this.finalContext, ...updates };
   };
+
+  // dependency map utils
+  private _addDependencies = (
+    prop: StringKey<T>,
+    dependsOn: StringKey<T> | StringKey<T>[]
+  ) => {
+    const _dependsOn = toArray(dependsOn) as StringKey<T>[];
+
+    for (let _prop of _dependsOn)
+      if (this.dependencyMap[_prop]) this.dependencyMap[_prop]?.push(prop);
+      else this.dependencyMap[_prop] = [prop];
+  };
+
+  private _getDependencies = (prop: StringKey<T>) =>
+    this.dependencyMap[prop] ?? [];
 
   protected _canInit = (prop: string) => {
     if (this._isDependentProp(prop)) return false;

@@ -1,3 +1,5 @@
+import { ObjectType } from "../utils/interfaces";
+
 export type TypeOf<T> = Exclude<T, undefined>;
 
 type Setter<K, T> = (
@@ -42,6 +44,10 @@ export namespace Schema {
       validator?: Function;
       value?: any;
     };
+  };
+
+  export type DependencyMap<T extends ObjectType> = {
+    [K in StringKey<T>]?: StringKey<T>[];
   };
 
   type Listenable<T> = {
