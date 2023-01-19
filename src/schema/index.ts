@@ -593,6 +593,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
   validate = async <K extends StringKey<T>>(prop: K, value: any) => {
     if (
       this._isConstant(prop) ||
+      this._isDependentProp(prop) ||
       (!this._isProp(prop) && !this._isSideEffect(prop))
     )
       return makeResponse<T[K]>({ valid: false, reason: "Invalid property" });
