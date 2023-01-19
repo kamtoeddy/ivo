@@ -418,6 +418,35 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           }
         });
 
+        it("should not allow property to depend on a constant property", () => {
+          const toFail = fx({
+            constantProp: {
+              constant: true,
+              value: "",
+            },
+            dependentProp: {
+              dependent: true,
+              default: "",
+              dependsOn: "constantProp",
+              resolver,
+            },
+          });
+
+          expectFailure(toFail);
+
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toMatchObject(
+              expect.objectContaining({
+                dependentProp: expect.arrayContaining([
+                  "A property cannot depend on a constant property",
+                ]),
+              })
+            );
+          }
+        });
+
         it("should reject dependent + missing default", () => {
           const toFail = fx({ dependentProp: { dependent: true } });
 

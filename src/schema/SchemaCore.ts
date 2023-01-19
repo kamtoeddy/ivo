@@ -226,6 +226,11 @@ export abstract class SchemaCore<T extends ObjectType> {
 
       if (_dependsOn.includes(prop))
         error.add(prop, "A property cannot depend on itself");
+
+      const dependsOnConstantProp = _dependsOn.some(this._isConstant);
+
+      if (dependsOnConstantProp)
+        error.add(prop, "A property cannot depend on a constant property");
     }
 
     if (error.isPayloadLoaded) error.throw();
