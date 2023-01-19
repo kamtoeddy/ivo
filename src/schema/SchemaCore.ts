@@ -207,6 +207,16 @@ export abstract class SchemaCore<T extends ObjectType> {
       if (!isDefOk.valid) error.add(prop, isDefOk.reasons!);
     }
 
+    for (let prop of this.sideEffects) {
+      const dependencies = this._getDependencies(prop);
+
+      if (!dependencies.length)
+        error.add(
+          prop,
+          "A side effect must have atleast one property that depends on it"
+        );
+    }
+
     if (error.isPayloadLoaded) error.throw();
   };
 

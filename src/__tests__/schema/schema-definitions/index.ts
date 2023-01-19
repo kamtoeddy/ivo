@@ -2189,6 +2189,12 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
         it("should allow onChange", () => {
           const toPass = fx({
+            dependentProp: {
+              default: "",
+              dependent: true,
+              dependsOn: "propertyName",
+              resolver: () => "",
+            },
             propertyName: { sideEffect: true, validator },
           });
 
@@ -2199,6 +2205,12 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
         it("should allow onFailure", () => {
           const toPass = fx({
+            dependentProp: {
+              default: "",
+              dependent: true,
+              dependsOn: "propertyName",
+              resolver: () => "",
+            },
             propertyName: {
               sideEffect: true,
               onFailure: validator,
@@ -2213,6 +2225,12 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
         it("should allow requiredBy + requiredError", () => {
           const toPass = fx({
+            dependentProp: {
+              default: "",
+              dependent: true,
+              dependsOn: "propertyName",
+              resolver: () => "",
+            },
             propertyName: {
               sideEffect: true,
               required: () => true,
@@ -2228,6 +2246,12 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
         it("should allow shouldInit(false) + validator", () => {
           const toPass = fx({
+            dependentProp: {
+              default: "",
+              dependent: true,
+              dependsOn: "propertyName",
+              resolver: () => "",
+            },
             propertyName: { sideEffect: true, shouldInit: false, validator },
           });
 
@@ -2241,6 +2265,12 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
           for (const onSuccess of values) {
             const toPass = fx({
+              dependentProp: {
+                default: "",
+                dependent: true,
+                dependsOn: "propertyName",
+                resolver: () => "",
+              },
               propertyName: { sideEffect: true, onSuccess, validator },
             });
 
@@ -2448,8 +2478,34 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
       });
 
       describe("invalid", () => {
+        it("should reject sideEffect & no dependent property ", () => {
+          const toFail = fx({
+            propertyName: { sideEffect: true, validator },
+          });
+
+          expectFailure(toFail);
+
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toEqual(
+              expect.objectContaining({
+                propertyName: [
+                  "A side effect must have atleast one property that depends on it",
+                ],
+              })
+            );
+          }
+        });
+
         it("should reject sideEffect & no validator ", () => {
           const toFail = fx({
+            dependentProp: {
+              default: "",
+              dependent: true,
+              dependsOn: "propertyName",
+              resolver: () => "",
+            },
             propertyName: { sideEffect: true },
           });
 
@@ -2471,6 +2527,12 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
           for (const shouldInit of values) {
             const toFail = fx({
+              dependentProp: {
+                default: "",
+                dependent: true,
+                dependsOn: "propertyName",
+                resolver: () => "",
+              },
               propertyName: { sideEffect: true, shouldInit, validator },
             });
 
@@ -2492,6 +2554,12 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
         it("should reject requiredBy + shouldInit", () => {
           const toFail = fx({
+            dependentProp: {
+              default: "",
+              dependent: true,
+              dependsOn: "propertyName",
+              resolver: () => "",
+            },
             propertyName: {
               sideEffect: true,
               shouldInit: false,
@@ -2518,6 +2586,12 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
         it("should reject required(true)", () => {
           const toFail = fx({
+            dependentProp: {
+              default: "",
+              dependent: true,
+              dependsOn: "propertyName",
+              resolver: () => "",
+            },
             propertyName: {
               sideEffect: true,
               required: true,
@@ -2557,6 +2631,12 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
           for (const rule of values) {
             const toFail = fx({
+              dependentProp: {
+                default: "",
+                dependent: true,
+                dependsOn: "propertyName",
+                resolver: () => "",
+              },
               propertyName: {
                 sideEffect: true,
                 [rule]: true,
