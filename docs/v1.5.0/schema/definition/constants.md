@@ -10,17 +10,11 @@ Example:
 const { Schema } = require("clean-schema");
 
 const userSchema = new Schema({
-  dateJoined: {
-    constant: true,
-    value: () => new Date(),
-  },
+  dateJoined: { constant: true, value: () => new Date() },
   id: {
     constant: true,
     value: (ctx) => `${ctx.userName}-${Date.now}`,
   },
-  userName: {
-    required: true,
-    validator: validateUserName,
-  },
+  userName: { required: true, validator: validateUserName },
 });
 ```
