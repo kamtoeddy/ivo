@@ -207,6 +207,7 @@ export abstract class SchemaCore<T extends ObjectType> {
       if (!isDefOk.valid) error.add(prop, isDefOk.reasons!);
     }
 
+    // make sure every side effect has atleast one dependency
     for (let prop of this.sideEffects) {
       const dependencies = this._getDependencies(prop);
 
@@ -215,6 +216,16 @@ export abstract class SchemaCore<T extends ObjectType> {
           prop,
           "A side effect must have atleast one property that depends on it"
         );
+    }
+
+    // make sure every side effect has atleast one dependency
+    for (let prop of this.dependents) {
+      const { dependsOn } = this._getDefinition(prop);
+
+      const _dependsOn = toArray(dependsOn);
+
+      if (_dependsOn.includes(prop))
+        error.add(prop, "A property cannot depend on itself");
     }
 
     if (error.isPayloadLoaded) error.throw();

@@ -371,6 +371,31 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
       });
 
       describe("invalid", () => {
+        it("should not allow property to depend on itself", () => {
+          const toFail = fx({
+            dependentProp: {
+              dependent: true,
+              default: "",
+              dependsOn: "dependentProp",
+              resolver,
+            },
+          });
+
+          expectFailure(toFail);
+
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toMatchObject(
+              expect.objectContaining({
+                dependentProp: expect.arrayContaining([
+                  "A property cannot depend on itself",
+                ]),
+              })
+            );
+          }
+        });
+
         it("should reject dependent + missing default", () => {
           const toFail = fx({ dependentProp: { dependent: true } });
 
