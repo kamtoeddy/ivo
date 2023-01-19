@@ -409,6 +409,7 @@ export abstract class SchemaCore<T extends ObjectType> {
       return { valid, reason: "Dependent properties cannot be sideEffect" };
 
     this.dependents.push(prop as StringKey<T>);
+    this._addDependencies(prop as StringKey<T>, dependsOn);
 
     return { valid: true };
   };
