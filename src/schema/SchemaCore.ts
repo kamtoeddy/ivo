@@ -330,6 +330,7 @@ export abstract class SchemaCore<T extends ObjectType> {
       sideEffect,
       shouldInit,
       readonly,
+      resolver,
       required,
     } = this._getDefinition(prop);
 
@@ -355,6 +356,18 @@ export abstract class SchemaCore<T extends ObjectType> {
 
     if (toArray(dependsOn).includes(prop))
       return { valid, reason: "A property cannot depend on itself" };
+
+    if (isEqual(resolver, undefined))
+      return {
+        valid,
+        reason: "Dependent properties must have a resolver",
+      };
+
+    if (!this._isFunction(resolver))
+      return {
+        valid,
+        reason: "The resolver of a dependent property must be a function",
+      };
 
     if (!isEqual(required, undefined) && typeof required !== "function")
       return {
