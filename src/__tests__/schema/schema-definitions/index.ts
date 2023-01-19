@@ -337,6 +337,28 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             }
           }
         });
+
+        it("should accept dependsOn", () => {
+          const values = [
+            "prop",
+            ["prop", "prop1"],
+            ["prop", "prop1", "prop2", "prop3"],
+          ];
+
+          for (const dependsOn of values) {
+            const toPass = fx({
+              dependentProp: { default: "", dependent: true, dependsOn },
+              prop: { default: "" },
+              prop1: { default: "" },
+              prop2: { default: "" },
+              prop3: { default: "" },
+            });
+
+            expectNoFailure(toPass);
+
+            toPass();
+          }
+        });
       });
 
       describe("invalid", () => {
