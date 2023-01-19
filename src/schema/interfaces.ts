@@ -29,6 +29,7 @@ export namespace Schema {
       default?: any;
       dependent?: boolean;
       readonly?: boolean | "lax";
+      resolver?: Function;
       required?: boolean | Function;
       requiredError?: string | Function;
       sideEffect?: boolean;
@@ -64,8 +65,11 @@ export namespace Schema {
   type Dependent<K extends keyof T, T> = Listenable<T> & {
     default: TypeOf<T[K]> | Setter<K, T>;
     dependent: true;
+    dependsOn:
+      | Exclude<StringKey<T>, K>
+      | NonEmptyArray<Exclude<StringKey<T>, K>>;
     readonly?: true;
-    validator?: Validator<K, T>;
+    resolver: Setter<K, T> | AsyncSetter<K, T>;
   };
 
   type Property<K extends keyof T, T> = Listenable<T> & {

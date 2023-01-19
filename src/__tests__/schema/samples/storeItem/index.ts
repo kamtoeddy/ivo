@@ -15,8 +15,10 @@ const storeItemSchema = new Schema<IStoreItem>(
   {
     _dependentReadOnly: {
       default: () => 0,
+      dependsOn: "_sideEffectForDependentReadOnly",
       readonly: true,
       dependent: true,
+      resolver: () => 1,
     },
     _laxProp: { default: "", validator: validateString("Invalid lax prop") },
     _readOnlyLax1: { default: "", readonly: "lax" },

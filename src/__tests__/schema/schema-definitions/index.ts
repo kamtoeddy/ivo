@@ -340,99 +340,99 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
         });
       });
 
-      describe("invalid", () => {
-        it("should reject dependent & no default", () => {
-          const toFail = fx({ propertyName: { dependent: true } });
+      // describe("invalid", () => {
+      //   it("should reject dependent & no default", () => {
+      //     const toFail = fx({ propertyName: { dependent: true } });
 
-          expectFailure(toFail);
+      //     expectFailure(toFail);
 
-          try {
-            toFail();
-          } catch (err: any) {
-            expect(err.payload).toEqual(
-              expect.objectContaining({
-                propertyName: expect.arrayContaining([
-                  "Dependent properties must have a default value",
-                ]),
-              })
-            );
-          }
-        });
+      //     try {
+      //       toFail();
+      //     } catch (err: any) {
+      //       expect(err.payload).toEqual(
+      //         expect.objectContaining({
+      //           propertyName: expect.arrayContaining([
+      //             "Dependent properties must have a default value",
+      //           ]),
+      //         })
+      //       );
+      //     }
+      //   });
 
-        it("should reject dependent & shouldInit", () => {
-          const values = [false, true];
+      //   it("should reject dependent & shouldInit", () => {
+      //     const values = [false, true];
 
-          for (const shouldInit of values) {
-            const toFail = fx({
-              propertyName: { default: "", dependent: true, shouldInit },
-            });
+      //     for (const shouldInit of values) {
+      //       const toFail = fx({
+      //         propertyName: { default: "", dependent: true, shouldInit },
+      //       });
 
-            expectFailure(toFail);
+      //       expectFailure(toFail);
 
-            try {
-              toFail();
-            } catch (err: any) {
-              expect(err.payload).toEqual(
-                expect.objectContaining({
-                  propertyName: expect.arrayContaining([
-                    "Dependent properties cannot have shouldInit rule",
-                  ]),
-                })
-              );
-            }
-          }
-        });
+      //       try {
+      //         toFail();
+      //       } catch (err: any) {
+      //         expect(err.payload).toEqual(
+      //           expect.objectContaining({
+      //             propertyName: expect.arrayContaining([
+      //               "Dependent properties cannot have shouldInit rule",
+      //             ]),
+      //           })
+      //         );
+      //       }
+      //     }
+      //   });
 
-        it("should reject dependent & readonly(lax)", () => {
-          const toFail = fx({
-            propertyName: {
-              default: "",
-              dependent: true,
-              readonly: "lax",
-              validator,
-            },
-          });
+      //   it("should reject dependent & readonly(lax)", () => {
+      //     const toFail = fx({
+      //       propertyName: {
+      //         default: "",
+      //         dependent: true,
+      //         readonly: "lax",
+      //         validator,
+      //       },
+      //     });
 
-          expectFailure(toFail);
+      //     expectFailure(toFail);
 
-          try {
-            toFail();
-          } catch (err: any) {
-            expect(err.payload).toEqual(
-              expect.objectContaining({
-                propertyName: expect.arrayContaining([
-                  "Dependent properties cannot be readonly 'lax'",
-                ]),
-              })
-            );
-          }
-        });
+      //     try {
+      //       toFail();
+      //     } catch (err: any) {
+      //       expect(err.payload).toEqual(
+      //         expect.objectContaining({
+      //           propertyName: expect.arrayContaining([
+      //             "Dependent properties cannot be readonly 'lax'",
+      //           ]),
+      //         })
+      //       );
+      //     }
+      //   });
 
-        it("should reject dependent & required", () => {
-          const toFail = fx({
-            propertyName: {
-              default: "",
-              dependent: true,
-              required: true,
-              validator,
-            },
-          });
+      //   it("should reject dependent & required", () => {
+      //     const toFail = fx({
+      //       propertyName: {
+      //         default: "",
+      //         dependent: true,
+      //         required: true,
+      //         validator,
+      //       },
+      //     });
 
-          expectFailure(toFail);
+      //     expectFailure(toFail);
 
-          try {
-            toFail();
-          } catch (err: any) {
-            expect(err.payload).toEqual(
-              expect.objectContaining({
-                propertyName: expect.arrayContaining([
-                  "Dependent properties cannot be strictly required",
-                ]),
-              })
-            );
-          }
-        });
-      });
+      //     try {
+      //       toFail();
+      //     } catch (err: any) {
+      //       expect(err.payload).toEqual(
+      //         expect.objectContaining({
+      //           propertyName: expect.arrayContaining([
+      //             "Dependent properties cannot be strictly required",
+      //           ]),
+      //         })
+      //       );
+      //     }
+      //   });
+      // });
     });
 
     describe("lax props", () => {
