@@ -488,35 +488,36 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           }
         });
 
-        // it("should reject dependent & validator", () => {
-        //   const values = [null, "", 1, true, false, undefined, validator];
+        it("should reject dependent & validator", () => {
+          const values = [null, "", 1, true, false, validator];
 
-        //   for (const validator of values) {
-        //     const toFail = fx({
-        //       dependentProp: {
-        //         default: "",
-        //         dependent: true,
-        //         dependsOn: "prop",
-        //         validator,
-        //       },
-        //       prop: { default: "" },
-        //     });
+          for (const validator of values) {
+            const toFail = fx({
+              dependentProp: {
+                default: "",
+                dependent: true,
+                dependsOn: "prop",
+                resolver,
+                validator,
+              },
+              prop: { default: "" },
+            });
 
-        //     expectFailure(toFail);
+            expectFailure(toFail);
 
-        //     try {
-        //       toFail();
-        //     } catch (err: any) {
-        //       expect(err.payload).toEqual(
-        //         expect.objectContaining({
-        //           propertyName: expect.arrayContaining([
-        //             "Dependent properties cannot be validated",
-        //           ]),
-        //         })
-        //       );
-        //     }
-        //   }
-        // });
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err.payload).toMatchObject(
+                expect.objectContaining({
+                  dependentProp: expect.arrayContaining([
+                    "Dependent properties cannot be validated",
+                  ]),
+                })
+              );
+            }
+          }
+        });
 
         it("should reject dependent & required", () => {
           const toFail = fx({

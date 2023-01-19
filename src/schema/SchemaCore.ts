@@ -369,6 +369,12 @@ export abstract class SchemaCore<T extends ObjectType> {
         reason: "The resolver of a dependent property must be a function",
       };
 
+    if (this._hasAny(prop, "validator"))
+      return {
+        valid,
+        reason: "Dependent properties cannot be validated",
+      };
+
     if (!isEqual(required, undefined) && typeof required !== "function")
       return {
         valid,
@@ -384,7 +390,7 @@ export abstract class SchemaCore<T extends ObjectType> {
         reason: "Dependent properties cannot have shouldInit rule",
       };
 
-    if (sideEffect)
+    if (this._hasAny(prop, "sideEffect"))
       return { valid, reason: "Dependent properties cannot be sideEffect" };
 
     this.dependents.push(prop as StringKey<T>);
