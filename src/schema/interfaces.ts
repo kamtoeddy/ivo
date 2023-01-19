@@ -32,6 +32,7 @@ export namespace Schema {
       constant?: any;
       default?: any;
       dependent?: boolean;
+      dependsOn?: StringKey<T> | NonEmptyArray<StringKey<T>>;
       readonly?: boolean | "lax";
       resolver?: Function;
       required?: boolean | Function;
@@ -192,6 +193,7 @@ export type PropDefinitionRule =
   | "constant"
   | "default"
   | "dependent"
+  | "dependsOn"
   | "onChange"
   | "onCreate"
   | "onDelete"
@@ -199,6 +201,7 @@ export type PropDefinitionRule =
   | "onSuccess"
   | "onUpdate"
   | "readonly"
+  | "resolver"
   | "required"
   | "requiredError"
   | "sideEffect"
