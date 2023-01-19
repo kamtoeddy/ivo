@@ -545,6 +545,27 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             );
           }
         });
+
+        it("should reject no dependent + dependsOn or resolver", () => {
+          const toFail = fx({
+            dependentProp: { default: "", dependsOn: "prop", resolver },
+            prop: { default: "" },
+          });
+
+          expectFailure(toFail);
+
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toMatchObject(
+              expect.objectContaining({
+                dependentProp: expect.arrayContaining([
+                  "dependsOn & resolver rules can only belong to dependent properties",
+                ]),
+              })
+            );
+          }
+        });
       });
     });
 

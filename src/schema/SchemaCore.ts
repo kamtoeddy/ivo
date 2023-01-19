@@ -327,7 +327,6 @@ export abstract class SchemaCore<T extends ObjectType> {
       default: _default,
       dependent,
       dependsOn,
-      sideEffect,
       shouldInit,
       readonly,
       resolver,
@@ -437,7 +436,10 @@ export abstract class SchemaCore<T extends ObjectType> {
       const dependentDef = this.__isDependentProp(prop);
 
       if (!dependentDef.valid) reasons.push(dependentDef.reason!);
-    }
+    } else if (this._hasAny(prop, ["dependsOn", "resolver"]))
+      reasons.push(
+        "dependsOn & resolver rules can only belong to dependent properties"
+      );
 
     if (this._hasAny(prop, "readonly")) {
       const readonlyDef = this.__isReadonly(prop);
