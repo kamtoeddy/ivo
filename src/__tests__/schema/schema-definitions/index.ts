@@ -390,6 +390,28 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
           toPass();
         });
+
+        it("should allow a dependent prop to depend on another dependent prop (non-circular)", () => {
+          const toPass = fx({
+            dependentProp1: {
+              default: "",
+              dependent: true,
+              dependsOn: "prop",
+              resolver,
+            },
+            dependentProp2: {
+              default: "",
+              dependent: true,
+              dependsOn: "dependentProp1",
+              resolver,
+            },
+            prop: { default: "" },
+          });
+
+          expectNoFailure(toPass);
+
+          toPass();
+        });
       });
 
       describe("invalid", () => {
@@ -441,6 +463,78 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               expect.objectContaining({
                 dependentProp: expect.arrayContaining([
                   "A property cannot depend on a constant property",
+                ]),
+              })
+            );
+          }
+        });
+
+        it("should identify circular dependencies and reject", () => {
+          const toFail = fx({
+            A: {
+              default: "",
+              dependent: true,
+              dependsOn: ["B", "C", "D"],
+              resolver,
+            },
+            B: {
+              default: "",
+              dependent: true,
+              dependsOn: ["A", "C", "E"],
+              resolver,
+            },
+            C: {
+              default: "",
+              dependent: true,
+              dependsOn: ["A"],
+              resolver,
+            },
+            D: {
+              default: "",
+              dependent: true,
+              dependsOn: "E",
+              resolver,
+            },
+            E: {
+              default: "",
+              dependent: true,
+              dependsOn: "A",
+              resolver,
+            },
+            F: {
+              default: "",
+              dependent: true,
+              dependsOn: "prop",
+              resolver,
+            },
+            prop: { default: "" },
+          });
+
+          expectFailure(toFail);
+
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toMatchObject(
+              expect.objectContaining({
+                A: expect.arrayContaining([
+                  "Circular dependency identified with 'B'",
+                  "Circular dependency identified with 'C'",
+                  "Circular dependency identified with 'E'",
+                ]),
+                B: expect.arrayContaining([
+                  "Circular dependency identified with 'A'",
+                ]),
+                C: expect.arrayContaining([
+                  "Circular dependency identified with 'A'",
+                  "Circular dependency identified with 'B'",
+                ]),
+                D: expect.arrayContaining([
+                  "Circular dependency identified with 'A'",
+                ]),
+                E: expect.arrayContaining([
+                  "Circular dependency identified with 'B'",
+                  "Circular dependency identified with 'D'",
                 ]),
               })
             );

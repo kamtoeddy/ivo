@@ -1,4 +1,4 @@
-import { belongsTo, toArray } from "../utils/functions";
+import { belongsTo, sort, toArray } from "../utils/functions";
 import { ObjectType } from "../utils/interfaces";
 import { isEqual } from "../utils/isEqual";
 import {
@@ -102,7 +102,7 @@ export abstract class SchemaCore<T extends ObjectType> {
     this.optionsTool = new OptionsTool(this._makeTimestamps());
   }
 
-  // context methods
+  // < context methods >
   protected _getContext = () => Object.freeze(Object.assign({}, this.context));
 
   protected _getFinalContext = () =>
@@ -129,8 +129,9 @@ export abstract class SchemaCore<T extends ObjectType> {
   protected _updateFinalContext = (updates: Partial<T>) => {
     this.finalContext = { ...this.finalContext, ...updates };
   };
+  // < context methods />
 
-  // dependency map utils
+  // < dependency map utils >
   private _addDependencies = (
     prop: StringKey<T>,
     dependsOn: StringKey<T> | StringKey<T>[]
@@ -142,8 +143,48 @@ export abstract class SchemaCore<T extends ObjectType> {
       else this.dependencyMap[_prop] = [prop];
   };
 
-  private _getDependencies = (prop: StringKey<T>) =>
+  protected _getDependencies = (prop: StringKey<T>) =>
     this.dependencyMap[prop] ?? [];
+
+  private _getCircularDependenciesOf = (a: StringKey<T>) => {
+    let circularDependencies: string[] = [];
+
+    const _dependsOn = toArray(this._getDefinition(a)?.dependsOn ?? []);
+
+    for (const _prop of _dependsOn)
+      circularDependencies = [
+        ...circularDependencies,
+        ...this._getCircularDependenciesOf_a_in_b(a, _prop),
+      ];
+
+    return sort(Array.from(new Set(circularDependencies)));
+  };
+
+  private _getCircularDependenciesOf_a_in_b = (
+    a: StringKey<T>,
+    b: StringKey<T>,
+    visitedNodes: StringKey<T>[] = []
+  ) => {
+    let circularDependencies: string[] = [];
+
+    if (!this._isDependentProp(b) || visitedNodes.includes(b)) return [];
+
+    visitedNodes.push(b);
+
+    const _dependsOn = toArray(this._getDefinition(b)?.dependsOn ?? []);
+
+    for (const _prop of _dependsOn) {
+      if (_prop == a) circularDependencies.push(b);
+      else if (this._isDependentProp(_prop))
+        circularDependencies = [
+          ...circularDependencies,
+          ...this._getCircularDependenciesOf_a_in_b(a, _prop, visitedNodes),
+        ];
+    }
+
+    return sort(Array.from(new Set(circularDependencies)));
+  };
+  // < dependency map utils />
 
   protected _canInit = (prop: string) => {
     if (this._isDependentProp(prop)) return false;
@@ -231,6 +272,12 @@ export abstract class SchemaCore<T extends ObjectType> {
 
       if (dependsOnConstantProp)
         error.add(prop, "A property cannot depend on a constant property");
+
+      // check against circular dependencies
+      const circularRelationShips = this._getCircularDependenciesOf(prop);
+
+      for (const _prop of circularRelationShips)
+        error.add(prop, `Circular dependency identified with '${_prop}'`);
     }
 
     if (error.isPayloadLoaded) error.throw();
