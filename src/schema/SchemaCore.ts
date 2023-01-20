@@ -149,7 +149,9 @@ export abstract class SchemaCore<I extends ObjectType> {
   private _getCircularDependenciesOf = (a: StringKey<I>) => {
     let circularDependencies: string[] = [];
 
-    const _dependsOn = toArray(this._getDefinition(a)?.dependsOn ?? []);
+    const _dependsOn = toArray<StringKey<I>>(
+      this._getDefinition(a)?.dependsOn ?? []
+    );
 
     for (const _prop of _dependsOn)
       circularDependencies = [
@@ -171,7 +173,9 @@ export abstract class SchemaCore<I extends ObjectType> {
 
     visitedNodes.push(b);
 
-    const _dependsOn = toArray(this._getDefinition(b)?.dependsOn ?? []);
+    const _dependsOn = toArray<StringKey<I>>(
+      this._getDefinition(b)?.dependsOn ?? []
+    );
 
     for (const _prop of _dependsOn) {
       if (_prop == a) circularDependencies.push(b);
@@ -263,7 +267,7 @@ export abstract class SchemaCore<I extends ObjectType> {
     for (let prop of this.dependents) {
       const { dependsOn } = this._getDefinition(prop);
 
-      const _dependsOn = toArray(dependsOn);
+      const _dependsOn = toArray<StringKey<I>>(dependsOn ?? []);
 
       if (_dependsOn.includes(prop))
         error.add(prop, "A property cannot depend on itself");
@@ -321,12 +325,14 @@ export abstract class SchemaCore<I extends ObjectType> {
       : _default;
   };
 
-  protected _getDetailedListeners = (
+  protected _getDetailedListeners = <T>(
     prop: string,
     lifeCycle: LifeCycles.Rule,
     valid = true
   ) => {
-    const listeners = toArray(this._getDefinition(prop)?.[lifeCycle]);
+    const listeners = toArray<LifeCycles.Listener<T>>(
+      this._getDefinition(prop)?.[lifeCycle] as any
+    );
 
     return (
       listeners
@@ -355,7 +361,7 @@ export abstract class SchemaCore<I extends ObjectType> {
   };
 
   protected _getListeners = <T>(prop: string, lifeCycle: LifeCycles.Rule) => {
-    return this._getDetailedListeners(prop, lifeCycle, true).map(
+    return this._getDetailedListeners<T>(prop, lifeCycle, true).map(
       (dt) => dt.listener
     ) as LifeCycles.Listener<T>[];
   };
@@ -452,7 +458,7 @@ export abstract class SchemaCore<I extends ObjectType> {
         reason: "Dependent properties must depend on atleast one property",
       };
 
-    if (toArray(dependsOn).includes(prop))
+    if (toArray(dependsOn).includes(prop as StringKey<I>))
       return { valid, reason: "A property cannot depend on itself" };
 
     if (isEqual(resolver, undefined))

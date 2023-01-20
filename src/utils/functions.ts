@@ -2,7 +2,8 @@ import { ObjectType } from "./interfaces";
 
 export const belongsTo = (value: any, values: any[]) => values.includes(value);
 
-export const toArray = (value: any) => (Array.isArray(value) ? value : [value]);
+export const toArray = <T>(value: T | T[]): T[] =>
+  Array.isArray(value) ? value : [value];
 
 export const sort = <T>(data: T[]): T[] =>
   data.sort((a, b) => (a < b ? -1 : 1));

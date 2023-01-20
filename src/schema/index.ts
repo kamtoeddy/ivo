@@ -6,7 +6,9 @@ import { defaultOptions, SchemaCore } from "./SchemaCore";
 import { makeResponse } from "./utils";
 import { ErrorTool } from "./utils/schema-error";
 
-export class Schema<
+export { Schema };
+
+class Schema<
   I extends ObjectType,
   O extends ObjectType = I
 > extends SchemaCore<I> {
@@ -25,26 +27,23 @@ export class Schema<
     return this._propDefinitions;
   }
 
-  private _useExtensionOptions = <T extends ObjectType>(
-    options: ns.ExtensionOptions<T>
-  ) => {
-    const remove = toArray(options?.remove ?? []);
-
-    remove?.forEach((prop) => delete this._propDefinitions?.[prop]);
-
-    return this;
-  };
-
-  extend = <U extends ObjectType>(
-    parent: Schema<U>,
+  extend = <U extends ObjectType, V extends ObjectType = U>(
+    parent: Schema<U, V>,
     options: ns.ExtensionOptions<U> = { remove: [] }
   ) => {
-    this._propDefinitions = {
+    const _propDefinitions = {
       ...parent.propDefinitions,
       ...this._propDefinitions,
-    } as ns.PropertyDefinitions<I>;
+    } as ns.PropertyDefinitions<U & I>;
 
-    return this._useExtensionOptions(options);
+    const remove = toArray(options?.remove ?? []);
+
+    remove?.forEach((prop) => delete _propDefinitions?.[prop]);
+
+    return new Schema<U & I, V>(_propDefinitions, this.options) as Schema<
+      U & I,
+      V
+    >;
   };
 
   getModel = () => new Model(new ModelTool<I, O>(this));
@@ -330,7 +329,9 @@ class ModelTool<
 
     this.setValues(values);
 
-    const reset = toArray(options.reset).filter(this._isProp);
+    const reset = toArray<StringKey<I>>(options.reset ?? []).filter(
+      this._isProp
+    );
 
     const data = {} as I;
     const error = new ErrorTool({ message: "Validation Error" });
