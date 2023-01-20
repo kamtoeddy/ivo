@@ -39,14 +39,18 @@ class Schema<
     type InputType = Omit<U & I, ToRemove>;
     type OutputType = Omit<V, ToRemove>;
 
-    const _propDefinitions = {
+    let _propDefinitions = {
       ...parent.propDefinitions,
-      ...this._propDefinitions,
     } as ns.PropertyDefinitions<InputType>;
 
     remove?.forEach(
       (prop) => delete _propDefinitions?.[prop as StringKey<InputType>]
     );
+
+    _propDefinitions = {
+      ..._propDefinitions,
+      ...this._propDefinitions,
+    } as ns.PropertyDefinitions<InputType>;
 
     return new Schema<InputType, OutputType>(_propDefinitions, this.options);
   };
