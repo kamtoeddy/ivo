@@ -369,7 +369,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           }
         });
 
-        it("should allow a dependent prop to depend on another dependent prop", () => {
+        it("should allow a dependent prop to depend on another dependent prop (non-circular)", () => {
           const toPass = fx({
             dependentProp1: {
               default: "",
@@ -391,21 +391,18 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           toPass();
         });
 
-        it("should allow a dependent prop to depend on another dependent prop (non-circular)", () => {
+        it("should allow a dependency on side effects", () => {
           const toPass = fx({
-            dependentProp1: {
+            dependentProp: {
               default: "",
               dependent: true,
-              dependsOn: "prop",
+              dependsOn: "sideEFFectProp",
               resolver,
             },
-            dependentProp2: {
-              default: "",
-              dependent: true,
-              dependsOn: "dependentProp1",
-              resolver,
+            sideEFFectProp: {
+              sideEffect: true,
+              validator: resolver,
             },
-            prop: { default: "" },
           });
 
           expectNoFailure(toPass);
