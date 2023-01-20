@@ -278,6 +278,17 @@ export abstract class SchemaCore<T extends ObjectType> {
 
       for (const _prop of circularRelationShips)
         error.add(prop, `Circular dependency identified with '${_prop}'`);
+
+      // check against dependencies on invalid properties
+      const invalidProps = _dependsOn.filter(
+        (p) => !(this._isProp(p) || this._isSideEffect(p))
+      );
+
+      for (const _prop of invalidProps)
+        error.add(
+          prop,
+          `Cannot establish dependency with '${_prop}' as it is neither a property nor a side effect of your model`
+        );
     }
 
     if (error.isPayloadLoaded) error.throw();

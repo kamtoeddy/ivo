@@ -412,6 +412,33 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
       });
 
       describe("invalid", () => {
+        it("should reject dependency on non-properties", () => {
+          const invalidProp = "invalidProp";
+
+          const toFail = fx({
+            dependentProp: {
+              dependent: true,
+              default: "",
+              dependsOn: invalidProp,
+              resolver,
+            },
+          });
+
+          expectFailure(toFail);
+
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toMatchObject(
+              expect.objectContaining({
+                dependentProp: expect.arrayContaining([
+                  `Cannot establish dependency with '${invalidProp}' as it is neither a property nor a side effect of your model`,
+                ]),
+              })
+            );
+          }
+        });
+
         it("should not allow property to depend on itself", () => {
           const toFail = fx({
             dependentProp: {
