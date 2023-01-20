@@ -4,8 +4,9 @@ All notable changes to this project will be documented in this file.
 
 # v2.7.0 <small><sup>[x][x]-01-2022</sup></small>
 
-- [Updated] updated the definition of [dependent properties]()
-- [Updated] updated the definition of [side effect properties]()
+- [Updated] updated the definition of [dependent properties](./schema/definition/dependents.md)
+- [Updated] updated the definition of [side effect properties](./schema/definition/side-effects.md)
+- [Updated] improved type inference during schema inheritance
 - [Updated] upgraded TS to v4.9.4
 - [Updated] rewrote types (to reduce files)
 
