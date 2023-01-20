@@ -66,31 +66,31 @@ const lifeCycleRules: LifeCycles.Rule[] = [
   "onUpdate",
 ];
 
-export abstract class SchemaCore<T extends ObjectType> {
+export abstract class SchemaCore<I extends ObjectType> {
   protected _options: ns.Options;
-  protected _propDefinitions = {} as ns.Definitions<T>;
+  protected _propDefinitions = {} as ns.Definitions<I>;
 
-  protected context: T = {} as T;
-  protected finalContext: T = {} as T;
-  protected defaults: Partial<T> = {};
-  protected values: Partial<T> = {};
-  protected dependencyMap: ns.DependencyMap<T> = {};
+  protected context: I = {} as I;
+  protected finalContext: I = {} as I;
+  protected defaults: Partial<I> = {};
+  protected values: Partial<I> = {};
+  protected dependencyMap: ns.DependencyMap<I> = {};
 
   // props
-  protected constants: StringKey<T>[] = [];
-  protected dependents: StringKey<T>[] = [];
-  protected laxProps: StringKey<T>[] = [];
-  protected props: StringKey<T>[] = [];
-  protected propsRequiredBy: StringKey<T>[] = [];
-  protected readonlyProps: StringKey<T>[] = [];
-  protected requiredProps: StringKey<T>[] = [];
-  protected sideEffects: StringKey<T>[] = [];
+  protected constants: StringKey<I>[] = [];
+  protected dependents: StringKey<I>[] = [];
+  protected laxProps: StringKey<I>[] = [];
+  protected props: StringKey<I>[] = [];
+  protected propsRequiredBy: StringKey<I>[] = [];
+  protected readonlyProps: StringKey<I>[] = [];
+  protected requiredProps: StringKey<I>[] = [];
+  protected sideEffects: StringKey<I>[] = [];
 
   // helpers
   protected optionsTool: OptionsTool;
 
   constructor(
-    propDefinitions: ns.Definitions<T>,
+    propDefinitions: ns.Definitions<I>,
     options: ns.Options = defaultOptions
   ) {
     this._propDefinitions = propDefinitions;
@@ -109,8 +109,8 @@ export abstract class SchemaCore<T extends ObjectType> {
     Object.freeze(Object.assign({}, this.finalContext));
 
   protected _initContexts = () => {
-    this.context = { ...this.values } as T;
-    this.finalContext = {} as T;
+    this.context = { ...this.values } as I;
+    this.finalContext = {} as I;
 
     const contstants = this._getKeysAsProps(this.context).filter(
       this._isConstant
@@ -118,35 +118,35 @@ export abstract class SchemaCore<T extends ObjectType> {
 
     if (contstants.length)
       contstants.forEach((prop) =>
-        this._updateFinalContext({ [prop]: this.context[prop] } as T)
+        this._updateFinalContext({ [prop]: this.context[prop] } as I)
       );
   };
 
-  protected _updateContext = (updates: Partial<T>) => {
+  protected _updateContext = (updates: Partial<I>) => {
     this.context = { ...this.context, ...updates };
   };
 
-  protected _updateFinalContext = (updates: Partial<T>) => {
+  protected _updateFinalContext = (updates: Partial<I>) => {
     this.finalContext = { ...this.finalContext, ...updates };
   };
   // < context methods />
 
   // < dependency map utils >
   private _addDependencies = (
-    prop: StringKey<T>,
-    dependsOn: StringKey<T> | StringKey<T>[]
+    prop: StringKey<I>,
+    dependsOn: StringKey<I> | StringKey<I>[]
   ) => {
-    const _dependsOn = toArray(dependsOn) as StringKey<T>[];
+    const _dependsOn = toArray(dependsOn) as StringKey<I>[];
 
     for (let _prop of _dependsOn)
       if (this.dependencyMap[_prop]) this.dependencyMap[_prop]?.push(prop);
       else this.dependencyMap[_prop] = [prop];
   };
 
-  protected _getDependencies = (prop: StringKey<T>) =>
+  protected _getDependencies = (prop: StringKey<I>) =>
     this.dependencyMap[prop] ?? [];
 
-  private _getCircularDependenciesOf = (a: StringKey<T>) => {
+  private _getCircularDependenciesOf = (a: StringKey<I>) => {
     let circularDependencies: string[] = [];
 
     const _dependsOn = toArray(this._getDefinition(a)?.dependsOn ?? []);
@@ -161,9 +161,9 @@ export abstract class SchemaCore<T extends ObjectType> {
   };
 
   private _getCircularDependenciesOf_a_in_b = (
-    a: StringKey<T>,
-    b: StringKey<T>,
-    visitedNodes: StringKey<T>[] = []
+    a: StringKey<I>,
+    b: StringKey<I>,
+    visitedNodes: StringKey<I>[] = []
   ) => {
     let circularDependencies: string[] = [];
 
@@ -345,7 +345,7 @@ export abstract class SchemaCore<T extends ObjectType> {
   ) => {
     const onChangeListeners = this._isChangeLifeCycle(lifeCycle)
       ? this._getListeners(prop, "onChange")
-      : ([] as LifeCycles.ChangeListener<T>[]);
+      : ([] as LifeCycles.ChangeListener<I>[]);
 
     if (this._isSideEffect(prop)) return { listeners: [], onChangeListeners };
 
@@ -354,7 +354,7 @@ export abstract class SchemaCore<T extends ObjectType> {
     return { listeners, onChangeListeners };
   };
 
-  protected _getListeners = (prop: string, lifeCycle: LifeCycles.Rule) => {
+  protected _getListeners = <T>(prop: string, lifeCycle: LifeCycles.Rule) => {
     return this._getDetailedListeners(prop, lifeCycle, true).map(
       (dt) => dt.listener
     ) as LifeCycles.Listener<T>[];
@@ -364,7 +364,7 @@ export abstract class SchemaCore<T extends ObjectType> {
     this._getDefinition(prop)?.validator;
 
   protected _getKeysAsProps = (data: any) =>
-    Object.keys(data) as StringKey<T>[];
+    Object.keys(data) as StringKey<I>[];
 
   protected _hasAny = (
     prop: string,
@@ -413,13 +413,13 @@ export abstract class SchemaCore<T extends ObjectType> {
           "Constant properties can only have ('constant' & 'value') or 'onCreate' | 'onDelete' | 'onSuccess'",
       };
 
-    this.constants.push(prop as StringKey<T>);
+    this.constants.push(prop as StringKey<I>);
 
     return { valid: true };
   };
 
   protected _isConstant = (prop: string) =>
-    this.constants.includes(prop as StringKey<T>);
+    this.constants.includes(prop as StringKey<I>);
 
   protected __isDependentProp = (prop: string) => {
     const {
@@ -491,22 +491,22 @@ export abstract class SchemaCore<T extends ObjectType> {
     if (this._hasAny(prop, "sideEffect"))
       return { valid, reason: "Dependent properties cannot be sideEffect" };
 
-    this.dependents.push(prop as StringKey<T>);
-    this._addDependencies(prop as StringKey<T>, dependsOn);
+    this.dependents.push(prop as StringKey<I>);
+    this._addDependencies(prop as StringKey<I>, dependsOn);
 
     return { valid: true };
   };
 
   protected _isDependentProp = (prop: string) =>
-    this.dependents.includes(prop as StringKey<T>);
+    this.dependents.includes(prop as StringKey<I>);
 
   protected _isFunction = (obj: any) => typeof obj === "function";
 
   protected _isLaxProp = (prop: string) =>
-    this.laxProps.includes(prop as StringKey<T>);
+    this.laxProps.includes(prop as StringKey<I>);
 
   protected _isProp = (prop: string) =>
-    this.props.includes(prop as StringKey<T>);
+    this.props.includes(prop as StringKey<I>);
 
   protected _isPropDefinitionObjectOk = (prop: string) => {
     const propDef = this._getDefinition(prop);
@@ -626,8 +626,8 @@ export abstract class SchemaCore<T extends ObjectType> {
     const valid = reasons.length ? false : true;
 
     if (valid && !this._isSideEffect(prop)) {
-      this.props.push(prop as StringKey<T>);
-      this._setDefaultOf(prop as StringKey<T>, "onCreate");
+      this.props.push(prop as StringKey<I>);
+      this._setDefaultOf(prop as StringKey<I>, "onCreate");
     }
 
     return { reasons, valid };
@@ -685,13 +685,13 @@ export abstract class SchemaCore<T extends ObjectType> {
         reason: "Readonly properties have readonly true | 'lax'",
       };
 
-    this.readonlyProps.push(prop as StringKey<T>);
+    this.readonlyProps.push(prop as StringKey<I>);
 
     return { valid: true };
   };
 
   protected _isReadonly = (prop: string) =>
-    this.readonlyProps.includes(prop as StringKey<T>);
+    this.readonlyProps.includes(prop as StringKey<I>);
 
   protected __isRequiredCommon = (prop: string) => {
     const valid = false;
@@ -748,13 +748,13 @@ export abstract class SchemaCore<T extends ObjectType> {
 
     if (!isRequiredCommon.valid) return isRequiredCommon;
 
-    this.requiredProps.push(prop as StringKey<T>);
+    this.requiredProps.push(prop as StringKey<I>);
 
     return { valid: true };
   };
 
   protected _isRequired = (prop: string) =>
-    this.requiredProps.includes(prop as StringKey<T>);
+    this.requiredProps.includes(prop as StringKey<I>);
 
   protected __isRequiredBy = (prop: string) => {
     const {
@@ -795,13 +795,13 @@ export abstract class SchemaCore<T extends ObjectType> {
       if (!isRequiredCommon.valid) return isRequiredCommon;
     }
 
-    this.propsRequiredBy.push(prop as StringKey<T>);
+    this.propsRequiredBy.push(prop as StringKey<I>);
 
     return { valid: true };
   };
 
   protected _isRequiredBy = (prop: string) =>
-    this.propsRequiredBy.includes(prop as StringKey<T>);
+    this.propsRequiredBy.includes(prop as StringKey<I>);
 
   protected __isSideEffectRequiredBy = (prop: string) => {
     if (this._hasAny(prop, "shouldInit"))
@@ -859,13 +859,13 @@ export abstract class SchemaCore<T extends ObjectType> {
         )}) as rules`,
       };
 
-    this.sideEffects.push(prop as StringKey<T>);
+    this.sideEffects.push(prop as StringKey<I>);
 
     return { valid: true };
   };
 
   protected _isSideEffect = (prop: string) =>
-    this.sideEffects.includes(prop as StringKey<T>);
+    this.sideEffects.includes(prop as StringKey<I>);
 
   protected _isSideInit = (prop: string) => {
     const propDef = this._getDefinition(prop);
@@ -904,7 +904,7 @@ export abstract class SchemaCore<T extends ObjectType> {
     )
       return;
 
-    this.laxProps.push(prop as StringKey<T>);
+    this.laxProps.push(prop as StringKey<I>);
   };
 
   private _isTimestampsOk() {
@@ -976,7 +976,7 @@ export abstract class SchemaCore<T extends ObjectType> {
   }
 
   private _setDefaultOf = (
-    prop: StringKey<T>,
+    prop: StringKey<I>,
     lifeCycle: LifeCycles.LifeCycle
   ) => {
     const _default = this._getValueBy(prop, "default", lifeCycle);

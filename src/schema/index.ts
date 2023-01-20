@@ -6,9 +6,12 @@ import { defaultOptions, SchemaCore } from "./SchemaCore";
 import { makeResponse } from "./utils";
 import { ErrorTool } from "./utils/schema-error";
 
-export class Schema<T extends ObjectType> extends SchemaCore<T> {
+export class Schema<
+  I extends ObjectType,
+  O extends ObjectType = I
+> extends SchemaCore<I> {
   constructor(
-    propDefinitions: ns.PropertyDefinitions<T>,
+    propDefinitions: ns.PropertyDefinitions<I>,
     options: ns.Options = defaultOptions
   ) {
     super(propDefinitions, options);
@@ -39,16 +42,19 @@ export class Schema<T extends ObjectType> extends SchemaCore<T> {
     this._propDefinitions = {
       ...parent.propDefinitions,
       ...this._propDefinitions,
-    } as ns.PropertyDefinitions<T>;
+    } as ns.PropertyDefinitions<I>;
 
     return this._useExtensionOptions(options);
   };
 
-  getModel = () => new Model(new ModelTool(this));
+  getModel = () => new Model(new ModelTool<I, O>(this));
 }
 
-class ModelTool<T extends ObjectType> extends SchemaCore<T> {
-  constructor(schema: Schema<T>) {
+class ModelTool<
+  I extends ObjectType,
+  O extends ObjectType = I
+> extends SchemaCore<I> {
+  constructor(schema: Schema<I, O>) {
     super(schema.propDefinitions, schema.options);
   }
 
@@ -69,7 +75,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
 
   private _areValuesOk = (values: any) => values && typeof values == "object";
 
-  private _getValues(values: Partial<T>, allowSideEffects = true) {
+  private _getValues(values: Partial<I | O>, allowSideEffects = true) {
     const keys = this._getKeysAsProps(values).filter(
       (key) =>
         (this.optionsTool.withTimestamps &&
@@ -78,7 +84,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
         (allowSideEffects && this._isSideEffect(key))
     );
 
-    const _values = {} as Partial<T>;
+    const _values = {} as Partial<I>;
 
     sort(keys).forEach((key) => (_values[key] = values[key]));
 
@@ -92,9 +98,9 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
   };
 
   private _handleFailure = async (
-    data: Partial<T>,
+    data: Partial<I>,
     error: ErrorTool,
-    sideEffects: StringKey<T>[] = []
+    sideEffects: StringKey<I>[] = []
   ) => {
     const props = [
       ...this._getKeysAsProps({ ...data, ...error.payload }),
@@ -159,7 +165,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
   };
 
   private _makeHandleSuccess = (
-    data: Partial<T>,
+    data: Partial<I>,
     lifeCycle: LifeCycles.LifeCycle
   ) => {
     const ctx = this._getContext();
@@ -173,11 +179,11 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
 
     const successProps = [...props, ...successFulSideEffects];
 
-    let successListeners = [] as LifeCycles.SuccessListener<T>[];
+    let successListeners = [] as LifeCycles.SuccessListener<I>[];
 
     for (const prop of successProps)
       successListeners = successListeners.concat(
-        this._getListeners(prop, "onSuccess") as LifeCycles.SuccessListener<T>[]
+        this._getListeners(prop, "onSuccess") as LifeCycles.SuccessListener<I>[]
       );
 
     return async () => {
@@ -190,19 +196,19 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
   };
 
   private _prepareListeners = (
-    listeners: LifeCycles.ChangeListener<T>[],
+    listeners: LifeCycles.ChangeListener<I>[],
     lifeCycle: LifeCycles.LifeCycle
   ) => {
     const prepared = listeners.map(
-      (listener) => async (ctx: Readonly<T>) => await listener(ctx, lifeCycle)
+      (listener) => async (ctx: Readonly<I>) => await listener(ctx, lifeCycle)
     );
     return prepared;
   };
 
   private _resolveLinked = async (
-    operationData: Partial<T>,
+    operationData: Partial<I>,
     error: ErrorTool,
-    props: StringKey<T>[],
+    props: StringKey<I>[],
     lifeCycle: LifeCycles.Rule
   ) => {
     const listenersUpdates = props.map((prop) => {
@@ -213,9 +219,9 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
   };
 
   private _resolveLinkedProps = async (
-    operationData: Partial<T> = {},
+    operationData: Partial<I> = {},
     error: ErrorTool,
-    prop: StringKey<T>,
+    prop: StringKey<I>,
     lifeCycle: LifeCycles.Rule
   ) => {
     const { listeners, onChangeListeners } = this._getOperationListeners(
@@ -243,7 +249,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
       : [];
 
     const handles = [...listeners, ...prepared].map(async (listener) => {
-      const extra = await listener(context);
+      const extra = (await listener(context)) as Partial<I>;
 
       if (!isChangeLifeCycle || typeof extra !== "object") return;
 
@@ -281,7 +287,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     await Promise.all(handles);
   };
 
-  private _useConfigProps = (obj: T | Partial<T>, asUpdate = false) => {
+  private _useConfigProps = (obj: I | Partial<I>, asUpdate = false) => {
     if (!this.optionsTool.withTimestamps) return sortKeys(obj);
 
     const createdAt = this.optionsTool.getCreateKey(),
@@ -295,9 +301,9 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
   };
 
   private _validateAndSet = async (
-    operationData: Partial<T> = {},
+    operationData: Partial<I> = {},
     error: ErrorTool,
-    prop: StringKey<T>,
+    prop: StringKey<I>,
     value: any
   ) => {
     const isValid = await this.validate(prop, value);
@@ -310,15 +316,15 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
 
     if (!this._isSideEffect(prop)) operationData[prop] = validated;
 
-    const validCtxUpdate = { [prop]: validated } as T;
+    const validCtxUpdate = { [prop]: validated } as I;
 
     this._updateContext(validCtxUpdate);
     this._updateFinalContext(validCtxUpdate);
   };
 
   clone = async (
-    values: Partial<T>,
-    options: ns.CloneOptions<T> = { reset: [] }
+    values: Partial<I>,
+    options: ns.CloneOptions<I> = { reset: [] }
   ) => {
     if (!this._areValuesOk(values)) return this._handleInvalidData();
 
@@ -326,7 +332,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
 
     const reset = toArray(options.reset).filter(this._isProp);
 
-    const data = {} as T;
+    const data = {} as I;
     const error = new ErrorTool({ message: "Validation Error" });
 
     const sideEffects = this._getKeysAsProps(this.values).filter(
@@ -339,7 +345,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
       if (this._isConstant(prop)) {
         data[prop] = await this._getConstantValue(prop);
 
-        const validCtxUpdate = { [prop]: data[prop] as any } as T;
+        const validCtxUpdate = { [prop]: data[prop] as any } as I;
 
         this._updateFinalContext(validCtxUpdate);
         return this._updateContext(validCtxUpdate);
@@ -352,7 +358,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
       if (!isSideEffect && reset.includes(prop)) {
         data[prop] = this._getDefaultValue(prop);
 
-        const validCtxUpdate = { [prop]: data[prop] } as T;
+        const validCtxUpdate = { [prop]: data[prop] } as I;
 
         this._updateFinalContext(validCtxUpdate);
         return this._updateContext(validCtxUpdate);
@@ -380,7 +386,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
       ) {
         data[prop] = this._getDefaultValue(prop);
 
-        const validCtxUpdate = { [prop]: data[prop] } as T;
+        const validCtxUpdate = { [prop]: data[prop] } as I;
 
         this._updateFinalContext(validCtxUpdate);
         return this._updateContext(validCtxUpdate);
@@ -408,18 +414,18 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     );
 
     return {
-      data: this._useConfigProps(data) as T,
+      data: this._useConfigProps(data) as O,
       error: undefined,
       handleSuccess: this._makeHandleSuccess(data, "onCreate"),
     };
   };
 
-  create = async (values: Partial<T>) => {
+  create = async (values: Partial<I>) => {
     if (!this._areValuesOk(values)) return this._handleInvalidData();
 
     this.setValues(values);
 
-    const data = {} as T;
+    const data = {} as I;
     const error = new ErrorTool({ message: "Validation Error" });
 
     const sideEffects = this._getKeysAsProps(this.values).filter(
@@ -432,7 +438,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
       if (this._isConstant(prop)) {
         data[prop] = await this._getConstantValue(prop);
 
-        const validCtxUpdate = { [prop]: data[prop] as any } as T;
+        const validCtxUpdate = { [prop]: data[prop] as any } as I;
 
         this._updateFinalContext(validCtxUpdate);
         return this._updateContext(validCtxUpdate);
@@ -457,7 +463,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
       ) {
         data[prop] = this._getDefaultValue(prop);
 
-        const validCtxUpdate = { [prop]: data[prop] as any } as T;
+        const validCtxUpdate = { [prop]: data[prop] as any } as I;
 
         this._updateFinalContext(validCtxUpdate);
         return this._updateContext(validCtxUpdate);
@@ -485,21 +491,21 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     );
 
     return {
-      data: this._useConfigProps(data) as T,
+      data: this._useConfigProps(data) as O,
       error: undefined,
       handleSuccess: this._makeHandleSuccess(data, "onCreate"),
     };
   };
 
-  delete = async (values: Partial<T>) => {
+  delete = async (values: O) => {
     if (!this._areValuesOk(values)) return this._handleInvalidData();
 
     const ctx = Object.freeze(
       Object.assign({}, this._getValues(values, false))
-    ) as Readonly<T>;
+    ) as Readonly<O>;
 
     const cleanups = this.props.map(async (prop) => {
-      const listeners = this._getListeners(prop, "onDelete");
+      const listeners = this._getListeners<O>(prop, "onDelete");
 
       const _cleanups = listeners.map(async (listener) => await listener(ctx));
 
@@ -509,30 +515,30 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     await Promise.all(cleanups);
   };
 
-  setValues(values: Partial<T>) {
+  setValues(values: Partial<I>) {
     this.values = this._getValues(values);
 
     this._initContexts();
   }
 
-  update = async (values: Partial<T>, changes: Partial<T>) => {
+  update = async (values: Partial<I>, changes: Partial<I>) => {
     if (!this._areValuesOk(values)) return this._handleInvalidData();
 
     this.setValues(values);
 
     const error = new ErrorTool({ message: "Validation Error" });
-    const updated = {} as Partial<T>;
+    const updated = {} as Partial<I>;
 
     const toUpdate = this._getKeysAsProps(changes ?? {}).filter((prop) =>
       this._isUpdatable(prop)
     );
 
-    const linkedProps: StringKey<T>[] = [];
-    const sideEffects: StringKey<T>[] = [];
+    const linkedProps: StringKey<I>[] = [];
+    const sideEffects: StringKey<I>[] = [];
 
     const validations = toUpdate.map(async (prop) => {
       const value = changes[prop] as Exclude<
-        T[Extract<keyof T, string>],
+        I[Extract<keyof I, string>],
         undefined
       >;
       const isValid = await this.validate(prop, value);
@@ -551,7 +557,7 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
         linkedProps.push(prop);
       }
 
-      const validCtxUpdate = { [prop]: validated } as T;
+      const validCtxUpdate = { [prop]: validated } as I;
 
       this._updateContext(validCtxUpdate);
       this._updateFinalContext(validCtxUpdate);
@@ -590,25 +596,25 @@ class ModelTool<T extends ObjectType> extends SchemaCore<T> {
     };
   };
 
-  validate = async <K extends StringKey<T>>(prop: K, value: any) => {
+  validate = async <K extends StringKey<I>>(prop: K, value: any) => {
     if (
       this._isConstant(prop) ||
       this._isDependentProp(prop) ||
       (!this._isProp(prop) && !this._isSideEffect(prop))
     )
-      return makeResponse<T[K]>({ valid: false, reason: "Invalid property" });
+      return makeResponse<I[K]>({ valid: false, reason: "Invalid property" });
 
     const validator = this._getValidator(prop);
 
     if (validator)
-      return makeResponse<T[K]>(await validator(value, this._getContext()));
+      return makeResponse<I[K]>(await validator(value, this._getContext()));
 
-    return makeResponse<T[K]>({ valid: true, validated: value });
+    return makeResponse<I[K]>({ valid: true, validated: value });
   };
 }
 
-class Model<T extends ObjectType> {
-  constructor(private modelTool: ModelTool<T>) {}
+class Model<I extends ObjectType, O extends ObjectType = I> {
+  constructor(private modelTool: ModelTool<I, O>) {}
 
   clone = this.modelTool.clone;
 
