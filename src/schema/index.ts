@@ -27,23 +27,28 @@ class Schema<
     return this._propDefinitions;
   }
 
-  extend = <U extends ObjectType, V extends ObjectType = U>(
+  extend = <U extends ObjectType, V extends ObjectType, T extends keyof U>(
     parent: Schema<U, V>,
-    options: ns.ExtensionOptions<U> = { remove: [] }
+    options: ns.ExtensionOptions<T> = { remove: [] }
   ) => {
+    const remove = toArray(options?.remove ?? []);
+    const _remove = [...remove] as const;
+
+    type ToRemove = typeof _remove[number];
+
+    type InputType = Omit<U & I, ToRemove>;
+    type OutputType = Omit<V, ToRemove>;
+
     const _propDefinitions = {
       ...parent.propDefinitions,
       ...this._propDefinitions,
-    } as ns.PropertyDefinitions<U & I>;
+    } as ns.PropertyDefinitions<InputType>;
 
-    const remove = toArray(options?.remove ?? []);
+    remove?.forEach(
+      (prop) => delete _propDefinitions?.[prop as StringKey<InputType>]
+    );
 
-    remove?.forEach((prop) => delete _propDefinitions?.[prop]);
-
-    return new Schema<U & I, V>(_propDefinitions, this.options) as Schema<
-      U & I,
-      V
-    >;
+    return new Schema<InputType, OutputType>(_propDefinitions, this.options);
   };
 
   getModel = () => new Model(new ModelTool<I, O>(this));

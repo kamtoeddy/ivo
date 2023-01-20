@@ -144,7 +144,7 @@ export namespace Schema {
   }
 
   export interface ExtensionOptions<T> {
-    remove?: StringKey<T> | StringKey<T>[];
+    remove?: T | T[];
   }
 
   export interface Options {
