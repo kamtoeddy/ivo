@@ -34,22 +34,24 @@ class Schema<
   }
 
   extend = <U extends ObjectType, V extends ObjectType = U>(
-    propDefinitions: ns.PropertyDefinitions<U, V>,
-    options: ns.ExtensionOptions<I> = {
+    propDefinitions: ns.PropertyDefinitions<
+      SpreadType<CombineTypes<I, U> & U>,
+      CombineTypes<O, V>
+    >,
+    options: ns.ExtensionOptions<StringKey<I>> = {
       ...defaultOptions,
       remove: [],
     }
   ) => {
     const remove = toArray(options?.remove ?? []);
-    const _remove = [...remove] as const;
+    delete options.remove;
 
-    type ToRemove = typeof _remove[number];
+    type InputType = CombineTypes<I, U>;
+    type OutputType = CombineTypes<O, V>;
 
-    type InputType = Omit<CombineTypes<I, U>, ToRemove>;
-    type OutputType = Omit<CombineTypes<O, V>, ToRemove>;
-
-    let _propDefinitions = this
-      .propDefinitions as ns.PropertyDefinitions<InputType>;
+    let _propDefinitions = {
+      ...this.propDefinitions,
+    } as ns.PropertyDefinitions<InputType, OutputType>;
 
     remove?.forEach(
       (prop) => delete _propDefinitions?.[prop as StringKey<InputType>]
@@ -58,9 +60,9 @@ class Schema<
     _propDefinitions = {
       ..._propDefinitions,
       ...propDefinitions,
-    } as ns.PropertyDefinitions<InputType>;
+    } as ns.PropertyDefinitions<InputType, OutputType>;
 
-    return new Schema<InputType, OutputType>(_propDefinitions, this.options);
+    return new Schema<InputType, OutputType>(_propDefinitions as any, options);
   };
 
   getModel = () => new Model(new ModelTool<I, O>(this));
@@ -644,45 +646,3 @@ class Model<I extends ObjectType, O extends ObjectType = I> {
 
   validate = this.modelTool.validate;
 }
-
-async () => {
-  type Book = {
-    id: number;
-    name: string;
-  };
-
-  type IBook = CombineTypes<Book, { _setName: string }>;
-
-  type BookWithAuthor = CombineTypes<Book, { author: string; id: string }>;
-
-  type IBookWithAuthor = CombineTypes<BookWithAuthor, { _setAuthor: string }>;
-
-  const bookSchema = new Schema<IBook, Book>({
-    id: { constant: true, value: 1 },
-    name: { default: "default name" },
-    _setName: { default: "default name" },
-  });
-  const BookModel = bookSchema.getModel();
-
-  const BookWithAuthorModel = bookSchema
-    .extend<IBookWithAuthor, BookWithAuthor>(
-      {
-        author: {
-          default: "",
-          onChange(ctx) {
-            ctx;
-          },
-          onDelete(ctx) {
-            ctx;
-          },
-        },
-        id: { constant: true, value: "" },
-      }
-      // { remove: ["id"] }
-    )
-    .getModel();
-
-  // // const { data, error } = await BookModel.create({});
-  const { data, error } = await BookWithAuthorModel.create({});
-  if (!error) data;
-};

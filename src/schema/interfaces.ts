@@ -172,7 +172,7 @@ export namespace Schema {
   }
 
   export type ExtensionOptions<T> = Options & {
-    remove?: (StringKey<T> | StringKey<T>[]) | never;
+    remove?: T | T[];
   };
 }
 
