@@ -13,11 +13,12 @@ export const isStringOkTest = ({ isStringOk }: { isStringOk: Function }) => {
       ];
 
       for (const value of truthy) {
-        expect(isStringOk(value)).toMatchObject({
-          reasons: [],
-          valid: true,
-          validated: value.trim(),
-        });
+        const res = isStringOk(value);
+
+        expect(res).toMatchObject({ valid: true, validated: value.trim() });
+
+        expect(res.reason).toBeUndefined();
+        expect(res.reasons).toBeUndefined();
       }
 
       const falsy = [
@@ -29,7 +30,9 @@ export const isStringOkTest = ({ isStringOk }: { isStringOk: Function }) => {
       ];
 
       for (const [value, reasons] of falsy) {
-        expect(isStringOk(value)).toMatchObject({
+        const res = isStringOk(value);
+
+        expect(res).toMatchObject({
           reasons,
           valid: false,
           validated: undefined,
@@ -38,28 +41,32 @@ export const isStringOkTest = ({ isStringOk }: { isStringOk: Function }) => {
     });
 
     it("should cast numbers to strings", () => {
-      expect(isStringOk(1)).toMatchObject({
-        reasons: [],
-        valid: true,
-        validated: "1",
-      });
+      const res = isStringOk(1);
+
+      expect(res).toMatchObject({ valid: true, validated: "1" });
+
+      expect(res.reason).toBeUndefined();
+      expect(res.reasons).toBeUndefined();
     });
 
     it("should accept only enumerated values if any", () => {
       const enums = ["admin", "moderator", "user"];
 
       for (const value of enums) {
-        expect(isStringOk(value, { enums })).toMatchObject({
-          reasons: [],
-          valid: true,
-          validated: value,
-        });
+        const res = isStringOk(value, { enums });
+
+        expect(res).toMatchObject({ valid: true, validated: value });
+
+        expect(res.reason).toBeUndefined();
+        expect(res.reasons).toBeUndefined();
       }
 
       const falsy = ["Admin", "ADMIN", "superadmin", "Moderators"];
 
       for (const value of falsy) {
-        expect(isStringOk(value, { enums })).toMatchObject({
+        const res = isStringOk(value, { enums });
+
+        expect(res).toMatchObject({
           reasons: ["Unacceptable value"],
           valid: false,
           validated: undefined,
@@ -73,17 +80,20 @@ export const isStringOkTest = ({ isStringOk }: { isStringOk: Function }) => {
       const truthy = ["admin", "Admin", "ADMIN", "moderator", "user"];
 
       for (const value of truthy) {
-        expect(isStringOk(value, { regExp })).toMatchObject({
-          reasons: [],
-          valid: true,
-          validated: value,
-        });
+        const res = isStringOk(value, { regExp });
+
+        expect(res).toMatchObject({ valid: true, validated: value });
+
+        expect(res.reason).toBeUndefined();
+        expect(res.reasons).toBeUndefined();
       }
 
       const falsy = ["12", "%%", ".  ", "__"];
 
       for (const value of falsy) {
-        expect(isStringOk(value, { regExp })).toMatchObject({
+        const res = isStringOk(value, { regExp });
+
+        expect(res).toMatchObject({
           reasons: ["Unacceptable value"],
           valid: false,
           validated: undefined,
