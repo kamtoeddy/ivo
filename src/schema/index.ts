@@ -324,7 +324,7 @@ class ModelTool<
     prop: StringKey<I>,
     value: any
   ) => {
-    const isValid = await this.validate(prop, value);
+    const isValid = await this._validate(prop, value, this._getContext());
 
     if (!isValid.valid) return error.add(prop, isValid.reasons);
 
@@ -561,7 +561,7 @@ class ModelTool<
         I[Extract<keyof I, string>],
         undefined
       >;
-      const isValid = await this.validate(prop, value);
+      const isValid = await this._validate(prop, value, this._getContext());
 
       if (!isValid.valid) return error.add(prop, isValid.reasons);
 
@@ -616,7 +616,11 @@ class ModelTool<
     };
   };
 
-  validate = async <K extends StringKey<I>>(prop: K, value: any) => {
+  _validate = async <K extends StringKey<I>>(
+    prop: K,
+    value: any,
+    ctx: Readonly<I>
+  ) => {
     if (
       this._isConstant(prop) ||
       this._isDependentProp(prop) ||
@@ -626,8 +630,7 @@ class ModelTool<
 
     const validator = this._getValidator(prop);
 
-    if (validator)
-      return makeResponse<I[K]>(await validator(value, this._getContext()));
+    if (validator) return makeResponse<I[K]>(await validator(value, ctx));
 
     return makeResponse<I[K]>({ valid: true, validated: value });
   };
@@ -644,5 +647,6 @@ class Model<I extends ObjectType, O extends ObjectType = I> {
 
   update = this.modelTool.update;
 
-  validate = this.modelTool.validate;
+  validate = async <K extends StringKey<I>>(prop: K, value: any) =>
+    this.modelTool._validate(prop, value, {} as Readonly<I>);
 }
