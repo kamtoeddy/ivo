@@ -32,11 +32,9 @@ export const isStringOkTest = ({ isStringOk }: { isStringOk: Function }) => {
       for (const [value, reasons] of falsy) {
         const res = isStringOk(value);
 
-        expect(res).toMatchObject({
-          reasons,
-          valid: false,
-          validated: undefined,
-        });
+        expect(res).toMatchObject({ reasons, valid: false });
+
+        expect(res.validated).toBeUndefined();
       }
     });
 
@@ -69,8 +67,9 @@ export const isStringOkTest = ({ isStringOk }: { isStringOk: Function }) => {
         expect(res).toMatchObject({
           reasons: ["Unacceptable value"],
           valid: false,
-          validated: undefined,
         });
+
+        expect(res.validated).toBeUndefined();
       }
     });
 
@@ -96,8 +95,9 @@ export const isStringOkTest = ({ isStringOk }: { isStringOk: Function }) => {
         expect(res).toMatchObject({
           reasons: ["Unacceptable value"],
           valid: false,
-          validated: undefined,
         });
+
+        expect(res.validated).toBeUndefined();
       }
     });
   });
