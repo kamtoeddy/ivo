@@ -19,11 +19,14 @@ export const isBooleanOkTest = ({ isBooleanOk }: { isBooleanOk: Function }) => {
       const falsyValues = ["true", "false", 1, 0, null, undefined, [], {}, NaN];
 
       for (let value of falsyValues) {
-        expect(isBooleanOk(value)).toMatchObject({
+        const res = isBooleanOk(value);
+
+        expect(res).toMatchObject({
           reasons: ["Expected a boolean"],
           valid: false,
-          validated: undefined,
         });
+
+        expect(res.validated).toBeUndefined();
       }
     });
   });
