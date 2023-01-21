@@ -1,14 +1,18 @@
 import { sort, sortKeys, toArray } from "../utils/functions";
 import { ObjectType } from "../utils/interfaces";
 import { isEqual } from "../utils/isEqual";
-import { LifeCycles, Schema as ns, StringKey } from "./interfaces";
+import {
+  CombineTypes,
+  LifeCycles,
+  Schema as ns,
+  SpreadType,
+  StringKey,
+} from "./interfaces";
 import { defaultOptions, SchemaCore } from "./SchemaCore";
 import { makeResponse } from "./utils";
 import { ErrorTool } from "./utils/schema-error";
 
 export { Schema };
-
-type Combined<I, O> = Omit<I, keyof I & keyof O> & O;
 
 class Schema<
   I extends ObjectType,
@@ -29,21 +33,23 @@ class Schema<
     return this._propDefinitions;
   }
 
-  extend = <U extends ObjectType, V extends ObjectType, T extends keyof U>(
-    parent: Schema<U, V>,
-    options: ns.ExtensionOptions<T> = { remove: [] }
+  extend = <U extends ObjectType, V extends ObjectType = U>(
+    propDefinitions: ns.PropertyDefinitions<U, V>,
+    options: ns.ExtensionOptions<I> = {
+      ...defaultOptions,
+      remove: [],
+    }
   ) => {
-    let remove = toArray(options?.remove ?? []);
+    const remove = toArray(options?.remove ?? []);
     const _remove = [...remove] as const;
 
     type ToRemove = typeof _remove[number];
 
-    type InputType = Omit<U & I, ToRemove>;
-    type OutputType = Omit<V & O, ToRemove>;
+    type InputType = Omit<CombineTypes<I, U>, ToRemove>;
+    type OutputType = Omit<CombineTypes<O, V>, ToRemove>;
 
-    let _propDefinitions = {
-      ...parent.propDefinitions,
-    } as ns.PropertyDefinitions<InputType>;
+    let _propDefinitions = this
+      .propDefinitions as ns.PropertyDefinitions<InputType>;
 
     remove?.forEach(
       (prop) => delete _propDefinitions?.[prop as StringKey<InputType>]
@@ -51,7 +57,7 @@ class Schema<
 
     _propDefinitions = {
       ..._propDefinitions,
-      ...this._propDefinitions,
+      ...propDefinitions,
     } as ns.PropertyDefinitions<InputType>;
 
     return new Schema<InputType, OutputType>(_propDefinitions, this.options);
@@ -638,43 +644,45 @@ class Model<I extends ObjectType, O extends ObjectType = I> {
 
   validate = this.modelTool.validate;
 }
+
 async () => {
-  type IBook = {
-    id: number;
-    name: string;
-
-    _setName: string;
-  };
-
   type Book = {
     id: number;
     name: string;
   };
 
-  // type BookWithAuthor = IBook & {
-  //   author: string;
-  // };
+  type IBook = CombineTypes<Book, { _setName: string }>;
+
+  type BookWithAuthor = CombineTypes<Book, { author: string; id: string }>;
+
+  type IBookWithAuthor = CombineTypes<BookWithAuthor, { _setAuthor: string }>;
 
   const bookSchema = new Schema<IBook, Book>({
     id: { constant: true, value: 1 },
     name: { default: "default name" },
+    _setName: { default: "default name" },
   });
   const BookModel = bookSchema.getModel();
 
-  const BookWithAuthorModel = new Schema({
-    author: {
-      default: "",
-      onDelete(ctx) {
-        ctx;
-      },
-    },
-    // id: { default: "Book id" },
-  })
-    .extend(bookSchema, { remove: [] })
+  const BookWithAuthorModel = bookSchema
+    .extend<IBookWithAuthor, BookWithAuthor>(
+      {
+        author: {
+          default: "",
+          onChange(ctx) {
+            ctx;
+          },
+          onDelete(ctx) {
+            ctx;
+          },
+        },
+        id: { constant: true, value: "" },
+      }
+      // { remove: ["id"] }
+    )
     .getModel();
 
-  // const { data, error } = await BookModel.create({});
+  // // const { data, error } = await BookModel.create({});
   const { data, error } = await BookWithAuthorModel.create({});
-
-  data?.id;
+  if (!error) data;
 };

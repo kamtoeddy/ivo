@@ -1,6 +1,26 @@
 import { ObjectType } from "../utils/interfaces";
 
-export type TypeOf<T> = Exclude<T, undefined>;
+export type { CombineTypes, SpreadType, TypeOf };
+
+type TypeOf<T> = Exclude<T, undefined>;
+
+type GetCommonProps<I, O> = {
+  [K in keyof (I | O)]: I[K] extends never
+    ? O[K]
+    : O[K] extends never
+    ? I[K]
+    : O[K];
+};
+
+type OmitNever<T> = { [K in keyof T as T[K] extends never ? never : K]: T[K] };
+
+type Combined<I, O> = OmitNever<I & O> extends never
+  ? O
+  : OmitNever<I & O> & GetCommonProps<I, O>;
+
+type SpreadType<T> = { [K in keyof T]: T[K] };
+
+type CombineTypes<I, O> = SpreadType<Combined<I, O>>;
 
 type Setter<K, T> = (
   ctx: Readonly<T>,
@@ -29,8 +49,8 @@ export namespace Schema {
       | SideEffect<K, I>;
   };
 
-  export type Definitions<I, O = I> = {
-    [K in keyof I]?: Listenable<I, O> & {
+  export type Definitions<I> = {
+    [K in keyof I]?: Listenable<I> & {
       constant?: any;
       default?: any;
       dependent?: boolean;
@@ -146,12 +166,14 @@ export namespace Schema {
     reset?: StringKey<T> | StringKey<T>[];
   }
 
-  export type ExtensionOptions<T> = { remove?: T | T[] };
-
   export interface Options {
     errors?: "silent" | "throw";
     timestamps?: boolean | { createdAt?: string; updatedAt?: string };
   }
+
+  export type ExtensionOptions<T> = Options & {
+    remove?: (StringKey<T> | StringKey<T>[]) | never;
+  };
 }
 
 export namespace LifeCycles {
