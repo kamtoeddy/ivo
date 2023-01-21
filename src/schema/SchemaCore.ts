@@ -66,9 +66,12 @@ const lifeCycleRules: LifeCycles.Rule[] = [
   "onUpdate",
 ];
 
-export abstract class SchemaCore<I extends ObjectType> {
+export abstract class SchemaCore<
+  I extends ObjectType,
+  O extends ObjectType = I
+> {
   protected _options: ns.Options;
-  protected _propDefinitions = {} as ns.Definitions<I>;
+  protected _propDefinitions = {} as ns.Definitions<I, O>;
 
   protected context: I = {} as I;
   protected finalContext: I = {} as I;
@@ -90,7 +93,7 @@ export abstract class SchemaCore<I extends ObjectType> {
   protected optionsTool: OptionsTool;
 
   constructor(
-    propDefinitions: ns.Definitions<I>,
+    propDefinitions: ns.Definitions<I, O>,
     options: ns.Options = defaultOptions
   ) {
     this._propDefinitions = propDefinitions;

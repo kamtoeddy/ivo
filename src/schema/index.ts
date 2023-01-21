@@ -8,6 +8,8 @@ import { ErrorTool } from "./utils/schema-error";
 
 export { Schema };
 
+type Combined<I, O> = Omit<I, keyof I & keyof O> & O;
+
 class Schema<
   I extends ObjectType,
   O extends ObjectType = I
@@ -31,13 +33,13 @@ class Schema<
     parent: Schema<U, V>,
     options: ns.ExtensionOptions<T> = { remove: [] }
   ) => {
-    const remove = toArray(options?.remove ?? []);
+    let remove = toArray(options?.remove ?? []);
     const _remove = [...remove] as const;
 
     type ToRemove = typeof _remove[number];
 
     type InputType = Omit<U & I, ToRemove>;
-    type OutputType = Omit<V, ToRemove>;
+    type OutputType = Omit<V & O, ToRemove>;
 
     let _propDefinitions = {
       ...parent.propDefinitions,
@@ -636,3 +638,43 @@ class Model<I extends ObjectType, O extends ObjectType = I> {
 
   validate = this.modelTool.validate;
 }
+async () => {
+  type IBook = {
+    id: number;
+    name: string;
+
+    _setName: string;
+  };
+
+  type Book = {
+    id: number;
+    name: string;
+  };
+
+  // type BookWithAuthor = IBook & {
+  //   author: string;
+  // };
+
+  const bookSchema = new Schema<IBook, Book>({
+    id: { constant: true, value: 1 },
+    name: { default: "default name" },
+  });
+  const BookModel = bookSchema.getModel();
+
+  const BookWithAuthorModel = new Schema({
+    author: {
+      default: "",
+      onDelete(ctx) {
+        ctx;
+      },
+    },
+    // id: { default: "Book id" },
+  })
+    .extend(bookSchema, { remove: [] })
+    .getModel();
+
+  // const { data, error } = await BookModel.create({});
+  const { data, error } = await BookWithAuthorModel.create({});
+
+  data?.id;
+};
