@@ -21,11 +21,9 @@ export const isEmailOkTest = ({ isEmailOk }: { isEmailOk: Function }) => {
       for (const value of falsy) {
         const res = isEmailOk(value);
 
-        expect(res).toMatchObject({
-          reasons: ["Invalid email"],
-          valid: false,
-          validated: undefined,
-        });
+        expect(res).toMatchObject({ reasons: ["Invalid email"], valid: false });
+
+        expect(res.validated).toBeUndefined();
       }
     });
 
@@ -52,11 +50,9 @@ export const isEmailOkTest = ({ isEmailOk }: { isEmailOk: Function }) => {
       for (const value of falsy) {
         const res = isEmailOk(value);
 
-        expect(res).toMatchObject({
-          reasons: ["Invalid email"],
-          valid: false,
-          validated: undefined,
-        });
+        expect(res).toMatchObject({ reasons: ["Invalid email"], valid: false });
+
+        expect(res.validated).toBeUndefined();
       }
     });
   });
