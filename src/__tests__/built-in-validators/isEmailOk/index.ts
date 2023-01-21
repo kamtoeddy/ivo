@@ -8,17 +8,20 @@ export const isEmailOkTest = ({ isEmailOk }: { isEmailOk: Function }) => {
       ];
 
       for (const value of truthy) {
-        expect(isEmailOk(value)).toMatchObject({
-          reasons: [],
-          valid: true,
-          validated: value.trim(),
-        });
+        const res = isEmailOk(value);
+
+        expect(res).toMatchObject({ valid: true, validated: value.trim() });
+
+        expect(res.reason).toBeUndefined();
+        expect(res.reasons).toBeUndefined();
       }
 
       const falsy = [1, null, false, "", "@gmail.com", "james71@..uk"];
 
       for (const value of falsy) {
-        expect(isEmailOk(value)).toMatchObject({
+        const res = isEmailOk(value);
+
+        expect(res).toMatchObject({
           reasons: ["Invalid email"],
           valid: false,
           validated: undefined,
@@ -36,17 +39,20 @@ export const isEmailOkTest = ({ isEmailOk }: { isEmailOk: Function }) => {
       ];
 
       for (const value of truthy) {
-        expect(isEmailOk(value, regExp)).toMatchObject({
-          reasons: [],
-          valid: true,
-          validated: value.trim(),
-        });
+        const res = isEmailOk(value, regExp);
+
+        expect(res).toMatchObject({ valid: true, validated: value.trim() });
+
+        expect(res.reason).toBeUndefined();
+        expect(res.reasons).toBeUndefined();
       }
 
       const falsy = [1, null, false, "", "@gmail.com", "james71@..uk"];
 
       for (const value of falsy) {
-        expect(isEmailOk(value)).toMatchObject({
+        const res = isEmailOk(value);
+
+        expect(res).toMatchObject({
           reasons: ["Invalid email"],
           valid: false,
           validated: undefined,
