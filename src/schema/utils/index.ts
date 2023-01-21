@@ -7,7 +7,7 @@ export const makeResponse = <T = undefined>(
   if (input.valid) {
     const { valid, validated } = input;
 
-    return { reasons: [], valid, validated } as ValidatorResponse<TypeOf<T>>;
+    return { valid, validated } as ValidatorResponse<TypeOf<T>>;
   }
 
   let { reason, reasons, valid } = input as any;
