@@ -22,8 +22,8 @@ import { Schema } from "clean-schema";
 
 # Defining an entity's schema
 
-```js
-const { Schema, validate } = require("clean-schema");
+```ts
+import { Schema, validate } from "clean-schema";
 
 const userSchema = new Schema(
   {
@@ -59,8 +59,8 @@ const UserModel = userSchema.getModel();
 
 # Creating an instance
 
-```js
-const db = require("db-of-choice"); // use db of your choice
+```ts
+import userDb from "db-of-choice"; // use any db that supports the information you are modelling
 
 const {
   data: user,
@@ -91,15 +91,15 @@ console.log(user);
 //   updatedAt: new Date(),
 // };
 
-await db.insert(user);
+await userDb.insert(user);
 
 await handleSuccess?.();
 ```
 
 # Updating instances
 
-```js
-const user = await db.query({ id: 1 });
+```ts
+const user = await userDb.query({ id: 1 });
 
 if (!user) throw new Error("User not found");
 
@@ -115,7 +115,7 @@ const { data, error, handleSuccess } = await UserModel.update(user, {
 // id is ignored because it is readonly
 console.log(data); // { lastSeen: new Date(), updatedAt: new Date() }
 
-await db.update({ id: 1 }, data);
+await userDb.update({ id: 1 }, data);
 
 await handleSuccess?.();
 ```
@@ -136,7 +136,7 @@ await handleSuccess?.();
     - [isEmailOk](./docs/v2.6.0/validate/isEmailOk.md)
     - [isNumberOk](./docs/v2.6.0/validate/isNumberOk.md)
     - [isStringOk](./docs/v2.6.0/validate/isStringOk.md)
-- [Inheritance](./docs/v1.4.6/schema/inheritance.md#schema-inheritance)
+- [Inheritance](./docs/v2.7.0/schema/definition/inheritance.md#schema-inheritance)
 - [The Operation Context](./docs/v2.5.0/schema/definition/life-cycles.md#the-operation-context)
 - [Life Cycles & Listeners](./docs/v2.5.10/schema/definition/life-cycles.md#life-cycle-listeners)
   - [onChange](./docs/v2.5.10/schema/definition/life-cycles.md#onchange)

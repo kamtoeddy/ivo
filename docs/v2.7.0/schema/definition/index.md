@@ -8,41 +8,40 @@ Clean schema considers a property to be properly defined if it is `dependent`, `
 1. definitions (required)
 1. [options (optional)](#options)
 
-```js
-const userSchema = new Schema(definitions, options);
+The schema constructor also takes two generic interfaces you could use to improve on the type inference of your `InputType` & `OutputType`.
+
+```ts
+const userSchema = new Schema<I, O>(definitions, options);
 ```
 
-```js
-const { Schema } = require("clean-schema");
+```ts
+import { Schema } from "clean-schema";
 
-const userSchema = new Schema({
-  dob: {
-    required: true,
-    validator: validateDob,
-  },
-  firstName: {
-    required: true,
-    onChange: onNameChange,
-    validator: validateName,
-  },
-  lastName: {
-    required: true,
-    onChange: onNameChange,
-    validator: validateName,
-  },
+type UserDTO = {
+  dob: { required: true; validator: validateDob };
+  firstName: { required: true; validator: validateName };
+  lastName: { required: true; validator: validateName };
+  fullName: {
+    default: "";
+    dependent: true;
+    dependsOn: ["firstName", "lastName"];
+    resolver: ({ firstName, lastName }) => `${firstName} ${lastName}`;
+  };
+};
+
+const userSchema = new Schema<I, O>({
+  dob: { required: true, validator: validateDob },
+  firstName: { required: true, validator: validateName },
+  lastName: { required: true, validator: validateName },
   fullName: {
     default: "",
-    validator: validateName,
+    dependent: true,
+    dependsOn: ["firstName", "lastName"],
+    resolver: (ctx) => `${ctx.firstName} ${ctx.lastName}`,
   },
 });
 
 const UserModel = userSchema.getModel();
-
-function onNameChange(context) {
-  const { firstName, lastName } = context;
-
-  return { fullName: `${firstName} ${lastName}` };
-}
 ```
 
 # Properties of a model
@@ -108,10 +107,10 @@ type SchemaError = {
 
 ## timestamps
 
-If timestamps is set to true, you'll automatically have the `createdAt` and `updatedAt` properties attached to instances of your model at creation, cloning & update. But you can override the options and use your own properties like in the example below. Default **false**
+If timestamps is set to true, you'll automatically have the `createdAt` and `updatedAt` properties attached to instances of your model at creation, cloning & update. But you can overwrite the options and use your own properties like in the example below. Default **false**
 
 ```js
-// override one
+// overwrite one
 let transactionSchema = new Schema(definitions, {
   timestamps: { createdAt: "created_at" },
 });

@@ -81,10 +81,10 @@ options: {
 }
 ```
 
-If timestamps is set to true, you'll automatically have the `createdAt` and `updatedAt` properties attached to instances of your model at creation, cloning & update. But you can override the options and use your own properties like in the example below. Default **false**
+If timestamps is set to true, you'll automatically have the `createdAt` and `updatedAt` properties attached to instances of your model at creation, cloning & update. But you can overwrite the options and use your own properties like in the example below. Default **false**
 
 ```js
-// override one
+// overwrite one
 let transactionSchema = new Schema(definitions, {
   timestamps: { createdAt: "created_at" },
 });

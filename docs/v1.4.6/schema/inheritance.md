@@ -6,7 +6,7 @@ For any schema that inherits from another, call the extend method on the schema 
 1. options: an options object with
    - remove: property or array of properties to ignore from the parent schema.
 
-> N.B: To override a property, you just do it in the property definitions
+> N.B: To overwrite a property, you just do it in the property definitions
 
 ```js
 const definitions = {

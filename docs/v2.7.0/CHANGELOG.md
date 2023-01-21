@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 - [Updated] updated the definition of [dependent properties](./schema/definition/dependents.md)
 - [Updated] updated the definition of [side effect properties](./schema/definition/side-effects.md)
+- [Updated] updated how schema inheritance works [more]()
 - [Updated] improved type inference during schema inheritance
 - [Updated] upgraded TS to v4.9.4
 - [Updated] rewrote types (to reduce files)
