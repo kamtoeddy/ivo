@@ -45,8 +45,9 @@ export const isNumberOkTest = ({ isNumberOk }: { isNumberOk: Function }) => {
         expect(res).toMatchObject({
           reasons: ["Expected a number"],
           valid: false,
-          validated: undefined,
         });
+
+        expect(res.validated).toBeUndefined();
       }
     });
 
@@ -125,8 +126,9 @@ export const isNumberOkTest = ({ isNumberOk }: { isNumberOk: Function }) => {
         expect(res).toMatchObject({
           reasons: [error],
           valid: false,
-          validated: undefined,
         });
+
+        expect(res.validated).toBeUndefined();
       });
     });
   });
