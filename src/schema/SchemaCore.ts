@@ -7,6 +7,7 @@ import {
   PropDefinitionRule,
   Schema as ns,
   StringKey,
+  Validator,
 } from "./interfaces";
 import { OptionsTool } from "./utils/options-tool";
 import { ErrorTool } from "./utils/schema-error";
@@ -366,8 +367,9 @@ export abstract class SchemaCore<I extends ObjectType> {
     ) as LifeCycles.Listener<T>[];
   };
 
-  protected _getValidator = (prop: string) =>
-    this._getDefinition(prop)?.validator;
+  protected _getValidator = <K extends StringKey<I>>(prop: K) => {
+    return this._getDefinition(prop)?.validator as Validator<K, I> | undefined;
+  };
 
   protected _getKeysAsProps = (data: any) =>
     Object.keys(data) as StringKey<I>[];

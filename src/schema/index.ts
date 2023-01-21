@@ -630,7 +630,13 @@ class ModelTool<
 
     const validator = this._getValidator(prop);
 
-    if (validator) return makeResponse<I[K]>(await validator(value, ctx));
+    if (validator) {
+      const res = await validator(value, ctx);
+
+      if (res.valid && isEqual(res.validated, undefined)) res.validated = value;
+
+      return makeResponse<I[K]>(res);
+    }
 
     return makeResponse<I[K]>({ valid: true, validated: value });
   };

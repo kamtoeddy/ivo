@@ -1,6 +1,13 @@
 import { ObjectType } from "../utils/interfaces";
 
-export type { CombineTypes, SpreadType, TypeOf };
+export type {
+  CombineTypes,
+  SpreadType,
+  TypeOf,
+  ResponseInput,
+  Validator,
+  ValidatorResponse,
+};
 
 type TypeOf<T> = Exclude<T, undefined>;
 
@@ -205,11 +212,11 @@ export namespace LifeCycles {
   export type VoidListener<T> = (ctx: Readonly<T>) => void | Promise<void>;
 }
 
-export type ValidatorResponse<T> =
+type ValidatorResponse<T> =
   | { valid: true; validated: T }
   | { reasons: string[]; valid: false };
 
-export type ResponseInput<T> =
+type ResponseInput<T> =
   | { valid: true; validated?: TypeOf<T> }
   | { reason?: string; reasons?: string[]; valid: false };
 
