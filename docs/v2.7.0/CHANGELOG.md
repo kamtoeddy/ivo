@@ -4,12 +4,21 @@ All notable changes to this project will be documented in this file.
 
 # v2.7.0 <small><sup>[x][x]-01-2022</sup></small>
 
+Breaking Changes
+
 - [Updated] updated the definition of [dependent properties](./schema/definition/dependents.md)
 - [Updated] updated the definition of [side effect properties](./schema/definition/side-effects.md)
-- [Updated] updated how schema inheritance works [more]()
+- [Updated] updated how schema inheritance works [more](./schema/definition/inheritance.md)
+
+Updates
+
 - [Updated] improved type inference during schema inheritance
 - [Updated] upgraded TS to v4.9.4
 - [Updated] rewrote types (to reduce files)
+
+Fixes
+
+- [Fix] fixed problem of Model.validate method still holding values from previous operation in ctx
 
 # v2.6.0 <small><sup>08-01-2022</sup></small>
 
