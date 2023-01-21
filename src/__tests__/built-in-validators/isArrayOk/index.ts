@@ -15,8 +15,9 @@ export const isArrayOkTest = ({ isArrayOk }: { isArrayOk: Function }) => {
         expect(result).toMatchObject({
           reasons: ["Expected an array"],
           valid: false,
-          validated: undefined,
         });
+
+        expect(result.validated).toBeUndefined();
       }
     });
 
@@ -26,17 +27,15 @@ export const isArrayOkTest = ({ isArrayOk }: { isArrayOk: Function }) => {
       expect(res).toMatchObject({
         reasons: ["Expected a non-empty array"],
         valid: false,
-        validated: undefined,
       });
+
+      expect(res.validated).toBeUndefined();
     });
 
     it("should accept an empty array if option is specified", async () => {
       const res = await isArrayOk([], { empty: true });
 
-      expect(res).toMatchObject({
-        valid: true,
-        validated: [],
-      });
+      expect(res).toMatchObject({ valid: true, validated: [] });
 
       expect(res.reason).toBeUndefined();
       expect(res.reasons).toBeUndefined();
@@ -102,8 +101,9 @@ export const isArrayOkTest = ({ isArrayOk }: { isArrayOk: Function }) => {
       expect(res1).toMatchObject({
         reasons: ["Expected a non-empty array"],
         valid: false,
-        validated: undefined,
       });
+
+      expect(res1.validated).toBeUndefined();
     });
 
     it("should respect modifier", async () => {
