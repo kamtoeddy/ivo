@@ -17,7 +17,5 @@ export const makeResponse = <T = undefined>(
 
   if (reason) reasons = [...reasons, ...toArray(reason)];
 
-  return { reasons, valid, validated: undefined } as ValidatorResponse<
-    TypeOf<T>
-  >;
+  return { reasons, valid } as ValidatorResponse<TypeOf<T>>;
 };
