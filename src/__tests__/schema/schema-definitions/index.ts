@@ -70,229 +70,230 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
       }
     });
 
-    // describe("constant", () => {
-    //   describe("valid", () => {
-    //     let User: any, user: any;
+    describe("constant", () => {
+      describe("valid", () => {
+        let User: any, user: any;
 
-    //     beforeAll(async () => {
-    //       User = new Schema(
-    //         {
-    //           asyncConstant: { constant: true, value: asyncSetter },
-    //           id: {
-    //             constant: true,
-    //             onCreate: ({ laxProp }: any) => ({ laxProp: laxProp + 2 }),
-    //             value: (ctx: any) => (ctx?.id === "id" ? "id-2" : "id"),
-    //           },
-    //           parentId: { constant: true, value: "parent id" },
-    //           laxProp: {
-    //             default: 0,
-    //             onUpdate: ({ laxProp }: any) => {
-    //               if (laxProp === "update id") return { id: "new id" };
-    //             },
-    //           },
-    //         },
-    //         { errors: "throw" }
-    //       ).getModel();
+        beforeAll(async () => {
+          User = new Schema(
+            {
+              asyncConstant: { constant: true, value: asyncSetter },
+              id: {
+                constant: true,
+                onCreate: ({ laxProp }: any) => ({ laxProp: laxProp + 2 }),
+                value: (ctx: any) => (ctx?.id === "id" ? "id-2" : "id"),
+              },
+              parentId: { constant: true, value: "parent id" },
+              laxProp: {
+                default: 0,
+                onUpdate: ({ laxProp }: any) => {
+                  if (laxProp === "update id") return { id: "new id" };
+                },
+              },
+            },
+            { errors: "throw" }
+          ).getModel();
 
-    //       function asyncSetter() {
-    //         return new Promise((res, rej) => {
-    //           setTimeout(() => res(20), 500);
-    //         });
-    //       }
+          function asyncSetter() {
+            return new Promise((res, rej) => {
+              setTimeout(() => res(20), 500);
+            });
+          }
 
-    //       user = (await User.create({ id: 2, parentId: [], laxProp: 2 })).data;
-    //     });
+          user = (await User.create({ id: 2, parentId: [], laxProp: 2 })).data;
+        });
 
-    //     it("should set constants at creation", () => {
-    //       expect(user).toEqual({
-    //         asyncConstant: 20,
-    //         id: "id",
-    //         parentId: "parent id",
-    //         laxProp: 4,
-    //       });
-    //     });
+        it("should set constants at creation", () => {
+          expect(user).toEqual({
+            asyncConstant: 20,
+            id: "id",
+            parentId: "parent id",
+            laxProp: 4,
+          });
+        });
 
-    //     it("should set constants during cloning", async () => {
-    //       const { data: clone } = await User.clone(user, { reset: "laxProp" });
+        it("should set constants during cloning", async () => {
+          const { data: clone } = await User.clone(user, { reset: "laxProp" });
 
-    //       expect(clone).toEqual({
-    //         asyncConstant: 20,
-    //         id: "id-2",
-    //         parentId: "parent id",
-    //         laxProp: 2,
-    //       });
-    //     });
+          expect(clone).toEqual({
+            asyncConstant: 20,
+            id: "id-2",
+            parentId: "parent id",
+            laxProp: 2,
+          });
+        });
 
-    //     it("should not set constants via listeners", async () => {
-    //       const { data: update } = await User.update(user, {
-    //         laxProp: "update id",
-    //       });
+        it("should not set constants via listeners", async () => {
+          const { data: update } = await User.update(user, {
+            laxProp: "update id",
+          });
 
-    //       expect(update).toEqual({ laxProp: "update id" });
-    //     });
+          expect(update).toEqual({ laxProp: "update id" });
+        });
 
-    //     it("should ignore constants during updates", () => {
-    //       const toFail = User.update(user, { id: 25 });
+        it("should ignore constants during updates", () => {
+          const toFail = User.update(user, { id: 25 });
 
-    //       expect(toFail).rejects.toThrow("Nothing to update");
-    //     });
+          expect(toFail).rejects.toThrow("Nothing to update");
+        });
 
-    //     it("should accept constant(true) & value(any | ()=>any)", () => {
-    //       const values = ["", "value", 1, null, false, true, {}, [], () => 1];
+        it("should accept constant(true) & value(any | ()=>any)", () => {
+          const values = ["", "value", 1, null, false, true, {}, [], () => 1];
 
-    //       for (const value of values) {
-    //         const toPass = fx({ propertyName: { constant: true, value } });
+          for (const value of values) {
+            const toPass = fx({ propertyName: { constant: true, value } });
 
-    //         expectNoFailure(toPass);
+            expectNoFailure(toPass);
 
-    //         toPass();
-    //       }
-    //     });
+            toPass();
+          }
+        });
 
-    //     it("should accept constant & value + onCreate(function | function[])", () => {
-    //       const values = [() => ({}), [() => ({})], [() => ({}), () => ({})]];
+        it("should accept constant & value + onCreate(function | function[])", () => {
+          const values = [() => ({}), [() => ({})], [() => ({}), () => ({})]];
 
-    //       for (const onCreate of values) {
-    //         const toPass = fx({
-    //           propertyName: { constant: true, value: "", onCreate },
-    //         });
+          for (const onCreate of values) {
+            const toPass = fx({
+              propertyName: { constant: true, value: "", onCreate },
+            });
 
-    //         expectNoFailure(toPass);
+            expectNoFailure(toPass);
 
-    //         toPass();
-    //       }
-    //     });
+            toPass();
+          }
+        });
 
-    //     it("should accept constant & value + onDelete(function | function[])", () => {
-    //       const values = [() => ({}), [() => ({})], [() => ({}), () => ({})]];
+        it("should accept constant & value + onDelete(function | function[])", () => {
+          const values = [() => ({}), [() => ({})], [() => ({}), () => ({})]];
 
-    //       for (const onDelete of values) {
-    //         const toPass = fx({
-    //           propertyName: { constant: true, value: "", onDelete },
-    //         });
+          for (const onDelete of values) {
+            const toPass = fx({
+              propertyName: { constant: true, value: "", onDelete },
+            });
 
-    //         expectNoFailure(toPass);
+            expectNoFailure(toPass);
 
-    //         toPass();
-    //       }
-    //     });
+            toPass();
+          }
+        });
 
-    //     it("should accept constant & value + onSuccess(function | function[])", () => {
-    //       const values = [() => ({}), [() => ({})], [() => ({}), () => ({})]];
+        it("should accept constant & value + onSuccess(function | function[])", () => {
+          const values = [() => ({}), [() => ({})], [() => ({}), () => ({})]];
 
-    //       for (const onSuccess of values) {
-    //         const toPass = fx({
-    //           propertyName: { constant: true, value: "", onSuccess },
-    //         });
+          for (const onSuccess of values) {
+            const toPass = fx({
+              propertyName: { constant: true, value: "", onSuccess },
+            });
 
-    //         expectNoFailure(toPass);
+            expectNoFailure(toPass);
 
-    //         toPass();
-    //       }
-    //     });
-    //   });
+            toPass();
+          }
+        });
+      });
 
-    //   describe("invalid", () => {
-    //     it("should reject constant(!true)", () => {
-    //       const values = [1, "", null, undefined, false, {}, []];
+      describe("invalid", () => {
+        it("should reject constant(!true)", () => {
+          const values = [1, "", null, undefined, false, {}, []];
 
-    //       for (const value of values) {
-    //         const toFail = fx({
-    //           propertyName: { constant: value, value: "" },
-    //         });
+          for (const value of values) {
+            const toFail = fx({
+              propertyName: { constant: value, value: "" },
+            });
 
-    //         expectFailure(toFail);
+            expectFailure(toFail);
 
-    //         try {
-    //           toFail();
-    //         } catch (err: any) {
-    //           expect(err.payload).toEqual(
-    //             expect.objectContaining({
-    //               propertyName: expect.arrayContaining([
-    //                 "Constant properties must have constant as 'true'",
-    //               ]),
-    //             })
-    //           );
-    //         }
-    //       }
-    //     });
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err.payload).toEqual(
+                expect.objectContaining({
+                  propertyName: expect.arrayContaining([
+                    "Constant properties must have constant as 'true'",
+                  ]),
+                })
+              );
+            }
+          }
+        });
 
-    //     it("should reject constant & no value", () => {
-    //       const toFail = fx({ propertyName: { constant: true } });
+        it("should reject constant & no value", () => {
+          const toFail = fx({ propertyName: { constant: true } });
 
-    //       expectFailure(toFail);
+          expectFailure(toFail);
 
-    //       try {
-    //         toFail();
-    //       } catch (err: any) {
-    //         expect(err.payload).toEqual(
-    //           expect.objectContaining({
-    //             propertyName: expect.arrayContaining([
-    //               "Constant properties must have a value or setter",
-    //             ]),
-    //           })
-    //         );
-    //       }
-    //     });
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toEqual(
+              expect.objectContaining({
+                propertyName: expect.arrayContaining([
+                  "Constant properties must have a value or setter",
+                ]),
+              })
+            );
+          }
+        });
 
-    //     it("should reject constant & value(undefined)", () => {
-    //       const toFail = fx({
-    //         propertyName: { constant: true, value: undefined },
-    //       });
+        it("should reject constant & value(undefined)", () => {
+          const toFail = fx({
+            propertyName: { constant: true, value: undefined },
+          });
 
-    //       expectFailure(toFail);
+          expectFailure(toFail);
 
-    //       try {
-    //         toFail();
-    //       } catch (err: any) {
-    //         expect(err.payload).toEqual(
-    //           expect.objectContaining({
-    //             propertyName: expect.arrayContaining([
-    //               "Constant properties cannot have 'undefined' as value",
-    //             ]),
-    //           })
-    //         );
-    //       }
-    //     });
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toEqual(
+              expect.objectContaining({
+                propertyName: expect.arrayContaining([
+                  "Constant properties cannot have 'undefined' as value",
+                ]),
+              })
+            );
+          }
+        });
 
-    //     it("should reject (constant & value) + any other rule(!onCreate)", () => {
-    //       const rules = [
-    //         "default",
-    //         "dependent",
-    //         "dependsOn",
-    //         "onChange",
-    //         "onFailure",
-    //         "onUpdate",
-    //         "readonly",
-    //         "resolver",
-    //         "required",
-    //         "sideEffect",
-    //         "shouldInit",
-    //         "validator",
-    //       ];
+        it("should reject (constant & value) + any other rule(!onCreate)", () => {
+          const rules = [
+            "default",
+            "dependent",
+            "dependsOn",
+            "onChange",
+            "onFailure",
+            "onUpdate",
+            "readonly",
+            "resolver",
+            "required",
+            "sanitizer",
+            "sideEffect",
+            "shouldInit",
+            "validator",
+          ];
 
-    //       for (const rule of rules) {
-    //         const toFail = fx({
-    //           propertyName: { constant: true, value: "", [rule]: true },
-    //         });
+          for (const rule of rules) {
+            const toFail = fx({
+              propertyName: { constant: true, value: "", [rule]: true },
+            });
 
-    //         expectFailure(toFail);
+            expectFailure(toFail);
 
-    //         try {
-    //           toFail();
-    //         } catch (err: any) {
-    //           expect(err.payload).toEqual(
-    //             expect.objectContaining({
-    //               propertyName: expect.arrayContaining([
-    //                 "Constant properties can only have ('constant' & 'value') or 'onCreate' | 'onDelete' | 'onSuccess'",
-    //               ]),
-    //             })
-    //           );
-    //         }
-    //       }
-    //     });
-    //   });
-    // });
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err.payload).toEqual(
+                expect.objectContaining({
+                  propertyName: expect.arrayContaining([
+                    "Constant properties can only have ('constant' & 'value') or 'onCreate' | 'onDelete' | 'onSuccess'",
+                  ]),
+                })
+              );
+            }
+          }
+        });
+      });
+    });
 
     describe("dependent", () => {
       const resolver = () => 1;
