@@ -122,7 +122,7 @@ await handleSuccess?.();
 
 ## Docs
 
-- [Defining a schema](./docs/v2.5.12/schema/definition/index.md#defining-a-schema)
+- [Defining a schema](./docs/v3.0.0/schema/definition/index.md#defining-a-schema)
   - [constant properties](./docs/v3.0.0/schema/definition/constants.md#constant-properties)
   - [default values](./docs/v3.0.0/schema/definition/defaults.md#default-values)
   - [dependent properties](./docs/v3.0.0/schema/definition/dependents.md#dependent-properties)
@@ -144,7 +144,7 @@ await handleSuccess?.();
   - [onFailure](./docs/v3.0.0/schema/definition/life-cycles.md#onfailure)
   - [onSuccess](./docs/v3.0.0/schema/definition/life-cycles.md#onsuccess)
 
-- [Options](./docs/v2.0.0/schema/definition/index.md#options)
+- [Options](./docs/v3.0.0/schema/definition/index.md#options)
 
 - [Changelog](./docs/v3.0.0/CHANGELOG.md#changelog)
 
