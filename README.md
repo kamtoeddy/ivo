@@ -125,10 +125,10 @@ await handleSuccess?.();
 - [Defining a schema](./docs/v2.5.12/schema/definition/index.md#defining-a-schema)
   - [constant properties](./docs/v1.5.0/schema/definition/constants.md#constant-properties-v150)
   - [default values](./docs/v1.4.10/schema/definition/defaults.md#default-values)
-  - [dependent properties](./docs/v2.7.0/schema/definition/dependents.md#dependent-properties)
+  - [dependent properties](./docs/v3.0.0/schema/definition/dependents.md#dependent-properties)
   - [readonly properties](./docs/v1.4.10/schema/definition/readonly.md#readonly-properties)
   - [required properties](./docs/v1.5.0/schema/definition/required.md#required-properties)
-  - [side effects](./docs/v2.7.0/schema/definition/side-effects.md#side-effect-properties)
+  - [side effects](./docs/v3.0.0/schema/definition/side-effects.md#side-effect-properties)
   - [validators](./docs/v2.6.0/validate/index.md#validators)
     - [isArrayOk](./docs/v2.6.0/validate/isArrayOk.md)
     - [isBooleanOk](./docs/v2.6.0/validate/isBooleanOk.md)
@@ -136,7 +136,7 @@ await handleSuccess?.();
     - [isEmailOk](./docs/v2.6.0/validate/isEmailOk.md)
     - [isNumberOk](./docs/v2.6.0/validate/isNumberOk.md)
     - [isStringOk](./docs/v2.6.0/validate/isStringOk.md)
-- [Inheritance](./docs/v2.7.0/schema/definition/inheritance.md#schema-inheritance)
+- [Inheritance](./docs/v3.0.0/schema/definition/inheritance.md#schema-inheritance)
 - [The Operation Context](./docs/v2.5.0/schema/definition/life-cycles.md#the-operation-context)
 - [Life Cycles & Listeners](./docs/v2.5.10/schema/definition/life-cycles.md#life-cycle-listeners)
   - [onChange](./docs/v2.5.10/schema/definition/life-cycles.md#onchange)
@@ -147,6 +147,6 @@ await handleSuccess?.();
   - [onUpdate](./docs/v2.5.10/schema/definition/life-cycles.md#onupdate)
 - [Options](./docs/v2.0.0/schema/definition/index.md#options)
 
-- [Changelog](./docs/v2.7.0/CHANGELOG.md#changelog)
+- [Changelog](./docs/v3.0.0/CHANGELOG.md#changelog)
 
 ## Happy coding! 😎

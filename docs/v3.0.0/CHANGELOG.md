@@ -2,12 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
-# v2.7.0 <small><sup>[x][x]-01-2022</sup></small>
+# v3.0.0 <small><sup>[x][x]-01-2022</sup></small>
 
 Breaking Changes
 
 - [Updated] updated the definition of [dependent properties](./schema/definition/dependents.md)
 - [Updated] updated the definition of [side effect properties](./schema/definition/side-effects.md)
+- [Removed] removed `onChange`, `onCreate` & `onUpdate` rules
 - [Updated] updated how schema inheritance works [more](./schema/definition/inheritance.md)
 
 Updates
