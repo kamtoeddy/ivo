@@ -178,7 +178,12 @@ class ModelTool<
     value: any,
     context: ObjectType
   ) => {
-    if (!this._isProp(prop) || this._isConstant(prop)) return false;
+    if (
+      !this._isProp(prop) ||
+      this._isConstant(prop) ||
+      this._isDependentProp(prop)
+    )
+      return false;
     return !isEqual(value, context?.[prop]);
   };
 
@@ -277,12 +282,7 @@ class ModelTool<
         const _value = extra[prop];
         const isSideEffect = this._isSideEffect(prop);
 
-        if (
-          this._isReadonly(prop) &&
-          !this._isDependentProp(prop) &&
-          !this._isUpdatable(prop)
-        )
-          return;
+        if (this._isReadonly(prop) && !this._isUpdatable(prop)) return;
 
         if (
           lifeCycle === "onUpdate" &&
