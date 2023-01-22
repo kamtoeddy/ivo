@@ -101,6 +101,9 @@ export namespace Schema {
     onDelete?:
       | LifeCycles.DeleteListener<O>
       | NonEmptyArray<LifeCycles.DeleteListener<O>>;
+    onSuccess?:
+      | LifeCycles.SuccessListener<T>
+      | NonEmptyArray<LifeCycles.SuccessListener<T>>;
     value: TypeOf<T[K]> | Setter<K, T> | AsyncSetter<K, T>;
   };
 
