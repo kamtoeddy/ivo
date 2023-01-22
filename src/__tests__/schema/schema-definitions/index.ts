@@ -323,6 +323,11 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
         describe("behaviour", () => {
           let Model: any, data: any;
 
+          let resolversCalledOnCreateStats = {} as Record<
+            string,
+            number | undefined
+          >;
+
           beforeAll(async () => {
             Model = new Schema({
               laxProp: { default: "" },
@@ -348,16 +353,28 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               },
             }).getModel();
 
+            function incrementResolveCountFor(prop: string) {
+              const previousCount = resolversCalledOnCreateStats[prop] ?? 0;
+
+              resolversCalledOnCreateStats[prop] = previousCount + 1;
+            }
+
             function resolverOfDependentProp({ laxProp, laxProp_1 }: any) {
+              incrementResolveCountFor("dependentProp");
               return laxProp.length + laxProp_1.length;
             }
 
             function resolverOfDependentProp_1({ dependentProp }: any) {
+              incrementResolveCountFor("dependentProp_1");
+
               return dependentProp + 1;
             }
 
             async function asyncResolver({ dependentProp }: any) {
+              incrementResolveCountFor("dependentProp_2");
+
               await pauseFor();
+
               return dependentProp + 2;
             }
 
@@ -373,6 +390,10 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             // await res.handleSuccess?.()
           });
 
+          beforeEach(() => {
+            let resolversCalledOnCreateStats = {};
+          });
+
           describe("creation", () => {
             it("should have all correct properties and values at creation", () => {
               expect(data).toEqual({
@@ -383,6 +404,8 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 dependentProp_1: 0,
                 dependentProp_2: 0,
               });
+
+              expect(resolversCalledOnCreateStats).toEqual({});
             });
           });
 
