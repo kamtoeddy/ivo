@@ -477,17 +477,20 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             });
           });
 
-          // describe("updates", () => {
-          //   it("should have all correct properties and values at creation", () => {
-          //     expect(data).toEqual({
-          //       laxProp: "value",
-          //       laxProp_1: "based pricing",
-          //       dependentProp: 0,
-          //       dependentProp_1: 0,
-          //       dependentProp_2: 0,
-          //     });
-          //   });
-          // });
+          describe("updates", () => {
+            it("should have all correct properties and values after updates", async () => {
+              const { data: updates } = await Model.update(data, {
+                laxProp_2: "hey",
+                dependentProp: 74,
+                dependentProp_1: 235,
+                dependentProp_2: 72,
+              });
+
+              expect(updates).toMatchObject({ laxProp_2: "hey" });
+
+              expect(resolversCalledOnCreateStats).toEqual({});
+            });
+          });
 
           // describe("deletion", () => {
           //   it("should have all correct properties and values at creation", () => {
