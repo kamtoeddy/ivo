@@ -2357,7 +2357,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
         //   });
         // });
 
-        it("should allow onChange", () => {
+        it("should allow sanitizer", () => {
           const toPass = fx({
             dependentProp: {
               default: "",
@@ -2365,7 +2365,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               dependsOn: "propertyName",
               resolver: () => "",
             },
-            propertyName: { sideEffect: true, validator },
+            propertyName: { sideEffect: true, sanitizer: () => "", validator },
           });
 
           expectNoFailure(toPass);
