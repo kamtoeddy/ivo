@@ -2648,6 +2648,38 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
       });
 
       describe("invalid", () => {
+        it("should reject 'sanitizer' rule on non-side effects", () => {
+          const values = [
+            -1,
+            1,
+            true,
+            false,
+            undefined,
+            null,
+            [],
+            {},
+            () => {},
+          ];
+
+          for (const sanitizer of values) {
+            const toFail = fx({ propertyName: { default: "", sanitizer } });
+
+            expectFailure(toFail);
+
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err.payload).toEqual(
+                expect.objectContaining({
+                  propertyName: expect.arrayContaining([
+                    "'sanitizer' is only valid on side effects",
+                  ]),
+                })
+              );
+            }
+          }
+        });
+
         it("should reject sideEffect & no dependent property ", () => {
           const toFail = fx({
             propertyName: { sideEffect: true, validator },

@@ -583,7 +583,8 @@ export abstract class SchemaCore<I extends ObjectType> {
       const sideEffectDef = this.__isSideEffect(prop);
 
       if (!sideEffectDef.valid) reasons.push(sideEffectDef.reason!);
-    }
+    } else if (this._hasAny(prop, "sanitizer"))
+      reasons.push("'sanitizer' is only valid on side effects");
 
     if (this._hasAny(prop, "shouldInit")) {
       const { shouldInit } = this._getDefinition(prop);
