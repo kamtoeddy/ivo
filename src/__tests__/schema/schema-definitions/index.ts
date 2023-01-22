@@ -334,8 +334,17 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               laxProp_1: { default: "" },
               laxProp_2: {
                 default: "",
-                onCreate: attemptToModify("dependentProp"),
+                onCreate: [
+                  attemptToModify("dependentProp"),
+                  attemptToModify("dependentProp_1"),
+                  attemptToModify("dependentProp_2"),
+                ],
                 onChange: [
+                  attemptToModify("dependentProp"),
+                  attemptToModify("dependentProp_1"),
+                  attemptToModify("dependentProp_2"),
+                ],
+                onUpdate: [
                   attemptToModify("dependentProp"),
                   attemptToModify("dependentProp_1"),
                   attemptToModify("dependentProp_2"),
@@ -422,17 +431,21 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             });
           });
 
-          // describe("cloning", () => {
-          //   it("should have all correct properties and values at creation", () => {
-          //     expect(data).toEqual({
-          //       laxProp: "value",
-          //       laxProp_1: "based pricing",
-          //       dependentProp: 0,
-          //       dependentProp_1: 0,
-          //       dependentProp_2: 0,
-          //     });
-          //   });
-          // });
+          describe("cloning", () => {
+            it("should have all correct properties and values at creation with 'clone' method", async () => {
+              const { data: clone } = await Model.clone(data);
+
+              expect(clone).toMatchObject({
+                laxProp: "value",
+                laxProp_1: "based pricing",
+                dependentProp: 0,
+                dependentProp_1: 0,
+                dependentProp_2: 0,
+              });
+
+              expect(resolversCalledOnCreateStats).toEqual({});
+            });
+          });
 
           // describe("updates", () => {
           //   it("should have all correct properties and values at creation", () => {
