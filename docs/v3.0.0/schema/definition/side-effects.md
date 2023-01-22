@@ -11,7 +11,7 @@ Cannot be dependent, defaulted, strictly required nor readonly
 Example:
 
 ```js
-const { Schema } = require("clean-schema");
+import { Schema } from "clean-schema";
 
 // definition
 const User = new Schema({
