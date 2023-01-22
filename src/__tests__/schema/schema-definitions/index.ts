@@ -84,7 +84,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           expect.objectContaining({
             message: "Invalid Schema",
             payload: {
-              emptyProp: ["'yoo' is not a valid rule"],
+              emptyProp: expect.arrayContaining(["'yoo' is not a valid rule"]),
             },
             statusCode: 500,
           })
@@ -1056,7 +1056,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
         it("should allow default + validator", () => {
           const toPass = fx({
-            propertyName: { default: "", validtor: () => ({ valid: true }) },
+            propertyName: { default: "", validator: () => ({ valid: true }) },
           });
 
           expectNoFailure(toPass);
@@ -1107,7 +1107,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               onChange: () => ({}),
               onCreate: [() => ({})],
               onUpdate: () => ({}),
-              validtor: () => ({ valid: true }),
+              validator: () => ({ valid: true }),
             },
           });
 

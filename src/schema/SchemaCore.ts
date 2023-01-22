@@ -369,12 +369,20 @@ export abstract class SchemaCore<I extends ObjectType> {
     ) as LifeCycles.Listener<T>[];
   };
 
+  protected _getInvalidRules = <K extends StringKey<I>>(prop: K) => {
+    const rulesProvided = this._getKeysAsProps<PropDefinitionRule>(
+      this._getDefinition(prop)
+    );
+
+    return rulesProvided.filter((r) => !allRules.includes(r));
+  };
+
   protected _getValidator = <K extends StringKey<I>>(prop: K) => {
     return this._getDefinition(prop)?.validator as Validator<K, I> | undefined;
   };
 
-  protected _getKeysAsProps = (data: any) =>
-    Object.keys(data) as StringKey<I>[];
+  protected _getKeysAsProps = <T = StringKey<I>>(data: any) =>
+    Object.keys(data) as T[];
 
   protected _hasAny = (
     prop: string,
@@ -535,6 +543,12 @@ export abstract class SchemaCore<I extends ObjectType> {
     if (!isPopDefOk.valid) isPopDefOk;
 
     let reasons: string[] = [];
+
+    const invalidRulesProvided = this._getInvalidRules(prop as StringKey<I>);
+
+    if (invalidRulesProvided.length)
+      for (let rule of invalidRulesProvided)
+        reasons.push(`'${rule}' is not a valid rule`);
 
     if (this._hasAny(prop, "constant")) {
       const constantDef = this.__isConstantProp(prop);
