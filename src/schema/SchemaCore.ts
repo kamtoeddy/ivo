@@ -540,7 +540,8 @@ export abstract class SchemaCore<I extends ObjectType> {
       const constantDef = this.__isConstantProp(prop);
 
       if (!constantDef.valid) reasons.push(constantDef.reason!);
-    }
+    } else if (this._hasAny(prop, "value"))
+      reasons.push("'value' rule can only be used with constant properties");
 
     if (this._hasAny(prop, "dependent")) {
       const dependentDef = this.__isDependentProp(prop);
