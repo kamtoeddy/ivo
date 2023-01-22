@@ -372,7 +372,11 @@ class ModelTool<
       }
 
       if (this._isDependentProp(prop)) {
-        data[prop] = this.values[prop]!;
+        const value = reset.includes(prop)
+          ? this._getDefaultValue(prop)
+          : this.values[prop];
+
+        data[prop] = value;
 
         const validCtxUpdate = { [prop]: data[prop] } as I;
 
