@@ -24,12 +24,9 @@ const allRules = [
   "default",
   "dependent",
   "dependsOn",
-  "onChange",
-  "onCreate",
   "onDelete",
   "onFailure",
   "onSuccess",
-  "onUpdate",
   "readonly",
   "resolver",
   "required",
@@ -42,13 +39,7 @@ const allRules = [
 ] as PropDefinitionRule[];
 
 const allowedOptions: OptionsKey[] = ["errors", "timestamps"];
-const constantRules = [
-  "constant",
-  "onCreate",
-  "onDelete",
-  "onSuccess",
-  "value",
-];
+const constantRules = ["constant", "onDelete", "onSuccess", "value"];
 const sideEffectRules = [
   "sanitizer",
   "sideEffect",
@@ -61,12 +52,9 @@ const sideEffectRules = [
 ];
 
 const lifeCycleRules: LifeCycles.Rule[] = [
-  "onChange",
-  "onCreate",
   "onDelete",
   "onFailure",
   "onSuccess",
-  "onUpdate",
 ];
 
 export abstract class SchemaCore<I extends ObjectType> {
@@ -314,7 +302,7 @@ export abstract class SchemaCore<I extends ObjectType> {
   };
 
   protected _getConstantValue = async (prop: string) =>
-    this._getValueBy(prop, "value", "onCreate");
+    this._getValueBy(prop, "value", "creating");
 
   protected _getValueBy = (
     prop: string,
@@ -353,8 +341,8 @@ export abstract class SchemaCore<I extends ObjectType> {
     lifeCycle: LifeCycles.Rule
   ) => {
     const onChangeListeners = this._isChangeLifeCycle(lifeCycle)
-      ? this._getListeners(prop, "onChange")
-      : ([] as LifeCycles.ChangeListener<I>[]);
+      ? this._getListeners(prop, "onDelete")
+      : [];
 
     if (this._isSideEffect(prop)) return { listeners: [], onChangeListeners };
 
@@ -428,7 +416,7 @@ export abstract class SchemaCore<I extends ObjectType> {
       return {
         valid,
         reason:
-          "Constant properties can only have ('constant' & 'value') or 'onCreate' | 'onDelete' | 'onSuccess'",
+          "Constant properties can only have ('constant' & 'value') or 'onDelete' | 'onSuccess'",
       };
 
     this.constants.push(prop as StringKey<I>);
@@ -618,7 +606,7 @@ export abstract class SchemaCore<I extends ObjectType> {
     if (this._hasAny(prop, "validator") && !this._isValidatorOk(prop))
       reasons.push("Invalid validator");
 
-    // onChange, onCreate, onDelete, onFailure, onSuccess & onUpdate
+    // onDelete, onFailure, & onSuccess
     for (let rule of lifeCycleRules) {
       if (!this._hasAny(prop, rule)) continue;
 
@@ -653,7 +641,7 @@ export abstract class SchemaCore<I extends ObjectType> {
 
     if (valid && !this._isSideEffect(prop)) {
       this.props.push(prop as StringKey<I>);
-      this._setDefaultOf(prop as StringKey<I>, "onCreate");
+      this._setDefaultOf(prop as StringKey<I>, "creating");
     }
 
     return { reasons, valid };

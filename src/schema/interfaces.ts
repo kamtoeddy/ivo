@@ -79,10 +79,6 @@ export namespace Schema {
   };
 
   type Listenable<I, O = I> = {
-    onChange?:
-      | LifeCycles.ChangeListener<I>
-      | NonEmptyArray<LifeCycles.ChangeListener<I>>;
-    onCreate?: LifeCycles.Listener<I> | NonEmptyArray<LifeCycles.Listener<I>>;
     onDelete?:
       | LifeCycles.DeleteListener<O>
       | NonEmptyArray<LifeCycles.DeleteListener<O>>;
@@ -92,12 +88,10 @@ export namespace Schema {
     onSuccess?:
       | LifeCycles.SuccessListener<I>
       | NonEmptyArray<LifeCycles.SuccessListener<I>>;
-    onUpdate?: LifeCycles.Listener<I> | NonEmptyArray<LifeCycles.Listener<I>>;
   };
 
   type Constant<K extends keyof T, T, O = T> = {
     constant: true;
-    onCreate?: LifeCycles.Listener<T> | NonEmptyArray<LifeCycles.Listener<T>>;
     onDelete?:
       | LifeCycles.DeleteListener<O>
       | NonEmptyArray<LifeCycles.DeleteListener<O>>;
@@ -189,23 +183,12 @@ export namespace Schema {
 }
 
 export namespace LifeCycles {
-  export type Rule =
-    | "onChange"
-    | "onCreate"
-    | "onDelete"
-    | "onFailure"
-    | "onSuccess"
-    | "onUpdate";
+  export type Rule = "onDelete" | "onFailure" | "onSuccess";
 
-  export type LifeCycle = "onCreate" | "onUpdate";
+  export type LifeCycle = "creating" | "updating";
 
   export type Listener<T> = (
     ctx: Readonly<T>
-  ) => Partial<T> | Promise<Partial<T>> | void | Promise<void>;
-
-  export type ChangeListener<T> = (
-    ctx: Readonly<T>,
-    lifeCycle: LifeCycle
   ) => Partial<T> | Promise<Partial<T>> | void | Promise<void>;
 
   export type DeleteListener<T> = (ctx: Readonly<T>) => void | Promise<void>;
@@ -237,12 +220,9 @@ export type PropDefinitionRule =
   | "default"
   | "dependent"
   | "dependsOn"
-  | "onChange"
-  | "onCreate"
   | "onDelete"
   | "onFailure"
   | "onSuccess"
-  | "onUpdate"
   | "readonly"
   | "resolver"
   | "required"
