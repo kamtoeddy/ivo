@@ -327,6 +327,12 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           let onSuccessStats = {} as Record<string, number | undefined>;
           let resolversCalledStats = {} as Record<string, number | undefined>;
 
+          const successCountOfDependentProps = {
+            dependentProp: 4,
+            dependentProp_1: 1,
+            dependentProp_2: 3,
+          };
+
           beforeEach(async () => {
             Model = new Schema({
               laxProp: { default: "" },
@@ -467,17 +473,19 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               });
 
               expect(resolversCalledStats).toEqual({});
-              expect(onSuccessStats).toEqual({
-                dependentProp: 4,
-                dependentProp_1: 1,
-                dependentProp_2: 3,
-              });
+              expect(onSuccessStats).toEqual(successCountOfDependentProps);
             });
           });
 
           describe("cloning", () => {
+            beforeEach(() => {
+              onSuccessStats = {};
+            });
+
             it("should have all correct properties and values at creation with 'clone' method", async () => {
-              const { data: clone } = await Model.clone(data);
+              const { data: clone, handleSuccess } = await Model.clone(data);
+
+              await handleSuccess();
 
               expect(clone).toMatchObject({
                 laxProp: "",
@@ -489,10 +497,12 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               });
 
               expect(resolversCalledStats).toEqual({});
+
+              expect(onSuccessStats).toEqual(successCountOfDependentProps);
             });
 
             it("should respect 'reset' option at creation with 'clone' method", async () => {
-              const { data: clone } = await Model.clone(
+              const { data: clone, handleSuccess } = await Model.clone(
                 {
                   ...data,
                   dependentProp: 20,
@@ -508,6 +518,8 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 }
               );
 
+              await handleSuccess();
+
               expect(clone).toMatchObject({
                 laxProp: "",
                 laxProp_1: "",
@@ -518,6 +530,8 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               });
 
               expect(resolversCalledStats).toEqual({});
+
+              expect(onSuccessStats).toEqual(successCountOfDependentProps);
             });
           });
 
