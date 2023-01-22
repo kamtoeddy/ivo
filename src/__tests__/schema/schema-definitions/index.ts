@@ -323,13 +323,11 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
         describe("behaviour", () => {
           let Model: any, data: any;
 
-          let resolversCalledOnCreateStats = {} as Record<
-            string,
-            number | undefined
-          >;
           let onDeleteStats = {} as Record<string, number | undefined>;
+          let onSuccessStats = {} as Record<string, number | undefined>;
+          let resolversCalledStats = {} as Record<string, number | undefined>;
 
-          beforeAll(async () => {
+          beforeEach(async () => {
             Model = new Schema({
               laxProp: { default: "" },
               laxProp_1: { default: "" },
@@ -357,8 +355,14 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 dependsOn: ["laxProp", "laxProp_1"],
                 resolver: resolverOfDependentProp,
                 onDelete: [
-                  incrementOnDeleteCountFor("dependentProp"),
-                  incrementOnDeleteCountFor("dependentProp"),
+                  incrementOnDeleteCountOf("dependentProp"),
+                  incrementOnDeleteCountOf("dependentProp"),
+                ],
+                onSuccess: [
+                  incrementOnSuccessCountOf("dependentProp"),
+                  incrementOnSuccessCountOf("dependentProp"),
+                  incrementOnSuccessCountOf("dependentProp"),
+                  incrementOnSuccessCountOf("dependentProp"),
                 ],
               },
               dependentProp_1: {
@@ -366,7 +370,8 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 dependent: true,
                 dependsOn: "dependentProp",
                 resolver: resolverOfDependentProp_1,
-                onDelete: incrementOnDeleteCountFor("dependentProp_1"),
+                onDelete: incrementOnDeleteCountOf("dependentProp_1"),
+                onSuccess: incrementOnSuccessCountOf("dependentProp_1"),
               },
               dependentProp_2: {
                 default: 0,
@@ -375,8 +380,13 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 readonly: true,
                 resolver: asyncResolver,
                 onDelete: [
-                  incrementOnDeleteCountFor("dependentProp_2"),
-                  incrementOnDeleteCountFor("dependentProp_2"),
+                  incrementOnDeleteCountOf("dependentProp_2"),
+                  incrementOnDeleteCountOf("dependentProp_2"),
+                ],
+                onSuccess: [
+                  incrementOnSuccessCountOf("dependentProp_2"),
+                  incrementOnSuccessCountOf("dependentProp_2"),
+                  incrementOnSuccessCountOf("dependentProp_2"),
                 ],
               },
             }).getModel();
@@ -385,7 +395,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               return (ctx: any) => ({ [prop]: ctx[prop] + 1000 });
             }
 
-            function incrementOnDeleteCountFor(prop: string) {
+            function incrementOnDeleteCountOf(prop: string) {
               return () => {
                 const previousCount = onDeleteStats[prop] ?? 0;
 
@@ -393,25 +403,34 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               };
             }
 
-            function incrementResolveCountFor(prop: string) {
-              const previousCount = resolversCalledOnCreateStats[prop] ?? 0;
+            function incrementOnSuccessCountOf(prop: string) {
+              return () => {
+                const previousCount = onSuccessStats[prop] ?? 0;
 
-              resolversCalledOnCreateStats[prop] = previousCount + 1;
+                onSuccessStats[prop] = previousCount + 1;
+              };
+            }
+
+            function incrementResolveCountOf(prop: string) {
+              const previousCount = resolversCalledStats[prop] ?? 0;
+
+              resolversCalledStats[prop] = previousCount + 1;
             }
 
             function resolverOfDependentProp({ laxProp, laxProp_1 }: any) {
-              incrementResolveCountFor("dependentProp");
+              incrementResolveCountOf("dependentProp");
+
               return laxProp.length + laxProp_1.length;
             }
 
             function resolverOfDependentProp_1({ dependentProp }: any) {
-              incrementResolveCountFor("dependentProp_1");
+              incrementResolveCountOf("dependentProp_1");
 
               return dependentProp + 1;
             }
 
             async function asyncResolver({ dependentProp }: any) {
-              incrementResolveCountFor("dependentProp_2");
+              incrementResolveCountOf("dependentProp_2");
 
               await pauseFor();
 
@@ -427,12 +446,13 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
             data = res.data;
 
-            // await res.handleSuccess?.()
+            await res.handleSuccess?.();
           });
 
-          beforeEach(() => {
-            let onDeleteStats = {};
-            let resolversCalledOnCreateStats = {};
+          afterEach(() => {
+            onDeleteStats = {};
+            onSuccessStats = {};
+            resolversCalledStats = {};
           });
 
           describe("creation", () => {
@@ -446,7 +466,12 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 dependentProp_2: 0,
               });
 
-              expect(resolversCalledOnCreateStats).toEqual({});
+              expect(resolversCalledStats).toEqual({});
+              expect(onSuccessStats).toEqual({
+                dependentProp: 4,
+                dependentProp_1: 1,
+                dependentProp_2: 3,
+              });
             });
           });
 
@@ -463,7 +488,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 dependentProp_2: 0,
               });
 
-              expect(resolversCalledOnCreateStats).toEqual({});
+              expect(resolversCalledStats).toEqual({});
             });
 
             it("should respect 'reset' option at creation with 'clone' method", async () => {
@@ -492,7 +517,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 dependentProp_2: 0,
               });
 
-              expect(resolversCalledOnCreateStats).toEqual({});
+              expect(resolversCalledStats).toEqual({});
             });
           });
 
@@ -507,7 +532,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
               expect(updates).toMatchObject({ laxProp_2: "hey" });
 
-              expect(resolversCalledOnCreateStats).toEqual({});
+              expect(resolversCalledStats).toEqual({});
             });
           });
 
