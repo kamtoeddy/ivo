@@ -831,13 +831,16 @@ export abstract class SchemaCore<I extends ObjectType> {
   protected __isSideEffect = (prop: string) => {
     const valid = false;
 
-    const { sideEffect, shouldInit } = this._getDefinition(prop);
+    const { sanitizer, sideEffect, shouldInit } = this._getDefinition(prop);
 
     if (sideEffect !== true)
       return { valid, reason: "SideEffects must have sideEffect as 'true'" };
 
     if (!this._isValidatorOk(prop))
       return { valid, reason: "Invalid validator" };
+
+    if (this._hasAny(prop, "sanitizer") && !this._isFunction(sanitizer))
+      return { valid, reason: "'sanitizer' must be a function" };
 
     const hasRequired = this._hasAny(prop, "required");
 
