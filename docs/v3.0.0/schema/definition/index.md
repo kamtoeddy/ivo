@@ -64,9 +64,9 @@ These methods are async because custom validators could be async as well.
 | onDelete      | function \| function[ ] | executed when the delete method of a model is invoked [more](./life-cycles.md#ondelete)                                                                     |
 | onFailure     | function \| function[ ] | executed after an unsucessful operation [more](./life-cycles.md#onfailure)                                                                                  |
 | onSuccess     | function \| function[ ] | executed after a sucessful operation [more](./life-cycles.md#onsuccess)                                                                                     |
-| readonly      | boolean \| 'lax'        | a propterty whose value should not change [more](../../../v1.4.10/schema/definition/readonly.md#readonly-properties)                                        |
-| required      | boolean \| function     | a property that must be set during an operation [more](../../../v1.5.0/schema/definition/required.md#required-properties)                                   |
-| requiredError | any \| function         | the error message to use when using a callable required property [more](../../../v1.5.0/schema/definition/required.md#required-by-v150)                     |
+| readonly      | boolean \| 'lax'        | a propterty whose value should not change [more](./readonly.md#readonly-properties)                                                                         |
+| required      | boolean \| function     | a property that must be set during an operation [more](./required.md#required-properties)                                                                   |
+| requiredError | any \| function         | the error message to use when using a callable required property [more](./required.md#required-by)                                                          |
 | sideEffect    | boolean                 | a helper property that can be used to provide extra context but does not appear on instances of your model [more](./side-effects.md#side-effect-properties) |
 | shouldInit    | boolean \| function     | A boolean or setter that tells clean-schema whether or not a property should be initialized. Default **true**                                               |
 | validator     | function                | A function (async / sync) used to validated the value of a property. [more](../../../v1.4.6/validate/index.md#validators)                                   |
@@ -75,14 +75,14 @@ These methods are async because custom validators could be async as well.
 # Options
 
 ```ts
-interface ITimestamp {
+type Timestamp = {
   createdAt?: string;
   updatedAt?: string;
-}
+};
 
 options: {
   errors: "silent" | "throw";
-  timestamps: boolean | ITimestamp;
+  timestamps: boolean | Timestamp;
 }
 ```
 
