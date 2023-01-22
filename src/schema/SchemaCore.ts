@@ -34,6 +34,7 @@ const allRules = [
   "resolver",
   "required",
   "requiredError",
+  "sanitizer",
   "sideEffect",
   "shouldInit",
   "validator",
@@ -49,6 +50,7 @@ const constantRules = [
   "value",
 ];
 const sideEffectRules = [
+  "sanitizer",
   "sideEffect",
   "onFailure",
   "onSuccess",

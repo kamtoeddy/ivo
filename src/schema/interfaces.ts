@@ -66,6 +66,7 @@ export namespace Schema {
       resolver?: Function;
       required?: boolean | Function;
       requiredError?: string | Function;
+      sanitizer?: Setter<K, I> | AsyncSetter<K, I>;
       sideEffect?: boolean;
       shouldInit?: false | Setter<boolean, I>;
       validator?: Function;
@@ -153,6 +154,7 @@ export namespace Schema {
 
   type SideEffect<K extends keyof T, T> = {
     sideEffect: true;
+    sanitizer?: Setter<K, T> | AsyncSetter<K, T>;
     onFailure?:
       | LifeCycles.VoidListener<T>
       | NonEmptyArray<LifeCycles.VoidListener<T>>;
@@ -243,6 +245,7 @@ export type PropDefinitionRule =
   | "required"
   | "requiredError"
   | "sideEffect"
+  | "sanitizer"
   | "shouldInit"
   | "validator"
   | "value";
