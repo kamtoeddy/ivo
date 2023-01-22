@@ -327,6 +327,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             string,
             number | undefined
           >;
+          let onDeleteStats = {} as Record<string, number | undefined>;
 
           beforeAll(async () => {
             Model = new Schema({
@@ -355,12 +356,17 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 dependent: true,
                 dependsOn: ["laxProp", "laxProp_1"],
                 resolver: resolverOfDependentProp,
+                onDelete: [
+                  incrementOnDeleteCountFor("dependentProp"),
+                  incrementOnDeleteCountFor("dependentProp"),
+                ],
               },
               dependentProp_1: {
                 default: 0,
                 dependent: true,
                 dependsOn: "dependentProp",
                 resolver: resolverOfDependentProp_1,
+                onDelete: incrementOnDeleteCountFor("dependentProp_1"),
               },
               dependentProp_2: {
                 default: 0,
@@ -368,11 +374,23 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 dependsOn: "dependentProp",
                 readonly: true,
                 resolver: asyncResolver,
+                onDelete: [
+                  incrementOnDeleteCountFor("dependentProp_2"),
+                  incrementOnDeleteCountFor("dependentProp_2"),
+                ],
               },
             }).getModel();
 
             function attemptToModify(prop: string) {
               return (ctx: any) => ({ [prop]: ctx[prop] + 1000 });
+            }
+
+            function incrementOnDeleteCountFor(prop: string) {
+              return () => {
+                const previousCount = onDeleteStats[prop] ?? 0;
+
+                onDeleteStats[prop] = previousCount + 1;
+              };
             }
 
             function incrementResolveCountFor(prop: string) {
@@ -413,6 +431,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           });
 
           beforeEach(() => {
+            let onDeleteStats = {};
             let resolversCalledOnCreateStats = {};
           });
 
@@ -492,17 +511,17 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             });
           });
 
-          // describe("deletion", () => {
-          //   it("should have all correct properties and values at creation", () => {
-          //     expect(data).toEqual({
-          //       laxProp: "value",
-          //       laxProp_1: "based pricing",
-          //       dependentProp: 0,
-          //       dependentProp_1: 0,
-          //       dependentProp_2: 0,
-          //     });
-          //   });
-          // });
+          describe("deletion", () => {
+            it("should have all correct properties and values at creation", async () => {
+              await Model.delete(data);
+
+              expect(onDeleteStats).toEqual({
+                dependentProp: 2,
+                dependentProp_1: 1,
+                dependentProp_2: 2,
+              });
+            });
+          });
         });
 
         it("should accept dependent & default(any | function)", () => {
