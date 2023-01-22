@@ -80,7 +80,7 @@ Fixes
 
 # v2.5.4 <small><sup>20-11-2022</sup></small>
 
-- [Docs] fixed broken links in readme
+- [Docs] fixed broken links in README
 
 # v2.5.3 <small><sup>05-11-2022</sup></small>
 
