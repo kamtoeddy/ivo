@@ -21,6 +21,7 @@ Fixes
 
 - [Fix] fixed problem of Model.validate method still holding values from previous operation in ctx
 - [Fix] fixed problem with Model.validate(prop, value) does not return the value provided when prop's validator does not return a validated(sanitized) value
+- [Fix] fixed problem with schema not complaining about invalid rules like 'yoo'
 
 # v2.6.0 <small><sup>08-01-2022</sup></small>
 
