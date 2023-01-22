@@ -235,6 +235,24 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           }
         });
 
+        it("should reject 'value' on non-constants", () => {
+          const toFail = fx({ propertyName: { value: true } });
+
+          expectFailure(toFail);
+
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toEqual(
+              expect.objectContaining({
+                propertyName: expect.arrayContaining([
+                  "'value' rule can only be used with constant properties",
+                ]),
+              })
+            );
+          }
+        });
+
         it("should reject constant & value(undefined)", () => {
           const toFail = fx({
             propertyName: { constant: true, value: undefined },
