@@ -59,7 +59,7 @@ These methods are async because custom validators could be async as well.
 | Property      | Type                    | Description                                                                                                                                                 |
 | ------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | constant      | boolean                 | use with **`value`** rule to specify a property with a forever constant value. [more](./constants.md#constant-properties)                                   |
-| default       | any \| function         | the default value of a propterty. [more](../../../v1.4.10/schema/definition/defaults.md#default-values)                                                     |
+| default       | any \| function         | the default value of a propterty. [more](./defaults.md#default-values)                                                                                      |
 | dependent     | boolean                 | to block the direct modification of a property. [more](./dependents.md#dependent-properties)                                                                |
 | onDelete      | function \| function[ ] | executed when the delete method of a model is invoked [more](./life-cycles.md#ondelete)                                                                     |
 | onFailure     | function \| function[ ] | executed after an unsucessful operation [more](./life-cycles.md#onfailure)                                                                                  |
