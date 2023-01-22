@@ -332,7 +332,15 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             Model = new Schema({
               laxProp: { default: "" },
               laxProp_1: { default: "" },
-              laxProp_2: { default: "" },
+              laxProp_2: {
+                default: "",
+                onCreate: attemptToModify("dependentProp"),
+                onChange: [
+                  attemptToModify("dependentProp"),
+                  attemptToModify("dependentProp_1"),
+                  attemptToModify("dependentProp_2"),
+                ],
+              },
               dependentProp: {
                 default: 0,
                 dependent: true,
@@ -349,9 +357,14 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 default: 0,
                 dependent: true,
                 dependsOn: "dependentProp",
+                readonly: true,
                 resolver: asyncResolver,
               },
             }).getModel();
+
+            function attemptToModify(prop: string) {
+              return (ctx: any) => ({ [prop]: ctx[prop] + 1000 });
+            }
 
             function incrementResolveCountFor(prop: string) {
               const previousCount = resolversCalledOnCreateStats[prop] ?? 0;
