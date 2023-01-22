@@ -371,6 +371,15 @@ class ModelTool<
         return this._updateContext(validCtxUpdate);
       }
 
+      if (this._isDependentProp(prop)) {
+        data[prop] = this.values[prop]!;
+
+        const validCtxUpdate = { [prop]: data[prop] } as I;
+
+        this._updateFinalContext(validCtxUpdate);
+        return this._updateContext(validCtxUpdate);
+      }
+
       const isSideEffect = sideEffects.includes(prop);
 
       if (isSideEffect && !this._isSideInit(prop)) return;
@@ -398,11 +407,7 @@ class ModelTool<
         (isLax &&
           this._hasAny(prop, "shouldInit") &&
           !this._getValueBy(prop, "shouldInit", "onCreate")) ||
-        (!this._isDependentProp(prop) &&
-          !isSideEffect &&
-          !this._canInit(prop) &&
-          !isLaxInit &&
-          !isRequiredInit)
+        (!isSideEffect && !this._canInit(prop) && !isLaxInit && !isRequiredInit)
       ) {
         data[prop] = this._getDefaultValue(prop);
 

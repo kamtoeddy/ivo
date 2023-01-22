@@ -436,8 +436,38 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               const { data: clone } = await Model.clone(data);
 
               expect(clone).toMatchObject({
-                laxProp: "value",
-                laxProp_1: "based pricing",
+                laxProp: "",
+                laxProp_1: "",
+                laxProp_2: "value based pricing",
+                dependentProp: 0,
+                dependentProp_1: 0,
+                dependentProp_2: 0,
+              });
+
+              expect(resolversCalledOnCreateStats).toEqual({});
+            });
+
+            it("should respect 'reset' option at creation with 'clone' method", async () => {
+              const { data: clone } = await Model.clone(
+                {
+                  ...data,
+                  dependentProp: 20,
+                  dependentProp_1: 1302,
+                  dependentProp_2: 10,
+                },
+                {
+                  reset: [
+                    "dependentProp",
+                    "dependentProp_1",
+                    "dependentProp_2",
+                  ],
+                }
+              );
+
+              expect(clone).toMatchObject({
+                laxProp: "",
+                laxProp_1: "",
+                laxProp_2: "value based pricing",
                 dependentProp: 0,
                 dependentProp_1: 0,
                 dependentProp_2: 0,
