@@ -138,13 +138,12 @@ await handleSuccess?.();
     - [isStringOk](./docs/v2.6.0/validate/isStringOk.md)
 - [Inheritance](./docs/v3.0.0/schema/definition/inheritance.md#schema-inheritance)
 - [The Operation Context](./docs/v2.5.0/schema/definition/life-cycles.md#the-operation-context)
-- [Life Cycles & Listeners](./docs/v2.5.10/schema/definition/life-cycles.md#life-cycle-listeners)
-  - [onChange](./docs/v2.5.10/schema/definition/life-cycles.md#onchange)
-  - [onCreate](./docs/v2.5.10/schema/definition/life-cycles.md#oncreate)
-  - [onDelete](./docs/v2.5.10/schema/definition/life-cycles.md#ondelete)
-  - [onFailure](./docs/v2.5.10/schema/definition/life-cycles.md#onfailure)
-  - [onSuccess](./docs/v2.5.10/schema/definition/life-cycles.md#onsuccess)
-  - [onUpdate](./docs/v2.5.10/schema/definition/life-cycles.md#onupdate)
+- [Life Cycles & Listeners](./docs/v3.0.0/schema/definition/life-cycles.md#life-cycle-listeners)
+
+  - [onDelete](./docs/v3.0.0/schema/definition/life-cycles.md#ondelete)
+  - [onFailure](./docs/v3.0.0/schema/definition/life-cycles.md#onfailure)
+  - [onSuccess](./docs/v3.0.0/schema/definition/life-cycles.md#onsuccess)
+
 - [Options](./docs/v2.0.0/schema/definition/index.md#options)
 
 - [Changelog](./docs/v3.0.0/CHANGELOG.md#changelog)
