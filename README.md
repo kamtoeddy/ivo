@@ -51,7 +51,7 @@ const userSchema = new Schema(
 function generateFullName(context) {
   const { firstName, lastName } = context;
 
-  return { fullName: `${firstName} ${lastName}` };
+  return `${firstName} ${lastName}`;
 }
 
 const UserModel = userSchema.getModel();
