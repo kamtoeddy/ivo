@@ -73,6 +73,25 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
       }
     });
 
+    it("should reject if a property's definition has an invalid rule", () => {
+      const toFail = fx({ emptyProp: { default: "", yoo: true } });
+      expectFailure(toFail);
+
+      try {
+        toFail();
+      } catch (err: any) {
+        expect(err).toEqual(
+          expect.objectContaining({
+            message: "Invalid Schema",
+            payload: {
+              emptyProp: ["'yoo' is not a valid rule"],
+            },
+            statusCode: 500,
+          })
+        );
+      }
+    });
+
     describe("constant", () => {
       describe("valid", () => {
         let User: any, user: any;
