@@ -17,8 +17,8 @@
   "keywords": [
     "event-driven",
     "schema",
-    "data definition",
-    "data validation"
+    "schema definition",
+    "schema validation"
   ],
   "jest": {
     "preset": "ts-jest",
