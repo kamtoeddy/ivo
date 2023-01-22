@@ -2822,7 +2822,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               expect(err.payload).toMatchObject(
                 expect.objectContaining({
                   propertyName: expect.arrayContaining([
-                    "SideEffects properties can only have (sideEffect, onFailure, onSuccess, required, requiredError, shouldInit, validator) as rules",
+                    "SideEffects properties can only have (sanitizer, sideEffect, onFailure, onSuccess, required, requiredError, shouldInit, validator) as rules",
                   ]),
                 })
               );
