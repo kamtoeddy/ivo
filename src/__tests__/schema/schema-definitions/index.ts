@@ -1,3 +1,6 @@
+const pauseFor = (ms = 5) =>
+  new Promise((res) => setTimeout(() => res(true), ms));
+
 export const schemaDefinition_Tests = ({ Schema }: any) => {
   const fx =
     (definition: any = undefined, options: any = { timestamps: false }) =>
@@ -317,6 +320,109 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
       const resolver = () => 1;
 
       describe("valid", () => {
+        describe("behaviour", () => {
+          let Model: any, data: any;
+
+          beforeAll(async () => {
+            Model = new Schema({
+              laxProp: { default: "" },
+              laxProp_1: { default: "" },
+              laxProp_2: { default: "" },
+              dependentProp: {
+                default: 0,
+                dependent: true,
+                dependsOn: ["laxProp", "laxProp_1"],
+                resolver: resolverOfDependentProp,
+              },
+              dependentProp_1: {
+                default: 0,
+                dependent: true,
+                dependsOn: "dependentProp",
+                resolver: resolverOfDependentProp_1,
+              },
+              dependentProp_2: {
+                default: 0,
+                dependent: true,
+                dependsOn: "dependentProp",
+                resolver: asyncResolver,
+              },
+            }).getModel();
+
+            function resolverOfDependentProp({ laxProp, laxProp_1 }: any) {
+              return laxProp.length + laxProp_1.length;
+            }
+
+            function resolverOfDependentProp_1({ dependentProp }: any) {
+              return dependentProp + 1;
+            }
+
+            async function asyncResolver({ dependentProp }: any) {
+              await pauseFor();
+              return dependentProp + 2;
+            }
+
+            const res = await Model.create({
+              laxProp_2: "value based pricing",
+              dependentProp: 25,
+              dependentProp_1: 34,
+              dependentProp_2: 17,
+            });
+
+            data = res.data;
+
+            // await res.handleSuccess?.()
+          });
+
+          describe("creation", () => {
+            it("should have all correct properties and values at creation", () => {
+              expect(data).toEqual({
+                laxProp: "",
+                laxProp_1: "",
+                laxProp_2: "value based pricing",
+                dependentProp: 0,
+                dependentProp_1: 0,
+                dependentProp_2: 0,
+              });
+            });
+          });
+
+          // describe("cloning", () => {
+          //   it("should have all correct properties and values at creation", () => {
+          //     expect(data).toEqual({
+          //       laxProp: "value",
+          //       laxProp_1: "based pricing",
+          //       dependentProp: 0,
+          //       dependentProp_1: 0,
+          //       dependentProp_2: 0,
+          //     });
+          //   });
+          // });
+
+          // describe("updates", () => {
+          //   it("should have all correct properties and values at creation", () => {
+          //     expect(data).toEqual({
+          //       laxProp: "value",
+          //       laxProp_1: "based pricing",
+          //       dependentProp: 0,
+          //       dependentProp_1: 0,
+          //       dependentProp_2: 0,
+          //     });
+          //   });
+          // });
+
+          // describe("deletion", () => {
+          //   it("should have all correct properties and values at creation", () => {
+          //     expect(data).toEqual({
+          //       laxProp: "value",
+          //       laxProp_1: "based pricing",
+          //       dependentProp: 0,
+          //       dependentProp_1: 0,
+          //       dependentProp_2: 0,
+          //     });
+          //   });
+          // });
+        });
+
         it("should accept dependent & default(any | function)", () => {
           const values = ["", 1, false, true, null, {}, []];
 
