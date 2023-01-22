@@ -33,7 +33,7 @@
       "node_modules/(?!variables/.*)"
     ]
   },
-  "license": "ISC",
+  "license": "MIT",
   "main": "dist/index.js",
   "name": "clean-schema",
   "repository": {
