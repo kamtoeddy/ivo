@@ -1591,7 +1591,6 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           const toFail = fx({
             dependentProp: {
               dependent: true,
-              default: "",
               dependsOn: "prop",
               resolver: () => 1,
             },
