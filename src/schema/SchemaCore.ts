@@ -606,6 +606,11 @@ export abstract class SchemaCore<I extends ObjectType> {
     if (this._hasAny(prop, "validator") && !this._isValidatorOk(prop))
       reasons.push("Invalid validator");
 
+    if (this._hasAny(prop, "onFailure") && !this._hasAny(prop, "validator"))
+      reasons.push(
+        "'onFailure' can only be used with properties that support and have validators"
+      );
+
     // onDelete, onFailure, & onSuccess
     for (let rule of lifeCycleRules) {
       if (!this._hasAny(prop, rule)) continue;

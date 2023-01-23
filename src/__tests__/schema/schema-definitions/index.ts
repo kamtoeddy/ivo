@@ -561,8 +561,8 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           }
         });
 
-        it("should accept life cycle listeners", () => {
-          const lifeCycles = ["onDelete", "onSuccess", "onFailure"];
+        it("should accept life cycle listeners except 'onFailure'", () => {
+          const lifeCycles = ["onDelete", "onSuccess"];
           const values = [() => {}, () => ({}), [() => {}, () => ({})]];
 
           for (const lifeCycle of lifeCycles) {
@@ -1268,10 +1268,14 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           Model = new Schema({
             prop1: { required: true, onFailure: onFailure("prop1"), validator },
             prop2: { required: true, onFailure: onFailure("prop2"), validator },
-            prop3: { required: true, onFailure: onFailure("prop3"), validator },
+            dependentProp: {
+              default: "",
+              dependent: true,
+              dependsOn: "prop4",
+              resolver: () => "",
+            },
             prop4: {
               sideEffect: true,
-              onChange: validator,
               onFailure: onFailure("prop4"),
               validator,
             },
@@ -1292,7 +1296,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               expect(err.payload).toMatchObject(
                 expect.objectContaining({
                   prop: expect.arrayContaining([
-                    "'onFailure' rule can only be used on properties that support and have validators",
+                    "'onFailure' can only be used with properties that support and have validators",
                   ]),
                 })
               );
