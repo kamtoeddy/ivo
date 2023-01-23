@@ -739,6 +739,12 @@ export abstract class SchemaCore<I extends ObjectType> {
         reason: "Required properties must have required as 'true'",
       };
 
+    if (required === true && this._hasAny(prop, "dependent"))
+      return {
+        valid,
+        reason: "Strictly required properties cannot be dependent",
+      };
+
     if (this._hasAny(prop, "default"))
       return {
         valid,
