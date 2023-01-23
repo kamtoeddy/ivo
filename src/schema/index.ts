@@ -148,8 +148,7 @@ class ModelTool<
     for (const prop of this.propsRequiredBy) {
       const [isRequired, message] = this._getRequiredState(prop, lifeCycle);
 
-      if (isRequired && this._isUpdatable(prop))
-        return error.add(prop, message);
+      if (isRequired && this._isUpdatable(prop)) error.add(prop, message);
     }
   };
 
