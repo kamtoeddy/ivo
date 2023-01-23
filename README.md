@@ -20,7 +20,7 @@ const { Schema } = require("clean-schema");
 import { Schema } from "clean-schema";
 ```
 
-# Defining an entity's schema
+# Defining a schema
 
 ```ts
 import { Schema, validate } from "clean-schema";
@@ -54,10 +54,11 @@ function generateFullName(context) {
   return `${firstName} ${lastName}`;
 }
 
+// get the model
 const UserModel = userSchema.getModel();
 ```
 
-# Creating an instance
+# Creating an entity
 
 ```ts
 import userDb from "db-of-choice"; // use any db that supports the information you are modelling
@@ -96,7 +97,7 @@ await userDb.insert(user);
 await handleSuccess?.();
 ```
 
-# Updating instances
+# Updating an entity
 
 ```ts
 const user = await userDb.query({ id: 1 });
