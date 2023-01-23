@@ -8,8 +8,10 @@ Breaking Changes
 
 - [Updated] updated the definition of [dependent properties](./schema/definition/dependents.md)
 - [Updated] updated the definition of [side effect properties](./schema/definition/side-effects.md)
-- [Removed] removed `onChange`, `onCreate` & `onUpdate` rules
 - [Updated] updated how schema inheritance works [more](./schema/definition/inheritance.md)
+- [Updated] updated how conditionally required properties work [more](./schema/definition/required.md#required-by)
+- [Removed] removed `requiredError` rule
+- [Removed] removed `onChange`, `onCreate` & `onUpdate` rules
 
 Updates
 

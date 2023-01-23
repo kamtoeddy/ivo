@@ -18,6 +18,8 @@ A void function or array of void functions(async / sync) you want to execute eve
 
 A void function or array of void functions(async / sync) you want to execute every time the **`create`**, **`clone`** & **`update`** operations are unsuccessful. Default **[ ]**
 
+> N.B: They are only allowed on properties that support and have validators
+
 ## onSuccess
 
 A void function or array of void functions(async / sync) you want to execute every time the **`create`**, **`clone`** & **`update`** operations are successful. Listeners for this event should expect the operation's context object & the concerned operation name (`creating` | `updating`) as first & second parameters respectively. Default **[ ]**

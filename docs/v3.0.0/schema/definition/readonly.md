@@ -6,7 +6,7 @@ If true will be required at initialization and will never allow updates. If true
 
 Just like [dependent properties](./dependents.md#dependent-properties) they `must` have a default value and can be used in combination with other rules like [**dependent**](./dependents.md#dependent-properties), **shouldInit**, etc.
 
-They **`cannot be strictly required`** but can be [conditionally required](./required.md#required-by)
+They **`cannot be strictly required`** but can be [conditionally required](./required.md#conditionally-required-properties)
 
 > Out of the box, dependent is assumed to be **`false`** for every property
 

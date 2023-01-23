@@ -12,8 +12,8 @@ This type of property is set at creation or cloning and never changes.
 
 Example:
 
-```js
-const { Schema } = require("clean-schema");
+```ts
+import { Schema } from "clean-schema";
 
 const userSchema = new Schema({
   dateJoined: { constant: true, value: () => new Date() },
@@ -21,6 +21,7 @@ const userSchema = new Schema({
     constant: true,
     value: (ctx) => `${ctx.userName}-${Date.now}`,
   },
+  role: { constant: true, value: "user" },
   userName: { required: true, validator: validateUserName },
 });
 ```

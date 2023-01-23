@@ -21,9 +21,11 @@ const userSchema = new Schema({
 });
 ```
 
-## Required By
+## Conditionally Required Properties
 
-Such a property is required depending on the context of the operation
+Such a property is required depending on the context of the operation. The value of **`required`** must be a function that returns `boolean` | `[boolean, string | undefined]`.
+
+`[boolean, string]` represents [required, requiredError]. If the required error is not provided, `[propertyName] is required!` would be used
 
 Example:
 
@@ -41,8 +43,11 @@ const bookSchema = new Schema({
   },
   price: {
     default: null,
-    required: (ctx) => ctx.price == null && ctx.isPublished,
-    requiredError: "A price is required to publish a book!",
+    required({ isPublished, price }) {
+      const isRequired = price == null && isPublished;
+
+      return [isRequired, "A price is required to publish a book!"];
+    },
     validator: validatePrice,
   },
 });

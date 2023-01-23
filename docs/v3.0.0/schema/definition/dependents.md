@@ -14,8 +14,8 @@ It could aslo be used in combination with other rules like [**readonly**](../../
 
 Example:
 
-```js
-const { Schema } = require("clean-schema");
+```ts
+import { Schema } from "clean-schema";
 
 const userSchema = new Schema({
   firstName: { required: true, validator: validateName },
@@ -31,6 +31,6 @@ const userSchema = new Schema({
 function generateFullName(context) {
   const { firstName, lastName } = context;
 
-  return { fullName: `${firstName} ${lastName}` };
+  return `${firstName} ${lastName}`;
 }
 ```
