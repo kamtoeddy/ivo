@@ -76,21 +76,6 @@ class ModelTool<
     super(schema.propDefinitions, schema.options);
   }
 
-  private _getCreatePropsWithListeners = () => {
-    const props = [];
-
-    // for (let prop of this.props) {
-    //   const { listeners, onChangeListeners } = this._getOperationListeners(
-    //     prop,
-    //     "onCreate"
-    //   );
-
-    //   if (listeners.length || onChangeListeners.length) props.push(prop);
-    // }
-
-    return [];
-  };
-
   private _areValuesOk = (values: any) => values && typeof values == "object";
 
   private _getValues(values: Partial<I | O>, allowSideEffects = true) {
@@ -170,20 +155,6 @@ class ModelTool<
     );
   };
 
-  private _isUpdatableInCTX = (
-    prop: string,
-    value: any,
-    context: ObjectType
-  ) => {
-    if (
-      !this._isProp(prop) ||
-      this._isConstant(prop) ||
-      this._isDependentProp(prop)
-    )
-      return false;
-    return !isEqual(value, context?.[prop]);
-  };
-
   private _makeHandleSuccess = (
     data: Partial<I>,
     lifeCycle: LifeCycles.LifeCycle
@@ -213,68 +184,6 @@ class ModelTool<
 
       await Promise.all(successOperations);
     };
-  };
-
-  private _resolveLinked = async (
-    operationData: Partial<I>,
-    error: ErrorTool,
-    props: StringKey<I>[],
-    lifeCycle: LifeCycles.LifeCycle
-  ) => {
-    const listenersUpdates = props.map((prop) => {
-      return this._resolveLinkedProps(operationData, error, prop, lifeCycle);
-    });
-
-    await Promise.all(listenersUpdates);
-  };
-
-  private _resolveLinkedProps = async (
-    operationData: Partial<I> = {},
-    error: ErrorTool,
-    prop: StringKey<I>,
-    lifeCycle: LifeCycles.LifeCycle
-  ) => {
-    // const { listeners, onChangeListeners } = this._getOperationListeners(
-    //   prop,
-    //   lifeCycle
-    // );
-    // if (
-    //   (!listeners.length && !onChangeListeners.length) ||
-    //   (lifeCycle === "onUpdate" &&
-    //     !this._isSideEffect(prop) &&
-    //     !this._isUpdatableInCTX(prop, operationData[prop], this.values))
-    // )
-    //   return;
-    // const isChangeLifeCycle = this._isChangeLifeCycle(lifeCycle);
-    // const context = Object.freeze({ ...this._getContext(), ...operationData });
-    // let prepared = isChangeLifeCycle
-    //   ? this._prepareListeners(
-    //       onChangeListeners,
-    //       lifeCycle as LifeCycles.LifeCycle
-    //     )
-    //   : [];
-    // const handles = [...listeners, ...prepared].map(async (listener) => {
-    //   const extra = (await listener(context)) as Partial<I>;
-    //   if (!isChangeLifeCycle || typeof extra !== "object") return;
-    //   const _props = this._getKeysAsProps(extra);
-    //   const resolvedHandles = _props.map(async (prop) => {
-    //     const _value = extra[prop];
-    //     const isSideEffect = this._isSideEffect(prop);
-    //     if (this._isReadonly(prop) && !this._isUpdatable(prop)) return;
-    // if (
-    //   lifeCycle === "onUpdate" &&
-    //   this._isReadonly(prop) &&
-    //   !isEqual(context[prop], this.values[prop])
-    // )
-    //   return;
-    //   if (!isSideEffect && !this._isUpdatableInCTX(prop, _value, context))
-    //     return;
-    //   await this._validateAndSet(operationData, error, prop, _value);
-    //   await this._resolveLinkedProps(operationData, error, prop, lifeCycle);
-    // });
-    // await Promise.all(resolvedHandles);
-    // });
-    // await Promise.all(handles);
   };
 
   private _useConfigProps = (obj: I | Partial<I>, asUpdate = false) => {
@@ -405,15 +314,6 @@ class ModelTool<
       return this._handleError(error);
     }
 
-    const linkedProps = this._getCreatePropsWithListeners();
-
-    await this._resolveLinked(
-      data,
-      error,
-      [...linkedProps, ...sideEffects],
-      "creating"
-    );
-
     return {
       data: this._useConfigProps(data) as O,
       error: undefined,
@@ -481,15 +381,6 @@ class ModelTool<
       await this._handleFailure(data, error, sideEffects);
       return this._handleError(error);
     }
-
-    const linkedProps = this._getCreatePropsWithListeners();
-
-    await this._resolveLinked(
-      data,
-      error,
-      [...linkedProps, ...sideEffects],
-      "creating"
-    );
 
     return {
       data: this._useConfigProps(data) as O,
@@ -572,18 +463,6 @@ class ModelTool<
       await this._handleFailure(updated, error, sideEffects);
       return this._handleError(error);
     }
-
-    if (!Object.keys(updated).length && !sideEffects.length) {
-      await this._handleFailure(updated, error, sideEffects);
-      return this._handleError(error.setMessage("Nothing to update"));
-    }
-
-    await this._resolveLinked(
-      updated,
-      error,
-      [...linkedProps, ...sideEffects],
-      "updating"
-    );
 
     if (!Object.keys(updated).length) {
       await this._handleFailure(updated, error, sideEffects);
