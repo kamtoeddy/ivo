@@ -1001,36 +1001,35 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           }
         });
 
-        // it("should reject dependent + requiredBy", () => {
-        //   const values = [false, true, undefined];
+        it("should reject dependent + requiredBy", () => {
+          const toFail = fx({
+            dependentProp: {
+              required() {
+                return true;
+              },
+              requiredError: "'dependentProp' is required",
+              dependent: true,
+              default: "",
+              dependsOn: "prop",
+              resolver: () => 1,
+            },
+            prop: { default: "" },
+          });
 
-        //   for (const dependent of values) {
-        //     const toFail = fx({
-        //       dependentProp: {
-        //         required: true,
-        //         dependent,
-        //         default: "",
-        //         dependsOn: "prop",
-        //         resolver: () => 1,
-        //       },
-        //       prop: { default: "" },
-        //     });
+          expectFailure(toFail);
 
-        //     expectFailure(toFail);
-
-        //     try {
-        //       toFail();
-        //     } catch (err: any) {
-        //       expect(err.payload).toMatchObject(
-        //         expect.objectContaining({
-        //           dependentProp: expect.arrayContaining([
-        //             "Strictly required properties cannot be dependent",
-        //           ]),
-        //         })
-        //       );
-        //     }
-        //   }
-        // });
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toMatchObject(
+              expect.objectContaining({
+                dependentProp: expect.arrayContaining([
+                  "Dependent properties cannot be required",
+                ]),
+              })
+            );
+          }
+        });
       });
     });
 
