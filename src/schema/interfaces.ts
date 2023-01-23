@@ -34,6 +34,11 @@ type Setter<K, T> = (
   lifeCycle: LifeCycles.LifeCycle
 ) => K extends keyof T ? TypeOf<T[K]> : K;
 
+type ConditionalRequiredSetter<T> = (
+  ctx: Readonly<T>,
+  lifeCycle: LifeCycles.LifeCycle
+) => boolean | [boolean, string];
+
 type AsyncSetter<K, T> = (
   ctx: Readonly<T>,
   lifeCycle: LifeCycles.LifeCycle
@@ -64,8 +69,7 @@ export namespace Schema {
       dependsOn?: StringKey<I> | NonEmptyArray<StringKey<I>>;
       readonly?: boolean | "lax";
       resolver?: Function;
-      required?: boolean | Function;
-      requiredError?: string | Function;
+      required?: boolean | ConditionalRequiredSetter<I>;
       sanitizer?: Setter<K, I> | AsyncSetter<K, I>;
       sideEffect?: boolean;
       shouldInit?: false | Setter<boolean, I>;
@@ -143,8 +147,7 @@ export namespace Schema {
 
   type RequiredBy<K extends keyof T, T, O = T> = Listenable<T, O> & {
     default: TypeOf<T[K]> | Setter<K, T>;
-    required: Setter<boolean, T>;
-    requiredError: string | Setter<string, T>;
+    required: ConditionalRequiredSetter<T>;
     readonly?: true;
     validator: Validator<K, T>;
   };
@@ -226,7 +229,6 @@ export type PropDefinitionRule =
   | "readonly"
   | "resolver"
   | "required"
-  | "requiredError"
   | "sideEffect"
   | "sanitizer"
   | "shouldInit"

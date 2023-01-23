@@ -30,7 +30,6 @@ const allRules = [
   "readonly",
   "resolver",
   "required",
-  "requiredError",
   "sanitizer",
   "sideEffect",
   "shouldInit",
@@ -46,7 +45,6 @@ const sideEffectRules = [
   "onFailure",
   "onSuccess",
   "required",
-  "requiredError",
   "shouldInit",
   "validator",
 ];
@@ -316,6 +314,28 @@ export abstract class SchemaCore<I extends ObjectType> {
       : _default;
   };
 
+  protected _getRequiredState = (
+    prop: string,
+    lifeCycle: LifeCycles.LifeCycle
+  ): [boolean, string] => {
+    const { required } = this._getDefinition(prop);
+
+    if (!required) return [false, ""];
+
+    const fallbackMessage = `'${prop}' is required!`;
+
+    if (!this._isFunction(required)) return [required, fallbackMessage];
+
+    const results = required(this._getContext(), lifeCycle);
+
+    if (typeof results == "boolean")
+      return [results, results ? fallbackMessage : ""];
+
+    if (!results[1]) results[1] = fallbackMessage;
+
+    return results;
+  };
+
   protected _getDetailedListeners = <T>(
     prop: string,
     lifeCycle: LifeCycles.Rule,
@@ -506,7 +526,7 @@ export abstract class SchemaCore<I extends ObjectType> {
   protected _isDependentProp = (prop: string) =>
     this.dependents.includes(prop as StringKey<I>);
 
-  protected _isFunction = (obj: any) => typeof obj === "function";
+  protected _isFunction = (v: any): v is Function => typeof v === "function";
 
   protected _isLaxProp = (prop: string) =>
     this.laxProps.includes(prop as StringKey<I>);
@@ -569,17 +589,6 @@ export abstract class SchemaCore<I extends ObjectType> {
           : this.__isRequired(prop);
 
       if (!requiredDef.valid) reasons.push(requiredDef.reason!);
-    }
-
-    if (this._hasAny(prop, "requiredError")) {
-      const { required, requiredError } = this._getDefinition(prop);
-
-      if (typeof required != "function")
-        reasons.push(
-          "RequiredError can only be used with a callable required rule"
-        );
-      if (!belongsTo(typeof requiredError, ["string", "function"]))
-        reasons.push("RequiredError must be a string or setter");
     }
 
     if (this._hasAny(prop, "sideEffect")) {
@@ -757,12 +766,6 @@ export abstract class SchemaCore<I extends ObjectType> {
         reason: "Strictly required properties cannot be readonly",
       };
 
-    if (this._hasAny(prop, "requiredError"))
-      return {
-        valid,
-        reason: "Strictly required properties cannot have a requiredError",
-      };
-
     const isRequiredCommon = this.__isRequiredCommon(prop);
 
     if (!isRequiredCommon.valid) return isRequiredCommon;
@@ -776,11 +779,7 @@ export abstract class SchemaCore<I extends ObjectType> {
     this.requiredProps.includes(prop as StringKey<I>);
 
   protected __isRequiredBy = (prop: string) => {
-    const {
-      default: _default,
-      required,
-      requiredError,
-    } = this._getDefinition(prop);
+    const { default: _default, required } = this._getDefinition(prop);
 
     const valid = false;
 
@@ -799,13 +798,6 @@ export abstract class SchemaCore<I extends ObjectType> {
         valid,
         reason:
           "Callable required properties must have a default value or setter",
-      };
-
-    if (isEqual(requiredError, undefined))
-      return {
-        valid,
-        reason:
-          "Callable required properties must have a requiredError or setter",
       };
 
     if (!hasSideEffect) {

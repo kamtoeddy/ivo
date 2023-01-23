@@ -146,12 +146,10 @@ class ModelTool<
     lifeCycle: LifeCycles.LifeCycle
   ) => {
     for (const prop of this.propsRequiredBy) {
-      const isRequired = this._getValueBy(prop, "required", lifeCycle);
+      const [isRequired, message] = this._getRequiredState(prop, lifeCycle);
+
       if (isRequired && this._isUpdatable(prop))
-        return error.add(
-          prop,
-          this._getValueBy(prop, "requiredError", lifeCycle)
-        );
+        return error.add(prop, message);
     }
   };
 
