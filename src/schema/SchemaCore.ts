@@ -479,10 +479,10 @@ export abstract class SchemaCore<I extends ObjectType> {
         reason: "Dependent properties cannot be validated",
       };
 
-    if (!isEqual(required, undefined) && typeof required !== "function")
+    if (this._hasAny(prop, "required"))
       return {
         valid,
-        reason: "Dependent properties cannot be strictly required",
+        reason: "Dependent properties cannot be required",
       };
 
     if (readonly === "lax")
@@ -742,12 +742,6 @@ export abstract class SchemaCore<I extends ObjectType> {
       return {
         valid,
         reason: "Required properties must have required as 'true'",
-      };
-
-    if (required === true && this._hasAny(prop, "dependent"))
-      return {
-        valid,
-        reason: "Strictly required properties cannot be dependent",
       };
 
     if (this._hasAny(prop, "default"))

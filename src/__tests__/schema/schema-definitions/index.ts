@@ -679,6 +679,27 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           }
         });
 
+        it("should reject no dependent + dependsOn or resolver", () => {
+          const toFail = fx({
+            dependentProp: { default: "", dependsOn: "prop", resolver },
+            prop: { default: "" },
+          });
+
+          expectFailure(toFail);
+
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toMatchObject(
+              expect.objectContaining({
+                dependentProp: expect.arrayContaining([
+                  "dependsOn & resolver rules can only belong to dependent properties",
+                ]),
+              })
+            );
+          }
+        });
+
         it("should not allow property to depend on itself", () => {
           const toFail = fx({
             dependentProp: {
@@ -973,33 +994,43 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             expect(err.payload).toEqual(
               expect.objectContaining({
                 dependentProp: expect.arrayContaining([
-                  "Dependent properties cannot be strictly required",
+                  "Dependent properties cannot be required",
                 ]),
               })
             );
           }
         });
 
-        it("should reject no dependent + dependsOn or resolver", () => {
-          const toFail = fx({
-            dependentProp: { default: "", dependsOn: "prop", resolver },
-            prop: { default: "" },
-          });
+        // it("should reject dependent + requiredBy", () => {
+        //   const values = [false, true, undefined];
 
-          expectFailure(toFail);
+        //   for (const dependent of values) {
+        //     const toFail = fx({
+        //       dependentProp: {
+        //         required: true,
+        //         dependent,
+        //         default: "",
+        //         dependsOn: "prop",
+        //         resolver: () => 1,
+        //       },
+        //       prop: { default: "" },
+        //     });
 
-          try {
-            toFail();
-          } catch (err: any) {
-            expect(err.payload).toMatchObject(
-              expect.objectContaining({
-                dependentProp: expect.arrayContaining([
-                  "dependsOn & resolver rules can only belong to dependent properties",
-                ]),
-              })
-            );
-          }
-        });
+        //     expectFailure(toFail);
+
+        //     try {
+        //       toFail();
+        //     } catch (err: any) {
+        //       expect(err.payload).toMatchObject(
+        //         expect.objectContaining({
+        //           dependentProp: expect.arrayContaining([
+        //             "Strictly required properties cannot be dependent",
+        //           ]),
+        //         })
+        //       );
+        //     }
+        //   }
+        // });
       });
     });
 
@@ -1074,7 +1105,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           }
         }
       });
-
+      // add an it in describe block
       describe("invalid", () => {
         const values = [1, "", 0, false, true, null, {}];
 
@@ -1312,7 +1343,6 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
         //   expect(propChangeMap).toEqual({
         //     prop1: true,
         //     prop2: true,
-        //     prop3: true,
         //   });
         // });
 
@@ -1323,7 +1353,6 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
         //   expect(propChangeMap).toEqual({
         //     prop1: true,
         //     prop2: true,
-        //     prop3: true,
         //     prop4: true,
         //   });
         // });
@@ -1336,7 +1365,6 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
         //   expect(propChangeMap).toEqual({
         //     prop1: true,
         //     prop2: true,
-        //     prop3: true,
         //   });
         // });
 
@@ -1347,7 +1375,6 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
         //   expect(propChangeMap).toEqual({
         //     prop1: true,
         //     prop2: true,
-        //     prop3: true,
         //     prop4: true,
         //   });
         // });
@@ -1771,37 +1798,6 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 expect.objectContaining({
                   propertyName: expect.arrayContaining([
                     "Strictly required properties cannot be readonly",
-                  ]),
-                })
-              );
-            }
-          }
-        });
-
-        it("should reject required(true) + dependent", () => {
-          const values = [false, true, undefined];
-
-          for (const dependent of values) {
-            const toFail = fx({
-              dependentProp: {
-                required: true,
-                dependent,
-                default: "",
-                dependsOn: "prop",
-                resolver: () => 1,
-              },
-              prop: { default: "" },
-            });
-
-            expectFailure(toFail);
-
-            try {
-              toFail();
-            } catch (err: any) {
-              expect(err.payload).toMatchObject(
-                expect.objectContaining({
-                  dependentProp: expect.arrayContaining([
-                    "Strictly required properties cannot be dependent",
                   ]),
                 })
               );
