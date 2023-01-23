@@ -1762,6 +1762,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           for (const dependent of values) {
             const toFail = fx({
               dependentProp: {
+                required: true,
                 dependent,
                 default: "",
                 dependsOn: "prop",
@@ -1778,7 +1779,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               expect(err.payload).toMatchObject(
                 expect.objectContaining({
                   dependentProp: expect.arrayContaining([
-                    "Required properties cannot be dependent",
+                    "Strictly required properties cannot be dependent",
                   ]),
                 })
               );
