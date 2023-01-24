@@ -2289,6 +2289,98 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
     describe("sideEffect", () => {
       describe("valid", () => {
+        it("should allow sanitizer", () => {
+          const toPass = fx({
+            dependentProp: {
+              default: "",
+              dependent: true,
+              dependsOn: "propertyName",
+              resolver: () => "",
+            },
+            propertyName: { sideEffect: true, sanitizer: () => "", validator },
+          });
+
+          expectNoFailure(toPass);
+
+          toPass();
+        });
+
+        it("should allow onFailure", () => {
+          const toPass = fx({
+            dependentProp: {
+              default: "",
+              dependent: true,
+              dependsOn: "propertyName",
+              resolver: () => "",
+            },
+            propertyName: {
+              sideEffect: true,
+              onFailure: validator,
+              validator,
+            },
+          });
+
+          expectNoFailure(toPass);
+
+          toPass();
+        });
+
+        it("should allow requiredBy + requiredError", () => {
+          const toPass = fx({
+            dependentProp: {
+              default: "",
+              dependent: true,
+              dependsOn: "propertyName",
+              resolver: () => "",
+            },
+            propertyName: {
+              sideEffect: true,
+              required: () => true,
+              validator,
+            },
+          });
+
+          expectNoFailure(toPass);
+
+          toPass();
+        });
+
+        it("should allow shouldInit(false) + validator", () => {
+          const toPass = fx({
+            dependentProp: {
+              default: "",
+              dependent: true,
+              dependsOn: "propertyName",
+              resolver: () => "",
+            },
+            propertyName: { sideEffect: true, shouldInit: false, validator },
+          });
+
+          expectNoFailure(toPass);
+
+          toPass();
+        });
+
+        it("should allow onSuccess + validator", () => {
+          const values = [[], () => ({})];
+
+          for (const onSuccess of values) {
+            const toPass = fx({
+              dependentProp: {
+                default: "",
+                dependent: true,
+                dependsOn: "propertyName",
+                resolver: () => "",
+              },
+              propertyName: { sideEffect: true, onSuccess, validator },
+            });
+
+            expectNoFailure(toPass);
+
+            toPass();
+          }
+        });
+
         describe("behaviour", () => {
           const defaultMap = {
             sideEffectWithSanitizer: { hasChanged: false, newValue: undefined },
@@ -2299,6 +2391,9 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             sideInit: { hasChanged: false, newValue: undefined },
             sideNoInit: { hasChanged: false, newValue: undefined },
           };
+
+          let sanitizersStats: any = {};
+
           let User: any, successMap: any;
 
           beforeAll(() => {
@@ -2331,19 +2426,35 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 sideEffectWithSanitizer: {
                   sideEffect: true,
                   onSuccess: onSuccess("sideEffectWithSanitizer"),
-                  sanitizer: () => "sanitized",
+                  sanitizer: sanitizerOf(
+                    "sideEffectWithSanitizer",
+                    "sanitized"
+                  ),
+
                   validator: validateBoolean,
                 },
                 sideEffectWithSanitizerNoInit: {
                   sideEffect: true,
                   shouldInit: false,
                   onSuccess: onSuccess("sideEffectWithSanitizerNoInit"),
-                  sanitizer: () => "sanitized no init",
+                  sanitizer: sanitizerOf(
+                    "sideEffectWithSanitizerNoInit",
+                    "sanitized no init"
+                  ),
                   validator: validateBoolean,
                 },
               },
               { errors: "throw" }
             ).getModel();
+
+            function sanitizerOf(prop: string, value: any) {
+              return () => {
+                // to make sure sanitizer is invoked
+                sanitizersStats[prop] = value;
+
+                return value;
+              };
+            }
 
             function onSuccess(prop: keyof typeof defaultMap) {
               return (ctx: any) =>
@@ -2357,21 +2468,36 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             }
           });
 
-          beforeEach(() => (successMap = { ...defaultMap }));
+          beforeEach(() => {
+            successMap = { ...defaultMap };
+            sanitizersStats = {};
+          });
 
           it("should respect sanitizer at creation", async () => {
-            const { data: user } = await User.create({
+            await User.create({
               name: "Peter",
               sideEffectWithSanitizer: true,
               sideEffectWithSanitizerNoInit: true,
             });
 
-            expect(user).toEqual({
-              dependentSideInit: true,
-              dependentSideNoInit: "",
-              name: "Peter",
+            expect(sanitizersStats).toEqual({
+              sideEffectWithSanitizer: "sanitized",
             });
           });
+
+          // it("should respect sanitizer at creation", async () => {
+          //   const { data: user } = await User.create({
+          //     name: "Peter",
+          //     sideEffectWithSanitizer: true,
+          //     sideEffectWithSanitizerNoInit: true,
+          //   });
+
+          //   expect(user).toEqual({
+          //     dependentSideInit: true,
+          //     dependentSideNoInit: "",
+          //     name: "Peter",
+          //   });
+          // });
 
           // it("should respect sideInits & sideNoInit", async () => {
           //   const { data: user } = await User.create({
@@ -2581,98 +2707,6 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           //     );
           //   });
           // });
-        });
-
-        it("should allow sanitizer", () => {
-          const toPass = fx({
-            dependentProp: {
-              default: "",
-              dependent: true,
-              dependsOn: "propertyName",
-              resolver: () => "",
-            },
-            propertyName: { sideEffect: true, sanitizer: () => "", validator },
-          });
-
-          expectNoFailure(toPass);
-
-          toPass();
-        });
-
-        it("should allow onFailure", () => {
-          const toPass = fx({
-            dependentProp: {
-              default: "",
-              dependent: true,
-              dependsOn: "propertyName",
-              resolver: () => "",
-            },
-            propertyName: {
-              sideEffect: true,
-              onFailure: validator,
-              validator,
-            },
-          });
-
-          expectNoFailure(toPass);
-
-          toPass();
-        });
-
-        it("should allow requiredBy + requiredError", () => {
-          const toPass = fx({
-            dependentProp: {
-              default: "",
-              dependent: true,
-              dependsOn: "propertyName",
-              resolver: () => "",
-            },
-            propertyName: {
-              sideEffect: true,
-              required: () => true,
-              validator,
-            },
-          });
-
-          expectNoFailure(toPass);
-
-          toPass();
-        });
-
-        it("should allow shouldInit(false) + validator", () => {
-          const toPass = fx({
-            dependentProp: {
-              default: "",
-              dependent: true,
-              dependsOn: "propertyName",
-              resolver: () => "",
-            },
-            propertyName: { sideEffect: true, shouldInit: false, validator },
-          });
-
-          expectNoFailure(toPass);
-
-          toPass();
-        });
-
-        it("should allow onSuccess + validator", () => {
-          const values = [[], () => ({})];
-
-          for (const onSuccess of values) {
-            const toPass = fx({
-              dependentProp: {
-                default: "",
-                dependent: true,
-                dependsOn: "propertyName",
-                resolver: () => "",
-              },
-              propertyName: { sideEffect: true, onSuccess, validator },
-            });
-
-            expectNoFailure(toPass);
-
-            toPass();
-          }
         });
       });
 

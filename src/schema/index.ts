@@ -137,6 +137,34 @@ class ModelTool<
     }
   };
 
+  private _handleSanitizationOfSideEffects = async (
+    lifeCycle: LifeCycles.LifeCycle
+  ) => {
+    let sanitizers: [StringKey<I>, Function][] = [];
+
+    const ctx = this._getContext();
+
+    const successFulSideEffects = this._getKeysAsProps(ctx).filter(
+      this._isSideEffect
+    );
+
+    for (const prop of successFulSideEffects) {
+      const { sanitizer } = this._getDefinition(prop);
+
+      if (!sanitizer) continue;
+
+      sanitizers.push([prop, sanitizer]);
+    }
+
+    const sanitizations = sanitizers.map(async ([prop, sanitizer]) => {
+      const resolvedValue = await sanitizer(ctx, lifeCycle);
+
+      this._updateContext({ [prop]: resolvedValue } as I);
+    });
+
+    await Promise.all(sanitizations);
+  };
+
   private _isUpdatable = (prop: string) => {
     if (this._isSideEffect(prop)) return true;
 
@@ -374,6 +402,8 @@ class ModelTool<
     });
 
     await Promise.all(validations);
+
+    await this._handleSanitizationOfSideEffects("creating");
 
     this._handleRequiredBy(error, "creating");
 

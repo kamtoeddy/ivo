@@ -70,7 +70,7 @@ export namespace Schema {
       readonly?: boolean | "lax";
       resolver?: Function;
       required?: boolean | ConditionalRequiredSetter<I>;
-      sanitizer?: Setter<K, I> | AsyncSetter<K, I>;
+      sanitizer?: Setter<I[StringKey<I>], I> | AsyncSetter<I[StringKey<I>], I>;
       sideEffect?: boolean;
       shouldInit?: false | Setter<boolean, I>;
       validator?: Function;
@@ -154,7 +154,7 @@ export namespace Schema {
 
   type SideEffect<K extends keyof T, T> = {
     sideEffect: true;
-    sanitizer?: Setter<K, T> | AsyncSetter<K, T>;
+    sanitizer?: Setter<T[StringKey<T>], T> | AsyncSetter<T[StringKey<T>], T>;
     onFailure?:
       | LifeCycles.VoidListener<T>
       | NonEmptyArray<LifeCycles.VoidListener<T>>;
