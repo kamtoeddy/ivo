@@ -2359,17 +2359,18 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
           beforeEach(() => (successMap = { ...defaultMap }));
 
-          // it("should respect sanitizer at creation", async () => {
-          //   const { data: user } = await User.create({sideInit: true,
-          //     name: "Peter",
-          //   });
+          it("should respect sanitizer at creation", async () => {
+            const { data: user } = await User.create({
+              sideInit: true,
+              name: "Peter",
+            });
 
-          //   expect(user).toEqual({
-          //     dependentSideNoInit: "",
-          //     dependentSideInit: true,
-          //     name: "Peter",
-          //   });
-          // });
+            expect(user).toEqual({
+              dependentSideNoInit: "",
+              dependentSideInit: true,
+              name: "Peter",
+            });
+          });
 
           // it("should respect sideInits & sideNoInit", async () => {
           //   const { data: user } = await User.create({
