@@ -165,6 +165,19 @@ class ModelTool<
     await Promise.all(sanitizations);
   };
 
+  private _isSanitizable = (
+    prop: string,
+    lifeCycle: LifeCycles.LifeCycle
+  ): [false, undefined] | [true, Function] => {
+    const { sanitizer, shouldInit } = this._getDefinition(prop);
+
+    if (!sanitizer) return [false, undefined];
+    if (lifeCycle == "creating" && isEqual(shouldInit, false))
+      return [false, undefined];
+
+    return [true, sanitizer];
+  };
+
   private _isUpdatable = (prop: string) => {
     if (this._isSideEffect(prop)) return true;
 
@@ -181,19 +194,6 @@ class ModelTool<
       !isReadonly ||
       (isReadonly && isEqual(this.defaults[prop], this.values[prop]))
     );
-  };
-
-  private _isSanitizable = (
-    prop: string,
-    lifeCycle: LifeCycles.LifeCycle
-  ): [false, undefined] | [true, Function] => {
-    const { sanitizer, shouldInit } = this._getDefinition(prop);
-
-    if (!sanitizer) return [false, undefined];
-    if (lifeCycle == "creating" && isEqual(shouldInit, false))
-      return [false, undefined];
-
-    return [true, sanitizer];
   };
 
   private _makeHandleSuccess = (
