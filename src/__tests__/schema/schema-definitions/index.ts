@@ -2501,6 +2501,26 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             });
           });
 
+          describe("updating", () => {
+            it("should respect sanitizer of all side effects provided during updates", async () => {
+              await User.update(
+                {
+                  name: "Peter",
+                },
+                {
+                  name: "John",
+                  sideEffectWithSanitizer: true,
+                  sideEffectWithSanitizerNoInit: true,
+                }
+              );
+
+              expect(sanitizersStats).toEqual({
+                sideEffectWithSanitizer: "sanitized",
+                sideEffectWithSanitizerNoInit: "sanitized no init",
+              });
+            });
+          });
+
           // it("should respect sideInits & sideNoInit", async () => {
           //   const { data: user } = await User.create({
           //     sideInit: true,
