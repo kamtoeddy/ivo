@@ -147,6 +147,6 @@ await handleSuccess?.();
 
 - [Options](./docs/v3.0.0/schema/definition/index.md#options)
 
-- [Changelog](./docs/v3.0.0/CHANGELOG.md#changelog)
+- [Changelog](./docs/CHANGELOG.md#changelog)
 
 ## Happy coding! 😎
