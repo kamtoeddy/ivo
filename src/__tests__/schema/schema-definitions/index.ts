@@ -2361,13 +2361,14 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
           it("should respect sanitizer at creation", async () => {
             const { data: user } = await User.create({
-              sideInit: true,
               name: "Peter",
+              sideEffectWithSanitizer: true,
+              sideEffectWithSanitizerNoInit: true,
             });
 
             expect(user).toEqual({
-              dependentSideNoInit: "",
               dependentSideInit: true,
+              dependentSideNoInit: "",
               name: "Peter",
             });
           });
