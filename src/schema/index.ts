@@ -504,6 +504,8 @@ class ModelTool<
 
     this._handleRequiredBy(error, "updating");
 
+    await this._handleSanitizationOfSideEffects("updating");
+
     if (error.isPayloadLoaded) {
       await this._handleFailure(updated, error, sideEffects);
       return this._handleError(error);
