@@ -2485,6 +2485,20 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 sideEffectWithSanitizer: "sanitized",
               });
             });
+
+            it("should respect sanitizer at creation(cloning)", async () => {
+              await User.clone({
+                dependentSideNoInit: "",
+                dependentSideInit: true,
+                name: "Peter",
+                sideEffectWithSanitizer: true,
+                sideEffectWithSanitizerNoInit: true,
+              });
+
+              expect(sanitizersStats).toEqual({
+                sideEffectWithSanitizer: "sanitized",
+              });
+            });
           });
 
           // it("should respect sideInits & sideNoInit", async () => {
