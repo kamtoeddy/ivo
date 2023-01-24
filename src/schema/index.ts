@@ -350,6 +350,8 @@ class ModelTool<
 
     this._handleRequiredBy(error, "creating");
 
+    await this._handleSanitizationOfSideEffects("creating");
+
     if (error.isPayloadLoaded) {
       await this._handleFailure(data, error, sideEffects);
       return this._handleError(error);
@@ -416,9 +418,9 @@ class ModelTool<
 
     await Promise.all(validations);
 
-    await this._handleSanitizationOfSideEffects("creating");
-
     this._handleRequiredBy(error, "creating");
+
+    await this._handleSanitizationOfSideEffects("creating");
 
     if (error.isPayloadLoaded) {
       await this._handleFailure(data, error, sideEffects);
