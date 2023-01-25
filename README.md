@@ -23,11 +23,15 @@ import { Schema } from "clean-schema";
 # Defining a schema
 
 ```ts
-import { Schema, validate } from "clean-schema";
+import { Schema } from "clean-schema";
+import hash from "hashing-module-of-choice";
 
 const userSchema = new Schema(
   {
-    firstName: { required: true, validator: validateName },
+    firstName: {
+      required: true,
+      validator: validateString("invalid first name"),
+    },
     fullName: {
       default: "",
       dependent: true,
@@ -36,13 +40,36 @@ const userSchema = new Schema(
     },
     isBlocked: { default: false, validator: validateBoolean },
     id: { readonly: true, validator: validateId },
-    lastName: { required: true, validator: validateName },
+    lastName: {
+      required: true,
+      validator: validateString("invalid last name"),
+    },
     lastSeen: { default: "", shouldInit: false },
-    password: { required: true, validator: validatePassword },
+    password: {
+      required: true,
+      validator(value) {
+        let validated = value.trim();
+
+        const valid = validated.length >= 8;
+
+        if (!valid) return { valid, reason: "minimum characters should be 8" };
+
+        validated = hash(validated);
+
+        return { valid, validated };
+      },
+    },
     role: {
       required: true,
-      validator: (value) =>
-        validate.isStringOk(value, { enums: ["admin", "app-user"] }),
+      validator(value) {
+        const validated = value.trim();
+
+        const valid = ["admin", "user"].includes(validated);
+
+        if (!valid) return { valid, reason: "invalid user role" };
+
+        return { valid, validated };
+      },
     },
   },
   { timestamps: true }
@@ -75,7 +102,7 @@ const {
   lastSeen: new Date(),
   name: "John Doe",
   password: "au_34ibUv^T-adjInFjj",
-  role: "app-user",
+  role: "user",
 });
 
 console.log(user);
@@ -88,7 +115,7 @@ console.log(user);
 //   lastName: "Spader",
 //   lastSeen: "",
 //   password: "au_34ibUv^T-adjInFjj",
-//   role: "app-user",
+//   role: "user",
 //   updatedAt: new Date(),
 // };
 
