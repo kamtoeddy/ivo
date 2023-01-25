@@ -262,12 +262,12 @@ class ModelTool<
 
     toResolve = Array.from(new Set(toResolve));
 
-    const finalCtx = this._getFinalContext();
+    const _ctx = this._getContext();
 
     const operations = toResolve.map(async (prop) => {
       const { resolver } = this._getDefinition(prop);
 
-      const value = await resolver!(finalCtx, lifeCycle);
+      const value = await resolver!(_ctx, lifeCycle);
 
       data[prop] = value;
 
@@ -282,7 +282,7 @@ class ModelTool<
         lifeCycle
       );
 
-      _updates = { ..._updates, ..._data };
+      return (_updates = { ..._updates, ..._data });
     });
 
     await Promise.all(operations);
@@ -539,7 +539,7 @@ class ModelTool<
     this.setValues(values);
 
     const error = new ErrorTool({ message: "Validation Error" });
-    const updated = {} as Partial<I>;
+    let updated = {} as Partial<I>;
 
     const toUpdate = this._getKeysAsProps(changes ?? {}).filter((prop) =>
       this._isUpdatable(prop)
@@ -580,6 +580,12 @@ class ModelTool<
     this._handleRequiredBy(error, "updating");
 
     await this._handleSanitizationOfSideEffects("updating");
+
+    updated = await this._resolveDependentChanges(
+      updated,
+      this._getFinalContext(),
+      "updating"
+    );
 
     if (error.isPayloadLoaded) {
       await this._handleFailure(updated, error, sideEffects);
