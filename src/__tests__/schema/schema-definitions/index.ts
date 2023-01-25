@@ -383,7 +383,6 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 default: 0,
                 dependent: true,
                 dependsOn: "laxProp_2",
-                readonly: true,
                 resolver: asyncResolver("dependentProp_3"),
                 onDelete: [
                   incrementOnDeleteCountOf("dependentProp_3"),
@@ -457,7 +456,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           });
 
           describe("creation", () => {
-            it("should have all correct properties and values at creation", () => {
+            it("should resolve dependent properties correctly at creation", () => {
               expect(data).toEqual({
                 laxProp: "",
                 laxProp_1: "",
@@ -465,22 +464,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 dependentProp: 0,
                 dependentProp_1: 0,
                 dependentProp_2: 0,
-                dependentProp_3: 0,
-              });
-
-              expect(resolversCalledStats).toEqual({});
-              expect(onSuccessStats).toEqual(successCountOfDependentProps);
-            });
-
-            it("should resolve dependent properties correctly", () => {
-              expect(data).toEqual({
-                laxProp: "",
-                laxProp_1: "",
-                laxProp_2: "value based pricing",
-                dependentProp: 0,
-                dependentProp_1: 0,
-                dependentProp_2: 0,
-                dependentProp_3: 0, // should be +2
+                dependentProp_3: 2, // should be +2
               });
 
               expect(resolversCalledStats).toEqual({});
