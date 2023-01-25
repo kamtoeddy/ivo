@@ -337,7 +337,7 @@ class ModelTool<
       this._isProp
     );
 
-    const data = {} as I;
+    let data = {} as Partial<I>;
     const error = new ErrorTool({ message: "Validation Error" });
 
     const sideEffects = this._getKeysAsProps(this.values).filter(
@@ -414,6 +414,12 @@ class ModelTool<
     this._handleRequiredBy(error, "creating");
 
     await this._handleSanitizationOfSideEffects("creating");
+
+    data = await this._resolveDependentChanges(
+      data,
+      this._getFinalContext(),
+      "creating"
+    );
 
     if (error.isPayloadLoaded) {
       await this._handleFailure(data, error, sideEffects);
