@@ -227,6 +227,69 @@ class ModelTool<
     };
   };
 
+  private _resolveDependentChanges = async (
+    data: Partial<I>,
+    ctx: Partial<I>,
+    lifeCycle: LifeCycles.LifeCycle
+  ) => {
+    let _updates = { ...data };
+
+    const successFulChanges = this._getKeysAsProps(ctx);
+
+    let toResolve = [] as StringKey<I>[];
+
+    for (const prop of successFulChanges) {
+      const dependencies = this._getDependencies(prop);
+
+      if (!dependencies.length) continue;
+
+      if (
+        lifeCycle == "creating" &&
+        this._isSideEffect(prop) &&
+        !this._isSideInit(prop)
+      )
+        continue;
+
+      if (
+        lifeCycle == "creating" &&
+        (this._isDependentProp(prop) || this._isLaxProp(prop)) &&
+        isEqual(this.defaults[prop], data[prop])
+      )
+        continue;
+
+      toResolve = toResolve.concat(dependencies);
+    }
+
+    toResolve = Array.from(new Set(toResolve));
+
+    const finalCtx = this._getFinalContext();
+
+    const operations = toResolve.map(async (prop) => {
+      const { resolver } = this._getDefinition(prop);
+
+      const value = await resolver!(finalCtx, lifeCycle);
+
+      data[prop] = value;
+
+      const updates = { [prop]: value } as I;
+
+      this._updateContext(updates);
+      this._updateFinalContext(updates);
+
+      const _data = await this._resolveDependentChanges(
+        data,
+        updates,
+        lifeCycle
+      );
+
+      _updates = { ..._updates, ..._data };
+    });
+
+    await Promise.all(operations);
+
+    return _updates;
+  };
+
   private _useConfigProps = (obj: I | Partial<I>, asUpdate = false) => {
     if (!this.optionsTool.withTimestamps) return sortKeys(obj);
 
@@ -369,7 +432,7 @@ class ModelTool<
 
     this.setValues(values);
 
-    const data = {} as I;
+    let data = {} as Partial<I>;
     const error = new ErrorTool({ message: "Validation Error" });
 
     const sideEffects = this._getKeysAsProps(this.values).filter(
@@ -421,6 +484,12 @@ class ModelTool<
     this._handleRequiredBy(error, "creating");
 
     await this._handleSanitizationOfSideEffects("creating");
+
+    data = await this._resolveDependentChanges(
+      data,
+      this._getFinalContext(),
+      "creating"
+    );
 
     if (error.isPayloadLoaded) {
       await this._handleFailure(data, error, sideEffects);
