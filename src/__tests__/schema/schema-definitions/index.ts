@@ -2382,19 +2382,11 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
         });
 
         describe("behaviour", () => {
-          const defaultMap = {
-            sideEffectWithSanitizer: { hasChanged: false, newValue: undefined },
-            sideEffectWithSanitizerNoInit: {
-              hasChanged: false,
-              newValue: undefined,
-            },
-            sideInit: { hasChanged: false, newValue: undefined },
-            sideNoInit: { hasChanged: false, newValue: undefined },
-          };
+          let onSuccessStats: any = {};
 
           let sanitizersStats: any = {};
 
-          let User: any, successMap: any;
+          let User: any;
 
           beforeAll(() => {
             User = new Schema(
@@ -2456,9 +2448,8 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               };
             }
 
-            function onSuccess(prop: keyof typeof defaultMap) {
-              return (ctx: any) =>
-                (successMap[prop] = { hasChanged: true, newValue: ctx[prop] });
+            function onSuccess(prop: string) {
+              return (ctx: any) => (onSuccessStats[prop] = ctx[prop]);
             }
 
             function validateBoolean(value: any) {
@@ -2469,7 +2460,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           });
 
           beforeEach(() => {
-            successMap = { ...defaultMap };
+            onSuccessStats = {};
             sanitizersStats = {};
           });
 
@@ -2499,6 +2490,19 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 sideEffectWithSanitizer: "sanitized",
               });
             });
+
+            //   it("should respect sideInits & sideNoInit", async () => {
+            //   const { data: user } = await User.create({
+            //     sideInit: true,
+            //     name: "Peter",
+            //   });
+
+            //   expect(user).toEqual({
+            //     dependentSideNoInit: "",
+            //     dependentSideInit: true,
+            //     name: "Peter",
+            //   });
+            // });
           });
 
           describe("updating", () => {
