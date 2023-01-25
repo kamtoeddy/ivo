@@ -328,6 +328,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             dependentProp: 4,
             dependentProp_1: 1,
             dependentProp_2: 3,
+            dependentProp_3: 1,
           };
 
           beforeEach(async () => {
@@ -336,6 +337,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               laxProp_1: { default: "" },
               laxProp_2: {
                 default: "",
+                onDelete: incrementOnDeleteCountOf("laxProp_2"),
               },
               dependentProp: {
                 default: 0,
@@ -366,7 +368,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 dependent: true,
                 dependsOn: "dependentProp",
                 readonly: true,
-                resolver: asyncResolver,
+                resolver: asyncResolver("dependentProp_2"),
                 onDelete: [
                   incrementOnDeleteCountOf("dependentProp_2"),
                   incrementOnDeleteCountOf("dependentProp_2"),
@@ -376,6 +378,18 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                   incrementOnSuccessCountOf("dependentProp_2"),
                   incrementOnSuccessCountOf("dependentProp_2"),
                 ],
+              },
+              dependentProp_3: {
+                default: 0,
+                dependent: true,
+                dependsOn: "laxProp_2",
+                readonly: true,
+                resolver: asyncResolver("dependentProp_3"),
+                onDelete: [
+                  incrementOnDeleteCountOf("dependentProp_3"),
+                  incrementOnDeleteCountOf("dependentProp_3"),
+                ],
+                onSuccess: [incrementOnSuccessCountOf("dependentProp_3")],
               },
             }).getModel();
 
@@ -413,12 +427,14 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               return dependentProp + 1;
             }
 
-            async function asyncResolver({ dependentProp }: any) {
-              incrementResolveCountOf("dependentProp_2");
+            function asyncResolver(prop: string) {
+              return async ({ dependentProp }: any) => {
+                incrementResolveCountOf(prop);
 
-              await pauseFor();
+                await pauseFor();
 
-              return dependentProp + 2;
+                return dependentProp + 2;
+              };
             }
 
             const res = await Model.create({
@@ -426,6 +442,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               dependentProp: 25,
               dependentProp_1: 34,
               dependentProp_2: 17,
+              dependentProp_3: 1,
             });
 
             data = res.data;
@@ -448,6 +465,22 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 dependentProp: 0,
                 dependentProp_1: 0,
                 dependentProp_2: 0,
+                dependentProp_3: 0,
+              });
+
+              expect(resolversCalledStats).toEqual({});
+              expect(onSuccessStats).toEqual(successCountOfDependentProps);
+            });
+
+            it("should resolve dependent properties correctly", () => {
+              expect(data).toEqual({
+                laxProp: "",
+                laxProp_1: "",
+                laxProp_2: "value based pricing",
+                dependentProp: 0,
+                dependentProp_1: 0,
+                dependentProp_2: 0,
+                dependentProp_3: 0, // should be +2
               });
 
               expect(resolversCalledStats).toEqual({});
@@ -472,6 +505,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 dependentProp: 0,
                 dependentProp_1: 0,
                 dependentProp_2: 0,
+                dependentProp_3: 0, // +2
               });
 
               expect(resolversCalledStats).toEqual({});
@@ -486,6 +520,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                   dependentProp: 20,
                   dependentProp_1: 1302,
                   dependentProp_2: 10,
+                  dependentProp_3: 350,
                 },
                 {
                   reset: [
@@ -505,6 +540,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 dependentProp: 0,
                 dependentProp_1: 0,
                 dependentProp_2: 0,
+                dependentProp_3: 350, // +2
               });
 
               expect(resolversCalledStats).toEqual({});
@@ -520,9 +556,12 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 dependentProp: 74,
                 dependentProp_1: 235,
                 dependentProp_2: 72,
+                dependentProp_3: 702,
               });
 
               expect(updates).toMatchObject({ laxProp_2: "hey" });
+              // expect(updates).toMatchObject({ laxProp_2: "hey",
+              // dependentProp_3: 2, });
 
               expect(resolversCalledStats).toEqual({});
             });
@@ -533,9 +572,11 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               await Model.delete(data);
 
               expect(onDeleteStats).toEqual({
+                laxProp_2: 1,
                 dependentProp: 2,
                 dependentProp_1: 1,
                 dependentProp_2: 2,
+                dependentProp_3: 2,
               });
             });
           });
@@ -2396,12 +2437,14 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                   dependent: true,
                   dependsOn: ["sideNoInit", "sideEffectWithSanitizerNoInit"],
                   resolver: () => "changed",
+                  onSuccess: onSuccess("dependentSideNoInit"),
                 },
                 dependentSideInit: {
                   default: false,
                   dependent: true,
                   dependsOn: ["sideInit", "sideEffectWithSanitizer"],
                   resolver: (ctx: any) => (ctx.sideInit ? true : false),
+                  onSuccess: onSuccess("dependentSideNoInit"),
                 },
                 name: { default: "" },
                 sideInit: {
@@ -2422,7 +2465,6 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                     "sideEffectWithSanitizer",
                     "sanitized"
                   ),
-
                   validator: validateBoolean,
                 },
                 sideEffectWithSanitizerNoInit: {
@@ -2491,10 +2533,15 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               });
             });
 
-            //   it("should respect sideInits & sideNoInit", async () => {
+            // it("should respect sideInits & sideNoInit", async () => {
             //   const { data: user } = await User.create({
             //     sideInit: true,
             //     name: "Peter",
+
+            //     dependentSideNoInit: "",
+            //     dependentSideInit: true,
+            //     sideEffectWithSanitizer: true,
+            //     sideEffectWithSanitizerNoInit: true,
             //   });
 
             //   expect(user).toEqual({
@@ -2524,19 +2571,6 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               });
             });
           });
-
-          // it("should respect sideInits & sideNoInit", async () => {
-          //   const { data: user } = await User.create({
-          //     sideInit: true,
-          //     name: "Peter",
-          //   });
-
-          //   expect(user).toEqual({
-          //     dependentSideNoInit: "",
-          //     dependentSideInit: true,
-          //     name: "Peter",
-          //   });
-          // });
 
           // describe("onSuccess", () => {
           //   it("should no trigger onSuccess listeners of sideEffects when not provided during cloning", async () => {
