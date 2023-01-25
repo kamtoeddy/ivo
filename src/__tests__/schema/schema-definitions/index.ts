@@ -543,11 +543,12 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 dependentProp_3: 702,
               });
 
-              expect(updates).toMatchObject({ laxProp_2: "hey" });
-              // expect(updates).toMatchObject({ laxProp_2: "hey",
-              // dependentProp_3: 2, });
+              expect(updates).toMatchObject({
+                laxProp_2: "hey",
+                dependentProp_3: 2,
+              });
 
-              expect(resolversCalledStats).toEqual({ dependentProp_3: 1 }); // 2
+              expect(resolversCalledStats).toEqual({ dependentProp_3: 2 });
             });
           });
 
