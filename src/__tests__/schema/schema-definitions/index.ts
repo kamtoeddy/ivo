@@ -492,7 +492,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 dependentProp_3: 2,
               });
 
-              expect(resolversCalledStats).toEqual({ dependentProp_3: 1 }); // 2
+              expect(resolversCalledStats).toEqual({ dependentProp_3: 2 });
 
               expect(onSuccessStats).toEqual(successCountOfDependentProps);
             });
@@ -524,10 +524,10 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 dependentProp: 0,
                 dependentProp_1: 0,
                 dependentProp_2: 0,
-                dependentProp_3: 350, // +2
+                dependentProp_3: 2,
               });
 
-              expect(resolversCalledStats).toEqual({ dependentProp_3: 1 }); // 2
+              expect(resolversCalledStats).toEqual({ dependentProp_3: 2 });
 
               expect(onSuccessStats).toEqual(successCountOfDependentProps);
             });
