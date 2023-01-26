@@ -39,7 +39,7 @@ const userSchema = new Schema(
       resolver: generateFullName,
     },
     isBlocked: { default: false, validator: validateBoolean },
-    id: { readonly: true, validator: validateId },
+    id: { constant: true, value: generateId },
     lastName: {
       required: true,
       validator: validateString("invalid last name"),
@@ -60,7 +60,7 @@ const userSchema = new Schema(
       },
     },
     role: {
-      required: true,
+      readonly: true,
       validator(value) {
         const validated = value.trim();
 
