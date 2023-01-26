@@ -498,6 +498,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 dependentProp_2: 1,
                 dependentProp_3: 1,
               });
+
               expect(onSuccessStats).toEqual({
                 dependentProp: 8,
                 dependentProp_1: 2,
@@ -563,6 +564,39 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               });
 
               expect(resolversCalledStats).toEqual({ dependentProp_3: 2 });
+
+              expect(onSuccessStats).toEqual(successCountOfDependentProps);
+            });
+
+            it("should resolve dependencies of dependent properties if provided at creation(cloning)", async () => {
+              const { data, handleSuccess } = await Model.clone({
+                laxProp: "",
+                laxProp_1: "hello",
+                laxProp_2: "",
+                dependentProp: 5,
+                dependentProp_1: 6,
+                dependentProp_2: 7,
+                dependentProp_3: 0,
+              });
+
+              await handleSuccess();
+
+              expect(data).toEqual({
+                laxProp: "",
+                laxProp_1: "hello",
+                laxProp_2: "",
+                dependentProp: 5,
+                dependentProp_1: 6,
+                dependentProp_2: 7,
+                dependentProp_3: 0,
+              });
+
+              expect(resolversCalledStats).toEqual({
+                dependentProp: 1,
+                dependentProp_1: 2,
+                dependentProp_2: 2,
+                dependentProp_3: 1,
+              });
 
               expect(onSuccessStats).toEqual(successCountOfDependentProps);
             });
