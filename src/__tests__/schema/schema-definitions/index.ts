@@ -600,6 +600,42 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
               expect(onSuccessStats).toEqual(successCountOfDependentProps);
             });
+
+            it("should resolve dependencies of dependent properties if provided at creation(cloning) and also respect the 'reset' option", async () => {
+              const { data, handleSuccess } = await Model.clone(
+                {
+                  laxProp: "",
+                  laxProp_1: "hello",
+                  laxProp_2: "",
+                  dependentProp: 5,
+                  dependentProp_1: 6,
+                  dependentProp_2: 7,
+                  dependentProp_3: 0,
+                },
+                { reset: "dependentProp" }
+              );
+
+              await handleSuccess();
+
+              expect(data).toEqual({
+                laxProp: "",
+                laxProp_1: "hello",
+                laxProp_2: "",
+                dependentProp: 5,
+                dependentProp_1: 6,
+                dependentProp_2: 7,
+                dependentProp_3: 0,
+              });
+
+              expect(resolversCalledStats).toEqual({
+                dependentProp: 1,
+                dependentProp_1: 1,
+                dependentProp_2: 1,
+                dependentProp_3: 1,
+              });
+
+              expect(onSuccessStats).toEqual(successCountOfDependentProps);
+            });
           });
 
           describe("updates", () => {
