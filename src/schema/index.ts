@@ -238,20 +238,18 @@ class ModelTool<
 
     let toResolve = [] as StringKey<I>[];
 
+    const isCreating = lifeCycle == "creating";
+
     for (const prop of successFulChanges) {
       const dependencies = this._getDependencies(prop);
 
       if (!dependencies.length) continue;
 
-      if (
-        lifeCycle == "creating" &&
-        this._isSideEffect(prop) &&
-        !this._isSideInit(prop)
-      )
+      if (isCreating && this._isSideEffect(prop) && !this._isSideInit(prop))
         continue;
 
       if (
-        lifeCycle == "creating" &&
+        isCreating &&
         (this._isDependentProp(prop) || this._isLaxProp(prop)) &&
         isEqual(this.defaults[prop], data[prop])
       )
@@ -267,7 +265,7 @@ class ModelTool<
     const operations = toResolve.map(async (prop) => {
       if (
         this._isReadonly(prop) &&
-        lifeCycle == "updating" &&
+        !isCreating &&
         !isEqual(this.values[prop], this.defaults[prop])
       )
         return;
