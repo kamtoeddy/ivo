@@ -265,6 +265,13 @@ class ModelTool<
     const _ctx = this._getContext();
 
     const operations = toResolve.map(async (prop) => {
+      // if (
+      //   this._isReadonly(prop) &&
+      //   lifeCycle == "updating" &&
+      //   !isEqual(this.values[prop], this.defaults[prop])
+      // )
+      //   return;
+
       const { resolver } = this._getDefinition(prop);
 
       const value = await resolver!(_ctx, lifeCycle);
