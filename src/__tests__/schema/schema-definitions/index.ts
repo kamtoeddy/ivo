@@ -727,12 +727,14 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               const stats = {
                 dependentProp: 1,
                 dependentProp_1: 1,
-                dependentProp_3: 1,
               };
 
               expect(resolversCalledStats).toEqual(stats);
 
-              expect(onSuccessStats).toEqual(stats);
+              expect(onSuccessStats).toEqual({
+                dependentProp: 4,
+                dependentProp_1: 1,
+              });
             });
           });
 
