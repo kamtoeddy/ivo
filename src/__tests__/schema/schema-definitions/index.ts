@@ -655,6 +655,45 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
               expect(resolversCalledStats).toEqual({ dependentProp_3: 2 });
             });
+
+            it("should resolve dependencies of dependent properties if provided during updates", async () => {
+              const { data, handleSuccess } = await Model.update(
+                {
+                  laxProp: "",
+                  laxProp_1: "",
+                  laxProp_2: "",
+                  dependentProp: 0,
+                  dependentProp_1: 0,
+                  dependentProp_2: 0,
+                  dependentProp_3: 0,
+                },
+                {
+                  laxProp: "hello",
+                  laxProp_1: "world",
+                }
+              );
+
+              await handleSuccess();
+
+              expect(data).toEqual({
+                laxProp: "hello",
+                laxProp_1: "world",
+                dependentProp: 10,
+                dependentProp_1: 11,
+                dependentProp_2: 12,
+              });
+
+              const stats = {
+                dependentProp: 1,
+                dependentProp_1: 1,
+                dependentProp_2: 1,
+                dependentProp_3: 1,
+              };
+
+              expect(resolversCalledStats).toEqual(stats);
+
+              expect(onSuccessStats).toEqual(stats);
+            });
           });
 
           describe("deletion", () => {
