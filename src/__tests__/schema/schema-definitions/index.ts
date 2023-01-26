@@ -694,6 +694,39 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
               expect(onSuccessStats).toEqual(stats);
             });
+
+            it("should not resolve readonly dependent properties that have changed if provided during updates", async () => {
+              const { data, handleSuccess } = await Model.update(
+                {
+                  laxProp: "hello",
+                  laxProp_1: "world",
+                  dependentProp: 10,
+                  dependentProp_1: 11,
+                  dependentProp_2: 12,
+                  dependentProp_3: 0,
+                },
+                { laxProp: "", laxProp_1: "hey" }
+              );
+
+              await handleSuccess();
+
+              expect(data).toEqual({
+                laxProp: "",
+                laxProp_1: "hey",
+                dependentProp: 3,
+                dependentProp_1: 4,
+              });
+
+              const stats = {
+                dependentProp: 8,
+                dependentProp_1: 2,
+                dependentProp_3: 1,
+              };
+
+              expect(resolversCalledStats).toEqual(stats);
+
+              expect(onSuccessStats).toEqual(stats);
+            });
           });
 
           describe("deletion", () => {
