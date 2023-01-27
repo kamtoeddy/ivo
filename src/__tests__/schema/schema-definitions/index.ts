@@ -2606,7 +2606,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
           let onSuccessStats: any = {};
 
-          let sanitizersStats: any = {};
+          let sanitizedValues: any = {};
 
           let User: any;
 
@@ -2677,7 +2677,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             function sanitizerOf(prop: string, value: any) {
               return () => {
                 // to make sure sanitizer is invoked
-                sanitizersStats[prop] = value;
+                sanitizedValues[prop] = value;
 
                 return value;
               };
@@ -2706,7 +2706,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           beforeEach(() => {
             onSuccessStats = {};
             onSuccessValues = {};
-            sanitizersStats = {};
+            sanitizedValues = {};
           });
 
           describe("creation", () => {
@@ -2721,7 +2721,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 name: "Peter",
               });
 
-              expect(sanitizersStats).toEqual({});
+              expect(sanitizedValues).toEqual({});
             });
 
             it("should respect sanitizer at creation", async () => {
@@ -2737,7 +2737,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 name: "Peter",
               });
 
-              expect(sanitizersStats).toEqual({
+              expect(sanitizedValues).toEqual({
                 sideEffectWithSanitizer: "sanitized",
               });
             });
@@ -2757,13 +2757,13 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 name: "Peter",
               });
 
-              expect(sanitizersStats).toEqual({
+              expect(sanitizedValues).toEqual({
                 sideEffectWithSanitizer: "sanitized",
               });
             });
 
             it("should respect sideInits & sideNoInit at creation", async () => {
-              const { data: user } = await User.create({
+              const { data: user, handleSuccess } = await User.create({
                 dependentSideNoInit: "",
                 dependentSideInit: true,
                 name: "Peter",
@@ -2773,10 +2773,30 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 sideEffectWithSanitizerNoInit: true,
               });
 
+              await handleSuccess();
+
               expect(user).toEqual({
                 dependentSideInit: "both",
                 dependentSideNoInit: "",
                 name: "Peter",
+              });
+
+              expect(onSuccessStats).toEqual({
+                dependentSideInit: 1,
+                dependentSideNoInit: 1,
+                sideInit: 1,
+                sideEffectWithSanitizer: 3,
+              });
+
+              expect(onSuccessValues).toEqual({
+                dependentSideInit: "both",
+                dependentSideNoInit: "",
+                sideInit: true,
+                sideEffectWithSanitizer: "sanitized",
+              });
+
+              expect(sanitizedValues).toEqual({
+                sideEffectWithSanitizer: "sanitized",
               });
             });
 
@@ -2812,7 +2832,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 sideInit: true,
               });
 
-              expect(sanitizersStats).toEqual({});
+              expect(sanitizedValues).toEqual({});
             });
           });
 
@@ -2849,7 +2869,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 sideEffectWithSanitizerNoInit: "sanitized no init",
               });
 
-              expect(sanitizersStats).toEqual({
+              expect(sanitizedValues).toEqual({
                 sideEffectWithSanitizer: "sanitized",
                 sideEffectWithSanitizerNoInit: "sanitized no init",
               });
