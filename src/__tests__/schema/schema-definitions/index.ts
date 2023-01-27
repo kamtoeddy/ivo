@@ -1615,37 +1615,38 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             });
           });
 
-          // updates
-          // it("should call onFailure listeners during updates", async () => {
-          //   const { error } = await Model.update({}, { prop1: "" });
+          describe("updates", () => {
+            it("should call onFailure listeners during updates", async () => {
+              const { error } = await Model.update({}, { prop1: "" });
 
-          //   expect(error).toBeDefined();
-          //   expect(propChangeMap).toEqual({ prop1: true });
-          // });
+              expect(error).toBeDefined();
+              expect(onFailureCount).toEqual({ prop1: 1 });
+            });
 
-          // it("should call onFailure listeners during updates with sideEffects", async () => {
-          //   const data = [
-          //     [{ prop4: "" }, { prop4: true }],
-          //     [
-          //       { prop1: "", prop4: "" },
-          //       { prop1: true, prop4: true },
-          //     ],
-          //   ];
+            // it("should call onFailure listeners during updates with sideEffects", async () => {
+            //   const data = [
+            //     [{ prop4: "" }, { prop4: true }],
+            //     [
+            //       { prop1: "", prop4: "" },
+            //       { prop1: true, prop4: true },
+            //     ],
+            //   ];
 
-          //   for (const [changes, results] of data) {
-          //     const { error } = await Model.update({}, changes);
+            //   for (const [changes, results] of data) {
+            //     const { error } = await Model.update({}, changes);
 
-          //     expect(error).toBeDefined();
-          //     expect(propChangeMap).toEqual(results);
-          //   }
-          // });
+            //     expect(error).toBeDefined();
+            //     expect(onFailureCount).toEqual(results);
+            //   }
+            // });
 
-          // it("should call onFailure listeners during updates & nothing to update", async () => {
-          //   const { error } = await Model.update({}, {});
+            // it("should call onFailure listeners during updates & nothing to update", async () => {
+            //   const { error } = await Model.update({}, {});
 
-          //   expect(error).toBeDefined();
-          //   expect(propChangeMap).toEqual({});
-          // });
+            //   expect(error).toBeDefined();
+            //   expect(onFailureCount).toEqual({});
+            // });
+          });
         });
       });
 
