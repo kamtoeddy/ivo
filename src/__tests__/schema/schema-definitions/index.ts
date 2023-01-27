@@ -2688,6 +2688,20 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           });
 
           describe("creation", () => {
+            it("should not sanitize sideEffects nor resolve their dependencies if not provided", async () => {
+              const { data } = await User.create({
+                name: "Peter",
+              });
+
+              expect(data).toEqual({
+                dependentSideInit: "",
+                dependentSideNoInit: "",
+                name: "Peter",
+              });
+
+              expect(sanitizersStats).toEqual({});
+            });
+
             it("should respect sanitizer at creation", async () => {
               const { data } = await User.create({
                 name: "Peter",
