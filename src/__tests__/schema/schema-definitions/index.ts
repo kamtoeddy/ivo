@@ -2712,23 +2712,23 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               });
             });
 
-            // it("should respect sideInits & sideNoInit", async () => {
-            //   const { data: user } = await User.create({
-            //     sideInit: true,
-            //     name: "Peter",
+            it("should respect sideInits & sideNoInit at creation", async () => {
+              const { data: user } = await User.create({
+                sideInit: true,
+                name: "Peter",
 
-            //     dependentSideNoInit: "",
-            //     dependentSideInit: true,
-            //     sideEffectWithSanitizer: true,
-            //     sideEffectWithSanitizerNoInit: true,
-            //   });
+                dependentSideNoInit: "",
+                dependentSideInit: true,
+                sideEffectWithSanitizer: true,
+                sideEffectWithSanitizerNoInit: true,
+              });
 
-            //   expect(user).toEqual({
-            //     dependentSideNoInit: "",
-            //     dependentSideInit: true,
-            //     name: "Peter",
-            //   });
-            // });
+              expect(user).toEqual({
+                dependentSideNoInit: "",
+                dependentSideInit: true,
+                name: "Peter",
+              });
+            });
           });
 
           describe("updating", () => {
