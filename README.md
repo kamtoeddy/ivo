@@ -39,7 +39,7 @@ const userSchema = new Schema(
       resolver: generateFullName,
     },
     isBlocked: { default: false, validator: validateBoolean },
-    id: { readonly: true, validator: validateId },
+    id: { constant: true, value: generateId },
     lastName: {
       required: true,
       validator: validateString("invalid last name"),
@@ -48,7 +48,7 @@ const userSchema = new Schema(
     password: {
       required: true,
       validator(value) {
-        let validated = value.trim();
+        let validated = String(value).trim();
 
         const valid = validated.length >= 8;
 
@@ -60,9 +60,9 @@ const userSchema = new Schema(
       },
     },
     role: {
-      required: true,
+      readonly: true,
       validator(value) {
-        const validated = value.trim();
+        const validated = String(value).trim();
 
         const valid = ["admin", "user"].includes(validated);
 
