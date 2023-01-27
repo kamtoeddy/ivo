@@ -105,10 +105,12 @@ class ModelTool<
     error: ErrorTool,
     sideEffects: StringKey<I>[] = []
   ) => {
-    const props = [
+    let props = [
       ...this._getKeysAsProps({ ...data, ...error.payload }),
       ...sideEffects,
     ];
+
+    props = Array.from(new Set(props));
 
     const ctx = this._getContext();
 
