@@ -2781,7 +2781,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             });
 
             it("should respect sideInits & sideNoInit at creation(cloning)", async () => {
-              const { data: user } = await User.clone(
+              const { data: user, handleSuccess } = await User.clone(
                 {
                   dependentSideNoInit: "bignw ",
                   dependentSideInit: "iehvhgwop",
@@ -2792,11 +2792,27 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 { reset: ["dependentSideInit", "dependentSideNoInit"] }
               );
 
+              await handleSuccess();
+
               expect(user).toEqual({
                 dependentSideInit: "one",
                 dependentSideNoInit: "",
                 name: "Peter",
               });
+
+              expect(onSuccessStats).toEqual({
+                dependentSideInit: 1,
+                dependentSideNoInit: 1,
+                sideInit: 1,
+              });
+
+              expect(onSuccessValues).toEqual({
+                dependentSideInit: "one",
+                dependentSideNoInit: "",
+                sideInit: true,
+              });
+
+              expect(sanitizersStats).toEqual({});
             });
           });
 
