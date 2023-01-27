@@ -1600,16 +1600,19 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               expect(onFailureCount).toEqual({ prop1: 1, prop2: 2 });
             });
 
-            // it("should call onFailure listeners during cloning with sideEffects", async () => {
-            //   const { error } = await Model.clone({ prop4: "Yes" });
+            it("should call onFailure listeners during cloning with sideEffects", async () => {
+              const { error } = await Model.clone({
+                prop1: "",
+                sideEffectProp: "Yes",
+              });
 
-            //   expect(error).toBeDefined();
-            //   expect(propChangeMap).toEqual({
-            //     prop1: true,
-            //     prop2: true,
-            //     prop4: true,
-            //   });
-            // });
+              expect(error).toBeDefined();
+              expect(onFailureCount).toEqual({
+                prop1: 1,
+                prop2: 2,
+                sideEffectProp: 3,
+              });
+            });
           });
 
           // updates
