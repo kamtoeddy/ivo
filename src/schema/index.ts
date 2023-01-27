@@ -586,6 +586,11 @@ class ModelTool<
 
     this._handleRequiredBy(error, "updating");
 
+    if (error.isPayloadLoaded) {
+      await this._handleFailure(updated, error, sideEffects);
+      return this._handleError(error);
+    }
+
     await this._handleSanitizationOfSideEffects("updating");
 
     updated = await this._resolveDependentChanges(
@@ -593,11 +598,6 @@ class ModelTool<
       this._getFinalContext(),
       "updating"
     );
-
-    if (error.isPayloadLoaded) {
-      await this._handleFailure(updated, error, sideEffects);
-      return this._handleError(error);
-    }
 
     if (!Object.keys(updated).length) {
       await this._handleFailure(updated, error, sideEffects);

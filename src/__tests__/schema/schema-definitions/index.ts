@@ -1625,14 +1625,16 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
             it("should call onFailure listeners during updates with sideEffects", async () => {
               const data = [
-                [{ SideEffectProp: "" }, { SideEffectProp: 3 }],
+                [{ sideEffectProp: "" }, { sideEffectProp: 3 }],
                 [
-                  { prop1: "", SideEffectProp: "" },
-                  { prop1: 1, SideEffectProp: 3 },
+                  { prop1: "", sideEffectProp: "" },
+                  { prop1: 1, sideEffectProp: 3 },
                 ],
               ];
 
               for (const [changes, results] of data) {
+                onFailureCount = {};
+
                 const { error } = await Model.update({}, changes);
 
                 expect(error).toBeDefined();
@@ -2251,7 +2253,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
         });
 
         it("should reject if condition is not met during updates of readonly", async () => {
-          const toFail = () => Book.update(book, { price: 101, isTest: true });
+          const toFail = () => Book.update(book, { price: 101 });
 
           expectPromiseFailure(toFail, "Validation Error");
 
