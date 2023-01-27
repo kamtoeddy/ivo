@@ -1592,29 +1592,25 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 sideEffectProp: 3,
               });
             });
+
+            it("should call onFailure listeners during cloning", async () => {
+              const { error } = await Model.clone({ prop1: "" });
+
+              expect(error).toBeDefined();
+              expect(onFailureCount).toEqual({ prop1: 1, prop2: 2 });
+            });
+
+            // it("should call onFailure listeners during cloning with sideEffects", async () => {
+            //   const { error } = await Model.clone({ prop4: "Yes" });
+
+            //   expect(error).toBeDefined();
+            //   expect(propChangeMap).toEqual({
+            //     prop1: true,
+            //     prop2: true,
+            //     prop4: true,
+            //   });
+            // });
           });
-
-          // cloning
-          // it("should call onFailure listeners during cloning", async () => {
-          //   const { error } = await Model.clone({});
-
-          //   expect(error).toBeDefined();
-          //   expect(propChangeMap).toEqual({
-          //     prop1: true,
-          //     prop2: true,
-          //   });
-          // });
-
-          // it("should call onFailure listeners during cloning with sideEffects", async () => {
-          //   const { error } = await Model.clone({ prop4: "Yes" });
-
-          //   expect(error).toBeDefined();
-          //   expect(propChangeMap).toEqual({
-          //     prop1: true,
-          //     prop2: true,
-          //     prop4: true,
-          //   });
-          // });
 
           // updates
           // it("should call onFailure listeners during updates", async () => {
