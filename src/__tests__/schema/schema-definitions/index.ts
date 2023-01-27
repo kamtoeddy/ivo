@@ -2602,6 +2602,8 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
         });
 
         describe("behaviour", () => {
+          let onSuccessValues: any = {};
+
           let onSuccessStats: any = {};
 
           let sanitizersStats: any = {};
@@ -2618,7 +2620,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                   resolver({ sideInit, sideEffectWithSanitizer }: any) {
                     return sideInit && sideEffectWithSanitizer ? "both" : "one";
                   },
-                  onSuccess: onSuccess("dependentSideNoInit"),
+                  onSuccess: onSuccess("dependentSideInit"),
                 },
                 dependentSideNoInit: {
                   default: "",
@@ -2636,12 +2638,19 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 sideNoInit: {
                   sideEffect: true,
                   shouldInit: false,
-                  onSuccess: onSuccess("sideNoInit"),
+                  onSuccess: [
+                    onSuccess("sideNoInit"),
+                    incrementOnSuccessStats("sideNoInit"),
+                  ],
                   validator: validateBoolean,
                 },
                 sideEffectWithSanitizer: {
                   sideEffect: true,
-                  onSuccess: onSuccess("sideEffectWithSanitizer"),
+                  onSuccess: [
+                    onSuccess("sideEffectWithSanitizer"),
+                    incrementOnSuccessStats("sideEffectWithSanitizer"),
+                    incrementOnSuccessStats("sideEffectWithSanitizer"),
+                  ],
                   sanitizer: sanitizerOf(
                     "sideEffectWithSanitizer",
                     "sanitized"
@@ -2651,7 +2660,10 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 sideEffectWithSanitizerNoInit: {
                   sideEffect: true,
                   shouldInit: false,
-                  onSuccess: onSuccess("sideEffectWithSanitizerNoInit"),
+                  onSuccess: [
+                    onSuccess("sideEffectWithSanitizerNoInit"),
+                    incrementOnSuccessStats("sideEffectWithSanitizerNoInit"),
+                  ],
                   sanitizer: sanitizerOf(
                     "sideEffectWithSanitizerNoInit",
                     "sanitized no init"
@@ -2671,8 +2683,17 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               };
             }
 
+            function incrementOnSuccessStats(prop: string) {
+              return () => {
+                onSuccessStats[prop] = (onSuccessStats[prop] ?? 0) + 1;
+              };
+            }
+
             function onSuccess(prop: string) {
-              return (ctx: any) => (onSuccessStats[prop] = ctx[prop]);
+              return (ctx: any) => {
+                onSuccessValues[prop] = ctx[prop];
+                incrementOnSuccessStats(prop)();
+              };
             }
 
             function validateBoolean(value: any) {
@@ -2684,6 +2705,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
           beforeEach(() => {
             onSuccessStats = {};
+            onSuccessValues = {};
             sanitizersStats = {};
           });
 
@@ -2780,7 +2802,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
           describe("updating", () => {
             it("should respect sanitizer of all side effects provided during updates", async () => {
-              const { data } = await User.update(
+              const { data, handleSuccess } = await User.update(
                 { name: "Peter" },
                 {
                   name: "John",
@@ -2789,10 +2811,26 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 }
               );
 
+              await handleSuccess();
+
               expect(data).toEqual({
                 name: "John",
                 dependentSideInit: "one",
                 dependentSideNoInit: "changed",
+              });
+
+              expect(onSuccessStats).toEqual({
+                dependentSideInit: 1,
+                dependentSideNoInit: 1,
+                sideEffectWithSanitizer: 3,
+                sideEffectWithSanitizerNoInit: 2,
+              });
+
+              expect(onSuccessValues).toEqual({
+                dependentSideInit: "one",
+                dependentSideNoInit: "changed",
+                sideEffectWithSanitizer: "sanitized",
+                sideEffectWithSanitizerNoInit: "sanitized no init",
               });
 
               expect(sanitizersStats).toEqual({
@@ -2801,202 +2839,6 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               });
             });
           });
-
-          // describe("onSuccess", () => {
-          //   it("should no trigger onSuccess listeners of sideEffects when not provided during cloning", async () => {
-          //     const { handleSuccess } = await User.clone({
-          //       name: "Peter",
-          //       dependentSideNoInit: "",
-          //       dependentSideInit: false,
-          //     });
-
-          //     await handleSuccess();
-
-          //     expect(successMap).toEqual({
-          //       sideInit: { hasChanged: false, newValue: undefined },
-          //       sideNoInit: { hasChanged: false, newValue: undefined },
-          //     });
-          //   });
-
-          //   it("should no trigger onSuccess listeners of sideEffects when not provided at creation", async () => {
-          //     const { handleSuccess } = await User.create({
-          //       name: "Peter",
-          //       dependentSideNoInit: "",
-          //       dependentSideInit: false,
-          //     });
-
-          //     await handleSuccess();
-
-          //     expect(successMap).toEqual({
-          //       sideInit: { hasChanged: false, newValue: undefined },
-          //       sideNoInit: { hasChanged: false, newValue: undefined },
-          //     });
-          //   });
-
-          //   it("should no trigger onSuccess listeners of sideEffects when not provided during updates", async () => {
-          //     const { handleSuccess } = await User.update(
-          //       {
-          //         name: "Peter",
-          //         dependentSideNoInit: "",
-          //         dependentSideInit: false,
-          //       },
-          //       { name: "John" }
-          //     );
-
-          //     await handleSuccess();
-
-          //     expect(successMap).toEqual({
-          //       sideInit: { hasChanged: false, newValue: undefined },
-          //       sideNoInit: { hasChanged: false, newValue: undefined },
-          //     });
-          //   });
-
-          //   it("should respect onSuccess of sideInits & sideNoInit during cloning", async () => {
-          //     const sideInit = false;
-          //     const { handleSuccess } = await User.clone({
-          //       sideInit,
-          //       sideNoInit: true,
-          //       name: "Peter",
-          //       dependentSideNoInit: "",
-          //       dependentSideInit: false,
-          //     });
-
-          //     await handleSuccess();
-
-          //     expect(successMap).toEqual({
-          //       sideInit: { hasChanged: true, newValue: sideInit },
-          //       sideNoInit: { hasChanged: false, newValue: undefined },
-          //     });
-          //   });
-
-          //   it("should respect onSuccess of sideInits & sideNoInit at creation", async () => {
-          //     const sideInit = false;
-          //     const { handleSuccess } = await User.create({
-          //       sideInit,
-          //       sideNoInit: true,
-          //       name: "Peter",
-          //     });
-
-          //     await handleSuccess();
-
-          //     expect(successMap).toEqual({
-          //       sideInit: { hasChanged: true, newValue: sideInit },
-          //       sideNoInit: { hasChanged: false, newValue: undefined },
-          //     });
-          //   });
-
-          //   it("should respect onSuccess of sideInits & sideNoInit during updates", async () => {
-          //     const sideInit = false,
-          //       sideNoInit = true;
-          //     const { handleSuccess } = await User.update(
-          //       {
-          //         dependentSideNoInit: "",
-          //         dependentSideInit: false,
-          //       },
-          //       { sideInit, sideNoInit, name: "Peter" }
-          //     );
-
-          //     await handleSuccess();
-
-          //     expect(successMap).toEqual({
-          //       sideInit: { hasChanged: true, newValue: sideInit },
-          //       sideNoInit: { hasChanged: true, newValue: sideNoInit },
-          //     });
-          //   });
-          // });
-
-          // describe("RequiredSideEffect", () => {
-          //   let RequiredSideEffect: any;
-
-          //   beforeAll(() => {
-          //     RequiredSideEffect = new Schema({
-          //       dependent: {
-          //         default: "",
-          //         dependent: true,
-          //         dependsOn: "sideEffect",
-          //         resolver: (ctx: any) => ctx.sideEffect,
-          //       },
-          //       laxProp: { default: "" },
-          //       sideEffect: {
-          //         sideEffect: true,
-          //         required: ({ sideEffect, dependent }: any) => {
-          //           return dependent === "" && sideEffect === undefined;
-          //         },
-          //         requiredError: () => "SideEffect is required",
-          //         validator,
-          //       },
-          //     }).getModel();
-          //   });
-
-          //   // creation
-          //   it("should create normally", async () => {
-          //     const { data } = await RequiredSideEffect.create({
-          //       sideEffect: true,
-          //       laxProp: "laxProp",
-          //     });
-
-          //     expect(data).toEqual({ dependent: true, laxProp: "laxProp" });
-          //   });
-
-          //   // cloning
-          //   it("should clone normally", async () => {
-          //     const { data } = await RequiredSideEffect.clone({
-          //       sideEffect: "cloned",
-          //       dependent: true,
-          //       laxProp: "laxProp",
-          //     });
-
-          //     expect(data).toEqual({ dependent: "cloned", laxProp: "laxProp" });
-          //   });
-
-          //   it("should require during cloning", async () => {
-          //     const { data, error } = await RequiredSideEffect.clone({
-          //       dependent: "",
-          //       laxProp: "laxProp",
-          //     });
-
-          //     expect(data).toBe(undefined);
-          //     expect(error).toEqual(
-          //       expect.objectContaining({
-          //         message: "Validation Error",
-          //         payload: { sideEffect: ["SideEffect is required"] },
-          //         statusCode: 400,
-          //       })
-          //     );
-          //   });
-
-          //   // updates
-          //   it("should update normally", async () => {
-          //     const { data } = await RequiredSideEffect.update(
-          //       {
-          //         dependent: true,
-          //         laxProp: "laxProp",
-          //       },
-          //       { sideEffect: "updated" }
-          //     );
-
-          //     expect(data).toEqual({ dependent: "updated" });
-          //   });
-
-          //   it("should require during updates", async () => {
-          //     const { data, error } = await RequiredSideEffect.update(
-          //       {
-          //         dependent: "",
-          //         laxProp: "laxProp",
-          //       },
-          //       { laxProp: 2 }
-          //     );
-
-          //     expect(data).toBe(undefined);
-          //     expect(error).toEqual(
-          //       expect.objectContaining({
-          //         message: "Validation Error",
-          //         payload: { sideEffect: ["SideEffect is required"] },
-          //         statusCode: 400,
-          //       })
-          //     );
-          //   });
-          // });
         });
       });
 
