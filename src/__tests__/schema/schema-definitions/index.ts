@@ -2611,13 +2611,6 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           beforeAll(() => {
             User = new Schema(
               {
-                dependentSideNoInit: {
-                  default: "",
-                  dependent: true,
-                  dependsOn: ["sideNoInit", "sideEffectWithSanitizerNoInit"],
-                  resolver: () => "changed",
-                  onSuccess: onSuccess("dependentSideNoInit"),
-                },
                 dependentSideInit: {
                   default: "",
                   dependent: true,
@@ -2625,6 +2618,13 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                   resolver({ sideInit, sideEffectWithSanitizer }: any) {
                     return sideInit && sideEffectWithSanitizer ? "both" : "one";
                   },
+                  onSuccess: onSuccess("dependentSideNoInit"),
+                },
+                dependentSideNoInit: {
+                  default: "",
+                  dependent: true,
+                  dependsOn: ["sideNoInit", "sideEffectWithSanitizerNoInit"],
+                  resolver: () => "changed",
                   onSuccess: onSuccess("dependentSideNoInit"),
                 },
                 name: { default: "" },
@@ -2696,8 +2696,8 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               });
 
               expect(data).toEqual({
-                dependentSideNoInit: "",
                 dependentSideInit: "one",
+                dependentSideNoInit: "",
                 name: "Peter",
               });
 
@@ -2716,8 +2716,8 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               });
 
               expect(data).toEqual({
-                dependentSideNoInit: "",
                 dependentSideInit: "one",
+                dependentSideNoInit: "",
                 name: "Peter",
               });
 
@@ -2738,8 +2738,8 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               });
 
               expect(user).toEqual({
-                dependentSideNoInit: "",
                 dependentSideInit: "both",
+                dependentSideNoInit: "",
                 name: "Peter",
               });
             });
@@ -2757,8 +2757,8 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               );
 
               expect(user).toEqual({
-                dependentSideNoInit: "",
                 dependentSideInit: "one",
+                dependentSideNoInit: "",
                 name: "Peter",
               });
             });
@@ -2775,10 +2775,11 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 }
               );
 
-              // expect(data).toEqual({
-              //   name: "John",
-              //   sideEffectWithSanitizerNoInit: "sanitized no init",
-              // });
+              expect(data).toEqual({
+                name: "John",
+                dependentSideInit: "one",
+                dependentSideNoInit: "changed",
+              });
 
               expect(sanitizersStats).toEqual({
                 sideEffectWithSanitizer: "sanitized",
