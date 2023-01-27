@@ -1623,22 +1623,22 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               expect(onFailureCount).toEqual({ prop1: 1 });
             });
 
-            // it("should call onFailure listeners during updates with sideEffects", async () => {
-            //   const data = [
-            //     [{ prop4: "" }, { prop4: true }],
-            //     [
-            //       { prop1: "", prop4: "" },
-            //       { prop1: true, prop4: true },
-            //     ],
-            //   ];
+            it("should call onFailure listeners during updates with sideEffects", async () => {
+              const data = [
+                [{ SideEffectProp: "" }, { SideEffectProp: 3 }],
+                [
+                  { prop1: "", SideEffectProp: "" },
+                  { prop1: 1, SideEffectProp: 3 },
+                ],
+              ];
 
-            //   for (const [changes, results] of data) {
-            //     const { error } = await Model.update({}, changes);
+              for (const [changes, results] of data) {
+                const { error } = await Model.update({}, changes);
 
-            //     expect(error).toBeDefined();
-            //     expect(onFailureCount).toEqual(results);
-            //   }
-            // });
+                expect(error).toBeDefined();
+                expect(onFailureCount).toEqual(results);
+              }
+            });
 
             // it("should call onFailure listeners during updates & nothing to update", async () => {
             //   const { error } = await Model.update({}, {});
