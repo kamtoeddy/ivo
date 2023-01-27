@@ -1642,12 +1642,12 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               }
             });
 
-            // it("should call onFailure listeners during updates & nothing to update", async () => {
-            //   const { error } = await Model.update({}, {});
+            it("should call onFailure listeners during updates & nothing to update", async () => {
+              const { error } = await Model.update({ prop1: 2 }, { prop1: 35 });
 
-            //   expect(error).toBeDefined();
-            //   expect(onFailureCount).toEqual({});
-            // });
+              expect(error).toBeDefined();
+              expect(onFailureCount).toEqual({ prop1: 1 });
+            });
           });
         });
       });
