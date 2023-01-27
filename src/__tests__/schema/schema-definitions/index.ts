@@ -2619,10 +2619,12 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                   onSuccess: onSuccess("dependentSideNoInit"),
                 },
                 dependentSideInit: {
-                  default: false,
+                  default: "",
                   dependent: true,
                   dependsOn: ["sideInit", "sideEffectWithSanitizer"],
-                  resolver: (ctx: any) => (ctx.sideInit ? true : false),
+                  resolver({ sideInit, sideEffectWithSanitizer }: any) {
+                    return sideInit && sideEffectWithSanitizer ? "both" : "one";
+                  },
                   onSuccess: onSuccess("dependentSideNoInit"),
                 },
                 name: { default: "" },
@@ -2687,10 +2689,16 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
           describe("creation", () => {
             it("should respect sanitizer at creation", async () => {
-              await User.create({
+              const { data } = await User.create({
                 name: "Peter",
                 sideEffectWithSanitizer: true,
                 sideEffectWithSanitizerNoInit: true,
+              });
+
+              expect(data).toEqual({
+                dependentSideNoInit: "",
+                dependentSideInit: "one",
+                name: "Peter",
               });
 
               expect(sanitizersStats).toEqual({
@@ -2699,12 +2707,18 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             });
 
             it("should respect sanitizer at creation(cloning)", async () => {
-              await User.clone({
+              const { data } = await User.clone({
                 dependentSideNoInit: "",
                 dependentSideInit: true,
                 name: "Peter",
                 sideEffectWithSanitizer: true,
                 sideEffectWithSanitizerNoInit: true,
+              });
+
+              expect(data).toEqual({
+                dependentSideNoInit: "",
+                dependentSideInit: "one",
+                name: "Peter",
               });
 
               expect(sanitizersStats).toEqual({
@@ -2714,18 +2728,18 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
             it("should respect sideInits & sideNoInit at creation", async () => {
               const { data: user } = await User.create({
-                sideInit: true,
-                name: "Peter",
-
                 dependentSideNoInit: "",
                 dependentSideInit: true,
+                name: "Peter",
+
+                sideInit: true,
                 sideEffectWithSanitizer: true,
                 sideEffectWithSanitizerNoInit: true,
               });
 
               expect(user).toEqual({
                 dependentSideNoInit: "",
-                dependentSideInit: true,
+                dependentSideInit: "both",
                 name: "Peter",
               });
             });
@@ -2744,7 +2758,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
               expect(user).toEqual({
                 dependentSideNoInit: "",
-                dependentSideInit: true,
+                dependentSideInit: "one",
                 name: "Peter",
               });
             });
@@ -2752,16 +2766,19 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
           describe("updating", () => {
             it("should respect sanitizer of all side effects provided during updates", async () => {
-              await User.update(
-                {
-                  name: "Peter",
-                },
+              const { data } = await User.update(
+                { name: "Peter" },
                 {
                   name: "John",
                   sideEffectWithSanitizer: true,
                   sideEffectWithSanitizerNoInit: true,
                 }
               );
+
+              // expect(data).toEqual({
+              //   name: "John",
+              //   sideEffectWithSanitizerNoInit: "sanitized no init",
+              // });
 
               expect(sanitizersStats).toEqual({
                 sideEffectWithSanitizer: "sanitized",
