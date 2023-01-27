@@ -1537,7 +1537,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
             Model = new Schema({
               prop1: {
-                required: true,
+                default: true,
                 onFailure: incrementOnFailureCountOf("prop1"),
                 validator,
               },
@@ -1567,30 +1567,32 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             }).getModel();
           });
 
-          beforeEach(() => (onFailureCount = {}));
+          beforeEach(() => {
+            onFailureCount = {};
+          });
 
           describe("creation", () => {
             it("should call onFailure listeners at creation", async () => {
-              const { error } = await Model.create({});
+              const { error } = await Model.create({ prop1: false });
+
+              expect(error).toBeDefined();
+              expect(onFailureCount).toEqual({ prop1: 1, prop2: 2 });
+            });
+
+            it("should call onFailure listeners at creation with sideEffects", async () => {
+              const { error } = await Model.create({
+                prop1: false,
+                sideEffectProp: "Yes",
+              });
 
               expect(error).toBeDefined();
               expect(onFailureCount).toEqual({
                 prop1: 1,
                 prop2: 2,
+                sideEffectProp: 3,
               });
             });
           });
-
-          // it("should call onFailure listeners at creation with sideEffects", async () => {
-          //   const { error } = await Model.create({ prop4: "Yes" });
-
-          //   expect(error).toBeDefined();
-          //   expect(propChangeMap).toEqual({
-          //     prop1: true,
-          //     prop2: true,
-          //     prop4: true,
-          //   });
-          // });
 
           // cloning
           // it("should call onFailure listeners during cloning", async () => {
