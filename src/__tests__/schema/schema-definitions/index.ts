@@ -1505,130 +1505,147 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
       });
 
       describe("onFailure", () => {
-        let Model: any,
-          propChangeMap: any = {};
+        it("should reject onFailure & no validator", () => {
+          const toFail = fx({ prop: { default: "", onFailure: () => {} } });
 
-        beforeAll(() => {
-          const onFailure =
-            (prop = "") =>
-            () =>
-              (propChangeMap[prop] = true);
-          const validator = () => ({ valid: false });
+          expectFailure(toFail);
 
-          Model = new Schema({
-            prop1: { required: true, onFailure: onFailure("prop1"), validator },
-            prop2: { required: true, onFailure: onFailure("prop2"), validator },
-            dependentProp: {
-              default: "",
-              dependent: true,
-              dependsOn: "prop4",
-              resolver: () => "",
-            },
-            prop4: {
-              sideEffect: true,
-              onFailure: onFailure("prop4"),
-              validator,
-            },
-          }).getModel();
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toMatchObject(
+              expect.objectContaining({
+                prop: expect.arrayContaining([
+                  "'onFailure' can only be used with properties that support and have validators",
+                ]),
+              })
+            );
+          }
         });
 
-        beforeEach(() => (propChangeMap = {}));
+        describe("behaviour", () => {
+          let Model: any,
+            onFailureCount: any = {};
 
-        describe("configuration", () => {
-          it("should reject onFailure & no validator", () => {
-            const toFail = fx({ prop: { default: "", onFailure: () => {} } });
-
-            expectFailure(toFail);
-
-            try {
-              toFail();
-            } catch (err: any) {
-              expect(err.payload).toMatchObject(
-                expect.objectContaining({
-                  prop: expect.arrayContaining([
-                    "'onFailure' can only be used with properties that support and have validators",
-                  ]),
-                })
-              );
+          beforeAll(() => {
+            function incrementOnFailureCountOf(prop: string) {
+              return () => {
+                onFailureCount[prop] = (onFailureCount[prop] ?? 0) + 1;
+              };
             }
+            const validator = () => ({ valid: false });
+
+            Model = new Schema({
+              prop1: {
+                required: true,
+                onFailure: incrementOnFailureCountOf("prop1"),
+                validator,
+              },
+              prop2: {
+                required: true,
+                onFailure: [
+                  incrementOnFailureCountOf("prop2"),
+                  incrementOnFailureCountOf("prop2"),
+                ],
+                validator,
+              },
+              dependentProp: {
+                default: "",
+                dependent: true,
+                dependsOn: "sideEffectProp",
+                resolver: () => "",
+              },
+              sideEffectProp: {
+                sideEffect: true,
+                onFailure: [
+                  incrementOnFailureCountOf("sideEffectProp"),
+                  incrementOnFailureCountOf("sideEffectProp"),
+                  incrementOnFailureCountOf("sideEffectProp"),
+                ],
+                validator,
+              },
+            }).getModel();
           });
+
+          beforeEach(() => (onFailureCount = {}));
+
+          describe("creation", () => {
+            it("should call onFailure listeners at creation", async () => {
+              const { error } = await Model.create({});
+
+              expect(error).toBeDefined();
+              expect(onFailureCount).toEqual({
+                prop1: 1,
+                prop2: 2,
+              });
+            });
+          });
+
+          // it("should call onFailure listeners at creation with sideEffects", async () => {
+          //   const { error } = await Model.create({ prop4: "Yes" });
+
+          //   expect(error).toBeDefined();
+          //   expect(propChangeMap).toEqual({
+          //     prop1: true,
+          //     prop2: true,
+          //     prop4: true,
+          //   });
+          // });
+
+          // cloning
+          // it("should call onFailure listeners during cloning", async () => {
+          //   const { error } = await Model.clone({});
+
+          //   expect(error).toBeDefined();
+          //   expect(propChangeMap).toEqual({
+          //     prop1: true,
+          //     prop2: true,
+          //   });
+          // });
+
+          // it("should call onFailure listeners during cloning with sideEffects", async () => {
+          //   const { error } = await Model.clone({ prop4: "Yes" });
+
+          //   expect(error).toBeDefined();
+          //   expect(propChangeMap).toEqual({
+          //     prop1: true,
+          //     prop2: true,
+          //     prop4: true,
+          //   });
+          // });
+
+          // updates
+          // it("should call onFailure listeners during updates", async () => {
+          //   const { error } = await Model.update({}, { prop1: "" });
+
+          //   expect(error).toBeDefined();
+          //   expect(propChangeMap).toEqual({ prop1: true });
+          // });
+
+          // it("should call onFailure listeners during updates with sideEffects", async () => {
+          //   const data = [
+          //     [{ prop4: "" }, { prop4: true }],
+          //     [
+          //       { prop1: "", prop4: "" },
+          //       { prop1: true, prop4: true },
+          //     ],
+          //   ];
+
+          //   for (const [changes, results] of data) {
+          //     const { error } = await Model.update({}, changes);
+
+          //     expect(error).toBeDefined();
+          //     expect(propChangeMap).toEqual(results);
+          //   }
+          // });
+
+          // it("should call onFailure listeners during updates & nothing to update", async () => {
+          //   const { error } = await Model.update({}, {});
+
+          //   expect(error).toBeDefined();
+          //   expect(propChangeMap).toEqual({});
+          // });
         });
-
-        // creation
-        // it("should call onFailure listeners at creation", async () => {
-        //   const { error } = await Model.create({});
-
-        //   expect(error).toBeDefined();
-        //   expect(propChangeMap).toEqual({
-        //     prop1: true,
-        //     prop2: true,
-        //   });
-        // });
-
-        // it("should call onFailure listeners at creation with sideEffects", async () => {
-        //   const { error } = await Model.create({ prop4: "Yes" });
-
-        //   expect(error).toBeDefined();
-        //   expect(propChangeMap).toEqual({
-        //     prop1: true,
-        //     prop2: true,
-        //     prop4: true,
-        //   });
-        // });
-
-        // cloning
-        // it("should call onFailure listeners during cloning", async () => {
-        //   const { error } = await Model.clone({});
-
-        //   expect(error).toBeDefined();
-        //   expect(propChangeMap).toEqual({
-        //     prop1: true,
-        //     prop2: true,
-        //   });
-        // });
-
-        // it("should call onFailure listeners during cloning with sideEffects", async () => {
-        //   const { error } = await Model.clone({ prop4: "Yes" });
-
-        //   expect(error).toBeDefined();
-        //   expect(propChangeMap).toEqual({
-        //     prop1: true,
-        //     prop2: true,
-        //     prop4: true,
-        //   });
-        // });
-
-        // updates
-        // it("should call onFailure listeners during updates", async () => {
-        //   const { error } = await Model.update({}, { prop1: "" });
-
-        //   expect(error).toBeDefined();
-        //   expect(propChangeMap).toEqual({ prop1: true });
-        // });
-
-        // it("should call onFailure listeners during updates with sideEffects", async () => {
-        //   const data = [
-        //     [{ prop4: "" }, { prop4: true }],
-        //     [
-        //       { prop1: "", prop4: "" },
-        //       { prop1: true, prop4: true },
-        //     ],
-        //   ];
-
-        //   for (const [changes, results] of data) {
-        //     const { error } = await Model.update({}, changes);
-
-        //     expect(error).toBeDefined();
-        //     expect(propChangeMap).toEqual(results);
-        //   }
-        // });
-
-        // it("should call onFailure listeners during updates & nothing to update", async () => {
-        //   const { error } = await Model.update({}, {});
-
-        //   expect(error).toBeDefined();
-        //   expect(propChangeMap).toEqual({});
-        // });
       });
 
       describe("onSuccess", () => {
