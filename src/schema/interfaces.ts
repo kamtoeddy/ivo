@@ -48,7 +48,7 @@ export type StringKey<T> = Extract<keyof T, string>;
 
 export namespace Schema {
   export type PropertyDefinitions<I, O = I> = {
-    [K in keyof I]?:
+    [K in keyof I]:
       | Constant<K, I, O>
       | Dependent<K, I, O>
       | Property<K, I, O>
@@ -66,7 +66,7 @@ export namespace Schema {
       constant?: any;
       default?: any;
       dependent?: boolean;
-      dependsOn?: StringKey<I> | NonEmptyArray<StringKey<I>>;
+      dependsOn?: StringKey<I> | StringKey<I>[];
       readonly?: boolean | "lax";
       resolver?: Function;
       required?: boolean | ConditionalRequiredSetter<I>;
@@ -108,9 +108,7 @@ export namespace Schema {
   type Dependent<K extends keyof T, T, O = T> = Listenable<T, O> & {
     default: TypeOf<T[K]> | Setter<K, T>;
     dependent: true;
-    dependsOn:
-      | Exclude<StringKey<T>, K>
-      | NonEmptyArray<Exclude<StringKey<T>, K>>;
+    dependsOn: Exclude<keyof T, K> | Exclude<keyof T, K>[];
     readonly?: true;
     resolver: Setter<K, T> | AsyncSetter<K, T>;
   };
