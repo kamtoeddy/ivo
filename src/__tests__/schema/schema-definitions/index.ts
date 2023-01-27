@@ -2729,6 +2729,25 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 name: "Peter",
               });
             });
+
+            it("should respect sideInits & sideNoInit at creation(cloning)", async () => {
+              const { data: user } = await User.clone(
+                {
+                  dependentSideNoInit: "bignw ",
+                  dependentSideInit: "iehvhgwop",
+                  name: "Peter",
+                  sideInit: true,
+                  sideNoInit: true,
+                },
+                { reset: ["dependentSideInit", "dependentSideNoInit"] }
+              );
+
+              expect(user).toEqual({
+                dependentSideNoInit: "",
+                dependentSideInit: true,
+                name: "Peter",
+              });
+            });
           });
 
           describe("updating", () => {
