@@ -1,4 +1,3 @@
-import { Schema } from "../../../../../dist";
 import { storeItemSchema } from "../storeItem";
 import { validatePrice } from "../storeItem/validators";
 import { IOrderItem } from "./interfaces";

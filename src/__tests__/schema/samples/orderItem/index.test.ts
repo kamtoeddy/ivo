@@ -17,7 +17,7 @@ describe("Testing schema of Orderitem (inherited schema)", () => {
           { coefficient: 5, name: "tray" },
           { coefficient: 12, name: "crate" },
         ],
-        quantity: 100,
+        _quantity: 100,
         // quantities: [{ quantity: 1, name: "crate24" }],
       })
     ).data!;
