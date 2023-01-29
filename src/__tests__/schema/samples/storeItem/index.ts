@@ -1,8 +1,7 @@
 import { Schema } from "../../../../../dist";
 import { IStoreItem } from "./interfaces";
 import {
-  onQuantitiesChange,
-  onQuantityChange,
+  sanitizeQuantities,
   validateName,
   validateOtherUnits,
   validatePrice,
@@ -26,12 +25,10 @@ const storeItemSchema = new Schema<IStoreItem>(
     _readOnlyNoInit: { default: "", readonly: true, shouldInit: false },
     _sideEffectForDependentReadOnly: {
       sideEffect: true,
-      onChange: [badHandler, () => ({ _dependentReadOnly: 1 })],
       validator: () => ({ valid: true }),
     },
     id: {
       readonly: true,
-      onChange: (ctx) => ({}),
       validator: validateString("Invalid id"),
     },
     name: { required: true, validator: validateName },
@@ -43,27 +40,32 @@ const storeItemSchema = new Schema<IStoreItem>(
     price: { required: true, validator: validatePrice },
     quantities: {
       sideEffect: true,
-      onChange: [onQuantitiesChange],
+      sanitizer: sanitizeQuantities,
       validator: validateQuantities,
     },
     quantity: {
       default: 0,
-      onChange: onQuantityChange,
-      validator: validateQuantity,
+      dependent: true,
+      dependsOn: ["_quantity", "quantities"],
+      resolver: resolveQuantity,
     },
-    quantityChangeCounter: { default: 0, dependent: true },
+    _quantity: { sideEffect: true, validator: validateQuantity },
+    quantityChangeCounter: {
+      default: 0,
+      dependent: true,
+      dependsOn: "quantity",
+      resolver({ quantityChangeCounter }) {
+        return quantityChangeCounter! + 1;
+      },
+    },
   },
   { errors: "throw", timestamps: { createdAt: "c_At", updatedAt: "u_At" } }
 );
 
-// this type of handler should not affect the next
-// operation context
-function badHandler(ctx: any) {
-  try {
-    ctx._dependentReadOnly = 1;
-    ctx.otherMeasureUnits = null;
-    ctx.quantity = 10000;
-  } catch (err: any) {}
+function resolveQuantity({ quantity, _quantity, quantities }: IStoreItem) {
+  const newQty = _quantity ?? (quantity as number);
+
+  return quantities ? newQty + (quantities as number) : newQty;
 }
 
 const StoreItem = storeItemSchema.getModel();
