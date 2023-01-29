@@ -234,10 +234,10 @@ export type PropDefinitionRule =
   | "value";
 
 export interface ITimestamp {
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: boolean | string;
+  updatedAt?: boolean | string;
 }
 
 export interface Private_ISchemaOptions {
-  timestamps: ITimestamp;
+  timestamps: { createdAt: string; updatedAt: string };
 }
