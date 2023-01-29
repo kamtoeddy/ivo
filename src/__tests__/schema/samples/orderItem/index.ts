@@ -3,18 +3,21 @@ import { storeItemSchema } from "../storeItem";
 import { validatePrice } from "../storeItem/validators";
 import { IOrderItem } from "./interfaces";
 
-const orderItemSchema = new Schema<IOrderItem>(
+const orderItemSchema = storeItemSchema.extend<IOrderItem>(
   {
     costPrice: { readonly: true, validator: validatePrice },
     price: { readonly: true, validator: validatePrice },
   },
-  { errors: "throw", timestamps: true }
-).extend(storeItemSchema, {
-  remove: [
-    "_readOnlyNoInit",
-    "_dependentReadOnly",
-    "_sideEffectForDependentReadOnly",
-  ],
-});
+  {
+    errors: "throw",
+    timestamps: true,
+
+    remove: [
+      "_readOnlyNoInit",
+      "_dependentReadOnly",
+      "_sideEffectForDependentReadOnly",
+    ],
+  }
+);
 
 export const OrderItem = orderItemSchema.getModel();

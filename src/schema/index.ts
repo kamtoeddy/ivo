@@ -34,9 +34,11 @@ class Schema<
   }
 
   extend = <U extends ObjectType, V extends ObjectType = U>(
-    propDefinitions: ns.PropertyDefinitions<
-      SpreadType<CombineTypes<I, U> & U>,
-      CombineTypes<O, V>
+    propDefinitions: Partial<
+      ns.PropertyDefinitions<
+        SpreadType<CombineTypes<I, U> & U>,
+        CombineTypes<O, V>
+      >
     >,
     options: ns.ExtensionOptions<StringKey<I>> = {
       ...defaultOptions,
