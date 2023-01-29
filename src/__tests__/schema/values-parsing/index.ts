@@ -1,13 +1,4 @@
 export const valuesParsing_Tests = ({ Schema }: any) => {
-  const fx =
-    (definition: any = undefined, options: any = { timestamps: false }) =>
-    () =>
-      new Schema(definition, options);
-
-  const expectFailure = (fx: Function, message = "Invalid Schema") => {
-    expect(fx).toThrow(message);
-  };
-
   const expectPromiseFailure = (fx: Function, message = "Invalid Schema") => {
     expect(fx).rejects.toThrow(message);
   };
@@ -15,8 +6,6 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
   const expectNoFailure = (fx: Function) => {
     expect(fx).not.toThrow();
   };
-
-  const validator = () => ({ valid: true });
 
   describe("Values Parsing", () => {
     const INVALID_DATA_ERROR = {
