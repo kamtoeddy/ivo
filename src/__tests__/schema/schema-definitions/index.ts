@@ -3977,7 +3977,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           }
         });
 
-        it("should reject custom name found on schema", () => {
+        it("should reject if custom timestamp names are the same", () => {
           const toFail = fx(validSchema, {
             timestamps: { createdAt: "c_At", updatedAt: "c_At" },
           });
