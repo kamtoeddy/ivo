@@ -3860,6 +3860,53 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             expect(updates).toHaveProperty("u_At");
           });
         });
+
+        describe("timestamps(createdAt:false)", () => {
+          let Model: any, entity: any;
+
+          beforeAll(async () => {
+            Model = new Schema(validSchema, {
+              timestamps: { createdAt: false },
+            }).getModel();
+
+            entity = (await Model.create(inputValue)).data;
+          });
+
+          it("should populate only updatedAt at creation", () => {
+            expect(entity).toMatchObject(inputValue);
+
+            expect(entity).not.toHaveProperty("createdAt");
+            expect(entity).toHaveProperty("updatedAt");
+            expect(Object.keys(entity).length).toBe(3);
+          });
+
+          it("should populate only updatedAt during cloning", async () => {
+            const { data: clone } = await Model.clone(entity, {
+              reset: "propertyName2",
+            });
+
+            expect(clone).toMatchObject({
+              propertyName1: "value1",
+              propertyName2: "",
+            });
+
+            expect(clone).not.toHaveProperty("createdAt");
+            expect(clone).toHaveProperty("updatedAt");
+            expect(Object.keys(entity).length).toBe(3);
+          });
+
+          it("should populate only updatedAt during updates", async () => {
+            const { data: updates } = await Model.update(entity, {
+              propertyName2: 20,
+            });
+
+            expect(updates).toMatchObject({ propertyName2: 20 });
+
+            expect(updates).not.toHaveProperty("createdAt");
+            expect(updates).toHaveProperty("updatedAt");
+            expect(Object.keys(updates).length).toBe(2);
+          });
+        });
       });
 
       describe("invalid", () => {
