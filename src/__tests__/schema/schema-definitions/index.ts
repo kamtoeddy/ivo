@@ -3730,7 +3730,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             expect(entity).toHaveProperty("c_At");
           });
 
-          it("should populate c_At during cloning", async () => {
+          it("should populate only c_At during cloning", async () => {
             const { data: clone } = await Model.clone(entity, {
               reset: "propertyName2",
             });
@@ -3747,18 +3747,19 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             expect(clone).toHaveProperty("c_At");
           });
 
-          // it("should populate u_At during updates", async () => {
-          //   const { data: updates } = await Model.update(entity, {
-          //     propertyName2: 20,
-          //   });
+          it("should not populate u_At during updates", async () => {
+            const { data: updates } = await Model.update(entity, {
+              propertyName2: 20,
+            });
 
-          //   expect(updates).toMatchObject({ propertyName2: 20 });
+            expect(updates).toMatchObject({ propertyName2: 20 });
 
-          //   expect(updates).not.toHaveProperty("createdAt");
-          //   expect(updates).not.toHaveProperty("updatedAt");
-          //   expect(updates).not.toHaveProperty("c_At");
-          //   expect(updates).toHaveProperty("u_At");
-          // });
+            expect(updates).not.toHaveProperty("createdAt");
+            expect(updates).not.toHaveProperty("updatedAt");
+            expect(Object.keys(updates).length).toBe(1);
+
+            expect(updates).not.toHaveProperty("c_At");
+          });
         });
       });
 
