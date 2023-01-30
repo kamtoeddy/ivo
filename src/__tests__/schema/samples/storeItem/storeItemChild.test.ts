@@ -16,6 +16,8 @@ describe("Testing non-inherited properties for StoreItemChild", () => {
   it("should have the correct properties at creation", () => {
     expect(item).toMatchObject({ childID: "1" });
 
+    console.log("debug:", item);
+
     expect(item).toHaveProperty("createdAt");
     expect(item).toHaveProperty("updatedAt");
   });

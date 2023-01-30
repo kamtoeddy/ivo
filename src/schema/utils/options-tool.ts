@@ -10,7 +10,9 @@ export class OptionsTool {
     const { timestamps } = config;
 
     this.timestamps = timestamps;
-    this.ts_keys = Object.keys(timestamps) as TimestampKey[];
+    this.ts_keys = Object.keys(timestamps).filter(
+      (key) => key.length > 0
+    ) as TimestampKey[];
   }
 
   getCreateKey = () => this.timestamps.createdAt;

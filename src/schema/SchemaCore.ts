@@ -983,8 +983,15 @@ export abstract class SchemaCore<I extends ObjectType> {
     const custom_createdAt = timestamps?.createdAt;
     const custom_updatedAt = timestamps?.updatedAt;
 
-    if (custom_createdAt) createdAt = custom_createdAt;
-    if (custom_updatedAt) updatedAt = custom_updatedAt;
+    if (custom_createdAt && typeof custom_createdAt == "string")
+      createdAt = custom_createdAt;
+
+    if (custom_createdAt === false) createdAt = "";
+
+    if (custom_updatedAt && typeof custom_updatedAt == "string")
+      updatedAt = custom_updatedAt;
+
+    if (custom_updatedAt === false) updatedAt = "";
 
     return { ...options, timestamps: { createdAt, updatedAt } };
   }

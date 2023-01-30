@@ -175,7 +175,9 @@ export namespace Schema {
 
   export interface Options {
     errors?: "silent" | "throw";
-    timestamps?: boolean | { createdAt?: string; updatedAt?: string };
+    timestamps?:
+      | boolean
+      | { createdAt?: boolean | string; updatedAt?: boolean | string };
   }
 
   export type ExtensionOptions<T> = Options & {
@@ -234,10 +236,10 @@ export type PropDefinitionRule =
   | "value";
 
 export interface ITimestamp {
-  createdAt?: boolean | string;
-  updatedAt?: boolean | string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Private_ISchemaOptions {
-  timestamps: { createdAt: string; updatedAt: string };
+  timestamps: ITimestamp;
 }

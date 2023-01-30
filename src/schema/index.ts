@@ -299,15 +299,18 @@ class ModelTool<
     return _updates;
   };
 
-  private _useConfigProps = (obj: I | Partial<I>, asUpdate = false) => {
+  private _useConfigProps = (obj: I | Partial<I>, isUpdate = false) => {
     if (!this.optionsTool.withTimestamps) return sortKeys(obj);
 
     const createdAt = this.optionsTool.getCreateKey(),
       updatedAt = this.optionsTool.getUpdateKey();
 
-    const results = asUpdate
-      ? { ...obj, [updatedAt]: new Date() }
-      : { ...obj, [createdAt]: new Date(), [updatedAt]: new Date() };
+    let results = { ...obj };
+
+    if (updatedAt) results = { ...results, [updatedAt]: new Date() };
+
+    if (!isUpdate && createdAt)
+      results = { ...results, [createdAt]: new Date() };
 
     return sortKeys(results);
   };
