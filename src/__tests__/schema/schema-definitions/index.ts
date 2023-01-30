@@ -3761,6 +3761,59 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             expect(updates).not.toHaveProperty("c_At");
           });
         });
+
+        describe("timestamps(createdAt:false, updatedAt:u_At)", () => {
+          let Model: any, entity: any;
+
+          beforeAll(async () => {
+            Model = new Schema(validSchema, {
+              timestamps: { createdAt: false, updatedAt: "u_At" },
+            }).getModel();
+
+            entity = (await Model.create(inputValue)).data;
+          });
+
+          it("should populate only u_At at creation", () => {
+            expect(entity).toMatchObject(inputValue);
+
+            expect(entity).not.toHaveProperty("createdAt");
+            expect(entity).not.toHaveProperty("updatedAt");
+            expect(Object.keys(entity).length).toBe(3);
+
+            expect(entity).toHaveProperty("u_At");
+          });
+
+          it("should populate only u_At during cloning", async () => {
+            const { data: clone } = await Model.clone(entity, {
+              reset: "propertyName2",
+            });
+
+            expect(clone).toMatchObject({
+              propertyName1: "value1",
+              propertyName2: "",
+            });
+
+            expect(clone).not.toHaveProperty("createdAt");
+            expect(clone).not.toHaveProperty("updatedAt");
+            expect(Object.keys(entity).length).toBe(3);
+
+            expect(clone).toHaveProperty("u_At");
+          });
+
+          it("should populate only u_At during updates", async () => {
+            const { data: updates } = await Model.update(entity, {
+              propertyName2: 20,
+            });
+
+            expect(updates).toMatchObject({ propertyName2: 20 });
+
+            expect(updates).not.toHaveProperty("createdAt");
+            expect(updates).not.toHaveProperty("updatedAt");
+            expect(Object.keys(updates).length).toBe(2);
+
+            expect(updates).toHaveProperty("u_At");
+          });
+        });
       });
 
       describe("invalid", () => {
