@@ -105,14 +105,31 @@ type SchemaError = {
 
 If timestamps is set to true, you'll automatically have the `createdAt` and `updatedAt` properties attached to instances of your model at creation, cloning & update. But you can overwrite the options and use your own properties like in the example below. Default **false**
 
+Overwrite one
+
 ```js
-// overwrite one
 let transactionSchema = new Schema(definitions, {
   timestamps: { createdAt: "created_at" },
 });
+```
 
-// or both
+Or both
+
+```js
 let transactionSchema = new Schema(definitions, {
   timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
+});
+```
+
+To use one timestamp alone, pass false for the timestamp key to eliminate
+
+```js
+let transactionSchema = new Schema(definitions, {
+  timestamps: { createdAt: "created_at", updatedAt: false },
+});
+
+// or
+let transactionSchema = new Schema(definitions, {
+  timestamps: { updatedAt: false },
 });
 ```
