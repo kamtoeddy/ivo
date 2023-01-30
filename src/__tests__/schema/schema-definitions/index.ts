@@ -3730,21 +3730,22 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             expect(entity).toHaveProperty("c_At");
           });
 
-          // it("should populate c_At & u_At during cloning", async () => {
-          //   const { data: clone } = await Model.clone(entity, {
-          //     reset: "propertyName2",
-          //   });
+          it("should populate c_At during cloning", async () => {
+            const { data: clone } = await Model.clone(entity, {
+              reset: "propertyName2",
+            });
 
-          //   expect(clone).toMatchObject({
-          //     propertyName1: "value1",
-          //     propertyName2: "",
-          //   });
+            expect(clone).toMatchObject({
+              propertyName1: "value1",
+              propertyName2: "",
+            });
 
-          //   expect(clone).not.toHaveProperty("createdAt");
-          //   expect(clone).not.toHaveProperty("updatedAt");
-          //   expect(clone).toHaveProperty("c_At");
-          //   expect(clone).toHaveProperty("u_At");
-          // });
+            expect(clone).not.toHaveProperty("createdAt");
+            expect(clone).not.toHaveProperty("updatedAt");
+            expect(Object.keys(entity).length).toBe(3);
+
+            expect(clone).toHaveProperty("c_At");
+          });
 
           // it("should populate u_At during updates", async () => {
           //   const { data: updates } = await Model.update(entity, {
