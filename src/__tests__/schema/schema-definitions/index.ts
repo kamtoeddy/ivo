@@ -2552,6 +2552,24 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
             expect(sanitizedValues).toEqual({});
           });
+
+          it("should ignore sideEffects at creation(cloning) when their shouldInit handler returns 'false'", async () => {
+            const { data, handleSuccess } = await Model.clone({
+              dependent: "",
+              laxProp: "Peter",
+              sideEffect: true,
+            });
+
+            await handleSuccess();
+
+            expect(data).toEqual({ dependent: "", laxProp: "Peter" });
+
+            expect(onSuccessStats).toEqual({ dependent: 1 });
+
+            expect(onSuccessValues).toEqual({ dependent: "" });
+
+            expect(sanitizedValues).toEqual({});
+          });
         });
 
         it("should accept shouldInit(false) + default", () => {
