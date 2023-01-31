@@ -2659,6 +2659,30 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             }
           }
         });
+
+        it("should reject shouldUpdate(false) & shouldInit(false)", () => {
+          const toFail = fx({
+            propertyName: {
+              default: "",
+              shouldUInit: false,
+              shouldUpdate: false,
+            },
+          });
+
+          expectFailure(toFail);
+
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toEqual(
+              expect.objectContaining({
+                propertyName: expect.arrayContaining([
+                  "Both 'shouldInit' & 'shouldUpdate' cannot be 'fasle'",
+                ]),
+              })
+            );
+          }
+        });
       });
     });
 
