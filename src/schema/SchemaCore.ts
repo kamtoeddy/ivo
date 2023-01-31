@@ -914,7 +914,7 @@ export abstract class SchemaCore<I extends ObjectType> {
   };
 
   protected __isShouldUpdateConfigOk = (prop: string) => {
-    const { shouldUpdate } = this._getDefinition(prop);
+    const { shouldInit, shouldUpdate } = this._getDefinition(prop);
     const valid = false;
 
     if (shouldUpdate !== false && !this._isFunction(shouldUpdate))
@@ -922,6 +922,12 @@ export abstract class SchemaCore<I extends ObjectType> {
         valid,
         reason:
           "'shouldUpdate' only accepts false or a function that returns a boolean",
+      };
+
+    if (shouldInit === false && shouldUpdate === false)
+      return {
+        valid,
+        reason: "Both 'shouldInit' & 'shouldUpdate' cannot be 'fasle'",
       };
 
     return { valid: true };

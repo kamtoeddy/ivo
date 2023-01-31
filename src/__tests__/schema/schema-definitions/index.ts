@@ -2664,7 +2664,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           const toFail = fx({
             propertyName: {
               default: "",
-              shouldUInit: false,
+              shouldInit: false,
               shouldUpdate: false,
             },
           });
