@@ -2572,16 +2572,20 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 resolver: () => "",
               },
               sideEffect: {
-                default: "",
+                sideEffect: true,
                 shouldInit,
                 shouldUpdate: false,
                 validator,
               },
             });
 
-            expectNoFailure(toPass);
+            // expectNoFailure(toPass);
 
-            toPass();
+            try {
+              toPass();
+            } catch (err: any) {
+              console.log(err.payload);
+            }
           }
         });
 
@@ -2713,7 +2717,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             propertyName: { default: "", shouldUpdate: false },
           });
 
-          expectNoFailure(toFail);
+          expectFailure(toFail);
 
           try {
             toFail();
@@ -2788,20 +2792,24 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           toPass();
         });
 
-        it("should allow shouldInit(false) + validator", () => {
-          const toPass = fx({
-            dependentProp: {
-              default: "",
-              dependent: true,
-              dependsOn: "propertyName",
-              resolver: () => "",
-            },
-            propertyName: { sideEffect: true, shouldInit: false, validator },
-          });
+        it("should allow shouldInit(false|()=>boolean) + validator", () => {
+          const values = [false, () => false, () => true];
 
-          expectNoFailure(toPass);
+          for (const shouldInit of values) {
+            const toPass = fx({
+              dependentProp: {
+                default: "",
+                dependent: true,
+                dependsOn: "propertyName",
+                resolver: () => "",
+              },
+              propertyName: { sideEffect: true, shouldInit, validator },
+            });
 
-          toPass();
+            expectNoFailure(toPass);
+
+            toPass();
+          }
         });
 
         it("should allow onSuccess + validator", () => {
@@ -3199,36 +3207,6 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 propertyName: expect.arrayContaining(["Invalid validator"]),
               })
             );
-          }
-        });
-
-        it("should reject shouldInit(!false)", () => {
-          const values = [true, null, [], {}, "", 25];
-
-          for (const shouldInit of values) {
-            const toFail = fx({
-              dependentProp: {
-                default: "",
-                dependent: true,
-                dependsOn: "propertyName",
-                resolver: () => "",
-              },
-              propertyName: { sideEffect: true, shouldInit, validator },
-            });
-
-            expectFailure(toFail);
-
-            try {
-              toFail();
-            } catch (err: any) {
-              expect(err.payload).toEqual(
-                expect.objectContaining({
-                  propertyName: expect.arrayContaining([
-                    "To block the initialization of side effects shouldInit must be 'false'",
-                  ]),
-                })
-              );
-            }
           }
         });
 

@@ -850,17 +850,6 @@ export abstract class SchemaCore<I extends ObjectType> {
       if (!isRequiredBy.valid) return isRequiredBy;
     }
 
-    if (
-      !hasRequired &&
-      this._hasAny(prop, "shouldInit") &&
-      shouldInit !== false
-    )
-      return {
-        valid,
-        reason:
-          "To block the initialization of side effects shouldInit must be 'false'",
-      };
-
     const unAcceptedRules = allRules.filter(
       (rule) => !sideEffectRules.includes(rule)
     );
@@ -927,7 +916,14 @@ export abstract class SchemaCore<I extends ObjectType> {
     if (shouldInit === false && shouldUpdate === false)
       return {
         valid,
-        reason: "Both 'shouldInit' & 'shouldUpdate' cannot be 'fasle'",
+        reason: "Both 'shouldInit' & 'shouldUpdate' cannot be 'false'",
+      };
+
+    if (shouldUpdate === false && !this._hasAny(prop, "sideEffect"))
+      return {
+        valid,
+        reason:
+          "Only 'sideEffects' are allowed to have 'shouldUpdate' as 'false'",
       };
 
     return { valid: true };
