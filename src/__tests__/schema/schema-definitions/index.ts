@@ -2762,7 +2762,8 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 onSuccess: incrementOnSuccessCountOf("dependentProp_1"),
               },
               laxProp: {
-                default: 0,
+                default: "",
+                readonly: "lax",
                 shouldUpdate: (ctx: any) => ctx.laxProp_1 == "test",
                 onSuccess: incrementOnSuccessCountOf("laxProp"),
               },
@@ -2811,7 +2812,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             expect(error.message).toBe("Nothing to update");
           });
 
-          it("should update properties when 'shouldUpdate' resolved to 'false'", async () => {
+          it("should update properties when 'shouldUpdate' resolved to 'true'", async () => {
             const { data, error, handleSuccess } = await Model.update(
               {
                 dependentProp: "dev",
@@ -2838,6 +2839,21 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               laxProp: "yoyo",
               sideEffect_1: true,
             });
+          });
+
+          it("should not update readonly properties that have changed even when 'shouldUpdate' resolved to 'true'", async () => {
+            const { data, error } = await Model.update(
+              {
+                dependentProp: "dev",
+                dependentProp_1: "dev",
+                laxProp: "changed",
+                laxProp_1: "test",
+              },
+              { laxProp: "yoyo" }
+            );
+
+            expect(data).toBeUndefined();
+            expect(error.message).toBe("Nothing to update");
           });
         });
       });

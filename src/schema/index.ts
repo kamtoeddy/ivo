@@ -194,17 +194,16 @@ class ModelTool<
     )
       return false;
 
-    if (this._hasAny(prop, "shouldUpdate"))
-      return this._getValueBy(prop, "shouldUpdate", "updating");
+    const hasShouldUpdateRule = this._hasAny(prop, "shouldUpdate");
+    const isUpdatable = this._getValueBy(prop, "shouldUpdate", "updating");
 
-    if (isSideEffect) return true;
+    if (isSideEffect) return hasShouldUpdateRule ? isUpdatable : true;
 
     const isReadonly = this._isReadonly(prop);
 
-    return (
-      !isReadonly ||
-      (isReadonly && isEqual(this.defaults[prop], this.values[prop]))
-    );
+    if (!isReadonly) return hasShouldUpdateRule ? isUpdatable : true;
+
+    return isReadonly && isEqual(this.defaults[prop], this.values[prop]);
   };
 
   private _makeHandleSuccess = (
