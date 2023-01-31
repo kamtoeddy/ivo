@@ -2935,6 +2935,30 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             );
           }
         });
+
+        it("should reject shouldUpdate & readonly(!'lax')", () => {
+          const toFail = fx({
+            propertyName: {
+              default: "",
+              readonly: true,
+              shouldUpdate: () => {},
+            },
+          });
+
+          expectFailure(toFail);
+
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toEqual(
+              expect.objectContaining({
+                propertyName: expect.arrayContaining([
+                  "The update of 'readonly' properties cannot be blocked. Try readonly: 'lax'",
+                ]),
+              })
+            );
+          }
+        });
       });
     });
 
