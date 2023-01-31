@@ -2408,55 +2408,149 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
     describe("shouldInit", () => {
       describe("valid", () => {
-        let Model: any;
+        describe("behaviour", () => {
+          let Model: any;
 
-        beforeAll(async () => {
-          Model = new Schema(
-            {
-              isBlocked: {
-                shouldInit: (ctx: any) => ctx.env == "test",
-                default: false,
+          beforeAll(async () => {
+            Model = new Schema(
+              {
+                isBlocked: {
+                  shouldInit: (ctx: any) => ctx.env == "test",
+                  default: false,
+                },
+                env: { default: "dev" },
+                laxProp: { default: 0 },
               },
-              env: { default: "dev" },
-              laxProp: { default: 0 },
-            },
-            { errors: "throw" }
-          ).getModel();
-        });
+              { errors: "throw" }
+            ).getModel();
+          });
 
-        it("should respect default rules", async () => {
-          const { data } = await Model.create({ isBlocked: true });
+          it("should respect default rules", async () => {
+            const { data } = await Model.create({ isBlocked: true });
 
-          expect(data).toMatchObject({
-            env: "dev",
-            isBlocked: false,
-            laxProp: 0,
+            expect(data).toMatchObject({
+              env: "dev",
+              isBlocked: false,
+              laxProp: 0,
+            });
+          });
+
+          it("should respect callable should init when condition passes during cloning", async () => {
+            const { data } = await Model.clone({
+              env: "test",
+              isBlocked: "yes",
+            });
+
+            expect(data).toMatchObject({
+              env: "test",
+              isBlocked: "yes",
+              laxProp: 0,
+            });
+          });
+
+          it("should respect callable should init when condition passes at creation", async () => {
+            const { data } = await Model.create({
+              env: "test",
+              isBlocked: "yes",
+            });
+
+            expect(data).toMatchObject({
+              env: "test",
+              isBlocked: "yes",
+              laxProp: 0,
+            });
           });
         });
 
-        it("should respect callable should init when condition passes during cloning", async () => {
-          const { data } = await Model.clone({
-            env: "test",
-            isBlocked: "yes",
+        describe("behaviour of callable shouldInit", () => {
+          let onSuccessValues: any = {};
+
+          let onSuccessStats: any = {};
+
+          let sanitizedValues: any = {};
+
+          let Model: any;
+
+          beforeAll(() => {
+            Model = new Schema(
+              {
+                dependent: {
+                  default: "",
+                  dependent: true,
+                  dependsOn: "sideEffect",
+                  resolver: () => "changed",
+                  onSuccess: onSuccess("dependent"),
+                },
+                laxProp: { default: "" },
+                sideEffect: {
+                  sideEffect: true,
+                  shouldInit: ({ laxProp }: any) =>
+                    laxProp === "allow sideEffect",
+                  onSuccess: [
+                    onSuccess("sideEffect"),
+                    incrementOnSuccessStats("sideEffect"),
+                    incrementOnSuccessStats("sideEffect"),
+                  ],
+                  sanitizer: sanitizerOf("sideEffect", "sanitized"),
+                  validator: validateBoolean,
+                },
+              },
+              { errors: "throw" }
+            ).getModel();
+
+            function sanitizerOf(prop: string, value: any) {
+              return () => {
+                // to make sure sanitizer is invoked
+                sanitizedValues[prop] = value;
+
+                return value;
+              };
+            }
+
+            function incrementOnSuccessStats(prop: string) {
+              return () => {
+                onSuccessStats[prop] = (onSuccessStats[prop] ?? 0) + 1;
+              };
+            }
+
+            function onSuccess(prop: string) {
+              return (ctx: any) => {
+                onSuccessValues[prop] = ctx[prop];
+                incrementOnSuccessStats(prop)();
+              };
+            }
+
+            function validateBoolean(value: any) {
+              if (![false, true].includes(value))
+                return {
+                  valid: false,
+                  reason: `${value} is not a boolean`,
+                };
+              return { valid: true };
+            }
           });
 
-          expect(data).toMatchObject({
-            env: "test",
-            isBlocked: "yes",
-            laxProp: 0,
-          });
-        });
-
-        it("should respect callable should init when condition passes at creation", async () => {
-          const { data } = await Model.create({
-            env: "test",
-            isBlocked: "yes",
+          beforeEach(() => {
+            onSuccessStats = {};
+            onSuccessValues = {};
+            sanitizedValues = {};
           });
 
-          expect(data).toMatchObject({
-            env: "test",
-            isBlocked: "yes",
-            laxProp: 0,
+          it("should ignore sideEffects at creation when their shouldInit handler returns 'false'", async () => {
+            const { data, handleSuccess } = await Model.create({
+              laxProp: "Peter",
+              sideEffect: true,
+            });
+
+            await handleSuccess();
+
+            expect(data).toEqual({ dependent: "", laxProp: "Peter" });
+
+            expect(onSuccessStats).toEqual({ dependent: 1 });
+
+            expect(onSuccessValues).toEqual({ dependent: "" });
+
+            expect(sanitizedValues).toEqual({});
           });
         });
 
@@ -2941,99 +3035,6 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           });
 
           describe("creation", () => {
-            describe("sideEffects with callable shouldInit", () => {
-              let onSuccessValues: any = {};
-
-              let onSuccessStats: any = {};
-
-              let sanitizedValues: any = {};
-
-              let Model: any;
-
-              beforeAll(() => {
-                Model = new Schema(
-                  {
-                    dependent: {
-                      default: "",
-                      dependent: true,
-                      dependsOn: "sideEffect",
-                      resolver: () => "changed",
-                      onSuccess: onSuccess("dependent"),
-                    },
-                    laxProp: { default: "" },
-                    sideEffect: {
-                      sideEffect: true,
-                      shouldInit: ({ laxProp }: any) =>
-                        laxProp === "allow sideEffect",
-                      onSuccess: [
-                        onSuccess("sideEffect"),
-                        incrementOnSuccessStats("sideEffect"),
-                        incrementOnSuccessStats("sideEffect"),
-                      ],
-                      sanitizer: sanitizerOf("sideEffect", "sanitized"),
-                      validator: validateBoolean,
-                    },
-                  },
-                  { errors: "throw" }
-                ).getModel();
-
-                function sanitizerOf(prop: string, value: any) {
-                  return () => {
-                    // to make sure sanitizer is invoked
-                    sanitizedValues[prop] = value;
-
-                    return value;
-                  };
-                }
-
-                function incrementOnSuccessStats(prop: string) {
-                  return () => {
-                    onSuccessStats[prop] = (onSuccessStats[prop] ?? 0) + 1;
-                  };
-                }
-
-                function onSuccess(prop: string) {
-                  return (ctx: any) => {
-                    onSuccessValues[prop] = ctx[prop];
-                    incrementOnSuccessStats(prop)();
-                  };
-                }
-
-                function validateBoolean(value: any) {
-                  if (![false, true].includes(value))
-                    return {
-                      valid: false,
-                      reason: `${value} is not a boolean`,
-                    };
-                  return { valid: true };
-                }
-              });
-
-              beforeEach(() => {
-                onSuccessStats = {};
-                onSuccessValues = {};
-                sanitizedValues = {};
-              });
-
-              it("should ignore sideEffects at creation when their shouldInit handler returns false", async () => {
-                const { data, handleSuccess } = await Model.create({
-                  laxProp: "Peter",
-                  sideEffect: true,
-                  isTest: true,
-                });
-
-                await handleSuccess();
-
-                expect(data).toEqual({ dependent: "", laxProp: "Peter" });
-
-                expect(onSuccessStats).toEqual({ dependent: 1 });
-
-                expect(onSuccessValues).toEqual({ dependent: "" });
-
-                expect(sanitizedValues).toEqual({});
-              });
-            });
-
             it("should not sanitize sideEffects nor resolve their dependencies if not provided", async () => {
               const { data } = await User.create({
                 name: "Peter",

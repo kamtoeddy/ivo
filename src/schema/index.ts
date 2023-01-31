@@ -147,8 +147,9 @@ class ModelTool<
     let sanitizers: [StringKey<I>, Function][] = [];
 
     const ctx = this._getContext();
+    const finalCtx = this._getFinalContext();
 
-    const successFulSideEffects = this._getKeysAsProps(ctx).filter(
+    const successFulSideEffects = this._getKeysAsProps(finalCtx).filter(
       this._isSideEffect
     );
 
@@ -470,10 +471,7 @@ class ModelTool<
       }
 
       const isSideEffect = sideEffects.includes(prop);
-      const isSideInit = this._isSideInit(prop);
-
-      if (values.isTest) console.log(isSideEffect, isSideInit);
-      if (isSideEffect && !isSideInit) return;
+      if (isSideEffect && !this._isSideInit(prop)) return;
 
       const isProvided = this.values.hasOwnProperty(prop);
 
