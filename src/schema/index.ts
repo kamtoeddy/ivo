@@ -203,6 +203,8 @@ class ModelTool<
 
     if (!isReadonly) return hasShouldUpdateRule ? isUpdatable : true;
 
+    if (hasShouldUpdateRule && !isUpdatable) return false;
+
     return isReadonly && isEqual(this.defaults[prop], this.values[prop]);
   };
 
