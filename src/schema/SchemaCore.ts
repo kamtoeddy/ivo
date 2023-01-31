@@ -614,6 +614,12 @@ export abstract class SchemaCore<I extends ObjectType> {
         );
     }
 
+    if (this._hasAny(prop, "shouldUpdate")) {
+      const { valid, reason } = this.__isShouldUpdateConfigOk(prop);
+
+      if (!valid) reasons.push(reason!);
+    }
+
     if (this._hasAny(prop, "validator") && !this._isValidatorOk(prop))
       reasons.push("Invalid validator");
 
@@ -891,6 +897,20 @@ export abstract class SchemaCore<I extends ObjectType> {
     const { shouldInit } = propDef;
 
     return this._isSideEffect(prop) && belongsTo(shouldInit, [true, undefined]);
+  };
+
+  protected __isShouldUpdateConfigOk = (prop: string) => {
+    const { shouldUpdate } = this._getDefinition(prop);
+    const valid = false;
+
+    if (shouldUpdate !== false && !this._isFunction(shouldUpdate))
+      return {
+        valid,
+        reason:
+          "'shouldUpdate' only accepts false or a function that returns a boolean",
+      };
+
+    return { valid: true };
   };
 
   protected _registerIfLax = (prop: string) => {
