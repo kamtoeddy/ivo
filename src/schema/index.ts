@@ -184,14 +184,20 @@ class ModelTool<
   };
 
   private _isUpdatable = (prop: string) => {
-    if (this._isSideEffect(prop)) return true;
+    const isSideEffect = this._isSideEffect(prop);
 
     if (
-      !this._isProp(prop) ||
-      this._isConstant(prop) ||
-      this._isDependentProp(prop)
+      (!this._isProp(prop) ||
+        this._isConstant(prop) ||
+        this._isDependentProp(prop)) &&
+      !isSideEffect
     )
       return false;
+
+    if (this._hasAny(prop, "shouldUpdate"))
+      return this._getValueBy(prop, "shouldUpdate", "updating");
+
+    if (isSideEffect) return true;
 
     const isReadonly = this._isReadonly(prop);
 
