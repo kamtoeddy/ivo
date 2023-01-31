@@ -45,10 +45,10 @@ type ConditionalRequiredSetter<T> = (
 
 type Promisable<T> = T extends Promise<infer I> ? I : T;
 
-type sanitizer<K, T> = (
+type sanitizer<K extends keyof T, T> = (
   ctx: Readonly<T>,
   lifeCycle: LifeCycles.LifeCycle
-) => Promisable<K extends keyof T ? TypeOf<T[K]> : K>;
+) => TypeOf<T[K]> | Promise<TypeOf<T[K]>>;
 
 type AsyncSetter<K, T> = (
   ctx: Readonly<T>,
@@ -81,7 +81,7 @@ export namespace Schema {
       readonly?: boolean | "lax";
       resolver?: Function;
       required?: boolean | ConditionalRequiredSetter<I>;
-      sanitizer?: sanitizer<I[K], I>;
+      sanitizer?: sanitizer<K, I>;
       sideEffect?: boolean;
       shouldInit?: false | Setter<boolean, I>;
       shouldUpdate?: false | Setter<boolean, I>;
@@ -169,7 +169,7 @@ export namespace Schema {
 
   type SideEffect<K extends keyof T, T> = {
     sideEffect: true;
-    sanitizer?: sanitizer<T[K], T>;
+    sanitizer?: sanitizer<K, T>;
     onFailure?:
       | LifeCycles.VoidListener<T>
       | NonEmptyArray<LifeCycles.VoidListener<T>>;

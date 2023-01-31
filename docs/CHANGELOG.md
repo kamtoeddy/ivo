@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# v3.0.3 <small><sup>31-01-2022</sup></small>
+
+- [Fix] fix problems with types when using 'sanitize' rule with TS
+
 # v3.0.2 <small><sup>31-01-2022</sup></small>
 
 - [Fix] fix various type issues with TS
