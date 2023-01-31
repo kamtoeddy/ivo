@@ -33,6 +33,7 @@ const allRules = [
   "sanitizer",
   "sideEffect",
   "shouldInit",
+  "shouldUpdate",
   "validator",
   "value",
 ] as PropDefinitionRule[];
@@ -46,6 +47,7 @@ const sideEffectRules = [
   "onSuccess",
   "required",
   "shouldInit",
+  "shouldUpdate",
   "validator",
 ];
 

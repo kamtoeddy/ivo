@@ -73,6 +73,7 @@ export namespace Schema {
       sanitizer?: Setter<I[StringKey<I>], I> | AsyncSetter<I[StringKey<I>], I>;
       sideEffect?: boolean;
       shouldInit?: false | Setter<boolean, I>;
+      shouldUpdate?: false | Setter<boolean, I>;
       validator?: Function;
       value?: any;
     };
@@ -117,12 +118,14 @@ export namespace Schema {
     default: TypeOf<T[K]> | Setter<K, T>;
     readonly?: "lax";
     shouldInit?: false | Setter<boolean, T>;
+    shouldUpdate?: false | Setter<boolean, T>;
     validator?: Validator<K, T>;
   };
 
   type Readonly<K extends keyof T, T, O = T> = Listenable<T, O> & {
     default: TypeOf<T[K]> | Setter<K, T>;
     readonly: "lax";
+    shouldUpdate?: false | Setter<boolean, T>;
     validator: Validator<K, T>;
   };
 
@@ -130,16 +133,19 @@ export namespace Schema {
     default: TypeOf<T[K]> | Setter<K, T>;
     readonly: true;
     shouldInit: false | Setter<boolean, T>;
+    shouldUpdate?: false | Setter<boolean, T>;
     validator?: Validator<K, T>;
   };
 
   type RequiredReadonly<K extends keyof T, T, O = T> = Listenable<T, O> & {
     readonly: true;
+    shouldUpdate?: false | Setter<boolean, T>;
     validator: Validator<K, T>;
   };
 
   type Required<K extends keyof T, T, O = T> = Listenable<T, O> & {
     required: true;
+    shouldUpdate?: false | Setter<boolean, T>;
     validator: Validator<K, T>;
   };
 
@@ -147,6 +153,7 @@ export namespace Schema {
     default: TypeOf<T[K]> | Setter<K, T>;
     required: ConditionalRequiredSetter<T>;
     readonly?: true;
+    shouldUpdate?: false | Setter<boolean, T>;
     validator: Validator<K, T>;
   };
 
@@ -160,11 +167,13 @@ export namespace Schema {
       | LifeCycles.SuccessListener<T>
       | NonEmptyArray<LifeCycles.SuccessListener<T>>;
     shouldInit?: false | Setter<boolean, T>;
+    shouldUpdate?: false | Setter<boolean, T>;
     validator: Validator<K, T>;
   };
 
   type RequiredSideEffect<K extends keyof T, T> = SideEffect<K, T> & {
     required: Setter<boolean, T>;
+    shouldUpdate?: false | Setter<boolean, T>;
     requiredError: string | Setter<string, T>;
   };
 
@@ -232,6 +241,7 @@ export type PropDefinitionRule =
   | "sideEffect"
   | "sanitizer"
   | "shouldInit"
+  | "shouldUpdate"
   | "validator"
   | "value";
 

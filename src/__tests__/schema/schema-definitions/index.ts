@@ -2408,16 +2408,16 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
     describe("shouldInit", () => {
       describe("valid", () => {
-        let TestSchema: any;
+        let Model: any;
 
         beforeAll(async () => {
-          TestSchema = new Schema(
+          Model = new Schema(
             {
-              env: { default: "dev" },
               isBlocked: {
                 shouldInit: (ctx: any) => ctx.env == "test",
                 default: false,
               },
+              env: { default: "dev" },
               laxProp: { default: 0 },
             },
             { errors: "throw" }
@@ -2425,7 +2425,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
         });
 
         it("should respect default rules", async () => {
-          const { data } = await TestSchema.create({ isBlocked: true });
+          const { data } = await Model.create({ isBlocked: true });
 
           expect(data).toMatchObject({
             env: "dev",
@@ -2435,7 +2435,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
         });
 
         it("should respect callable should init when condition passes during cloning", async () => {
-          const { data } = await TestSchema.clone({
+          const { data } = await Model.clone({
             env: "test",
             isBlocked: "yes",
           });
@@ -2448,7 +2448,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
         });
 
         it("should respect callable should init when condition passes at creation", async () => {
-          const { data } = await TestSchema.create({
+          const { data } = await Model.create({
             env: "test",
             isBlocked: "yes",
           });
@@ -2523,6 +2523,94 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 })
               );
             }
+          }
+        });
+      });
+    });
+
+    describe("shouldUpdate", () => {
+      describe("valid", () => {
+        //  describe("behaviour",()=>{
+        // let Model: any;
+        // beforeAll(async () => {
+        //   Model = new Schema(
+        //     {
+        //       env: { default: "dev" },
+        //       isBlocked: {
+        //         default: false,
+        //         shouldUpdate: (ctx: any) => ctx.env == "test",
+        //       },
+        //       laxProp: { default: 0 },
+        //     },
+        //     { errors: "throw" }
+        //   ).getModel();
+        // });
+        // it("should respect default rules", async () => {
+        //   const { data } = await Model.create({ isBlocked: true });
+        //   expect(data).toMatchObject({
+        //     env: "dev",
+        //     isBlocked: false,
+        //     laxProp: 0,
+        //   });
+        // });
+        // it("should respect callable should init when condition passes during cloning", async () => {
+        //   const { data } = await Model.clone({
+        //     env: "test",
+        //     isBlocked: "yes",
+        //   });
+        //   expect(data).toMatchObject({
+        //     env: "test",
+        //     isBlocked: "yes",
+        //     laxProp: 0,
+        //   });
+        // });
+        // it("should respect callable should init when condition passes at creation", async () => {
+        //   const { data } = await Model.create({
+        //     env: "test",
+        //     isBlocked: "yes",
+        //   });
+        //   expect(data).toMatchObject({
+        //     env: "test",
+        //     isBlocked: "yes",
+        //     laxProp: 0,
+        //   });
+        // });
+        //  })
+        // it("should accept shouldInit(false) + default", () => {
+        //   const fxn = fx({
+        //     propertyName: { shouldInit: false, default: true },
+        //   });
+        //   expectNoFailure(fxn);
+        //   fxn();
+        // });
+        // it("should accept shouldInit: () => boolean + default", () => {
+        //   const values = [() => true, () => false];
+        //   for (const shouldInit of values) {
+        //     const fxn = fx({
+        //       propertyName: { shouldInit, default: true },
+        //     });
+        //     expectNoFailure(fxn);
+        //     fxn();
+        //   }
+        // });
+      });
+
+      describe("invalid", () => {
+        it("should reject shouldUpdate !(false | () => boolean)", () => {
+          const fxn = fx({ propertyName: { shouldInit: false } });
+
+          expectFailure(fxn);
+
+          try {
+            fxn();
+          } catch (err: any) {
+            expect(err.payload).toEqual(
+              expect.objectContaining({
+                propertyName: expect.arrayContaining([
+                  "A property with initialization blocked must have a default value",
+                ]),
+              })
+            );
           }
         });
       });
@@ -3091,48 +3179,46 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           }
         });
 
-        // it("should reject any non sideEffect rule", () => {
-        //   const values = [
-        //     "constant",
-        //     "default",
-        //     "dependent",
-        //     "dependsOn",
-        //     "onDelete",
-        //     "readonly",
-        //     "resolver",
-        //     "value",
-        //   ];
+        it("should reject any non sideEffect rule", () => {
+          const values = [
+            "constant",
+            "default",
+            "dependent",
+            "dependsOn",
+            "onDelete",
+            "readonly",
+            "resolver",
+            "value",
+          ];
 
-        //   for (const rule of values) {
-        //     const toFail = fx({
-        //       dependentProp: {
-        //         default: "",
-        //         dependent: true,
-        //         dependsOn: "propertyName",
-        //         resolver: () => "",
-        //       },
-        //       propertyName: {
-        //         sideEffect: true,
-        //         [rule]: true,
-        //         validator,
-        //       },
-        //     });
+          for (const rule of values) {
+            const toFail = fx({
+              dependentProp: {
+                default: "",
+                dependent: true,
+                dependsOn: "propertyName",
+                resolver: () => "",
+              },
+              propertyName: {
+                sideEffect: true,
+                [rule]: true,
+                validator,
+              },
+            });
 
-        //     expectFailure(toFail);
+            expectFailure(toFail);
 
-        //     try {
-        //       toFail();
-        //     } catch (err: any) {
-        //       expect(err.payload).toMatchObject(
-        //         expect.objectContaining({
-        //           propertyName: expect.arrayContaining([
-        //             "SideEffects properties can only have (sanitizer, sideEffect, onFailure, onSuccess, required, requiredError, shouldInit, validator) as rules",
-        //           ]),
-        //         })
-        //       );
-        //     }
-        //   }
-        // });
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err.payload).toMatchObject({
+                propertyName: expect.arrayContaining([
+                  "SideEffects properties can only have (sanitizer, sideEffect, onFailure, onSuccess, required, shouldInit, shouldUpdate, validator) as rules",
+                ]),
+              });
+            }
+          }
+        });
       });
     });
   });
