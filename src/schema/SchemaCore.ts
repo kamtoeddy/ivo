@@ -929,11 +929,11 @@ export abstract class SchemaCore<I extends ObjectType> {
           "Only 'sideEffects' are allowed to have 'shouldUpdate' as 'false'",
       };
 
-    if (!belongsTo(readonly, ["lax", undefined]))
+    if (readonly === true && isEqual(shouldInit, undefined))
       return {
         valid,
         reason:
-          "The update of 'readonly' properties cannot be blocked. Try readonly: 'lax'",
+          "Cannot block the update of 'readonly' properties that do not have initialization('shouldInit') blocked. Either add 'shouldInit' or use readonly: 'lax'",
       };
 
     return { valid: true };

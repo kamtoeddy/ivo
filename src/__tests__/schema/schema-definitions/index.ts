@@ -2731,12 +2731,45 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
             expectNoFailure(toPass);
 
-            try {
-              toPass();
-            } catch (err: any) {
-              console.log(err.payload);
-            }
+            toPass();
           }
+        });
+
+        it("should accept shouldInit(() => boolean) + shouldUpdate(false | () => boolean) + readonly(true | 'lax')", () => {
+          // [readonly, shouldInit, shouldUpdate]
+          const readonlyTrue = [
+            [true, false, () => {}],
+            [true, () => {}, () => {}],
+          ];
+
+          for (const [readonly, shouldInit, shouldUpdate] of readonlyTrue) {
+            const toPass = fx({
+              dependentProp: {
+                default: "",
+                readonly,
+                shouldInit,
+                shouldUpdate,
+                validator,
+              },
+            });
+
+            expectNoFailure(toPass);
+
+            toPass();
+          }
+
+          const toPass = fx({
+            dependentProp: {
+              default: "",
+              readonly: "lax",
+              shouldUpdate: () => {},
+              validator,
+            },
+          });
+
+          expectNoFailure(toPass);
+
+          toPass();
         });
 
         describe("behaviour", () => {
@@ -2936,7 +2969,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           }
         });
 
-        it("should reject shouldUpdate & readonly(!'lax')", () => {
+        it("should reject shouldUpdate & readonly(true) & no shouldInit", () => {
           const toFail = fx({
             propertyName: {
               default: "",
@@ -2953,7 +2986,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             expect(err.payload).toEqual(
               expect.objectContaining({
                 propertyName: expect.arrayContaining([
-                  "The update of 'readonly' properties cannot be blocked. Try readonly: 'lax'",
+                  "Cannot block the update of 'readonly' properties that do not have initialization('shouldInit') blocked. Either add 'shouldInit' or use readonly: 'lax'",
                 ]),
               })
             );
