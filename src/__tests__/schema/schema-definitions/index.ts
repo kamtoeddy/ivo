@@ -2570,6 +2570,53 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
             expect(sanitizedValues).toEqual({});
           });
+
+          it("should respect sideEffects at creation when their shouldInit handler returns 'true'", async () => {
+            const { data, handleSuccess } = await Model.create({
+              laxProp: "allow sideEffect",
+              sideEffect: true,
+            });
+
+            await handleSuccess();
+
+            expect(data).toEqual({
+              dependent: "changed",
+              laxProp: "allow sideEffect",
+            });
+
+            expect(onSuccessStats).toEqual({ dependent: 1, sideEffect: 3 });
+
+            expect(onSuccessValues).toEqual({
+              dependent: "changed",
+              sideEffect: "sanitized",
+            });
+
+            expect(sanitizedValues).toEqual({ sideEffect: "sanitized" });
+          });
+
+          it("should respect sideEffects at creation(cloning) when their shouldInit handler returns 'true'", async () => {
+            const { data, handleSuccess } = await Model.clone({
+              dependent: "",
+              laxProp: "allow sideEffect",
+              sideEffect: true,
+            });
+
+            await handleSuccess();
+
+            expect(data).toEqual({
+              dependent: "changed",
+              laxProp: "allow sideEffect",
+            });
+
+            expect(onSuccessStats).toEqual({ dependent: 1, sideEffect: 3 });
+
+            expect(onSuccessValues).toEqual({
+              dependent: "changed",
+              sideEffect: "sanitized",
+            });
+
+            expect(sanitizedValues).toEqual({ sideEffect: "sanitized" });
+          });
         });
 
         it("should accept shouldInit(false) + default", () => {
