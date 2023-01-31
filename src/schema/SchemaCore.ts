@@ -831,7 +831,7 @@ export abstract class SchemaCore<I extends ObjectType> {
   protected __isSideEffect = (prop: string) => {
     const valid = false;
 
-    const { sanitizer, sideEffect, shouldInit } = this._getDefinition(prop);
+    const { sanitizer, sideEffect } = this._getDefinition(prop);
 
     if (sideEffect !== true)
       return { valid, reason: "SideEffects must have sideEffect as 'true'" };
