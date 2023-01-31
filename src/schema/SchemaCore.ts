@@ -561,57 +561,49 @@ export abstract class SchemaCore<I extends ObjectType> {
         reasons.push(`'${rule}' is not a valid rule`);
 
     if (this._hasAny(prop, "constant")) {
-      const constantDef = this.__isConstantProp(prop);
+      const { valid, reason } = this.__isConstantProp(prop);
 
-      if (!constantDef.valid) reasons.push(constantDef.reason!);
+      if (!valid) reasons.push(reason!);
     } else if (this._hasAny(prop, "value"))
       reasons.push("'value' rule can only be used with constant properties");
 
     if (this._hasAny(prop, "dependent")) {
-      const dependentDef = this.__isDependentProp(prop);
+      const { valid, reason } = this.__isDependentProp(prop);
 
-      if (!dependentDef.valid) reasons.push(dependentDef.reason!);
+      if (!valid) reasons.push(reason!);
     } else if (this._hasAny(prop, ["dependsOn", "resolver"]))
       reasons.push(
         "dependsOn & resolver rules can only belong to dependent properties"
       );
 
     if (this._hasAny(prop, "readonly")) {
-      const readonlyDef = this.__isReadonly(prop);
+      const { valid, reason } = this.__isReadonly(prop);
 
-      if (!readonlyDef.valid) reasons.push(readonlyDef.reason!);
+      if (!valid) reasons.push(reason!);
     }
 
     if (this._hasAny(prop, "required")) {
       const { required } = this._getDefinition(prop);
 
-      const requiredDef =
+      const { valid, reason } =
         typeof required === "function"
           ? this.__isRequiredBy(prop)
           : this.__isRequired(prop);
 
-      if (!requiredDef.valid) reasons.push(requiredDef.reason!);
+      if (!valid) reasons.push(reason!);
     }
 
     if (this._hasAny(prop, "sideEffect")) {
-      const sideEffectDef = this.__isSideEffect(prop);
+      const { valid, reason } = this.__isSideEffect(prop);
 
-      if (!sideEffectDef.valid) reasons.push(sideEffectDef.reason!);
+      if (!valid) reasons.push(reason!);
     } else if (this._hasAny(prop, "sanitizer"))
       reasons.push("'sanitizer' is only valid on side effects");
 
     if (this._hasAny(prop, "shouldInit")) {
-      const { shouldInit } = this._getDefinition(prop);
+      const { valid, reason } = this.__isShouldInitConfigOk(prop);
 
-      if (!["boolean", "function"].includes(typeof shouldInit))
-        reasons.push(
-          "The initialization of a property can only be blocked if the 'shouldinit' rule is set to 'false' or a function that returns a boolean"
-        );
-
-      if (!this._hasAny(prop, ["default", "sideEffect"]))
-        reasons.push(
-          "A property with initialization blocked must have a default value"
-        );
+      if (!valid) reasons.push(reason!);
     }
 
     if (this._hasAny(prop, "shouldUpdate")) {
@@ -897,6 +889,28 @@ export abstract class SchemaCore<I extends ObjectType> {
     const { shouldInit } = propDef;
 
     return this._isSideEffect(prop) && belongsTo(shouldInit, [true, undefined]);
+  };
+
+  protected __isShouldInitConfigOk = (prop: string) => {
+    const { shouldInit } = this._getDefinition(prop);
+
+    const valid = false;
+
+    if (shouldInit !== false && !this._isFunction(shouldInit))
+      return {
+        valid,
+        reason:
+          "The initialization of a property can only be blocked if the 'shouldinit' rule is set to 'false' or a function that returns a boolean",
+      };
+
+    if (!this._hasAny(prop, ["default", "sideEffect"]))
+      return {
+        valid,
+        reason:
+          "A property with initialization blocked must have a default value",
+      };
+
+    return { valid: true };
   };
 
   protected __isShouldUpdateConfigOk = (prop: string) => {
