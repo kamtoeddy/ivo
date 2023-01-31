@@ -2,12 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
-# v3.0.0 <small><sup>[x][x]-01-2022</sup></small>
+# v3.0.1 <small><sup>31-01-2022</sup></small>
 
 Breaking Changes
 
-- [Added] possibility to use one timestamp value at a time. [more](./v3.0.0/schema/definition/index.md#timestamps)
-- [Added] 'shouldUpdate' rule [more](./v3.0.0/schema/definition/index.md#accepted-rules)
+- [Fix] fix problems with types when using 'sanitize' rule with TS
+
+# v3.0.0 <small><sup>31-01-2022</sup></small>
+
+Breaking Changes
+
 - [Updated] updated the definition of [dependent properties](./schema/definition/dependents.md)
 - [Updated] updated the definition of [side effect properties](./schema/definition/side-effects.md)
 - [Updated] updated how schema inheritance works [more](./schema/definition/inheritance.md)
@@ -17,6 +21,8 @@ Breaking Changes
 
 Updates
 
+- [Added] possibility to use one timestamp value at a time. [more](./v3.0.0/schema/definition/index.md#timestamps)
+- [Added] 'shouldUpdate' rule [more](./v3.0.0/schema/definition/index.md#accepted-rules)
 - [Updated] improved type inference during schema inheritance
 - [Updated] upgraded TS to v4.9.4
 - [Updated] rewrote types (to reduce files)
