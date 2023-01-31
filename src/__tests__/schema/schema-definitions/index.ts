@@ -2531,10 +2531,29 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
     describe("shouldUpdate", () => {
       describe("valid", () => {
         it("should accept shouldUpdate (false | () => boolean)", () => {
-          const invalidValues = [false, () => false, () => true];
+          const validValues = [false, () => false, () => true];
 
-          for (const shouldUpdate of invalidValues) {
+          for (const shouldUpdate of validValues) {
             const toPass = fx({ propertyName: { default: "", shouldUpdate } });
+
+            expectNoFailure(toPass);
+
+            toPass();
+          }
+        });
+
+        it("should accept shouldUpdate(() => boolean) & shouldInit(false)", () => {
+          // [shouldInit, shouldUpdate]
+          const values = [
+            [false, () => false],
+            [() => false, () => false],
+            [() => false, false],
+          ];
+
+          for (const [shouldInit, shouldUpdate] of values) {
+            const toPass = fx({
+              propertyName: { default: "", shouldInit, shouldUpdate },
+            });
 
             expectNoFailure(toPass);
 
