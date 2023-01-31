@@ -906,7 +906,7 @@ export abstract class SchemaCore<I extends ObjectType> {
   };
 
   protected __isShouldUpdateConfigOk = (prop: string) => {
-    const { shouldInit, shouldUpdate } = this._getDefinition(prop);
+    const { readonly, shouldInit, shouldUpdate } = this._getDefinition(prop);
     const valid = false;
 
     if (shouldUpdate !== false && !this._isFunction(shouldUpdate))
@@ -927,6 +927,13 @@ export abstract class SchemaCore<I extends ObjectType> {
         valid,
         reason:
           "Only 'sideEffects' are allowed to have 'shouldUpdate' as 'false'",
+      };
+
+    if (!belongsTo(readonly, ["lax", undefined]))
+      return {
+        valid,
+        reason:
+          "The update of 'readonly' properties cannot be blocked. Try readonly: 'lax'",
       };
 
     return { valid: true };
