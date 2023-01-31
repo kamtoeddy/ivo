@@ -1,13 +1,12 @@
 import { storeItemSchema } from ".";
-import { Schema } from "../../../../../dist";
 import { validateString } from "./validators";
 
-const storeItemChildSchema = new Schema(
+const storeItemChildSchema = storeItemSchema.extend(
   {
     childID: { readonly: true, validator: validateString("Invalid child id") },
   },
   { errors: "throw", timestamps: true }
-).extend(storeItemSchema);
+);
 
 const StoreItemChild = storeItemChildSchema.getModel();
 

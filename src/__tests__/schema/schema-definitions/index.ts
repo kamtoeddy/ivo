@@ -1,3 +1,6 @@
+const pauseFor = (ms = 5) =>
+  new Promise((res) => setTimeout(() => res(true), ms));
+
 export const schemaDefinition_Tests = ({ Schema }: any) => {
   const fx =
     (definition: any = undefined, options: any = { timestamps: false }) =>
@@ -70,6 +73,25 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
       }
     });
 
+    it("should reject if a property's definition has an invalid rule", () => {
+      const toFail = fx({ emptyProp: { default: "", yoo: true } });
+      expectFailure(toFail);
+
+      try {
+        toFail();
+      } catch (err: any) {
+        expect(err).toEqual(
+          expect.objectContaining({
+            message: "Invalid Schema",
+            payload: {
+              emptyProp: expect.arrayContaining(["'yoo' is not a valid rule"]),
+            },
+            statusCode: 500,
+          })
+        );
+      }
+    });
+
     describe("constant", () => {
       describe("valid", () => {
         let User: any, user: any;
@@ -80,24 +102,18 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               asyncConstant: { constant: true, value: asyncSetter },
               id: {
                 constant: true,
-                onCreate: ({ laxProp }: any) => ({ laxProp: laxProp + 2 }),
                 value: (ctx: any) => (ctx?.id === "id" ? "id-2" : "id"),
               },
               parentId: { constant: true, value: "parent id" },
-              laxProp: {
-                default: 0,
-                onUpdate: ({ laxProp }: any) => {
-                  if (laxProp === "update id") return { id: "new id" };
-                },
-              },
+              laxProp: { default: 0 },
             },
             { errors: "throw" }
           ).getModel();
 
-          function asyncSetter() {
-            return new Promise((res, rej) => {
-              setTimeout(() => res(20), 500);
-            });
+          async function asyncSetter() {
+            await pauseFor(5);
+
+            return 20;
           }
 
           user = (await User.create({ id: 2, parentId: [], laxProp: 2 })).data;
@@ -108,7 +124,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             asyncConstant: 20,
             id: "id",
             parentId: "parent id",
-            laxProp: 4,
+            laxProp: 2,
           });
         });
 
@@ -119,7 +135,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             asyncConstant: 20,
             id: "id-2",
             parentId: "parent id",
-            laxProp: 2,
+            laxProp: 0,
           });
         });
 
@@ -142,20 +158,6 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
           for (const value of values) {
             const toPass = fx({ propertyName: { constant: true, value } });
-
-            expectNoFailure(toPass);
-
-            toPass();
-          }
-        });
-
-        it("should accept constant & value + onCreate(function | function[])", () => {
-          const values = [() => ({}), [() => ({})], [() => ({}), () => ({})]];
-
-          for (const onCreate of values) {
-            const toPass = fx({
-              propertyName: { constant: true, value: "", onCreate },
-            });
 
             expectNoFailure(toPass);
 
@@ -235,6 +237,24 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           }
         });
 
+        it("should reject 'value' on non-constants", () => {
+          const toFail = fx({ propertyName: { value: true } });
+
+          expectFailure(toFail);
+
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toEqual(
+              expect.objectContaining({
+                propertyName: expect.arrayContaining([
+                  "'value' rule can only be used with constant properties",
+                ]),
+              })
+            );
+          }
+        });
+
         it("should reject constant & value(undefined)", () => {
           const toFail = fx({
             propertyName: { constant: true, value: undefined },
@@ -259,11 +279,12 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           const rules = [
             "default",
             "dependent",
-            "onChange",
+            "dependsOn",
             "onFailure",
-            "onUpdate",
             "readonly",
+            "resolver",
             "required",
+            "sanitizer",
             "sideEffect",
             "shouldInit",
             "validator",
@@ -282,7 +303,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               expect(err.payload).toEqual(
                 expect.objectContaining({
                   propertyName: expect.arrayContaining([
-                    "Constant properties can only have ('constant' & 'value') or 'onCreate' | 'onDelete' | 'onSuccess'",
+                    "Constant properties can only have ('constant' & 'value') or 'onDelete' | 'onSuccess'",
                   ]),
                 })
               );
@@ -293,13 +314,465 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
     });
 
     describe("dependent", () => {
+      const resolver = () => 1;
+
       describe("valid", () => {
+        describe("behaviour", () => {
+          let Model: any;
+
+          let onDeleteStats = {} as Record<string, number | undefined>;
+          let onSuccessStats = {} as Record<string, number | undefined>;
+          let resolversCalledStats = {} as Record<string, number | undefined>;
+
+          const successCountOfDependentProps = {
+            dependentProp: 4,
+            dependentProp_1: 1,
+            dependentProp_2: 3,
+            dependentProp_3: 1,
+          };
+
+          beforeEach(async () => {
+            Model = new Schema({
+              laxProp: { default: "" },
+              laxProp_1: { default: "" },
+              laxProp_2: {
+                default: "",
+                onDelete: incrementOnDeleteCountOf("laxProp_2"),
+              },
+              dependentProp: {
+                default: 0,
+                dependent: true,
+                dependsOn: ["laxProp", "laxProp_1"],
+                resolver: resolverOfDependentProp,
+                onDelete: [
+                  incrementOnDeleteCountOf("dependentProp"),
+                  incrementOnDeleteCountOf("dependentProp"),
+                ],
+                onSuccess: [
+                  incrementOnSuccessCountOf("dependentProp"),
+                  incrementOnSuccessCountOf("dependentProp"),
+                  incrementOnSuccessCountOf("dependentProp"),
+                  incrementOnSuccessCountOf("dependentProp"),
+                ],
+              },
+              dependentProp_1: {
+                default: 0,
+                dependent: true,
+                dependsOn: "dependentProp",
+                resolver: resolverOfDependentProp_1,
+                onDelete: incrementOnDeleteCountOf("dependentProp_1"),
+                onSuccess: incrementOnSuccessCountOf("dependentProp_1"),
+              },
+              dependentProp_2: {
+                default: 0,
+                dependent: true,
+                dependsOn: "dependentProp",
+                readonly: true,
+                resolver: asyncResolver("dependentProp_2"),
+                onDelete: [
+                  incrementOnDeleteCountOf("dependentProp_2"),
+                  incrementOnDeleteCountOf("dependentProp_2"),
+                ],
+                onSuccess: [
+                  incrementOnSuccessCountOf("dependentProp_2"),
+                  incrementOnSuccessCountOf("dependentProp_2"),
+                  incrementOnSuccessCountOf("dependentProp_2"),
+                ],
+              },
+              dependentProp_3: {
+                default: 0,
+                dependent: true,
+                dependsOn: "laxProp_2",
+                resolver: asyncResolver("dependentProp_3"),
+                onDelete: [
+                  incrementOnDeleteCountOf("dependentProp_3"),
+                  incrementOnDeleteCountOf("dependentProp_3"),
+                ],
+                onSuccess: [incrementOnSuccessCountOf("dependentProp_3")],
+              },
+            }).getModel();
+
+            function incrementOnDeleteCountOf(prop: string) {
+              return () => {
+                const previousCount = onDeleteStats[prop] ?? 0;
+
+                onDeleteStats[prop] = previousCount + 1;
+              };
+            }
+
+            function incrementOnSuccessCountOf(prop: string) {
+              return () => {
+                const previousCount = onSuccessStats[prop] ?? 0;
+
+                onSuccessStats[prop] = previousCount + 1;
+              };
+            }
+
+            function incrementResolveCountOf(prop: string) {
+              const previousCount = resolversCalledStats[prop] ?? 0;
+
+              resolversCalledStats[prop] = previousCount + 1;
+            }
+
+            function resolverOfDependentProp({ laxProp, laxProp_1 }: any) {
+              incrementResolveCountOf("dependentProp");
+
+              return laxProp.length + laxProp_1.length;
+            }
+
+            function resolverOfDependentProp_1({ dependentProp }: any) {
+              incrementResolveCountOf("dependentProp_1");
+
+              return dependentProp + 1;
+            }
+
+            function asyncResolver(prop: string) {
+              return async ({ dependentProp }: any) => {
+                incrementResolveCountOf(prop);
+
+                await pauseFor();
+
+                return dependentProp + 2;
+              };
+            }
+          });
+
+          afterEach(() => {
+            onDeleteStats = {};
+            onSuccessStats = {};
+            resolversCalledStats = {};
+          });
+
+          describe("creation", () => {
+            it("should resolve dependent properties correctly at creation", async () => {
+              const { data, handleSuccess } = await Model.create({
+                laxProp_2: "value based pricing",
+                dependentProp: 25,
+                dependentProp_1: 34,
+                dependentProp_2: 17,
+                dependentProp_3: 1,
+              });
+
+              await handleSuccess?.();
+
+              expect(data).toEqual({
+                laxProp: "",
+                laxProp_1: "",
+                laxProp_2: "value based pricing",
+                dependentProp: 0,
+                dependentProp_1: 0,
+                dependentProp_2: 0,
+                dependentProp_3: 2,
+              });
+
+              expect(resolversCalledStats).toEqual({ dependentProp_3: 1 });
+              expect(onSuccessStats).toEqual(successCountOfDependentProps);
+            });
+
+            it("should resolve dependencies of dependent properties if provided at creation", async () => {
+              const { data, handleSuccess } = await Model.create({
+                laxProp: "",
+                laxProp_1: "hello",
+                dependentProp: 0,
+                dependentProp_1: 0,
+                dependentProp_2: 0,
+              });
+
+              await handleSuccess();
+
+              expect(data).toEqual({
+                laxProp: "",
+                laxProp_1: "hello",
+                laxProp_2: "",
+                dependentProp: 5,
+                dependentProp_1: 6,
+                dependentProp_2: 7,
+                dependentProp_3: 0,
+              });
+
+              expect(resolversCalledStats).toEqual({
+                dependentProp: 1,
+                dependentProp_1: 1,
+                dependentProp_2: 1,
+              });
+
+              expect(onSuccessStats).toEqual(successCountOfDependentProps);
+            });
+          });
+
+          describe("cloning", () => {
+            it("should have all correct properties and values at creation with 'clone' method", async () => {
+              const { data: clone, handleSuccess } = await Model.clone({
+                laxProp: "",
+                laxProp_1: "",
+                laxProp_2: "value based pricing",
+                dependentProp: 0,
+                dependentProp_1: 0,
+                dependentProp_2: 0,
+                dependentProp_3: 2,
+              });
+
+              await handleSuccess();
+
+              expect(clone).toMatchObject({
+                laxProp: "",
+                laxProp_1: "",
+                laxProp_2: "value based pricing",
+                dependentProp: 0,
+                dependentProp_1: 0,
+                dependentProp_2: 0,
+                dependentProp_3: 2,
+              });
+
+              expect(resolversCalledStats).toEqual({ dependentProp_3: 1 });
+
+              expect(onSuccessStats).toEqual(successCountOfDependentProps);
+            });
+
+            it("should respect 'reset' option at creation with 'clone' method", async () => {
+              const { data: clone, handleSuccess } = await Model.clone(
+                {
+                  laxProp: "",
+                  laxProp_1: "",
+                  laxProp_2: "value based pricing",
+                  dependentProp: 20,
+                  dependentProp_1: 1302,
+                  dependentProp_2: 10,
+                  dependentProp_3: 350,
+                },
+                {
+                  reset: [
+                    "dependentProp",
+                    "dependentProp_1",
+                    "dependentProp_2",
+                  ],
+                }
+              );
+
+              await handleSuccess();
+
+              expect(clone).toMatchObject({
+                laxProp: "",
+                laxProp_1: "",
+                laxProp_2: "value based pricing",
+                dependentProp: 0,
+                dependentProp_1: 0,
+                dependentProp_2: 0,
+                dependentProp_3: 2,
+              });
+
+              expect(resolversCalledStats).toEqual({ dependentProp_3: 1 });
+
+              expect(onSuccessStats).toEqual(successCountOfDependentProps);
+            });
+
+            it("should resolve dependencies of dependent properties if provided at creation(cloning)", async () => {
+              const { data, handleSuccess } = await Model.clone({
+                laxProp: "",
+                laxProp_1: "hello",
+                laxProp_2: "",
+                dependentProp: 5,
+                dependentProp_1: 6,
+                dependentProp_2: 7,
+                dependentProp_3: 0,
+              });
+
+              await handleSuccess();
+
+              expect(data).toEqual({
+                laxProp: "",
+                laxProp_1: "hello",
+                laxProp_2: "",
+                dependentProp: 5,
+                dependentProp_1: 6,
+                dependentProp_2: 7,
+                dependentProp_3: 0,
+              });
+
+              expect(resolversCalledStats).toEqual({
+                dependentProp: 1,
+                dependentProp_1: 2,
+                dependentProp_2: 2,
+              });
+
+              expect(onSuccessStats).toEqual(successCountOfDependentProps);
+            });
+
+            it("should resolve dependencies of dependent properties if provided at creation(cloning) and also respect the 'reset' option", async () => {
+              const { data, handleSuccess } = await Model.clone(
+                {
+                  laxProp: "",
+                  laxProp_1: "hello",
+                  laxProp_2: "",
+                  dependentProp: 5,
+                  dependentProp_1: 6,
+                  dependentProp_2: 7,
+                  dependentProp_3: 0,
+                },
+                { reset: "dependentProp" }
+              );
+
+              await handleSuccess();
+
+              expect(data).toEqual({
+                laxProp: "",
+                laxProp_1: "hello",
+                laxProp_2: "",
+                dependentProp: 5,
+                dependentProp_1: 6,
+                dependentProp_2: 7,
+                dependentProp_3: 0,
+              });
+
+              expect(resolversCalledStats).toEqual({
+                dependentProp: 1,
+                dependentProp_1: 1,
+                dependentProp_2: 1,
+              });
+
+              expect(onSuccessStats).toEqual(successCountOfDependentProps);
+            });
+          });
+
+          describe("updates", () => {
+            it("should have all correct properties and values after updates", async () => {
+              const { data: updates } = await Model.update(
+                {
+                  laxProp: "",
+                  laxProp_1: "",
+                  laxProp_2: "value based pricing",
+                  dependentProp: 0,
+                  dependentProp_1: 0,
+                  dependentProp_2: 0,
+                  dependentProp_3: 2,
+                },
+                {
+                  laxProp_2: "hey",
+                  dependentProp: 74,
+                  dependentProp_1: 235,
+                  dependentProp_2: 72,
+                  dependentProp_3: 702,
+                }
+              );
+
+              expect(updates).toMatchObject({
+                laxProp_2: "hey",
+                dependentProp_3: 2,
+              });
+
+              expect(resolversCalledStats).toEqual({ dependentProp_3: 1 });
+            });
+
+            it("should resolve dependencies of dependent properties if provided during updates", async () => {
+              const { data, handleSuccess } = await Model.update(
+                {
+                  laxProp: "",
+                  laxProp_1: "",
+                  laxProp_2: "",
+                  dependentProp: 0,
+                  dependentProp_1: 0,
+                  dependentProp_2: 0,
+                  dependentProp_3: 0,
+                },
+                {
+                  laxProp: "hello",
+                  laxProp_1: "world",
+                }
+              );
+
+              await handleSuccess();
+
+              expect(data).toEqual({
+                laxProp: "hello",
+                laxProp_1: "world",
+                dependentProp: 10,
+                dependentProp_1: 11,
+                dependentProp_2: 12,
+              });
+
+              const { dependentProp_3, ...stats } =
+                successCountOfDependentProps;
+
+              expect(resolversCalledStats).toEqual({
+                dependentProp: 1,
+                dependentProp_1: 1,
+                dependentProp_2: 1,
+              });
+
+              expect(onSuccessStats).toEqual(stats);
+            });
+
+            it("should not resolve readonly dependent properties that have changed if provided during updates", async () => {
+              const { data, handleSuccess } = await Model.update(
+                {
+                  laxProp: "hello",
+                  laxProp_1: "world",
+                  dependentProp: 10,
+                  dependentProp_1: 11,
+                  dependentProp_2: 12,
+                  dependentProp_3: 0,
+                },
+                { laxProp: "", laxProp_1: "hey" }
+              );
+
+              await handleSuccess();
+
+              expect(data).toEqual({
+                laxProp: "",
+                laxProp_1: "hey",
+                dependentProp: 3,
+                dependentProp_1: 4,
+              });
+
+              const stats = {
+                dependentProp: 1,
+                dependentProp_1: 1,
+              };
+
+              expect(resolversCalledStats).toEqual(stats);
+
+              expect(onSuccessStats).toEqual({
+                dependentProp: 4,
+                dependentProp_1: 1,
+              });
+            });
+          });
+
+          describe("deletion", () => {
+            it("should have all correct properties and values at creation", async () => {
+              await Model.delete({
+                laxProp: "",
+                laxProp_1: "",
+                laxProp_2: "value based pricing",
+                dependentProp: 0,
+                dependentProp_1: 0,
+                dependentProp_2: 0,
+                dependentProp_3: 2,
+              });
+
+              expect(onDeleteStats).toEqual({
+                laxProp_2: 1,
+                dependentProp: 2,
+                dependentProp_1: 1,
+                dependentProp_2: 2,
+                dependentProp_3: 2,
+              });
+            });
+          });
+        });
+
         it("should accept dependent & default(any | function)", () => {
           const values = ["", 1, false, true, null, {}, []];
 
           for (const value of values) {
             const toPass = fx({
-              propertyName: { default: value, dependent: true },
+              dependentProp: {
+                default: value,
+                dependent: true,
+                dependsOn: "prop",
+                resolver,
+              },
+              prop: { default: "" },
             });
 
             expectNoFailure(toPass);
@@ -308,18 +781,21 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           }
         });
 
-        it("should accept life cycle listeners", () => {
-          const lifeCycles = ["onCreate", "onChange", "onUpdate"];
+        it("should accept life cycle listeners except 'onFailure'", () => {
+          const lifeCycles = ["onDelete", "onSuccess"];
           const values = [() => {}, () => ({}), [() => {}, () => ({})]];
 
           for (const lifeCycle of lifeCycles) {
             for (const value of values) {
               const toPass = fx({
-                propertyName: {
+                dependentProp: {
                   default: value,
                   dependent: true,
+                  dependsOn: "prop",
+                  resolver,
                   [lifeCycle]: value,
                 },
+                prop: { default: "" },
               });
 
               expectNoFailure(toPass);
@@ -329,9 +805,64 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           }
         });
 
-        it("should accept validator", () => {
+        it("should accept dependsOn & resolver", () => {
+          const values = [
+            "prop",
+            ["prop", "prop1"],
+            ["prop", "prop1", "prop2", "prop3"],
+          ];
+
+          for (const dependsOn of values) {
+            const toPass = fx({
+              dependentProp: {
+                default: "",
+                dependent: true,
+                dependsOn,
+                resolver,
+              },
+              prop: { default: "" },
+              prop1: { default: "" },
+              prop2: { default: "" },
+              prop3: { default: "" },
+            });
+
+            expectNoFailure(toPass);
+
+            toPass();
+          }
+        });
+
+        it("should allow a dependent prop to depend on another dependent prop (non-circular)", () => {
           const toPass = fx({
-            propertyName: { default: "", dependent: true, validator },
+            dependentProp1: {
+              default: "",
+              dependent: true,
+              dependsOn: "prop",
+              resolver,
+            },
+            dependentProp2: {
+              default: "",
+              dependent: true,
+              dependsOn: "dependentProp1",
+              resolver,
+            },
+            prop: { default: "" },
+          });
+
+          expectNoFailure(toPass);
+
+          toPass();
+        });
+
+        it("should allow a dependency on side effects", () => {
+          const toPass = fx({
+            dependentProp: {
+              default: "",
+              dependent: true,
+              dependsOn: "sideEFFectProp",
+              resolver,
+            },
+            sideEFFectProp: { sideEffect: true, validator: resolver },
           });
 
           expectNoFailure(toPass);
@@ -341,18 +872,233 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
       });
 
       describe("invalid", () => {
-        it("should reject dependent & no default", () => {
-          const toFail = fx({ propertyName: { dependent: true } });
+        it("should reject dependency on non-properties", () => {
+          const invalidProp = "invalidProp";
+
+          const toFail = fx({
+            dependentProp: {
+              dependent: true,
+              default: "",
+              dependsOn: invalidProp,
+              resolver,
+            },
+          });
 
           expectFailure(toFail);
 
           try {
             toFail();
           } catch (err: any) {
-            expect(err.payload).toEqual(
+            expect(err.payload).toMatchObject(
+              expect.objectContaining({
+                dependentProp: expect.arrayContaining([
+                  `Cannot establish dependency with '${invalidProp}' as it is neither a property nor a side effect of your model`,
+                ]),
+              })
+            );
+          }
+        });
+
+        it("should reject no dependent + dependsOn or resolver", () => {
+          const toFail = fx({
+            dependentProp: { default: "", dependsOn: "prop", resolver },
+            prop: { default: "" },
+          });
+
+          expectFailure(toFail);
+
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toMatchObject(
+              expect.objectContaining({
+                dependentProp: expect.arrayContaining([
+                  "dependsOn & resolver rules can only belong to dependent properties",
+                ]),
+              })
+            );
+          }
+        });
+
+        it("should not allow property to depend on itself", () => {
+          const toFail = fx({
+            dependentProp: {
+              dependent: true,
+              default: "",
+              dependsOn: "dependentProp",
+              resolver,
+            },
+          });
+
+          expectFailure(toFail);
+
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toMatchObject(
+              expect.objectContaining({
+                dependentProp: expect.arrayContaining([
+                  "A property cannot depend on itself",
+                ]),
+              })
+            );
+          }
+        });
+
+        it("should not allow property to depend on a constant property", () => {
+          const toFail = fx({
+            constantProp: {
+              constant: true,
+              value: "",
+            },
+            dependentProp: {
+              dependent: true,
+              default: "",
+              dependsOn: "constantProp",
+              resolver,
+            },
+          });
+
+          expectFailure(toFail);
+
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toMatchObject(
+              expect.objectContaining({
+                dependentProp: expect.arrayContaining([
+                  "A property cannot depend on a constant property",
+                ]),
+              })
+            );
+          }
+        });
+
+        it("should identify circular dependencies and reject", () => {
+          const toFail = fx({
+            A: {
+              default: "",
+              dependent: true,
+              dependsOn: ["B", "C", "D"],
+              resolver,
+            },
+            B: {
+              default: "",
+              dependent: true,
+              dependsOn: ["A", "C", "E"],
+              resolver,
+            },
+            C: {
+              default: "",
+              dependent: true,
+              dependsOn: ["A"],
+              resolver,
+            },
+            D: {
+              default: "",
+              dependent: true,
+              dependsOn: "E",
+              resolver,
+            },
+            E: {
+              default: "",
+              dependent: true,
+              dependsOn: "A",
+              resolver,
+            },
+            F: {
+              default: "",
+              dependent: true,
+              dependsOn: "prop",
+              resolver,
+            },
+            prop: { default: "" },
+          });
+
+          expectFailure(toFail);
+
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toMatchObject(
+              expect.objectContaining({
+                A: expect.arrayContaining([
+                  "Circular dependency identified with 'B'",
+                  "Circular dependency identified with 'C'",
+                  "Circular dependency identified with 'E'",
+                ]),
+                B: expect.arrayContaining([
+                  "Circular dependency identified with 'A'",
+                ]),
+                C: expect.arrayContaining([
+                  "Circular dependency identified with 'A'",
+                  "Circular dependency identified with 'B'",
+                ]),
+                D: expect.arrayContaining([
+                  "Circular dependency identified with 'A'",
+                ]),
+                E: expect.arrayContaining([
+                  "Circular dependency identified with 'B'",
+                  "Circular dependency identified with 'D'",
+                ]),
+              })
+            );
+          }
+        });
+
+        it("should reject dependent + missing default", () => {
+          const toFail = fx({ dependentProp: { dependent: true } });
+
+          expectFailure(toFail);
+
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toMatchObject(
+              expect.objectContaining({
+                dependentProp: expect.arrayContaining([
+                  "Dependent properties must have a default value",
+                ]),
+              })
+            );
+          }
+        });
+
+        it("should reject dependent + missing dependsOn", () => {
+          const toFail = fx({
+            propertyName: { dependent: true, default: "", resolver },
+          });
+
+          expectFailure(toFail);
+
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toMatchObject(
               expect.objectContaining({
                 propertyName: expect.arrayContaining([
-                  "Dependent properties must have a default value",
+                  "Dependent properties must depend on atleast one property",
+                ]),
+              })
+            );
+          }
+        });
+
+        it("should reject dependent + missing resolver", () => {
+          const toFail = fx({
+            dependentProp: { dependent: true, default: "", dependsOn: "prop" },
+            prop: { default: "" },
+          });
+
+          expectFailure(toFail);
+
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toMatchObject(
+              expect.objectContaining({
+                dependentProp: expect.arrayContaining([
+                  "Dependent properties must have a resolver",
                 ]),
               })
             );
@@ -364,7 +1110,14 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
           for (const shouldInit of values) {
             const toFail = fx({
-              propertyName: { default: "", dependent: true, shouldInit },
+              dependentProp: {
+                dependent: true,
+                default: "",
+                dependsOn: "prop",
+                resolver,
+                shouldInit,
+              },
+              prop: { default: "" },
             });
 
             expectFailure(toFail);
@@ -374,7 +1127,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             } catch (err: any) {
               expect(err.payload).toEqual(
                 expect.objectContaining({
-                  propertyName: expect.arrayContaining([
+                  dependentProp: expect.arrayContaining([
                     "Dependent properties cannot have shouldInit rule",
                   ]),
                 })
@@ -385,12 +1138,14 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
         it("should reject dependent & readonly(lax)", () => {
           const toFail = fx({
-            propertyName: {
+            dependentProp: {
               default: "",
               dependent: true,
+              dependsOn: "prop",
+              resolver,
               readonly: "lax",
-              validator,
             },
+            prop: { default: "" },
           });
 
           expectFailure(toFail);
@@ -400,7 +1155,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           } catch (err: any) {
             expect(err.payload).toEqual(
               expect.objectContaining({
-                propertyName: expect.arrayContaining([
+                dependentProp: expect.arrayContaining([
                   "Dependent properties cannot be readonly 'lax'",
                 ]),
               })
@@ -408,14 +1163,47 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           }
         });
 
+        it("should reject dependent & validator", () => {
+          const values = [null, "", 1, true, false, validator];
+
+          for (const validator of values) {
+            const toFail = fx({
+              dependentProp: {
+                default: "",
+                dependent: true,
+                dependsOn: "prop",
+                resolver,
+                validator,
+              },
+              prop: { default: "" },
+            });
+
+            expectFailure(toFail);
+
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err.payload).toMatchObject(
+                expect.objectContaining({
+                  dependentProp: expect.arrayContaining([
+                    "Dependent properties cannot be validated",
+                  ]),
+                })
+              );
+            }
+          }
+        });
+
         it("should reject dependent & required", () => {
           const toFail = fx({
-            propertyName: {
+            dependentProp: {
               default: "",
               dependent: true,
+              dependsOn: "prop",
+              resolver,
               required: true,
-              validator,
             },
+            prop: { default: "" },
           });
 
           expectFailure(toFail);
@@ -425,8 +1213,38 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           } catch (err: any) {
             expect(err.payload).toEqual(
               expect.objectContaining({
-                propertyName: expect.arrayContaining([
-                  "Dependent properties cannot be strictly required",
+                dependentProp: expect.arrayContaining([
+                  "Dependent properties cannot be required",
+                ]),
+              })
+            );
+          }
+        });
+
+        it("should reject dependent + requiredBy", () => {
+          const toFail = fx({
+            dependentProp: {
+              required() {
+                return true;
+              },
+              requiredError: "'dependentProp' is required",
+              dependent: true,
+              default: "",
+              dependsOn: "prop",
+              resolver: () => 1,
+            },
+            prop: { default: "" },
+          });
+
+          expectFailure(toFail);
+
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toMatchObject(
+              expect.objectContaining({
+                dependentProp: expect.arrayContaining([
+                  "Dependent properties cannot be required",
                 ]),
               })
             );
@@ -447,68 +1265,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
         it("should allow default + validator", () => {
           const toPass = fx({
-            propertyName: { default: "", validtor: () => ({ valid: true }) },
-          });
-
-          expectNoFailure(toPass);
-
-          toPass();
-        });
-
-        it("should allow default + (onChange | onChange[])", () => {
-          const values = [() => {}, [() => {}], [() => {}, () => {}]];
-
-          for (const onChange of values) {
-            const toPass = fx({
-              dependent: { default: "", dependent: true },
-              propertyName: { default: "", onChange },
-            });
-
-            expectNoFailure(toPass);
-
-            toPass();
-          }
-        });
-
-        it("should allow default + (onCreate | onCreate[])", () => {
-          const values = [() => {}, [() => {}], [() => {}, () => {}]];
-
-          for (const onCreate of values) {
-            const toPass = fx({
-              dependent: { default: "", dependent: true },
-              propertyName: { default: "", onCreate },
-            });
-
-            expectNoFailure(toPass);
-
-            toPass();
-          }
-        });
-
-        it("should allow default + (onUpdate | onUpdate[])", () => {
-          const values = [() => {}, [() => {}], [() => {}, () => {}]];
-
-          for (const onUpdate of values) {
-            const toPass = fx({
-              dependent: { default: "", dependent: true },
-              propertyName: { default: "", onUpdate },
-            });
-
-            expectNoFailure(toPass);
-
-            toPass();
-          }
-        });
-
-        it("should allow default + onChange + onCreate + onUpdate + validator", () => {
-          const toPass = fx({
-            propertyName: {
-              default: "",
-              onChange: () => ({}),
-              onCreate: [() => ({})],
-              onUpdate: () => ({}),
-              validtor: () => ({ valid: true }),
-            },
+            propertyName: { default: "", validator: () => ({ valid: true }) },
           });
 
           expectNoFailure(toPass);
@@ -537,66 +1294,11 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             );
           }
         });
-
-        it("should reject default + invalid onChange", () => {
-          const values = [false, 1, "", undefined, true, null];
-
-          for (const onChange of values) {
-            const toFail = fx({ propertyName: { default: "", onChange } });
-
-            expectFailure(toFail);
-
-            try {
-              toFail();
-            } catch (err: any) {
-              expect(err.payload.propertyName.length).toBe(1);
-            }
-          }
-        });
-
-        it("should reject default + invalid onCreate", () => {
-          const values = [false, 1, "", undefined, true, null];
-
-          for (const onCreate of values) {
-            const toFail = fx({ propertyName: { default: "", onCreate } });
-
-            expectFailure(toFail);
-
-            try {
-              toFail();
-            } catch (err: any) {
-              expect(err.payload.propertyName.length).toBe(1);
-            }
-          }
-        });
-
-        it("should reject default + invalid onUpdate", () => {
-          const values = [false, 1, "", undefined, true, null];
-
-          for (const onUpdate of values) {
-            const toFail = fx({ propertyName: { default: "", onUpdate } });
-
-            expectFailure(toFail);
-
-            try {
-              toFail();
-            } catch (err: any) {
-              expect(err.payload.propertyName.length).toBe(1);
-            }
-          }
-        });
       });
     });
 
     describe("life cycle listeners", () => {
-      const rules = [
-        "onChange",
-        "onCreate",
-        "onDelete",
-        "onFailure",
-        "onSuccess",
-        "onUpdate",
-      ];
+      const rules = ["onDelete", "onFailure", "onSuccess"];
 
       describe("valid", () => {
         const values = [
@@ -622,7 +1324,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           }
         }
       });
-
+      // add an it in describe block
       describe("invalid", () => {
         const values = [1, "", 0, false, true, null, {}];
 
@@ -654,14 +1356,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
       });
 
       describe("life cycle readonly ctx", () => {
-        const rules = [
-          "onChange",
-          "onCreate",
-          "onDelete",
-          "onFailure",
-          "onSuccess",
-          "onUpdate",
-        ];
+        const rules = ["onDelete", "onFailure", "onSuccess"];
 
         let Model: any,
           propChangeMap: any = {};
@@ -688,38 +1383,28 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             constant: {
               constant: true,
               value: "constant",
-              onCreate: handle("onCreate", "constant"),
               onDelete: handle("onDelete", "constant"),
               onSuccess: handle("onSuccess", "constant"),
             },
             prop1: {
               required: true,
-              onChange: handle("onChange", "prop1"),
-              onCreate: handle("onCreate", "prop1"),
               onDelete: handle("onDelete", "prop1"),
               onFailure: handle("onFailure", "prop1"),
               onSuccess: handle("onSuccess", "prop1"),
-              onUpdate: handle("onUpdate", "prop1"),
               validator,
             },
             prop2: {
               required: true,
-              onChange: handle("onChange", "prop2"),
-              onCreate: handle("onCreate", "prop2"),
               onDelete: handle("onDelete", "prop2"),
               onFailure: handle("onFailure", "prop2"),
               onSuccess: handle("onSuccess", "prop2"),
-              onUpdate: handle("onUpdate", "prop2"),
               validator,
             },
             prop3: {
               required: true,
-              onChange: handle("onChange", "prop3"),
-              onCreate: handle("onCreate", "prop3"),
               onDelete: handle("onDelete", "prop3"),
               onFailure: handle("onFailure", "prop3"),
               onSuccess: handle("onSuccess", "prop3"),
-              onUpdate: handle("onUpdate", "prop3"),
               validator,
             },
           }).getModel();
@@ -732,24 +1417,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
           await handleSuccess?.();
 
-          for (const prop of allProps)
-            expect(propChangeMap.onCreate[prop]).toBe(true);
-
           expect(propChangeMap.onSuccess.constant).toBe(true);
-
-          for (const prop of props)
-            for (const rule of ["onChange", "onSuccess"])
-              expect(propChangeMap[rule][prop]).toBe(true);
-        });
-
-        it("should reject listeners that try to mutate the onChange, onCreate & onSuccess ctx (clone)", async () => {
-          await Model.clone(validData);
-
-          for (const prop of allProps)
-            expect(propChangeMap.onCreate[prop]).toBe(true);
-
-          for (const prop of props)
-            expect(propChangeMap.onChange[prop]).toBe(true);
         });
 
         it("should reject listeners that try to mutate the onDelete ctx", async () => {
@@ -790,15 +1458,6 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
               expect(propChangeMap?.[rule]?.[prop]).toBe(result);
             }
-        });
-
-        it("should reject listeners that try to mutate the onUpdate & onChange ctx", async () => {
-          await Model.update(validData, { prop1: "2", prop2: "3", prop3: "4" });
-
-          for (const prop of props) {
-            expect(propChangeMap.onUpdate[prop]).toBe(true);
-            expect(propChangeMap.onChange[prop]).toBe(true);
-          }
         });
       });
 
@@ -846,109 +1505,150 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
       });
 
       describe("onFailure", () => {
-        let Model: any,
-          propChangeMap: any = {};
+        it("should reject onFailure & no validator", () => {
+          const toFail = fx({ prop: { default: "", onFailure: () => {} } });
 
-        beforeAll(() => {
-          const onFailure =
-            (prop = "") =>
-            () =>
-              (propChangeMap[prop] = true);
-          const validator = () => ({ valid: false });
+          expectFailure(toFail);
 
-          Model = new Schema({
-            prop1: { required: true, onFailure: onFailure("prop1"), validator },
-            prop2: { required: true, onFailure: onFailure("prop2"), validator },
-            prop3: { required: true, onFailure: onFailure("prop3"), validator },
-            prop4: {
-              sideEffect: true,
-              onChange: validator,
-              onFailure: onFailure("prop4"),
-              validator,
-            },
-          }).getModel();
-        });
-
-        beforeEach(() => (propChangeMap = {}));
-
-        // creation
-        it("should call onFailure listeners at creation", async () => {
-          const { error } = await Model.create({});
-
-          expect(error).toBeDefined();
-          expect(propChangeMap).toEqual({
-            prop1: true,
-            prop2: true,
-            prop3: true,
-          });
-        });
-
-        it("should call onFailure listeners at creation with sideEffects", async () => {
-          const { error } = await Model.create({ prop4: "Yes" });
-
-          expect(error).toBeDefined();
-          expect(propChangeMap).toEqual({
-            prop1: true,
-            prop2: true,
-            prop3: true,
-            prop4: true,
-          });
-        });
-
-        // cloning
-        it("should call onFailure listeners during cloning", async () => {
-          const { error } = await Model.clone({});
-
-          expect(error).toBeDefined();
-          expect(propChangeMap).toEqual({
-            prop1: true,
-            prop2: true,
-            prop3: true,
-          });
-        });
-
-        it("should call onFailure listeners during cloning with sideEffects", async () => {
-          const { error } = await Model.clone({ prop4: "Yes" });
-
-          expect(error).toBeDefined();
-          expect(propChangeMap).toEqual({
-            prop1: true,
-            prop2: true,
-            prop3: true,
-            prop4: true,
-          });
-        });
-
-        // updates
-        it("should call onFailure listeners during updates", async () => {
-          const { error } = await Model.update({}, { prop1: "" });
-
-          expect(error).toBeDefined();
-          expect(propChangeMap).toEqual({ prop1: true });
-        });
-
-        it("should call onFailure listeners during updates with sideEffects", async () => {
-          const data = [
-            [{ prop4: "" }, { prop4: true }],
-            [
-              { prop1: "", prop4: "" },
-              { prop1: true, prop4: true },
-            ],
-          ];
-
-          for (const [changes, results] of data) {
-            const { error } = await Model.update({}, changes);
-
-            expect(error).toBeDefined();
-            expect(propChangeMap).toEqual(results);
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toMatchObject(
+              expect.objectContaining({
+                prop: expect.arrayContaining([
+                  "'onFailure' can only be used with properties that support and have validators",
+                ]),
+              })
+            );
           }
         });
 
-        it("should call onFailure listeners during updates & nothing to update", async () => {
-          const { error } = await Model.update({}, {});
+        describe("behaviour", () => {
+          let Model: any,
+            onFailureCount: any = {};
 
-          expect(error).toBeDefined();
-          expect(propChangeMap).toEqual({});
+          beforeAll(() => {
+            function incrementOnFailureCountOf(prop: string) {
+              return () => {
+                onFailureCount[prop] = (onFailureCount[prop] ?? 0) + 1;
+              };
+            }
+            const validator = () => ({ valid: false });
+
+            Model = new Schema({
+              prop1: {
+                default: true,
+                onFailure: incrementOnFailureCountOf("prop1"),
+                validator,
+              },
+              prop2: {
+                required: true,
+                onFailure: [
+                  incrementOnFailureCountOf("prop2"),
+                  incrementOnFailureCountOf("prop2"),
+                ],
+                validator,
+              },
+              dependentProp: {
+                default: "",
+                dependent: true,
+                dependsOn: "sideEffectProp",
+                resolver: () => "",
+              },
+              sideEffectProp: {
+                sideEffect: true,
+                onFailure: [
+                  incrementOnFailureCountOf("sideEffectProp"),
+                  incrementOnFailureCountOf("sideEffectProp"),
+                  incrementOnFailureCountOf("sideEffectProp"),
+                ],
+                validator,
+              },
+            }).getModel();
+          });
+
+          beforeEach(() => {
+            onFailureCount = {};
+          });
+
+          describe("creation", () => {
+            it("should call onFailure listeners at creation", async () => {
+              const { error } = await Model.create({ prop1: false });
+
+              expect(error).toBeDefined();
+              expect(onFailureCount).toEqual({ prop1: 1, prop2: 2 });
+            });
+
+            it("should call onFailure listeners at creation with sideEffects", async () => {
+              const { error } = await Model.create({
+                prop1: false,
+                sideEffectProp: "Yes",
+              });
+
+              expect(error).toBeDefined();
+              expect(onFailureCount).toEqual({
+                prop1: 1,
+                prop2: 2,
+                sideEffectProp: 3,
+              });
+            });
+
+            it("should call onFailure listeners during cloning", async () => {
+              const { error } = await Model.clone({ prop1: "" });
+
+              expect(error).toBeDefined();
+              expect(onFailureCount).toEqual({ prop1: 1, prop2: 2 });
+            });
+
+            it("should call onFailure listeners during cloning with sideEffects", async () => {
+              const { error } = await Model.clone({
+                prop1: "",
+                sideEffectProp: "Yes",
+              });
+
+              expect(error).toBeDefined();
+              expect(onFailureCount).toEqual({
+                prop1: 1,
+                prop2: 2,
+                sideEffectProp: 3,
+              });
+            });
+          });
+
+          describe("updates", () => {
+            it("should call onFailure listeners during updates", async () => {
+              const { error } = await Model.update({}, { prop1: "" });
+
+              expect(error).toBeDefined();
+              expect(onFailureCount).toEqual({ prop1: 1 });
+            });
+
+            it("should call onFailure listeners during updates with sideEffects", async () => {
+              const data = [
+                [{ sideEffectProp: "" }, { sideEffectProp: 3 }],
+                [
+                  { prop1: "", sideEffectProp: "" },
+                  { prop1: 1, sideEffectProp: 3 },
+                ],
+              ];
+
+              for (const [changes, results] of data) {
+                onFailureCount = {};
+
+                const { error } = await Model.update({}, changes);
+
+                expect(error).toBeDefined();
+                expect(onFailureCount).toEqual(results);
+              }
+            });
+
+            it("should call onFailure listeners during updates & nothing to update", async () => {
+              const { error } = await Model.update({ prop1: 2 }, { prop1: 35 });
+
+              expect(error).toBeDefined();
+              expect(onFailureCount).toEqual({ prop1: 1 });
+            });
+          });
         });
       });
 
@@ -974,7 +1674,9 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             dependent: {
               default: "",
               dependent: true,
+              dependsOn: "readonlyLax",
               onSuccess: onSuccess("dependent"),
+              resolver: () => ({ dependent: true }),
             },
             lax: { default: "", onSuccess: onSuccess("lax"), validator },
             readonly: {
@@ -986,7 +1688,6 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               default: "",
               readonly: "lax",
               onSuccess: onSuccess("readonlyLax"),
-              onChange: () => ({ dependent: true }),
               validator,
             },
             required: {
@@ -1051,19 +1752,19 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           });
         });
 
-        it("should call onSuccess listeners during updates with readonlyLax & dependent", async () => {
-          const { error, handleSuccess } = await Model.update(initialData, {
-            readonlyLax: true,
-          });
+        // it("should call onSuccess listeners during updates with readonlyLax & dependent", async () => {
+        //   const { error, handleSuccess } = await Model.update(initialData, {
+        //     readonlyLax: true,
+        //   });
 
-          await handleSuccess();
+        //   await handleSuccess();
 
-          expect(error).toBeUndefined();
-          expect(propChangeMap).toEqual({
-            dependent: true,
-            readonlyLax: true,
-          });
-        });
+        //   expect(error).toBeUndefined();
+        //   expect(propChangeMap).toEqual({
+        //     dependent: true,
+        //     readonlyLax: true,
+        //   });
+        // });
       });
     });
 
@@ -1071,7 +1772,14 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
       describe("valid", () => {
         it("should allow readonly(true) + dependent + default", () => {
           const toPass = fx({
-            propertyName: { readonly: true, dependent: true, default: "" },
+            dependentProp: {
+              default: "value",
+              dependent: true,
+              dependsOn: "prop",
+              resolver: () => 1,
+              readonly: true,
+            },
+            prop: { default: "" },
           });
 
           expectNoFailure(toPass);
@@ -1085,7 +1793,6 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               default: "",
               readonly: true,
               required: () => true,
-              requiredError: "",
               validator,
             },
           });
@@ -1103,8 +1810,6 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               age: { readonly: true, default: null },
               name: {
                 default: "Default Name",
-                onChange: () => ({ age: 12 }),
-                // onUpdate: () => ({ age: 12 }),
               },
             }).getModel();
           });
@@ -1173,7 +1878,12 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
         it("should reject readonly(true) + dependent & no default", () => {
           const toFail = fx({
-            propertyName: { readonly: true, dependent: true },
+            dependentProp: {
+              dependent: true,
+              dependsOn: "prop",
+              resolver: () => 1,
+            },
+            prop: { default: "" },
           });
 
           expectFailure(toFail);
@@ -1183,7 +1893,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           } catch (err: any) {
             expect(err.payload).toEqual(
               expect.objectContaining({
-                propertyName: expect.arrayContaining([
+                dependentProp: expect.arrayContaining([
                   "Dependent properties must have a default value",
                 ]),
               })
@@ -1193,7 +1903,14 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
         it("should reject readonly(lax) + dependent", () => {
           const toFail = fx({
-            propertyName: { default: "", readonly: "lax", dependent: true },
+            dependentProp: {
+              dependent: true,
+              default: "",
+              dependsOn: "prop",
+              resolver: () => 1,
+              readonly: "lax",
+            },
+            prop: { default: "" },
           });
 
           expectFailure(toFail);
@@ -1203,7 +1920,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           } catch (err: any) {
             expect(err.payload).toEqual(
               expect.objectContaining({
-                propertyName: expect.arrayContaining([
+                dependentProp: expect.arrayContaining([
                   "Readonly(lax) properties cannot be dependent",
                 ]),
               })
@@ -1327,54 +2044,6 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           }
         });
 
-        it("should reject required(true) + dependent", () => {
-          const values = [false, true, undefined];
-
-          for (const dependent of values) {
-            const toFail = fx({
-              propertyName: { dependent, required: true, validator },
-            });
-
-            expectFailure(toFail);
-
-            try {
-              toFail();
-            } catch (err: any) {
-              expect(err.payload).toMatchObject(
-                expect.objectContaining({
-                  propertyName: expect.arrayContaining([
-                    "Required properties cannot be dependent",
-                  ]),
-                })
-              );
-            }
-          }
-        });
-
-        it("should reject required(true) + requiredError", () => {
-          const values = ["", () => ""];
-
-          for (const requiredError of values) {
-            const toFail = fx({
-              propertyName: { required: true, requiredError, validator },
-            });
-
-            expectFailure(toFail);
-
-            try {
-              toFail();
-            } catch (err: any) {
-              expect(err.payload).toMatchObject(
-                expect.objectContaining({
-                  propertyName: expect.arrayContaining([
-                    "Strictly required properties cannot have a requiredError",
-                  ]),
-                })
-              );
-            }
-          }
-        });
-
         it("should reject required(true) + shouldInit", () => {
           const values = [false, true, () => "", [], {}];
 
@@ -1408,29 +2077,33 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
         beforeAll(async () => {
           Book = new Schema(
             {
-              bookId: {
-                required: true,
-                validator,
-              },
-              isPublished: {
-                default: false,
-                validator,
-              },
+              bookId: { required: true, validator },
+              isPublished: { default: false, validator },
               price: {
                 default: null,
                 required(ctx: any) {
-                  return ctx.isPublished && ctx.price == null;
+                  const isRequired = ctx.isPublished && ctx.price == null;
+                  return [isRequired, "A price is required to publish a book!"];
                 },
-                requiredError: "A price is required to publish a book!",
                 validator: validatePrice,
               },
               priceReadonly: {
                 default: null,
                 readonly: true,
-                required(ctx: any) {
-                  return ctx.price == 101 && ctx.priceReadonly == null;
+                required({ price, priceReadonly }: any) {
+                  const isRequired = price == 101 && priceReadonly == null;
+                  return [
+                    isRequired,
+                    "A priceReadonly is required when price is 101!",
+                  ];
                 },
-                requiredError: "A priceReadonly is required when price is 101!",
+                validator: validatePrice,
+              },
+              priceRequiredWithoutMessage: {
+                default: null,
+                readonly: true,
+                required: ({ price, priceReadonly }: any) =>
+                  price == 101 && priceReadonly == null,
                 validator: validatePrice,
               },
             },
@@ -1452,6 +2125,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             isPublished: false,
             price: null,
             priceReadonly: null,
+            priceRequiredWithoutMessage: null,
           });
         });
 
@@ -1468,6 +2142,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             isPublished: true,
             price: 2000,
             priceReadonly: null,
+            priceRequiredWithoutMessage: null,
           });
         });
 
@@ -1502,6 +2177,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             isPublished: true,
             price: 2000,
             priceReadonly: null,
+            priceRequiredWithoutMessage: null,
           });
         });
 
@@ -1583,6 +2259,9 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 priceReadonly: expect.arrayContaining([
                   "A priceReadonly is required when price is 101!",
                 ]),
+                priceRequiredWithoutMessage: expect.arrayContaining([
+                  "'priceRequiredWithoutMessage' is required!",
+                ]),
               })
             );
           }
@@ -1596,6 +2275,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 isPublished: false,
                 price: null,
                 priceReadonly: 201,
+                priceRequiredWithoutMessage: null,
               },
               { priceReadonly: 101 }
             );
@@ -1611,7 +2291,6 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               propertyName: {
                 default: value,
                 required: () => true,
-                requiredError: "",
                 validator,
               },
             });
@@ -1628,7 +2307,6 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               default: "",
               readonly: true,
               required: () => true,
-              requiredError: "",
               validator,
             },
           });
@@ -1637,23 +2315,57 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
           toPass();
         });
+      });
 
-        it("should accept requiredBy + requiredError(string | function)", () => {
-          const values = ["", () => ""];
+      describe("invalid", () => {
+        it("should reject requiredBy & no default", () => {
+          const toFail = fx({
+            propertyName: {
+              required: () => true,
+              validator,
+            },
+          });
 
-          for (const requiredError of values) {
-            const toPass = fx({
-              propertyName: {
-                default: "",
-                required: () => true,
-                requiredError,
-                validator,
-              },
-            });
+          expectFailure(toFail);
 
-            expectNoFailure(toPass);
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toMatchObject(
+              expect.objectContaining({
+                propertyName: expect.arrayContaining([
+                  "Callable required properties must have a default value or setter",
+                ]),
+              })
+            );
+          }
+        });
 
-            toPass();
+        it("should reject requiredBy + default & dependent(true)", () => {
+          const toFail = fx({
+            dependentProp: {
+              default: "value",
+              dependent: true,
+              dependsOn: "prop",
+              resolver: () => 1,
+              required: () => true,
+              validator,
+            },
+            prop: { default: "" },
+          });
+
+          expectFailure(toFail);
+
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toMatchObject(
+              expect.objectContaining({
+                dependentProp: expect.arrayContaining([
+                  "Required properties cannot be dependent",
+                ]),
+              })
+            );
           }
         });
 
@@ -1665,7 +2377,6 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               propertyName: {
                 default: "",
                 required: () => true,
-                requiredError: "",
                 shouldInit,
                 validator,
               },
@@ -1687,193 +2398,215 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           }
         });
       });
-
-      describe("invalid", () => {
-        it("should reject requiredBy & no default", () => {
-          const toFail = fx({
-            propertyName: {
-              required: () => true,
-              requiredError: "",
-              validator,
-            },
-          });
-
-          expectFailure(toFail);
-
-          try {
-            toFail();
-          } catch (err: any) {
-            expect(err.payload).toMatchObject(
-              expect.objectContaining({
-                propertyName: expect.arrayContaining([
-                  "Callable required properties must have a default value or setter",
-                ]),
-              })
-            );
-          }
-        });
-
-        it("should reject requiredError & required(!function)", () => {
-          const values = [undefined, true, [], {}, false, 2, ""];
-
-          for (const required of values) {
-            const toFail = fx({
-              propertyName: {
-                default: true,
-                required,
-                requiredError: () => "",
-                validator,
-              },
-            });
-
-            expectFailure(toFail);
-
-            try {
-              toFail();
-            } catch (err: any) {
-              expect(err.payload).toEqual(
-                expect.objectContaining({
-                  propertyName: expect.arrayContaining([
-                    "RequiredError can only be used with a callable required rule",
-                  ]),
-                })
-              );
-            }
-          }
-        });
-
-        it("should reject requiredBy & no requiredError", () => {
-          const toFail = fx({
-            propertyName: {
-              default: "",
-              required: () => true,
-              validator,
-            },
-          });
-
-          expectFailure(toFail);
-
-          try {
-            toFail();
-          } catch (err: any) {
-            expect(err.payload).toMatchObject(
-              expect.objectContaining({
-                propertyName: expect.arrayContaining([
-                  "Callable required properties must have a requiredError or setter",
-                ]),
-              })
-            );
-          }
-        });
-
-        it("should reject requiredBy + requiredError(!string & !function)", () => {
-          const values = [1, {}, [], false, true, undefined];
-
-          for (const requiredError of values) {
-            const toFail = fx({
-              propertyName: {
-                default: "",
-                required: () => true,
-                requiredError,
-                validator,
-              },
-            });
-
-            expectFailure(toFail);
-
-            try {
-              toFail();
-            } catch (err: any) {
-              expect(err.payload).toMatchObject(
-                expect.objectContaining({
-                  propertyName: expect.arrayContaining([
-                    "RequiredError must be a string or setter",
-                  ]),
-                })
-              );
-            }
-          }
-        });
-
-        it("should reject requiredBy + default & dependent(true)", () => {
-          const toFail = fx({
-            propertyName: {
-              default: "",
-              dependent: true,
-              required: () => true,
-              requiredError: "",
-              validator,
-            },
-          });
-
-          expectFailure(toFail);
-
-          try {
-            toFail();
-          } catch (err: any) {
-            expect(err.payload).toMatchObject(
-              expect.objectContaining({
-                propertyName: expect.arrayContaining([
-                  "Required properties cannot be dependent",
-                ]),
-              })
-            );
-          }
-        });
-      });
     });
 
     describe("shouldInit", () => {
       describe("valid", () => {
-        let TestSchema: any;
+        describe("behaviour", () => {
+          let Model: any;
 
-        beforeAll(async () => {
-          TestSchema = new Schema(
-            {
-              env: { default: "dev" },
-              isBlocked: {
-                shouldInit: (ctx: any) => ctx.env == "test",
-                default: false,
+          beforeAll(async () => {
+            Model = new Schema(
+              {
+                isBlocked: {
+                  shouldInit: (ctx: any) => ctx.env == "test",
+                  default: false,
+                },
+                env: { default: "dev" },
+                laxProp: { default: 0 },
               },
-              laxProp: { default: 0 },
-            },
-            { errors: "throw" }
-          ).getModel();
-        });
+              { errors: "throw" }
+            ).getModel();
+          });
 
-        it("should respect default rules", async () => {
-          const { data } = await TestSchema.create({ isBlocked: true });
+          it("should respect default rules", async () => {
+            const { data } = await Model.create({ isBlocked: true });
 
-          expect(data).toMatchObject({
-            env: "dev",
-            isBlocked: false,
-            laxProp: 0,
+            expect(data).toMatchObject({
+              env: "dev",
+              isBlocked: false,
+              laxProp: 0,
+            });
+          });
+
+          it("should respect callable should init when condition passes during cloning", async () => {
+            const { data } = await Model.clone({
+              env: "test",
+              isBlocked: "yes",
+            });
+
+            expect(data).toMatchObject({
+              env: "test",
+              isBlocked: "yes",
+              laxProp: 0,
+            });
+          });
+
+          it("should respect callable should init when condition passes at creation", async () => {
+            const { data } = await Model.create({
+              env: "test",
+              isBlocked: "yes",
+            });
+
+            expect(data).toMatchObject({
+              env: "test",
+              isBlocked: "yes",
+              laxProp: 0,
+            });
           });
         });
 
-        it("should respect callable should init when condition passes during cloning", async () => {
-          const { data } = await TestSchema.clone({
-            env: "test",
-            isBlocked: "yes",
+        describe("behaviour of callable shouldInit", () => {
+          let onSuccessValues: any = {};
+
+          let onSuccessStats: any = {};
+
+          let sanitizedValues: any = {};
+
+          let Model: any;
+
+          beforeAll(() => {
+            Model = new Schema(
+              {
+                dependent: {
+                  default: "",
+                  dependent: true,
+                  dependsOn: "sideEffect",
+                  resolver: () => "changed",
+                  onSuccess: onSuccess("dependent"),
+                },
+                laxProp: { default: "" },
+                sideEffect: {
+                  sideEffect: true,
+                  shouldInit: ({ laxProp }: any) =>
+                    laxProp === "allow sideEffect",
+                  onSuccess: [
+                    onSuccess("sideEffect"),
+                    incrementOnSuccessStats("sideEffect"),
+                    incrementOnSuccessStats("sideEffect"),
+                  ],
+                  sanitizer: sanitizerOf("sideEffect", "sanitized"),
+                  validator: validateBoolean,
+                },
+              },
+              { errors: "throw" }
+            ).getModel();
+
+            function sanitizerOf(prop: string, value: any) {
+              return () => {
+                // to make sure sanitizer is invoked
+                sanitizedValues[prop] = value;
+
+                return value;
+              };
+            }
+
+            function incrementOnSuccessStats(prop: string) {
+              return () => {
+                onSuccessStats[prop] = (onSuccessStats[prop] ?? 0) + 1;
+              };
+            }
+
+            function onSuccess(prop: string) {
+              return (ctx: any) => {
+                onSuccessValues[prop] = ctx[prop];
+                incrementOnSuccessStats(prop)();
+              };
+            }
+
+            function validateBoolean(value: any) {
+              if (![false, true].includes(value))
+                return { valid: false, reason: `${value} is not a boolean` };
+              return { valid: true };
+            }
           });
 
-          expect(data).toMatchObject({
-            env: "test",
-            isBlocked: "yes",
-            laxProp: 0,
-          });
-        });
-
-        it("should respect callable should init when condition passes at creation", async () => {
-          const { data } = await TestSchema.create({
-            env: "test",
-            isBlocked: "yes",
+          beforeEach(() => {
+            onSuccessStats = {};
+            onSuccessValues = {};
+            sanitizedValues = {};
           });
 
-          expect(data).toMatchObject({
-            env: "test",
-            isBlocked: "yes",
-            laxProp: 0,
+          it("should ignore sideEffects at creation when their shouldInit handler returns 'false'", async () => {
+            const { data, handleSuccess } = await Model.create({
+              laxProp: "Peter",
+              sideEffect: true,
+            });
+
+            await handleSuccess();
+
+            expect(data).toEqual({ dependent: "", laxProp: "Peter" });
+
+            expect(onSuccessStats).toEqual({ dependent: 1 });
+
+            expect(onSuccessValues).toEqual({ dependent: "" });
+
+            expect(sanitizedValues).toEqual({});
+          });
+
+          it("should ignore sideEffects at creation(cloning) when their shouldInit handler returns 'false'", async () => {
+            const { data, handleSuccess } = await Model.clone({
+              dependent: "",
+              laxProp: "Peter",
+              sideEffect: true,
+            });
+
+            await handleSuccess();
+
+            expect(data).toEqual({ dependent: "", laxProp: "Peter" });
+
+            expect(onSuccessStats).toEqual({ dependent: 1 });
+
+            expect(onSuccessValues).toEqual({ dependent: "" });
+
+            expect(sanitizedValues).toEqual({});
+          });
+
+          it("should respect sideEffects at creation when their shouldInit handler returns 'true'", async () => {
+            const { data, handleSuccess } = await Model.create({
+              laxProp: "allow sideEffect",
+              sideEffect: true,
+            });
+
+            await handleSuccess();
+
+            expect(data).toEqual({
+              dependent: "changed",
+              laxProp: "allow sideEffect",
+            });
+
+            expect(onSuccessStats).toEqual({ dependent: 1, sideEffect: 3 });
+
+            expect(onSuccessValues).toEqual({
+              dependent: "changed",
+              sideEffect: "sanitized",
+            });
+
+            expect(sanitizedValues).toEqual({ sideEffect: "sanitized" });
+          });
+
+          it("should respect sideEffects at creation(cloning) when their shouldInit handler returns 'true'", async () => {
+            const { data, handleSuccess } = await Model.clone({
+              dependent: "",
+              laxProp: "allow sideEffect",
+              sideEffect: true,
+            });
+
+            await handleSuccess();
+
+            expect(data).toEqual({
+              dependent: "changed",
+              laxProp: "allow sideEffect",
+            });
+
+            expect(onSuccessStats).toEqual({ dependent: 1, sideEffect: 3 });
+
+            expect(onSuccessValues).toEqual({
+              dependent: "changed",
+              sideEffect: "sanitized",
+            });
+
+            expect(sanitizedValues).toEqual({ sideEffect: "sanitized" });
           });
         });
 
@@ -1945,78 +2678,334 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
       });
     });
 
-    describe("sideEffect", () => {
+    describe("shouldUpdate", () => {
       describe("valid", () => {
-        const defaultMap = {
-          sideInit: { hasChanged: false, newValue: undefined },
-          sideNoInit: { hasChanged: false, newValue: undefined },
-        };
-        let User: any, successMap: any;
+        it("should accept shouldUpdate(() => boolean)", () => {
+          const validValues = [() => false, () => true];
 
-        beforeAll(() => {
-          User = new Schema(
-            {
-              dependentSideNoInit: {
+          for (const shouldUpdate of validValues) {
+            const toPass = fx({ propertyName: { default: "", shouldUpdate } });
+
+            expectNoFailure(toPass);
+
+            toPass();
+          }
+        });
+
+        it("should accept shouldUpdate(() => boolean) & shouldInit(false)", () => {
+          // [shouldInit, shouldUpdate]
+          const values = [
+            [false, () => false],
+            [() => false, () => false],
+          ];
+
+          for (const [shouldInit, shouldUpdate] of values) {
+            const toPass = fx({
+              propertyName: { default: "", shouldInit, shouldUpdate },
+            });
+
+            expectNoFailure(toPass);
+
+            toPass();
+          }
+        });
+
+        it("should accept shouldInit(() => boolean) & shouldUpdate(false) for sideEffects", () => {
+          const values = [() => true, () => false];
+
+          for (const shouldInit of values) {
+            const toPass = fx({
+              dependentProp: {
                 default: "",
                 dependent: true,
+                dependsOn: "sideEffect",
+                resolver: () => "",
               },
-              dependentSideInit: {
+              sideEffect: {
+                sideEffect: true,
+                shouldInit,
+                shouldUpdate: false,
+                validator,
+              },
+            });
+
+            expectNoFailure(toPass);
+
+            toPass();
+          }
+        });
+
+        it("should accept shouldInit(() => boolean) + shouldUpdate(false | () => boolean) + readonly(true | 'lax')", () => {
+          // [readonly, shouldInit, shouldUpdate]
+          const readonlyTrue = [
+            [true, false, () => {}],
+            [true, () => {}, () => {}],
+          ];
+
+          for (const [readonly, shouldInit, shouldUpdate] of readonlyTrue) {
+            const toPass = fx({
+              dependentProp: {
+                default: "",
+                readonly,
+                shouldInit,
+                shouldUpdate,
+                validator,
+              },
+            });
+
+            expectNoFailure(toPass);
+
+            toPass();
+          }
+
+          const toPass = fx({
+            dependentProp: {
+              default: "",
+              readonly: "lax",
+              shouldUpdate: () => {},
+              validator,
+            },
+          });
+
+          expectNoFailure(toPass);
+
+          toPass();
+        });
+
+        describe("behaviour", () => {
+          let onSuccessValues: any = {};
+          let onSuccessStats: any = {};
+
+          let Model: any;
+
+          beforeAll(() => {
+            Model = new Schema({
+              dependentProp: {
                 default: false,
                 dependent: true,
-                validator: validateBoolean,
+                dependsOn: "sideEffect",
+                resolver: ({ sideEffect }: any) => sideEffect,
+                onSuccess: incrementOnSuccessCountOf("dependentProp"),
               },
-              name: { default: "" },
-              sideInit: {
+              dependentProp_1: {
+                default: false,
+                dependent: true,
+                dependsOn: "sideEffect_1",
+                resolver: ({ sideEffect_1 }: any) => sideEffect_1,
+                onSuccess: incrementOnSuccessCountOf("dependentProp_1"),
+              },
+              laxProp: {
+                default: "",
+                readonly: "lax",
+                shouldUpdate: (ctx: any) => ctx.laxProp_1 == "test",
+                onSuccess: incrementOnSuccessCountOf("laxProp"),
+              },
+              laxProp_1: { default: "dev" },
+              sideEffect: {
                 sideEffect: true,
-                onChange: onSideInitChange,
-                onSuccess: onSuccess("sideInit"),
-                validator: validateBoolean,
+                shouldUpdate: false,
+                validator: () => ({ valid: true }),
+                onSuccess: incrementOnSuccessCountOf("sideEffect"),
               },
-              sideNoInit: {
+              sideEffect_1: {
                 sideEffect: true,
-                shouldInit: false,
-                onChange: () => ({ dependentSideNoInit: "changed" }),
-                onSuccess: onSuccess("sideNoInit"),
-                validator: validateBoolean,
+                shouldUpdate: (ctx: any) => ctx.laxProp_1 == "test",
+                validator: () => ({ valid: true }),
+                onSuccess: incrementOnSuccessCountOf("sideEffect_1"),
               },
+            }).getModel();
+
+            function incrementOnSuccessCountOf(prop: string) {
+              return (ctx: any) => {
+                const previousCount = onSuccessStats[prop] ?? 0;
+
+                onSuccessStats[prop] = previousCount + 1;
+                onSuccessValues[prop] = ctx[prop];
+              };
+            }
+          });
+
+          afterEach(() => {
+            onSuccessValues = {};
+            onSuccessStats = {};
+          });
+
+          it("should not update properties when 'shouldUpdate' resolved to 'false'", async () => {
+            const { data, error } = await Model.update(
+              {
+                dependentProp: "dev",
+                dependentProp_1: "dev",
+                laxProp: "",
+                laxProp_1: "",
+              },
+              { laxProp: "yoyo", sideEffect: true, sideEffect_1: true }
+            );
+
+            expect(data).toBeUndefined();
+            expect(error.message).toBe("Nothing to update");
+          });
+
+          it("should update properties when 'shouldUpdate' resolved to 'true'", async () => {
+            const { data, error, handleSuccess } = await Model.update(
+              {
+                dependentProp: "dev",
+                dependentProp_1: "dev",
+                laxProp: "",
+                laxProp_1: "test",
+              },
+              { laxProp: "yoyo", sideEffect: true, sideEffect_1: true }
+            );
+
+            await handleSuccess();
+
+            expect(error).toBeUndefined();
+            expect(data).toEqual({ dependentProp_1: true, laxProp: "yoyo" });
+
+            expect(onSuccessStats).toEqual({
+              dependentProp_1: 1,
+              laxProp: 1,
+              sideEffect_1: 1,
+            });
+
+            expect(onSuccessValues).toEqual({
+              dependentProp_1: true,
+              laxProp: "yoyo",
+              sideEffect_1: true,
+            });
+          });
+
+          it("should not update readonly properties that have changed even when 'shouldUpdate' resolved to 'true'", async () => {
+            const { data, error } = await Model.update(
+              {
+                dependentProp: "dev",
+                dependentProp_1: "dev",
+                laxProp: "changed",
+                laxProp_1: "test",
+              },
+              { laxProp: "yoyo" }
+            );
+
+            expect(data).toBeUndefined();
+            expect(error.message).toBe("Nothing to update");
+          });
+        });
+      });
+
+      describe("invalid", () => {
+        it("should reject shouldUpdate !(false | () => boolean)", () => {
+          const invalidValues = [
+            true,
+            1,
+            0,
+            -1,
+            "true",
+            "false",
+            [],
+            null,
+            undefined,
+            {},
+          ];
+
+          for (const shouldUpdate of invalidValues) {
+            const toFail = fx({ propertyName: { default: "", shouldUpdate } });
+
+            expectFailure(toFail);
+
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err.payload).toEqual(
+                expect.objectContaining({
+                  propertyName: expect.arrayContaining([
+                    "'shouldUpdate' only accepts false or a function that returns a boolean",
+                  ]),
+                })
+              );
+            }
+          }
+        });
+
+        it("should reject shouldUpdate(false) & shouldInit(false)", () => {
+          const toFail = fx({
+            propertyName: {
+              default: "",
+              shouldInit: false,
+              shouldUpdate: false,
             },
-            { errors: "throw" }
-          ).getModel();
+          });
 
-          function onSideInitChange({ sideInit }: any) {
-            return { dependentSideInit: sideInit ? true : false };
-          }
+          expectFailure(toFail);
 
-          function onSuccess(prop: keyof typeof defaultMap) {
-            return (ctx: any) =>
-              (successMap[prop] = { hasChanged: true, newValue: ctx[prop] });
-          }
-
-          function validateBoolean(value: any) {
-            if (![false, true].includes(value))
-              return { valid: false, reason: `${value} is not a boolean` };
-            return { valid: true };
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toEqual(
+              expect.objectContaining({
+                propertyName: expect.arrayContaining([
+                  "Both 'shouldInit' & 'shouldUpdate' cannot be 'false'",
+                ]),
+              })
+            );
           }
         });
 
-        beforeEach(() => (successMap = { ...defaultMap }));
-
-        it("should respect sideInits & sideNoInit", async () => {
-          const { data: user } = await User.create({
-            sideInit: true,
-            name: "Peter",
+        it("should reject shouldUpdate(false) for non-sideEffects", () => {
+          const toFail = fx({
+            propertyName: { default: "", shouldUpdate: false },
           });
 
-          expect(user).toEqual({
-            dependentSideNoInit: "",
-            dependentSideInit: true,
-            name: "Peter",
-          });
+          expectFailure(toFail);
+
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toEqual(
+              expect.objectContaining({
+                propertyName: expect.arrayContaining([
+                  "Only 'sideEffects' are allowed to have 'shouldUpdate' as 'false'",
+                ]),
+              })
+            );
+          }
         });
 
-        it("should allow onChange", () => {
+        it("should reject shouldUpdate & readonly(true) & no shouldInit", () => {
+          const toFail = fx({
+            propertyName: {
+              default: "",
+              readonly: true,
+              shouldUpdate: () => {},
+            },
+          });
+
+          expectFailure(toFail);
+
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toEqual(
+              expect.objectContaining({
+                propertyName: expect.arrayContaining([
+                  "Cannot block the update of 'readonly' properties that do not have initialization('shouldInit') blocked. Either add 'shouldInit' or use readonly: 'lax'",
+                ]),
+              })
+            );
+          }
+        });
+      });
+    });
+
+    describe("sideEffect", () => {
+      describe("valid", () => {
+        it("should allow sanitizer", () => {
           const toPass = fx({
-            propertyName: { sideEffect: true, onChange: validator, validator },
+            dependentProp: {
+              default: "",
+              dependent: true,
+              dependsOn: "propertyName",
+              resolver: () => "",
+            },
+            propertyName: { sideEffect: true, sanitizer: () => "", validator },
           });
 
           expectNoFailure(toPass);
@@ -2026,9 +3015,14 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
         it("should allow onFailure", () => {
           const toPass = fx({
+            dependentProp: {
+              default: "",
+              dependent: true,
+              dependsOn: "propertyName",
+              resolver: () => "",
+            },
             propertyName: {
               sideEffect: true,
-              onChange: validator,
               onFailure: validator,
               validator,
             },
@@ -2041,11 +3035,15 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
         it("should allow requiredBy + requiredError", () => {
           const toPass = fx({
+            dependentProp: {
+              default: "",
+              dependent: true,
+              dependsOn: "propertyName",
+              resolver: () => "",
+            },
             propertyName: {
               sideEffect: true,
-              onChange: validator,
               required: () => true,
-              requiredError: () => "",
               validator,
             },
           });
@@ -2055,32 +3053,18 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           toPass();
         });
 
-        it("should allow onChange + shouldInit(false) + validator", () => {
-          const toPass = fx({
-            propertyName: {
-              sideEffect: true,
-              shouldInit: false,
-              onChange: validator,
-              validator,
-            },
-          });
+        it("should allow shouldInit(false|()=>boolean) + validator", () => {
+          const values = [false, () => false, () => true];
 
-          expectNoFailure(toPass);
-
-          toPass();
-        });
-
-        it("should allow onChange + onSuccess + validator", () => {
-          const values = [[], () => ({})];
-
-          for (const onSuccess of values) {
+          for (const shouldInit of values) {
             const toPass = fx({
-              propertyName: {
-                sideEffect: true,
-                onChange: validator,
-                onSuccess,
-                validator,
+              dependentProp: {
+                default: "",
+                dependent: true,
+                dependsOn: "propertyName",
+                resolver: () => "",
               },
+              propertyName: { sideEffect: true, shouldInit, validator },
             });
 
             expectNoFailure(toPass);
@@ -2089,206 +3073,364 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           }
         });
 
-        describe("onSuccess", () => {
-          it("should no trigger onSuccess listeners of sideEffects when not provided during cloning", async () => {
-            const { handleSuccess } = await User.clone({
-              name: "Peter",
-              dependentSideNoInit: "",
-              dependentSideInit: false,
-            });
+        it("should allow onSuccess + validator", () => {
+          const values = [[], () => ({})];
 
-            await handleSuccess();
-
-            expect(successMap).toEqual({
-              sideInit: { hasChanged: false, newValue: undefined },
-              sideNoInit: { hasChanged: false, newValue: undefined },
-            });
-          });
-
-          it("should no trigger onSuccess listeners of sideEffects when not provided at creation", async () => {
-            const { handleSuccess } = await User.create({
-              name: "Peter",
-              dependentSideNoInit: "",
-              dependentSideInit: false,
-            });
-
-            await handleSuccess();
-
-            expect(successMap).toEqual({
-              sideInit: { hasChanged: false, newValue: undefined },
-              sideNoInit: { hasChanged: false, newValue: undefined },
-            });
-          });
-
-          it("should no trigger onSuccess listeners of sideEffects when not provided during updates", async () => {
-            const { handleSuccess } = await User.update(
-              {
-                name: "Peter",
-                dependentSideNoInit: "",
-                dependentSideInit: false,
+          for (const onSuccess of values) {
+            const toPass = fx({
+              dependentProp: {
+                default: "",
+                dependent: true,
+                dependsOn: "propertyName",
+                resolver: () => "",
               },
-              { name: "John" }
-            );
-
-            await handleSuccess();
-
-            expect(successMap).toEqual({
-              sideInit: { hasChanged: false, newValue: undefined },
-              sideNoInit: { hasChanged: false, newValue: undefined },
-            });
-          });
-
-          it("should respect onSuccess of sideInits & sideNoInit during cloning", async () => {
-            const sideInit = false;
-            const { handleSuccess } = await User.clone({
-              sideInit,
-              sideNoInit: true,
-              name: "Peter",
-              dependentSideNoInit: "",
-              dependentSideInit: false,
+              propertyName: { sideEffect: true, onSuccess, validator },
             });
 
-            await handleSuccess();
+            expectNoFailure(toPass);
 
-            expect(successMap).toEqual({
-              sideInit: { hasChanged: true, newValue: sideInit },
-              sideNoInit: { hasChanged: false, newValue: undefined },
-            });
-          });
-
-          it("should respect onSuccess of sideInits & sideNoInit at creation", async () => {
-            const sideInit = false;
-            const { handleSuccess } = await User.create({
-              sideInit,
-              sideNoInit: true,
-              name: "Peter",
-            });
-
-            await handleSuccess();
-
-            expect(successMap).toEqual({
-              sideInit: { hasChanged: true, newValue: sideInit },
-              sideNoInit: { hasChanged: false, newValue: undefined },
-            });
-          });
-
-          it("should respect onSuccess of sideInits & sideNoInit during updates", async () => {
-            const sideInit = false,
-              sideNoInit = true;
-            const { handleSuccess } = await User.update(
-              {
-                dependentSideNoInit: "",
-                dependentSideInit: false,
-              },
-              { sideInit, sideNoInit, name: "Peter" }
-            );
-
-            await handleSuccess();
-
-            expect(successMap).toEqual({
-              sideInit: { hasChanged: true, newValue: sideInit },
-              sideNoInit: { hasChanged: true, newValue: sideNoInit },
-            });
-          });
+            toPass();
+          }
         });
 
-        describe("RequiredSideEffect", () => {
-          let RequiredSideEffect: any;
+        describe("behaviour", () => {
+          let onSuccessValues: any = {};
+
+          let onSuccessStats: any = {};
+
+          let sanitizedValues: any = {};
+
+          let User: any;
 
           beforeAll(() => {
-            RequiredSideEffect = new Schema({
-              dependent: { default: "", dependent: true },
-              laxProp: { default: "" },
-              sideEffect: {
-                sideEffect: true,
-                onChange,
-                required: ({ sideEffect, dependent }: any) => {
-                  return dependent === "" && sideEffect === undefined;
+            User = new Schema(
+              {
+                dependentSideInit: {
+                  default: "",
+                  dependent: true,
+                  dependsOn: ["sideInit", "sideEffectWithSanitizer"],
+                  resolver({ sideInit, sideEffectWithSanitizer }: any) {
+                    return sideInit && sideEffectWithSanitizer ? "both" : "one";
+                  },
+                  onSuccess: onSuccess("dependentSideInit"),
                 },
-                requiredError: () => "SideEffect is required",
-                validator,
+                dependentSideNoInit: {
+                  default: "",
+                  dependent: true,
+                  dependsOn: ["sideNoInit", "sideEffectWithSanitizerNoInit"],
+                  resolver: () => "changed",
+                  onSuccess: onSuccess("dependentSideNoInit"),
+                },
+                name: { default: "" },
+                sideInit: {
+                  sideEffect: true,
+                  onSuccess: onSuccess("sideInit"),
+                  validator: validateBoolean,
+                },
+                sideNoInit: {
+                  sideEffect: true,
+                  shouldInit: false,
+                  onSuccess: [
+                    onSuccess("sideNoInit"),
+                    incrementOnSuccessStats("sideNoInit"),
+                  ],
+                  validator: validateBoolean,
+                },
+                sideEffectWithSanitizer: {
+                  sideEffect: true,
+                  onSuccess: [
+                    onSuccess("sideEffectWithSanitizer"),
+                    incrementOnSuccessStats("sideEffectWithSanitizer"),
+                    incrementOnSuccessStats("sideEffectWithSanitizer"),
+                  ],
+                  sanitizer: sanitizerOf(
+                    "sideEffectWithSanitizer",
+                    "sanitized"
+                  ),
+                  validator: validateBoolean,
+                },
+                sideEffectWithSanitizerNoInit: {
+                  sideEffect: true,
+                  shouldInit: false,
+                  onSuccess: [
+                    onSuccess("sideEffectWithSanitizerNoInit"),
+                    incrementOnSuccessStats("sideEffectWithSanitizerNoInit"),
+                  ],
+                  sanitizer: sanitizerOf(
+                    "sideEffectWithSanitizerNoInit",
+                    "sanitized no init"
+                  ),
+                  validator: validateBoolean,
+                },
               },
-            }).getModel();
+              { errors: "throw" }
+            ).getModel();
 
-            function onChange({ sideEffect }: any) {
-              return { dependent: sideEffect };
+            function sanitizerOf(prop: string, value: any) {
+              return () => {
+                // to make sure sanitizer is invoked
+                sanitizedValues[prop] = value;
+
+                return value;
+              };
+            }
+
+            function incrementOnSuccessStats(prop: string) {
+              return () => {
+                onSuccessStats[prop] = (onSuccessStats[prop] ?? 0) + 1;
+              };
+            }
+
+            function onSuccess(prop: string) {
+              return (ctx: any) => {
+                onSuccessValues[prop] = ctx[prop];
+                incrementOnSuccessStats(prop)();
+              };
+            }
+
+            function validateBoolean(value: any) {
+              if (![false, true].includes(value))
+                return { valid: false, reason: `${value} is not a boolean` };
+              return { valid: true };
             }
           });
 
-          // creation
-          it("should create normally", async () => {
-            const { data } = await RequiredSideEffect.create({
-              sideEffect: true,
-              laxProp: "laxProp",
+          beforeEach(() => {
+            onSuccessStats = {};
+            onSuccessValues = {};
+            sanitizedValues = {};
+          });
+
+          describe("creation", () => {
+            it("should not sanitize sideEffects nor resolve their dependencies if not provided", async () => {
+              const { data } = await User.create({
+                name: "Peter",
+              });
+
+              expect(data).toEqual({
+                dependentSideInit: "",
+                dependentSideNoInit: "",
+                name: "Peter",
+              });
+
+              expect(sanitizedValues).toEqual({});
             });
 
-            expect(data).toEqual({ dependent: true, laxProp: "laxProp" });
-          });
+            it("should respect sanitizer at creation", async () => {
+              const { data } = await User.create({
+                name: "Peter",
+                sideEffectWithSanitizer: true,
+                sideEffectWithSanitizerNoInit: true,
+              });
 
-          // cloning
-          it("should clone normally", async () => {
-            const { data } = await RequiredSideEffect.clone({
-              sideEffect: "cloned",
-              dependent: true,
-              laxProp: "laxProp",
+              expect(data).toEqual({
+                dependentSideInit: "one",
+                dependentSideNoInit: "",
+                name: "Peter",
+              });
+
+              expect(sanitizedValues).toEqual({
+                sideEffectWithSanitizer: "sanitized",
+              });
             });
 
-            expect(data).toEqual({ dependent: "cloned", laxProp: "laxProp" });
-          });
+            it("should respect sanitizer at creation(cloning)", async () => {
+              const { data } = await User.clone({
+                dependentSideNoInit: "",
+                dependentSideInit: true,
+                name: "Peter",
+                sideEffectWithSanitizer: true,
+                sideEffectWithSanitizerNoInit: true,
+              });
 
-          it("should require during cloning", async () => {
-            const { data, error } = await RequiredSideEffect.clone({
-              dependent: "",
-              laxProp: "laxProp",
+              expect(data).toEqual({
+                dependentSideInit: "one",
+                dependentSideNoInit: "",
+                name: "Peter",
+              });
+
+              expect(sanitizedValues).toEqual({
+                sideEffectWithSanitizer: "sanitized",
+              });
             });
 
-            expect(data).toBe(undefined);
-            expect(error).toEqual(
-              expect.objectContaining({
-                message: "Validation Error",
-                payload: { sideEffect: ["SideEffect is required"] },
-                statusCode: 400,
-              })
-            );
+            it("should respect sideInits & sideNoInit at creation", async () => {
+              const { data: user, handleSuccess } = await User.create({
+                dependentSideNoInit: "",
+                dependentSideInit: true,
+                name: "Peter",
+
+                sideInit: true,
+                sideEffectWithSanitizer: true,
+                sideEffectWithSanitizerNoInit: true,
+              });
+
+              await handleSuccess();
+
+              expect(user).toEqual({
+                dependentSideInit: "both",
+                dependentSideNoInit: "",
+                name: "Peter",
+              });
+
+              expect(onSuccessStats).toEqual({
+                dependentSideInit: 1,
+                dependentSideNoInit: 1,
+                sideInit: 1,
+                sideEffectWithSanitizer: 3,
+              });
+
+              expect(onSuccessValues).toEqual({
+                dependentSideInit: "both",
+                dependentSideNoInit: "",
+                sideInit: true,
+                sideEffectWithSanitizer: "sanitized",
+              });
+
+              expect(sanitizedValues).toEqual({
+                sideEffectWithSanitizer: "sanitized",
+              });
+            });
+
+            it("should respect sideInits & sideNoInit at creation(cloning)", async () => {
+              const { data: user, handleSuccess } = await User.clone(
+                {
+                  dependentSideNoInit: "bignw ",
+                  dependentSideInit: "iehvhgwop",
+                  name: "Peter",
+                  sideInit: true,
+                  sideNoInit: true,
+                },
+                { reset: ["dependentSideInit", "dependentSideNoInit"] }
+              );
+
+              await handleSuccess();
+
+              expect(user).toEqual({
+                dependentSideInit: "one",
+                dependentSideNoInit: "",
+                name: "Peter",
+              });
+
+              expect(onSuccessStats).toEqual({
+                dependentSideInit: 1,
+                dependentSideNoInit: 1,
+                sideInit: 1,
+              });
+
+              expect(onSuccessValues).toEqual({
+                dependentSideInit: "one",
+                dependentSideNoInit: "",
+                sideInit: true,
+              });
+
+              expect(sanitizedValues).toEqual({});
+            });
           });
 
-          // updates
-          it("should update normally", async () => {
-            const { data } = await RequiredSideEffect.update(
-              {
-                dependent: true,
-                laxProp: "laxProp",
-              },
-              { sideEffect: "updated" }
-            );
+          describe("updating", () => {
+            it("should respect sanitizer of all side effects provided during updates", async () => {
+              const { data, handleSuccess } = await User.update(
+                { name: "Peter" },
+                {
+                  name: "John",
+                  sideEffectWithSanitizer: true,
+                  sideEffectWithSanitizerNoInit: true,
+                }
+              );
 
-            expect(data).toEqual({ dependent: "updated" });
-          });
+              await handleSuccess();
 
-          it("should require during updates", async () => {
-            const { data, error } = await RequiredSideEffect.update(
-              {
-                dependent: "",
-                laxProp: "laxProp",
-              },
-              { laxProp: 2 }
-            );
+              expect(data).toEqual({
+                name: "John",
+                dependentSideInit: "one",
+                dependentSideNoInit: "changed",
+              });
 
-            expect(data).toBe(undefined);
-            expect(error).toEqual(
-              expect.objectContaining({
-                message: "Validation Error",
-                payload: { sideEffect: ["SideEffect is required"] },
-                statusCode: 400,
-              })
-            );
+              expect(onSuccessStats).toEqual({
+                dependentSideInit: 1,
+                dependentSideNoInit: 1,
+                sideEffectWithSanitizer: 3,
+                sideEffectWithSanitizerNoInit: 2,
+              });
+
+              expect(onSuccessValues).toEqual({
+                dependentSideInit: "one",
+                dependentSideNoInit: "changed",
+                sideEffectWithSanitizer: "sanitized",
+                sideEffectWithSanitizerNoInit: "sanitized no init",
+              });
+
+              expect(sanitizedValues).toEqual({
+                sideEffectWithSanitizer: "sanitized",
+                sideEffectWithSanitizerNoInit: "sanitized no init",
+              });
+            });
           });
         });
       });
 
       describe("invalid", () => {
-        it("should reject sideEffect & no onChange listeners", () => {
-          const toFail = fx({ propertyName: { sideEffect: true, validator } });
+        it("should reject invalid sanitizer", () => {
+          const values = [-1, 1, true, false, undefined, null, [], {}];
+
+          for (const sanitizer of values) {
+            const toFail = fx({
+              propertyName: { sideEffect: true, sanitizer, validator },
+            });
+
+            expectFailure(toFail);
+
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err.payload).toEqual(
+                expect.objectContaining({
+                  propertyName: expect.arrayContaining([
+                    "'sanitizer' must be a function",
+                  ]),
+                })
+              );
+            }
+          }
+        });
+
+        it("should reject 'sanitizer' rule on non-side effects", () => {
+          const values = [
+            -1,
+            1,
+            true,
+            false,
+            undefined,
+            null,
+            [],
+            {},
+            () => {},
+          ];
+
+          for (const sanitizer of values) {
+            const toFail = fx({ propertyName: { default: "", sanitizer } });
+
+            expectFailure(toFail);
+
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err.payload).toEqual(
+                expect.objectContaining({
+                  propertyName: expect.arrayContaining([
+                    "'sanitizer' is only valid on side effects",
+                  ]),
+                })
+              );
+            }
+          }
+        });
+
+        it("should reject sideEffect & no dependent property ", () => {
+          const toFail = fx({
+            propertyName: { sideEffect: true, validator },
+          });
 
           expectFailure(toFail);
 
@@ -2297,9 +3439,9 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           } catch (err: any) {
             expect(err.payload).toEqual(
               expect.objectContaining({
-                propertyName: expect.arrayContaining([
-                  "SideEffects must have at least one onChange listener",
-                ]),
+                propertyName: [
+                  "A side effect must have atleast one property that depends on it",
+                ],
               })
             );
           }
@@ -2307,7 +3449,13 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
         it("should reject sideEffect & no validator ", () => {
           const toFail = fx({
-            propertyName: { sideEffect: true, onChange: validator },
+            dependentProp: {
+              default: "",
+              dependent: true,
+              dependsOn: "propertyName",
+              resolver: () => "",
+            },
+            propertyName: { sideEffect: true },
           });
 
           expectFailure(toFail);
@@ -2323,43 +3471,18 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           }
         });
 
-        it("should reject shouldInit(!false)", () => {
-          const values = [true, null, [], {}, "", 25];
-
-          for (const shouldInit of values) {
-            const toFail = fx({
-              propertyName: {
-                sideEffect: true,
-                shouldInit,
-                onChange: validator,
-                validator,
-              },
-            });
-
-            expectFailure(toFail);
-
-            try {
-              toFail();
-            } catch (err: any) {
-              expect(err.payload).toEqual(
-                expect.objectContaining({
-                  propertyName: expect.arrayContaining([
-                    "To block the initialization of side effects shouldInit must be 'false'",
-                  ]),
-                })
-              );
-            }
-          }
-        });
-
         it("should reject requiredBy + shouldInit", () => {
           const toFail = fx({
+            dependentProp: {
+              default: "",
+              dependent: true,
+              dependsOn: "propertyName",
+              resolver: () => "",
+            },
             propertyName: {
               sideEffect: true,
               shouldInit: false,
-              onChange: validator,
               required: () => true,
-              requiredError: () => "",
               validator,
             },
           });
@@ -2381,9 +3504,14 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
         it("should reject required(true)", () => {
           const toFail = fx({
+            dependentProp: {
+              default: "",
+              dependent: true,
+              dependsOn: "propertyName",
+              resolver: () => "",
+            },
             propertyName: {
               sideEffect: true,
-              onChange: validator,
               required: true,
               validator,
             },
@@ -2409,19 +3537,24 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             "constant",
             "default",
             "dependent",
-            "onCreate",
+            "dependsOn",
             "onDelete",
-            "onUpdate",
             "readonly",
+            "resolver",
             "value",
           ];
 
           for (const rule of values) {
             const toFail = fx({
+              dependentProp: {
+                default: "",
+                dependent: true,
+                dependsOn: "propertyName",
+                resolver: () => "",
+              },
               propertyName: {
                 sideEffect: true,
                 [rule]: true,
-                onChange: validator,
                 validator,
               },
             });
@@ -2431,13 +3564,11 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             try {
               toFail();
             } catch (err: any) {
-              expect(err.payload).toEqual(
-                expect.objectContaining({
-                  propertyName: expect.arrayContaining([
-                    "SideEffects properties can only have (sideEffect, onChange, onFailure, onSuccess, required, requiredError, shouldInit, validator) as rules",
-                  ]),
-                })
-              );
+              expect(err.payload).toMatchObject({
+                propertyName: expect.arrayContaining([
+                  "SideEffects properties can only have (sanitizer, sideEffect, onFailure, onSuccess, required, shouldInit, shouldUpdate, validator) as rules",
+                ]),
+              });
             }
           }
         });
@@ -3016,6 +4147,205 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             expect(updates).toHaveProperty("u_At");
           });
         });
+
+        describe("timestamps(createdAt:c_At, updatedAt:false)", () => {
+          let Model: any, entity: any;
+
+          beforeAll(async () => {
+            Model = new Schema(validSchema, {
+              timestamps: { createdAt: "c_At", updatedAt: false },
+            }).getModel();
+
+            entity = (await Model.create(inputValue)).data;
+          });
+
+          it("should populate only c_At at creation", () => {
+            expect(entity).toMatchObject(inputValue);
+
+            expect(entity).not.toHaveProperty("createdAt");
+            expect(entity).not.toHaveProperty("updatedAt");
+            expect(Object.keys(entity).length).toBe(3);
+
+            expect(entity).toHaveProperty("c_At");
+          });
+
+          it("should populate only c_At during cloning", async () => {
+            const { data: clone } = await Model.clone(entity, {
+              reset: "propertyName2",
+            });
+
+            expect(clone).toMatchObject({
+              propertyName1: "value1",
+              propertyName2: "",
+            });
+
+            expect(clone).not.toHaveProperty("createdAt");
+            expect(clone).not.toHaveProperty("updatedAt");
+            expect(Object.keys(entity).length).toBe(3);
+
+            expect(clone).toHaveProperty("c_At");
+          });
+
+          it("should not populate u_At during updates", async () => {
+            const { data: updates } = await Model.update(entity, {
+              propertyName2: 20,
+            });
+
+            expect(updates).toMatchObject({ propertyName2: 20 });
+
+            expect(updates).not.toHaveProperty("createdAt");
+            expect(updates).not.toHaveProperty("updatedAt");
+            expect(Object.keys(updates).length).toBe(1);
+
+            expect(updates).not.toHaveProperty("c_At");
+          });
+        });
+
+        describe("timestamps(updatedAt:false)", () => {
+          let Model: any, entity: any;
+
+          beforeAll(async () => {
+            Model = new Schema(validSchema, {
+              timestamps: { updatedAt: false },
+            }).getModel();
+
+            entity = (await Model.create(inputValue)).data;
+          });
+
+          it("should populate only createdAt at creation", () => {
+            expect(entity).toMatchObject(inputValue);
+
+            expect(entity).toHaveProperty("createdAt");
+            expect(entity).not.toHaveProperty("updatedAt");
+            expect(Object.keys(entity).length).toBe(3);
+          });
+
+          it("should populate only createdAt during cloning", async () => {
+            const { data: clone } = await Model.clone(entity, {
+              reset: "propertyName2",
+            });
+
+            expect(clone).toMatchObject({
+              propertyName1: "value1",
+              propertyName2: "",
+            });
+
+            expect(clone).toHaveProperty("createdAt");
+            expect(clone).not.toHaveProperty("updatedAt");
+            expect(Object.keys(entity).length).toBe(3);
+          });
+
+          it("should not populate updatedAt during updates", async () => {
+            const { data: updates } = await Model.update(entity, {
+              propertyName2: 20,
+            });
+
+            expect(updates).toMatchObject({ propertyName2: 20 });
+
+            expect(updates).not.toHaveProperty("updatedAt");
+            expect(Object.keys(updates).length).toBe(1);
+          });
+        });
+
+        describe("timestamps(createdAt:false, updatedAt:u_At)", () => {
+          let Model: any, entity: any;
+
+          beforeAll(async () => {
+            Model = new Schema(validSchema, {
+              timestamps: { createdAt: false, updatedAt: "u_At" },
+            }).getModel();
+
+            entity = (await Model.create(inputValue)).data;
+          });
+
+          it("should populate only u_At at creation", () => {
+            expect(entity).toMatchObject(inputValue);
+
+            expect(entity).not.toHaveProperty("createdAt");
+            expect(entity).not.toHaveProperty("updatedAt");
+            expect(Object.keys(entity).length).toBe(3);
+
+            expect(entity).toHaveProperty("u_At");
+          });
+
+          it("should populate only u_At during cloning", async () => {
+            const { data: clone } = await Model.clone(entity, {
+              reset: "propertyName2",
+            });
+
+            expect(clone).toMatchObject({
+              propertyName1: "value1",
+              propertyName2: "",
+            });
+
+            expect(clone).not.toHaveProperty("createdAt");
+            expect(clone).not.toHaveProperty("updatedAt");
+            expect(Object.keys(entity).length).toBe(3);
+
+            expect(clone).toHaveProperty("u_At");
+          });
+
+          it("should populate only u_At during updates", async () => {
+            const { data: updates } = await Model.update(entity, {
+              propertyName2: 20,
+            });
+
+            expect(updates).toMatchObject({ propertyName2: 20 });
+
+            expect(updates).not.toHaveProperty("createdAt");
+            expect(updates).not.toHaveProperty("updatedAt");
+            expect(Object.keys(updates).length).toBe(2);
+
+            expect(updates).toHaveProperty("u_At");
+          });
+        });
+
+        describe("timestamps(createdAt:false)", () => {
+          let Model: any, entity: any;
+
+          beforeAll(async () => {
+            Model = new Schema(validSchema, {
+              timestamps: { createdAt: false },
+            }).getModel();
+
+            entity = (await Model.create(inputValue)).data;
+          });
+
+          it("should populate only updatedAt at creation", () => {
+            expect(entity).toMatchObject(inputValue);
+
+            expect(entity).not.toHaveProperty("createdAt");
+            expect(entity).toHaveProperty("updatedAt");
+            expect(Object.keys(entity).length).toBe(3);
+          });
+
+          it("should populate only updatedAt during cloning", async () => {
+            const { data: clone } = await Model.clone(entity, {
+              reset: "propertyName2",
+            });
+
+            expect(clone).toMatchObject({
+              propertyName1: "value1",
+              propertyName2: "",
+            });
+
+            expect(clone).not.toHaveProperty("createdAt");
+            expect(clone).toHaveProperty("updatedAt");
+            expect(Object.keys(entity).length).toBe(3);
+          });
+
+          it("should populate only updatedAt during updates", async () => {
+            const { data: updates } = await Model.update(entity, {
+              propertyName2: 20,
+            });
+
+            expect(updates).toMatchObject({ propertyName2: 20 });
+
+            expect(updates).not.toHaveProperty("createdAt");
+            expect(updates).toHaveProperty("updatedAt");
+            expect(Object.keys(updates).length).toBe(2);
+          });
+        });
       });
 
       describe("invalid", () => {
@@ -3086,7 +4416,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           }
         });
 
-        it("should reject custom name found on schema", () => {
+        it("should reject if custom timestamp names are the same", () => {
           const toFail = fx(validSchema, {
             timestamps: { createdAt: "c_At", updatedAt: "c_At" },
           });

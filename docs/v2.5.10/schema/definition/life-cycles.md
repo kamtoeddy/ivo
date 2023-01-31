@@ -68,7 +68,7 @@ As from `v2.5.0`, these listeners have to be triggered manually by invoking the 
 If the operation is unsuccessful, `handleSuccess` will be `undefined`
 
 ```js
-const { data, error, handleSuccess } = await UserModel.create(...userData);
+const { data, error, handleSuccess } = await UserModel.create(userData);
 
 await handleSuccess?.();
 ```

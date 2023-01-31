@@ -20,50 +20,75 @@ const { Schema } = require("clean-schema");
 import { Schema } from "clean-schema";
 ```
 
-# Defining an entity's schema
+# Defining a schema
 
-```js
-const { Schema, validate } = require("clean-schema");
+```ts
+import { Schema } from "clean-schema";
+import hash from "hashing-module-of-choice";
 
 const userSchema = new Schema(
   {
     firstName: {
       required: true,
-      onChange: onNameChange,
-      validator: validateName,
+      validator: validateString("invalid first name"),
     },
-    fullName: { default: "", dependent: true },
+    fullName: {
+      default: "",
+      dependent: true,
+      dependsOn: ["firstName", "lastName"],
+      resolver: generateFullName,
+    },
     isBlocked: { default: false, validator: validateBoolean },
-    id: { readonly: true, validator: validateId },
+    id: { constant: true, value: generateId },
     lastName: {
       required: true,
-      onChange: [onNameChange],
-      validator: validateName,
+      validator: validateString("invalid last name"),
     },
     lastSeen: { default: "", shouldInit: false },
-    password: { required: true, validator: validatePassword },
-    role: {
+    password: {
       required: true,
-      validator: (value) =>
-        validate.isStringOk(value, { enums: ["admin", "app-user"] }),
+      validator(value) {
+        let validated = String(value).trim();
+
+        const valid = validated.length >= 8;
+
+        if (!valid) return { valid, reason: "minimum characters should be 8" };
+
+        validated = hash(validated);
+
+        return { valid, validated };
+      },
+    },
+    role: {
+      readonly: true,
+      validator(value) {
+        const validated = String(value).trim();
+
+        const valid = ["admin", "user"].includes(validated);
+
+        if (!valid) return { valid, reason: "invalid user role" };
+
+        return { valid, validated };
+      },
     },
   },
   { timestamps: true }
 );
 
-function onNameChange(context) {
+function generateFullName(context) {
   const { firstName, lastName } = context;
 
-  return { fullName: `${firstName} ${lastName}` };
+  return `${firstName} ${lastName}`;
 }
 
+// get the model
 const UserModel = userSchema.getModel();
 ```
 
-# Creating an instance
+# Creating an entity
 
-```js
-const db = require("db-of-choice"); // use db of your choice
+```ts
+import userDb from "db-of-choice"; // use any db that supports the information you are modelling
 
 const {
   data: user,
@@ -77,7 +102,7 @@ const {
   lastSeen: new Date(),
   name: "John Doe",
   password: "au_34ibUv^T-adjInFjj",
-  role: "app-user",
+  role: "user",
 });
 
 console.log(user);
@@ -90,19 +115,19 @@ console.log(user);
 //   lastName: "Spader",
 //   lastSeen: "",
 //   password: "au_34ibUv^T-adjInFjj",
-//   role: "app-user",
+//   role: "user",
 //   updatedAt: new Date(),
 // };
 
-await db.insert(user);
+await userDb.insert(user);
 
 await handleSuccess?.();
 ```
 
-# Updating instances
+# Updating an entity
 
-```js
-const user = await db.query({ id: 1 });
+```ts
+const user = await userDb.query({ id: 1 });
 
 if (!user) throw new Error("User not found");
 
@@ -118,20 +143,20 @@ const { data, error, handleSuccess } = await UserModel.update(user, {
 // id is ignored because it is readonly
 console.log(data); // { lastSeen: new Date(), updatedAt: new Date() }
 
-await db.update({ id: 1 }, data);
+await userDb.update({ id: 1 }, data);
 
 await handleSuccess?.();
 ```
 
 ## Docs
 
-- [Defining a schema](./docs/v2.5.12/schema/definition/index.md#defining-a-schema)
-  - [constant properties](./docs/v1.5.0/schema/definition/constants.md#constant-properties-v150)
-  - [default values](./docs/v1.4.10/schema/definition/defaults.md#default-values)
-  - [dependent properties](./docs/v1.4.10/schema/definition/dependents.md#dependent-properties)
-  - [readonly properties](./docs/v1.4.10/schema/definition/readonly.md#readonly-properties)
-  - [required properties](./docs/v1.5.0/schema/definition/required.md#required-properties)
-  - [side effects](./docs/v2.1.0/schema/definition/side-effects.md#side-effect-properties)
+- [Defining a schema](./docs/v3.0.0/schema/definition/index.md#defining-a-schema)
+  - [constant properties](./docs/v3.0.0/schema/definition/constants.md#constant-properties)
+  - [default values](./docs/v3.0.0/schema/definition/defaults.md#default-values)
+  - [dependent properties](./docs/v3.0.0/schema/definition/dependents.md#dependent-properties)
+  - [readonly properties](./docs/v3.0.0/schema/definition/readonly.md#readonly-properties)
+  - [required properties](./docs/v3.0.0/schema/definition/required.md#required-properties)
+  - [side effects](./docs/v3.0.0/schema/definition/side-effects.md#side-effect-properties)
   - [validators](./docs/v2.6.0/validate/index.md#validators)
     - [isArrayOk](./docs/v2.6.0/validate/isArrayOk.md)
     - [isBooleanOk](./docs/v2.6.0/validate/isBooleanOk.md)
@@ -139,17 +164,16 @@ await handleSuccess?.();
     - [isEmailOk](./docs/v2.6.0/validate/isEmailOk.md)
     - [isNumberOk](./docs/v2.6.0/validate/isNumberOk.md)
     - [isStringOk](./docs/v2.6.0/validate/isStringOk.md)
-- [Inheritance](./docs/v1.4.6/schema/inheritance.md#schema-inheritance)
-- [The Operation Context](./docs/v2.5.0/schema/definition/life-cycles.md#the-operation-context)
-- [Life Cycles & Listeners](./docs/v2.5.10/schema/definition/life-cycles.md#life-cycle-listeners)
-  - [onChange](./docs/v2.5.10/schema/definition/life-cycles.md#onchange)
-  - [onCreate](./docs/v2.5.10/schema/definition/life-cycles.md#oncreate)
-  - [onDelete](./docs/v2.5.10/schema/definition/life-cycles.md#ondelete)
-  - [onFailure](./docs/v2.5.10/schema/definition/life-cycles.md#onfailure)
-  - [onSuccess](./docs/v2.5.10/schema/definition/life-cycles.md#onsuccess)
-  - [onUpdate](./docs/v2.5.10/schema/definition/life-cycles.md#onupdate)
-- [Options](./docs/v2.0.0/schema/definition/index.md#options)
+- [Inheritance](./docs/v3.0.0/schema/definition/inheritance.md#schema-inheritance)
+- [The Operation Context](./docs/v3.0.0/schema/definition/life-cycles.md#the-operation-context)
+- [Life Cycles & Listeners](./docs/v3.0.0/schema/definition/life-cycles.md#life-cycle-listeners)
 
-- [Changelog](./docs/v2.6.0/CHANGELOG.md#changelog)
+  - [onDelete](./docs/v3.0.0/schema/definition/life-cycles.md#ondelete)
+  - [onFailure](./docs/v3.0.0/schema/definition/life-cycles.md#onfailure)
+  - [onSuccess](./docs/v3.0.0/schema/definition/life-cycles.md#onsuccess)
+
+- [Options](./docs/v3.0.0/schema/definition/index.md#options)
+
+- [Changelog](./docs/CHANGELOG.md#changelog)
 
 ## Happy coding! 😎

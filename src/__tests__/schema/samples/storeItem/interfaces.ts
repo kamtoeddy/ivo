@@ -9,17 +9,18 @@ export interface IOtherMeasureUnit {
 }
 
 export interface IStoreItem {
+  _dependentReadOnly?: number;
   _laxProp: string;
+  _quantity?: number;
   _readOnlyLax1: string;
   _readOnlyLax2: string;
   _readOnlyNoInit?: any;
-  _dependentReadOnly?: number;
   _sideEffectForDependentReadOnly?: any;
   id: string;
   name: string;
   price: number;
   quantityChangeCounter?: number;
-  quantities?: IOtherQuantity[];
+  quantities?: IOtherQuantity[] | number;
   quantity?: number;
   measureUnit: string;
   otherMeasureUnits?: IOtherMeasureUnit[];

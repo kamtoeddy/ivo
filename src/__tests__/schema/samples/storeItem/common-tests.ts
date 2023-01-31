@@ -12,7 +12,7 @@ export const commonTestData = {
     { coefficient: 5, name: "tray" },
     { coefficient: 12, name: "crate" },
   ],
-  quantity: 100,
+  _quantity: 100,
 };
 
 export const CommonInheritanceTest = (
@@ -174,7 +174,7 @@ export const CommonInheritanceTest = (
       it("should update the relevant properties", async () => {
         const update = await Model.update(item, {
           name: "Castel",
-          quantity: 10,
+          _quantity: 10,
         });
 
         expect(update.data).toMatchObject({
@@ -214,7 +214,7 @@ export const CommonInheritanceTest = (
       it("should update the relevant properties & on side effects", async () => {
         const update = await Model.update(item, {
           name: "Castel",
-          quantity: 10,
+          _quantity: 10,
           quantities: [
             { quantity: 1, name: "crate24" },
             { name: "crate", quantity: 2 },
@@ -224,7 +224,7 @@ export const CommonInheritanceTest = (
 
         expect(update.data).toMatchObject({
           name: "Castel",
-          quantityChangeCounter: 3,
+          quantityChangeCounter: 2,
           quantity: 83,
         });
       });

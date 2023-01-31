@@ -88,10 +88,6 @@ export const validateQuantities = async (value: any, ctx: IStoreItem) => {
   });
 };
 
-export const onQuantityChange = ({ quantityChangeCounter }: IStoreItem) => {
-  return { quantityChangeCounter: quantityChangeCounter! + 1 };
-};
-
 const getMeasureUnit = (
   otherMeasureUnits: IOtherMeasureUnit[],
   name: string
@@ -99,18 +95,15 @@ const getMeasureUnit = (
   return findBy(otherMeasureUnits, { name });
 };
 
-export const onQuantitiesChange = ({
-  quantity,
+export const sanitizeQuantities = ({
   quantities,
   otherMeasureUnits,
 }: IStoreItem) => {
-  const _quantity = quantities!.reduce((prev, { name, quantity }) => {
+  return (quantities as IOtherQuantity[]).reduce((prev, { name, quantity }) => {
     const mu = getMeasureUnit(otherMeasureUnits!, name);
 
     if (!mu) return prev;
 
     return (prev += quantity * mu.coefficient);
-  }, quantity!);
-
-  return { quantity: _quantity };
+  }, 0);
 };

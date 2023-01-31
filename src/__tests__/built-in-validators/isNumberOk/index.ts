@@ -7,11 +7,12 @@ export const isNumberOkTest = ({ isNumberOk }: { isNumberOk: Function }) => {
       const truthyValues = [-45, 0, 0.23, 1, 100];
 
       for (let value of truthyValues) {
-        expect(isNumberOk(value)).toMatchObject({
-          reasons: [],
-          valid: true,
-          validated: value,
-        });
+        const res = isNumberOk(value);
+
+        expect(res).toMatchObject({ valid: true, validated: value });
+
+        expect(res.reason).toBeUndefined();
+        expect(res.reasons).toBeUndefined();
       }
 
       // fasly values that will be parsed
@@ -24,22 +25,29 @@ export const isNumberOkTest = ({ isNumberOk }: { isNumberOk: Function }) => {
       };
 
       for (let value of falsyButParsed) {
-        expect(isNumberOk(value)).toMatchObject({
-          reasons: [],
+        const res = isNumberOk(value);
+
+        expect(res).toMatchObject({
           valid: true,
           validated: parsedByValueMap[value],
         });
+
+        expect(res.reason).toBeUndefined();
+        expect(res.reasons).toBeUndefined();
       }
 
       // falsy values
       const falsyValues = [false, true, "hey", NaN, null, undefined, [], {}];
 
       for (let value of falsyValues) {
-        expect(isNumberOk(value)).toMatchObject({
+        const res = isNumberOk(value);
+
+        expect(res).toMatchObject({
           reasons: ["Expected a number"],
           valid: false,
-          validated: undefined,
         });
+
+        expect(res.validated).toBeUndefined();
       }
     });
 
@@ -86,11 +94,12 @@ export const isNumberOkTest = ({ isNumberOk }: { isNumberOk: Function }) => {
       ];
 
       pairsToPass.forEach(([num, range]) => {
-        expect(isNumberOk(num, { range })).toMatchObject({
-          reasons: [],
-          valid: true,
-          validated: num,
-        });
+        const res = isNumberOk(num, { range });
+
+        expect(res).toMatchObject({ valid: true, validated: num });
+
+        expect(res.reason).toBeUndefined();
+        expect(res.reasons).toBeUndefined();
       });
 
       // falsy values
@@ -112,11 +121,14 @@ export const isNumberOkTest = ({ isNumberOk }: { isNumberOk: Function }) => {
       ];
 
       pairsToFail.forEach(([num, range, error]) => {
-        expect(isNumberOk(num, { range })).toMatchObject({
+        const res = isNumberOk(num, { range });
+
+        expect(res).toMatchObject({
           reasons: [error],
           valid: false,
-          validated: undefined,
         });
+
+        expect(res.validated).toBeUndefined();
       });
     });
   });

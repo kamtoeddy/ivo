@@ -1,4 +1,4 @@
-import { belongsTo, toArray } from "../utils/functions";
+import { belongsTo, sort, toArray } from "../utils/functions";
 import { ObjectType } from "../utils/interfaces";
 import { isEqual } from "../utils/isEqual";
 import {
@@ -7,6 +7,7 @@ import {
   PropDefinitionRule,
   Schema as ns,
   StringKey,
+  Validator,
 } from "./interfaces";
 import { OptionsTool } from "./utils/options-tool";
 import { ErrorTool } from "./utils/schema-error";
@@ -22,73 +23,65 @@ const allRules = [
   "constant",
   "default",
   "dependent",
-  "onChange",
-  "onCreate",
+  "dependsOn",
   "onDelete",
   "onFailure",
   "onSuccess",
-  "onUpdate",
   "readonly",
+  "resolver",
   "required",
-  "requiredError",
+  "sanitizer",
   "sideEffect",
   "shouldInit",
+  "shouldUpdate",
   "validator",
   "value",
 ] as PropDefinitionRule[];
 
 const allowedOptions: OptionsKey[] = ["errors", "timestamps"];
-const constantRules = [
-  "constant",
-  "onCreate",
-  "onDelete",
-  "onSuccess",
-  "value",
-];
+const constantRules = ["constant", "onDelete", "onSuccess", "value"];
 const sideEffectRules = [
+  "sanitizer",
   "sideEffect",
-  "onChange",
   "onFailure",
   "onSuccess",
   "required",
-  "requiredError",
   "shouldInit",
+  "shouldUpdate",
   "validator",
 ];
 
 const lifeCycleRules: LifeCycles.Rule[] = [
-  "onChange",
-  "onCreate",
   "onDelete",
   "onFailure",
   "onSuccess",
-  "onUpdate",
 ];
 
-export abstract class SchemaCore<T extends ObjectType> {
+export abstract class SchemaCore<I extends ObjectType> {
   protected _options: ns.Options;
-  protected _propDefinitions = {} as ns.Definitions<T>;
+  protected _propDefinitions = {} as ns.Definitions<I>;
 
-  protected context: T = {} as T;
-  protected finalContext: T = {} as T;
-  protected defaults: Partial<T> = {};
-  protected values: Partial<T> = {};
+  protected context: I = {} as I;
+  protected finalContext: I = {} as I;
+  protected defaults: Partial<I> = {};
+  protected values: Partial<I> = {};
+  protected dependencyMap: ns.DependencyMap<I> = {};
 
   // props
-  protected constants: StringKey<T>[] = [];
-  protected dependents: StringKey<T>[] = [];
-  protected laxProps: StringKey<T>[] = [];
-  protected props: StringKey<T>[] = [];
-  protected propsRequiredBy: StringKey<T>[] = [];
-  protected readonlyProps: StringKey<T>[] = [];
-  protected requiredProps: StringKey<T>[] = [];
-  protected sideEffects: StringKey<T>[] = [];
+  protected constants: StringKey<I>[] = [];
+  protected dependents: StringKey<I>[] = [];
+  protected laxProps: StringKey<I>[] = [];
+  protected props: StringKey<I>[] = [];
+  protected propsRequiredBy: StringKey<I>[] = [];
+  protected readonlyProps: StringKey<I>[] = [];
+  protected requiredProps: StringKey<I>[] = [];
+  protected sideEffects: StringKey<I>[] = [];
 
   // helpers
   protected optionsTool: OptionsTool;
 
   constructor(
-    propDefinitions: ns.Definitions<T>,
+    propDefinitions: ns.Definitions<I>,
     options: ns.Options = defaultOptions
   ) {
     this._propDefinitions = propDefinitions;
@@ -100,15 +93,15 @@ export abstract class SchemaCore<T extends ObjectType> {
     this.optionsTool = new OptionsTool(this._makeTimestamps());
   }
 
-  // context methods
+  // < context methods >
   protected _getContext = () => Object.freeze(Object.assign({}, this.context));
 
   protected _getFinalContext = () =>
     Object.freeze(Object.assign({}, this.finalContext));
 
   protected _initContexts = () => {
-    this.context = { ...this.values } as T;
-    this.finalContext = {} as T;
+    this.context = { ...this.values } as I;
+    this.finalContext = {} as I;
 
     const contstants = this._getKeysAsProps(this.context).filter(
       this._isConstant
@@ -116,23 +109,85 @@ export abstract class SchemaCore<T extends ObjectType> {
 
     if (contstants.length)
       contstants.forEach((prop) =>
-        this._updateFinalContext({ [prop]: this.context[prop] } as T)
+        this._updateFinalContext({ [prop]: this.context[prop] } as I)
       );
   };
 
-  protected _updateContext = (updates: Partial<T>) => {
+  protected _updateContext = (updates: Partial<I>) => {
     this.context = { ...this.context, ...updates };
   };
 
-  protected _updateFinalContext = (updates: Partial<T>) => {
+  protected _updateFinalContext = (updates: Partial<I>) => {
     this.finalContext = { ...this.finalContext, ...updates };
   };
+  // < context methods />
+
+  // < dependency map utils >
+  private _addDependencies = (
+    prop: StringKey<I>,
+    dependsOn: StringKey<I> | StringKey<I>[]
+  ) => {
+    const _dependsOn = toArray(dependsOn) as StringKey<I>[];
+
+    for (let _prop of _dependsOn)
+      if (this.dependencyMap[_prop]) this.dependencyMap[_prop]?.push(prop);
+      else this.dependencyMap[_prop] = [prop];
+  };
+
+  protected _getDependencies = (prop: StringKey<I>) =>
+    this.dependencyMap[prop] ?? [];
+
+  private _getCircularDependenciesOf = (a: StringKey<I>) => {
+    let circularDependencies: string[] = [];
+
+    const _dependsOn = toArray<StringKey<I>>(
+      this._getDefinition(a)?.dependsOn ?? []
+    );
+
+    for (const _prop of _dependsOn)
+      circularDependencies = [
+        ...circularDependencies,
+        ...this._getCircularDependenciesOf_a_in_b(a, _prop),
+      ];
+
+    return sort(Array.from(new Set(circularDependencies)));
+  };
+
+  private _getCircularDependenciesOf_a_in_b = (
+    a: StringKey<I>,
+    b: StringKey<I>,
+    visitedNodes: StringKey<I>[] = []
+  ) => {
+    let circularDependencies: string[] = [];
+
+    if (!this._isDependentProp(b) || visitedNodes.includes(b)) return [];
+
+    visitedNodes.push(b);
+
+    const _dependsOn = toArray<StringKey<I>>(
+      this._getDefinition(b)?.dependsOn ?? []
+    );
+
+    for (const _prop of _dependsOn) {
+      if (_prop == a) circularDependencies.push(b);
+      else if (this._isDependentProp(_prop))
+        circularDependencies = [
+          ...circularDependencies,
+          ...this._getCircularDependenciesOf_a_in_b(a, _prop, visitedNodes),
+        ];
+    }
+
+    return sort(Array.from(new Set(circularDependencies)));
+  };
+  // < dependency map utils />
 
   protected _canInit = (prop: string) => {
     if (this._isDependentProp(prop)) return false;
     if (this._isRequired(prop)) return true;
 
-    const { readonly, shouldInit } = this._getDefinition(prop);
+    const { readonly } = this._getDefinition(prop);
+
+    const shouldInit = this._getValueBy(prop, "shouldInit", "creating");
 
     return (
       readonly === true &&
@@ -190,6 +245,49 @@ export abstract class SchemaCore<T extends ObjectType> {
       if (!isDefOk.valid) error.add(prop, isDefOk.reasons!);
     }
 
+    // make sure every side effect has atleast one dependency
+    for (let prop of this.sideEffects) {
+      const dependencies = this._getDependencies(prop);
+
+      if (!dependencies.length)
+        error.add(
+          prop,
+          "A side effect must have atleast one property that depends on it"
+        );
+    }
+
+    // make sure every side effect has atleast one dependency
+    for (let prop of this.dependents) {
+      const { dependsOn } = this._getDefinition(prop);
+
+      const _dependsOn = toArray<StringKey<I>>(dependsOn ?? []);
+
+      if (_dependsOn.includes(prop))
+        error.add(prop, "A property cannot depend on itself");
+
+      const dependsOnConstantProp = _dependsOn.some(this._isConstant);
+
+      if (dependsOnConstantProp)
+        error.add(prop, "A property cannot depend on a constant property");
+
+      // check against circular dependencies
+      const circularRelationShips = this._getCircularDependenciesOf(prop);
+
+      for (const _prop of circularRelationShips)
+        error.add(prop, `Circular dependency identified with '${_prop}'`);
+
+      // check against dependencies on invalid properties
+      const invalidProps = _dependsOn.filter(
+        (p) => !(this._isProp(p) || this._isSideEffect(p))
+      );
+
+      for (const _prop of invalidProps)
+        error.add(
+          prop,
+          `Cannot establish dependency with '${_prop}' as it is neither a property nor a side effect of your model`
+        );
+    }
+
     if (error.isPayloadLoaded) error.throw();
   };
 
@@ -206,20 +304,50 @@ export abstract class SchemaCore<T extends ObjectType> {
   };
 
   protected _getConstantValue = async (prop: string) =>
-    this._getValueBy(prop, "value");
+    this._getValueBy(prop, "value", "creating");
 
-  protected _getValueBy = (prop: string, rule: PropDefinitionRule) => {
-    const _default = this._getDefinition(prop)?.[rule];
+  protected _getValueBy = (
+    prop: string,
+    rule: PropDefinitionRule,
+    lifeCycle: LifeCycles.LifeCycle
+  ) => {
+    const value = this._getDefinition(prop)?.[rule];
 
-    return this._isFunction(_default) ? _default(this._getContext()) : _default;
+    return this._isFunction(value)
+      ? value(this._getContext(), lifeCycle)
+      : value;
   };
 
-  protected _getDetailedListeners = (
+  protected _getRequiredState = (
+    prop: string,
+    lifeCycle: LifeCycles.LifeCycle
+  ): [boolean, string] => {
+    const { required } = this._getDefinition(prop);
+
+    if (!required) return [false, ""];
+
+    const fallbackMessage = `'${prop}' is required!`;
+
+    if (!this._isFunction(required)) return [required, fallbackMessage];
+
+    const results = required(this._getContext(), lifeCycle);
+
+    if (typeof results == "boolean")
+      return [results, results ? fallbackMessage : ""];
+
+    if (!results[1]) results[1] = fallbackMessage;
+
+    return results;
+  };
+
+  protected _getDetailedListeners = <T>(
     prop: string,
     lifeCycle: LifeCycles.Rule,
     valid = true
   ) => {
-    const listeners = toArray(this._getDefinition(prop)?.[lifeCycle]);
+    const listeners = toArray<LifeCycles.Listener<T>>(
+      this._getDefinition(prop)?.[lifeCycle] as any
+    );
 
     return (
       listeners
@@ -237,8 +365,8 @@ export abstract class SchemaCore<T extends ObjectType> {
     lifeCycle: LifeCycles.Rule
   ) => {
     const onChangeListeners = this._isChangeLifeCycle(lifeCycle)
-      ? this._getListeners(prop, "onChange")
-      : ([] as LifeCycles.ChangeListener<T>[]);
+      ? this._getListeners(prop, "onDelete")
+      : [];
 
     if (this._isSideEffect(prop)) return { listeners: [], onChangeListeners };
 
@@ -247,17 +375,26 @@ export abstract class SchemaCore<T extends ObjectType> {
     return { listeners, onChangeListeners };
   };
 
-  protected _getListeners = (prop: string, lifeCycle: LifeCycles.Rule) => {
-    return this._getDetailedListeners(prop, lifeCycle, true).map(
+  protected _getListeners = <T>(prop: string, lifeCycle: LifeCycles.Rule) => {
+    return this._getDetailedListeners<T>(prop, lifeCycle, true).map(
       (dt) => dt.listener
     ) as LifeCycles.Listener<T>[];
   };
 
-  protected _getValidator = (prop: string) =>
-    this._getDefinition(prop)?.validator;
+  protected _getInvalidRules = <K extends StringKey<I>>(prop: K) => {
+    const rulesProvided = this._getKeysAsProps<PropDefinitionRule>(
+      this._getDefinition(prop)
+    );
 
-  protected _getKeysAsProps = (data: any) =>
-    Object.keys(data) as StringKey<T>[];
+    return rulesProvided.filter((r) => !allRules.includes(r));
+  };
+
+  protected _getValidator = <K extends StringKey<I>>(prop: K) => {
+    return this._getDefinition(prop)?.validator as Validator<K, I> | undefined;
+  };
+
+  protected _getKeysAsProps = <T = StringKey<I>>(data: any) =>
+    Object.keys(data) as T[];
 
   protected _hasAny = (
     prop: string,
@@ -303,24 +440,25 @@ export abstract class SchemaCore<T extends ObjectType> {
       return {
         valid,
         reason:
-          "Constant properties can only have ('constant' & 'value') or 'onCreate' | 'onDelete' | 'onSuccess'",
+          "Constant properties can only have ('constant' & 'value') or 'onDelete' | 'onSuccess'",
       };
 
-    this.constants.push(prop as StringKey<T>);
+    this.constants.push(prop as StringKey<I>);
 
     return { valid: true };
   };
 
   protected _isConstant = (prop: string) =>
-    this.constants.includes(prop as StringKey<T>);
+    this.constants.includes(prop as StringKey<I>);
 
   protected __isDependentProp = (prop: string) => {
     const {
       default: _default,
       dependent,
-      sideEffect,
+      dependsOn,
       shouldInit,
       readonly,
+      resolver,
       required,
     } = this._getDefinition(prop);
 
@@ -338,10 +476,37 @@ export abstract class SchemaCore<T extends ObjectType> {
         reason: "Dependent properties must have a default value",
       };
 
-    if (!isEqual(required, undefined) && typeof required !== "function")
+    if (isEqual(dependsOn, undefined) || !dependsOn?.length)
       return {
         valid,
-        reason: "Dependent properties cannot be strictly required",
+        reason: "Dependent properties must depend on atleast one property",
+      };
+
+    if (toArray(dependsOn).includes(prop as StringKey<I>))
+      return { valid, reason: "A property cannot depend on itself" };
+
+    if (isEqual(resolver, undefined))
+      return {
+        valid,
+        reason: "Dependent properties must have a resolver",
+      };
+
+    if (!this._isFunction(resolver))
+      return {
+        valid,
+        reason: "The resolver of a dependent property must be a function",
+      };
+
+    if (this._hasAny(prop, "validator"))
+      return {
+        valid,
+        reason: "Dependent properties cannot be validated",
+      };
+
+    if (this._hasAny(prop, "required"))
+      return {
+        valid,
+        reason: "Dependent properties cannot be required",
       };
 
     if (readonly === "lax")
@@ -353,24 +518,25 @@ export abstract class SchemaCore<T extends ObjectType> {
         reason: "Dependent properties cannot have shouldInit rule",
       };
 
-    if (sideEffect)
+    if (this._hasAny(prop, "sideEffect"))
       return { valid, reason: "Dependent properties cannot be sideEffect" };
 
-    this.dependents.push(prop as StringKey<T>);
+    this.dependents.push(prop as StringKey<I>);
+    this._addDependencies(prop as StringKey<I>, dependsOn);
 
     return { valid: true };
   };
 
   protected _isDependentProp = (prop: string) =>
-    this.dependents.includes(prop as StringKey<T>);
+    this.dependents.includes(prop as StringKey<I>);
 
-  protected _isFunction = (obj: any) => typeof obj === "function";
+  protected _isFunction = (v: any): v is Function => typeof v === "function";
 
   protected _isLaxProp = (prop: string) =>
-    this.laxProps.includes(prop as StringKey<T>);
+    this.laxProps.includes(prop as StringKey<I>);
 
   protected _isProp = (prop: string) =>
-    this.props.includes(prop as StringKey<T>);
+    this.props.includes(prop as StringKey<I>);
 
   protected _isPropDefinitionObjectOk = (prop: string) => {
     const propDef = this._getDefinition(prop);
@@ -390,70 +556,73 @@ export abstract class SchemaCore<T extends ObjectType> {
 
     let reasons: string[] = [];
 
-    if (this._hasAny(prop, "constant")) {
-      const constantDef = this.__isConstantProp(prop);
+    const invalidRulesProvided = this._getInvalidRules(prop as StringKey<I>);
 
-      if (!constantDef.valid) reasons.push(constantDef.reason!);
-    }
+    if (invalidRulesProvided.length)
+      for (let rule of invalidRulesProvided)
+        reasons.push(`'${rule}' is not a valid rule`);
+
+    if (this._hasAny(prop, "constant")) {
+      const { valid, reason } = this.__isConstantProp(prop);
+
+      if (!valid) reasons.push(reason!);
+    } else if (this._hasAny(prop, "value"))
+      reasons.push("'value' rule can only be used with constant properties");
 
     if (this._hasAny(prop, "dependent")) {
-      const dependentDef = this.__isDependentProp(prop);
+      const { valid, reason } = this.__isDependentProp(prop);
 
-      if (!dependentDef.valid) reasons.push(dependentDef.reason!);
-    }
+      if (!valid) reasons.push(reason!);
+    } else if (this._hasAny(prop, ["dependsOn", "resolver"]))
+      reasons.push(
+        "dependsOn & resolver rules can only belong to dependent properties"
+      );
 
     if (this._hasAny(prop, "readonly")) {
-      const readonlyDef = this.__isReadonly(prop);
+      const { valid, reason } = this.__isReadonly(prop);
 
-      if (!readonlyDef.valid) reasons.push(readonlyDef.reason!);
+      if (!valid) reasons.push(reason!);
     }
 
     if (this._hasAny(prop, "required")) {
       const { required } = this._getDefinition(prop);
 
-      const requiredDef =
+      const { valid, reason } =
         typeof required === "function"
           ? this.__isRequiredBy(prop)
           : this.__isRequired(prop);
 
-      if (!requiredDef.valid) reasons.push(requiredDef.reason!);
-    }
-
-    if (this._hasAny(prop, "requiredError")) {
-      const { required, requiredError } = this._getDefinition(prop);
-
-      if (typeof required != "function")
-        reasons.push(
-          "RequiredError can only be used with a callable required rule"
-        );
-      if (!belongsTo(typeof requiredError, ["string", "function"]))
-        reasons.push("RequiredError must be a string or setter");
+      if (!valid) reasons.push(reason!);
     }
 
     if (this._hasAny(prop, "sideEffect")) {
-      const sideEffectDef = this.__isSideEffect(prop);
+      const { valid, reason } = this.__isSideEffect(prop);
 
-      if (!sideEffectDef.valid) reasons.push(sideEffectDef.reason!);
-    }
+      if (!valid) reasons.push(reason!);
+    } else if (this._hasAny(prop, "sanitizer"))
+      reasons.push("'sanitizer' is only valid on side effects");
 
     if (this._hasAny(prop, "shouldInit")) {
-      const { shouldInit } = this._getDefinition(prop);
+      const { valid, reason } = this.__isShouldInitConfigOk(prop);
 
-      if (!["boolean", "function"].includes(typeof shouldInit))
-        reasons.push(
-          "The initialization of a property can only be blocked if the 'shouldinit' rule is set to 'false' or a function that returns a boolean"
-        );
+      if (!valid) reasons.push(reason!);
+    }
 
-      if (!this._hasAny(prop, ["default", "sideEffect"]))
-        reasons.push(
-          "A property with initialization blocked must have a default value"
-        );
+    if (this._hasAny(prop, "shouldUpdate")) {
+      const { valid, reason } = this.__isShouldUpdateConfigOk(prop);
+
+      if (!valid) reasons.push(reason!);
     }
 
     if (this._hasAny(prop, "validator") && !this._isValidatorOk(prop))
       reasons.push("Invalid validator");
 
-    // onChange, onCreate, onDelete, onFailure, onSuccess & onUpdate
+    if (this._hasAny(prop, "onFailure") && !this._hasAny(prop, "validator"))
+      reasons.push(
+        "'onFailure' can only be used with properties that support and have validators"
+      );
+
+    // onDelete, onFailure, & onSuccess
     for (let rule of lifeCycleRules) {
       if (!this._hasAny(prop, rule)) continue;
 
@@ -487,8 +656,8 @@ export abstract class SchemaCore<T extends ObjectType> {
     const valid = reasons.length ? false : true;
 
     if (valid && !this._isSideEffect(prop)) {
-      this.props.push(prop as StringKey<T>);
-      this._setDefaultOf(prop as StringKey<T>);
+      this.props.push(prop as StringKey<I>);
+      this._setDefaultOf(prop as StringKey<I>, "creating");
     }
 
     return { reasons, valid };
@@ -546,13 +715,13 @@ export abstract class SchemaCore<T extends ObjectType> {
         reason: "Readonly properties have readonly true | 'lax'",
       };
 
-    this.readonlyProps.push(prop as StringKey<T>);
+    this.readonlyProps.push(prop as StringKey<I>);
 
     return { valid: true };
   };
 
   protected _isReadonly = (prop: string) =>
-    this.readonlyProps.includes(prop as StringKey<T>);
+    this.readonlyProps.includes(prop as StringKey<I>);
 
   protected __isRequiredCommon = (prop: string) => {
     const valid = false;
@@ -599,30 +768,20 @@ export abstract class SchemaCore<T extends ObjectType> {
         reason: "Strictly required properties cannot be readonly",
       };
 
-    if (this._hasAny(prop, "requiredError"))
-      return {
-        valid,
-        reason: "Strictly required properties cannot have a requiredError",
-      };
-
     const isRequiredCommon = this.__isRequiredCommon(prop);
 
     if (!isRequiredCommon.valid) return isRequiredCommon;
 
-    this.requiredProps.push(prop as StringKey<T>);
+    this.requiredProps.push(prop as StringKey<I>);
 
     return { valid: true };
   };
 
   protected _isRequired = (prop: string) =>
-    this.requiredProps.includes(prop as StringKey<T>);
+    this.requiredProps.includes(prop as StringKey<I>);
 
   protected __isRequiredBy = (prop: string) => {
-    const {
-      default: _default,
-      required,
-      requiredError,
-    } = this._getDefinition(prop);
+    const { default: _default, required } = this._getDefinition(prop);
 
     const valid = false;
 
@@ -643,26 +802,19 @@ export abstract class SchemaCore<T extends ObjectType> {
           "Callable required properties must have a default value or setter",
       };
 
-    if (isEqual(requiredError, undefined))
-      return {
-        valid,
-        reason:
-          "Callable required properties must have a requiredError or setter",
-      };
-
     if (!hasSideEffect) {
       const isRequiredCommon = this.__isRequiredCommon(prop);
 
       if (!isRequiredCommon.valid) return isRequiredCommon;
     }
 
-    this.propsRequiredBy.push(prop as StringKey<T>);
+    this.propsRequiredBy.push(prop as StringKey<I>);
 
     return { valid: true };
   };
 
   protected _isRequiredBy = (prop: string) =>
-    this.propsRequiredBy.includes(prop as StringKey<T>);
+    this.propsRequiredBy.includes(prop as StringKey<I>);
 
   protected __isSideEffectRequiredBy = (prop: string) => {
     if (this._hasAny(prop, "shouldInit"))
@@ -681,7 +833,7 @@ export abstract class SchemaCore<T extends ObjectType> {
   protected __isSideEffect = (prop: string) => {
     const valid = false;
 
-    const { sideEffect, shouldInit } = this._getDefinition(prop);
+    const { sanitizer, sideEffect } = this._getDefinition(prop);
 
     if (sideEffect !== true)
       return { valid, reason: "SideEffects must have sideEffect as 'true'" };
@@ -689,11 +841,8 @@ export abstract class SchemaCore<T extends ObjectType> {
     if (!this._isValidatorOk(prop))
       return { valid, reason: "Invalid validator" };
 
-    if (!this._getListeners(prop, "onChange").length)
-      return {
-        valid,
-        reason: "SideEffects must have at least one onChange listener",
-      };
+    if (this._hasAny(prop, "sanitizer") && !this._isFunction(sanitizer))
+      return { valid, reason: "'sanitizer' must be a function" };
 
     const hasRequired = this._hasAny(prop, "required");
 
@@ -702,17 +851,6 @@ export abstract class SchemaCore<T extends ObjectType> {
 
       if (!isRequiredBy.valid) return isRequiredBy;
     }
-
-    if (
-      !hasRequired &&
-      this._hasAny(prop, "shouldInit") &&
-      shouldInit !== false
-    )
-      return {
-        valid,
-        reason:
-          "To block the initialization of side effects shouldInit must be 'false'",
-      };
 
     const unAcceptedRules = allRules.filter(
       (rule) => !sideEffectRules.includes(rule)
@@ -726,22 +864,79 @@ export abstract class SchemaCore<T extends ObjectType> {
         )}) as rules`,
       };
 
-    this.sideEffects.push(prop as StringKey<T>);
+    this.sideEffects.push(prop as StringKey<I>);
 
     return { valid: true };
   };
 
   protected _isSideEffect = (prop: string) =>
-    this.sideEffects.includes(prop as StringKey<T>);
+    this.sideEffects.includes(prop as StringKey<I>);
 
   protected _isSideInit = (prop: string) => {
-    const propDef = this._getDefinition(prop);
+    if (!this._isSideEffect(prop)) return false;
 
-    if (!propDef) return false;
+    const { shouldInit } = this._getDefinition(prop);
 
-    const { shouldInit } = propDef;
+    return (
+      isEqual(shouldInit, undefined) ||
+      this._getValueBy(prop, "shouldInit", "creating")
+    );
+  };
 
-    return this._isSideEffect(prop) && belongsTo(shouldInit, [true, undefined]);
+  protected __isShouldInitConfigOk = (prop: string) => {
+    const { shouldInit } = this._getDefinition(prop);
+
+    const valid = false;
+
+    if (shouldInit !== false && !this._isFunction(shouldInit))
+      return {
+        valid,
+        reason:
+          "The initialization of a property can only be blocked if the 'shouldinit' rule is set to 'false' or a function that returns a boolean",
+      };
+
+    if (!this._hasAny(prop, ["default", "sideEffect"]))
+      return {
+        valid,
+        reason:
+          "A property with initialization blocked must have a default value",
+      };
+
+    return { valid: true };
+  };
+
+  protected __isShouldUpdateConfigOk = (prop: string) => {
+    const { readonly, shouldInit, shouldUpdate } = this._getDefinition(prop);
+    const valid = false;
+
+    if (shouldUpdate !== false && !this._isFunction(shouldUpdate))
+      return {
+        valid,
+        reason:
+          "'shouldUpdate' only accepts false or a function that returns a boolean",
+      };
+
+    if (shouldInit === false && shouldUpdate === false)
+      return {
+        valid,
+        reason: "Both 'shouldInit' & 'shouldUpdate' cannot be 'false'",
+      };
+
+    if (shouldUpdate === false && !this._hasAny(prop, "sideEffect"))
+      return {
+        valid,
+        reason:
+          "Only 'sideEffects' are allowed to have 'shouldUpdate' as 'false'",
+      };
+
+    if (readonly === true && isEqual(shouldInit, undefined))
+      return {
+        valid,
+        reason:
+          "Cannot block the update of 'readonly' properties that do not have initialization('shouldInit') blocked. Either add 'shouldInit' or use readonly: 'lax'",
+      };
+
+    return { valid: true };
   };
 
   protected _registerIfLax = (prop: string) => {
@@ -771,7 +966,7 @@ export abstract class SchemaCore<T extends ObjectType> {
     )
       return;
 
-    this.laxProps.push(prop as StringKey<T>);
+    this.laxProps.push(prop as StringKey<I>);
   };
 
   private _isTimestampsOk() {
@@ -836,14 +1031,24 @@ export abstract class SchemaCore<T extends ObjectType> {
     const custom_createdAt = timestamps?.createdAt;
     const custom_updatedAt = timestamps?.updatedAt;
 
-    if (custom_createdAt) createdAt = custom_createdAt;
-    if (custom_updatedAt) updatedAt = custom_updatedAt;
+    if (custom_createdAt && typeof custom_createdAt == "string")
+      createdAt = custom_createdAt;
+
+    if (custom_createdAt === false) createdAt = "";
+
+    if (custom_updatedAt && typeof custom_updatedAt == "string")
+      updatedAt = custom_updatedAt;
+
+    if (custom_updatedAt === false) updatedAt = "";
 
     return { ...options, timestamps: { createdAt, updatedAt } };
   }
 
-  private _setDefaultOf = (prop: StringKey<T>) => {
-    const _default = this._getValueBy(prop, "default");
+  private _setDefaultOf = (
+    prop: StringKey<I>,
+    lifeCycle: LifeCycles.LifeCycle
+  ) => {
+    const _default = this._getValueBy(prop, "default", lifeCycle);
 
     if (!isEqual(_default, undefined)) this.defaults[prop] = _default;
   };

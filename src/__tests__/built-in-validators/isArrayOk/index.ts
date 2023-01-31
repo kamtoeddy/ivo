@@ -15,8 +15,9 @@ export const isArrayOkTest = ({ isArrayOk }: { isArrayOk: Function }) => {
         expect(result).toMatchObject({
           reasons: ["Expected an array"],
           valid: false,
-          validated: undefined,
         });
+
+        expect(result.validated).toBeUndefined();
       }
     });
 
@@ -26,18 +27,18 @@ export const isArrayOkTest = ({ isArrayOk }: { isArrayOk: Function }) => {
       expect(res).toMatchObject({
         reasons: ["Expected a non-empty array"],
         valid: false,
-        validated: undefined,
       });
+
+      expect(res.validated).toBeUndefined();
     });
 
     it("should accept an empty array if option is specified", async () => {
       const res = await isArrayOk([], { empty: true });
 
-      expect(res).toMatchObject({
-        reasons: [],
-        valid: true,
-        validated: [],
-      });
+      expect(res).toMatchObject({ valid: true, validated: [] });
+
+      expect(res.reason).toBeUndefined();
+      expect(res.reasons).toBeUndefined();
     });
 
     it("should sort resulting array if option is specified", async () => {
@@ -45,10 +46,12 @@ export const isArrayOkTest = ({ isArrayOk }: { isArrayOk: Function }) => {
       const res = await isArrayOk(values, { sorted: true });
 
       expect(res).toMatchObject({
-        reasons: [],
         valid: true,
         validated: [-20, 0, 1, 7, 18],
       });
+
+      expect(res.reason).toBeUndefined();
+      expect(res.reasons).toBeUndefined();
 
       const res1 = await isArrayOk(values, {
         sorted: true,
@@ -56,10 +59,12 @@ export const isArrayOkTest = ({ isArrayOk }: { isArrayOk: Function }) => {
       });
 
       expect(res1).toMatchObject({
-        reasons: [],
         valid: true,
         validated: res.validated.reverse(),
       });
+
+      expect(res1.reason).toBeUndefined();
+      expect(res1.reasons).toBeUndefined();
     });
 
     it("should sort 'asc' if invalid sortOrder is provided", async () => {
@@ -68,10 +73,12 @@ export const isArrayOkTest = ({ isArrayOk }: { isArrayOk: Function }) => {
       const res = await isArrayOk(values, { sorted: true, sortedOrder: "yoo" });
 
       expect(res).toMatchObject({
-        reasons: [],
         valid: true,
         validated: sorted,
       });
+
+      expect(res.reason).toBeUndefined();
+      expect(res.reasons).toBeUndefined();
     });
 
     it("should respect filter", async () => {
@@ -80,10 +87,12 @@ export const isArrayOkTest = ({ isArrayOk }: { isArrayOk: Function }) => {
       const res = await isArrayOk([1, 7, 18, -20], { filter });
 
       expect(res).toMatchObject({
-        reasons: [],
         valid: true,
         validated: [1, 7, 18, -20],
       });
+
+      expect(res.reason).toBeUndefined();
+      expect(res.reasons).toBeUndefined();
 
       const res1 = await isArrayOk(["1-1", ".", undefined], {
         filter,
@@ -92,8 +101,9 @@ export const isArrayOkTest = ({ isArrayOk }: { isArrayOk: Function }) => {
       expect(res1).toMatchObject({
         reasons: ["Expected a non-empty array"],
         valid: false,
-        validated: undefined,
       });
+
+      expect(res1.validated).toBeUndefined();
     });
 
     it("should respect modifier", async () => {
@@ -102,10 +112,12 @@ export const isArrayOkTest = ({ isArrayOk }: { isArrayOk: Function }) => {
       const res = await isArrayOk([1, 7, "18", -20, null], { modifier });
 
       expect(res).toMatchObject({
-        reasons: [],
         valid: true,
         validated: [1, 7, 18, -20, 0],
       });
+
+      expect(res.reason).toBeUndefined();
+      expect(res.reasons).toBeUndefined();
     });
 
     it("should respect unique option", async () => {
@@ -114,16 +126,21 @@ export const isArrayOkTest = ({ isArrayOk }: { isArrayOk: Function }) => {
       });
 
       expect(res).toMatchObject({
-        reasons: [],
         valid: true,
         validated: [1, 7, "18", -20, null],
       });
+
+      expect(res.reason).toBeUndefined();
+      expect(res.reasons).toBeUndefined();
     });
 
     it("should respect unique option with unique key", async () => {
       const res = await isArrayOk(people, { unique: true, uniqueKey: "name" });
 
-      expect(res).toMatchObject({ reasons: [], valid: true });
+      expect(res).toMatchObject({ valid: true });
+
+      expect(res.reason).toBeUndefined();
+      expect(res.reasons).toBeUndefined();
 
       expect(res.validated.length).toBe(3);
     });
@@ -134,7 +151,10 @@ export const isArrayOkTest = ({ isArrayOk }: { isArrayOk: Function }) => {
         uniqueKey: "bio.displayName",
       });
 
-      expect(res).toMatchObject({ reasons: [], valid: true });
+      expect(res).toMatchObject({ valid: true });
+
+      expect(res.reason).toBeUndefined();
+      expect(res.reasons).toBeUndefined();
 
       expect(res.validated.length).toBe(4);
     });
@@ -147,10 +167,12 @@ export const isArrayOkTest = ({ isArrayOk }: { isArrayOk: Function }) => {
       });
 
       expect(res).toMatchObject({
-        reasons: [],
         valid: true,
         validated: [-20, 0, 1, 7, 18],
       });
+
+      expect(res.reason).toBeUndefined();
+      expect(res.reasons).toBeUndefined();
     });
   });
 };
