@@ -2597,20 +2597,35 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
       describe("invalid", () => {
         it("should reject shouldUpdate !(false | () => boolean)", () => {
-          const fxn = fx({ propertyName: { shouldInit: false } });
+          const invalidValues = [
+            true,
+            1,
+            0,
+            -1,
+            "true",
+            "false",
+            [],
+            null,
+            undefined,
+            {},
+          ];
 
-          expectFailure(fxn);
+          for (const shouldUpdate of invalidValues) {
+            const fxn = fx({ propertyName: { default: "", shouldUpdate } });
 
-          try {
-            fxn();
-          } catch (err: any) {
-            expect(err.payload).toEqual(
-              expect.objectContaining({
-                propertyName: expect.arrayContaining([
-                  "A property with initialization blocked must have a default value",
-                ]),
-              })
-            );
+            expectFailure(fxn);
+
+            try {
+              fxn();
+            } catch (err: any) {
+              expect(err.payload).toEqual(
+                expect.objectContaining({
+                  propertyName: expect.arrayContaining([
+                    "'shouldUpdate' only accepts false or a function that returns a boolean",
+                  ]),
+                })
+              );
+            }
           }
         });
       });
