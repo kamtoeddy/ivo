@@ -2530,6 +2530,18 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
     describe("shouldUpdate", () => {
       describe("valid", () => {
+        it("should accept shouldUpdate (false | () => boolean)", () => {
+          const invalidValues = [false, () => false, () => true];
+
+          for (const shouldUpdate of invalidValues) {
+            const toPass = fx({ propertyName: { default: "", shouldUpdate } });
+
+            expectNoFailure(toPass);
+
+            toPass();
+          }
+        });
+
         //  describe("behaviour",()=>{
         // let Model: any;
         // beforeAll(async () => {
@@ -2611,12 +2623,12 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           ];
 
           for (const shouldUpdate of invalidValues) {
-            const fxn = fx({ propertyName: { default: "", shouldUpdate } });
+            const toFail = fx({ propertyName: { default: "", shouldUpdate } });
 
-            expectFailure(fxn);
+            expectFailure(toFail);
 
             try {
-              fxn();
+              toFail();
             } catch (err: any) {
               expect(err.payload).toEqual(
                 expect.objectContaining({
