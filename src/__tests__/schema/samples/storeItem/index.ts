@@ -1,5 +1,5 @@
 import { Schema } from "../../../../../dist";
-import { IStoreItem } from "./interfaces";
+import { IStoreItem, StoreItemType } from "./interfaces";
 import {
   sanitizeQuantities,
   validateName,
@@ -10,7 +10,7 @@ import {
   validateString,
 } from "./validators";
 
-const storeItemSchema = new Schema<IStoreItem>(
+const storeItemSchema = new Schema<IStoreItem, StoreItemType>(
   {
     _dependentReadOnly: {
       default: () => 0,

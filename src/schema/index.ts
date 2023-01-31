@@ -22,7 +22,7 @@ class Schema<
     propDefinitions: ns.PropertyDefinitions<I, O>,
     options: ns.Options = defaultOptions
   ) {
-    super(propDefinitions as ns.Definitions<I>, options);
+    super(propDefinitions as ns.Definitions<I>, options as ns.Options);
   }
 
   get options() {
