@@ -82,7 +82,7 @@ export abstract class SchemaCore<I extends ObjectType> {
 
   constructor(
     propDefinitions: ns.Definitions<I>,
-    options: ns.Options = defaultOptions
+    options: ns.Options = defaultOptions as ns.Options
   ) {
     this._propDefinitions = propDefinitions;
     this._options = options;

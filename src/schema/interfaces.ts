@@ -27,7 +27,11 @@ type Combined<I, O> = OmitNever<I & O> extends never
 
 type SpreadType<T> = { [K in keyof T]: T[K] };
 
-type CombineTypes<I, O> = SpreadType<Combined<I, O>>;
+type CombineTypes<I, O> = O extends I
+  ? I extends O
+    ? I
+    : SpreadType<Combined<I, O>>
+  : SpreadType<Combined<I, O>>;
 
 type Setter<K, T> = (
   ctx: Readonly<T>,
@@ -39,26 +43,33 @@ type ConditionalRequiredSetter<T> = (
   lifeCycle: LifeCycles.LifeCycle
 ) => boolean | [boolean, string];
 
+type Promisable<T> = T extends Promise<infer I> ? I : T;
+
+type sanitizer<K, T> = (
+  ctx: Readonly<T>,
+  lifeCycle: LifeCycles.LifeCycle
+) => Promisable<K extends keyof T ? TypeOf<T[K]> : K>;
+
 type AsyncSetter<K, T> = (
   ctx: Readonly<T>,
   lifeCycle: LifeCycles.LifeCycle
-) => Awaited<K extends keyof T ? TypeOf<T[K]> : K>;
+) => Promisable<K extends keyof T ? TypeOf<T[K]> : K>;
 
 export type StringKey<T> = Extract<keyof T, string>;
 
 export namespace Schema {
   export type PropertyDefinitions<I, O = I> = {
-    [K in keyof I]:
-      | Constant<K, I, O>
-      | Dependent<K, I, O>
-      | Property<K, I, O>
-      | Readonly<K, I, O>
-      | ReadonlyNoInit<K, I, O>
-      | Required<K, I, O>
-      | RequiredBy<K, I, O>
-      | ReadonlyRequired<K, I, O>
-      | RequiredSideEffect<K, I>
-      | SideEffect<K, I>;
+    [K in keyof CombineTypes<I, Partial<O>>]:
+      | Constant<K, CombineTypes<I, Partial<O>>, O>
+      | Dependent<K, CombineTypes<I, Partial<O>>, O>
+      | Property<K, CombineTypes<I, Partial<O>>, O>
+      | Readonly<K, CombineTypes<I, Partial<O>>, O>
+      | ReadonlyNoInit<K, CombineTypes<I, Partial<O>>, O>
+      | Required<K, CombineTypes<I, Partial<O>>, O>
+      | RequiredBy<K, CombineTypes<I, Partial<O>>, O>
+      | ReadonlyRequired<K, CombineTypes<I, Partial<O>>, O>
+      | RequiredSideEffect<K, CombineTypes<I, Partial<O>>>
+      | SideEffect<K, CombineTypes<I, Partial<O>>>;
   };
 
   export type Definitions<I> = {
@@ -70,7 +81,7 @@ export namespace Schema {
       readonly?: boolean | "lax";
       resolver?: Function;
       required?: boolean | ConditionalRequiredSetter<I>;
-      sanitizer?: Setter<I[StringKey<I>], I> | AsyncSetter<I[K], I>;
+      sanitizer?: sanitizer<I[K], I>;
       sideEffect?: boolean;
       shouldInit?: false | Setter<boolean, I>;
       shouldUpdate?: false | Setter<boolean, I>;
@@ -158,7 +169,7 @@ export namespace Schema {
 
   type SideEffect<K extends keyof T, T> = {
     sideEffect: true;
-    sanitizer?: Setter<T[K], T> | AsyncSetter<T[K], T>;
+    sanitizer?: sanitizer<T[K], T>;
     onFailure?:
       | LifeCycles.VoidListener<T>
       | NonEmptyArray<LifeCycles.VoidListener<T>>;
@@ -171,7 +182,7 @@ export namespace Schema {
   };
 
   type RequiredSideEffect<K extends keyof T, T> = SideEffect<K, T> & {
-    required: Setter<boolean, T>;
+    required: ConditionalRequiredSetter<T>;
     shouldUpdate?: false | Setter<boolean, T>;
     requiredError: string | Setter<string, T>;
   };
@@ -185,12 +196,13 @@ export namespace Schema {
     errors?: "silent" | "throw";
     timestamps?:
       | boolean
-      | { createdAt?: boolean | string; updatedAt?: boolean | string };
+      | {
+          createdAt?: boolean | string;
+          updatedAt?: boolean | string;
+        };
   }
 
-  export type ExtensionOptions<T> = Options & {
-    remove?: T | T[];
-  };
+  export type ExtensionOptions<T> = Options & { remove?: T | T[] };
 }
 
 export namespace LifeCycles {

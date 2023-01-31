@@ -26,6 +26,23 @@ export interface IStoreItem {
   otherMeasureUnits?: IOtherMeasureUnit[];
 }
 
+export interface StoreItemType {
+  _dependentReadOnly?: number;
+  _laxProp: string;
+  _readOnlyLax1: string;
+  _readOnlyLax2: string;
+  _readOnlyNoInit?: any;
+  c_At: string;
+  id: string;
+  name: string;
+  price: number;
+  quantityChangeCounter?: number;
+  quantity?: number;
+  measureUnit: string;
+  otherMeasureUnits?: IOtherMeasureUnit[];
+  u_At: string;
+}
+
 export interface IStoreItemChild extends IStoreItem {
   childID: string;
 }
