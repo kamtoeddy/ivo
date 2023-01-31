@@ -2530,8 +2530,8 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
     describe("shouldUpdate", () => {
       describe("valid", () => {
-        it("should accept shouldUpdate (false | () => boolean)", () => {
-          const validValues = [false, () => false, () => true];
+        it("should accept shouldUpdate(() => boolean)", () => {
+          const validValues = [() => false, () => true];
 
           for (const shouldUpdate of validValues) {
             const toPass = fx({ propertyName: { default: "", shouldUpdate } });
@@ -2547,12 +2547,36 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           const values = [
             [false, () => false],
             [() => false, () => false],
-            [() => false, false],
           ];
 
           for (const [shouldInit, shouldUpdate] of values) {
             const toPass = fx({
               propertyName: { default: "", shouldInit, shouldUpdate },
+            });
+
+            expectNoFailure(toPass);
+
+            toPass();
+          }
+        });
+
+        it("should accept shouldInit(() => boolean) & shouldUpdate(false) for sideEffects", () => {
+          const values = [() => true, () => false];
+
+          for (const shouldInit of values) {
+            const toPass = fx({
+              dependentProp: {
+                default: "",
+                dependent: true,
+                dependsOn: "sideEffect",
+                resolver: () => "",
+              },
+              sideEffect: {
+                default: "",
+                shouldInit,
+                shouldUpdate: false,
+                validator,
+              },
             });
 
             expectNoFailure(toPass);
@@ -2677,7 +2701,27 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             expect(err.payload).toEqual(
               expect.objectContaining({
                 propertyName: expect.arrayContaining([
-                  "Both 'shouldInit' & 'shouldUpdate' cannot be 'fasle'",
+                  "Both 'shouldInit' & 'shouldUpdate' cannot be 'false'",
+                ]),
+              })
+            );
+          }
+        });
+
+        it("should reject shouldUpdate(false) for non-sideEffects", () => {
+          const toFail = fx({
+            propertyName: { default: "", shouldUpdate: false },
+          });
+
+          expectNoFailure(toFail);
+
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toEqual(
+              expect.objectContaining({
+                propertyName: expect.arrayContaining([
+                  "Only 'sideEffects' are allowed to have 'shouldUpdate' as 'false'",
                 ]),
               })
             );
