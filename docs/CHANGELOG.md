@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 Breaking Changes
 
 - [Added] possibility to use one timestamp value at a time. [more](./v3.0.0/schema/definition/index.md#timestamps)
+- [Added] 'shouldUpdate' rule [more](./v3.0.0/schema/definition/index.md#accepted-rules)
 - [Updated] updated the definition of [dependent properties](./schema/definition/dependents.md)
 - [Updated] updated the definition of [side effect properties](./schema/definition/side-effects.md)
 - [Updated] updated how schema inheritance works [more](./schema/definition/inheritance.md)

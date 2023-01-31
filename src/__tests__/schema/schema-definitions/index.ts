@@ -2748,68 +2748,34 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           }
         });
 
-        //  describe("behaviour",()=>{
-        // let Model: any;
-        // beforeAll(async () => {
-        //   Model = new Schema(
-        //     {
-        //       env: { default: "dev" },
-        //       isBlocked: {
-        //         default: false,
-        //         shouldUpdate: (ctx: any) => ctx.env == "test",
-        //       },
-        //       laxProp: { default: 0 },
-        //     },
-        //     { errors: "throw" }
-        //   ).getModel();
-        // });
-        // it("should respect default rules", async () => {
-        //   const { data } = await Model.create({ isBlocked: true });
-        //   expect(data).toMatchObject({
-        //     env: "dev",
-        //     isBlocked: false,
-        //     laxProp: 0,
+        // describe("behaviour", () => {
+        //   let Model: any;
+
+        //   beforeAll(() => {
+        //     Model = new Schema(
+        //       {
+        //         env: { default: "dev" },
+        //         isBlocked: {
+        //           default: false,
+        //           shouldUpdate: (ctx: any) => ctx.env == "test",
+        //         },
+        //         laxProp: { default: 0 },
+        //       }
+        //     ).getModel();
         //   });
-        // });
-        // it("should respect callable should init when condition passes during cloning", async () => {
-        //   const { data } = await Model.clone({
-        //     env: "test",
-        //     isBlocked: "yes",
-        //   });
-        //   expect(data).toMatchObject({
-        //     env: "test",
-        //     isBlocked: "yes",
-        //     laxProp: 0,
-        //   });
-        // });
-        // it("should respect callable should init when condition passes at creation", async () => {
-        //   const { data } = await Model.create({
-        //     env: "test",
-        //     isBlocked: "yes",
-        //   });
-        //   expect(data).toMatchObject({
-        //     env: "test",
-        //     isBlocked: "yes",
-        //     laxProp: 0,
-        //   });
-        // });
-        //  })
-        // it("should accept shouldInit(false) + default", () => {
-        //   const fxn = fx({
-        //     propertyName: { shouldInit: false, default: true },
-        //   });
-        //   expectNoFailure(fxn);
-        //   fxn();
-        // });
-        // it("should accept shouldInit: () => boolean + default", () => {
-        //   const values = [() => true, () => false];
-        //   for (const shouldInit of values) {
-        //     const fxn = fx({
-        //       propertyName: { shouldInit, default: true },
+
+        //   it("should respect default rules", async () => {
+        //     const { data,error } = await Model.update(
+        //       { env: "dev", isBlocked: false, laxProp: 0 },
+        //       { isBlocked: true }
+        //     );
+
+        //     expect(data).toMatchObject({
+        //       env: "dev",
+        //       isBlocked: false,
+        //       laxProp: 0,
         //     });
-        //     expectNoFailure(fxn);
-        //     fxn();
-        //   }
+        //   });
         // });
       });
 
