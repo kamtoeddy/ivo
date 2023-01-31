@@ -2729,7 +2729,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               },
             });
 
-            // expectNoFailure(toPass);
+            expectNoFailure(toPass);
 
             try {
               toPass();
@@ -2741,7 +2741,6 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
         describe("behaviour", () => {
           let onSuccessValues: any = {};
-
           let onSuccessStats: any = {};
 
           let Model: any;
@@ -2776,7 +2775,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               },
               sideEffect_1: {
                 sideEffect: true,
-                shouldUpdate: false,
+                shouldUpdate: (ctx: any) => ctx.laxProp_1 == "test",
                 validator: () => ({ valid: true }),
                 onSuccess: incrementOnSuccessCountOf("sideEffect_1"),
               },
@@ -2794,11 +2793,10 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
           afterEach(() => {
             onSuccessValues = {};
-
             onSuccessStats = {};
           });
 
-          it("should not update properties with 'shouldUpdate(false)'", async () => {
+          it("should not update properties when 'shouldUpdate' resolved to 'false'", async () => {
             const { data, error } = await Model.update(
               {
                 dependentProp: "dev",
@@ -2806,10 +2804,40 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 laxProp: "",
                 laxProp_1: "",
               },
-              { laxProp: "yoyo", sideEffect: true }
+              { laxProp: "yoyo", sideEffect: true, sideEffect_1: true }
             );
 
             expect(data).toBeUndefined();
+            expect(error.message).toBe("Nothing to update");
+          });
+
+          it("should update properties when 'shouldUpdate' resolved to 'false'", async () => {
+            const { data, error, handleSuccess } = await Model.update(
+              {
+                dependentProp: "dev",
+                dependentProp_1: "dev",
+                laxProp: "",
+                laxProp_1: "test",
+              },
+              { laxProp: "yoyo", sideEffect: true, sideEffect_1: true }
+            );
+
+            await handleSuccess();
+
+            expect(error).toBeUndefined();
+            expect(data).toEqual({ dependentProp_1: true, laxProp: "yoyo" });
+
+            expect(onSuccessStats).toEqual({
+              dependentProp_1: 1,
+              laxProp: 1,
+              sideEffect_1: 1,
+            });
+
+            expect(onSuccessValues).toEqual({
+              dependentProp_1: true,
+              laxProp: "yoyo",
+              sideEffect_1: true,
+            });
           });
         });
       });
