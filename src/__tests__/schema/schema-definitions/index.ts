@@ -2941,6 +2941,99 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           });
 
           describe("creation", () => {
+            describe("sideEffects with callable shouldInit", () => {
+              let onSuccessValues: any = {};
+
+              let onSuccessStats: any = {};
+
+              let sanitizedValues: any = {};
+
+              let Model: any;
+
+              beforeAll(() => {
+                Model = new Schema(
+                  {
+                    dependent: {
+                      default: "",
+                      dependent: true,
+                      dependsOn: "sideEffect",
+                      resolver: () => "changed",
+                      onSuccess: onSuccess("dependent"),
+                    },
+                    laxProp: { default: "" },
+                    sideEffect: {
+                      sideEffect: true,
+                      shouldInit: ({ laxProp }: any) =>
+                        laxProp === "allow sideEffect",
+                      onSuccess: [
+                        onSuccess("sideEffect"),
+                        incrementOnSuccessStats("sideEffect"),
+                        incrementOnSuccessStats("sideEffect"),
+                      ],
+                      sanitizer: sanitizerOf("sideEffect", "sanitized"),
+                      validator: validateBoolean,
+                    },
+                  },
+                  { errors: "throw" }
+                ).getModel();
+
+                function sanitizerOf(prop: string, value: any) {
+                  return () => {
+                    // to make sure sanitizer is invoked
+                    sanitizedValues[prop] = value;
+
+                    return value;
+                  };
+                }
+
+                function incrementOnSuccessStats(prop: string) {
+                  return () => {
+                    onSuccessStats[prop] = (onSuccessStats[prop] ?? 0) + 1;
+                  };
+                }
+
+                function onSuccess(prop: string) {
+                  return (ctx: any) => {
+                    onSuccessValues[prop] = ctx[prop];
+                    incrementOnSuccessStats(prop)();
+                  };
+                }
+
+                function validateBoolean(value: any) {
+                  if (![false, true].includes(value))
+                    return {
+                      valid: false,
+                      reason: `${value} is not a boolean`,
+                    };
+                  return { valid: true };
+                }
+              });
+
+              beforeEach(() => {
+                onSuccessStats = {};
+                onSuccessValues = {};
+                sanitizedValues = {};
+              });
+
+              it("should ignore sideEffects at creation when their shouldInit handler returns false", async () => {
+                const { data, handleSuccess } = await Model.create({
+                  laxProp: "Peter",
+                  sideEffect: true,
+                  isTest: true,
+                });
+
+                await handleSuccess();
+
+                expect(data).toEqual({ dependent: "", laxProp: "Peter" });
+
+                expect(onSuccessStats).toEqual({ dependent: 1 });
+
+                expect(onSuccessValues).toEqual({ dependent: "" });
+
+                expect(sanitizedValues).toEqual({});
+              });
+            });
+
             it("should not sanitize sideEffects nor resolve their dependencies if not provided", async () => {
               const { data } = await User.create({
                 name: "Peter",

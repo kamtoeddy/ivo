@@ -470,7 +470,10 @@ class ModelTool<
       }
 
       const isSideEffect = sideEffects.includes(prop);
-      if (isSideEffect && !this._isSideInit(prop)) return;
+      const isSideInit = this._isSideInit(prop);
+
+      if (values.isTest) console.log(isSideEffect, isSideInit);
+      if (isSideEffect && !isSideInit) return;
 
       const isProvided = this.values.hasOwnProperty(prop);
 

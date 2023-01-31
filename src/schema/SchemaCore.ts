@@ -311,11 +311,11 @@ export abstract class SchemaCore<I extends ObjectType> {
     rule: PropDefinitionRule,
     lifeCycle: LifeCycles.LifeCycle
   ) => {
-    const _default = this._getDefinition(prop)?.[rule];
+    const value = this._getDefinition(prop)?.[rule];
 
-    return this._isFunction(_default)
-      ? _default(this._getContext(), lifeCycle)
-      : _default;
+    return this._isFunction(value)
+      ? value(this._getContext(), lifeCycle)
+      : value;
   };
 
   protected _getRequiredState = (
@@ -873,13 +873,14 @@ export abstract class SchemaCore<I extends ObjectType> {
     this.sideEffects.includes(prop as StringKey<I>);
 
   protected _isSideInit = (prop: string) => {
-    const propDef = this._getDefinition(prop);
+    if (!this._isSideEffect(prop)) return false;
 
-    if (!propDef) return false;
+    const { shouldInit } = this._getDefinition(prop);
 
-    const { shouldInit } = propDef;
-
-    return this._isSideEffect(prop) && belongsTo(shouldInit, [true, undefined]);
+    return (
+      isEqual(shouldInit, undefined) ||
+      this._getValueBy(prop, "shouldInit", "creating")
+    );
   };
 
   protected __isShouldInitConfigOk = (prop: string) => {
