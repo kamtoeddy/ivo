@@ -2077,14 +2077,8 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
         beforeAll(async () => {
           Book = new Schema(
             {
-              bookId: {
-                required: true,
-                validator,
-              },
-              isPublished: {
-                default: false,
-                validator,
-              },
+              bookId: { required: true, validator },
+              isPublished: { default: false, validator },
               price: {
                 default: null,
                 required(ctx: any) {
@@ -2522,10 +2516,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
             function validateBoolean(value: any) {
               if (![false, true].includes(value))
-                return {
-                  valid: false,
-                  reason: `${value} is not a boolean`,
-                };
+                return { valid: false, reason: `${value} is not a boolean` };
               return { valid: true };
             }
           });
@@ -2748,35 +2739,79 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           }
         });
 
-        // describe("behaviour", () => {
-        //   let Model: any;
+        describe("behaviour", () => {
+          let onSuccessValues: any = {};
 
-        //   beforeAll(() => {
-        //     Model = new Schema(
-        //       {
-        //         env: { default: "dev" },
-        //         isBlocked: {
-        //           default: false,
-        //           shouldUpdate: (ctx: any) => ctx.env == "test",
-        //         },
-        //         laxProp: { default: 0 },
-        //       }
-        //     ).getModel();
-        //   });
+          let onSuccessStats: any = {};
 
-        //   it("should respect default rules", async () => {
-        //     const { data,error } = await Model.update(
-        //       { env: "dev", isBlocked: false, laxProp: 0 },
-        //       { isBlocked: true }
-        //     );
+          let Model: any;
 
-        //     expect(data).toMatchObject({
-        //       env: "dev",
-        //       isBlocked: false,
-        //       laxProp: 0,
-        //     });
-        //   });
-        // });
+          beforeAll(() => {
+            Model = new Schema({
+              dependentProp: {
+                default: false,
+                dependent: true,
+                dependsOn: "sideEffect",
+                resolver: ({ sideEffect }: any) => sideEffect,
+                onSuccess: incrementOnSuccessCountOf("dependentProp"),
+              },
+              dependentProp_1: {
+                default: false,
+                dependent: true,
+                dependsOn: "sideEffect_1",
+                resolver: ({ sideEffect_1 }: any) => sideEffect_1,
+                onSuccess: incrementOnSuccessCountOf("dependentProp_1"),
+              },
+              laxProp: {
+                default: 0,
+                shouldUpdate: (ctx: any) => ctx.laxProp_1 == "test",
+                onSuccess: incrementOnSuccessCountOf("laxProp"),
+              },
+              laxProp_1: { default: "dev" },
+              sideEffect: {
+                sideEffect: true,
+                shouldUpdate: false,
+                validator: () => ({ valid: true }),
+                onSuccess: incrementOnSuccessCountOf("sideEffect"),
+              },
+              sideEffect_1: {
+                sideEffect: true,
+                shouldUpdate: false,
+                validator: () => ({ valid: true }),
+                onSuccess: incrementOnSuccessCountOf("sideEffect_1"),
+              },
+            }).getModel();
+
+            function incrementOnSuccessCountOf(prop: string) {
+              return (ctx: any) => {
+                const previousCount = onSuccessStats[prop] ?? 0;
+
+                onSuccessStats[prop] = previousCount + 1;
+                onSuccessValues[prop] = ctx[prop];
+              };
+            }
+          });
+
+          afterEach(() => {
+            onSuccessValues = {};
+
+            onSuccessStats = {};
+          });
+
+          it("should not update properties with 'shouldUpdate(false)'", async () => {
+            const { data, error } = await Model.update(
+              {
+                dependentProp: "dev",
+                dependentProp_1: "dev",
+                laxProp: "",
+                laxProp_1: "",
+              },
+              { laxProp: "yoyo", sideEffect: true }
+            );
+
+            expect(data).toBeUndefined();
+          });
+        });
       });
 
       describe("invalid", () => {
