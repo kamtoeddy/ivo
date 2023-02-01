@@ -19,7 +19,10 @@ class Schema<
   O extends ObjectType = I
 > extends SchemaCore<I> {
   constructor(
-    propDefinitions: ns.PropertyDefinitions<I, O>,
+    propDefinitions: ns.PropertyDefinitions<
+      SpreadType<CombineTypes<O, I> & O>,
+      O
+    >,
     options: ns.Options = defaultOptions
   ) {
     super(propDefinitions as ns.Definitions<I>, options as ns.Options);

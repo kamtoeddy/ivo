@@ -68,7 +68,7 @@ export namespace Schema {
   };
 
   export type Definitions<I> = {
-    [K in keyof I]?: Listenable<I> & {
+    [K in keyof I]?: Listenable<I, I> & {
       constant?: any;
       default?: any;
       dependent?: boolean;
@@ -89,7 +89,7 @@ export namespace Schema {
     [K in StringKey<T>]?: StringKey<T>[];
   };
 
-  type Listenable<I, O = I> = {
+  type Listenable<I, O> = {
     onDelete?:
       | LifeCycles.DeleteListener<O>
       | NonEmptyArray<LifeCycles.DeleteListener<O>>;
