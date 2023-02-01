@@ -545,7 +545,8 @@ class ModelTool<
   };
 
   delete = async (values: O) => {
-    if (!this._areValuesOk(values)) return this._handleInvalidData();
+    if (!this._areValuesOk(values))
+      return new ErrorTool({ message: "Invalid Data" }).throw();
 
     this._setValues(values, { allowSideEffects: false, allowTimestamps: true });
 

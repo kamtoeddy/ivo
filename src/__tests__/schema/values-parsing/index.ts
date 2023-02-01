@@ -97,7 +97,13 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
           for (const val of invalidData) {
             const operation = async () => await User.delete(val);
 
-            expectNoFailure(operation);
+            expectPromiseFailure(operation, "Invalid Data");
+
+            try {
+              await operation();
+            } catch (err: any) {
+              expect(err).toMatchObject(INVALID_DATA_ERROR);
+            }
           }
         });
 
