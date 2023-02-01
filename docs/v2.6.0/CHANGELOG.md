@@ -2,11 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
-# v2.6.0 <small><sup>08-01-2022</sup></small>
+# v2.6.0 <small><sup>08-01-2023</sup></small>
 
 - [Updated] updated the way validator responses should behave
 
-# v2.5.16 <small><sup>05-01-2022</sup></small>
+# v2.5.16 <small><sup>05-01-2023</sup></small>
 
 - [Fix] fixed problem of context of operation of onSuccess listeners missing some values
 - [Fix] fixed problem of model allowing default timestamp values(`createdAt` & `updatedAt`) to be set as values when `schema.options.timestamps` config is in default mode
