@@ -19,7 +19,10 @@ class Schema<
   O extends ObjectType = I
 > extends SchemaCore<I> {
   constructor(
-    propDefinitions: ns.PropertyDefinitions<I, O>,
+    propDefinitions: ns.PropertyDefinitions<
+      SpreadType<CombineTypes<O, I> & O>,
+      O
+    >,
     options: ns.Options = defaultOptions
   ) {
     super(propDefinitions as ns.Definitions<I>, options as ns.Options);
@@ -79,22 +82,6 @@ class ModelTool<
   }
 
   private _areValuesOk = (values: any) => values && typeof values == "object";
-
-  private _getValues(values: Partial<I | O>, allowSideEffects = true) {
-    const keys = this._getKeysAsProps(values).filter(
-      (key) =>
-        (this.optionsTool.withTimestamps &&
-          this.optionsTool.isTimestampKey(key)) ||
-        this._isProp(key) ||
-        (allowSideEffects && this._isSideEffect(key))
-    );
-
-    const _values = {} as Partial<I>;
-
-    sort(keys).forEach((key) => (_values[key] = values[key]));
-
-    return _values;
-  }
 
   private _handleError = (error: ErrorTool) => {
     return this._options.errors === "throw"
@@ -286,6 +273,8 @@ class ModelTool<
 
       const value = await resolver!(_ctx, lifeCycle);
 
+      if (!isCreating && isEqual(value, _ctx[prop])) return;
+
       data[prop] = value;
 
       const updates = { [prop]: value } as I;
@@ -306,6 +295,37 @@ class ModelTool<
 
     return _updates;
   };
+
+  private _setValues(
+    values: Partial<I | O>,
+    {
+      allowSideEffects = true,
+      allowTimestamps = false,
+    }: {
+      allowSideEffects?: boolean;
+      allowTimestamps?: boolean;
+    } = {
+      allowSideEffects: true,
+      allowTimestamps: false,
+    }
+  ) {
+    const keys = this._getKeysAsProps(values).filter(
+      (key) =>
+        (allowTimestamps &&
+          this.optionsTool.withTimestamps &&
+          this.optionsTool.isTimestampKey(key)) ||
+        this._isProp(key) ||
+        (allowSideEffects && this._isSideEffect(key))
+    );
+
+    const _values = {} as Partial<I>;
+
+    sort(keys).forEach((key) => (_values[key] = values[key]));
+
+    this.values = _values;
+
+    this._initContexts();
+  }
 
   private _useConfigProps = (obj: I | Partial<I>, isUpdate = false) => {
     if (!this.optionsTool.withTimestamps) return sortKeys(obj);
@@ -351,7 +371,7 @@ class ModelTool<
   ) => {
     if (!this._areValuesOk(values)) return this._handleInvalidData();
 
-    this.setValues(values);
+    this._setValues(values);
 
     const reset = toArray<StringKey<I>>(options.reset ?? []).filter(
       this._isProp
@@ -456,7 +476,7 @@ class ModelTool<
   create = async (values: Partial<I>) => {
     if (!this._areValuesOk(values)) return this._handleInvalidData();
 
-    this.setValues(values);
+    this._setValues(values);
 
     let data = {} as Partial<I>;
     const error = new ErrorTool({ message: "Validation Error" });
@@ -530,11 +550,12 @@ class ModelTool<
   };
 
   delete = async (values: O) => {
-    if (!this._areValuesOk(values)) return this._handleInvalidData();
+    if (!this._areValuesOk(values))
+      return new ErrorTool({ message: "Invalid Data" }).throw();
 
-    const ctx = Object.freeze(
-      Object.assign({}, this._getValues(values, false))
-    ) as Readonly<O>;
+    this._setValues(values, { allowSideEffects: false, allowTimestamps: true });
+
+    const ctx = this._getContext() as Readonly<O>;
 
     const cleanups = this.props.map(async (prop) => {
       const listeners = this._getListeners<O>(prop, "onDelete");
@@ -547,16 +568,10 @@ class ModelTool<
     await Promise.all(cleanups);
   };
 
-  setValues(values: Partial<I>) {
-    this.values = this._getValues(values);
-
-    this._initContexts();
-  }
-
-  update = async (values: Partial<I>, changes: Partial<I>) => {
+  update = async (values: O, changes: Partial<I>) => {
     if (!this._areValuesOk(values)) return this._handleInvalidData();
 
-    this.setValues(values);
+    this._setValues(values, { allowSideEffects: false, allowTimestamps: true });
 
     const error = new ErrorTool({ message: "Validation Error" });
     let updated = {} as Partial<I>;

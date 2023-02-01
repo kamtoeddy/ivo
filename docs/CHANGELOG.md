@@ -2,19 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
-# v3.0.3 <small><sup>31-01-2022</sup></small>
+# v3.0.4 <small><sup>01-02-2023</sup></small>
+
+- [Fix] fix problems whereby newly resolved values of dependent properties were considered as updates even though their values were not different from the previous values
+- [Fix] fix problems with types when using 'sanitize' rule with TS
+- [Updated] updated how values are set internally so that values of properties sideEffects are only accepted at creation, cloning, deletion and as changes during updates. Timestamps are only accepted as current values during updates & deletion
+
+# v3.0.3 <small><sup>31-01-2023</sup></small>
 
 - [Fix] fix problems with types when using 'sanitize' rule with TS
 
-# v3.0.2 <small><sup>31-01-2022</sup></small>
+# v3.0.2 <small><sup>31-01-2023</sup></small>
 
 - [Fix] fix various type issues with TS
 
-# v3.0.1 <small><sup>31-01-2022</sup></small>
+# v3.0.1 <small><sup>31-01-2023</sup></small>
 
 - [Fix] fix problems with types when using 'sanitize' rule with TS
 
-# v3.0.0 <small><sup>31-01-2022</sup></small>
+# v3.0.0 <small><sup>31-01-2023</sup></small>
 
 Breaking Changes
 
@@ -41,11 +47,11 @@ Bug Fixes
 
 - [Fix] fixed issue with some conditionally required fields not being called at when another conditionally required field was required during the same operation
 
-# v2.6.0 <small><sup>08-01-2022</sup></small>
+# v2.6.0 <small><sup>08-01-2023</sup></small>
 
 - [Updated] updated the way validator responses should behave
 
-# v2.5.16 <small><sup>05-01-2022</sup></small>
+# v2.5.16 <small><sup>05-01-2023</sup></small>
 
 - [Fix] fixed problem of context of operation of onSuccess listeners missing some values
 - [Fix] fixed problem of model allowing default timestamp values(`createdAt` & `updatedAt`) to be set as values when `schema.options.timestamps` config is in default mode
