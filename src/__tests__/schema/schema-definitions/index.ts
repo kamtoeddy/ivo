@@ -316,171 +316,286 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
     describe("dependent", () => {
       const resolver = () => 1;
 
-      describe("valid", () => {
-        describe("behaviour", () => {
-          let Model: any;
+      describe("behaviour", () => {
+        let Model: any;
 
-          let onDeleteStats = {} as Record<string, number | undefined>;
-          let onSuccessStats = {} as Record<string, number | undefined>;
-          let resolversCalledStats = {} as Record<string, number | undefined>;
+        let onDeleteStats = {} as Record<string, number | undefined>;
+        let onSuccessStats = {} as Record<string, number | undefined>;
+        let resolversCalledStats = {} as Record<string, number | undefined>;
 
-          const successCountOfDependentProps = {
-            dependentProp: 4,
-            dependentProp_1: 1,
-            dependentProp_2: 3,
-            dependentProp_3: 1,
-          };
+        const successCountOfDependentProps = {
+          dependentProp: 4,
+          dependentProp_1: 1,
+          dependentProp_2: 3,
+          dependentProp_3: 1,
+        };
 
-          beforeEach(async () => {
-            Model = new Schema({
-              laxProp: { default: "" },
-              laxProp_1: { default: "" },
-              laxProp_2: {
-                default: "",
-                onDelete: incrementOnDeleteCountOf("laxProp_2"),
-              },
-              dependentProp: {
-                default: 0,
-                dependent: true,
-                dependsOn: ["laxProp", "laxProp_1"],
-                resolver: resolverOfDependentProp,
-                onDelete: [
-                  incrementOnDeleteCountOf("dependentProp"),
-                  incrementOnDeleteCountOf("dependentProp"),
-                ],
-                onSuccess: [
-                  incrementOnSuccessCountOf("dependentProp"),
-                  incrementOnSuccessCountOf("dependentProp"),
-                  incrementOnSuccessCountOf("dependentProp"),
-                  incrementOnSuccessCountOf("dependentProp"),
-                ],
-              },
-              dependentProp_1: {
-                default: 0,
-                dependent: true,
-                dependsOn: "dependentProp",
-                resolver: resolverOfDependentProp_1,
-                onDelete: incrementOnDeleteCountOf("dependentProp_1"),
-                onSuccess: incrementOnSuccessCountOf("dependentProp_1"),
-              },
-              dependentProp_2: {
-                default: 0,
-                dependent: true,
-                dependsOn: "dependentProp",
-                readonly: true,
-                resolver: asyncResolver("dependentProp_2"),
-                onDelete: [
-                  incrementOnDeleteCountOf("dependentProp_2"),
-                  incrementOnDeleteCountOf("dependentProp_2"),
-                ],
-                onSuccess: [
-                  incrementOnSuccessCountOf("dependentProp_2"),
-                  incrementOnSuccessCountOf("dependentProp_2"),
-                  incrementOnSuccessCountOf("dependentProp_2"),
-                ],
-              },
-              dependentProp_3: {
-                default: 0,
-                dependent: true,
-                dependsOn: "laxProp_2",
-                resolver: asyncResolver("dependentProp_3"),
-                onDelete: [
-                  incrementOnDeleteCountOf("dependentProp_3"),
-                  incrementOnDeleteCountOf("dependentProp_3"),
-                ],
-                onSuccess: [incrementOnSuccessCountOf("dependentProp_3")],
-              },
-            }).getModel();
+        beforeEach(async () => {
+          Model = new Schema({
+            laxProp: { default: "" },
+            laxProp_1: { default: "" },
+            laxProp_2: {
+              default: "",
+              onDelete: incrementOnDeleteCountOf("laxProp_2"),
+            },
+            dependentProp: {
+              default: 0,
+              dependent: true,
+              dependsOn: ["laxProp", "laxProp_1"],
+              resolver: resolverOfDependentProp,
+              onDelete: [
+                incrementOnDeleteCountOf("dependentProp"),
+                incrementOnDeleteCountOf("dependentProp"),
+              ],
+              onSuccess: [
+                incrementOnSuccessCountOf("dependentProp"),
+                incrementOnSuccessCountOf("dependentProp"),
+                incrementOnSuccessCountOf("dependentProp"),
+                incrementOnSuccessCountOf("dependentProp"),
+              ],
+            },
+            dependentProp_1: {
+              default: 0,
+              dependent: true,
+              dependsOn: "dependentProp",
+              resolver: resolverOfDependentProp_1,
+              onDelete: incrementOnDeleteCountOf("dependentProp_1"),
+              onSuccess: incrementOnSuccessCountOf("dependentProp_1"),
+            },
+            dependentProp_2: {
+              default: 0,
+              dependent: true,
+              dependsOn: "dependentProp",
+              readonly: true,
+              resolver: asyncResolver("dependentProp_2"),
+              onDelete: [
+                incrementOnDeleteCountOf("dependentProp_2"),
+                incrementOnDeleteCountOf("dependentProp_2"),
+              ],
+              onSuccess: [
+                incrementOnSuccessCountOf("dependentProp_2"),
+                incrementOnSuccessCountOf("dependentProp_2"),
+                incrementOnSuccessCountOf("dependentProp_2"),
+              ],
+            },
+            dependentProp_3: {
+              default: 0,
+              dependent: true,
+              dependsOn: "laxProp_2",
+              resolver: asyncResolver("dependentProp_3"),
+              onDelete: [
+                incrementOnDeleteCountOf("dependentProp_3"),
+                incrementOnDeleteCountOf("dependentProp_3"),
+              ],
+              onSuccess: [incrementOnSuccessCountOf("dependentProp_3")],
+            },
+          }).getModel();
 
-            function incrementOnDeleteCountOf(prop: string) {
-              return () => {
-                const previousCount = onDeleteStats[prop] ?? 0;
+          function incrementOnDeleteCountOf(prop: string) {
+            return () => {
+              const previousCount = onDeleteStats[prop] ?? 0;
 
-                onDeleteStats[prop] = previousCount + 1;
-              };
-            }
+              onDeleteStats[prop] = previousCount + 1;
+            };
+          }
 
-            function incrementOnSuccessCountOf(prop: string) {
-              return () => {
-                const previousCount = onSuccessStats[prop] ?? 0;
+          function incrementOnSuccessCountOf(prop: string) {
+            return () => {
+              const previousCount = onSuccessStats[prop] ?? 0;
 
-                onSuccessStats[prop] = previousCount + 1;
-              };
-            }
+              onSuccessStats[prop] = previousCount + 1;
+            };
+          }
 
-            function incrementResolveCountOf(prop: string) {
-              const previousCount = resolversCalledStats[prop] ?? 0;
+          function incrementResolveCountOf(prop: string) {
+            const previousCount = resolversCalledStats[prop] ?? 0;
 
-              resolversCalledStats[prop] = previousCount + 1;
-            }
+            resolversCalledStats[prop] = previousCount + 1;
+          }
 
-            function resolverOfDependentProp({ laxProp, laxProp_1 }: any) {
-              incrementResolveCountOf("dependentProp");
+          function resolverOfDependentProp({ laxProp, laxProp_1 }: any) {
+            incrementResolveCountOf("dependentProp");
 
-              return laxProp.length + laxProp_1.length;
-            }
+            return laxProp.length + laxProp_1.length;
+          }
 
-            function resolverOfDependentProp_1({ dependentProp }: any) {
-              incrementResolveCountOf("dependentProp_1");
+          function resolverOfDependentProp_1({ dependentProp }: any) {
+            incrementResolveCountOf("dependentProp_1");
 
-              return dependentProp + 1;
-            }
+            return dependentProp + 1;
+          }
 
-            function asyncResolver(prop: string) {
-              return async ({ dependentProp }: any) => {
-                incrementResolveCountOf(prop);
+          function asyncResolver(prop: string) {
+            return async ({ dependentProp }: any) => {
+              incrementResolveCountOf(prop);
 
-                await pauseFor();
+              await pauseFor();
 
-                return dependentProp + 2;
-              };
-            }
+              return dependentProp + 2;
+            };
+          }
+        });
+
+        afterEach(() => {
+          onDeleteStats = {};
+          onSuccessStats = {};
+          resolversCalledStats = {};
+        });
+
+        describe("creation", () => {
+          it("should resolve dependent properties correctly at creation", async () => {
+            const { data, handleSuccess } = await Model.create({
+              laxProp_2: "value based pricing",
+              dependentProp: 25,
+              dependentProp_1: 34,
+              dependentProp_2: 17,
+              dependentProp_3: 1,
+            });
+
+            await handleSuccess?.();
+
+            expect(data).toEqual({
+              laxProp: "",
+              laxProp_1: "",
+              laxProp_2: "value based pricing",
+              dependentProp: 0,
+              dependentProp_1: 0,
+              dependentProp_2: 0,
+              dependentProp_3: 2,
+            });
+
+            expect(resolversCalledStats).toEqual({ dependentProp_3: 1 });
+            expect(onSuccessStats).toEqual(successCountOfDependentProps);
           });
 
-          afterEach(() => {
-            onDeleteStats = {};
-            onSuccessStats = {};
-            resolversCalledStats = {};
+          it("should resolve dependencies of dependent properties if provided at creation", async () => {
+            const { data, handleSuccess } = await Model.create({
+              laxProp: "",
+              laxProp_1: "hello",
+              dependentProp: 0,
+              dependentProp_1: 0,
+              dependentProp_2: 0,
+            });
+
+            await handleSuccess();
+
+            expect(data).toEqual({
+              laxProp: "",
+              laxProp_1: "hello",
+              laxProp_2: "",
+              dependentProp: 5,
+              dependentProp_1: 6,
+              dependentProp_2: 7,
+              dependentProp_3: 0,
+            });
+
+            expect(resolversCalledStats).toEqual({
+              dependentProp: 1,
+              dependentProp_1: 1,
+              dependentProp_2: 1,
+            });
+
+            expect(onSuccessStats).toEqual(successCountOfDependentProps);
+          });
+        });
+
+        describe("cloning", () => {
+          it("should have all correct properties and values at creation with 'clone' method", async () => {
+            const { data: clone, handleSuccess } = await Model.clone({
+              laxProp: "",
+              laxProp_1: "",
+              laxProp_2: "value based pricing",
+              dependentProp: 0,
+              dependentProp_1: 0,
+              dependentProp_2: 0,
+              dependentProp_3: 2,
+            });
+
+            await handleSuccess();
+
+            expect(clone).toMatchObject({
+              laxProp: "",
+              laxProp_1: "",
+              laxProp_2: "value based pricing",
+              dependentProp: 0,
+              dependentProp_1: 0,
+              dependentProp_2: 0,
+              dependentProp_3: 2,
+            });
+
+            expect(resolversCalledStats).toEqual({ dependentProp_3: 1 });
+
+            expect(onSuccessStats).toEqual(successCountOfDependentProps);
           });
 
-          describe("creation", () => {
-            it("should resolve dependent properties correctly at creation", async () => {
-              const { data, handleSuccess } = await Model.create({
-                laxProp_2: "value based pricing",
-                dependentProp: 25,
-                dependentProp_1: 34,
-                dependentProp_2: 17,
-                dependentProp_3: 1,
-              });
-
-              await handleSuccess?.();
-
-              expect(data).toEqual({
+          it("should respect 'reset' option at creation with 'clone' method", async () => {
+            const { data: clone, handleSuccess } = await Model.clone(
+              {
                 laxProp: "",
                 laxProp_1: "",
                 laxProp_2: "value based pricing",
-                dependentProp: 0,
-                dependentProp_1: 0,
-                dependentProp_2: 0,
-                dependentProp_3: 2,
-              });
+                dependentProp: 20,
+                dependentProp_1: 1302,
+                dependentProp_2: 10,
+                dependentProp_3: 350,
+              },
+              {
+                reset: ["dependentProp", "dependentProp_1", "dependentProp_2"],
+              }
+            );
 
-              expect(resolversCalledStats).toEqual({ dependentProp_3: 1 });
-              expect(onSuccessStats).toEqual(successCountOfDependentProps);
+            await handleSuccess();
+
+            expect(clone).toMatchObject({
+              laxProp: "",
+              laxProp_1: "",
+              laxProp_2: "value based pricing",
+              dependentProp: 0,
+              dependentProp_1: 0,
+              dependentProp_2: 0,
+              dependentProp_3: 2,
             });
 
-            it("should resolve dependencies of dependent properties if provided at creation", async () => {
-              const { data, handleSuccess } = await Model.create({
-                laxProp: "",
-                laxProp_1: "hello",
-                dependentProp: 0,
-                dependentProp_1: 0,
-                dependentProp_2: 0,
-              });
+            expect(resolversCalledStats).toEqual({ dependentProp_3: 1 });
 
-              await handleSuccess();
+            expect(onSuccessStats).toEqual(successCountOfDependentProps);
+          });
 
-              expect(data).toEqual({
+          it("should resolve dependencies of dependent properties if provided at creation(cloning)", async () => {
+            const { data, handleSuccess } = await Model.clone({
+              laxProp: "",
+              laxProp_1: "hello",
+              laxProp_2: "",
+              dependentProp: 5,
+              dependentProp_1: 6,
+              dependentProp_2: 7,
+              dependentProp_3: 0,
+            });
+
+            await handleSuccess();
+
+            expect(data).toEqual({
+              laxProp: "",
+              laxProp_1: "hello",
+              laxProp_2: "",
+              dependentProp: 5,
+              dependentProp_1: 6,
+              dependentProp_2: 7,
+              dependentProp_3: 0,
+            });
+
+            expect(resolversCalledStats).toEqual({
+              dependentProp: 1,
+              dependentProp_1: 2,
+              dependentProp_2: 2,
+            });
+
+            expect(onSuccessStats).toEqual(successCountOfDependentProps);
+          });
+
+          it("should resolve dependencies of dependent properties if provided at creation(cloning) and also respect the 'reset' option", async () => {
+            const { data, handleSuccess } = await Model.clone(
+              {
                 laxProp: "",
                 laxProp_1: "hello",
                 laxProp_2: "",
@@ -488,21 +603,36 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 dependentProp_1: 6,
                 dependentProp_2: 7,
                 dependentProp_3: 0,
-              });
+              },
+              { reset: "dependentProp" }
+            );
 
-              expect(resolversCalledStats).toEqual({
-                dependentProp: 1,
-                dependentProp_1: 1,
-                dependentProp_2: 1,
-              });
+            await handleSuccess();
 
-              expect(onSuccessStats).toEqual(successCountOfDependentProps);
+            expect(data).toEqual({
+              laxProp: "",
+              laxProp_1: "hello",
+              laxProp_2: "",
+              dependentProp: 5,
+              dependentProp_1: 6,
+              dependentProp_2: 7,
+              dependentProp_3: 0,
             });
+
+            expect(resolversCalledStats).toEqual({
+              dependentProp: 1,
+              dependentProp_1: 1,
+              dependentProp_2: 1,
+            });
+
+            expect(onSuccessStats).toEqual(successCountOfDependentProps);
           });
+        });
 
-          describe("cloning", () => {
-            it("should have all correct properties and values at creation with 'clone' method", async () => {
-              const { data: clone, handleSuccess } = await Model.clone({
+        describe("updates", () => {
+          it("should have all correct properties and values after updates", async () => {
+            const { data: updates } = await Model.update(
+              {
                 laxProp: "",
                 laxProp_1: "",
                 laxProp_2: "value based pricing",
@@ -510,257 +640,144 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 dependentProp_1: 0,
                 dependentProp_2: 0,
                 dependentProp_3: 2,
-              });
-
-              await handleSuccess();
-
-              expect(clone).toMatchObject({
-                laxProp: "",
-                laxProp_1: "",
-                laxProp_2: "value based pricing",
-                dependentProp: 0,
-                dependentProp_1: 0,
-                dependentProp_2: 0,
-                dependentProp_3: 2,
-              });
-
-              expect(resolversCalledStats).toEqual({ dependentProp_3: 1 });
-
-              expect(onSuccessStats).toEqual(successCountOfDependentProps);
-            });
-
-            it("should respect 'reset' option at creation with 'clone' method", async () => {
-              const { data: clone, handleSuccess } = await Model.clone(
-                {
-                  laxProp: "",
-                  laxProp_1: "",
-                  laxProp_2: "value based pricing",
-                  dependentProp: 20,
-                  dependentProp_1: 1302,
-                  dependentProp_2: 10,
-                  dependentProp_3: 350,
-                },
-                {
-                  reset: [
-                    "dependentProp",
-                    "dependentProp_1",
-                    "dependentProp_2",
-                  ],
-                }
-              );
-
-              await handleSuccess();
-
-              expect(clone).toMatchObject({
-                laxProp: "",
-                laxProp_1: "",
-                laxProp_2: "value based pricing",
-                dependentProp: 0,
-                dependentProp_1: 0,
-                dependentProp_2: 0,
-                dependentProp_3: 2,
-              });
-
-              expect(resolversCalledStats).toEqual({ dependentProp_3: 1 });
-
-              expect(onSuccessStats).toEqual(successCountOfDependentProps);
-            });
-
-            it("should resolve dependencies of dependent properties if provided at creation(cloning)", async () => {
-              const { data, handleSuccess } = await Model.clone({
-                laxProp: "",
-                laxProp_1: "hello",
-                laxProp_2: "",
-                dependentProp: 5,
-                dependentProp_1: 6,
-                dependentProp_2: 7,
-                dependentProp_3: 0,
-              });
-
-              await handleSuccess();
-
-              expect(data).toEqual({
-                laxProp: "",
-                laxProp_1: "hello",
-                laxProp_2: "",
-                dependentProp: 5,
-                dependentProp_1: 6,
-                dependentProp_2: 7,
-                dependentProp_3: 0,
-              });
-
-              expect(resolversCalledStats).toEqual({
-                dependentProp: 1,
-                dependentProp_1: 2,
-                dependentProp_2: 2,
-              });
-
-              expect(onSuccessStats).toEqual(successCountOfDependentProps);
-            });
-
-            it("should resolve dependencies of dependent properties if provided at creation(cloning) and also respect the 'reset' option", async () => {
-              const { data, handleSuccess } = await Model.clone(
-                {
-                  laxProp: "",
-                  laxProp_1: "hello",
-                  laxProp_2: "",
-                  dependentProp: 5,
-                  dependentProp_1: 6,
-                  dependentProp_2: 7,
-                  dependentProp_3: 0,
-                },
-                { reset: "dependentProp" }
-              );
-
-              await handleSuccess();
-
-              expect(data).toEqual({
-                laxProp: "",
-                laxProp_1: "hello",
-                laxProp_2: "",
-                dependentProp: 5,
-                dependentProp_1: 6,
-                dependentProp_2: 7,
-                dependentProp_3: 0,
-              });
-
-              expect(resolversCalledStats).toEqual({
-                dependentProp: 1,
-                dependentProp_1: 1,
-                dependentProp_2: 1,
-              });
-
-              expect(onSuccessStats).toEqual(successCountOfDependentProps);
-            });
-          });
-
-          describe("updates", () => {
-            it("should have all correct properties and values after updates", async () => {
-              const { data: updates } = await Model.update(
-                {
-                  laxProp: "",
-                  laxProp_1: "",
-                  laxProp_2: "value based pricing",
-                  dependentProp: 0,
-                  dependentProp_1: 0,
-                  dependentProp_2: 0,
-                  dependentProp_3: 2,
-                },
-                {
-                  laxProp_2: "hey",
-                  dependentProp: 74,
-                  dependentProp_1: 235,
-                  dependentProp_2: 72,
-                  dependentProp_3: 702,
-                }
-              );
-
-              expect(updates).toMatchObject({
+              },
+              {
                 laxProp_2: "hey",
-                dependentProp_3: 2,
-              });
+                dependentProp: 74,
+                dependentProp_1: 235,
+                dependentProp_2: 72,
+                dependentProp_3: 702,
+              }
+            );
 
-              expect(resolversCalledStats).toEqual({ dependentProp_3: 1 });
+            expect(updates).toMatchObject({
+              laxProp_2: "hey",
+              dependentProp_3: 2,
             });
 
-            it("should resolve dependencies of dependent properties if provided during updates", async () => {
-              const { data, handleSuccess } = await Model.update(
-                {
-                  laxProp: "",
-                  laxProp_1: "",
-                  laxProp_2: "",
-                  dependentProp: 0,
-                  dependentProp_1: 0,
-                  dependentProp_2: 0,
-                  dependentProp_3: 0,
-                },
-                {
-                  laxProp: "hello",
-                  laxProp_1: "world",
-                }
-              );
+            expect(resolversCalledStats).toEqual({ dependentProp_3: 1 });
+          });
 
-              await handleSuccess();
+          it("should resolve dependencies of dependent properties if provided during updates", async () => {
+            const { data, handleSuccess } = await Model.update(
+              {
+                laxProp: "",
+                laxProp_1: "",
+                laxProp_2: "",
+                dependentProp: 0,
+                dependentProp_1: 0,
+                dependentProp_2: 0,
+                dependentProp_3: 0,
+              },
+              {
+                laxProp: "hello",
+                laxProp_1: "world",
+              }
+            );
 
-              expect(data).toEqual({
+            await handleSuccess();
+
+            expect(data).toEqual({
+              laxProp: "hello",
+              laxProp_1: "world",
+              dependentProp: 10,
+              dependentProp_1: 11,
+              dependentProp_2: 12,
+            });
+
+            const { dependentProp_3, ...stats } = successCountOfDependentProps;
+
+            expect(resolversCalledStats).toEqual({
+              dependentProp: 1,
+              dependentProp_1: 1,
+              dependentProp_2: 1,
+            });
+
+            expect(onSuccessStats).toEqual(stats);
+          });
+
+          it("should not resolve readonly dependent properties that have changed if provided during updates", async () => {
+            const { data, handleSuccess } = await Model.update(
+              {
                 laxProp: "hello",
                 laxProp_1: "world",
                 dependentProp: 10,
                 dependentProp_1: 11,
                 dependentProp_2: 12,
-              });
+                dependentProp_3: 0,
+              },
+              { laxProp: "", laxProp_1: "hey" }
+            );
 
-              const { dependentProp_3, ...stats } =
-                successCountOfDependentProps;
+            await handleSuccess();
 
-              expect(resolversCalledStats).toEqual({
-                dependentProp: 1,
-                dependentProp_1: 1,
-                dependentProp_2: 1,
-              });
-
-              expect(onSuccessStats).toEqual(stats);
+            expect(data).toEqual({
+              laxProp: "",
+              laxProp_1: "hey",
+              dependentProp: 3,
+              dependentProp_1: 4,
             });
 
-            it("should not resolve readonly dependent properties that have changed if provided during updates", async () => {
-              const { data, handleSuccess } = await Model.update(
-                {
-                  laxProp: "hello",
-                  laxProp_1: "world",
-                  dependentProp: 10,
-                  dependentProp_1: 11,
-                  dependentProp_2: 12,
-                  dependentProp_3: 0,
-                },
-                { laxProp: "", laxProp_1: "hey" }
-              );
+            const stats = {
+              dependentProp: 1,
+              dependentProp_1: 1,
+            };
 
-              await handleSuccess();
+            expect(resolversCalledStats).toEqual(stats);
 
-              expect(data).toEqual({
-                laxProp: "",
-                laxProp_1: "hey",
-                dependentProp: 3,
-                dependentProp_1: 4,
-              });
-
-              const stats = {
-                dependentProp: 1,
-                dependentProp_1: 1,
-              };
-
-              expect(resolversCalledStats).toEqual(stats);
-
-              expect(onSuccessStats).toEqual({
-                dependentProp: 4,
-                dependentProp_1: 1,
-              });
+            expect(onSuccessStats).toEqual({
+              dependentProp: 4,
+              dependentProp_1: 1,
             });
           });
 
-          describe("deletion", () => {
-            it("should have all correct properties and values at creation", async () => {
-              await Model.delete({
-                laxProp: "",
-                laxProp_1: "",
-                laxProp_2: "value based pricing",
-                dependentProp: 0,
-                dependentProp_1: 0,
-                dependentProp_2: 0,
-                dependentProp_3: 2,
-              });
+          it("should not consider new resolved values of dependent properties if they are not different from previous values during updates", async () => {
+            const { data, handleSuccess } = await Model.update(
+              {
+                laxProp: "hello",
+                laxProp_1: "world",
+                dependentProp: 3,
+                dependentProp_1: 4,
+                dependentProp_2: 12,
+                dependentProp_3: 0,
+              },
+              { laxProp: "", laxProp_1: "hey" }
+            );
 
-              expect(onDeleteStats).toEqual({
-                laxProp_2: 1,
-                dependentProp: 2,
-                dependentProp_1: 1,
-                dependentProp_2: 2,
-                dependentProp_3: 2,
-              });
-            });
+            await handleSuccess();
+
+            expect(data).toEqual({ laxProp: "", laxProp_1: "hey" });
+
+            expect(resolversCalledStats).toEqual({});
+
+            expect(onSuccessStats).toEqual({});
           });
         });
 
+        describe("deletion", () => {
+          it("should have all correct properties and values at creation", async () => {
+            await Model.delete({
+              laxProp: "",
+              laxProp_1: "",
+              laxProp_2: "value based pricing",
+              dependentProp: 0,
+              dependentProp_1: 0,
+              dependentProp_2: 0,
+              dependentProp_3: 2,
+            });
+
+            expect(onDeleteStats).toEqual({
+              laxProp_2: 1,
+              dependentProp: 2,
+              dependentProp_1: 1,
+              dependentProp_2: 2,
+              dependentProp_3: 2,
+            });
+          });
+        });
+      });
+
+      describe("valid", () => {
         it("should accept dependent & default(any | function)", () => {
           const values = ["", 1, false, true, null, {}, []];
 
