@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 # v3.0.4 <small><sup>01-02-2023</sup></small>
 
+- [Fix] fix problems whereby newly resolved values of dependent properties were considered as updates even though their values were not different from the previous values
 - [Fix] fix problems with types when using 'sanitize' rule with TS
 - [Updated] updated how values are set internally so that values of properties sideEffects are only accepted at creation, cloning, deletion and as changes during updates. Timestamps are only accepted as current values during updates & deletion
 
