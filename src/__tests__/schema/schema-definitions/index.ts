@@ -631,7 +631,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
         describe("updates", () => {
           it("should have all correct properties and values after updates", async () => {
-            const { data: updates } = await Model.update(
+            const { data: updates, handleSuccess } = await Model.update(
               {
                 laxProp: "",
                 laxProp_1: "",
@@ -650,12 +650,13 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               }
             );
 
-            expect(updates).toMatchObject({
-              laxProp_2: "hey",
-              dependentProp_3: 2,
-            });
+            await handleSuccess();
+
+            expect(updates).toMatchObject({ laxProp_2: "hey" });
 
             expect(resolversCalledStats).toEqual({ dependentProp_3: 1 });
+
+            expect(onSuccessStats).toEqual({});
           });
 
           it("should resolve dependencies of dependent properties if provided during updates", async () => {
@@ -748,7 +749,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
             expect(data).toEqual({ laxProp: "", laxProp_1: "hey" });
 
-            expect(resolversCalledStats).toEqual({});
+            expect(resolversCalledStats).toEqual({ dependentProp: 1 });
 
             expect(onSuccessStats).toEqual({});
           });

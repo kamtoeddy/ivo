@@ -273,6 +273,8 @@ class ModelTool<
 
       const value = await resolver!(_ctx, lifeCycle);
 
+      if (!isCreating && isEqual(value, _ctx[prop])) return;
+
       data[prop] = value;
 
       const updates = { [prop]: value } as I;
