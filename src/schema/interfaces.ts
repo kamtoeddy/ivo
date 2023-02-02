@@ -179,7 +179,6 @@ export namespace Schema {
   type RequiredSideEffect<K extends keyof T, T> = SideEffect<K, T> & {
     required: ConditionalRequiredSetter<T>;
     shouldUpdate?: false | Setter<boolean, T>;
-    requiredError: string | Setter<string, T>;
   };
 
   // options
