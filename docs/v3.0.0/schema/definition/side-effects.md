@@ -19,21 +19,14 @@ import { Schema } from "clean-schema";
 
 // definition
 const User = new Schema({
-  blockUser: {
-    sideEffect: true,
-    validator: validateBoolean,
-  },
+  blockUser: { sideEffect: true, validator: validateBoolean },
   isBlocked: {
     default: false,
     dependent: true,
     dependsOn: "blockUser",
-    resolver: resolveIsBlocked,
+    resolver: ({ blockUser: isBlocked }) => isBlocked,
   },
 }).getModel();
-
-function resolveIsBlocked({ blockUser }) {
-  return  isBlocked: blockUser ? true : false ;
-}
 
 function validateBoolean(value) {
   if (![false, true].includes(value))
