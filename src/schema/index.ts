@@ -20,7 +20,7 @@ class Schema<
 > extends SchemaCore<I> {
   constructor(
     propDefinitions: ns.PropertyDefinitions<
-      SpreadType<CombineTypes<O, I> & O>,
+      SpreadType<CombineTypes<I, O> & I>,
       O
     >,
     options: ns.Options = defaultOptions
@@ -633,7 +633,7 @@ class ModelTool<
     }
 
     return {
-      data: this._useConfigProps(updated, true),
+      data: this._useConfigProps(updated, true) as Partial<O>,
       error: undefined,
       handleSuccess: this._makeHandleSuccess(updated, "updating"),
     };
