@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# v3.0.5 <small><sup>02-02-2023</sup></small>
+
+- [Fix] fixed problem of types not being properly inferred for updated values
+
 # v3.0.4 <small><sup>01-02-2023</sup></small>
 
 - [Fix] fix problems whereby newly resolved values of dependent properties were considered as updates even though their values were not different from the previous values
