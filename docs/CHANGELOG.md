@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# v3.0.6 <small><sup>02-02-2023</sup></small>
+
+- [Fix] removed old config rule 'requiredError' from interfaces
+
 # v3.0.5 <small><sup>02-02-2023</sup></small>
 
 - [Fix] fixed problem of types not being properly inferred for updated values
