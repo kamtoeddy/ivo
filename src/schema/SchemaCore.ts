@@ -360,21 +360,6 @@ export abstract class SchemaCore<I extends ObjectType> {
     );
   };
 
-  protected _getOperationListeners = (
-    prop: string,
-    lifeCycle: LifeCycles.Rule
-  ) => {
-    const onChangeListeners = this._isChangeLifeCycle(lifeCycle)
-      ? this._getListeners(prop, "onDelete")
-      : [];
-
-    if (this._isSideEffect(prop)) return { listeners: [], onChangeListeners };
-
-    const listeners = this._getListeners(prop, lifeCycle);
-
-    return { listeners, onChangeListeners };
-  };
-
   protected _getListeners = <T>(prop: string, lifeCycle: LifeCycles.Rule) => {
     return this._getDetailedListeners<T>(prop, lifeCycle, true).map(
       (dt) => dt.listener
@@ -405,9 +390,6 @@ export abstract class SchemaCore<I extends ObjectType> {
 
     return false;
   };
-
-  protected _isChangeLifeCycle = (lifeCycle: LifeCycles.Rule) =>
-    ["onCreate", "onUpdate"].includes(lifeCycle);
 
   protected __isConstantProp = (prop: string) => {
     const { constant, value } = this._getDefinition(prop);

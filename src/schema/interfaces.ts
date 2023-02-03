@@ -87,12 +87,8 @@ export namespace Schema {
   };
 
   type Listenable<I, O> = {
-    onDelete?:
-      | LifeCycles.DeleteListener<O>
-      | NonEmptyArray<LifeCycles.DeleteListener<O>>;
-    onFailure?:
-      | LifeCycles.VoidListener<I>
-      | NonEmptyArray<LifeCycles.VoidListener<I>>;
+    onDelete?: LifeCycles.Listener<O> | NonEmptyArray<LifeCycles.Listener<O>>;
+    onFailure?: LifeCycles.Listener<I> | NonEmptyArray<LifeCycles.Listener<I>>;
     onSuccess?:
       | LifeCycles.SuccessListener<I>
       | NonEmptyArray<LifeCycles.SuccessListener<I>>;
@@ -100,9 +96,7 @@ export namespace Schema {
 
   type Constant<K extends keyof T, T, O = T> = {
     constant: true;
-    onDelete?:
-      | LifeCycles.DeleteListener<O>
-      | NonEmptyArray<LifeCycles.DeleteListener<O>>;
+    onDelete?: LifeCycles.Listener<O> | NonEmptyArray<LifeCycles.Listener<O>>;
     onSuccess?:
       | LifeCycles.SuccessListener<T>
       | NonEmptyArray<LifeCycles.SuccessListener<T>>;
@@ -162,9 +156,7 @@ export namespace Schema {
   type SideEffect<K extends keyof T, T> = {
     sideEffect: true;
     sanitizer?: AsyncSetter<K, T>;
-    onFailure?:
-      | LifeCycles.VoidListener<T>
-      | NonEmptyArray<LifeCycles.VoidListener<T>>;
+    onFailure?: LifeCycles.Listener<T> | NonEmptyArray<LifeCycles.Listener<T>>;
     onSuccess?:
       | LifeCycles.SuccessListener<T>
       | NonEmptyArray<LifeCycles.SuccessListener<T>>;
@@ -198,17 +190,12 @@ export namespace LifeCycles {
 
   export type LifeCycle = "creating" | "updating";
 
-  export type Listener<T> = (
-    ctx: Readonly<T>
-  ) => Partial<T> | Promise<Partial<T>> | void | Promise<void>;
-
-  export type DeleteListener<T> = (ctx: Readonly<T>) => void | Promise<void>;
+  export type Listener<T> = (ctx: Readonly<T>) => void | Promise<void>;
 
   export type SuccessListener<T> = (
     ctx: Readonly<T>,
     lifeCycle: LifeCycle
   ) => void | Promise<void>;
-  export type VoidListener<T> = (ctx: Readonly<T>) => void | Promise<void>;
 }
 
 type ValidatorResponse<T> =
