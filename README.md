@@ -114,7 +114,7 @@ console.log(user);
 //   isBlocked: false,
 //   lastName: "Spader",
 //   lastSeen: "",
-//   password: "au_34ibUv^T-adjInFjj",
+//   password: "**************",
 //   role: "user",
 //   updatedAt: new Date(),
 // };
