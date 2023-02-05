@@ -299,13 +299,13 @@ class ModelTool<
   private _setValues(
     values: Partial<I | O>,
     {
-      allowSideEffects = true,
+      allowVirtuals = true,
       allowTimestamps = false,
     }: {
-      allowSideEffects?: boolean;
+      allowVirtuals?: boolean;
       allowTimestamps?: boolean;
     } = {
-      allowSideEffects: true,
+      allowVirtuals: true,
       allowTimestamps: false,
     }
   ) {
@@ -315,7 +315,7 @@ class ModelTool<
           this.optionsTool.withTimestamps &&
           this.optionsTool.isTimestampKey(key)) ||
         this._isProp(key) ||
-        (allowSideEffects && this._isVirtual(key))
+        (allowVirtuals && this._isVirtual(key))
     );
 
     const _values = {} as Partial<I>;
@@ -497,8 +497,9 @@ class ModelTool<
         return this._updateContext(validCtxUpdate);
       }
 
-      const isSideEffect = virtuals.includes(prop);
-      if (isSideEffect && !this._isVirtualInit(prop)) return;
+      const isVirtual = virtuals.includes(prop);
+
+      if (isVirtual && !this._isVirtualInit(prop)) return;
 
       const isProvided = this.values.hasOwnProperty(prop);
 
@@ -512,7 +513,7 @@ class ModelTool<
         (isLax &&
           this._hasAny(prop, "shouldInit") &&
           !this._getValueBy(prop, "shouldInit", "creating")) ||
-        (!isSideEffect && !this._canInit(prop) && !isLaxInit && !isRequiredInit)
+        (!isVirtual && !this._canInit(prop) && !isLaxInit && !isRequiredInit)
       ) {
         data[prop] = this._getDefaultValue(prop);
 
@@ -553,7 +554,7 @@ class ModelTool<
     if (!this._areValuesOk(values))
       return new ErrorTool({ message: "Invalid Data" }).throw();
 
-    this._setValues(values, { allowSideEffects: false, allowTimestamps: true });
+    this._setValues(values, { allowVirtuals: false, allowTimestamps: true });
 
     const ctx = this._getContext() as Readonly<O>;
 
@@ -571,7 +572,7 @@ class ModelTool<
   update = async (values: O, changes: Partial<I>) => {
     if (!this._areValuesOk(values)) return this._handleInvalidData();
 
-    this._setValues(values, { allowSideEffects: false, allowTimestamps: true });
+    this._setValues(values, { allowVirtuals: false, allowTimestamps: true });
 
     const error = new ErrorTool({ message: "Validation Error" });
     let updated = {} as Partial<I>;
