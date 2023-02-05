@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+# v3.0.7 <small><sup>02-02-2023</sup></small>
+
+- [Update] removed unused methods from SchemaCore
+- [Fix] updated types of setters of 'shouldInit' & 'shouldUpdate' rules so that they do not suggest the operation's name anymore
+
 # v3.0.6 <small><sup>02-02-2023</sup></small>
 
 - [Fix] fixed problem with 'requiredError' rule still being suggested as a configuration when defining a schema
