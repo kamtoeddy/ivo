@@ -92,11 +92,11 @@ class ModelTool<
   private _handleFailure = async (
     data: Partial<I>,
     error: ErrorTool,
-    sideEffects: StringKey<I>[] = []
+    virtuals: StringKey<I>[] = []
   ) => {
     let props = [
       ...this._getKeysAsProps({ ...data, ...error.payload }),
-      ...sideEffects,
+      ...virtuals,
     ];
 
     props = Array.from(new Set(props));
@@ -128,7 +128,7 @@ class ModelTool<
     }
   };
 
-  private _handleSanitizationOfSideEffects = async (
+  private _handleSanitizationOfVirtuals = async (
     lifeCycle: LifeCycles.LifeCycle
   ) => {
     let sanitizers: [StringKey<I>, Function][] = [];
@@ -136,11 +136,11 @@ class ModelTool<
     const ctx = this._getContext();
     const finalCtx = this._getFinalContext();
 
-    const successFulSideEffects = this._getKeysAsProps(finalCtx).filter(
-      this._isSideEffect
+    const successFulVirtuals = this._getKeysAsProps(finalCtx).filter(
+      this._isVirtual
     );
 
-    for (const prop of successFulSideEffects) {
+    for (const prop of successFulVirtuals) {
       const [isSanitizable, sanitizer] = this._isSanitizable(prop, lifeCycle);
 
       if (!isSanitizable) continue;
@@ -171,20 +171,20 @@ class ModelTool<
   };
 
   private _isUpdatable = (prop: string) => {
-    const isSideEffect = this._isSideEffect(prop);
+    const isVirtual = this._isVirtual(prop);
 
     if (
       (!this._isProp(prop) ||
         this._isConstant(prop) ||
         this._isDependentProp(prop)) &&
-      !isSideEffect
+      !isVirtual
     )
       return false;
 
     const hasShouldUpdateRule = this._hasAny(prop, "shouldUpdate");
     const isUpdatable = this._getValueBy(prop, "shouldUpdate", "updating");
 
-    if (isSideEffect) return hasShouldUpdateRule ? isUpdatable : true;
+    if (isVirtual) return hasShouldUpdateRule ? isUpdatable : true;
 
     const isReadonly = this._isReadonly(prop);
 
@@ -203,7 +203,7 @@ class ModelTool<
     const finalCtx = this._getFinalContext();
 
     const successFulSideEffects = this._getKeysAsProps(finalCtx).filter(
-      this._isSideEffect
+      this._isVirtual
     );
 
     const props = this._getKeysAsProps(data);
@@ -244,7 +244,7 @@ class ModelTool<
 
       if (!dependencies.length) continue;
 
-      if (isCreating && this._isSideEffect(prop) && !this._isSideInit(prop))
+      if (isCreating && this._isVirtual(prop) && !this._isVirtualInit(prop))
         continue;
 
       if (
@@ -315,7 +315,7 @@ class ModelTool<
           this.optionsTool.withTimestamps &&
           this.optionsTool.isTimestampKey(key)) ||
         this._isProp(key) ||
-        (allowSideEffects && this._isSideEffect(key))
+        (allowSideEffects && this._isVirtual(key))
     );
 
     const _values = {} as Partial<I>;
@@ -357,7 +357,7 @@ class ModelTool<
 
     if (isEqual(validated, undefined)) validated = value;
 
-    if (!this._isSideEffect(prop)) operationData[prop] = validated;
+    if (!this._isVirtual(prop)) operationData[prop] = validated;
 
     const validCtxUpdate = { [prop]: validated } as I;
 
@@ -380,11 +380,11 @@ class ModelTool<
     let data = {} as Partial<I>;
     const error = new ErrorTool({ message: "Validation Error" });
 
-    const sideEffects = this._getKeysAsProps(this.values).filter(
-      this._isSideInit
+    const virtuals = this._getKeysAsProps(this.values).filter(
+      this._isVirtualInit
     );
 
-    const props = [...this.props, ...sideEffects];
+    const props = [...this.props, ...virtuals];
 
     const validations = props.map(async (prop) => {
       if (this._isConstant(prop)) {
@@ -409,9 +409,9 @@ class ModelTool<
         return this._updateContext(validCtxUpdate);
       }
 
-      const isSideEffect = sideEffects.includes(prop);
+      const isSideEffect = virtuals.includes(prop);
 
-      if (isSideEffect && !this._isSideInit(prop)) return;
+      if (isSideEffect && !this._isVirtualInit(prop)) return;
 
       if (!isSideEffect && reset.includes(prop)) {
         data[prop] = this._getDefaultValue(prop);
@@ -453,7 +453,7 @@ class ModelTool<
 
     this._handleRequiredBy(error, "creating");
 
-    await this._handleSanitizationOfSideEffects("creating");
+    await this._handleSanitizationOfVirtuals("creating");
 
     data = await this._resolveDependentChanges(
       data,
@@ -462,7 +462,7 @@ class ModelTool<
     );
 
     if (error.isPayloadLoaded) {
-      await this._handleFailure(data, error, sideEffects);
+      await this._handleFailure(data, error, virtuals);
       return this._handleError(error);
     }
 
@@ -481,11 +481,11 @@ class ModelTool<
     let data = {} as Partial<I>;
     const error = new ErrorTool({ message: "Validation Error" });
 
-    const sideEffects = this._getKeysAsProps(this.values).filter(
-      this._isSideInit
+    const virtuals = this._getKeysAsProps(this.values).filter(
+      this._isVirtualInit
     );
 
-    const props = [...this.props, ...sideEffects];
+    const props = [...this.props, ...virtuals];
 
     const validations = props.map(async (prop) => {
       if (this._isConstant(prop)) {
@@ -497,8 +497,8 @@ class ModelTool<
         return this._updateContext(validCtxUpdate);
       }
 
-      const isSideEffect = sideEffects.includes(prop);
-      if (isSideEffect && !this._isSideInit(prop)) return;
+      const isSideEffect = virtuals.includes(prop);
+      if (isSideEffect && !this._isVirtualInit(prop)) return;
 
       const isProvided = this.values.hasOwnProperty(prop);
 
@@ -529,7 +529,7 @@ class ModelTool<
 
     this._handleRequiredBy(error, "creating");
 
-    await this._handleSanitizationOfSideEffects("creating");
+    await this._handleSanitizationOfVirtuals("creating");
 
     data = await this._resolveDependentChanges(
       data,
@@ -538,7 +538,7 @@ class ModelTool<
     );
 
     if (error.isPayloadLoaded) {
-      await this._handleFailure(data, error, sideEffects);
+      await this._handleFailure(data, error, virtuals);
       return this._handleError(error);
     }
 
@@ -581,7 +581,7 @@ class ModelTool<
     );
 
     const linkedProps: StringKey<I>[] = [];
-    const sideEffects: StringKey<I>[] = [];
+    const virtuals: StringKey<I>[] = [];
 
     const validations = toUpdate.map(async (prop) => {
       const value = changes[prop] as Exclude<
@@ -598,7 +598,7 @@ class ModelTool<
 
       if (isEqual(validated, this.values[prop])) return;
 
-      if (this._isSideEffect(prop)) sideEffects.push(prop);
+      if (this._isVirtual(prop)) virtuals.push(prop);
       else {
         updated[prop] = validated;
         linkedProps.push(prop);
@@ -615,11 +615,11 @@ class ModelTool<
     this._handleRequiredBy(error, "updating");
 
     if (error.isPayloadLoaded) {
-      await this._handleFailure(updated, error, sideEffects);
+      await this._handleFailure(updated, error, virtuals);
       return this._handleError(error);
     }
 
-    await this._handleSanitizationOfSideEffects("updating");
+    await this._handleSanitizationOfVirtuals("updating");
 
     updated = await this._resolveDependentChanges(
       updated,
@@ -628,7 +628,7 @@ class ModelTool<
     );
 
     if (!Object.keys(updated).length) {
-      await this._handleFailure(updated, error, sideEffects);
+      await this._handleFailure(updated, error, virtuals);
       return this._handleError(error.setMessage("Nothing to update"));
     }
 
@@ -647,7 +647,7 @@ class ModelTool<
     if (
       this._isConstant(prop) ||
       this._isDependentProp(prop) ||
-      (!this._isProp(prop) && !this._isSideEffect(prop))
+      (!this._isProp(prop) && !this._isVirtual(prop))
     )
       return makeResponse<I[K]>({ valid: false, reason: "Invalid property" });
 

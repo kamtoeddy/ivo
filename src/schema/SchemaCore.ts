@@ -31,24 +31,24 @@ const allRules = [
   "resolver",
   "required",
   "sanitizer",
-  "sideEffect",
   "shouldInit",
   "shouldUpdate",
   "validator",
   "value",
+  "virtual",
 ] as PropDefinitionRule[];
 
 const allowedOptions: OptionsKey[] = ["errors", "timestamps"];
 const constantRules = ["constant", "onDelete", "onSuccess", "value"];
-const sideEffectRules = [
+const VirtualRules = [
   "sanitizer",
-  "sideEffect",
   "onFailure",
   "onSuccess",
   "required",
   "shouldInit",
   "shouldUpdate",
   "validator",
+  "virtual",
 ];
 
 const lifeCycleRules: LifeCycles.Rule[] = [
@@ -75,7 +75,7 @@ export abstract class SchemaCore<I extends ObjectType> {
   protected propsRequiredBy: StringKey<I>[] = [];
   protected readonlyProps: StringKey<I>[] = [];
   protected requiredProps: StringKey<I>[] = [];
-  protected sideEffects: StringKey<I>[] = [];
+  protected virtuals: StringKey<I>[] = [];
 
   // helpers
   protected optionsTool: OptionsTool;
@@ -245,18 +245,18 @@ export abstract class SchemaCore<I extends ObjectType> {
       if (!isDefOk.valid) error.add(prop, isDefOk.reasons!);
     }
 
-    // make sure every side effect has atleast one dependency
-    for (let prop of this.sideEffects) {
+    // make sure every virtual property has atleast one dependency
+    for (let prop of this.virtuals) {
       const dependencies = this._getDependencies(prop);
 
       if (!dependencies.length)
         error.add(
           prop,
-          "A side effect must have atleast one property that depends on it"
+          "A virtual property must have atleast one property that depends on it"
         );
     }
 
-    // make sure every side effect has atleast one dependency
+    // make sure every virtual has atleast one dependency
     for (let prop of this.dependents) {
       const { dependsOn } = this._getDefinition(prop);
 
@@ -278,13 +278,13 @@ export abstract class SchemaCore<I extends ObjectType> {
 
       // check against dependencies on invalid properties
       const invalidProps = _dependsOn.filter(
-        (p) => !(this._isProp(p) || this._isSideEffect(p))
+        (p) => !(this._isProp(p) || this._isVirtual(p))
       );
 
       for (const _prop of invalidProps)
         error.add(
           prop,
-          `Cannot establish dependency with '${_prop}' as it is neither a property nor a side effect of your model`
+          `Cannot establish dependency with '${_prop}' as it is neither a property nor a virtual of your model`
         );
     }
 
@@ -500,8 +500,8 @@ export abstract class SchemaCore<I extends ObjectType> {
         reason: "Dependent properties cannot have shouldInit rule",
       };
 
-    if (this._hasAny(prop, "sideEffect"))
-      return { valid, reason: "Dependent properties cannot be sideEffect" };
+    if (this._hasAny(prop, "virtual"))
+      return { valid, reason: "Dependent properties cannot be virtual" };
 
     this.dependents.push(prop as StringKey<I>);
     this._addDependencies(prop as StringKey<I>, dependsOn);
@@ -577,12 +577,12 @@ export abstract class SchemaCore<I extends ObjectType> {
       if (!valid) reasons.push(reason!);
     }
 
-    if (this._hasAny(prop, "sideEffect")) {
-      const { valid, reason } = this.__isSideEffect(prop);
+    if (this._hasAny(prop, "virtual")) {
+      const { valid, reason } = this.__isVirtual(prop);
 
       if (!valid) reasons.push(reason!);
     } else if (this._hasAny(prop, "sanitizer"))
-      reasons.push("'sanitizer' is only valid on side effects");
+      reasons.push("'sanitizer' is only valid on virtuals");
 
     if (this._hasAny(prop, "shouldInit")) {
       const { valid, reason } = this.__isShouldInitConfigOk(prop);
@@ -628,7 +628,7 @@ export abstract class SchemaCore<I extends ObjectType> {
       !this._isLaxProp(prop) &&
       !this._isReadonly(prop) &&
       !this._isRequired(prop) &&
-      !this._isSideEffect(prop)
+      !this._isVirtual(prop)
     ) {
       reasons.push(
         "A property should at least be readonly, required, or have a default value"
@@ -637,7 +637,7 @@ export abstract class SchemaCore<I extends ObjectType> {
 
     const valid = reasons.length ? false : true;
 
-    if (valid && !this._isSideEffect(prop)) {
+    if (valid && !this._isVirtual(prop)) {
       this.props.push(prop as StringKey<I>);
       this._setDefaultOf(prop as StringKey<I>, "creating");
     }
@@ -775,16 +775,16 @@ export abstract class SchemaCore<I extends ObjectType> {
         reason: "Callable required properties must have required as a function",
       };
 
-    const hasSideEffect = this._hasAny(prop, "sideEffect");
+    const hasVirtualRule = this._hasAny(prop, "virtual");
 
-    if (isEqual(_default, undefined) && !hasSideEffect)
+    if (isEqual(_default, undefined) && !hasVirtualRule)
       return {
         valid,
         reason:
           "Callable required properties must have a default value or setter",
       };
 
-    if (!hasSideEffect) {
+    if (!hasVirtualRule) {
       const isRequiredCommon = this.__isRequiredCommon(prop);
 
       if (!isRequiredCommon.valid) return isRequiredCommon;
@@ -798,11 +798,11 @@ export abstract class SchemaCore<I extends ObjectType> {
   protected _isRequiredBy = (prop: string) =>
     this.propsRequiredBy.includes(prop as StringKey<I>);
 
-  protected __isSideEffectRequiredBy = (prop: string) => {
+  protected __isVirtualRequiredBy = (prop: string) => {
     if (this._hasAny(prop, "shouldInit"))
       return {
         valid: false,
-        reason: "Required sideEffects cannot have initialization blocked",
+        reason: "Required virtuals cannot have initialization blocked",
       };
 
     const isRequiredBy = this.__isRequiredBy(prop);
@@ -812,13 +812,13 @@ export abstract class SchemaCore<I extends ObjectType> {
     return { valid: true };
   };
 
-  protected __isSideEffect = (prop: string) => {
+  protected __isVirtual = (prop: string) => {
     const valid = false;
 
-    const { sanitizer, sideEffect } = this._getDefinition(prop);
+    const { sanitizer, virtual } = this._getDefinition(prop);
 
-    if (sideEffect !== true)
-      return { valid, reason: "SideEffects must have sideEffect as 'true'" };
+    if (virtual !== true)
+      return { valid, reason: "Virtuals must have virtual as 'true'" };
 
     if (!this._isValidatorOk(prop))
       return { valid, reason: "Invalid validator" };
@@ -829,33 +829,33 @@ export abstract class SchemaCore<I extends ObjectType> {
     const hasRequired = this._hasAny(prop, "required");
 
     if (hasRequired) {
-      const isRequiredBy = this.__isSideEffectRequiredBy(prop);
+      const isRequiredBy = this.__isVirtualRequiredBy(prop);
 
       if (!isRequiredBy.valid) return isRequiredBy;
     }
 
     const unAcceptedRules = allRules.filter(
-      (rule) => !sideEffectRules.includes(rule)
+      (rule) => !VirtualRules.includes(rule)
     );
 
     if (this._hasAny(prop, unAcceptedRules))
       return {
         valid,
-        reason: `SideEffects properties can only have (${sideEffectRules.join(
+        reason: `SideEffects properties can only have (${VirtualRules.join(
           ", "
         )}) as rules`,
       };
 
-    this.sideEffects.push(prop as StringKey<I>);
+    this.virtuals.push(prop as StringKey<I>);
 
     return { valid: true };
   };
 
-  protected _isSideEffect = (prop: string) =>
-    this.sideEffects.includes(prop as StringKey<I>);
+  protected _isVirtual = (prop: string) =>
+    this.virtuals.includes(prop as StringKey<I>);
 
-  protected _isSideInit = (prop: string) => {
-    if (!this._isSideEffect(prop)) return false;
+  protected _isVirtualInit = (prop: string) => {
+    if (!this._isVirtual(prop)) return false;
 
     const { shouldInit } = this._getDefinition(prop);
 
@@ -877,7 +877,7 @@ export abstract class SchemaCore<I extends ObjectType> {
           "The initialization of a property can only be blocked if the 'shouldinit' rule is set to 'false' or a function that returns a boolean",
       };
 
-    if (!this._hasAny(prop, ["default", "sideEffect"]))
+    if (!this._hasAny(prop, ["default", "virtual"]))
       return {
         valid,
         reason:
@@ -904,11 +904,10 @@ export abstract class SchemaCore<I extends ObjectType> {
         reason: "Both 'shouldInit' & 'shouldUpdate' cannot be 'false'",
       };
 
-    if (shouldUpdate === false && !this._hasAny(prop, "sideEffect"))
+    if (shouldUpdate === false && !this._hasAny(prop, "virtual"))
       return {
         valid,
-        reason:
-          "Only 'sideEffects' are allowed to have 'shouldUpdate' as 'false'",
+        reason: "Only 'Virtuals' are allowed to have 'shouldUpdate' as 'false'",
       };
 
     if (readonly === true && isEqual(shouldInit, undefined))
@@ -937,8 +936,8 @@ export abstract class SchemaCore<I extends ObjectType> {
     // Lax properties cannot be required
     if (this._hasAny(prop, "required")) return;
 
-    // Lax properties cannot be side effects
-    if (this._hasAny(prop, "sideEffect")) return;
+    // Lax properties cannot be virtual
+    if (this._hasAny(prop, "virtual")) return;
 
     // only readonly(lax) are lax props &
     // Lax properties cannot have initialization blocked

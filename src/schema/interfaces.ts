@@ -60,8 +60,8 @@ export namespace Schema {
       | Required<K, I, O>
       | RequiredBy<K, I, O>
       | ReadonlyRequired<K, I, O>
-      | RequiredSideEffect<K, I>
-      | SideEffect<K, I>;
+      | RequiredVirtual<K, I>
+      | Virtual<K, I>;
   };
 
   export type Definitions<I> = {
@@ -74,11 +74,11 @@ export namespace Schema {
       resolver?: Function;
       required?: boolean | ConditionalRequiredSetter<I>;
       sanitizer?: AsyncSetter<K, I>;
-      sideEffect?: boolean;
       shouldInit?: false | BooleanSetter<I>;
       shouldUpdate?: false | BooleanSetter<I>;
       validator?: Function;
       value?: any;
+      virtual?: boolean;
     };
   };
 
@@ -153,8 +153,8 @@ export namespace Schema {
     validator: Validator<K, T>;
   };
 
-  type SideEffect<K extends keyof T, T> = {
-    sideEffect: true;
+  type Virtual<K extends keyof T, T> = {
+    virtual: true;
     sanitizer?: AsyncSetter<K, T>;
     onFailure?: LifeCycles.Listener<T> | NonEmptyArray<LifeCycles.Listener<T>>;
     onSuccess?:
@@ -165,7 +165,7 @@ export namespace Schema {
     validator: Validator<K, T>;
   };
 
-  type RequiredSideEffect<K extends keyof T, T> = SideEffect<K, T> & {
+  type RequiredVirtual<K extends keyof T, T> = Virtual<K, T> & {
     required: ConditionalRequiredSetter<T>;
     shouldUpdate?: false | BooleanSetter<T>;
   };
@@ -224,12 +224,12 @@ export type PropDefinitionRule =
   | "readonly"
   | "resolver"
   | "required"
-  | "sideEffect"
   | "sanitizer"
   | "shouldInit"
   | "shouldUpdate"
   | "validator"
-  | "value";
+  | "value"
+  | "virtual";
 
 export interface ITimestamp {
   createdAt: string;
