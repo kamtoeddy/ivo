@@ -45,10 +45,7 @@ type AsyncSetter<K, T> = (
   lifeCycle: LifeCycles.LifeCycle
 ) => Value<K, T> | Promise<Value<K, T>>;
 
-type Setter<K, T> = (
-  ctx: Readonly<T>,
-  lifeCycle: LifeCycles.LifeCycle
-) => Value<K, T>;
+type BooleanSetter<T> = (ctx: Readonly<T>) => boolean;
 
 export type StringKey<T> = Extract<keyof T, string>;
 
@@ -78,8 +75,8 @@ export namespace Schema {
       required?: boolean | ConditionalRequiredSetter<I>;
       sanitizer?: AsyncSetter<K, I>;
       sideEffect?: boolean;
-      shouldInit?: false | Setter<boolean, I>;
-      shouldUpdate?: false | Setter<boolean, I>;
+      shouldInit?: false | BooleanSetter<I>;
+      shouldUpdate?: false | BooleanSetter<I>;
       validator?: Function;
       value?: any;
     };
@@ -90,12 +87,8 @@ export namespace Schema {
   };
 
   type Listenable<I, O> = {
-    onDelete?:
-      | LifeCycles.DeleteListener<O>
-      | NonEmptyArray<LifeCycles.DeleteListener<O>>;
-    onFailure?:
-      | LifeCycles.VoidListener<I>
-      | NonEmptyArray<LifeCycles.VoidListener<I>>;
+    onDelete?: LifeCycles.Listener<O> | NonEmptyArray<LifeCycles.Listener<O>>;
+    onFailure?: LifeCycles.Listener<I> | NonEmptyArray<LifeCycles.Listener<I>>;
     onSuccess?:
       | LifeCycles.SuccessListener<I>
       | NonEmptyArray<LifeCycles.SuccessListener<I>>;
@@ -103,9 +96,7 @@ export namespace Schema {
 
   type Constant<K extends keyof T, T, O = T> = {
     constant: true;
-    onDelete?:
-      | LifeCycles.DeleteListener<O>
-      | NonEmptyArray<LifeCycles.DeleteListener<O>>;
+    onDelete?: LifeCycles.Listener<O> | NonEmptyArray<LifeCycles.Listener<O>>;
     onSuccess?:
       | LifeCycles.SuccessListener<T>
       | NonEmptyArray<LifeCycles.SuccessListener<T>>;
@@ -123,23 +114,23 @@ export namespace Schema {
   type Property<K extends keyof T, T, O = T> = Listenable<T, O> & {
     default: TypeOf<T[K]> | AsyncSetter<K, T>;
     readonly?: "lax";
-    shouldInit?: false | Setter<boolean, T>;
-    shouldUpdate?: Setter<boolean, T>;
+    shouldInit?: false | BooleanSetter<T>;
+    shouldUpdate?: BooleanSetter<T>;
     validator?: Validator<K, T>;
   };
 
   type Readonly<K extends keyof T, T, O = T> = Listenable<T, O> & {
     default: TypeOf<T[K]> | AsyncSetter<K, T>;
     readonly: "lax";
-    shouldUpdate?: Setter<boolean, T>;
+    shouldUpdate?: BooleanSetter<T>;
     validator: Validator<K, T>;
   };
 
   type ReadonlyNoInit<K extends keyof T, T, O = T> = Listenable<T, O> & {
     default: TypeOf<T[K]> | AsyncSetter<K, T>;
     readonly: true;
-    shouldInit: false | Setter<boolean, T>;
-    shouldUpdate?: Setter<boolean, T>;
+    shouldInit: false | BooleanSetter<T>;
+    shouldUpdate?: BooleanSetter<T>;
     validator?: Validator<K, T>;
   };
 
@@ -150,7 +141,7 @@ export namespace Schema {
 
   type Required<K extends keyof T, T, O = T> = Listenable<T, O> & {
     required: true;
-    shouldUpdate?: Setter<boolean, T>;
+    shouldUpdate?: BooleanSetter<T>;
     validator: Validator<K, T>;
   };
 
@@ -158,27 +149,25 @@ export namespace Schema {
     default: TypeOf<T[K]> | AsyncSetter<K, T>;
     required: ConditionalRequiredSetter<T>;
     readonly?: true;
-    shouldUpdate?: Setter<boolean, T>;
+    shouldUpdate?: BooleanSetter<T>;
     validator: Validator<K, T>;
   };
 
   type SideEffect<K extends keyof T, T> = {
     sideEffect: true;
     sanitizer?: AsyncSetter<K, T>;
-    onFailure?:
-      | LifeCycles.VoidListener<T>
-      | NonEmptyArray<LifeCycles.VoidListener<T>>;
+    onFailure?: LifeCycles.Listener<T> | NonEmptyArray<LifeCycles.Listener<T>>;
     onSuccess?:
       | LifeCycles.SuccessListener<T>
       | NonEmptyArray<LifeCycles.SuccessListener<T>>;
-    shouldInit?: false | Setter<boolean, T>;
-    shouldUpdate?: false | Setter<boolean, T>;
+    shouldInit?: false | BooleanSetter<T>;
+    shouldUpdate?: false | BooleanSetter<T>;
     validator: Validator<K, T>;
   };
 
   type RequiredSideEffect<K extends keyof T, T> = SideEffect<K, T> & {
     required: ConditionalRequiredSetter<T>;
-    shouldUpdate?: false | Setter<boolean, T>;
+    shouldUpdate?: false | BooleanSetter<T>;
   };
 
   // options
@@ -201,17 +190,12 @@ export namespace LifeCycles {
 
   export type LifeCycle = "creating" | "updating";
 
-  export type Listener<T> = (
-    ctx: Readonly<T>
-  ) => Partial<T> | Promise<Partial<T>> | void | Promise<void>;
-
-  export type DeleteListener<T> = (ctx: Readonly<T>) => void | Promise<void>;
+  export type Listener<T> = (ctx: Readonly<T>) => void | Promise<void>;
 
   export type SuccessListener<T> = (
     ctx: Readonly<T>,
     lifeCycle: LifeCycle
   ) => void | Promise<void>;
-  export type VoidListener<T> = (ctx: Readonly<T>) => void | Promise<void>;
 }
 
 type ValidatorResponse<T> =
