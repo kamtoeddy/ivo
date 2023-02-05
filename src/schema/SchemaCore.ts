@@ -40,7 +40,7 @@ const allRules = [
 
 const allowedOptions: OptionsKey[] = ["errors", "timestamps"];
 const constantRules = ["constant", "onDelete", "onSuccess", "value"];
-const VirtualRules = [
+const virtualRules = [
   "sanitizer",
   "onFailure",
   "onSuccess",
@@ -798,73 +798,6 @@ export abstract class SchemaCore<I extends ObjectType> {
   protected _isRequiredBy = (prop: string) =>
     this.propsRequiredBy.includes(prop as StringKey<I>);
 
-  protected __isVirtualRequiredBy = (prop: string) => {
-    if (this._hasAny(prop, "shouldInit"))
-      return {
-        valid: false,
-        reason: "Required virtuals cannot have initialization blocked",
-      };
-
-    const isRequiredBy = this.__isRequiredBy(prop);
-
-    if (!isRequiredBy.valid) return isRequiredBy;
-
-    return { valid: true };
-  };
-
-  protected __isVirtual = (prop: string) => {
-    const valid = false;
-
-    const { sanitizer, virtual } = this._getDefinition(prop);
-
-    if (virtual !== true)
-      return { valid, reason: "Virtuals must have virtual as 'true'" };
-
-    if (!this._isValidatorOk(prop))
-      return { valid, reason: "Invalid validator" };
-
-    if (this._hasAny(prop, "sanitizer") && !this._isFunction(sanitizer))
-      return { valid, reason: "'sanitizer' must be a function" };
-
-    const hasRequired = this._hasAny(prop, "required");
-
-    if (hasRequired) {
-      const isRequiredBy = this.__isVirtualRequiredBy(prop);
-
-      if (!isRequiredBy.valid) return isRequiredBy;
-    }
-
-    const unAcceptedRules = allRules.filter(
-      (rule) => !VirtualRules.includes(rule)
-    );
-
-    if (this._hasAny(prop, unAcceptedRules))
-      return {
-        valid,
-        reason: `Virtual properties can only have (${VirtualRules.join(
-          ", "
-        )}) as rules`,
-      };
-
-    this.virtuals.push(prop as StringKey<I>);
-
-    return { valid: true };
-  };
-
-  protected _isVirtual = (prop: string) =>
-    this.virtuals.includes(prop as StringKey<I>);
-
-  protected _isVirtualInit = (prop: string) => {
-    if (!this._isVirtual(prop)) return false;
-
-    const { shouldInit } = this._getDefinition(prop);
-
-    return (
-      isEqual(shouldInit, undefined) ||
-      this._getValueBy(prop, "shouldInit", "creating")
-    );
-  };
-
   protected __isShouldInitConfigOk = (prop: string) => {
     const { shouldInit } = this._getDefinition(prop);
 
@@ -918,6 +851,73 @@ export abstract class SchemaCore<I extends ObjectType> {
       };
 
     return { valid: true };
+  };
+
+  protected __isVirtualRequiredBy = (prop: string) => {
+    if (this._hasAny(prop, "shouldInit"))
+      return {
+        valid: false,
+        reason: "Required virtuals cannot have initialization blocked",
+      };
+
+    const isRequiredBy = this.__isRequiredBy(prop);
+
+    if (!isRequiredBy.valid) return isRequiredBy;
+
+    return { valid: true };
+  };
+
+  protected __isVirtual = (prop: string) => {
+    const valid = false;
+
+    const { sanitizer, virtual } = this._getDefinition(prop);
+
+    if (virtual !== true)
+      return { valid, reason: "Virtuals must have virtual as 'true'" };
+
+    if (!this._isValidatorOk(prop))
+      return { valid, reason: "Invalid validator" };
+
+    if (this._hasAny(prop, "sanitizer") && !this._isFunction(sanitizer))
+      return { valid, reason: "'sanitizer' must be a function" };
+
+    const hasRequired = this._hasAny(prop, "required");
+
+    if (hasRequired) {
+      const isRequiredBy = this.__isVirtualRequiredBy(prop);
+
+      if (!isRequiredBy.valid) return isRequiredBy;
+    }
+
+    const unAcceptedRules = allRules.filter(
+      (rule) => !virtualRules.includes(rule)
+    );
+
+    if (this._hasAny(prop, unAcceptedRules))
+      return {
+        valid,
+        reason: `Virtual properties can only have (${virtualRules.join(
+          ", "
+        )}) as rules`,
+      };
+
+    this.virtuals.push(prop as StringKey<I>);
+
+    return { valid: true };
+  };
+
+  protected _isVirtual = (prop: string) =>
+    this.virtuals.includes(prop as StringKey<I>);
+
+  protected _isVirtualInit = (prop: string) => {
+    if (!this._isVirtual(prop)) return false;
+
+    const { shouldInit } = this._getDefinition(prop);
+
+    return (
+      isEqual(shouldInit, undefined) ||
+      this._getValueBy(prop, "shouldInit", "creating")
+    );
   };
 
   protected _registerIfLax = (prop: string) => {
