@@ -285,9 +285,9 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             "resolver",
             "required",
             "sanitizer",
-            "sideEffect",
             "shouldInit",
             "validator",
+            "virtual",
           ];
 
           for (const rule of rules) {
@@ -872,15 +872,15 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           toPass();
         });
 
-        it("should allow a dependency on side effects", () => {
+        it("should allow a dependency on virtuals", () => {
           const toPass = fx({
             dependentProp: {
               default: "",
               dependent: true,
-              dependsOn: "sideEFFectProp",
+              dependsOn: "virtualProp",
               resolver,
             },
-            sideEFFectProp: { sideEffect: true, validator: resolver },
+            virtualProp: { virtual: true, validator: resolver },
           });
 
           expectNoFailure(toPass);
@@ -910,7 +910,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             expect(err.payload).toMatchObject(
               expect.objectContaining({
                 dependentProp: expect.arrayContaining([
-                  `Cannot establish dependency with '${invalidProp}' as it is neither a property nor a side effect of your model`,
+                  `Cannot establish dependency with '${invalidProp}' as it is neither a property nor a virtual of your model`,
                 ]),
               })
             );
@@ -1504,7 +1504,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
         beforeEach(() => (propChangeMap = {}));
 
-        it("should trigger all onDelete listeners but for sideEffects", async () => {
+        it("should trigger all onDelete listeners but for virtuals", async () => {
           await Model.delete({
             constant: true,
             prop1: true,
@@ -1570,15 +1570,15 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               dependentProp: {
                 default: "",
                 dependent: true,
-                dependsOn: "sideEffectProp",
+                dependsOn: "virtualProp",
                 resolver: () => "",
               },
-              sideEffectProp: {
-                sideEffect: true,
+              virtualProp: {
+                virtual: true,
                 onFailure: [
-                  incrementOnFailureCountOf("sideEffectProp"),
-                  incrementOnFailureCountOf("sideEffectProp"),
-                  incrementOnFailureCountOf("sideEffectProp"),
+                  incrementOnFailureCountOf("virtualProp"),
+                  incrementOnFailureCountOf("virtualProp"),
+                  incrementOnFailureCountOf("virtualProp"),
                 ],
                 validator,
               },
@@ -1597,17 +1597,17 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               expect(onFailureCount).toEqual({ prop1: 1, prop2: 2 });
             });
 
-            it("should call onFailure listeners at creation with sideEffects", async () => {
+            it("should call onFailure listeners at creation with virtuals", async () => {
               const { error } = await Model.create({
                 prop1: false,
-                sideEffectProp: "Yes",
+                virtualProp: "Yes",
               });
 
               expect(error).toBeDefined();
               expect(onFailureCount).toEqual({
                 prop1: 1,
                 prop2: 2,
-                sideEffectProp: 3,
+                virtualProp: 3,
               });
             });
 
@@ -1618,17 +1618,17 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               expect(onFailureCount).toEqual({ prop1: 1, prop2: 2 });
             });
 
-            it("should call onFailure listeners during cloning with sideEffects", async () => {
+            it("should call onFailure listeners during cloning with virtuals", async () => {
               const { error } = await Model.clone({
                 prop1: "",
-                sideEffectProp: "Yes",
+                virtualProp: "Yes",
               });
 
               expect(error).toBeDefined();
               expect(onFailureCount).toEqual({
                 prop1: 1,
                 prop2: 2,
-                sideEffectProp: 3,
+                virtualProp: 3,
               });
             });
           });
@@ -1641,12 +1641,12 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               expect(onFailureCount).toEqual({ prop1: 1 });
             });
 
-            it("should call onFailure listeners during updates with sideEffects", async () => {
+            it("should call onFailure listeners during updates with virtuals", async () => {
               const data = [
-                [{ sideEffectProp: "" }, { sideEffectProp: 3 }],
+                [{ virtualProp: "" }, { virtualProp: 3 }],
                 [
-                  { prop1: "", sideEffectProp: "" },
-                  { prop1: 1, sideEffectProp: 3 },
+                  { prop1: "", virtualProp: "" },
+                  { prop1: 1, virtualProp: 3 },
                 ],
               ];
 
@@ -2489,21 +2489,20 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 dependent: {
                   default: "",
                   dependent: true,
-                  dependsOn: "sideEffect",
+                  dependsOn: "virtual",
                   resolver: () => "changed",
                   onSuccess: onSuccess("dependent"),
                 },
                 laxProp: { default: "" },
-                sideEffect: {
-                  sideEffect: true,
-                  shouldInit: ({ laxProp }: any) =>
-                    laxProp === "allow sideEffect",
+                virtual: {
+                  virtual: true,
+                  shouldInit: ({ laxProp }: any) => laxProp === "allow virtual",
                   onSuccess: [
-                    onSuccess("sideEffect"),
-                    incrementOnSuccessStats("sideEffect"),
-                    incrementOnSuccessStats("sideEffect"),
+                    onSuccess("virtual"),
+                    incrementOnSuccessStats("virtual"),
+                    incrementOnSuccessStats("virtual"),
                   ],
-                  sanitizer: sanitizerOf("sideEffect", "sanitized"),
+                  sanitizer: sanitizerOf("virtual", "sanitized"),
                   validator: validateBoolean,
                 },
               },
@@ -2545,10 +2544,10 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             sanitizedValues = {};
           });
 
-          it("should ignore sideEffects at creation when their shouldInit handler returns 'false'", async () => {
+          it("should ignore virtuals at creation when their shouldInit handler returns 'false'", async () => {
             const { data, handleSuccess } = await Model.create({
               laxProp: "Peter",
-              sideEffect: true,
+              virtual: true,
             });
 
             await handleSuccess();
@@ -2562,11 +2561,11 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             expect(sanitizedValues).toEqual({});
           });
 
-          it("should ignore sideEffects at creation(cloning) when their shouldInit handler returns 'false'", async () => {
+          it("should ignore virtuals at creation(cloning) when their shouldInit handler returns 'false'", async () => {
             const { data, handleSuccess } = await Model.clone({
               dependent: "",
               laxProp: "Peter",
-              sideEffect: true,
+              virtual: true,
             });
 
             await handleSuccess();
@@ -2580,51 +2579,51 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             expect(sanitizedValues).toEqual({});
           });
 
-          it("should respect sideEffects at creation when their shouldInit handler returns 'true'", async () => {
+          it("should respect virtuals at creation when their shouldInit handler returns 'true'", async () => {
             const { data, handleSuccess } = await Model.create({
-              laxProp: "allow sideEffect",
-              sideEffect: true,
+              laxProp: "allow virtual",
+              virtual: true,
             });
 
             await handleSuccess();
 
             expect(data).toEqual({
               dependent: "changed",
-              laxProp: "allow sideEffect",
+              laxProp: "allow virtual",
             });
 
-            expect(onSuccessStats).toEqual({ dependent: 1, sideEffect: 3 });
+            expect(onSuccessStats).toEqual({ dependent: 1, virtual: 3 });
 
             expect(onSuccessValues).toEqual({
               dependent: "changed",
-              sideEffect: "sanitized",
+              virtual: "sanitized",
             });
 
-            expect(sanitizedValues).toEqual({ sideEffect: "sanitized" });
+            expect(sanitizedValues).toEqual({ virtual: "sanitized" });
           });
 
-          it("should respect sideEffects at creation(cloning) when their shouldInit handler returns 'true'", async () => {
+          it("should respect virtuals at creation(cloning) when their shouldInit handler returns 'true'", async () => {
             const { data, handleSuccess } = await Model.clone({
               dependent: "",
-              laxProp: "allow sideEffect",
-              sideEffect: true,
+              laxProp: "allow virtual",
+              virtual: true,
             });
 
             await handleSuccess();
 
             expect(data).toEqual({
               dependent: "changed",
-              laxProp: "allow sideEffect",
+              laxProp: "allow virtual",
             });
 
-            expect(onSuccessStats).toEqual({ dependent: 1, sideEffect: 3 });
+            expect(onSuccessStats).toEqual({ dependent: 1, virtual: 3 });
 
             expect(onSuccessValues).toEqual({
               dependent: "changed",
-              sideEffect: "sanitized",
+              virtual: "sanitized",
             });
 
-            expect(sanitizedValues).toEqual({ sideEffect: "sanitized" });
+            expect(sanitizedValues).toEqual({ virtual: "sanitized" });
           });
         });
 
@@ -2728,7 +2727,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           }
         });
 
-        it("should accept shouldInit(() => boolean) & shouldUpdate(false) for sideEffects", () => {
+        it("should accept shouldInit(() => boolean) & shouldUpdate(false) for virtuals", () => {
           const values = [() => true, () => false];
 
           for (const shouldInit of values) {
@@ -2736,11 +2735,11 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               dependentProp: {
                 default: "",
                 dependent: true,
-                dependsOn: "sideEffect",
+                dependsOn: "virtual",
                 resolver: () => "",
               },
-              sideEffect: {
-                sideEffect: true,
+              virtual: {
+                virtual: true,
                 shouldInit,
                 shouldUpdate: false,
                 validator,
@@ -2801,15 +2800,15 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               dependentProp: {
                 default: false,
                 dependent: true,
-                dependsOn: "sideEffect",
-                resolver: ({ sideEffect }: any) => sideEffect,
+                dependsOn: "virtual",
+                resolver: ({ virtual }: any) => virtual,
                 onSuccess: incrementOnSuccessCountOf("dependentProp"),
               },
               dependentProp_1: {
                 default: false,
                 dependent: true,
-                dependsOn: "sideEffect_1",
-                resolver: ({ sideEffect_1 }: any) => sideEffect_1,
+                dependsOn: "virtual_1",
+                resolver: ({ virtual_1 }: any) => virtual_1,
                 onSuccess: incrementOnSuccessCountOf("dependentProp_1"),
               },
               laxProp: {
@@ -2819,17 +2818,17 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 onSuccess: incrementOnSuccessCountOf("laxProp"),
               },
               laxProp_1: { default: "dev" },
-              sideEffect: {
-                sideEffect: true,
+              virtual: {
+                virtual: true,
                 shouldUpdate: false,
                 validator: () => ({ valid: true }),
-                onSuccess: incrementOnSuccessCountOf("sideEffect"),
+                onSuccess: incrementOnSuccessCountOf("virtual"),
               },
-              sideEffect_1: {
-                sideEffect: true,
+              virtual_1: {
+                virtual: true,
                 shouldUpdate: (ctx: any) => ctx.laxProp_1 == "test",
                 validator: () => ({ valid: true }),
-                onSuccess: incrementOnSuccessCountOf("sideEffect_1"),
+                onSuccess: incrementOnSuccessCountOf("virtual_1"),
               },
             }).getModel();
 
@@ -2856,7 +2855,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 laxProp: "",
                 laxProp_1: "",
               },
-              { laxProp: "yoyo", sideEffect: true, sideEffect_1: true }
+              { laxProp: "yoyo", virtual: true, virtual_1: true }
             );
 
             expect(data).toBeUndefined();
@@ -2871,7 +2870,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 laxProp: "",
                 laxProp_1: "test",
               },
-              { laxProp: "yoyo", sideEffect: true, sideEffect_1: true }
+              { laxProp: "yoyo", virtual: true, virtual_1: true }
             );
 
             await handleSuccess();
@@ -2882,13 +2881,13 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             expect(onSuccessStats).toEqual({
               dependentProp_1: 1,
               laxProp: 1,
-              sideEffect_1: 1,
+              virtual_1: 1,
             });
 
             expect(onSuccessValues).toEqual({
               dependentProp_1: true,
               laxProp: "yoyo",
-              sideEffect_1: true,
+              virtual_1: true,
             });
           });
 
@@ -2967,7 +2966,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           }
         });
 
-        it("should reject shouldUpdate(false) for non-sideEffects", () => {
+        it("should reject shouldUpdate(false) for non-virtuals", () => {
           const toFail = fx({
             propertyName: { default: "", shouldUpdate: false },
           });
@@ -2980,7 +2979,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             expect(err.payload).toEqual(
               expect.objectContaining({
                 propertyName: expect.arrayContaining([
-                  "Only 'sideEffects' are allowed to have 'shouldUpdate' as 'false'",
+                  "Only 'Virtuals' are allowed to have 'shouldUpdate' as 'false'",
                 ]),
               })
             );
@@ -3013,7 +3012,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
       });
     });
 
-    describe("sideEffect", () => {
+    describe("virtual", () => {
       describe("valid", () => {
         it("should allow sanitizer", () => {
           const toPass = fx({
@@ -3023,7 +3022,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               dependsOn: "propertyName",
               resolver: () => "",
             },
-            propertyName: { sideEffect: true, sanitizer: () => "", validator },
+            propertyName: { virtual: true, sanitizer: () => "", validator },
           });
 
           expectNoFailure(toPass);
@@ -3040,7 +3039,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               resolver: () => "",
             },
             propertyName: {
-              sideEffect: true,
+              virtual: true,
               onFailure: validator,
               validator,
             },
@@ -3060,7 +3059,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               resolver: () => "",
             },
             propertyName: {
-              sideEffect: true,
+              virtual: true,
               required: () => true,
               validator,
             },
@@ -3082,7 +3081,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 dependsOn: "propertyName",
                 resolver: () => "",
               },
-              propertyName: { sideEffect: true, shouldInit, validator },
+              propertyName: { virtual: true, shouldInit, validator },
             });
 
             expectNoFailure(toPass);
@@ -3102,7 +3101,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 dependsOn: "propertyName",
                 resolver: () => "",
               },
-              propertyName: { sideEffect: true, onSuccess, validator },
+              propertyName: { virtual: true, onSuccess, validator },
             });
 
             expectNoFailure(toPass);
@@ -3126,27 +3125,27 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 dependentSideInit: {
                   default: "",
                   dependent: true,
-                  dependsOn: ["sideInit", "sideEffectWithSanitizer"],
-                  resolver({ sideInit, sideEffectWithSanitizer }: any) {
-                    return sideInit && sideEffectWithSanitizer ? "both" : "one";
+                  dependsOn: ["sideInit", "virtualWithSanitizer"],
+                  resolver({ sideInit, virtualWithSanitizer }: any) {
+                    return sideInit && virtualWithSanitizer ? "both" : "one";
                   },
                   onSuccess: onSuccess("dependentSideInit"),
                 },
                 dependentSideNoInit: {
                   default: "",
                   dependent: true,
-                  dependsOn: ["sideNoInit", "sideEffectWithSanitizerNoInit"],
+                  dependsOn: ["sideNoInit", "virtualWithSanitizerNoInit"],
                   resolver: () => "changed",
                   onSuccess: onSuccess("dependentSideNoInit"),
                 },
                 name: { default: "" },
                 sideInit: {
-                  sideEffect: true,
+                  virtual: true,
                   onSuccess: onSuccess("sideInit"),
                   validator: validateBoolean,
                 },
                 sideNoInit: {
-                  sideEffect: true,
+                  virtual: true,
                   shouldInit: false,
                   onSuccess: [
                     onSuccess("sideNoInit"),
@@ -3154,28 +3153,25 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                   ],
                   validator: validateBoolean,
                 },
-                sideEffectWithSanitizer: {
-                  sideEffect: true,
+                virtualWithSanitizer: {
+                  virtual: true,
                   onSuccess: [
-                    onSuccess("sideEffectWithSanitizer"),
-                    incrementOnSuccessStats("sideEffectWithSanitizer"),
-                    incrementOnSuccessStats("sideEffectWithSanitizer"),
+                    onSuccess("virtualWithSanitizer"),
+                    incrementOnSuccessStats("virtualWithSanitizer"),
+                    incrementOnSuccessStats("virtualWithSanitizer"),
                   ],
-                  sanitizer: sanitizerOf(
-                    "sideEffectWithSanitizer",
-                    "sanitized"
-                  ),
+                  sanitizer: sanitizerOf("virtualWithSanitizer", "sanitized"),
                   validator: validateBoolean,
                 },
-                sideEffectWithSanitizerNoInit: {
-                  sideEffect: true,
+                virtualWithSanitizerNoInit: {
+                  virtual: true,
                   shouldInit: false,
                   onSuccess: [
-                    onSuccess("sideEffectWithSanitizerNoInit"),
-                    incrementOnSuccessStats("sideEffectWithSanitizerNoInit"),
+                    onSuccess("virtualWithSanitizerNoInit"),
+                    incrementOnSuccessStats("virtualWithSanitizerNoInit"),
                   ],
                   sanitizer: sanitizerOf(
-                    "sideEffectWithSanitizerNoInit",
+                    "virtualWithSanitizerNoInit",
                     "sanitized no init"
                   ),
                   validator: validateBoolean,
@@ -3220,7 +3216,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           });
 
           describe("creation", () => {
-            it("should not sanitize sideEffects nor resolve their dependencies if not provided", async () => {
+            it("should not sanitize virtuals nor resolve their dependencies if not provided", async () => {
               const { data } = await User.create({
                 name: "Peter",
               });
@@ -3237,8 +3233,8 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             it("should respect sanitizer at creation", async () => {
               const { data } = await User.create({
                 name: "Peter",
-                sideEffectWithSanitizer: true,
-                sideEffectWithSanitizerNoInit: true,
+                virtualWithSanitizer: true,
+                virtualWithSanitizerNoInit: true,
               });
 
               expect(data).toEqual({
@@ -3248,7 +3244,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               });
 
               expect(sanitizedValues).toEqual({
-                sideEffectWithSanitizer: "sanitized",
+                virtualWithSanitizer: "sanitized",
               });
             });
 
@@ -3257,8 +3253,8 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 dependentSideNoInit: "",
                 dependentSideInit: true,
                 name: "Peter",
-                sideEffectWithSanitizer: true,
-                sideEffectWithSanitizerNoInit: true,
+                virtualWithSanitizer: true,
+                virtualWithSanitizerNoInit: true,
               });
 
               expect(data).toEqual({
@@ -3268,7 +3264,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               });
 
               expect(sanitizedValues).toEqual({
-                sideEffectWithSanitizer: "sanitized",
+                virtualWithSanitizer: "sanitized",
               });
             });
 
@@ -3279,8 +3275,8 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 name: "Peter",
 
                 sideInit: true,
-                sideEffectWithSanitizer: true,
-                sideEffectWithSanitizerNoInit: true,
+                virtualWithSanitizer: true,
+                virtualWithSanitizerNoInit: true,
               });
 
               await handleSuccess();
@@ -3295,18 +3291,18 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 dependentSideInit: 1,
                 dependentSideNoInit: 1,
                 sideInit: 1,
-                sideEffectWithSanitizer: 3,
+                virtualWithSanitizer: 3,
               });
 
               expect(onSuccessValues).toEqual({
                 dependentSideInit: "both",
                 dependentSideNoInit: "",
                 sideInit: true,
-                sideEffectWithSanitizer: "sanitized",
+                virtualWithSanitizer: "sanitized",
               });
 
               expect(sanitizedValues).toEqual({
-                sideEffectWithSanitizer: "sanitized",
+                virtualWithSanitizer: "sanitized",
               });
             });
 
@@ -3347,13 +3343,13 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           });
 
           describe("updating", () => {
-            it("should respect sanitizer of all side effects provided during updates", async () => {
+            it("should respect sanitizer of all virtuals provided during updates", async () => {
               const { data, handleSuccess } = await User.update(
                 { name: "Peter" },
                 {
                   name: "John",
-                  sideEffectWithSanitizer: true,
-                  sideEffectWithSanitizerNoInit: true,
+                  virtualWithSanitizer: true,
+                  virtualWithSanitizerNoInit: true,
                 }
               );
 
@@ -3368,20 +3364,20 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               expect(onSuccessStats).toEqual({
                 dependentSideInit: 1,
                 dependentSideNoInit: 1,
-                sideEffectWithSanitizer: 3,
-                sideEffectWithSanitizerNoInit: 2,
+                virtualWithSanitizer: 3,
+                virtualWithSanitizerNoInit: 2,
               });
 
               expect(onSuccessValues).toEqual({
                 dependentSideInit: "one",
                 dependentSideNoInit: "changed",
-                sideEffectWithSanitizer: "sanitized",
-                sideEffectWithSanitizerNoInit: "sanitized no init",
+                virtualWithSanitizer: "sanitized",
+                virtualWithSanitizerNoInit: "sanitized no init",
               });
 
               expect(sanitizedValues).toEqual({
-                sideEffectWithSanitizer: "sanitized",
-                sideEffectWithSanitizerNoInit: "sanitized no init",
+                virtualWithSanitizer: "sanitized",
+                virtualWithSanitizerNoInit: "sanitized no init",
               });
             });
           });
@@ -3394,7 +3390,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
           for (const sanitizer of values) {
             const toFail = fx({
-              propertyName: { sideEffect: true, sanitizer, validator },
+              propertyName: { virtual: true, sanitizer, validator },
             });
 
             expectFailure(toFail);
@@ -3413,7 +3409,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           }
         });
 
-        it("should reject 'sanitizer' rule on non-side effects", () => {
+        it("should reject 'sanitizer' rule on non-virtuals", () => {
           const values = [
             -1,
             1,
@@ -3437,7 +3433,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               expect(err.payload).toEqual(
                 expect.objectContaining({
                   propertyName: expect.arrayContaining([
-                    "'sanitizer' is only valid on side effects",
+                    "'sanitizer' is only valid on virtuals",
                   ]),
                 })
               );
@@ -3445,9 +3441,9 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           }
         });
 
-        it("should reject sideEffect & no dependent property ", () => {
+        it("should reject virtual & no dependent property ", () => {
           const toFail = fx({
-            propertyName: { sideEffect: true, validator },
+            propertyName: { virtual: true, validator },
           });
 
           expectFailure(toFail);
@@ -3458,14 +3454,14 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             expect(err.payload).toEqual(
               expect.objectContaining({
                 propertyName: [
-                  "A side effect must have atleast one property that depends on it",
+                  "A virtual property must have atleast one property that depends on it",
                 ],
               })
             );
           }
         });
 
-        it("should reject sideEffect & no validator ", () => {
+        it("should reject virtual & no validator ", () => {
           const toFail = fx({
             dependentProp: {
               default: "",
@@ -3473,7 +3469,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               dependsOn: "propertyName",
               resolver: () => "",
             },
-            propertyName: { sideEffect: true },
+            propertyName: { virtual: true },
           });
 
           expectFailure(toFail);
@@ -3498,7 +3494,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               resolver: () => "",
             },
             propertyName: {
-              sideEffect: true,
+              virtual: true,
               shouldInit: false,
               required: () => true,
               validator,
@@ -3513,7 +3509,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             expect(err.payload).toEqual(
               expect.objectContaining({
                 propertyName: expect.arrayContaining([
-                  "Required sideEffects cannot have initialization blocked",
+                  "Required virtuals cannot have initialization blocked",
                 ]),
               })
             );
@@ -3529,7 +3525,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               resolver: () => "",
             },
             propertyName: {
-              sideEffect: true,
+              virtual: true,
               required: true,
               validator,
             },
@@ -3550,7 +3546,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           }
         });
 
-        it("should reject any non sideEffect rule", () => {
+        it("should reject any non virtual rule", () => {
           const values = [
             "constant",
             "default",
@@ -3571,7 +3567,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 resolver: () => "",
               },
               propertyName: {
-                sideEffect: true,
+                virtual: true,
                 [rule]: true,
                 validator,
               },
@@ -3584,7 +3580,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             } catch (err: any) {
               expect(err.payload).toMatchObject({
                 propertyName: expect.arrayContaining([
-                  "SideEffects properties can only have (sanitizer, sideEffect, onFailure, onSuccess, required, shouldInit, shouldUpdate, validator) as rules",
+                  "Virtual properties can only have (sanitizer, onFailure, onSuccess, required, shouldInit, shouldUpdate, validator, virtual) as rules",
                 ]),
               });
             }

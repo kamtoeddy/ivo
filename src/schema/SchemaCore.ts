@@ -841,7 +841,7 @@ export abstract class SchemaCore<I extends ObjectType> {
     if (this._hasAny(prop, unAcceptedRules))
       return {
         valid,
-        reason: `SideEffects properties can only have (${VirtualRules.join(
+        reason: `Virtual properties can only have (${VirtualRules.join(
           ", "
         )}) as rules`,
       };
