@@ -2,7 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
-# v3.0.7 <small><sup>02-02-2023</sup></small>
+# v3.1.0 <small><sup>05-02-2023</sup></small>
+
+Breaking Changes
+
+- [Updated] changed `sideEffect` rule to `virtual`
+
+# v3.0.7 <small><sup>05-02-2023</sup></small>
 
 - [Update] removed unused methods from SchemaCore
 - [Fix] updated types of setters of 'shouldInit' & 'shouldUpdate' rules so that they do not suggest the operation's name anymore
