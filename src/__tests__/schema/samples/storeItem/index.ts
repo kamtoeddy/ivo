@@ -14,7 +14,7 @@ const storeItemSchema = new Schema<IStoreItem, StoreItemType>(
   {
     _dependentReadOnly: {
       default: () => 0,
-      dependsOn: "_sideEffectForDependentReadOnly",
+      dependsOn: "_virtualForDependentReadOnly",
       readonly: true,
       dependent: true,
       resolver: () => 1,
@@ -23,8 +23,8 @@ const storeItemSchema = new Schema<IStoreItem, StoreItemType>(
     _readOnlyLax1: { default: "", readonly: "lax" },
     _readOnlyLax2: { default: "", readonly: "lax" },
     _readOnlyNoInit: { default: "", readonly: true, shouldInit: false },
-    _sideEffectForDependentReadOnly: {
-      sideEffect: true,
+    _virtualForDependentReadOnly: {
+      virtual: true,
       validator: () => ({ valid: true }),
     },
     id: {
@@ -39,7 +39,7 @@ const storeItemSchema = new Schema<IStoreItem, StoreItemType>(
     otherMeasureUnits: { default: [], validator: validateOtherUnits },
     price: { required: true, validator: validatePrice },
     quantities: {
-      sideEffect: true,
+      virtual: true,
       sanitizer: sanitizeQuantities,
       validator: validateQuantities,
     },
@@ -49,7 +49,7 @@ const storeItemSchema = new Schema<IStoreItem, StoreItemType>(
       dependsOn: ["_quantity", "quantities"],
       resolver: resolveQuantity,
     },
-    _quantity: { sideEffect: true, validator: validateQuantity },
+    _quantity: { virtual: true, validator: validateQuantity },
     quantityChangeCounter: {
       default: 0,
       dependent: true,

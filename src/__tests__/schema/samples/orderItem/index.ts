@@ -14,7 +14,7 @@ const orderItemSchema = storeItemSchema.extend<IOrderItem>(
     remove: [
       "_readOnlyNoInit",
       "_dependentReadOnly",
-      "_sideEffectForDependentReadOnly",
+      "_virtualForDependentReadOnly",
     ],
   }
 );

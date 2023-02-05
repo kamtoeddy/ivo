@@ -98,7 +98,7 @@ export const CommonInheritanceTest = (
         });
       });
 
-      it("should clone properly with side effects", async () => {
+      it("should clone properly with virtuals", async () => {
         const { data: clonedItem } = await Model.clone({
           ...item,
           quantities: [
@@ -196,7 +196,7 @@ export const CommonInheritanceTest = (
         expect(toFail).rejects.toThrow("Nothing to update");
       });
 
-      it("should update on side effects", async () => {
+      it("should update on virtuals", async () => {
         const update = await Model.update(item, {
           quantities: [
             { quantity: 1, name: "crate24" },
@@ -211,7 +211,7 @@ export const CommonInheritanceTest = (
         });
       });
 
-      it("should update the relevant properties & on side effects", async () => {
+      it("should update the relevant properties & on virtuals", async () => {
         const update = await Model.update(item, {
           name: "Castel",
           _quantity: 10,
@@ -260,9 +260,9 @@ export const CommonInheritanceTest = (
         );
       });
 
-      it("should update dependent properties on side effects", async () => {
+      it("should update dependent properties on virtuals", async () => {
         const { data: update } = await Model.update(item, {
-          _sideEffectForDependentReadOnly: "haha",
+          _virtualForDependentReadOnly: "haha",
         });
 
         expect(update).toMatchObject({
@@ -272,14 +272,14 @@ export const CommonInheritanceTest = (
 
       it("should not update readonly dependent properties that have changed", async () => {
         const { data: update } = await Model.update(item, {
-          _sideEffectForDependentReadOnly: "haha",
+          _virtualForDependentReadOnly: "haha",
         });
 
         const updateToFail = async () => {
           await Model.update(
             { ...item, ...update },
             {
-              _sideEffectForDependentReadOnly: "haha",
+              _virtualForDependentReadOnly: "haha",
             }
           );
         };
@@ -301,7 +301,7 @@ export const CommonInheritanceTest = (
     });
   });
 
-  describe(`initialization with sideffect for '${schemaName}'`, () => {
+  describe(`initialization with virtual props for '${schemaName}'`, () => {
     let item: any;
 
     beforeAll(async () => {

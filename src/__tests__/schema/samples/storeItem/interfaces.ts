@@ -15,7 +15,7 @@ export interface IStoreItem {
   _readOnlyLax1: string;
   _readOnlyLax2: string;
   _readOnlyNoInit?: any;
-  _sideEffectForDependentReadOnly?: any;
+  _virtualForDependentReadOnly?: any;
   id: string;
   name: string;
   price: number;
