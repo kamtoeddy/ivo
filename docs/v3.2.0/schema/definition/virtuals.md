@@ -16,11 +16,19 @@ These properties are used to manipulate dependent properties at the level of you
 
 Example:
 
-```js
+```ts
 import { Schema } from "clean-schema";
 
+type UserDTO = {
+  blockUser?: boolean;
+};
+
+type UserType = {
+  isBlocked: boolean;
+};
+
 // definition
-const User = new Schema({
+const User = new Schema<UserDTO, UserType>({
   blockUser: { virtual: true, validator: validateBoolean },
   isBlocked: {
     default: false,
@@ -55,13 +63,26 @@ An alias is an extra **external** name for a virtual property. This means that a
 - Only virtuals can have aliases
 - an alias must be of type `string`
 - cannot be the name of another property on your model (except if the alias is the name of a dependent property on that virtual)
+- for best results with TS, the type definitions provided should correspond for your alias and it's virtual property (see in example 1 below)
 
 ### Examples
 
 Example 1: Alias with name of related dependent property
 
 ```ts
-const StoreItem = new Schema({
+type StoreItemDTO = {
+  _virtualQuantity?: number;
+};
+
+type StoreItemType = {
+  quantity: number;
+};
+
+type Aliases = {
+  quantity?: number;
+};
+
+const StoreItem = new Schema<StoreItemDTO, StoreItemType, Aliases>({
   quantity: {
     default: 0,
     dependent: true,
