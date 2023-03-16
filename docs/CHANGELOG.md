@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-# v3.2.0 <small><sup>16-03-2023</sup></small>
+# v3.2.0 <small><sup>[x][x]-03-2023</sup></small>
 
 - [Add] added support for aliases on virtuals
 
