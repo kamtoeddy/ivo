@@ -2,13 +2,13 @@
 
 These properties are used to manipulate dependent properties at the level of your model but won't appear on instances, hence don't go to you database.
 
-Side effects must have:
+- They (virtuals) must have:
 
-- `virtual: true`
-- A validator and
-- Atleast one property that depends on it
+  - `virtual: true`
+  - A validator and
+  - Atleast one property that depends on it
 
-They can have (**`shouldInit === false`**), cannot be dependent, defaulted, strictly required nor readonly
+- They can have (**`shouldInit === false`**), cannot be dependent, defaulted, strictly required nor readonly
 
 > Out of the box, virtual is **`false`**
 

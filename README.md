@@ -150,13 +150,13 @@ await handleSuccess?.();
 
 ## Docs
 
-- [Defining a schema](./docs/v3.0.0/schema/definition/index.md#defining-a-schema)
+- [Defining a schema](./docs/v3.2.0/schema/definition/index.md#defining-a-schema)
   - [constant properties](./docs/v3.0.0/schema/definition/constants.md#constant-properties)
   - [default values](./docs/v3.0.0/schema/definition/defaults.md#default-values)
   - [dependent properties](./docs/v3.0.0/schema/definition/dependents.md#dependent-properties)
   - [readonly properties](./docs/v3.0.0/schema/definition/readonly.md#readonly-properties)
   - [required properties](./docs/v3.0.0/schema/definition/required.md#required-properties)
-  - [virtuals](./docs/v3.1.0/schema/definition/virtuals.md#virtual-properties)
+  - [virtuals](./docs/v3.2.0/schema/definition/virtuals.md#virtual-properties)
   - [validators](./docs/v2.6.0/validate/index.md#validators)
     - [isArrayOk](./docs/v2.6.0/validate/isArrayOk.md)
     - [isBooleanOk](./docs/v2.6.0/validate/isBooleanOk.md)
