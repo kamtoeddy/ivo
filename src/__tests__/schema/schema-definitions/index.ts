@@ -3476,6 +3476,46 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               );
             }
           });
+
+          it("should reject alias if already used by another virtual", () => {
+            const alias = "alias";
+            const virtualProp = "virtualProp";
+
+            const toFail = fx({
+              dependentProp: {
+                default: "",
+                dependent: true,
+                dependsOn: [virtualProp, "virtualProp1"],
+                resolver: () => "",
+              },
+              [virtualProp]: {
+                alias,
+                virtual: true,
+                sanitizer: () => "",
+                validator,
+              },
+              virtualProp1: {
+                alias,
+                virtual: true,
+                sanitizer: () => "",
+                validator,
+              },
+            });
+
+            expectFailure(toFail);
+
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err.payload).toEqual(
+                expect.objectContaining({
+                  virtualProp1: expect.arrayContaining([
+                    `Sorry, alias provided '${alias}' already belongs to property '${virtualProp}'`,
+                  ]),
+                })
+              );
+            }
+          });
         });
 
         describe("sanitizers", () => {
