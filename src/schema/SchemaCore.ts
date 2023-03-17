@@ -936,13 +936,10 @@ export abstract class SchemaCore<I extends ObjectType> {
       alias as StringKey<I>
     );
 
-    if (
-      (this._isProp(alias) && !isDependentOnVirtual) ||
+    return (this._isProp(alias) && !isDependentOnVirtual) ||
       this._isVirtual(alias)
-    )
-      return invalidResponse;
-
-    return { valid: true };
+      ? invalidResponse
+      : { valid: true };
   };
 
   protected _isVirtual = (prop: string) =>
