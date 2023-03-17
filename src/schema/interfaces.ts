@@ -85,6 +85,8 @@ export namespace Schema {
     };
   };
 
+  export type AliasMap<T extends ObjectType> = Record<string, StringKey<T>>;
+
   export type DependencyMap<T extends ObjectType> = {
     [K in StringKey<T>]?: StringKey<T>[];
   };

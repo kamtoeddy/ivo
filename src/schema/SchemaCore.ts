@@ -32,10 +32,14 @@ export abstract class SchemaCore<I extends ObjectType> {
   protected _options: ns.Options;
   protected _propDefinitions = {} as ns.Definitions<I>;
 
+  // contexts & values
   protected context: I = {} as I;
   protected finalContext: I = {} as I;
   protected defaults: Partial<I> = {};
   protected values: Partial<I> = {};
+
+  // maps
+  protected aliasMap: ns.AliasMap<I> = {};
   protected dependencyMap: ns.DependencyMap<I> = {};
 
   // props
@@ -899,6 +903,15 @@ export abstract class SchemaCore<I extends ObjectType> {
         valid,
         reason: "An alias cannot be the same as the virtual property",
       };
+
+    const isTakenBy = this.aliasMap[alias];
+    if (isTakenBy)
+      return {
+        valid,
+        reason: `Sorry, alias provided '${alias}' already belongs to property '${isTakenBy}'`,
+      };
+
+    this.aliasMap[alias] = prop as StringKey<I>;
 
     return { valid: true };
   };
