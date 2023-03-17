@@ -3016,25 +3016,51 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
     describe("virtual", () => {
       describe("valid", () => {
-        it("should allow alias", () => {
-          const toPass = fx({
-            dependentProp: {
-              default: "",
-              dependent: true,
-              dependsOn: "propertyName",
-              resolver: () => "",
-            },
-            propertyName: {
-              alias: "alias",
-              virtual: true,
-              sanitizer: () => "",
-              validator,
-            },
+        describe("alias", () => {
+          it("should allow alias", () => {
+            const toPass = fx({
+              dependentProp: {
+                default: "",
+                dependent: true,
+                dependsOn: "propertyName",
+                resolver: () => "",
+              },
+              propertyName: {
+                alias: "alias",
+                virtual: true,
+                sanitizer: () => "",
+                validator,
+              },
+            });
+
+            expectNoFailure(toPass);
+
+            toPass();
           });
 
-          expectNoFailure(toPass);
+          it("should allow alias if it is the same as a related dependency of the virtual", () => {
+            const dependentProp = "dependentProp";
+            const virtualProp = "virtualProp";
 
-          toPass();
+            const toPass = fx({
+              [dependentProp]: {
+                default: "",
+                dependent: true,
+                dependsOn: virtualProp,
+                resolver: () => "",
+              },
+              [virtualProp]: {
+                alias: dependentProp,
+                virtual: true,
+                sanitizer: () => "",
+                validator,
+              },
+            });
+
+            expectNoFailure(toPass);
+
+            toPass();
+          });
         });
 
         it("should allow sanitizer", () => {
