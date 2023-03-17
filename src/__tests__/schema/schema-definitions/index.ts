@@ -3449,7 +3449,6 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 propertyName: {
                   alias,
                   virtual: true,
-                  sanitizer: () => "",
                   validator,
                 },
               });
@@ -3483,7 +3482,6 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               [virtualProp]: {
                 alias: virtualProp,
                 virtual: true,
-                sanitizer: () => "",
                 validator,
               },
             });
@@ -3517,13 +3515,11 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               [virtualProp]: {
                 alias,
                 virtual: true,
-                sanitizer: () => "",
                 validator,
               },
               virtualProp1: {
                 alias,
                 virtual: true,
-                sanitizer: () => "",
                 validator,
               },
             });
@@ -3557,12 +3553,10 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               [virtualProp]: {
                 alias,
                 virtual: true,
-                sanitizer: () => "",
                 validator,
               },
               virtualProp1: {
                 virtual: true,
-                sanitizer: () => "",
                 validator,
               },
             });
@@ -3596,7 +3590,6 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               [virtualProp]: {
                 alias: laxProp,
                 virtual: true,
-                sanitizer: () => "",
                 validator,
               },
               [laxProp]: { default: true },
@@ -3611,6 +3604,49 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 expect.objectContaining({
                   [virtualProp]: expect.arrayContaining([
                     `'${laxProp}' cannot be used as the alias of '${virtualProp}' because it is the name of an existing property on your schema. To use an alias that matches another property on your schema, this property must be dependent on the said virtual property`,
+                  ]),
+                })
+              );
+            }
+          });
+
+          it("should reject alias if it is the same as an unrelated dependent property", () => {
+            const dependentProp = "dependentProp";
+            const virtualProp = "virtualProp";
+
+            const toFail = fx({
+              [dependentProp]: {
+                default: "",
+                dependent: true,
+                dependsOn: virtualProp,
+                resolver: () => "",
+              },
+              [virtualProp]: {
+                alias: "dependentProp1",
+                virtual: true,
+                validator,
+              },
+              dependentProp1: {
+                default: "",
+                dependent: true,
+                dependsOn: "virtualProp1",
+                resolver: () => "",
+              },
+              virtualProp1: {
+                virtual: true,
+                validator,
+              },
+            });
+
+            expectFailure(toFail);
+
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err.payload).toEqual(
+                expect.objectContaining({
+                  [virtualProp]: expect.arrayContaining([
+                    `'dependentProp1' cannot be used as the alias of '${virtualProp}' because it is the name of an existing property on your schema. To use an alias that matches another property on your schema, this property must be dependent on the said virtual property`,
                   ]),
                 })
               );
