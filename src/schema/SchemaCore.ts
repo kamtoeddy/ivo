@@ -23,6 +23,7 @@ type OptionsKey = StringKey<ns.Options>;
 const allowedOptions: OptionsKey[] = ["errors", "timestamps"];
 const constantRules = ["constant", "onDelete", "onSuccess", "value"];
 const virtualRules = [
+  "alias",
   "sanitizer",
   "onFailure",
   "onSuccess",
