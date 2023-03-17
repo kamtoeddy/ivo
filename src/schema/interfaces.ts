@@ -27,6 +27,8 @@ type Combined<I, O> = OmitNever<I & O> extends never
 
 type SpreadType<T> = { [K in keyof T]: T[K] };
 
+type _Required<T> = Required<T>;
+
 type CombineTypes<I, O> = O extends I
   ? I extends O
     ? I
@@ -50,7 +52,7 @@ type BooleanSetter<T> = (ctx: Readonly<T>) => boolean;
 export type StringKey<T> = Extract<keyof T, string>;
 
 export namespace Schema {
-  export type PropertyDefinitions<I, O = I> = {
+  export type PropertyDefinitions<I, O = I, A = ObjectType> = {
     [K in keyof I]?:
       | Constant<K, I, O>
       | Dependent<K, I, O>
@@ -60,12 +62,13 @@ export namespace Schema {
       | Required<K, I, O>
       | RequiredBy<K, I, O>
       | ReadonlyRequired<K, I, O>
-      | RequiredVirtual<K, I>
-      | Virtual<K, I>;
+      | RequiredVirtual<K, I, A>
+      | Virtual<K, I, A>;
   };
 
   export type Definitions<I> = {
     [K in keyof I]?: Listenable<I, I> & {
+      alias?: string;
       constant?: any;
       default?: any;
       dependent?: boolean;
@@ -153,7 +156,8 @@ export namespace Schema {
     validator: Validator<K, T>;
   };
 
-  type Virtual<K extends keyof T, T> = {
+  type Virtual<K extends keyof T, T, A> = {
+    alias?: Exclude<StringKey<_Required<A>>, K>;
     virtual: true;
     sanitizer?: AsyncSetter<K, T>;
     onFailure?: LifeCycles.Listener<T> | NonEmptyArray<LifeCycles.Listener<T>>;
@@ -162,10 +166,10 @@ export namespace Schema {
       | NonEmptyArray<LifeCycles.SuccessListener<T>>;
     shouldInit?: false | BooleanSetter<T>;
     shouldUpdate?: false | BooleanSetter<T>;
-    validator: Validator<K, T>;
+    validator: Validator<K, T & Partial<A>>;
   };
 
-  type RequiredVirtual<K extends keyof T, T> = Virtual<K, T> & {
+  type RequiredVirtual<K extends keyof T, T, A> = Virtual<K, T, A> & {
     required: ConditionalRequiredSetter<T>;
     shouldUpdate?: false | BooleanSetter<T>;
   };
@@ -213,23 +217,27 @@ type Validator<K extends keyof T, T> = (
 
 export type NonEmptyArray<T> = [T, ...T[]];
 
-export type PropDefinitionRule =
-  | "constant"
-  | "default"
-  | "dependent"
-  | "dependsOn"
-  | "onDelete"
-  | "onFailure"
-  | "onSuccess"
-  | "readonly"
-  | "resolver"
-  | "required"
-  | "sanitizer"
-  | "shouldInit"
-  | "shouldUpdate"
-  | "validator"
-  | "value"
-  | "virtual";
+export const PropDefinitionRules = [
+  "alias",
+  "constant",
+  "default",
+  "dependent",
+  "dependsOn",
+  "onDelete",
+  "onFailure",
+  "onSuccess",
+  "readonly",
+  "resolver",
+  "required",
+  "sanitizer",
+  "shouldInit",
+  "shouldUpdate",
+  "validator",
+  "value",
+  "virtual",
+] as const;
+
+export type PropDefinitionRule = typeof PropDefinitionRules[number];
 
 export interface ITimestamp {
   createdAt: string;

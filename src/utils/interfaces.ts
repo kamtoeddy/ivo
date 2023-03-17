@@ -25,7 +25,7 @@ export interface ErrorToolProps {
   statusCode?: number;
 }
 
-export type ObjectType = Record<number | string, any>;
+export type ObjectType = Record<number | string, any> & {};
 
 export interface NumberRangeType {
   bounds: number[];

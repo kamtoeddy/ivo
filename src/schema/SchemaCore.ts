@@ -5,6 +5,7 @@ import {
   LifeCycles,
   Private_ISchemaOptions,
   PropDefinitionRule,
+  PropDefinitionRules,
   Schema as ns,
   StringKey,
   Validator,
@@ -18,25 +19,6 @@ export const defaultOptions = {
 } as ns.Options;
 
 type OptionsKey = StringKey<ns.Options>;
-
-const allRules = [
-  "constant",
-  "default",
-  "dependent",
-  "dependsOn",
-  "onDelete",
-  "onFailure",
-  "onSuccess",
-  "readonly",
-  "resolver",
-  "required",
-  "sanitizer",
-  "shouldInit",
-  "shouldUpdate",
-  "validator",
-  "value",
-  "virtual",
-] as PropDefinitionRule[];
 
 const allowedOptions: OptionsKey[] = ["errors", "timestamps"];
 const constantRules = ["constant", "onDelete", "onSuccess", "value"];
@@ -371,7 +353,7 @@ export abstract class SchemaCore<I extends ObjectType> {
       this._getDefinition(prop)
     );
 
-    return rulesProvided.filter((r) => !allRules.includes(r));
+    return rulesProvided.filter((r) => !PropDefinitionRules.includes(r));
   };
 
   protected _getValidator = <K extends StringKey<I>>(prop: K) => {
@@ -414,7 +396,7 @@ export abstract class SchemaCore<I extends ObjectType> {
         reason: "Constant properties cannot have 'undefined' as value",
       };
 
-    const unAcceptedRules = allRules.filter(
+    const unAcceptedRules = PropDefinitionRules.filter(
       (rule) => !constantRules.includes(rule)
     );
 
@@ -889,7 +871,7 @@ export abstract class SchemaCore<I extends ObjectType> {
       if (!isRequiredBy.valid) return isRequiredBy;
     }
 
-    const unAcceptedRules = allRules.filter(
+    const unAcceptedRules = PropDefinitionRules.filter(
       (rule) => !virtualRules.includes(rule)
     );
 
