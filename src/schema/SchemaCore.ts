@@ -862,12 +862,10 @@ export abstract class SchemaCore<I extends ObjectType> {
     if (this._hasAny(prop, "sanitizer") && !this._isFunction(sanitizer))
       return { valid, reason: "'sanitizer' must be a function" };
 
-    const hasRequired = this._hasAny(prop, "required");
+    if (this._hasAny(prop, "required")) {
+      const isValid = this.__isVirtualRequiredBy(prop);
 
-    if (hasRequired) {
-      const isRequiredBy = this.__isVirtualRequiredBy(prop);
-
-      if (!isRequiredBy.valid) return isRequiredBy;
+      if (!isValid.valid) return isValid;
     }
 
     const unAcceptedRules = PropDefinitionRules.filter(
