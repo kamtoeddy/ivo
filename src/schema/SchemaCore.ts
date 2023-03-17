@@ -112,6 +112,9 @@ export abstract class SchemaCore<I extends ObjectType> {
   protected _getDependencies = (prop: StringKey<I>) =>
     this.dependencyMap[prop] ?? [];
 
+  protected _getPropertyByAlias = (alias: string): StringKey<I> | undefined =>
+    this.aliasMap[alias];
+
   private _getCircularDependenciesOf = (a: StringKey<I>) => {
     let circularDependencies: string[] = [];
 
@@ -229,6 +232,13 @@ export abstract class SchemaCore<I extends ObjectType> {
           prop,
           "A virtual property must have atleast one property that depends on it"
         );
+    }
+
+    // make sure aliases respect the second validation rules
+    for (const [alias, prop] of Object.entries(this.aliasMap)) {
+      const isValid = this.__isVirtualAliasOk2(alias);
+
+      if (!isValid.valid) error.add(prop, isValid.reason);
     }
 
     // make sure every virtual has atleast one dependency
@@ -910,6 +920,22 @@ export abstract class SchemaCore<I extends ObjectType> {
       };
 
     this.aliasMap[alias] = prop as StringKey<I>;
+
+    return { valid: true };
+  };
+
+  protected __isVirtualAliasOk2 = (alias: string) => {
+    const valid = false;
+
+    const prop = this._getPropertyByAlias(alias)!;
+
+    if (this._isVirtual(alias))
+      return {
+        valid,
+        reason: `'${alias}' cannot be used as the alias of '${prop}' because it is the name of an existing property on your schema. To use an alias that matches another property on your schema, this property must be dependent on the said virtual property`,
+      };
+
+    // const {} = this._getDefinition(prop);
 
     return { valid: true };
   };
