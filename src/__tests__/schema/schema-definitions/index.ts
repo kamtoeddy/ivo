@@ -3555,6 +3555,41 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               );
             }
           });
+
+          it("should reject alias if it is the same as the name of existing property", () => {
+            const laxProp = "laxProp";
+            const virtualProp = "virtualProp";
+
+            const toFail = fx({
+              dependentProp: {
+                default: "",
+                dependent: true,
+                dependsOn: virtualProp,
+                resolver: () => "",
+              },
+              [virtualProp]: {
+                alias: laxProp,
+                virtual: true,
+                sanitizer: () => "",
+                validator,
+              },
+              [laxProp]: { default: true },
+            });
+
+            expectFailure(toFail);
+
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err.payload).toEqual(
+                expect.objectContaining({
+                  [virtualProp]: expect.arrayContaining([
+                    `'${laxProp}' cannot be used as the alias of '${virtualProp}' because it is the name of an existing property on your schema. To use an alias that matches another property on your schema, this property must be dependent on the said virtual property`,
+                  ]),
+                })
+              );
+            }
+          });
         });
 
         describe("sanitizers", () => {
