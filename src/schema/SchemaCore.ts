@@ -841,7 +841,7 @@ export abstract class SchemaCore<I extends ObjectType> {
   protected __isVirtual = (prop: string) => {
     const valid = false;
 
-    const { alias, sanitizer, virtual } = this._getDefinition(prop);
+    const { sanitizer, virtual } = this._getDefinition(prop);
 
     if (virtual !== true)
       return { valid, reason: "Virtuals must have virtual as 'true'" };
@@ -849,14 +849,11 @@ export abstract class SchemaCore<I extends ObjectType> {
     if (!this._isValidatorOk(prop))
       return { valid, reason: "Invalid validator" };
 
-    if (
-      this._hasAny(prop, "alias") &&
-      (typeof alias !== "string" || !alias.length)
-    )
-      return {
-        valid,
-        reason: "An alias must be a string with atleast 1 character",
-      };
+    if (this._hasAny(prop, "alias")) {
+      const isValid = this.__isVirtualAliasOk(prop);
+
+      if (!isValid.valid) return isValid;
+    }
 
     if (this._hasAny(prop, "sanitizer") && !this._isFunction(sanitizer))
       return { valid, reason: "'sanitizer' must be a function" };
@@ -882,6 +879,22 @@ export abstract class SchemaCore<I extends ObjectType> {
       };
 
     this.virtuals.push(prop as StringKey<I>);
+
+    return { valid: true };
+  };
+
+  protected __isVirtualAliasOk = (prop: string) => {
+    const valid = false;
+
+    const { alias } = this._getDefinition(prop);
+
+    if (typeof alias !== "string" || !alias.length)
+      return {
+        valid,
+        reason: "An alias must be a string with atleast 1 character",
+      };
+
+    // this.virtuals.push(prop as StringKey<I>);
 
     return { valid: true };
   };
