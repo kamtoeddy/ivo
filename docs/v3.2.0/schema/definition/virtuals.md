@@ -62,7 +62,7 @@ An alias is an extra **external** name for a virtual property. This means that a
 
 - Only virtuals can have aliases
 - an alias must be of type `string`
-- cannot be the name of another property on your model (except if the alias is the name of a dependent property on that virtual)
+- cannot be the name of another property or virtual on your model (except if the alias is the name of a dependent property on that virtual)
 - for best results with TS, the type definitions provided should correspond for your alias and it's virtual property (see in example 1 below)
 
 ### Examples
