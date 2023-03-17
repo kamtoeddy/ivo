@@ -932,7 +932,15 @@ export abstract class SchemaCore<I extends ObjectType> {
       reason: `'${alias}' cannot be used as the alias of '${prop}' because it is the name of an existing property on your schema. To use an alias that matches another property on your schema, this property must be dependent on the said virtual property`,
     } as any;
 
-    if (this._isProp(alias) || this._isVirtual(alias)) return invalidResponse;
+    const isDependentOnVirtual = this._getDependencies(prop)?.includes(
+      alias as StringKey<I>
+    );
+
+    if (
+      (this._isProp(alias) && !isDependentOnVirtual) ||
+      this._isVirtual(alias)
+    )
+      return invalidResponse;
 
     return { valid: true };
   };
