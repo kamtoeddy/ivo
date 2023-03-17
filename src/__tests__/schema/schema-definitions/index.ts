@@ -3443,6 +3443,39 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               }
             }
           });
+
+          it("should reject alias if it's same as the virtual property", () => {
+            const virtualProp = "virtualProp";
+
+            const toFail = fx({
+              dependentProp: {
+                default: "",
+                dependent: true,
+                dependsOn: virtualProp,
+                resolver: () => "",
+              },
+              [virtualProp]: {
+                alias: virtualProp,
+                virtual: true,
+                sanitizer: () => "",
+                validator,
+              },
+            });
+
+            expectFailure(toFail);
+
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err.payload).toEqual(
+                expect.objectContaining({
+                  [virtualProp]: expect.arrayContaining([
+                    "An alias cannot be the same as the virtual property",
+                  ]),
+                })
+              );
+            }
+          });
         });
 
         describe("sanitizers", () => {
