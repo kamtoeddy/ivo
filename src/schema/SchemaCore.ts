@@ -894,7 +894,11 @@ export abstract class SchemaCore<I extends ObjectType> {
         reason: "An alias must be a string with atleast 1 character",
       };
 
-    // this.virtuals.push(prop as StringKey<I>);
+    if (alias == prop)
+      return {
+        valid,
+        reason: "An alias cannot be the same as the virtual property",
+      };
 
     return { valid: true };
   };
