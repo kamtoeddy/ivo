@@ -841,13 +841,22 @@ export abstract class SchemaCore<I extends ObjectType> {
   protected __isVirtual = (prop: string) => {
     const valid = false;
 
-    const { sanitizer, virtual } = this._getDefinition(prop);
+    const { alias, sanitizer, virtual } = this._getDefinition(prop);
 
     if (virtual !== true)
       return { valid, reason: "Virtuals must have virtual as 'true'" };
 
     if (!this._isValidatorOk(prop))
       return { valid, reason: "Invalid validator" };
+
+    if (
+      this._hasAny(prop, "alias") &&
+      (typeof alias !== "string" || !alias.length)
+    )
+      return {
+        valid,
+        reason: "An alias must be a string with atleast 1 character",
+      };
 
     if (this._hasAny(prop, "sanitizer") && !this._isFunction(sanitizer))
       return { valid, reason: "'sanitizer' must be a function" };
