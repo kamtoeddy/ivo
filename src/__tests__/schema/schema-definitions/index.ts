@@ -3014,6 +3014,27 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
     describe("virtual", () => {
       describe("valid", () => {
+        it("should allow alias", () => {
+          const toPass = fx({
+            dependentProp: {
+              default: "",
+              dependent: true,
+              dependsOn: "propertyName",
+              resolver: () => "",
+            },
+            propertyName: {
+              alias: "alias",
+              virtual: true,
+              sanitizer: () => "",
+              validator,
+            },
+          });
+
+          expectNoFailure(toPass);
+
+          toPass();
+        });
+
         it("should allow sanitizer", () => {
           const toPass = fx({
             dependentProp: {
