@@ -25,7 +25,7 @@ type Combined<I, O> = OmitNever<I & O> extends never
   ? O
   : OmitNever<I & O> & GetCommonProps<I, O>;
 
-type SpreadType<T> = { [K in keyof T]: T[K] };
+type SpreadType<T> = { [K in keyof T]: T[K] } & {};
 
 type _Required<T> = Required<T>;
 
@@ -168,7 +168,7 @@ export namespace Schema {
       | NonEmptyArray<LifeCycles.SuccessListener<T>>;
     shouldInit?: false | BooleanSetter<T>;
     shouldUpdate?: false | BooleanSetter<T>;
-    validator: Validator<K, T & Partial<A>>;
+    validator: Validator<K, T>;
   };
 
   type RequiredVirtual<K extends keyof T, T, A> = Virtual<K, T, A> & {
