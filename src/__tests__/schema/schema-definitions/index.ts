@@ -3408,60 +3408,99 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
       });
 
       describe("invalid", () => {
-        it("should reject invalid sanitizer", () => {
-          const values = [-1, 1, true, false, undefined, null, [], {}];
+        describe("alias", () => {
+          it("should reject alias if non-empty string is provided", () => {
+            const values = [-1, 1, true, false, undefined, "", null, [], {}];
 
-          for (const sanitizer of values) {
-            const toFail = fx({
-              propertyName: { virtual: true, sanitizer, validator },
-            });
+            for (const alias of values) {
+              const toFail = fx({
+                dependentProp: {
+                  default: "",
+                  dependent: true,
+                  dependsOn: "propertyName",
+                  resolver: () => "",
+                },
+                propertyName: {
+                  alias,
+                  virtual: true,
+                  sanitizer: () => "",
+                  validator,
+                },
+              });
 
-            expectFailure(toFail);
+              expectFailure(toFail);
 
-            try {
-              toFail();
-            } catch (err: any) {
-              expect(err.payload).toEqual(
-                expect.objectContaining({
-                  propertyName: expect.arrayContaining([
-                    "'sanitizer' must be a function",
-                  ]),
-                })
-              );
+              try {
+                toFail();
+              } catch (err: any) {
+                expect(err.payload).toEqual(
+                  expect.objectContaining({
+                    propertyName: expect.arrayContaining([
+                      "An alias must be a string with atleast 1 character",
+                    ]),
+                  })
+                );
+              }
             }
-          }
+          });
         });
 
-        it("should reject 'sanitizer' rule on non-virtuals", () => {
-          const values = [
-            -1,
-            1,
-            true,
-            false,
-            undefined,
-            null,
-            [],
-            {},
-            () => {},
-          ];
+        describe("sanitizers", () => {
+          it("should reject invalid sanitizer", () => {
+            const values = [-1, 1, true, false, undefined, null, [], {}];
 
-          for (const sanitizer of values) {
-            const toFail = fx({ propertyName: { default: "", sanitizer } });
+            for (const sanitizer of values) {
+              const toFail = fx({
+                propertyName: { virtual: true, sanitizer, validator },
+              });
 
-            expectFailure(toFail);
+              expectFailure(toFail);
 
-            try {
-              toFail();
-            } catch (err: any) {
-              expect(err.payload).toEqual(
-                expect.objectContaining({
-                  propertyName: expect.arrayContaining([
-                    "'sanitizer' is only valid on virtuals",
-                  ]),
-                })
-              );
+              try {
+                toFail();
+              } catch (err: any) {
+                expect(err.payload).toEqual(
+                  expect.objectContaining({
+                    propertyName: expect.arrayContaining([
+                      "'sanitizer' must be a function",
+                    ]),
+                  })
+                );
+              }
             }
-          }
+          });
+
+          it("should reject 'sanitizer' rule on non-virtuals", () => {
+            const values = [
+              -1,
+              1,
+              true,
+              false,
+              undefined,
+              null,
+              [],
+              {},
+              () => {},
+            ];
+
+            for (const sanitizer of values) {
+              const toFail = fx({ propertyName: { default: "", sanitizer } });
+
+              expectFailure(toFail);
+
+              try {
+                toFail();
+              } catch (err: any) {
+                expect(err.payload).toEqual(
+                  expect.objectContaining({
+                    propertyName: expect.arrayContaining([
+                      "'sanitizer' is only valid on virtuals",
+                    ]),
+                  })
+                );
+              }
+            }
+          });
         });
 
         it("should reject virtual & no dependent property ", () => {
