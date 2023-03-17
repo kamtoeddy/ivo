@@ -1,3 +1,5 @@
+import { virtualRules } from "../../../schema/interfaces";
+
 const pauseFor = (ms = 5) =>
   new Promise((res) => setTimeout(() => res(true), ms));
 
@@ -3601,7 +3603,9 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             } catch (err: any) {
               expect(err.payload).toMatchObject({
                 propertyName: expect.arrayContaining([
-                  "Virtual properties can only have (sanitizer, onFailure, onSuccess, required, shouldInit, shouldUpdate, validator, virtual) as rules",
+                  `Virtual properties can only have (${virtualRules.join(
+                    ", "
+                  )}) as rules`,
                 ]),
               });
             }

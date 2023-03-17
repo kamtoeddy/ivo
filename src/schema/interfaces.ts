@@ -217,7 +217,18 @@ type Validator<K extends keyof T, T> = (
 
 export type NonEmptyArray<T> = [T, ...T[]];
 
-export const PropDefinitionRules = [
+export interface ITimestamp {
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Private_ISchemaOptions {
+  timestamps: ITimestamp;
+}
+
+export type OptionsKey = StringKey<Schema.Options>;
+
+const PropDefinitionRules = [
   "alias",
   "constant",
   "default",
@@ -239,11 +250,18 @@ export const PropDefinitionRules = [
 
 export type PropDefinitionRule = typeof PropDefinitionRules[number];
 
-export interface ITimestamp {
-  createdAt: string;
-  updatedAt: string;
-}
+const allowedOptions: OptionsKey[] = ["errors", "timestamps"];
+const constantRules = ["constant", "onDelete", "onSuccess", "value"];
+const virtualRules = [
+  "alias",
+  "sanitizer",
+  "onFailure",
+  "onSuccess",
+  "required",
+  "shouldInit",
+  "shouldUpdate",
+  "validator",
+  "virtual",
+];
 
-export interface Private_ISchemaOptions {
-  timestamps: ITimestamp;
-}
+export { allowedOptions, constantRules, virtualRules, PropDefinitionRules };

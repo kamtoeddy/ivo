@@ -9,6 +9,10 @@ import {
   Schema as ns,
   StringKey,
   Validator,
+  OptionsKey,
+  allowedOptions,
+  constantRules,
+  virtualRules,
 } from "./interfaces";
 import { OptionsTool } from "./utils/options-tool";
 import { ErrorTool } from "./utils/schema-error";
@@ -17,22 +21,6 @@ export const defaultOptions = {
   errors: "silent",
   timestamps: false,
 } as ns.Options;
-
-type OptionsKey = StringKey<ns.Options>;
-
-const allowedOptions: OptionsKey[] = ["errors", "timestamps"];
-const constantRules = ["constant", "onDelete", "onSuccess", "value"];
-const virtualRules = [
-  "alias",
-  "sanitizer",
-  "onFailure",
-  "onSuccess",
-  "required",
-  "shouldInit",
-  "shouldUpdate",
-  "validator",
-  "virtual",
-];
 
 const lifeCycleRules: LifeCycles.Rule[] = [
   "onDelete",
