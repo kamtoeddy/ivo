@@ -424,11 +424,11 @@ class ModelTool<
         return this._updateContext(validCtxUpdate);
       }
 
-      const isSideEffect = virtuals.includes(prop);
+      const isVirtualInit = virtuals.includes(prop);
 
-      if (isSideEffect && !this._isVirtualInit(prop)) return;
+      if (this._isVirtual(prop) && !isVirtualInit) return;
 
-      if (!isSideEffect && reset.includes(prop)) {
+      if (!isVirtualInit && reset.includes(prop)) {
         data[prop] = this._getDefaultValue(prop);
 
         const validCtxUpdate = { [prop]: data[prop] } as I;
@@ -451,7 +451,10 @@ class ModelTool<
         (isLax &&
           this._hasAny(prop, "shouldInit") &&
           !this._getValueBy(prop, "shouldInit", "creating")) ||
-        (!isSideEffect && !this._canInit(prop) && !isLaxInit && !isRequiredInit)
+        (!isVirtualInit &&
+          !this._canInit(prop) &&
+          !isLaxInit &&
+          !isRequiredInit)
       ) {
         data[prop] = this._getDefaultValue(prop);
 
@@ -512,9 +515,9 @@ class ModelTool<
         return this._updateContext(validCtxUpdate);
       }
 
-      const isVirtual = virtuals.includes(prop);
+      const isVirtualInit = virtuals.includes(prop);
 
-      if (isVirtual && !this._isVirtualInit(prop)) return;
+      if (this._isVirtual(prop) && !isVirtualInit) return;
 
       const isProvided = this.values.hasOwnProperty(prop);
 
@@ -528,7 +531,10 @@ class ModelTool<
         (isLax &&
           this._hasAny(prop, "shouldInit") &&
           !this._getValueBy(prop, "shouldInit", "creating")) ||
-        (!isVirtual && !this._canInit(prop) && !isLaxInit && !isRequiredInit)
+        (!isVirtualInit &&
+          !this._canInit(prop) &&
+          !isLaxInit &&
+          !isRequiredInit)
       ) {
         data[prop] = this._getDefaultValue(prop);
 

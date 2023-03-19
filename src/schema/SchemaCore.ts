@@ -946,9 +946,13 @@ export abstract class SchemaCore<I extends ObjectType> {
     this.virtuals.includes(prop as StringKey<I>);
 
   protected _isVirtualInit = (prop: string) => {
-    if (!this._isVirtual(prop)) return false;
+    const isAlias = this._isVirtualAlias(prop);
 
-    const { shouldInit } = this._getDefinition(prop);
+    if (!this._isVirtual(prop) && !isAlias) return false;
+
+    const definitionName = isAlias ? this._getPropertyByAlias(prop)! : prop;
+
+    const { shouldInit } = this._getDefinition(definitionName);
 
     return (
       isEqual(shouldInit, undefined) ||
