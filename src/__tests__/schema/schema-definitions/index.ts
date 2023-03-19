@@ -3139,7 +3139,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             }
 
             const Model = new Schema({
-              id: { constant: true, value: 1 },
+              id: { constant: true, value: 1, onDelete: resolver },
               quantity: {
                 default: 0.0,
                 dependent: true,
@@ -3232,6 +3232,14 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 });
 
                 expect(operation2.data).toMatchObject({ id: 1, quantity: 1 });
+              });
+            });
+
+            describe("delete", () => {
+              it("aliases should not be available in context during deletion", async () => {
+                await Model.delete({ id: 1, quantity: 12, qty: 1000 });
+
+                expect(contextRecord).toEqual({});
               });
             });
           });
