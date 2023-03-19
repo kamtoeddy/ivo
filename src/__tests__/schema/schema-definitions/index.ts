@@ -3094,6 +3094,32 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               expect(res1.valid).toBe(false);
               expect(res1?.validated).toBeUndefined();
             });
+
+            it("should not reject with 'invalid property error' if Model.validate is passed an alias with same name as a dependent property", async () => {
+              const Model = new Schema({
+                dependentProp: {
+                  default: "",
+                  dependent: true,
+                  dependsOn: "virtualProp",
+                  resolver: () => {},
+                },
+                virtualProp: {
+                  alias: "dependentProp",
+                  virtual: true,
+                  validator,
+                },
+              }).getModel();
+
+              const res = await Model.validate("dependentProp", true);
+
+              expect(res.valid).toBe(true);
+              expect(res.validated).toBe("validated");
+
+              const res1 = await Model.validate("alias", false);
+
+              expect(res1.valid).toBe(false);
+              expect(res1?.validated).toBeUndefined();
+            });
           });
         });
 
