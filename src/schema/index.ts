@@ -182,28 +182,34 @@ class ModelTool<
   };
 
   private _isUpdatable = (prop: string) => {
-    const isVirtual = this._isVirtual(prop);
+    const isAlias = this._isVirtualAlias(prop),
+      isVirtual = this._isVirtual(prop);
 
     if (
       (!this._isProp(prop) ||
         this._isConstant(prop) ||
         this._isDependentProp(prop)) &&
-      !isVirtual
+      !isVirtual &&
+      !isAlias
     )
       return false;
 
-    const hasShouldUpdateRule = this._hasAny(prop, "shouldUpdate");
-    const isUpdatable = this._getValueBy(prop, "shouldUpdate", "updating");
+    const propName = isAlias ? this._getPropertyByAlias(prop)! : prop;
+
+    const hasShouldUpdateRule = this._hasAny(propName, "shouldUpdate");
+    const isUpdatable = this._getValueBy(propName, "shouldUpdate", "updating");
 
     if (isVirtual) return hasShouldUpdateRule ? isUpdatable : true;
 
-    const isReadonly = this._isReadonly(prop);
+    const isReadonly = this._isReadonly(propName);
 
     if (!isReadonly) return hasShouldUpdateRule ? isUpdatable : true;
 
     if (hasShouldUpdateRule && !isUpdatable) return false;
 
-    return isReadonly && isEqual(this.defaults[prop], this.values[prop]);
+    return (
+      isReadonly && isEqual(this.defaults[propName], this.values[propName])
+    );
   };
 
   private _makeHandleSuccess = (
@@ -609,7 +615,7 @@ class ModelTool<
     let updated = {} as Partial<I>;
 
     const toUpdate = this._getKeysAsProps<Partial<I>>(changes ?? {}).filter(
-      (prop) => this._isUpdatable(prop)
+      this._isUpdatable
     );
 
     const linkedProps: StringKey<I>[] = [];
@@ -628,15 +634,19 @@ class ModelTool<
 
       if (isEqual(validated, undefined)) validated = value;
 
-      if (isEqual(validated, this.values[prop])) return;
+      const isAlias = this._isVirtualAlias(prop);
 
-      if (this._isVirtual(prop)) virtuals.push(prop);
+      const propName = isAlias ? this._getPropertyByAlias(prop)! : prop;
+
+      if (isEqual(validated, this.values[propName])) return;
+
+      if (this._isVirtual(propName)) virtuals.push(propName);
       else {
-        updated[prop] = validated;
-        linkedProps.push(prop);
+        updated[propName] = validated;
+        linkedProps.push(propName);
       }
 
-      const validCtxUpdate = { [prop]: validated } as I;
+      const validCtxUpdate = { [propName]: validated } as I;
 
       this._updateContext(validCtxUpdate);
       this._updateFinalContext(validCtxUpdate);
