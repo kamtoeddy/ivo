@@ -940,6 +940,8 @@ export abstract class SchemaCore<I extends ObjectType> {
       : { valid: true };
   };
 
+  protected _isVirtualAlias = (prop: string) => !!this.aliasMap[prop];
+
   protected _isVirtual = (prop: string) =>
     this.virtuals.includes(prop as StringKey<I>);
 

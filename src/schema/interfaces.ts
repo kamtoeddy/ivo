@@ -159,7 +159,7 @@ export namespace Schema {
   };
 
   type Virtual<K extends keyof T, T, A> = {
-    alias?: Exclude<StringKey<_Required<A>>, K>;
+    alias?: Exclude<StringKey<A>, K>;
     virtual: true;
     sanitizer?: AsyncSetter<K, T>;
     onFailure?: LifeCycles.Listener<T> | NonEmptyArray<LifeCycles.Listener<T>>;

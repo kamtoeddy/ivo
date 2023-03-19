@@ -16,12 +16,14 @@ export { Schema };
 
 class Schema<
   I extends ObjectType,
-  O extends ObjectType = I
+  O extends ObjectType = I,
+  A extends ObjectType = {}
 > extends SchemaCore<I> {
   constructor(
     propDefinitions: ns.PropertyDefinitions<
       SpreadType<CombineTypes<I, O> & I>,
-      O
+      O,
+      A
     >,
     options: ns.Options = defaultOptions
   ) {
@@ -36,11 +38,16 @@ class Schema<
     return this._propDefinitions;
   }
 
-  extend = <U extends ObjectType, V extends ObjectType = U>(
+  extend = <
+    U extends ObjectType,
+    V extends ObjectType = U,
+    A extends ObjectType = {}
+  >(
     propDefinitions: Partial<
       ns.PropertyDefinitions<
         SpreadType<CombineTypes<I, U> & U>,
-        CombineTypes<O, V>
+        CombineTypes<O, V>,
+        A
       >
     >,
     options: ns.ExtensionOptions<StringKey<I>> = {
@@ -56,7 +63,7 @@ class Schema<
 
     let _propDefinitions = {
       ...this.propDefinitions,
-    } as ns.PropertyDefinitions<InputType, OutputType>;
+    } as ns.PropertyDefinitions<InputType, OutputType, A>;
 
     remove?.forEach(
       (prop) => delete _propDefinitions?.[prop as StringKey<InputType>]
@@ -65,19 +72,23 @@ class Schema<
     _propDefinitions = {
       ..._propDefinitions,
       ...propDefinitions,
-    } as ns.PropertyDefinitions<InputType, OutputType>;
+    } as ns.PropertyDefinitions<InputType, OutputType, A>;
 
-    return new Schema<InputType, OutputType>(_propDefinitions as any, options);
+    return new Schema<InputType, OutputType, A>(
+      _propDefinitions as any,
+      options
+    );
   };
 
-  getModel = () => new Model(new ModelTool<I, O>(this));
+  getModel = () => new Model(new ModelTool<I, O, A>(this));
 }
 
 class ModelTool<
   I extends ObjectType,
-  O extends ObjectType = I
+  O extends ObjectType = I,
+  A extends ObjectType = {}
 > extends SchemaCore<I> {
-  constructor(schema: Schema<I, O>) {
+  constructor(schema: Schema<I, O, A>) {
     super(schema.propDefinitions, schema.options);
   }
 
@@ -640,7 +651,7 @@ class ModelTool<
     };
   };
 
-  _validate = async <K extends StringKey<I>>(
+  _validate = async <K extends StringKey<I & A>>(
     prop: K,
     value: any,
     ctx: Readonly<I>
@@ -652,7 +663,11 @@ class ModelTool<
     )
       return makeResponse<I[K]>({ valid: false, reason: "Invalid property" });
 
-    const validator = this._getValidator(prop);
+    const _prop = this._isVirtualAlias(prop)
+      ? this._getPropertyByAlias(prop)
+      : prop;
+
+    const validator = this._getValidator(_prop as StringKey<I>);
 
     if (validator) {
       const res = await validator(value, ctx);
@@ -666,8 +681,12 @@ class ModelTool<
   };
 }
 
-class Model<I extends ObjectType, O extends ObjectType = I> {
-  constructor(private modelTool: ModelTool<I, O>) {}
+class Model<
+  I extends ObjectType,
+  O extends ObjectType = I,
+  A extends ObjectType = {}
+> {
+  constructor(private modelTool: ModelTool<I, O, A>) {}
 
   clone = this.modelTool.clone;
 
