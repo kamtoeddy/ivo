@@ -3061,6 +3061,40 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
             toPass();
           });
+
+          describe("Model.validate", () => {
+            function validator(v: any) {
+              return v === true
+                ? { valid: true, validated: "validated" }
+                : { valid: false };
+            }
+
+            it("should call the validator of corresponding virtual when alias is passed to Model.validate method", async () => {
+              const Model = new Schema({
+                dependentProp: {
+                  default: "",
+                  dependent: true,
+                  dependsOn: "virtualProp",
+                  resolver: () => {},
+                },
+                virtualProp: {
+                  alias: "alias",
+                  virtual: true,
+                  validator,
+                },
+              }).getModel();
+
+              const res = await Model.validate("alias", true);
+
+              expect(res.valid).toBe(true);
+              expect(res.validated).toBe("validated");
+
+              const res1 = await Model.validate("alias", false);
+
+              expect(res1.valid).toBe(false);
+              expect(res1?.validated).toBeUndefined();
+            });
+          });
         });
 
         it("should allow sanitizer", () => {
