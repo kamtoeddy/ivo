@@ -3135,7 +3135,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               const _type = typeof v;
               return _type === "number"
                 ? { valid: true, validated: v }
-                : { valid: false };
+                : { valid: false, reason: "Invalid quantity" };
             }
 
             const Model = new Schema({
@@ -3162,6 +3162,15 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 const { data } = await Model.create({ qty: 12 });
 
                 expect(data).toMatchObject({ id: 1, quantity: 12 });
+                expect(contextRecord).toEqual({});
+              });
+
+              it("should return alias errors with alias name in error payload at creation", async () => {
+                const { error } = await Model.create({ qty: "12" });
+
+                expect(error.payload).toMatchObject({
+                  qty: ["Invalid quantity"],
+                });
                 expect(contextRecord).toEqual({});
               });
             });
