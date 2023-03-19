@@ -420,8 +420,10 @@ class ModelTool<
         this._updateFinalContext(validCtxUpdate);
         return this._updateContext(validCtxUpdate);
       }
+      const isAlias = this._isVirtualAlias(prop),
+        isDependent = this._isDependentProp(prop);
 
-      if (this._isDependentProp(prop)) {
+      if (isDependent && !isAlias) {
         const value = reset.includes(prop)
           ? this._getDefaultValue(prop)
           : this.values[prop];
@@ -438,7 +440,7 @@ class ModelTool<
 
       if (this._isVirtual(prop) && !isVirtualInit) return;
 
-      if (this._isVirtualAlias(prop))
+      if (isAlias && !isDependent)
         return this._validateAndSet(data, error, prop, values[prop]);
 
       if (!isVirtualInit && reset.includes(prop)) {
@@ -532,7 +534,7 @@ class ModelTool<
 
       if (this._isVirtual(prop) && !isVirtualInit) return;
 
-      if (this._isVirtualAlias(prop))
+      if (this._isVirtualAlias(prop) && !this._isDependentProp(prop))
         return this._validateAndSet(data, error, prop, values[prop]);
 
       const isProvided = this.values.hasOwnProperty(prop);
