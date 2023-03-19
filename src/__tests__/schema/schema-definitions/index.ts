@@ -3209,6 +3209,29 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 expect(contextRecord).toEqual({});
               });
 
+              it("should use default values of dependent props to be set if an alias with that prop's name exists on the same schema at creation", async () => {
+                const Model = new Schema({
+                  id: { constant: true, value: 1, onDelete: resolver },
+                  quantity: {
+                    default: 0.0,
+                    dependent: true,
+                    dependsOn: "setQuantity",
+                    resolver,
+                  },
+                  setQuantity: {
+                    alias: "quantity",
+                    virtual: true,
+                    shouldInit: false,
+                    validator,
+                  },
+                }).getModel();
+
+                const { data } = await Model.create({ quantity: 12 });
+
+                expect(data).toMatchObject({ id: 1, quantity: 0 });
+                expect(contextRecord).toEqual({});
+              });
+
               it("should return alias errors with alias name in error payload at creation", async () => {
                 const { error } = await Model.create({ qty: "12" });
 
