@@ -71,17 +71,3 @@ function resolveQuantity({ quantity, _quantity, quantities }: IStoreItem) {
 const StoreItem = storeItemSchema.getModel();
 
 export { StoreItem, storeItemSchema };
-
-type Input = { setQuantity?: number };
-type Output = { id: number; quantity: number };
-type Aliases = { qty: number };
-
-const Model = new Schema<Input, Output, Aliases>({
-  id: { constant: true, value: 1 },
-  quantity: { default: 0.0, dependent: true, dependsOn: "setQuantity" },
-  setQuantity: {
-    alias: "setQuantity",
-    virtual: true,
-    validator: () => ({ valid: true }),
-  },
-});

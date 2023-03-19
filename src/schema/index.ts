@@ -308,7 +308,7 @@ class ModelTool<
   };
 
   private _setValues(
-    values: Partial<I | O>,
+    values: Partial<I | O | A>,
     {
       allowVirtuals = true,
       allowTimestamps = false,
@@ -320,14 +320,18 @@ class ModelTool<
       allowTimestamps: false,
     }
   ) {
-    const keys = this._getKeysAsProps(values).filter(
-      (key) =>
-        (allowTimestamps &&
-          this.optionsTool.withTimestamps &&
-          this.optionsTool.isTimestampKey(key)) ||
-        this._isProp(key) ||
-        (allowVirtuals && this._isVirtual(key))
-    );
+    const keys = this._getKeysAsProps(values).filter((key) => {
+      if (
+        allowTimestamps &&
+        this.optionsTool.withTimestamps &&
+        this.optionsTool.isTimestampKey(key)
+      )
+        return true;
+
+      if (allowVirtuals && this._isVirtual(key)) return true;
+
+      return this._isProp(key);
+    });
 
     const _values = {} as Partial<I>;
 
@@ -377,7 +381,7 @@ class ModelTool<
   };
 
   clone = async (
-    values: Partial<I>,
+    values: Partial<I & A>,
     options: ns.CloneOptions<I> = { reset: [] }
   ) => {
     if (!this._areValuesOk(values)) return this._handleInvalidData();
@@ -484,7 +488,7 @@ class ModelTool<
     };
   };
 
-  create = async (values: Partial<I>) => {
+  create = async (values: Partial<I & A>) => {
     if (!this._areValuesOk(values)) return this._handleInvalidData();
 
     this._setValues(values);
@@ -580,7 +584,7 @@ class ModelTool<
     await Promise.all(cleanups);
   };
 
-  update = async (values: O, changes: Partial<I>) => {
+  update = async (values: O, changes: Partial<I & A>) => {
     if (!this._areValuesOk(values)) return this._handleInvalidData();
 
     this._setValues(values, { allowVirtuals: false, allowTimestamps: true });
@@ -588,8 +592,8 @@ class ModelTool<
     const error = new ErrorTool({ message: "Validation Error" });
     let updated = {} as Partial<I>;
 
-    const toUpdate = this._getKeysAsProps(changes ?? {}).filter((prop) =>
-      this._isUpdatable(prop)
+    const toUpdate = this._getKeysAsProps<Partial<I>>(changes ?? {}).filter(
+      (prop) => this._isUpdatable(prop)
     );
 
     const linkedProps: StringKey<I>[] = [];
@@ -656,16 +660,19 @@ class ModelTool<
     value: any,
     ctx: Readonly<I>
   ) => {
+    const isAlias = this._isVirtualAlias(prop);
+
     if (
       this._isConstant(prop) ||
-      this._isDependentProp(prop) ||
-      (!this._isProp(prop) && !this._isVirtual(prop))
+      (this._isDependentProp(prop) && !isAlias) ||
+      (!this._isProp(prop) && !this._isVirtual(prop) && !isAlias)
     )
-      return makeResponse<I[K]>({ valid: false, reason: "Invalid property" });
+      return makeResponse<(I & A)[K]>({
+        valid: false,
+        reason: "Invalid property",
+      });
 
-    const _prop = this._isVirtualAlias(prop)
-      ? this._getPropertyByAlias(prop)
-      : prop;
+    const _prop = isAlias ? this._getPropertyByAlias(prop) : prop;
 
     const validator = this._getValidator(_prop as StringKey<I>);
 
@@ -674,10 +681,10 @@ class ModelTool<
 
       if (res.valid && isEqual(res.validated, undefined)) res.validated = value;
 
-      return makeResponse<I[K]>(res);
+      return makeResponse<(I & A)[K]>(res);
     }
 
-    return makeResponse<I[K]>({ valid: true, validated: value });
+    return makeResponse<(I & A)[K]>({ valid: true, validated: value });
   };
 }
 
@@ -696,6 +703,6 @@ class Model<
 
   update = this.modelTool.update;
 
-  validate = async <K extends StringKey<I>>(prop: K, value: any) =>
+  validate = async <K extends StringKey<I & A>>(prop: K, value: any) =>
     this.modelTool._validate(prop, value, {} as Readonly<I>);
 }
