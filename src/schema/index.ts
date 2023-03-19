@@ -399,7 +399,7 @@ class ModelTool<
     let data = {} as Partial<I>;
     const error = new ErrorTool({ message: "Validation Error" });
 
-    const virtuals = this._getKeysAsProps(this.values).filter(
+    const virtuals = this._getKeysAsProps<Partial<I>>(values).filter(
       this._isVirtualInit
     );
 
@@ -431,6 +431,9 @@ class ModelTool<
       const isVirtualInit = virtuals.includes(prop);
 
       if (this._isVirtual(prop) && !isVirtualInit) return;
+
+      if (this._isVirtualAlias(prop))
+        return this._validateAndSet(data, error, prop, values[prop]);
 
       if (!isVirtualInit && reset.includes(prop)) {
         data[prop] = this._getDefaultValue(prop);
