@@ -3266,21 +3266,27 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 expect(contextRecord).toEqual({});
               });
 
-              // it("should respect precedence of virtual property and alias if both are provided at creation", async () => {
-              //   const operation1 = await Model.create({
-              //     qty: 12,
-              //     setQuantity: 50,
-              //   });
+              it("should respect precedence of virtual property and alias if both are provided during updates", async () => {
+                const operation1 = await Model.update(
+                  { id: 1, quantity: 75 },
+                  {
+                    qty: 12,
+                    setQuantity: 50,
+                  }
+                );
 
-              //   expect(operation1.data).toMatchObject({ id: 1, quantity: 50 });
+                expect(operation1.data).toMatchObject({ quantity: 50 });
 
-              //   const operation2 = await Model.create({
-              //     setQuantity: 20,
-              //     qty: 1,
-              //   });
+                const operation2 = await Model.update(
+                  { id: 1, quantity: 75 },
+                  {
+                    setQuantity: 20,
+                    qty: 1,
+                  }
+                );
 
-              //   expect(operation2.data).toMatchObject({ id: 1, quantity: 1 });
-              // });
+                expect(operation2.data).toMatchObject({ quantity: 1 });
+              });
             });
           });
         });
