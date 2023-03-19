@@ -352,9 +352,7 @@ export abstract class SchemaCore<I extends ObjectType> {
   };
 
   protected _getInvalidRules = <K extends StringKey<I>>(prop: K) => {
-    const rulesProvided = this._getKeysAsProps<PropDefinitionRule>(
-      this._getDefinition(prop)
-    );
+    const rulesProvided = this._getKeysAsProps(this._getDefinition(prop));
 
     return rulesProvided.filter((r) => !PropDefinitionRules.includes(r));
   };
@@ -363,8 +361,8 @@ export abstract class SchemaCore<I extends ObjectType> {
     return this._getDefinition(prop)?.validator as Validator<K, I> | undefined;
   };
 
-  protected _getKeysAsProps = <T = StringKey<I>>(data: any) =>
-    Object.keys(data) as T[];
+  protected _getKeysAsProps = <T extends ObjectType>(data: T) =>
+    Object.keys(data) as StringKey<T>[];
 
   protected _hasAny = (
     prop: string,
@@ -924,7 +922,7 @@ export abstract class SchemaCore<I extends ObjectType> {
     return { valid: true };
   };
 
-  protected __isVirtualAliasOk2 = (alias: string) => {
+  protected __isVirtualAliasOk2 = (alias: string | StringKey<I>) => {
     const prop = this._getPropertyByAlias(alias)!;
 
     const invalidResponse = {
@@ -932,9 +930,9 @@ export abstract class SchemaCore<I extends ObjectType> {
       reason: `'${alias}' cannot be used as the alias of '${prop}' because it is the name of an existing property on your schema. To use an alias that matches another property on your schema, this property must be dependent on the said virtual property`,
     } as any;
 
-    const isDependentOnVirtual = this._getDependencies(prop)?.includes(
-      alias as StringKey<I>
-    );
+    const isDependentOnVirtual = (
+      this._getDependencies(prop) as string[]
+    )?.includes(alias as StringKey<I>);
 
     return (this._isProp(alias) && !isDependentOnVirtual) ||
       this._isVirtual(alias)
