@@ -3132,7 +3132,8 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             }
 
             function validator(v: any) {
-              return typeof v === "number"
+              const _type = typeof v;
+              return _type === "number"
                 ? { valid: true, validated: v }
                 : { valid: false };
             }
@@ -3157,7 +3158,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             });
 
             describe("creation", () => {
-              it("should respect alias if provided", async () => {
+              it("should respect alias if provided at creation", async () => {
                 const { data } = await Model.create({ qty: 12 });
 
                 expect(data).toMatchObject({ id: 1, quantity: 12 });

@@ -372,9 +372,13 @@ class ModelTool<
 
     if (isEqual(validated, undefined)) validated = value;
 
-    if (!this._isVirtual(prop)) operationData[prop] = validated;
+    const isAlias = this._isVirtualAlias(prop);
 
-    const validCtxUpdate = { [prop]: validated } as I;
+    const propName = isAlias ? this._getPropertyByAlias(prop)! : prop;
+
+    if (!this._isVirtual(propName)) operationData[propName] = validated;
+
+    const validCtxUpdate = { [propName]: validated } as I;
 
     this._updateContext(validCtxUpdate);
     this._updateFinalContext(validCtxUpdate);
@@ -499,7 +503,7 @@ class ModelTool<
     let data = {} as Partial<I>;
     const error = new ErrorTool({ message: "Validation Error" });
 
-    const virtuals = this._getKeysAsProps(this.values).filter(
+    const virtuals = this._getKeysAsProps<Partial<I>>(values).filter(
       this._isVirtualInit
     );
 
@@ -518,6 +522,9 @@ class ModelTool<
       const isVirtualInit = virtuals.includes(prop);
 
       if (this._isVirtual(prop) && !isVirtualInit) return;
+
+      if (this._isVirtualAlias(prop))
+        return this._validateAndSet(data, error, prop, values[prop]);
 
       const isProvided = this.values.hasOwnProperty(prop);
 
