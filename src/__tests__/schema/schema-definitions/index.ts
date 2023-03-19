@@ -3121,6 +3121,50 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               expect(res1?.validated).toBeUndefined();
             });
           });
+
+          describe("behaviour", () => {
+            let contextRecord = {} as Record<string, number | undefined>;
+
+            function resolver({ setQuantity, qty }: any) {
+              if (qty !== undefined) contextRecord.qty = qty;
+
+              return setQuantity;
+            }
+
+            function validator(v: any) {
+              return typeof v === "number"
+                ? { valid: true, validated: v }
+                : { valid: false };
+            }
+
+            const Model = new Schema({
+              id: { constant: true, value: 1 },
+              quantity: {
+                default: 0.0,
+                dependent: true,
+                dependsOn: "setQuantity",
+                resolver,
+              },
+              setQuantity: {
+                alias: "qty",
+                virtual: true,
+                validator,
+              },
+            }).getModel();
+
+            beforeEach(() => {
+              contextRecord = {};
+            });
+
+            describe("creation", () => {
+              it("should respect alias if provided", async () => {
+                const { data } = await Model.create({ qty: 12 });
+
+                expect(data).toMatchObject({ id: 1, quantity: 12 });
+                expect(contextRecord).toEqual({});
+              });
+            });
+          });
         });
 
         it("should allow sanitizer", () => {
