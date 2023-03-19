@@ -3254,14 +3254,17 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 expect(contextRecord).toEqual({});
               });
 
-              // it("should return alias errors with alias name in error payload at creation", async () => {
-              //   const { error } = await Model.create({ qty: "12" });
+              it("should return alias errors with alias name in error payload during updates", async () => {
+                const { error } = await Model.update(
+                  { id: 1, quantity: 12 },
+                  { qty: "2" }
+                );
 
-              //   expect(error.payload).toMatchObject({
-              //     qty: ["Invalid quantity"],
-              //   });
-              //   expect(contextRecord).toEqual({});
-              // });
+                expect(error.payload).toMatchObject({
+                  qty: ["Invalid quantity"],
+                });
+                expect(contextRecord).toEqual({});
+              });
 
               // it("should respect precedence of virtual property and alias if both are provided at creation", async () => {
               //   const operation1 = await Model.create({
