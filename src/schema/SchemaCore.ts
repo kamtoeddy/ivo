@@ -611,7 +611,8 @@ export abstract class SchemaCore<I extends ObjectType> {
       !this._isLaxProp(prop) &&
       !this._isReadonly(prop) &&
       !this._isRequired(prop) &&
-      !this._isVirtual(prop)
+      !this._isVirtual(prop) &&
+      !reasons.length
     ) {
       reasons.push(
         "A property should at least be readonly, required, or have a default value"
