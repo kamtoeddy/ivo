@@ -27,8 +27,6 @@ type Combined<I, O> = OmitNever<I & O> extends never
 
 type SpreadType<T> = { [K in keyof T]: T[K] } & {};
 
-type _Required<T> = Required<T>;
-
 type CombineTypes<I, O> = O extends I
   ? I extends O
     ? I
@@ -52,7 +50,7 @@ type BooleanSetter<T> = (ctx: Readonly<T>) => boolean;
 export type StringKey<T> = Extract<keyof T, string>;
 
 export namespace Schema {
-  export type PropertyDefinitions<I, O = I, A = ObjectType> = {
+  export type PropertyDefinitions<I, O = I, A extends ObjectType = {}> = {
     [K in keyof I]?:
       | Constant<K, I, O>
       | Dependent<K, I, O>
@@ -159,7 +157,9 @@ export namespace Schema {
   };
 
   type Virtual<K extends keyof T, T, A> = {
-    alias?: Exclude<StringKey<A>, K>;
+    alias?: Exclude<StringKey<A>, K> extends undefined
+      ? string
+      : Exclude<StringKey<A>, K>;
     virtual: true;
     sanitizer?: AsyncSetter<K, T>;
     onFailure?: LifeCycles.Listener<T> | NonEmptyArray<LifeCycles.Listener<T>>;
