@@ -75,6 +75,31 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
       }
     });
 
+    it("should reject if a property's definition is not an object", () => {
+      const invalidDefinitions = [null, true, false, [], 1, -1, "", "invalid"];
+
+      for (const definition of invalidDefinitions) {
+        const toFail = fx({ emptyProp: definition });
+        expectFailure(toFail);
+
+        try {
+          toFail();
+        } catch (err: any) {
+          expect(err).toEqual(
+            expect.objectContaining({
+              message: "Invalid Schema",
+              payload: {
+                emptyProp: [
+                  "Invalid property definition. Expected an object '{}'",
+                ],
+              },
+              statusCode: 500,
+            })
+          );
+        }
+      }
+    });
+
     it("should reject if a property's definition has an invalid rule", () => {
       const toFail = fx({ emptyProp: { default: "", yoo: true } });
       expectFailure(toFail);
