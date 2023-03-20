@@ -2,54 +2,46 @@ import { ObjectType } from "../utils/interfaces";
 
 export type {
   CombineTypes,
-  SpreadType,
-  TypeOf,
+  ITimestamp,
+  LifeCycles,
+  NonEmptyArray,
+  OptionsKey,
+  Private_ISchemaOptions,
+  PropDefinitionRule,
+  RealType,
   ResponseInput,
+  Schema,
+  StringKey,
+  TypeOf,
   Validator,
   ValidatorResponse,
 };
 
 type TypeOf<T> = Exclude<T, undefined>;
 
-type GetCommonProps<I, O> = {
-  [K in keyof (I | O)]: I[K] extends never
-    ? O[K]
-    : O[K] extends never
-    ? I[K]
-    : O[K];
-};
+type CombineTypes<I, O> = RealType<I & O>;
 
-type OmitNever<T> = { [K in keyof T as T[K] extends never ? never : K]: T[K] };
+type RealType_<T> = T extends (...args: any) => infer I ? I : T;
 
-type Combined<I, O> = OmitNever<I & O> extends never
-  ? O
-  : OmitNever<I & O> & GetCommonProps<I, O>;
-
-type SpreadType<T> = { [K in keyof T]: T[K] } & {};
-
-type CombineTypes<I, O> = O extends I
-  ? I extends O
-    ? I
-    : SpreadType<Combined<I, O>>
-  : SpreadType<Combined<I, O>>;
+type RealType<T> = {
+  [K in keyof T]: Exclude<T[K], Function> | RealType_<T[K]>;
+} & {};
 
 type ConditionalRequiredSetter<T> = (
   ctx: Readonly<T>,
   lifeCycle: LifeCycles.LifeCycle
 ) => boolean | [boolean, string];
 
-type Value<K, T> = K extends keyof T ? TypeOf<T[K]> : K;
-
-type AsyncSetter<K, T> = (
+type AsyncSetter<K extends keyof T, T> = (
   ctx: Readonly<T>,
   lifeCycle: LifeCycles.LifeCycle
-) => Value<K, T> | Promise<Value<K, T>>;
+) => TypeOf<T[K]> | Promise<TypeOf<T[K]>>;
 
 type BooleanSetter<T> = (ctx: Readonly<T>) => boolean;
 
-export type StringKey<T> = Extract<keyof T, string>;
+type StringKey<T> = Extract<keyof T, string>;
 
-export namespace Schema {
+namespace Schema {
   export type PropertyDefinitions<I, O = I, A extends ObjectType = {}> = {
     [K in keyof I]?:
       | Constant<K, I, O>
@@ -191,7 +183,7 @@ export namespace Schema {
   export type ExtensionOptions<T> = Options & { remove?: T | T[] };
 }
 
-export namespace LifeCycles {
+namespace LifeCycles {
   export type Rule = "onDelete" | "onFailure" | "onSuccess";
 
   export type LifeCycle = "creating" | "updating";
@@ -217,18 +209,18 @@ type Validator<K extends keyof T, T> = (
   ctx: Readonly<T>
 ) => ResponseInput<T[K]> | Promise<ResponseInput<T[K]>>;
 
-export type NonEmptyArray<T> = [T, ...T[]];
+type NonEmptyArray<T> = [T, ...T[]];
 
-export interface ITimestamp {
+interface ITimestamp {
   createdAt: string;
   updatedAt: string;
 }
 
-export interface Private_ISchemaOptions {
+interface Private_ISchemaOptions {
   timestamps: ITimestamp;
 }
 
-export type OptionsKey = StringKey<Schema.Options>;
+type OptionsKey = StringKey<Schema.Options>;
 
 const PropDefinitionRules = [
   "alias",
@@ -250,7 +242,7 @@ const PropDefinitionRules = [
   "virtual",
 ] as const;
 
-export type PropDefinitionRule = typeof PropDefinitionRules[number];
+type PropDefinitionRule = typeof PropDefinitionRules[number];
 
 const allowedOptions: OptionsKey[] = ["errors", "timestamps"];
 const constantRules = ["constant", "onDelete", "onSuccess", "value"];
@@ -266,4 +258,4 @@ const virtualRules = [
   "virtual",
 ];
 
-export { allowedOptions, constantRules, virtualRules, PropDefinitionRules };
+export { allowedOptions, constantRules, PropDefinitionRules, virtualRules };

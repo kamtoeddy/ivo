@@ -5,7 +5,7 @@ import {
   CombineTypes,
   LifeCycles,
   Schema as ns,
-  SpreadType,
+  RealType,
   StringKey,
 } from "./interfaces";
 import { defaultOptions, SchemaCore } from "./SchemaCore";
@@ -18,16 +18,15 @@ class Schema<
   I extends ObjectType,
   O extends ObjectType = I,
   A extends ObjectType = {}
-> extends SchemaCore<I> {
+> extends SchemaCore<RealType<I>> {
   constructor(
-    propDefinitions: ns.PropertyDefinitions<
-      SpreadType<CombineTypes<I, O> & I>,
-      O,
-      A
-    >,
+    propDefinitions: ns.PropertyDefinitions<CombineTypes<I, O>, RealType<O>, A>,
     options: ns.Options = defaultOptions
   ) {
-    super(propDefinitions as ns.Definitions<I>, options as ns.Options);
+    super(
+      propDefinitions as ns.Definitions<RealType<I>>,
+      options as ns.Options
+    );
   }
 
   get options() {
@@ -44,13 +43,9 @@ class Schema<
     A extends ObjectType = {}
   >(
     propDefinitions: Partial<
-      ns.PropertyDefinitions<
-        SpreadType<CombineTypes<I, U> & U>,
-        CombineTypes<O, V>,
-        A
-      >
+      ns.PropertyDefinitions<CombineTypes<I, U>, CombineTypes<O, V>, A>
     >,
-    options: ns.ExtensionOptions<StringKey<I>> = {
+    options: ns.ExtensionOptions<StringKey<RealType<I>>> = {
       ...defaultOptions,
       remove: [],
     }
@@ -80,7 +75,8 @@ class Schema<
     );
   };
 
-  getModel = () => new Model(new ModelTool<I, O, A>(this));
+  getModel = (): Model<RealType<I>, RealType<O>, A> =>
+    new Model(new ModelTool<RealType<I>, RealType<O>, A>(this));
 }
 
 class ModelTool<
