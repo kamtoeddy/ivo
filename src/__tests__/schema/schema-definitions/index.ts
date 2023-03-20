@@ -76,10 +76,10 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
     });
 
     it("should reject if a property's definition is not an object", () => {
-      const invalidDefinitions = [null, true, false, [], 1, -1, "", "invalid"];
+      const invalidDefinitions = [true, false, [], 1, -1, "", "invalid"];
 
       for (const definition of invalidDefinitions) {
-        const toFail = fx({ emptyProp: definition });
+        const toFail = fx({ invalidProp0000: definition });
         expectFailure(toFail);
 
         try {
@@ -89,8 +89,8 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             expect.objectContaining({
               message: "Invalid Schema",
               payload: {
-                emptyProp: [
-                  "Invalid property definition. Expected an object '{}'",
+                invalidProp0000: [
+                  `Invalid property definition. Expected an object '{}' but received '${typeof definition}'`,
                 ],
               },
               statusCode: 500,

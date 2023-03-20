@@ -506,18 +506,24 @@ export abstract class SchemaCore<I extends ObjectType> {
   protected _isPropDefinitionObjectOk = (prop: string) => {
     const propDef = this._getDefinition(prop);
 
-    return propDef && typeof propDef === "object" && !Array.isArray(propDef)
-      ? { valid: true }
-      : {
-          reasons: ["Property definitions must be an object"],
+    const propertyTypeProvided = typeof propDef;
+
+    return !propDef ||
+      propertyTypeProvided !== "object" ||
+      Array.isArray(propDef)
+      ? {
+          reasons: [
+            `Invalid property definition. Expected an object '{}' but received '${propertyTypeProvided}'`,
+          ],
           valid: false,
-        };
+        }
+      : { valid: true };
   };
 
   protected __isPropDefinitionOk = (prop: string) => {
     const isPopDefOk = this._isPropDefinitionObjectOk(prop);
 
-    if (!isPopDefOk.valid) isPopDefOk;
+    if (!isPopDefOk.valid) return isPopDefOk;
 
     let reasons: string[] = [];
 
