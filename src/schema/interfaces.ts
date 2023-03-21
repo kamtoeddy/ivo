@@ -27,11 +27,6 @@ type RealType<T> = {
   [K in keyof T]: Exclude<T[K], Function> | RealType_<T[K]>;
 } & {};
 
-type ConditionalRequiredSetter<T> = (
-  ctx: Readonly<T>,
-  lifeCycle: LifeCycles.LifeCycle
-) => boolean | [boolean, string];
-
 type AsyncSetter<K extends keyof T, T> = (
   ctx: Readonly<T>,
   lifeCycle: LifeCycles.LifeCycle
@@ -39,21 +34,16 @@ type AsyncSetter<K extends keyof T, T> = (
 
 type BooleanSetter<T> = (ctx: Readonly<T>) => boolean;
 
+type ConditionalRequiredSetter<T> = (
+  ctx: Readonly<T>,
+  lifeCycle: LifeCycles.LifeCycle
+) => boolean | [boolean, string];
+
 type StringKey<T> = Extract<keyof T, string>;
 
 namespace Schema {
   export type PropertyDefinitions<I, O = I, A extends ObjectType = {}> = {
-    [K in keyof I]?:
-      | Constant<K, I, O>
-      | Dependent<K, I, O>
-      | Property<K, I, O>
-      | Readonly<K, I, O>
-      | ReadonlyNoInit<K, I, O>
-      | Required<K, I, O>
-      | RequiredBy<K, I, O>
-      | ReadonlyRequired<K, I, O>
-      | RequiredVirtual<K, I, A>
-      | Virtual<K, I, A>;
+    [K in keyof I]?: Property<K, I, O, A>;
   };
 
   export type Definitions<I> = {
@@ -81,6 +71,18 @@ namespace Schema {
     [K in StringKey<T>]?: StringKey<T>[];
   };
 
+  type Property<K extends keyof I, I, O, A> =
+    | Constant<K, I, O>
+    | Dependent<K, I, O>
+    | LaxProperty<K, I, O>
+    | Readonly<K, I, O>
+    | ReadonlyNoInit<K, I, O>
+    | Required<K, I, O>
+    | RequiredBy<K, I, O>
+    | ReadonlyRequired<K, I, O>
+    | RequiredVirtual<K, I, A>
+    | Virtual<K, I, A>;
+
   type Listenable<I, O> = {
     onDelete?: LifeCycles.Listener<O> | NonEmptyArray<LifeCycles.Listener<O>>;
     onFailure?: LifeCycles.Listener<I> | NonEmptyArray<LifeCycles.Listener<I>>;
@@ -106,7 +108,7 @@ namespace Schema {
     resolver: AsyncSetter<K, T>;
   };
 
-  type Property<K extends keyof T, T, O = T> = Listenable<T, O> & {
+  type LaxProperty<K extends keyof T, T, O = T> = Listenable<T, O> & {
     default: TypeOf<T[K]> | AsyncSetter<K, T>;
     readonly?: "lax";
     shouldInit?: false | BooleanSetter<T>;
