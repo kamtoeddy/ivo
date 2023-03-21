@@ -43,7 +43,11 @@ class Schema<
     A extends ObjectType = {}
   >(
     propDefinitions: Partial<
-      ns.PropertyDefinitions<CombineTypes<I, U>, CombineTypes<O, V>, A>
+      ns.PropertyDefinitions<
+        CombineTypes<CombineTypes<I, U>, CombineTypes<O, V>>,
+        CombineTypes<O, V>,
+        A
+      >
     >,
     options: ns.ExtensionOptions<StringKey<RealType<I>>> = {
       ...defaultOptions,
@@ -53,7 +57,7 @@ class Schema<
     const remove = toArray(options?.remove ?? []);
     delete options.remove;
 
-    type InputType = CombineTypes<I, U>;
+    type InputType = CombineTypes<CombineTypes<I, U>, CombineTypes<O, V>>;
     type OutputType = CombineTypes<O, V>;
 
     let _propDefinitions = {
