@@ -3377,6 +3377,28 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 expect(operation2.data).toEqual({ id: 1, quantity: 75 });
               });
 
+              it("should respect 'shouldUpdate' rule of virtual property even when alias is provided during cloning", async () => {
+                const operation1 = await Model.clone({
+                  id: 1,
+                  quantity: 0,
+                  qty: -75,
+                });
+
+                expect(contextRecord).toEqual({ setQuantity: -75 });
+                expect(operation1.error).toBeUndefined();
+                expect(operation1.data).toEqual({ id: 1, quantity: 0 });
+
+                const operation2 = await Model.clone({
+                  id: 1,
+                  quantity: 0,
+                  qty: 75,
+                });
+
+                expect(contextRecord).toEqual({ setQuantity: 75 });
+                expect(operation2.error).toBeUndefined();
+                expect(operation2.data).toEqual({ id: 1, quantity: 75 });
+              });
+
               // it("should respect 'shouldUpdate' rule of virtual property even when alias is provided during updates", async () => {
 
               //   const operation1 = await Model.update(
