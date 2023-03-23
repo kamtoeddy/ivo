@@ -405,8 +405,8 @@ class ModelTool<
     let data = {} as Partial<I>;
     const error = new ErrorTool({ message: "Validation Error" });
 
-    const virtuals = this._getKeysAsProps<Partial<I>>(values).filter(
-      this._isVirtualInit
+    const virtuals = this._getKeysAsProps<Partial<I>>(values).filter((prop) =>
+      this._isVirtualInit(prop, values[prop])
     );
 
     const props = [...this.props, ...virtuals];
@@ -443,7 +443,7 @@ class ModelTool<
       if (isAlias && !isDependent)
         return this._validateAndSet(data, error, prop, values[prop]);
 
-      if (!isVirtualInit && reset.includes(prop)) {
+      if (reset.includes(prop)) {
         data[prop] = this._getDefaultValue(prop);
 
         const validCtxUpdate = { [prop]: data[prop] } as I;
