@@ -294,12 +294,13 @@ export abstract class SchemaCore<I extends ObjectType> {
   protected _getValueBy = (
     prop: string,
     rule: PropDefinitionRule,
-    lifeCycle: LifeCycles.LifeCycle
+    lifeCycle: LifeCycles.LifeCycle,
+    extraCtx: ObjectType = {}
   ) => {
     const value = this._getDefinition(prop)?.[rule];
 
     return this._isFunction(value)
-      ? value(this._getContext(), lifeCycle)
+      ? value({ ...this._getContext(), ...extraCtx }, lifeCycle)
       : value;
   };
 
@@ -952,7 +953,7 @@ export abstract class SchemaCore<I extends ObjectType> {
   protected _isVirtual = (prop: string) =>
     this.virtuals.includes(prop as StringKey<I>);
 
-  protected _isVirtualInit = (prop: string) => {
+  protected _isVirtualInit = (prop: string, value: any = undefined) => {
     const isAlias = this._isVirtualAlias(prop);
 
     if (!this._isVirtual(prop) && !isAlias) return false;
@@ -961,9 +962,11 @@ export abstract class SchemaCore<I extends ObjectType> {
 
     const { shouldInit } = this._getDefinition(definitionName);
 
+    const extraCtx = isAlias ? { [definitionName]: value } : {};
+
     return (
       isEqual(shouldInit, undefined) ||
-      this._getValueBy(prop, "shouldInit", "creating")
+      this._getValueBy(definitionName, "shouldInit", "creating", extraCtx)
     );
   };
 
