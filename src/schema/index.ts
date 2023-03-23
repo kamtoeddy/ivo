@@ -181,7 +181,7 @@ class ModelTool<
     return [true, sanitizer];
   };
 
-  private _isUpdatable = (prop: string) => {
+  private _isUpdatable = (prop: string, value?: any) => {
     const isAlias = this._isVirtualAlias(prop),
       isVirtual = this._isVirtual(prop);
 
@@ -197,7 +197,15 @@ class ModelTool<
     const propName = isAlias ? this._getPropertyByAlias(prop)! : prop;
 
     const hasShouldUpdateRule = this._hasAny(propName, "shouldUpdate");
-    const isUpdatable = this._getValueBy(propName, "shouldUpdate", "updating");
+
+    const extraCtx = isAlias ? { [propName]: value } : {};
+
+    const isUpdatable = this._getValueBy(
+      propName,
+      "shouldUpdate",
+      "updating",
+      extraCtx
+    );
 
     if (isVirtual) return hasShouldUpdateRule ? isUpdatable : true;
 
@@ -617,7 +625,7 @@ class ModelTool<
     let updated = {} as Partial<I>;
 
     const toUpdate = this._getKeysAsProps<Partial<I>>(changes ?? {}).filter(
-      this._isUpdatable
+      (prop) => this._isUpdatable(prop, changes[prop])
     );
 
     const linkedProps: StringKey<I>[] = [];
