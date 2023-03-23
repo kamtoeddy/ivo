@@ -3336,6 +3336,74 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 expect(operation2.data).toMatchObject({ quantity: 1 });
               });
             });
+
+            describe("availability of virtuals in ctx of shouldInit & shouldUpdate methods of the virtual when it's alias is provided", () => {
+              const Model = new Schema({
+                id: { constant: true, value: 1, onDelete: resolver },
+                quantity: {
+                  default: 0.0,
+                  dependent: true,
+                  dependsOn: "setQuantity",
+                  resolver,
+                },
+                setQuantity: {
+                  alias: "qty",
+                  virtual: true,
+                  shouldInit({ setQuantity }: any) {
+                    contextRecord.setQuantity = setQuantity;
+
+                    return setQuantity > 0;
+                  },
+                  shouldUpdate({ quantity, setQuantity }: any) {
+                    contextRecord.setQuantity = setQuantity;
+
+                    return setQuantity > quantity;
+                  },
+                  validator,
+                },
+              }).getModel();
+
+              it("should respect 'shouldUpdate' rule of virtual property even when alias is provided at creation", async () => {
+                const operation1 = await Model.create({ id: 1, qty: -75 });
+
+                expect(contextRecord).toEqual({ setQuantity: -75 });
+                expect(operation1.error).toBeUndefined();
+                expect(operation1.data).toEqual({ id: 1, quantity: 0 });
+
+                const operation2 = await Model.create({ id: 1, qty: 75 });
+
+                expect(contextRecord).toEqual({ setQuantity: 75 });
+                expect(operation2.error).toBeUndefined();
+                expect(operation2.data).toEqual({ id: 1, quantity: 75 });
+              });
+
+              // it("should respect 'shouldUpdate' rule of virtual property even when alias is provided during updates", async () => {
+
+              //   const operation1 = await Model.update(
+              //     { id: 1, quantity: 75 },
+              //     {
+              //       qty: 12,
+              //     }
+              //   );
+
+              //   expect(operation1.error).toEqual({
+              //     message: "Nothing to update",
+              //     payload: {},
+              //     statusCode: 400,
+              //   });
+              //   expect(operation1.data).toBeUndefined();
+
+              //   const operation2 = await Model.update(
+              //     { id: 1, quantity: 75 },
+              //     {
+              //       qty: 100,
+              //     }
+              //   );
+
+              //   expect(operation2.error).toBeUndefined();
+              //   expect(operation2.data).toMatchObject({ quantity: 100 });
+              // });
+            });
           });
         });
 
