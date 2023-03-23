@@ -79,7 +79,7 @@ type StoreItemType = {
 };
 
 type Aliases = {
-  quantity?: number;
+  quantity: number;
 };
 
 const StoreItem = new Schema<StoreItemDTO, StoreItemType, Aliases>({
