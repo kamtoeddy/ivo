@@ -3399,32 +3399,33 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 expect(operation2.data).toEqual({ id: 1, quantity: 75 });
               });
 
-              // it("should respect 'shouldUpdate' rule of virtual property even when alias is provided during updates", async () => {
+              it("should respect 'shouldUpdate' rule of virtual property even when alias is provided during updates", async () => {
+                const operation1 = await Model.update(
+                  { id: 1, quantity: 75 },
+                  {
+                    qty: 12,
+                  }
+                );
 
-              //   const operation1 = await Model.update(
-              //     { id: 1, quantity: 75 },
-              //     {
-              //       qty: 12,
-              //     }
-              //   );
+                expect(contextRecord).toEqual({ setQuantity: 12 });
+                expect(operation1.error).toEqual({
+                  message: "Nothing to update",
+                  payload: {},
+                  statusCode: 400,
+                });
+                expect(operation1.data).toBeUndefined();
 
-              //   expect(operation1.error).toEqual({
-              //     message: "Nothing to update",
-              //     payload: {},
-              //     statusCode: 400,
-              //   });
-              //   expect(operation1.data).toBeUndefined();
+                const operation2 = await Model.update(
+                  { id: 1, quantity: 75 },
+                  {
+                    qty: 100,
+                  }
+                );
 
-              //   const operation2 = await Model.update(
-              //     { id: 1, quantity: 75 },
-              //     {
-              //       qty: 100,
-              //     }
-              //   );
-
-              //   expect(operation2.error).toBeUndefined();
-              //   expect(operation2.data).toMatchObject({ quantity: 100 });
-              // });
+                expect(contextRecord).toEqual({ setQuantity: 100 });
+                expect(operation2.error).toBeUndefined();
+                expect(operation2.data).toMatchObject({ quantity: 100 });
+              });
             });
           });
         });
