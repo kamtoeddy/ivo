@@ -356,7 +356,7 @@ class ModelTool<
     this._initContexts();
   }
 
-  private _useConfigProps = (obj: I | Partial<I>, isUpdate = false) => {
+  private _useConfigProps = (obj: Partial<I>, isUpdate = false) => {
     if (!this.optionsTool.withTimestamps) return sortKeys(obj);
 
     const createdAt = this.optionsTool.getCreateKey(),
@@ -507,8 +507,13 @@ class ModelTool<
       return this._handleError(error);
     }
 
+    const finalData = this._useConfigProps(data);
+
+    this._updateContext(finalData);
+    this._updateFinalContext(finalData);
+
     return {
-      data: this._useConfigProps(data) as O,
+      data: finalData as O,
       error: undefined,
       handleSuccess: this._makeHandleSuccess(data, "creating"),
     };
@@ -590,8 +595,13 @@ class ModelTool<
       return this._handleError(error);
     }
 
+    const finalData = this._useConfigProps(data);
+
+    this._updateContext(finalData);
+    this._updateFinalContext(finalData);
+
     return {
-      data: this._useConfigProps(data) as O,
+      data: finalData as O,
       error: undefined,
       handleSuccess: this._makeHandleSuccess(data, "creating"),
     };

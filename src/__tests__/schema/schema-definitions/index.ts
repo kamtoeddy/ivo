@@ -4627,7 +4627,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             let Model: any, entity: any;
 
             beforeEach(async () => {
-              const onSuccess = ({ createdAt, updatedAt, ...ctx }: any) => {
+              const onSuccess = ({ createdAt, updatedAt }: any) => {
                 onSuccessValues.createdAt = createdAt;
                 onSuccessValues.updatedAt = updatedAt;
               };
@@ -4681,6 +4681,9 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
               expect(updates).not.toHaveProperty("createdAt");
               expect(updates).toHaveProperty("updatedAt");
+
+              expect(onSuccessValues.createdAt).toBeDefined();
+              expect(onSuccessValues.updatedAt).toBeDefined();
             });
           });
 
@@ -4745,6 +4748,9 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               expect(updates).not.toHaveProperty("c_At");
               expect(updates).not.toHaveProperty("createdAt");
               expect(updates).toHaveProperty("updatedAt");
+
+              expect(onSuccessValues.c_At).toBeDefined();
+              expect(onSuccessValues.updatedAt).toBeDefined();
             });
           });
 
@@ -4809,6 +4815,9 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               expect(updates).not.toHaveProperty("createdAt");
               expect(updates).not.toHaveProperty("updatedAt");
               expect(updates).toHaveProperty("u_At");
+
+              expect(onSuccessValues.createdAt).toBeDefined();
+              expect(onSuccessValues.u_At).toBeDefined();
             });
           });
 
@@ -4874,6 +4883,9 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               expect(updates).not.toHaveProperty("updatedAt");
               expect(updates).not.toHaveProperty("c_At");
               expect(updates).toHaveProperty("u_At");
+
+              expect(onSuccessValues.c_At).toBeDefined();
+              expect(onSuccessValues.u_At).toBeDefined();
             });
           });
 
@@ -4944,6 +4956,9 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               expect(Object.keys(updates).length).toBe(1);
 
               expect(updates).not.toHaveProperty("c_At");
+
+              expect(onSuccessValues.c_At).toBeDefined();
+              expect(onSuccessValues.updatedAt).toBeUndefined();
             });
           });
 
@@ -4999,14 +5014,20 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             });
 
             it("should not populate updatedAt during updates", async () => {
-              const { data: updates } = await Model.update(entity, {
-                propertyName2: 20,
-              });
+              const { data: updates, handleSuccess } = await Model.update(
+                entity,
+                { propertyName2: 20 }
+              );
+
+              await handleSuccess();
 
               expect(updates).toMatchObject({ propertyName2: 20 });
 
               expect(updates).not.toHaveProperty("updatedAt");
               expect(Object.keys(updates).length).toBe(1);
+
+              expect(onSuccessValues.createdAt).toBeDefined();
+              expect(onSuccessValues.updatedAt).toBeUndefined();
             });
           });
 
@@ -5076,6 +5097,9 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               expect(Object.keys(updates).length).toBe(2);
 
               expect(updates).toHaveProperty("u_At");
+
+              expect(onSuccessValues.createdAt).toBeUndefined();
+              expect(onSuccessValues.u_At).toBeDefined();
             });
           });
 
@@ -5131,15 +5155,21 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             });
 
             it("should populate only updatedAt during updates", async () => {
-              const { data: updates } = await Model.update(entity, {
-                propertyName2: 20,
-              });
+              const { data: updates, handleSuccess } = await Model.update(
+                entity,
+                { propertyName2: 20 }
+              );
+
+              await handleSuccess();
 
               expect(updates).toMatchObject({ propertyName2: 20 });
 
               expect(updates).not.toHaveProperty("createdAt");
               expect(updates).toHaveProperty("updatedAt");
               expect(Object.keys(updates).length).toBe(2);
+
+              expect(onSuccessValues.createdAt).toBeUndefined();
+              expect(onSuccessValues.updatedAt).toBeDefined();
             });
           });
         });
