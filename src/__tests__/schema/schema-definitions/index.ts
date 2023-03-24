@@ -4231,16 +4231,16 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
   });
 
   describe("Schema options", () => {
-    const validSchema = {
-      propertyName1: { default: "", validator },
+    const getValidSchema = (extraDefinition = {}) => ({
+      propertyName1: { default: "", validator, ...extraDefinition },
       propertyName2: { default: "", validator },
-    };
+    });
 
     it("should reject non-object values", () => {
       const values = [null, false, true, 1, "abc", []];
 
       for (const options of values) {
-        const toFail = fx(validSchema, options);
+        const toFail = fx(getValidSchema(), options);
 
         expectFailure(toFail);
 
@@ -4257,7 +4257,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
     });
 
     it("should reject empty objects", () => {
-      const toFail = fx(validSchema, {});
+      const toFail = fx(getValidSchema(), {});
 
       expectFailure(toFail);
 
@@ -4273,7 +4273,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
     });
 
     it("should reject invalid option name", () => {
-      const toFail = fx(validSchema, { propertyName: true });
+      const toFail = fx(getValidSchema(), { propertyName: true });
 
       expectFailure(toFail);
 
@@ -4293,7 +4293,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
         const values = ["silent", "throw"];
 
         for (const errors of values) {
-          const toPass = fx(validSchema, { errors });
+          const toPass = fx(getValidSchema(), { errors });
 
           expectNoFailure(toPass);
 
@@ -4577,7 +4577,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           const values = ["silence", 1, null, false, true, "throws", [], {}];
 
           for (const errors of values) {
-            const toFail = fx(validSchema, { errors });
+            const toFail = fx(getValidSchema(), { errors });
 
             expectFailure(toFail);
 
@@ -4603,7 +4603,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           const values = [false, true];
 
           for (const timestamps of values) {
-            const toPass = fx(validSchema, { timestamps });
+            const toPass = fx(getValidSchema(), { timestamps });
 
             expectNoFailure(toPass);
 
@@ -4611,393 +4611,536 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           }
         });
 
-        const inputValue = {
-          propertyName1: "value1",
-          propertyName2: "value2",
-        };
+        describe("behaviour", () => {
+          const inputValue = {
+            propertyName1: "value1",
+            propertyName2: "value2",
+          };
 
-        describe("timestamps(true)", () => {
-          let Model: any, entity: any;
+          let onSuccessValues: any = {};
 
-          beforeAll(async () => {
-            Model = new Schema(validSchema, { timestamps: true }).getModel();
-
-            entity = (await Model.create(inputValue)).data;
+          beforeEach(() => {
+            onSuccessValues = {};
           });
 
-          it("should populate createdAt & updatedAt at creation", () => {
-            expect(entity).toMatchObject(inputValue);
+          describe("timestamps(true)", () => {
+            let Model: any, entity: any;
 
-            expect(entity).toHaveProperty("createdAt");
-            expect(entity).toHaveProperty("updatedAt");
-          });
+            beforeEach(async () => {
+              const onSuccess = ({ createdAt, updatedAt, ...ctx }: any) => {
+                onSuccessValues.createdAt = createdAt;
+                onSuccessValues.updatedAt = updatedAt;
+              };
 
-          it("should populate createdAt & updatedAt during cloning", async () => {
-            const { data: clone } = await Model.clone(entity, {
-              reset: "propertyName2",
+              Model = new Schema(getValidSchema({ onSuccess }), {
+                timestamps: true,
+              }).getModel();
+
+              const res = await Model.create(inputValue);
+
+              entity = res.data;
+
+              await res.handleSuccess();
             });
 
-            expect(clone).toMatchObject({
-              propertyName1: "value1",
-              propertyName2: "",
+            it("should populate createdAt & updatedAt at creation", () => {
+              expect(entity).toMatchObject(inputValue);
+
+              expect(entity).toHaveProperty("createdAt");
+              expect(entity).toHaveProperty("updatedAt");
+
+              expect(onSuccessValues.createdAt).toBeDefined();
+              expect(onSuccessValues.updatedAt).toBeDefined();
             });
 
-            expect(clone).toHaveProperty("createdAt");
-            expect(clone).toHaveProperty("updatedAt");
-          });
+            it("should populate createdAt & updatedAt during cloning", async () => {
+              const { data: clone, handleSuccess } = await Model.clone(entity, {
+                reset: "propertyName2",
+              });
 
-          it("should populate updatedAt during updates", async () => {
-            const { data: updates } = await Model.update(entity, {
-              propertyName2: 20,
+              await handleSuccess();
+
+              expect(clone).toMatchObject({
+                propertyName1: "value1",
+                propertyName2: "",
+              });
+
+              expect(clone).toHaveProperty("createdAt");
+              expect(clone).toHaveProperty("updatedAt");
+
+              expect(onSuccessValues.createdAt).toBeDefined();
+              expect(onSuccessValues.updatedAt).toBeDefined();
             });
 
-            expect(updates).toMatchObject({ propertyName2: 20 });
+            it("should populate updatedAt during updates", async () => {
+              const { data: updates } = await Model.update(entity, {
+                propertyName2: 20,
+              });
 
-            expect(updates).not.toHaveProperty("createdAt");
-            expect(updates).toHaveProperty("updatedAt");
-          });
-        });
+              expect(updates).toMatchObject({ propertyName2: 20 });
 
-        describe("timestamps(createdAt:c_At)", () => {
-          let Model: any, entity: any;
-
-          beforeAll(async () => {
-            Model = new Schema(validSchema, {
-              timestamps: { createdAt: "c_At" },
-            }).getModel();
-
-            entity = (await Model.create(inputValue)).data;
+              expect(updates).not.toHaveProperty("createdAt");
+              expect(updates).toHaveProperty("updatedAt");
+            });
           });
 
-          it("should populate c_At & updatedAt at creation", () => {
-            expect(entity).toMatchObject(inputValue);
+          describe("timestamps(createdAt:c_At)", () => {
+            let Model: any, entity: any;
 
-            expect(entity).not.toHaveProperty("createdAt");
-            expect(entity).toHaveProperty("c_At");
-            expect(entity).toHaveProperty("updatedAt");
-          });
+            beforeEach(async () => {
+              const onSuccess = ({ c_At, updatedAt }: any) => {
+                onSuccessValues.c_At = c_At;
+                onSuccessValues.updatedAt = updatedAt;
+              };
 
-          it("should populate c_At & updatedAt during cloning", async () => {
-            const { data: clone } = await Model.clone(entity, {
-              reset: "propertyName2",
+              Model = new Schema(getValidSchema({ onSuccess }), {
+                timestamps: { createdAt: "c_At" },
+              }).getModel();
+
+              const res = await Model.create(inputValue);
+
+              entity = res.data;
+
+              await res.handleSuccess();
             });
 
-            expect(clone).toMatchObject({
-              propertyName1: "value1",
-              propertyName2: "",
+            it("should populate c_At & updatedAt at creation", () => {
+              expect(entity).toMatchObject(inputValue);
+
+              expect(entity).not.toHaveProperty("createdAt");
+              expect(entity).toHaveProperty("c_At");
+              expect(entity).toHaveProperty("updatedAt");
+
+              expect(onSuccessValues.c_At).toBeDefined();
+              expect(onSuccessValues.updatedAt).toBeDefined();
             });
 
-            expect(clone).not.toHaveProperty("createdAt");
-            expect(clone).toHaveProperty("c_At");
-            expect(clone).toHaveProperty("updatedAt");
-          });
+            it("should populate c_At & updatedAt during cloning", async () => {
+              const { data: clone, handleSuccess } = await Model.clone(entity, {
+                reset: "propertyName2",
+              });
 
-          it("should populate updatedAt during updates", async () => {
-            const { data: updates } = await Model.update(entity, {
-              propertyName2: 20,
+              await handleSuccess();
+
+              expect(clone).toMatchObject({
+                propertyName1: "value1",
+                propertyName2: "",
+              });
+
+              expect(clone).not.toHaveProperty("createdAt");
+              expect(clone).toHaveProperty("c_At");
+              expect(clone).toHaveProperty("updatedAt");
+
+              expect(onSuccessValues.c_At).toBeDefined();
+              expect(onSuccessValues.updatedAt).toBeDefined();
             });
 
-            expect(updates).toMatchObject({ propertyName2: 20 });
+            it("should populate updatedAt during updates", async () => {
+              const { data: updates } = await Model.update(entity, {
+                propertyName2: 20,
+              });
 
-            expect(updates).not.toHaveProperty("c_At");
-            expect(updates).not.toHaveProperty("createdAt");
-            expect(updates).toHaveProperty("updatedAt");
-          });
-        });
+              expect(updates).toMatchObject({ propertyName2: 20 });
 
-        describe("timestamps(updatedAt:u_At)", () => {
-          let Model: any, entity: any;
-
-          beforeAll(async () => {
-            Model = new Schema(validSchema, {
-              timestamps: { updatedAt: "u_At" },
-            }).getModel();
-
-            entity = (await Model.create(inputValue)).data;
+              expect(updates).not.toHaveProperty("c_At");
+              expect(updates).not.toHaveProperty("createdAt");
+              expect(updates).toHaveProperty("updatedAt");
+            });
           });
 
-          it("should populate createdAt & u_At at creation", () => {
-            expect(entity).toMatchObject(inputValue);
+          describe("timestamps(updatedAt:u_At)", () => {
+            let Model: any, entity: any;
 
-            expect(entity).not.toHaveProperty("updatedAt");
-            expect(entity).toHaveProperty("createdAt");
-            expect(entity).toHaveProperty("u_At");
-          });
+            beforeEach(async () => {
+              const onSuccess = ({ createdAt, u_At }: any) => {
+                onSuccessValues.createdAt = createdAt;
+                onSuccessValues.u_At = u_At;
+              };
 
-          it("should populate createdAt & u_At during cloning", async () => {
-            const { data: clone } = await Model.clone(entity, {
-              reset: "propertyName2",
+              Model = new Schema(getValidSchema({ onSuccess }), {
+                timestamps: { updatedAt: "u_At" },
+              }).getModel();
+
+              const res = await Model.create(inputValue);
+
+              entity = res.data;
+
+              await res.handleSuccess();
             });
 
-            expect(clone).toMatchObject({
-              propertyName1: "value1",
-              propertyName2: "",
+            it("should populate createdAt & u_At at creation", () => {
+              expect(entity).toMatchObject(inputValue);
+
+              expect(entity).not.toHaveProperty("updatedAt");
+              expect(entity).toHaveProperty("createdAt");
+              expect(entity).toHaveProperty("u_At");
+
+              expect(onSuccessValues.createdAt).toBeDefined();
+              expect(onSuccessValues.u_At).toBeDefined();
             });
 
-            expect(clone).not.toHaveProperty("updatedAt");
-            expect(clone).toHaveProperty("createdAt");
-            expect(clone).toHaveProperty("u_At");
-          });
+            it("should populate createdAt & u_At during cloning", async () => {
+              const { data: clone, handleSuccess } = await Model.clone(entity, {
+                reset: "propertyName2",
+              });
 
-          it("should populate u_At during updates", async () => {
-            const { data: updates } = await Model.update(entity, {
-              propertyName2: 20,
+              await handleSuccess();
+
+              expect(clone).toMatchObject({
+                propertyName1: "value1",
+                propertyName2: "",
+              });
+
+              expect(clone).not.toHaveProperty("updatedAt");
+              expect(clone).toHaveProperty("createdAt");
+              expect(clone).toHaveProperty("u_At");
+
+              expect(onSuccessValues.createdAt).toBeDefined();
+              expect(onSuccessValues.u_At).toBeDefined();
             });
 
-            expect(updates).toMatchObject({ propertyName2: 20 });
+            it("should populate u_At during updates", async () => {
+              const { data: updates } = await Model.update(entity, {
+                propertyName2: 20,
+              });
 
-            expect(updates).not.toHaveProperty("createdAt");
-            expect(updates).not.toHaveProperty("updatedAt");
-            expect(updates).toHaveProperty("u_At");
-          });
-        });
+              expect(updates).toMatchObject({ propertyName2: 20 });
 
-        describe("timestamps(createdAt:c_At, updatedAt:u_At)", () => {
-          let Model: any, entity: any;
-
-          beforeAll(async () => {
-            Model = new Schema(validSchema, {
-              timestamps: { createdAt: "c_At", updatedAt: "u_At" },
-            }).getModel();
-
-            entity = (await Model.create(inputValue)).data;
+              expect(updates).not.toHaveProperty("createdAt");
+              expect(updates).not.toHaveProperty("updatedAt");
+              expect(updates).toHaveProperty("u_At");
+            });
           });
 
-          it("should populate c_At & u_At at creation", () => {
-            expect(entity).toMatchObject(inputValue);
+          describe("timestamps(createdAt:c_At, updatedAt:u_At)", () => {
+            let Model: any, entity: any;
 
-            expect(entity).not.toHaveProperty("createdAt");
-            expect(entity).not.toHaveProperty("updatedAt");
-            expect(entity).toHaveProperty("c_At");
-            expect(entity).toHaveProperty("u_At");
-          });
+            beforeEach(async () => {
+              const onSuccess = ({ c_At, u_At }: any) => {
+                onSuccessValues.c_At = c_At;
+                onSuccessValues.u_At = u_At;
+              };
 
-          it("should populate c_At & u_At during cloning", async () => {
-            const { data: clone } = await Model.clone(entity, {
-              reset: "propertyName2",
+              Model = new Schema(getValidSchema({ onSuccess }), {
+                timestamps: { createdAt: "c_At", updatedAt: "u_At" },
+              }).getModel();
+
+              const res = await Model.create(inputValue);
+
+              entity = res.data;
+
+              await res.handleSuccess();
             });
 
-            expect(clone).toMatchObject({
-              propertyName1: "value1",
-              propertyName2: "",
+            it("should populate c_At & u_At at creation", () => {
+              expect(entity).toMatchObject(inputValue);
+
+              expect(entity).not.toHaveProperty("createdAt");
+              expect(entity).not.toHaveProperty("updatedAt");
+              expect(entity).toHaveProperty("c_At");
+              expect(entity).toHaveProperty("u_At");
+
+              expect(onSuccessValues.c_At).toBeDefined();
+              expect(onSuccessValues.u_At).toBeDefined();
             });
 
-            expect(clone).not.toHaveProperty("createdAt");
-            expect(clone).not.toHaveProperty("updatedAt");
-            expect(clone).toHaveProperty("c_At");
-            expect(clone).toHaveProperty("u_At");
-          });
+            it("should populate c_At & u_At during cloning", async () => {
+              const { data: clone } = await Model.clone(entity, {
+                reset: "propertyName2",
+              });
 
-          it("should populate u_At during updates", async () => {
-            const { data: updates } = await Model.update(entity, {
-              propertyName2: 20,
+              expect(clone).toMatchObject({
+                propertyName1: "value1",
+                propertyName2: "",
+              });
+
+              expect(clone).not.toHaveProperty("createdAt");
+              expect(clone).not.toHaveProperty("updatedAt");
+              expect(clone).toHaveProperty("c_At");
+              expect(clone).toHaveProperty("u_At");
+
+              expect(onSuccessValues.c_At).toBeDefined();
+              expect(onSuccessValues.u_At).toBeDefined();
             });
 
-            expect(updates).toMatchObject({ propertyName2: 20 });
+            it("should populate u_At during updates", async () => {
+              const { data: updates } = await Model.update(entity, {
+                propertyName2: 20,
+              });
 
-            expect(updates).not.toHaveProperty("createdAt");
-            expect(updates).not.toHaveProperty("updatedAt");
-            expect(updates).not.toHaveProperty("c_At");
-            expect(updates).toHaveProperty("u_At");
-          });
-        });
+              expect(updates).toMatchObject({ propertyName2: 20 });
 
-        describe("timestamps(createdAt:c_At, updatedAt:false)", () => {
-          let Model: any, entity: any;
-
-          beforeAll(async () => {
-            Model = new Schema(validSchema, {
-              timestamps: { createdAt: "c_At", updatedAt: false },
-            }).getModel();
-
-            entity = (await Model.create(inputValue)).data;
+              expect(updates).not.toHaveProperty("createdAt");
+              expect(updates).not.toHaveProperty("updatedAt");
+              expect(updates).not.toHaveProperty("c_At");
+              expect(updates).toHaveProperty("u_At");
+            });
           });
 
-          it("should populate only c_At at creation", () => {
-            expect(entity).toMatchObject(inputValue);
+          describe("timestamps(createdAt:c_At, updatedAt:false)", () => {
+            let Model: any, entity: any;
 
-            expect(entity).not.toHaveProperty("createdAt");
-            expect(entity).not.toHaveProperty("updatedAt");
-            expect(Object.keys(entity).length).toBe(3);
+            beforeEach(async () => {
+              const onSuccess = ({ c_At, updatedAt }: any) => {
+                onSuccessValues.c_At = c_At;
+                onSuccessValues.updatedAt = updatedAt;
+              };
 
-            expect(entity).toHaveProperty("c_At");
-          });
+              Model = new Schema(getValidSchema({ onSuccess }), {
+                timestamps: { createdAt: "c_At", updatedAt: false },
+              }).getModel();
 
-          it("should populate only c_At during cloning", async () => {
-            const { data: clone } = await Model.clone(entity, {
-              reset: "propertyName2",
+              const res = await Model.create(inputValue);
+
+              entity = res.data;
+
+              await res.handleSuccess();
             });
 
-            expect(clone).toMatchObject({
-              propertyName1: "value1",
-              propertyName2: "",
+            it("should populate only c_At at creation", () => {
+              expect(entity).toMatchObject(inputValue);
+
+              expect(entity).not.toHaveProperty("createdAt");
+              expect(entity).not.toHaveProperty("updatedAt");
+              expect(Object.keys(entity).length).toBe(3);
+
+              expect(entity).toHaveProperty("c_At");
+
+              expect(onSuccessValues.c_At).toBeDefined();
+              expect(onSuccessValues.updatedAt).toBeUndefined();
             });
 
-            expect(clone).not.toHaveProperty("createdAt");
-            expect(clone).not.toHaveProperty("updatedAt");
-            expect(Object.keys(entity).length).toBe(3);
+            it("should populate only c_At during cloning", async () => {
+              const { data: clone, handleSuccess } = await Model.clone(entity, {
+                reset: "propertyName2",
+              });
 
-            expect(clone).toHaveProperty("c_At");
-          });
+              await handleSuccess();
 
-          it("should not populate u_At during updates", async () => {
-            const { data: updates } = await Model.update(entity, {
-              propertyName2: 20,
+              expect(clone).toMatchObject({
+                propertyName1: "value1",
+                propertyName2: "",
+              });
+
+              expect(clone).not.toHaveProperty("createdAt");
+              expect(clone).not.toHaveProperty("updatedAt");
+              expect(Object.keys(entity).length).toBe(3);
+
+              expect(clone).toHaveProperty("c_At");
+
+              expect(onSuccessValues.c_At).toBeDefined();
+              expect(onSuccessValues.updatedAt).toBeUndefined();
             });
 
-            expect(updates).toMatchObject({ propertyName2: 20 });
+            it("should not populate updatedAt during updates", async () => {
+              const { data: updates } = await Model.update(entity, {
+                propertyName2: 20,
+              });
 
-            expect(updates).not.toHaveProperty("createdAt");
-            expect(updates).not.toHaveProperty("updatedAt");
-            expect(Object.keys(updates).length).toBe(1);
+              expect(updates).toMatchObject({ propertyName2: 20 });
 
-            expect(updates).not.toHaveProperty("c_At");
-          });
-        });
+              expect(updates).not.toHaveProperty("createdAt");
+              expect(updates).not.toHaveProperty("updatedAt");
+              expect(Object.keys(updates).length).toBe(1);
 
-        describe("timestamps(updatedAt:false)", () => {
-          let Model: any, entity: any;
-
-          beforeAll(async () => {
-            Model = new Schema(validSchema, {
-              timestamps: { updatedAt: false },
-            }).getModel();
-
-            entity = (await Model.create(inputValue)).data;
+              expect(updates).not.toHaveProperty("c_At");
+            });
           });
 
-          it("should populate only createdAt at creation", () => {
-            expect(entity).toMatchObject(inputValue);
+          describe("timestamps(updatedAt:false)", () => {
+            let Model: any, entity: any;
 
-            expect(entity).toHaveProperty("createdAt");
-            expect(entity).not.toHaveProperty("updatedAt");
-            expect(Object.keys(entity).length).toBe(3);
-          });
+            beforeEach(async () => {
+              const onSuccess = ({ createdAt, updatedAt }: any) => {
+                onSuccessValues.createdAt = createdAt;
+                onSuccessValues.updatedAt = updatedAt;
+              };
 
-          it("should populate only createdAt during cloning", async () => {
-            const { data: clone } = await Model.clone(entity, {
-              reset: "propertyName2",
+              Model = new Schema(getValidSchema({ onSuccess }), {
+                timestamps: { updatedAt: false },
+              }).getModel();
+
+              const res = await Model.create(inputValue);
+
+              entity = res.data;
+
+              await res.handleSuccess();
             });
 
-            expect(clone).toMatchObject({
-              propertyName1: "value1",
-              propertyName2: "",
+            it("should populate only createdAt at creation", () => {
+              expect(entity).toMatchObject(inputValue);
+
+              expect(entity).toHaveProperty("createdAt");
+              expect(entity).not.toHaveProperty("updatedAt");
+              expect(Object.keys(entity).length).toBe(3);
+
+              expect(onSuccessValues.createdAt).toBeDefined();
+              expect(onSuccessValues.updatedAt).toBeUndefined();
             });
 
-            expect(clone).toHaveProperty("createdAt");
-            expect(clone).not.toHaveProperty("updatedAt");
-            expect(Object.keys(entity).length).toBe(3);
-          });
+            it("should populate only createdAt during cloning", async () => {
+              const { data: clone, handleSuccess } = await Model.clone(entity, {
+                reset: "propertyName2",
+              });
 
-          it("should not populate updatedAt during updates", async () => {
-            const { data: updates } = await Model.update(entity, {
-              propertyName2: 20,
+              await handleSuccess();
+
+              expect(clone).toMatchObject({
+                propertyName1: "value1",
+                propertyName2: "",
+              });
+
+              expect(clone).toHaveProperty("createdAt");
+              expect(clone).not.toHaveProperty("updatedAt");
+              expect(Object.keys(entity).length).toBe(3);
+
+              expect(onSuccessValues.createdAt).toBeDefined();
+              expect(onSuccessValues.updatedAt).toBeUndefined();
             });
 
-            expect(updates).toMatchObject({ propertyName2: 20 });
+            it("should not populate updatedAt during updates", async () => {
+              const { data: updates } = await Model.update(entity, {
+                propertyName2: 20,
+              });
 
-            expect(updates).not.toHaveProperty("updatedAt");
-            expect(Object.keys(updates).length).toBe(1);
-          });
-        });
+              expect(updates).toMatchObject({ propertyName2: 20 });
 
-        describe("timestamps(createdAt:false, updatedAt:u_At)", () => {
-          let Model: any, entity: any;
-
-          beforeAll(async () => {
-            Model = new Schema(validSchema, {
-              timestamps: { createdAt: false, updatedAt: "u_At" },
-            }).getModel();
-
-            entity = (await Model.create(inputValue)).data;
+              expect(updates).not.toHaveProperty("updatedAt");
+              expect(Object.keys(updates).length).toBe(1);
+            });
           });
 
-          it("should populate only u_At at creation", () => {
-            expect(entity).toMatchObject(inputValue);
+          describe("timestamps(createdAt:false, updatedAt:u_At)", () => {
+            let Model: any, entity: any;
 
-            expect(entity).not.toHaveProperty("createdAt");
-            expect(entity).not.toHaveProperty("updatedAt");
-            expect(Object.keys(entity).length).toBe(3);
+            beforeEach(async () => {
+              const onSuccess = ({ createdAt, u_At }: any) => {
+                onSuccessValues.createdAt = createdAt;
+                onSuccessValues.u_At = u_At;
+              };
 
-            expect(entity).toHaveProperty("u_At");
-          });
+              Model = new Schema(getValidSchema({ onSuccess }), {
+                timestamps: { createdAt: false, updatedAt: "u_At" },
+              }).getModel();
 
-          it("should populate only u_At during cloning", async () => {
-            const { data: clone } = await Model.clone(entity, {
-              reset: "propertyName2",
+              const res = await Model.create(inputValue);
+
+              entity = res.data;
+
+              await res.handleSuccess();
             });
 
-            expect(clone).toMatchObject({
-              propertyName1: "value1",
-              propertyName2: "",
+            it("should populate only u_At at creation", () => {
+              expect(entity).toMatchObject(inputValue);
+
+              expect(entity).toHaveProperty("u_At");
+              expect(entity).not.toHaveProperty("createdAt");
+              expect(entity).not.toHaveProperty("updatedAt");
+              expect(Object.keys(entity).length).toBe(3);
+
+              expect(onSuccessValues.createdAt).toBeUndefined();
+              expect(onSuccessValues.u_At).toBeDefined();
             });
 
-            expect(clone).not.toHaveProperty("createdAt");
-            expect(clone).not.toHaveProperty("updatedAt");
-            expect(Object.keys(entity).length).toBe(3);
+            it("should populate only u_At during cloning", async () => {
+              const { data: clone, handleSuccess } = await Model.clone(entity, {
+                reset: "propertyName2",
+              });
 
-            expect(clone).toHaveProperty("u_At");
-          });
+              await handleSuccess();
 
-          it("should populate only u_At during updates", async () => {
-            const { data: updates } = await Model.update(entity, {
-              propertyName2: 20,
+              expect(clone).toMatchObject({
+                propertyName1: "value1",
+                propertyName2: "",
+              });
+
+              expect(clone).not.toHaveProperty("createdAt");
+              expect(clone).not.toHaveProperty("updatedAt");
+              expect(Object.keys(entity).length).toBe(3);
+
+              expect(clone).toHaveProperty("u_At");
+
+              expect(onSuccessValues.createdAt).toBeUndefined();
+              expect(onSuccessValues.u_At).toBeDefined();
             });
 
-            expect(updates).toMatchObject({ propertyName2: 20 });
+            it("should populate only u_At during updates", async () => {
+              const { data: updates } = await Model.update(entity, {
+                propertyName2: 20,
+              });
 
-            expect(updates).not.toHaveProperty("createdAt");
-            expect(updates).not.toHaveProperty("updatedAt");
-            expect(Object.keys(updates).length).toBe(2);
+              expect(updates).toMatchObject({ propertyName2: 20 });
 
-            expect(updates).toHaveProperty("u_At");
-          });
-        });
+              expect(updates).not.toHaveProperty("createdAt");
+              expect(updates).not.toHaveProperty("updatedAt");
+              expect(Object.keys(updates).length).toBe(2);
 
-        describe("timestamps(createdAt:false)", () => {
-          let Model: any, entity: any;
-
-          beforeAll(async () => {
-            Model = new Schema(validSchema, {
-              timestamps: { createdAt: false },
-            }).getModel();
-
-            entity = (await Model.create(inputValue)).data;
+              expect(updates).toHaveProperty("u_At");
+            });
           });
 
-          it("should populate only updatedAt at creation", () => {
-            expect(entity).toMatchObject(inputValue);
+          describe("timestamps(createdAt:false)", () => {
+            let Model: any, entity: any;
 
-            expect(entity).not.toHaveProperty("createdAt");
-            expect(entity).toHaveProperty("updatedAt");
-            expect(Object.keys(entity).length).toBe(3);
-          });
+            beforeEach(async () => {
+              const onSuccess = ({ createdAt, updatedAt }: any) => {
+                onSuccessValues.createdAt = createdAt;
+                onSuccessValues.updatedAt = updatedAt;
+              };
 
-          it("should populate only updatedAt during cloning", async () => {
-            const { data: clone } = await Model.clone(entity, {
-              reset: "propertyName2",
+              Model = new Schema(getValidSchema({ onSuccess }), {
+                timestamps: { createdAt: false },
+              }).getModel();
+
+              const res = await Model.create(inputValue);
+
+              entity = res.data;
+
+              await res.handleSuccess();
             });
 
-            expect(clone).toMatchObject({
-              propertyName1: "value1",
-              propertyName2: "",
+            it("should populate only updatedAt at creation", () => {
+              expect(entity).toMatchObject(inputValue);
+
+              expect(entity).not.toHaveProperty("createdAt");
+              expect(entity).toHaveProperty("updatedAt");
+              expect(Object.keys(entity).length).toBe(3);
+
+              expect(onSuccessValues.createdAt).toBeUndefined();
+              expect(onSuccessValues.updatedAt).toBeDefined();
             });
 
-            expect(clone).not.toHaveProperty("createdAt");
-            expect(clone).toHaveProperty("updatedAt");
-            expect(Object.keys(entity).length).toBe(3);
-          });
+            it("should populate only updatedAt during cloning", async () => {
+              const { data: clone, handleSuccess } = await Model.clone(entity, {
+                reset: "propertyName2",
+              });
 
-          it("should populate only updatedAt during updates", async () => {
-            const { data: updates } = await Model.update(entity, {
-              propertyName2: 20,
+              await handleSuccess();
+
+              expect(clone).toMatchObject({
+                propertyName1: "value1",
+                propertyName2: "",
+              });
+
+              expect(clone).not.toHaveProperty("createdAt");
+              expect(clone).toHaveProperty("updatedAt");
+              expect(Object.keys(entity).length).toBe(3);
+
+              expect(onSuccessValues.createdAt).toBeUndefined();
+              expect(onSuccessValues.updatedAt).toBeDefined();
             });
 
-            expect(updates).toMatchObject({ propertyName2: 20 });
+            it("should populate only updatedAt during updates", async () => {
+              const { data: updates } = await Model.update(entity, {
+                propertyName2: 20,
+              });
 
-            expect(updates).not.toHaveProperty("createdAt");
-            expect(updates).toHaveProperty("updatedAt");
-            expect(Object.keys(updates).length).toBe(2);
+              expect(updates).toMatchObject({ propertyName2: 20 });
+
+              expect(updates).not.toHaveProperty("createdAt");
+              expect(updates).toHaveProperty("updatedAt");
+              expect(Object.keys(updates).length).toBe(2);
+            });
           });
         });
       });
@@ -5007,7 +5150,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           const values = [null, [], 1, "2asf"];
 
           for (const timestamps of values) {
-            const toFail = fx(validSchema, { timestamps });
+            const toFail = fx(getValidSchema(), { timestamps });
 
             expectFailure(toFail);
 
@@ -5026,7 +5169,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
         });
 
         it("should reject empty object", () => {
-          const toFail = fx(validSchema, { timestamps: {} });
+          const toFail = fx(getValidSchema(), { timestamps: {} });
 
           expectFailure(toFail);
 
@@ -5049,7 +5192,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
           for (const ts_key of timestampKeys) {
             for (const value of values) {
-              const toFail = fx(validSchema, {
+              const toFail = fx(getValidSchema(), {
                 timestamps: { [ts_key]: value },
               });
 
@@ -5071,7 +5214,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
         });
 
         it("should reject if custom timestamp names are the same", () => {
-          const toFail = fx(validSchema, {
+          const toFail = fx(getValidSchema(), {
             timestamps: { createdAt: "c_At", updatedAt: "c_At" },
           });
 
