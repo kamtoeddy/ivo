@@ -20,21 +20,18 @@ class Schema<
   A extends ObjectType = {}
 > extends SchemaCore<RealType<I>> {
   constructor(
-    propDefinitions: ns.PropertyDefinitions<CombineTypes<I, O>, RealType<O>, A>,
+    definitions: ns.Definitions<CombineTypes<I, O>, RealType<O>, A>,
     options: ns.Options = defaultOptions
   ) {
-    super(
-      propDefinitions as ns.Definitions<RealType<I>>,
-      options as ns.Options
-    );
+    super(definitions as ns.Definitions_<RealType<I>>, options as ns.Options);
+  }
+
+  get definitions() {
+    return this._definitions;
   }
 
   get options() {
     return this._options;
-  }
-
-  get propDefinitions() {
-    return this._propDefinitions;
   }
 
   extend = <
@@ -43,7 +40,7 @@ class Schema<
     A extends ObjectType = {}
   >(
     propDefinitions: Partial<
-      ns.PropertyDefinitions<
+      ns.Definitions<
         CombineTypes<CombineTypes<I, U>, CombineTypes<O, V>>,
         CombineTypes<O, V>,
         A
@@ -60,23 +57,20 @@ class Schema<
     type InputType = CombineTypes<CombineTypes<I, U>, CombineTypes<O, V>>;
     type OutputType = CombineTypes<O, V>;
 
-    let _propDefinitions = {
-      ...this.propDefinitions,
-    } as ns.PropertyDefinitions<InputType, OutputType, A>;
+    let _definitions = {
+      ...this.definitions,
+    } as ns.Definitions<InputType, OutputType, A>;
 
     remove?.forEach(
-      (prop) => delete _propDefinitions?.[prop as StringKey<InputType>]
+      (prop) => delete _definitions?.[prop as StringKey<InputType>]
     );
 
-    _propDefinitions = {
-      ..._propDefinitions,
+    _definitions = {
+      ..._definitions,
       ...propDefinitions,
-    } as ns.PropertyDefinitions<InputType, OutputType, A>;
+    } as ns.Definitions<InputType, OutputType, A>;
 
-    return new Schema<InputType, OutputType, A>(
-      _propDefinitions as any,
-      options
-    );
+    return new Schema<InputType, OutputType, A>(_definitions as any, options);
   };
 
   getModel = (): Model<RealType<I>, RealType<O>, A> =>
@@ -89,7 +83,7 @@ class ModelTool<
   A extends ObjectType = {}
 > extends SchemaCore<I> {
   constructor(schema: Schema<I, O, A>) {
-    super(schema.propDefinitions, schema.options);
+    super(schema.definitions, schema.options);
   }
 
   private _areValuesOk = (values: any) => values && typeof values == "object";
@@ -196,7 +190,10 @@ class ModelTool<
 
     const propName = isAlias ? this._getPropertyByAlias(prop)! : prop;
 
-    const hasShouldUpdateRule = this._hasAny(propName, "shouldUpdate");
+    const hasShouldUpdateRule = this._isRuleInDefinition(
+      propName,
+      "shouldUpdate"
+    );
 
     const extraCtx = isAlias ? { [propName]: value } : {};
 
@@ -472,7 +469,7 @@ class ModelTool<
 
       if (
         (isLax &&
-          this._hasAny(prop, "shouldInit") &&
+          this._isRuleInDefinition(prop, "shouldInit") &&
           !this._getValueBy(prop, "shouldInit", "creating")) ||
         (!isVirtualInit &&
           !this._canInit(prop) &&
@@ -560,7 +557,7 @@ class ModelTool<
 
       if (
         (isLax &&
-          this._hasAny(prop, "shouldInit") &&
+          this._isRuleInDefinition(prop, "shouldInit") &&
           !this._getValueBy(prop, "shouldInit", "creating")) ||
         (!isVirtualInit &&
           !this._canInit(prop) &&

@@ -42,11 +42,11 @@ type ConditionalRequiredSetter<T> = (
 type StringKey<T> = Extract<keyof T, string>;
 
 namespace Schema {
-  export type PropertyDefinitions<I, O = I, A extends ObjectType = {}> = {
+  export type Definitions<I, O = I, A extends ObjectType = {}> = {
     [K in keyof I]?: Property<K, I, O, A>;
   };
 
-  export type Definitions<I> = {
+  export type Definitions_<I> = {
     [K in keyof I]?: Listenable<I, I> & {
       alias?: string;
       constant?: any;
