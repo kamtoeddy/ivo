@@ -1,4 +1,4 @@
-import { virtualRules } from "../../../schema/interfaces";
+import { VIRTUAL_RULES } from "../../../schema/interfaces";
 
 const pauseFor = (ms = 5) =>
   new Promise((res) => setTimeout(() => res(true), ms));
@@ -1413,9 +1413,9 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
         beforeAll(() => {
           const handle =
             (rule = "", prop = "") =>
-            (ctx: any) => {
+            ({ context }: any) => {
               try {
-                ctx[prop] = 1;
+                context[prop] = 1;
               } catch (err) {
                 if (!propChangeMap[rule]) propChangeMap[rule] = {};
 
@@ -2552,8 +2552,8 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             }
 
             function onSuccess(prop: string) {
-              return (ctx: any) => {
-                onSuccessValues[prop] = ctx[prop];
+              return ({ context }: any) => {
+                onSuccessValues[prop] = context[prop];
                 incrementOnSuccessStats(prop)();
               };
             }
@@ -2860,11 +2860,11 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             }).getModel();
 
             function incrementOnSuccessCountOf(prop: string) {
-              return (ctx: any) => {
+              return ({ context }: any) => {
                 const previousCount = onSuccessStats[prop] ?? 0;
 
                 onSuccessStats[prop] = previousCount + 1;
-                onSuccessValues[prop] = ctx[prop];
+                onSuccessValues[prop] = context[prop];
               };
             }
           });
@@ -3612,8 +3612,8 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             }
 
             function onSuccess(prop: string) {
-              return (ctx: any) => {
-                onSuccessValues[prop] = ctx[prop];
+              return ({ context }: any) => {
+                onSuccessValues[prop] = context[prop];
                 incrementOnSuccessStats(prop)();
               };
             }
@@ -4218,7 +4218,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             } catch (err: any) {
               expect(err.payload).toMatchObject({
                 propertyName: expect.arrayContaining([
-                  `Virtual properties can only have (${virtualRules.join(
+                  `Virtual properties can only have (${VIRTUAL_RULES.join(
                     ", "
                   )}) as rules`,
                 ]),
@@ -4627,7 +4627,9 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             let Model: any, entity: any;
 
             beforeEach(async () => {
-              const onSuccess = ({ createdAt, updatedAt }: any) => {
+              const onSuccess = ({
+                context: { createdAt, updatedAt },
+              }: any) => {
                 onSuccessValues.createdAt = createdAt;
                 onSuccessValues.updatedAt = updatedAt;
               };
@@ -4691,7 +4693,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             let Model: any, entity: any;
 
             beforeEach(async () => {
-              const onSuccess = ({ c_At, updatedAt }: any) => {
+              const onSuccess = ({ context: { c_At, updatedAt } }: any) => {
                 onSuccessValues.c_At = c_At;
                 onSuccessValues.updatedAt = updatedAt;
               };
@@ -4758,7 +4760,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             let Model: any, entity: any;
 
             beforeEach(async () => {
-              const onSuccess = ({ createdAt, u_At }: any) => {
+              const onSuccess = ({ context: { createdAt, u_At } }: any) => {
                 onSuccessValues.createdAt = createdAt;
                 onSuccessValues.u_At = u_At;
               };
@@ -4825,7 +4827,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             let Model: any, entity: any;
 
             beforeEach(async () => {
-              const onSuccess = ({ c_At, u_At }: any) => {
+              const onSuccess = ({ context: { c_At, u_At } }: any) => {
                 onSuccessValues.c_At = c_At;
                 onSuccessValues.u_At = u_At;
               };
@@ -4893,7 +4895,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             let Model: any, entity: any;
 
             beforeEach(async () => {
-              const onSuccess = ({ c_At, updatedAt }: any) => {
+              const onSuccess = ({ context: { c_At, updatedAt } }: any) => {
                 onSuccessValues.c_At = c_At;
                 onSuccessValues.updatedAt = updatedAt;
               };
@@ -4966,7 +4968,9 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             let Model: any, entity: any;
 
             beforeEach(async () => {
-              const onSuccess = ({ createdAt, updatedAt }: any) => {
+              const onSuccess = ({
+                context: { createdAt, updatedAt },
+              }: any) => {
                 onSuccessValues.createdAt = createdAt;
                 onSuccessValues.updatedAt = updatedAt;
               };
@@ -5035,7 +5039,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             let Model: any, entity: any;
 
             beforeEach(async () => {
-              const onSuccess = ({ createdAt, u_At }: any) => {
+              const onSuccess = ({ context: { createdAt, u_At } }: any) => {
                 onSuccessValues.createdAt = createdAt;
                 onSuccessValues.u_At = u_At;
               };
@@ -5107,7 +5111,9 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             let Model: any, entity: any;
 
             beforeEach(async () => {
-              const onSuccess = ({ createdAt, updatedAt }: any) => {
+              const onSuccess = ({
+                context: { createdAt, updatedAt },
+              }: any) => {
                 onSuccessValues.createdAt = createdAt;
                 onSuccessValues.updatedAt = updatedAt;
               };

@@ -2,17 +2,17 @@ import { belongsTo, sort, toArray } from "../utils/functions";
 import { ObjectType } from "../utils/interfaces";
 import { isEqual } from "../utils/isEqual";
 import {
-  LifeCycles,
-  Private_ISchemaOptions,
-  PropDefinitionRule,
-  PropDefinitionRules,
-  Schema as ns,
+  CombinedType,
+  DefinitionRule,
+  ISchema as ns,
   StringKey,
   Validator,
   OptionsKey,
-  allowedOptions,
-  constantRules,
-  virtualRules,
+  Private_ISchemaOptions,
+  ALLOWED_OPTIONS,
+  DEFINITION_RULES,
+  CONSTANT_RULES,
+  VIRTUAL_RULES,
 } from "./interfaces";
 import { OptionsTool } from "./utils/options-tool";
 import { ErrorTool } from "./utils/schema-error";
@@ -22,19 +22,15 @@ export const defaultOptions = {
   timestamps: false,
 } as ns.Options;
 
-const lifeCycleRules: LifeCycles.Rule[] = [
-  "onDelete",
-  "onFailure",
-  "onSuccess",
-];
+const lifeCycleRules: ns.LifeCycles[] = ["onDelete", "onFailure", "onSuccess"];
 
-export abstract class SchemaCore<I extends ObjectType> {
+export abstract class SchemaCore<I extends ObjectType, O extends ObjectType> {
   protected _options: ns.Options;
-  protected _definitions = {} as ns.Definitions_<I>;
+  protected _definitions = {} as ns.Definitions_<I, O>;
 
   // contexts & values
-  protected context: I = {} as I;
-  protected finalContext: I = {} as I;
+  protected context: CombinedType<I, O> = {} as CombinedType<I, O>;
+  protected finalContext: CombinedType<I, O> = {} as CombinedType<I, O>;
   protected defaults: Partial<I> = {};
   protected values: Partial<I> = {};
 
@@ -56,7 +52,7 @@ export abstract class SchemaCore<I extends ObjectType> {
   protected optionsTool: OptionsTool;
 
   constructor(
-    definitions: ns.Definitions_<I>,
+    definitions: ns.Definitions_<I, O>,
     options: ns.Options = defaultOptions as ns.Options
   ) {
     this._definitions = definitions;
@@ -75,8 +71,8 @@ export abstract class SchemaCore<I extends ObjectType> {
     Object.freeze(Object.assign({}, this.finalContext));
 
   protected _initContexts = () => {
-    this.context = { ...this.values } as I;
-    this.finalContext = {} as I;
+    this.context = { ...this.values } as CombinedType<I, O>;
+    this.finalContext = {} as CombinedType<I, O>;
 
     const contstants = this._getKeysAsProps(this.context).filter(
       this._isConstant
@@ -165,7 +161,7 @@ export abstract class SchemaCore<I extends ObjectType> {
 
     const { readonly } = this._getDefinition(prop);
 
-    const shouldInit = this._getValueBy(prop, "shouldInit", "creating");
+    const shouldInit = this._getValueBy(prop, "shouldInit", "creation");
 
     return (
       readonly === true &&
@@ -189,7 +185,7 @@ export abstract class SchemaCore<I extends ObjectType> {
     if (!options.length) error.add("schema options", "Cannot be empty").throw();
 
     for (let option of options)
-      if (!allowedOptions.includes(option))
+      if (!ALLOWED_OPTIONS.includes(option))
         error.add(option, "Invalid option").throw();
 
     if (this._options.hasOwnProperty("errors"))
@@ -289,12 +285,12 @@ export abstract class SchemaCore<I extends ObjectType> {
   };
 
   protected _getConstantValue = async (prop: string) =>
-    this._getValueBy(prop, "value", "creating");
+    this._getValueBy(prop, "value", "creation");
 
   protected _getValueBy = (
     prop: string,
-    rule: PropDefinitionRule,
-    lifeCycle: LifeCycles.LifeCycle,
+    rule: DefinitionRule,
+    lifeCycle: ns.OperationName,
     extraCtx: ObjectType = {}
   ) => {
     const value = this._getDefinition(prop)?.[rule];
@@ -306,7 +302,7 @@ export abstract class SchemaCore<I extends ObjectType> {
 
   protected _getRequiredState = (
     prop: string,
-    lifeCycle: LifeCycles.LifeCycle
+    lifeCycle: ns.OperationName
   ): [boolean, string] => {
     const { required } = this._getDefinition(prop);
 
@@ -328,10 +324,10 @@ export abstract class SchemaCore<I extends ObjectType> {
 
   private _getDetailedListeners = <T>(
     prop: string,
-    lifeCycle: LifeCycles.Rule,
+    lifeCycle: ns.LifeCycles,
     valid = true
   ) => {
-    const listeners = toArray<LifeCycles.Listener<T>>(
+    const listeners = toArray<ns.Listener<T>>(
       this._getDefinition(prop)?.[lifeCycle] as any
     );
 
@@ -346,20 +342,22 @@ export abstract class SchemaCore<I extends ObjectType> {
     );
   };
 
-  protected _getListeners = <T>(prop: string, lifeCycle: LifeCycles.Rule) => {
+  protected _getListeners = <T>(prop: string, lifeCycle: ns.LifeCycles) => {
     return this._getDetailedListeners<T>(prop, lifeCycle, true).map(
       (dt) => dt.listener
-    ) as LifeCycles.Listener<T>[];
+    ) as ns.Listener<T>[];
   };
 
   private _getInvalidRules = <K extends StringKey<I>>(prop: K) => {
     const rulesProvided = this._getKeysAsProps(this._getDefinition(prop));
 
-    return rulesProvided.filter((r) => !PropDefinitionRules.includes(r));
+    return rulesProvided.filter((r) => !DEFINITION_RULES.includes(r));
   };
 
   protected _getValidator = <K extends StringKey<I>>(prop: K) => {
-    return this._getDefinition(prop)?.validator as Validator<K, I> | undefined;
+    return this._getDefinition(prop)?.validator as
+      | Validator<K, I, O>
+      | undefined;
   };
 
   protected _getKeysAsProps = <T extends ObjectType>(data: T) =>
@@ -367,7 +365,7 @@ export abstract class SchemaCore<I extends ObjectType> {
 
   protected _isRuleInDefinition = (
     prop: string,
-    rules: PropDefinitionRule | PropDefinitionRule[]
+    rules: DefinitionRule | DefinitionRule[]
   ): boolean => {
     for (let _prop of toArray(rules))
       if (this._getDefinition(prop)?.hasOwnProperty(_prop)) return true;
@@ -398,8 +396,8 @@ export abstract class SchemaCore<I extends ObjectType> {
         reason: "Constant properties cannot have 'undefined' as value",
       };
 
-    const unAcceptedRules = PropDefinitionRules.filter(
-      (rule) => !constantRules.includes(rule)
+    const unAcceptedRules = DEFINITION_RULES.filter(
+      (rule) => !CONSTANT_RULES.includes(rule)
     );
 
     if (this._isRuleInDefinition(prop, unAcceptedRules))
@@ -636,7 +634,7 @@ export abstract class SchemaCore<I extends ObjectType> {
 
     if (valid && !this._isVirtual(prop)) {
       this.props.push(prop as StringKey<I>);
-      this._setDefaultOf(prop as StringKey<I>, "creating");
+      this._setDefaultOf(prop as StringKey<I>, "creation");
     }
 
     return { reasons, valid };
@@ -896,14 +894,14 @@ export abstract class SchemaCore<I extends ObjectType> {
       if (!isValid.valid) return isValid;
     }
 
-    const unAcceptedRules = PropDefinitionRules.filter(
-      (rule) => !virtualRules.includes(rule)
+    const unAcceptedRules = DEFINITION_RULES.filter(
+      (rule) => !VIRTUAL_RULES.includes(rule)
     );
 
     if (this._isRuleInDefinition(prop, unAcceptedRules))
       return {
         valid,
-        reason: `Virtual properties can only have (${virtualRules.join(
+        reason: `Virtual properties can only have (${VIRTUAL_RULES.join(
           ", "
         )}) as rules`,
       };
@@ -978,7 +976,7 @@ export abstract class SchemaCore<I extends ObjectType> {
 
     return (
       isEqual(shouldInit, undefined) ||
-      this._getValueBy(definitionName, "shouldInit", "creating", extraCtx)
+      this._getValueBy(definitionName, "shouldInit", "creation", extraCtx)
     );
   };
 
@@ -1088,10 +1086,7 @@ export abstract class SchemaCore<I extends ObjectType> {
     this.laxProps.push(prop as StringKey<I>);
   };
 
-  private _setDefaultOf = (
-    prop: StringKey<I>,
-    lifeCycle: LifeCycles.LifeCycle
-  ) => {
+  private _setDefaultOf = (prop: StringKey<I>, lifeCycle: ns.OperationName) => {
     const _default = this._getValueBy(prop, "default", lifeCycle);
 
     if (!isEqual(_default, undefined)) this.defaults[prop] = _default;
