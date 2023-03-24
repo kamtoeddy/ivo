@@ -232,7 +232,7 @@ class ModelTool<
 
       const operationSummary = this._makeOperationSummary(
         context,
-        data[prop],
+        data[prop] ?? (context[prop] as any),
         this.values[prop],
         isUpdate
       );
