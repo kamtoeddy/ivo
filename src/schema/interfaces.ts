@@ -1,16 +1,15 @@
 import { ObjectType } from "../utils/interfaces";
 
 export type {
-  CombineTypes,
+  CombinedType,
+  DefinitionRule,
+  ISchema,
   ITimestamp,
-  LifeCycles,
   NonEmptyArray,
   OptionsKey,
   Private_ISchemaOptions,
-  PropDefinitionRule,
   RealType,
   ResponseInput,
-  Schema,
   StringKey,
   TypeOf,
   Validator,
@@ -19,7 +18,21 @@ export type {
 
 type TypeOf<T> = Exclude<T, undefined>;
 
-type CombineTypes<I, O> = RealType<I & O>;
+type OmitNever<T> = { [K in keyof T as T[K] extends never ? never : K]: T[K] };
+
+type GetCommonProps<I, O> = {
+  [K in keyof (I | O)]: I[K] extends never
+    ? O[K]
+    : O[K] extends never
+    ? I[K]
+    : O[K];
+};
+
+type CombinedType_<I, O> = OmitNever<I & O> extends never
+  ? O
+  : OmitNever<I & O> & GetCommonProps<I, O>;
+
+type CombinedType<I, O> = RealType<CombinedType_<I, O> & O>;
 
 type RealType_<T> = T extends (...args: any) => infer I ? I : T;
 
@@ -27,27 +40,51 @@ type RealType<T> = {
   [K in keyof T]: Exclude<T[K], Function> | RealType_<T[K]>;
 } & {};
 
-type AsyncSetter<K extends keyof T, T> = (
-  ctx: Readonly<T>,
-  lifeCycle: LifeCycles.LifeCycle
-) => TypeOf<T[K]> | Promise<TypeOf<T[K]>>;
+type AsyncSetter<K extends keyof I, I, O> = (
+  context: Readonly<CombinedType<I, O>>,
+  operation: ISchema.OperationName
+) => TypeOf<I[K]> | Promise<TypeOf<I[K]>>;
 
-type BooleanSetter<T> = (ctx: Readonly<T>) => boolean;
+type BooleanSetter<I, O> = (context: Readonly<CombinedType<I, O>>) => boolean;
 
-type ConditionalRequiredSetter<T> = (
-  ctx: Readonly<T>,
-  lifeCycle: LifeCycles.LifeCycle
+type ConditionalRequiredSetter<I, O> = (
+  context: Readonly<CombinedType<I, O>>,
+  operation: ISchema.OperationName
 ) => boolean | [boolean, string];
 
 type StringKey<T> = Extract<keyof T, string>;
 
-namespace Schema {
+namespace ISchema {
+  export type LifeCycles = "onDelete" | "onFailure" | "onSuccess";
+
+  export type OperationName = "creation" | "update";
+
+  export type Listener<T> = (context: Readonly<T>) => void | Promise<void>;
+
+  export type SuccessListener<OutputType, ContextType> = (
+    summary: OperationSummary<OutputType, ContextType>
+  ) => void | Promise<void>;
+
+  export type OperationSummary<OutputType, ContextType> =
+    | {
+        context: Readonly<ContextType>;
+        data: OutputType;
+        operation: "creation";
+        previousData: undefined;
+      }
+    | {
+        context: Readonly<ContextType>;
+        data: OutputType;
+        operation: "update";
+        previousData: OutputType;
+      };
+
   export type Definitions<I, O = I, A extends ObjectType = {}> = {
     [K in keyof I]?: Property<K, I, O, A>;
   };
 
-  export type Definitions_<I> = {
-    [K in keyof I]?: Listenable<I, I> & {
+  export type Definitions_<I, O> = {
+    [K in keyof I]?: Listenable<K, I, I> & {
       alias?: string;
       constant?: any;
       default?: any;
@@ -55,10 +92,10 @@ namespace Schema {
       dependsOn?: StringKey<I> | StringKey<I>[];
       readonly?: boolean | "lax";
       resolver?: Function;
-      required?: boolean | ConditionalRequiredSetter<I>;
-      sanitizer?: AsyncSetter<K, I>;
-      shouldInit?: false | BooleanSetter<I>;
-      shouldUpdate?: false | BooleanSetter<I>;
+      required?: boolean | ConditionalRequiredSetter<I, O>;
+      sanitizer?: AsyncSetter<K, I, O>;
+      shouldInit?: false | BooleanSetter<I, O>;
+      shouldUpdate?: false | BooleanSetter<I, O>;
       validator?: Function;
       value?: any;
       virtual?: boolean;
@@ -75,99 +112,107 @@ namespace Schema {
     | Constant<K, I, O>
     | Dependent<K, I, O>
     | LaxProperty<K, I, O>
-    | Readonly<K, I, O>
+    | Readonly_<K, I, O>
     | ReadonlyNoInit<K, I, O>
     | Required<K, I, O>
     | RequiredBy<K, I, O>
     | ReadonlyRequired<K, I, O>
-    | RequiredVirtual<K, I, A>
-    | Virtual<K, I, A>;
+    | RequiredVirtual<K, I, O, A>
+    | Virtual<K, I, O, A>;
 
-  type Listenable<I, O> = {
-    onDelete?: LifeCycles.Listener<O> | NonEmptyArray<LifeCycles.Listener<O>>;
-    onFailure?: LifeCycles.Listener<I> | NonEmptyArray<LifeCycles.Listener<I>>;
+  type Listenable<K extends keyof I, I, O> = {
+    onDelete?:
+      | ISchema.Listener<CombinedType<I, O>>
+      | NonEmptyArray<ISchema.Listener<CombinedType<I, O>>>;
+    onFailure?:
+      | ISchema.Listener<CombinedType<I, O>>
+      | NonEmptyArray<ISchema.Listener<CombinedType<I, O>>>;
     onSuccess?:
-      | LifeCycles.SuccessListener<I>
-      | NonEmptyArray<LifeCycles.SuccessListener<I>>;
+      | ISchema.SuccessListener<I[K], CombinedType<I, O>>
+      | NonEmptyArray<ISchema.SuccessListener<I[K], CombinedType<I, O>>>;
   };
 
-  type Constant<K extends keyof T, T, O = T> = {
+  type Constant<K extends keyof I, I, O = I> = {
     constant: true;
-    onDelete?: LifeCycles.Listener<O> | NonEmptyArray<LifeCycles.Listener<O>>;
+    onDelete?:
+      | ISchema.Listener<CombinedType<I, O>>
+      | NonEmptyArray<ISchema.Listener<CombinedType<I, O>>>;
     onSuccess?:
-      | LifeCycles.SuccessListener<T>
-      | NonEmptyArray<LifeCycles.SuccessListener<T>>;
-    value: TypeOf<T[K]> | AsyncSetter<K, T>;
+      | ISchema.SuccessListener<O, CombinedType<I, O>>
+      | NonEmptyArray<ISchema.SuccessListener<O, CombinedType<I, O>>>;
+    value: TypeOf<I[K]> | AsyncSetter<K, I, O>;
   };
 
-  type Dependent<K extends keyof T, T, O = T> = Listenable<T, O> & {
-    default: TypeOf<T[K]> | AsyncSetter<K, T>;
+  type Dependent<K extends keyof I, I, O = I> = Listenable<K, I, O> & {
+    default: TypeOf<I[K]> | AsyncSetter<K, I, O>;
     dependent: true;
-    dependsOn: Exclude<StringKey<T>, K> | Exclude<StringKey<T>, K>[];
+    dependsOn: Exclude<StringKey<I>, K> | Exclude<StringKey<I>, K>[];
     readonly?: true;
-    resolver: AsyncSetter<K, T>;
+    resolver: AsyncSetter<K, I, O>;
   };
 
-  type LaxProperty<K extends keyof T, T, O = T> = Listenable<T, O> & {
-    default: TypeOf<T[K]> | AsyncSetter<K, T>;
+  type LaxProperty<K extends keyof I, I, O = I> = Listenable<K, I, O> & {
+    default: TypeOf<I[K]> | AsyncSetter<K, I, O>;
     readonly?: "lax";
-    shouldInit?: false | BooleanSetter<T>;
-    shouldUpdate?: BooleanSetter<T>;
-    validator?: Validator<K, T>;
+    shouldInit?: false | BooleanSetter<I, O>;
+    shouldUpdate?: BooleanSetter<I, O>;
+    validator?: Validator<K, I, O>;
   };
 
-  type Readonly<K extends keyof T, T, O = T> = Listenable<T, O> & {
-    default: TypeOf<T[K]> | AsyncSetter<K, T>;
+  type Readonly_<K extends keyof I, I, O = I> = Listenable<K, I, O> & {
+    default: TypeOf<I[K]> | AsyncSetter<K, I, O>;
     readonly: "lax";
-    shouldUpdate?: BooleanSetter<T>;
-    validator: Validator<K, T>;
+    shouldUpdate?: BooleanSetter<I, O>;
+    validator: Validator<K, I, O>;
   };
 
-  type ReadonlyNoInit<K extends keyof T, T, O = T> = Listenable<T, O> & {
-    default: TypeOf<T[K]> | AsyncSetter<K, T>;
+  type ReadonlyNoInit<K extends keyof I, I, O = I> = Listenable<K, I, O> & {
+    default: TypeOf<I[K]> | AsyncSetter<K, I, O>;
     readonly: true;
-    shouldInit: false | BooleanSetter<T>;
-    shouldUpdate?: BooleanSetter<T>;
-    validator?: Validator<K, T>;
+    shouldInit: false | BooleanSetter<I, O>;
+    shouldUpdate?: BooleanSetter<I, O>;
+    validator?: Validator<K, I, O>;
   };
 
-  type ReadonlyRequired<K extends keyof T, T, O = T> = Listenable<T, O> & {
+  type ReadonlyRequired<K extends keyof I, I, O = I> = Listenable<K, I, O> & {
     readonly: true;
-    validator: Validator<K, T>;
+    validator: Validator<K, I, O>;
   };
 
-  type Required<K extends keyof T, T, O = T> = Listenable<T, O> & {
+  type Required<K extends keyof I, I, O = I> = Listenable<K, I, O> & {
     required: true;
-    shouldUpdate?: BooleanSetter<T>;
-    validator: Validator<K, T>;
+    shouldUpdate?: BooleanSetter<I, O>;
+    validator: Validator<K, I, O>;
   };
 
-  type RequiredBy<K extends keyof T, T, O = T> = Listenable<T, O> & {
-    default: TypeOf<T[K]> | AsyncSetter<K, T>;
-    required: ConditionalRequiredSetter<T>;
+  type RequiredBy<K extends keyof I, I, O = I> = Listenable<K, I, O> & {
+    default: TypeOf<I[K]> | AsyncSetter<K, I, O>;
+    required: ConditionalRequiredSetter<I, O>;
     readonly?: true;
-    shouldUpdate?: BooleanSetter<T>;
-    validator: Validator<K, T>;
+    shouldUpdate?: BooleanSetter<I, O>;
+    validator: Validator<K, I, O>;
   };
 
-  type Virtual<K extends keyof T, T, A> = {
+  type Virtual<K extends keyof I, I, O, A> = {
     alias?: Exclude<StringKey<A>, K> extends undefined
       ? string
       : Exclude<StringKey<A>, K>;
     virtual: true;
-    sanitizer?: AsyncSetter<K, T>;
-    onFailure?: LifeCycles.Listener<T> | NonEmptyArray<LifeCycles.Listener<T>>;
+    sanitizer?: AsyncSetter<K, I, O>;
+    onFailure?:
+      | ISchema.Listener<CombinedType<I, O>>
+      | NonEmptyArray<ISchema.Listener<CombinedType<I, O>>>;
     onSuccess?:
-      | LifeCycles.SuccessListener<T>
-      | NonEmptyArray<LifeCycles.SuccessListener<T>>;
-    shouldInit?: false | BooleanSetter<T>;
-    shouldUpdate?: false | BooleanSetter<T>;
-    validator: Validator<K, T>;
+      | ISchema.SuccessListener<O, CombinedType<I, O>>
+      | NonEmptyArray<ISchema.SuccessListener<O, CombinedType<I, O>>>;
+    shouldInit?: false | BooleanSetter<I, O>;
+    shouldUpdate?: false | BooleanSetter<I, O>;
+    validator: Validator<K, I, O>;
   };
 
-  type RequiredVirtual<K extends keyof T, T, A> = Virtual<K, T, A> & {
-    required: ConditionalRequiredSetter<T>;
-    shouldUpdate?: false | BooleanSetter<T>;
+  type RequiredVirtual<K extends keyof I, I, O, A> = Virtual<K, I, O, A> & {
+    required: ConditionalRequiredSetter<I, O>;
+    shouldUpdate?: false | BooleanSetter<I, O>;
   };
 
   // options
@@ -185,19 +230,6 @@ namespace Schema {
   export type ExtensionOptions<T> = Options & { remove?: T | T[] };
 }
 
-namespace LifeCycles {
-  export type Rule = "onDelete" | "onFailure" | "onSuccess";
-
-  export type LifeCycle = "creating" | "updating";
-
-  export type Listener<T> = (ctx: Readonly<T>) => void | Promise<void>;
-
-  export type SuccessListener<T> = (
-    ctx: Readonly<T>,
-    lifeCycle: LifeCycle
-  ) => void | Promise<void>;
-}
-
 type ValidatorResponse<T> =
   | { valid: true; validated: T }
   | { reasons: string[]; valid: false };
@@ -206,10 +238,10 @@ type ResponseInput<T> =
   | { valid: true; validated?: TypeOf<T> }
   | { reason?: string; reasons?: string[]; valid: false };
 
-type Validator<K extends keyof T, T> = (
+type Validator<K extends keyof I, I, O> = (
   value: any,
-  ctx: Readonly<T>
-) => ResponseInput<T[K]> | Promise<ResponseInput<T[K]>>;
+  context: Readonly<CombinedType<I, O>>
+) => ResponseInput<I[K]> | Promise<ResponseInput<I[K]>>;
 
 type NonEmptyArray<T> = [T, ...T[]];
 
@@ -222,9 +254,9 @@ interface Private_ISchemaOptions {
   timestamps: ITimestamp;
 }
 
-type OptionsKey = StringKey<Schema.Options>;
+type OptionsKey = StringKey<ISchema.Options>;
 
-const PropDefinitionRules = [
+const DEFINITION_RULES = [
   "alias",
   "constant",
   "default",
@@ -244,11 +276,11 @@ const PropDefinitionRules = [
   "virtual",
 ] as const;
 
-type PropDefinitionRule = typeof PropDefinitionRules[number];
+type DefinitionRule = typeof DEFINITION_RULES[number];
 
-const allowedOptions: OptionsKey[] = ["errors", "timestamps"];
-const constantRules = ["constant", "onDelete", "onSuccess", "value"];
-const virtualRules = [
+const ALLOWED_OPTIONS: OptionsKey[] = ["errors", "timestamps"];
+const CONSTANT_RULES = ["constant", "onDelete", "onSuccess", "value"];
+const VIRTUAL_RULES = [
   "alias",
   "sanitizer",
   "onFailure",
@@ -260,4 +292,4 @@ const virtualRules = [
   "virtual",
 ];
 
-export { allowedOptions, constantRules, PropDefinitionRules, virtualRules };
+export { ALLOWED_OPTIONS, CONSTANT_RULES, DEFINITION_RULES, VIRTUAL_RULES };

@@ -1,13 +1,7 @@
 import { sort, sortKeys, toArray } from "../utils/functions";
 import { ObjectType } from "../utils/interfaces";
 import { isEqual } from "../utils/isEqual";
-import {
-  CombineTypes,
-  LifeCycles,
-  Schema as ns,
-  RealType,
-  StringKey,
-} from "./interfaces";
+import { CombinedType, ISchema as ns, RealType, StringKey } from "./interfaces";
 import { defaultOptions, SchemaCore } from "./SchemaCore";
 import { makeResponse } from "./utils";
 import { ErrorTool } from "./utils/schema-error";
@@ -18,12 +12,12 @@ class Schema<
   I extends ObjectType,
   O extends ObjectType = I,
   A extends ObjectType = {}
-> extends SchemaCore<RealType<I>> {
+> extends SchemaCore<I, O> {
   constructor(
-    definitions: ns.Definitions<CombineTypes<I, O>, RealType<O>, A>,
+    definitions: ns.Definitions<RealType<I>, RealType<O>, A>,
     options: ns.Options = defaultOptions
   ) {
-    super(definitions as ns.Definitions_<RealType<I>>, options as ns.Options);
+    super(definitions as ns.Definitions_<I, O>, options as ns.Options);
   }
 
   get definitions() {
@@ -37,14 +31,12 @@ class Schema<
   extend = <
     U extends ObjectType,
     V extends ObjectType = U,
-    A extends ObjectType = {}
+    A1 extends ObjectType = {}
   >(
-    propDefinitions: Partial<
-      ns.Definitions<
-        CombineTypes<CombineTypes<I, U>, CombineTypes<O, V>>,
-        CombineTypes<O, V>,
-        A
-      >
+    propDefinitions: ns.Definitions<
+      CombinedType<I, U>,
+      CombinedType<O, V>,
+      CombinedType<A, A1>
     >,
     options: ns.ExtensionOptions<StringKey<RealType<I>>> = {
       ...defaultOptions,
@@ -54,12 +46,13 @@ class Schema<
     const remove = toArray(options?.remove ?? []);
     delete options.remove;
 
-    type InputType = CombineTypes<CombineTypes<I, U>, CombineTypes<O, V>>;
-    type OutputType = CombineTypes<O, V>;
+    type InputType = CombinedType<I, U>;
+    type OutputType = CombinedType<O, V>;
+    type AliasType = CombinedType<A, A1>;
 
     let _definitions = {
       ...this.definitions,
-    } as ns.Definitions<InputType, OutputType, A>;
+    } as ns.Definitions<InputType, OutputType, AliasType>;
 
     remove?.forEach(
       (prop) => delete _definitions?.[prop as StringKey<InputType>]
@@ -68,9 +61,9 @@ class Schema<
     _definitions = {
       ..._definitions,
       ...propDefinitions,
-    } as ns.Definitions<InputType, OutputType, A>;
+    } as ns.Definitions<InputType, OutputType, AliasType>;
 
-    return new Schema<InputType, OutputType, A>(_definitions as any, options);
+    return new Schema<InputType, OutputType, AliasType>(_definitions, options);
   };
 
   getModel = (): Model<RealType<I>, RealType<O>, A> =>
@@ -81,7 +74,7 @@ class ModelTool<
   I extends ObjectType,
   O extends ObjectType = I,
   A extends ObjectType = {}
-> extends SchemaCore<I> {
+> extends SchemaCore<I, O> {
   constructor(schema: Schema<I, O, A>) {
     super(schema.definitions, schema.options);
   }
@@ -124,7 +117,7 @@ class ModelTool<
 
   private _handleRequiredBy = (
     error: ErrorTool,
-    lifeCycle: LifeCycles.LifeCycle
+    lifeCycle: ns.OperationName
   ) => {
     for (const prop of this.propsRequiredBy) {
       const [isRequired, message] = this._getRequiredState(prop, lifeCycle);
@@ -134,7 +127,7 @@ class ModelTool<
   };
 
   private _handleSanitizationOfVirtuals = async (
-    lifeCycle: LifeCycles.LifeCycle
+    lifeCycle: ns.OperationName
   ) => {
     let sanitizers: [StringKey<I>, Function][] = [];
 
@@ -150,7 +143,7 @@ class ModelTool<
 
       if (!isSanitizable) continue;
 
-      sanitizers.push([prop, sanitizer]);
+      sanitizers.push([prop as StringKey<I>, sanitizer]);
     }
 
     const sanitizations = sanitizers.map(async ([prop, sanitizer]) => {
@@ -164,12 +157,12 @@ class ModelTool<
 
   private _isSanitizable = (
     prop: string,
-    lifeCycle: LifeCycles.LifeCycle
+    lifeCycle: ns.OperationName
   ): [false, undefined] | [true, Function] => {
     const { sanitizer, shouldInit } = this._getDefinition(prop);
 
     if (!sanitizer) return [false, undefined];
-    if (lifeCycle == "creating" && isEqual(shouldInit, false))
+    if (lifeCycle == "creation" && isEqual(shouldInit, false))
       return [false, undefined];
 
     return [true, sanitizer];
@@ -200,7 +193,7 @@ class ModelTool<
     const isUpdatable = this._getValueBy(
       propName,
       "shouldUpdate",
-      "updating",
+      "update",
       extraCtx
     );
 
@@ -217,11 +210,8 @@ class ModelTool<
     );
   };
 
-  private _makeHandleSuccess = (
-    data: Partial<I>,
-    lifeCycle: LifeCycles.LifeCycle
-  ) => {
-    const ctx = this._getContext();
+  private _makeHandleSuccess = (data: Partial<I>, isUpdate = false) => {
+    const context = this._getContext();
     const finalCtx = this._getFinalContext();
 
     const successFulSideEffects = this._getKeysAsProps(finalCtx).filter(
@@ -232,26 +222,50 @@ class ModelTool<
 
     const successProps = [...props, ...successFulSideEffects];
 
-    let successListeners = [] as LifeCycles.SuccessListener<I>[];
+    let successListeners = [] as (() => any)[];
 
-    for (const prop of successProps)
-      successListeners = successListeners.concat(
-        this._getListeners(prop, "onSuccess") as LifeCycles.SuccessListener<I>[]
+    for (const prop of successProps) {
+      const methods = this._getListeners(
+        prop,
+        "onSuccess"
+      ) as ns.SuccessListener<I, O>[];
+
+      const operationSummary = this._makeOperationSummary(
+        context,
+        data[prop],
+        this.values[prop],
+        isUpdate
       );
+
+      successListeners = successListeners.concat(
+        methods.map((m) => () => m(operationSummary as any))
+      );
+    }
 
     return async () => {
       const successOperations = successListeners.map(
-        async (listener) => await listener(ctx, lifeCycle)
+        async (listener) => await listener()
       );
 
       await Promise.allSettled(successOperations);
     };
   };
 
+  private _makeOperationSummary = <O, C>(
+    context: C,
+    data: O,
+    previousData: O,
+    isUpdate = false
+  ): ns.OperationSummary<O, C> => {
+    return isUpdate
+      ? { context, data, operation: "update", previousData }
+      : { context, data, operation: "creation", previousData: undefined };
+  };
+
   private _resolveDependentChanges = async (
     data: Partial<I>,
-    ctx: Partial<I>,
-    lifeCycle: LifeCycles.LifeCycle
+    ctx: Partial<I> | Partial<CombinedType<I, O>>,
+    lifeCycle: ns.OperationName
   ) => {
     let _updates = { ...data };
 
@@ -259,10 +273,10 @@ class ModelTool<
 
     let toResolve = [] as StringKey<I>[];
 
-    const isCreating = lifeCycle == "creating";
+    const isCreating = lifeCycle == "creation";
 
     for (const prop of successFulChanges) {
-      const dependencies = this._getDependencies(prop);
+      const dependencies = this._getDependencies(prop as StringKey<I>);
 
       if (!dependencies.length) continue;
 
@@ -470,7 +484,7 @@ class ModelTool<
       if (
         (isLax &&
           this._isRuleInDefinition(prop, "shouldInit") &&
-          !this._getValueBy(prop, "shouldInit", "creating")) ||
+          !this._getValueBy(prop, "shouldInit", "creation")) ||
         (!isVirtualInit &&
           !this._canInit(prop) &&
           !isLaxInit &&
@@ -489,14 +503,14 @@ class ModelTool<
 
     await Promise.allSettled(validations);
 
-    this._handleRequiredBy(error, "creating");
+    this._handleRequiredBy(error, "creation");
 
-    await this._handleSanitizationOfVirtuals("creating");
+    await this._handleSanitizationOfVirtuals("creation");
 
     data = await this._resolveDependentChanges(
       data,
       this._getFinalContext(),
-      "creating"
+      "creation"
     );
 
     if (error.isPayloadLoaded) {
@@ -512,7 +526,7 @@ class ModelTool<
     return {
       data: finalData as O,
       error: undefined,
-      handleSuccess: this._makeHandleSuccess(data, "creating"),
+      handleSuccess: this._makeHandleSuccess(data),
     };
   };
 
@@ -558,7 +572,7 @@ class ModelTool<
       if (
         (isLax &&
           this._isRuleInDefinition(prop, "shouldInit") &&
-          !this._getValueBy(prop, "shouldInit", "creating")) ||
+          !this._getValueBy(prop, "shouldInit", "creation")) ||
         (!isVirtualInit &&
           !this._canInit(prop) &&
           !isLaxInit &&
@@ -577,14 +591,14 @@ class ModelTool<
 
     await Promise.allSettled(validations);
 
-    this._handleRequiredBy(error, "creating");
+    this._handleRequiredBy(error, "creation");
 
-    await this._handleSanitizationOfVirtuals("creating");
+    await this._handleSanitizationOfVirtuals("creation");
 
     data = await this._resolveDependentChanges(
       data,
       this._getFinalContext(),
-      "creating"
+      "creation"
     );
 
     if (error.isPayloadLoaded) {
@@ -600,7 +614,7 @@ class ModelTool<
     return {
       data: finalData as O,
       error: undefined,
-      handleSuccess: this._makeHandleSuccess(data, "creating"),
+      handleSuccess: this._makeHandleSuccess(data),
     };
   };
 
@@ -671,19 +685,19 @@ class ModelTool<
 
     await Promise.allSettled(validations);
 
-    this._handleRequiredBy(error, "updating");
+    this._handleRequiredBy(error, "update");
 
     if (error.isPayloadLoaded) {
       await this._handleFailure(updated, error, virtuals);
       return this._handleError(error);
     }
 
-    await this._handleSanitizationOfVirtuals("updating");
+    await this._handleSanitizationOfVirtuals("update");
 
     updated = await this._resolveDependentChanges(
       updated,
       this._getFinalContext(),
-      "updating"
+      "update"
     );
 
     if (!Object.keys(updated).length) {
@@ -699,14 +713,14 @@ class ModelTool<
     return {
       data: finalData as Partial<O>,
       error: undefined,
-      handleSuccess: this._makeHandleSuccess(updated, "updating"),
+      handleSuccess: this._makeHandleSuccess(updated, true),
     };
   };
 
   _validate = async <K extends StringKey<I & A>>(
     prop: K,
     value: any,
-    ctx: Readonly<I>
+    ctx: Readonly<CombinedType<I, O>>
   ) => {
     const isAlias = this._isVirtualAlias(prop);
 
@@ -752,5 +766,5 @@ class Model<
   update = this.modelTool.update;
 
   validate = async <K extends StringKey<I & A>>(prop: K, value: any) =>
-    this.modelTool._validate(prop, value, {} as Readonly<I>);
+    this.modelTool._validate(prop, value, {} as Readonly<CombinedType<I, O>>);
 }

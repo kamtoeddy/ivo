@@ -7,5 +7,5 @@ export { Schema } from "./schema";
 export * as validate from "./validate";
 
 // types & interfaces
-export type { CombineTypes } from "./schema/interfaces";
+export type { CombinedType, ISchema } from "./schema/interfaces";
 export * from "./utils/interfaces";
