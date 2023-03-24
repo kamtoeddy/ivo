@@ -119,10 +119,10 @@ class ModelTool<
 
       const _cleanups = listeners.map(async (listener) => await listener(ctx));
 
-      await Promise.all(_cleanups);
+      await Promise.allSettled(_cleanups);
     });
 
-    await Promise.all(cleanups);
+    await Promise.allSettled(cleanups);
   };
 
   private _handleInvalidData = () =>
@@ -165,7 +165,7 @@ class ModelTool<
       this._updateContext({ [prop]: resolvedValue } as I);
     });
 
-    await Promise.all(sanitizations);
+    await Promise.allSettled(sanitizations);
   };
 
   private _isSanitizable = (
@@ -247,7 +247,7 @@ class ModelTool<
         async (listener) => await listener(ctx, lifeCycle)
       );
 
-      await Promise.all(successOperations);
+      await Promise.allSettled(successOperations);
     };
   };
 
@@ -316,7 +316,7 @@ class ModelTool<
       return (_updates = { ..._updates, ..._data });
     });
 
-    await Promise.all(operations);
+    await Promise.allSettled(operations);
 
     return _updates;
   };
@@ -490,7 +490,7 @@ class ModelTool<
       return this._validateAndSet(data, error, prop, this.values[prop]);
     });
 
-    await Promise.all(validations);
+    await Promise.allSettled(validations);
 
     this._handleRequiredBy(error, "creating");
 
@@ -573,7 +573,7 @@ class ModelTool<
       return this._validateAndSet(data, error, prop, this.values[prop]);
     });
 
-    await Promise.all(validations);
+    await Promise.allSettled(validations);
 
     this._handleRequiredBy(error, "creating");
 
@@ -610,10 +610,10 @@ class ModelTool<
 
       const _cleanups = listeners.map(async (listener) => await listener(ctx));
 
-      await Promise.all(_cleanups);
+      await Promise.allSettled(_cleanups);
     });
 
-    await Promise.all(cleanups);
+    await Promise.allSettled(cleanups);
   };
 
   update = async (values: O, changes: Partial<I & A>) => {
@@ -662,7 +662,7 @@ class ModelTool<
       this._updateFinalContext(validCtxUpdate);
     });
 
-    await Promise.all(validations);
+    await Promise.allSettled(validations);
 
     this._handleRequiredBy(error, "updating");
 
