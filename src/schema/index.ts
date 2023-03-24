@@ -694,8 +694,13 @@ class ModelTool<
       return this._handleError(error.setMessage("Nothing to update"));
     }
 
+    const finalData = this._useConfigProps(updated, true);
+
+    this._updateContext(finalData);
+    this._updateFinalContext(finalData);
+
     return {
-      data: this._useConfigProps(updated, true) as Partial<O>,
+      data: finalData as Partial<O>,
       error: undefined,
       handleSuccess: this._makeHandleSuccess(updated, "updating"),
     };
