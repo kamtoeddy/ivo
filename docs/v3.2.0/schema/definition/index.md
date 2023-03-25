@@ -64,15 +64,15 @@ These methods are async because custom validators could be async as well.
 | constant     | boolean                      | use with **`value`** rule to specify a property with a forever constant value. [more](../../../v3.0.0/schema/definition/constants.md#constant-properties) |
 | default      | any \| function              | the default value of a propterty. [more](../../../v3.0.0/schema/definition/defaults.md#default-values)                                                    |
 | dependent    | boolean                      | to block the direct modification of a property. [more](../../../v3.0.0/schema/definition/dependents.md#dependent-properties)                              |
-| onDelete     | function \| function[ ]      | executed when the delete method of a model is invoked [more](../../../v3.0.0/schema/definition/life-cycles.md#ondelete)                                   |
-| onFailure    | function \| function[ ]      | executed after an unsucessful operation [more](../../../v3.0.0/schema/definition/life-cycles.md#onfailure)                                                |
-| onSuccess    | function \| function[ ]      | executed after a sucessful operation [more](../../../v3.0.0/schema/definition/life-cycles.md#onsuccess)                                                   |
+| onDelete     | function \| function[ ]      | executed when the delete method of a model is invoked [more](./life-cycles.md#ondelete)                                                                   |
+| onFailure    | function \| function[ ]      | executed after an unsucessful operation [more](./life-cycles.md#onfailure)                                                                                |
+| onSuccess    | function \| function[ ]      | executed after a sucessful operation [more](./life-cycles.md#onsuccess)                                                                                   |
 | readonly     | boolean \| 'lax'             | a propterty whose value should not change [more](../../../v3.0.0/schema/definition/readonly.md#readonly-properties)                                       |
 | required     | boolean \| function          | a property that must be set during an operation [more](../../../v3.0.0/schema/definition/required.md#required-properties)                                 |
 | shouldInit   | false \| function(): boolean | A boolean or setter that tells clean-schema whether or not a property should be initialized.                                                              |
 | shouldUpdate | false \| function(): boolean | A boolean or setter that tells clean-schema whether or not a property should be initialized.                                                              |
 | validator    | function                     | A function (async / sync) used to validated the value of a property. [more](../../../v1.4.6/validate/index.md#validators)                                 |
-| value        | any \| function              | value or setter of constant property. [more](./constants.md#constant-properties`)                                                                         |
+| value        | any \| function              | value or setter of constant property. [more](../../../v3.0.0/schema/definition/constants.md#constant-properties`)                                         |
 | virtual      | boolean                      | a helper property that can be used to provide extra context but does not appear on instances of your model [more](./virtuals.md#virtual-properties)       |
 
 # Options
@@ -103,6 +103,49 @@ type SchemaError = {
   };
   statusCode: number; // e.g. 400
 };
+```
+
+## onSuccess
+
+This could be a function or an array of functions with the `SuccessListener` signature below. These functions would be triggered together with the onSuccess listeners of individual properties when the handleSuccess method is invoked at creation & during updates of any property. See more [here](./life-cycles.md#onsuccess)
+
+It's summary contains the values of the entire entity
+
+```ts
+import type { CombinedType } from "clean-schema";
+
+type Input = { name: string; price: number };
+
+type Output = { id: string; name: string };
+
+const BookModel = new Schema<Input, Output>(
+  {
+    id: { constant: true, value: generateId },
+    name: { required: true, validator: validateBookName },
+    price: { default: 0, validator: validatePrice },
+  },
+  { onSuccess }
+).getModel();
+
+function onSuccess(summary: OperationSummary) {}
+
+type OperationSummary =
+  | {
+      context: CombinedType<Input, Output>;
+      operationName: "creation";
+      previousValue: undefined;
+      value: Output;
+    }
+  | {
+      context: CombinedType<Input, Output>;
+      operationName: "update";
+      previousValue: Output;
+      value: Output;
+    };
+
+type SuccessListener = (
+  operationSummary: CombinedType<Input, Output>
+) => void | Promise<void>;
 ```
 
 ## timestamps
