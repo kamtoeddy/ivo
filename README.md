@@ -39,6 +39,7 @@ type Output = {
   createdAt: Date;
   firstName: string;
   fullName: string;
+  id: number;
   lastName: string;
   password: string;
   role: UserRole;
