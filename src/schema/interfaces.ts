@@ -65,18 +65,18 @@ namespace ISchema {
     summary: OperationSummary<OutputType, ContextType>
   ) => void | Promise<void>;
 
-  export type OperationSummary<OutputType, ContextType> =
+  export type OperationSummary<ValueType, ContextType> =
     | {
         context: Readonly<ContextType>;
         operation: "creation";
         previousValue: undefined;
-        value: OutputType;
+        value: ValueType;
       }
     | {
         context: Readonly<ContextType>;
         operation: "update";
-        previousValue: OutputType;
-        value: OutputType;
+        previousValue: ValueType;
+        value: ValueType;
       };
 
   export type Definitions<I, O = I, A extends ObjectType = {}> = {

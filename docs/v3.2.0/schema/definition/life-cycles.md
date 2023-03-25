@@ -9,29 +9,31 @@ type Input = {};
 
 type Output = {};
 
+type ContextType = CombinedType<Input, Output>;
+
 const Model = new Schema<Input, Output>(definitions).getModel();
 
 type DeleteListener = (context: Output) => void | Promise<void>;
 
-type Listener = (context: CombinedType<Input, Output>) => void | Promise<void>;
+type Listener = (context: ContextType) => void | Promise<void>;
 
 // on property success
-type OperationSummary<Property> =
+type OperationSummary<ValueType, ContextType> =
   | {
-      context: CombinedType<Input, Output>;
-      operationName: "creation";
+      context: Readonly<ContextType>;
+      operation: "creation";
       previousValue: undefined;
-      value: CombinedType<Input, Output>[Property];
+      value: ValueType;
     }
   | {
-      context: CombinedType<Input, Output>;
-      operationName: "update";
-      previousValue: CombinedType<Input, Output>[Property];
-      value: CombinedType<Input, Output>[Property];
+      context: Readonly<ContextType>;
+      operation: "update";
+      previousValue: ValueType;
+      value: ValueType;
     };
 
 type SuccessListener = (
-  operationSummary: CombinedType<Input, Output>
+  operationSummary: OperationSummary<ValueType, ContextType>
 ) => void | Promise<void>;
 ```
 

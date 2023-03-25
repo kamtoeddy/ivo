@@ -118,6 +118,8 @@ type Input = { name: string; price: number };
 
 type Output = { id: string; name: string };
 
+type ContextType = CombinedType<Input, Output>;
+
 const BookModel = new Schema<Input, Output>(
   {
     id: { constant: true, value: generateId },
@@ -131,20 +133,20 @@ function onSuccess(summary: OperationSummary) {}
 
 type OperationSummary =
   | {
-      context: CombinedType<Input, Output>;
+      context: ContextType;
       operationName: "creation";
       previousValue: undefined;
       value: Output;
     }
   | {
-      context: CombinedType<Input, Output>;
+      context: ContextType;
       operationName: "update";
       previousValue: Output;
       value: Output;
     };
 
 type SuccessListener = (
-  operationSummary: CombinedType<Input, Output>
+  operationSummary: OperationSummary
 ) => void | Promise<void>;
 ```
 

@@ -4,7 +4,14 @@ All notable changes to this project will be documented in this file.
 
 # v3.2.0 <small><sup>[x][x]-03-2023</sup></small>
 
-- [Add] added support for aliases on virtuals
+Breaking Changes
+
+- [Update] changed the signature and implementation of life cycle listeners
+
+Features
+
+- [Add] added support for `aliases` on virtuals
+- [Add] added support for global `onSuccess` in schema options
 
 # v3.1.0 <small><sup>05-02-2023</sup></small>
 
