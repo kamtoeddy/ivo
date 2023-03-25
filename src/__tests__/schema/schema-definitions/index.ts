@@ -1700,28 +1700,33 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
       describe("onSuccess", () => {
         let Model: any,
           initialData = {
-            dependent: "",
+            dependent: false,
             lax: "changed",
             readonly: "changed",
             readonlyLax: "",
             required: "changed",
           },
-          propChangeMap: any = {};
+          propChangeMap: any = {},
+          onSuccessValues: any = {};
 
         beforeAll(() => {
           const onSuccess =
             (prop = "") =>
-            () =>
-              (propChangeMap[prop] = true);
+            (summary: any) => {
+              propChangeMap[prop] = true;
+              onSuccessValues[prop] = summary;
+              onSuccessValues.__ctx = summary.context;
+            };
+
           const validator = () => ({ valid: true });
 
           Model = new Schema({
             dependent: {
-              default: "",
+              default: false,
               dependent: true,
               dependsOn: "readonlyLax",
               onSuccess: onSuccess("dependent"),
-              resolver: () => ({ dependent: true }),
+              resolver: () => true,
             },
             lax: { default: "", onSuccess: onSuccess("lax"), validator },
             readonly: {
@@ -1743,7 +1748,10 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           }).getModel();
         });
 
-        beforeEach(() => (propChangeMap = {}));
+        beforeEach(() => {
+          propChangeMap = {};
+          onSuccessValues = {};
+        });
 
         // creation
         it("should call onSuccess listeners at creation", async () => {
@@ -1762,13 +1770,52 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             readonlyLax: true,
             required: true,
           });
+
+          const operation = "creation",
+            previousValue = undefined;
+
+          expect(onSuccessValues).toMatchObject({
+            dependent: expect.objectContaining({
+              context: onSuccessValues.__ctx,
+              operation,
+              previousValue,
+              value: false,
+            }),
+            lax: expect.objectContaining({
+              context: onSuccessValues.__ctx,
+              operation,
+              previousValue,
+              value: "",
+            }),
+            readonly: expect.objectContaining({
+              context: onSuccessValues.__ctx,
+              operation,
+              previousValue,
+              value: true,
+            }),
+            readonlyLax: expect.objectContaining({
+              context: onSuccessValues.__ctx,
+              operation,
+              previousValue,
+              value: "",
+            }),
+            required: expect.objectContaining({
+              context: onSuccessValues.__ctx,
+              operation,
+              previousValue,
+              value: true,
+            }),
+          });
         });
 
         // cloning
         it("should call onSuccess listeners during cloning", async () => {
           const { error, handleSuccess } = await Model.clone({
-            required: true,
+            dependent: false,
+            lax: "",
             readonly: true,
+            readonlyLax: "",
+            required: true,
           });
 
           await handleSuccess();
@@ -1781,6 +1828,42 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             readonlyLax: true,
             required: true,
           });
+
+          const operation = "creation",
+            previousValue = undefined;
+
+          expect(onSuccessValues).toMatchObject({
+            dependent: expect.objectContaining({
+              context: onSuccessValues.__ctx,
+              operation,
+              previousValue,
+              value: false,
+            }),
+            lax: expect.objectContaining({
+              context: onSuccessValues.__ctx,
+              operation,
+              previousValue,
+              value: "",
+            }),
+            readonly: expect.objectContaining({
+              context: onSuccessValues.__ctx,
+              operation,
+              previousValue,
+              value: true,
+            }),
+            readonlyLax: expect.objectContaining({
+              context: onSuccessValues.__ctx,
+              operation,
+              previousValue,
+              value: "",
+            }),
+            required: expect.objectContaining({
+              context: onSuccessValues.__ctx,
+              operation,
+              previousValue,
+              value: true,
+            }),
+          });
         });
 
         // updates
@@ -1792,24 +1875,30 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           await handleSuccess();
 
           expect(error).toBeUndefined();
-          expect(propChangeMap).toEqual({
-            lax: true,
+          expect(propChangeMap).toEqual({ lax: true });
+
+          const operation = "update";
+
+          expect(onSuccessValues).toMatchObject({
+            lax: expect.objectContaining({
+              context: onSuccessValues.__ctx,
+              operation,
+              previousValue: initialData.lax,
+              value: true,
+            }),
           });
         });
 
-        // it("should call onSuccess listeners during updates with readonlyLax & dependent", async () => {
-        //   const { error, handleSuccess } = await Model.update(initialData, {
-        //     readonlyLax: true,
-        //   });
+        it("should call onSuccess listeners during updates with readonlyLax & dependent", async () => {
+          const { error, handleSuccess } = await Model.update(initialData, {
+            readonlyLax: true,
+          });
 
-        //   await handleSuccess();
+          await handleSuccess();
 
-        //   expect(error).toBeUndefined();
-        //   expect(propChangeMap).toEqual({
-        //     dependent: true,
-        //     readonlyLax: true,
-        //   });
-        // });
+          expect(error).toBeUndefined();
+          expect(propChangeMap).toEqual({ dependent: true, readonlyLax: true });
+        });
       });
     });
 
