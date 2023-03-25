@@ -23,10 +23,31 @@ import { Schema } from "clean-schema";
 # Defining a schema
 
 ```ts
-import { Schema } from "clean-schema";
+import { Schema, type CombinedType } from "clean-schema";
 import hash from "hashing-module-of-choice";
 
-const userSchema = new Schema(
+type UserRole = "admin" | "user";
+
+type Input = {
+  firstName: string;
+  lastName: string;
+  password: string;
+  role?: UserRole;
+};
+
+type Output = {
+  createdAt: Date;
+  firstName: string;
+  fullName: string;
+  lastName: string;
+  password: string;
+  role: UserRole;
+  updatedAt: Date;
+};
+
+type Context = CombinedType<Input, Output>;
+
+const userSchema = new Schema<Input, Output>(
   {
     firstName: {
       required: true,
@@ -38,13 +59,11 @@ const userSchema = new Schema(
       dependsOn: ["firstName", "lastName"],
       resolver: generateFullName,
     },
-    isBlocked: { default: false, validator: validateBoolean },
     id: { constant: true, value: generateId },
     lastName: {
       required: true,
       validator: validateString("invalid last name"),
     },
-    lastSeen: { default: "", shouldInit: false },
     password: {
       required: true,
       validator(value) {
@@ -60,7 +79,8 @@ const userSchema = new Schema(
       },
     },
     role: {
-      readonly: true,
+      default: "user",
+      shouldInit: false,
       validator(value) {
         const validated = String(value).trim();
 
@@ -75,9 +95,7 @@ const userSchema = new Schema(
   { timestamps: true }
 );
 
-function generateFullName(context) {
-  const { firstName, lastName } = context;
-
+function generateFullName({ firstName, lastName }: Context) {
   return `${firstName} ${lastName}`;
 }
 
@@ -95,25 +113,23 @@ const {
   error,
   handleSuccess,
 } = await UserModel.create({
-  firstName: "James",
+  firstName: "John",
   fullName: "Mr. James",
   id: 1,
-  lastName: "Spader",
+  lastName: "Doe",
   lastSeen: new Date(),
   name: "John Doe",
   password: "au_34ibUv^T-adjInFjj",
-  role: "user",
+  role: "admin",
 });
 
 console.log(user);
 //  {
 //   createdAt: new Date(),
-//   firstName: "James",
-//   fullName: "James Spader",
+//   firstName: "John",
+//   fullName: "John Doe",
 //   id: 1,
-//   isBlocked: false,
-//   lastName: "Spader",
-//   lastSeen: "",
+//   lastName: "Doe",
 //   password: "**************",
 //   role: "user",
 //   updatedAt: new Date(),
@@ -121,7 +137,7 @@ console.log(user);
 
 await userDb.insert(user);
 
-await handleSuccess?.();
+await handleSuccess();
 ```
 
 # Updating an entity
@@ -132,7 +148,7 @@ const user = await userDb.query({ id: 1 });
 if (!user) throw new Error("User not found");
 
 const { data, error, handleSuccess } = await UserModel.update(user, {
-  lastSeen: new Date(),
+  firstName: "Peter",
   id: 2,
   age: 34,
   fullName: "Raymond Reddington",
@@ -140,12 +156,12 @@ const { data, error, handleSuccess } = await UserModel.update(user, {
 
 // age is ignored because it is not a valid property
 // fullName is ignored because it is dependent
-// id is ignored because it is readonly
-console.log(data); // { lastSeen: new Date(), updatedAt: new Date() }
+// id is ignored because it is a constant
+console.log(data); // { firstName: "Peter", fullName: "Peter Doe", updatedAt: new Date() }
 
 await userDb.update({ id: 1 }, data);
 
-await handleSuccess?.();
+await handleSuccess();
 ```
 
 ## Docs
