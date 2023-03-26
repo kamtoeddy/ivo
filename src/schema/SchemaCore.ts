@@ -35,7 +35,8 @@ export abstract class SchemaCore<I extends ObjectType, O extends ObjectType> {
   protected values: Partial<I> = {};
 
   // maps
-  protected aliasMap: ns.AliasMap<I> = {};
+  protected aliasToVirtualMap: ns.AliasToVirtualMap<I> = {};
+  protected virtualToAliasMap: ns.AliasToVirtualMap<I> = {};
   protected dependencyMap: ns.DependencyMap<I> = {};
 
   // props
@@ -108,8 +109,11 @@ export abstract class SchemaCore<I extends ObjectType, O extends ObjectType> {
   protected _getDependencies = (prop: StringKey<I>) =>
     this.dependencyMap[prop] ?? [];
 
-  protected _getPropertyByAlias = (alias: string): StringKey<I> | undefined =>
-    this.aliasMap[alias];
+  protected _getAliasByVirtual = (prop: StringKey<I>): string | undefined =>
+    this.virtualToAliasMap[prop];
+
+  protected _getVirtualByAlias = (alias: string): StringKey<I> | undefined =>
+    this.aliasToVirtualMap[alias];
 
   private _getCircularDependenciesOf = (a: StringKey<I>) => {
     let circularDependencies: string[] = [];
@@ -231,7 +235,7 @@ export abstract class SchemaCore<I extends ObjectType, O extends ObjectType> {
     }
 
     // make sure aliases respect the second validation rules
-    for (const [alias, prop] of Object.entries(this.aliasMap)) {
+    for (const [alias, prop] of Object.entries(this.aliasToVirtualMap)) {
       const isValid = this.__isVirtualAliasOk2(alias);
 
       if (!isValid.valid) error.add(prop, isValid.reason);
@@ -929,20 +933,21 @@ export abstract class SchemaCore<I extends ObjectType, O extends ObjectType> {
         reason: "An alias cannot be the same as the virtual property",
       };
 
-    const isTakenBy = this.aliasMap[alias];
+    const isTakenBy = this._getVirtualByAlias(alias);
     if (isTakenBy)
       return {
         valid,
         reason: `Sorry, alias provided '${alias}' already belongs to property '${isTakenBy}'`,
       };
 
-    this.aliasMap[alias] = prop as StringKey<I>;
+    this.aliasToVirtualMap[alias] = prop as StringKey<I>;
+    this.virtualToAliasMap[prop] = alias as StringKey<I>;
 
     return { valid: true };
   };
 
   protected __isVirtualAliasOk2 = (alias: string | StringKey<I>) => {
-    const prop = this._getPropertyByAlias(alias)!;
+    const prop = this._getVirtualByAlias(alias)!;
 
     const invalidResponse = {
       valid: false,
@@ -959,7 +964,7 @@ export abstract class SchemaCore<I extends ObjectType, O extends ObjectType> {
       : { valid: true };
   };
 
-  protected _isVirtualAlias = (prop: string) => !!this.aliasMap[prop];
+  protected _isVirtualAlias = (prop: string) => !!this.aliasToVirtualMap[prop];
 
   protected _isVirtual = (prop: string) =>
     this.virtuals.includes(prop as StringKey<I>);
@@ -969,7 +974,7 @@ export abstract class SchemaCore<I extends ObjectType, O extends ObjectType> {
 
     if (!this._isVirtual(prop) && !isAlias) return false;
 
-    const definitionName = isAlias ? this._getPropertyByAlias(prop)! : prop;
+    const definitionName = isAlias ? this._getVirtualByAlias(prop)! : prop;
 
     const { shouldInit } = this._getDefinition(definitionName);
 

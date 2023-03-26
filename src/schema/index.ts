@@ -122,7 +122,20 @@ class ModelTool<
     for (const prop of this.propsRequiredBy) {
       const [isRequired, message] = this._getRequiredState(prop, lifeCycle);
 
-      if (isRequired && this._isUpdatable(prop)) error.add(prop, message);
+      if (isRequired && this._isUpdatable(prop)) {
+        error.add(prop, message);
+
+        const alias = this._getAliasByVirtual(prop);
+
+        if (!alias) continue;
+
+        const _message =
+          message == `'${prop}' is required!`
+            ? `'${alias}' is required!`
+            : message;
+
+        error.add(alias, _message);
+      }
     }
   };
 
@@ -181,7 +194,7 @@ class ModelTool<
     )
       return false;
 
-    const propName = isAlias ? this._getPropertyByAlias(prop)! : prop;
+    const propName = isAlias ? this._getVirtualByAlias(prop)! : prop;
 
     const hasShouldUpdateRule = this._isRuleInDefinition(
       propName,
@@ -399,7 +412,7 @@ class ModelTool<
 
     const isAlias = this._isVirtualAlias(prop);
 
-    const propName = isAlias ? this._getPropertyByAlias(prop)! : prop;
+    const propName = isAlias ? this._getVirtualByAlias(prop)! : prop;
 
     if (!this._isVirtual(propName)) operationData[propName] = validated;
 
@@ -667,7 +680,7 @@ class ModelTool<
 
       const isAlias = this._isVirtualAlias(prop);
 
-      const propName = isAlias ? this._getPropertyByAlias(prop)! : prop;
+      const propName = isAlias ? this._getVirtualByAlias(prop)! : prop;
 
       if (isEqual(validated, this.values[propName])) return;
 
@@ -734,7 +747,7 @@ class ModelTool<
         reason: "Invalid property",
       });
 
-    const _prop = isAlias ? this._getPropertyByAlias(prop) : prop;
+    const _prop = isAlias ? this._getVirtualByAlias(prop) : prop;
 
     const validator = this._getValidator(_prop as StringKey<I>);
 

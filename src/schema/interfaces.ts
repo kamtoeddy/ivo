@@ -109,7 +109,14 @@ namespace ISchema {
     };
   };
 
-  export type AliasMap<T extends ObjectType> = Record<string, StringKey<T>>;
+  export type AliasToVirtualMap<T extends ObjectType> = Record<
+    string,
+    StringKey<T>
+  >;
+  export type VirtualToAliasMap<T extends ObjectType> = Record<
+    StringKey<T>,
+    string
+  >;
 
   export type DependencyMap<T extends ObjectType> = {
     [K in StringKey<T>]?: StringKey<T>[];
