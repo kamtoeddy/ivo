@@ -788,7 +788,8 @@ export abstract class SchemaCore<I extends ObjectType, O extends ObjectType> {
       if (!isRequiredCommon.valid) return isRequiredCommon;
     }
 
-    this.propsRequiredBy.push(prop as StringKey<I>);
+    if (!this._isRequiredBy(prop))
+      this.propsRequiredBy.push(prop as StringKey<I>);
 
     return { valid: true };
   };
