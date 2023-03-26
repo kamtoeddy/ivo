@@ -45,7 +45,14 @@ type AsyncSetter<K extends keyof I, I, O> = (
   operation: ISchema.OperationName
 ) => TypeOf<I[K]> | Promise<TypeOf<I[K]>>;
 
-type BooleanSetter<I, O> = (context: Readonly<CombinedType<I, O>>) => boolean;
+type BooleanSetter<I, O> = (
+  context: Readonly<CombinedType<I, O>>,
+  operation: ISchema.OperationName
+) => boolean;
+
+type BooleanSetterNoOperation<I, O> = (
+  context: Readonly<CombinedType<I, O>>
+) => boolean;
 
 type ConditionalRequiredSetter<I, O> = (
   context: Readonly<CombinedType<I, O>>,
@@ -94,8 +101,8 @@ namespace ISchema {
       resolver?: Function;
       required?: boolean | ConditionalRequiredSetter<I, O>;
       sanitizer?: AsyncSetter<K, I, O>;
-      shouldInit?: false | BooleanSetter<I, O>;
-      shouldUpdate?: false | BooleanSetter<I, O>;
+      shouldInit?: false | BooleanSetterNoOperation<I, O>;
+      shouldUpdate?: false | BooleanSetterNoOperation<I, O>;
       validator?: Function;
       value?: any;
       virtual?: boolean;
@@ -117,7 +124,6 @@ namespace ISchema {
     | Required<K, I, O>
     | RequiredBy<K, I, O>
     | ReadonlyRequired<K, I, O>
-    | RequiredVirtual<K, I, O, A>
     | Virtual<K, I, O, A>;
 
   type Listenable<K extends keyof I, I, O> = {
@@ -154,23 +160,23 @@ namespace ISchema {
   type LaxProperty<K extends keyof I, I, O = I> = Listenable<K, I, O> & {
     default: TypeOf<I[K]> | AsyncSetter<K, I, O>;
     readonly?: "lax";
-    shouldInit?: false | BooleanSetter<I, O>;
-    shouldUpdate?: BooleanSetter<I, O>;
+    shouldInit?: false | BooleanSetterNoOperation<I, O>;
+    shouldUpdate?: BooleanSetterNoOperation<I, O>;
     validator?: Validator<K, I, O>;
   };
 
   type Readonly_<K extends keyof I, I, O = I> = Listenable<K, I, O> & {
     default: TypeOf<I[K]> | AsyncSetter<K, I, O>;
     readonly: "lax";
-    shouldUpdate?: BooleanSetter<I, O>;
+    shouldUpdate?: BooleanSetterNoOperation<I, O>;
     validator: Validator<K, I, O>;
   };
 
   type ReadonlyNoInit<K extends keyof I, I, O = I> = Listenable<K, I, O> & {
     default: TypeOf<I[K]> | AsyncSetter<K, I, O>;
     readonly: true;
-    shouldInit: false | BooleanSetter<I, O>;
-    shouldUpdate?: BooleanSetter<I, O>;
+    shouldInit: false | BooleanSetterNoOperation<I, O>;
+    shouldUpdate?: BooleanSetterNoOperation<I, O>;
     validator?: Validator<K, I, O>;
   };
 
@@ -181,7 +187,7 @@ namespace ISchema {
 
   type Required<K extends keyof I, I, O = I> = Listenable<K, I, O> & {
     required: true;
-    shouldUpdate?: BooleanSetter<I, O>;
+    shouldUpdate?: BooleanSetterNoOperation<I, O>;
     validator: Validator<K, I, O>;
   };
 
@@ -189,7 +195,7 @@ namespace ISchema {
     default: TypeOf<I[K]> | AsyncSetter<K, I, O>;
     required: ConditionalRequiredSetter<I, O>;
     readonly?: true;
-    shouldUpdate?: BooleanSetter<I, O>;
+    shouldUpdate?: BooleanSetterNoOperation<I, O>;
     validator: Validator<K, I, O>;
   };
 
@@ -197,6 +203,7 @@ namespace ISchema {
     alias?: Exclude<StringKey<A>, K> extends undefined
       ? string
       : Exclude<StringKey<A>, K>;
+    required?: ConditionalRequiredSetter<I, O>;
     virtual: true;
     sanitizer?: AsyncSetter<K, I, O>;
     onFailure?:
@@ -205,14 +212,9 @@ namespace ISchema {
     onSuccess?:
       | ISchema.SuccessListener<O, CombinedType<I, O>>
       | NonEmptyArray<ISchema.SuccessListener<O, CombinedType<I, O>>>;
-    shouldInit?: false | BooleanSetter<I, O>;
-    shouldUpdate?: false | BooleanSetter<I, O>;
+    shouldInit?: false | BooleanSetterNoOperation<I, O>;
+    shouldUpdate?: false | BooleanSetterNoOperation<I, O>;
     validator: Validator<K, I, O>;
-  };
-
-  type RequiredVirtual<K extends keyof I, I, O, A> = Virtual<K, I, O, A> & {
-    required: ConditionalRequiredSetter<I, O>;
-    shouldUpdate?: false | BooleanSetter<I, O>;
   };
 
   // options
