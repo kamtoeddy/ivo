@@ -3491,6 +3491,29 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                   setQuantity: ["invalid quantity"],
                 });
               });
+
+              it("should respect 'required' rule of virtual property even when alias is provided during updates", async () => {
+                let qty = -100;
+                const entity = { id: 1, quantity: 100 };
+                const operation1 = await Model.update(entity, { qty });
+
+                expect(contextRecord).toEqual({ setQuantity: qty });
+                expect(operation1.data).toBeUndefined();
+                expect(operation1.error.payload).toEqual({
+                  qty: ["'qty' is required!"],
+                  setQuantity: ["'setQuantity' is required!"],
+                });
+
+                qty = -1000;
+                const operation2 = await Model.update(entity, { qty });
+
+                expect(contextRecord).toEqual({ setQuantity: qty });
+                expect(operation2.data).toBeUndefined();
+                expect(operation2.error.payload).toEqual({
+                  qty: ["invalid quantity"],
+                  setQuantity: ["invalid quantity"],
+                });
+              });
             });
 
             describe("availability of virtuals in ctx of shouldInit & shouldUpdate methods of the virtual when it's alias is provided", () => {
