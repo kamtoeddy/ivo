@@ -3260,11 +3260,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 dependsOn: "setQuantity",
                 resolver,
               },
-              setQuantity: {
-                alias: "qty",
-                virtual: true,
-                validator,
-              },
+              setQuantity: { alias: "qty", virtual: true, validator },
             }).getModel();
 
             beforeEach(() => {
@@ -3423,6 +3419,45 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 );
 
                 expect(operation2.data).toMatchObject({ quantity: 1 });
+              });
+            });
+
+            describe("availability of virtuals in ctx of 'required' method of virtual", () => {
+              const Model = new Schema({
+                id: { constant: true, value: 1 },
+                quantity: {
+                  default: 0.0,
+                  dependent: true,
+                  dependsOn: "setQuantity",
+                  resolver,
+                },
+                setQuantity: {
+                  alias: "qty",
+                  virtual: true,
+                  required({ setQuantity }: any) {
+                    contextRecord.setQuantity = setQuantity;
+
+                    if (setQuantity == -100) return true;
+
+                    return setQuantity == -1000
+                      ? [true, "invalid quantity"]
+                      : false;
+                  },
+                  validator,
+                },
+              }).getModel();
+
+              it("should respect 'required' rule of virtual property even when alias is provided at creation", async () => {
+                const qty = -100;
+                const requiredError = ["quantity too low"];
+                const operation1 = await Model.create({ id: 1, qty });
+
+                expect(contextRecord).toEqual({ setQuantity: qty });
+                expect(operation1.data).toBeUndefined();
+                expect(operation1.error.payload).toMatchObject({
+                  qty: requiredError,
+                  setQuantity: requiredError,
+                });
               });
             });
 
@@ -3902,11 +3937,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                   dependsOn: "propertyName",
                   resolver: () => "",
                 },
-                propertyName: {
-                  alias,
-                  virtual: true,
-                  validator,
-                },
+                propertyName: { alias, virtual: true, validator },
               });
 
               expectFailure(toFail);
