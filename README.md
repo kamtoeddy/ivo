@@ -24,7 +24,6 @@ import { Schema } from "clean-schema";
 
 ```ts
 import { Schema, type CombinedType } from "clean-schema";
-import hash from "hashing-module-of-choice";
 
 type UserRole = "admin" | "user";
 
@@ -60,44 +59,71 @@ const userSchema = new Schema<Input, Output>(
       dependsOn: ["firstName", "lastName"],
       resolver: generateFullName,
     },
-    id: { constant: true, value: generateId },
+    id: { constant: true, value: generateUserId },
     lastName: {
       required: true,
       validator: validateString("invalid last name"),
     },
-    password: {
-      required: true,
-      validator(value) {
-        let validated = String(value).trim();
-
-        const valid = validated.length >= 8;
-
-        if (!valid) return { valid, reason: "minimum characters should be 8" };
-
-        validated = hash(validated);
-
-        return { valid, validated };
-      },
-    },
-    role: {
-      default: "user",
-      shouldInit: false,
-      validator(value) {
-        const validated = String(value).trim();
-
-        const valid = ["admin", "user"].includes(validated);
-
-        if (!valid) return { valid, reason: "invalid user role" };
-
-        return { valid, validated };
-      },
-    },
+    password: { required: true, validator: validatePassword },
+    role: { default: "user", shouldInit: false, validator: validateRole },
   },
   { timestamps: true }
 );
 
+// resolvers
 function generateFullName({ firstName, lastName }: Context) {
   return `${firstName} ${lastName}`;
+}
+
+function generateUserId() {
+  return (Math.random() * 1e18).toString();
+}
+
+function hashPassword(value) {
+  return Math.random().toString(value.length);
+}
+
+// validators
+function validatePassword(value) {
+  const isValidString = validateString()(value);
+
+  if (!isValidString.valid) return isValidString;
+
+  let validated = isValidString.validated;
+
+  const valid = validated.length >= 8;
+
+  if (!valid) return { valid, reason: "minimum characters should be 8" };
+
+  return { valid, validated: hashPassword(validated) };
+}
+
+function validateRole(value) {
+  const isValidString = validateString()(value);
+
+  if (!isValidString.valid) return isValidString;
+
+  let validated = isValidString.validated;
+
+  const valid = ["admin", "user"].includes(validated);
+
+  if (!valid) return { valid, reason: "invalid user role" };
+
+  return { valid, validated };
+}
+
+function validateString(message = "") {
+  return (value) => {
+    const typeProvided = typeof value;
+
+    if (typeProvided != "string") {
+      const reason = message || `expected a string but got '${typeProvided}'`;
+
+      return { valid: false, reason };
+    }
+
+    return { valid: true, validated: value.trim() };
+  };
 }
 
 // get the model
@@ -129,7 +155,7 @@ console.log(user);
 //   createdAt: new Date(),
 //   firstName: "John",
 //   fullName: "John Doe",
-//   id: 1,
+//   id: '18927934748659724',
 //   lastName: "Doe",
 //   password: "**************",
 //   role: "user",
