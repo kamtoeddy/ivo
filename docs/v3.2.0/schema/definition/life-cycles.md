@@ -3,37 +3,37 @@
 This is an object comprized of values of the instance during a life cycle operation ( cloning, creation or update ) plus any side effect values (if present during the operation) defined in your schema.
 
 ```ts
-import type { CombinedType } from "clean-schema";
+import type { ContextType } from "clean-schema";
 
 type Input = {};
 
 type Output = {};
 
-type ContextType = CombinedType<Input, Output>;
+type Context = ContextType<Input, Output>;
 
 const Model = new Schema<Input, Output>(definitions).getModel();
 
 type DeleteListener = (context: Output) => void | Promise<void>;
 
-type Listener = (context: ContextType) => void | Promise<void>;
+type Listener = (context: Context) => void | Promise<void>;
 
 // on property success
-type OperationSummary<ValueType, ContextType> =
+type OperationSummary<ValueType, Context> =
   | {
-      context: Readonly<ContextType>;
+      context: Context;
       operation: "creation";
       previousValue: undefined;
       value: ValueType;
     }
   | {
-      context: Readonly<ContextType>;
+      context: Context;
       operation: "update";
       previousValue: ValueType;
       value: ValueType;
     };
 
 type SuccessListener = (
-  operationSummary: OperationSummary<ValueType, ContextType>
+  operationSummary: OperationSummary<ValueType, Context>
 ) => void | Promise<void>;
 ```
 

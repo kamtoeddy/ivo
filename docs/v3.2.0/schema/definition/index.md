@@ -112,13 +112,13 @@ This could be a function or an array of functions with the `SuccessListener` sig
 It's summary contains the values of the entire entity
 
 ```ts
-import type { CombinedType } from "clean-schema";
+import type { ContextType } from "clean-schema";
 
 type Input = { name: string; price: number };
 
 type Output = { id: string; name: string };
 
-type ContextType = CombinedType<Input, Output>;
+type Context = ContextType<Input, Output>;
 
 const BookModel = new Schema<Input, Output>(
   {
@@ -133,13 +133,13 @@ function onSuccess(summary: OperationSummary) {}
 
 type OperationSummary =
   | {
-      context: ContextType;
+      context: Context;
       operationName: "creation";
       previousValue: undefined;
       value: Output;
     }
   | {
-      context: ContextType;
+      context: Context;
       operationName: "update";
       previousValue: Output;
       value: Output;

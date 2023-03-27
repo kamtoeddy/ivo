@@ -23,7 +23,7 @@ import { Schema } from "clean-schema";
 # Defining a schema
 
 ```ts
-import { Schema, type CombinedType } from "clean-schema";
+import { Schema, type ContextType } from "clean-schema";
 
 type UserRole = "admin" | "user";
 
@@ -45,7 +45,7 @@ type Output = {
   updatedAt: Date;
 };
 
-type Context = CombinedType<Input, Output>;
+type Context = ContextType<Input, Output>;
 
 const userSchema = new Schema<Input, Output>(
   {
@@ -178,7 +178,7 @@ const { data, error, handleSuccess } = await UserModel.update(user, {
   firstName: "Peter",
   id: 2,
   age: 34,
-  fullName: "Raymond Reddington",
+  fullName: "Gordon Lightfoot",
 });
 
 // age is ignored because it is not a valid property
