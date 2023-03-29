@@ -1,7 +1,13 @@
 import { sort, sortKeys, toArray } from "../utils/functions";
 import { ObjectType } from "../utils/interfaces";
 import { isEqual } from "../utils/isEqual";
-import { CombinedType, ISchema as ns, RealType, StringKey } from "./interfaces";
+import {
+  CombinedType,
+  ContextType,
+  ISchema as ns,
+  RealType,
+  StringKey,
+} from "./interfaces";
 import { defaultOptions, SchemaCore } from "./SchemaCore";
 import { makeResponse } from "./utils";
 import { ErrorTool } from "./utils/schema-error";
@@ -779,5 +785,5 @@ class Model<
   update = this.modelTool.update;
 
   validate = async <K extends StringKey<I & A>>(prop: K, value: any) =>
-    this.modelTool._validate(prop, value, {} as Readonly<CombinedType<I, O>>);
+    this.modelTool._validate(prop, value, {} as ContextType<I, O>);
 }

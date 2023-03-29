@@ -2,7 +2,7 @@ import { belongsTo, sort, toArray } from "../utils/functions";
 import { ObjectType } from "../utils/interfaces";
 import { isEqual } from "../utils/isEqual";
 import {
-  CombinedType,
+  ContextType,
   DefinitionRule,
   ISchema as ns,
   StringKey,
@@ -29,8 +29,8 @@ export abstract class SchemaCore<I extends ObjectType, O extends ObjectType> {
   protected _definitions = {} as ns.Definitions_<I, O>;
 
   // contexts & values
-  protected context: CombinedType<I, O> = {} as CombinedType<I, O>;
-  protected finalContext: CombinedType<I, O> = {} as CombinedType<I, O>;
+  protected context: ContextType<I, O> = {} as ContextType<I, O>;
+  protected finalContext: ContextType<I, O> = {} as ContextType<I, O>;
   protected defaults: Partial<I> = {};
   protected values: Partial<I> = {};
 
@@ -72,8 +72,8 @@ export abstract class SchemaCore<I extends ObjectType, O extends ObjectType> {
     Object.freeze(Object.assign({}, this.finalContext));
 
   protected _initContexts = () => {
-    this.context = { ...this.values } as CombinedType<I, O>;
-    this.finalContext = {} as CombinedType<I, O>;
+    this.context = { ...this.values } as ContextType<I, O>;
+    this.finalContext = {} as ContextType<I, O>;
 
     const contstants = this._getKeysAsProps(this.context).filter(
       this._isConstant

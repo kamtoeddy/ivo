@@ -1,11 +1,14 @@
 import { ObjectType } from "../utils/interfaces";
+import { Merge } from "./merge-types";
 
 export type {
   CombinedType,
+  ContextType,
   DefinitionRule,
   ISchema,
   ITimestamp,
   NonEmptyArray,
+  OperationSummary,
   OptionsKey,
   Private_ISchemaOptions,
   RealType,
@@ -16,23 +19,16 @@ export type {
   ValidatorResponse,
 };
 
+type OperationSummary<ValueType, ContextType> = ISchema.OperationSummary<
+  ValueType,
+  ContextType
+>;
+
 type TypeOf<T> = Exclude<T, undefined>;
 
-type OmitNever<T> = { [K in keyof T as T[K] extends never ? never : K]: T[K] };
+type CombinedType<I, O> = RealType<Merge<I, O>>;
 
-type GetCommonProps<I, O> = {
-  [K in keyof (I | O)]: I[K] extends never
-    ? O[K]
-    : O[K] extends never
-    ? I[K]
-    : O[K];
-};
-
-type CombinedType_<I, O> = OmitNever<I & O> extends never
-  ? O
-  : OmitNever<I & O> & GetCommonProps<I, O>;
-
-type CombinedType<I, O> = RealType<CombinedType_<I, O> & O>;
+type ContextType<I, O> = Readonly<CombinedType<I, O>>;
 
 type RealType_<T> = T extends (...args: any) => infer I ? I : T;
 
@@ -40,19 +36,26 @@ type RealType<T> = {
   [K in keyof T]: Exclude<T[K], Function> | RealType_<T[K]>;
 } & {};
 
+interface A {
+  name: string;
+  quantity: number;
+}
+
+interface B {
+  coefficient: number;
+  name: string;
+  quantity: null;
+}
+
+type C = CombinedType<A, B>;
+type D = ContextType<A, B>;
+
 type AsyncSetter<K extends keyof I, I, O> = (
   context: Readonly<CombinedType<I, O>>,
   operation: ISchema.OperationName
 ) => TypeOf<I[K]> | Promise<TypeOf<I[K]>>;
 
-type BooleanSetter<I, O> = (
-  context: Readonly<CombinedType<I, O>>,
-  operation: ISchema.OperationName
-) => boolean;
-
-type BooleanSetterNoOperation<I, O> = (
-  context: Readonly<CombinedType<I, O>>
-) => boolean;
+type BooleanSetter<I, O> = (context: Readonly<CombinedType<I, O>>) => boolean;
 
 type ConditionalRequiredSetter<I, O> = (
   context: Readonly<CombinedType<I, O>>,
@@ -74,13 +77,13 @@ namespace ISchema {
 
   export type OperationSummary<ValueType, ContextType> =
     | {
-        context: Readonly<ContextType>;
+        context: ContextType;
         operation: "creation";
         previousValue: undefined;
         value: ValueType;
       }
     | {
-        context: Readonly<ContextType>;
+        context: ContextType;
         operation: "update";
         previousValue: ValueType;
         value: ValueType;
@@ -101,8 +104,8 @@ namespace ISchema {
       resolver?: Function;
       required?: boolean | ConditionalRequiredSetter<I, O>;
       sanitizer?: AsyncSetter<K, I, O>;
-      shouldInit?: false | BooleanSetterNoOperation<I, O>;
-      shouldUpdate?: false | BooleanSetterNoOperation<I, O>;
+      shouldInit?: false | BooleanSetter<I, O>;
+      shouldUpdate?: false | BooleanSetter<I, O>;
       validator?: Function;
       value?: any;
       virtual?: boolean;
@@ -167,23 +170,23 @@ namespace ISchema {
   type LaxProperty<K extends keyof I, I, O = I> = Listenable<K, I, O> & {
     default: TypeOf<I[K]> | AsyncSetter<K, I, O>;
     readonly?: "lax";
-    shouldInit?: false | BooleanSetterNoOperation<I, O>;
-    shouldUpdate?: BooleanSetterNoOperation<I, O>;
+    shouldInit?: false | BooleanSetter<I, O>;
+    shouldUpdate?: BooleanSetter<I, O>;
     validator?: Validator<K, I, O>;
   };
 
   type Readonly_<K extends keyof I, I, O = I> = Listenable<K, I, O> & {
     default: TypeOf<I[K]> | AsyncSetter<K, I, O>;
     readonly: "lax";
-    shouldUpdate?: BooleanSetterNoOperation<I, O>;
+    shouldUpdate?: BooleanSetter<I, O>;
     validator: Validator<K, I, O>;
   };
 
   type ReadonlyNoInit<K extends keyof I, I, O = I> = Listenable<K, I, O> & {
     default: TypeOf<I[K]> | AsyncSetter<K, I, O>;
     readonly: true;
-    shouldInit: false | BooleanSetterNoOperation<I, O>;
-    shouldUpdate?: BooleanSetterNoOperation<I, O>;
+    shouldInit: false | BooleanSetter<I, O>;
+    shouldUpdate?: BooleanSetter<I, O>;
     validator?: Validator<K, I, O>;
   };
 
@@ -194,7 +197,7 @@ namespace ISchema {
 
   type Required<K extends keyof I, I, O = I> = Listenable<K, I, O> & {
     required: true;
-    shouldUpdate?: BooleanSetterNoOperation<I, O>;
+    shouldUpdate?: BooleanSetter<I, O>;
     validator: Validator<K, I, O>;
   };
 
@@ -202,7 +205,7 @@ namespace ISchema {
     default: TypeOf<I[K]> | AsyncSetter<K, I, O>;
     required: ConditionalRequiredSetter<I, O>;
     readonly?: true;
-    shouldUpdate?: BooleanSetterNoOperation<I, O>;
+    shouldUpdate?: BooleanSetter<I, O>;
     validator: Validator<K, I, O>;
   };
 
@@ -219,8 +222,8 @@ namespace ISchema {
     onSuccess?:
       | ISchema.SuccessListener<O, CombinedType<I, O>>
       | NonEmptyArray<ISchema.SuccessListener<O, CombinedType<I, O>>>;
-    shouldInit?: false | BooleanSetterNoOperation<I, O>;
-    shouldUpdate?: false | BooleanSetterNoOperation<I, O>;
+    shouldInit?: false | BooleanSetter<I, O>;
+    shouldUpdate?: false | BooleanSetter<I, O>;
     validator: Validator<K, I, O>;
   };
 
