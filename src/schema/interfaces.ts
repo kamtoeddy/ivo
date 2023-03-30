@@ -1,5 +1,4 @@
-import { ObjectType } from "../utils/interfaces";
-import { Merge } from "./merge-types";
+import { Merge, RealType } from "./merge-types";
 
 export type {
   CombinedType,
@@ -28,37 +27,17 @@ type TypeOf<T> = Exclude<T, undefined>;
 
 type CombinedType<I, O> = RealType<Merge<I, O>>;
 
-type ContextType<I, O> = Readonly<CombinedType<I, O>>;
-
-type RealType_<T> = T extends (...args: any) => infer I ? I : T;
-
-type RealType<T> = {
-  [K in keyof T]: Exclude<T[K], Function> | RealType_<T[K]>;
-} & {};
-
-interface A {
-  name: string;
-  quantity: number;
-}
-
-interface B {
-  coefficient: number;
-  name: string;
-  quantity: null;
-}
-
-type C = CombinedType<A, B>;
-type D = ContextType<A, B>;
+type ContextType<I, O> = Readonly<Merge<I, O>>;
 
 type AsyncSetter<K extends keyof I, I, O> = (
-  context: Readonly<CombinedType<I, O>>,
+  context: ContextType<I, O>,
   operation: ISchema.OperationName
 ) => TypeOf<I[K]> | Promise<TypeOf<I[K]>>;
 
-type BooleanSetter<I, O> = (context: Readonly<CombinedType<I, O>>) => boolean;
+type BooleanSetter<I, O> = (context: ContextType<I, O>) => boolean;
 
 type ConditionalRequiredSetter<I, O> = (
-  context: Readonly<CombinedType<I, O>>,
+  context: ContextType<I, O>,
   operation: ISchema.OperationName
 ) => boolean | [boolean, string];
 
@@ -89,12 +68,12 @@ namespace ISchema {
         value: ValueType;
       };
 
-  export type Definitions<I, O = I, A extends ObjectType = {}> = {
+  export type Definitions<I, O = I, A = {}> = {
     [K in keyof I]?: Property<K, I, O, A>;
   };
 
   export type Definitions_<I, O> = {
-    [K in keyof I]?: Listenable<K, I, I> & {
+    [K in keyof I]?: Listenable<K, I, O> & {
       alias?: string;
       constant?: any;
       default?: any;
@@ -112,16 +91,10 @@ namespace ISchema {
     };
   };
 
-  export type AliasToVirtualMap<T extends ObjectType> = Record<
-    string,
-    StringKey<T>
-  >;
-  export type VirtualToAliasMap<T extends ObjectType> = Record<
-    StringKey<T>,
-    string
-  >;
+  export type AliasToVirtualMap<T> = Record<string, StringKey<T>>;
+  export type VirtualToAliasMap<T> = Record<StringKey<T>, string>;
 
-  export type DependencyMap<T extends ObjectType> = {
+  export type DependencyMap<T> = {
     [K in StringKey<T>]?: StringKey<T>[];
   };
 
@@ -138,24 +111,24 @@ namespace ISchema {
 
   type Listenable<K extends keyof I, I, O> = {
     onDelete?:
-      | ISchema.Listener<CombinedType<I, O>>
-      | NonEmptyArray<ISchema.Listener<CombinedType<I, O>>>;
+      | ISchema.Listener<ContextType<I, O>>
+      | NonEmptyArray<ISchema.Listener<ContextType<I, O>>>;
     onFailure?:
-      | ISchema.Listener<CombinedType<I, O>>
-      | NonEmptyArray<ISchema.Listener<CombinedType<I, O>>>;
+      | ISchema.Listener<ContextType<I, O>>
+      | NonEmptyArray<ISchema.Listener<ContextType<I, O>>>;
     onSuccess?:
-      | ISchema.SuccessListener<I[K], CombinedType<I, O>>
-      | NonEmptyArray<ISchema.SuccessListener<I[K], CombinedType<I, O>>>;
+      | ISchema.SuccessListener<I[K], ContextType<I, O>>
+      | NonEmptyArray<ISchema.SuccessListener<I[K], ContextType<I, O>>>;
   };
 
   type Constant<K extends keyof I, I, O = I> = {
     constant: true;
     onDelete?:
-      | ISchema.Listener<CombinedType<I, O>>
-      | NonEmptyArray<ISchema.Listener<CombinedType<I, O>>>;
+      | ISchema.Listener<ContextType<I, O>>
+      | NonEmptyArray<ISchema.Listener<ContextType<I, O>>>;
     onSuccess?:
-      | ISchema.SuccessListener<O, CombinedType<I, O>>
-      | NonEmptyArray<ISchema.SuccessListener<O, CombinedType<I, O>>>;
+      | ISchema.SuccessListener<O, ContextType<I, O>>
+      | NonEmptyArray<ISchema.SuccessListener<O, ContextType<I, O>>>;
     value: TypeOf<I[K]> | AsyncSetter<K, I, O>;
   };
 
@@ -217,11 +190,11 @@ namespace ISchema {
     virtual: true;
     sanitizer?: AsyncSetter<K, I, O>;
     onFailure?:
-      | ISchema.Listener<CombinedType<I, O>>
-      | NonEmptyArray<ISchema.Listener<CombinedType<I, O>>>;
+      | ISchema.Listener<ContextType<I, O>>
+      | NonEmptyArray<ISchema.Listener<ContextType<I, O>>>;
     onSuccess?:
-      | ISchema.SuccessListener<O, CombinedType<I, O>>
-      | NonEmptyArray<ISchema.SuccessListener<O, CombinedType<I, O>>>;
+      | ISchema.SuccessListener<O, ContextType<I, O>>
+      | NonEmptyArray<ISchema.SuccessListener<O, ContextType<I, O>>>;
     shouldInit?: false | BooleanSetter<I, O>;
     shouldUpdate?: false | BooleanSetter<I, O>;
     validator: Validator<K, I, O>;
@@ -252,7 +225,7 @@ type ResponseInput<T> =
 
 type Validator<K extends keyof I, I, O> = (
   value: any,
-  context: Readonly<CombinedType<I, O>>
+  context: ContextType<I, O>
 ) => ResponseInput<I[K]> | Promise<ResponseInput<I[K]>>;
 
 type NonEmptyArray<T> = [T, ...T[]];

@@ -1,24 +1,20 @@
 import { sort, sortKeys, toArray } from "../utils/functions";
-import { ObjectType } from "../utils/interfaces";
 import { isEqual } from "../utils/isEqual";
 import {
-  CombinedType,
   ContextType,
   ISchema as ns,
   RealType,
+  ResponseInput,
   StringKey,
 } from "./interfaces";
+import { Merge } from "./merge-types";
 import { defaultOptions, SchemaCore } from "./SchemaCore";
 import { makeResponse } from "./utils";
 import { ErrorTool } from "./utils/schema-error";
 
 export { Schema };
 
-class Schema<
-  I extends ObjectType,
-  O extends ObjectType = I,
-  A extends ObjectType = {}
-> extends SchemaCore<I, O> {
+class Schema<I, O = I, A = {}> extends SchemaCore<I, O> {
   constructor(
     definitions: ns.Definitions<RealType<I>, RealType<O>, A>,
     options: ns.Options = defaultOptions
@@ -34,16 +30,8 @@ class Schema<
     return this._options;
   }
 
-  extend = <
-    U extends ObjectType,
-    V extends ObjectType = U,
-    A1 extends ObjectType = {}
-  >(
-    propDefinitions: ns.Definitions<
-      CombinedType<I, U>,
-      CombinedType<O, V>,
-      CombinedType<A, A1>
-    >,
+  extend = <U, V = U, A1 = {}>(
+    propDefinitions: ns.Definitions<Merge<I, U>, Merge<O, V>, Merge<A, A1>>,
     options: ns.ExtensionOptions<StringKey<RealType<I>>> = {
       ...defaultOptions,
       remove: [],
@@ -52,9 +40,9 @@ class Schema<
     const remove = toArray(options?.remove ?? []);
     delete options.remove;
 
-    type InputType = CombinedType<I, U>;
-    type OutputType = CombinedType<O, V>;
-    type AliasType = CombinedType<A, A1>;
+    type InputType = Merge<I, U>;
+    type OutputType = Merge<O, V>;
+    type AliasType = Merge<A, A1>;
 
     let _definitions = {
       ...this.definitions,
@@ -69,18 +57,17 @@ class Schema<
       ...propDefinitions,
     } as ns.Definitions<InputType, OutputType, AliasType>;
 
-    return new Schema<InputType, OutputType, AliasType>(_definitions, options);
+    return new Schema<InputType, OutputType, AliasType>(
+      _definitions as any,
+      options
+    );
   };
 
   getModel = (): Model<RealType<I>, RealType<O>, A> =>
-    new Model(new ModelTool<RealType<I>, RealType<O>, A>(this));
+    new Model(new ModelTool<RealType<I>, RealType<O>, A>(this as any));
 }
 
-class ModelTool<
-  I extends ObjectType,
-  O extends ObjectType = I,
-  A extends ObjectType = {}
-> extends SchemaCore<I, O> {
+class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
   constructor(schema: Schema<I, O, A>) {
     super(schema.definitions, schema.options);
   }
@@ -200,7 +187,9 @@ class ModelTool<
     )
       return false;
 
-    const propName = isAlias ? this._getVirtualByAlias(prop)! : prop;
+    const propName = (
+      isAlias ? this._getVirtualByAlias(prop)! : prop
+    ) as StringKey<I>;
 
     const hasShouldUpdateRule = this._isRuleInDefinition(
       propName,
@@ -225,7 +214,11 @@ class ModelTool<
     if (hasShouldUpdateRule && !isUpdatable) return false;
 
     return (
-      isReadonly && isEqual(this.defaults[propName], this.values[propName])
+      isReadonly &&
+      isEqual(
+        this.defaults[propName],
+        this.values[propName as StringKey<ContextType<I, O>>]
+      )
     );
   };
 
@@ -251,8 +244,9 @@ class ModelTool<
 
       const operationSummary = this._makeOperationSummary(
         context,
-        data[prop] ?? (context[prop] as any),
-        this.values[prop],
+        data[prop as StringKey<I>] ??
+          context[prop as StringKey<ContextType<I, O>>],
+        this.values[prop as StringKey<ContextType<I, O>>],
         isUpdate
       );
 
@@ -283,7 +277,7 @@ class ModelTool<
 
   private _resolveDependentChanges = async (
     data: Partial<I>,
-    ctx: Partial<I> | Partial<CombinedType<I, O>>,
+    ctx: Partial<I> | Partial<ContextType<I, O>>,
     lifeCycle: ns.OperationName
   ) => {
     let _updates = { ...data };
@@ -295,7 +289,7 @@ class ModelTool<
     const isCreating = lifeCycle == "creation";
 
     for (const prop of successFulChanges) {
-      const dependencies = this._getDependencies(prop as StringKey<I>);
+      const dependencies = this._getDependencies(prop);
 
       if (!dependencies.length) continue;
 
@@ -305,7 +299,7 @@ class ModelTool<
       if (
         isCreating &&
         (this._isDependentProp(prop) || this._isLaxProp(prop)) &&
-        isEqual(this.defaults[prop], data[prop])
+        isEqual(this.defaults[prop as StringKey<I>], data[prop])
       )
         continue;
 
@@ -320,7 +314,10 @@ class ModelTool<
       if (
         this._isReadonly(prop) &&
         !isCreating &&
-        !isEqual(this.values[prop], this.defaults[prop])
+        !isEqual(
+          this.values[prop as StringKey<ContextType<I, O>>],
+          this.defaults[prop as StringKey<I>]
+        )
       )
         return;
 
@@ -328,7 +325,11 @@ class ModelTool<
 
       const value = await resolver!(_ctx, lifeCycle);
 
-      if (!isCreating && isEqual(value, _ctx[prop])) return;
+      if (
+        !isCreating &&
+        isEqual(value, _ctx[prop as StringKey<ContextType<I, O>>])
+      )
+        return;
 
       data[prop] = value;
 
@@ -377,11 +378,11 @@ class ModelTool<
       return this._isProp(key);
     });
 
-    const _values = {} as Partial<I>;
+    const _values = {} as any;
 
     sort(keys).forEach((key) => (_values[key] = values[key]));
 
-    this.values = _values;
+    this.values = _values as ContextType<I, O>;
 
     this._initContexts();
   }
@@ -422,7 +423,7 @@ class ModelTool<
 
     if (!this._isVirtual(propName)) operationData[propName] = validated;
 
-    const validCtxUpdate = { [propName]: validated } as I;
+    const validCtxUpdate = { [propName]: validated } as unknown as I;
 
     this._updateContext(validCtxUpdate);
     this._updateFinalContext(validCtxUpdate);
@@ -464,11 +465,11 @@ class ModelTool<
       if (isDependent && !isAlias) {
         const value = reset.includes(prop)
           ? this._getDefaultValue(prop)
-          : this.values[prop];
+          : this.values[prop as StringKey<ContextType<I, O>>];
 
         data[prop] = value;
 
-        const validCtxUpdate = { [prop]: data[prop] } as I;
+        const validCtxUpdate = { [prop]: data[prop] } as unknown as I;
 
         this._updateFinalContext(validCtxUpdate);
         return this._updateContext(validCtxUpdate);
@@ -484,7 +485,7 @@ class ModelTool<
       if (reset.includes(prop)) {
         data[prop] = this._getDefaultValue(prop);
 
-        const validCtxUpdate = { [prop]: data[prop] } as I;
+        const validCtxUpdate = { [prop]: data[prop] } as unknown as I;
 
         this._updateFinalContext(validCtxUpdate);
         return this._updateContext(validCtxUpdate);
@@ -495,7 +496,12 @@ class ModelTool<
       const isProvided = this.values.hasOwnProperty(prop);
 
       const isLaxInit =
-        isLax && isProvided && !isEqual(this.values[prop], this.defaults[prop]);
+        isLax &&
+        isProvided &&
+        !isEqual(
+          this.values[prop as StringKey<ContextType<I, O>>],
+          this.defaults[prop]
+        );
 
       const isRequiredInit =
         this._isRequiredBy(prop) && this.values.hasOwnProperty(prop);
@@ -511,13 +517,18 @@ class ModelTool<
       ) {
         data[prop] = this._getDefaultValue(prop);
 
-        const validCtxUpdate = { [prop]: data[prop] } as I;
+        const validCtxUpdate = { [prop]: data[prop] } as unknown as I;
 
         this._updateFinalContext(validCtxUpdate);
         return this._updateContext(validCtxUpdate);
       }
 
-      return this._validateAndSet(data, error, prop, this.values[prop]);
+      return this._validateAndSet(
+        data,
+        error,
+        prop,
+        this.values[prop as StringKey<ContextType<I, O>>]
+      );
     });
 
     await Promise.allSettled(validations);
@@ -605,7 +616,12 @@ class ModelTool<
         return this._updateContext(validCtxUpdate);
       }
 
-      return this._validateAndSet(data, error, prop, this.values[prop]);
+      return this._validateAndSet(
+        data,
+        error,
+        prop,
+        this.values[prop as StringKey<ContextType<I, O>>]
+      );
     });
 
     await Promise.allSettled(validations);
@@ -656,7 +672,7 @@ class ModelTool<
     await Promise.allSettled(cleanups);
   };
 
-  update = async (values: O, changes: Partial<I & A>) => {
+  update = async (values: O, changes: Partial<ContextType<I, O>>) => {
     if (!this._areValuesOk(values)) return this._handleInvalidData();
 
     this._setValues(values, { allowVirtuals: false, allowTimestamps: true });
@@ -664,19 +680,20 @@ class ModelTool<
     const error = new ErrorTool({ message: "Validation Error" });
     let updated = {} as Partial<I>;
 
-    const toUpdate = this._getKeysAsProps<Partial<I>>(changes ?? {}).filter(
-      (prop) => this._isUpdatable(prop, changes[prop])
+    const toUpdate = this._getKeysAsProps(changes ?? {}).filter((prop) =>
+      this._isUpdatable(prop, changes[prop])
     );
 
     const linkedProps: StringKey<I>[] = [];
     const virtuals: StringKey<I>[] = [];
 
     const validations = toUpdate.map(async (prop) => {
-      const value = changes[prop] as Exclude<
-        I[Extract<keyof I, string>],
-        undefined
-      >;
-      const isValid = await this._validate(prop, value, this._getContext());
+      const value = changes[prop] as Exclude<I[StringKey<I>], undefined>;
+      const isValid = await this._validate(
+        prop as StringKey<I>,
+        value,
+        this._getContext()
+      );
 
       if (!isValid.valid) return error.add(prop, isValid.reasons);
 
@@ -686,9 +703,17 @@ class ModelTool<
 
       const isAlias = this._isVirtualAlias(prop);
 
-      const propName = isAlias ? this._getVirtualByAlias(prop)! : prop;
+      const propName = (
+        isAlias ? this._getVirtualByAlias(prop)! : prop
+      ) as StringKey<I>;
 
-      if (isEqual(validated, this.values[propName])) return;
+      if (
+        isEqual(
+          validated,
+          this.values[propName as StringKey<ContextType<I, O>>]
+        )
+      )
+        return;
 
       if (this._isVirtual(propName)) virtuals.push(propName);
       else {
@@ -696,7 +721,7 @@ class ModelTool<
         linkedProps.push(propName);
       }
 
-      const validCtxUpdate = { [propName]: validated } as I;
+      const validCtxUpdate = { [propName]: validated } as unknown as I;
 
       this._updateContext(validCtxUpdate);
       this._updateFinalContext(validCtxUpdate);
@@ -730,16 +755,16 @@ class ModelTool<
     this._updateFinalContext(finalData);
 
     return {
-      data: finalData as Partial<O>,
+      data: finalData as Partial<I>,
       error: undefined,
       handleSuccess: this._makeHandleSuccess(updated, true),
     };
   };
 
-  _validate = async <K extends StringKey<I & A>>(
+  _validate = async <K extends StringKey<I>>(
     prop: K,
     value: any,
-    ctx: Readonly<CombinedType<I, O>>
+    ctx: ContextType<I, O>
   ) => {
     const isAlias = this._isVirtualAlias(prop);
 
@@ -748,7 +773,7 @@ class ModelTool<
       (this._isDependentProp(prop) && !isAlias) ||
       (!this._isProp(prop) && !this._isVirtual(prop) && !isAlias)
     )
-      return makeResponse<(I & A)[K]>({
+      return makeResponse<I[K]>({
         valid: false,
         reason: "Invalid property",
       });
@@ -762,18 +787,14 @@ class ModelTool<
 
       if (res.valid && isEqual(res.validated, undefined)) res.validated = value;
 
-      return makeResponse<(I & A)[K]>(res);
+      return makeResponse<I[K]>(res as ResponseInput<I[K]>);
     }
 
-    return makeResponse<(I & A)[K]>({ valid: true, validated: value });
+    return makeResponse<I[K]>({ valid: true, validated: value });
   };
 }
 
-class Model<
-  I extends ObjectType,
-  O extends ObjectType = I,
-  A extends ObjectType = {}
-> {
+class Model<I, O = I, A = {}> {
   constructor(private modelTool: ModelTool<I, O, A>) {}
 
   clone = this.modelTool.clone;
@@ -784,6 +805,13 @@ class Model<
 
   update = this.modelTool.update;
 
-  validate = async <K extends StringKey<I & A>>(prop: K, value: any) =>
-    this.modelTool._validate(prop, value, {} as ContextType<I, O>);
+  validate = async <K extends StringKey<ContextType<I, O>> | StringKey<A>>(
+    prop: K,
+    value: any
+  ) =>
+    this.modelTool._validate(
+      prop as unknown as StringKey<I>,
+      value,
+      {} as ContextType<I, O>
+    );
 }

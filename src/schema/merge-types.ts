@@ -1,78 +1,62 @@
-type Primitive = string | number | boolean | bigint | symbol | null | undefined;
-type Expand<T> = T extends Primitive ? T : { [K in keyof T]: T[K] };
+export { Merge, RealType };
 
-type OptionalKeys<T> = {
-  [K in keyof T]-?: T extends Record<K, T[K]> ? never : K;
-}[keyof T];
+type TypeFromPromise<T> = T extends Promise<infer I> ? I : T;
 
-type RequiredKeys<T> = {
-  [K in keyof T]-?: T extends Record<K, T[K]> ? K : never;
-}[keyof T] &
-  keyof T;
+type RealType_<T> = T extends (...args: any) => infer I ? I : T;
 
-type RequiredMergeKeys<T, U> = RequiredKeys<T> & RequiredKeys<U>;
+type RealType<T> = {
+  [K in keyof T]: TypeFromPromise<Exclude<T[K], Function> | RealType_<T[K]>>;
+} & {};
 
-type OptionalMergeKeys<T, U> =
-  | OptionalKeys<T>
-  | OptionalKeys<U>
-  | Exclude<RequiredKeys<T>, RequiredKeys<U>>
-  | Exclude<RequiredKeys<U>, RequiredKeys<T>>;
+export type OmitIndexSignature<ObjectType> = {
+  [K in keyof ObjectType as {} extends Record<K, unknown>
+    ? never
+    : K]: ObjectType[K];
+};
 
-type MergeNonUnionObjects<T, U> = Expand<
-  {
-    [K in RequiredMergeKeys<T, U>]: Expand<Merge<T[K], U[K]>>;
-  } & {
-    [K in OptionalMergeKeys<T, U>]?: K extends keyof T
-      ? K extends keyof U
-        ? Expand<Merge<Exclude<T[K], undefined>, Exclude<U[K], undefined>>>
-        : T[K]
-      : K extends keyof U
-      ? U[K]
-      : never;
-  }
->;
+type SimpleMerge<I, O> = {
+  [K in keyof I as K extends keyof O ? never : K]: I[K];
+} & O;
 
-type MergeNonUnionArrays<
-  T extends readonly any[],
-  U extends readonly any[]
-> = Array<Expand<Merge<T[number], U[number]>>>;
-
-type MergeArrays<T extends readonly any[], U extends readonly any[]> = [
-  T
-] extends [never]
-  ? U extends any
-    ? MergeNonUnionArrays<T, U>
-    : never
-  : [U] extends [never]
-  ? T extends any
-    ? MergeNonUnionArrays<T, U>
-    : never
-  : T extends any
-  ? U extends any
-    ? MergeNonUnionArrays<T, U>
-    : never
-  : never;
-
-type MergeObjects<T, U> = [T] extends [never]
-  ? U extends any
-    ? MergeNonUnionObjects<T, U>
-    : never
-  : [U] extends [never]
-  ? T extends any
-    ? MergeNonUnionObjects<T, U>
-    : never
-  : T extends any
-  ? U extends any
-    ? MergeNonUnionObjects<T, U>
-    : never
-  : never;
-
-type Merge<T, U> =
-  | Extract<T | U, Primitive>
-  | MergeArrays<Extract<T, readonly any[]>, Extract<U, readonly any[]>>
-  | MergeObjects<
-      Exclude<T, Primitive | readonly any[]>,
-      Exclude<U, Primitive | readonly any[]>
+type Merge<I, O> = I extends O
+  ? O extends I
+    ? I
+    : EnforceOptional<
+        SimpleMerge<PickIndexSignature<I>, PickIndexSignature<O>> &
+          SimpleMerge<OmitIndexSignature<I>, OmitIndexSignature<O>>
+      >
+  : EnforceOptional<
+      SimpleMerge<PickIndexSignature<I>, PickIndexSignature<O>> &
+        SimpleMerge<OmitIndexSignature<I>, OmitIndexSignature<O>>
     >;
 
-export { Merge };
+type PickIndexSignature<ObjectType> = {
+  [K in keyof ObjectType as {} extends Record<K, unknown>
+    ? K
+    : never]: ObjectType[K];
+};
+
+// Returns `never` if the key is optional otherwise return the key type.
+type RequiredFilter<I, K extends keyof I> = undefined extends I[K]
+  ? I[K] extends undefined
+    ? K
+    : never
+  : K;
+
+// Returns `never` if the key is required otherwise return the key type.
+type OptionalFilter<T, K extends keyof T> = undefined extends T[K]
+  ? T[K] extends undefined
+    ? never
+    : K
+  : never;
+
+export type EnforceOptional<ObjectType> = RealType<
+  {
+    [K in keyof ObjectType as RequiredFilter<ObjectType, K>]: ObjectType[K];
+  } & {
+    [K in keyof ObjectType as OptionalFilter<ObjectType, K>]?: Exclude<
+      ObjectType[K],
+      undefined
+    >;
+  }
+>;

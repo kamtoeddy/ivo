@@ -24,7 +24,7 @@ export const defaultOptions = {
 
 const lifeCycleRules: ns.LifeCycles[] = ["onDelete", "onFailure", "onSuccess"];
 
-export abstract class SchemaCore<I extends ObjectType, O extends ObjectType> {
+export abstract class SchemaCore<I, O> {
   protected _options: ns.Options;
   protected _definitions = {} as ns.Definitions_<I, O>;
 
@@ -32,7 +32,7 @@ export abstract class SchemaCore<I extends ObjectType, O extends ObjectType> {
   protected context: ContextType<I, O> = {} as ContextType<I, O>;
   protected finalContext: ContextType<I, O> = {} as ContextType<I, O>;
   protected defaults: Partial<I> = {};
-  protected values: Partial<I> = {};
+  protected values: ContextType<I, O> = {} as ContextType<I, O>;
 
   // maps
   protected aliasToVirtualMap: ns.AliasToVirtualMap<I> = {};
@@ -81,7 +81,7 @@ export abstract class SchemaCore<I extends ObjectType, O extends ObjectType> {
 
     if (contstants.length)
       contstants.forEach((prop) =>
-        this._updateFinalContext({ [prop]: this.context[prop] } as I)
+        this._updateFinalContext({ [prop]: this.context[prop] } as any)
       );
   };
 
@@ -106,8 +106,8 @@ export abstract class SchemaCore<I extends ObjectType, O extends ObjectType> {
       else this.dependencyMap[_prop] = [prop];
   };
 
-  protected _getDependencies = (prop: StringKey<I>) =>
-    this.dependencyMap[prop] ?? [];
+  protected _getDependencies = (prop: string) =>
+    this.dependencyMap[prop as StringKey<I>] ?? [];
 
   protected _getAliasByVirtual = (prop: StringKey<I>): string | undefined =>
     this.virtualToAliasMap[prop];
@@ -276,16 +276,20 @@ export abstract class SchemaCore<I extends ObjectType, O extends ObjectType> {
     if (error.isPayloadLoaded) error.throw();
   };
 
-  protected _getDefinition = (prop: string) => this._definitions[prop]!;
+  protected _getDefinition = (prop: string) =>
+    this._definitions[prop as StringKey<I>]!;
 
   protected _getDefaultValue = (prop: string) => {
+    const def = this._getDefinition(prop);
     const _default = this._getDefinition(prop)?.default;
 
     const value = this._isFunction(_default)
       ? _default(this._getContext())
-      : this.defaults[prop];
+      : this.defaults[prop as StringKey<I>];
 
-    return isEqual(value, undefined) ? this.values[prop] : value;
+    return isEqual(value, undefined)
+      ? this.values[prop as StringKey<ContextType<I, O>>]
+      : value;
   };
 
   protected _getConstantValue = async (prop: string) =>
@@ -355,7 +359,9 @@ export abstract class SchemaCore<I extends ObjectType, O extends ObjectType> {
   private _getInvalidRules = <K extends StringKey<I>>(prop: K) => {
     const rulesProvided = this._getKeysAsProps(this._getDefinition(prop));
 
-    return rulesProvided.filter((r) => !DEFINITION_RULES.includes(r));
+    return rulesProvided.filter(
+      (r) => !DEFINITION_RULES.includes(r as DefinitionRule)
+    );
   };
 
   protected _getValidator = <K extends StringKey<I>>(prop: K) => {
