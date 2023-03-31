@@ -2212,218 +2212,6 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
     describe("requiredBy", () => {
       describe("valid", () => {
-        let Book: any, book: any;
-
-        beforeAll(async () => {
-          Book = new Schema(
-            {
-              bookId: { required: true, validator },
-              isPublished: { default: false, validator },
-              price: {
-                default: null,
-                required({ context }: any) {
-                  const isRequired =
-                    context.isPublished && context.price == null;
-                  return [isRequired, "A price is required to publish a book!"];
-                },
-                validator: validatePrice,
-              },
-              priceReadonly: {
-                default: null,
-                readonly: true,
-                required({ context: { price, priceReadonly } }: any) {
-                  const isRequired = price == 101 && priceReadonly == null;
-                  return [
-                    isRequired,
-                    "A priceReadonly is required when price is 101!",
-                  ];
-                },
-                validator: validatePrice,
-              },
-              priceRequiredWithoutMessage: {
-                default: null,
-                readonly: true,
-                required: ({ context: { price, priceReadonly } }: any) =>
-                  price == 101 && priceReadonly == null,
-                validator: validatePrice,
-              },
-            },
-            { errors: "throw" }
-          ).getModel();
-
-          function validatePrice(price: any) {
-            const validated = Number(price),
-              valid = !isNaN(price) && validated;
-            return { valid, validated };
-          }
-
-          book = (await Book.create({ bookId: 1 })).data;
-        });
-
-        it("should create normally", () => {
-          expect(book).toEqual({
-            bookId: 1,
-            isPublished: false,
-            price: null,
-            priceReadonly: null,
-            priceRequiredWithoutMessage: null,
-          });
-        });
-
-        it("should pass if condition is met at creation", async () => {
-          const toPass = () =>
-            Book.create({ bookId: 1, isPublished: true, price: 2000 });
-
-          expectNoFailure(toPass);
-
-          const { data } = await toPass();
-
-          expect(data).toEqual({
-            bookId: 1,
-            isPublished: true,
-            price: 2000,
-            priceReadonly: null,
-            priceRequiredWithoutMessage: null,
-          });
-        });
-
-        it("should reject if condition is not met at creation", async () => {
-          const toFail = () => Book.create({ bookId: 1, isPublished: true });
-
-          expectPromiseFailure(toFail, "Validation Error");
-
-          try {
-            await toFail();
-          } catch (err: any) {
-            expect(err.payload).toEqual(
-              expect.objectContaining({
-                price: expect.arrayContaining([
-                  "A price is required to publish a book!",
-                ]),
-              })
-            );
-          }
-        });
-
-        it("should pass if condition is met during cloning", async () => {
-          const toPass = () =>
-            Book.clone({ bookId: 1, isPublished: true, price: 2000 });
-
-          expectNoFailure(toPass);
-
-          const { data } = await toPass();
-
-          expect(data).toEqual({
-            bookId: 1,
-            isPublished: true,
-            price: 2000,
-            priceReadonly: null,
-            priceRequiredWithoutMessage: null,
-          });
-        });
-
-        it("should reject if condition is not met during cloning", async () => {
-          const toFail = () => Book.clone({ bookId: 1, isPublished: true });
-
-          expectPromiseFailure(toFail, "Validation Error");
-
-          try {
-            await toFail();
-          } catch (err: any) {
-            expect(err.payload).toEqual(
-              expect.objectContaining({
-                price: expect.arrayContaining([
-                  "A price is required to publish a book!",
-                ]),
-              })
-            );
-          }
-        });
-
-        it("should pass if condition is met during updates", async () => {
-          const toPass = () =>
-            Book.update(
-              { bookId: 1, isPublished: false, price: null },
-              { isPublished: true, price: 20 }
-            );
-
-          expectNoFailure(toPass);
-
-          const { data } = await toPass();
-
-          expect(data).toEqual({ isPublished: true, price: 20 });
-        });
-
-        it("should pass if condition is met during updates of readonly", async () => {
-          const toPass = () =>
-            Book.update(book, { price: 101, priceReadonly: 201 });
-
-          expectNoFailure(toPass);
-
-          const { data } = await toPass();
-
-          expect(data).toEqual({ price: 101, priceReadonly: 201 });
-        });
-
-        it("should reject if condition is not met during updates", async () => {
-          const toFail = () =>
-            Book.update(
-              { bookId: 1, isPublished: false, price: null },
-              { isPublished: true }
-            );
-
-          expectPromiseFailure(toFail, "Validation Error");
-
-          try {
-            await toFail();
-          } catch (err: any) {
-            expect(err.payload).toEqual(
-              expect.objectContaining({
-                price: expect.arrayContaining([
-                  "A price is required to publish a book!",
-                ]),
-              })
-            );
-          }
-        });
-
-        it("should reject if condition is not met during updates of readonly", async () => {
-          const toFail = () => Book.update(book, { price: 101 });
-
-          expectPromiseFailure(toFail, "Validation Error");
-
-          try {
-            await toFail();
-          } catch (err: any) {
-            expect(err.payload).toEqual(
-              expect.objectContaining({
-                priceReadonly: expect.arrayContaining([
-                  "A priceReadonly is required when price is 101!",
-                ]),
-                priceRequiredWithoutMessage: expect.arrayContaining([
-                  "'priceRequiredWithoutMessage' is required!",
-                ]),
-              })
-            );
-          }
-        });
-
-        it("should not update callable readonly prop that has changed", async () => {
-          const toFail = () =>
-            Book.update(
-              {
-                bookId: 1,
-                isPublished: false,
-                price: null,
-                priceReadonly: 201,
-                priceRequiredWithoutMessage: null,
-              },
-              { priceReadonly: 101 }
-            );
-
-          expectPromiseFailure(toFail, "Nothing to update");
-        });
-
         it("should accept requiredBy + default(any | function)", () => {
           const values = ["", () => ""];
 
@@ -2455,6 +2243,257 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           expectNoFailure(toPass);
 
           toPass();
+        });
+
+        describe("behaviour", () => {
+          let Book: any, book: any;
+
+          beforeAll(async () => {
+            Book = new Schema(
+              {
+                bookId: { required: true, validator },
+                isPublished: { default: false, validator },
+                price: {
+                  default: null,
+                  required({ context: { isPublished, price } }: any) {
+                    const isRequired = isPublished && price == null;
+                    return [
+                      isRequired,
+                      "A price is required to publish a book!",
+                    ];
+                  },
+                  validator: validatePrice,
+                },
+                priceReadonly: {
+                  default: null,
+                  readonly: true,
+                  required({ context: { price, priceReadonly } }: any) {
+                    const isRequired = price == 101 && priceReadonly == null;
+                    return [
+                      isRequired,
+                      "A priceReadonly is required when price is 101!",
+                    ];
+                  },
+                  validator: validatePrice,
+                },
+                priceRequiredWithoutMessage: {
+                  default: null,
+                  readonly: true,
+                  required: ({ context: { price, priceReadonly } }: any) =>
+                    price == 101 && priceReadonly == null,
+                  validator: validatePrice,
+                },
+              },
+              { errors: "throw" }
+            ).getModel();
+
+            function validatePrice(price: any) {
+              const validated = Number(price),
+                valid = !isNaN(price) && validated;
+              return { valid, validated };
+            }
+
+            book = (await Book.create({ bookId: 1 })).data;
+          });
+
+          it("should create normally", () => {
+            expect(book).toEqual({
+              bookId: 1,
+              isPublished: false,
+              price: null,
+              priceReadonly: null,
+              priceRequiredWithoutMessage: null,
+            });
+          });
+
+          it("should pass if condition is met at creation", async () => {
+            const toPass = () =>
+              Book.create({ bookId: 1, isPublished: true, price: 2000 });
+
+            expectNoFailure(toPass);
+
+            const { data } = await toPass();
+
+            expect(data).toEqual({
+              bookId: 1,
+              isPublished: true,
+              price: 2000,
+              priceReadonly: null,
+              priceRequiredWithoutMessage: null,
+            });
+          });
+
+          it("should reject if condition is not met at creation", async () => {
+            const toFail = () => Book.create({ bookId: 1, isPublished: true });
+
+            expectPromiseFailure(toFail, "Validation Error");
+
+            try {
+              await toFail();
+            } catch (err: any) {
+              expect(err.payload).toEqual(
+                expect.objectContaining({
+                  price: expect.arrayContaining([
+                    "A price is required to publish a book!",
+                  ]),
+                })
+              );
+            }
+          });
+
+          it("should pass if condition is met during cloning", async () => {
+            const toPass = () =>
+              Book.clone({ bookId: 1, isPublished: true, price: 2000 });
+
+            expectNoFailure(toPass);
+
+            const { data } = await toPass();
+
+            expect(data).toEqual({
+              bookId: 1,
+              isPublished: true,
+              price: 2000,
+              priceReadonly: null,
+              priceRequiredWithoutMessage: null,
+            });
+          });
+
+          it("should reject if condition is not met during cloning", async () => {
+            const toFail = () => Book.clone({ bookId: 1, isPublished: true });
+
+            expectPromiseFailure(toFail, "Validation Error");
+
+            try {
+              await toFail();
+            } catch (err: any) {
+              expect(err.payload).toEqual(
+                expect.objectContaining({
+                  price: expect.arrayContaining([
+                    "A price is required to publish a book!",
+                  ]),
+                })
+              );
+            }
+          });
+
+          it("should pass if condition is met during updates", async () => {
+            const toPass = () =>
+              Book.update(
+                { bookId: 1, isPublished: false, price: null },
+                { isPublished: true, price: 20 }
+              );
+
+            expectNoFailure(toPass);
+
+            const { data } = await toPass();
+
+            expect(data).toEqual({ isPublished: true, price: 20 });
+          });
+
+          it("should pass if condition is met during updates of readonly", async () => {
+            const toPass = () =>
+              Book.update(book, { price: 101, priceReadonly: 201 });
+
+            expectNoFailure(toPass);
+
+            const { data } = await toPass();
+
+            expect(data).toEqual({ price: 101, priceReadonly: 201 });
+          });
+
+          it("should reject if condition is not met during updates", async () => {
+            const toFail = () =>
+              Book.update(
+                { bookId: 1, isPublished: false, price: null },
+                { isPublished: true }
+              );
+
+            expectPromiseFailure(toFail, "Validation Error");
+
+            try {
+              await toFail();
+            } catch (err: any) {
+              expect(err.payload).toEqual(
+                expect.objectContaining({
+                  price: expect.arrayContaining([
+                    "A price is required to publish a book!",
+                  ]),
+                })
+              );
+            }
+          });
+
+          it("should reject if condition is not met during updates of readonly", async () => {
+            const toFail = () => Book.update(book, { price: 101 });
+
+            expectPromiseFailure(toFail, "Validation Error");
+
+            try {
+              await toFail();
+            } catch (err: any) {
+              expect(err.payload).toEqual(
+                expect.objectContaining({
+                  priceReadonly: expect.arrayContaining([
+                    "A priceReadonly is required when price is 101!",
+                  ]),
+                  priceRequiredWithoutMessage: expect.arrayContaining([
+                    "'priceRequiredWithoutMessage' is required!",
+                  ]),
+                })
+              );
+            }
+          });
+
+          it("should not update callable readonly prop that has changed", async () => {
+            const toFail = () =>
+              Book.update(
+                {
+                  bookId: 1,
+                  isPublished: false,
+                  price: null,
+                  priceReadonly: 201,
+                  priceRequiredWithoutMessage: null,
+                },
+                { priceReadonly: 101 }
+              );
+
+            expectPromiseFailure(toFail, "Nothing to update");
+          });
+
+          describe("behaviour", () => {
+            let Book: any;
+
+            beforeAll(async () => {
+              Book = new Schema(
+                {
+                  bookId: { required: true, validator },
+                  isPublished: { default: false, validator },
+                  price: {
+                    default: null,
+                    required() {},
+                    validator: validatePrice,
+                  },
+                },
+                { errors: "throw" }
+              ).getModel();
+
+              function validatePrice(price: any) {
+                const validated = Number(price),
+                  valid = !isNaN(price) && validated;
+                return { valid, validated };
+              }
+            });
+
+            it("should create normally", async () => {
+              const { data } = await Book.create({ bookId: 1 });
+
+              expect(data).toEqual({
+                bookId: 1,
+                isPublished: false,
+                price: null,
+              });
+            });
+          });
         });
       });
 
