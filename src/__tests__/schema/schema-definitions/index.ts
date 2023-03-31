@@ -2464,24 +2464,16 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             let Book: any;
 
             beforeAll(async () => {
-              Book = new Schema(
-                {
-                  bookId: { required: true, validator },
-                  isPublished: { default: false, validator },
-                  price: {
-                    default: null,
-                    required() {},
-                    validator: validatePrice,
-                  },
+              Book = new Schema({
+                bookId: { required: true, validator },
+                isPublished: { default: false, validator },
+                name: { default: "", validator },
+                price: {
+                  default: null,
+                  required() {},
+                  validator: validator,
                 },
-                { errors: "throw" }
-              ).getModel();
-
-              function validatePrice(price: any) {
-                const validated = Number(price),
-                  valid = !isNaN(price) && validated;
-                return { valid, validated };
-              }
+              }).getModel();
             });
 
             it("should create normally", async () => {
@@ -2490,8 +2482,33 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               expect(data).toEqual({
                 bookId: 1,
                 isPublished: false,
+                name: "",
                 price: null,
               });
+            });
+
+            it("should clone normally", async () => {
+              const book = {
+                bookId: 1,
+                isPublished: false,
+                name: "",
+                price: null,
+              };
+              const { data } = await Book.clone(book);
+
+              expect(data).toEqual(book);
+            });
+
+            it("should update normally", async () => {
+              const book = {
+                bookId: 1,
+                isPublished: false,
+                name: "",
+                price: null,
+              };
+              const { data } = await Book.update(book, { name: "yooo" });
+
+              expect(data).toEqual({ name: "yooo" });
             });
           });
         });
