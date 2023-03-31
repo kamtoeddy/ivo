@@ -314,6 +314,8 @@ export abstract class SchemaCore<I, O> {
 
     const results = required(summary);
 
+    if (typeof results == "undefined") return [false, ""];
+
     if (typeof results == "boolean")
       return [results, results ? fallbackMessage : ""];
 
