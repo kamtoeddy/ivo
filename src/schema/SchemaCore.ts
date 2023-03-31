@@ -7,8 +7,6 @@ import {
   ISchema as ns,
   StringKey,
   Validator,
-  OptionsKey,
-  Private_ISchemaOptions,
   ALLOWED_OPTIONS,
   DEFINITION_RULES,
   CONSTANT_RULES,
@@ -177,7 +175,7 @@ export abstract class SchemaCore<I, O> {
     )
       error.add("schema options", "Must be an object").throw();
 
-    let options = Object.keys(this._options) as OptionsKey[];
+    let options = Object.keys(this._options) as ns.OptionsKey[];
 
     if (!options.length) error.add("schema options", "Cannot be empty").throw();
 
@@ -1026,7 +1024,7 @@ export abstract class SchemaCore<I, O> {
   private _isValidatorOk = (prop: string) =>
     this._isFunction(this._getDefinition(prop)?.validator);
 
-  private _makeTimestamps(): Private_ISchemaOptions {
+  private _makeTimestamps(): ns.PrivateOptions {
     const options = this._options;
 
     if (!options) return { timestamps: { createdAt: "", updatedAt: "" } };

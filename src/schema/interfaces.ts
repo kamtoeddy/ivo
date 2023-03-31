@@ -4,12 +4,9 @@ export type {
   CombinedType,
   GetContext,
   GetSummary,
-  DefinitionRule,
   ISchema,
-  ITimestamp,
+  DefinitionRule,
   NonEmptyArray,
-  OptionsKey,
-  Private_ISchemaOptions,
   RealType,
   ResponseInput,
   StringKey,
@@ -209,6 +206,16 @@ namespace ISchema {
       | boolean
       | { createdAt?: boolean | string; updatedAt?: boolean | string };
   }
+  export type OptionsKey = StringKey<Options>;
+
+  export interface PrivateOptions {
+    timestamps: Timestamp;
+  }
+
+  export interface Timestamp {
+    createdAt: string;
+    updatedAt: string;
+  }
 
   export type ExtensionOptions<T> = Options & { remove?: T | T[] };
 }
@@ -227,17 +234,6 @@ type Validator<K extends keyof I, I, O> = (
 ) => ResponseInput<I[K]> | Promise<ResponseInput<I[K]>>;
 
 type NonEmptyArray<T> = [T, ...T[]];
-
-interface ITimestamp {
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface Private_ISchemaOptions {
-  timestamps: ITimestamp;
-}
-
-type OptionsKey = StringKey<ISchema.Options>;
 
 const DEFINITION_RULES = [
   "alias",
@@ -261,7 +257,7 @@ const DEFINITION_RULES = [
 
 type DefinitionRule = typeof DEFINITION_RULES[number];
 
-const ALLOWED_OPTIONS: OptionsKey[] = ["errors", "timestamps"];
+const ALLOWED_OPTIONS: ISchema.OptionsKey[] = ["errors", "timestamps"];
 const CONSTANT_RULES = ["constant", "onDelete", "onSuccess", "value"];
 const VIRTUAL_RULES = [
   "alias",
