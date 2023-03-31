@@ -2,12 +2,12 @@ import { Merge, RealType } from "./merge-types";
 
 export type {
   CombinedType,
-  ContextType,
+  GetContext,
+  GetSummary,
   DefinitionRule,
   ISchema,
   ITimestamp,
   NonEmptyArray,
-  OperationSummary,
   OptionsKey,
   Private_ISchemaOptions,
   RealType,
@@ -18,26 +18,23 @@ export type {
   ValidatorResponse,
 };
 
-type OperationSummary<ValueType, ContextType> = ISchema.OperationSummary<
-  ValueType,
-  ContextType
->;
+type GetSummary<I, O> = ISchema.GetSummary<I, O>;
 
 type TypeOf<T> = Exclude<T, undefined>;
 
 type CombinedType<I, O> = RealType<Merge<I, O>>;
 
-type ContextType<I, O> = Readonly<Merge<I, O>>;
+type GetContext<I, O> = Readonly<Merge<I, O>>;
 
 type AsyncSetter<K extends keyof I, I, O> = (
-  context: ContextType<I, O>,
+  context: GetContext<I, O>,
   operation: ISchema.OperationName
 ) => TypeOf<I[K]> | Promise<TypeOf<I[K]>>;
 
-type BooleanSetter<I, O> = (context: ContextType<I, O>) => boolean;
+type BooleanSetter<I, O> = (context: GetContext<I, O>) => boolean;
 
 type ConditionalRequiredSetter<I, O> = (
-  context: ContextType<I, O>,
+  context: GetContext<I, O>,
   operation: ISchema.OperationName
 ) => boolean | [boolean, string];
 
@@ -50,23 +47,24 @@ namespace ISchema {
 
   export type Listener<T> = (context: Readonly<T>) => void | Promise<void>;
 
-  export type SuccessListener<OutputType, ContextType> = (
-    summary: OperationSummary<OutputType, ContextType>
+  export type SuccessListener<OutputType, Context> = (
+    summary: GetSummary<OutputType, Context>
   ) => void | Promise<void>;
 
-  export type OperationSummary<ValueType, ContextType> =
+  export type GetSummary<I, O> = Readonly<
     | {
-        context: ContextType;
+        context: GetContext<I, O>;
         operation: "creation";
-        previousValue: undefined;
-        value: ValueType;
+        previousValues: undefined;
+        values: Readonly<O>;
       }
     | {
-        context: ContextType;
+        context: GetContext<I, O>;
         operation: "update";
-        previousValue: ValueType;
-        value: ValueType;
-      };
+        previousValues: Readonly<O>;
+        values: Readonly<O>;
+      }
+  >;
 
   export type Definitions<I, O = I, A = {}> = {
     [K in keyof I]?: Property<K, I, O, A>;
@@ -111,24 +109,24 @@ namespace ISchema {
 
   type Listenable<K extends keyof I, I, O> = {
     onDelete?:
-      | ISchema.Listener<ContextType<I, O>>
-      | NonEmptyArray<ISchema.Listener<ContextType<I, O>>>;
+      | ISchema.Listener<GetContext<I, O>>
+      | NonEmptyArray<ISchema.Listener<GetContext<I, O>>>;
     onFailure?:
-      | ISchema.Listener<ContextType<I, O>>
-      | NonEmptyArray<ISchema.Listener<ContextType<I, O>>>;
+      | ISchema.Listener<GetContext<I, O>>
+      | NonEmptyArray<ISchema.Listener<GetContext<I, O>>>;
     onSuccess?:
-      | ISchema.SuccessListener<I[K], ContextType<I, O>>
-      | NonEmptyArray<ISchema.SuccessListener<I[K], ContextType<I, O>>>;
+      | ISchema.SuccessListener<I[K], GetContext<I, O>>
+      | NonEmptyArray<ISchema.SuccessListener<I[K], GetContext<I, O>>>;
   };
 
   type Constant<K extends keyof I, I, O = I> = {
     constant: true;
     onDelete?:
-      | ISchema.Listener<ContextType<I, O>>
-      | NonEmptyArray<ISchema.Listener<ContextType<I, O>>>;
+      | ISchema.Listener<GetContext<I, O>>
+      | NonEmptyArray<ISchema.Listener<GetContext<I, O>>>;
     onSuccess?:
-      | ISchema.SuccessListener<O, ContextType<I, O>>
-      | NonEmptyArray<ISchema.SuccessListener<O, ContextType<I, O>>>;
+      | ISchema.SuccessListener<O, GetContext<I, O>>
+      | NonEmptyArray<ISchema.SuccessListener<O, GetContext<I, O>>>;
     value: TypeOf<I[K]> | AsyncSetter<K, I, O>;
   };
 
@@ -190,11 +188,11 @@ namespace ISchema {
     virtual: true;
     sanitizer?: AsyncSetter<K, I, O>;
     onFailure?:
-      | ISchema.Listener<ContextType<I, O>>
-      | NonEmptyArray<ISchema.Listener<ContextType<I, O>>>;
+      | ISchema.Listener<GetContext<I, O>>
+      | NonEmptyArray<ISchema.Listener<GetContext<I, O>>>;
     onSuccess?:
-      | ISchema.SuccessListener<O, ContextType<I, O>>
-      | NonEmptyArray<ISchema.SuccessListener<O, ContextType<I, O>>>;
+      | ISchema.SuccessListener<O, GetContext<I, O>>
+      | NonEmptyArray<ISchema.SuccessListener<O, GetContext<I, O>>>;
     shouldInit?: false | BooleanSetter<I, O>;
     shouldUpdate?: false | BooleanSetter<I, O>;
     validator: Validator<K, I, O>;
@@ -225,7 +223,7 @@ type ResponseInput<T> =
 
 type Validator<K extends keyof I, I, O> = (
   value: any,
-  context: ContextType<I, O>
+  context: GetContext<I, O>
 ) => ResponseInput<I[K]> | Promise<ResponseInput<I[K]>>;
 
 type NonEmptyArray<T> = [T, ...T[]];

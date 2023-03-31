@@ -1,11 +1,12 @@
 import { sort, sortKeys, toArray } from "../utils/functions";
 import { isEqual } from "../utils/isEqual";
 import {
-  ContextType,
+  GetContext,
   ISchema as ns,
   RealType,
   ResponseInput,
   StringKey,
+  ValidatorResponse,
 } from "./interfaces";
 import { Merge } from "./merge-types";
 import { defaultOptions, SchemaCore } from "./SchemaCore";
@@ -81,9 +82,9 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
   };
 
   private _handleFailure = async (
-    data: Partial<I>,
+    data: Partial<O>,
     error: ErrorTool,
-    virtuals: StringKey<I>[] = []
+    virtuals: StringKey<O>[] = []
   ) => {
     let props = [
       ...this._getKeysAsProps({ ...data, ...error.payload }),
@@ -189,7 +190,7 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
 
     const propName = (
       isAlias ? this._getVirtualByAlias(prop)! : prop
-    ) as StringKey<I>;
+    ) as StringKey<O>;
 
     const hasShouldUpdateRule = this._isRuleInDefinition(
       propName,
@@ -214,16 +215,11 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
     if (hasShouldUpdateRule && !isUpdatable) return false;
 
     return (
-      isReadonly &&
-      isEqual(
-        this.defaults[propName],
-        this.values[propName as StringKey<ContextType<I, O>>]
-      )
+      isReadonly && isEqual(this.defaults[propName], this.values[propName])
     );
   };
 
-  private _makeHandleSuccess = (data: Partial<I>, isUpdate = false) => {
-    const context = this._getContext();
+  private _makeHandleSuccess = (data: Partial<O>, isUpdate = false) => {
     const finalCtx = this._getFinalContext();
 
     const successFulSideEffects = this._getKeysAsProps(finalCtx).filter(
@@ -242,13 +238,7 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
         "onSuccess"
       ) as ns.SuccessListener<I, O>[];
 
-      const operationSummary = this._makeOperationSummary(
-        context,
-        data[prop as StringKey<I>] ??
-          context[prop as StringKey<ContextType<I, O>>],
-        this.values[prop as StringKey<ContextType<I, O>>],
-        isUpdate
-      );
+      const operationSummary = this._makeOperationSummary(data, isUpdate);
 
       successListeners = successListeners.concat(
         methods.map((m) => () => m(operationSummary as any))
@@ -264,27 +254,34 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
     };
   };
 
-  private _makeOperationSummary = <O, C>(
-    context: C,
-    value: O,
-    previousValue: O,
+  private _makeOperationSummary = (
+    data: Partial<O>,
     isUpdate = false
-  ): ns.OperationSummary<O, C> => {
+  ): ns.GetSummary<I, O> => {
+    const context = this._getContext(),
+      previousValues = Object.freeze(this.values),
+      values = Object.freeze(data as O);
+
     return isUpdate
-      ? { context, operation: "update", previousValue, value }
-      : { context, operation: "creation", previousValue: undefined, value };
+      ? Object.freeze({ context, operation: "update", previousValues, values })
+      : Object.freeze({
+          context,
+          operation: "creation",
+          previousValues: undefined,
+          values,
+        });
   };
 
   private _resolveDependentChanges = async (
-    data: Partial<I>,
-    ctx: Partial<I> | Partial<ContextType<I, O>>,
+    data: Partial<O>,
+    ctx: Partial<O> | Partial<GetContext<I, O>>,
     lifeCycle: ns.OperationName
   ) => {
     let _updates = { ...data };
 
     const successFulChanges = this._getKeysAsProps(ctx);
 
-    let toResolve = [] as StringKey<I>[];
+    let toResolve = [] as StringKey<O>[];
 
     const isCreating = lifeCycle == "creation";
 
@@ -299,11 +296,11 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
       if (
         isCreating &&
         (this._isDependentProp(prop) || this._isLaxProp(prop)) &&
-        isEqual(this.defaults[prop as StringKey<I>], data[prop])
+        isEqual(this.defaults[prop], data[prop])
       )
         continue;
 
-      toResolve = toResolve.concat(dependencies);
+      toResolve = toResolve.concat(dependencies as any);
     }
 
     toResolve = Array.from(new Set(toResolve));
@@ -314,10 +311,7 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
       if (
         this._isReadonly(prop) &&
         !isCreating &&
-        !isEqual(
-          this.values[prop as StringKey<ContextType<I, O>>],
-          this.defaults[prop as StringKey<I>]
-        )
+        !isEqual(this.values[prop], this.defaults[prop])
       )
         return;
 
@@ -327,7 +321,7 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
 
       if (
         !isCreating &&
-        isEqual(value, _ctx[prop as StringKey<ContextType<I, O>>])
+        isEqual(value, _ctx[prop as StringKey<GetContext<I, O>>])
       )
         return;
 
@@ -340,7 +334,7 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
 
       const _data = await this._resolveDependentChanges(
         data,
-        updates,
+        updates as unknown as O,
         lifeCycle
       );
 
@@ -382,12 +376,12 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
 
     sort(keys).forEach((key) => (_values[key] = values[key]));
 
-    this.values = _values as ContextType<I, O>;
+    this.values = _values as O;
 
     this._initContexts();
   }
 
-  private _useConfigProps = (obj: Partial<I>, isUpdate = false) => {
+  private _useConfigProps = (obj: Partial<O>, isUpdate = false) => {
     if (!this.optionsTool.withTimestamps) return sortKeys(obj);
 
     const createdAt = this.optionsTool.getCreateKey(),
@@ -404,12 +398,16 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
   };
 
   private _validateAndSet = async (
-    operationData: Partial<I> = {},
+    operationData: Partial<O> = {},
     error: ErrorTool,
-    prop: StringKey<I>,
+    prop: StringKey<O>,
     value: any
   ) => {
-    const isValid = await this._validate(prop, value, this._getContext());
+    const isValid = (await this._validate(
+      prop as any,
+      value,
+      this._getContext()
+    )) as ValidatorResponse<O[StringKey<O>]>;
 
     if (!isValid.valid) return error.add(prop, isValid.reasons);
 
@@ -421,7 +419,8 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
 
     const propName = isAlias ? this._getVirtualByAlias(prop)! : prop;
 
-    if (!this._isVirtual(propName)) operationData[propName] = validated;
+    if (!this._isVirtual(propName))
+      operationData[propName as StringKey<O>] = validated;
 
     const validCtxUpdate = { [propName]: validated } as unknown as I;
 
@@ -441,11 +440,12 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
       this._isProp
     );
 
-    let data = {} as Partial<I>;
+    let data = {} as Partial<O>;
     const error = new ErrorTool({ message: "Validation Error" });
 
-    const virtuals = this._getKeysAsProps<Partial<I>>(values).filter((prop) =>
-      this._isVirtualInit(prop, values[prop])
+    const virtuals = this._getKeysAsProps<Partial<O>>(values as any).filter(
+      (prop) =>
+        this._isVirtualInit(prop, values[prop as unknown as StringKey<I>])
     );
 
     const props = [...this.props, ...virtuals];
@@ -463,9 +463,9 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
         isDependent = this._isDependentProp(prop);
 
       if (isDependent && !isAlias) {
-        const value = reset.includes(prop)
+        const value = reset.includes(prop as any)
           ? this._getDefaultValue(prop)
-          : this.values[prop as StringKey<ContextType<I, O>>];
+          : this.values[prop as unknown as StringKey<O>];
 
         data[prop] = value;
 
@@ -480,9 +480,14 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
       if (this._isVirtual(prop) && !isVirtualInit) return;
 
       if (isAlias && !isDependent)
-        return this._validateAndSet(data, error, prop, values[prop]);
+        return this._validateAndSet(
+          data,
+          error,
+          prop,
+          values[prop as unknown as StringKey<I>]
+        );
 
-      if (reset.includes(prop)) {
+      if (reset.includes(prop as any)) {
         data[prop] = this._getDefaultValue(prop);
 
         const validCtxUpdate = { [prop]: data[prop] } as unknown as I;
@@ -493,18 +498,18 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
 
       const isLax = this._isLaxProp(prop);
 
-      const isProvided = this.values.hasOwnProperty(prop);
+      const isProvided = Object(this.values).hasOwnProperty(prop);
 
       const isLaxInit =
         isLax &&
         isProvided &&
         !isEqual(
-          this.values[prop as StringKey<ContextType<I, O>>],
-          this.defaults[prop]
+          this.values[prop as unknown as StringKey<O>],
+          this.defaults[prop as unknown as StringKey<O>]
         );
 
       const isRequiredInit =
-        this._isRequiredBy(prop) && this.values.hasOwnProperty(prop);
+        this._isRequiredBy(prop) && Object(this.values).hasOwnProperty(prop);
 
       if (
         (isLax &&
@@ -527,7 +532,7 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
         data,
         error,
         prop,
-        this.values[prop as StringKey<ContextType<I, O>>]
+        this.values[prop as unknown as StringKey<O>]
       );
     });
 
@@ -550,8 +555,8 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
 
     const finalData = this._useConfigProps(data);
 
-    this._updateContext(finalData);
-    this._updateFinalContext(finalData);
+    this._updateContext(finalData as I);
+    this._updateFinalContext(finalData as I);
 
     return {
       data: finalData as O,
@@ -565,11 +570,12 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
 
     this._setValues(values);
 
-    let data = {} as Partial<I>;
+    let data = {} as Partial<O>;
     const error = new ErrorTool({ message: "Validation Error" });
 
-    const virtuals = this._getKeysAsProps<Partial<I>>(values).filter((prop) =>
-      this._isVirtualInit(prop, values[prop])
+    const virtuals = this._getKeysAsProps<Partial<O>>(values as any).filter(
+      (prop) =>
+        this._isVirtualInit(prop, values[prop as unknown as StringKey<I>])
     );
 
     const props = [...this.props, ...virtuals];
@@ -589,9 +595,14 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
       if (this._isVirtual(prop) && !isVirtualInit) return;
 
       if (this._isVirtualAlias(prop) && !this._isDependentProp(prop))
-        return this._validateAndSet(data, error, prop, values[prop]);
+        return this._validateAndSet(
+          data,
+          error,
+          prop,
+          values[prop as unknown as StringKey<I>]
+        );
 
-      const isProvided = this.values.hasOwnProperty(prop);
+      const isProvided = Object(this.values).hasOwnProperty(prop);
 
       const isLax = this._isLaxProp(prop);
 
@@ -616,12 +627,7 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
         return this._updateContext(validCtxUpdate);
       }
 
-      return this._validateAndSet(
-        data,
-        error,
-        prop,
-        this.values[prop as StringKey<ContextType<I, O>>]
-      );
+      return this._validateAndSet(data, error, prop, this.values[prop]);
     });
 
     await Promise.allSettled(validations);
@@ -643,8 +649,8 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
 
     const finalData = this._useConfigProps(data);
 
-    this._updateContext(finalData);
-    this._updateFinalContext(finalData);
+    this._updateContext(finalData as I);
+    this._updateFinalContext(finalData as I);
 
     return {
       data: finalData as O,
@@ -672,28 +678,28 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
     await Promise.allSettled(cleanups);
   };
 
-  update = async (values: O, changes: Partial<ContextType<I, O>>) => {
+  update = async (values: O, changes: Partial<GetContext<I, O>>) => {
     if (!this._areValuesOk(values)) return this._handleInvalidData();
 
     this._setValues(values, { allowVirtuals: false, allowTimestamps: true });
 
     const error = new ErrorTool({ message: "Validation Error" });
-    let updated = {} as Partial<I>;
+    let updated = {} as Partial<O>;
 
     const toUpdate = this._getKeysAsProps(changes ?? {}).filter((prop) =>
       this._isUpdatable(prop, changes[prop])
     );
 
-    const linkedProps: StringKey<I>[] = [];
-    const virtuals: StringKey<I>[] = [];
+    const linkedProps: StringKey<O>[] = [];
+    const virtuals: StringKey<O>[] = [];
 
     const validations = toUpdate.map(async (prop) => {
-      const value = changes[prop] as Exclude<I[StringKey<I>], undefined>;
-      const isValid = await this._validate(
-        prop as StringKey<I>,
+      const value = changes[prop] as unknown as O[StringKey<O>];
+      const isValid = (await this._validate(
+        prop as any,
         value,
         this._getContext()
-      );
+      )) as ValidatorResponse<O[StringKey<O>]>;
 
       if (!isValid.valid) return error.add(prop, isValid.reasons);
 
@@ -705,19 +711,13 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
 
       const propName = (
         isAlias ? this._getVirtualByAlias(prop)! : prop
-      ) as StringKey<I>;
+      ) as StringKey<O>;
 
-      if (
-        isEqual(
-          validated,
-          this.values[propName as StringKey<ContextType<I, O>>]
-        )
-      )
-        return;
+      if (isEqual(validated, this.values[propName])) return;
 
       if (this._isVirtual(propName)) virtuals.push(propName);
       else {
-        updated[propName] = validated;
+        updated[propName as StringKey<O>] = validated;
         linkedProps.push(propName);
       }
 
@@ -732,7 +732,7 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
     this._handleRequiredBy(error, "update");
 
     if (error.isPayloadLoaded) {
-      await this._handleFailure(updated, error, virtuals);
+      await this._handleFailure(updated as any, error, virtuals);
       return this._handleError(error);
     }
 
@@ -751,11 +751,11 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
 
     const finalData = this._useConfigProps(updated, true);
 
-    this._updateContext(finalData);
-    this._updateFinalContext(finalData);
+    this._updateContext(finalData as I);
+    this._updateFinalContext(finalData as I);
 
     return {
-      data: finalData as Partial<I>,
+      data: finalData as Partial<O>,
       error: undefined,
       handleSuccess: this._makeHandleSuccess(updated, true),
     };
@@ -764,7 +764,7 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
   _validate = async <K extends StringKey<I>>(
     prop: K,
     value: any,
-    ctx: ContextType<I, O>
+    ctx: GetContext<I, O>
   ) => {
     const isAlias = this._isVirtualAlias(prop);
 
@@ -805,13 +805,13 @@ class Model<I, O = I, A = {}> {
 
   update = this.modelTool.update;
 
-  validate = async <K extends StringKey<ContextType<I, O>> | StringKey<A>>(
+  validate = async <K extends StringKey<GetContext<I, O>> | StringKey<A>>(
     prop: K,
     value: any
   ) =>
     this.modelTool._validate(
       prop as unknown as StringKey<I>,
       value,
-      {} as ContextType<I, O>
+      {} as GetContext<I, O>
     );
 }

@@ -2,7 +2,7 @@ import { belongsTo, sort, toArray } from "../utils/functions";
 import { ObjectType } from "../utils/interfaces";
 import { isEqual } from "../utils/isEqual";
 import {
-  ContextType,
+  GetContext,
   DefinitionRule,
   ISchema as ns,
   StringKey,
@@ -29,10 +29,10 @@ export abstract class SchemaCore<I, O> {
   protected _definitions = {} as ns.Definitions_<I, O>;
 
   // contexts & values
-  protected context: ContextType<I, O> = {} as ContextType<I, O>;
-  protected finalContext: ContextType<I, O> = {} as ContextType<I, O>;
-  protected defaults: Partial<I> = {};
-  protected values: ContextType<I, O> = {} as ContextType<I, O>;
+  protected context: GetContext<I, O> = {} as GetContext<I, O>;
+  protected finalContext: GetContext<I, O> = {} as GetContext<I, O>;
+  protected defaults: Partial<O> = {};
+  protected values: O = {} as O;
 
   // maps
   protected aliasToVirtualMap: ns.AliasToVirtualMap<I> = {};
@@ -43,7 +43,7 @@ export abstract class SchemaCore<I, O> {
   protected constants: StringKey<I>[] = [];
   protected dependents: StringKey<I>[] = [];
   protected laxProps: StringKey<I>[] = [];
-  protected props: StringKey<I>[] = [];
+  protected props: StringKey<O>[] = [];
   protected propsRequiredBy: StringKey<I>[] = [];
   protected readonlyProps: StringKey<I>[] = [];
   protected requiredProps: StringKey<I>[] = [];
@@ -72,8 +72,8 @@ export abstract class SchemaCore<I, O> {
     Object.freeze(Object.assign({}, this.finalContext));
 
   protected _initContexts = () => {
-    this.context = { ...this.values } as ContextType<I, O>;
-    this.finalContext = {} as ContextType<I, O>;
+    this.context = { ...this.values } as GetContext<I, O>;
+    this.finalContext = {} as GetContext<I, O>;
 
     const contstants = this._getKeysAsProps(this.context).filter(
       this._isConstant
@@ -285,10 +285,10 @@ export abstract class SchemaCore<I, O> {
 
     const value = this._isFunction(_default)
       ? _default(this._getContext())
-      : this.defaults[prop as StringKey<I>];
+      : this.defaults[prop as StringKey<O>];
 
     return isEqual(value, undefined)
-      ? this.values[prop as StringKey<ContextType<I, O>>]
+      ? this.values[prop as StringKey<O>]
       : value;
   };
 
@@ -510,7 +510,7 @@ export abstract class SchemaCore<I, O> {
     this.laxProps.includes(prop as StringKey<I>);
 
   protected _isProp = (prop: string) =>
-    this.props.includes(prop as StringKey<I>);
+    this.props.includes(prop as StringKey<O>);
 
   protected _isPropDefinitionObjectOk = (prop: string) => {
     const propDef = this._getDefinition(prop);
@@ -643,8 +643,8 @@ export abstract class SchemaCore<I, O> {
     const valid = reasons.length ? false : true;
 
     if (valid && !this._isVirtual(prop)) {
-      this.props.push(prop as StringKey<I>);
-      this._setDefaultOf(prop as StringKey<I>, "creation");
+      this.props.push(prop as StringKey<O>);
+      this._setDefaultOf(prop as StringKey<O>, "creation");
     }
 
     return { reasons, valid };
@@ -1098,7 +1098,7 @@ export abstract class SchemaCore<I, O> {
     this.laxProps.push(prop as StringKey<I>);
   };
 
-  private _setDefaultOf = (prop: StringKey<I>, lifeCycle: ns.OperationName) => {
+  private _setDefaultOf = (prop: StringKey<O>, lifeCycle: ns.OperationName) => {
     const _default = this._getValueBy(prop, "default", lifeCycle);
 
     if (!isEqual(_default, undefined)) this.defaults[prop] = _default;
