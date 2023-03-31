@@ -2221,8 +2221,9 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               isPublished: { default: false, validator },
               price: {
                 default: null,
-                required(ctx: any) {
-                  const isRequired = ctx.isPublished && ctx.price == null;
+                required({ context }: any) {
+                  const isRequired =
+                    context.isPublished && context.price == null;
                   return [isRequired, "A price is required to publish a book!"];
                 },
                 validator: validatePrice,
@@ -2230,7 +2231,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               priceReadonly: {
                 default: null,
                 readonly: true,
-                required({ price, priceReadonly }: any) {
+                required({ context: { price, priceReadonly } }: any) {
                   const isRequired = price == 101 && priceReadonly == null;
                   return [
                     isRequired,
@@ -2242,7 +2243,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
               priceRequiredWithoutMessage: {
                 default: null,
                 readonly: true,
-                required: ({ price, priceReadonly }: any) =>
+                required: ({ context: { price, priceReadonly } }: any) =>
                   price == 101 && priceReadonly == null,
                 validator: validatePrice,
               },
@@ -3440,7 +3441,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
                 setQuantity: {
                   alias: "qty",
                   virtual: true,
-                  required({ setQuantity }: any) {
+                  required({ context: { setQuantity } }: any) {
                     contextRecord.setQuantity = setQuantity;
 
                     if (setQuantity == -100) return true;

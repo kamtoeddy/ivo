@@ -31,8 +31,7 @@ type AsyncSetter<K extends keyof I, I, O> = (
 type BooleanSetter<I, O> = (context: GetContext<I, O>) => boolean;
 
 type ConditionalRequiredSetter<I, O> = (
-  context: GetContext<I, O>,
-  operation: ISchema.OperationName
+  summary: GetSummary<I, O>
 ) => boolean | [boolean, string];
 
 type StringKey<T> = Extract<keyof T, string>;

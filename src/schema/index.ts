@@ -71,6 +71,22 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
 
   private _areValuesOk = (values: any) => values && typeof values == "object";
 
+  private _getSummary = (data: Partial<O>, isUpdate = false) => {
+    const context = this._getContext(),
+      operation = isUpdate ? "update" : "creation",
+      previousValues = isUpdate ? this._getFrozenCopy(this.values) : undefined,
+      values = this._getFrozenCopy(
+        isUpdate ? { ...this.values, ...data } : (data as O)
+      );
+
+    return this._getFrozenCopy({
+      context,
+      operation,
+      previousValues,
+      values,
+    }) as GetSummary<I, O>;
+  };
+
   private _handleError = (error: ErrorTool) => {
     return this._options.errors === "throw"
       ? error.throw()
@@ -106,11 +122,14 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
     this._handleError(new ErrorTool({ message: "Invalid Data" }));
 
   private _handleRequiredBy = (
+    data: Partial<O>,
     error: ErrorTool,
-    lifeCycle: ns.OperationName
+    isUpdate = false
   ) => {
+    const summary = this._getSummary(data, isUpdate);
+
     for (const prop of this.propsRequiredBy) {
-      const [isRequired, message] = this._getRequiredState(prop, lifeCycle);
+      const [isRequired, message] = this._getRequiredState(prop, summary);
 
       if (isRequired && this._isUpdatable(prop)) {
         error.add(prop, message);
@@ -222,7 +241,7 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
 
     let successListeners = [] as ns.SuccessListener<I, O>[];
 
-    const summary = this._makeOperationSummary(data, isUpdate);
+    const summary = this._getSummary(data, isUpdate);
 
     for (const prop of successProps) {
       const listeners = this._getListeners(prop, "onSuccess");
@@ -237,22 +256,6 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
 
       await Promise.allSettled(successOperations);
     };
-  };
-
-  private _makeOperationSummary = (data: Partial<O>, isUpdate = false) => {
-    const context = this._getContext(),
-      operation = isUpdate ? "update" : "creation",
-      previousValues = isUpdate ? this._getFrozenCopy(this.values) : undefined,
-      values = this._getFrozenCopy(
-        isUpdate ? { ...this.values, ...data } : (data as O)
-      );
-
-    return this._getFrozenCopy({
-      context,
-      operation,
-      previousValues,
-      values,
-    }) as GetSummary<I, O>;
   };
 
   private _resolveDependentChanges = async (
@@ -519,7 +522,7 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
 
     await Promise.allSettled(validations);
 
-    this._handleRequiredBy(error, "creation");
+    this._handleRequiredBy(data, error);
 
     await this._handleSanitizationOfVirtuals("creation");
 
@@ -613,7 +616,7 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
 
     await Promise.allSettled(validations);
 
-    this._handleRequiredBy(error, "creation");
+    this._handleRequiredBy(data, error);
 
     await this._handleSanitizationOfVirtuals("creation");
 
@@ -710,7 +713,7 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
 
     await Promise.allSettled(validations);
 
-    this._handleRequiredBy(error, "update");
+    this._handleRequiredBy(updated, error, true);
 
     if (error.isPayloadLoaded) {
       await this._handleFailure(updated as any, error, virtuals);

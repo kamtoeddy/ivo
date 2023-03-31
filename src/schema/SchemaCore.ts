@@ -11,6 +11,7 @@ import {
   DEFINITION_RULES,
   CONSTANT_RULES,
   VIRTUAL_RULES,
+  GetSummary,
 } from "./interfaces";
 import { OptionsTool } from "./utils/options-tool";
 import { ErrorTool } from "./utils/schema-error";
@@ -301,7 +302,7 @@ export abstract class SchemaCore<I, O> {
 
   protected _getRequiredState = (
     prop: string,
-    lifeCycle: ns.OperationName
+    summary: GetSummary<I, O>
   ): [boolean, string] => {
     const { required } = this._getDefinition(prop);
 
@@ -311,7 +312,7 @@ export abstract class SchemaCore<I, O> {
 
     if (!this._isFunction(required)) return [required, fallbackMessage];
 
-    const results = required(this._getContext(), lifeCycle);
+    const results = required(summary);
 
     if (typeof results == "boolean")
       return [results, results ? fallbackMessage : ""];
