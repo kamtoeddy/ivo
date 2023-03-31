@@ -68,7 +68,7 @@ These methods are async because custom validators could be async as well.
 | onFailure    | function \| function[ ]      | executed after an unsucessful operation [more](./life-cycles.md#onfailure)                                                                                |
 | onSuccess    | function \| function[ ]      | executed after a sucessful operation [more](./life-cycles.md#onsuccess)                                                                                   |
 | readonly     | boolean \| 'lax'             | a propterty whose value should not change [more](../../../v3.0.0/schema/definition/readonly.md#readonly-properties)                                       |
-| required     | boolean \| function          | a property that must be set during an operation [more](../../../v3.0.0/schema/definition/required.md#required-properties)                                 |
+| required     | boolean \| function          | a property that must be set during an operation [more](./required.md#required-properties)                                                                 |
 | shouldInit   | false \| function(): boolean | A boolean or setter that tells clean-schema whether or not a property should be initialized.                                                              |
 | shouldUpdate | false \| function(): boolean | A boolean or setter that tells clean-schema whether or not a property should be initialized.                                                              |
 | validator    | function                     | A function (async / sync) used to validated the value of a property. [more](../../../v1.4.6/validate/index.md#validators)                                 |

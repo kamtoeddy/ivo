@@ -200,7 +200,7 @@ await handleSuccess();
   - [default values](./docs/v3.0.0/schema/definition/defaults.md#default-values)
   - [dependent properties](./docs/v3.2.0/schema/definition/dependents.md#dependent-properties)
   - [readonly properties](./docs/v3.0.0/schema/definition/readonly.md#readonly-properties)
-  - [required properties](./docs/v3.0.0/schema/definition/required.md#required-properties)
+  - [required properties](./docs/v3.2.0/schema/definition/required.md#required-properties)
   - [virtuals](./docs/v3.2.0/schema/definition/virtuals.md#virtual-properties)
   - [validators](./docs/v2.6.0/validate/index.md#validators)
     - [isArrayOk](./docs/v2.6.0/validate/isArrayOk.md)
