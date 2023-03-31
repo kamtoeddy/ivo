@@ -31,8 +31,8 @@ class Schema<I, O = I, A = {}> extends SchemaCore<I, O> {
     return this._options;
   }
 
-  extend = <U, V = U, A1 = {}>(
-    propDefinitions: ns.Definitions<Merge<I, U>, Merge<O, V>, Merge<A, A1>>,
+  extend = <U, V = U, A = {}>(
+    propDefinitions: Partial<ns.Definitions<Merge<I, U> & U, V, A>>,
     options: ns.ExtensionOptions<StringKey<RealType<I>>> = {
       ...defaultOptions,
       remove: [],
@@ -41,13 +41,11 @@ class Schema<I, O = I, A = {}> extends SchemaCore<I, O> {
     const remove = toArray(options?.remove ?? []);
     delete options.remove;
 
-    type InputType = Merge<I, U>;
-    type OutputType = Merge<O, V>;
-    type AliasType = Merge<A, A1>;
+    type InputType = Merge<I, U> & U;
 
     let _definitions = {
-      ...this.definitions,
-    } as ns.Definitions<InputType, OutputType, AliasType>;
+      ...(this.definitions as ns.Definitions<InputType, V, A>),
+    } as ns.Definitions<InputType, V, A>;
 
     remove?.forEach(
       (prop) => delete _definitions?.[prop as StringKey<InputType>]
@@ -56,12 +54,9 @@ class Schema<I, O = I, A = {}> extends SchemaCore<I, O> {
     _definitions = {
       ..._definitions,
       ...propDefinitions,
-    } as ns.Definitions<InputType, OutputType, AliasType>;
+    } as ns.Definitions<InputType, V, A>;
 
-    return new Schema<InputType, OutputType, AliasType>(
-      _definitions as any,
-      options
-    );
+    return new Schema<InputType, V, A>(_definitions as any, options);
   };
 
   getModel = (): Model<RealType<I>, RealType<O>, A> =>
