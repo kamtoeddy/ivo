@@ -63,7 +63,7 @@ These methods are async because custom validators could be async as well.
 | ------------ | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | constant     | boolean                      | use with **`value`** rule to specify a property with a forever constant value. [more](../../../v3.0.0/schema/definition/constants.md#constant-properties) |
 | default      | any \| function              | the default value of a propterty. [more](../../../v3.0.0/schema/definition/defaults.md#default-values)                                                    |
-| dependent    | boolean                      | to block the direct modification of a property. [more](../../../v3.0.0/schema/definition/dependents.md#dependent-properties)                              |
+| dependent    | boolean                      | to block the direct modification of a property. [more](./dependents.md#dependent-properties)                                                              |
 | onDelete     | function \| function[ ]      | executed when the delete method of a model is invoked [more](./life-cycles.md#ondelete)                                                                   |
 | onFailure    | function \| function[ ]      | executed after an unsucessful operation [more](./life-cycles.md#onfailure)                                                                                |
 | onSuccess    | function \| function[ ]      | executed after a sucessful operation [more](./life-cycles.md#onsuccess)                                                                                   |
@@ -112,13 +112,14 @@ This could be a function or an array of functions with the `SuccessListener` sig
 It's summary contains the values of the entire entity
 
 ```ts
-import type { ContextType } from "clean-schema";
+import type { GetContext, GetSummary } from "clean-schema";
 
 type Input = { name: string; price: number };
 
 type Output = { id: string; name: string };
 
-type Context = ContextType<Input, Output>;
+type Context = GetContext<Input, Output>;
+type Summary = GetSummary<Input, Output>;
 
 const BookModel = new Schema<Input, Output>(
   {
@@ -129,26 +130,12 @@ const BookModel = new Schema<Input, Output>(
   { onSuccess }
 ).getModel();
 
-function onSuccess(summary: OperationSummary) {}
+function onSuccess(summary: Summary) {}
 
-type OperationSummary =
-  | {
-      context: Context;
-      operationName: "creation";
-      previousValue: undefined;
-      value: Output;
-    }
-  | {
-      context: Context;
-      operationName: "update";
-      previousValue: Output;
-      value: Output;
-    };
-
-type SuccessListener = (
-  operationSummary: OperationSummary
-) => void | Promise<void>;
+type SuccessListener = (summary: Summary) => void | Promise<void>;
 ```
+
+More details on the `Context` & `Summary` [here](./life-cycles.md#the-operation-context)
 
 ## timestamps
 

@@ -2,16 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
-# v3.2.0 <small><sup>[x][x]-03-2023</sup></small>
+# v3.2.0 <small><sup>[x][x]-04-2023</sup></small>
 
 Breaking Changes
 
-- [Update] changed the signature and implementation of life cycle listeners
+- [Update] changed the signature and behaviour of resolvers of [dependent properties](./v3.2.0/schema/definition/dependents.md)
+- [Update] changed the signature and behaviour of [life cycle listeners](./v3.2.0/schema/definition/life-cycles.md#life-cycle-listeners)
 
 Features
 
-- [Add] added support for `aliases` on virtuals
-- [Add] added support for global `onSuccess` in schema options
+- [Add] added support for [`aliases`](./v3.2.0/schema/definition/virtuals.md#aliases) on virtuals
+- [Add] added support for global [`onSuccess`](./v3.2.0/schema/definition/index.md#onsuccess) in schema options
+- [Add] added utility types `GetContext`& `GetSummary` for TypeScript. Details [here](./v3.2.0/schema/definition/life-cycles.md#life-cycle-listeners)
 
 # v3.1.0 <small><sup>05-02-2023</sup></small>
 

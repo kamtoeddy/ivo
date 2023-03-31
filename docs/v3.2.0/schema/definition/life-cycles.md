@@ -3,38 +3,51 @@
 This is an object comprized of values of the instance during a life cycle operation ( cloning, creation or update ) plus any side effect values (if present during the operation) defined in your schema.
 
 ```ts
-import type { ContextType } from "clean-schema";
+import type { GetContext } from "clean-schema";
 
 type Input = {};
 
 type Output = {};
 
-type Context = ContextType<Input, Output>;
+type Context = GetContext<Input, Output>;
 
 const Model = new Schema<Input, Output>(definitions).getModel();
 
-type DeleteListener = (context: Output) => void | Promise<void>;
+type DeleteListener = (context: Readonly<Output>) => void | Promise<void>;
 
 type Listener = (context: Context) => void | Promise<void>;
+```
 
-// on property success
-type OperationSummary<ValueType, Context> =
-  | {
+# The Operation Summary
+
+```ts
+import type { GetContext, GetSummary } from "clean-schema";
+
+type Input = {};
+
+type Output = {};
+
+type Context = GetContext<Input, Output>;
+type Summary = GetSummary<Input, Output>;
+
+// 👇 this is what `Summary` looks like
+type S =
+  | Readonly<{
       context: Context;
       operation: "creation";
-      previousValue: undefined;
-      value: ValueType;
-    }
-  | {
+      previousValues: undefined;
+      values: Readonly<Output>;
+    }>
+  | Readonly<{
       context: Context;
       operation: "update";
-      previousValue: ValueType;
-      value: ValueType;
-    };
+      previousValues: Readonly<Output>;
+      values: Readonly<Output>;
+    }>;
 
-type SuccessListener = (
-  operationSummary: OperationSummary<ValueType, Context>
-) => void | Promise<void>;
+const Model = new Schema<Input, Output>(definitions).getModel();
+
+type SuccessListener = (summary: GetSummary) => void | Promise<void>;
 ```
 
 ## Life Cycle listeners

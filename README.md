@@ -23,7 +23,8 @@ import { Schema } from "clean-schema";
 # Defining a schema
 
 ```ts
-import { Schema, type ContextType } from "clean-schema";
+import { Schema } from "clean-schema";
+import type { GetContext, GetSummary } from "clean-schema";
 
 type UserRole = "admin" | "user";
 
@@ -45,7 +46,8 @@ type Output = {
   updatedAt: Date;
 };
 
-type Context = ContextType<Input, Output>;
+type Context = GetContext<Input, Output>;
+type Summary = GetSummary<Input, Output>;
 
 const userSchema = new Schema<Input, Output>(
   {
@@ -71,7 +73,7 @@ const userSchema = new Schema<Input, Output>(
 );
 
 // resolvers
-function generateFullName({ firstName, lastName }: Context) {
+function generateFullName({ context: { firstName, lastName } }: Summary) {
   return `${firstName} ${lastName}`;
 }
 
@@ -196,7 +198,7 @@ await handleSuccess();
 - [Defining a schema](./docs/v3.2.0/schema/definition/index.md#defining-a-schema)
   - [constant properties](./docs/v3.0.0/schema/definition/constants.md#constant-properties)
   - [default values](./docs/v3.0.0/schema/definition/defaults.md#default-values)
-  - [dependent properties](./docs/v3.0.0/schema/definition/dependents.md#dependent-properties)
+  - [dependent properties](./docs/v3.2.0/schema/definition/dependents.md#dependent-properties)
   - [readonly properties](./docs/v3.0.0/schema/definition/readonly.md#readonly-properties)
   - [required properties](./docs/v3.0.0/schema/definition/required.md#required-properties)
   - [virtuals](./docs/v3.2.0/schema/definition/virtuals.md#virtual-properties)
@@ -207,14 +209,15 @@ await handleSuccess();
     - [isNumberOk](./docs/v2.6.0/validate/isNumberOk.md)
     - [isStringOk](./docs/v2.6.0/validate/isStringOk.md)
 - [Inheritance](./docs/v3.0.0/schema/definition/inheritance.md#schema-inheritance)
-- [The Operation Context](./docs/v3.0.0/schema/definition/life-cycles.md#the-operation-context)
+- [The Operation Context](./docs/v3.2.0/schema/definition/life-cycles.md#the-operation-context)
+- [The Operation Summary](./docs/v3.2.0/schema/definition/life-cycles.md#the-operation-summary)
 - [Life Cycles & Listeners](./docs/v3.2.0/schema/definition/life-cycles.md#life-cycle-listeners)
 
   - [onDelete](./docs/v3.2.0/schema/definition/life-cycles.md#ondelete)
   - [onFailure](./docs/v3.2.0/schema/definition/life-cycles.md#onfailure)
   - [onSuccess](./docs/v3.2.0/schema/definition/life-cycles.md#onsuccess)
 
-- [Options](./docs/v3.0.0/schema/definition/index.md#options)
+- [Options](./docs/v3.2.0/schema/definition/index.md#options)
 
 - [Changelog](./docs/CHANGELOG.md#changelog)
 
