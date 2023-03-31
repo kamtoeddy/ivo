@@ -406,9 +406,7 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
 
     if (!isValid.valid) return error.add(prop, isValid.reasons);
 
-    let { validated } = isValid;
-
-    if (isEqual(validated, undefined)) validated = value;
+    const { validated } = isValid;
 
     const isAlias = this._isVirtualAlias(prop);
 
