@@ -1755,7 +1755,11 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
         // creation
         it("should call onSuccess listeners at creation", async () => {
-          const { error, handleSuccess } = await Model.create({
+          const {
+            data: values,
+            error,
+            handleSuccess,
+          } = await Model.create({
             required: true,
             readonly: true,
           });
@@ -1772,51 +1776,52 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           });
 
           const operation = "creation",
-            previousValue = undefined;
+            previousValues = undefined;
 
           expect(onSuccessValues).toMatchObject({
             dependent: expect.objectContaining({
               context: onSuccessValues.__ctx,
               operation,
-              previousValue,
-              value: false,
+              previousValues,
+              values,
             }),
             lax: expect.objectContaining({
               context: onSuccessValues.__ctx,
               operation,
-              previousValue,
-              value: "",
+              previousValues,
+              values,
             }),
             readonly: expect.objectContaining({
               context: onSuccessValues.__ctx,
               operation,
-              previousValue,
-              value: true,
+              previousValues,
+              values,
             }),
             readonlyLax: expect.objectContaining({
               context: onSuccessValues.__ctx,
               operation,
-              previousValue,
-              value: "",
+              previousValues,
+              values,
             }),
             required: expect.objectContaining({
               context: onSuccessValues.__ctx,
               operation,
-              previousValue,
-              value: true,
+              previousValues,
+              values,
             }),
           });
         });
 
         // cloning
         it("should call onSuccess listeners during cloning", async () => {
-          const { error, handleSuccess } = await Model.clone({
+          const initialData = {
             dependent: false,
             lax: "",
             readonly: true,
             readonlyLax: "",
             required: true,
-          });
+          };
+          const { data, error, handleSuccess } = await Model.clone(initialData);
 
           await handleSuccess();
 
@@ -1830,38 +1835,39 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
           });
 
           const operation = "creation",
-            previousValue = undefined;
+            previousValues = undefined,
+            values = { ...initialData, data };
 
           expect(onSuccessValues).toMatchObject({
             dependent: expect.objectContaining({
               context: onSuccessValues.__ctx,
               operation,
-              previousValue,
-              value: false,
+              previousValues,
+              values,
             }),
             lax: expect.objectContaining({
               context: onSuccessValues.__ctx,
               operation,
-              previousValue,
-              value: "",
+              previousValues,
+              values,
             }),
             readonly: expect.objectContaining({
               context: onSuccessValues.__ctx,
               operation,
-              previousValue,
-              value: true,
+              previousValues,
+              values,
             }),
             readonlyLax: expect.objectContaining({
               context: onSuccessValues.__ctx,
               operation,
-              previousValue,
-              value: "",
+              previousValues,
+              values,
             }),
             required: expect.objectContaining({
               context: onSuccessValues.__ctx,
               operation,
-              previousValue,
-              value: true,
+              previousValues,
+              values,
             }),
           });
         });
@@ -1883,8 +1889,8 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
             lax: expect.objectContaining({
               context: onSuccessValues.__ctx,
               operation,
-              previousValue: initialData.lax,
-              value: true,
+              previousValues: initialData,
+              values: { ...initialData, lax: true },
             }),
           });
         });
