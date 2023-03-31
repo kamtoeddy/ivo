@@ -1,4 +1,4 @@
-import { belongsTo, sort, toArray } from "../utils/functions";
+import { belongsTo, sort, sortKeys, toArray } from "../utils/functions";
 import { ObjectType } from "../utils/interfaces";
 import { isEqual } from "../utils/isEqual";
 import {
@@ -66,7 +66,7 @@ export abstract class SchemaCore<I, O> {
   }
 
   // < context methods >
-  protected _getContext = () => this._getFrozenCopy(this.context);
+  protected _getContext = () => this._getFrozenCopy(sortKeys(this.context));
 
   protected _getPartialContext = () => this._getFrozenCopy(this.partialContext);
 
