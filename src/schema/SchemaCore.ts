@@ -30,7 +30,7 @@ export abstract class SchemaCore<I, O> {
 
   // contexts & values
   protected context: GetContext<I, O> = {} as GetContext<I, O>;
-  protected finalContext: GetContext<I, O> = {} as GetContext<I, O>;
+  protected partialContext: GetContext<I, O> = {} as GetContext<I, O>;
   protected defaults: Partial<O> = {};
   protected values: O = {} as O;
 
@@ -66,31 +66,21 @@ export abstract class SchemaCore<I, O> {
   }
 
   // < context methods >
-  protected _getContext = () => Object.freeze(Object.assign({}, this.context));
+  protected _getContext = () => this._getFrozenCopy(this.context);
 
-  protected _getFinalContext = () =>
-    Object.freeze(Object.assign({}, this.finalContext));
+  protected _getPartialContext = () => this._getFrozenCopy(this.partialContext);
 
   protected _initContexts = () => {
     this.context = { ...this.values } as GetContext<I, O>;
-    this.finalContext = {} as GetContext<I, O>;
-
-    const contstants = this._getKeysAsProps(this.context).filter(
-      this._isConstant
-    );
-
-    if (contstants.length)
-      contstants.forEach((prop) =>
-        this._updateFinalContext({ [prop]: this.context[prop] } as any)
-      );
+    this.partialContext = {} as GetContext<I, O>;
   };
 
   protected _updateContext = (updates: Partial<I>) => {
     this.context = { ...this.context, ...updates };
   };
 
-  protected _updateFinalContext = (updates: Partial<I>) => {
-    this.finalContext = { ...this.finalContext, ...updates };
+  protected _updatePartialContext = (updates: Partial<I>) => {
+    this.partialContext = { ...this.partialContext, ...updates };
   };
   // < context methods />
 
@@ -158,6 +148,9 @@ export abstract class SchemaCore<I, O> {
     return sort(Array.from(new Set(circularDependencies)));
   };
   // < dependency map utils />
+
+  protected _getFrozenCopy = <T>(data: T): Readonly<T> =>
+    Object.freeze(Object.assign({}, data));
 
   protected _canInit = (prop: string) => {
     if (this._isDependentProp(prop)) return false;

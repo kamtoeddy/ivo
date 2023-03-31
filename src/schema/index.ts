@@ -2,6 +2,7 @@ import { sort, sortKeys, toArray } from "../utils/functions";
 import { isEqual } from "../utils/isEqual";
 import {
   GetContext,
+  GetSummary,
   ISchema as ns,
   RealType,
   ResponseInput,
@@ -134,9 +135,9 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
     let sanitizers: [StringKey<I>, Function][] = [];
 
     const ctx = this._getContext();
-    const finalCtx = this._getFinalContext();
+    const partialCtx = this._getPartialContext();
 
-    const successFulVirtuals = this._getKeysAsProps(finalCtx).filter(
+    const successFulVirtuals = this._getKeysAsProps(partialCtx).filter(
       this._isVirtual
     );
 
@@ -215,56 +216,43 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
   };
 
   private _makeHandleSuccess = (data: Partial<O>, isUpdate = false) => {
-    const finalCtx = this._getFinalContext();
+    const partialCtx = this._getPartialContext();
 
-    const successFulSideEffects = this._getKeysAsProps(finalCtx).filter(
-      this._isVirtual
-    );
+    const successProps = this._getKeysAsProps(partialCtx);
 
-    const props = this._getKeysAsProps(data);
+    let successListeners = [] as ns.SuccessListener<I, O>[];
 
-    const successProps = [...props, ...successFulSideEffects];
-
-    let successListeners = [] as (() => any)[];
+    const summary = this._makeOperationSummary(data, isUpdate);
 
     for (const prop of successProps) {
-      const methods = this._getListeners(
-        prop,
-        "onSuccess"
-      ) as ns.SuccessListener<I, O>[];
+      const listeners = this._getListeners(prop, "onSuccess");
 
-      const operationSummary = this._makeOperationSummary(data, isUpdate);
-
-      successListeners = successListeners.concat(
-        methods.map((m) => () => m(operationSummary as any))
-      );
+      successListeners = successListeners.concat(listeners);
     }
 
     return async () => {
       const successOperations = successListeners.map(
-        async (listener) => await listener()
+        async (listener) => await listener(summary)
       );
 
       await Promise.allSettled(successOperations);
     };
   };
 
-  private _makeOperationSummary = (
-    data: Partial<O>,
-    isUpdate = false
-  ): ns.GetSummary<I, O> => {
+  private _makeOperationSummary = (data: Partial<O>, isUpdate = false) => {
     const context = this._getContext(),
-      previousValues = Object.freeze(this.values),
-      values = Object.freeze(data as O);
+      operation = isUpdate ? "update" : "creation",
+      previousValues = isUpdate ? this._getFrozenCopy(this.values) : undefined,
+      values = this._getFrozenCopy(
+        isUpdate ? { ...this.values, ...data } : (data as O)
+      );
 
-    return isUpdate
-      ? Object.freeze({ context, operation: "update", previousValues, values })
-      : Object.freeze({
-          context,
-          operation: "creation",
-          previousValues: undefined,
-          values,
-        });
+    return this._getFrozenCopy({
+      context,
+      operation,
+      previousValues,
+      values,
+    }) as GetSummary<I, O>;
   };
 
   private _resolveDependentChanges = async (
@@ -325,7 +313,7 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
       const updates = { [prop]: value } as I;
 
       this._updateContext(updates);
-      this._updateFinalContext(updates);
+      this._updatePartialContext(updates);
 
       const _data = await this._resolveDependentChanges(
         data,
@@ -418,7 +406,7 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
     const validCtxUpdate = { [propName]: validated } as unknown as I;
 
     this._updateContext(validCtxUpdate);
-    this._updateFinalContext(validCtxUpdate);
+    this._updatePartialContext(validCtxUpdate);
   };
 
   clone = async (
@@ -449,7 +437,7 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
 
         const validCtxUpdate = { [prop]: data[prop] as any } as I;
 
-        this._updateFinalContext(validCtxUpdate);
+        this._updatePartialContext(validCtxUpdate);
         return this._updateContext(validCtxUpdate);
       }
       const isAlias = this._isVirtualAlias(prop),
@@ -464,7 +452,7 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
 
         const validCtxUpdate = { [prop]: data[prop] } as unknown as I;
 
-        this._updateFinalContext(validCtxUpdate);
+        this._updatePartialContext(validCtxUpdate);
         return this._updateContext(validCtxUpdate);
       }
 
@@ -485,7 +473,7 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
 
         const validCtxUpdate = { [prop]: data[prop] } as unknown as I;
 
-        this._updateFinalContext(validCtxUpdate);
+        this._updatePartialContext(validCtxUpdate);
         return this._updateContext(validCtxUpdate);
       }
 
@@ -517,7 +505,7 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
 
         const validCtxUpdate = { [prop]: data[prop] } as unknown as I;
 
-        this._updateFinalContext(validCtxUpdate);
+        this._updatePartialContext(validCtxUpdate);
         return this._updateContext(validCtxUpdate);
       }
 
@@ -537,7 +525,7 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
 
     data = await this._resolveDependentChanges(
       data,
-      this._getFinalContext(),
+      this._getPartialContext(),
       "creation"
     );
 
@@ -549,12 +537,12 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
     const finalData = this._useConfigProps(data);
 
     this._updateContext(finalData as I);
-    this._updateFinalContext(finalData as I);
+    this._updatePartialContext(finalData as I);
 
     return {
       data: finalData as O,
       error: undefined,
-      handleSuccess: this._makeHandleSuccess(data),
+      handleSuccess: this._makeHandleSuccess(finalData),
     };
   };
 
@@ -579,7 +567,7 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
 
         const validCtxUpdate = { [prop]: data[prop] as any } as I;
 
-        this._updateFinalContext(validCtxUpdate);
+        this._updatePartialContext(validCtxUpdate);
         return this._updateContext(validCtxUpdate);
       }
 
@@ -616,7 +604,7 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
 
         const validCtxUpdate = { [prop]: data[prop] as any } as I;
 
-        this._updateFinalContext(validCtxUpdate);
+        this._updatePartialContext(validCtxUpdate);
         return this._updateContext(validCtxUpdate);
       }
 
@@ -631,7 +619,7 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
 
     data = await this._resolveDependentChanges(
       data,
-      this._getFinalContext(),
+      this._getPartialContext(),
       "creation"
     );
 
@@ -643,12 +631,12 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
     const finalData = this._useConfigProps(data);
 
     this._updateContext(finalData as I);
-    this._updateFinalContext(finalData as I);
+    this._updatePartialContext(finalData as I);
 
     return {
       data: finalData as O,
       error: undefined,
-      handleSuccess: this._makeHandleSuccess(data),
+      handleSuccess: this._makeHandleSuccess(finalData),
     };
   };
 
@@ -717,7 +705,7 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
       const validCtxUpdate = { [propName]: validated } as unknown as I;
 
       this._updateContext(validCtxUpdate);
-      this._updateFinalContext(validCtxUpdate);
+      this._updatePartialContext(validCtxUpdate);
     });
 
     await Promise.allSettled(validations);
@@ -733,7 +721,7 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
 
     updated = await this._resolveDependentChanges(
       updated,
-      this._getFinalContext(),
+      this._getPartialContext(),
       "update"
     );
 
@@ -745,12 +733,12 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
     const finalData = this._useConfigProps(updated, true);
 
     this._updateContext(finalData as I);
-    this._updateFinalContext(finalData as I);
+    this._updatePartialContext(finalData as I);
 
     return {
       data: finalData as Partial<O>,
       error: undefined,
-      handleSuccess: this._makeHandleSuccess(updated, true),
+      handleSuccess: this._makeHandleSuccess(finalData, true),
     };
   };
 

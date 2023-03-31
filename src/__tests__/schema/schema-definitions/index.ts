@@ -1836,7 +1836,7 @@ export const schemaDefinition_Tests = ({ Schema }: any) => {
 
           const operation = "creation",
             previousValues = undefined,
-            values = { ...initialData, data };
+            values = { ...initialData, ...data };
 
           expect(onSuccessValues).toMatchObject({
             dependent: expect.objectContaining({
