@@ -319,7 +319,8 @@ export abstract class SchemaCore<I, O> {
     if (typeof results == "boolean")
       return [results, results ? fallbackMessage : ""];
 
-    if (!results[1]) results[1] = fallbackMessage;
+    if (!results[1] || typeof results[1] != "string")
+      results[1] = fallbackMessage;
 
     return results;
   };
