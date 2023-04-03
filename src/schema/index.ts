@@ -1,12 +1,12 @@
 import { sort, sortKeys, toArray } from "../utils/functions";
 import { isEqual } from "../utils/isEqual";
 import {
-  GetContext,
-  GetSummary,
+  Context,
   ISchema as ns,
   RealType,
   ResponseInput,
   StringKey,
+  Summary,
   ValidatorResponse,
 } from "./interfaces";
 import { Merge } from "./merge-types";
@@ -84,7 +84,7 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
       operation,
       previousValues,
       values,
-    }) as GetSummary<I, O>;
+    }) as Summary<I, O>;
   };
 
   private _handleError = (error: ErrorTool) => {
@@ -108,7 +108,10 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
     const ctx = this._getContext();
 
     const cleanups = props.map(async (prop) => {
-      const listeners = this._getListeners(prop, "onFailure");
+      const listeners = this._getListeners(prop, "onFailure") as ns.Listener<
+        I,
+        O
+      >[];
 
       const _cleanups = listeners.map(async (listener) => await listener(ctx));
 
@@ -244,7 +247,10 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
     const summary = this._getSummary(data, isUpdate);
 
     for (const prop of successProps) {
-      const listeners = this._getListeners(prop, "onSuccess");
+      const listeners = this._getListeners(
+        prop,
+        "onSuccess"
+      ) as ns.SuccessListener<I, O>[];
 
       successListeners = successListeners.concat(listeners);
     }
@@ -260,7 +266,7 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
 
   private _resolveDependentChanges = async (
     data: Partial<O>,
-    ctx: Partial<O> | Partial<GetContext<I, O>>,
+    ctx: Partial<O> | Partial<Context<I, O>>,
     lifeCycle: ns.OperationName
   ) => {
     let _updates = { ...data };
@@ -305,10 +311,7 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
 
       const value = await resolver!(_ctx, lifeCycle);
 
-      if (
-        !isCreating &&
-        isEqual(value, _ctx[prop as StringKey<GetContext<I, O>>])
-      )
+      if (!isCreating && isEqual(value, _ctx[prop as StringKey<Context<I, O>>]))
         return;
 
       data[prop] = value;
@@ -649,10 +652,13 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
 
     this._setValues(values, { allowVirtuals: false, allowTimestamps: true });
 
-    const ctx = this._getContext() as Readonly<O>;
+    const ctx = this._getContext();
 
     const cleanups = this.props.map(async (prop) => {
-      const listeners = this._getListeners<O>(prop, "onDelete");
+      const listeners = this._getListeners(prop, "onDelete") as ns.Listener<
+        I,
+        O
+      >[];
 
       const _cleanups = listeners.map(async (listener) => await listener(ctx));
 
@@ -662,7 +668,7 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
     await Promise.allSettled(cleanups);
   };
 
-  update = async (values: O, changes: Partial<GetContext<I, O>>) => {
+  update = async (values: O, changes: Partial<Context<I, O>>) => {
     if (!this._areValuesOk(values)) return this._handleInvalidData();
 
     this._setValues(values, { allowVirtuals: false, allowTimestamps: true });
@@ -748,7 +754,7 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
   _validate = async <K extends StringKey<I & A>>(
     prop: K,
     value: any,
-    ctx: GetContext<I, O>
+    ctx: Context<I, O>
   ) => {
     const isAlias = this._isVirtualAlias(prop);
 
@@ -790,5 +796,5 @@ class Model<I, O = I, A = {}> {
   update = this.modelTool.update;
 
   validate = async <K extends StringKey<I & A>>(prop: K, value: any) =>
-    this.modelTool._validate(prop, value, {} as GetContext<I, O>);
+    this.modelTool._validate(prop, value, {} as Context<I, O>);
 }

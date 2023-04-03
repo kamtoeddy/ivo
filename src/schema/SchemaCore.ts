@@ -2,16 +2,17 @@ import { belongsTo, sort, sortKeys, toArray } from "../utils/functions";
 import { ObjectType } from "../utils/interfaces";
 import { isEqual } from "../utils/isEqual";
 import {
-  GetContext,
+  Context,
   DefinitionRule,
+  Frozen,
   ISchema as ns,
   StringKey,
+  Summary,
   Validator,
   ALLOWED_OPTIONS,
   DEFINITION_RULES,
   CONSTANT_RULES,
   VIRTUAL_RULES,
-  GetSummary,
 } from "./interfaces";
 import { OptionsTool } from "./utils/options-tool";
 import { ErrorTool } from "./utils/schema-error";
@@ -28,8 +29,8 @@ export abstract class SchemaCore<I, O> {
   protected _definitions = {} as ns.Definitions_<I, O>;
 
   // contexts & values
-  protected context: GetContext<I, O> = {} as GetContext<I, O>;
-  protected partialContext: GetContext<I, O> = {} as GetContext<I, O>;
+  protected context: Context<I, O> = {} as Context<I, O>;
+  protected partialContext: Context<I, O> = {} as Context<I, O>;
   protected defaults: Partial<O> = {};
   protected values: O = {} as O;
 
@@ -65,13 +66,14 @@ export abstract class SchemaCore<I, O> {
   }
 
   // < context methods >
-  protected _getContext = () => this._getFrozenCopy(sortKeys(this.context));
+  protected _getContext = () =>
+    this._getFrozenCopy(sortKeys(this.context)) as Context<I, O>;
 
   protected _getPartialContext = () => this._getFrozenCopy(this.partialContext);
 
   protected _initContexts = () => {
-    this.context = { ...this.values } as GetContext<I, O>;
-    this.partialContext = {} as GetContext<I, O>;
+    this.context = { ...this.values } as Context<I, O>;
+    this.partialContext = {} as Context<I, O>;
   };
 
   protected _updateContext = (updates: Partial<I>) => {
@@ -148,8 +150,8 @@ export abstract class SchemaCore<I, O> {
   };
   // < dependency map utils />
 
-  protected _getFrozenCopy = <T>(data: T): Readonly<T> =>
-    Object.freeze(Object.assign({}, data));
+  protected _getFrozenCopy = <T>(data: T): Frozen<T> =>
+    Object.freeze(Object.assign({}, data)) as Frozen<T>;
 
   protected _canInit = (prop: string) => {
     if (this._isDependentProp(prop)) return false;
@@ -302,7 +304,7 @@ export abstract class SchemaCore<I, O> {
 
   protected _getRequiredState = (
     prop: string,
-    summary: GetSummary<I, O>
+    summary: Summary<I, O>
   ): [boolean, string] => {
     const { required } = this._getDefinition(prop);
 
@@ -325,12 +327,12 @@ export abstract class SchemaCore<I, O> {
     return results;
   };
 
-  private _getDetailedListeners = <T>(
+  private _getDetailedListeners = (
     prop: string,
     lifeCycle: ns.LifeCycles,
     valid = true
   ) => {
-    const listeners = toArray<ns.Listener<T>>(
+    const listeners = toArray<ns.Listener<I, O>>(
       this._getDefinition(prop)?.[lifeCycle] as any
     );
 
@@ -345,10 +347,10 @@ export abstract class SchemaCore<I, O> {
     );
   };
 
-  protected _getListeners = <T>(prop: string, lifeCycle: ns.LifeCycles) => {
-    return this._getDetailedListeners<T>(prop, lifeCycle, true).map(
+  protected _getListeners = (prop: string, lifeCycle: ns.LifeCycles) => {
+    return this._getDetailedListeners(prop, lifeCycle, true).map(
       (dt) => dt.listener
-    ) as ns.Listener<T>[];
+    ) as ns.Listener<I, O>[] | ns.SuccessListener<I, O>[];
   };
 
   private _getInvalidRules = <K extends StringKey<I>>(prop: K) => {
