@@ -417,55 +417,67 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
             () => {},
           ];
 
-          let Book: any;
+          for (const message of invalidMessages) {
+            let Book: any;
 
-          beforeAll(async () => {
-            Book = new Schema({
-              bookId: { required: true, validator },
-              isPublished: { default: false, validator },
-              name: { default: "", validator },
-              price: {
-                default: null,
-                required: () => [true, invalidMessages[2]],
-                validator: validator,
-              },
-            }).getModel();
-          });
-
-          it("should reject with proper required error message at creation", async () => {
-            const { data, error } = await Book.create({ bookId: 1 });
-
-            expect(data).toBeUndefined();
-
-            expect(error).toMatchObject({
-              message: "Validation Error",
-              payload: { price: ["'price' is required!"] },
+            beforeAll(async () => {
+              Book = new Schema({
+                bookId: { required: true, validator },
+                isPublished: { default: false, validator },
+                name: { default: "", validator },
+                price: {
+                  default: null,
+                  required: () => [true, message],
+                  validator: validator,
+                },
+              }).getModel();
             });
-          });
 
-          // it("should clone normally", async () => {
-          //   const book = {
-          //     bookId: 1,
-          //     isPublished: false,
-          //     name: "",
-          //     price: null,
-          //   };
-          //   const { data } = await Book.clone(book);
+            it("should reject with proper required error message at creation", async () => {
+              const { data, error } = await Book.create({ bookId: 1 });
 
-          //   expect(data).toEqual(book);
-          // });
+              expect(data).toBeUndefined();
 
-          // it("should update normally", async () => {
-          //   const book = {
-          //     bookId: 1,
-          //     isPublished: false,
-          //     name: "",
-          //     price: null,
-          //   };
-          //   const { data } = await Book.update(book, { name: "yooo" });
+              expect(error).toMatchObject({
+                message: "Validation Error",
+                payload: { price: ["'price' is required!"] },
+              });
+            });
 
-          //   expect(data).toEqual({ name: "yooo" });
-          // });
+            it("should reject with proper required error message during cloning", async () => {
+              const book = {
+                bookId: 1,
+                isPublished: false,
+                name: "",
+                price: null,
+              };
+              const { data, error } = await Book.clone(book);
+
+              expect(data).toBeUndefined();
+
+              expect(error).toMatchObject({
+                message: "Validation Error",
+                payload: { price: ["'price' is required!"] },
+              });
+            });
+
+            it("should reject with proper required error message during cupdatesloning", async () => {
+              const book = {
+                bookId: 1,
+                isPublished: false,
+                name: "",
+                price: null,
+              };
+              const { data, error } = await Book.update(book, { name: "yooo" });
+
+              expect(data).toBeUndefined();
+
+              expect(error).toMatchObject({
+                message: "Validation Error",
+                payload: { price: ["'price' is required!"] },
+              });
+            });
+          }
         });
       });
     });
