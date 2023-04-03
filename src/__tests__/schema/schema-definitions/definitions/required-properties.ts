@@ -353,7 +353,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
           expectPromiseFailure(toFail, "Nothing to update");
         });
 
-        describe("behaviour", () => {
+        describe("behaviour when nothing is returned from required function", () => {
           let Book: any;
 
           beforeAll(async () => {
@@ -403,6 +403,69 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
 
             expect(data).toEqual({ name: "yooo" });
           });
+        });
+
+        describe("behaviour when a non-string value is returned as message from required function", () => {
+          const invalidMessages = [
+            null,
+            undefined,
+            [],
+            {},
+            1,
+            0,
+            -12,
+            () => {},
+          ];
+
+          let Book: any;
+
+          beforeAll(async () => {
+            Book = new Schema({
+              bookId: { required: true, validator },
+              isPublished: { default: false, validator },
+              name: { default: "", validator },
+              price: {
+                default: null,
+                required: () => [true, invalidMessages[2]],
+                validator: validator,
+              },
+            }).getModel();
+          });
+
+          it("should reject with proper required error message at creation", async () => {
+            const { data, error } = await Book.create({ bookId: 1 });
+
+            expect(data).toBeUndefined();
+
+            expect(error).toMatchObject({
+              message: "Validation Error",
+              payload: { price: ["'price' is required!"] },
+            });
+          });
+
+          // it("should clone normally", async () => {
+          //   const book = {
+          //     bookId: 1,
+          //     isPublished: false,
+          //     name: "",
+          //     price: null,
+          //   };
+          //   const { data } = await Book.clone(book);
+
+          //   expect(data).toEqual(book);
+          // });
+
+          // it("should update normally", async () => {
+          //   const book = {
+          //     bookId: 1,
+          //     isPublished: false,
+          //     name: "",
+          //     price: null,
+          //   };
+          //   const { data } = await Book.update(book, { name: "yooo" });
+
+          //   expect(data).toEqual({ name: "yooo" });
+          // });
         });
       });
     });
