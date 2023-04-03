@@ -19,7 +19,7 @@ const userSchema = new Schema({
 
 Such a property is required depending on the summary of the operation. The value of **`required`** must be a function that returns `boolean` | `[boolean, string | undefined]`.
 
-`[boolean, string]` represents [required, requiredError]. If the required error is not provided, `[propertyName] is required!` would be used.
+`[boolean, string]` represents [required, requiredError]. If the required error is not provided or if the value provided for requiredError is not a string, `[propertyName] is required!` would be used.
 
 If nothing is returned, the operation will proceed with `required: false`
 

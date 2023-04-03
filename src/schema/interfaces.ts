@@ -1,37 +1,47 @@
 import { Merge, RealType } from "./merge-types";
 
 export type {
-  Context,
+  GetContext,
   DefinitionRule,
-  Frozen,
+  GetSummary,
   Schema as ISchema,
   NonEmptyArray,
   RealType,
   ResponseInput,
   StringKey,
-  Summary,
   TypeOf,
   Validator,
   ValidatorResponse,
 };
 
-type Frozen<T> = T extends Readonly<infer I> ? Readonly<I> : T;
+type GetContext<I, O = I> = Readonly<Merge<I, O>>;
 
-type Context<I, O = I> = Readonly<Merge<I, O>>;
-
-type Summary<I, O = I> = Schema.Summary<I, O>;
+type GetSummary<I, O = I> = (
+  | Readonly<{
+      context: GetContext<I, O>;
+      operation: "creation";
+      previousValues: undefined;
+      values: Readonly<O>;
+    }>
+  | Readonly<{
+      context: GetContext<I, O>;
+      operation: "update";
+      previousValues: Readonly<O>;
+      values: Readonly<O>;
+    }>
+) & {};
 
 type TypeOf<T> = Exclude<T, undefined>;
 
 type AsyncSetter<K extends keyof (I & O), I, O> = (
-  context: Context<I, O>,
+  context: GetContext<I, O>,
   operation: Schema.OperationName
 ) => TypeOf<(I & O)[K]> | Promise<TypeOf<(I & O)[K]>>;
 
-type BooleanSetter<I, O> = (context: Context<I, O>) => boolean;
+type BooleanSetter<I, O> = (context: GetContext<I, O>) => boolean;
 
 type ConditionalRequiredSetter<I, O> = (
-  summary: Summary<I, O>
+  summary: GetSummary<I, O>
 ) => boolean | [boolean, string];
 
 type StringKey<T> = Extract<keyof T, string>;
@@ -41,26 +51,13 @@ namespace Schema {
 
   export type OperationName = "creation" | "update";
 
-  export type Listener<I, O> = (context: Context<I, O>) => void | Promise<void>;
-
-  export type SuccessListener<I, O> = (
-    summary: Summary<I, O>
+  export type Listener<I, O> = (
+    context: GetContext<I, O>
   ) => void | Promise<void>;
 
-  export type Summary<I, O> = Readonly<
-    | {
-        context: Context<I, O>;
-        operation: "creation";
-        previousValues: undefined;
-        values: Readonly<O>;
-      }
-    | {
-        context: Context<I, O>;
-        operation: "update";
-        previousValues: Readonly<O>;
-        values: Readonly<O>;
-      }
-  > & {};
+  export type SuccessListener<I, O> = (
+    summary: GetSummary<I, O>
+  ) => void | Promise<void>;
 
   export type Definitions<I, O = I, A = {}> = {
     [K in keyof (I & O)]?: Property<K, I, O, A>;
@@ -229,7 +226,7 @@ type ResponseInput<T> =
 
 type Validator<K extends keyof (I & O), I, O> = (
   value: any,
-  context: Context<I, O>
+  context: GetContext<I, O>
 ) => ResponseInput<(I & O)[K]> | Promise<ResponseInput<(I & O)[K]>>;
 
 type NonEmptyArray<T> = [T, ...T[]];

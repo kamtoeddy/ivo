@@ -2,12 +2,11 @@ import { belongsTo, sort, sortKeys, toArray } from "../utils/functions";
 import { ObjectType } from "../utils/interfaces";
 import { isEqual } from "../utils/isEqual";
 import {
-  Context,
   DefinitionRule,
-  Frozen,
+  GetContext,
+  GetSummary,
   ISchema as ns,
   StringKey,
-  Summary,
   Validator,
   ALLOWED_OPTIONS,
   DEFINITION_RULES,
@@ -29,8 +28,8 @@ export abstract class SchemaCore<I, O> {
   protected _definitions = {} as ns.Definitions_<I, O>;
 
   // contexts & values
-  protected context: Context<I, O> = {} as Context<I, O>;
-  protected partialContext: Context<I, O> = {} as Context<I, O>;
+  protected context: GetContext<I, O> = {} as GetContext<I, O>;
+  protected partialGetContext: GetContext<I, O> = {} as GetContext<I, O>;
   protected defaults: Partial<O> = {};
   protected values: O = {} as O;
 
@@ -66,22 +65,23 @@ export abstract class SchemaCore<I, O> {
   }
 
   // < context methods >
-  protected _getContext = () =>
-    this._getFrozenCopy(sortKeys(this.context)) as Context<I, O>;
+  protected _getGetContext = () =>
+    this._getFrozenCopy(sortKeys(this.context)) as GetContext<I, O>;
 
-  protected _getPartialContext = () => this._getFrozenCopy(this.partialContext);
+  protected _getPartialGetContext = () =>
+    this._getFrozenCopy(this.partialGetContext);
 
-  protected _initContexts = () => {
-    this.context = { ...this.values } as Context<I, O>;
-    this.partialContext = {} as Context<I, O>;
+  protected _initGetContexts = () => {
+    this.context = { ...this.values } as GetContext<I, O>;
+    this.partialGetContext = {} as GetContext<I, O>;
   };
 
-  protected _updateContext = (updates: Partial<I>) => {
+  protected _updateGetContext = (updates: Partial<I>) => {
     this.context = { ...this.context, ...updates };
   };
 
-  protected _updatePartialContext = (updates: Partial<I>) => {
-    this.partialContext = { ...this.partialContext, ...updates };
+  protected _updatePartialGetContext = (updates: Partial<I>) => {
+    this.partialGetContext = { ...this.partialGetContext, ...updates };
   };
   // < context methods />
 
@@ -150,8 +150,8 @@ export abstract class SchemaCore<I, O> {
   };
   // < dependency map utils />
 
-  protected _getFrozenCopy = <T>(data: T): Frozen<T> =>
-    Object.freeze(Object.assign({}, data)) as Frozen<T>;
+  protected _getFrozenCopy = <T>(data: T): Readonly<T> =>
+    Object.freeze(Object.assign({}, data)) as Readonly<T>;
 
   protected _canInit = (prop: string) => {
     if (this._isDependentProp(prop)) return false;
@@ -278,7 +278,7 @@ export abstract class SchemaCore<I, O> {
     const _default = this._getDefinition(prop)?.default;
 
     const value = this._isFunction(_default)
-      ? _default(this._getContext())
+      ? _default(this._getGetContext())
       : this.defaults[prop as StringKey<O>];
 
     return isEqual(value, undefined)
@@ -298,13 +298,13 @@ export abstract class SchemaCore<I, O> {
     const value = this._getDefinition(prop)?.[rule];
 
     return this._isFunction(value)
-      ? value({ ...this._getContext(), ...extraCtx }, lifeCycle)
+      ? value({ ...this._getGetContext(), ...extraCtx }, lifeCycle)
       : value;
   };
 
   protected _getRequiredState = (
     prop: string,
-    summary: Summary<I, O>
+    summary: GetSummary<I, O>
   ): [boolean, string] => {
     const { required } = this._getDefinition(prop);
 

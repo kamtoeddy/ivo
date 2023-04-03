@@ -78,7 +78,7 @@ function generateFullName({ context: { firstName, lastName } }: Summary) {
 }
 
 function generateUserId() {
-  return (Math.random() * 1e18).toString();
+  return Math.random() * 1e18;
 }
 
 function hashPassword(value) {
