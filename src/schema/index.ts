@@ -745,7 +745,7 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
     };
   };
 
-  _validate = async <K extends StringKey<I>>(
+  _validate = async <K extends StringKey<I & A>>(
     prop: K,
     value: any,
     ctx: GetContext<I, O>
@@ -757,7 +757,7 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
       (this._isDependentProp(prop) && !isAlias) ||
       (!this._isProp(prop) && !this._isVirtual(prop) && !isAlias)
     )
-      return makeResponse<I[K]>({
+      return makeResponse<(I & A)[K]>({
         valid: false,
         reason: "Invalid property",
       });
@@ -771,10 +771,10 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
 
       if (res.valid && isEqual(res.validated, undefined)) res.validated = value;
 
-      return makeResponse<I[K]>(res as ResponseInput<I[K]>);
+      return makeResponse<(I & A)[K]>(res as ResponseInput<(I & A)[K]>);
     }
 
-    return makeResponse<I[K]>({ valid: true, validated: value });
+    return makeResponse<(I & A)[K]>({ valid: true, validated: value });
   };
 }
 
@@ -789,13 +789,6 @@ class Model<I, O = I, A = {}> {
 
   update = this.modelTool.update;
 
-  validate = async <K extends StringKey<GetContext<I, O>> | StringKey<A>>(
-    prop: K,
-    value: any
-  ) =>
-    this.modelTool._validate(
-      prop as unknown as StringKey<I>,
-      value,
-      {} as GetContext<I, O>
-    );
+  validate = async <K extends StringKey<I & A>>(prop: K, value: any) =>
+    this.modelTool._validate(prop, value, {} as GetContext<I, O>);
 }
