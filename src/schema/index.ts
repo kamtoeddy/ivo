@@ -447,8 +447,8 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
 
     const _response: ResponseInput_<T> = { valid: false };
 
-    if (response.reason) _response.reason = response.reason;
-    if (response.reasons) _response.reasons = response.reasons;
+    if (response?.reason) _response.reason = response.reason;
+    if (response?.reasons) _response.reasons = response.reasons;
 
     if (!_response.reason && !_response.reasons)
       return validationFailedResponse;
