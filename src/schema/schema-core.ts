@@ -314,12 +314,16 @@ export abstract class SchemaCore<I, O> {
 
     if (!this._isFunction(required)) return [required, fallbackMessage];
 
-    const results = required(summary);
+    let results = required(summary);
 
-    if (typeof results == "undefined") return [false, ""];
+    const datatype = typeof results;
 
-    if (typeof results == "boolean")
-      return [results, results ? fallbackMessage : ""];
+    if (datatype !== "boolean" && !Array.isArray(results)) return [false, ""];
+
+    if (datatype === "boolean")
+      return [results as boolean, results ? fallbackMessage : ""];
+
+    results = results as [boolean, string];
 
     if (!results[1] || typeof results[1] != "string")
       results[1] = fallbackMessage;
