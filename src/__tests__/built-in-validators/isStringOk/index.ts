@@ -25,7 +25,7 @@ export const isStringOkTest = ({ isStringOk }: { isStringOk: Function }) => {
         [null, ["Unacceptable value"]],
         [undefined, ["Unacceptable value"]],
         ["", ["Too short"]],
-        [Array(41 + 1).join("a"), ["Too long"]],
+        [Array(257).join("a"), ["Too long"]],
       ];
 
       for (const [value, reasons] of falsy) {

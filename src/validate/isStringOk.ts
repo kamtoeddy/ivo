@@ -6,7 +6,7 @@ export function isStringOk(
   str: any,
   {
     enums,
-    maxLength = 40,
+    maxLength = 255,
     minLength = 1,
     regExp,
     trim = false,
