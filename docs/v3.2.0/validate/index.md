@@ -4,6 +4,7 @@ Validators are expected to behave as below
 
 ```ts
 type ValidationResults =
+  | boolean
   | {
       valid: true; // tells if data was valid or not
       validated?: any; // the validated values passed which could have been formated in the custom validator (i.e made ready for the db)
