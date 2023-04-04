@@ -14,10 +14,13 @@ import { Test_ShouldUpdateRule } from "./definitions/should-update-rule";
 import { Test_SchemaErrors } from "./options/errors";
 import { Test_SchemaOptionFormat } from "./options/format";
 import { Test_SchemaTimestampOption } from "./options/timestamps";
+import { Test_Validators } from "./validators";
 
 const fx = makeFx(Schema);
 
 Test_BasicDefinitions({ fx });
+
+Test_Validators({ Schema });
 
 Test_ConstantProperties({ Schema, fx });
 Test_DependentProperties({ Schema, fx });
