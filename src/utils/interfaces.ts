@@ -38,4 +38,5 @@ export interface IStringOptions {
   maxLength?: number;
   minLength?: number;
   regExp?: RegExp;
+  trim?: boolean;
 }
