@@ -25,7 +25,7 @@ class Schema<I, O = I, A = {}> extends SchemaCore<I, O> {
   }
 
   get definitions() {
-    return this._definitions;
+    return this._definitions as ns.Definitions<RealType<I>, RealType<O>, A>;
   }
 
   get options() {
@@ -33,7 +33,7 @@ class Schema<I, O = I, A = {}> extends SchemaCore<I, O> {
   }
 
   extend = <U, V = U, A = {}>(
-    propDefinitions: Partial<ns.Definitions<Merge<I, U> & U, V, A>>,
+    definitions: Partial<ns.Definitions<Merge<I, U> & U, V, A>>,
     options: ns.ExtensionOptions<StringKey<RealType<I>>> = {
       ...defaultOptions,
       remove: [],
@@ -54,7 +54,7 @@ class Schema<I, O = I, A = {}> extends SchemaCore<I, O> {
 
     _definitions = {
       ..._definitions,
-      ...propDefinitions,
+      ...definitions,
     } as ns.Definitions<InputType, V, A>;
 
     return new Schema<InputType, V, A>(_definitions as any, options);
@@ -66,7 +66,7 @@ class Schema<I, O = I, A = {}> extends SchemaCore<I, O> {
 
 class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
   constructor(schema: Schema<I, O, A>) {
-    super(schema.definitions, schema.options);
+    super(schema.definitions as any, schema.options);
   }
 
   private _areValuesOk = (values: any) => values && typeof values == "object";
