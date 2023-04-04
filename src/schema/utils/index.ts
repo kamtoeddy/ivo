@@ -1,8 +1,8 @@
 import { toArray } from "../../utils/functions";
-import { ResponseInput, ValidatorResponse, TypeOf } from "../interfaces";
+import { ResponseInput_, ValidatorResponse, TypeOf } from "../interfaces";
 
 export const makeResponse = <T = undefined>(
-  input: ResponseInput<T>
+  input: ResponseInput_<T>
 ): ValidatorResponse<TypeOf<T>> => {
   if (input.valid) {
     const { valid, validated } = input;

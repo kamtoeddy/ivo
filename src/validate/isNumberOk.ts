@@ -1,4 +1,4 @@
-import { ResponseInput } from "../schema/interfaces";
+import { ResponseInput_ } from "../schema/interfaces";
 import { makeResponse } from "../schema/utils";
 import { NumberRangeType } from "../utils/interfaces";
 
@@ -7,7 +7,7 @@ export type RangeType = undefined | NumberRangeType;
 function isInRange(
   value: number,
   range: NumberRangeType
-): ResponseInput<number> {
+): ResponseInput_<number> {
   const { bounds, inclusiveBottom, inclusiveTop } = range;
   const [min, max] = bounds;
 

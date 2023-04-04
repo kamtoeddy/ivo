@@ -25,7 +25,7 @@ const storeItemSchema = new Schema<IStoreItem, StoreItemType>(
     _readOnlyNoInit: { default: "", readonly: true, shouldInit: false },
     _virtualForDependentReadOnly: {
       virtual: true,
-      validator: () => ({ valid: true }),
+      validator: () => true,
     },
     id: {
       readonly: true,

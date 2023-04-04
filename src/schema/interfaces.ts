@@ -8,6 +8,7 @@ export type {
   NonEmptyArray,
   RealType,
   ResponseInput,
+  ResponseInput_,
   StringKey,
   TypeOf,
   Validator,
@@ -41,7 +42,7 @@ type AsyncSetter<K extends keyof (I & O), I, O> = (
 type BooleanSetter<I, O> = (context: GetContext<I, O>) => boolean;
 
 type ConditionalRequiredSetter<I, O> = (
-  summary: GetSummary<I, O>
+  summary: GetSummary<I, O> & {}
 ) => boolean | [boolean, string];
 
 type StringKey<T> = Extract<keyof T, string>;
@@ -56,7 +57,7 @@ namespace Schema {
   ) => void | Promise<void>;
 
   export type SuccessListener<I, O> = (
-    summary: GetSummary<I, O>
+    summary: GetSummary<I, O> & {}
   ) => void | Promise<void>;
 
   export type Definitions<I, O = I, A = {}> = {
@@ -220,9 +221,11 @@ type ValidatorResponse<T> =
   | { valid: true; validated: T }
   | { reasons: string[]; valid: false };
 
-type ResponseInput<T> =
+type ResponseInput_<T> =
   | { valid: true; validated?: TypeOf<T> }
   | { reason?: string; reasons?: string[]; valid: false };
+
+type ResponseInput<T> = boolean | (ResponseInput_<T> & {});
 
 type Validator<K extends keyof (I & O), I, O> = (
   value: any,

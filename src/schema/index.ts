@@ -5,7 +5,7 @@ import {
   GetSummary,
   ISchema as ns,
   RealType,
-  ResponseInput,
+  ResponseInput_,
   StringKey,
   ValidatorResponse,
 } from "./interfaces";
@@ -15,6 +15,11 @@ import { makeResponse } from "./utils";
 import { ErrorTool } from "./utils/schema-error";
 
 export { Schema };
+
+const validationFailedResponse = {
+  valid: false,
+  reasons: ["validation failed"],
+};
 
 class Schema<I, O = I, A = {}> extends SchemaCore<I, O> {
   constructor(
@@ -418,6 +423,39 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
     this._updatePartialGetContext(validCtxUpdate);
   };
 
+  private _sanitizeValidationResponse = <T>(
+    response: any,
+    value: any
+  ): ResponseInput_<T> => {
+    const responseType = typeof response;
+
+    if (responseType == "boolean")
+      return response
+        ? { valid: true, validated: value }
+        : validationFailedResponse;
+
+    if (!response && (responseType != "object" || Array.isArray(response)))
+      return validationFailedResponse;
+
+    if (response?.valid) {
+      const validated = isEqual(response?.validated, undefined)
+        ? value
+        : response.validated;
+
+      return { valid: true, validated };
+    }
+
+    const _response: ResponseInput_<T> = { valid: false };
+
+    if (response.reason) _response.reason = response.reason;
+    if (response.reasons) _response.reasons = response.reasons;
+
+    if (!_response.reason && !_response.reasons)
+      return validationFailedResponse;
+
+    return _response;
+  };
+
   clone = async (
     values: Partial<I & A>,
     options: ns.CloneOptions<I> = { reset: [] }
@@ -776,11 +814,11 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
     const validator = this._getValidator(_prop as StringKey<I>);
 
     if (validator) {
-      const res = await validator(value, ctx);
+      let res = (await validator(value, ctx)) as ResponseInput_<(I & A)[K]>;
 
-      if (res.valid && isEqual(res.validated, undefined)) res.validated = value;
+      res = this._sanitizeValidationResponse<(I & A)[K]>(res, value);
 
-      return makeResponse<(I & A)[K]>(res as ResponseInput<(I & A)[K]>);
+      return makeResponse(res);
     }
 
     return makeResponse<(I & A)[K]>({ valid: true, validated: value });

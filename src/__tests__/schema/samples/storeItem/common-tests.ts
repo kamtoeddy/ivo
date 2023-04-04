@@ -342,7 +342,7 @@ export const CommonInheritanceTest = (
           expect(err.message).toBe("Validation Error");
           expect(err.payload).toMatchObject({
             _laxProp: ["Invalid lax prop", "Too short"],
-            name: [],
+            name: ["validation failed"],
           });
         }
       };
@@ -358,7 +358,7 @@ export const CommonInheritanceTest = (
           expect(err.message).toBe("Validation Error");
           expect(err.payload).toMatchObject({
             _laxProp: ["Invalid lax prop", "Unacceptable value"],
-            name: [],
+            name: ["validation failed"],
           });
         }
       };
@@ -374,7 +374,7 @@ export const CommonInheritanceTest = (
           expect(err.message).toBe("Validation Error");
           expect(err.payload).toMatchObject({
             _laxProp: ["Invalid lax prop", "Too short"],
-            name: [],
+            name: ["validation failed"],
           });
         }
       };
