@@ -8,6 +8,7 @@ Breaking Changes
 
 - [Update] changed the signature and behaviour of resolvers of [dependent properties](./v3.2.0/schema/definition/dependents.md)
 - [Update] changed the signature and behaviour of [life cycle listeners](./v3.2.0/schema/definition/life-cycles.md#life-cycle-listeners)
+- [Add] added a 'trim' option to validate.isStringOk so one can opt in and out of trimmed values [more](./v3.2.0/validate/isStringOk.md)
 
 Features
 
