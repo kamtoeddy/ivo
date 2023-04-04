@@ -9,7 +9,7 @@ import {
 import { findBy } from "../../utils";
 
 export const validateName = (val: any) => {
-  const isValid = isStringOk(val);
+  const isValid = isStringOk(val, { trim: true });
 
   if (!isValid.valid) return { valid: false };
 
