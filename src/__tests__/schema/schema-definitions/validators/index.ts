@@ -45,5 +45,30 @@ export const Test_Validators = ({ Schema }: any) => {
         expect(res).toEqual({ valid: true, validated: "valid" });
       });
     });
+
+    describe("Behaviour with invalid user validation response", () => {
+      const invalidResponses = [
+        null,
+        undefined,
+        -100,
+        0,
+        14,
+        "",
+        "Invalid response",
+        [],
+      ];
+
+      for (const response of invalidResponses) {
+        const Model = new Schema({
+          prop: { default: "", validator: () => response },
+        }).getModel();
+
+        it("should fail validation with 'validation failed' message when value returned from validator is invalid instead of crashing", async () => {
+          const res = await Model.validate("prop", "yoo");
+
+          expect(res).toEqual({ valid: false, reasons: ["validation failed"] });
+        });
+      }
+    });
   });
 };
