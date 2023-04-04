@@ -35,8 +35,8 @@ export abstract class SchemaCore<I, O> {
 
   // maps
   protected aliasToVirtualMap: ns.AliasToVirtualMap<I> = {};
-  protected virtualToAliasMap: ns.AliasToVirtualMap<I> = {};
   protected dependencyMap: ns.DependencyMap<I> = {};
+  protected virtualToAliasMap: ns.AliasToVirtualMap<I> = {};
 
   // props
   protected constants: StringKey<I>[] = [];
