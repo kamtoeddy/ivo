@@ -479,6 +479,72 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
             });
           }
         });
+
+        describe("behaviour when a value returned by required function is not boolean nor array", () => {
+          const invalidResponses = [
+            null,
+            undefined,
+            {},
+            "",
+            "not array",
+            1,
+            0,
+            -12,
+            () => {},
+          ];
+
+          for (const response of invalidResponses) {
+            let Book: any;
+
+            beforeAll(async () => {
+              Book = new Schema({
+                bookId: { required: true, validator },
+                isPublished: { default: false, validator },
+                name: { default: "", validator },
+                price: {
+                  default: null,
+                  required: () => response,
+                  validator: validator,
+                },
+              }).getModel();
+            });
+
+            it("should create normally", async () => {
+              const { data } = await Book.create({ bookId: 1 });
+
+              expect(data).toEqual({
+                bookId: 1,
+                isPublished: false,
+                name: "",
+                price: null,
+              });
+            });
+
+            it("should clone normally", async () => {
+              const book = {
+                bookId: 1,
+                isPublished: false,
+                name: "",
+                price: null,
+              };
+              const { data } = await Book.clone(book);
+
+              expect(data).toEqual(book);
+            });
+
+            it("should update normally", async () => {
+              const book = {
+                bookId: 1,
+                isPublished: false,
+                name: "",
+                price: null,
+              };
+              const { data } = await Book.update(book, { name: "yooo" });
+
+              expect(data).toEqual({ name: "yooo" });
+            });
+          }
+        });
       });
     });
 
