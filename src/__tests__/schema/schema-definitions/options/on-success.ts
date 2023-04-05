@@ -118,6 +118,98 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
           });
         });
       });
+
+      describe("behaviour without other success listeners", () => {
+        const Book = new Schema(
+          {
+            id: { constant: true, value: 1 },
+            name: { required: true, validator },
+            price: {
+              default: null,
+              dependent: true,
+              dependsOn: "_setPrice",
+              resolver: ({ _setPrice }: any) => _setPrice,
+            },
+            _setPrice: {
+              virtual: true,
+              validator,
+            },
+          },
+          { onSuccess: [onSuccess_("global"), onSuccess_("global-1")] }
+        ).getModel();
+
+        it("should trigger all 'success' listeners at creation", async () => {
+          const { data, handleSuccess } = await Book.create({
+            name: "Book name",
+            _setPrice: 100,
+          });
+
+          await handleSuccess();
+
+          const values = { id: 1, name: "Book name", price: 100 };
+          const summary = {
+            context: { ...values, _setPrice: 100 },
+            operation: "creation",
+            previousValues: undefined,
+            values: values,
+          };
+
+          expect(data).toEqual(values);
+          expect(successValues).toEqual({
+            global: summary,
+            "global-1": summary,
+          });
+        });
+
+        it("should trigger all 'success' listeners during cloning ", async () => {
+          const book = { id: 1, name: "Book name", price: 100 };
+
+          const { data, handleSuccess } = await Book.clone({
+            ...book,
+            _setPrice: 100,
+          });
+
+          await handleSuccess();
+
+          const summary = {
+            context: { ...book, _setPrice: 100 },
+            operation: "creation",
+            previousValues: undefined,
+            values: book,
+          };
+
+          expect(data).toEqual(book);
+          expect(successValues).toEqual({
+            global: summary,
+            "global-1": summary,
+          });
+        });
+
+        it("should trigger all 'success' listeners during updates ", async () => {
+          const book = { id: 1, name: "Book name", price: 100 };
+
+          const { data, handleSuccess } = await Book.update(book, {
+            _setPrice: 200,
+          });
+
+          await handleSuccess();
+
+          const values = { ...book, price: 200 };
+
+          const summary = {
+            context: { ...values, _setPrice: 200 },
+            operation: "update",
+            previousValues: book,
+            values: values,
+          };
+
+          expect(data).toEqual({ price: 200 });
+          expect(successValues).toEqual({
+            global: summary,
+            "global-1": summary,
+          });
+        });
+      });
     });
 
     describe("valid", () => {
