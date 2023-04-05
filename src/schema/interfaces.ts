@@ -197,13 +197,16 @@ namespace Schema {
     reset?: StringKey<T> | StringKey<T>[];
   }
 
-  export interface Options {
+  export interface Options<I, O> {
     errors?: "silent" | "throw";
+    onSuccess?:
+      | Schema.SuccessListener<I, O>
+      | NonEmptyArray<Schema.SuccessListener<I, O>>;
     timestamps?:
       | boolean
       | { createdAt?: boolean | string; updatedAt?: boolean | string };
   }
-  export type OptionsKey = StringKey<Options>;
+  export type OptionsKey<I, O> = StringKey<Options<I, O>>;
 
   export interface PrivateOptions {
     timestamps: Timestamp;
@@ -214,7 +217,9 @@ namespace Schema {
     updatedAt: string;
   }
 
-  export type ExtensionOptions<T> = Options & { remove?: T | T[] };
+  export type ExtensionOptions<ParentInput, I, O> = Options<I, O> & {
+    remove?: ParentInput | ParentInput[];
+  };
 }
 
 type ValidatorResponse<T> =
@@ -256,7 +261,11 @@ const DEFINITION_RULES = [
 
 type DefinitionRule = typeof DEFINITION_RULES[number];
 
-const ALLOWED_OPTIONS: Schema.OptionsKey[] = ["errors", "timestamps"];
+const ALLOWED_OPTIONS: Schema.OptionsKey<any, any>[] = [
+  "errors",
+  "onSuccess",
+  "timestamps",
+];
 const CONSTANT_RULES = ["constant", "onDelete", "onSuccess", "value"];
 const VIRTUAL_RULES = [
   "alias",

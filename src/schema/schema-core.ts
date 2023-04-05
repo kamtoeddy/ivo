@@ -19,12 +19,12 @@ import { ErrorTool } from "./utils/schema-error";
 export const defaultOptions = {
   errors: "silent",
   timestamps: false,
-} as ns.Options;
+} as ns.Options<any, any>;
 
 const lifeCycleRules: ns.LifeCycles[] = ["onDelete", "onFailure", "onSuccess"];
 
 export abstract class SchemaCore<I, O> {
-  protected _options: ns.Options;
+  protected _options: ns.Options<I, O>;
   protected _definitions = {} as ns.Definitions_<I, O>;
 
   // contexts & values
@@ -53,7 +53,7 @@ export abstract class SchemaCore<I, O> {
 
   constructor(
     definitions: ns.Definitions_<I, O>,
-    options: ns.Options = defaultOptions as ns.Options
+    options: ns.Options<I, O> = defaultOptions as ns.Options<I, O>
   ) {
     this._definitions = definitions;
     this._options = options;
@@ -178,7 +178,7 @@ export abstract class SchemaCore<I, O> {
     )
       error.add("schema options", "Must be an object").throw();
 
-    let options = Object.keys(this._options) as ns.OptionsKey[];
+    let options = Object.keys(this._options) as ns.OptionsKey<I, O>[];
 
     if (!options.length) error.add("schema options", "Cannot be empty").throw();
 

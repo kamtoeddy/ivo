@@ -24,9 +24,9 @@ const validationFailedResponse = {
 class Schema<I, O = I, A = {}> extends SchemaCore<I, O> {
   constructor(
     definitions: ns.Definitions<RealType<I>, RealType<O>, A>,
-    options: ns.Options = defaultOptions
+    options: ns.Options<I, O> = defaultOptions
   ) {
-    super(definitions as ns.Definitions_<I, O>, options as ns.Options);
+    super(definitions as ns.Definitions_<I, O>, options as ns.Options<I, O>);
   }
 
   get definitions() {
@@ -39,7 +39,7 @@ class Schema<I, O = I, A = {}> extends SchemaCore<I, O> {
 
   extend = <U, V = U, A = {}>(
     definitions: Partial<ns.Definitions<Merge<I, U> & U, V, A>>,
-    options: ns.ExtensionOptions<StringKey<RealType<I>>> = {
+    options: ns.ExtensionOptions<StringKey<RealType<I>>, Merge<I, U> & U, V> = {
       ...defaultOptions,
       remove: [],
     }
