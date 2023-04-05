@@ -190,10 +190,16 @@ export abstract class SchemaCore<I, O> {
       if (!["silent", "throw"].includes(this._options.errors!))
         error.add("errors", "should be 'silent' or 'throw'").throw();
 
-    if (this._options.hasOwnProperty("timestamps")) {
-      const ts_valid = this._isTimestampsOk();
+    if (this._options.hasOwnProperty("onSuccess")) {
+      const isValid = this._isOnSuccessOptionOk();
 
-      if (!ts_valid.valid) error.add("timestamps", ts_valid.reason!).throw();
+      if (!isValid.valid) error.add("onSuccess", isValid.reasons!).throw();
+    }
+
+    if (this._options.hasOwnProperty("timestamps")) {
+      const isValid = this._isTimestampsOptionOk();
+
+      if (!isValid.valid) error.add("timestamps", isValid.reason!).throw();
     }
   };
 
@@ -993,7 +999,7 @@ export abstract class SchemaCore<I, O> {
     );
   };
 
-  private _isTimestampsOk() {
+  private _isTimestampsOptionOk() {
     const { timestamps } = this._options,
       valid = false;
 
@@ -1027,6 +1033,22 @@ export abstract class SchemaCore<I, O> {
 
     if (createdAt === updatedAt)
       return { valid, reason: "createdAt & updatedAt cannot be same" };
+
+    return { valid: true };
+  }
+
+  private _isOnSuccessOptionOk() {
+    const { onSuccess } = this._options,
+      reasons: string[] = [];
+
+    const listeners = toArray<ns.SuccessListener<I, O>>(onSuccess!);
+
+    listeners.forEach((listener, i) => {
+      if (!this._isFunction(listener))
+        reasons.push(`The success listener @[${i}] is not a function`);
+    });
+
+    if (reasons.length) return { valid: false, reasons };
 
     return { valid: true };
   }
