@@ -10,4 +10,6 @@ const storeItemChildSchema = storeItemSchema.extend(
 
 const StoreItemChild = storeItemChildSchema.getModel();
 
+// const {data}= await StoreItemChild.create({})
+
 export { StoreItemChild };

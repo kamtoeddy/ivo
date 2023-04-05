@@ -21,31 +21,32 @@ const validationFailedResponse = {
   reasons: ["validation failed"],
 };
 
-class Schema<I, O = I, A = {}> extends SchemaCore<I, O> {
+class Schema<
+  I extends RealType<I>,
+  O extends RealType<O> = I,
+  A = {}
+> extends SchemaCore<I, O> {
   constructor(
-    definitions: ns.Definitions<RealType<I>, RealType<O>, A>,
-    options: ns.Options<RealType<I>, RealType<O>> = defaultOptions
+    definitions: ns.Definitions<I, O, A>,
+    options: ns.Options<I, O> = defaultOptions
   ) {
-    super(
-      definitions as ns.Definitions_<I, O>,
-      options as ns.Options<RealType<I>, RealType<O>>
-    );
+    super(definitions as ns.Definitions_<I, O>, options);
   }
 
   get definitions() {
-    return this._definitions as ns.Definitions<RealType<I>, RealType<O>, A>;
+    return this._definitions as ns.Definitions<I, O, A>;
   }
 
   get options() {
     return this._options;
   }
 
-  extend = <U, V = U, A = {}>(
-    definitions: Partial<ns.Definitions<Merge<I, U> & U, V, A>>,
+  extend = <U extends RealType<U>, V extends RealType<V> = U, A = {}>(
+    definitions: Partial<ns.Definitions<Merge<I, U> & U, Merge<O, V>, A>>,
     options: ns.ExtensionOptions<
-      StringKey<RealType<I>>,
+      StringKey<I>,
       RealType<Merge<I, U> & U>,
-      RealType<V>
+      RealType<Merge<O, V>>
     > = {
       ...defaultOptions,
       remove: [],
@@ -55,10 +56,11 @@ class Schema<I, O = I, A = {}> extends SchemaCore<I, O> {
     delete options.remove;
 
     type InputType = Merge<I, U> & U;
+    type OutputType = Merge<O, V>;
 
     let _definitions = {
-      ...(this.definitions as ns.Definitions<InputType, V, A>),
-    } as ns.Definitions<InputType, V, A>;
+      ...(this.definitions as ns.Definitions<InputType, OutputType, A>),
+    } as ns.Definitions<InputType, OutputType, A>;
 
     remove?.forEach(
       (prop) => delete _definitions?.[prop as StringKey<InputType>]
@@ -67,16 +69,19 @@ class Schema<I, O = I, A = {}> extends SchemaCore<I, O> {
     _definitions = {
       ..._definitions,
       ...definitions,
-    } as ns.Definitions<InputType, V, A>;
+    } as ns.Definitions<InputType, OutputType, A>;
 
-    return new Schema<InputType, V, A>(_definitions as any, options);
+    return new Schema(_definitions as any, options as any);
   };
 
-  getModel = (): Model<RealType<I>, RealType<O>, A> =>
-    new Model(new ModelTool<RealType<I>, RealType<O>, A>(this as any));
+  getModel = () => new Model(new ModelTool<I, O, A>(this as any));
 }
 
-class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
+class ModelTool<
+  I extends RealType<I>,
+  O extends RealType<O> = I,
+  A = {}
+> extends SchemaCore<I, O> {
   constructor(schema: Schema<I, O, A>) {
     super(schema.definitions as any, schema.options);
   }
@@ -186,7 +191,7 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
     const sanitizations = sanitizers.map(async ([prop, sanitizer]) => {
       const resolvedValue = await sanitizer(ctx, lifeCycle);
 
-      this._updateGetContext({ [prop]: resolvedValue } as I);
+      this._updateGetContext({ [prop]: resolvedValue } as any);
     });
 
     await Promise.allSettled(sanitizations);
@@ -333,7 +338,7 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
 
       data[prop] = value;
 
-      const updates = { [prop]: value } as I;
+      const updates = { [prop]: value } as any;
 
       this._updateGetContext(updates);
       this._updatePartialGetContext(updates);
@@ -426,7 +431,7 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
     if (!this._isVirtual(propName))
       operationData[propName as StringKey<O>] = validated;
 
-    const validCtxUpdate = { [propName]: validated } as unknown as I;
+    const validCtxUpdate = { [propName]: validated } as unknown as any;
 
     this._updateGetContext(validCtxUpdate);
     this._updatePartialGetContext(validCtxUpdate);
@@ -491,7 +496,7 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
       if (this._isConstant(prop)) {
         data[prop] = await this._getConstantValue(prop);
 
-        const validCtxUpdate = { [prop]: data[prop] as any } as I;
+        const validCtxUpdate = { [prop]: data[prop] as any } as any;
 
         this._updatePartialGetContext(validCtxUpdate);
         return this._updateGetContext(validCtxUpdate);
@@ -506,7 +511,7 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
 
         data[prop] = value;
 
-        const validCtxUpdate = { [prop]: data[prop] } as unknown as I;
+        const validCtxUpdate = { [prop]: data[prop] } as unknown as any;
 
         this._updatePartialGetContext(validCtxUpdate);
         return this._updateGetContext(validCtxUpdate);
@@ -527,7 +532,7 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
       if (reset.includes(prop as any)) {
         data[prop] = this._getDefaultValue(prop);
 
-        const validCtxUpdate = { [prop]: data[prop] } as unknown as I;
+        const validCtxUpdate = { [prop]: data[prop] } as unknown as any;
 
         this._updatePartialGetContext(validCtxUpdate);
         return this._updateGetContext(validCtxUpdate);
@@ -559,7 +564,7 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
       ) {
         data[prop] = this._getDefaultValue(prop);
 
-        const validCtxUpdate = { [prop]: data[prop] } as unknown as I;
+        const validCtxUpdate = { [prop]: data[prop] } as unknown as any;
 
         this._updatePartialGetContext(validCtxUpdate);
         return this._updateGetContext(validCtxUpdate);
@@ -592,8 +597,8 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
 
     const finalData = this._useConfigProps(data);
 
-    this._updateGetContext(finalData as I);
-    this._updatePartialGetContext(finalData as I);
+    this._updateGetContext(finalData as any);
+    this._updatePartialGetContext(finalData as any);
 
     return {
       data: finalData as O,
@@ -621,7 +626,7 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
       if (this._isConstant(prop)) {
         data[prop] = await this._getConstantValue(prop);
 
-        const validCtxUpdate = { [prop]: data[prop] as any } as I;
+        const validCtxUpdate = { [prop]: data[prop] as any } as any;
 
         this._updatePartialGetContext(validCtxUpdate);
         return this._updateGetContext(validCtxUpdate);
@@ -658,7 +663,7 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
       ) {
         data[prop] = this._getDefaultValue(prop);
 
-        const validCtxUpdate = { [prop]: data[prop] as any } as I;
+        const validCtxUpdate = { [prop]: data[prop] as any } as any;
 
         this._updatePartialGetContext(validCtxUpdate);
         return this._updateGetContext(validCtxUpdate);
@@ -686,8 +691,8 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
 
     const finalData = this._useConfigProps(data);
 
-    this._updateGetContext(finalData as I);
-    this._updatePartialGetContext(finalData as I);
+    this._updateGetContext(finalData as any);
+    this._updatePartialGetContext(finalData as any);
 
     return {
       data: finalData as O,
@@ -761,7 +766,7 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
         linkedProps.push(propName);
       }
 
-      const validCtxUpdate = { [propName]: validated } as unknown as I;
+      const validCtxUpdate = { [propName]: validated } as unknown as any;
 
       this._updateGetContext(validCtxUpdate);
       this._updatePartialGetContext(validCtxUpdate);
@@ -791,8 +796,8 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
 
     const finalData = this._useConfigProps(updated, true);
 
-    this._updateGetContext(finalData as I);
-    this._updatePartialGetContext(finalData as I);
+    this._updateGetContext(finalData as any);
+    this._updatePartialGetContext(finalData as any);
 
     return {
       data: finalData as Partial<O>,
@@ -834,7 +839,7 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
   };
 }
 
-class Model<I, O = I, A = {}> {
+class Model<I extends RealType<I>, O extends RealType<O> = I, A = {}> {
   constructor(private modelTool: ModelTool<I, O, A>) {}
 
   clone = this.modelTool.clone;
