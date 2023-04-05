@@ -1,4 +1,4 @@
-import { Schema } from "../../../../../dist";
+import { GetSummary, Schema } from "../../../../../dist";
 import { IStoreItem, StoreItemType } from "./interfaces";
 import {
   sanitizeQuantities,
@@ -59,10 +59,22 @@ const storeItemSchema = new Schema<IStoreItem, StoreItemType>(
       },
     },
   },
-  { errors: "throw", timestamps: { createdAt: "c_At", updatedAt: "u_At" } }
+  {
+    errors: "throw",
+    onSuccess,
+    timestamps: { createdAt: "c_At", updatedAt: "u_At" },
+  }
 );
 
 function resolveQuantity({ quantity, _quantity, quantities }: IStoreItem) {
+  const newQty = _quantity ?? (quantity as number);
+
+  return quantities ? newQty + (quantities as number) : newQty;
+}
+
+type Summary = GetSummary<IStoreItem, StoreItemType>;
+
+function onSuccess({ context: { quantity, _quantity, quantities } }: Summary) {
   const newQty = _quantity ?? (quantity as number);
 
   return quantities ? newQty + (quantities as number) : newQty;

@@ -12,6 +12,7 @@ import {
   DEFINITION_RULES,
   CONSTANT_RULES,
   VIRTUAL_RULES,
+  RealType,
 } from "./interfaces";
 import { OptionsTool } from "./utils/options-tool";
 import { ErrorTool } from "./utils/schema-error";
@@ -24,7 +25,7 @@ export const defaultOptions = {
 const lifeCycleRules: ns.LifeCycles[] = ["onDelete", "onFailure", "onSuccess"];
 
 export abstract class SchemaCore<I, O> {
-  protected _options: ns.Options<I, O>;
+  protected _options: ns.Options<RealType<I>, RealType<O>>;
   protected _definitions = {} as ns.Definitions_<I, O>;
 
   // contexts & values
@@ -56,7 +57,10 @@ export abstract class SchemaCore<I, O> {
 
   constructor(
     definitions: ns.Definitions_<I, O>,
-    options: ns.Options<I, O> = defaultOptions as ns.Options<I, O>
+    options: ns.Options<
+      RealType<I>,
+      RealType<O>
+    > = defaultOptions as ns.Options<RealType<I>, RealType<O>>
   ) {
     this._definitions = definitions;
     this._options = options;
@@ -1044,7 +1048,7 @@ export abstract class SchemaCore<I, O> {
     const { onSuccess } = this._options,
       reasons: string[] = [];
 
-    const listeners = toArray<ns.SuccessListener<I, O>>(onSuccess!);
+    const listeners = toArray<ns.SuccessListener<any, any>>(onSuccess!);
 
     listeners.forEach((listener, i) => {
       if (this._isFunction(listener))

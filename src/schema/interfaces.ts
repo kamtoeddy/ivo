@@ -54,18 +54,18 @@ namespace Schema {
 
   export type Listener<I, O> = (
     context: GetContext<I, O>
-  ) => void | Promise<void>;
+  ) => any | Promise<any>;
 
   export type SuccessListener<I, O> = (
     summary: GetSummary<I, O> & {}
-  ) => void | Promise<void>;
+  ) => any | Promise<any>;
 
   export type Definitions<I, O = I, A = {}> = {
     [K in keyof (I & O)]?: Property<K, I, O, A>;
   };
 
   export type Definitions_<I, O> = {
-    [K in keyof I]?: Listenable<K, I, O> & {
+    [K in keyof I]?: Listenable<I, O> & {
       alias?: string;
       constant?: any;
       default?: any;
@@ -101,24 +101,20 @@ namespace Schema {
     | ReadonlyRequired<K, I, O>
     | Virtual<K, I, O, A>;
 
-  type Listenable<K extends keyof (I & O), I, O> = {
-    onDelete?: Schema.Listener<I, O> | NonEmptyArray<Schema.Listener<I, O>>;
-    onFailure?: Schema.Listener<I, O> | NonEmptyArray<Schema.Listener<I, O>>;
-    onSuccess?:
-      | Schema.SuccessListener<I, O>
-      | NonEmptyArray<Schema.SuccessListener<I, O>>;
+  type Listenable<I, O> = {
+    onDelete?: Listener<I, O> | NonEmptyArray<Listener<I, O>>;
+    onFailure?: Listener<I, O> | NonEmptyArray<Listener<I, O>>;
+    onSuccess?: SuccessListener<I, O> | NonEmptyArray<SuccessListener<I, O>>;
   };
 
   type Constant<K extends keyof (I & O), I, O = I> = {
     constant: true;
-    onDelete?: Schema.Listener<I, O> | NonEmptyArray<Schema.Listener<I, O>>;
-    onSuccess?:
-      | Schema.SuccessListener<I, O>
-      | NonEmptyArray<Schema.SuccessListener<I, O>>;
+    onDelete?: Listener<I, O> | NonEmptyArray<Listener<I, O>>;
+    onSuccess?: SuccessListener<I, O> | NonEmptyArray<SuccessListener<I, O>>;
     value: TypeOf<(I & O)[K]> | AsyncSetter<K, I, O>;
   };
 
-  type Dependent<K extends keyof (I & O), I, O = I> = Listenable<K, I, O> & {
+  type Dependent<K extends keyof (I & O), I, O = I> = Listenable<I, O> & {
     default: TypeOf<(I & O)[K]> | AsyncSetter<K, I, O>;
     dependent: true;
     dependsOn: Exclude<StringKey<I>, K> | Exclude<StringKey<I>, K>[];
@@ -126,7 +122,7 @@ namespace Schema {
     resolver: AsyncSetter<K, I, O>;
   };
 
-  type LaxProperty<K extends keyof (I & O), I, O = I> = Listenable<K, I, O> & {
+  type LaxProperty<K extends keyof (I & O), I, O = I> = Listenable<I, O> & {
     default: TypeOf<(I & O)[K]> | AsyncSetter<K, I, O>;
     readonly?: "lax";
     shouldInit?: false | BooleanSetter<I, O>;
@@ -134,18 +130,14 @@ namespace Schema {
     validator?: Validator<K, I, O>;
   };
 
-  type Readonly_<K extends keyof (I & O), I, O = I> = Listenable<K, I, O> & {
+  type Readonly_<K extends keyof (I & O), I, O = I> = Listenable<I, O> & {
     default: TypeOf<(I & O)[K]> | AsyncSetter<K, I, O>;
     readonly: "lax";
     shouldUpdate?: BooleanSetter<I, O>;
     validator: Validator<K, I, O>;
   };
 
-  type ReadonlyNoInit<K extends keyof (I & O), I, O = I> = Listenable<
-    K,
-    I,
-    O
-  > & {
+  type ReadonlyNoInit<K extends keyof (I & O), I, O = I> = Listenable<I, O> & {
     default: TypeOf<(I & O)[K]> | AsyncSetter<K, I, O>;
     readonly: true;
     shouldInit: false | BooleanSetter<I, O>;
@@ -154,7 +146,6 @@ namespace Schema {
   };
 
   type ReadonlyRequired<K extends keyof (I & O), I, O = I> = Listenable<
-    K,
     I,
     O
   > & {
@@ -162,13 +153,13 @@ namespace Schema {
     validator: Validator<K, I, O>;
   };
 
-  type Required<K extends keyof (I & O), I, O = I> = Listenable<K, I, O> & {
+  type Required<K extends keyof (I & O), I, O = I> = Listenable<I, O> & {
     required: true;
     shouldUpdate?: BooleanSetter<I, O>;
     validator: Validator<K, I, O>;
   };
 
-  type RequiredBy<K extends keyof (I & O), I, O = I> = Listenable<K, I, O> & {
+  type RequiredBy<K extends keyof (I & O), I, O = I> = Listenable<I, O> & {
     default: TypeOf<(I & O)[K]> | AsyncSetter<K, I, O>;
     required: ConditionalRequiredSetter<I, O>;
     readonly?: true;
@@ -183,10 +174,8 @@ namespace Schema {
     required?: ConditionalRequiredSetter<I, O>;
     virtual: true;
     sanitizer?: AsyncSetter<K, I, O>;
-    onFailure?: Schema.Listener<I, O> | NonEmptyArray<Schema.Listener<I, O>>;
-    onSuccess?:
-      | Schema.SuccessListener<I, O>
-      | NonEmptyArray<Schema.SuccessListener<I, O>>;
+    onFailure?: Listener<I, O> | NonEmptyArray<Listener<I, O>>;
+    onSuccess?: SuccessListener<I, O> | NonEmptyArray<SuccessListener<I, O>>;
     shouldInit?: false | BooleanSetter<I, O>;
     shouldUpdate?: false | BooleanSetter<I, O>;
     validator: Validator<K, I, O>;
@@ -199,9 +188,7 @@ namespace Schema {
 
   export interface Options<I, O> {
     errors?: "silent" | "throw";
-    onSuccess?:
-      | Schema.SuccessListener<I, O>
-      | NonEmptyArray<Schema.SuccessListener<I, O>>;
+    onSuccess?: SuccessListener<I, O> | NonEmptyArray<SuccessListener<I, O>>;
     timestamps?:
       | boolean
       | { createdAt?: boolean | string; updatedAt?: boolean | string };
