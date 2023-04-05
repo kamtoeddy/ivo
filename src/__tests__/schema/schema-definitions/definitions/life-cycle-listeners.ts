@@ -7,7 +7,7 @@ export const Test_LifeCycleListeners = ({ Schema, fx }: any) => {
     describe("valid", () => {
       const values = [() => {}, () => ({}), [() => {}], [() => {}, () => ({})]];
 
-      for (const rule of rules) {
+      for (const rule of rules)
         for (const value of values) {
           const toPass = fx({
             propertyName: {
@@ -21,13 +21,12 @@ export const Test_LifeCycleListeners = ({ Schema, fx }: any) => {
 
           toPass();
         }
-      }
     });
-    // add an it in describe block
+
     describe("invalid", () => {
       const values = [1, "", 0, false, true, null, {}];
 
-      for (const rule of rules) {
+      for (const rule of rules)
         for (const value of values) {
           const toFail = fx({
             propertyName: {
@@ -51,63 +50,59 @@ export const Test_LifeCycleListeners = ({ Schema, fx }: any) => {
             );
           }
         }
-      }
     });
 
     describe("life cycle readonly ctx", () => {
       const rules = ["onDelete", "onFailure", "onSuccess"];
 
-      let Model: any,
-        propChangeMap: any = {};
+      let propChangeMap: any = {};
 
       const validData = { constant: 1, prop1: "1", prop2: "2", prop3: "3" };
       const allProps = ["constant", "prop1", "prop2", "prop3"],
         props = ["prop1", "prop2", "prop3"];
 
-      beforeAll(() => {
-        const handle =
-          (rule = "", prop = "") =>
-          ({ context }: any) => {
-            try {
-              context[prop] = 1;
-            } catch (err) {
-              if (!propChangeMap[rule]) propChangeMap[rule] = {};
+      const handle =
+        (rule = "", prop = "") =>
+        ({ context }: any) => {
+          try {
+            context[prop] = 1;
+          } catch (err) {
+            if (!propChangeMap[rule]) propChangeMap[rule] = {};
 
-              propChangeMap[rule][prop] = true;
-            }
-          };
-        const validator = (value: any) => ({ valid: !!value });
+            propChangeMap[rule][prop] = true;
+          }
+        };
+      const validator = (value: any) => ({ valid: !!value });
 
-        Model = new Schema({
-          constant: {
-            constant: true,
-            value: "constant",
-            onDelete: handle("onDelete", "constant"),
-            onSuccess: handle("onSuccess", "constant"),
-          },
-          prop1: {
-            required: true,
-            onDelete: handle("onDelete", "prop1"),
-            onFailure: handle("onFailure", "prop1"),
-            onSuccess: handle("onSuccess", "prop1"),
-            validator,
-          },
-          prop2: {
-            required: true,
-            onDelete: handle("onDelete", "prop2"),
-            onFailure: handle("onFailure", "prop2"),
-            onSuccess: handle("onSuccess", "prop2"),
-            validator,
-          },
-          prop3: {
-            required: true,
-            onDelete: handle("onDelete", "prop3"),
-            onFailure: handle("onFailure", "prop3"),
-            onSuccess: handle("onSuccess", "prop3"),
-            validator,
-          },
-        }).getModel();
-      });
+      const Model = new Schema({
+        constant: {
+          constant: true,
+          value: "constant",
+          onDelete: handle("onDelete", "constant"),
+          onSuccess: handle("onSuccess", "constant"),
+        },
+        prop1: {
+          required: true,
+          onDelete: handle("onDelete", "prop1"),
+          onFailure: handle("onFailure", "prop1"),
+          onSuccess: handle("onSuccess", "prop1"),
+          validator,
+        },
+        prop2: {
+          required: true,
+          onDelete: handle("onDelete", "prop2"),
+          onFailure: handle("onFailure", "prop2"),
+          onSuccess: handle("onSuccess", "prop2"),
+          validator,
+        },
+        prop3: {
+          required: true,
+          onDelete: handle("onDelete", "prop3"),
+          onFailure: handle("onFailure", "prop3"),
+          onSuccess: handle("onSuccess", "prop3"),
+          validator,
+        },
+      }).getModel();
 
       beforeEach(() => (propChangeMap = {}));
 
@@ -161,27 +156,24 @@ export const Test_LifeCycleListeners = ({ Schema, fx }: any) => {
     });
 
     describe("onDelete", () => {
-      let Model: any,
-        propChangeMap: any = {};
+      let propChangeMap: any = {};
 
-      beforeAll(() => {
-        const onDelete =
-          (prop = "") =>
-          () =>
-            (propChangeMap[prop] = true);
-        const validator = () => ({ valid: false });
+      const onDelete =
+        (prop = "") =>
+        () =>
+          (propChangeMap[prop] = true);
+      const validator = () => ({ valid: false });
 
-        Model = new Schema({
-          constant: {
-            constant: true,
-            value: "constant",
-            onDelete: onDelete("constant"),
-          },
-          prop1: { required: true, onDelete: onDelete("prop1"), validator },
-          prop2: { required: true, onDelete: onDelete("prop2"), validator },
-          prop3: { required: true, onDelete: onDelete("prop3"), validator },
-        }).getModel();
-      });
+      const Model = new Schema({
+        constant: {
+          constant: true,
+          value: "constant",
+          onDelete: onDelete("constant"),
+        },
+        prop1: { required: true, onDelete: onDelete("prop1"), validator },
+        prop2: { required: true, onDelete: onDelete("prop2"), validator },
+        prop3: { required: true, onDelete: onDelete("prop3"), validator },
+      }).getModel();
 
       beforeEach(() => (propChangeMap = {}));
 
@@ -223,48 +215,45 @@ export const Test_LifeCycleListeners = ({ Schema, fx }: any) => {
       });
 
       describe("behaviour", () => {
-        let Model: any,
-          onFailureCount: any = {};
+        let onFailureCount: any = {};
 
-        beforeAll(() => {
-          function incrementOnFailureCountOf(prop: string) {
-            return () => {
-              onFailureCount[prop] = (onFailureCount[prop] ?? 0) + 1;
-            };
-          }
-          const validator = () => ({ valid: false });
+        function incrementOnFailureCountOf(prop: string) {
+          return () => {
+            onFailureCount[prop] = (onFailureCount[prop] ?? 0) + 1;
+          };
+        }
+        const validator = () => ({ valid: false });
 
-          Model = new Schema({
-            prop1: {
-              default: true,
-              onFailure: incrementOnFailureCountOf("prop1"),
-              validator,
-            },
-            prop2: {
-              required: true,
-              onFailure: [
-                incrementOnFailureCountOf("prop2"),
-                incrementOnFailureCountOf("prop2"),
-              ],
-              validator,
-            },
-            dependentProp: {
-              default: "",
-              dependent: true,
-              dependsOn: "virtualProp",
-              resolver: () => "",
-            },
-            virtualProp: {
-              virtual: true,
-              onFailure: [
-                incrementOnFailureCountOf("virtualProp"),
-                incrementOnFailureCountOf("virtualProp"),
-                incrementOnFailureCountOf("virtualProp"),
-              ],
-              validator,
-            },
-          }).getModel();
-        });
+        const Model = new Schema({
+          prop1: {
+            default: true,
+            onFailure: incrementOnFailureCountOf("prop1"),
+            validator,
+          },
+          prop2: {
+            required: true,
+            onFailure: [
+              incrementOnFailureCountOf("prop2"),
+              incrementOnFailureCountOf("prop2"),
+            ],
+            validator,
+          },
+          dependentProp: {
+            default: "",
+            dependent: true,
+            dependsOn: "virtualProp",
+            resolver: () => "",
+          },
+          virtualProp: {
+            virtual: true,
+            onFailure: [
+              incrementOnFailureCountOf("virtualProp"),
+              incrementOnFailureCountOf("virtualProp"),
+              incrementOnFailureCountOf("virtualProp"),
+            ],
+            validator,
+          },
+        }).getModel();
 
         beforeEach(() => {
           onFailureCount = {};
@@ -352,8 +341,7 @@ export const Test_LifeCycleListeners = ({ Schema, fx }: any) => {
     });
 
     describe("onSuccess", () => {
-      let Model: any,
-        initialData = {
+      let initialData = {
           dependent: false,
           lax: "changed",
           readonly: "changed",
@@ -363,44 +351,42 @@ export const Test_LifeCycleListeners = ({ Schema, fx }: any) => {
         propChangeMap: any = {},
         onSuccessValues: any = {};
 
-      beforeAll(() => {
-        const onSuccess =
-          (prop = "") =>
-          (summary: any) => {
-            propChangeMap[prop] = true;
-            onSuccessValues[prop] = summary;
-            onSuccessValues.__ctx = summary.context;
-          };
+      const onSuccess =
+        (prop = "") =>
+        (summary: any) => {
+          propChangeMap[prop] = true;
+          onSuccessValues[prop] = summary;
+          onSuccessValues.__ctx = summary.context;
+        };
 
-        const validator = () => ({ valid: true });
+      const validator = () => ({ valid: true });
 
-        Model = new Schema({
-          dependent: {
-            default: false,
-            dependent: true,
-            dependsOn: "readonlyLax",
-            onSuccess: onSuccess("dependent"),
-            resolver: () => true,
-          },
-          lax: { default: "", onSuccess: onSuccess("lax"), validator },
-          readonly: {
-            readonly: true,
-            onSuccess: onSuccess("readonly"),
-            validator,
-          },
-          readonlyLax: {
-            default: "",
-            readonly: "lax",
-            onSuccess: onSuccess("readonlyLax"),
-            validator,
-          },
-          required: {
-            required: true,
-            onSuccess: onSuccess("required"),
-            validator,
-          },
-        }).getModel();
-      });
+      const Model = new Schema({
+        dependent: {
+          default: false,
+          dependent: true,
+          dependsOn: "readonlyLax",
+          onSuccess: onSuccess("dependent"),
+          resolver: () => true,
+        },
+        lax: { default: "", onSuccess: onSuccess("lax"), validator },
+        readonly: {
+          readonly: true,
+          onSuccess: onSuccess("readonly"),
+          validator,
+        },
+        readonlyLax: {
+          default: "",
+          readonly: "lax",
+          onSuccess: onSuccess("readonlyLax"),
+          validator,
+        },
+        required: {
+          required: true,
+          onSuccess: onSuccess("required"),
+          validator,
+        },
+      }).getModel();
 
       beforeEach(() => {
         propChangeMap = {};
@@ -409,11 +395,7 @@ export const Test_LifeCycleListeners = ({ Schema, fx }: any) => {
 
       // creation
       it("should call onSuccess listeners at creation", async () => {
-        const {
-          data: values,
-          error,
-          handleSuccess,
-        } = await Model.create({
+        const { data, error, handleSuccess } = await Model.create({
           required: true,
           readonly: true,
         });
@@ -429,40 +411,18 @@ export const Test_LifeCycleListeners = ({ Schema, fx }: any) => {
           required: true,
         });
 
-        const operation = "creation",
-          previousValues = undefined;
+        const context = onSuccessValues.__ctx,
+          operation = "creation",
+          previousValues = undefined,
+          values = data,
+          summary = { context, operation, previousValues, values };
 
         expect(onSuccessValues).toMatchObject({
-          dependent: expect.objectContaining({
-            context: onSuccessValues.__ctx,
-            operation,
-            previousValues,
-            values,
-          }),
-          lax: expect.objectContaining({
-            context: onSuccessValues.__ctx,
-            operation,
-            previousValues,
-            values,
-          }),
-          readonly: expect.objectContaining({
-            context: onSuccessValues.__ctx,
-            operation,
-            previousValues,
-            values,
-          }),
-          readonlyLax: expect.objectContaining({
-            context: onSuccessValues.__ctx,
-            operation,
-            previousValues,
-            values,
-          }),
-          required: expect.objectContaining({
-            context: onSuccessValues.__ctx,
-            operation,
-            previousValues,
-            values,
-          }),
+          dependent: summary,
+          lax: summary,
+          readonly: summary,
+          readonlyLax: summary,
+          required: summary,
         });
       });
 
@@ -488,41 +448,18 @@ export const Test_LifeCycleListeners = ({ Schema, fx }: any) => {
           required: true,
         });
 
-        const operation = "creation",
+        const context = onSuccessValues.__ctx,
+          operation = "creation",
           previousValues = undefined,
-          values = { ...initialData, ...data };
+          values = { ...initialData, ...data },
+          summary = { context, operation, previousValues, values };
 
         expect(onSuccessValues).toMatchObject({
-          dependent: expect.objectContaining({
-            context: onSuccessValues.__ctx,
-            operation,
-            previousValues,
-            values,
-          }),
-          lax: expect.objectContaining({
-            context: onSuccessValues.__ctx,
-            operation,
-            previousValues,
-            values,
-          }),
-          readonly: expect.objectContaining({
-            context: onSuccessValues.__ctx,
-            operation,
-            previousValues,
-            values,
-          }),
-          readonlyLax: expect.objectContaining({
-            context: onSuccessValues.__ctx,
-            operation,
-            previousValues,
-            values,
-          }),
-          required: expect.objectContaining({
-            context: onSuccessValues.__ctx,
-            operation,
-            previousValues,
-            values,
-          }),
+          dependent: summary,
+          lax: summary,
+          readonly: summary,
+          readonlyLax: summary,
+          required: summary,
         });
       });
 
@@ -550,7 +487,7 @@ export const Test_LifeCycleListeners = ({ Schema, fx }: any) => {
       });
 
       it("should call onSuccess listeners during updates with readonlyLax & dependent", async () => {
-        const { error, handleSuccess } = await Model.update(initialData, {
+        const { data, error, handleSuccess } = await Model.update(initialData, {
           readonlyLax: true,
         });
 
@@ -558,6 +495,17 @@ export const Test_LifeCycleListeners = ({ Schema, fx }: any) => {
 
         expect(error).toBeUndefined();
         expect(propChangeMap).toEqual({ dependent: true, readonlyLax: true });
+
+        const context = onSuccessValues.__ctx,
+          operation = "update",
+          previousValues = initialData,
+          values = { ...initialData, ...data },
+          summary = { context, operation, previousValues, values };
+
+        expect(onSuccessValues).toMatchObject({
+          dependent: summary,
+          readonlyLax: summary,
+        });
       });
     });
   });
