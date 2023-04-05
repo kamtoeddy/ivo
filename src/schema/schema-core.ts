@@ -51,6 +51,9 @@ export abstract class SchemaCore<I, O> {
   // helpers
   protected optionsTool: OptionsTool;
 
+  // listeners
+  protected globalSuccessListeners: ns.SuccessListener<I, O>[] = [];
+
   constructor(
     definitions: ns.Definitions_<I, O>,
     options: ns.Options<I, O> = defaultOptions as ns.Options<I, O>
@@ -1044,8 +1047,10 @@ export abstract class SchemaCore<I, O> {
     const listeners = toArray<ns.SuccessListener<I, O>>(onSuccess!);
 
     listeners.forEach((listener, i) => {
-      if (!this._isFunction(listener))
-        reasons.push(`The success listener @[${i}] is not a function`);
+      if (this._isFunction(listener))
+        return this.globalSuccessListeners.push(listener);
+
+      reasons.push(`The success listener @[${i}] is not a function`);
     });
 
     if (reasons.length) return { valid: false, reasons };

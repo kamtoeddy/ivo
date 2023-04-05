@@ -260,6 +260,8 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
       successListeners = successListeners.concat(listeners);
     }
 
+    successListeners = successListeners.concat(this.globalSuccessListeners);
+
     return async () => {
       const successOperations = successListeners.map(
         async (listener) => await listener(summary)
