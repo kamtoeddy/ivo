@@ -6,7 +6,7 @@ import {
 } from "../_utils";
 
 export const Test_SchemaErrors = ({ Schema, fx }: any) => {
-  describe("errors", () => {
+  describe("Schema.options.errors", () => {
     it("should allow 'silent' | 'throw'", () => {
       const values = ["silent", "throw"];
 

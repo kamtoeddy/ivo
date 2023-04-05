@@ -1,7 +1,7 @@
 import { expectFailure, expectNoFailure, getValidSchema } from "../_utils";
 
 export const Test_SchemaTimestampOption = ({ Schema, fx }: any) => {
-  describe("timestamps", () => {
+  describe("Schema.options.timestamps", () => {
     describe("valid", () => {
       it("should allow true | false", () => {
         const values = [false, true];

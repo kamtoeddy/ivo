@@ -1,7 +1,7 @@
 import { expectFailure, getValidSchema } from "../_utils";
 
 export const Test_SchemaOptionFormat = ({ fx }: any) => {
-  describe("option-format", () => {
+  describe("Schema.options", () => {
     it("should reject non-object values", () => {
       const values = [null, false, true, 1, "abc", []];
 

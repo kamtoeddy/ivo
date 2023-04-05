@@ -76,7 +76,7 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
 
   private _areValuesOk = (values: any) => values && typeof values == "object";
 
-  private _getGetSummary = (data: Partial<O>, isUpdate = false) => {
+  private _getSummary = (data: Partial<O>, isUpdate = false) => {
     const context = this._getGetContext(),
       operation = isUpdate ? "update" : "creation",
       previousValues = isUpdate ? this._getFrozenCopy(this.values) : undefined,
@@ -134,7 +134,7 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
     error: ErrorTool,
     isUpdate = false
   ) => {
-    const summary = this._getGetSummary(data, isUpdate);
+    const summary = this._getSummary(data, isUpdate);
 
     for (const prop of this.propsRequiredBy) {
       const [isRequired, message] = this._getRequiredState(prop, summary);
@@ -249,7 +249,7 @@ class ModelTool<I, O = I, A = {}> extends SchemaCore<I, O> {
 
     let successListeners = [] as ns.SuccessListener<I, O>[];
 
-    const summary = this._getGetSummary(data, isUpdate);
+    const summary = this._getSummary(data, isUpdate);
 
     for (const prop of successProps) {
       const listeners = this._getListeners(
