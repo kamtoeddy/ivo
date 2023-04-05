@@ -64,6 +64,59 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
             global: summary,
           });
         });
+
+        it("should trigger all 'success' listeners during cloning ", async () => {
+          const book = { id: 1, name: "Book name", price: 100 };
+
+          const { data, handleSuccess } = await Book.clone({
+            ...book,
+            _setPrice: 100,
+          });
+
+          await handleSuccess();
+
+          const summary = {
+            context: { ...book, _setPrice: 100 },
+            operation: "creation",
+            previousValues: undefined,
+            values: book,
+          };
+
+          expect(data).toEqual(book);
+          expect(successValues).toEqual({
+            id: summary,
+            name: summary,
+            price: summary,
+            _setPrice: summary,
+            global: summary,
+          });
+        });
+
+        it("should trigger all 'success' listeners during updates ", async () => {
+          const book = { id: 1, name: "Book name", price: 100 };
+
+          const { data, handleSuccess } = await Book.update(book, {
+            _setPrice: 200,
+          });
+
+          await handleSuccess();
+
+          const values = { ...book, price: 200 };
+
+          const summary = {
+            context: { ...values, _setPrice: 200 },
+            operation: "update",
+            previousValues: book,
+            values: values,
+          };
+
+          expect(data).toEqual({ price: 200 });
+          expect(successValues).toEqual({
+            price: summary,
+            _setPrice: summary,
+            global: summary,
+          });
+        });
       });
     });
 
