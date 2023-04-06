@@ -120,10 +120,12 @@ namespace Schema {
     value: TypeOf<(I & O)[K]> | DefaultSetter<K, I, O>;
   };
 
-  type Dependent<K extends keyof (I & O), I, O = I> = Listenable<I, O> & {
+  type Dependent<K extends keyof (I & O), I, O = I> = {
     default: TypeOf<(I & O)[K]> | DefaultSetter<K, I, O>;
     dependent: true;
     dependsOn: Exclude<StringKey<I>, K> | Exclude<StringKey<I>, K>[];
+    onDelete?: DeleteHandler<O> | NonEmptyArray<DeleteHandler<O>>;
+    onSuccess?: SuccessHandler<I, O> | NonEmptyArray<SuccessHandler<I, O>>;
     readonly?: true;
     resolver: Resolver<K, I, O>;
   };
