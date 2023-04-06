@@ -78,7 +78,7 @@ class Schema<
     return new ExtendedSchema<InputType, OutputType, A>(_definitions, options);
   };
 
-  getModel = () => new Model(new ModelTool<I, O, A>(this as any));
+  getModel = () => new Model(new ModelTool<I, O, A>(this));
 }
 
 class ExtendedSchema<
@@ -106,7 +106,7 @@ class ModelTool<
   private _areValuesOk = (values: any) => values && typeof values == "object";
 
   private _getSummary = (data: Partial<O>, isUpdate = false) => {
-    const context = this._getGetContext(),
+    const context = this._getContext(),
       operation = isUpdate ? "update" : "creation",
       previousValues = isUpdate ? this._getFrozenCopy(this.values) : undefined,
       values = this._getFrozenCopy(
@@ -120,6 +120,9 @@ class ModelTool<
       values,
     }) as GetSummary<I, O>;
   };
+
+  private _getValidationSummary = (isUpdate = false) =>
+    this._getSummary(this.values, isUpdate);
 
   private _handleError = (error: ErrorTool) => {
     return this._options.errors === "throw"
@@ -139,7 +142,7 @@ class ModelTool<
 
     props = Array.from(new Set(props));
 
-    const ctx = this._getGetContext();
+    const ctx = this._getContext();
 
     const cleanups = props.map(async (prop) => {
       const listeners = this._getListeners(prop, "onFailure") as ns.Listener<
@@ -190,8 +193,8 @@ class ModelTool<
   ) => {
     let sanitizers: [StringKey<I>, Function][] = [];
 
-    const ctx = this._getGetContext();
-    const partialCtx = this._getPartialGetContext();
+    const ctx = this._getContext();
+    const partialCtx = this._getPartialContext();
 
     const successFulVirtuals = this._getKeysAsProps(partialCtx).filter(
       this._isVirtual
@@ -208,7 +211,7 @@ class ModelTool<
     const sanitizations = sanitizers.map(async ([prop, sanitizer]) => {
       const resolvedValue = await sanitizer(ctx, lifeCycle);
 
-      this._updateGetContext({ [prop]: resolvedValue } as any);
+      this._updateContext({ [prop]: resolvedValue } as any);
     });
 
     await Promise.allSettled(sanitizations);
@@ -272,7 +275,7 @@ class ModelTool<
   };
 
   private _makeHandleSuccess = (data: Partial<O>, isUpdate = false) => {
-    const partialCtx = this._getPartialGetContext();
+    const partialCtx = this._getPartialContext();
 
     const successProps = this._getKeysAsProps(partialCtx);
 
@@ -333,7 +336,7 @@ class ModelTool<
 
     toResolve = Array.from(new Set(toResolve));
 
-    const _ctx = this._getGetContext();
+    const _ctx = this._getContext();
 
     const operations = toResolve.map(async (prop) => {
       if (
@@ -357,8 +360,8 @@ class ModelTool<
 
       const updates = { [prop]: value } as any;
 
-      this._updateGetContext(updates);
-      this._updatePartialGetContext(updates);
+      this._updateContext(updates);
+      this._updatePartialContext(updates);
 
       const _data = await this._resolveDependentChanges(
         data,
@@ -406,7 +409,7 @@ class ModelTool<
 
     this.values = _values as O;
 
-    this._initGetContexts();
+    this._initialiseContexts();
   }
 
   private _useConfigProps = (obj: Partial<O>, isUpdate = false) => {
@@ -429,12 +432,13 @@ class ModelTool<
     operationData: Partial<O> = {},
     error: ErrorTool,
     prop: StringKey<O>,
-    value: any
+    value: any,
+    isUpdate = false
   ) => {
     const isValid = (await this._validate(
       prop as any,
       value,
-      this._getGetContext()
+      this._getValidationSummary(isUpdate)
     )) as ValidatorResponse<O[StringKey<O>]>;
 
     if (!isValid.valid) return error.add(prop, isValid.reasons);
@@ -450,8 +454,8 @@ class ModelTool<
 
     const validCtxUpdate = { [propName]: validated } as unknown as any;
 
-    this._updateGetContext(validCtxUpdate);
-    this._updatePartialGetContext(validCtxUpdate);
+    this._updateContext(validCtxUpdate);
+    this._updatePartialContext(validCtxUpdate);
   };
 
   private _sanitizeValidationResponse = <T>(
@@ -515,8 +519,8 @@ class ModelTool<
 
         const validCtxUpdate = { [prop]: data[prop] as any } as any;
 
-        this._updatePartialGetContext(validCtxUpdate);
-        return this._updateGetContext(validCtxUpdate);
+        this._updatePartialContext(validCtxUpdate);
+        return this._updateContext(validCtxUpdate);
       }
       const isAlias = this._isVirtualAlias(prop),
         isDependent = this._isDependentProp(prop);
@@ -530,8 +534,8 @@ class ModelTool<
 
         const validCtxUpdate = { [prop]: data[prop] } as unknown as any;
 
-        this._updatePartialGetContext(validCtxUpdate);
-        return this._updateGetContext(validCtxUpdate);
+        this._updatePartialContext(validCtxUpdate);
+        return this._updateContext(validCtxUpdate);
       }
 
       const isVirtualInit = virtuals.includes(prop);
@@ -551,8 +555,8 @@ class ModelTool<
 
         const validCtxUpdate = { [prop]: data[prop] } as unknown as any;
 
-        this._updatePartialGetContext(validCtxUpdate);
-        return this._updateGetContext(validCtxUpdate);
+        this._updatePartialContext(validCtxUpdate);
+        return this._updateContext(validCtxUpdate);
       }
 
       const isLax = this._isLaxProp(prop);
@@ -583,8 +587,8 @@ class ModelTool<
 
         const validCtxUpdate = { [prop]: data[prop] } as unknown as any;
 
-        this._updatePartialGetContext(validCtxUpdate);
-        return this._updateGetContext(validCtxUpdate);
+        this._updatePartialContext(validCtxUpdate);
+        return this._updateContext(validCtxUpdate);
       }
 
       return this._validateAndSet(
@@ -603,7 +607,7 @@ class ModelTool<
 
     data = await this._resolveDependentChanges(
       data,
-      this._getPartialGetContext(),
+      this._getPartialContext(),
       "creation"
     );
 
@@ -614,8 +618,8 @@ class ModelTool<
 
     const finalData = this._useConfigProps(data);
 
-    this._updateGetContext(finalData as any);
-    this._updatePartialGetContext(finalData as any);
+    this._updateContext(finalData as any);
+    this._updatePartialContext(finalData as any);
 
     return {
       data: finalData as O,
@@ -645,8 +649,8 @@ class ModelTool<
 
         const validCtxUpdate = { [prop]: data[prop] as any } as any;
 
-        this._updatePartialGetContext(validCtxUpdate);
-        return this._updateGetContext(validCtxUpdate);
+        this._updatePartialContext(validCtxUpdate);
+        return this._updateContext(validCtxUpdate);
       }
 
       const isVirtualInit = virtuals.includes(prop);
@@ -682,8 +686,8 @@ class ModelTool<
 
         const validCtxUpdate = { [prop]: data[prop] as any } as any;
 
-        this._updatePartialGetContext(validCtxUpdate);
-        return this._updateGetContext(validCtxUpdate);
+        this._updatePartialContext(validCtxUpdate);
+        return this._updateContext(validCtxUpdate);
       }
 
       return this._validateAndSet(data, error, prop, this.values[prop]);
@@ -697,7 +701,7 @@ class ModelTool<
 
     data = await this._resolveDependentChanges(
       data,
-      this._getPartialGetContext(),
+      this._getPartialContext(),
       "creation"
     );
 
@@ -708,8 +712,8 @@ class ModelTool<
 
     const finalData = this._useConfigProps(data);
 
-    this._updateGetContext(finalData as any);
-    this._updatePartialGetContext(finalData as any);
+    this._updateContext(finalData as any);
+    this._updatePartialContext(finalData as any);
 
     return {
       data: finalData as O,
@@ -724,7 +728,7 @@ class ModelTool<
 
     this._setValues(values, { allowVirtuals: false, allowTimestamps: true });
 
-    const ctx = this._getGetContext();
+    const ctx = this._getContext();
 
     const cleanups = this.props.map(async (prop) => {
       const listeners = this._getListeners(prop, "onDelete") as ns.Listener<
@@ -760,7 +764,7 @@ class ModelTool<
       const isValid = (await this._validate(
         prop as any,
         value,
-        this._getGetContext()
+        this._getValidationSummary(true)
       )) as ValidatorResponse<O[StringKey<O>]>;
 
       if (!isValid.valid) return error.add(prop, isValid.reasons);
@@ -785,8 +789,8 @@ class ModelTool<
 
       const validCtxUpdate = { [propName]: validated } as unknown as any;
 
-      this._updateGetContext(validCtxUpdate);
-      this._updatePartialGetContext(validCtxUpdate);
+      this._updateContext(validCtxUpdate);
+      this._updatePartialContext(validCtxUpdate);
     });
 
     await Promise.allSettled(validations);
@@ -802,7 +806,7 @@ class ModelTool<
 
     updated = await this._resolveDependentChanges(
       updated,
-      this._getPartialGetContext(),
+      this._getPartialContext(),
       "update"
     );
 
@@ -813,8 +817,8 @@ class ModelTool<
 
     const finalData = this._useConfigProps(updated, true);
 
-    this._updateGetContext(finalData as any);
-    this._updatePartialGetContext(finalData as any);
+    this._updateContext(finalData as any);
+    this._updatePartialContext(finalData as any);
 
     return {
       data: finalData as Partial<O>,
@@ -826,7 +830,7 @@ class ModelTool<
   _validate = async <K extends StringKey<I & A>>(
     prop: K,
     value: any,
-    ctx: GetContext<I, O>
+    summary_: GetSummary<I, O>
   ) => {
     const isAlias = this._isVirtualAlias(prop);
 
@@ -845,7 +849,9 @@ class ModelTool<
     const validator = this._getValidator(_prop as StringKey<I>);
 
     if (validator) {
-      let res = (await validator(value, ctx)) as ResponseInput_<(I & A)[K]>;
+      let res = (await validator(value, summary_)) as ResponseInput_<
+        (I & A)[K]
+      >;
 
       res = this._sanitizeValidationResponse<(I & A)[K]>(res, value);
 
@@ -867,6 +873,14 @@ class Model<I extends RealType<I>, O extends RealType<O> = I, A = {}> {
 
   update = this.modelTool.update;
 
-  validate = async <K extends StringKey<I & A>>(prop: K, value: any) =>
-    this.modelTool._validate(prop, value, {} as GetContext<I, O>);
+  validate = async <K extends StringKey<I & A>>(prop: K, value: any) => {
+    const summary = {
+      context: {},
+      operation: "creation",
+      previousValues: undefined,
+      values: {},
+    } as GetSummary<I, O>;
+
+    return this.modelTool._validate(prop, value, summary);
+  };
 }

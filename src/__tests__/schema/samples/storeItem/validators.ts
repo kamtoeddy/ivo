@@ -1,5 +1,10 @@
-import { IStringOptions } from "../../../../../dist";
-import { IOtherMeasureUnit, IOtherQuantity, IStoreItem } from "./interfaces";
+import { GetSummary, IStringOptions } from "../../../../../dist";
+import {
+  IOtherMeasureUnit,
+  IOtherQuantity,
+  IStoreItem,
+  StoreItemType,
+} from "./interfaces";
 
 import {
   isArrayOk,
@@ -79,12 +84,15 @@ export const validateOtherQuantity = (value: any, ctx: IStoreItem) => {
   };
 };
 
-export const validateQuantities = async (value: any, ctx: IStoreItem) => {
+export const validateQuantities = async (
+  value: any,
+  { context }: GetSummary<IStoreItem, StoreItemType>
+) => {
   return isArrayOk<IOtherQuantity>(value, {
     empty: true,
     unique: false,
-    filter: (v) => validateOtherQuantity(v, ctx).valid,
-    modifier: (v) => validateOtherQuantity(v, ctx).validated,
+    filter: (v) => validateOtherQuantity(v, context).valid,
+    modifier: (v) => validateOtherQuantity(v, context).validated,
   });
 };
 

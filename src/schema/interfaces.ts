@@ -221,7 +221,7 @@ type ResponseInput<T> = boolean | (ResponseInput_<T> & {});
 
 type Validator<K extends keyof (I & O), I, O> = (
   value: any,
-  context: GetContext<I, O>
+  summary: GetSummary<I, O> & {}
 ) => ResponseInput<(I & O)[K]> | Promise<ResponseInput<(I & O)[K]>>;
 
 type NonEmptyArray<T> = [T, ...T[]];

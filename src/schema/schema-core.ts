@@ -69,22 +69,22 @@ export abstract class SchemaCore<I, O> {
   }
 
   // < context methods >
-  protected _getGetContext = () =>
+  protected _getContext = () =>
     this._getFrozenCopy(sortKeys(this.context)) as GetContext<I, O>;
 
-  protected _getPartialGetContext = () =>
+  protected _getPartialContext = () =>
     this._getFrozenCopy(this.partialGetContext);
 
-  protected _initGetContexts = () => {
+  protected _initialiseContexts = () => {
     this.context = { ...this.values } as GetContext<I, O>;
     this.partialGetContext = {} as GetContext<I, O>;
   };
 
-  protected _updateGetContext = (updates: Partial<I>) => {
+  protected _updateContext = (updates: Partial<I>) => {
     this.context = { ...this.context, ...updates };
   };
 
-  protected _updatePartialGetContext = (updates: Partial<I>) => {
+  protected _updatePartialContext = (updates: Partial<I>) => {
     this.partialGetContext = { ...this.partialGetContext, ...updates };
   };
   // < context methods />
@@ -288,7 +288,7 @@ export abstract class SchemaCore<I, O> {
     const _default = this._getDefinition(prop)?.default;
 
     const value = this._isFunction(_default)
-      ? _default(this._getGetContext())
+      ? _default(this._getContext())
       : this.defaults[prop as StringKey<O>];
 
     return isEqual(value, undefined)
@@ -308,7 +308,7 @@ export abstract class SchemaCore<I, O> {
     const value = this._getDefinition(prop)?.[rule];
 
     return this._isFunction(value)
-      ? value({ ...this._getGetContext(), ...extraCtx }, lifeCycle)
+      ? value({ ...this._getContext(), ...extraCtx }, lifeCycle)
       : value;
   };
 
