@@ -38,7 +38,8 @@ const userSchema = new Schema<UserDTO, UserType>({
     default: "",
     dependent: true,
     dependsOn: ["firstName", "lastName"],
-    resolver: (ctx) => `${ctx.firstName} ${ctx.lastName}`,
+    resolver: ({ context: { firstName, lastName } }) =>
+      `${firstName} ${lastName}`,
   },
 });
 
@@ -71,7 +72,7 @@ These methods are async because custom validators could be async as well.
 | required     | boolean \| function          | a property that must be set during an operation [more](./required.md#required-properties)                                                                 |
 | shouldInit   | false \| function(): boolean | A boolean or setter that tells clean-schema whether or not a property should be initialized.                                                              |
 | shouldUpdate | false \| function(): boolean | A boolean or setter that tells clean-schema whether or not a property should be initialized.                                                              |
-| validator    | function                     | A function (async / sync) used to validated the value of a property. [more](../../../v1.4.6/validate/index.md#validators)                                 |
+| validator    | function                     | A function (async / sync) used to validated the value of a property. [more](../../validate/index.md#validators)                                           |
 | value        | any \| function              | value or setter of constant property. [more](../../../v3.0.0/schema/definition/constants.md#constant-properties`)                                         |
 | virtual      | boolean                      | a helper property that can be used to provide extra context but does not appear on instances of your model [more](./virtuals.md#virtual-properties)       |
 

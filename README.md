@@ -59,7 +59,7 @@ const userSchema = new Schema<Input, Output>(
       default: "",
       dependent: true,
       dependsOn: ["firstName", "lastName"],
-      resolver: generateFullName,
+      resolver: getFullName,
     },
     id: { constant: true, value: generateUserId },
     lastName: {
@@ -73,7 +73,7 @@ const userSchema = new Schema<Input, Output>(
 );
 
 // resolvers
-function generateFullName({ context: { firstName, lastName } }: Summary) {
+function getFullName({ context: { firstName, lastName } }: Summary) {
   return `${firstName} ${lastName}`;
 }
 
@@ -105,13 +105,11 @@ function validateRole(value) {
 
   if (!isValidString.valid) return isValidString;
 
-  let validated = isValidString.validated;
-
   const valid = ["admin", "user"].includes(validated);
 
   if (!valid) return { valid, reason: "invalid user role" };
 
-  return { valid, validated };
+  return { valid, validated: isValidString.validated };
 }
 
 function validateString(message = "") {
@@ -180,7 +178,7 @@ const { data, error, handleSuccess } = await UserModel.update(user, {
   firstName: "Peter",
   id: 2,
   age: 34,
-  fullName: "Gordon Lightfoot",
+  fullName: "Tony Stark",
 });
 
 // age is ignored because it is not a valid property
@@ -208,7 +206,7 @@ await handleSuccess();
     - [isEmailOk](./docs/v2.6.0/validate/isEmailOk.md)
     - [isNumberOk](./docs/v2.6.0/validate/isNumberOk.md)
     - [isStringOk](./docs/v3.2.0/validate/isStringOk.md)
-- [Inheritance](./docs/v3.0.0/schema/definition/inheritance.md#schema-inheritance)
+- [Extending Schemas](./docs/v3.2.0/schema/definition/extend-schemas.md#extending-schemas)
 - [The Operation Context](./docs/v3.2.0/schema/definition/life-cycles.md#the-operation-context)
 - [The Operation Summary](./docs/v3.2.0/schema/definition/life-cycles.md#the-operation-summary)
 - [Life Cycles & Listeners](./docs/v3.2.0/schema/definition/life-cycles.md#life-cycle-listeners)
