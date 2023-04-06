@@ -1,9 +1,9 @@
 import { Merge, RealType } from "./merge-types";
 
 export type {
-  GetContext,
+  Context,
   DefinitionRule,
-  GetSummary,
+  Summary,
   Schema as ISchema,
   NonEmptyArray,
   RealType,
@@ -15,17 +15,17 @@ export type {
   ValidatorResponse,
 };
 
-type GetContext<I, O = I> = Readonly<Merge<I, O>>;
+type Context<I, O = I> = Readonly<Merge<I, O>>;
 
-type GetSummary<I, O = I> = (
+type Summary<I, O = I> = (
   | Readonly<{
-      context: GetContext<I, O>;
+      context: Context<I, O>;
       operation: "creation";
       previousValues: undefined;
       values: Readonly<O>;
     }>
   | Readonly<{
-      context: GetContext<I, O>;
+      context: Context<I, O>;
       operation: "update";
       previousValues: Readonly<O>;
       values: Readonly<O>;
@@ -35,14 +35,14 @@ type GetSummary<I, O = I> = (
 type TypeOf<T> = Exclude<T, undefined>;
 
 type AsyncSetter<K extends keyof (I & O), I, O> = (
-  context: GetContext<I, O>,
+  context: Context<I, O>,
   operation: Schema.OperationName
 ) => TypeOf<(I & O)[K]> | Promise<TypeOf<(I & O)[K]>>;
 
-type BooleanSetter<I, O> = (context: GetContext<I, O>) => boolean;
+type BooleanSetter<I, O> = (context: Context<I, O>) => boolean;
 
 type ConditionalRequiredSetter<I, O> = (
-  summary: GetSummary<I, O> & {}
+  summary: Summary<I, O> & {}
 ) => boolean | [boolean, string];
 
 type StringKey<T> = Extract<keyof T, string>;
@@ -52,12 +52,10 @@ namespace Schema {
 
   export type OperationName = "creation" | "update";
 
-  export type Listener<I, O> = (
-    context: GetContext<I, O>
-  ) => any | Promise<any>;
+  export type Listener<I, O> = (context: Context<I, O>) => any | Promise<any>;
 
   export type SuccessListener<I, O> = (
-    summary: GetSummary<I, O> & {}
+    summary: Summary<I, O> & {}
   ) => any | Promise<any>;
 
   export type Definitions<I, O = I, A = {}> = {
@@ -221,7 +219,7 @@ type ResponseInput<T> = boolean | (ResponseInput_<T> & {});
 
 type Validator<K extends keyof (I & O), I, O> = (
   value: any,
-  summary: GetSummary<I, O> & {}
+  summary: Summary<I, O> & {}
 ) => ResponseInput<(I & O)[K]> | Promise<ResponseInput<(I & O)[K]>>;
 
 type NonEmptyArray<T> = [T, ...T[]];

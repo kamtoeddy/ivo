@@ -1,4 +1,4 @@
-import { GetSummary, IStringOptions } from "../../../../../dist";
+import { Summary, IStringOptions } from "../../../../../dist";
 import {
   IOtherMeasureUnit,
   IOtherQuantity,
@@ -86,7 +86,7 @@ export const validateOtherQuantity = (value: any, ctx: IStoreItem) => {
 
 export const validateQuantities = async (
   value: any,
-  { context }: GetSummary<IStoreItem, StoreItemType>
+  { context }: Summary<IStoreItem, StoreItemType>
 ) => {
   return isArrayOk<IOtherQuantity>(value, {
     empty: true,

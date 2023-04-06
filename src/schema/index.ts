@@ -1,12 +1,12 @@
 import { sort, sortKeys, toArray } from "../utils/functions";
 import { isEqual } from "../utils/isEqual";
 import {
-  GetContext,
-  GetSummary,
+  Context,
   ISchema as ns,
   RealType,
   ResponseInput_,
   StringKey,
+  Summary,
   ValidatorResponse,
 } from "./interfaces";
 import { Merge } from "./merge-types";
@@ -118,7 +118,7 @@ class ModelTool<
       operation,
       previousValues,
       values,
-    }) as GetSummary<I, O>;
+    }) as Summary<I, O>;
   };
 
   private _getValidationSummary = (isUpdate = false) =>
@@ -305,7 +305,7 @@ class ModelTool<
 
   private _resolveDependentChanges = async (
     data: Partial<O>,
-    ctx: Partial<O> | Partial<GetContext<I, O>>,
+    ctx: Partial<O> | Partial<Context<I, O>>,
     lifeCycle: ns.OperationName
   ) => {
     let _updates = { ...data };
@@ -350,10 +350,7 @@ class ModelTool<
 
       const value = await resolver(_ctx, lifeCycle);
 
-      if (
-        !isCreating &&
-        isEqual(value, _ctx[prop as StringKey<GetContext<I, O>>])
-      )
+      if (!isCreating && isEqual(value, _ctx[prop as StringKey<Context<I, O>>]))
         return;
 
       data[prop] = value;
@@ -744,7 +741,7 @@ class ModelTool<
     await Promise.allSettled(cleanups);
   };
 
-  update = async (values: O, changes: Partial<GetContext<I, O>>) => {
+  update = async (values: O, changes: Partial<Context<I, O>>) => {
     if (!this._areValuesOk(values)) return this._handleInvalidData();
 
     this._setValues(values, { allowVirtuals: false, allowTimestamps: true });
@@ -830,7 +827,7 @@ class ModelTool<
   _validate = async <K extends StringKey<I & A>>(
     prop: K,
     value: any,
-    summary_: GetSummary<I, O>
+    summary_: Summary<I, O>
   ) => {
     const isAlias = this._isVirtualAlias(prop);
 
@@ -879,7 +876,7 @@ class Model<I extends RealType<I>, O extends RealType<O> = I, A = {}> {
       operation: "creation",
       previousValues: undefined,
       values: {},
-    } as GetSummary<I, O>;
+    } as Summary<I, O>;
 
     return this.modelTool._validate(prop, value, summary);
   };

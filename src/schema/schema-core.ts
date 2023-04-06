@@ -3,16 +3,15 @@ import { ObjectType } from "../utils/interfaces";
 import { isEqual } from "../utils/isEqual";
 import {
   DefinitionRule,
-  GetContext,
-  GetSummary,
+  Context,
   ISchema as ns,
   StringKey,
+  Summary,
   Validator,
   ALLOWED_OPTIONS,
   DEFINITION_RULES,
   CONSTANT_RULES,
   VIRTUAL_RULES,
-  RealType,
 } from "./interfaces";
 import { OptionsTool } from "./utils/options-tool";
 import { ErrorTool } from "./utils/schema-error";
@@ -29,8 +28,8 @@ export abstract class SchemaCore<I, O> {
   protected _definitions = {} as ns.Definitions_<I, O>;
 
   // contexts & values
-  protected context: GetContext<I, O> = {} as GetContext<I, O>;
-  protected partialGetContext: GetContext<I, O> = {} as GetContext<I, O>;
+  protected context: Context<I, O> = {} as Context<I, O>;
+  protected partialContext: Context<I, O> = {} as Context<I, O>;
   protected defaults: Partial<O> = {};
   protected values: O = {} as O;
 
@@ -70,14 +69,13 @@ export abstract class SchemaCore<I, O> {
 
   // < context methods >
   protected _getContext = () =>
-    this._getFrozenCopy(sortKeys(this.context)) as GetContext<I, O>;
+    this._getFrozenCopy(sortKeys(this.context)) as Context<I, O>;
 
-  protected _getPartialContext = () =>
-    this._getFrozenCopy(this.partialGetContext);
+  protected _getPartialContext = () => this._getFrozenCopy(this.partialContext);
 
   protected _initialiseContexts = () => {
-    this.context = { ...this.values } as GetContext<I, O>;
-    this.partialGetContext = {} as GetContext<I, O>;
+    this.context = { ...this.values } as Context<I, O>;
+    this.partialContext = {} as Context<I, O>;
   };
 
   protected _updateContext = (updates: Partial<I>) => {
@@ -85,7 +83,7 @@ export abstract class SchemaCore<I, O> {
   };
 
   protected _updatePartialContext = (updates: Partial<I>) => {
-    this.partialGetContext = { ...this.partialGetContext, ...updates };
+    this.partialContext = { ...this.partialContext, ...updates };
   };
   // < context methods />
 
@@ -314,7 +312,7 @@ export abstract class SchemaCore<I, O> {
 
   protected _getRequiredState = (
     prop: string,
-    summary: GetSummary<I, O>
+    summary: Summary<I, O>
   ): [boolean, string] => {
     const { required } = this._getDefinition(prop);
 

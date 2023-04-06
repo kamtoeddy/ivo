@@ -1,4 +1,4 @@
-import { GetSummary, Schema } from "../../../../../dist";
+import { Summary, Schema } from "../../../../../dist";
 import { IStoreItem, StoreItemType } from "./interfaces";
 import {
   sanitizeQuantities,
@@ -72,9 +72,9 @@ function resolveQuantity({ quantity, _quantity, quantities }: IStoreItem) {
   return quantities ? newQty + (quantities as number) : newQty;
 }
 
-type Summary = GetSummary<IStoreItem, StoreItemType>;
-
-function onSuccess({ context: { quantity, _quantity, quantities } }: Summary) {
+function onSuccess({
+  context: { quantity, _quantity, quantities },
+}: Summary<IStoreItem, StoreItemType>) {
   const newQty = _quantity ?? (quantity as number);
 
   return quantities ? newQty + (quantities as number) : newQty;
