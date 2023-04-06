@@ -44,9 +44,9 @@ type RequiredSetter<I, O> = (
   summary: Summary<I, O> & {}
 ) => boolean | [boolean, string];
 
-// type Resolver<K extends keyof (I & O), I, O> = (
-//   summary: Summary<I, O> & {}
-// ) => TypeOf<(I & O)[K]> | Promise<TypeOf<(I & O)[K]>>;
+type Resolver<K extends keyof (I & O), I, O> = (
+  summary: Summary<I, O> & {}
+) => TypeOf<(I & O)[K]> | Promise<TypeOf<(I & O)[K]>>;
 
 type StringKey<T> = Extract<keyof T, string>;
 
@@ -125,7 +125,7 @@ namespace Schema {
     dependent: true;
     dependsOn: Exclude<StringKey<I>, K> | Exclude<StringKey<I>, K>[];
     readonly?: true;
-    resolver: DefaultSetter<K, I, O>;
+    resolver: Resolver<K, I, O>;
   };
 
   type LaxProperty<K extends keyof (I & O), I, O = I> = Listenable<I, O> & {

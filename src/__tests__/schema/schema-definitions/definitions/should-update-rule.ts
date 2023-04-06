@@ -107,14 +107,14 @@ export const Test_ShouldUpdateRule = ({ Schema, fx }: any) => {
               default: false,
               dependent: true,
               dependsOn: "virtual",
-              resolver: ({ virtual }: any) => virtual,
+              resolver: ({ context }: any) => context.virtual,
               onSuccess: incrementOnSuccessCountOf("dependentProp"),
             },
             dependentProp_1: {
               default: false,
               dependent: true,
               dependsOn: "virtual_1",
-              resolver: ({ virtual_1 }: any) => virtual_1,
+              resolver: ({ context }: any) => context.virtual_1,
               onSuccess: incrementOnSuccessCountOf("dependentProp_1"),
             },
             laxProp: {

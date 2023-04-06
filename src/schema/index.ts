@@ -297,7 +297,7 @@ class ModelTool<
   private _resolveDependentChanges = async (
     data: Partial<O>,
     ctx: Partial<O> | Partial<Context<I, O>>,
-    lifeCycle: ns.OperationName
+    isUpdate = false
   ) => {
     let _updates = { ...data };
 
@@ -305,7 +305,7 @@ class ModelTool<
 
     let toResolve = [] as StringKey<O>[];
 
-    const isCreating = lifeCycle == "creation";
+    const isCreating = !isUpdate;
 
     for (const prop of successFulChanges) {
       const dependencies = this._getDependencies(prop);
@@ -327,7 +327,10 @@ class ModelTool<
 
     toResolve = Array.from(new Set(toResolve));
 
-    const _ctx = this._getContext();
+    const values = isUpdate ? data : { ...this.values, ...data };
+
+    const _ctx = this._getContext(),
+      summary = this._getSummary(values, isUpdate);
 
     const operations = toResolve.map(async (prop) => {
       if (
@@ -339,7 +342,7 @@ class ModelTool<
 
       const resolver = this._getDefinition(prop).resolver!;
 
-      const value = await resolver(_ctx, lifeCycle);
+      const value = await resolver(summary);
 
       if (!isCreating && isEqual(value, _ctx[prop as StringKey<Context<I, O>>]))
         return;
@@ -354,7 +357,7 @@ class ModelTool<
       const _data = await this._resolveDependentChanges(
         data,
         updates as unknown as O,
-        lifeCycle
+        isUpdate
       );
 
       return (_updates = { ..._updates, ..._data });
@@ -593,11 +596,7 @@ class ModelTool<
 
     await this._handleSanitizationOfVirtuals("creation");
 
-    data = await this._resolveDependentChanges(
-      data,
-      this._getPartialContext(),
-      "creation"
-    );
+    data = await this._resolveDependentChanges(data, this._getPartialContext());
 
     if (error.isPayloadLoaded) {
       await this._handleFailure(data, error, virtuals);
@@ -687,11 +686,7 @@ class ModelTool<
 
     await this._handleSanitizationOfVirtuals("creation");
 
-    data = await this._resolveDependentChanges(
-      data,
-      this._getPartialContext(),
-      "creation"
-    );
+    data = await this._resolveDependentChanges(data, this._getPartialContext());
 
     if (error.isPayloadLoaded) {
       await this._handleFailure(data, error, virtuals);
@@ -795,7 +790,7 @@ class ModelTool<
     updated = await this._resolveDependentChanges(
       updated,
       this._getPartialContext(),
-      "update"
+      true
     );
 
     if (!Object.keys(updated).length) {

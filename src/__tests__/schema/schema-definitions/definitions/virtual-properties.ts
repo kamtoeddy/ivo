@@ -113,7 +113,7 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
         describe("behaviour", () => {
           let contextRecord = {} as Record<string, number | undefined>;
 
-          function resolver({ setQuantity, qty }: any) {
+          function resolver({ context: { setQuantity, qty } }: any) {
             if (qty !== undefined) contextRecord.qty = qty;
 
             return setQuantity;
@@ -595,7 +595,7 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
                 default: "",
                 dependent: true,
                 dependsOn: ["sideInit", "virtualWithSanitizer"],
-                resolver({ sideInit, virtualWithSanitizer }: any) {
+                resolver({ context: { sideInit, virtualWithSanitizer } }: any) {
                   return sideInit && virtualWithSanitizer ? "both" : "one";
                 },
                 onSuccess: onSuccess("dependentSideInit"),

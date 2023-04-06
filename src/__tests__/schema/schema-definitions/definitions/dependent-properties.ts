@@ -5,8 +5,6 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
     const resolver = () => 1;
 
     describe("behaviour", () => {
-      let Model: any;
-
       let onDeleteStats = {} as Record<string, number | undefined>;
       let onSuccessStats = {} as Record<string, number | undefined>;
       let resolversCalledStats = {} as Record<string, number | undefined>;
@@ -18,111 +16,111 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
         dependentProp_3: 1,
       };
 
-      beforeEach(async () => {
-        Model = new Schema({
-          laxProp: { default: "" },
-          laxProp_1: { default: "" },
-          laxProp_2: {
-            default: "",
-            onDelete: incrementOnDeleteCountOf("laxProp_2"),
-          },
-          dependentProp: {
-            default: 0,
-            dependent: true,
-            dependsOn: ["laxProp", "laxProp_1"],
-            resolver: resolverOfDependentProp,
-            onDelete: [
-              incrementOnDeleteCountOf("dependentProp"),
-              incrementOnDeleteCountOf("dependentProp"),
-            ],
-            onSuccess: [
-              incrementOnSuccessCountOf("dependentProp"),
-              incrementOnSuccessCountOf("dependentProp"),
-              incrementOnSuccessCountOf("dependentProp"),
-              incrementOnSuccessCountOf("dependentProp"),
-            ],
-          },
-          dependentProp_1: {
-            default: 0,
-            dependent: true,
-            dependsOn: "dependentProp",
-            resolver: resolverOfDependentProp_1,
-            onDelete: incrementOnDeleteCountOf("dependentProp_1"),
-            onSuccess: incrementOnSuccessCountOf("dependentProp_1"),
-          },
-          dependentProp_2: {
-            default: 0,
-            dependent: true,
-            dependsOn: "dependentProp",
-            readonly: true,
-            resolver: asyncResolver("dependentProp_2"),
-            onDelete: [
-              incrementOnDeleteCountOf("dependentProp_2"),
-              incrementOnDeleteCountOf("dependentProp_2"),
-            ],
-            onSuccess: [
-              incrementOnSuccessCountOf("dependentProp_2"),
-              incrementOnSuccessCountOf("dependentProp_2"),
-              incrementOnSuccessCountOf("dependentProp_2"),
-            ],
-          },
-          dependentProp_3: {
-            default: 0,
-            dependent: true,
-            dependsOn: "laxProp_2",
-            resolver: asyncResolver("dependentProp_3"),
-            onDelete: [
-              incrementOnDeleteCountOf("dependentProp_3"),
-              incrementOnDeleteCountOf("dependentProp_3"),
-            ],
-            onSuccess: [incrementOnSuccessCountOf("dependentProp_3")],
-          },
-        }).getModel();
+      const Model = new Schema({
+        laxProp: { default: "" },
+        laxProp_1: { default: "" },
+        laxProp_2: {
+          default: "",
+          onDelete: incrementOnDeleteCountOf("laxProp_2"),
+        },
+        dependentProp: {
+          default: 0,
+          dependent: true,
+          dependsOn: ["laxProp", "laxProp_1"],
+          resolver: resolverOfDependentProp,
+          onDelete: [
+            incrementOnDeleteCountOf("dependentProp"),
+            incrementOnDeleteCountOf("dependentProp"),
+          ],
+          onSuccess: [
+            incrementOnSuccessCountOf("dependentProp"),
+            incrementOnSuccessCountOf("dependentProp"),
+            incrementOnSuccessCountOf("dependentProp"),
+            incrementOnSuccessCountOf("dependentProp"),
+          ],
+        },
+        dependentProp_1: {
+          default: 0,
+          dependent: true,
+          dependsOn: "dependentProp",
+          resolver: resolverOfDependentProp_1,
+          onDelete: incrementOnDeleteCountOf("dependentProp_1"),
+          onSuccess: incrementOnSuccessCountOf("dependentProp_1"),
+        },
+        dependentProp_2: {
+          default: 0,
+          dependent: true,
+          dependsOn: "dependentProp",
+          readonly: true,
+          resolver: asyncResolver("dependentProp_2"),
+          onDelete: [
+            incrementOnDeleteCountOf("dependentProp_2"),
+            incrementOnDeleteCountOf("dependentProp_2"),
+          ],
+          onSuccess: [
+            incrementOnSuccessCountOf("dependentProp_2"),
+            incrementOnSuccessCountOf("dependentProp_2"),
+            incrementOnSuccessCountOf("dependentProp_2"),
+          ],
+        },
+        dependentProp_3: {
+          default: 0,
+          dependent: true,
+          dependsOn: "laxProp_2",
+          resolver: asyncResolver("dependentProp_3"),
+          onDelete: [
+            incrementOnDeleteCountOf("dependentProp_3"),
+            incrementOnDeleteCountOf("dependentProp_3"),
+          ],
+          onSuccess: [incrementOnSuccessCountOf("dependentProp_3")],
+        },
+      }).getModel();
 
-        function incrementOnDeleteCountOf(prop: string) {
-          return () => {
-            const previousCount = onDeleteStats[prop] ?? 0;
+      function incrementOnDeleteCountOf(prop: string) {
+        return () => {
+          const previousCount = onDeleteStats[prop] ?? 0;
 
-            onDeleteStats[prop] = previousCount + 1;
-          };
-        }
+          onDeleteStats[prop] = previousCount + 1;
+        };
+      }
 
-        function incrementOnSuccessCountOf(prop: string) {
-          return () => {
-            const previousCount = onSuccessStats[prop] ?? 0;
+      function incrementOnSuccessCountOf(prop: string) {
+        return () => {
+          const previousCount = onSuccessStats[prop] ?? 0;
 
-            onSuccessStats[prop] = previousCount + 1;
-          };
-        }
+          onSuccessStats[prop] = previousCount + 1;
+        };
+      }
 
-        function incrementResolveCountOf(prop: string) {
-          const previousCount = resolversCalledStats[prop] ?? 0;
+      function incrementResolveCountOf(prop: string) {
+        const previousCount = resolversCalledStats[prop] ?? 0;
 
-          resolversCalledStats[prop] = previousCount + 1;
-        }
+        resolversCalledStats[prop] = previousCount + 1;
+      }
 
-        function resolverOfDependentProp({ laxProp, laxProp_1 }: any) {
-          incrementResolveCountOf("dependentProp");
+      function resolverOfDependentProp({
+        context: { laxProp, laxProp_1 },
+      }: any) {
+        incrementResolveCountOf("dependentProp");
 
-          return laxProp.length + laxProp_1.length;
-        }
+        return laxProp.length + laxProp_1.length;
+      }
 
-        function resolverOfDependentProp_1({ dependentProp }: any) {
-          incrementResolveCountOf("dependentProp_1");
+      function resolverOfDependentProp_1({ context: { dependentProp } }: any) {
+        incrementResolveCountOf("dependentProp_1");
 
-          return dependentProp + 1;
-        }
+        return dependentProp + 1;
+      }
 
-        function asyncResolver(prop: string) {
-          return async ({ dependentProp }: any) => {
-            incrementResolveCountOf(prop);
+      function asyncResolver(prop: string) {
+        return async ({ context: { dependentProp } }: any) => {
+          incrementResolveCountOf(prop);
 
-            await pauseFor();
+          await pauseFor();
 
-            return dependentProp + 2;
-          };
-        }
-      });
+          return dependentProp + 2;
+        };
+      }
 
       afterEach(() => {
         onDeleteStats = {};

@@ -54,7 +54,7 @@ const storeItemSchema = new Schema<IStoreItem, StoreItemType>(
       default: 0,
       dependent: true,
       dependsOn: "quantity",
-      resolver({ quantityChangeCounter }) {
+      resolver({ context: { quantityChangeCounter } }) {
         return quantityChangeCounter! + 1;
       },
     },
@@ -66,7 +66,9 @@ const storeItemSchema = new Schema<IStoreItem, StoreItemType>(
   }
 );
 
-function resolveQuantity({ quantity, _quantity, quantities }: IStoreItem) {
+function resolveQuantity({
+  context: { quantity, _quantity, quantities },
+}: Summary<IStoreItem, StoreItemType>) {
   const newQty = _quantity ?? (quantity as number);
 
   return quantities ? newQty + (quantities as number) : newQty;

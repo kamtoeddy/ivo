@@ -27,7 +27,7 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
               default: null,
               dependent: true,
               dependsOn: "_setPrice",
-              resolver: ({ _setPrice }: any) => _setPrice,
+              resolver: ({ context }: any) => context._setPrice,
               onSuccess: onSuccess_("price"),
             },
             _setPrice: {
@@ -128,7 +128,7 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
               default: null,
               dependent: true,
               dependsOn: "_setPrice",
-              resolver: ({ _setPrice }: any) => _setPrice,
+              resolver: ({ context }: any) => context._setPrice,
             },
             _setPrice: {
               virtual: true,
