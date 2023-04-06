@@ -15,12 +15,12 @@ It could aslo be used in combination with other rules like [**readonly**](../../
 Example:
 
 ```ts
-import { Schema, type GetSummary } from "clean-schema";
+import { Schema, type Summary } from "clean-schema";
 
 type Input = { firstName: string; lastName: string };
 type Output = { firstName: string; fullName: string; lastName: string };
 
-type Summary = GetSummary<Input, Output>;
+type ISummary = Summary<Input, Output>;
 
 const userSchema = new Schema<Input, Output>({
   firstName: { required: true, validator: validateName },
@@ -28,12 +28,12 @@ const userSchema = new Schema<Input, Output>({
     default: "",
     dependent: true,
     dependsOn: ["firstName", "lastName"],
-    resolver: generateFullName,
+    resolver: getFullName,
   },
   lastName: { required: true, validator: validateName },
 });
 
-function generateFullName({ context }: Summary) {
+function getFullName({ context }: ISummary) {
   const { firstName, lastName } = context;
 
   return `${firstName} ${lastName}`;

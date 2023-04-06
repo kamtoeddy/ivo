@@ -34,7 +34,7 @@ const User = new Schema<UserDTO, UserType>({
     default: false,
     dependent: true,
     dependsOn: "blockUser",
-    resolver: ({ blockUser: isBlocked }) => isBlocked,
+    resolver: ({ context: { blockUser } }) => blockUser,
   },
 }).getModel();
 
@@ -70,11 +70,11 @@ An alias is an extra **external** name for a virtual property. This means that a
 Example 1: Alias with name of related dependent property
 
 ```ts
-type StoreItemDTO = {
+type Input = {
   _virtualQuantity?: number;
 };
 
-type StoreItemType = {
+type Output = {
   quantity: number;
 };
 
@@ -82,12 +82,12 @@ type Aliases = {
   quantity: number;
 };
 
-const StoreItem = new Schema<StoreItemDTO, StoreItemType, Aliases>({
+const StoreItem = new Schema<Input, Output, Aliases>({
   quantity: {
     default: 0,
     dependent: true,
     dependsOn: "_virtualQuantity",
-    resolver: ({ _virtualQuantity }) => _virtualQuantity,
+    resolver: ({ context: { _virtualQuantity } }) => _virtualQuantity,
   },
   _virtualQuantity: {
     alias: "quantity",
@@ -129,7 +129,7 @@ const StoreItem = new Schema({
     default: 0,
     dependent: true,
     dependsOn: "_virtualQuantity",
-    resolver: ({ _virtualQuantity }) => _virtualQuantity,
+    resolver: ({ context: { _virtualQuantity } }) => _virtualQuantity,
   },
   _virtualQuantity: {
     alias: "qty",

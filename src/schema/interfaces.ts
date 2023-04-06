@@ -184,13 +184,17 @@ namespace Schema {
     reset?: StringKey<T> | StringKey<T>[];
   }
 
-  export interface Options<I, O> {
+  export type Options<I, O> = {
     errors?: "silent" | "throw";
     onSuccess?: SuccessListener<I, O> | NonEmptyArray<SuccessListener<I, O>>;
     timestamps?:
       | boolean
-      | { createdAt?: boolean | string; updatedAt?: boolean | string };
-  }
+      | {
+          createdAt?: boolean | string;
+          updatedAt?: boolean | string;
+        };
+  };
+
   export type OptionsKey<I, O> = StringKey<Options<I, O>>;
 
   export interface PrivateOptions {
@@ -203,7 +207,7 @@ namespace Schema {
   }
 
   export type ExtensionOptions<ParentInput, I, O> = Options<I, O> & {
-    remove?: ParentInput | ParentInput[];
+    remove?: StringKey<ParentInput> | StringKey<ParentInput>[];
   };
 }
 

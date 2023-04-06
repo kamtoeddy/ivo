@@ -3,7 +3,7 @@
 Validators are expected to behave as below
 
 ```ts
-import type { GetSummary } from "clean-schema";
+import type { Summary } from "clean-schema";
 
 type Input = {}; // the input type of your model
 type Output = {}; // the output type of your model
@@ -25,7 +25,7 @@ type ValidationResults =
 
 const validator = (
   value: any,
-  summary: GetSummary<Input, Output>
+  summary: Summary<Input, Output>
 ): IValidationResults => {
   // validation logic here
 

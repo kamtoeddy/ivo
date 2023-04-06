@@ -38,8 +38,9 @@ const userSchema = new Schema<UserDTO, UserType>({
     default: "",
     dependent: true,
     dependsOn: ["firstName", "lastName"],
-    resolver: ({ context: { firstName, lastName } }) =>
-      `${firstName} ${lastName}`,
+    resolver({ context: { firstName, lastName } }) {
+      return `${firstName} ${lastName}`;
+    },
   },
 });
 
@@ -106,21 +107,19 @@ type SchemaError = {
 };
 ```
 
-## onSuccess
-
-This could be a function or an array of functions with the `SuccessListener` signature below. These functions would be triggered together with the onSuccess listeners of individual properties when the handleSuccess method is invoked at creation & during updates of any property. See more [here](./life-cycles.md#onsuccess)
-
-It's summary contains the values of the entire entity
-
 ```ts
-import type { GetContext, GetSummary } from "clean-schema";
+import type { Context, Summary } from "clean-schema";
 
 type Input = { name: string; price: number };
 
 type Output = { id: string; name: string };
 
-type Context = GetContext<Input, Output>;
-type Summary = GetSummary<Input, Output>;
+type IContext = Context<Input, Output>;
+type ISummary = Summary<Input, Output>;
+
+type DeleteListener = (data: Readonly<Output>) => void | Promise<void>;
+
+type SuccessListener = (summary: ISummary) => void | Promise<void>;
 
 const BookModel = new Schema<Input, Output>(
   {
@@ -128,15 +127,23 @@ const BookModel = new Schema<Input, Output>(
     name: { required: true, validator: validateBookName },
     price: { default: 0, validator: validatePrice },
   },
-  { onSuccess }
+  { onDelete, onSuccess }
 ).getModel();
 
-function onSuccess(summary: Summary) {}
+function onDelete(data: Readonly<Output>) {}
 
-type SuccessListener = (summary: Summary) => void | Promise<void>;
+function onSuccess(summary: ISummary) {}
 ```
 
-More details on the `Context` & `Summary` [here](./life-cycles.md#the-operation-context)
+More details on the `Context` & `Summary` utiliies [here](./life-cycles.md#the-operation-context)
+
+## onDelete
+
+This could be a function or an array of functions with the `DeleteListener` signature above. These functions would be triggered together with the onDelete listeners of individual properties when the `Model.delete` method is invoked. See more [here](./life-cycles.md#ondelete)
+
+## onSuccess
+
+This could be a function or an array of functions with the `SuccessListener` signature above. These functions would be triggered together with the onSuccess listeners of individual properties when the handleSuccess method is invoked at creation & during updates of any property. See more [here](./life-cycles.md#onsuccess)
 
 ## timestamps
 

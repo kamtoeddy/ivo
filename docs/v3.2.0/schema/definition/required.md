@@ -26,7 +26,7 @@ If nothing is returned, the operation will proceed with `required: false`
 Example:
 
 ```ts
-import { Schema, type GetSummary } from "clean-schema";
+import { Schema, type Summary } from "clean-schema";
 
 type Book = {
   bookId: string;
@@ -34,14 +34,14 @@ type Book = {
   price: number | null;
 };
 
-type Summary = GetSummary<Book>;
+type ISummary = Summary<Book>;
 
 const bookSchema = new Schema<Book>({
   bookId: { required: true, validator: validateBookId },
   isPublished: { default: false, validator: validateBoolean },
   price: {
     default: null,
-    required({ context: { isPublished, price } }: Summary) {
+    required({ context: { isPublished, price } }: ISummary) {
       const isRequired = price == null && isPublished;
 
       return [isRequired, "A price is required to publish a book!"];

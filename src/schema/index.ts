@@ -45,11 +45,7 @@ class Schema<
     definitions: Partial<
       ns.Definitions<RealType<Merge<I, U> & U>, Merge<O, V>, A>
     >,
-    options: ns.ExtensionOptions<
-      StringKey<I>,
-      RealType<Merge<I, U> & U>,
-      Merge<O, V>
-    > = {
+    options: ns.ExtensionOptions<I, RealType<Merge<I, U> & U>, Merge<O, V>> = {
       ...defaultOptions,
       remove: [],
     }

@@ -8,13 +8,15 @@ Breaking Changes
 
 - [Update] changed the signature and behaviour of resolvers of [dependent properties](./v3.2.0/schema/definition/dependents.md)
 - [Update] changed the signature and behaviour of [life cycle listeners](./v3.2.0/schema/definition/life-cycles.md#life-cycle-listeners)
+- [Update] changed second argument of `validator functions` from operation context to operation summary [more](./v3.2.0/validate/index.md#validators)
 - [Add] added a 'trim' option to validate.isStringOk so one can opt in and out of trimmed values [more](./v3.2.0/validate/isStringOk.md)
 
 Features
 
 - [Add] added support for [`aliases`](./v3.2.0/schema/definition/virtuals.md#aliases) on virtuals
+- [Add] added support for global [`onDelete`](./v3.2.0/schema/definition/index.md#ondelete) in schema options
 - [Add] added support for global [`onSuccess`](./v3.2.0/schema/definition/index.md#onsuccess) in schema options
-- [Add] added utility types `GetContext`& `GetSummary` for TypeScript. Details [here](./v3.2.0/schema/definition/life-cycles.md#life-cycle-listeners)
+- [Add] added utility types `Context`& `Summary` for TypeScript. Details [here](./v3.2.0/schema/definition/life-cycles.md#life-cycle-listeners)
 
 # v3.1.0 <small><sup>05-02-2023</sup></small>
 

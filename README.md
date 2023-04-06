@@ -24,7 +24,7 @@ import { Schema } from "clean-schema";
 
 ```ts
 import { Schema } from "clean-schema";
-import type { GetContext, GetSummary } from "clean-schema";
+import type { Context, Summary } from "clean-schema";
 
 type UserRole = "admin" | "user";
 
@@ -46,8 +46,8 @@ type Output = {
   updatedAt: Date;
 };
 
-type Context = GetContext<Input, Output>;
-type Summary = GetSummary<Input, Output>;
+type IContext = Context<Input, Output>;
+type ISummary = Summary<Input, Output>;
 
 const userSchema = new Schema<Input, Output>(
   {
@@ -73,7 +73,7 @@ const userSchema = new Schema<Input, Output>(
 );
 
 // resolvers
-function getFullName({ context: { firstName, lastName } }: Summary) {
+function getFullName({ context: { firstName, lastName } }: ISummary) {
   return `${firstName} ${lastName}`;
 }
 
