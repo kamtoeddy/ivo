@@ -78,7 +78,7 @@ class Schema<
     return new ExtendedSchema<InputType, OutputType, A>(_definitions, options);
   };
 
-  getModel = () => new Model(new ModelTool<I, O, A>(this));
+  getModel = () => new Model(new ModelTool<I, O, A>(this as any));
 }
 
 class ExtendedSchema<
