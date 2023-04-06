@@ -252,7 +252,7 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
               message: "Invalid Schema",
               payload: {
                 onSuccess: expect.arrayContaining([
-                  "The success listener @[0] is not a function",
+                  "The 'onSuccess' handler @[0] is not a function",
                 ]),
               },
               statusCode: 500,

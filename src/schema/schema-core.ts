@@ -52,7 +52,7 @@ export abstract class SchemaCore<I, O> {
   protected optionsTool: OptionsTool;
 
   // listeners
-  protected globalSuccessListeners: ns.SuccessListener<I, O>[] = [];
+  protected globalSuccessHandlers: ns.SuccessHandler<I, O>[] = [];
 
   constructor(
     definitions: ns.Definitions_<I, O>,
@@ -161,7 +161,7 @@ export abstract class SchemaCore<I, O> {
 
     const { readonly } = this._getDefinition(prop);
 
-    const shouldInit = this._getValueBy(prop, "shouldInit", "creation");
+    const shouldInit = this._getValueBy(prop, "shouldInit");
 
     return (
       readonly === true &&
@@ -222,6 +222,7 @@ export abstract class SchemaCore<I, O> {
 
     for (let prop of props) {
       const isDefOk = this.__isPropDefinitionOk(prop);
+
       if (!isDefOk.valid) error.add(prop, isDefOk.reasons!);
     }
 
@@ -281,12 +282,11 @@ export abstract class SchemaCore<I, O> {
   protected _getDefinition = (prop: string) =>
     this._definitions[prop as StringKey<I>]!;
 
-  protected _getDefaultValue = (prop: string) => {
-    const def = this._getDefinition(prop);
+  protected _getDefaultValue = async (prop: string) => {
     const _default = this._getDefinition(prop)?.default;
 
-    const value = this._isFunction(_default)
-      ? _default(this._getContext())
+    let value = this._isFunction(_default)
+      ? await _default(this._getContext())
       : this.defaults[prop as StringKey<O>];
 
     return isEqual(value, undefined)
@@ -295,18 +295,17 @@ export abstract class SchemaCore<I, O> {
   };
 
   protected _getConstantValue = async (prop: string) =>
-    this._getValueBy(prop, "value", "creation");
+    this._getValueBy(prop, "value");
 
   protected _getValueBy = (
     prop: string,
     rule: DefinitionRule,
-    lifeCycle: ns.OperationName,
     extraCtx: ObjectType = {}
   ) => {
     const value = this._getDefinition(prop)?.[rule];
 
     return this._isFunction(value)
-      ? value({ ...this._getContext(), ...extraCtx }, lifeCycle)
+      ? value({ ...this._getContext(), ...extraCtx })
       : value;
   };
 
@@ -339,31 +338,8 @@ export abstract class SchemaCore<I, O> {
     return results;
   };
 
-  private _getDetailedListeners = (
-    prop: string,
-    lifeCycle: ns.LifeCycles,
-    valid = true
-  ) => {
-    const listeners = toArray<ns.Listener<I, O>>(
-      this._getDefinition(prop)?.[lifeCycle] as any
-    );
-
-    return (
-      listeners
-        ?.map((listener, index) => ({
-          index,
-          listener,
-          valid: this._isFunction(listener),
-        }))
-        .filter((data) => data.valid === valid) ?? []
-    );
-  };
-
-  protected _getListeners = (prop: string, lifeCycle: ns.LifeCycles) => {
-    return this._getDetailedListeners(prop, lifeCycle, true).map(
-      (dt) => dt.listener
-    ) as ns.Listener<I, O>[] | ns.SuccessListener<I, O>[];
-  };
+  protected _getHandlers = <T>(prop: string, lifeCycle: ns.LifeCycles) =>
+    toArray((this._getDefinition(prop)?.[lifeCycle] ?? []) as any) as T[];
 
   private _getInvalidRules = <K extends StringKey<I>>(prop: K) => {
     const rulesProvided = this._getKeysAsProps(this._getDefinition(prop));
@@ -381,6 +357,25 @@ export abstract class SchemaCore<I, O> {
 
   protected _getKeysAsProps = <T extends ObjectType>(data: T) =>
     Object.keys(data) as StringKey<T>[];
+
+  private _areHandlersOk = (prop: string, lifeCycle: ns.LifeCycles) => {
+    const handlers = toArray<ns.FailureHandler<I, O>>(
+      this._getDefinition(prop)?.[lifeCycle] as any
+    );
+
+    const reasons: string[] = [];
+
+    handlers.forEach((handler, index) => {
+      if (!this._isFunction(handler))
+        reasons.push(
+          `The '${lifeCycle}' handler @[${index}] is not a function`
+        );
+    });
+
+    const valid = !reasons.length;
+
+    return valid ? { listeners: handlers, valid } : { reasons, valid };
+  };
 
   protected _isRuleInDefinition = (
     prop: string,
@@ -442,7 +437,6 @@ export abstract class SchemaCore<I, O> {
       shouldInit,
       readonly,
       resolver,
-      required,
     } = this._getDefinition(prop);
 
     const valid = false;
@@ -621,21 +615,17 @@ export abstract class SchemaCore<I, O> {
     for (let rule of lifeCycleRules) {
       if (!this._isRuleInDefinition(prop, rule)) continue;
 
-      const invalidHandlers = this._getDetailedListeners(prop, rule, false);
+      const isValid = this._areHandlersOk(prop, rule);
 
-      if (!invalidHandlers?.length) continue;
-
-      reasons = reasons.concat(
-        invalidHandlers.map(
-          (dt) => `The listener for '${rule}' @[${dt.index}] is not a function`
-        )
-      );
+      if (!isValid.valid) reasons = reasons.concat(isValid.reasons);
     }
 
     this._registerIfLax(prop);
 
+    const hasDefaultRule = this._isRuleInDefinition(prop, "default");
+
     if (
-      !this._isRuleInDefinition(prop, "default") &&
+      !hasDefaultRule &&
       !this._isConstant(prop) &&
       !this._isDependentProp(prop) &&
       !this._isLaxProp(prop) &&
@@ -653,7 +643,9 @@ export abstract class SchemaCore<I, O> {
 
     if (valid && !this._isVirtual(prop)) {
       this.props.push(prop as StringKey<O>);
-      this._setDefaultOf(prop as StringKey<O>, "creation");
+
+      if (hasDefaultRule)
+        this.defaults[prop as StringKey<O>] = this._getValueBy(prop, "default");
     }
 
     return { reasons, valid };
@@ -914,11 +906,11 @@ export abstract class SchemaCore<I, O> {
       if (!isValid.valid) return isValid;
     }
 
-    const unAcceptedRules = DEFINITION_RULES.filter(
+    const invalidVirtualRules = DEFINITION_RULES.filter(
       (rule) => !VIRTUAL_RULES.includes(rule)
     );
 
-    if (this._isRuleInDefinition(prop, unAcceptedRules))
+    if (this._isRuleInDefinition(prop, invalidVirtualRules))
       return {
         valid,
         reason: `Virtual properties can only have (${VIRTUAL_RULES.join(
@@ -997,7 +989,7 @@ export abstract class SchemaCore<I, O> {
 
     return (
       isEqual(shouldInit, undefined) ||
-      this._getValueBy(definitionName, "shouldInit", "creation", extraCtx)
+      this._getValueBy(definitionName, "shouldInit", extraCtx)
     );
   };
 
@@ -1043,13 +1035,13 @@ export abstract class SchemaCore<I, O> {
     const { onSuccess } = this._options,
       reasons: string[] = [];
 
-    const listeners = toArray<ns.SuccessListener<any, any>>(onSuccess!);
+    const handlers = toArray<ns.SuccessHandler<any, any>>(onSuccess!);
 
-    listeners.forEach((listener, i) => {
-      if (this._isFunction(listener))
-        return this.globalSuccessListeners.push(listener);
+    handlers.forEach((handler, i) => {
+      if (this._isFunction(handler))
+        return this.globalSuccessHandlers.push(handler);
 
-      reasons.push(`The success listener @[${i}] is not a function`);
+      reasons.push(`The 'onSuccess' handler @[${i}] is not a function`);
     });
 
     if (reasons.length) return { valid: false, reasons };
@@ -1123,11 +1115,5 @@ export abstract class SchemaCore<I, O> {
       return;
 
     this.laxProps.push(prop as StringKey<I>);
-  };
-
-  private _setDefaultOf = (prop: StringKey<O>, lifeCycle: ns.OperationName) => {
-    const _default = this._getValueBy(prop, "default", lifeCycle);
-
-    if (!isEqual(_default, undefined)) this.defaults[prop] = _default;
   };
 }

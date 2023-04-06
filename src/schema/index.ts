@@ -141,10 +141,10 @@ class ModelTool<
     const ctx = this._getContext();
 
     const cleanups = props.map(async (prop) => {
-      const listeners = this._getListeners(prop, "onFailure") as ns.Listener<
-        I,
-        O
-      >[];
+      const listeners = this._getHandlers<ns.FailureHandler<I, O>>(
+        prop,
+        "onFailure"
+      );
 
       const _cleanups = listeners.map(async (listener) => await listener(ctx));
 
@@ -250,12 +250,7 @@ class ModelTool<
 
     const extraCtx = isAlias ? { [propName]: value } : {};
 
-    const isUpdatable = this._getValueBy(
-      propName,
-      "shouldUpdate",
-      "update",
-      extraCtx
-    );
+    const isUpdatable = this._getValueBy(propName, "shouldUpdate", extraCtx);
 
     if (isVirtual) return hasShouldUpdateRule ? isUpdatable : true;
 
@@ -275,20 +270,20 @@ class ModelTool<
 
     const successProps = this._getKeysAsProps(partialCtx);
 
-    let successListeners = [] as ns.SuccessListener<I, O>[];
+    let successListeners = [] as ns.SuccessHandler<I, O>[];
 
     const summary = this._getSummary(data, isUpdate);
 
     for (const prop of successProps) {
-      const listeners = this._getListeners(
+      const listeners = this._getHandlers<ns.SuccessHandler<I, O>>(
         prop,
         "onSuccess"
-      ) as ns.SuccessListener<I, O>[];
+      );
 
       successListeners = successListeners.concat(listeners);
     }
 
-    successListeners = successListeners.concat(this.globalSuccessListeners);
+    successListeners = successListeners.concat(this.globalSuccessHandlers);
 
     return async () => {
       const successOperations = successListeners.map(
@@ -520,7 +515,7 @@ class ModelTool<
 
       if (isDependent && !isAlias) {
         const value = reset.includes(prop as any)
-          ? this._getDefaultValue(prop)
+          ? await this._getDefaultValue(prop)
           : this.values[prop as unknown as StringKey<O>];
 
         data[prop] = value;
@@ -544,7 +539,7 @@ class ModelTool<
         );
 
       if (reset.includes(prop as any)) {
-        data[prop] = this._getDefaultValue(prop);
+        data[prop] = await this._getDefaultValue(prop);
 
         const validCtxUpdate = { [prop]: data[prop] } as unknown as any;
 
@@ -570,13 +565,13 @@ class ModelTool<
       if (
         (isLax &&
           this._isRuleInDefinition(prop, "shouldInit") &&
-          !this._getValueBy(prop, "shouldInit", "creation")) ||
+          !this._getValueBy(prop, "shouldInit")) ||
         (!isVirtualInit &&
           !this._canInit(prop) &&
           !isLaxInit &&
           !isRequiredInit)
       ) {
-        data[prop] = this._getDefaultValue(prop);
+        data[prop] = await this._getDefaultValue(prop);
 
         const validCtxUpdate = { [prop]: data[prop] } as unknown as any;
 
@@ -669,13 +664,13 @@ class ModelTool<
       if (
         (isLax &&
           this._isRuleInDefinition(prop, "shouldInit") &&
-          !this._getValueBy(prop, "shouldInit", "creation")) ||
+          !this._getValueBy(prop, "shouldInit")) ||
         (!isVirtualInit &&
           !this._canInit(prop) &&
           !isLaxInit &&
           !isRequiredInit)
       ) {
-        data[prop] = this._getDefaultValue(prop);
+        data[prop] = await this._getDefaultValue(prop);
 
         const validCtxUpdate = { [prop]: data[prop] as any } as any;
 
@@ -721,15 +716,15 @@ class ModelTool<
 
     this._setValues(values, { allowVirtuals: false, allowTimestamps: true });
 
-    const ctx = this._getContext();
-
     const cleanups = this.props.map(async (prop) => {
-      const listeners = this._getListeners(prop, "onDelete") as ns.Listener<
-        I,
-        O
-      >[];
+      const listeners = this._getHandlers<ns.DeleteHandler<O>>(
+        prop,
+        "onDelete"
+      );
 
-      const _cleanups = listeners.map(async (listener) => await listener(ctx));
+      const _cleanups = listeners.map(
+        async (listener) => await listener(this._getFrozenCopy(this.values))
+      );
 
       await Promise.allSettled(_cleanups);
     });

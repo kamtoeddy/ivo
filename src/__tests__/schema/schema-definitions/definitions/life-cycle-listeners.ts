@@ -44,7 +44,7 @@ export const Test_LifeCycleListeners = ({ Schema, fx }: any) => {
             expect(err.payload).toEqual(
               expect.objectContaining({
                 propertyName: expect.arrayContaining([
-                  `The listener for '${rule}' @[0] is not a function`,
+                  `The '${rule}' handler @[0] is not a function`,
                 ]),
               })
             );

@@ -34,16 +34,19 @@ type Summary<I, O = I> = (
 
 type TypeOf<T> = Exclude<T, undefined>;
 
-type AsyncSetter<K extends keyof (I & O), I, O> = (
-  context: Context<I, O>,
-  operation: Schema.OperationName
-) => TypeOf<(I & O)[K]> | Promise<TypeOf<(I & O)[K]>>;
-
 type BooleanSetter<I, O> = (context: Context<I, O>) => boolean;
 
-type ConditionalRequiredSetter<I, O> = (
+type DefaultSetter<K extends keyof (I & O), I, O> = (
+  context: Context<I, O>
+) => TypeOf<(I & O)[K]> | Promise<TypeOf<(I & O)[K]>>;
+
+type RequiredSetter<I, O> = (
   summary: Summary<I, O> & {}
 ) => boolean | [boolean, string];
+
+// type Resolver<K extends keyof (I & O), I, O> = (
+//   summary: Summary<I, O> & {}
+// ) => TypeOf<(I & O)[K]> | Promise<TypeOf<(I & O)[K]>>;
 
 type StringKey<T> = Extract<keyof T, string>;
 
@@ -52,9 +55,13 @@ namespace Schema {
 
   export type OperationName = "creation" | "update";
 
-  export type Listener<I, O> = (context: Context<I, O>) => any | Promise<any>;
+  export type DeleteHandler<O> = (data: Readonly<O>) => any | Promise<any>;
 
-  export type SuccessListener<I, O> = (
+  export type FailureHandler<I, O> = (
+    context: Context<I, O>
+  ) => any | Promise<any>;
+
+  export type SuccessHandler<I, O> = (
     summary: Summary<I, O> & {}
   ) => any | Promise<any>;
 
@@ -71,8 +78,8 @@ namespace Schema {
       dependsOn?: StringKey<I> | StringKey<I>[];
       readonly?: boolean | "lax";
       resolver?: Function;
-      required?: boolean | ConditionalRequiredSetter<I, O>;
-      sanitizer?: AsyncSetter<K, I, O>;
+      required?: boolean | RequiredSetter<I, O>;
+      sanitizer?: DefaultSetter<K, I, O>;
       shouldInit?: false | BooleanSetter<I, O>;
       shouldUpdate?: false | BooleanSetter<I, O>;
       validator?: Function;
@@ -82,6 +89,7 @@ namespace Schema {
   };
 
   export type AliasToVirtualMap<T> = Record<string, StringKey<T>>;
+
   export type VirtualToAliasMap<T> = Record<StringKey<T>, string>;
 
   export type DependencyMap<T> = {
@@ -100,28 +108,28 @@ namespace Schema {
     | Virtual<K, I, O, A>;
 
   type Listenable<I, O> = {
-    onDelete?: Listener<I, O> | NonEmptyArray<Listener<I, O>>;
-    onFailure?: Listener<I, O> | NonEmptyArray<Listener<I, O>>;
-    onSuccess?: SuccessListener<I, O> | NonEmptyArray<SuccessListener<I, O>>;
+    onDelete?: DeleteHandler<O> | NonEmptyArray<DeleteHandler<O>>;
+    onFailure?: FailureHandler<I, O> | NonEmptyArray<FailureHandler<I, O>>;
+    onSuccess?: SuccessHandler<I, O> | NonEmptyArray<SuccessHandler<I, O>>;
   };
 
   type Constant<K extends keyof (I & O), I, O = I> = {
     constant: true;
-    onDelete?: Listener<I, O> | NonEmptyArray<Listener<I, O>>;
-    onSuccess?: SuccessListener<I, O> | NonEmptyArray<SuccessListener<I, O>>;
-    value: TypeOf<(I & O)[K]> | AsyncSetter<K, I, O>;
+    onDelete?: DeleteHandler<O> | NonEmptyArray<DeleteHandler<O>>;
+    onSuccess?: SuccessHandler<I, O> | NonEmptyArray<SuccessHandler<I, O>>;
+    value: TypeOf<(I & O)[K]> | DefaultSetter<K, I, O>;
   };
 
   type Dependent<K extends keyof (I & O), I, O = I> = Listenable<I, O> & {
-    default: TypeOf<(I & O)[K]> | AsyncSetter<K, I, O>;
+    default: TypeOf<(I & O)[K]> | DefaultSetter<K, I, O>;
     dependent: true;
     dependsOn: Exclude<StringKey<I>, K> | Exclude<StringKey<I>, K>[];
     readonly?: true;
-    resolver: AsyncSetter<K, I, O>;
+    resolver: DefaultSetter<K, I, O>;
   };
 
   type LaxProperty<K extends keyof (I & O), I, O = I> = Listenable<I, O> & {
-    default: TypeOf<(I & O)[K]> | AsyncSetter<K, I, O>;
+    default: TypeOf<(I & O)[K]> | DefaultSetter<K, I, O>;
     readonly?: "lax";
     shouldInit?: false | BooleanSetter<I, O>;
     shouldUpdate?: BooleanSetter<I, O>;
@@ -129,14 +137,14 @@ namespace Schema {
   };
 
   type Readonly_<K extends keyof (I & O), I, O = I> = Listenable<I, O> & {
-    default: TypeOf<(I & O)[K]> | AsyncSetter<K, I, O>;
+    default: TypeOf<(I & O)[K]> | DefaultSetter<K, I, O>;
     readonly: "lax";
     shouldUpdate?: BooleanSetter<I, O>;
     validator: Validator<K, I, O>;
   };
 
   type ReadonlyNoInit<K extends keyof (I & O), I, O = I> = Listenable<I, O> & {
-    default: TypeOf<(I & O)[K]> | AsyncSetter<K, I, O>;
+    default: TypeOf<(I & O)[K]> | DefaultSetter<K, I, O>;
     readonly: true;
     shouldInit: false | BooleanSetter<I, O>;
     shouldUpdate?: BooleanSetter<I, O>;
@@ -158,8 +166,8 @@ namespace Schema {
   };
 
   type RequiredBy<K extends keyof (I & O), I, O = I> = Listenable<I, O> & {
-    default: TypeOf<(I & O)[K]> | AsyncSetter<K, I, O>;
-    required: ConditionalRequiredSetter<I, O>;
+    default: TypeOf<(I & O)[K]> | DefaultSetter<K, I, O>;
+    required: RequiredSetter<I, O>;
     readonly?: true;
     shouldUpdate?: BooleanSetter<I, O>;
     validator: Validator<K, I, O>;
@@ -169,11 +177,11 @@ namespace Schema {
     alias?: Exclude<StringKey<A>, K> extends undefined
       ? string
       : Exclude<StringKey<A>, K>;
-    required?: ConditionalRequiredSetter<I, O>;
+    required?: RequiredSetter<I, O>;
     virtual: true;
-    sanitizer?: AsyncSetter<K, I, O>;
-    onFailure?: Listener<I, O> | NonEmptyArray<Listener<I, O>>;
-    onSuccess?: SuccessListener<I, O> | NonEmptyArray<SuccessListener<I, O>>;
+    sanitizer?: DefaultSetter<K, I, O>;
+    onFailure?: FailureHandler<I, O> | NonEmptyArray<FailureHandler<I, O>>;
+    onSuccess?: SuccessHandler<I, O> | NonEmptyArray<SuccessHandler<I, O>>;
     shouldInit?: false | BooleanSetter<I, O>;
     shouldUpdate?: false | BooleanSetter<I, O>;
     validator: Validator<K, I, O>;
@@ -186,7 +194,7 @@ namespace Schema {
 
   export type Options<I, O> = {
     errors?: "silent" | "throw";
-    onSuccess?: SuccessListener<I, O> | NonEmptyArray<SuccessListener<I, O>>;
+    onSuccess?: SuccessHandler<I, O> | NonEmptyArray<SuccessHandler<I, O>>;
     timestamps?:
       | boolean
       | {
