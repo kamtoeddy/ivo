@@ -586,97 +586,95 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
 
         let sanitizedValues: any = {};
 
-        let User: any;
-
-        beforeAll(() => {
-          User = new Schema(
-            {
-              dependentSideInit: {
-                default: "",
-                dependent: true,
-                dependsOn: ["sideInit", "virtualWithSanitizer"],
-                resolver({ context: { sideInit, virtualWithSanitizer } }: any) {
-                  return sideInit && virtualWithSanitizer ? "both" : "one";
-                },
-                onSuccess: onSuccess("dependentSideInit"),
+        const User = new Schema(
+          {
+            dependentSideInit: {
+              default: "",
+              dependent: true,
+              dependsOn: ["virtualInit", "virtualWithSanitizer"],
+              resolver({
+                context: { virtualInit, virtualWithSanitizer },
+              }: any) {
+                return virtualInit && virtualWithSanitizer ? "both" : "one";
               },
-              dependentSideNoInit: {
-                default: "",
-                dependent: true,
-                dependsOn: ["sideNoInit", "virtualWithSanitizerNoInit"],
-                resolver: () => "changed",
-                onSuccess: onSuccess("dependentSideNoInit"),
-              },
-              name: { default: "" },
-              sideInit: {
-                virtual: true,
-                onSuccess: onSuccess("sideInit"),
-                validator: validateBoolean,
-              },
-              sideNoInit: {
-                virtual: true,
-                shouldInit: false,
-                onSuccess: [
-                  onSuccess("sideNoInit"),
-                  incrementOnSuccessStats("sideNoInit"),
-                ],
-                validator: validateBoolean,
-              },
-              virtualWithSanitizer: {
-                virtual: true,
-                onSuccess: [
-                  onSuccess("virtualWithSanitizer"),
-                  incrementOnSuccessStats("virtualWithSanitizer"),
-                  incrementOnSuccessStats("virtualWithSanitizer"),
-                ],
-                sanitizer: sanitizerOf("virtualWithSanitizer", "sanitized"),
-                validator: validateBoolean,
-              },
-              virtualWithSanitizerNoInit: {
-                virtual: true,
-                shouldInit: false,
-                onSuccess: [
-                  onSuccess("virtualWithSanitizerNoInit"),
-                  incrementOnSuccessStats("virtualWithSanitizerNoInit"),
-                ],
-                sanitizer: sanitizerOf(
-                  "virtualWithSanitizerNoInit",
-                  "sanitized no init"
-                ),
-                validator: validateBoolean,
-              },
+              onSuccess: onSuccess("dependentSideInit"),
             },
-            { errors: "throw" }
-          ).getModel();
+            dependentSideNoInit: {
+              default: "",
+              dependent: true,
+              dependsOn: ["virtualNoInit", "virtualWithSanitizerNoInit"],
+              resolver: () => "changed",
+              onSuccess: onSuccess("dependentSideNoInit"),
+            },
+            name: { default: "" },
+            virtualInit: {
+              virtual: true,
+              onSuccess: onSuccess("virtualInit"),
+              validator: validateBoolean,
+            },
+            virtualNoInit: {
+              virtual: true,
+              shouldInit: false,
+              onSuccess: [
+                onSuccess("virtualNoInit"),
+                incrementOnSuccessStats("virtualNoInit"),
+              ],
+              validator: validateBoolean,
+            },
+            virtualWithSanitizer: {
+              virtual: true,
+              onSuccess: [
+                onSuccess("virtualWithSanitizer"),
+                incrementOnSuccessStats("virtualWithSanitizer"),
+                incrementOnSuccessStats("virtualWithSanitizer"),
+              ],
+              sanitizer: sanitizerOf("virtualWithSanitizer", "sanitized"),
+              validator: validateBoolean,
+            },
+            virtualWithSanitizerNoInit: {
+              virtual: true,
+              shouldInit: false,
+              onSuccess: [
+                onSuccess("virtualWithSanitizerNoInit"),
+                incrementOnSuccessStats("virtualWithSanitizerNoInit"),
+              ],
+              sanitizer: sanitizerOf(
+                "virtualWithSanitizerNoInit",
+                "sanitized no init"
+              ),
+              validator: validateBoolean,
+            },
+          },
+          { errors: "throw" }
+        ).getModel();
 
-          function sanitizerOf(prop: string, value: any) {
-            return () => {
-              // to make sure sanitizer is invoked
-              sanitizedValues[prop] = value;
+        function sanitizerOf(prop: string, value: any) {
+          return () => {
+            // to make sure sanitizer is invoked
+            sanitizedValues[prop] = value;
 
-              return value;
-            };
-          }
+            return value;
+          };
+        }
 
-          function incrementOnSuccessStats(prop: string) {
-            return () => {
-              onSuccessStats[prop] = (onSuccessStats[prop] ?? 0) + 1;
-            };
-          }
+        function incrementOnSuccessStats(prop: string) {
+          return () => {
+            onSuccessStats[prop] = (onSuccessStats[prop] ?? 0) + 1;
+          };
+        }
 
-          function onSuccess(prop: string) {
-            return ({ context }: any) => {
-              onSuccessValues[prop] = context[prop];
-              incrementOnSuccessStats(prop)();
-            };
-          }
+        function onSuccess(prop: string) {
+          return ({ context }: any) => {
+            onSuccessValues[prop] = context[prop];
+            incrementOnSuccessStats(prop)();
+          };
+        }
 
-          function validateBoolean(value: any) {
-            if (![false, true].includes(value))
-              return { valid: false, reason: `${value} is not a boolean` };
-            return { valid: true };
-          }
-        });
+        function validateBoolean(value: any) {
+          if (![false, true].includes(value))
+            return { valid: false, reason: `${value} is not a boolean` };
+          return { valid: true };
+        }
 
         beforeEach(() => {
           onSuccessStats = {};
@@ -737,13 +735,13 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
             });
           });
 
-          it("should respect sideInits & sideNoInit at creation", async () => {
+          it("should respect virtualInits & virtualNoInit at creation", async () => {
             const { data: user, handleSuccess } = await User.create({
               dependentSideNoInit: "",
               dependentSideInit: true,
               name: "Peter",
 
-              sideInit: true,
+              virtualInit: true,
               virtualWithSanitizer: true,
               virtualWithSanitizerNoInit: true,
             });
@@ -759,14 +757,14 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
             expect(onSuccessStats).toEqual({
               dependentSideInit: 1,
               dependentSideNoInit: 1,
-              sideInit: 1,
+              virtualInit: 1,
               virtualWithSanitizer: 3,
             });
 
             expect(onSuccessValues).toEqual({
               dependentSideInit: "both",
               dependentSideNoInit: "",
-              sideInit: true,
+              virtualInit: true,
               virtualWithSanitizer: "sanitized",
             });
 
@@ -775,14 +773,14 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
             });
           });
 
-          it("should respect sideInits & sideNoInit at creation(cloning)", async () => {
+          it("should respect virtualInits & virtualNoInit at creation(cloning)", async () => {
             const { data: user, handleSuccess } = await User.clone(
               {
                 dependentSideNoInit: "bignw ",
                 dependentSideInit: "iehvhgwop",
                 name: "Peter",
-                sideInit: true,
-                sideNoInit: true,
+                virtualInit: true,
+                virtualNoInit: true,
               },
               { reset: ["dependentSideInit", "dependentSideNoInit"] }
             );
@@ -798,13 +796,13 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
             expect(onSuccessStats).toEqual({
               dependentSideInit: 1,
               dependentSideNoInit: 1,
-              sideInit: 1,
+              virtualInit: 1,
             });
 
             expect(onSuccessValues).toEqual({
               dependentSideInit: "one",
               dependentSideNoInit: "",
-              sideInit: true,
+              virtualInit: true,
             });
 
             expect(sanitizedValues).toEqual({});
