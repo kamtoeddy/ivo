@@ -305,18 +305,18 @@ class ModelTool<
 
     let toResolve = [] as StringKey<O>[];
 
-    const isCreating = !isUpdate;
+    const isCreation = !isUpdate;
 
     for (const prop of successFulChanges) {
       const dependencies = this._getDependencies(prop);
 
       if (!dependencies.length) continue;
 
-      if (isCreating && this._isVirtual(prop) && !this._isVirtualInit(prop))
+      if (isCreation && this._isVirtual(prop) && !this._isVirtualInit(prop))
         continue;
 
       if (
-        isCreating &&
+        isCreation &&
         (this._isDependentProp(prop) || this._isLaxProp(prop)) &&
         isEqual(this.defaults[prop], data[prop])
       )
@@ -335,7 +335,7 @@ class ModelTool<
     const operations = toResolve.map(async (prop) => {
       if (
         this._isReadonly(prop) &&
-        !isCreating &&
+        !isCreation &&
         !isEqual(this.values[prop], this.defaults[prop])
       )
         return;
@@ -344,7 +344,7 @@ class ModelTool<
 
       const value = await resolver(summary);
 
-      if (!isCreating && isEqual(value, _ctx[prop as StringKey<Context<I, O>>]))
+      if (!isCreation && isEqual(value, _ctx[prop as StringKey<Context<I, O>>]))
         return;
 
       data[prop] = value;
