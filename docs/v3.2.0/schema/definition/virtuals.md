@@ -8,9 +8,12 @@ These properties are used to manipulate dependent properties at the level of you
   - A validator and
   - Atleast one property that depends on it
 
-- They can have (**`shouldInit === false`**), cannot be dependent, defaulted, strictly required nor readonly
-
-- They can also have [aliases](#aliases)
+- They can have (**`shouldInit === false`**) or `shouldInit` as a function
+- They can have (**`shouldUpdate === false`**) or `shouldUpdate` as a function
+- They can have `required` as a function
+- They can have [aliases](#aliases)
+- They can have [sanitizers](#aliases)
+- They **CANNOT** be dependent, defaulted, strictly required nor readonly
 
 > Out of the box, virtual is **`false`**
 
@@ -150,3 +153,51 @@ console.log(item1, item2); // { quantity: 100 } { quantity: 100 }
 > N.B: Virtual properties can only be accessed with their aliases outside of your schema. This is to say that virtual properties should not be accessed on [`operation contexts`](../../../v3.0.0/schema/definition/life-cycles.md#the-operation-context) with their aliases
 
 Aliases are available on the `clone`, `create`, `update` and `validate` methods of your models
+
+## Sanitizer
+
+This should be used when your virtual property may exist in more than one form. This function is executed immediately the validation step is complete. This function could be synchronous or asynchronous and has access to only one argument, the [operation summary](./life-cycles.md#the-operation-summary)
+
+A good usecase would be when a dealing with file uploads. The example below shows how you could upload a file to a file or cloud storage, get the metadata you'll need to persist as metadata. After sanitization, the resolver of properties that depend (`metadata` in our case) on the these virtuals are run with the new values of the virtual properties
+
+```ts
+import { Schema, type Summary } from "clean-schema";
+
+type FileMetadata = { size: number; url: string };
+
+type Input = {
+  file: File | FileMetadata;
+  name: string;
+};
+
+type Output = {
+  id: string;
+  metadata: FileMetadata;
+  name: string;
+};
+
+const FileModel = new Schema<Input, Output>({
+  id: { constant: true, value: generateID },
+  metadata: {
+    default: { size: 0, url: "" },
+    dependent: true,
+    dependsOn: "file",
+    resolver({ context: { file } }) {
+      return file as FileMetadata;
+    },
+  },
+  name: { required: true, validator: validateName },
+  file: {
+    vitual: true,
+    sanitizer: sanitizeFile,
+    validator: validateFile,
+  },
+}).getModel();
+
+async function sanitizeFile({ context: { file } }: Summary<Input, Output>) {
+  // upload file
+  const { size, url } = await uploadFile(file);
+
+  return { size, url } as FileMetadata;
+}
+```

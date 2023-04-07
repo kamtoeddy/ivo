@@ -23,17 +23,35 @@ type ValidationResults =
       valid: false;
     };
 
-const validator = (
+const validator1 = (
   value: any,
   summary: Summary<Input, Output>
-): IValidationResults => {
+) => {
   // validation logic here
 
   if (valid) return { valid, validated };
 
   return { reason, valid };
 };
+
+const validator2 = (
+  value: any,
+  summary: Summary<Input, Output>
+) {
+  // validation logic here
+
+  if (valid) return false
+
+  return true
+};
 ```
+
+In the code snippet above we have 2 validators; `validator1` and `validator2`
+
+Although both work just the same, we `validator1` is recommended because:
+
+- it is good to provided the reason why the validation failed and
+- returning the `validated` value tells TypeScript more about the type of that property especially if have not explicitly provided the input & output interfaces of your schema
 
 > N.B: if the validator does not return a validated value or it is undefined, the direct value passed will be used even `undefined`.
 

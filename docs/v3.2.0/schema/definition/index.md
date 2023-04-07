@@ -71,6 +71,7 @@ These methods are async because custom validators could be async as well.
 | onSuccess    | function \| function[ ]      | executed after a sucessful operation [more](./life-cycles.md#onsuccess)                                                                                   |
 | readonly     | boolean \| 'lax'             | a propterty whose value should not change [more](../../../v3.0.0/schema/definition/readonly.md#readonly-properties)                                       |
 | required     | boolean \| function          | a property that must be set during an operation [more](./required.md#required-properties)                                                                 |
+| sanitizer    | function                     | This could be used to transform a virtual property before their dependent properties get resolved. [more](./virtuals.md#sanitizer)                        |
 | shouldInit   | false \| function(): boolean | A boolean or setter that tells clean-schema whether or not a property should be initialized.                                                              |
 | shouldUpdate | false \| function(): boolean | A boolean or setter that tells clean-schema whether or not a property should be initialized.                                                              |
 | validator    | function                     | A function (async / sync) used to validated the value of a property. [more](../../validate/index.md#validators)                                           |
