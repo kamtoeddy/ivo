@@ -185,11 +185,11 @@ class ModelTool<
   };
 
   private _handleSanitizationOfVirtuals = async (
-    lifeCycle: ns.OperationName
+    data: Partial<O>,
+    isUpdate = false
   ) => {
     let sanitizers: [StringKey<I>, Function][] = [];
 
-    const ctx = this._getContext();
     const partialCtx = this._getPartialContext();
 
     const successFulVirtuals = this._getKeysAsProps(partialCtx).filter(
@@ -197,15 +197,15 @@ class ModelTool<
     );
 
     for (const prop of successFulVirtuals) {
-      const [isSanitizable, sanitizer] = this._isSanitizable(prop, lifeCycle);
+      const [isSanitizable, sanitizer] = this._isSanitizable(prop, !isUpdate);
 
-      if (!isSanitizable) continue;
-
-      sanitizers.push([prop as StringKey<I>, sanitizer]);
+      if (isSanitizable) sanitizers.push([prop as StringKey<I>, sanitizer]);
     }
 
+    const summary = this._getSummary(data, isUpdate);
+
     const sanitizations = sanitizers.map(async ([prop, sanitizer]) => {
-      const resolvedValue = await sanitizer(ctx, lifeCycle);
+      const resolvedValue = await sanitizer(summary);
 
       this._updateContext({ [prop]: resolvedValue } as any);
     });
@@ -215,13 +215,13 @@ class ModelTool<
 
   private _isSanitizable = (
     prop: string,
-    lifeCycle: ns.OperationName
+    isCreation: boolean
   ): [false, undefined] | [true, Function] => {
     const { sanitizer, shouldInit } = this._getDefinition(prop);
 
     if (!sanitizer) return [false, undefined];
-    if (lifeCycle == "creation" && isEqual(shouldInit, false))
-      return [false, undefined];
+
+    if (isCreation && isEqual(shouldInit, false)) return [false, undefined];
 
     return [true, sanitizer];
   };
@@ -594,7 +594,7 @@ class ModelTool<
 
     this._handleRequiredBy(data, error);
 
-    await this._handleSanitizationOfVirtuals("creation");
+    await this._handleSanitizationOfVirtuals(data);
 
     data = await this._resolveDependentChanges(data, this._getPartialContext());
 
@@ -684,7 +684,7 @@ class ModelTool<
 
     this._handleRequiredBy(data, error);
 
-    await this._handleSanitizationOfVirtuals("creation");
+    await this._handleSanitizationOfVirtuals(data);
 
     data = await this._resolveDependentChanges(data, this._getPartialContext());
 
@@ -733,7 +733,7 @@ class ModelTool<
     this._setValues(values, { allowVirtuals: false, allowTimestamps: true });
 
     const error = new ErrorTool({ message: "Validation Error" });
-    let updated = {} as Partial<O>;
+    let updates = {} as Partial<O>;
 
     const toUpdate = this._getKeysAsProps(changes ?? {}).filter((prop) =>
       this._isUpdatable(prop, changes[prop])
@@ -766,7 +766,7 @@ class ModelTool<
 
       if (this._isVirtual(propName)) virtuals.push(propName);
       else {
-        updated[propName as StringKey<O>] = validated;
+        updates[propName as StringKey<O>] = validated;
         linkedProps.push(propName);
       }
 
@@ -778,27 +778,27 @@ class ModelTool<
 
     await Promise.allSettled(validations);
 
-    this._handleRequiredBy(updated, error, true);
+    this._handleRequiredBy(updates, error, true);
 
     if (error.isPayloadLoaded) {
-      await this._handleFailure(updated as any, error, virtuals);
+      await this._handleFailure(updates as any, error, virtuals);
       return this._handleError(error);
     }
 
-    await this._handleSanitizationOfVirtuals("update");
+    await this._handleSanitizationOfVirtuals(updates, true);
 
-    updated = await this._resolveDependentChanges(
-      updated,
+    updates = await this._resolveDependentChanges(
+      updates,
       this._getPartialContext(),
       true
     );
 
-    if (!Object.keys(updated).length) {
-      await this._handleFailure(updated, error, virtuals);
+    if (!Object.keys(updates).length) {
+      await this._handleFailure(updates, error, virtuals);
       return this._handleError(error.setMessage("Nothing to update"));
     }
 
-    const finalData = this._useConfigProps(updated, true);
+    const finalData = this._useConfigProps(updates, true);
 
     this._updateContext(finalData as any);
     this._updatePartialContext(finalData as any);

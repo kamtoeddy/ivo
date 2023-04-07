@@ -6,6 +6,8 @@ import {
   StoreItemType,
 } from "./interfaces";
 
+type SummaryType = Summary<IStoreItem, StoreItemType>;
+
 import {
   isArrayOk,
   isNumberOk,
@@ -86,7 +88,7 @@ export const validateOtherQuantity = (value: any, ctx: IStoreItem) => {
 
 export const validateQuantities = async (
   value: any,
-  { context }: Summary<IStoreItem, StoreItemType>
+  { context }: SummaryType
 ) => {
   return isArrayOk<IOtherQuantity>(value, {
     empty: true,
@@ -104,9 +106,8 @@ const getMeasureUnit = (
 };
 
 export const sanitizeQuantities = ({
-  quantities,
-  otherMeasureUnits,
-}: IStoreItem) => {
+  context: { quantities, otherMeasureUnits },
+}: SummaryType) => {
   return (quantities as IOtherQuantity[]).reduce((prev, { name, quantity }) => {
     const mu = getMeasureUnit(otherMeasureUnits!, name);
 

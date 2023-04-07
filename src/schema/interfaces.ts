@@ -181,7 +181,7 @@ namespace Schema {
       : Exclude<StringKey<A>, K>;
     required?: RequiredSetter<I, O>;
     virtual: true;
-    sanitizer?: DefaultSetter<K, I, O>;
+    sanitizer?: Resolver<K, I, O>;
     onFailure?: FailureHandler<I, O> | NonEmptyArray<FailureHandler<I, O>>;
     onSuccess?: SuccessHandler<I, O> | NonEmptyArray<SuccessHandler<I, O>>;
     shouldInit?: false | BooleanSetter<I, O>;
