@@ -16,6 +16,7 @@ import { Test_SchemaOptionFormat } from "./options/format";
 import { Test_SchemaTimestampOption } from "./options/timestamps";
 import { Test_Validators } from "./validators";
 import { Test_SchemaOnSuccess } from "./options/on-success";
+import { Test_SchemaOnDelete } from "./options/on-delete";
 
 const fx = makeFx(Schema);
 
@@ -35,6 +36,7 @@ Test_ShouldInitRule({ Schema, fx });
 Test_ShouldUpdateRule({ Schema, fx });
 
 Test_SchemaErrors({ Schema, fx });
+Test_SchemaOnDelete({ Schema, fx });
 Test_SchemaOnSuccess({ Schema, fx });
 Test_SchemaOptionFormat({ fx });
 Test_SchemaTimestampOption({ Schema, fx });
