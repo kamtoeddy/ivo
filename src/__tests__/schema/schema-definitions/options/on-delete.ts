@@ -29,10 +29,7 @@ export const Test_SchemaOnDelete = ({ Schema, fx }: any) => {
               resolver: ({ context }: any) => context._setPrice,
               onDelete: onDelete_("price"),
             },
-            _setPrice: {
-              virtual: true,
-              validator,
-            },
+            _setPrice: { virtual: true, validator },
           },
           { onDelete: onDelete_("global") }
         ).getModel();
@@ -60,10 +57,7 @@ export const Test_SchemaOnDelete = ({ Schema, fx }: any) => {
               dependsOn: "_setPrice",
               resolver: ({ context }: any) => context._setPrice,
             },
-            _setPrice: {
-              virtual: true,
-              validator,
-            },
+            _setPrice: { virtual: true, validator },
           },
           { onDelete: [onDelete_("global"), onDelete_("global-1")] }
         ).getModel();

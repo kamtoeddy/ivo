@@ -130,10 +130,7 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
               dependsOn: "_setPrice",
               resolver: ({ context }: any) => context._setPrice,
             },
-            _setPrice: {
-              virtual: true,
-              validator,
-            },
+            _setPrice: { virtual: true, validator },
           },
           { onSuccess: [onSuccess_("global"), onSuccess_("global-1")] }
         ).getModel();
