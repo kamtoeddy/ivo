@@ -52,6 +52,7 @@ export abstract class SchemaCore<I, O> {
   protected optionsTool: OptionsTool;
 
   // listeners
+  protected globalDeleteHandlers: ns.DeleteHandler<O>[] = [];
   protected globalSuccessHandlers: ns.SuccessHandler<I, O>[] = [];
 
   constructor(
@@ -192,8 +193,14 @@ export abstract class SchemaCore<I, O> {
       if (!["silent", "throw"].includes(this._options.errors!))
         error.add("errors", "should be 'silent' or 'throw'").throw();
 
+    if (this._options.hasOwnProperty("onDelete")) {
+      const isValid = this._isHandlerOptionOk("onDelete");
+
+      if (!isValid.valid) error.add("onDelete", isValid.reasons!).throw();
+    }
+
     if (this._options.hasOwnProperty("onSuccess")) {
-      const isValid = this._isOnSuccessOptionOk();
+      const isValid = this._isHandlerOptionOk("onSuccess");
 
       if (!isValid.valid) error.add("onSuccess", isValid.reasons!).throw();
     }
@@ -1031,17 +1038,21 @@ export abstract class SchemaCore<I, O> {
     return { valid: true };
   }
 
-  private _isOnSuccessOptionOk() {
-    const { onSuccess } = this._options,
+  private _isHandlerOptionOk(lifeCycle: "onDelete" | "onSuccess") {
+    const _handlers = this._options[lifeCycle],
       reasons: string[] = [];
 
-    const handlers = toArray<ns.SuccessHandler<any, any>>(onSuccess!);
+    const handlers = toArray(_handlers!);
 
     handlers.forEach((handler, i) => {
-      if (this._isFunction(handler))
-        return this.globalSuccessHandlers.push(handler);
+      if (!this._isFunction(handler))
+        return reasons.push(
+          `The '${lifeCycle}' handler @[${i}] is not a function`
+        );
 
-      reasons.push(`The 'onSuccess' handler @[${i}] is not a function`);
+      if (lifeCycle == "onDelete")
+        this.globalDeleteHandlers.push(handler as ns.DeleteHandler<O>);
+      else this.globalSuccessHandlers.push(handler as ns.SuccessHandler<I, O>);
     });
 
     if (reasons.length) return { valid: false, reasons };
