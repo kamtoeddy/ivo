@@ -226,40 +226,40 @@ export const Test_SchemaOnDelete = ({ Schema, fx }: any) => {
       });
     });
 
-    // describe("invalid", () => {
-    //   it("should reject 'onDelete' other than (() => any) | ((() => any)[])", () => {
-    //     const invalidValues = [
-    //       1,
-    //       0,
-    //       -14,
-    //       true,
-    //       false,
-    //       "invalid",
-    //       "",
-    //       null,
-    //       undefined,
-    //     ];
+    describe("invalid", () => {
+      it("should reject 'onDelete' other than (() => any) | ((() => any)[])", () => {
+        const invalidValues = [
+          1,
+          0,
+          -14,
+          true,
+          false,
+          "invalid",
+          "",
+          null,
+          undefined,
+        ];
 
-    //     for (const onDelete of invalidValues) {
-    //       const toFail = fx(getValidSchema(), { onDelete });
+        for (const onDelete of invalidValues) {
+          const toFail = fx(getValidSchema(), { onDelete });
 
-    //       expectFailure(toFail);
+          expectFailure(toFail);
 
-    //       try {
-    //         toFail();
-    //       } catch (err: any) {
-    //         expect(err).toMatchObject({
-    //           message: "Invalid Schema",
-    //           payload: {
-    //             onDelete: expect.arrayContaining([
-    //               "The 'onDelete' handler @[0] is not a function",
-    //             ]),
-    //           },
-    //           statusCode: 500,
-    //         });
-    //       }
-    //     }
-    //   });
-    // });
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err).toMatchObject({
+              message: "Invalid Schema",
+              payload: {
+                onDelete: expect.arrayContaining([
+                  "The 'onDelete' handler @[0] is not a function",
+                ]),
+              },
+              statusCode: 500,
+            });
+          }
+        }
+      });
+    });
   });
 };
