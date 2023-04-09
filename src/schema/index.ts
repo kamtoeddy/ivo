@@ -727,7 +727,7 @@ class ModelTool<
     await Promise.allSettled(cleanups);
   };
 
-  update = async (values: O, changes: Partial<Context<I, O>>) => {
+  update = async (values: O, changes: Partial<I & A>) => {
     if (!this._areValuesOk(values)) return this._handleInvalidData();
 
     this._setValues(values, { allowVirtuals: false, allowTimestamps: true });
@@ -758,9 +758,9 @@ class ModelTool<
 
       const isAlias = this._isVirtualAlias(prop);
 
-      const propName = (
-        isAlias ? this._getVirtualByAlias(prop)! : prop
-      ) as StringKey<O>;
+      const propName = (isAlias
+        ? this._getVirtualByAlias(prop)!
+        : prop) as unknown as StringKey<O>;
 
       if (isEqual(validated, this.values[propName])) return;
 

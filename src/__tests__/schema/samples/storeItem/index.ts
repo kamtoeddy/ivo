@@ -49,7 +49,11 @@ const storeItemSchema = new Schema<IStoreItem, StoreItemType>(
       dependsOn: ["_quantity", "quantities"],
       resolver: resolveQuantity,
     },
-    _quantity: { virtual: true, validator: validateQuantity },
+    _quantity: {
+      alias: "__quantity",
+      virtual: true,
+      validator: validateQuantity,
+    },
     quantityChangeCounter: {
       default: 0,
       dependent: true,
