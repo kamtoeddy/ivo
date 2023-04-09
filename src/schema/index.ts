@@ -141,12 +141,12 @@ class ModelTool<
     const ctx = this._getContext();
 
     const cleanups = props.map(async (prop) => {
-      const listeners = this._getHandlers<ns.FailureHandler<I, O>>(
+      const handlers = this._getHandlers<ns.FailureHandler<I, O>>(
         prop,
         "onFailure"
       );
 
-      const _cleanups = listeners.map(async (listener) => await listener(ctx));
+      const _cleanups = handlers.map(async (handler) => await handler(ctx));
 
       await Promise.allSettled(_cleanups);
     });
@@ -275,19 +275,19 @@ class ModelTool<
     const summary = this._getSummary(data, isUpdate);
 
     for (const prop of successProps) {
-      const listeners = this._getHandlers<ns.SuccessHandler<I, O>>(
+      const handlers = this._getHandlers<ns.SuccessHandler<I, O>>(
         prop,
         "onSuccess"
       );
 
-      successListeners = successListeners.concat(listeners);
+      successListeners = successListeners.concat(handlers);
     }
 
     successListeners = successListeners.concat(this.globalSuccessHandlers);
 
     return async () => {
       const successOperations = successListeners.map(
-        async (listener) => await listener(summary)
+        async (handler) => await handler(summary)
       );
 
       await Promise.allSettled(successOperations);
@@ -400,7 +400,7 @@ class ModelTool<
 
     this.values = _values as O;
 
-    this._initialiseContexts();
+    this._initializeContexts();
   }
 
   private _useConfigProps = (obj: Partial<O>, isUpdate = false) => {
@@ -713,6 +713,8 @@ class ModelTool<
 
     let handlers: ns.DeleteHandler<O>[] = [...this.globalDeleteHandlers];
 
+    const data = this._getFrozenCopy(this.values);
+
     this.props.map(async (prop) => {
       const handlers_ = this._getHandlers<ns.DeleteHandler<O>>(
         prop,
@@ -722,9 +724,7 @@ class ModelTool<
       if (handlers_.length) handlers = handlers.concat(handlers_);
     });
 
-    const cleanups = handlers.map(
-      async (listener) => await listener(this._getFrozenCopy(this.values))
-    );
+    const cleanups = handlers.map(async (handler) => await handler(data));
 
     await Promise.allSettled(cleanups);
   };

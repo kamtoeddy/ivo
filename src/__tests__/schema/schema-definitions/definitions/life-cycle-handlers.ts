@@ -1,7 +1,7 @@
 import { expectFailure, expectNoFailure, validator } from "../_utils";
 
-export const Test_LifeCycleListeners = ({ Schema, fx }: any) => {
-  describe("life cycle listeners", () => {
+export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
+  describe("life cycle handlers", () => {
     const rules = ["onDelete", "onFailure", "onSuccess"];
 
     describe("valid", () => {
@@ -106,7 +106,7 @@ export const Test_LifeCycleListeners = ({ Schema, fx }: any) => {
 
       beforeEach(() => (propChangeMap = {}));
 
-      it("should reject listeners that try to mutate the onChange, onCreate & onSuccess ctx", async () => {
+      it("should reject handlers that try to mutate the onChange, onCreate & onSuccess ctx", async () => {
         const { handleSuccess } = await Model.create(validData);
 
         await handleSuccess?.();
@@ -114,14 +114,14 @@ export const Test_LifeCycleListeners = ({ Schema, fx }: any) => {
         expect(propChangeMap.onSuccess.constant).toBe(true);
       });
 
-      it("should reject listeners that try to mutate the onDelete ctx", async () => {
+      it("should reject handlers that try to mutate the onDelete ctx", async () => {
         await Model.delete(validData);
 
         for (const prop of allProps)
           expect(propChangeMap.onDelete[prop]).toBe(true);
       });
 
-      it("should reject listeners that try to mutate the onFailure(clone) ctx", async () => {
+      it("should reject handlers that try to mutate the onFailure(clone) ctx", async () => {
         await Model.clone({ prop1: "", prop2: "", prop3: "" });
 
         for (const prop of props)
@@ -132,7 +132,7 @@ export const Test_LifeCycleListeners = ({ Schema, fx }: any) => {
           }
       });
 
-      it("should reject listeners that try to mutate the onFailure(create) ctx", async () => {
+      it("should reject handlers that try to mutate the onFailure(create) ctx", async () => {
         await Model.create({ prop1: "", prop2: "", prop3: "" });
 
         for (const prop of props)
@@ -143,7 +143,7 @@ export const Test_LifeCycleListeners = ({ Schema, fx }: any) => {
           }
       });
 
-      it("should reject listeners that try to mutate the onFailure(update) ctx", async () => {
+      it("should reject handlers that try to mutate the onFailure(update) ctx", async () => {
         await Model.update(validData, { prop1: "", prop2: "", prop3: "" });
 
         for (const prop of props)
@@ -177,7 +177,7 @@ export const Test_LifeCycleListeners = ({ Schema, fx }: any) => {
 
       beforeEach(() => (propChangeMap = {}));
 
-      it("should trigger all onDelete listeners but for virtuals", async () => {
+      it("should trigger all onDelete handlers but for virtuals", async () => {
         await Model.delete({
           constant: true,
           prop1: true,
@@ -260,14 +260,14 @@ export const Test_LifeCycleListeners = ({ Schema, fx }: any) => {
         });
 
         describe("creation", () => {
-          it("should call onFailure listeners at creation", async () => {
+          it("should call onFailure handlers at creation", async () => {
             const { error } = await Model.create({ prop1: false });
 
             expect(error).toBeDefined();
             expect(onFailureCount).toEqual({ prop1: 1, prop2: 2 });
           });
 
-          it("should call onFailure listeners at creation with virtuals", async () => {
+          it("should call onFailure handlers at creation with virtuals", async () => {
             const { error } = await Model.create({
               prop1: false,
               virtualProp: "Yes",
@@ -281,14 +281,14 @@ export const Test_LifeCycleListeners = ({ Schema, fx }: any) => {
             });
           });
 
-          it("should call onFailure listeners during cloning", async () => {
+          it("should call onFailure handlers during cloning", async () => {
             const { error } = await Model.clone({ prop1: "" });
 
             expect(error).toBeDefined();
             expect(onFailureCount).toEqual({ prop1: 1, prop2: 2 });
           });
 
-          it("should call onFailure listeners during cloning with virtuals", async () => {
+          it("should call onFailure handlers during cloning with virtuals", async () => {
             const { error } = await Model.clone({
               prop1: "",
               virtualProp: "Yes",
@@ -304,14 +304,14 @@ export const Test_LifeCycleListeners = ({ Schema, fx }: any) => {
         });
 
         describe("updates", () => {
-          it("should call onFailure listeners during updates", async () => {
+          it("should call onFailure handlers during updates", async () => {
             const { error } = await Model.update({}, { prop1: "" });
 
             expect(error).toBeDefined();
             expect(onFailureCount).toEqual({ prop1: 1 });
           });
 
-          it("should call onFailure listeners during updates with virtuals", async () => {
+          it("should call onFailure handlers during updates with virtuals", async () => {
             const data = [
               [{ virtualProp: "" }, { virtualProp: 3 }],
               [
@@ -330,7 +330,7 @@ export const Test_LifeCycleListeners = ({ Schema, fx }: any) => {
             }
           });
 
-          it("should call onFailure listeners during updates & nothing to update", async () => {
+          it("should call onFailure handlers during updates & nothing to update", async () => {
             const { error } = await Model.update({ prop1: 2 }, { prop1: 35 });
 
             expect(error).toBeDefined();
@@ -394,7 +394,7 @@ export const Test_LifeCycleListeners = ({ Schema, fx }: any) => {
       });
 
       // creation
-      it("should call onSuccess listeners at creation", async () => {
+      it("should call onSuccess handlers at creation", async () => {
         const { data, error, handleSuccess } = await Model.create({
           required: true,
           readonly: true,
@@ -427,7 +427,7 @@ export const Test_LifeCycleListeners = ({ Schema, fx }: any) => {
       });
 
       // cloning
-      it("should call onSuccess listeners during cloning", async () => {
+      it("should call onSuccess handlers during cloning", async () => {
         const initialData = {
           dependent: false,
           lax: "",
@@ -464,7 +464,7 @@ export const Test_LifeCycleListeners = ({ Schema, fx }: any) => {
       });
 
       // updates
-      it("should call onSuccess listeners during updates with lax props", async () => {
+      it("should call onSuccess handlers during updates with lax props", async () => {
         const { error, handleSuccess } = await Model.update(initialData, {
           lax: true,
         });
@@ -486,7 +486,7 @@ export const Test_LifeCycleListeners = ({ Schema, fx }: any) => {
         });
       });
 
-      it("should call onSuccess listeners during updates with readonlyLax & dependent", async () => {
+      it("should call onSuccess handlers during updates with readonlyLax & dependent", async () => {
         const { data, error, handleSuccess } = await Model.update(initialData, {
           readonlyLax: true,
         });

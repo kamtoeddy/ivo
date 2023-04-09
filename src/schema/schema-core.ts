@@ -24,13 +24,13 @@ export const defaultOptions = {
 const lifeCycleRules: ns.LifeCycles[] = ["onDelete", "onFailure", "onSuccess"];
 
 export abstract class SchemaCore<I, O> {
-  protected _options: ns.Options<I, O>;
   protected _definitions = {} as ns.Definitions_<I, O>;
+  protected _options: ns.Options<I, O>;
 
   // contexts & values
   protected context: Context<I, O> = {} as Context<I, O>;
-  protected partialContext: Context<I, O> = {} as Context<I, O>;
   protected defaults: Partial<O> = {};
+  protected partialContext: Context<I, O> = {} as Context<I, O>;
   protected values: O = {} as O;
 
   // maps
@@ -51,7 +51,7 @@ export abstract class SchemaCore<I, O> {
   // helpers
   protected optionsTool: OptionsTool;
 
-  // listeners
+  // handlers
   protected globalDeleteHandlers: ns.DeleteHandler<O>[] = [];
   protected globalSuccessHandlers: ns.SuccessHandler<I, O>[] = [];
 
@@ -74,7 +74,7 @@ export abstract class SchemaCore<I, O> {
 
   protected _getPartialContext = () => this._getFrozenCopy(this.partialContext);
 
-  protected _initialiseContexts = () => {
+  protected _initializeContexts = () => {
     this.context = { ...this.values } as Context<I, O>;
     this.partialContext = {} as Context<I, O>;
   };
@@ -153,8 +153,36 @@ export abstract class SchemaCore<I, O> {
   };
   // < dependency map utils />
 
-  protected _getFrozenCopy = <T>(data: T): Readonly<T> =>
-    Object.freeze(Object.assign({}, data)) as Readonly<T>;
+  private _areHandlersOk = (
+    _handlers: any,
+    lifeCycle: ns.LifeCycles,
+    global = false
+  ) => {
+    const reasons: string[] = [];
+
+    const handlers = toArray(_handlers);
+
+    handlers.forEach((handler, i) => {
+      if (!this._isFunction(handler))
+        return reasons.push(
+          `The '${lifeCycle}' handler @[${i}] is not a function`
+        );
+
+      if (!global) return;
+
+      if (lifeCycle == "onDelete")
+        return this.globalDeleteHandlers.push(handler as ns.DeleteHandler<O>);
+
+      if (lifeCycle == "onSuccess")
+        return this.globalSuccessHandlers.push(
+          handler as ns.SuccessHandler<I, O>
+        );
+    });
+
+    if (reasons.length) return { valid: false, reasons };
+
+    return { valid: true };
+  };
 
   protected _canInit = (prop: string) => {
     if (this._isDependentProp(prop)) return false;
@@ -171,7 +199,18 @@ export abstract class SchemaCore<I, O> {
     );
   };
 
-  private _checkOptions = () => {
+  protected _getFrozenCopy = <T>(data: T): Readonly<T> =>
+    Object.freeze(Object.assign({}, data)) as Readonly<T>;
+
+  private _getInvalidRules = <K extends StringKey<I>>(prop: K) => {
+    const rulesProvided = this._getKeysAsProps(this._getDefinition(prop));
+
+    return rulesProvided.filter(
+      (r) => !DEFINITION_RULES.includes(r as DefinitionRule)
+    );
+  };
+
+  protected _checkOptions = () => {
     const error = new ErrorTool({ message: "Invalid Schema", statusCode: 500 });
 
     if (
@@ -194,13 +233,21 @@ export abstract class SchemaCore<I, O> {
         error.add("errors", "should be 'silent' or 'throw'").throw();
 
     if (this._options.hasOwnProperty("onDelete")) {
-      const isValid = this._isHandlerOptionOk("onDelete");
+      const isValid = this._areHandlersOk(
+        this._options.onDelete,
+        "onDelete",
+        true
+      );
 
       if (!isValid.valid) error.add("onDelete", isValid.reasons!).throw();
     }
 
     if (this._options.hasOwnProperty("onSuccess")) {
-      const isValid = this._isHandlerOptionOk("onSuccess");
+      const isValid = this._areHandlersOk(
+        this._options.onSuccess,
+        "onSuccess",
+        true
+      );
 
       if (!isValid.valid) error.add("onSuccess", isValid.reasons!).throw();
     }
@@ -212,7 +259,7 @@ export abstract class SchemaCore<I, O> {
     }
   };
 
-  private _checkPropDefinitions = () => {
+  protected _checkPropDefinitions = () => {
     const error = new ErrorTool({ message: "Invalid Schema", statusCode: 500 });
 
     if (
@@ -348,14 +395,6 @@ export abstract class SchemaCore<I, O> {
   protected _getHandlers = <T>(prop: string, lifeCycle: ns.LifeCycles) =>
     toArray((this._getDefinition(prop)?.[lifeCycle] ?? []) as any) as T[];
 
-  private _getInvalidRules = <K extends StringKey<I>>(prop: K) => {
-    const rulesProvided = this._getKeysAsProps(this._getDefinition(prop));
-
-    return rulesProvided.filter(
-      (r) => !DEFINITION_RULES.includes(r as DefinitionRule)
-    );
-  };
-
   protected _getValidator = <K extends StringKey<I>>(prop: K) => {
     return this._getDefinition(prop)?.validator as
       | Validator<K, I, O>
@@ -364,25 +403,6 @@ export abstract class SchemaCore<I, O> {
 
   protected _getKeysAsProps = <T extends ObjectType>(data: T) =>
     Object.keys(data) as StringKey<T>[];
-
-  private _areHandlersOk = (prop: string, lifeCycle: ns.LifeCycles) => {
-    const handlers = toArray<ns.FailureHandler<I, O>>(
-      this._getDefinition(prop)?.[lifeCycle] as any
-    );
-
-    const reasons: string[] = [];
-
-    handlers.forEach((handler, index) => {
-      if (!this._isFunction(handler))
-        reasons.push(
-          `The '${lifeCycle}' handler @[${index}] is not a function`
-        );
-    });
-
-    const valid = !reasons.length;
-
-    return valid ? { listeners: handlers, valid } : { reasons, valid };
-  };
 
   protected _isRuleInDefinition = (
     prop: string,
@@ -522,7 +542,7 @@ export abstract class SchemaCore<I, O> {
   protected _isProp = (prop: string) =>
     this.props.includes(prop as StringKey<O>);
 
-  protected _isPropDefinitionObjectOk = (prop: string) => {
+  private _isPropDefinitionObjectOk = (prop: string) => {
     const propDef = this._getDefinition(prop);
 
     const propertyTypeProvided = typeof propDef;
@@ -622,9 +642,12 @@ export abstract class SchemaCore<I, O> {
     for (let rule of lifeCycleRules) {
       if (!this._isRuleInDefinition(prop, rule)) continue;
 
-      const isValid = this._areHandlersOk(prop, rule);
+      const isValid = this._areHandlersOk(
+        this._getDefinition(prop)[rule],
+        rule
+      );
 
-      if (!isValid.valid) reasons = reasons.concat(isValid.reasons);
+      if (!isValid.valid) reasons = reasons.concat(isValid.reasons!);
     }
 
     this._registerIfLax(prop);
@@ -657,9 +680,6 @@ export abstract class SchemaCore<I, O> {
 
     return { reasons, valid };
   };
-
-  protected _isPropDefinitionOk = (prop: string): boolean =>
-    this.__isPropDefinitionOk(prop).valid;
 
   private __isReadonly = (prop: string) => {
     const {
@@ -718,10 +738,7 @@ export abstract class SchemaCore<I, O> {
     return { valid: true };
   };
 
-  protected _isReadonly = (prop: string) =>
-    this.readonlyProps.includes(prop as StringKey<I>);
-
-  protected __isRequiredCommon = (prop: string) => {
+  private __isRequiredCommon = (prop: string) => {
     const valid = false;
 
     if (this._isRuleInDefinition(prop, "dependent"))
@@ -775,10 +792,7 @@ export abstract class SchemaCore<I, O> {
     return { valid: true };
   };
 
-  protected _isRequired = (prop: string) =>
-    this.requiredProps.includes(prop as StringKey<I>);
-
-  protected __isRequiredBy = (prop: string) => {
+  private __isRequiredBy = (prop: string) => {
     const { default: _default, required } = this._getDefinition(prop);
 
     const valid = false;
@@ -812,10 +826,7 @@ export abstract class SchemaCore<I, O> {
     return { valid: true };
   };
 
-  protected _isRequiredBy = (prop: string) =>
-    this.propsRequiredBy.includes(prop as StringKey<I>);
-
-  protected __isShouldInitConfigOk = (prop: string) => {
+  private __isShouldInitConfigOk = (prop: string) => {
     const { shouldInit } = this._getDefinition(prop);
 
     const valid = false;
@@ -837,7 +848,7 @@ export abstract class SchemaCore<I, O> {
     return { valid: true };
   };
 
-  protected __isShouldUpdateConfigOk = (prop: string) => {
+  private __isShouldUpdateConfigOk = (prop: string) => {
     const { readonly, shouldInit, shouldUpdate } = this._getDefinition(prop);
     const valid = false;
 
@@ -870,7 +881,7 @@ export abstract class SchemaCore<I, O> {
     return { valid: true };
   };
 
-  protected __isVirtualRequiredBy = (prop: string) => {
+  private __isVirtualRequiredBy = (prop: string) => {
     if (this._isRuleInDefinition(prop, "shouldInit"))
       return {
         valid: false,
@@ -884,7 +895,7 @@ export abstract class SchemaCore<I, O> {
     return { valid: true };
   };
 
-  protected __isVirtual = (prop: string) => {
+  private __isVirtual = (prop: string) => {
     const valid = false;
 
     const { sanitizer, virtual } = this._getDefinition(prop);
@@ -930,7 +941,7 @@ export abstract class SchemaCore<I, O> {
     return { valid: true };
   };
 
-  protected __isVirtualAliasOk = (prop: string) => {
+  private __isVirtualAliasOk = (prop: string) => {
     const valid = false;
 
     const { alias } = this._getDefinition(prop);
@@ -960,7 +971,7 @@ export abstract class SchemaCore<I, O> {
     return { valid: true };
   };
 
-  protected __isVirtualAliasOk2 = (alias: string | StringKey<I>) => {
+  private __isVirtualAliasOk2 = (alias: string | StringKey<I>) => {
     const prop = this._getVirtualByAlias(alias)!;
 
     const invalidResponse = {
@@ -976,28 +987,6 @@ export abstract class SchemaCore<I, O> {
       this._isVirtual(alias)
       ? invalidResponse
       : { valid: true };
-  };
-
-  protected _isVirtualAlias = (prop: string) => !!this.aliasToVirtualMap[prop];
-
-  protected _isVirtual = (prop: string) =>
-    this.virtuals.includes(prop as StringKey<I>);
-
-  protected _isVirtualInit = (prop: string, value: any = undefined) => {
-    const isAlias = this._isVirtualAlias(prop);
-
-    if (!this._isVirtual(prop) && !isAlias) return false;
-
-    const definitionName = isAlias ? this._getVirtualByAlias(prop)! : prop;
-
-    const { shouldInit } = this._getDefinition(definitionName);
-
-    const extraCtx = isAlias ? { [definitionName]: value } : {};
-
-    return (
-      isEqual(shouldInit, undefined) ||
-      this._getValueBy(definitionName, "shouldInit", extraCtx)
-    );
   };
 
   private _isTimestampsOptionOk() {
@@ -1034,28 +1023,6 @@ export abstract class SchemaCore<I, O> {
 
     if (createdAt === updatedAt)
       return { valid, reason: "createdAt & updatedAt cannot be same" };
-
-    return { valid: true };
-  }
-
-  private _isHandlerOptionOk(lifeCycle: "onDelete" | "onSuccess") {
-    const _handlers = this._options[lifeCycle],
-      reasons: string[] = [];
-
-    const handlers = toArray(_handlers!);
-
-    handlers.forEach((handler, i) => {
-      if (!this._isFunction(handler))
-        return reasons.push(
-          `The '${lifeCycle}' handler @[${i}] is not a function`
-        );
-
-      if (lifeCycle == "onDelete")
-        this.globalDeleteHandlers.push(handler as ns.DeleteHandler<O>);
-      else this.globalSuccessHandlers.push(handler as ns.SuccessHandler<I, O>);
-    });
-
-    if (reasons.length) return { valid: false, reasons };
 
     return { valid: true };
   }
@@ -1126,5 +1093,36 @@ export abstract class SchemaCore<I, O> {
       return;
 
     this.laxProps.push(prop as StringKey<I>);
+  };
+
+  protected _isReadonly = (prop: string) =>
+    this.readonlyProps.includes(prop as StringKey<I>);
+
+  protected _isRequired = (prop: string) =>
+    this.requiredProps.includes(prop as StringKey<I>);
+
+  protected _isRequiredBy = (prop: string) =>
+    this.propsRequiredBy.includes(prop as StringKey<I>);
+
+  protected _isVirtualAlias = (prop: string) => !!this.aliasToVirtualMap[prop];
+
+  protected _isVirtual = (prop: string) =>
+    this.virtuals.includes(prop as StringKey<I>);
+
+  protected _isVirtualInit = (prop: string, value: any = undefined) => {
+    const isAlias = this._isVirtualAlias(prop);
+
+    if (!this._isVirtual(prop) && !isAlias) return false;
+
+    const definitionName = isAlias ? this._getVirtualByAlias(prop)! : prop;
+
+    const { shouldInit } = this._getDefinition(definitionName);
+
+    const extraCtx = isAlias ? { [definitionName]: value } : {};
+
+    return (
+      isEqual(shouldInit, undefined) ||
+      this._getValueBy(definitionName, "shouldInit", extraCtx)
+    );
   };
 }
