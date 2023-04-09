@@ -196,6 +196,7 @@ namespace Schema {
 
   export type Options<I, O> = {
     errors?: "silent" | "throw";
+    onDelete?: DeleteHandler<O> | NonEmptyArray<DeleteHandler<O>>;
     onSuccess?: SuccessHandler<I, O> | NonEmptyArray<SuccessHandler<I, O>>;
     timestamps?:
       | boolean
