@@ -263,6 +263,7 @@ type DefinitionRule = typeof DEFINITION_RULES[number];
 
 const ALLOWED_OPTIONS: Schema.OptionsKey<any, any>[] = [
   "errors",
+  "onDelete",
   "onSuccess",
   "timestamps",
 ];
