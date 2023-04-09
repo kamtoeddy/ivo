@@ -711,18 +711,20 @@ class ModelTool<
 
     this._setValues(values, { allowVirtuals: false, allowTimestamps: true });
 
-    const cleanups = this.props.map(async (prop) => {
-      const listeners = this._getHandlers<ns.DeleteHandler<O>>(
+    let handlers: ns.DeleteHandler<O>[] = [...this.globalDeleteHandlers];
+
+    this.props.map(async (prop) => {
+      const handlers_ = this._getHandlers<ns.DeleteHandler<O>>(
         prop,
         "onDelete"
       );
 
-      const _cleanups = listeners.map(
-        async (listener) => await listener(this._getFrozenCopy(this.values))
-      );
-
-      await Promise.allSettled(_cleanups);
+      if (handlers_.length) handlers = handlers.concat(handlers_);
     });
+
+    const cleanups = handlers.map(
+      async (listener) => await listener(this._getFrozenCopy(this.values))
+    );
 
     await Promise.allSettled(cleanups);
   };
