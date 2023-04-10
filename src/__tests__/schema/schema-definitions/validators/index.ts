@@ -98,6 +98,39 @@ export const Test_Validators = ({ Schema }: any) => {
           });
         }
       });
+
+      it("should ignore keys of otherReasons that are not properties, aliases or are constants or dependents", async () => {
+        const Model = new Schema({
+          constant: { constant: true, value: 1 },
+          dependent: {
+            default: "",
+            dependent: true,
+            dependsOn: "prop",
+            resolver: () => "",
+          },
+          prop: {
+            required: true,
+            validator() {
+              return {
+                valid: false,
+                otherReasons: {
+                  constant: "invalid constant",
+                  dependent: "invalid dependent",
+                  invalidProp: "invalid prop",
+                },
+              };
+            },
+          },
+        }).getModel();
+
+        const { data, error } = await Model.create({});
+
+        expect(data).toBeUndefined();
+        expect(error).toMatchObject({
+          message: "Validation Error",
+          payload: { prop: ["validation failed"] },
+        });
+      });
     });
   });
 };
