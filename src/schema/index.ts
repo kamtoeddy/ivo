@@ -505,7 +505,11 @@ class ModelTool<
       const otherReasons = {} as Record<string, any>;
 
       for (const prop of validProperties)
-        otherReasons[prop] = response.otherReasons[prop];
+        otherReasons[prop] = toArray(response.otherReasons[prop]).map(
+          (value) => {
+            return typeof value === "string" ? value : "validation failed";
+          }
+        );
 
       _response.otherReasons = otherReasons;
     }

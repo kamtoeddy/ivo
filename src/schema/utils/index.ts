@@ -29,6 +29,6 @@ export const makeInternalResponse = <T = undefined>(
 
 export const makeResponse = <T = undefined>(
   input: ResponseInput_<any, any, T>
-): ValidatorResponse<TypeOf<T>> => {
+) => {
   return makeInternalResponse(input) as ValidatorResponse<TypeOf<T>>;
 };
