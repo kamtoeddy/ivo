@@ -266,6 +266,16 @@ class ModelTool<
     );
   };
 
+  private _isValidProperty = (prop: string) => {
+    if (this._isConstant(prop)) return false;
+
+    const isAlias = this._isVirtualAlias(prop);
+
+    if (this._isDependentProp(prop) && !isAlias) return false;
+
+    return this._isProp(prop) || this._isVirtual(prop) || isAlias;
+  };
+
   private _makeHandleSuccess = (data: Partial<O>, isUpdate = false) => {
     const partialCtx = this._getPartialContext();
 
@@ -441,6 +451,7 @@ class ModelTool<
       if (!hasOtherReasons) return error.add(prop, reasons);
 
       if (reasons.length) error.add(prop, reasons);
+      else error.add(prop, "validation failed");
 
       return Object.entries(otherReasons).forEach(([key, reasons]) => {
         error.add(key, reasons);
@@ -486,7 +497,19 @@ class ModelTool<
 
     const _response: ResponseInput_<any, any, T> = { valid: false };
 
-    if (response?.otherReasons) _response.otherReasons = response.otherReasons;
+    if (response?.otherReasons) {
+      const validProperties = this._getKeysAsProps(
+        response.otherReasons
+      ).filter(this._isValidProperty);
+
+      const otherReasons = {} as Record<string, any>;
+
+      for (const prop of validProperties)
+        otherReasons[prop] = response.otherReasons[prop];
+
+      _response.otherReasons = otherReasons;
+    }
+
     if (response?.reason) _response.reason = response.reason;
     if (response?.reasons) _response.reasons = response.reasons;
 
@@ -831,17 +854,13 @@ class ModelTool<
     value: any,
     summary_: Summary<I, O>
   ) => {
-    const isAlias = this._isVirtualAlias(prop);
-
-    if (
-      this._isConstant(prop) ||
-      (this._isDependentProp(prop) && !isAlias) ||
-      (!this._isProp(prop) && !this._isVirtual(prop) && !isAlias)
-    )
+    if (!this._isValidProperty(prop))
       return makeResponse<(I & A)[K]>({
         valid: false,
         reason: "Invalid property",
       });
+
+    const isAlias = this._isVirtualAlias(prop);
 
     const _prop = isAlias ? this._getVirtualByAlias(prop) : prop;
 
