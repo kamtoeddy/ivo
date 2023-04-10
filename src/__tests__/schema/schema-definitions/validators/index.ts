@@ -131,6 +131,45 @@ export const Test_Validators = ({ Schema }: any) => {
           payload: { prop: ["validation failed"] },
         });
       });
+
+      it("should ignore non-strings or array values passed to otherReasons", async () => {
+        const invalidMessages = [
+          null,
+          true,
+          false,
+          undefined,
+          -100,
+          0,
+          14,
+          {},
+          () => {},
+          [() => {}],
+        ];
+
+        for (const message of invalidMessages) {
+          const Model = new Schema({
+            prop1: { default: "" },
+            prop: {
+              required: true,
+              validator() {
+                return { valid: false, otherReasons: { prop1: message } };
+              },
+            },
+          }).getModel();
+
+          const { data, error } = await Model.create({});
+
+          expect(data).toBeUndefined();
+          expect(error).toEqual({
+            message: "Validation Error",
+            payload: {
+              prop: ["validation failed"],
+              prop1: ["validation failed"],
+            },
+            statusCode: 400,
+          });
+        }
+      });
     });
   });
 };
