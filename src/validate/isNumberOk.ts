@@ -7,7 +7,7 @@ export type RangeType = undefined | NumberRangeType;
 function isInRange(
   value: number,
   range: NumberRangeType
-): ResponseInput_<number> {
+): ResponseInput_<any, any, number> {
   const { bounds, inclusiveBottom, inclusiveTop } = range;
   const [min, max] = bounds;
 

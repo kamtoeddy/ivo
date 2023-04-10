@@ -55,9 +55,15 @@ export class ErrorTool extends Error {
     if (!value) value = [];
     else value = toArray(value);
 
-    this.payload[field] = this._has(field)
-      ? [...this.payload[field], ...value]
-      : value;
+    if (this._has(field)) {
+      const currentValues = this.payload[field];
+
+      value.forEach((v) => {
+        if (!currentValues.includes(v)) currentValues.push(v);
+      });
+
+      this.payload[field] = currentValues;
+    } else this.payload[field] = value;
 
     return this;
   }

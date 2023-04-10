@@ -1,3 +1,4 @@
+import { InputPayload } from "../utils/interfaces";
 import { Merge, RealType } from "./merge-types";
 
 export type {
@@ -13,6 +14,7 @@ export type {
   TypeOf,
   Validator,
   ValidatorResponse,
+  InternalValidatorResponse,
 };
 
 type Context<I, O = I> = Readonly<Merge<I, O>>;
@@ -226,16 +228,25 @@ type ValidatorResponse<T> =
   | { valid: true; validated: T }
   | { reasons: string[]; valid: false };
 
-type ResponseInput_<T> =
-  | { valid: true; validated?: TypeOf<T> }
-  | { reason?: string; reasons?: string[]; valid: false };
+type InternalValidatorResponse<T> =
+  | { valid: true; validated: T }
+  | { otherReasons?: InputPayload; reasons: string[]; valid: false };
 
-type ResponseInput<T> = boolean | (ResponseInput_<T> & {});
+type ResponseInput_<K, I, T> =
+  | { valid: true; validated?: TypeOf<T> }
+  | {
+      otherReasons?: { [Key in Exclude<keyof I, K>]: string | string[] };
+      reason?: string;
+      reasons?: string[];
+      valid: false;
+    };
+
+type ResponseInput<K, I, T> = boolean | (ResponseInput_<K, I, T> & {});
 
 type Validator<K extends keyof (I & O), I, O> = (
   value: any,
   summary: Summary<I, O> & {}
-) => ResponseInput<(I & O)[K]> | Promise<ResponseInput<(I & O)[K]>>;
+) => ResponseInput<K, I, (I & O)[K]> | Promise<ResponseInput<K, I, (I & O)[K]>>;
 
 type NonEmptyArray<T> = [T, ...T[]];
 

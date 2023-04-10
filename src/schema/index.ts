@@ -2,6 +2,7 @@ import { sort, sortKeys, toArray } from "../utils/functions";
 import { isEqual } from "../utils/isEqual";
 import {
   Context,
+  InternalValidatorResponse,
   ISchema as ns,
   RealType,
   ResponseInput_,
@@ -11,7 +12,7 @@ import {
 } from "./interfaces";
 import { Merge } from "./merge-types";
 import { defaultOptions, SchemaCore } from "./schema-core";
-import { makeResponse } from "./utils";
+import { makeInternalResponse, makeResponse } from "./utils";
 import { ErrorTool } from "./utils/schema-error";
 
 export { Schema };
@@ -426,13 +427,25 @@ class ModelTool<
     value: any,
     isUpdate = false
   ) => {
-    const isValid = (await this._validate(
+    const isValid = (await this._validateInternally(
       prop as any,
       value,
       this._getValidationSummary(isUpdate)
-    )) as ValidatorResponse<O[StringKey<O>]>;
+    )) as InternalValidatorResponse<O[StringKey<O>]>;
 
-    if (!isValid.valid) return error.add(prop, isValid.reasons);
+    if (!isValid.valid) {
+      const { otherReasons, reasons } = isValid;
+
+      const hasOtherReasons = !!otherReasons;
+
+      if (!hasOtherReasons) return error.add(prop, reasons);
+
+      if (reasons.length) error.add(prop, reasons);
+
+      return Object.entries(otherReasons).forEach(([key, reasons]) => {
+        error.add(key, reasons);
+      });
+    }
 
     const { validated } = isValid;
 
@@ -452,7 +465,7 @@ class ModelTool<
   private _sanitizeValidationResponse = <T>(
     response: any,
     value: any
-  ): ResponseInput_<T> => {
+  ): ResponseInput_<any, any, T> => {
     const responseType = typeof response;
 
     if (responseType == "boolean")
@@ -471,15 +484,16 @@ class ModelTool<
       return { valid: true, validated };
     }
 
-    const _response: ResponseInput_<T> = { valid: false };
+    const _response: ResponseInput_<any, any, T> = { valid: false };
 
+    if (response?.otherReasons) _response.otherReasons = response.otherReasons;
     if (response?.reason) _response.reason = response.reason;
     if (response?.reasons) _response.reasons = response.reasons;
 
-    if (!_response.reason && !_response.reasons)
+    if (!_response.reason && !_response.reasons && !_response.otherReasons)
       return validationFailedResponse;
 
-    return _response;
+    return makeInternalResponse(_response);
   };
 
   clone = async (
@@ -812,7 +826,7 @@ class ModelTool<
     };
   };
 
-  _validate = async <K extends StringKey<I & A>>(
+  _validateInternally = async <K extends StringKey<I & A>>(
     prop: K,
     value: any,
     summary_: Summary<I, O>
@@ -835,6 +849,8 @@ class ModelTool<
 
     if (validator) {
       let res = (await validator(value, summary_)) as ResponseInput_<
+        any,
+        I,
         (I & A)[K]
       >;
 
@@ -844,6 +860,16 @@ class ModelTool<
     }
 
     return makeResponse<(I & A)[K]>({ valid: true, validated: value });
+  };
+
+  _validate = async <K extends StringKey<I & A>>(
+    prop: K,
+    value: any,
+    summary_: Summary<I, O>
+  ) => {
+    const res = await this._validateInternally(prop, value, summary_);
+
+    return makeResponse<(I & A)[K]>(res);
   };
 }
 
