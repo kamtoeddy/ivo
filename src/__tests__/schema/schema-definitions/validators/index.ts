@@ -70,5 +70,34 @@ export const Test_Validators = ({ Schema }: any) => {
         });
       }
     });
+
+    describe("OtherReasons", () => {
+      it("should add corresponding properties and error messages passed as otherReasons", async () => {
+        const messages = [
+          ["Invalid Prop", ["Invalid Prop"]],
+          [["Invalid Prop"], ["Invalid Prop"]],
+        ];
+
+        for (const [input, output] of messages) {
+          const Model = new Schema({
+            prop: { default: "" },
+            prop2: {
+              required: true,
+              validator() {
+                return { valid: false, otherReasons: { prop: input } };
+              },
+            },
+          }).getModel();
+
+          const { data, error } = await Model.create({});
+
+          expect(data).toBeUndefined();
+          expect(error).toMatchObject({
+            message: "Validation Error",
+            payload: { prop: output },
+          });
+        }
+      });
+    });
   });
 };
