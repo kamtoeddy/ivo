@@ -6,6 +6,8 @@
     "lib": ["es2020", "es2017", "es7", "es6", "dom"],
     "module": "commonjs",
     "moduleResolution": "node",
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "outDir": "./dist",
     "rootDir": "./src",
     "strict": true,

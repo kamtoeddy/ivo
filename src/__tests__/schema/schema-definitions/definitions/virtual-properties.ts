@@ -649,7 +649,7 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
         ).getModel();
 
         function sanitizerOf(prop: string, value: any) {
-          return (s: any) => {
+          return () => {
             // to make sure sanitizer is invoked
             sanitizedValues[prop] = value;
 
