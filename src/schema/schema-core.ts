@@ -13,6 +13,7 @@ import {
   CONSTANT_RULES,
   VIRTUAL_RULES,
 } from "./interfaces";
+import { isPropertyOn } from "./utils";
 import { OptionsTool } from "./utils/options-tool";
 import { ErrorTool } from "./utils/schema-error";
 
@@ -95,7 +96,7 @@ export abstract class SchemaCore<I, O> {
   ) => {
     const _dependsOn = toArray(dependsOn) as StringKey<I>[];
 
-    for (let _prop of _dependsOn)
+    for (const _prop of _dependsOn)
       if (this.dependencyMap[_prop]) this.dependencyMap[_prop]?.push(prop);
       else this.dependencyMap[_prop] = [prop];
   };
@@ -220,19 +221,19 @@ export abstract class SchemaCore<I, O> {
     )
       error.add("schema options", "Must be an object").throw();
 
-    let options = Object.keys(this._options) as ns.OptionsKey<I, O>[];
+    const options = Object.keys(this._options) as ns.OptionsKey<I, O>[];
 
     if (!options.length) error.add("schema options", "Cannot be empty").throw();
 
-    for (let option of options)
+    for (const option of options)
       if (!ALLOWED_OPTIONS.includes(option))
         error.add(option, "Invalid option").throw();
 
-    if (this._options.hasOwnProperty("errors"))
+    if (isPropertyOn("errors", this._options))
       if (!["silent", "throw"].includes(this._options.errors!))
         error.add("errors", "should be 'silent' or 'throw'").throw();
 
-    if (this._options.hasOwnProperty("onDelete")) {
+    if (isPropertyOn("onDelete", this._options)) {
       const isValid = this._areHandlersOk(
         this._options.onDelete,
         "onDelete",
@@ -242,7 +243,7 @@ export abstract class SchemaCore<I, O> {
       if (!isValid.valid) error.add("onDelete", isValid.reasons!).throw();
     }
 
-    if (this._options.hasOwnProperty("onSuccess")) {
+    if (isPropertyOn("onSuccess", this._options)) {
       const isValid = this._areHandlersOk(
         this._options.onSuccess,
         "onSuccess",
@@ -252,7 +253,7 @@ export abstract class SchemaCore<I, O> {
       if (!isValid.valid) error.add("onSuccess", isValid.reasons!).throw();
     }
 
-    if (this._options.hasOwnProperty("timestamps")) {
+    if (isPropertyOn("timestamps", this._options)) {
       const isValid = this._isTimestampsOptionOk();
 
       if (!isValid.valid) error.add("timestamps", isValid.reason!).throw();
@@ -269,19 +270,19 @@ export abstract class SchemaCore<I, O> {
     )
       error.throw();
 
-    let props: string[] = Object.keys(this._definitions);
+    const props: string[] = Object.keys(this._definitions);
 
     if (!props.length)
       error.add("schema properties", "Insufficient Schema properties").throw();
 
-    for (let prop of props) {
+    for (const prop of props) {
       const isDefOk = this.__isPropDefinitionOk(prop);
 
       if (!isDefOk.valid) error.add(prop, isDefOk.reasons!);
     }
 
     // make sure every virtual property has atleast one dependency
-    for (let prop of this.virtuals) {
+    for (const prop of this.virtuals) {
       const dependencies = this._getDependencies(prop);
 
       if (!dependencies.length)
@@ -299,7 +300,7 @@ export abstract class SchemaCore<I, O> {
     }
 
     // make sure every virtual has atleast one dependency
-    for (let prop of this.dependents) {
+    for (const prop of this.dependents) {
       const { dependsOn } = this._getDefinition(prop);
 
       const _dependsOn = toArray<StringKey<I>>(dependsOn ?? []);
@@ -339,7 +340,7 @@ export abstract class SchemaCore<I, O> {
   protected _getDefaultValue = async (prop: string) => {
     const _default = this._getDefinition(prop)?.default;
 
-    let value = this._isFunction(_default)
+    const value = this._isFunction(_default)
       ? await _default(this._getContext())
       : this.defaults[prop as StringKey<O>];
 
@@ -408,8 +409,8 @@ export abstract class SchemaCore<I, O> {
     prop: string,
     rules: DefinitionRule | DefinitionRule[]
   ): boolean => {
-    for (let _prop of toArray(rules))
-      if (this._getDefinition(prop)?.hasOwnProperty(_prop)) return true;
+    for (const _prop of toArray(rules))
+      if (isPropertyOn(_prop, this._getDefinition(prop))) return true;
 
     return false;
   };
@@ -569,7 +570,7 @@ export abstract class SchemaCore<I, O> {
     const invalidRulesProvided = this._getInvalidRules(prop as StringKey<I>);
 
     if (invalidRulesProvided.length)
-      for (let rule of invalidRulesProvided)
+      for (const rule of invalidRulesProvided)
         reasons.push(`'${rule}' is not a valid rule`);
 
     if (this._isRuleInDefinition(prop, "constant")) {
@@ -639,7 +640,7 @@ export abstract class SchemaCore<I, O> {
       );
 
     // onDelete, onFailure, & onSuccess
-    for (let rule of lifeCycleRules) {
+    for (const rule of lifeCycleRules) {
       if (!this._isRuleInDefinition(prop, rule)) continue;
 
       const isValid = this._areHandlersOk(
@@ -1035,13 +1036,13 @@ export abstract class SchemaCore<I, O> {
 
     if (!options) return { timestamps: { createdAt: "", updatedAt: "" } };
 
-    let { timestamps } = options;
+    const { timestamps } = options;
 
     let createdAt = "createdAt",
       updatedAt = "updatedAt";
 
     if (!timestamps || timestamps === true) {
-      let _timestamps = timestamps
+      const _timestamps = timestamps
         ? { createdAt, updatedAt }
         : { createdAt: "", updatedAt: "" };
 

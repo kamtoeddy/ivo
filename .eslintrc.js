@@ -10,5 +10,14 @@ module.exports = {
     sourceType: "module",
   },
   plugins: ["@typescript-eslint"],
-  rules: { "@typescript-eslint/no-explicit-any": "off" },
+  rules: {
+    "@typescript-eslint/ban-types": [
+      "error",
+      { types: { "{}": false, Function: false }, extendDefaults: true },
+    ],
+    "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/no-namespace": "off",
+    "@typescript-eslint/no-non-null-assertion": "off",
+    "no-control-regex": 0,
+  },
 };

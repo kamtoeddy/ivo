@@ -12,7 +12,7 @@ import {
 } from "./interfaces";
 import { Merge } from "./merge-types";
 import { defaultOptions, SchemaCore } from "./schema-core";
-import { makeInternalResponse, makeResponse } from "./utils";
+import { isPropertyOn, makeInternalResponse, makeResponse } from "./utils";
 import { ErrorTool } from "./utils/schema-error";
 
 export { Schema };
@@ -189,7 +189,7 @@ class ModelTool<
     data: Partial<O>,
     isUpdate = false
   ) => {
-    let sanitizers: [StringKey<I>, Function][] = [];
+    const sanitizers: [StringKey<I>, Function][] = [];
 
     const partialCtx = this._getPartialContext();
 
@@ -593,7 +593,7 @@ class ModelTool<
 
       const isLax = this._isLaxProp(prop);
 
-      const isProvided = Object(this.values).hasOwnProperty(prop);
+      const isProvided = isPropertyOn(prop, this.values);
 
       const isLaxInit =
         isLax &&
@@ -604,7 +604,7 @@ class ModelTool<
         );
 
       const isRequiredInit =
-        this._isRequiredBy(prop) && Object(this.values).hasOwnProperty(prop);
+        this._isRequiredBy(prop) && isPropertyOn(prop, this.values);
 
       if (
         (isLax &&
@@ -693,7 +693,7 @@ class ModelTool<
           values[prop as unknown as StringKey<I>]
         );
 
-      const isProvided = Object(this.values).hasOwnProperty(prop);
+      const isProvided = isPropertyOn(prop, this.values);
 
       const isLax = this._isLaxProp(prop);
 

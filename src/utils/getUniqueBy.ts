@@ -23,7 +23,7 @@ export const getUnique = <T>(list: T[]) => {
 export const getUniqueBy = <T>(list: T[], key?: string) => {
   if (!key) return getUnique(list);
 
-  let obj: ObjectType = {};
+  const obj: ObjectType = {};
 
   list.forEach((dt) => (obj[getDeepValue(dt as ObjectType, key)] = dt));
 

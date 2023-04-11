@@ -15,6 +15,7 @@ export const makeInternalResponse = <T = undefined>(
     return { valid, validated } as InternalValidatorResponse<TypeOf<T>>;
   }
 
+  // eslint-disable-next-line prefer-const
   let { otherReasons, reason, reasons, valid } = input as any;
 
   if (reasons) reasons = toArray(reasons);
@@ -32,3 +33,6 @@ export const makeResponse = <T = undefined>(
 ) => {
   return makeInternalResponse(input) as ValidatorResponse<TypeOf<T>>;
 };
+
+export const isPropertyOn = (prop: string | number, object: any) =>
+  Object.hasOwnProperty.call(object, prop);

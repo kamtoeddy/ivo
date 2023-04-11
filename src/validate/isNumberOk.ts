@@ -32,8 +32,6 @@ function makeRage(range: RangeType): RangeType {
 }
 
 export function isNumberOk(num: any, { range }: { range?: RangeType } = {}) {
-  let valid = true;
-
   if (!["number", "string"].includes(typeof num) || isNaN(num))
     return makeResponse({ reason: "Expected a number", valid: false });
 
@@ -47,5 +45,5 @@ export function isNumberOk(num: any, { range }: { range?: RangeType } = {}) {
     if (!_isInRange.valid) return makeResponse(_isInRange);
   }
 
-  return makeResponse<number>({ valid, validated: num });
+  return makeResponse<number>({ valid: true, validated: num });
 }

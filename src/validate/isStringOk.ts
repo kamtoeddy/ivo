@@ -12,8 +12,6 @@ export function isStringOk(
     trim = false,
   }: IStringOptions = {}
 ) {
-  let valid = true;
-
   if (belongsTo(str, [null, undefined]))
     return makeResponse({ reason: "Unacceptable value", valid: false });
 
@@ -33,5 +31,5 @@ export function isStringOk(
   if (str.length > maxLength)
     return makeResponse({ reason: "Too long", valid: false });
 
-  return makeResponse<string>({ valid, validated: str });
+  return makeResponse<string>({ valid: true, validated: str });
 }

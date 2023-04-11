@@ -1,3 +1,4 @@
+import { isPropertyOn } from ".";
 import { sortKeys, toArray } from "../../utils/functions";
 import {
   ErrorPayload,
@@ -43,7 +44,7 @@ export class ErrorTool extends Error {
     };
   }
 
-  private _has = (field: PayloadKey) => this.payload.hasOwnProperty(field);
+  private _has = (field: PayloadKey) => isPropertyOn(field, this.payload);
 
   private _setPayload = (payload: InputPayload) => {
     Object.entries(payload).forEach(([key, value]) => {
