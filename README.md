@@ -23,8 +23,7 @@ import { Schema } from "clean-schema";
 # Defining a schema
 
 ```ts
-import { Schema } from "clean-schema";
-import type { Context, Summary } from "clean-schema";
+import { Schema, type Summary } from "clean-schema";
 
 type UserRole = "admin" | "user";
 
@@ -46,7 +45,6 @@ type Output = {
   updatedAt: Date;
 };
 
-type IContext = Context<Input, Output>;
 type ISummary = Summary<Input, Output>;
 
 const userSchema = new Schema<Input, Output>(
@@ -155,7 +153,7 @@ console.log(user);
 //   createdAt: new Date(),
 //   firstName: "John",
 //   fullName: "John Doe",
-//   id: '18927934748659724',
+//   id: 18927934748659724,
 //   lastName: "Doe",
 //   password: "**************",
 //   role: "user",
@@ -170,7 +168,7 @@ await handleSuccess();
 # Updating an entity
 
 ```ts
-const user = await userDb.query({ id: 1 });
+const user = await userDb.findById(18927934748659724);
 
 if (!user) throw new Error("User not found");
 
@@ -186,7 +184,7 @@ const { data, error, handleSuccess } = await UserModel.update(user, {
 // id is ignored because it is a constant
 console.log(data); // { firstName: "Peter", fullName: "Peter Doe", updatedAt: new Date() }
 
-await userDb.update({ id: 1 }, data);
+await userDb.updateOne({ id: user.id }, data);
 
 await handleSuccess();
 ```
