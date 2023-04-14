@@ -99,54 +99,50 @@ export const Test_ShouldUpdateRule = ({ Schema, fx }: any) => {
         let onSuccessValues: any = {};
         let onSuccessStats: any = {};
 
-        let Model: any;
+        function incrementOnSuccessCountOf(prop: string) {
+          return ({ context }: any) => {
+            const previousCount = onSuccessStats[prop] ?? 0;
 
-        beforeAll(() => {
-          Model = new Schema({
-            dependentProp: {
-              default: false,
-              dependent: true,
-              dependsOn: "virtual",
-              resolver: ({ context }: any) => context.virtual,
-              onSuccess: incrementOnSuccessCountOf("dependentProp"),
-            },
-            dependentProp_1: {
-              default: false,
-              dependent: true,
-              dependsOn: "virtual_1",
-              resolver: ({ context }: any) => context.virtual_1,
-              onSuccess: incrementOnSuccessCountOf("dependentProp_1"),
-            },
-            laxProp: {
-              default: "",
-              readonly: "lax",
-              shouldUpdate: (ctx: any) => ctx.laxProp_1 == "test",
-              onSuccess: incrementOnSuccessCountOf("laxProp"),
-            },
-            laxProp_1: { default: "dev" },
-            virtual: {
-              virtual: true,
-              shouldUpdate: false,
-              validator: () => ({ valid: true }),
-              onSuccess: incrementOnSuccessCountOf("virtual"),
-            },
-            virtual_1: {
-              virtual: true,
-              shouldUpdate: (ctx: any) => ctx.laxProp_1 == "test",
-              validator: () => ({ valid: true }),
-              onSuccess: incrementOnSuccessCountOf("virtual_1"),
-            },
-          }).getModel();
+            onSuccessStats[prop] = previousCount + 1;
+            onSuccessValues[prop] = context[prop];
+          };
+        }
 
-          function incrementOnSuccessCountOf(prop: string) {
-            return ({ context }: any) => {
-              const previousCount = onSuccessStats[prop] ?? 0;
-
-              onSuccessStats[prop] = previousCount + 1;
-              onSuccessValues[prop] = context[prop];
-            };
-          }
-        });
+        const Model = new Schema({
+          dependentProp: {
+            default: false,
+            dependent: true,
+            dependsOn: "virtual",
+            resolver: ({ context }: any) => context.virtual,
+            onSuccess: incrementOnSuccessCountOf("dependentProp"),
+          },
+          dependentProp_1: {
+            default: false,
+            dependent: true,
+            dependsOn: "virtual_1",
+            resolver: ({ context }: any) => context.virtual_1,
+            onSuccess: incrementOnSuccessCountOf("dependentProp_1"),
+          },
+          laxProp: {
+            default: "",
+            readonly: "lax",
+            shouldUpdate: (ctx: any) => ctx.laxProp_1 == "test",
+            onSuccess: incrementOnSuccessCountOf("laxProp"),
+          },
+          laxProp_1: { default: "dev" },
+          virtual: {
+            virtual: true,
+            shouldUpdate: false,
+            validator: () => ({ valid: true }),
+            onSuccess: incrementOnSuccessCountOf("virtual"),
+          },
+          virtual_1: {
+            virtual: true,
+            shouldUpdate: (ctx: any) => ctx.laxProp_1 == "test",
+            validator: () => ({ valid: true }),
+            onSuccess: incrementOnSuccessCountOf("virtual_1"),
+          },
+        }).getModel();
 
         afterEach(() => {
           onSuccessValues = {};
@@ -210,6 +206,26 @@ export const Test_ShouldUpdateRule = ({ Schema, fx }: any) => {
 
           expect(data).toBeUndefined();
           expect(error.message).toBe("Nothing to update");
+        });
+
+        describe("behaviour when shouldUpdate method returns nothing", () => {
+          const Model = new Schema({
+            isBlocked: { default: false, shouldUpdate: () => {} },
+            laxProp: { default: 0 },
+          }).getModel();
+
+          it("should assume updatability of a property as falsy if shouldInit method returns nothing", async () => {
+            const { data, error } = await Model.update(
+              { isBlocked: false, laxProp: 0 },
+              { isBlocked: true }
+            );
+
+            expect(data).toBeUndefined();
+            expect(error).toMatchObject({
+              message: "Nothing to update",
+              payload: {},
+            });
+          });
         });
       });
     });
