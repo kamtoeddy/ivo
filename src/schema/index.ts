@@ -12,7 +12,7 @@ import {
 } from "./interfaces";
 import { Merge } from "./merge-types";
 import { defaultOptions, SchemaCore } from "./schema-core";
-import { isPropertyOn, makeInternalResponse, makeResponse } from "./utils";
+import { isPropertyOn, makeResponse } from "./utils";
 import { ErrorTool } from "./utils/schema-error";
 
 export { Schema };
@@ -520,7 +520,7 @@ class ModelTool<
     if (!_response.reason && !_response.reasons && !_response.otherReasons)
       return validationFailedResponse;
 
-    return makeInternalResponse(_response);
+    return makeResponse(_response);
   };
 
   clone = async (
@@ -871,15 +871,13 @@ class ModelTool<
     const validator = this._getValidator(_prop as StringKey<I>);
 
     if (validator) {
-      let res = (await validator(value, summary_)) as ResponseInput_<
+      const res = (await validator(value, summary_)) as ResponseInput_<
         any,
         I,
         (I & A)[K]
       >;
 
-      res = this._sanitizeValidationResponse<(I & A)[K]>(res, value);
-
-      return makeResponse(res);
+      return this._sanitizeValidationResponse<(I & A)[K]>(res, value);
     }
 
     return makeResponse<(I & A)[K]>({ valid: true, validated: value });
