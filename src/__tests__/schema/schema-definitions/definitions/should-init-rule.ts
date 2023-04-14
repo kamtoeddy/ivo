@@ -4,21 +4,17 @@ export const Test_ShouldInitRule = ({ Schema, fx }: any) => {
   describe("shouldInit", () => {
     describe("valid", () => {
       describe("behaviour", () => {
-        let Model: any;
-
-        beforeAll(async () => {
-          Model = new Schema(
-            {
-              isBlocked: {
-                shouldInit: (ctx: any) => ctx.env == "test",
-                default: false,
-              },
-              env: { default: "dev" },
-              laxProp: { default: 0 },
+        const Model = new Schema(
+          {
+            isBlocked: {
+              default: false,
+              shouldInit: (ctx: any) => ctx.env == "test",
             },
-            { errors: "throw" }
-          ).getModel();
-        });
+            env: { default: "dev" },
+            laxProp: { default: 0 },
+          },
+          { errors: "throw" }
+        ).getModel();
 
         it("should respect default rules", async () => {
           const { data } = await Model.create({ isBlocked: true });
@@ -53,6 +49,28 @@ export const Test_ShouldInitRule = ({ Schema, fx }: any) => {
             env: "test",
             isBlocked: "yes",
             laxProp: 0,
+          });
+        });
+
+        describe("behaviour when shouldInit method returns nothing", () => {
+          const Model = new Schema(
+            {
+              isBlocked: { default: false, shouldInit: () => {} },
+              laxProp: { default: 0 },
+            },
+            { errors: "throw" }
+          ).getModel();
+
+          it("should assume initialization as falsy if shouldInit method returns nothing at creation", async () => {
+            const { data } = await Model.create({ isBlocked: "yes" });
+
+            expect(data).toMatchObject({ isBlocked: false, laxProp: 0 });
+          });
+
+          it("should assume initialization as falsy if shouldInit method returns nothing during cloning", async () => {
+            const { data } = await Model.clone({ isBlocked: true, laxProp: 0 });
+
+            expect(data).toMatchObject({ isBlocked: false, laxProp: 0 });
           });
         });
       });
