@@ -202,10 +202,7 @@ namespace Schema {
     onSuccess?: SuccessHandler<I, O> | NonEmptyArray<SuccessHandler<I, O>>;
     timestamps?:
       | boolean
-      | {
-          createdAt?: boolean | string;
-          updatedAt?: boolean | string;
-        };
+      | { createdAt?: boolean | string; updatedAt?: boolean | string };
   };
 
   export type OptionsKey<I, O> = StringKey<Options<I, O>>;

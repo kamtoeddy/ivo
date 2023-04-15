@@ -42,11 +42,13 @@ class Schema<
     return this._options;
   }
 
-  extend = <U extends RealType<U>, V extends RealType<V> = U, A = {}>(
-    definitions: Partial<
-      ns.Definitions<RealType<Merge<I, U> & U>, Merge<O, V>, A>
-    >,
-    options: ns.ExtensionOptions<I, RealType<Merge<I, U> & U>, Merge<O, V>> = {
+  extend = <
+    U extends RealType<Merge<U, I>>,
+    V extends RealType<Merge<V, O>> = RealType<Merge<any, O>>,
+    A = {}
+  >(
+    definitions: Partial<ns.Definitions<U, V, A>>,
+    options: ns.ExtensionOptions<I, U, V> = {
       ...defaultOptions,
       remove: [],
     }
@@ -54,41 +56,29 @@ class Schema<
     const remove = toArray(options?.remove ?? []);
     delete options.remove;
 
-    type InputType = RealType<Merge<I, U> & U>;
-    type OutputType = Merge<O, V>;
+    type Input = RealType<U>;
+    type Output = RealType<V>;
 
     let _definitions = { ...this.definitions } as ns.Definitions<
-      InputType,
-      OutputType,
+      RealType<Input>,
+      RealType<Output>,
       A
     >;
 
     remove?.forEach(
       (prop) =>
-        delete _definitions?.[
-          prop as StringKey<ns.Definitions<InputType, OutputType, A>>
-        ]
+        delete _definitions?.[prop as StringKey<ns.Definitions<U, V, A>>]
     );
 
     _definitions = { ..._definitions, ...definitions };
 
-    return new ExtendedSchema<InputType, OutputType, A>(_definitions, options);
+    return new Schema<RealType<Input>, RealType<Output>, A>(
+      _definitions,
+      options as ns.Options<RealType<Input>, RealType<Output>>
+    );
   };
 
   getModel = () => new Model(new ModelTool<I, O, A>(this));
-}
-
-class ExtendedSchema<
-  I extends RealType<any>,
-  O extends RealType<any> = I,
-  A = {}
-> extends Schema<I, O> {
-  constructor(
-    definitions: ns.Definitions<I, O, A>,
-    options: ns.Options<I, O> = defaultOptions
-  ) {
-    super(definitions, options);
-  }
 }
 
 class ModelTool<
