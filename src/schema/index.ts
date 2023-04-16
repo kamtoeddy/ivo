@@ -161,7 +161,10 @@ class ModelTool<
     for (const prop of this.propsRequiredBy) {
       const [isRequired, message] = this._getRequiredState(prop, summary);
 
-      if (isRequired && this._isUpdatable(prop)) {
+      if (
+        (isRequired && !isUpdate) ||
+        (isRequired && isUpdate && this._isUpdatable(prop))
+      ) {
         error.add(prop, message);
 
         const alias = this._getAliasByVirtual(prop);
