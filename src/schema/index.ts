@@ -114,7 +114,13 @@ class ModelTool<
   private _getValidationSummary = (isUpdate = false) =>
     this._getSummary(this.values, isUpdate);
 
-  private _handleError = (error: ErrorTool) => {
+  private _handleError = async (
+    error: ErrorTool,
+    data?: Partial<O>,
+    virtuals: StringKey<O>[] = []
+  ) => {
+    if (data) await this._handleFailure(data, error, virtuals);
+
     return this._options.errors === "throw"
       ? error.throw()
       : { data: undefined, error: error.summary, handleSuccess: undefined };
@@ -151,11 +157,8 @@ class ModelTool<
   private _handleInvalidData = () =>
     this._handleError(new ErrorTool({ message: "Invalid Data" }));
 
-  private _handleRequiredBy = (
-    data: Partial<O>,
-    error: ErrorTool,
-    isUpdate = false
-  ) => {
+  private _handleRequiredBy = (data: Partial<O>, isUpdate = false) => {
+    const error = new ErrorTool({ message: "Validation Error" });
     const summary = this._getSummary(data, isUpdate);
 
     for (const prop of this.propsRequiredBy) {
@@ -179,6 +182,8 @@ class ModelTool<
         error.add(alias, _message);
       }
     }
+
+    return error;
   };
 
   private _handleSanitizationOfVirtuals = async (
@@ -532,7 +537,7 @@ class ModelTool<
     );
 
     let data = {} as Partial<O>;
-    const error = new ErrorTool({ message: "Validation Error" });
+    const validationError = new ErrorTool({ message: "Validation Error" });
 
     const virtuals = this._getKeysAsProps<Partial<O>>(values as any).filter(
       (prop) =>
@@ -550,6 +555,7 @@ class ModelTool<
         this._updatePartialContext(validCtxUpdate);
         return this._updateContext(validCtxUpdate);
       }
+
       const isAlias = this._isVirtualAlias(prop),
         isDependent = this._isDependentProp(prop);
 
@@ -573,7 +579,7 @@ class ModelTool<
       if (isAlias && !isDependent)
         return this._validateAndSet(
           data,
-          error,
+          validationError,
           prop,
           values[prop as unknown as StringKey<I>]
         );
@@ -621,7 +627,7 @@ class ModelTool<
 
       return this._validateAndSet(
         data,
-        error,
+        validationError,
         prop,
         this.values[prop as unknown as StringKey<O>]
       );
@@ -629,16 +635,17 @@ class ModelTool<
 
     await Promise.allSettled(validations);
 
-    this._handleRequiredBy(data, error);
+    if (validationError.isPayloadLoaded)
+      return this._handleError(validationError, data, virtuals);
+
+    const requiredError = this._handleRequiredBy(data);
+
+    if (requiredError.isPayloadLoaded)
+      return this._handleError(requiredError, data, virtuals);
 
     await this._handleSanitizationOfVirtuals(data);
 
     data = await this._resolveDependentChanges(data, this._getPartialContext());
-
-    if (error.isPayloadLoaded) {
-      await this._handleFailure(data, error, virtuals);
-      return this._handleError(error);
-    }
 
     const finalData = this._useConfigProps(data);
 
@@ -658,7 +665,7 @@ class ModelTool<
     this._setValues(values);
 
     let data = {} as Partial<O>;
-    const error = new ErrorTool({ message: "Validation Error" });
+    const validationError = new ErrorTool({ message: "Validation Error" });
 
     const virtuals = this._getKeysAsProps<Partial<O>>(values as any).filter(
       (prop) =>
@@ -684,7 +691,7 @@ class ModelTool<
       if (this._isVirtualAlias(prop) && !this._isDependentProp(prop))
         return this._validateAndSet(
           data,
-          error,
+          validationError,
           prop,
           values[prop as unknown as StringKey<I>]
         );
@@ -714,21 +721,27 @@ class ModelTool<
         return this._updateContext(validCtxUpdate);
       }
 
-      return this._validateAndSet(data, error, prop, this.values[prop]);
+      return this._validateAndSet(
+        data,
+        validationError,
+        prop,
+        this.values[prop]
+      );
     });
 
     await Promise.allSettled(validations);
 
-    this._handleRequiredBy(data, error);
+    if (validationError.isPayloadLoaded)
+      return this._handleError(validationError, data, virtuals);
+
+    const requiredError = this._handleRequiredBy(data);
+
+    if (requiredError.isPayloadLoaded)
+      return this._handleError(requiredError, data, virtuals);
 
     await this._handleSanitizationOfVirtuals(data);
 
     data = await this._resolveDependentChanges(data, this._getPartialContext());
-
-    if (error.isPayloadLoaded) {
-      await this._handleFailure(data, error, virtuals);
-      return this._handleError(error);
-    }
 
     const finalData = this._useConfigProps(data);
 
@@ -771,7 +784,7 @@ class ModelTool<
 
     this._setValues(values, { allowVirtuals: false, allowTimestamps: true });
 
-    const error = new ErrorTool({ message: "Validation Error" });
+    const validationError = new ErrorTool({ message: "Validation Error" });
     let updates = {} as Partial<O>;
 
     const toUpdate = this._getKeysAsProps(changes ?? {}).filter((prop) =>
@@ -789,7 +802,7 @@ class ModelTool<
         this._getValidationSummary(true)
       )) as ValidatorResponse<O[StringKey<O>]>;
 
-      if (!isValid.valid) return error.add(prop, isValid.reasons);
+      if (!isValid.valid) return validationError.add(prop, isValid.reasons);
 
       let { validated } = isValid;
 
@@ -817,12 +830,13 @@ class ModelTool<
 
     await Promise.allSettled(validations);
 
-    this._handleRequiredBy(updates, error, true);
+    if (validationError.isPayloadLoaded)
+      return this._handleError(validationError, updates, virtuals);
 
-    if (error.isPayloadLoaded) {
-      await this._handleFailure(updates as any, error, virtuals);
-      return this._handleError(error);
-    }
+    const requiredError = this._handleRequiredBy(updates, true);
+
+    if (requiredError.isPayloadLoaded)
+      return this._handleError(requiredError, updates, virtuals);
 
     await this._handleSanitizationOfVirtuals(updates, true);
 
@@ -833,8 +847,8 @@ class ModelTool<
     );
 
     if (!Object.keys(updates).length) {
-      await this._handleFailure(updates, error, virtuals);
-      return this._handleError(error.setMessage("Nothing to update"));
+      await this._handleFailure(updates, validationError, virtuals);
+      return this._handleError(validationError.setMessage("Nothing to update"));
     }
 
     const finalData = this._useConfigProps(updates, true);
