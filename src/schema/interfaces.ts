@@ -125,7 +125,9 @@ namespace Schema {
   type Dependent<K extends keyof (I & O), I, O = I> = {
     default: TypeOf<(I & O)[K]> | DefaultSetter<K, I, O>;
     dependent: true;
-    dependsOn: Exclude<StringKey<I>, K> | Exclude<StringKey<I>, K>[];
+    dependsOn:
+      | Exclude<StringKey<Context<I, O>>, K>
+      | Exclude<StringKey<Context<I, O>>, K>[];
     onDelete?: DeleteHandler<O> | NonEmptyArray<DeleteHandler<O>>;
     onSuccess?: SuccessHandler<I, O> | NonEmptyArray<SuccessHandler<I, O>>;
     readonly?: true;

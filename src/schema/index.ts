@@ -46,10 +46,10 @@ class Schema<
     U extends RealType<Merge<U, I>>,
     T = O,
     A = {},
-    V extends RealType<Merge<V, T>> = RealType<Merge<any, T>>
+    V extends RealType<Merge<T, O>> = RealType<Merge<T, O>>
   >(
-    definitions: Partial<ns.Definitions<U, V, A>>,
-    options: ns.ExtensionOptions<I, O, U, V> = {
+    definitions: Partial<ns.Definitions<U, T, A>>,
+    options: ns.ExtensionOptions<I, O, U, T> = {
       ...defaultOptions,
       remove: [],
     }

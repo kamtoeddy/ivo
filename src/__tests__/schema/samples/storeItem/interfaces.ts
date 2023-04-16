@@ -10,19 +10,16 @@ export interface IOtherMeasureUnit {
 
 export interface IStoreItem {
   _laxProp: string;
-  _quantity?: number;
+  _quantity: number;
   _readOnlyLax1: string;
   _readOnlyLax2: string;
-  _readOnlyNoInit?: any;
   _virtualForDependentReadOnly?: any;
   id: string;
   name: string;
   price: number;
-  quantityChangeCounter?: number;
-  quantities?: IOtherQuantity[] | number;
-  quantity?: number;
+  quantities: IOtherQuantity[] | number;
   measureUnit: string;
-  otherMeasureUnits?: IOtherMeasureUnit[];
+  otherMeasureUnits: IOtherMeasureUnit[];
 }
 
 export interface StoreItemType {

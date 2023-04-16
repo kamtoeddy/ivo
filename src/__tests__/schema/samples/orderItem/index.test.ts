@@ -1,8 +1,8 @@
 import { OrderItem } from ".";
-import { IOrderItem } from "./interfaces";
+import { OrderItemType } from "./interfaces";
 
 describe("Testing schema of Orderitem (inherited schema)", () => {
-  let orderItem: IOrderItem;
+  let orderItem: OrderItemType;
 
   beforeAll(async () => {
     orderItem = (
@@ -24,7 +24,7 @@ describe("Testing schema of Orderitem (inherited schema)", () => {
   });
 
   it("should have been created properly", () => {
-    expect(orderItem).toMatchObject<Partial<IOrderItem>>({
+    expect(orderItem).toMatchObject({
       id: "1",
       name: "beer",
       costPrice: 5,

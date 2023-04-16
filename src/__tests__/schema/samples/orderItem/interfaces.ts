@@ -1,4 +1,3 @@
-import { RealType } from "../../../../../dist/schema/merge-types";
 import { IStoreItem, StoreItemType } from "../storeItem/interfaces";
 
 export interface IOrderItem
@@ -6,8 +5,7 @@ export interface IOrderItem
   costPrice: number;
 }
 
-export type OrderItemType = RealType<
-  Omit<StoreItemType, "_readOnlyNoInit" | "_dependentReadOnly"> & {
-    costPrice: number;
-  }
->;
+export type OrderItemType = Omit<
+  StoreItemType,
+  "_readOnlyNoInit" | "_dependentReadOnly"
+> & { costPrice: number };
