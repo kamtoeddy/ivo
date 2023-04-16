@@ -535,6 +535,160 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
             });
           }
         });
+
+        describe("behaviour with virtual properties", () => {
+          const book = { name: "book name", price: 10 };
+
+          describe("when value of virtual is not provided", () => {
+            const Book = new Schema({
+              name: { default: "" },
+              price: {
+                default: null,
+                dependent: true,
+                dependsOn: "_price",
+                resolver: ({ context: { _price } }: any) => _price,
+              },
+              _price: {
+                virtual: true,
+                required({ context: { _price } }: any) {
+                  return _price == undefined;
+                },
+                validator: validator,
+              },
+            }).getModel();
+
+            it("should reject at creation", async () => {
+              const { data, error } = await Book.create({});
+
+              expect(data).toBeUndefined();
+              expect(error).toMatchObject({
+                message: "Validation Error",
+                payload: { _price: ["'_price' is required!"] },
+              });
+            });
+
+            it("should reject during cloning", async () => {
+              const { data, error } = await Book.clone(book);
+
+              expect(data).toBeUndefined();
+              expect(error).toMatchObject({
+                message: "Validation Error",
+                payload: { _price: ["'_price' is required!"] },
+              });
+            });
+
+            it("should reject during updates", async () => {
+              const { data, error } = await Book.update(book, {
+                name: "updated name",
+              });
+
+              expect(data).toBeUndefined();
+              expect(error).toMatchObject({
+                message: "Validation Error",
+                payload: { _price: ["'_price' is required!"] },
+              });
+            });
+          });
+
+          describe("when value of virtual is not provided and required at creation only", () => {
+            const Book = new Schema({
+              name: { default: "" },
+              price: {
+                default: null,
+                dependent: true,
+                dependsOn: "_price",
+                resolver: ({ context: { _price } }: any) => _price,
+              },
+              _price: {
+                virtual: true,
+                required({ context: { _price }, operation }: any) {
+                  return _price == undefined && operation == "creation";
+                },
+                validator: validator,
+              },
+            }).getModel();
+
+            it("should reject at creation", async () => {
+              const { data, error } = await Book.create({});
+
+              expect(data).toBeUndefined();
+              expect(error).toMatchObject({
+                message: "Validation Error",
+                payload: { _price: ["'_price' is required!"] },
+              });
+            });
+
+            it("should reject during cloning", async () => {
+              const { data, error } = await Book.clone(book);
+
+              expect(data).toBeUndefined();
+              expect(error).toMatchObject({
+                message: "Validation Error",
+                payload: { _price: ["'_price' is required!"] },
+              });
+            });
+
+            it("should reject during updates", async () => {
+              const name = "updated book name";
+              const { data, error } = await Book.update(book, {
+                name,
+              });
+
+              expect(error).toBeUndefined();
+              expect(data).toEqual({ name });
+            });
+          });
+
+          describe("when value of virtual is not provided and required at creation and update is blocked", () => {
+            const Book = new Schema({
+              name: { default: "" },
+              price: {
+                default: null,
+                dependent: true,
+                dependsOn: "_price",
+                resolver: ({ context: { _price } }: any) => _price,
+              },
+              _price: {
+                virtual: true,
+                shouldUpdate: false,
+                required({ context: { _price } }: any) {
+                  return _price == undefined;
+                },
+                validator: validator,
+              },
+            }).getModel();
+
+            it("should reject at creation", async () => {
+              const { data, error } = await Book.create({});
+
+              expect(data).toBeUndefined();
+              expect(error).toMatchObject({
+                message: "Validation Error",
+                payload: { _price: ["'_price' is required!"] },
+              });
+            });
+
+            it("should reject during cloning", async () => {
+              const { data, error } = await Book.clone(book);
+
+              expect(data).toBeUndefined();
+              expect(error).toMatchObject({
+                message: "Validation Error",
+                payload: { _price: ["'_price' is required!"] },
+              });
+            });
+
+            it("should reject during updates", async () => {
+              const name = "updated book name";
+              const { data, error } = await Book.update(book, {
+                name,
+              });
+
+              expect(error).toBeUndefined();
+              expect(data).toEqual({ name });
+            });
+          });
+        });
       });
     });
 
