@@ -9,7 +9,6 @@ export interface IOtherMeasureUnit {
 }
 
 export interface IStoreItem {
-  _dependentReadOnly?: number;
   _laxProp: string;
   _quantity?: number;
   _readOnlyLax1: string;

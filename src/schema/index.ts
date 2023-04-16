@@ -44,11 +44,12 @@ class Schema<
 
   extend = <
     U extends RealType<Merge<U, I>>,
-    V extends RealType<Merge<V, O>> = RealType<Merge<any, O>>,
-    A = {}
+    T = O,
+    A = {},
+    V extends RealType<Merge<V, T>> = RealType<Merge<any, T>>
   >(
     definitions: Partial<ns.Definitions<U, V, A>>,
-    options: ns.ExtensionOptions<I, U, V> = {
+    options: ns.ExtensionOptions<I, O, U, V> = {
       ...defaultOptions,
       remove: [],
     }
@@ -67,7 +68,9 @@ class Schema<
 
     remove?.forEach(
       (prop) =>
-        delete _definitions?.[prop as StringKey<ns.Definitions<U, V, A>>]
+        delete _definitions?.[
+          prop as unknown as StringKey<ns.Definitions<U, V, A>>
+        ]
     );
 
     _definitions = { ..._definitions, ...definitions };

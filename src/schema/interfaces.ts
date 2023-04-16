@@ -216,8 +216,13 @@ namespace Schema {
     updatedAt: string;
   }
 
-  export type ExtensionOptions<ParentInput, I, O> = Options<I, O> & {
-    remove?: StringKey<ParentInput> | StringKey<ParentInput>[];
+  export type ExtensionOptions<ParentInput, ParentOutput, I, O> = Options<
+    I,
+    O
+  > & {
+    remove?:
+      | StringKey<Merge<ParentInput, ParentOutput>>
+      | StringKey<Merge<ParentInput, ParentOutput>>[];
   };
 }
 
