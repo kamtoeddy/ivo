@@ -165,8 +165,10 @@ class ModelTool<
       const [isRequired, message] = this._getRequiredState(prop, summary);
 
       if (
-        (isRequired && !isUpdate) ||
-        (isRequired && isUpdate && this._isUpdatable(prop))
+        isRequired &&
+        this._isUpdatable(prop)
+        // (isRequired && !isUpdate) ||
+        // (isRequired && isUpdate && this._isUpdatable(prop))
       ) {
         error.add(prop, message);
 

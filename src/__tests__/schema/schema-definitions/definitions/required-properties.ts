@@ -142,61 +142,63 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
       });
 
       describe("behaviour", () => {
-        let Book: any, book: any;
+        const book = {
+          bookId: 1,
+          isPublished: false,
+          price: null,
+          priceReadonly: null,
+          priceRequiredWithoutMessage: null,
+        };
 
-        beforeAll(async () => {
-          Book = new Schema(
-            {
-              bookId: { required: true, validator },
-              isPublished: { default: false, validator },
-              price: {
-                default: null,
-                required({ context: { isPublished, price } }: any) {
-                  const isRequired = isPublished && price == null;
-                  return [isRequired, "A price is required to publish a book!"];
-                },
-                validator: validatePrice,
+        function validatePrice(price: any) {
+          const validated = Number(price),
+            valid = !isNaN(price) && validated;
+          return { valid, validated };
+        }
+
+        const Book = new Schema(
+          {
+            bookId: { required: true, validator },
+            isPublished: { default: false, validator },
+            price: {
+              default: null,
+              required({ context: { isPublished, price } }: any) {
+                const isRequired = isPublished && price == null;
+                return [isRequired, "A price is required to publish a book!"];
               },
-              priceReadonly: {
-                default: null,
-                readonly: true,
-                required({ context: { price, priceReadonly } }: any) {
-                  const isRequired = price == 101 && priceReadonly == null;
-                  return [
-                    isRequired,
-                    "A priceReadonly is required when price is 101!",
-                  ];
-                },
-                validator: validatePrice,
-              },
-              priceRequiredWithoutMessage: {
-                default: null,
-                readonly: true,
-                required: ({ context: { price, priceReadonly } }: any) =>
-                  price == 101 && priceReadonly == null,
-                validator: validatePrice,
-              },
+              validator: validatePrice,
             },
-            { errors: "throw" }
-          ).getModel();
+            priceReadonly: {
+              default: null,
+              readonly: true,
+              required({ context: { price, priceReadonly } }: any) {
+                const isRequired = price == 101 && priceReadonly == null;
+                return [
+                  isRequired,
+                  "A priceReadonly is required when price is 101!",
+                ];
+              },
+              validator: validatePrice,
+            },
+            priceRequiredWithoutMessage: {
+              default: null,
+              readonly: true,
+              required: ({ context: { price, priceReadonly } }: any) =>
+                price == 101 && priceReadonly == null,
+              validator: validatePrice,
+            },
+          },
+          { errors: "throw" }
+        ).getModel();
 
-          function validatePrice(price: any) {
-            const validated = Number(price),
-              valid = !isNaN(price) && validated;
-            return { valid, validated };
-          }
+        it("should create normally", async () => {
+          const toPass = () => Book.create({ bookId: 1 });
 
-          book = (await Book.create({ bookId: 1 })).data;
-        });
+          expectNoFailure(toPass);
 
-        it("should create normally", () => {
-          expect(book).toEqual({
-            bookId: 1,
-            isPublished: false,
-            price: null,
-            priceReadonly: null,
-            priceRequiredWithoutMessage: null,
-          });
+          const { data } = await toPass();
+
+          expect(data).toEqual(book);
         });
 
         it("should pass if condition is met at creation", async () => {
@@ -354,20 +356,16 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
         });
 
         describe("behaviour when nothing is returned from required function", () => {
-          let Book: any;
-
-          beforeAll(async () => {
-            Book = new Schema({
-              bookId: { required: true, validator },
-              isPublished: { default: false, validator },
-              name: { default: "", validator },
-              price: {
-                default: null,
-                required() {},
-                validator: validator,
-              },
-            }).getModel();
-          });
+          const Book = new Schema({
+            bookId: { required: true, validator },
+            isPublished: { default: false, validator },
+            name: { default: "", validator },
+            price: {
+              default: null,
+              required() {},
+              validator: validator,
+            },
+          }).getModel();
 
           it("should create normally", async () => {
             const { data } = await Book.create({ bookId: 1 });
@@ -418,20 +416,16 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
           ];
 
           for (const message of invalidMessages) {
-            let Book: any;
-
-            beforeAll(async () => {
-              Book = new Schema({
-                bookId: { required: true, validator },
-                isPublished: { default: false, validator },
-                name: { default: "", validator },
-                price: {
-                  default: null,
-                  required: () => [true, message],
-                  validator: validator,
-                },
-              }).getModel();
-            });
+            const Book = new Schema({
+              bookId: { required: true, validator },
+              isPublished: { default: false, validator },
+              name: { default: "", validator },
+              price: {
+                default: null,
+                required: () => [true, message],
+                validator: validator,
+              },
+            }).getModel();
 
             it("should reject with proper required error message at creation", async () => {
               const { data, error } = await Book.create({ bookId: 1 });
@@ -494,20 +488,16 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
           ];
 
           for (const response of invalidResponses) {
-            let Book: any;
-
-            beforeAll(async () => {
-              Book = new Schema({
-                bookId: { required: true, validator },
-                isPublished: { default: false, validator },
-                name: { default: "", validator },
-                price: {
-                  default: null,
-                  required: () => response,
-                  validator: validator,
-                },
-              }).getModel();
-            });
+            const Book = new Schema({
+              bookId: { required: true, validator },
+              isPublished: { default: false, validator },
+              name: { default: "", validator },
+              price: {
+                default: null,
+                required: () => response,
+                validator: validator,
+              },
+            }).getModel();
 
             it("should create normally", async () => {
               const { data } = await Book.create({ bookId: 1 });
