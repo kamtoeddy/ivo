@@ -972,7 +972,9 @@ class ArchivedSchema<
     if (!isEqual(options, undefined) && !isObject(options))
       error.add("options", "expected an object").throw();
 
-    const optionsProvided = Object.keys(options as any);
+    if (!options) options = {};
+
+    const optionsProvided = Object.keys(options);
 
     optionsProvided.forEach((option) => {
       if (!ALLOWED_ARCHIVED_OPTIONS.includes(option as any))
