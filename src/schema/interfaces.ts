@@ -57,7 +57,7 @@ namespace Schema {
 
   export type OperationName = "creation" | "update";
 
-  export type DeleteHandler<O> = (data: Readonly<O>) => any | Promise<any>;
+  export type Handler<O> = (data: Readonly<O>) => any | Promise<any>;
 
   export type FailureHandler<I, O> = (
     context: Context<I, O>
@@ -110,14 +110,14 @@ namespace Schema {
     | Virtual<K, I, O, A>;
 
   type Listenable<I, O> = {
-    onDelete?: DeleteHandler<O> | NonEmptyArray<DeleteHandler<O>>;
+    onDelete?: Handler<O> | NonEmptyArray<Handler<O>>;
     onFailure?: FailureHandler<I, O> | NonEmptyArray<FailureHandler<I, O>>;
     onSuccess?: SuccessHandler<I, O> | NonEmptyArray<SuccessHandler<I, O>>;
   };
 
   type Constant<K extends keyof (I & O), I, O = I> = {
     constant: true;
-    onDelete?: DeleteHandler<O> | NonEmptyArray<DeleteHandler<O>>;
+    onDelete?: Handler<O> | NonEmptyArray<Handler<O>>;
     onSuccess?: SuccessHandler<I, O> | NonEmptyArray<SuccessHandler<I, O>>;
     value: TypeOf<(I & O)[K]> | DefaultSetter<K, I, O>;
   };
@@ -128,7 +128,7 @@ namespace Schema {
     dependsOn:
       | Exclude<StringKey<Context<I, O>>, K>
       | Exclude<StringKey<Context<I, O>>, K>[];
-    onDelete?: DeleteHandler<O> | NonEmptyArray<DeleteHandler<O>>;
+    onDelete?: Handler<O> | NonEmptyArray<Handler<O>>;
     onSuccess?: SuccessHandler<I, O> | NonEmptyArray<SuccessHandler<I, O>>;
     readonly?: true;
     resolver: Resolver<K, I, O>;
@@ -198,9 +198,15 @@ namespace Schema {
     reset?: StringKey<T> | StringKey<T>[];
   }
 
+  export type ArchivedOptions<O> = {
+    createdAt?: StringKey<O>;
+    onDelete?: Handler<O> | NonEmptyArray<Handler<O>>;
+    onSuccess?: Handler<O> | NonEmptyArray<Handler<O>>;
+  };
+
   export type Options<I, O> = {
     errors?: "silent" | "throw";
-    onDelete?: DeleteHandler<O> | NonEmptyArray<DeleteHandler<O>>;
+    onDelete?: Handler<O> | NonEmptyArray<Handler<O>>;
     onSuccess?: SuccessHandler<I, O> | NonEmptyArray<SuccessHandler<I, O>>;
     timestamps?:
       | boolean
@@ -274,7 +280,7 @@ const DEFINITION_RULES = [
   "virtual",
 ] as const;
 
-type DefinitionRule = typeof DEFINITION_RULES[number];
+type DefinitionRule = (typeof DEFINITION_RULES)[number];
 
 const ALLOWED_OPTIONS: Schema.OptionsKey<any, any>[] = [
   "errors",

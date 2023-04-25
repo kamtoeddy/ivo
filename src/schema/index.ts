@@ -765,15 +765,12 @@ class ModelTool<
 
     this._setValues(values, { allowVirtuals: false, allowTimestamps: true });
 
-    let handlers: ns.DeleteHandler<O>[] = [...this.globalDeleteHandlers];
+    let handlers: ns.Handler<O>[] = [...this.globalDeleteHandlers];
 
     const data = this._getFrozenCopy(this.values);
 
     this.props.map(async (prop) => {
-      const handlers_ = this._getHandlers<ns.DeleteHandler<O>>(
-        prop,
-        "onDelete"
-      );
+      const handlers_ = this._getHandlers<ns.Handler<O>>(prop, "onDelete");
 
       if (handlers_.length) handlers = handlers.concat(handlers_);
     });

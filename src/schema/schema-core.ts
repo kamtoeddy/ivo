@@ -60,7 +60,7 @@ export abstract class SchemaCore<I, O> {
   protected optionsTool: OptionsTool;
 
   // handlers
-  protected globalDeleteHandlers: ns.DeleteHandler<O>[] = [];
+  protected globalDeleteHandlers: ns.Handler<O>[] = [];
   protected globalSuccessHandlers: ns.SuccessHandler<I, O>[] = [];
 
   constructor(
@@ -179,7 +179,7 @@ export abstract class SchemaCore<I, O> {
       if (!global) return;
 
       if (lifeCycle == "onDelete")
-        return this.globalDeleteHandlers.push(handler as ns.DeleteHandler<O>);
+        return this.globalDeleteHandlers.push(handler as ns.Handler<O>);
 
       if (lifeCycle == "onSuccess")
         return this.globalSuccessHandlers.push(
