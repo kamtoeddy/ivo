@@ -934,10 +934,17 @@ class ArchivedSchema<
   Op extends RealType<Op>
 > {
   props: StringKey<O>[] = [];
+  private _options: ns.ArchivedOptions<O> = {};
   // private createdAtKey: StringKey<O>;
 
-  constructor(parentSchema: Schema<Ip, Op>) {
+  constructor(parentSchema: Schema<Ip, Op>, options?: ns.ArchivedOptions<O>) {
+    this._validateOptions(parentSchema, options);
+
     this._setProperties(parentSchema);
+  }
+
+  get options() {
+    return this._options;
   }
 
   private _setProperties(parentSchema: Schema<Ip, Op>) {
@@ -950,5 +957,12 @@ class ArchivedSchema<
 
       this.props.push(prop as unknown as StringKey<O>);
     }
+  }
+
+  private _validateOptions(
+    parentSchema: Schema<Ip, Op>,
+    options?: ns.ArchivedOptions<O>
+  ) {
+    if (parentSchema || options) return;
   }
 }
