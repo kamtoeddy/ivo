@@ -1,5 +1,6 @@
 import {
   getKeysAsProps,
+  isObject,
   isPropertyOn,
   sort,
   sortKeys,
@@ -87,8 +88,10 @@ class Schema<
     );
   };
 
-  getArchivedSchema = <T extends RealType<T> = O>(): ArchivedSchema<T, I, O> =>
-    new ArchivedSchema<T, I, O>(this as Schema<I, O>);
+  getArchivedSchema = <T extends RealType<T> = O>(
+    options?: ns.ArchivedOptions<T>
+  ): ArchivedSchema<T, I, O> =>
+    new ArchivedSchema<T, I, O>(this as Schema<I, O>, options);
 
   getModel = () => new Model(new ModelTool<I, O, A>(this));
 }
@@ -963,6 +966,13 @@ class ArchivedSchema<
     parentSchema: Schema<Ip, Op>,
     options?: ns.ArchivedOptions<O>
   ) {
+    const error = new ErrorTool({ message: "Invalid Schema", statusCode: 500 });
+
+    if (!isEqual(options, undefined) && !isObject(options))
+      error.add("options", "expected an object");
+
+    if (error.isPayloadLoaded) error.throw();
+
     if (parentSchema || options) return;
   }
 }
