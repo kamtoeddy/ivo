@@ -28,6 +28,14 @@ export const Test_ArchivedSchemas = ({ Schema }: any) => {
 
           toPass();
         });
+
+        it("should not crash if options are not passed to Archived Schema", () => {
+          const toPass = () => bookSchema.getArchivedSchema();
+
+          expectNoFailure(toPass);
+
+          toPass();
+        });
       });
 
       describe("invalid", () => {
