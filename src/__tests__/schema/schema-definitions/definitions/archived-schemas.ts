@@ -1,4 +1,4 @@
-import { expectFailure } from "../_utils";
+import { expectFailure, expectNoFailure } from "../_utils";
 
 export const Test_ArchivedSchemas = ({ Schema }: any) => {
   describe("Archived Schemas", () => {
@@ -15,6 +15,21 @@ export const Test_ArchivedSchemas = ({ Schema }: any) => {
     });
 
     describe("options", () => {
+      describe("valid", () => {
+        it("should accept any valid property in archived options", () => {
+          const toPass = () =>
+            bookSchema.getArchivedSchema({
+              createdAt: "archivedAt",
+              onDelete: () => {},
+              onSuccess: () => {},
+            });
+
+          expectNoFailure(toPass);
+
+          toPass();
+        });
+      });
+
       describe("invalid", () => {
         it("should reject options that are not objects", () => {
           const invalidOptions = [-1, 0, 1, null, true, false, [], () => {}];
@@ -35,6 +50,34 @@ export const Test_ArchivedSchemas = ({ Schema }: any) => {
                 statusCode: 500,
               });
             }
+          }
+        });
+
+        it("should reject any invalid property in archived options", () => {
+          const errorMessages = ["a", "b", "errors", "timestamps"].map(
+            (prop) => `'${prop}' is not a valid archived option`
+          );
+
+          const toFail = () =>
+            bookSchema.getArchivedSchema({
+              a: true,
+              b: true,
+              errors: "throw",
+              timestamps: "throw",
+            });
+
+          expectFailure(toFail);
+
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err).toMatchObject({
+              message: "Invalid Schema",
+              payload: expect.objectContaining({
+                options: errorMessages,
+              }),
+              statusCode: 500,
+            });
           }
         });
       });

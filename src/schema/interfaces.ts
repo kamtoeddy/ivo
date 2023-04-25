@@ -213,6 +213,8 @@ namespace Schema {
       | { createdAt?: boolean | string; updatedAt?: boolean | string };
   };
 
+  export type ArchivedOptionsKey<O> = StringKey<ArchivedOptions<O>>;
+
   export type OptionsKey<I, O> = StringKey<Options<I, O>>;
 
   export interface PrivateOptions {
@@ -282,6 +284,12 @@ const DEFINITION_RULES = [
 
 type DefinitionRule = (typeof DEFINITION_RULES)[number];
 
+const ALLOWED_ARCHIVED_OPTIONS: Schema.ArchivedOptionsKey<any>[] = [
+  "createdAt",
+  "onDelete",
+  "onSuccess",
+];
+
 const ALLOWED_OPTIONS: Schema.OptionsKey<any, any>[] = [
   "errors",
   "onDelete",
@@ -301,4 +309,10 @@ const VIRTUAL_RULES = [
   "virtual",
 ];
 
-export { ALLOWED_OPTIONS, CONSTANT_RULES, DEFINITION_RULES, VIRTUAL_RULES };
+export {
+  ALLOWED_ARCHIVED_OPTIONS,
+  ALLOWED_OPTIONS,
+  CONSTANT_RULES,
+  DEFINITION_RULES,
+  VIRTUAL_RULES,
+};
