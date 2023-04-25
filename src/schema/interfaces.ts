@@ -199,7 +199,7 @@ namespace Schema {
   }
 
   export type ArchivedOptions<O> = {
-    createdAt?: StringKey<O>;
+    createdAt?: string;
     onDelete?: Handler<O> | NonEmptyArray<Handler<O>>;
     onSuccess?: Handler<O> | NonEmptyArray<Handler<O>>;
   };

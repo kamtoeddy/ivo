@@ -89,10 +89,10 @@ class Schema<
     );
   };
 
-  getArchivedSchema = <T extends RealType<T> = O>(
-    options?: ns.ArchivedOptions<T>
-  ): ArchivedSchema<T, I, O> =>
-    new ArchivedSchema<T, I, O>(this as Schema<I, O>, options);
+  getArchivedSchema = <T extends RealType<T> = O, U extends RealType<U> = T>(
+    options?: ns.ArchivedOptions<U>
+  ): ArchivedSchema<T, U, I, O> =>
+    new ArchivedSchema<T, U, I, O>(this as Schema<I, O>, options);
 
   getModel = () => new Model(new ModelTool<I, O, A>(this));
 }
@@ -933,15 +933,19 @@ class Model<I extends RealType<I>, O extends RealType<O> = I, A = {}> {
 }
 
 class ArchivedSchema<
-  O extends RealType<O>,
+  Input extends RealType<Input>,
+  Output extends RealType<Output>,
   Ip extends RealType<Ip>,
   Op extends RealType<Op>
 > {
-  props: StringKey<O>[] = [];
-  private _options: ns.ArchivedOptions<O> = {};
+  _props: StringKey<Output>[] = [];
+  private _options: ns.ArchivedOptions<Output> = {};
   // private createdAtKey: StringKey<O>;
 
-  constructor(parentSchema: Schema<Ip, Op>, options?: ns.ArchivedOptions<O>) {
+  constructor(
+    parentSchema: Schema<Ip, Op>,
+    options?: ns.ArchivedOptions<Output>
+  ) {
     this._validateOptions(parentSchema, options);
 
     this._setProperties(parentSchema);
@@ -949,6 +953,10 @@ class ArchivedSchema<
 
   get options() {
     return this._options;
+  }
+
+  get props() {
+    return this._props;
   }
 
   private _setProperties(parentSchema: Schema<Ip, Op>) {
@@ -959,13 +967,13 @@ class ArchivedSchema<
 
       if (isPropertyOn("virtual", definition)) continue;
 
-      this.props.push(prop as unknown as StringKey<O>);
+      this._props.push(prop as unknown as StringKey<Output>);
     }
   }
 
   private _validateOptions(
     parentSchema: Schema<Ip, Op>,
-    options?: ns.ArchivedOptions<O>
+    options?: ns.ArchivedOptions<Output>
   ) {
     const error = new ErrorTool({ message: "Invalid Schema", statusCode: 500 });
 
