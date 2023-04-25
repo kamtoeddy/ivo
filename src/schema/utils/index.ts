@@ -20,6 +20,3 @@ export const makeResponse = <T = undefined>(
 
   return { otherReasons, reasons, valid } as ValidatorResponse<TypeOf<T>>;
 };
-
-export const isPropertyOn = (prop: string | number, object: any) =>
-  Object.hasOwnProperty.call(object, prop);

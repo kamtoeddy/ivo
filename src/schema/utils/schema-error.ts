@@ -1,5 +1,4 @@
-import { isPropertyOn } from ".";
-import { sortKeys, toArray } from "../../utils/functions";
+import { isPropertyOn, sortKeys, toArray } from "../../utils/functions";
 import {
   ErrorPayload,
   ErrorToolProps,

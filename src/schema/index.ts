@@ -1,4 +1,10 @@
-import { sort, sortKeys, toArray } from "../utils/functions";
+import {
+  getKeysAsProps,
+  isPropertyOn,
+  sort,
+  sortKeys,
+  toArray,
+} from "../utils/functions";
 import { isEqual } from "../utils/isEqual";
 import {
   Context,
@@ -12,7 +18,7 @@ import {
 } from "./interfaces";
 import { Merge } from "./merge-types";
 import { defaultOptions, SchemaCore } from "./schema-core";
-import { isPropertyOn, makeResponse } from "./utils";
+import { makeResponse } from "./utils";
 import { ErrorTool } from "./utils/schema-error";
 
 export { Schema };
@@ -81,6 +87,9 @@ class Schema<
     );
   };
 
+  getArchivedSchema = <T extends RealType<T> = O>(): ArchivedSchema<T, I, O> =>
+    new ArchivedSchema<T, I, O>(this as Schema<I, O>);
+
   getModel = () => new Model(new ModelTool<I, O, A>(this));
 }
 
@@ -131,10 +140,7 @@ class ModelTool<
     error: ErrorTool,
     virtuals: StringKey<O>[] = []
   ) => {
-    let props = [
-      ...this._getKeysAsProps({ ...data, ...error.payload }),
-      ...virtuals,
-    ];
+    let props = [...getKeysAsProps({ ...data, ...error.payload }), ...virtuals];
 
     props = Array.from(new Set(props));
 
@@ -194,7 +200,7 @@ class ModelTool<
 
     const partialCtx = this._getPartialContext();
 
-    const successFulVirtuals = this._getKeysAsProps(partialCtx).filter(
+    const successFulVirtuals = getKeysAsProps(partialCtx).filter(
       this._isVirtual
     );
 
@@ -280,7 +286,7 @@ class ModelTool<
   private _makeHandleSuccess = (data: Partial<O>, isUpdate = false) => {
     const partialCtx = this._getPartialContext();
 
-    const successProps = this._getKeysAsProps(partialCtx);
+    const successProps = getKeysAsProps(partialCtx);
 
     let successListeners = [] as ns.SuccessHandler<I, O>[];
 
@@ -313,7 +319,7 @@ class ModelTool<
   ) => {
     let _updates = { ...data };
 
-    const successFulChanges = this._getKeysAsProps(ctx);
+    const successFulChanges = getKeysAsProps(ctx);
 
     let toResolve = [] as StringKey<O>[];
 
@@ -393,7 +399,7 @@ class ModelTool<
       allowTimestamps: false,
     }
   ) {
-    const keys = this._getKeysAsProps(values).filter((key) => {
+    const keys = getKeysAsProps(values).filter((key) => {
       if (
         allowTimestamps &&
         this.optionsTool.withTimestamps &&
@@ -499,9 +505,9 @@ class ModelTool<
     const _response: ResponseInput_<any, any, T> = { valid: false };
 
     if (response?.otherReasons) {
-      const validProperties = this._getKeysAsProps(
-        response.otherReasons
-      ).filter(this._isValidProperty);
+      const validProperties = getKeysAsProps(response.otherReasons).filter(
+        this._isValidProperty
+      );
 
       const otherReasons = {} as Record<string, any>;
 
@@ -539,9 +545,8 @@ class ModelTool<
     let data = {} as Partial<O>;
     const validationError = new ErrorTool({ message: "Validation Error" });
 
-    const virtuals = this._getKeysAsProps<Partial<O>>(values as any).filter(
-      (prop) =>
-        this._isVirtualInit(prop, values[prop as unknown as StringKey<I>])
+    const virtuals = getKeysAsProps<Partial<O>>(values as any).filter((prop) =>
+      this._isVirtualInit(prop, values[prop as unknown as StringKey<I>])
     );
 
     const props = [...this.props, ...virtuals];
@@ -667,9 +672,8 @@ class ModelTool<
     let data = {} as Partial<O>;
     const validationError = new ErrorTool({ message: "Validation Error" });
 
-    const virtuals = this._getKeysAsProps<Partial<O>>(values as any).filter(
-      (prop) =>
-        this._isVirtualInit(prop, values[prop as unknown as StringKey<I>])
+    const virtuals = getKeysAsProps<Partial<O>>(values as any).filter((prop) =>
+      this._isVirtualInit(prop, values[prop as unknown as StringKey<I>])
     );
 
     const props = [...this.props, ...virtuals];
@@ -787,7 +791,7 @@ class ModelTool<
     const validationError = new ErrorTool({ message: "Validation Error" });
     let updates = {} as Partial<O>;
 
-    const toUpdate = this._getKeysAsProps(changes ?? {}).filter((prop) =>
+    const toUpdate = getKeysAsProps(changes ?? {}).filter((prop) =>
       this._isUpdatable(prop, changes[prop])
     );
 
@@ -925,4 +929,29 @@ class Model<I extends RealType<I>, O extends RealType<O> = I, A = {}> {
 
     return this.modelTool._validate(prop, value, summary);
   };
+}
+
+class ArchivedSchema<
+  O extends RealType<O>,
+  Ip extends RealType<Ip>,
+  Op extends RealType<Op>
+> {
+  props: StringKey<O>[] = [];
+  // private createdAtKey: StringKey<O>;
+
+  constructor(parentSchema: Schema<Ip, Op>) {
+    this._setProperties(parentSchema);
+  }
+
+  private _setProperties(parentSchema: Schema<Ip, Op>) {
+    const parentProps = getKeysAsProps(parentSchema.definitions);
+
+    for (const prop of parentProps) {
+      const definition = parentSchema.definitions[prop];
+
+      if (isPropertyOn("virtual", definition)) continue;
+
+      this.props.push(prop as unknown as StringKey<O>);
+    }
+  }
 }

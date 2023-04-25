@@ -1,4 +1,12 @@
-import { belongsTo, sort, sortKeys, toArray } from "../utils/functions";
+import {
+  belongsTo,
+  getKeysAsProps,
+  isFunction,
+  isPropertyOn,
+  sort,
+  sortKeys,
+  toArray,
+} from "../utils/functions";
 import { ObjectType } from "../utils/interfaces";
 import { isEqual } from "../utils/isEqual";
 import {
@@ -13,7 +21,6 @@ import {
   CONSTANT_RULES,
   VIRTUAL_RULES,
 } from "./interfaces";
-import { isPropertyOn } from "./utils";
 import { OptionsTool } from "./utils/options-tool";
 import { ErrorTool } from "./utils/schema-error";
 
@@ -164,7 +171,7 @@ export abstract class SchemaCore<I, O> {
     const handlers = toArray(_handlers);
 
     handlers.forEach((handler, i) => {
-      if (!this._isFunction(handler))
+      if (!isFunction(handler))
         return reasons.push(
           `The '${lifeCycle}' handler @[${i}] is not a function`
         );
@@ -204,7 +211,7 @@ export abstract class SchemaCore<I, O> {
     Object.freeze(Object.assign({}, data)) as Readonly<T>;
 
   private _getInvalidRules = <K extends StringKey<I>>(prop: K) => {
-    const rulesProvided = this._getKeysAsProps(this._getDefinition(prop));
+    const rulesProvided = getKeysAsProps(this._getDefinition(prop));
 
     return rulesProvided.filter(
       (r) => !DEFINITION_RULES.includes(r as DefinitionRule)
@@ -340,7 +347,7 @@ export abstract class SchemaCore<I, O> {
   protected _getDefaultValue = async (prop: string) => {
     const _default = this._getDefinition(prop)?.default;
 
-    const value = this._isFunction(_default)
+    const value = isFunction(_default)
       ? await _default(this._getContext())
       : this.defaults[prop as StringKey<O>];
 
@@ -359,7 +366,7 @@ export abstract class SchemaCore<I, O> {
   ) => {
     const value = this._getDefinition(prop)?.[rule];
 
-    return this._isFunction(value)
+    return isFunction(value)
       ? value({ ...this._getContext(), ...extraCtx })
       : value;
   };
@@ -374,7 +381,7 @@ export abstract class SchemaCore<I, O> {
 
     const fallbackMessage = `'${prop}' is required!`;
 
-    if (!this._isFunction(required)) return [required, fallbackMessage];
+    if (!isFunction(required)) return [required, fallbackMessage];
 
     let results = required(summary);
 
@@ -401,9 +408,6 @@ export abstract class SchemaCore<I, O> {
       | Validator<K, I, O>
       | undefined;
   };
-
-  protected _getKeysAsProps = <T extends ObjectType>(data: T) =>
-    Object.keys(data) as StringKey<T>[];
 
   protected _isRuleInDefinition = (
     prop: string,
@@ -496,7 +500,7 @@ export abstract class SchemaCore<I, O> {
         reason: "Dependent properties must have a resolver",
       };
 
-    if (!this._isFunction(resolver))
+    if (!isFunction(resolver))
       return {
         valid,
         reason: "The resolver of a dependent property must be a function",
@@ -534,8 +538,6 @@ export abstract class SchemaCore<I, O> {
 
   protected _isDependentProp = (prop: string) =>
     this.dependents.includes(prop as StringKey<I>);
-
-  protected _isFunction = (v: any): v is Function => typeof v === "function";
 
   protected _isLaxProp = (prop: string) =>
     this.laxProps.includes(prop as StringKey<I>);
@@ -832,7 +834,7 @@ export abstract class SchemaCore<I, O> {
 
     const valid = false;
 
-    if (shouldInit !== false && !this._isFunction(shouldInit))
+    if (shouldInit !== false && !isFunction(shouldInit))
       return {
         valid,
         reason:
@@ -853,7 +855,7 @@ export abstract class SchemaCore<I, O> {
     const { readonly, shouldInit, shouldUpdate } = this._getDefinition(prop);
     const valid = false;
 
-    if (shouldUpdate !== false && !this._isFunction(shouldUpdate))
+    if (shouldUpdate !== false && !isFunction(shouldUpdate))
       return {
         valid,
         reason:
@@ -913,10 +915,7 @@ export abstract class SchemaCore<I, O> {
       if (!isValid.valid) return isValid;
     }
 
-    if (
-      this._isRuleInDefinition(prop, "sanitizer") &&
-      !this._isFunction(sanitizer)
-    )
+    if (this._isRuleInDefinition(prop, "sanitizer") && !isFunction(sanitizer))
       return { valid, reason: "'sanitizer' must be a function" };
 
     if (this._isRuleInDefinition(prop, "required")) {
@@ -1029,7 +1028,7 @@ export abstract class SchemaCore<I, O> {
   }
 
   private _isValidatorOk = (prop: string) =>
-    this._isFunction(this._getDefinition(prop)?.validator);
+    isFunction(this._getDefinition(prop)?.validator);
 
   private _makeTimestamps(): ns.PrivateOptions {
     const options = this._options;

@@ -1,14 +1,32 @@
+import { StringKey } from "../schema/interfaces";
 import { ObjectType } from "./interfaces";
 
-export const belongsTo = (value: any, values: any[]) => values.includes(value);
+export {
+  belongsTo,
+  getKeysAsProps,
+  isFunction,
+  isPropertyOn,
+  toArray,
+  sort,
+  sortKeys,
+};
 
-export const toArray = <T>(value: T | T[]): T[] =>
+const belongsTo = (value: any, values: any[]) => values.includes(value);
+
+const getKeysAsProps = <T>(data: T) =>
+  Object.keys(data as object) as StringKey<T>[];
+
+const isFunction = (v: any): v is Function => typeof v === "function";
+
+const isPropertyOn = (prop: string | number, object: any) =>
+  Object.hasOwnProperty.call(object, prop);
+
+const toArray = <T>(value: T | T[]): T[] =>
   Array.isArray(value) ? value : [value];
 
-export const sort = <T>(data: T[]): T[] =>
-  data.sort((a, b) => (a < b ? -1 : 1));
+const sort = <T>(data: T[]): T[] => data.sort((a, b) => (a < b ? -1 : 1));
 
-export function sortKeys<T extends ObjectType>(obj: T): T {
+function sortKeys<T extends ObjectType>(obj: T): T {
   const keys = sort(Object.keys(obj));
 
   return keys.reduce((prev, next: keyof T) => {
