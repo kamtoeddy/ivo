@@ -8,6 +8,7 @@ import {
 } from "../utils/functions";
 import { isEqual } from "../utils/isEqual";
 import {
+  ALLOWED_ARCHIVED_OPTIONS,
   Context,
   InternalValidatorResponse,
   ISchema as ns,
@@ -969,7 +970,14 @@ class ArchivedSchema<
     const error = new ErrorTool({ message: "Invalid Schema", statusCode: 500 });
 
     if (!isEqual(options, undefined) && !isObject(options))
-      error.add("options", "expected an object");
+      error.add("options", "expected an object").throw();
+
+    const optionsProvided = Object.keys(options as any);
+
+    optionsProvided.forEach((option) => {
+      if (!ALLOWED_ARCHIVED_OPTIONS.includes(option as any))
+        error.add("options", `'${option}' is not a valid archived option`);
+    });
 
     if (error.isPayloadLoaded) error.throw();
 
