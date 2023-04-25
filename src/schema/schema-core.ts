@@ -2,6 +2,7 @@ import {
   belongsTo,
   getKeysAsProps,
   isFunction,
+  isObject,
   isPropertyOn,
   sort,
   sortKeys,
@@ -221,11 +222,7 @@ export abstract class SchemaCore<I, O> {
   protected _checkOptions = () => {
     const error = new ErrorTool({ message: "Invalid Schema", statusCode: 500 });
 
-    if (
-      !this._options ||
-      typeof this._options !== "object" ||
-      Array.isArray(this._options)
-    )
+    if (!isObject(this._options))
       error.add("schema options", "Must be an object").throw();
 
     const options = Object.keys(this._options) as ns.OptionsKey<I, O>[];
@@ -270,12 +267,7 @@ export abstract class SchemaCore<I, O> {
   protected _checkPropDefinitions = () => {
     const error = new ErrorTool({ message: "Invalid Schema", statusCode: 500 });
 
-    if (
-      !this._definitions ||
-      typeof this._definitions !== "object" ||
-      Array.isArray(this._definitions)
-    )
-      error.throw();
+    if (!isObject(this._definitions)) error.throw();
 
     const props: string[] = Object.keys(this._definitions);
 
@@ -550,9 +542,7 @@ export abstract class SchemaCore<I, O> {
 
     const propertyTypeProvided = typeof propDef;
 
-    return !propDef ||
-      propertyTypeProvided !== "object" ||
-      Array.isArray(propDef)
+    return !isObject(propDef)
       ? {
           reasons: [
             `Invalid property definition. Expected an object '{}' but received '${propertyTypeProvided}'`,
@@ -997,10 +987,7 @@ export abstract class SchemaCore<I, O> {
 
     if (ts_type === "boolean") return { valid: true };
 
-    if (
-      ts_type !== "object" ||
-      (ts_type === "object" && (!timestamps || Array.isArray(timestamps)))
-    )
+    if (!isObject(timestamps))
       return {
         valid,
         reason: "should be 'boolean' or 'non null object'",

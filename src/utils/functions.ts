@@ -5,6 +5,7 @@ export {
   belongsTo,
   getKeysAsProps,
   isFunction,
+  isObject,
   isPropertyOn,
   toArray,
   sort,
@@ -17,6 +18,10 @@ const getKeysAsProps = <T>(data: T) =>
   Object.keys(data as object) as StringKey<T>[];
 
 const isFunction = (v: any): v is Function => typeof v === "function";
+
+const isObject = (data: any): data is ObjectType => {
+  return data && typeof data === "object" && !Array.isArray(data);
+};
 
 const isPropertyOn = (prop: string | number, object: any) =>
   Object.hasOwnProperty.call(object, prop);
