@@ -14,10 +14,11 @@ Breaking Changes
 Features
 
 - [Add] added support for [`aliases`](./v3.2.0/schema/definition/virtuals.md#aliases) on virtuals
-- [Add] added support for global [`onDelete`](./v3.2.0/schema/definition/index.md#ondelete) in schema options
-- [Add] added support for global [`onSuccess`](./v3.2.0/schema/definition/index.md#onsuccess) in schema options
+- [Add] added support for [`global onDelete`](./v3.2.0/schema/definition/index.md#ondelete) in schema options
+- [Add] added support for [`global onSuccess`](./v3.2.0/schema/definition/index.md#onsuccess) in schema options
 - [Add] added utility types [`Context` & `Summary`](./v3.2.0/schema/definition/life-cycles.md#life-cycle-listeners) for TypeScript
 - [Add] added support for [`otherReasons`](./v3.2.0/validate/index.md) in validators
+- [Add] added support for [`archived schemas and models`](./v3.2.0/schema/archived-schemas.md)
 
 # v3.1.0 <small><sup>05-02-2023</sup></small>
 

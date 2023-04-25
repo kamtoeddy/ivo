@@ -214,6 +214,7 @@ await handleSuccess();
   - [onSuccess](./docs/v3.2.0/schema/definition/life-cycles.md#onsuccess)
 
 - [Options](./docs/v3.2.0/schema/definition/index.md#options)
+- [Archived Schemas](./docs/v3.2.0/schema/archived-schemas.md)
 
 - [Changelog](./docs/CHANGELOG.md#changelog)
 
