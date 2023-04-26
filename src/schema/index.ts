@@ -989,6 +989,11 @@ class ArchivedSchema<
         error.add("options", `'${option}' is not a valid archived option`);
     });
 
+    if (isPropertyOn("archivedAt", options)) {
+      if (!["boolean", "string"].includes(typeof options.archivedAt))
+        error.add("options", `'archivedAt' should be of type boolean | string`);
+    }
+
     if (error.isPayloadLoaded) error.throw();
 
     if (parentSchema || options) return;
