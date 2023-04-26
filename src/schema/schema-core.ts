@@ -1008,6 +1008,12 @@ export abstract class SchemaCore<I, O> {
         return { valid, reason: `'${ts_key}' already belongs to your schema` };
     }
 
+    if (typeof createdAt == "string" && !createdAt.trim().length)
+      return { valid, reason: "'createdAt' cannot be an empty string" };
+
+    if (typeof updatedAt == "string" && !updatedAt.trim().length)
+      return { valid, reason: "'updatedAt' cannot be an empty string" };
+
     if (createdAt === updatedAt)
       return { valid, reason: "createdAt & updatedAt cannot be same" };
 
@@ -1039,12 +1045,12 @@ export abstract class SchemaCore<I, O> {
     const custom_updatedAt = timestamps?.updatedAt;
 
     if (custom_createdAt && typeof custom_createdAt == "string")
-      createdAt = custom_createdAt;
+      createdAt = custom_createdAt.trim();
 
     if (custom_createdAt === false) createdAt = "";
 
     if (custom_updatedAt && typeof custom_updatedAt == "string")
-      updatedAt = custom_updatedAt;
+      updatedAt = custom_updatedAt.trim();
 
     if (custom_updatedAt === false) updatedAt = "";
 
