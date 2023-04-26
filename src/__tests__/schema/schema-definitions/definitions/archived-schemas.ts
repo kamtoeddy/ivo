@@ -19,7 +19,7 @@ export const Test_ArchivedSchemas = ({ Schema }: any) => {
         it("should accept any valid property in archived options", () => {
           const toPass = () =>
             bookSchema.getArchivedSchema({
-              createdAt: "archivedAt",
+              archivedAt: "archived_at",
               onDelete: () => {},
               onSuccess: () => {},
             });
@@ -62,15 +62,22 @@ export const Test_ArchivedSchemas = ({ Schema }: any) => {
         });
 
         it("should reject any invalid property in archived options", () => {
-          const errorMessages = ["a", "b", "errors", "timestamps"].map(
-            (prop) => `'${prop}' is not a valid archived option`
-          );
+          const errorMessages = [
+            "a",
+            "b",
+            "createdAt",
+            "errors",
+            "updatedAt",
+            "timestamps",
+          ].map((prop) => `'${prop}' is not a valid archived option`);
 
           const toFail = () =>
             bookSchema.getArchivedSchema({
               a: true,
               b: true,
+              createdAt: "createdAt",
               errors: "throw",
+              updatedAt: "updatedAt",
               timestamps: "throw",
             });
 

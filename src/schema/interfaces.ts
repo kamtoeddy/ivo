@@ -199,7 +199,7 @@ namespace Schema {
   }
 
   export type ArchivedOptions<O> = {
-    createdAt?: string;
+    archivedAt?: boolean | string;
     onDelete?: Handler<O> | NonEmptyArray<Handler<O>>;
     onSuccess?: Handler<O> | NonEmptyArray<Handler<O>>;
   };
@@ -285,7 +285,7 @@ const DEFINITION_RULES = [
 type DefinitionRule = (typeof DEFINITION_RULES)[number];
 
 const ALLOWED_ARCHIVED_OPTIONS: Schema.ArchivedOptionsKey<any>[] = [
-  "createdAt",
+  "archivedAt",
   "onDelete",
   "onSuccess",
 ];
