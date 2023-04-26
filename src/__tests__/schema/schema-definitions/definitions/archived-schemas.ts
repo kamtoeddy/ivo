@@ -36,6 +36,18 @@ export const Test_ArchivedSchemas = ({ Schema }: any) => {
 
           toPass();
         });
+
+        it("should accept 'archivedAt' as a string or boolean", () => {
+          const values = ["archived_at", true, false];
+
+          for (const archivedAt of values) {
+            const toPass = () => bookSchema.getArchivedSchema({ archivedAt });
+
+            expectNoFailure(toPass);
+
+            toPass();
+          }
+        });
       });
 
       describe("invalid", () => {
@@ -93,6 +105,30 @@ export const Test_ArchivedSchemas = ({ Schema }: any) => {
               }),
               statusCode: 500,
             });
+          }
+        });
+
+        it("should reject 'archivedAt' if not of type string or boolean", () => {
+          const values = [{}, [], 1, -1, 0, () => {}, null];
+
+          for (const archivedAt of values) {
+            const toFail = () => bookSchema.getArchivedSchema({ archivedAt });
+
+            expectFailure(toFail);
+
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err).toMatchObject({
+                message: "Invalid Schema",
+                payload: expect.objectContaining({
+                  options: expect.arrayContaining([
+                    "'archivedAt' should be of type boolean | string",
+                  ]),
+                }),
+                statusCode: 500,
+              });
+            }
           }
         });
       });
