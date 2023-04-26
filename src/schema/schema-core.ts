@@ -1,13 +1,26 @@
-import { belongsTo, sort, toArray } from "../utils/functions";
+import {
+  belongsTo,
+  getKeysAsProps,
+  isFunction,
+  isObject,
+  isPropertyOn,
+  sort,
+  sortKeys,
+  toArray,
+} from "../utils/functions";
 import { ObjectType } from "../utils/interfaces";
 import { isEqual } from "../utils/isEqual";
 import {
-  LifeCycles,
-  Private_ISchemaOptions,
-  PropDefinitionRule,
-  Schema as ns,
+  DefinitionRule,
+  Context,
+  ISchema as ns,
   StringKey,
+  Summary,
   Validator,
+  ALLOWED_OPTIONS,
+  DEFINITION_RULES,
+  CONSTANT_RULES,
+  VIRTUAL_RULES,
 } from "./interfaces";
 import { OptionsTool } from "./utils/options-tool";
 import { ErrorTool } from "./utils/schema-error";
@@ -15,63 +28,30 @@ import { ErrorTool } from "./utils/schema-error";
 export const defaultOptions = {
   errors: "silent",
   timestamps: false,
-} as ns.Options;
+} as ns.Options<any, any>;
 
-type OptionsKey = StringKey<ns.Options>;
+const lifeCycleRules: ns.LifeCycles[] = ["onDelete", "onFailure", "onSuccess"];
 
-const allRules = [
-  "constant",
-  "default",
-  "dependent",
-  "dependsOn",
-  "onDelete",
-  "onFailure",
-  "onSuccess",
-  "readonly",
-  "resolver",
-  "required",
-  "sanitizer",
-  "shouldInit",
-  "shouldUpdate",
-  "validator",
-  "value",
-  "virtual",
-] as PropDefinitionRule[];
+export abstract class SchemaCore<I, O> {
+  protected _definitions = {} as ns.Definitions_<I, O>;
+  protected _options: ns.Options<I, O>;
 
-const allowedOptions: OptionsKey[] = ["errors", "timestamps"];
-const constantRules = ["constant", "onDelete", "onSuccess", "value"];
-const virtualRules = [
-  "sanitizer",
-  "onFailure",
-  "onSuccess",
-  "required",
-  "shouldInit",
-  "shouldUpdate",
-  "validator",
-  "virtual",
-];
+  // contexts & values
+  protected context: Context<I, O> = {} as Context<I, O>;
+  protected defaults: Partial<O> = {};
+  protected partialContext: Context<I, O> = {} as Context<I, O>;
+  protected values: O = {} as O;
 
-const lifeCycleRules: LifeCycles.Rule[] = [
-  "onDelete",
-  "onFailure",
-  "onSuccess",
-];
-
-export abstract class SchemaCore<I extends ObjectType> {
-  protected _options: ns.Options;
-  protected _propDefinitions = {} as ns.Definitions<I>;
-
-  protected context: I = {} as I;
-  protected finalContext: I = {} as I;
-  protected defaults: Partial<I> = {};
-  protected values: Partial<I> = {};
+  // maps
+  protected aliasToVirtualMap: ns.AliasToVirtualMap<I> = {};
   protected dependencyMap: ns.DependencyMap<I> = {};
+  protected virtualToAliasMap: ns.AliasToVirtualMap<I> = {};
 
   // props
   protected constants: StringKey<I>[] = [];
   protected dependents: StringKey<I>[] = [];
   protected laxProps: StringKey<I>[] = [];
-  protected props: StringKey<I>[] = [];
+  protected props: StringKey<O>[] = [];
   protected propsRequiredBy: StringKey<I>[] = [];
   protected readonlyProps: StringKey<I>[] = [];
   protected requiredProps: StringKey<I>[] = [];
@@ -80,11 +60,15 @@ export abstract class SchemaCore<I extends ObjectType> {
   // helpers
   protected optionsTool: OptionsTool;
 
+  // handlers
+  protected globalDeleteHandlers: ns.Handler<O>[] = [];
+  protected globalSuccessHandlers: ns.SuccessHandler<I, O>[] = [];
+
   constructor(
-    propDefinitions: ns.Definitions<I>,
-    options: ns.Options = defaultOptions as ns.Options
+    definitions: ns.Definitions_<I, O>,
+    options: ns.Options<I, O> = defaultOptions as ns.Options<I, O>
   ) {
-    this._propDefinitions = propDefinitions;
+    this._definitions = definitions;
     this._options = options;
 
     this._checkPropDefinitions();
@@ -94,31 +78,22 @@ export abstract class SchemaCore<I extends ObjectType> {
   }
 
   // < context methods >
-  protected _getContext = () => Object.freeze(Object.assign({}, this.context));
+  protected _getContext = () =>
+    this._getFrozenCopy(sortKeys(this.context)) as Context<I, O>;
 
-  protected _getFinalContext = () =>
-    Object.freeze(Object.assign({}, this.finalContext));
+  protected _getPartialContext = () => this._getFrozenCopy(this.partialContext);
 
-  protected _initContexts = () => {
-    this.context = { ...this.values } as I;
-    this.finalContext = {} as I;
-
-    const contstants = this._getKeysAsProps(this.context).filter(
-      this._isConstant
-    );
-
-    if (contstants.length)
-      contstants.forEach((prop) =>
-        this._updateFinalContext({ [prop]: this.context[prop] } as I)
-      );
+  protected _initializeContexts = () => {
+    this.context = { ...this.values } as Context<I, O>;
+    this.partialContext = {} as Context<I, O>;
   };
 
   protected _updateContext = (updates: Partial<I>) => {
     this.context = { ...this.context, ...updates };
   };
 
-  protected _updateFinalContext = (updates: Partial<I>) => {
-    this.finalContext = { ...this.finalContext, ...updates };
+  protected _updatePartialContext = (updates: Partial<I>) => {
+    this.partialContext = { ...this.partialContext, ...updates };
   };
   // < context methods />
 
@@ -129,13 +104,19 @@ export abstract class SchemaCore<I extends ObjectType> {
   ) => {
     const _dependsOn = toArray(dependsOn) as StringKey<I>[];
 
-    for (let _prop of _dependsOn)
+    for (const _prop of _dependsOn)
       if (this.dependencyMap[_prop]) this.dependencyMap[_prop]?.push(prop);
       else this.dependencyMap[_prop] = [prop];
   };
 
-  protected _getDependencies = (prop: StringKey<I>) =>
-    this.dependencyMap[prop] ?? [];
+  protected _getDependencies = (prop: string) =>
+    this.dependencyMap[prop as StringKey<I>] ?? [];
+
+  protected _getAliasByVirtual = (prop: StringKey<I>): string | undefined =>
+    this.virtualToAliasMap[prop];
+
+  protected _getVirtualByAlias = (alias: string): StringKey<I> | undefined =>
+    this.aliasToVirtualMap[alias];
 
   private _getCircularDependenciesOf = (a: StringKey<I>) => {
     let circularDependencies: string[] = [];
@@ -181,13 +162,44 @@ export abstract class SchemaCore<I extends ObjectType> {
   };
   // < dependency map utils />
 
+  private _areHandlersOk = (
+    _handlers: any,
+    lifeCycle: ns.LifeCycles,
+    global = false
+  ) => {
+    const reasons: string[] = [];
+
+    const handlers = toArray(_handlers);
+
+    handlers.forEach((handler, i) => {
+      if (!isFunction(handler))
+        return reasons.push(
+          `The '${lifeCycle}' handler @[${i}] is not a function`
+        );
+
+      if (!global) return;
+
+      if (lifeCycle == "onDelete")
+        return this.globalDeleteHandlers.push(handler as ns.Handler<O>);
+
+      if (lifeCycle == "onSuccess")
+        return this.globalSuccessHandlers.push(
+          handler as ns.SuccessHandler<I, O>
+        );
+    });
+
+    if (reasons.length) return { valid: false, reasons };
+
+    return { valid: true };
+  };
+
   protected _canInit = (prop: string) => {
     if (this._isDependentProp(prop)) return false;
     if (this._isRequired(prop)) return true;
 
     const { readonly } = this._getDefinition(prop);
 
-    const shouldInit = this._getValueBy(prop, "shouldInit", "creating");
+    const shouldInit = this._getValueBy(prop, "shouldInit");
 
     return (
       readonly === true &&
@@ -196,57 +208,80 @@ export abstract class SchemaCore<I extends ObjectType> {
     );
   };
 
+  protected _getFrozenCopy = <T>(data: T): Readonly<T> =>
+    Object.freeze(Object.assign({}, data)) as Readonly<T>;
+
+  private _getInvalidRules = <K extends StringKey<I>>(prop: K) => {
+    const rulesProvided = getKeysAsProps(this._getDefinition(prop));
+
+    return rulesProvided.filter(
+      (r) => !DEFINITION_RULES.includes(r as DefinitionRule)
+    );
+  };
+
   protected _checkOptions = () => {
     const error = new ErrorTool({ message: "Invalid Schema", statusCode: 500 });
 
-    if (
-      !this._options ||
-      typeof this._options !== "object" ||
-      Array.isArray(this._options)
-    )
+    if (!isObject(this._options))
       error.add("schema options", "Must be an object").throw();
 
-    let options = Object.keys(this._options) as OptionsKey[];
+    const options = Object.keys(this._options) as ns.OptionsKey<I, O>[];
 
     if (!options.length) error.add("schema options", "Cannot be empty").throw();
 
-    for (let option of options)
-      if (!allowedOptions.includes(option))
+    for (const option of options)
+      if (!ALLOWED_OPTIONS.includes(option))
         error.add(option, "Invalid option").throw();
 
-    if (this._options.hasOwnProperty("errors"))
+    if (isPropertyOn("errors", this._options))
       if (!["silent", "throw"].includes(this._options.errors!))
         error.add("errors", "should be 'silent' or 'throw'").throw();
 
-    if (this._options.hasOwnProperty("timestamps")) {
-      const ts_valid = this._isTimestampsOk();
+    if (isPropertyOn("onDelete", this._options)) {
+      const isValid = this._areHandlersOk(
+        this._options.onDelete,
+        "onDelete",
+        true
+      );
 
-      if (!ts_valid.valid) error.add("timestamps", ts_valid.reason!).throw();
+      if (!isValid.valid) error.add("onDelete", isValid.reasons!).throw();
+    }
+
+    if (isPropertyOn("onSuccess", this._options)) {
+      const isValid = this._areHandlersOk(
+        this._options.onSuccess,
+        "onSuccess",
+        true
+      );
+
+      if (!isValid.valid) error.add("onSuccess", isValid.reasons!).throw();
+    }
+
+    if (isPropertyOn("timestamps", this._options)) {
+      const isValid = this._isTimestampsOptionOk();
+
+      if (!isValid.valid) error.add("timestamps", isValid.reason!).throw();
     }
   };
 
   protected _checkPropDefinitions = () => {
     const error = new ErrorTool({ message: "Invalid Schema", statusCode: 500 });
 
-    if (
-      !this._propDefinitions ||
-      typeof this._propDefinitions !== "object" ||
-      Array.isArray(this._propDefinitions)
-    )
-      error.throw();
+    if (!isObject(this._definitions)) error.throw();
 
-    let props: string[] = Object.keys(this._propDefinitions);
+    const props: string[] = Object.keys(this._definitions);
 
     if (!props.length)
       error.add("schema properties", "Insufficient Schema properties").throw();
 
-    for (let prop of props) {
+    for (const prop of props) {
       const isDefOk = this.__isPropDefinitionOk(prop);
+
       if (!isDefOk.valid) error.add(prop, isDefOk.reasons!);
     }
 
     // make sure every virtual property has atleast one dependency
-    for (let prop of this.virtuals) {
+    for (const prop of this.virtuals) {
       const dependencies = this._getDependencies(prop);
 
       if (!dependencies.length)
@@ -256,8 +291,15 @@ export abstract class SchemaCore<I extends ObjectType> {
         );
     }
 
+    // make sure aliases respect the second validation rules
+    for (const [alias, prop] of Object.entries(this.aliasToVirtualMap)) {
+      const isValid = this.__isVirtualAliasOk2(alias);
+
+      if (!isValid.valid) error.add(prop, isValid.reason);
+    }
+
     // make sure every virtual has atleast one dependency
-    for (let prop of this.dependents) {
+    for (const prop of this.dependents) {
       const { dependsOn } = this._getDefinition(prop);
 
       const _dependsOn = toArray<StringKey<I>>(dependsOn ?? []);
@@ -291,36 +333,39 @@ export abstract class SchemaCore<I extends ObjectType> {
     if (error.isPayloadLoaded) error.throw();
   };
 
-  protected _getDefinition = (prop: string) => this._propDefinitions[prop]!;
+  protected _getDefinition = (prop: string) =>
+    this._definitions[prop as StringKey<I>]!;
 
-  protected _getDefaultValue = (prop: string) => {
+  protected _getDefaultValue = async (prop: string) => {
     const _default = this._getDefinition(prop)?.default;
 
-    const value = this._isFunction(_default)
-      ? _default(this._getContext())
-      : this.defaults[prop];
+    const value = isFunction(_default)
+      ? await _default(this._getContext())
+      : this.defaults[prop as StringKey<O>];
 
-    return isEqual(value, undefined) ? this.values[prop] : value;
+    return isEqual(value, undefined)
+      ? this.values[prop as StringKey<O>]
+      : value;
   };
 
   protected _getConstantValue = async (prop: string) =>
-    this._getValueBy(prop, "value", "creating");
+    this._getValueBy(prop, "value");
 
   protected _getValueBy = (
     prop: string,
-    rule: PropDefinitionRule,
-    lifeCycle: LifeCycles.LifeCycle
+    rule: DefinitionRule,
+    extraCtx: ObjectType = {}
   ) => {
     const value = this._getDefinition(prop)?.[rule];
 
-    return this._isFunction(value)
-      ? value(this._getContext(), lifeCycle)
+    return isFunction(value)
+      ? value({ ...this._getContext(), ...extraCtx })
       : value;
   };
 
   protected _getRequiredState = (
     prop: string,
-    lifeCycle: LifeCycles.LifeCycle
+    summary: Summary<I, O>
   ): [boolean, string] => {
     const { required } = this._getDefinition(prop);
 
@@ -328,70 +373,45 @@ export abstract class SchemaCore<I extends ObjectType> {
 
     const fallbackMessage = `'${prop}' is required!`;
 
-    if (!this._isFunction(required)) return [required, fallbackMessage];
+    if (!isFunction(required)) return [required, fallbackMessage];
 
-    const results = required(this._getContext(), lifeCycle);
+    let results = required(summary);
 
-    if (typeof results == "boolean")
-      return [results, results ? fallbackMessage : ""];
+    const datatype = typeof results;
 
-    if (!results[1]) results[1] = fallbackMessage;
+    if (datatype !== "boolean" && !Array.isArray(results)) return [false, ""];
+
+    if (datatype === "boolean")
+      return [results as boolean, results ? fallbackMessage : ""];
+
+    results = results as [boolean, string];
+
+    if (!results[1] || typeof results[1] != "string")
+      results[1] = fallbackMessage;
 
     return results;
   };
 
-  protected _getDetailedListeners = <T>(
-    prop: string,
-    lifeCycle: LifeCycles.Rule,
-    valid = true
-  ) => {
-    const listeners = toArray<LifeCycles.Listener<T>>(
-      this._getDefinition(prop)?.[lifeCycle] as any
-    );
-
-    return (
-      listeners
-        ?.map((listener, index) => ({
-          index,
-          listener,
-          valid: this._isFunction(listener),
-        }))
-        .filter((data) => data.valid === valid) ?? []
-    );
-  };
-
-  protected _getListeners = <T>(prop: string, lifeCycle: LifeCycles.Rule) => {
-    return this._getDetailedListeners<T>(prop, lifeCycle, true).map(
-      (dt) => dt.listener
-    ) as LifeCycles.Listener<T>[];
-  };
-
-  protected _getInvalidRules = <K extends StringKey<I>>(prop: K) => {
-    const rulesProvided = this._getKeysAsProps<PropDefinitionRule>(
-      this._getDefinition(prop)
-    );
-
-    return rulesProvided.filter((r) => !allRules.includes(r));
-  };
+  protected _getHandlers = <T>(prop: string, lifeCycle: ns.LifeCycles) =>
+    toArray((this._getDefinition(prop)?.[lifeCycle] ?? []) as any) as T[];
 
   protected _getValidator = <K extends StringKey<I>>(prop: K) => {
-    return this._getDefinition(prop)?.validator as Validator<K, I> | undefined;
+    return this._getDefinition(prop)?.validator as
+      | Validator<K, I, O>
+      | undefined;
   };
 
-  protected _getKeysAsProps = <T = StringKey<I>>(data: any) =>
-    Object.keys(data) as T[];
-
-  protected _hasAny = (
+  protected _isRuleInDefinition = (
     prop: string,
-    rules: PropDefinitionRule | PropDefinitionRule[]
+    rules: DefinitionRule | DefinitionRule[]
   ): boolean => {
-    for (let _prop of toArray(rules))
-      if (this._getDefinition(prop)?.hasOwnProperty(_prop)) return true;
+    for (const _prop of toArray(rules))
+      if (isPropertyOn(_prop, this._getDefinition(prop))) return true;
 
     return false;
   };
 
-  protected __isConstantProp = (prop: string) => {
+  private __isConstantProp = (prop: string) => {
     const { constant, value } = this._getDefinition(prop);
 
     const valid = false;
@@ -402,7 +422,7 @@ export abstract class SchemaCore<I extends ObjectType> {
         reason: "Constant properties must have constant as 'true'",
       };
 
-    if (!this._hasAny(prop, "value"))
+    if (!this._isRuleInDefinition(prop, "value"))
       return {
         valid,
         reason: "Constant properties must have a value or setter",
@@ -414,11 +434,11 @@ export abstract class SchemaCore<I extends ObjectType> {
         reason: "Constant properties cannot have 'undefined' as value",
       };
 
-    const unAcceptedRules = allRules.filter(
-      (rule) => !constantRules.includes(rule)
+    const unAcceptedRules = DEFINITION_RULES.filter(
+      (rule) => !CONSTANT_RULES.includes(rule)
     );
 
-    if (this._hasAny(prop, unAcceptedRules))
+    if (this._isRuleInDefinition(prop, unAcceptedRules))
       return {
         valid,
         reason:
@@ -433,7 +453,7 @@ export abstract class SchemaCore<I extends ObjectType> {
   protected _isConstant = (prop: string) =>
     this.constants.includes(prop as StringKey<I>);
 
-  protected __isDependentProp = (prop: string) => {
+  private __isDependentProp = (prop: string) => {
     const {
       default: _default,
       dependent,
@@ -441,7 +461,6 @@ export abstract class SchemaCore<I extends ObjectType> {
       shouldInit,
       readonly,
       resolver,
-      required,
     } = this._getDefinition(prop);
 
     const valid = false;
@@ -473,19 +492,19 @@ export abstract class SchemaCore<I extends ObjectType> {
         reason: "Dependent properties must have a resolver",
       };
 
-    if (!this._isFunction(resolver))
+    if (!isFunction(resolver))
       return {
         valid,
         reason: "The resolver of a dependent property must be a function",
       };
 
-    if (this._hasAny(prop, "validator"))
+    if (this._isRuleInDefinition(prop, "validator"))
       return {
         valid,
         reason: "Dependent properties cannot be validated",
       };
 
-    if (this._hasAny(prop, "required"))
+    if (this._isRuleInDefinition(prop, "required"))
       return {
         valid,
         reason: "Dependent properties cannot be required",
@@ -500,7 +519,7 @@ export abstract class SchemaCore<I extends ObjectType> {
         reason: "Dependent properties cannot have shouldInit rule",
       };
 
-    if (this._hasAny(prop, "virtual"))
+    if (this._isRuleInDefinition(prop, "virtual"))
       return { valid, reason: "Dependent properties cannot be virtual" };
 
     this.dependents.push(prop as StringKey<I>);
@@ -512,61 +531,63 @@ export abstract class SchemaCore<I extends ObjectType> {
   protected _isDependentProp = (prop: string) =>
     this.dependents.includes(prop as StringKey<I>);
 
-  protected _isFunction = (v: any): v is Function => typeof v === "function";
-
   protected _isLaxProp = (prop: string) =>
     this.laxProps.includes(prop as StringKey<I>);
 
   protected _isProp = (prop: string) =>
-    this.props.includes(prop as StringKey<I>);
+    this.props.includes(prop as StringKey<O>);
 
-  protected _isPropDefinitionObjectOk = (prop: string) => {
+  private _isPropDefinitionObjectOk = (prop: string) => {
     const propDef = this._getDefinition(prop);
 
-    return propDef && typeof propDef === "object" && !Array.isArray(propDef)
-      ? { valid: true }
-      : {
-          reasons: ["Property definitions must be an object"],
+    const propertyTypeProvided = typeof propDef;
+
+    return !isObject(propDef)
+      ? {
+          reasons: [
+            `Invalid property definition. Expected an object '{}' but received '${propertyTypeProvided}'`,
+          ],
           valid: false,
-        };
+        }
+      : { valid: true };
   };
 
-  protected __isPropDefinitionOk = (prop: string) => {
+  private __isPropDefinitionOk = (prop: string) => {
     const isPopDefOk = this._isPropDefinitionObjectOk(prop);
 
-    if (!isPopDefOk.valid) isPopDefOk;
+    if (!isPopDefOk.valid) return isPopDefOk;
 
     let reasons: string[] = [];
 
     const invalidRulesProvided = this._getInvalidRules(prop as StringKey<I>);
 
     if (invalidRulesProvided.length)
-      for (let rule of invalidRulesProvided)
+      for (const rule of invalidRulesProvided)
         reasons.push(`'${rule}' is not a valid rule`);
 
-    if (this._hasAny(prop, "constant")) {
+    if (this._isRuleInDefinition(prop, "constant")) {
       const { valid, reason } = this.__isConstantProp(prop);
 
       if (!valid) reasons.push(reason!);
-    } else if (this._hasAny(prop, "value"))
+    } else if (this._isRuleInDefinition(prop, "value"))
       reasons.push("'value' rule can only be used with constant properties");
 
-    if (this._hasAny(prop, "dependent")) {
+    if (this._isRuleInDefinition(prop, "dependent")) {
       const { valid, reason } = this.__isDependentProp(prop);
 
       if (!valid) reasons.push(reason!);
-    } else if (this._hasAny(prop, ["dependsOn", "resolver"]))
+    } else if (this._isRuleInDefinition(prop, ["dependsOn", "resolver"]))
       reasons.push(
         "dependsOn & resolver rules can only belong to dependent properties"
       );
 
-    if (this._hasAny(prop, "readonly")) {
+    if (this._isRuleInDefinition(prop, "readonly")) {
       const { valid, reason } = this.__isReadonly(prop);
 
       if (!valid) reasons.push(reason!);
     }
 
-    if (this._hasAny(prop, "required")) {
+    if (this._isRuleInDefinition(prop, "required")) {
       const { required } = this._getDefinition(prop);
 
       const { valid, reason } =
@@ -577,58 +598,64 @@ export abstract class SchemaCore<I extends ObjectType> {
       if (!valid) reasons.push(reason!);
     }
 
-    if (this._hasAny(prop, "virtual")) {
+    if (this._isRuleInDefinition(prop, "virtual")) {
       const { valid, reason } = this.__isVirtual(prop);
 
       if (!valid) reasons.push(reason!);
-    } else if (this._hasAny(prop, "sanitizer"))
+    } else if (this._isRuleInDefinition(prop, "sanitizer"))
       reasons.push("'sanitizer' is only valid on virtuals");
 
-    if (this._hasAny(prop, "shouldInit")) {
+    if (this._isRuleInDefinition(prop, "shouldInit")) {
       const { valid, reason } = this.__isShouldInitConfigOk(prop);
 
       if (!valid) reasons.push(reason!);
     }
 
-    if (this._hasAny(prop, "shouldUpdate")) {
+    if (this._isRuleInDefinition(prop, "shouldUpdate")) {
       const { valid, reason } = this.__isShouldUpdateConfigOk(prop);
 
       if (!valid) reasons.push(reason!);
     }
 
-    if (this._hasAny(prop, "validator") && !this._isValidatorOk(prop))
+    if (
+      this._isRuleInDefinition(prop, "validator") &&
+      !this._isValidatorOk(prop)
+    )
       reasons.push("Invalid validator");
 
-    if (this._hasAny(prop, "onFailure") && !this._hasAny(prop, "validator"))
+    if (
+      this._isRuleInDefinition(prop, "onFailure") &&
+      !this._isRuleInDefinition(prop, "validator")
+    )
       reasons.push(
         "'onFailure' can only be used with properties that support and have validators"
       );
 
     // onDelete, onFailure, & onSuccess
-    for (let rule of lifeCycleRules) {
-      if (!this._hasAny(prop, rule)) continue;
+    for (const rule of lifeCycleRules) {
+      if (!this._isRuleInDefinition(prop, rule)) continue;
 
-      const invalidHandlers = this._getDetailedListeners(prop, rule, false);
-
-      if (!invalidHandlers?.length) continue;
-
-      reasons = reasons.concat(
-        invalidHandlers.map(
-          (dt) => `The listener for '${rule}' @[${dt.index}] is not a function`
-        )
+      const isValid = this._areHandlersOk(
+        this._getDefinition(prop)[rule],
+        rule
       );
+
+      if (!isValid.valid) reasons = reasons.concat(isValid.reasons!);
     }
 
     this._registerIfLax(prop);
 
+    const hasDefaultRule = this._isRuleInDefinition(prop, "default");
+
     if (
-      !this._hasAny(prop, "default") &&
+      !hasDefaultRule &&
       !this._isConstant(prop) &&
       !this._isDependentProp(prop) &&
       !this._isLaxProp(prop) &&
       !this._isReadonly(prop) &&
       !this._isRequired(prop) &&
-      !this._isVirtual(prop)
+      !this._isVirtual(prop) &&
+      !reasons.length
     ) {
       reasons.push(
         "A property should at least be readonly, required, or have a default value"
@@ -638,17 +665,16 @@ export abstract class SchemaCore<I extends ObjectType> {
     const valid = reasons.length ? false : true;
 
     if (valid && !this._isVirtual(prop)) {
-      this.props.push(prop as StringKey<I>);
-      this._setDefaultOf(prop as StringKey<I>, "creating");
+      this.props.push(prop as StringKey<O>);
+
+      if (hasDefaultRule)
+        this.defaults[prop as StringKey<O>] = this._getValueBy(prop, "default");
     }
 
     return { reasons, valid };
   };
 
-  protected _isPropDefinitionOk = (prop: string): boolean =>
-    this.__isPropDefinitionOk(prop).valid;
-
-  protected __isReadonly = (prop: string) => {
+  private __isReadonly = (prop: string) => {
     const {
       default: _default,
       dependent,
@@ -665,7 +691,10 @@ export abstract class SchemaCore<I extends ObjectType> {
         valid,
       };
 
-    if (this._hasAny(prop, "required") && typeof required != "function")
+    if (
+      this._isRuleInDefinition(prop, "required") &&
+      typeof required != "function"
+    )
       return {
         valid,
         reason:
@@ -702,22 +731,13 @@ export abstract class SchemaCore<I extends ObjectType> {
     return { valid: true };
   };
 
-  protected _isReadonly = (prop: string) =>
-    this.readonlyProps.includes(prop as StringKey<I>);
-
-  protected __isRequiredCommon = (prop: string) => {
+  private __isRequiredCommon = (prop: string) => {
     const valid = false;
 
-    if (this._hasAny(prop, "dependent"))
+    if (this._isRuleInDefinition(prop, "dependent"))
       return {
         valid,
         reason: "Required properties cannot be dependent",
-      };
-
-    if (this._hasAny(prop, "shouldInit"))
-      return {
-        valid,
-        reason: "Required properties cannot have a initialization blocked",
       };
 
     if (!this._isValidatorOk(prop))
@@ -726,7 +746,7 @@ export abstract class SchemaCore<I extends ObjectType> {
     return { valid: true };
   };
 
-  protected __isRequired = (prop: string) => {
+  private __isRequired = (prop: string) => {
     const { required } = this._getDefinition(prop);
 
     const valid = false;
@@ -737,17 +757,24 @@ export abstract class SchemaCore<I extends ObjectType> {
         reason: "Required properties must have required as 'true'",
       };
 
-    if (this._hasAny(prop, "default"))
+    if (this._isRuleInDefinition(prop, "default"))
       return {
         valid,
         reason:
           "Strictly required properties cannot have a default value or setter",
       };
 
-    if (this._hasAny(prop, "readonly"))
+    if (this._isRuleInDefinition(prop, "readonly"))
       return {
         valid,
         reason: "Strictly required properties cannot be readonly",
+      };
+
+    if (this._isRuleInDefinition(prop, "shouldInit"))
+      return {
+        valid,
+        reason:
+          "Strictly Required properties cannot have a initialization blocked",
       };
 
     const isRequiredCommon = this.__isRequiredCommon(prop);
@@ -759,10 +786,7 @@ export abstract class SchemaCore<I extends ObjectType> {
     return { valid: true };
   };
 
-  protected _isRequired = (prop: string) =>
-    this.requiredProps.includes(prop as StringKey<I>);
-
-  protected __isRequiredBy = (prop: string) => {
+  private __isRequiredBy = (prop: string) => {
     const { default: _default, required } = this._getDefinition(prop);
 
     const valid = false;
@@ -775,7 +799,7 @@ export abstract class SchemaCore<I extends ObjectType> {
         reason: "Callable required properties must have required as a function",
       };
 
-    const hasVirtualRule = this._hasAny(prop, "virtual");
+    const hasVirtualRule = this._isRuleInDefinition(prop, "virtual");
 
     if (isEqual(_default, undefined) && !hasVirtualRule)
       return {
@@ -790,27 +814,25 @@ export abstract class SchemaCore<I extends ObjectType> {
       if (!isRequiredCommon.valid) return isRequiredCommon;
     }
 
-    this.propsRequiredBy.push(prop as StringKey<I>);
+    if (!this._isRequiredBy(prop))
+      this.propsRequiredBy.push(prop as StringKey<I>);
 
     return { valid: true };
   };
 
-  protected _isRequiredBy = (prop: string) =>
-    this.propsRequiredBy.includes(prop as StringKey<I>);
-
-  protected __isShouldInitConfigOk = (prop: string) => {
+  private __isShouldInitConfigOk = (prop: string) => {
     const { shouldInit } = this._getDefinition(prop);
 
     const valid = false;
 
-    if (shouldInit !== false && !this._isFunction(shouldInit))
+    if (shouldInit !== false && !isFunction(shouldInit))
       return {
         valid,
         reason:
           "The initialization of a property can only be blocked if the 'shouldinit' rule is set to 'false' or a function that returns a boolean",
       };
 
-    if (!this._hasAny(prop, ["default", "virtual"]))
+    if (!this._isRuleInDefinition(prop, ["default", "virtual"]))
       return {
         valid,
         reason:
@@ -820,11 +842,11 @@ export abstract class SchemaCore<I extends ObjectType> {
     return { valid: true };
   };
 
-  protected __isShouldUpdateConfigOk = (prop: string) => {
+  private __isShouldUpdateConfigOk = (prop: string) => {
     const { readonly, shouldInit, shouldUpdate } = this._getDefinition(prop);
     const valid = false;
 
-    if (shouldUpdate !== false && !this._isFunction(shouldUpdate))
+    if (shouldUpdate !== false && !isFunction(shouldUpdate))
       return {
         valid,
         reason:
@@ -837,7 +859,7 @@ export abstract class SchemaCore<I extends ObjectType> {
         reason: "Both 'shouldInit' & 'shouldUpdate' cannot be 'false'",
       };
 
-    if (shouldUpdate === false && !this._hasAny(prop, "virtual"))
+    if (shouldUpdate === false && !this._isRuleInDefinition(prop, "virtual"))
       return {
         valid,
         reason: "Only 'Virtuals' are allowed to have 'shouldUpdate' as 'false'",
@@ -853,8 +875,8 @@ export abstract class SchemaCore<I extends ObjectType> {
     return { valid: true };
   };
 
-  protected __isVirtualRequiredBy = (prop: string) => {
-    if (this._hasAny(prop, "shouldInit"))
+  private __isVirtualRequiredBy = (prop: string) => {
+    if (this._isRuleInDefinition(prop, "shouldInit"))
       return {
         valid: false,
         reason: "Required virtuals cannot have initialization blocked",
@@ -867,7 +889,7 @@ export abstract class SchemaCore<I extends ObjectType> {
     return { valid: true };
   };
 
-  protected __isVirtual = (prop: string) => {
+  private __isVirtual = (prop: string) => {
     const valid = false;
 
     const { sanitizer, virtual } = this._getDefinition(prop);
@@ -878,25 +900,29 @@ export abstract class SchemaCore<I extends ObjectType> {
     if (!this._isValidatorOk(prop))
       return { valid, reason: "Invalid validator" };
 
-    if (this._hasAny(prop, "sanitizer") && !this._isFunction(sanitizer))
-      return { valid, reason: "'sanitizer' must be a function" };
+    if (this._isRuleInDefinition(prop, "alias")) {
+      const isValid = this.__isVirtualAliasOk(prop);
 
-    const hasRequired = this._hasAny(prop, "required");
-
-    if (hasRequired) {
-      const isRequiredBy = this.__isVirtualRequiredBy(prop);
-
-      if (!isRequiredBy.valid) return isRequiredBy;
+      if (!isValid.valid) return isValid;
     }
 
-    const unAcceptedRules = allRules.filter(
-      (rule) => !virtualRules.includes(rule)
+    if (this._isRuleInDefinition(prop, "sanitizer") && !isFunction(sanitizer))
+      return { valid, reason: "'sanitizer' must be a function" };
+
+    if (this._isRuleInDefinition(prop, "required")) {
+      const isValid = this.__isVirtualRequiredBy(prop);
+
+      if (!isValid.valid) return isValid;
+    }
+
+    const invalidVirtualRules = DEFINITION_RULES.filter(
+      (rule) => !VIRTUAL_RULES.includes(rule)
     );
 
-    if (this._hasAny(prop, unAcceptedRules))
+    if (this._isRuleInDefinition(prop, invalidVirtualRules))
       return {
         valid,
-        reason: `Virtual properties can only have (${virtualRules.join(
+        reason: `Virtual properties can only have (${VIRTUAL_RULES.join(
           ", "
         )}) as rules`,
       };
@@ -906,51 +932,55 @@ export abstract class SchemaCore<I extends ObjectType> {
     return { valid: true };
   };
 
-  protected _isVirtual = (prop: string) =>
-    this.virtuals.includes(prop as StringKey<I>);
+  private __isVirtualAliasOk = (prop: string) => {
+    const valid = false;
 
-  protected _isVirtualInit = (prop: string) => {
-    if (!this._isVirtual(prop)) return false;
+    const { alias } = this._getDefinition(prop);
 
-    const { shouldInit } = this._getDefinition(prop);
+    if (typeof alias !== "string" || !alias.length)
+      return {
+        valid,
+        reason: "An alias must be a string with atleast 1 character",
+      };
 
-    return (
-      isEqual(shouldInit, undefined) ||
-      this._getValueBy(prop, "shouldInit", "creating")
-    );
+    if (alias == prop)
+      return {
+        valid,
+        reason: "An alias cannot be the same as the virtual property",
+      };
+
+    const isTakenBy = this._getVirtualByAlias(alias);
+    if (isTakenBy)
+      return {
+        valid,
+        reason: `Sorry, alias provided '${alias}' already belongs to property '${isTakenBy}'`,
+      };
+
+    this.aliasToVirtualMap[alias] = prop as StringKey<I>;
+    this.virtualToAliasMap[prop] = alias as StringKey<I>;
+
+    return { valid: true };
   };
 
-  protected _registerIfLax = (prop: string) => {
-    const {
-      default: _default,
-      readonly,
-      shouldInit,
-    } = this._getDefinition(prop);
+  private __isVirtualAliasOk2 = (alias: string | StringKey<I>) => {
+    const prop = this._getVirtualByAlias(alias)!;
 
-    // Lax properties must have a default value nor setter
-    if (isEqual(_default, undefined)) return;
+    const invalidResponse = {
+      valid: false,
+      reason: `'${alias}' cannot be used as the alias of '${prop}' because it is the name of an existing property on your schema. To use an alias that matches another property on your schema, this property must be dependent on the said virtual property`,
+    } as any;
 
-    // Lax properties cannot be dependent
-    if (this._hasAny(prop, "dependent")) return;
+    const isDependentOnVirtual = (
+      this._getDependencies(prop) as string[]
+    )?.includes(alias as StringKey<I>);
 
-    // Lax properties cannot be required
-    if (this._hasAny(prop, "required")) return;
-
-    // Lax properties cannot be virtual
-    if (this._hasAny(prop, "virtual")) return;
-
-    // only readonly(lax) are lax props &
-    // Lax properties cannot have initialization blocked
-    if (
-      (this._hasAny(prop, "readonly") && readonly !== "lax") ||
-      (this._hasAny(prop, "shouldInit") && typeof shouldInit != "function")
-    )
-      return;
-
-    this.laxProps.push(prop as StringKey<I>);
+    return (this._isProp(alias) && !isDependentOnVirtual) ||
+      this._isVirtual(alias)
+      ? invalidResponse
+      : { valid: true };
   };
 
-  private _isTimestampsOk() {
+  private _isTimestampsOptionOk() {
     const { timestamps } = this._options,
       valid = false;
 
@@ -958,10 +988,7 @@ export abstract class SchemaCore<I extends ObjectType> {
 
     if (ts_type === "boolean") return { valid: true };
 
-    if (
-      ts_type !== "object" ||
-      (ts_type === "object" && (!timestamps || Array.isArray(timestamps)))
-    )
+    if (!isObject(timestamps))
       return {
         valid,
         reason: "should be 'boolean' or 'non null object'",
@@ -982,6 +1009,12 @@ export abstract class SchemaCore<I extends ObjectType> {
         return { valid, reason: `'${ts_key}' already belongs to your schema` };
     }
 
+    if (typeof createdAt == "string" && !createdAt.trim().length)
+      return { valid, reason: "'createdAt' cannot be an empty string" };
+
+    if (typeof updatedAt == "string" && !updatedAt.trim().length)
+      return { valid, reason: "'updatedAt' cannot be an empty string" };
+
     if (createdAt === updatedAt)
       return { valid, reason: "createdAt & updatedAt cannot be same" };
 
@@ -989,20 +1022,20 @@ export abstract class SchemaCore<I extends ObjectType> {
   }
 
   private _isValidatorOk = (prop: string) =>
-    this._isFunction(this._getDefinition(prop)?.validator);
+    isFunction(this._getDefinition(prop)?.validator);
 
-  private _makeTimestamps(): Private_ISchemaOptions {
+  private _makeTimestamps(): ns.PrivateOptions {
     const options = this._options;
 
     if (!options) return { timestamps: { createdAt: "", updatedAt: "" } };
 
-    let { timestamps } = options;
+    const { timestamps } = options;
 
     let createdAt = "createdAt",
       updatedAt = "updatedAt";
 
     if (!timestamps || timestamps === true) {
-      let _timestamps = timestamps
+      const _timestamps = timestamps
         ? { createdAt, updatedAt }
         : { createdAt: "", updatedAt: "" };
 
@@ -1013,24 +1046,77 @@ export abstract class SchemaCore<I extends ObjectType> {
     const custom_updatedAt = timestamps?.updatedAt;
 
     if (custom_createdAt && typeof custom_createdAt == "string")
-      createdAt = custom_createdAt;
+      createdAt = custom_createdAt.trim();
 
     if (custom_createdAt === false) createdAt = "";
 
     if (custom_updatedAt && typeof custom_updatedAt == "string")
-      updatedAt = custom_updatedAt;
+      updatedAt = custom_updatedAt.trim();
 
     if (custom_updatedAt === false) updatedAt = "";
 
     return { ...options, timestamps: { createdAt, updatedAt } };
   }
 
-  private _setDefaultOf = (
-    prop: StringKey<I>,
-    lifeCycle: LifeCycles.LifeCycle
-  ) => {
-    const _default = this._getValueBy(prop, "default", lifeCycle);
+  private _registerIfLax = (prop: string) => {
+    const {
+      default: _default,
+      readonly,
+      shouldInit,
+    } = this._getDefinition(prop);
 
-    if (!isEqual(_default, undefined)) this.defaults[prop] = _default;
+    // Lax properties must have a default value nor setter
+    if (isEqual(_default, undefined)) return;
+
+    // Lax properties cannot be dependent
+    if (this._isRuleInDefinition(prop, "dependent")) return;
+
+    // Lax properties cannot be required
+    if (this._isRuleInDefinition(prop, "required")) return;
+
+    // Lax properties cannot be virtual
+    if (this._isRuleInDefinition(prop, "virtual")) return;
+
+    // only readonly(lax) are lax props &
+    // Lax properties cannot have initialization blocked
+    if (
+      (this._isRuleInDefinition(prop, "readonly") && readonly !== "lax") ||
+      (this._isRuleInDefinition(prop, "shouldInit") &&
+        typeof shouldInit != "function")
+    )
+      return;
+
+    this.laxProps.push(prop as StringKey<I>);
+  };
+
+  protected _isReadonly = (prop: string) =>
+    this.readonlyProps.includes(prop as StringKey<I>);
+
+  protected _isRequired = (prop: string) =>
+    this.requiredProps.includes(prop as StringKey<I>);
+
+  protected _isRequiredBy = (prop: string) =>
+    this.propsRequiredBy.includes(prop as StringKey<I>);
+
+  protected _isVirtualAlias = (prop: string) => !!this.aliasToVirtualMap[prop];
+
+  protected _isVirtual = (prop: string) =>
+    this.virtuals.includes(prop as StringKey<I>);
+
+  protected _isVirtualInit = (prop: string, value: any = undefined) => {
+    const isAlias = this._isVirtualAlias(prop);
+
+    if (!this._isVirtual(prop) && !isAlias) return false;
+
+    const definitionName = isAlias ? this._getVirtualByAlias(prop)! : prop;
+
+    const { shouldInit } = this._getDefinition(definitionName);
+
+    const extraCtx = isAlias ? { [definitionName]: value } : {};
+
+    return (
+      isEqual(shouldInit, undefined) ||
+      this._getValueBy(definitionName, "shouldInit", extraCtx)
+    );
   };
 }

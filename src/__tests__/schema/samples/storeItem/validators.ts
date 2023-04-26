@@ -1,5 +1,12 @@
-import { IStringOptions } from "../../../../../dist";
-import { IOtherMeasureUnit, IOtherQuantity, IStoreItem } from "./interfaces";
+import { Summary, IStringOptions } from "../../../../../dist";
+import {
+  IOtherMeasureUnit,
+  IOtherQuantity,
+  IStoreItem,
+  StoreItemType,
+} from "./interfaces";
+
+type SummaryType = Summary<IStoreItem, StoreItemType>;
 
 import {
   isArrayOk,
@@ -9,7 +16,7 @@ import {
 import { findBy } from "../../utils";
 
 export const validateName = (val: any) => {
-  const isValid = isStringOk(val);
+  const isValid = isStringOk(val, { trim: true });
 
   if (!isValid.valid) return { valid: false };
 
@@ -79,12 +86,15 @@ export const validateOtherQuantity = (value: any, ctx: IStoreItem) => {
   };
 };
 
-export const validateQuantities = async (value: any, ctx: IStoreItem) => {
+export const validateQuantities = async (
+  value: any,
+  { context }: SummaryType
+) => {
   return isArrayOk<IOtherQuantity>(value, {
     empty: true,
     unique: false,
-    filter: (v) => validateOtherQuantity(v, ctx).valid,
-    modifier: (v) => validateOtherQuantity(v, ctx).validated,
+    filter: (v) => validateOtherQuantity(v, context).valid,
+    modifier: (v) => validateOtherQuantity(v, context).validated,
   });
 };
 
@@ -96,9 +106,8 @@ const getMeasureUnit = (
 };
 
 export const sanitizeQuantities = ({
-  quantities,
-  otherMeasureUnits,
-}: IStoreItem) => {
+  context: { quantities, otherMeasureUnits },
+}: SummaryType) => {
   return (quantities as IOtherQuantity[]).reduce((prev, { name, quantity }) => {
     const mu = getMeasureUnit(otherMeasureUnits!, name);
 

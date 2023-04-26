@@ -9,37 +9,33 @@ export interface IOtherMeasureUnit {
 }
 
 export interface IStoreItem {
-  _dependentReadOnly?: number;
   _laxProp: string;
-  _quantity?: number;
+  _quantity: number;
   _readOnlyLax1: string;
   _readOnlyLax2: string;
-  _readOnlyNoInit?: any;
   _virtualForDependentReadOnly?: any;
   id: string;
   name: string;
   price: number;
-  quantityChangeCounter?: number;
-  quantities?: IOtherQuantity[] | number;
-  quantity?: number;
+  quantities: IOtherQuantity[] | number;
   measureUnit: string;
-  otherMeasureUnits?: IOtherMeasureUnit[];
+  otherMeasureUnits: IOtherMeasureUnit[];
 }
 
 export interface StoreItemType {
-  _dependentReadOnly?: number;
+  _dependentReadOnly: number;
   _laxProp: string;
   _readOnlyLax1: string;
   _readOnlyLax2: string;
-  _readOnlyNoInit?: any;
+  _readOnlyNoInit: any;
   c_At: string;
   id: string;
   name: string;
   price: number;
-  quantityChangeCounter?: number;
-  quantity?: number;
+  quantityChangeCounter: number;
+  quantity: number;
   measureUnit: string;
-  otherMeasureUnits?: IOtherMeasureUnit[];
+  otherMeasureUnits: IOtherMeasureUnit[];
   u_At: string;
 }
 

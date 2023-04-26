@@ -15,7 +15,7 @@ export const isStringOkTest = ({ isStringOk }: { isStringOk: Function }) => {
       for (const value of truthy) {
         const res = isStringOk(value);
 
-        expect(res).toMatchObject({ valid: true, validated: value.trim() });
+        expect(res).toMatchObject({ valid: true, validated: value });
 
         expect(res.reason).toBeUndefined();
         expect(res.reasons).toBeUndefined();
@@ -25,8 +25,7 @@ export const isStringOkTest = ({ isStringOk }: { isStringOk: Function }) => {
         [null, ["Unacceptable value"]],
         [undefined, ["Unacceptable value"]],
         ["", ["Too short"]],
-        ["  ", ["Too short"]],
-        [Array(41 + 1).join("a"), ["Too long"]],
+        [Array(257).join("a"), ["Too long"]],
       ];
 
       for (const [value, reasons] of falsy) {
@@ -70,6 +69,32 @@ export const isStringOkTest = ({ isStringOk }: { isStringOk: Function }) => {
         });
 
         expect(res.validated).toBeUndefined();
+      }
+    });
+
+    it("should trim strings only when trim option is passed", () => {
+      const data = [
+        [" admin", "admin"],
+        ["moderator ", "moderator"],
+        [" user ", "user"],
+      ];
+
+      for (const [value, validated] of data) {
+        const res = isStringOk(value, { trim: true });
+
+        expect(res).toMatchObject({ valid: true, validated });
+
+        expect(res.reason).toBeUndefined();
+        expect(res.reasons).toBeUndefined();
+      }
+
+      for (const [value] of data) {
+        const res = isStringOk(value);
+
+        expect(res).toMatchObject({ valid: true, validated: value });
+
+        expect(res.reason).toBeUndefined();
+        expect(res.reasons).toBeUndefined();
       }
     });
 

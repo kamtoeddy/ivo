@@ -1,4 +1,4 @@
-import { Schema } from "../../../../../dist";
+import { Summary, Schema } from "../../../../../dist";
 import { IStoreItem, StoreItemType } from "./interfaces";
 import {
   sanitizeQuantities,
@@ -25,7 +25,7 @@ const storeItemSchema = new Schema<IStoreItem, StoreItemType>(
     _readOnlyNoInit: { default: "", readonly: true, shouldInit: false },
     _virtualForDependentReadOnly: {
       virtual: true,
-      validator: () => ({ valid: true }),
+      validator: () => true,
     },
     id: {
       readonly: true,
@@ -49,20 +49,38 @@ const storeItemSchema = new Schema<IStoreItem, StoreItemType>(
       dependsOn: ["_quantity", "quantities"],
       resolver: resolveQuantity,
     },
-    _quantity: { virtual: true, validator: validateQuantity },
+    _quantity: {
+      alias: "__quantity",
+      virtual: true,
+      validator: validateQuantity,
+    },
     quantityChangeCounter: {
       default: 0,
       dependent: true,
       dependsOn: "quantity",
-      resolver({ quantityChangeCounter }) {
+      resolver({ context: { quantityChangeCounter } }) {
         return quantityChangeCounter! + 1;
       },
     },
   },
-  { errors: "throw", timestamps: { createdAt: "c_At", updatedAt: "u_At" } }
+  {
+    errors: "throw",
+    onSuccess,
+    timestamps: { createdAt: "c_At", updatedAt: "u_At" },
+  }
 );
 
-function resolveQuantity({ quantity, _quantity, quantities }: IStoreItem) {
+function resolveQuantity({
+  context: { quantity, _quantity, quantities },
+}: Summary<IStoreItem, StoreItemType>) {
+  const newQty = _quantity ?? (quantity as number);
+
+  return quantities ? newQty + (quantities as number) : newQty;
+}
+
+function onSuccess({
+  context: { quantity, _quantity, quantities },
+}: Summary<IStoreItem, StoreItemType>) {
   const newQty = _quantity ?? (quantity as number);
 
   return quantities ? newQty + (quantities as number) : newQty;

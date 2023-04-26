@@ -1,49 +1,63 @@
-import { sort, sortKeys, toArray } from "../utils/functions";
-import { ObjectType } from "../utils/interfaces";
+import {
+  getKeysAsProps,
+  isObject,
+  isPropertyOn,
+  sort,
+  sortKeys,
+  toArray,
+} from "../utils/functions";
 import { isEqual } from "../utils/isEqual";
 import {
-  CombineTypes,
-  LifeCycles,
-  Schema as ns,
-  SpreadType,
+  ALLOWED_ARCHIVED_OPTIONS,
+  Context,
+  InternalValidatorResponse,
+  ISchema as ns,
+  RealType,
+  ResponseInput_,
   StringKey,
+  Summary,
+  ValidatorResponse,
 } from "./interfaces";
-import { defaultOptions, SchemaCore } from "./SchemaCore";
+import { Merge } from "./merge-types";
+import { defaultOptions, SchemaCore } from "./schema-core";
 import { makeResponse } from "./utils";
 import { ErrorTool } from "./utils/schema-error";
 
 export { Schema };
 
+const validationFailedResponse = {
+  valid: false,
+  reasons: ["validation failed"],
+};
+
 class Schema<
-  I extends ObjectType,
-  O extends ObjectType = I
-> extends SchemaCore<I> {
+  I extends RealType<I>,
+  O extends RealType<O> = I,
+  A = {}
+> extends SchemaCore<I, O> {
   constructor(
-    propDefinitions: ns.PropertyDefinitions<
-      SpreadType<CombineTypes<I, O> & I>,
-      O
-    >,
-    options: ns.Options = defaultOptions
+    definitions: ns.Definitions<I, O, A>,
+    options: ns.Options<I, O> = defaultOptions
   ) {
-    super(propDefinitions as ns.Definitions<I>, options as ns.Options);
+    super(definitions as ns.Definitions_<I, O>, options);
+  }
+
+  get definitions() {
+    return this._definitions as ns.Definitions<I, O, A>;
   }
 
   get options() {
     return this._options;
   }
 
-  get propDefinitions() {
-    return this._propDefinitions;
-  }
-
-  extend = <U extends ObjectType, V extends ObjectType = U>(
-    propDefinitions: Partial<
-      ns.PropertyDefinitions<
-        SpreadType<CombineTypes<I, U> & U>,
-        CombineTypes<O, V>
-      >
-    >,
-    options: ns.ExtensionOptions<StringKey<I>> = {
+  extend = <
+    U extends RealType<Merge<U, I>>,
+    T = O,
+    A = {},
+    V extends RealType<Merge<T, O>> = RealType<Merge<T, O>>
+  >(
+    definitions: Partial<ns.Definitions<U, T, A>>,
+    options: ns.ExtensionOptions<I, O, U, T> = {
       ...defaultOptions,
       remove: [],
     }
@@ -51,253 +65,333 @@ class Schema<
     const remove = toArray(options?.remove ?? []);
     delete options.remove;
 
-    type InputType = CombineTypes<I, U>;
-    type OutputType = CombineTypes<O, V>;
+    type Input = RealType<U>;
+    type Output = RealType<V>;
 
-    let _propDefinitions = {
-      ...this.propDefinitions,
-    } as ns.PropertyDefinitions<InputType, OutputType>;
+    let _definitions = { ...this.definitions } as ns.Definitions<
+      RealType<Input>,
+      RealType<Output>,
+      A
+    >;
 
     remove?.forEach(
-      (prop) => delete _propDefinitions?.[prop as StringKey<InputType>]
+      (prop) =>
+        delete _definitions?.[
+          prop as unknown as StringKey<ns.Definitions<U, V, A>>
+        ]
     );
 
-    _propDefinitions = {
-      ..._propDefinitions,
-      ...propDefinitions,
-    } as ns.PropertyDefinitions<InputType, OutputType>;
+    _definitions = { ..._definitions, ...definitions };
 
-    return new Schema<InputType, OutputType>(_propDefinitions as any, options);
+    return new Schema<RealType<Input>, RealType<Output>, A>(
+      _definitions,
+      options as ns.Options<RealType<Input>, RealType<Output>>
+    );
   };
 
-  getModel = () => new Model(new ModelTool<I, O>(this));
+  getArchivedSchema = <T extends RealType<T> = O, U extends RealType<U> = T>(
+    options?: ns.ArchivedOptions<U>
+  ): ArchivedSchema<T, U, I, O> =>
+    new ArchivedSchema<T, U, I, O>(this as Schema<I, O>, options);
+
+  getModel = () => new Model(new ModelTool<I, O, A>(this));
 }
 
 class ModelTool<
-  I extends ObjectType,
-  O extends ObjectType = I
-> extends SchemaCore<I> {
-  constructor(schema: Schema<I, O>) {
-    super(schema.propDefinitions, schema.options);
+  I extends RealType<I>,
+  O extends RealType<O> = I,
+  A = {}
+> extends SchemaCore<I, O> {
+  constructor(schema: Schema<I, O, A>) {
+    super(schema.definitions as any, schema.options);
   }
 
   private _areValuesOk = (values: any) => values && typeof values == "object";
 
-  private _handleError = (error: ErrorTool) => {
+  private _getSummary = (data: Partial<O>, isUpdate = false) => {
+    const context = this._getContext(),
+      operation = isUpdate ? "update" : "creation",
+      previousValues = isUpdate ? this._getFrozenCopy(this.values) : undefined,
+      values = this._getFrozenCopy(
+        isUpdate ? { ...this.values, ...data } : (data as O)
+      );
+
+    return this._getFrozenCopy({
+      context,
+      operation,
+      previousValues,
+      values,
+    }) as Summary<I, O>;
+  };
+
+  private _getValidationSummary = (isUpdate = false) =>
+    this._getSummary(this.values, isUpdate);
+
+  private _handleError = async (
+    error: ErrorTool,
+    data?: Partial<O>,
+    virtuals: StringKey<O>[] = []
+  ) => {
+    if (data) await this._handleFailure(data, error, virtuals);
+
     return this._options.errors === "throw"
       ? error.throw()
       : { data: undefined, error: error.summary, handleSuccess: undefined };
   };
 
   private _handleFailure = async (
-    data: Partial<I>,
+    data: Partial<O>,
     error: ErrorTool,
-    virtuals: StringKey<I>[] = []
+    virtuals: StringKey<O>[] = []
   ) => {
-    let props = [
-      ...this._getKeysAsProps({ ...data, ...error.payload }),
-      ...virtuals,
-    ];
+    let props = [...getKeysAsProps({ ...data, ...error.payload }), ...virtuals];
 
     props = Array.from(new Set(props));
 
     const ctx = this._getContext();
 
     const cleanups = props.map(async (prop) => {
-      const listeners = this._getListeners(prop, "onFailure");
+      const handlers = this._getHandlers<ns.FailureHandler<I, O>>(
+        prop,
+        "onFailure"
+      );
 
-      const _cleanups = listeners.map(async (listener) => await listener(ctx));
+      const _cleanups = handlers.map(async (handler) => await handler(ctx));
 
-      await Promise.all(_cleanups);
+      await Promise.allSettled(_cleanups);
     });
 
-    await Promise.all(cleanups);
+    await Promise.allSettled(cleanups);
   };
 
   private _handleInvalidData = () =>
     this._handleError(new ErrorTool({ message: "Invalid Data" }));
 
-  private _handleRequiredBy = (
-    error: ErrorTool,
-    lifeCycle: LifeCycles.LifeCycle
-  ) => {
-    for (const prop of this.propsRequiredBy) {
-      const [isRequired, message] = this._getRequiredState(prop, lifeCycle);
+  private _handleRequiredBy = (data: Partial<O>, isUpdate = false) => {
+    const error = new ErrorTool({ message: "Validation Error" });
+    const summary = this._getSummary(data, isUpdate);
 
-      if (isRequired && this._isUpdatable(prop)) error.add(prop, message);
+    for (const prop of this.propsRequiredBy) {
+      const [isRequired, message] = this._getRequiredState(prop, summary);
+
+      if (
+        (isRequired && !isUpdate) ||
+        (isRequired && isUpdate && this._isUpdatable(prop))
+      ) {
+        error.add(prop, message);
+
+        const alias = this._getAliasByVirtual(prop);
+
+        if (!alias) continue;
+
+        const _message =
+          message == `'${prop}' is required!`
+            ? `'${alias}' is required!`
+            : message;
+
+        error.add(alias, _message);
+      }
     }
+
+    return error;
   };
 
   private _handleSanitizationOfVirtuals = async (
-    lifeCycle: LifeCycles.LifeCycle
+    data: Partial<O>,
+    isUpdate = false
   ) => {
-    let sanitizers: [StringKey<I>, Function][] = [];
+    const sanitizers: [StringKey<I>, Function][] = [];
 
-    const ctx = this._getContext();
-    const finalCtx = this._getFinalContext();
+    const partialCtx = this._getPartialContext();
 
-    const successFulVirtuals = this._getKeysAsProps(finalCtx).filter(
+    const successFulVirtuals = getKeysAsProps(partialCtx).filter(
       this._isVirtual
     );
 
     for (const prop of successFulVirtuals) {
-      const [isSanitizable, sanitizer] = this._isSanitizable(prop, lifeCycle);
+      const [isSanitizable, sanitizer] = this._isSanitizable(prop, !isUpdate);
 
-      if (!isSanitizable) continue;
-
-      sanitizers.push([prop, sanitizer]);
+      if (isSanitizable) sanitizers.push([prop as StringKey<I>, sanitizer]);
     }
 
-    const sanitizations = sanitizers.map(async ([prop, sanitizer]) => {
-      const resolvedValue = await sanitizer(ctx, lifeCycle);
+    const summary = this._getSummary(data, isUpdate);
 
-      this._updateContext({ [prop]: resolvedValue } as I);
+    const sanitizations = sanitizers.map(async ([prop, sanitizer]) => {
+      const resolvedValue = await sanitizer(summary);
+
+      this._updateContext({ [prop]: resolvedValue } as any);
     });
 
-    await Promise.all(sanitizations);
+    await Promise.allSettled(sanitizations);
   };
 
   private _isSanitizable = (
     prop: string,
-    lifeCycle: LifeCycles.LifeCycle
+    isCreation: boolean
   ): [false, undefined] | [true, Function] => {
     const { sanitizer, shouldInit } = this._getDefinition(prop);
 
     if (!sanitizer) return [false, undefined];
-    if (lifeCycle == "creating" && isEqual(shouldInit, false))
-      return [false, undefined];
+
+    if (isCreation && isEqual(shouldInit, false)) return [false, undefined];
 
     return [true, sanitizer];
   };
 
-  private _isUpdatable = (prop: string) => {
-    const isVirtual = this._isVirtual(prop);
+  private _isUpdatable = (prop: string, value?: any) => {
+    const isAlias = this._isVirtualAlias(prop),
+      isVirtual = this._isVirtual(prop);
 
     if (
       (!this._isProp(prop) ||
         this._isConstant(prop) ||
         this._isDependentProp(prop)) &&
-      !isVirtual
+      !isVirtual &&
+      !isAlias
     )
       return false;
 
-    const hasShouldUpdateRule = this._hasAny(prop, "shouldUpdate");
-    const isUpdatable = this._getValueBy(prop, "shouldUpdate", "updating");
+    const propName = (
+      isAlias ? this._getVirtualByAlias(prop)! : prop
+    ) as StringKey<O>;
+
+    const hasShouldUpdateRule = this._isRuleInDefinition(
+      propName,
+      "shouldUpdate"
+    );
+
+    const extraCtx = isAlias ? { [propName]: value } : {};
+
+    const isUpdatable = this._getValueBy(propName, "shouldUpdate", extraCtx);
 
     if (isVirtual) return hasShouldUpdateRule ? isUpdatable : true;
 
-    const isReadonly = this._isReadonly(prop);
+    const isReadonly = this._isReadonly(propName);
 
     if (!isReadonly) return hasShouldUpdateRule ? isUpdatable : true;
 
     if (hasShouldUpdateRule && !isUpdatable) return false;
 
-    return isReadonly && isEqual(this.defaults[prop], this.values[prop]);
+    return (
+      isReadonly && isEqual(this.defaults[propName], this.values[propName])
+    );
   };
 
-  private _makeHandleSuccess = (
-    data: Partial<I>,
-    lifeCycle: LifeCycles.LifeCycle
-  ) => {
-    const ctx = this._getContext();
-    const finalCtx = this._getFinalContext();
+  private _isValidProperty = (prop: string) => {
+    if (this._isConstant(prop)) return false;
 
-    const successFulSideEffects = this._getKeysAsProps(finalCtx).filter(
-      this._isVirtual
-    );
+    const isAlias = this._isVirtualAlias(prop);
 
-    const props = this._getKeysAsProps(data);
+    if (this._isDependentProp(prop) && !isAlias) return false;
 
-    const successProps = [...props, ...successFulSideEffects];
+    return this._isProp(prop) || this._isVirtual(prop) || isAlias;
+  };
 
-    let successListeners = [] as LifeCycles.SuccessListener<I>[];
+  private _makeHandleSuccess = (data: Partial<O>, isUpdate = false) => {
+    const partialCtx = this._getPartialContext();
 
-    for (const prop of successProps)
-      successListeners = successListeners.concat(
-        this._getListeners(prop, "onSuccess") as LifeCycles.SuccessListener<I>[]
+    const successProps = getKeysAsProps(partialCtx);
+
+    let successListeners = [] as ns.SuccessHandler<I, O>[];
+
+    const summary = this._getSummary(data, isUpdate);
+
+    for (const prop of successProps) {
+      const handlers = this._getHandlers<ns.SuccessHandler<I, O>>(
+        prop,
+        "onSuccess"
       );
+
+      successListeners = successListeners.concat(handlers);
+    }
+
+    successListeners = successListeners.concat(this.globalSuccessHandlers);
 
     return async () => {
       const successOperations = successListeners.map(
-        async (listener) => await listener(ctx, lifeCycle)
+        async (handler) => await handler(summary)
       );
 
-      await Promise.all(successOperations);
+      await Promise.allSettled(successOperations);
     };
   };
 
   private _resolveDependentChanges = async (
-    data: Partial<I>,
-    ctx: Partial<I>,
-    lifeCycle: LifeCycles.LifeCycle
+    data: Partial<O>,
+    ctx: Partial<O> | Partial<Context<I, O>>,
+    isUpdate = false
   ) => {
     let _updates = { ...data };
 
-    const successFulChanges = this._getKeysAsProps(ctx);
+    const successFulChanges = getKeysAsProps(ctx);
 
-    let toResolve = [] as StringKey<I>[];
+    let toResolve = [] as StringKey<O>[];
 
-    const isCreating = lifeCycle == "creating";
+    const isCreation = !isUpdate;
 
     for (const prop of successFulChanges) {
       const dependencies = this._getDependencies(prop);
 
       if (!dependencies.length) continue;
 
-      if (isCreating && this._isVirtual(prop) && !this._isVirtualInit(prop))
+      if (isCreation && this._isVirtual(prop) && !this._isVirtualInit(prop))
         continue;
 
       if (
-        isCreating &&
+        isCreation &&
         (this._isDependentProp(prop) || this._isLaxProp(prop)) &&
         isEqual(this.defaults[prop], data[prop])
       )
         continue;
 
-      toResolve = toResolve.concat(dependencies);
+      toResolve = toResolve.concat(dependencies as any);
     }
 
     toResolve = Array.from(new Set(toResolve));
 
-    const _ctx = this._getContext();
+    const values = isUpdate ? data : { ...this.values, ...data };
+
+    const _ctx = this._getContext(),
+      summary = this._getSummary(values, isUpdate);
 
     const operations = toResolve.map(async (prop) => {
       if (
         this._isReadonly(prop) &&
-        !isCreating &&
+        !isCreation &&
         !isEqual(this.values[prop], this.defaults[prop])
       )
         return;
 
-      const { resolver } = this._getDefinition(prop);
+      const resolver = this._getDefinition(prop).resolver!;
 
-      const value = await resolver!(_ctx, lifeCycle);
+      const value = await resolver(summary);
 
-      if (!isCreating && isEqual(value, _ctx[prop])) return;
+      if (!isCreation && isEqual(value, _ctx[prop as StringKey<Context<I, O>>]))
+        return;
 
       data[prop] = value;
 
-      const updates = { [prop]: value } as I;
+      const updates = { [prop]: value } as any;
 
       this._updateContext(updates);
-      this._updateFinalContext(updates);
+      this._updatePartialContext(updates);
 
       const _data = await this._resolveDependentChanges(
         data,
-        updates,
-        lifeCycle
+        updates as unknown as O,
+        isUpdate
       );
 
       return (_updates = { ..._updates, ..._data });
     });
 
-    await Promise.all(operations);
+    await Promise.allSettled(operations);
 
     return _updates;
   };
 
   private _setValues(
-    values: Partial<I | O>,
+    values: Partial<I | O | A>,
     {
       allowVirtuals = true,
       allowTimestamps = false,
@@ -309,25 +403,29 @@ class ModelTool<
       allowTimestamps: false,
     }
   ) {
-    const keys = this._getKeysAsProps(values).filter(
-      (key) =>
-        (allowTimestamps &&
-          this.optionsTool.withTimestamps &&
-          this.optionsTool.isTimestampKey(key)) ||
-        this._isProp(key) ||
-        (allowVirtuals && this._isVirtual(key))
-    );
+    const keys = getKeysAsProps(values).filter((key) => {
+      if (
+        allowTimestamps &&
+        this.optionsTool.withTimestamps &&
+        this.optionsTool.isTimestampKey(key)
+      )
+        return true;
 
-    const _values = {} as Partial<I>;
+      if (allowVirtuals && this._isVirtual(key)) return true;
+
+      return this._isProp(key);
+    });
+
+    const _values = {} as any;
 
     sort(keys).forEach((key) => (_values[key] = values[key]));
 
-    this.values = _values;
+    this.values = _values as O;
 
-    this._initContexts();
+    this._initializeContexts();
   }
 
-  private _useConfigProps = (obj: I | Partial<I>, isUpdate = false) => {
+  private _useConfigProps = (obj: Partial<O>, isUpdate = false) => {
     if (!this.optionsTool.withTimestamps) return sortKeys(obj);
 
     const createdAt = this.optionsTool.getCreateKey(),
@@ -344,29 +442,100 @@ class ModelTool<
   };
 
   private _validateAndSet = async (
-    operationData: Partial<I> = {},
+    operationData: Partial<O> = {},
     error: ErrorTool,
-    prop: StringKey<I>,
-    value: any
+    prop: StringKey<O>,
+    value: any,
+    isUpdate = false
   ) => {
-    const isValid = await this._validate(prop, value, this._getContext());
+    const isValid = (await this._validateInternally(
+      prop as any,
+      value,
+      this._getValidationSummary(isUpdate)
+    )) as InternalValidatorResponse<O[StringKey<O>]>;
 
-    if (!isValid.valid) return error.add(prop, isValid.reasons);
+    if (!isValid.valid) {
+      const { otherReasons, reasons } = isValid;
 
-    let { validated } = isValid;
+      const hasOtherReasons = !!otherReasons;
 
-    if (isEqual(validated, undefined)) validated = value;
+      if (!hasOtherReasons) return error.add(prop, reasons);
 
-    if (!this._isVirtual(prop)) operationData[prop] = validated;
+      if (reasons.length) error.add(prop, reasons);
+      else error.add(prop, "validation failed");
 
-    const validCtxUpdate = { [prop]: validated } as I;
+      return Object.entries(otherReasons).forEach(([key, reasons]) => {
+        error.add(key, reasons);
+      });
+    }
+
+    const { validated } = isValid;
+
+    const isAlias = this._isVirtualAlias(prop);
+
+    const propName = isAlias ? this._getVirtualByAlias(prop)! : prop;
+
+    if (!this._isVirtual(propName))
+      operationData[propName as StringKey<O>] = validated;
+
+    const validCtxUpdate = { [propName]: validated } as unknown as any;
 
     this._updateContext(validCtxUpdate);
-    this._updateFinalContext(validCtxUpdate);
+    this._updatePartialContext(validCtxUpdate);
+  };
+
+  private _sanitizeValidationResponse = <T>(
+    response: any,
+    value: any
+  ): ResponseInput_<any, any, T> => {
+    const responseType = typeof response;
+
+    if (responseType == "boolean")
+      return response
+        ? { valid: true, validated: value }
+        : validationFailedResponse;
+
+    if (!response && (responseType != "object" || Array.isArray(response)))
+      return validationFailedResponse;
+
+    if (response?.valid) {
+      const validated = isEqual(response?.validated, undefined)
+        ? value
+        : response.validated;
+
+      return { valid: true, validated };
+    }
+
+    const _response: ResponseInput_<any, any, T> = { valid: false };
+
+    if (response?.otherReasons) {
+      const validProperties = getKeysAsProps(response.otherReasons).filter(
+        this._isValidProperty
+      );
+
+      const otherReasons = {} as Record<string, any>;
+
+      for (const prop of validProperties)
+        otherReasons[prop] = toArray(response.otherReasons[prop]).map(
+          (value) => {
+            return typeof value === "string" ? value : "validation failed";
+          }
+        );
+
+      _response.otherReasons = otherReasons;
+    }
+
+    if (response?.reason) _response.reason = response.reason;
+    if (response?.reasons) _response.reasons = response.reasons;
+
+    if (!_response.reason && !_response.reasons && !_response.otherReasons)
+      return validationFailedResponse;
+
+    return makeResponse(_response);
   };
 
   clone = async (
-    values: Partial<I>,
+    values: Partial<I & A>,
     options: ns.CloneOptions<I> = { reset: [] }
   ) => {
     if (!this._areValuesOk(values)) return this._handleInvalidData();
@@ -377,11 +546,11 @@ class ModelTool<
       this._isProp
     );
 
-    let data = {} as Partial<I>;
-    const error = new ErrorTool({ message: "Validation Error" });
+    let data = {} as Partial<O>;
+    const validationError = new ErrorTool({ message: "Validation Error" });
 
-    const virtuals = this._getKeysAsProps(this.values).filter(
-      this._isVirtualInit
+    const virtuals = getKeysAsProps<Partial<O>>(values as any).filter((prop) =>
+      this._isVirtualInit(prop, values[prop as unknown as StringKey<I>])
     );
 
     const props = [...this.props, ...virtuals];
@@ -390,99 +559,125 @@ class ModelTool<
       if (this._isConstant(prop)) {
         data[prop] = await this._getConstantValue(prop);
 
-        const validCtxUpdate = { [prop]: data[prop] as any } as I;
+        const validCtxUpdate = { [prop]: data[prop] as any } as any;
 
-        this._updateFinalContext(validCtxUpdate);
+        this._updatePartialContext(validCtxUpdate);
         return this._updateContext(validCtxUpdate);
       }
 
-      if (this._isDependentProp(prop)) {
-        const value = reset.includes(prop)
-          ? this._getDefaultValue(prop)
-          : this.values[prop];
+      const isAlias = this._isVirtualAlias(prop),
+        isDependent = this._isDependentProp(prop);
+
+      if (isDependent && !isAlias) {
+        const value = reset.includes(prop as any)
+          ? await this._getDefaultValue(prop)
+          : this.values[prop as unknown as StringKey<O>];
 
         data[prop] = value;
 
-        const validCtxUpdate = { [prop]: data[prop] } as I;
+        const validCtxUpdate = { [prop]: data[prop] } as unknown as any;
 
-        this._updateFinalContext(validCtxUpdate);
+        this._updatePartialContext(validCtxUpdate);
         return this._updateContext(validCtxUpdate);
       }
 
-      const isSideEffect = virtuals.includes(prop);
+      const isVirtualInit = virtuals.includes(prop);
 
-      if (isSideEffect && !this._isVirtualInit(prop)) return;
+      if (this._isVirtual(prop) && !isVirtualInit) return;
 
-      if (!isSideEffect && reset.includes(prop)) {
-        data[prop] = this._getDefaultValue(prop);
+      if (isAlias && !isDependent)
+        return this._validateAndSet(
+          data,
+          validationError,
+          prop,
+          values[prop as unknown as StringKey<I>]
+        );
 
-        const validCtxUpdate = { [prop]: data[prop] } as I;
+      if (reset.includes(prop as any)) {
+        data[prop] = await this._getDefaultValue(prop);
 
-        this._updateFinalContext(validCtxUpdate);
+        const validCtxUpdate = { [prop]: data[prop] } as unknown as any;
+
+        this._updatePartialContext(validCtxUpdate);
         return this._updateContext(validCtxUpdate);
       }
 
       const isLax = this._isLaxProp(prop);
 
-      const isProvided = this.values.hasOwnProperty(prop);
+      const isProvided = isPropertyOn(prop, this.values);
 
       const isLaxInit =
-        isLax && isProvided && !isEqual(this.values[prop], this.defaults[prop]);
+        isLax &&
+        isProvided &&
+        !isEqual(
+          this.values[prop as unknown as StringKey<O>],
+          this.defaults[prop as unknown as StringKey<O>]
+        );
 
       const isRequiredInit =
-        this._isRequiredBy(prop) && this.values.hasOwnProperty(prop);
+        this._isRequiredBy(prop) && isPropertyOn(prop, this.values);
 
       if (
         (isLax &&
-          this._hasAny(prop, "shouldInit") &&
-          !this._getValueBy(prop, "shouldInit", "creating")) ||
-        (!isSideEffect && !this._canInit(prop) && !isLaxInit && !isRequiredInit)
+          this._isRuleInDefinition(prop, "shouldInit") &&
+          !this._getValueBy(prop, "shouldInit")) ||
+        (!isVirtualInit &&
+          !this._canInit(prop) &&
+          !isLaxInit &&
+          !isRequiredInit)
       ) {
-        data[prop] = this._getDefaultValue(prop);
+        data[prop] = await this._getDefaultValue(prop);
 
-        const validCtxUpdate = { [prop]: data[prop] } as I;
+        const validCtxUpdate = { [prop]: data[prop] } as unknown as any;
 
-        this._updateFinalContext(validCtxUpdate);
+        this._updatePartialContext(validCtxUpdate);
         return this._updateContext(validCtxUpdate);
       }
 
-      return this._validateAndSet(data, error, prop, this.values[prop]);
+      return this._validateAndSet(
+        data,
+        validationError,
+        prop,
+        this.values[prop as unknown as StringKey<O>]
+      );
     });
 
-    await Promise.all(validations);
+    await Promise.allSettled(validations);
 
-    this._handleRequiredBy(error, "creating");
+    if (validationError.isPayloadLoaded)
+      return this._handleError(validationError, data, virtuals);
 
-    await this._handleSanitizationOfVirtuals("creating");
+    const requiredError = this._handleRequiredBy(data);
 
-    data = await this._resolveDependentChanges(
-      data,
-      this._getFinalContext(),
-      "creating"
-    );
+    if (requiredError.isPayloadLoaded)
+      return this._handleError(requiredError, data, virtuals);
 
-    if (error.isPayloadLoaded) {
-      await this._handleFailure(data, error, virtuals);
-      return this._handleError(error);
-    }
+    await this._handleSanitizationOfVirtuals(data);
+
+    data = await this._resolveDependentChanges(data, this._getPartialContext());
+
+    const finalData = this._useConfigProps(data);
+
+    this._updateContext(finalData as any);
+    this._updatePartialContext(finalData as any);
 
     return {
-      data: this._useConfigProps(data) as O,
+      data: finalData as O,
       error: undefined,
-      handleSuccess: this._makeHandleSuccess(data, "creating"),
+      handleSuccess: this._makeHandleSuccess(finalData),
     };
   };
 
-  create = async (values: Partial<I>) => {
+  create = async (values: Partial<I & A>) => {
     if (!this._areValuesOk(values)) return this._handleInvalidData();
 
     this._setValues(values);
 
-    let data = {} as Partial<I>;
-    const error = new ErrorTool({ message: "Validation Error" });
+    let data = {} as Partial<O>;
+    const validationError = new ErrorTool({ message: "Validation Error" });
 
-    const virtuals = this._getKeysAsProps(this.values).filter(
-      this._isVirtualInit
+    const virtuals = getKeysAsProps<Partial<O>>(values as any).filter((prop) =>
+      this._isVirtualInit(prop, values[prop as unknown as StringKey<I>])
     );
 
     const props = [...this.props, ...virtuals];
@@ -491,17 +686,25 @@ class ModelTool<
       if (this._isConstant(prop)) {
         data[prop] = await this._getConstantValue(prop);
 
-        const validCtxUpdate = { [prop]: data[prop] as any } as I;
+        const validCtxUpdate = { [prop]: data[prop] as any } as any;
 
-        this._updateFinalContext(validCtxUpdate);
+        this._updatePartialContext(validCtxUpdate);
         return this._updateContext(validCtxUpdate);
       }
 
-      const isVirtual = virtuals.includes(prop);
+      const isVirtualInit = virtuals.includes(prop);
 
-      if (isVirtual && !this._isVirtualInit(prop)) return;
+      if (this._isVirtual(prop) && !isVirtualInit) return;
 
-      const isProvided = this.values.hasOwnProperty(prop);
+      if (this._isVirtualAlias(prop) && !this._isDependentProp(prop))
+        return this._validateAndSet(
+          data,
+          validationError,
+          prop,
+          values[prop as unknown as StringKey<I>]
+        );
+
+      const isProvided = isPropertyOn(prop, this.values);
 
       const isLax = this._isLaxProp(prop);
 
@@ -511,42 +714,52 @@ class ModelTool<
 
       if (
         (isLax &&
-          this._hasAny(prop, "shouldInit") &&
-          !this._getValueBy(prop, "shouldInit", "creating")) ||
-        (!isVirtual && !this._canInit(prop) && !isLaxInit && !isRequiredInit)
+          this._isRuleInDefinition(prop, "shouldInit") &&
+          !this._getValueBy(prop, "shouldInit")) ||
+        (!isVirtualInit &&
+          !this._canInit(prop) &&
+          !isLaxInit &&
+          !isRequiredInit)
       ) {
-        data[prop] = this._getDefaultValue(prop);
+        data[prop] = await this._getDefaultValue(prop);
 
-        const validCtxUpdate = { [prop]: data[prop] as any } as I;
+        const validCtxUpdate = { [prop]: data[prop] as any } as any;
 
-        this._updateFinalContext(validCtxUpdate);
+        this._updatePartialContext(validCtxUpdate);
         return this._updateContext(validCtxUpdate);
       }
 
-      return this._validateAndSet(data, error, prop, this.values[prop]);
+      return this._validateAndSet(
+        data,
+        validationError,
+        prop,
+        this.values[prop]
+      );
     });
 
-    await Promise.all(validations);
+    await Promise.allSettled(validations);
 
-    this._handleRequiredBy(error, "creating");
+    if (validationError.isPayloadLoaded)
+      return this._handleError(validationError, data, virtuals);
 
-    await this._handleSanitizationOfVirtuals("creating");
+    const requiredError = this._handleRequiredBy(data);
 
-    data = await this._resolveDependentChanges(
-      data,
-      this._getFinalContext(),
-      "creating"
-    );
+    if (requiredError.isPayloadLoaded)
+      return this._handleError(requiredError, data, virtuals);
 
-    if (error.isPayloadLoaded) {
-      await this._handleFailure(data, error, virtuals);
-      return this._handleError(error);
-    }
+    await this._handleSanitizationOfVirtuals(data);
+
+    data = await this._resolveDependentChanges(data, this._getPartialContext());
+
+    const finalData = this._useConfigProps(data);
+
+    this._updateContext(finalData as any);
+    this._updatePartialContext(finalData as any);
 
     return {
-      data: this._useConfigProps(data) as O,
+      data: finalData as O,
       error: undefined,
-      handleSuccess: this._makeHandleSuccess(data, "creating"),
+      handleSuccess: this._makeHandleSuccess(finalData),
     };
   };
 
@@ -556,118 +769,148 @@ class ModelTool<
 
     this._setValues(values, { allowVirtuals: false, allowTimestamps: true });
 
-    const ctx = this._getContext() as Readonly<O>;
+    let handlers: ns.Handler<O>[] = [...this.globalDeleteHandlers];
 
-    const cleanups = this.props.map(async (prop) => {
-      const listeners = this._getListeners<O>(prop, "onDelete");
+    const data = this._getFrozenCopy(this.values);
 
-      const _cleanups = listeners.map(async (listener) => await listener(ctx));
+    this.props.map(async (prop) => {
+      const handlers_ = this._getHandlers<ns.Handler<O>>(prop, "onDelete");
 
-      await Promise.all(_cleanups);
+      if (handlers_.length) handlers = handlers.concat(handlers_);
     });
 
-    await Promise.all(cleanups);
+    const cleanups = handlers.map(async (handler) => await handler(data));
+
+    await Promise.allSettled(cleanups);
   };
 
-  update = async (values: O, changes: Partial<I>) => {
+  update = async (values: O, changes: Partial<I & A>) => {
     if (!this._areValuesOk(values)) return this._handleInvalidData();
 
     this._setValues(values, { allowVirtuals: false, allowTimestamps: true });
 
-    const error = new ErrorTool({ message: "Validation Error" });
-    let updated = {} as Partial<I>;
+    const validationError = new ErrorTool({ message: "Validation Error" });
+    let updates = {} as Partial<O>;
 
-    const toUpdate = this._getKeysAsProps(changes ?? {}).filter((prop) =>
-      this._isUpdatable(prop)
+    const toUpdate = getKeysAsProps(changes ?? {}).filter((prop) =>
+      this._isUpdatable(prop, changes[prop])
     );
 
-    const linkedProps: StringKey<I>[] = [];
-    const virtuals: StringKey<I>[] = [];
+    const linkedProps: StringKey<O>[] = [];
+    const virtuals: StringKey<O>[] = [];
 
     const validations = toUpdate.map(async (prop) => {
-      const value = changes[prop] as Exclude<
-        I[Extract<keyof I, string>],
-        undefined
-      >;
-      const isValid = await this._validate(prop, value, this._getContext());
+      const value = changes[prop] as unknown as O[StringKey<O>];
+      const isValid = (await this._validate(
+        prop as any,
+        value,
+        this._getValidationSummary(true)
+      )) as ValidatorResponse<O[StringKey<O>]>;
 
-      if (!isValid.valid) return error.add(prop, isValid.reasons);
+      if (!isValid.valid) return validationError.add(prop, isValid.reasons);
 
       let { validated } = isValid;
 
       if (isEqual(validated, undefined)) validated = value;
 
-      if (isEqual(validated, this.values[prop])) return;
+      const isAlias = this._isVirtualAlias(prop);
 
-      if (this._isVirtual(prop)) virtuals.push(prop);
+      const propName = (isAlias
+        ? this._getVirtualByAlias(prop)!
+        : prop) as unknown as StringKey<O>;
+
+      if (isEqual(validated, this.values[propName])) return;
+
+      if (this._isVirtual(propName)) virtuals.push(propName);
       else {
-        updated[prop] = validated;
-        linkedProps.push(prop);
+        updates[propName as StringKey<O>] = validated;
+        linkedProps.push(propName);
       }
 
-      const validCtxUpdate = { [prop]: validated } as I;
+      const validCtxUpdate = { [propName]: validated } as unknown as any;
 
       this._updateContext(validCtxUpdate);
-      this._updateFinalContext(validCtxUpdate);
+      this._updatePartialContext(validCtxUpdate);
     });
 
-    await Promise.all(validations);
+    await Promise.allSettled(validations);
 
-    this._handleRequiredBy(error, "updating");
+    if (validationError.isPayloadLoaded)
+      return this._handleError(validationError, updates, virtuals);
 
-    if (error.isPayloadLoaded) {
-      await this._handleFailure(updated, error, virtuals);
-      return this._handleError(error);
-    }
+    const requiredError = this._handleRequiredBy(updates, true);
 
-    await this._handleSanitizationOfVirtuals("updating");
+    if (requiredError.isPayloadLoaded)
+      return this._handleError(requiredError, updates, virtuals);
 
-    updated = await this._resolveDependentChanges(
-      updated,
-      this._getFinalContext(),
-      "updating"
+    await this._handleSanitizationOfVirtuals(updates, true);
+
+    updates = await this._resolveDependentChanges(
+      updates,
+      this._getPartialContext(),
+      true
     );
 
-    if (!Object.keys(updated).length) {
-      await this._handleFailure(updated, error, virtuals);
-      return this._handleError(error.setMessage("Nothing to update"));
+    if (!Object.keys(updates).length) {
+      await this._handleFailure(updates, validationError, virtuals);
+      return this._handleError(validationError.setMessage("Nothing to update"));
     }
 
+    const finalData = this._useConfigProps(updates, true);
+
+    this._updateContext(finalData as any);
+    this._updatePartialContext(finalData as any);
+
     return {
-      data: this._useConfigProps(updated, true) as Partial<O>,
+      data: finalData as Partial<O>,
       error: undefined,
-      handleSuccess: this._makeHandleSuccess(updated, "updating"),
+      handleSuccess: this._makeHandleSuccess(finalData, true),
     };
   };
 
-  _validate = async <K extends StringKey<I>>(
+  _validateInternally = async <K extends StringKey<I & A>>(
     prop: K,
     value: any,
-    ctx: Readonly<I>
+    summary_: Summary<I, O>
   ) => {
-    if (
-      this._isConstant(prop) ||
-      this._isDependentProp(prop) ||
-      (!this._isProp(prop) && !this._isVirtual(prop))
-    )
-      return makeResponse<I[K]>({ valid: false, reason: "Invalid property" });
+    if (!this._isValidProperty(prop))
+      return makeResponse<(I & A)[K]>({
+        valid: false,
+        reason: "Invalid property",
+      });
 
-    const validator = this._getValidator(prop);
+    const isAlias = this._isVirtualAlias(prop);
+
+    const _prop = isAlias ? this._getVirtualByAlias(prop) : prop;
+
+    const validator = this._getValidator(_prop as StringKey<I>);
 
     if (validator) {
-      const res = await validator(value, ctx);
+      const res = (await validator(value, summary_)) as ResponseInput_<
+        any,
+        I,
+        (I & A)[K]
+      >;
 
-      if (res.valid && isEqual(res.validated, undefined)) res.validated = value;
-
-      return makeResponse<I[K]>(res);
+      return this._sanitizeValidationResponse<(I & A)[K]>(res, value);
     }
 
-    return makeResponse<I[K]>({ valid: true, validated: value });
+    return makeResponse<(I & A)[K]>({ valid: true, validated: value });
+  };
+
+  _validate = async <K extends StringKey<I & A>>(
+    prop: K,
+    value: any,
+    summary_: Summary<I, O>
+  ) => {
+    const res = await this._validateInternally(prop, value, summary_);
+
+    return makeResponse<(I & A)[K]>(res);
   };
 }
 
-class Model<I extends ObjectType, O extends ObjectType = I> {
-  constructor(private modelTool: ModelTool<I, O>) {}
+class Model<I extends RealType<I>, O extends RealType<O> = I, A = {}> {
+  constructor(private modelTool: ModelTool<I, O, A>) {}
 
   clone = this.modelTool.clone;
 
@@ -677,6 +920,122 @@ class Model<I extends ObjectType, O extends ObjectType = I> {
 
   update = this.modelTool.update;
 
-  validate = async <K extends StringKey<I>>(prop: K, value: any) =>
-    this.modelTool._validate(prop, value, {} as Readonly<I>);
+  validate = async <K extends StringKey<I & A>>(prop: K, value: any) => {
+    const summary = {
+      context: {},
+      operation: "creation",
+      previousValues: undefined,
+      values: {},
+    } as Summary<I, O>;
+
+    return this.modelTool._validate(prop, value, summary);
+  };
+}
+
+class ArchivedSchema<
+  Input extends RealType<Input>,
+  Output extends RealType<Output>,
+  Ip extends RealType<Ip>,
+  Op extends RealType<Op>
+> {
+  private _props: StringKey<Output>[] = [];
+  private _options: ns.ArchivedOptions<Output> = {};
+  private archivedAtKey = "";
+
+  constructor(
+    parentSchema: Schema<Ip, Op>,
+    options?: ns.ArchivedOptions<Output>
+  ) {
+    this._validateOptions(parentSchema, options);
+
+    this._setProperties(parentSchema);
+  }
+
+  get options() {
+    return this._options;
+  }
+
+  get props() {
+    const props = [...this._props];
+
+    if (this.archivedAtKey) props.push(this.archivedAtKey as StringKey<Output>);
+
+    return sort(props);
+  }
+
+  private _setProperties(parentSchema: Schema<Ip, Op>) {
+    const parentProps = getKeysAsProps(parentSchema.definitions);
+
+    for (const prop of parentProps) {
+      const definition = parentSchema.definitions[prop];
+
+      if (isPropertyOn("virtual", definition)) continue;
+
+      this._props.push(prop as unknown as StringKey<Output>);
+    }
+  }
+
+  private _validateArchivedAtKey(
+    parentSchema: Schema<Ip, Op>,
+    options: ns.ArchivedOptions<Output>
+  ) {
+    const error = new ErrorTool({ message: "Invalid Schema", statusCode: 500 });
+
+    let archivedKey = options.archivedAt!;
+
+    if (!isPropertyOn("archivedAt", options)) {
+      this.archivedAtKey = "";
+
+      return;
+    }
+
+    const typeProvided: boolean | string = typeof archivedKey;
+
+    const isBoolean = typeProvided == "boolean";
+    const isString = typeProvided == "string";
+
+    if (!isBoolean && !isString)
+      error
+        .add("options", "'archivedAt' should be of type boolean | string")
+        .throw();
+
+    if (isBoolean)
+      return (this.archivedAtKey = archivedKey ? "archivedAt" : "");
+
+    archivedKey = (archivedKey as string).trim();
+
+    if (!archivedKey.length)
+      error.add("options", "'archivedAt' cannot be an empty string").throw();
+
+    this.archivedAtKey = archivedKey as string;
+
+    if (error.isPayloadLoaded) error.throw();
+
+    if (!parentSchema) return;
+  }
+
+  private _validateOptions(
+    parentSchema: Schema<Ip, Op>,
+    options?: ns.ArchivedOptions<Output>
+  ) {
+    const error = new ErrorTool({ message: "Invalid Schema", statusCode: 500 });
+
+    if (!isEqual(options, undefined) && !isObject(options))
+      error.add("options", "expected an object").throw();
+
+    if (!options) options = {};
+
+    const optionsProvided = Object.keys(options);
+
+    optionsProvided.forEach((option) => {
+      if (!ALLOWED_ARCHIVED_OPTIONS.includes(option as any))
+        error.add("options", `'${option}' is not a valid archived option`);
+    });
+
+    this._validateArchivedAtKey(parentSchema, options);
+
+    if (error.isPayloadLoaded) error.throw();
+
+    if (parentSchema || options) return;
+  }
 }

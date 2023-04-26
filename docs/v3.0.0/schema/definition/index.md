@@ -18,18 +18,19 @@ const userSchema = new Schema<I, O>(definitions, options);
 import { Schema } from "clean-schema";
 
 type UserDTO = {
-  dob: { required: true; validator: validateDob };
-  firstName: { required: true; validator: validateName };
-  lastName: { required: true; validator: validateName };
-  fullName: {
-    default: "";
-    dependent: true;
-    dependsOn: ["firstName", "lastName"];
-    resolver: ({ firstName, lastName }) => `${firstName} ${lastName}`;
-  };
+  dob?: Date | null;
+  firstName: string;
+  lastName: string;
 };
 
-const userSchema = new Schema<I, O>({
+type UserType = {
+  dob?: Date | null;
+  firstName: string;
+  lastName: string;
+  fullName: string;
+};
+
+const userSchema = new Schema<UserDTO, UserType>({
   dob: { required: true, validator: validateDob },
   firstName: { required: true, validator: validateName },
   lastName: { required: true, validator: validateName },

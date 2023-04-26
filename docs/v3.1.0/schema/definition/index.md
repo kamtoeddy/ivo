@@ -18,18 +18,19 @@ const userSchema = new Schema<I, O>(definitions, options);
 import { Schema } from "clean-schema";
 
 type UserDTO = {
-  dob: { required: true; validator: validateDob };
-  firstName: { required: true; validator: validateName };
-  lastName: { required: true; validator: validateName };
-  fullName: {
-    default: "";
-    dependent: true;
-    dependsOn: ["firstName", "lastName"];
-    resolver: ({ firstName, lastName }) => `${firstName} ${lastName}`;
-  };
+  dob?: Date | null;
+  firstName: string;
+  lastName: string;
 };
 
-const userSchema = new Schema<I, O>({
+type UserType = {
+  dob?: Date | null;
+  firstName: string;
+  lastName: string;
+  fullName: string;
+};
+
+const userSchema = new Schema<UserDTO, UserType>({
   dob: { required: true, validator: validateDob },
   firstName: { required: true, validator: validateName },
   lastName: { required: true, validator: validateName },
@@ -48,13 +49,13 @@ const UserModel = userSchema.getModel();
 
 These methods are async because custom validators could be async as well.
 
-| Property | Type     | Description                                                             |
-| -------- | -------- | ----------------------------------------------------------------------- |
-| clone    | function | Async method to copy an instance                                        |
-| create   | function | Async method to create an instance                                      |
-| delete   | function | Async method to trigger all onDelete listeners                          |
-| update   | function | Async method to update an instance                                      |
-| validate | function | Async method used to validate a property based onthe validator provided |
+| Property | Type     | Description                                                              |
+| -------- | -------- | ------------------------------------------------------------------------ |
+| clone    | function | Async method to copy an instance                                         |
+| create   | function | Async method to create an instance                                       |
+| delete   | function | Async method to trigger all onDelete listeners                           |
+| update   | function | Async method to update an instance                                       |
+| validate | function | Async method used to validate a property based on the validator provided |
 
 # Accepted rules
 

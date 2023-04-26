@@ -1,12 +1,12 @@
-import { ITimestamp, Private_ISchemaOptions, StringKey } from "../interfaces";
+import type { ISchema, StringKey } from "../interfaces";
 
-type TimestampKey = StringKey<ITimestamp>;
+type TimestampKey = StringKey<ISchema.Timestamp>;
 
 export class OptionsTool {
   private ts_keys: TimestampKey[];
-  private timestamps: ITimestamp;
+  private timestamps: ISchema.Timestamp;
 
-  constructor(config: Private_ISchemaOptions) {
+  constructor(config: ISchema.PrivateOptions) {
     const { timestamps } = config;
 
     this.timestamps = timestamps;

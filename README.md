@@ -23,10 +23,31 @@ import { Schema } from "clean-schema";
 # Defining a schema
 
 ```ts
-import { Schema } from "clean-schema";
-import hash from "hashing-module-of-choice";
+import { Schema, type Summary } from "clean-schema";
 
-const userSchema = new Schema(
+type UserRole = "admin" | "user";
+
+type Input = {
+  firstName: string;
+  lastName: string;
+  password: string;
+  role?: UserRole;
+};
+
+type Output = {
+  createdAt: Date;
+  firstName: string;
+  fullName: string;
+  id: number;
+  lastName: string;
+  password: string;
+  role: UserRole;
+  updatedAt: Date;
+};
+
+type ISummary = Summary<Input, Output>;
+
+const userSchema = new Schema<Input, Output>(
   {
     firstName: {
       required: true,
@@ -36,49 +57,71 @@ const userSchema = new Schema(
       default: "",
       dependent: true,
       dependsOn: ["firstName", "lastName"],
-      resolver: generateFullName,
+      resolver: getFullName,
     },
-    isBlocked: { default: false, validator: validateBoolean },
-    id: { constant: true, value: generateId },
+    id: { constant: true, value: generateUserId },
     lastName: {
       required: true,
       validator: validateString("invalid last name"),
     },
-    lastSeen: { default: "", shouldInit: false },
-    password: {
-      required: true,
-      validator(value) {
-        let validated = String(value).trim();
-
-        const valid = validated.length >= 8;
-
-        if (!valid) return { valid, reason: "minimum characters should be 8" };
-
-        validated = hash(validated);
-
-        return { valid, validated };
-      },
-    },
-    role: {
-      readonly: true,
-      validator(value) {
-        const validated = String(value).trim();
-
-        const valid = ["admin", "user"].includes(validated);
-
-        if (!valid) return { valid, reason: "invalid user role" };
-
-        return { valid, validated };
-      },
-    },
+    password: { required: true, validator: validatePassword },
+    role: { default: "user", shouldInit: false, validator: validateRole },
   },
   { timestamps: true }
 );
 
-function generateFullName(context) {
-  const { firstName, lastName } = context;
-
+// resolvers
+function getFullName({ context: { firstName, lastName } }: ISummary) {
   return `${firstName} ${lastName}`;
+}
+
+function generateUserId() {
+  return Math.random() * 1e18;
+}
+
+function hashPassword(value) {
+  return Math.random().toString(value.length);
+}
+
+// validators
+function validatePassword(value) {
+  const isValidString = validateString()(value);
+
+  if (!isValidString.valid) return isValidString;
+
+  let validated = isValidString.validated;
+
+  const valid = validated.length >= 8;
+
+  if (!valid) return { valid, reason: "minimum characters should be 8" };
+
+  return { valid, validated: hashPassword(validated) };
+}
+
+function validateRole(value) {
+  const isValidString = validateString()(value);
+
+  if (!isValidString.valid) return isValidString;
+
+  const valid = ["admin", "user"].includes(validated);
+
+  if (!valid) return { valid, reason: "invalid user role" };
+
+  return { valid, validated: isValidString.validated };
+}
+
+function validateString(message = "") {
+  return (value) => {
+    const typeProvided = typeof value;
+
+    if (typeProvided != "string") {
+      const reason = message || `expected a string but got '${typeProvided}'`;
+
+      return { valid: false, reason };
+    }
+
+    return { valid: true, validated: value.trim() };
+  };
 }
 
 // get the model
@@ -95,25 +138,23 @@ const {
   error,
   handleSuccess,
 } = await UserModel.create({
-  firstName: "James",
+  firstName: "John",
   fullName: "Mr. James",
   id: 1,
-  lastName: "Spader",
+  lastName: "Doe",
   lastSeen: new Date(),
   name: "John Doe",
   password: "au_34ibUv^T-adjInFjj",
-  role: "user",
+  role: "admin",
 });
 
 console.log(user);
 //  {
 //   createdAt: new Date(),
-//   firstName: "James",
-//   fullName: "James Spader",
-//   id: 1,
-//   isBlocked: false,
-//   lastName: "Spader",
-//   lastSeen: "",
+//   firstName: "John",
+//   fullName: "John Doe",
+//   id: 18927934748659724,
+//   lastName: "Doe",
 //   password: "**************",
 //   role: "user",
 //   updatedAt: new Date(),
@@ -121,57 +162,59 @@ console.log(user);
 
 await userDb.insert(user);
 
-await handleSuccess?.();
+await handleSuccess();
 ```
 
 # Updating an entity
 
 ```ts
-const user = await userDb.query({ id: 1 });
+const user = await userDb.findById(18927934748659724);
 
 if (!user) throw new Error("User not found");
 
 const { data, error, handleSuccess } = await UserModel.update(user, {
-  lastSeen: new Date(),
+  firstName: "Peter",
   id: 2,
   age: 34,
-  fullName: "Raymond Reddington",
+  fullName: "Tony Stark",
 });
 
 // age is ignored because it is not a valid property
 // fullName is ignored because it is dependent
-// id is ignored because it is readonly
-console.log(data); // { lastSeen: new Date(), updatedAt: new Date() }
+// id is ignored because it is a constant
+console.log(data); // { firstName: "Peter", fullName: "Peter Doe", updatedAt: new Date() }
 
-await userDb.update({ id: 1 }, data);
+await userDb.updateOne({ id: user.id }, data);
 
-await handleSuccess?.();
+await handleSuccess();
 ```
 
 ## Docs
 
-- [Defining a schema](./docs/v3.0.0/schema/definition/index.md#defining-a-schema)
+- [Defining a schema](./docs/v3.2.0/schema/definition/index.md#defining-a-schema)
   - [constant properties](./docs/v3.0.0/schema/definition/constants.md#constant-properties)
   - [default values](./docs/v3.0.0/schema/definition/defaults.md#default-values)
-  - [dependent properties](./docs/v3.0.0/schema/definition/dependents.md#dependent-properties)
+  - [dependent properties](./docs/v3.2.0/schema/definition/dependents.md#dependent-properties)
   - [readonly properties](./docs/v3.0.0/schema/definition/readonly.md#readonly-properties)
-  - [required properties](./docs/v3.0.0/schema/definition/required.md#required-properties)
-  - [virtuals](./docs/v3.1.0/schema/definition/virtuals.md#virtual-properties)
-  - [validators](./docs/v2.6.0/validate/index.md#validators)
+  - [required properties](./docs/v3.2.0/schema/definition/required.md#required-properties)
+  - [virtuals](./docs/v3.2.0/schema/definition/virtuals.md#virtual-properties)
+  - [validators](./docs/v3.2.0/validate/index.md#validators)
     - [isArrayOk](./docs/v2.6.0/validate/isArrayOk.md)
     - [isBooleanOk](./docs/v2.6.0/validate/isBooleanOk.md)
     - [isEmailOk](./docs/v2.6.0/validate/isEmailOk.md)
     - [isNumberOk](./docs/v2.6.0/validate/isNumberOk.md)
-    - [isStringOk](./docs/v2.6.0/validate/isStringOk.md)
-- [Inheritance](./docs/v3.0.0/schema/definition/inheritance.md#schema-inheritance)
-- [The Operation Context](./docs/v3.0.0/schema/definition/life-cycles.md#the-operation-context)
-- [Life Cycles & Listeners](./docs/v3.0.0/schema/definition/life-cycles.md#life-cycle-listeners)
+    - [isStringOk](./docs/v3.2.0/validate/isStringOk.md)
+- [Extending Schemas](./docs/v3.2.0/schema/definition/extend-schemas.md#extending-schemas)
+- [The Operation Context](./docs/v3.2.0/schema/definition/life-cycles.md#the-operation-context)
+- [The Operation Summary](./docs/v3.2.0/schema/definition/life-cycles.md#the-operation-summary)
+- [Life Cycles & Listeners](./docs/v3.2.0/schema/definition/life-cycles.md#life-cycle-listeners)
 
-  - [onDelete](./docs/v3.0.0/schema/definition/life-cycles.md#ondelete)
-  - [onFailure](./docs/v3.0.0/schema/definition/life-cycles.md#onfailure)
-  - [onSuccess](./docs/v3.0.0/schema/definition/life-cycles.md#onsuccess)
+  - [onDelete](./docs/v3.2.0/schema/definition/life-cycles.md#ondelete)
+  - [onFailure](./docs/v3.2.0/schema/definition/life-cycles.md#onfailure)
+  - [onSuccess](./docs/v3.2.0/schema/definition/life-cycles.md#onsuccess)
 
-- [Options](./docs/v3.0.0/schema/definition/index.md#options)
+- [Options](./docs/v3.2.0/schema/definition/index.md#options)
+- [Archived Schemas](./docs/v3.2.0/schema/archived-schemas.md)
 
 - [Changelog](./docs/CHANGELOG.md#changelog)
 

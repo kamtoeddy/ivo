@@ -5,10 +5,13 @@
   },
   "description": "schema builder for javascript environments",
   "devDependencies": {
-    "@types/jest": "^28.1.6",
+    "@types/jest": "^28.1.8",
+    "@typescript-eslint/eslint-plugin": "^5.58.0",
+    "@typescript-eslint/parser": "^5.58.0",
+    "eslint": "^8.38.0",
     "jest": "^28.1.3",
     "ts-jest": "^28.0.7",
-    "typescript": "^4.9.4"
+    "typescript": "^4.9.5"
   },
   "files": [
     "dist/**/*"
@@ -43,11 +46,12 @@
   "scripts": {
     "build": "tsc",
     "clean-up": "rm -rf coverage dist",
+    "lint": "eslint . --ext .ts",
     "test": "tsc & jest --verbose --watchAll",
     "test-c": "tsc & jest --verbose --watchAll --coverage",
-    "test:ci": "tsc & jest --verbose",
+    "test:ci": "tsc && npm run lint && jest --verbose",
     "prepare": "npm run clean-up && npm run build"
   },
   "types": "dist/index.d.ts",
-  "version": "3.1.0"
+  "version": "3.2.0-beta.0"
 }

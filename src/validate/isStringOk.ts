@@ -4,10 +4,14 @@ import { IStringOptions } from "../utils/interfaces";
 
 export function isStringOk(
   str: any,
-  { enums, maxLength = 40, minLength = 1, regExp }: IStringOptions = {}
+  {
+    enums,
+    maxLength = 255,
+    minLength = 1,
+    regExp,
+    trim = false,
+  }: IStringOptions = {}
 ) {
-  let valid = true;
-
   if (belongsTo(str, [null, undefined]))
     return makeResponse({ reason: "Unacceptable value", valid: false });
 
@@ -17,7 +21,9 @@ export function isStringOk(
   if (regExp && !regExp.test(str))
     return makeResponse({ reason: "Unacceptable value", valid: false });
 
-  str = String(str).trim();
+  str = String(str);
+
+  if (trim) str = str.trim();
 
   if (str.length < minLength)
     return makeResponse({ reason: "Too short", valid: false });
@@ -25,5 +31,5 @@ export function isStringOk(
   if (str.length > maxLength)
     return makeResponse({ reason: "Too long", valid: false });
 
-  return makeResponse<string>({ valid, validated: str });
+  return makeResponse<string>({ valid: true, validated: str });
 }

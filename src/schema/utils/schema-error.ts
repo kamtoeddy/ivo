@@ -1,4 +1,4 @@
-import { sortKeys, toArray } from "../../utils/functions";
+import { isPropertyOn, sortKeys, toArray } from "../../utils/functions";
 import {
   ErrorPayload,
   ErrorToolProps,
@@ -43,7 +43,7 @@ export class ErrorTool extends Error {
     };
   }
 
-  private _has = (field: PayloadKey) => this.payload.hasOwnProperty(field);
+  private _has = (field: PayloadKey) => isPropertyOn(field, this.payload);
 
   private _setPayload = (payload: InputPayload) => {
     Object.entries(payload).forEach(([key, value]) => {
@@ -55,9 +55,15 @@ export class ErrorTool extends Error {
     if (!value) value = [];
     else value = toArray(value);
 
-    this.payload[field] = this._has(field)
-      ? [...this.payload[field], ...value]
-      : value;
+    if (this._has(field)) {
+      const currentValues = this.payload[field];
+
+      value.forEach((v) => {
+        if (!currentValues.includes(v)) currentValues.push(v);
+      });
+
+      this.payload[field] = currentValues;
+    } else this.payload[field] = value;
 
     return this;
   }
