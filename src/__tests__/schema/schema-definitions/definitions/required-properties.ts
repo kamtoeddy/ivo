@@ -745,16 +745,11 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
       });
 
       it("should reject required(true) + shouldInit", () => {
-        const values = [false, true, () => "", [], {}];
+        const values = [false, true, [], {}];
 
         for (const shouldInit of values) {
           const toFail = fx({
-            propertyName: {
-              default: "",
-              required: () => true,
-              shouldInit,
-              validator,
-            },
+            propertyName: { required: true, shouldInit, validator },
           });
 
           expectFailure(toFail);
@@ -765,7 +760,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
             expect(err.payload).toMatchObject(
               expect.objectContaining({
                 propertyName: expect.arrayContaining([
-                  "Required properties cannot have a initialization blocked",
+                  "Strictly Required properties cannot have a initialization blocked",
                 ]),
               })
             );
