@@ -938,9 +938,9 @@ class ArchivedSchema<
   Ip extends RealType<Ip>,
   Op extends RealType<Op>
 > {
-  _props: StringKey<Output>[] = [];
+  private _props: StringKey<Output>[] = [];
   private _options: ns.ArchivedOptions<Output> = {};
-  // private archivedAt: StringKey<O>;
+  private archivedAtKey: string = "";
 
   constructor(
     parentSchema: Schema<Ip, Op>,
@@ -956,7 +956,11 @@ class ArchivedSchema<
   }
 
   get props() {
-    return this._props;
+    const props = [...this._props];
+
+    if (this.archivedAtKey) props.push(this.archivedAtKey as StringKey<Output>);
+
+    return sort(props);
   }
 
   private _setProperties(parentSchema: Schema<Ip, Op>) {
@@ -969,6 +973,45 @@ class ArchivedSchema<
 
       this._props.push(prop as unknown as StringKey<Output>);
     }
+  }
+
+  private _validateArchivedAtKey(
+    parentSchema: Schema<Ip, Op>,
+    options: ns.ArchivedOptions<Output>
+  ) {
+    const error = new ErrorTool({ message: "Invalid Schema", statusCode: 500 });
+
+    let archivedKey = options.archivedAt!;
+
+    if (!isPropertyOn("archivedAt", options)) {
+      this.archivedAtKey = "";
+
+      return;
+    }
+
+    const typeProvided: boolean | string = typeof archivedKey;
+
+    const isBoolean = typeProvided == "boolean";
+    const isString = typeProvided == "string";
+
+    if (!isBoolean && !isString)
+      error
+        .add("options", "'archivedAt' should be of type boolean | string")
+        .throw();
+
+    if (isBoolean)
+      return (this.archivedAtKey = archivedKey ? "archivedAt" : "");
+
+    archivedKey = (archivedKey as string).trim();
+
+    if (!archivedKey.length)
+      error.add("options", "'archivedAt' cannot be an empty string").throw();
+
+    this.archivedAtKey = archivedKey as string;
+
+    if (error.isPayloadLoaded) error.throw();
+
+    if (!parentSchema) return;
   }
 
   private _validateOptions(
@@ -989,10 +1032,7 @@ class ArchivedSchema<
         error.add("options", `'${option}' is not a valid archived option`);
     });
 
-    if (isPropertyOn("archivedAt", options)) {
-      if (!["boolean", "string"].includes(typeof options.archivedAt))
-        error.add("options", `'archivedAt' should be of type boolean | string`);
-    }
+    this._validateArchivedAtKey(parentSchema, options);
 
     if (error.isPayloadLoaded) error.throw();
 
