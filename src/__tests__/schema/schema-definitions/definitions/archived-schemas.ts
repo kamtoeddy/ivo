@@ -131,6 +131,30 @@ export const Test_ArchivedSchemas = ({ Schema }: any) => {
             }
           }
         });
+
+        it("should reject 'archivedAt' if empty string is provided", () => {
+          const values = ["", "  "];
+
+          for (const archivedAt of values) {
+            const toFail = () => bookSchema.getArchivedSchema({ archivedAt });
+
+            expectFailure(toFail);
+
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err).toMatchObject({
+                message: "Invalid Schema",
+                payload: expect.objectContaining({
+                  options: expect.arrayContaining([
+                    "'archivedAt' cannot be an empty string",
+                  ]),
+                }),
+                statusCode: 500,
+              });
+            }
+          }
+        });
       });
     });
   });
