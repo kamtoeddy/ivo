@@ -940,7 +940,7 @@ class ArchivedSchema<
 > {
   private _props: StringKey<Output>[] = [];
   private _options: ns.ArchivedOptions<Output> = {};
-  private archivedAtKey: string = "";
+  private archivedAtKey = "";
 
   constructor(
     parentSchema: Schema<Ip, Op>,
