@@ -664,6 +664,42 @@ export const Test_SchemaTimestampOption = ({ Schema, fx }: any) => {
           );
         }
       });
+
+      it("should reject empty strings for custom 'createdAt'", () => {
+        const toFail = fx(getValidSchema(), { timestamps: { createdAt: "" } });
+
+        expectFailure(toFail);
+
+        try {
+          toFail();
+        } catch (err: any) {
+          expect(err.payload).toEqual(
+            expect.objectContaining({
+              timestamps: expect.arrayContaining([
+                "'createdAt' cannot be an empty string",
+              ]),
+            })
+          );
+        }
+      });
+
+      it("should reject empty strings for custom 'updatedAt'", () => {
+        const toFail = fx(getValidSchema(), { timestamps: { updatedAt: "" } });
+
+        expectFailure(toFail);
+
+        try {
+          toFail();
+        } catch (err: any) {
+          expect(err.payload).toEqual(
+            expect.objectContaining({
+              timestamps: expect.arrayContaining([
+                "'updatedAt' cannot be an empty string",
+              ]),
+            })
+          );
+        }
+      });
     });
   });
 };
