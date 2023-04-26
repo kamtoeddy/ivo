@@ -740,12 +740,6 @@ export abstract class SchemaCore<I, O> {
         reason: "Required properties cannot be dependent",
       };
 
-    if (this._isRuleInDefinition(prop, "shouldInit"))
-      return {
-        valid,
-        reason: "Required properties cannot have a initialization blocked",
-      };
-
     if (!this._isValidatorOk(prop))
       return { valid, reason: "Required properties must have a validator" };
 
@@ -774,6 +768,13 @@ export abstract class SchemaCore<I, O> {
       return {
         valid,
         reason: "Strictly required properties cannot be readonly",
+      };
+
+    if (this._isRuleInDefinition(prop, "shouldInit"))
+      return {
+        valid,
+        reason:
+          "Strictly Required properties cannot have a initialization blocked",
       };
 
     const isRequiredCommon = this.__isRequiredCommon(prop);

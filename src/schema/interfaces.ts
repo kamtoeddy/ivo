@@ -175,6 +175,7 @@ namespace Schema {
     default: TypeOf<(I & O)[K]> | DefaultSetter<K, I, O>;
     required: RequiredSetter<I, O>;
     readonly?: true;
+    shouldInit?: BooleanSetter<I, O>;
     shouldUpdate?: BooleanSetter<I, O>;
     validator: Validator<K, I, O>;
   };
