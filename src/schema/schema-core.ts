@@ -1004,10 +1004,9 @@ export abstract class SchemaCore<I, O> {
 
     const reservedKeys = [...this.props, ...this.virtuals] as string[];
 
-    for (const key of [createdAt, updatedAt]) {
+    for (const key of [createdAt, updatedAt])
       if (key && reservedKeys?.includes(key))
         return { valid, reason: `'${key}' already belongs to your schema` };
-    }
 
     if (typeof createdAt == "string" && !createdAt.trim().length)
       return { valid, reason: "'createdAt' cannot be an empty string" };
