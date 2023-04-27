@@ -2,17 +2,20 @@ import { expectFailure, expectNoFailure } from "../_utils";
 
 export const Test_ArchivedSchemas = ({ Schema }: any) => {
   describe("Archived Schemas", () => {
-    const bookSchema = new Schema({
-      id: { constant: true, value: 1 },
-      name: { default: "" },
-      price: {
-        default: 0,
-        dependent: true,
-        dependsOn: "_price",
-        resolver: () => 100,
+    const bookSchema = new Schema(
+      {
+        id: { constant: true, value: 1 },
+        name: { default: "" },
+        price: {
+          default: 0,
+          dependent: true,
+          dependsOn: "_price",
+          resolver: () => 100,
+        },
+        _price: { virtual: true, validator: () => true },
       },
-      _price: { virtual: true, validator: () => true },
-    });
+      { timestamps: true }
+    );
 
     describe("options", () => {
       describe("valid", () => {
@@ -148,6 +151,37 @@ export const Test_ArchivedSchemas = ({ Schema }: any) => {
                 payload: expect.objectContaining({
                   options: expect.arrayContaining([
                     "'archivedAt' cannot be an empty string",
+                  ]),
+                }),
+                statusCode: 500,
+              });
+            }
+          }
+        });
+
+        it("should reject 'archivedAt' if string provided is a property, virtual or timestamp of parent schema", () => {
+          const values = [
+            "id",
+            "name",
+            "price",
+            "_price",
+            "createdAt",
+            "updatedAt",
+          ];
+
+          for (const archivedAt of values) {
+            const toFail = () => bookSchema.getArchivedSchema({ archivedAt });
+
+            expectFailure(toFail);
+
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err).toMatchObject({
+                message: "Invalid Schema",
+                payload: expect.objectContaining({
+                  options: expect.arrayContaining([
+                    `'${archivedAt}' is a reserved property on your parent schema`,
                   ]),
                 }),
                 statusCode: 500,
