@@ -619,14 +619,33 @@ export const Test_SchemaTimestampOption = ({ Schema, fx }: any) => {
       });
 
       it("should reject custom name found on schema", () => {
-        const values = ["propertyName1", "propertyName2"];
+        const values = [
+          "dependentProp",
+          "propertyName1",
+          "propertyName2",
+          "virtualProp",
+        ];
         const timestampKeys = ["createdAt", "updatedAt"];
 
-        for (const ts_key of timestampKeys) {
+        for (const key of timestampKeys) {
           for (const value of values) {
-            const toFail = fx(getValidSchema(), {
-              timestamps: { [ts_key]: value },
-            });
+            const toFail = fx(
+              getValidSchema(
+                {},
+                {
+                  dependentProp: {
+                    default: "",
+                    dependent: true,
+                    dependsOn: "virtualProp",
+                    resolver: () => "",
+                  },
+                  virtualProp: { virtual: true, validator: () => true },
+                }
+              ),
+              {
+                timestamps: { [key]: value },
+              }
+            );
 
             expectFailure(toFail);
 
