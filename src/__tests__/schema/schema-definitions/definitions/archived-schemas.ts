@@ -54,19 +54,21 @@ export const Test_ArchivedSchemas = ({ Schema }: any) => {
       });
 
       describe("invalid", () => {
+        const ErrorMessage = "Invalid Archived Schema";
+
         it("should reject options that are not objects", () => {
           const invalidOptions = [-1, 0, 1, null, true, false, [], () => {}];
 
           for (const option of invalidOptions) {
             const toFail = () => bookSchema.getArchivedSchema(option);
 
-            expectFailure(toFail);
+            expectFailure(toFail, ErrorMessage);
 
             try {
               toFail();
             } catch (err: any) {
               expect(err).toMatchObject({
-                message: "Invalid Schema",
+                message: ErrorMessage,
                 payload: expect.objectContaining({
                   options: ["expected an object"],
                 }),
@@ -96,13 +98,13 @@ export const Test_ArchivedSchemas = ({ Schema }: any) => {
               timestamps: "throw",
             });
 
-          expectFailure(toFail);
+          expectFailure(toFail, ErrorMessage);
 
           try {
             toFail();
           } catch (err: any) {
             expect(err).toMatchObject({
-              message: "Invalid Schema",
+              message: ErrorMessage,
               payload: expect.objectContaining({
                 options: errorMessages,
               }),
@@ -117,13 +119,13 @@ export const Test_ArchivedSchemas = ({ Schema }: any) => {
           for (const archivedAt of values) {
             const toFail = () => bookSchema.getArchivedSchema({ archivedAt });
 
-            expectFailure(toFail);
+            expectFailure(toFail, ErrorMessage);
 
             try {
               toFail();
             } catch (err: any) {
               expect(err).toMatchObject({
-                message: "Invalid Schema",
+                message: ErrorMessage,
                 payload: expect.objectContaining({
                   options: expect.arrayContaining([
                     "'archivedAt' should be of type boolean | string",
@@ -141,13 +143,13 @@ export const Test_ArchivedSchemas = ({ Schema }: any) => {
           for (const archivedAt of values) {
             const toFail = () => bookSchema.getArchivedSchema({ archivedAt });
 
-            expectFailure(toFail);
+            expectFailure(toFail, ErrorMessage);
 
             try {
               toFail();
             } catch (err: any) {
               expect(err).toMatchObject({
-                message: "Invalid Schema",
+                message: ErrorMessage,
                 payload: expect.objectContaining({
                   options: expect.arrayContaining([
                     "'archivedAt' cannot be an empty string",
@@ -172,13 +174,13 @@ export const Test_ArchivedSchemas = ({ Schema }: any) => {
           for (const archivedAt of values) {
             const toFail = () => bookSchema.getArchivedSchema({ archivedAt });
 
-            expectFailure(toFail);
+            expectFailure(toFail, ErrorMessage);
 
             try {
               toFail();
             } catch (err: any) {
               expect(err).toMatchObject({
-                message: "Invalid Schema",
+                message: ErrorMessage,
                 payload: expect.objectContaining({
                   options: expect.arrayContaining([
                     `'${archivedAt}' is a reserved property on your parent schema`,

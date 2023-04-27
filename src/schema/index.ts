@@ -989,7 +989,10 @@ class ArchivedSchema<
     parentSchema: Schema<Ip, Op>,
     options: ns.ArchivedOptions<Output>
   ) {
-    const error = new ErrorTool({ message: "Invalid Schema", statusCode: 500 });
+    const error = new ErrorTool({
+      message: "Invalid Archived Schema",
+      statusCode: 500,
+    });
 
     let archivedAtKey = options.archivedAt!;
 
@@ -1026,17 +1029,16 @@ class ArchivedSchema<
         .throw();
 
     this.archivedAtKey = archivedAtKey as string;
-
-    if (error.isPayloadLoaded) error.throw();
-
-    if (!parentSchema) return;
   }
 
   private _validateOptions(
     parentSchema: Schema<Ip, Op>,
     options?: ns.ArchivedOptions<Output>
   ) {
-    const error = new ErrorTool({ message: "Invalid Schema", statusCode: 500 });
+    const error = new ErrorTool({
+      message: "Invalid Archived Schema",
+      statusCode: 500,
+    });
 
     if (!isEqual(options, undefined) && !isObject(options))
       error.add("options", "expected an object").throw();
@@ -1050,10 +1052,8 @@ class ArchivedSchema<
         error.add("options", `'${option}' is not a valid archived option`);
     });
 
-    this._validateArchivedAtKey(parentSchema, options);
-
     if (error.isPayloadLoaded) error.throw();
 
-    if (parentSchema || options) return;
+    this._validateArchivedAtKey(parentSchema, options);
   }
 }
