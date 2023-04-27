@@ -984,9 +984,9 @@ export abstract class SchemaCore<I, O> {
     const { timestamps } = this._options,
       valid = false;
 
-    const ts_type = typeof timestamps;
+    const typeProveded = typeof timestamps;
 
-    if (ts_type === "boolean") return { valid: true };
+    if (typeProveded === "boolean") return { valid: true };
 
     if (!isObject(timestamps))
       return {

@@ -50,6 +50,17 @@ class Schema<
     return this._options;
   }
 
+  get reservedKeys() {
+    const props = [...this.props, ...this.virtuals] as string[];
+
+    const { createdAt, updatedAt } = this.optionsTool.getKeys();
+
+    if (createdAt) props.push(createdAt);
+    if (updatedAt) props.push(updatedAt);
+
+    return sort(props);
+  }
+
   extend = <
     U extends RealType<Merge<U, I>>,
     T = O,
@@ -428,8 +439,7 @@ class ModelTool<
   private _useConfigProps = (obj: Partial<O>, isUpdate = false) => {
     if (!this.optionsTool.withTimestamps) return sortKeys(obj);
 
-    const createdAt = this.optionsTool.getCreateKey(),
-      updatedAt = this.optionsTool.getUpdateKey();
+    const { createdAt, updatedAt } = this.optionsTool.getKeys();
 
     let results = { ...obj };
 
@@ -981,7 +991,7 @@ class ArchivedSchema<
   ) {
     const error = new ErrorTool({ message: "Invalid Schema", statusCode: 500 });
 
-    let archivedKey = options.archivedAt!;
+    let archivedAtKey = options.archivedAt!;
 
     if (!isPropertyOn("archivedAt", options)) {
       this.archivedAtKey = "";
@@ -989,7 +999,7 @@ class ArchivedSchema<
       return;
     }
 
-    const typeProvided: boolean | string = typeof archivedKey;
+    const typeProvided: boolean | string = typeof archivedAtKey;
 
     const isBoolean = typeProvided == "boolean";
     const isString = typeProvided == "string";
@@ -1000,14 +1010,22 @@ class ArchivedSchema<
         .throw();
 
     if (isBoolean)
-      return (this.archivedAtKey = archivedKey ? "archivedAt" : "");
+      return (this.archivedAtKey = archivedAtKey ? "archivedAt" : "");
 
-    archivedKey = (archivedKey as string).trim();
+    archivedAtKey = (archivedAtKey as string).trim();
 
-    if (!archivedKey.length)
+    if (!archivedAtKey.length)
       error.add("options", "'archivedAt' cannot be an empty string").throw();
 
-    this.archivedAtKey = archivedKey as string;
+    if (parentSchema.reservedKeys.includes(archivedAtKey))
+      error
+        .add(
+          "options",
+          `'${archivedAtKey}' is a reserved property on your parent schema`
+        )
+        .throw();
+
+    this.archivedAtKey = archivedAtKey as string;
 
     if (error.isPayloadLoaded) error.throw();
 
