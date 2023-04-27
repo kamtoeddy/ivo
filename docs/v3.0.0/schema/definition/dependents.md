@@ -1,6 +1,6 @@
 # Dependent Properties
 
-If set to **`true`**, any external attempt to modify the of the said property will be ignored; making it's value solely modifiable via the life cycle listeners and side effects.
+If set to **`true`**, any external attempt to modify the value of the said property will be ignored; making it's value solely modifiable via the life cycle listeners and side effects.
 
 One such property `must` have the following rules:
 

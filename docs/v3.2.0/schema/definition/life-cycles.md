@@ -47,33 +47,35 @@ type S =
 
 const Model = new Schema<Input, Output>(definitions).getModel();
 
-type SuccessListener = (summary: ISummary) => void | Promise<void>;
+type Handler = (context: IContext) => void | Promise<void>;
+
+type SuccessHandler = (summary: ISummary) => void | Promise<void>;
 ```
 
-## Life Cycle listeners
+## Life Cycle handlers
 
-These are functions that are invoked during a life cycle operation and recieve the [operation context](#the-operation-context) as only parameter. They are expected to respect the `type Listener` as shown above
+These are functions that are invoked during a life cycle operation (`creation`, `failure` or `update`)
 
-## onDelete
+### onDelete
 
-A void function or array of void functions(async / sync) you want to execute every time an instance of your model gets deleted. That is; every time the **`model.delete`** method is invoked. These listeners have access to a context without sideEffects even if passed to the delete method of the model. Default **[ ]**. They are expected to respect the `type DeleteListener` as shown above
+A void function or array of void functions(async / sync) you want to execute every time an instance of your model gets deleted. That is; every time the **`model.delete`** method is invoked. These listeners have access to a context without sideEffects even if passed to the delete method of the model. Default **[ ]**. They are expected to respect the `type Handler` as shown above
 
-## onFailure
+### onFailure
 
-A void function or array of void functions(async / sync) you want to execute every time the **`create`**, **`clone`** & **`update`** operations are unsuccessful. Default **[ ]**. They are expected to respect the `type Listener` as shown above
+A void function or array of void functions(async / sync) you want to execute every time the **`create`**, **`clone`** & **`update`** operations are unsuccessful. Default **[ ]**. They are expected to respect the `type SuccessHandler` as shown above
 
 > N.B: They are only allowed on properties that support and have validators
 
-## onSuccess
+### onSuccess
 
-A void function or array of void functions(async / sync) you want to execute every time the **`create`**, **`clone`** & **`update`** operations are successful. Listeners for this event should expect the operation's context object & the concerned operation name (`creating` | `updating`) as first & second parameters respectively. Default **[ ]**.They are expected to respect the `type SuccessListener` as shown above
+A void function or array of void functions(async / sync) you want to execute every time the **`create`**, **`clone`** & **`update`** operations are successful. Handlers for this event should expect the operation's context object & the concerned operation name (`creating` | `updating`) as first & second parameters respectively. Default **[ ]**.They are expected to respect the `type SuccessHandler` as shown above
 
-As from `v2.5.0`, these listeners have to be triggered manually by invoking the handleSuccess method of the operation's results object returned by the create, clone & update methods of your models.
+As from `v2.5.0`, these handlers have to be triggered manually by invoking the handleSuccess method of the operation's results object returned by the create, clone & update methods of your models.
 
 If the operation is unsuccessful, `handleSuccess` will be `undefined`
 
 ```js
 const { data, error, handleSuccess } = await UserModel.create(userData);
 
-await handleSuccess?.();
+if (data) await handleSuccess();
 ```
