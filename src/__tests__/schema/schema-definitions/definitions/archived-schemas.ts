@@ -1,6 +1,6 @@
-import { expectFailure, expectNoFailure, validator } from "../_utils";
+import { expectFailure, expectNoFailure } from "../_utils";
 
-export const Test_ArchivedSchemas = ({ Schema, fx }: any) => {
+export const Test_ArchivedSchemas = ({ Schema }: any) => {
   describe("Archived Schemas", () => {
     const bookSchema = new Schema(
       {
@@ -64,13 +64,11 @@ export const Test_ArchivedSchemas = ({ Schema, fx }: any) => {
 
           for (const rule of rules)
             for (const value of values) {
-              const toPass = fx({
-                propertyName: {
-                  default: "",
+              const toPass = () =>
+                bookSchema.getArchivedSchema({
+                  archivedAt: "archived_at",
                   [rule]: value,
-                  validator,
-                },
-              });
+                });
 
               expectNoFailure(toPass);
 
@@ -216,6 +214,33 @@ export const Test_ArchivedSchemas = ({ Schema, fx }: any) => {
               });
             }
           }
+        });
+
+        it("should reject invalid 'onDelete' & 'onSuccess' handlers", () => {
+          const values = [1, "", 0, false, true, null, {}];
+
+          for (const rule of rules)
+            for (const value of values) {
+              const toFail = () =>
+                bookSchema.getArchivedSchema({
+                  archivedAt: "archived_at",
+                  [rule]: value,
+                });
+
+              expectFailure(toFail, ErrorMessage);
+
+              try {
+                toFail();
+              } catch (err: any) {
+                expect(err.payload).toEqual(
+                  expect.objectContaining({
+                    options: expect.arrayContaining([
+                      `The '${rule}' handler @[0] is not a function`,
+                    ]),
+                  })
+                );
+              }
+            }
         });
       });
     });
