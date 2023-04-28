@@ -1,5 +1,6 @@
 import {
   getKeysAsProps,
+  isFunction,
   isObject,
   isPropertyOn,
   sort,
@@ -29,6 +30,11 @@ const validationFailedResponse = {
   valid: false,
   reasons: ["validation failed"],
 };
+
+const archivedOptionsLifecycleRules = [
+  "onDelete",
+  "onSuccess",
+] as (keyof ns.ArchivedOptions<any>)[];
 
 class Schema<
   I extends RealType<I>,
@@ -950,7 +956,11 @@ class ArchivedSchema<
 > {
   private _props: StringKey<Output>[] = [];
   private _options: ns.ArchivedOptions<Output> = {};
-  private archivedAtKey = "";
+  private _archivedAtKey = "";
+  private _lifecycleHandelrs = {} as Record<
+    keyof ns.ArchivedOptions<Output>,
+    ns.Handler<Output>[]
+  >;
 
   constructor(
     parentSchema: Schema<Ip, Op>,
@@ -968,7 +978,8 @@ class ArchivedSchema<
   get props() {
     const props = [...this._props];
 
-    if (this.archivedAtKey) props.push(this.archivedAtKey as StringKey<Output>);
+    if (this._archivedAtKey)
+      props.push(this._archivedAtKey as StringKey<Output>);
 
     return sort(props);
   }
@@ -997,7 +1008,7 @@ class ArchivedSchema<
     let archivedAtKey = options.archivedAt!;
 
     if (!isPropertyOn("archivedAt", options)) {
-      this.archivedAtKey = "";
+      this._archivedAtKey = "";
 
       return;
     }
@@ -1013,7 +1024,7 @@ class ArchivedSchema<
         .throw();
 
     if (isBoolean)
-      return (this.archivedAtKey = archivedAtKey ? "archivedAt" : "");
+      return (this._archivedAtKey = archivedAtKey ? "archivedAt" : "");
 
     archivedAtKey = (archivedAtKey as string).trim();
 
@@ -1028,7 +1039,32 @@ class ArchivedSchema<
         )
         .throw();
 
-    this.archivedAtKey = archivedAtKey as string;
+    this._archivedAtKey = archivedAtKey as string;
+  }
+
+  private _validateHandlers(options: ns.ArchivedOptions<Output>) {
+    const error = new ErrorTool({
+      message: "Invalid Archived Schema",
+      statusCode: 500,
+    });
+
+    for (const rule of archivedOptionsLifecycleRules) {
+      if (!isPropertyOn(rule, options)) continue;
+
+      const handlers = toArray(options[rule]);
+
+      handlers.forEach((handler, i) => {
+        if (!isFunction(handler))
+          error.add(
+            "options",
+            `The '${rule}' handler @[${i}] is not a function`
+          );
+      });
+
+      if (error.isPayloadLoaded) error.throw();
+
+      this._lifecycleHandelrs[rule] = handlers as ns.Handler<Output>[];
+    }
   }
 
   private _validateOptions(
@@ -1055,5 +1091,7 @@ class ArchivedSchema<
     if (error.isPayloadLoaded) error.throw();
 
     this._validateArchivedAtKey(parentSchema, options);
+
+    this._validateHandlers(options);
   }
 }
