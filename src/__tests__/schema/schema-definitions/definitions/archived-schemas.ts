@@ -1,6 +1,6 @@
-import { expectFailure, expectNoFailure } from "../_utils";
+import { expectFailure, expectNoFailure, validator } from "../_utils";
 
-export const Test_ArchivedSchemas = ({ Schema }: any) => {
+export const Test_ArchivedSchemas = ({ Schema, fx }: any) => {
   describe("Archived Schemas", () => {
     const bookSchema = new Schema(
       {
@@ -18,6 +18,8 @@ export const Test_ArchivedSchemas = ({ Schema }: any) => {
     );
 
     describe("options", () => {
+      const rules = ["onDelete", "onSuccess"];
+
       describe("valid", () => {
         it("should accept any valid property in archived options", () => {
           const toPass = () =>
@@ -50,6 +52,30 @@ export const Test_ArchivedSchemas = ({ Schema }: any) => {
 
             toPass();
           }
+        });
+
+        it("should accept valid 'onDelete' & 'onSuccess' handlers", () => {
+          const values = [
+            () => {},
+            () => ({}),
+            [() => {}],
+            [() => {}, () => ({})],
+          ];
+
+          for (const rule of rules)
+            for (const value of values) {
+              const toPass = fx({
+                propertyName: {
+                  default: "",
+                  [rule]: value,
+                  validator,
+                },
+              });
+
+              expectNoFailure(toPass);
+
+              toPass();
+            }
         });
       });
 

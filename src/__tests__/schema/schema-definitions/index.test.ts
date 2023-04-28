@@ -21,7 +21,7 @@ import { Test_SchemaOnDelete } from "./options/on-delete";
 
 const fx = makeFx(Schema);
 
-Test_ArchivedSchemas({ Schema });
+Test_ArchivedSchemas({ Schema, fx });
 
 Test_BasicDefinitions({ fx });
 
