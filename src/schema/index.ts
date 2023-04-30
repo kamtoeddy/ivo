@@ -1094,4 +1094,19 @@ class ArchivedSchema<
 
     this._validateHandlers(options);
   }
+
+  getModel = (): ArchivedModel<Input, Output> => {
+    return new ArchivedModel<Input, Output>(
+      this as ArchivedSchema<Input, Output, Ip, Op>
+    );
+  };
+}
+
+class ArchivedModel<
+  Input extends RealType<Input>,
+  Output extends RealType<Output>
+> {
+  constructor(private schema: ArchivedSchema<Input, Output, any, any>) {
+    if (!this.schema) throw "Invalid Archived Schema";
+  }
 }
