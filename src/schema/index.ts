@@ -971,6 +971,10 @@ class ArchivedSchema<
     this._setProperties(parentSchema);
   }
 
+  get lifecycleHandelrs() {
+    return this._lifecycleHandelrs;
+  }
+
   get options() {
     return this._options;
   }
@@ -1116,6 +1120,16 @@ class ArchivedModel<
     for (const prop of this.schema.props)
       data[prop] = values?.[prop as unknown as StringKey<Input>] as any;
 
-    return { data };
+    const handleSuccess = async () => {
+      const handlers = toArray<ns.Handler<Output>>(
+        this.schema.lifecycleHandelrs?.["onSuccess"] ?? []
+      );
+
+      const operations = handlers.map(async (handler) => await handler(data));
+
+      await Promise.allSettled(operations);
+    };
+
+    return { data, handleSuccess };
   };
 }

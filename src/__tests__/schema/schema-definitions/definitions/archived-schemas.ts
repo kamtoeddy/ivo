@@ -27,7 +27,11 @@ export const Test_ArchivedSchemas = ({ Schema }: any) => {
       });
 
       describe("behaviour with no options", () => {
-        const Model = bookSchema.getArchivedSchema().getModel();
+        const Model = bookSchema
+          .getArchivedSchema({
+            onSuccess: (data: any) => (onSuccessValues = data),
+          })
+          .getModel();
         const book = { id: 1, name: "Book name", price: 250 };
 
         it("should create properly and all 'onSuccess' handlers should be triggered in the handle success method returned from the create method of the model", async () => {
