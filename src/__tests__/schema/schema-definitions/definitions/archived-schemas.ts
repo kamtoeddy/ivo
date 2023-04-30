@@ -17,6 +17,19 @@ export const Test_ArchivedSchemas = ({ Schema }: any) => {
       { timestamps: true }
     );
 
+    describe("behaviour", () => {
+      describe("behaviour with no options", () => {
+        const Model = bookSchema.getArchivedSchema().getModel();
+        const book = { id: 1, name: "Book name", price: 250 };
+
+        it("should create properly", async () => {
+          const { data } = Model.create(book);
+
+          expect(data).toEqual(book);
+        });
+      });
+    });
+
     describe("options", () => {
       const rules = ["onDelete", "onSuccess"];
 
