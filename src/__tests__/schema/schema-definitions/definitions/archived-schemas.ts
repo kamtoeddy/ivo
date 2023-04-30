@@ -29,6 +29,7 @@ export const Test_ArchivedSchemas = ({ Schema }: any) => {
       describe("behaviour with no options", () => {
         const Model = bookSchema
           .getArchivedSchema({
+            onDelete: (data: any) => (onDeleteValues = data),
             onSuccess: (data: any) => (onSuccessValues = data),
           })
           .getModel();
@@ -45,11 +46,12 @@ export const Test_ArchivedSchemas = ({ Schema }: any) => {
           expect(onSuccessValues).toEqual(book);
         });
 
-        // it("should all 'onDelete' handlers should be invoked properly", async () => {
-        //   await Model.delete(book);
+        it("should invoke all 'onDelete' handlers properly", async () => {
+          await Model.delete(book);
 
-        //   // expect(data).toEqual(book);
-        // });
+          expect(onDeleteValues).toEqual(book);
+          expect(onSuccessValues).toEqual({});
+        });
       });
     });
 
