@@ -1114,11 +1114,17 @@ class ArchivedModel<
     if (!this.schema) throw "Invalid Archived Schema";
   }
 
-  create = (values: Input = {} as Input) => {
+  private _cleanValues = (values: Input = {} as Input) => {
     const data = {} as Output;
 
     for (const prop of this.schema.props)
       data[prop] = values?.[prop as unknown as StringKey<Input>] as any;
+
+    return data;
+  };
+
+  create = (values: Input = {} as Input) => {
+    const data = this._cleanValues(values);
 
     const handleSuccess = async () => {
       const handlers = toArray<ns.Handler<Output>>(
@@ -1131,5 +1137,17 @@ class ArchivedModel<
     };
 
     return { data, handleSuccess };
+  };
+
+  delete = async (values: Input = {} as Input) => {
+    const data = this._cleanValues(values);
+
+    const handlers = toArray<ns.Handler<Output>>(
+      this.schema.lifecycleHandelrs?.["onDelete"] ?? []
+    );
+
+    const operations = handlers.map(async (handler) => await handler(data));
+
+    await Promise.allSettled(operations);
   };
 }
