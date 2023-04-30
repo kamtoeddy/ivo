@@ -18,15 +18,34 @@ export const Test_ArchivedSchemas = ({ Schema }: any) => {
     );
 
     describe("behaviour", () => {
+      let onDeleteValues: any = {};
+      let onSuccessValues: any = {};
+
+      beforeEach(() => {
+        onDeleteValues = {};
+        onSuccessValues = {};
+      });
+
       describe("behaviour with no options", () => {
         const Model = bookSchema.getArchivedSchema().getModel();
         const book = { id: 1, name: "Book name", price: 250 };
 
-        it("should create properly", async () => {
-          const { data } = Model.create(book);
+        it("should create properly and all 'onSuccess' handlers should be triggered in the handle success method returned from the create method of the model", async () => {
+          const { data, handleSuccess } = Model.create(book);
+
+          await handleSuccess();
 
           expect(data).toEqual(book);
+
+          expect(onDeleteValues).toEqual({});
+          expect(onSuccessValues).toEqual(book);
         });
+
+        // it("should all 'onDelete' handlers should be invoked properly", async () => {
+        //   await Model.delete(book);
+
+        //   // expect(data).toEqual(book);
+        // });
       });
     });
 
