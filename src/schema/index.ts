@@ -1110,9 +1110,7 @@ class ArchivedModel<
   Input extends RealType<Input>,
   Output extends RealType<Output>
 > {
-  constructor(private schema: ArchivedSchema<Input, Output, any, any>) {
-    if (!this.schema) throw "Invalid Archived Schema";
-  }
+  constructor(private schema: ArchivedSchema<Input, Output, any, any>) {}
 
   private _cleanValues = (values: Input = {} as Input) => {
     const data = {} as Output;

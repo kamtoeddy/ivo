@@ -26,7 +26,7 @@ export const Test_ArchivedSchemas = ({ Schema }: any) => {
         onSuccessValues = {};
       });
 
-      describe("behaviour with no options", () => {
+      describe("behaviour with simple configuration", () => {
         const Model = bookSchema
           .getArchivedSchema({
             onDelete: (data: any) => (onDeleteValues = data),
