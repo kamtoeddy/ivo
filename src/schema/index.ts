@@ -1109,4 +1109,13 @@ class ArchivedModel<
   constructor(private schema: ArchivedSchema<Input, Output, any, any>) {
     if (!this.schema) throw "Invalid Archived Schema";
   }
+
+  create = (values: Input = {} as Input) => {
+    const data = {} as Output;
+
+    for (const prop of this.schema.props)
+      data[prop] = values?.[prop as unknown as StringKey<Input>] as any;
+
+    return { data };
+  };
 }
