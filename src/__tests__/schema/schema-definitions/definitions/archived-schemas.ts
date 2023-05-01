@@ -46,8 +46,22 @@ export const Test_ArchivedSchemas = ({ Schema }: any) => {
           expect(onSuccessValues).toEqual(book);
         });
 
-        it("should invoke all 'onDelete' handlers properly", async () => {
-          await Model.delete(book);
+        it("should ignore invalid properties provided at creation", async () => {
+          const { data, handleSuccess } = Model.create({
+            ...book,
+            invalidProp: true,
+          });
+
+          await handleSuccess();
+
+          expect(data).toEqual(book);
+
+          expect(onDeleteValues).toEqual({});
+          expect(onSuccessValues).toEqual(book);
+        });
+
+        it("should ignore invalid properties provided during deletion", async () => {
+          await Model.delete({ ...book, invalidProp: true });
 
           expect(onDeleteValues).toEqual(book);
           expect(onSuccessValues).toEqual({});
