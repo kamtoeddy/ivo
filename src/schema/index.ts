@@ -31,6 +31,8 @@ const validationFailedResponse = {
   reasons: ["validation failed"],
 };
 
+const areValuesOk = (values: any) => values && typeof values == "object";
+
 const archivedOptionsLifecycleRules = [
   "onDelete",
   "onSuccess",
@@ -122,8 +124,6 @@ class ModelTool<
   constructor(schema: Schema<I, O, A>) {
     super(schema.definitions as any, schema.options);
   }
-
-  private _areValuesOk = (values: any) => values && typeof values == "object";
 
   private _getSummary = (data: Partial<O>, isUpdate = false) => {
     const context = this._getContext(),
@@ -554,7 +554,7 @@ class ModelTool<
     values: Partial<I & A>,
     options: ns.CloneOptions<I> = { reset: [] }
   ) => {
-    if (!this._areValuesOk(values)) return this._handleInvalidData();
+    if (!areValuesOk(values)) return this._handleInvalidData();
 
     this._setValues(values);
 
@@ -685,7 +685,7 @@ class ModelTool<
   };
 
   create = async (values: Partial<I & A>) => {
-    if (!this._areValuesOk(values)) return this._handleInvalidData();
+    if (!areValuesOk(values)) return this._handleInvalidData();
 
     this._setValues(values);
 
@@ -780,7 +780,7 @@ class ModelTool<
   };
 
   delete = async (values: O) => {
-    if (!this._areValuesOk(values))
+    if (!areValuesOk(values))
       return new ErrorTool({ message: "Invalid Data" }).throw();
 
     this._setValues(values, { allowVirtuals: false, allowTimestamps: true });
@@ -801,7 +801,7 @@ class ModelTool<
   };
 
   update = async (values: O, changes: Partial<I & A>) => {
-    if (!this._areValuesOk(values)) return this._handleInvalidData();
+    if (!areValuesOk(values)) return this._handleInvalidData();
 
     this._setValues(values, { allowVirtuals: false, allowTimestamps: true });
 
@@ -1116,7 +1116,7 @@ class ArchivedModel<
 > {
   constructor(private schema: ArchivedSchema<Input, Output, any, any>) {}
 
-  private _cleanValues = (values: Input = {} as Input, isCreation = true) => {
+  private _cleanValues = (values: Input, isCreation = true) => {
     const data = {} as Output;
 
     for (const prop of this.schema.props)
@@ -1129,7 +1129,12 @@ class ArchivedModel<
     return data;
   };
 
-  create = (values: Input = {} as Input) => {
+  private _handleInvalidData = () =>
+    new ErrorTool({ message: "Invalid Data" }).throw();
+
+  create = (values: Input) => {
+    if (!areValuesOk(values)) this._handleInvalidData();
+
     const data = this._cleanValues(values);
 
     const handleSuccess = async () => {
@@ -1145,7 +1150,7 @@ class ArchivedModel<
     return { data, handleSuccess };
   };
 
-  delete = async (values: Input = {} as Input) => {
+  delete = async (values: Input) => {
     const ctx = this._cleanValues(values, false);
 
     const handlers = toArray<ns.Handler<Output>>(
