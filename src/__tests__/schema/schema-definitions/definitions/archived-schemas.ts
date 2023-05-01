@@ -34,6 +34,15 @@ export const Test_ArchivedSchemas = ({ Schema }: any) => {
           })
           .getModel();
         const book = { id: 1, name: "Book name", price: 250 };
+        const invalidValues = [1, -1, 0, null, undefined, true, false];
+
+        it("should ignore invalid properties provided at creation", () => {
+          for (const values of invalidValues) {
+            const toFail = () => Model.create(values);
+
+            expectFailure(toFail, "Invalid Data");
+          }
+        });
 
         it("should create properly and all 'onSuccess' handlers should be triggered in the handle success method returned from the create method of the model", async () => {
           const { data, handleSuccess } = Model.create(book);
