@@ -971,6 +971,10 @@ class ArchivedSchema<
     this._setProperties(parentSchema);
   }
 
+  get archivedAt() {
+    return this._archivedAtKey as StringKey<Output>;
+  }
+
   get lifecycleHandelrs() {
     return this._lifecycleHandelrs;
   }
@@ -1112,11 +1116,15 @@ class ArchivedModel<
 > {
   constructor(private schema: ArchivedSchema<Input, Output, any, any>) {}
 
-  private _cleanValues = (values: Input = {} as Input) => {
+  private _cleanValues = (values: Input = {} as Input, isCreation = true) => {
     const data = {} as Output;
 
     for (const prop of this.schema.props)
       data[prop] = values?.[prop as unknown as StringKey<Input>] as any;
+
+    const archivedAt = this.schema.archivedAt;
+
+    if (isCreation && archivedAt) data[archivedAt] = new Date() as any;
 
     return data;
   };
@@ -1138,13 +1146,13 @@ class ArchivedModel<
   };
 
   delete = async (values: Input = {} as Input) => {
-    const data = this._cleanValues(values);
+    const ctx = this._cleanValues(values, false);
 
     const handlers = toArray<ns.Handler<Output>>(
       this.schema.lifecycleHandelrs?.["onDelete"] ?? []
     );
 
-    const operations = handlers.map(async (handler) => await handler(data));
+    const operations = handlers.map(async (handler) => await handler(ctx));
 
     await Promise.allSettled(operations);
   };
