@@ -54,11 +54,11 @@ export const Test_ArchivedSchemas = ({ Schema }: any) => {
         });
       });
 
-      describe("behaviour with archivedAr: true", () => {
+      describe("behaviour with archivedAt: true", () => {
         const Model = bookSchema
           .getArchivedSchema({
             archivedAt: true,
-            onDelete: (data: any) => (onDeleteValues = data),
+            onDelete: [(data: any) => (onDeleteValues = data)],
             onSuccess: (data: any) => (onSuccessValues = data),
           })
           .getModel();
@@ -82,6 +82,40 @@ export const Test_ArchivedSchemas = ({ Schema }: any) => {
 
           expect(onDeleteValues).toMatchObject(book);
           expect(onDeleteValues.archivedAt).toBeDefined();
+          expect(onSuccessValues).toEqual({});
+        });
+      });
+
+      describe("behaviour with archivedAt: string", () => {
+        const archivedAt = "deletedAt";
+
+        const Model = bookSchema
+          .getArchivedSchema({
+            archivedAt,
+            onDelete: (data: any) => (onDeleteValues = data),
+            onSuccess: [(data: any) => (onSuccessValues = data)],
+          })
+          .getModel();
+        const book = { id: 1, name: "Book name", price: 250 };
+
+        it("should create properly and all 'onSuccess' handlers should be triggered in the handle success method returned from the create method of the model", async () => {
+          const { data, handleSuccess } = Model.create(book);
+
+          await handleSuccess();
+
+          expect(data).toMatchObject(book);
+          expect(data[archivedAt]).toBeDefined();
+
+          expect(onDeleteValues).toEqual({});
+          expect(onSuccessValues).toMatchObject(book);
+          expect(onSuccessValues[archivedAt]).toBeDefined();
+        });
+
+        it("should invoke all 'onDelete' handlers properly", async () => {
+          await Model.delete({ ...book, [archivedAt]: new Date() });
+
+          expect(onDeleteValues).toMatchObject(book);
+          expect(onDeleteValues[archivedAt]).toBeDefined();
           expect(onSuccessValues).toEqual({});
         });
       });
