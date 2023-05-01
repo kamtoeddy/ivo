@@ -1,4 +1,8 @@
-import { expectFailure, expectNoFailure } from "../_utils";
+import {
+  expectFailure,
+  expectNoFailure,
+  expectPromiseFailure,
+} from "../_utils";
 
 export const Test_ArchivedSchemas = ({ Schema }: any) => {
   describe("Archived Schemas", () => {
@@ -36,11 +40,19 @@ export const Test_ArchivedSchemas = ({ Schema }: any) => {
         const book = { id: 1, name: "Book name", price: 250 };
         const invalidValues = [1, -1, 0, null, undefined, true, false];
 
-        it("should ignore invalid properties provided at creation", () => {
+        it("should reject invalid values provided at creation", () => {
           for (const values of invalidValues) {
             const toFail = () => Model.create(values);
 
             expectFailure(toFail, "Invalid Data");
+          }
+        });
+
+        it("should reject invalid values provided during deletion", () => {
+          for (const values of invalidValues) {
+            const toFail = () => Model.delete(values);
+
+            expectPromiseFailure(toFail, "Invalid Data");
           }
         });
 
