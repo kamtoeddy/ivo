@@ -1151,6 +1151,8 @@ class ArchivedModel<
   };
 
   delete = async (values: Input) => {
+    if (!areValuesOk(values)) this._handleInvalidData();
+
     const ctx = this._cleanValues(values, false);
 
     const handlers = toArray<ns.Handler<Output>>(
