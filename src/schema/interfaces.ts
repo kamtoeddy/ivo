@@ -21,12 +21,14 @@ type Context<I, O = I> = Readonly<Merge<I, O>>;
 
 type Summary<I, O = I> = (
   | Readonly<{
+      changes: undefined;
       context: Context<I, O>;
       operation: "creation";
       previousValues: undefined;
       values: Readonly<O>;
     }>
   | Readonly<{
+      changes: Partial<RealType<O>>;
       context: Context<I, O>;
       operation: "update";
       previousValues: Readonly<O>;

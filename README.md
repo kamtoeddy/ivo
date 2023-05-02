@@ -1,8 +1,10 @@
 # Foreword
 
-Clean-schema is a user story focused event-driven schema validator whose purpose is to help you ensure that the data going to your database is always consistent.
+Clean-schema is a user story focused utility that helps you build factory methods to manage entities and their values in your domain.
 
-It provides an interface for you to clearly define the behaviour of your entities and their properites at creation and during updates together with the flexibility of using the database of your choice.
+In short, it is a sophisticated event-driven schema validator which provides an interface for you to clearly define the behaviour of your entities and their properites at creation and during updates together.
+
+You can read more about the philosophy [here](./docs/philosophy.md)
 
 # Installation
 

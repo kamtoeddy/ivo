@@ -18,7 +18,11 @@
   ],
   "homepage": "https://github.com/kamtoeddy/clean-schema#readme",
   "keywords": [
-    "event-driven",
+    "Domain Driven Design",
+    "DDD",
+    "factory pattern",
+    "factories",
+    "entities",
     "schema",
     "schema definition",
     "schema validation"

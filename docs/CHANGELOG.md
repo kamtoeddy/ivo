@@ -2,7 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
-# v3.2.0 <small><sup>[x][x]-04-2023</sup></small>
+# v3.2.0<small><sup>[x][x]-05-2023</sup></small>
+
+- [Update] completed work on [`archived schemas`](./v3.2.0/schema/archived-schemas.md)
+
+# v3.2.0-beta.0 <small><sup>26-04-2023</sup></small>
 
 Breaking Changes
 

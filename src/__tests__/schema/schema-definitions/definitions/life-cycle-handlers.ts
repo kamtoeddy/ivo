@@ -411,11 +411,12 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
           required: true,
         });
 
-        const context = onSuccessValues.__ctx,
+        const changes = undefined,
+          context = onSuccessValues.__ctx,
           operation = "creation",
           previousValues = undefined,
           values = data,
-          summary = { context, operation, previousValues, values };
+          summary = { changes, context, operation, previousValues, values };
 
         expect(onSuccessValues).toMatchObject({
           dependent: summary,
@@ -448,11 +449,12 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
           required: true,
         });
 
-        const context = onSuccessValues.__ctx,
+        const changes = undefined,
+          context = onSuccessValues.__ctx,
           operation = "creation",
           previousValues = undefined,
           values = { ...initialData, ...data },
-          summary = { context, operation, previousValues, values };
+          summary = { changes, context, operation, previousValues, values };
 
         expect(onSuccessValues).toMatchObject({
           dependent: summary,
@@ -465,7 +467,7 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
 
       // updates
       it("should call onSuccess handlers during updates with lax props", async () => {
-        const { error, handleSuccess } = await Model.update(initialData, {
+        const { data, error, handleSuccess } = await Model.update(initialData, {
           lax: true,
         });
 
@@ -478,6 +480,7 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
 
         expect(onSuccessValues).toMatchObject({
           lax: expect.objectContaining({
+            changes: data,
             context: onSuccessValues.__ctx,
             operation,
             previousValues: initialData,
@@ -496,11 +499,12 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
         expect(error).toBeUndefined();
         expect(propChangeMap).toEqual({ dependent: true, readonlyLax: true });
 
-        const context = onSuccessValues.__ctx,
+        const changes = data,
+          context = onSuccessValues.__ctx,
           operation = "update",
           previousValues = initialData,
           values = { ...initialData, ...data },
-          summary = { context, operation, previousValues, values };
+          summary = { changes, context, operation, previousValues, values };
 
         expect(onSuccessValues).toMatchObject({
           dependent: summary,

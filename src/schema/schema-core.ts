@@ -984,9 +984,9 @@ export abstract class SchemaCore<I, O> {
     const { timestamps } = this._options,
       valid = false;
 
-    const ts_type = typeof timestamps;
+    const typeProveded = typeof timestamps;
 
-    if (ts_type === "boolean") return { valid: true };
+    if (typeProveded === "boolean") return { valid: true };
 
     if (!isObject(timestamps))
       return {
@@ -1002,12 +1002,11 @@ export abstract class SchemaCore<I, O> {
       updatedAt: "";
     };
 
-    const _props = this.props as string[];
+    const reservedKeys = [...this.props, ...this.virtuals] as string[];
 
-    for (const ts_key of [createdAt, updatedAt]) {
-      if (ts_key && _props?.includes(ts_key))
-        return { valid, reason: `'${ts_key}' already belongs to your schema` };
-    }
+    for (const key of [createdAt, updatedAt])
+      if (key && reservedKeys?.includes(key))
+        return { valid, reason: `'${key}' already belongs to your schema` };
 
     if (typeof createdAt == "string" && !createdAt.trim().length)
       return { valid, reason: "'createdAt' cannot be an empty string" };

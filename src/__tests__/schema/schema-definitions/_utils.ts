@@ -20,9 +20,10 @@ const expectNoFailure = (fx: Function) => {
   expect(fx).not.toThrow();
 };
 
-const getValidSchema = (extraDefinition = {}) => ({
+const getValidSchema = (extraDefinition = {}, extraProps = {}) => ({
   propertyName1: { default: "", validator, ...extraDefinition },
   propertyName2: { default: "", validator },
+  ...extraProps,
 });
 
 const makeFx =
