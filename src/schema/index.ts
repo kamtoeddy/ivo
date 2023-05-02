@@ -126,7 +126,8 @@ class ModelTool<
   }
 
   private _getSummary = (data: Partial<O>, isUpdate = false) => {
-    const context = this._getContext(),
+    const changes = isUpdate ? data : undefined,
+      context = this._getContext(),
       operation = isUpdate ? "update" : "creation",
       previousValues = isUpdate ? this._getFrozenCopy(this.values) : undefined,
       values = this._getFrozenCopy(
@@ -134,6 +135,7 @@ class ModelTool<
       );
 
     return this._getFrozenCopy({
+      changes,
       context,
       operation,
       previousValues,
