@@ -33,12 +33,14 @@ type ISummary = Summary<Input, Output>;
 // 👇 this is what `Summary` looks like
 type S =
   | Readonly<{
+      changes: undefined;
       context: IContext;
       operation: "creation";
       previousValues: undefined;
       values: Readonly<Output>;
     }>
   | Readonly<{
+      changes: Partial<Readonly<Output>>;
       context: IContext;
       operation: "update";
       previousValues: Readonly<Output>;
