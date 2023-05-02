@@ -49,6 +49,7 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
 
           const values = { id: 1, name: "Book name", price: 100 };
           const summary = {
+            changes: undefined,
             context: { ...values, _setPrice: 100 },
             operation: "creation",
             previousValues: undefined,
@@ -76,6 +77,7 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
           await handleSuccess();
 
           const summary = {
+            changes: undefined,
             context: { ...book, _setPrice: 100 },
             operation: "creation",
             previousValues: undefined,
@@ -104,6 +106,7 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
           const values = { ...book, price: 200 };
 
           const summary = {
+            changes: data,
             context: { ...values, _setPrice: 200 },
             operation: "update",
             previousValues: book,
@@ -145,6 +148,7 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
 
           const values = { id: 1, name: "Book name", price: 100 };
           const summary = {
+            changes: undefined,
             context: { ...values, _setPrice: 100 },
             operation: "creation",
             previousValues: undefined,
@@ -169,6 +173,7 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
           await handleSuccess();
 
           const summary = {
+            changes: undefined,
             context: { ...book, _setPrice: 100 },
             operation: "creation",
             previousValues: undefined,
@@ -194,6 +199,7 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
           const values = { ...book, price: 200 };
 
           const summary = {
+            changes: data,
             context: { ...values, _setPrice: 200 },
             operation: "update",
             previousValues: book,
