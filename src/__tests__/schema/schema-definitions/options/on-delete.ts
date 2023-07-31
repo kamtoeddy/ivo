@@ -2,51 +2,51 @@ import {
   expectFailure,
   expectNoFailure,
   getValidSchema,
-  validator,
-} from "../_utils";
+  validator
+} from '../_utils'
 
 export const Test_SchemaOnDelete = ({ Schema, fx }: any) => {
-  describe("Schema.options.onDelete", () => {
-    describe("behaviour", () => {
-      const values = { id: 1, name: "Book name", price: 100 };
-      let deletedValues: any = {};
+  describe('Schema.options.onDelete', () => {
+    describe('behaviour', () => {
+      const values = { id: 1, name: 'Book name', price: 100 }
+      let deletedValues: any = {}
 
-      function onDelete_(prop = "") {
-        return (values: any) => (deletedValues[prop] = values);
+      function onDelete_(prop = '') {
+        return (values: any) => (deletedValues[prop] = values)
       }
 
-      beforeEach(() => (deletedValues = {}));
+      beforeEach(() => (deletedValues = {}))
 
-      describe("behaviour with other delete handlers", () => {
+      describe('behaviour with other delete handlers', () => {
         const Book = new Schema(
           {
-            id: { constant: true, value: 1, onDelete: onDelete_("id") },
-            name: { required: true, validator, onDelete: onDelete_("name") },
+            id: { constant: true, value: 1, onDelete: onDelete_('id') },
+            name: { required: true, validator, onDelete: onDelete_('name') },
             price: {
               default: null,
               dependent: true,
-              dependsOn: "_setPrice",
+              dependsOn: '_setPrice',
               resolver: ({ context }: any) => context._setPrice,
-              onDelete: onDelete_("price"),
+              onDelete: onDelete_('price')
             },
-            _setPrice: { virtual: true, validator },
+            _setPrice: { virtual: true, validator }
           },
-          { onDelete: onDelete_("global") }
-        ).getModel();
+          { onDelete: onDelete_('global') }
+        ).getModel()
 
         it("should trigger all 'delete' handlers on properties an global handlers", async () => {
-          await Book.delete(values);
+          await Book.delete(values)
 
           expect(deletedValues).toEqual({
             id: values,
             name: values,
             price: values,
-            global: values,
-          });
-        });
-      });
+            global: values
+          })
+        })
+      })
 
-      describe("behaviour without other delete handlers", () => {
+      describe('behaviour without other delete handlers', () => {
         const Book = new Schema(
           {
             id: { constant: true, value: 1 },
@@ -54,37 +54,37 @@ export const Test_SchemaOnDelete = ({ Schema, fx }: any) => {
             price: {
               default: null,
               dependent: true,
-              dependsOn: "_setPrice",
-              resolver: ({ context }: any) => context._setPrice,
+              dependsOn: '_setPrice',
+              resolver: ({ context }: any) => context._setPrice
             },
-            _setPrice: { virtual: true, validator },
+            _setPrice: { virtual: true, validator }
           },
-          { onDelete: [onDelete_("global"), onDelete_("global-1")] }
-        ).getModel();
+          { onDelete: [onDelete_('global'), onDelete_('global-1')] }
+        ).getModel()
 
         it("should trigger all global 'delete' handlers", async () => {
-          await Book.delete(values);
+          await Book.delete(values)
 
-          expect(deletedValues).toEqual({ global: values, "global-1": values });
-        });
-      });
-    });
+          expect(deletedValues).toEqual({ global: values, 'global-1': values })
+        })
+      })
+    })
 
-    describe("valid", () => {
+    describe('valid', () => {
       it("should allow 'onDelete' as (() => any) | ((() => any)[])", () => {
-        const values = [() => {}, [() => {}]];
+        const values = [() => {}, [() => {}]]
 
         for (const onDelete of values) {
-          const toPass = fx(getValidSchema(), { onDelete });
+          const toPass = fx(getValidSchema(), { onDelete })
 
-          expectNoFailure(toPass);
+          expectNoFailure(toPass)
 
-          toPass();
+          toPass()
         }
-      });
-    });
+      })
+    })
 
-    describe("invalid", () => {
+    describe('invalid', () => {
       it("should reject 'onDelete' other than (() => any) | ((() => any)[])", () => {
         const invalidValues = [
           1,
@@ -92,32 +92,32 @@ export const Test_SchemaOnDelete = ({ Schema, fx }: any) => {
           -14,
           true,
           false,
-          "invalid",
-          "",
+          'invalid',
+          '',
           null,
-          undefined,
-        ];
+          undefined
+        ]
 
         for (const onDelete of invalidValues) {
-          const toFail = fx(getValidSchema(), { onDelete });
+          const toFail = fx(getValidSchema(), { onDelete })
 
-          expectFailure(toFail);
+          expectFailure(toFail)
 
           try {
-            toFail();
+            toFail()
           } catch (err: any) {
             expect(err).toMatchObject({
-              message: "Invalid Schema",
+              message: 'Invalid Schema',
               payload: {
                 onDelete: expect.arrayContaining([
-                  "The 'onDelete' handler @[0] is not a function",
-                ]),
+                  "The 'onDelete' handler @[0] is not a function"
+                ])
               },
-              statusCode: 500,
-            });
+              statusCode: 500
+            })
           }
         }
-      });
-    });
-  });
-};
+      })
+    })
+  })
+}

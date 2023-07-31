@@ -1,16 +1,16 @@
-import { Schema } from "./schema";
+import { Schema } from './schema'
 
-export default Schema;
+export default Schema
 
-export { isEqual } from "./utils/isEqual.js";
-export { Schema } from "./schema";
-export * as validate from "./validate";
+export { isEqual } from './utils/isEqual.js'
+export { Schema } from './schema'
+export * as validate from './validate'
 
 // types & interfaces
 export type {
   Context,
   Summary,
   ISchema,
-  ValidatorResponse,
-} from "./schema/interfaces";
-export * from "./utils/interfaces";
+  ValidatorResponse
+} from './schema/interfaces'
+export * from './utils/interfaces'

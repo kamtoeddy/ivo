@@ -1,4 +1,4 @@
-import { isStringOk } from "../../../validate";
-import { isStringOkTest } from ".";
+import { isStringOk } from '../../../validate'
+import { isStringOkTest } from '.'
 
-isStringOkTest({ isStringOk });
+isStringOkTest({ isStringOk })

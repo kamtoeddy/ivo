@@ -1,49 +1,49 @@
-import { ResponseInput_ } from "../schema/interfaces";
-import { makeResponse } from "../schema/utils";
-import { NumberRangeType } from "../utils/interfaces";
+import { ResponseInput_ } from '../schema/interfaces'
+import { makeResponse } from '../schema/utils'
+import { NumberRangeType } from '../utils/interfaces'
 
-export type RangeType = undefined | NumberRangeType;
+export type RangeType = undefined | NumberRangeType
 
 function isInRange(
   value: number,
   range: NumberRangeType
 ): ResponseInput_<any, any, number> {
-  const { bounds, inclusiveBottom, inclusiveTop } = range;
-  const [min, max] = bounds;
+  const { bounds, inclusiveBottom, inclusiveTop } = range
+  const [min, max] = bounds
 
   if ((inclusiveBottom && value < min) || (!inclusiveBottom && value <= min))
-    return { reason: "Too small", valid: false };
+    return { reason: 'Too small', valid: false }
 
   if ((inclusiveTop && value > max) || (!inclusiveTop && value >= max))
-    return { reason: "Too large", valid: false };
+    return { reason: 'Too large', valid: false }
 
-  return { valid: true, validated: value };
+  return { valid: true, validated: value }
 }
 
 function makeRage(range: RangeType): RangeType {
-  if (!range?.bounds) return undefined;
+  if (!range?.bounds) return undefined
 
-  const { inclusiveBottom, inclusiveTop } = range;
+  const { inclusiveBottom, inclusiveTop } = range
 
-  if (typeof inclusiveBottom !== "boolean") range.inclusiveBottom = true;
-  if (typeof inclusiveTop !== "boolean") range.inclusiveTop = true;
+  if (typeof inclusiveBottom !== 'boolean') range.inclusiveBottom = true
+  if (typeof inclusiveTop !== 'boolean') range.inclusiveTop = true
 
-  return range;
+  return range
 }
 
 export function isNumberOk(num: any, { range }: { range?: RangeType } = {}) {
-  if (!["number", "string"].includes(typeof num) || isNaN(num))
-    return makeResponse({ reason: "Expected a number", valid: false });
+  if (!['number', 'string'].includes(typeof num) || isNaN(num))
+    return makeResponse({ reason: 'Expected a number', valid: false })
 
-  num = Number(num);
+  num = Number(num)
 
-  range = makeRage(range);
+  range = makeRage(range)
 
   if (range) {
-    const _isInRange = isInRange(num, range);
+    const _isInRange = isInRange(num, range)
 
-    if (!_isInRange.valid) return makeResponse(_isInRange);
+    if (!_isInRange.valid) return makeResponse(_isInRange)
   }
 
-  return makeResponse<number>({ valid: true, validated: num });
+  return makeResponse<number>({ valid: true, validated: num })
 }

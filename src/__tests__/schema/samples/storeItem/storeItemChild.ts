@@ -1,13 +1,13 @@
-import { storeItemSchema } from ".";
-import { validateString } from "./validators";
+import { storeItemSchema } from '.'
+import { validateString } from './validators'
 
 const storeItemChildSchema = storeItemSchema.extend(
   {
-    childID: { readonly: true, validator: validateString("Invalid child id") },
+    childID: { readonly: true, validator: validateString('Invalid child id') }
   },
-  { errors: "throw", timestamps: true }
-);
+  { errors: 'throw', timestamps: true }
+)
 
-const StoreItemChild = storeItemChildSchema.getModel();
+const StoreItemChild = storeItemChildSchema.getModel()
 
-export { StoreItemChild };
+export { StoreItemChild }

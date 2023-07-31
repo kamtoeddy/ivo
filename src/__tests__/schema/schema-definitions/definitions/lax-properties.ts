@@ -1,47 +1,47 @@
-import { expectFailure, expectNoFailure } from "../_utils";
+import { expectFailure, expectNoFailure } from '../_utils'
 
 export const Test_LaxProperties = ({ fx }: any) => {
-  describe("lax props", () => {
-    describe("valid", () => {
-      it("should allow default alone", () => {
-        const toPass = fx({ propertyName: { default: "" } });
+  describe('lax props', () => {
+    describe('valid', () => {
+      it('should allow default alone', () => {
+        const toPass = fx({ propertyName: { default: '' } })
 
-        expectNoFailure(toPass);
+        expectNoFailure(toPass)
 
-        toPass();
-      });
+        toPass()
+      })
 
-      it("should allow default + validator", () => {
+      it('should allow default + validator', () => {
         const toPass = fx({
-          propertyName: { default: "", validator: () => ({ valid: true }) },
-        });
+          propertyName: { default: '', validator: () => ({ valid: true }) }
+        })
 
-        expectNoFailure(toPass);
+        expectNoFailure(toPass)
 
-        toPass();
-      });
-    });
+        toPass()
+      })
+    })
 
-    describe("invalid", () => {
-      it("should reject no default", () => {
+    describe('invalid', () => {
+      it('should reject no default', () => {
         const toFail = fx({
-          propertyName: { validator: () => ({ valid: true }) },
-        });
+          propertyName: { validator: () => ({ valid: true }) }
+        })
 
-        expectFailure(toFail);
+        expectFailure(toFail)
 
         try {
-          toFail();
+          toFail()
         } catch (err: any) {
           expect(err.payload).toEqual(
             expect.objectContaining({
               propertyName: expect.arrayContaining([
-                "A property should at least be readonly, required, or have a default value",
-              ]),
+                'A property should at least be readonly, required, or have a default value'
+              ])
             })
-          );
+          )
         }
-      });
-    });
-  });
-};
+      })
+    })
+  })
+}
