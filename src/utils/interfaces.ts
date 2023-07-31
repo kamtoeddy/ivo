@@ -13,14 +13,20 @@ export type PayloadKey = number | string
 export type ErrorPayload = Record<PayloadKey, string[]>
 export type InputPayload = Record<PayloadKey, string | string[]>
 
+export type SchemaErrorMessage =
+  | 'Invalid Data'
+  | 'Invalid Schema'
+  | 'Nothing to update'
+  | 'Validation Error'
+
 export interface SchemaErrorProps {
-  message: string
+  message: SchemaErrorMessage
   payload?: ErrorPayload
   statusCode?: number
 }
 
 export interface ErrorToolProps {
-  message: string
+  message: SchemaErrorMessage
   payload?: InputPayload
   statusCode?: number
 }
