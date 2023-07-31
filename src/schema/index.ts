@@ -1,7 +1,5 @@
 import {
   getKeysAsProps,
-  isFunction,
-  isObject,
   isPropertyOn,
   sort,
   sortKeys,
@@ -9,7 +7,6 @@ import {
 } from '../utils/functions'
 import { isEqual } from '../utils/isEqual'
 import {
-  ALLOWED_ARCHIVED_OPTIONS,
   Context,
   InternalValidatorResponse,
   ISchema as ns,
@@ -32,11 +29,6 @@ const validationFailedResponse = {
 }
 
 const areValuesOk = (values: any) => values && typeof values == 'object'
-
-const archivedOptionsLifecycleRules = [
-  'onDelete',
-  'onSuccess'
-] as (keyof ns.ArchivedOptions<any>)[]
 
 class Schema<
   I extends RealType<I>,
@@ -107,11 +99,6 @@ class Schema<
       options as ns.Options<RealType<Input>, RealType<Output>>
     )
   }
-
-  getArchivedSchema = <T extends RealType<T> = O, U extends RealType<U> = T>(
-    options?: ns.ArchivedOptions<U>
-  ): ArchivedSchema<T, U, I, O> =>
-    new ArchivedSchema<T, U, I, O>(this as Schema<I, O>, options)
 
   getModel = () => new Model(new ModelTool<I, O, A>(this))
 }
@@ -945,222 +932,5 @@ class Model<I extends RealType<I>, O extends RealType<O> = I, A = {}> {
     } as unknown as Summary<I, O>
 
     return this.modelTool._validate(prop, value, summary)
-  }
-}
-
-class ArchivedSchema<
-  Input extends RealType<Input>,
-  Output extends RealType<Output>,
-  Ip extends RealType<Ip>,
-  Op extends RealType<Op>
-> {
-  private _props: StringKey<Output>[] = []
-  private _options: ns.ArchivedOptions<Output> = {}
-  private _archivedAtKey = ''
-  private _lifecycleHandelrs = {} as Record<
-    keyof ns.ArchivedOptions<Output>,
-    ns.Handler<Output>[]
-  >
-
-  constructor(
-    parentSchema: Schema<Ip, Op>,
-    options?: ns.ArchivedOptions<Output>
-  ) {
-    this._validateOptions(parentSchema, options)
-
-    this._setProperties(parentSchema)
-  }
-
-  get archivedAt() {
-    return this._archivedAtKey as StringKey<Output>
-  }
-
-  get lifecycleHandelrs() {
-    return this._lifecycleHandelrs
-  }
-
-  get options() {
-    return this._options
-  }
-
-  get props() {
-    const props = [...this._props]
-
-    if (this._archivedAtKey)
-      props.push(this._archivedAtKey as StringKey<Output>)
-
-    return sort(props)
-  }
-
-  private _setProperties(parentSchema: Schema<Ip, Op>) {
-    const parentProps = getKeysAsProps(parentSchema.definitions)
-
-    for (const prop of parentProps) {
-      const definition = parentSchema.definitions[prop]
-
-      if (isPropertyOn('virtual', definition)) continue
-
-      this._props.push(prop as unknown as StringKey<Output>)
-    }
-  }
-
-  private _validateArchivedAtKey(
-    parentSchema: Schema<Ip, Op>,
-    options: ns.ArchivedOptions<Output>
-  ) {
-    const error = new ErrorTool({
-      message: 'Invalid Archived Schema',
-      statusCode: 500
-    })
-
-    let archivedAtKey = options.archivedAt!
-
-    if (!isPropertyOn('archivedAt', options)) {
-      this._archivedAtKey = ''
-
-      return
-    }
-
-    const typeProvided: boolean | string = typeof archivedAtKey
-
-    const isBoolean = typeProvided == 'boolean'
-    const isString = typeProvided == 'string'
-
-    if (!isBoolean && !isString)
-      error
-        .add('options', "'archivedAt' should be of type boolean | string")
-        .throw()
-
-    if (isBoolean)
-      return (this._archivedAtKey = archivedAtKey ? 'archivedAt' : '')
-
-    archivedAtKey = (archivedAtKey as string).trim()
-
-    if (!archivedAtKey.length)
-      error.add('options', "'archivedAt' cannot be an empty string").throw()
-
-    if (parentSchema.reservedKeys.includes(archivedAtKey))
-      error
-        .add(
-          'options',
-          `'${archivedAtKey}' is a reserved property on your parent schema`
-        )
-        .throw()
-
-    this._archivedAtKey = archivedAtKey as string
-  }
-
-  private _validateHandlers(options: ns.ArchivedOptions<Output>) {
-    const error = new ErrorTool({
-      message: 'Invalid Archived Schema',
-      statusCode: 500
-    })
-
-    for (const rule of archivedOptionsLifecycleRules) {
-      if (!isPropertyOn(rule, options)) continue
-
-      const handlers = toArray(options[rule])
-
-      handlers.forEach((handler, i) => {
-        if (!isFunction(handler))
-          error.add(
-            'options',
-            `The '${rule}' handler @[${i}] is not a function`
-          )
-      })
-
-      if (error.isPayloadLoaded) error.throw()
-
-      this._lifecycleHandelrs[rule] = handlers as ns.Handler<Output>[]
-    }
-  }
-
-  private _validateOptions(
-    parentSchema: Schema<Ip, Op>,
-    options?: ns.ArchivedOptions<Output>
-  ) {
-    const error = new ErrorTool({
-      message: 'Invalid Archived Schema',
-      statusCode: 500
-    })
-
-    if (!isEqual(options, undefined) && !isObject(options))
-      error.add('options', 'expected an object').throw()
-
-    if (!options) options = {}
-
-    const optionsProvided = Object.keys(options)
-
-    optionsProvided.forEach((option) => {
-      if (!ALLOWED_ARCHIVED_OPTIONS.includes(option as any))
-        error.add('options', `'${option}' is not a valid archived option`)
-    })
-
-    if (error.isPayloadLoaded) error.throw()
-
-    this._validateArchivedAtKey(parentSchema, options)
-
-    this._validateHandlers(options)
-  }
-
-  getModel = (): ArchivedModel<Input, Output> => {
-    return new ArchivedModel<Input, Output>(
-      this as ArchivedSchema<Input, Output, Ip, Op>
-    )
-  }
-}
-
-class ArchivedModel<
-  Input extends RealType<Input>,
-  Output extends RealType<Output>
-> {
-  constructor(private schema: ArchivedSchema<Input, Output, any, any>) {}
-
-  private _cleanValues = (values: Input, isCreation = true) => {
-    const data = {} as Output
-
-    for (const prop of this.schema.props)
-      data[prop] = values?.[prop as unknown as StringKey<Input>] as any
-
-    const archivedAt = this.schema.archivedAt
-
-    if (isCreation && archivedAt) data[archivedAt] = new Date() as any
-
-    return data
-  }
-
-  private _handleInvalidData = () =>
-    new ErrorTool({ message: 'Invalid Data' }).throw()
-
-  create = (values: Input) => {
-    if (!areValuesOk(values)) this._handleInvalidData()
-
-    const data = this._cleanValues(values)
-
-    const handleSuccess = async () => {
-      const handlers = toArray<ns.Handler<Output>>(
-        this.schema.lifecycleHandelrs?.['onSuccess'] ?? []
-      )
-
-      const operations = handlers.map(async (handler) => await handler(data))
-
-      await Promise.allSettled(operations)
-    }
-
-    return { data, handleSuccess }
-  }
-
-  delete = async (values: Input) => {
-    if (!areValuesOk(values)) this._handleInvalidData()
-
-    const ctx = this._cleanValues(values, false)
-
-    const handlers = toArray<ns.Handler<Output>>(
-      this.schema.lifecycleHandelrs?.['onDelete'] ?? []
-    )
-
-    const operations = handlers.map(async (handler) => await handler(ctx))
-
-    await Promise.allSettled(operations)
   }
 }

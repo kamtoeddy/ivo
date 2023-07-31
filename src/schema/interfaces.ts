@@ -201,11 +201,7 @@ namespace Schema {
     reset?: StringKey<T> | StringKey<T>[]
   }
 
-  export type ArchivedOptions<O> = {
-    archivedAt?: boolean | string
-    onDelete?: Handler<O> | NonEmptyArray<Handler<O>>
-    onSuccess?: Handler<O> | NonEmptyArray<Handler<O>>
-  }
+
 
   export type Options<I, O> = {
     errors?: 'silent' | 'throw'
@@ -216,7 +212,6 @@ namespace Schema {
       | { createdAt?: boolean | string; updatedAt?: boolean | string }
   }
 
-  export type ArchivedOptionsKey<O> = StringKey<ArchivedOptions<O>>
 
   export type OptionsKey<I, O> = StringKey<Options<I, O>>
 
@@ -287,11 +282,6 @@ const DEFINITION_RULES = [
 
 type DefinitionRule = (typeof DEFINITION_RULES)[number]
 
-const ALLOWED_ARCHIVED_OPTIONS: Schema.ArchivedOptionsKey<any>[] = [
-  'archivedAt',
-  'onDelete',
-  'onSuccess'
-]
 
 const ALLOWED_OPTIONS: Schema.OptionsKey<any, any>[] = [
   'errors',
@@ -313,7 +303,6 @@ const VIRTUAL_RULES = [
 ]
 
 export {
-  ALLOWED_ARCHIVED_OPTIONS,
   ALLOWED_OPTIONS,
   CONSTANT_RULES,
   DEFINITION_RULES,

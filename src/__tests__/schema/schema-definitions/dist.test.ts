@@ -1,7 +1,6 @@
 import { Schema } from '../../../../dist'
 import { makeFx } from './_utils'
 
-import { Test_ArchivedSchemas } from './definitions/archived-schemas'
 import { Test_BasicDefinitions } from './definitions/basic'
 import { Test_ConstantProperties } from './definitions/constant-properties'
 import { Test_DependentProperties } from './definitions/dependent-properties'
@@ -20,8 +19,6 @@ import { Test_SchemaOnSuccess } from './options/on-success'
 import { Test_SchemaOnDelete } from './options/on-delete'
 
 const fx = makeFx(Schema)
-
-Test_ArchivedSchemas({ Schema })
 
 Test_BasicDefinitions({ fx })
 
