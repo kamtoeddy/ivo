@@ -1,1 +1,0 @@
-This is an extension of DDD (domain driven design)

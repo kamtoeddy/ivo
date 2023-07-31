@@ -201,8 +201,6 @@ namespace Schema {
     reset?: StringKey<T> | StringKey<T>[]
   }
 
-
-
   export type Options<I, O> = {
     errors?: 'silent' | 'throw'
     onDelete?: Handler<O> | NonEmptyArray<Handler<O>>
@@ -211,7 +209,6 @@ namespace Schema {
       | boolean
       | { createdAt?: boolean | string; updatedAt?: boolean | string }
   }
-
 
   export type OptionsKey<I, O> = StringKey<Options<I, O>>
 
@@ -282,7 +279,6 @@ const DEFINITION_RULES = [
 
 type DefinitionRule = (typeof DEFINITION_RULES)[number]
 
-
 const ALLOWED_OPTIONS: Schema.OptionsKey<any, any>[] = [
   'errors',
   'onDelete',
@@ -302,9 +298,4 @@ const VIRTUAL_RULES = [
   'virtual'
 ]
 
-export {
-  ALLOWED_OPTIONS,
-  CONSTANT_RULES,
-  DEFINITION_RULES,
-  VIRTUAL_RULES
-}
+export { ALLOWED_OPTIONS, CONSTANT_RULES, DEFINITION_RULES, VIRTUAL_RULES }
