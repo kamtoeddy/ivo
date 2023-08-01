@@ -679,7 +679,7 @@ class ModelTool<
     }
   }
 
-  create = async (values: Partial<I & A>) => {
+  create = async (values: Partial<I & A> = {}) => {
     if (!areValuesOk(values)) return this._handleInvalidData()
 
     this._setValues(values)

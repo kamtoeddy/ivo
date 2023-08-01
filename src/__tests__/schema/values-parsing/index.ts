@@ -14,7 +14,7 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
       statusCode: 400
     }
     const validData = { age: 15, name: 'Frank' }
-    const invalidData = [1, -10, 0, false, true, '', 'true', undefined, null]
+    const invalidData = [1, -10, 0, false, true, '', 'true', null]
 
     describe('with silent errors', () => {
       let User: any
@@ -36,6 +36,14 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
           expect(error).toBe(null)
 
           expect(data).toEqual(cloned)
+        })
+
+        it('should allow for create method of model to be empty', async () => {
+          const { data, error } = await User.create()
+
+          expect(error).toBe(null)
+
+          expect(data).toEqual({ age: 10, id: 1, name: '' })
         })
 
         it('should set values properly at creation', async () => {
