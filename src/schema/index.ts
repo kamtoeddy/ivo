@@ -244,6 +244,14 @@ class ModelTool<
     return [true, sanitizer]
   }
 
+  private _isGloballyUpdatable = (changes: any) => {
+    const { shouldUpdate = defaultOptions.shouldUpdate! } = this._options
+
+    if (typeof shouldUpdate == 'boolean') return shouldUpdate
+
+    return shouldUpdate(this._getSummary(changes, true))
+  }
+
   private _isUpdatable = (prop: string, value?: any) => {
     const isAlias = this._isVirtualAlias(prop),
       isVirtual = this._isVirtual(prop)
@@ -793,6 +801,10 @@ class ModelTool<
     this._setValues(values, { allowVirtuals: false, allowTimestamps: true })
 
     const validationError = new ErrorTool({ message: 'Validation Error' })
+
+    if (!this._isGloballyUpdatable(changes as any))
+      return this._handleError(validationError.setMessage('Nothing to update'))
+
     let updates = {} as Partial<O>
 
     const toUpdate = getKeysAsProps(changes ?? {}).filter((prop) =>

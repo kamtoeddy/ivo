@@ -27,6 +27,7 @@ import { ErrorTool } from './utils/schema-error'
 
 export const defaultOptions = {
   errors: 'silent',
+  shouldUpdate: true,
   timestamps: false
 } as ns.Options<any, any>
 
@@ -255,6 +256,18 @@ export abstract class SchemaCore<I, O> {
       )
 
       if (!isValid.valid) error.add('onSuccess', isValid.reasons!).throw()
+    }
+
+    if (isPropertyOn('shouldUpdate', this._options)) {
+      const typeProvided = typeof this._options.shouldUpdate
+
+      if (!['boolean', 'function'].includes(typeProvided))
+        error
+          .add(
+            'shouldUpdate',
+            "'shouldUpdate' should either be a 'boolean' or a 'function'"
+          )
+          .throw()
     }
 
     if (isPropertyOn('timestamps', this._options)) {

@@ -17,6 +17,7 @@ import { Test_SchemaTimestampOption } from './options/timestamps'
 import { Test_Validators } from './validators'
 import { Test_SchemaOnSuccess } from './options/on-success'
 import { Test_SchemaOnDelete } from './options/on-delete'
+import { Test_SchemaShouldUpdateOption } from './options/should-update'
 
 const fx = makeFx(Schema)
 
@@ -39,4 +40,5 @@ Test_SchemaErrors({ Schema, fx })
 Test_SchemaOnDelete({ Schema, fx })
 Test_SchemaOnSuccess({ Schema, fx })
 Test_SchemaOptionFormat({ fx })
+Test_SchemaShouldUpdateOption({ Schema, fx })
 Test_SchemaTimestampOption({ Schema, fx })

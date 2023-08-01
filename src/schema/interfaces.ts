@@ -39,6 +39,7 @@ type Summary<I, O = I> = (
 type TypeOf<T> = Exclude<T, undefined>
 
 type BooleanSetter<I, O> = (context: Context<I, O>) => boolean
+type BooleanSetterWithSummary<I, O> = (summary: Summary<I, O> & {}) => boolean
 
 type DefaultSetter<K extends keyof (I & O), I, O> = (
   context: Context<I, O>
@@ -205,6 +206,7 @@ namespace Schema {
     errors?: 'silent' | 'throw'
     onDelete?: Handler<O> | NonEmptyArray<Handler<O>>
     onSuccess?: SuccessHandler<I, O> | NonEmptyArray<SuccessHandler<I, O>>
+    shouldUpdate?: boolean | BooleanSetterWithSummary<I, O>
     timestamps?:
       | boolean
       | { createdAt?: boolean | string; updatedAt?: boolean | string }
@@ -283,6 +285,7 @@ const ALLOWED_OPTIONS: Schema.OptionsKey<any, any>[] = [
   'errors',
   'onDelete',
   'onSuccess',
+  'shouldUpdate',
   'timestamps'
 ]
 const CONSTANT_RULES = ['constant', 'onDelete', 'onSuccess', 'value']
