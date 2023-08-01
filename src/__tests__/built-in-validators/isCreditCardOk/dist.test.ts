@@ -1,4 +1,4 @@
-import { isCreditCardOk } from "../../../../dist/validate";
-import { isCreditCardOkTest } from ".";
+import { isCreditCardOk } from '../../../../dist/validate'
+import { isCreditCardOkTest } from '.'
 
-isCreditCardOkTest({ isCreditCardOk });
+isCreditCardOkTest({ isCreditCardOk })

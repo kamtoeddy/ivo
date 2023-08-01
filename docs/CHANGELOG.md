@@ -2,7 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
-# v3.2.0<small><sup>[x][x]-05-2023</sup></small>
+# v3.3.0 <small><sup>01-08-2023</sup></small>
+
+- [Add] added support for [`global shouldUpdate`](./v3.3.0/schema/definition/index.md#shouldupdate) rule
+- [Update] the create, clone and update methods of models now return `null` instead of `undefined`
+- [Update] made sure that the various messages of the Schema error are properly typed
+- [Update] updated signature of `operation summary` so it holds `null` for instead of `undefined` at creation. [see more](./v3.3.0/schema/definition/life-cycles.md#the-operation-summary)
+- [Remove] removed archived schemas
+
+# v3.2.0 <small><sup>02-05-2023</sup></small>
 
 - [Update] completed work on [`archived schemas`](./v3.2.0/schema/archived-schemas.md)
 

@@ -17,16 +17,6 @@
     "dist/**/*"
   ],
   "homepage": "https://github.com/kamtoeddy/clean-schema#readme",
-  "keywords": [
-    "Domain Driven Design",
-    "DDD",
-    "factory pattern",
-    "factories",
-    "entities",
-    "schema",
-    "schema definition",
-    "schema validation"
-  ],
   "jest": {
     "preset": "ts-jest",
     "testEnvironment": "node",
@@ -57,5 +47,5 @@
     "prepare": "npm run clean-up && npm run build"
   },
   "types": "dist/index.d.ts",
-  "version": "3.2.1"
+  "version": "3.3.0"
 }

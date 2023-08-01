@@ -18,13 +18,13 @@ const userSchema = new Schema<I, O>(definitions, options)
 import { Schema } from 'clean-schema'
 
 type UserDTO = {
-  dob?: Date | null
+  dob: Date | null
   firstName: string
   lastName: string
 }
 
 type UserType = {
-  dob?: Date | null
+  dob: Date | null
   firstName: string
   lastName: string
   fullName: string
@@ -103,6 +103,7 @@ type SchemaOptions = {
   errors?: 'silent' | 'throw'
   onDelete?: DeleteListener | [DeleteListener]
   onSuccess?: SuccessListener | [SuccessListener]
+  shouldUpdate?: boolean | (summary: ISummary) => boolean
   timestamps?: boolean | Timestamp
 }
 
@@ -120,8 +121,14 @@ This option is to specify the way the errors should be treated. If set to `silen
 This is the structure of the error returned or thrown
 
 ```ts
+type SchemaErrorMessage =
+  | 'Invalid Data'
+  | 'Invalid Schema'
+  | 'Nothing to update'
+  | 'Validation Error'
+
 type SchemaError = {
-  message: string // e.g. Validation Error
+  message: SchemaErrorMessage
   payload: {
     [key: string]: string[] // e.g. name: ["Invalid name", "too long"]
   }
@@ -136,6 +143,12 @@ This could be a function or an array of functions with the `DeleteListener` sign
 ## onSuccess
 
 This could be a function or an array of functions with the `SuccessListener` signature above. These functions would be triggered together with the onSuccess listeners of individual properties when the handleSuccess method is invoked at creation & during updates of any property. See more [here](./life-cycles.md#onsuccess)
+
+## shouldUpdate
+
+A boolean or a function that expects the operation's summary and returns a boolean value. This value is read/computed before the values provided during updates have been validated.
+
+If it's value or computed value if true, validations for updates will proceed else, the operation will fail with error message `Nothing to update`
 
 ## timestamps
 

@@ -1,387 +1,383 @@
-import {
-  expectFailure,
-  expectNoFailure,
-  expectPromiseFailure,
-} from "../_utils";
+import { expectFailure, expectNoFailure, expectPromiseFailure } from '../_utils'
 
 export const Test_ArchivedSchemas = ({ Schema }: any) => {
-  describe("Archived Schemas", () => {
+  describe('Archived Schemas', () => {
     const bookSchema = new Schema(
       {
         id: { constant: true, value: 1 },
-        name: { default: "" },
+        name: { default: '' },
         price: {
           default: 0,
           dependent: true,
-          dependsOn: "_price",
-          resolver: () => 100,
+          dependsOn: '_price',
+          resolver: () => 100
         },
-        _price: { virtual: true, validator: () => true },
+        _price: { virtual: true, validator: () => true }
       },
       { timestamps: true }
-    );
+    )
 
-    describe("behaviour", () => {
-      let onDeleteValues: any = {};
-      let onSuccessValues: any = {};
+    describe('behaviour', () => {
+      let onDeleteValues: any = {}
+      let onSuccessValues: any = {}
 
       beforeEach(() => {
-        onDeleteValues = {};
-        onSuccessValues = {};
-      });
+        onDeleteValues = {}
+        onSuccessValues = {}
+      })
 
-      describe("behaviour with simple configuration", () => {
+      describe('behaviour with simple configuration', () => {
         const Model = bookSchema
           .getArchivedSchema({
             onDelete: (data: any) => (onDeleteValues = data),
-            onSuccess: (data: any) => (onSuccessValues = data),
+            onSuccess: (data: any) => (onSuccessValues = data)
           })
-          .getModel();
-        const book = { id: 1, name: "Book name", price: 250 };
-        const invalidValues = [1, -1, 0, null, undefined, true, false];
+          .getModel()
+        const book = { id: 1, name: 'Book name', price: 250 }
+        const invalidValues = [1, -1, 0, null, undefined, true, false]
 
-        it("should reject invalid values provided at creation", () => {
+        it('should reject invalid values provided at creation', () => {
           for (const values of invalidValues) {
-            const toFail = () => Model.create(values);
+            const toFail = () => Model.create(values)
 
-            expectFailure(toFail, "Invalid Data");
+            expectFailure(toFail, 'Invalid Data')
           }
-        });
+        })
 
-        it("should reject invalid values provided during deletion", () => {
+        it('should reject invalid values provided during deletion', () => {
           for (const values of invalidValues) {
-            const toFail = () => Model.delete(values);
+            const toFail = () => Model.delete(values)
 
-            expectPromiseFailure(toFail, "Invalid Data");
+            expectPromiseFailure(toFail, 'Invalid Data')
           }
-        });
+        })
 
         it("should create properly and all 'onSuccess' handlers should be triggered in the handle success method returned from the create method of the model", async () => {
-          const { data, handleSuccess } = Model.create(book);
+          const { data, handleSuccess } = Model.create(book)
 
-          await handleSuccess();
+          await handleSuccess()
 
-          expect(data).toEqual(book);
+          expect(data).toEqual(book)
 
-          expect(onDeleteValues).toEqual({});
-          expect(onSuccessValues).toEqual(book);
-        });
+          expect(onDeleteValues).toEqual({})
+          expect(onSuccessValues).toEqual(book)
+        })
 
-        it("should ignore invalid properties provided at creation", async () => {
+        it('should ignore invalid properties provided at creation', async () => {
           const { data, handleSuccess } = Model.create({
             ...book,
-            invalidProp: true,
-          });
+            invalidProp: true
+          })
 
-          await handleSuccess();
+          await handleSuccess()
 
-          expect(data).toEqual(book);
+          expect(data).toEqual(book)
 
-          expect(onDeleteValues).toEqual({});
-          expect(onSuccessValues).toEqual(book);
-        });
+          expect(onDeleteValues).toEqual({})
+          expect(onSuccessValues).toEqual(book)
+        })
 
-        it("should ignore invalid properties provided during deletion", async () => {
-          await Model.delete({ ...book, invalidProp: true });
+        it('should ignore invalid properties provided during deletion', async () => {
+          await Model.delete({ ...book, invalidProp: true })
 
-          expect(onDeleteValues).toEqual(book);
-          expect(onSuccessValues).toEqual({});
-        });
-      });
+          expect(onDeleteValues).toEqual(book)
+          expect(onSuccessValues).toEqual({})
+        })
+      })
 
-      describe("behaviour with archivedAt: true", () => {
+      describe('behaviour with archivedAt: true', () => {
         const Model = bookSchema
           .getArchivedSchema({
             archivedAt: true,
             onDelete: [(data: any) => (onDeleteValues = data)],
-            onSuccess: (data: any) => (onSuccessValues = data),
+            onSuccess: (data: any) => (onSuccessValues = data)
           })
-          .getModel();
-        const book = { id: 1, name: "Book name", price: 250 };
+          .getModel()
+        const book = { id: 1, name: 'Book name', price: 250 }
 
         it("should create properly and all 'onSuccess' handlers should be triggered in the handle success method returned from the create method of the model", async () => {
-          const { data, handleSuccess } = Model.create(book);
+          const { data, handleSuccess } = Model.create(book)
 
-          await handleSuccess();
+          await handleSuccess()
 
-          expect(data).toMatchObject(book);
-          expect(data.archivedAt).toBeDefined();
+          expect(data).toMatchObject(book)
+          expect(data.archivedAt).toBeDefined()
 
-          expect(onDeleteValues).toEqual({});
-          expect(onSuccessValues).toMatchObject(book);
-          expect(onSuccessValues.archivedAt).toBeDefined();
-        });
+          expect(onDeleteValues).toEqual({})
+          expect(onSuccessValues).toMatchObject(book)
+          expect(onSuccessValues.archivedAt).toBeDefined()
+        })
 
         it("should invoke all 'onDelete' handlers properly", async () => {
-          await Model.delete({ ...book, archivedAt: new Date() });
+          await Model.delete({ ...book, archivedAt: new Date() })
 
-          expect(onDeleteValues).toMatchObject(book);
-          expect(onDeleteValues.archivedAt).toBeDefined();
-          expect(onSuccessValues).toEqual({});
-        });
-      });
+          expect(onDeleteValues).toMatchObject(book)
+          expect(onDeleteValues.archivedAt).toBeDefined()
+          expect(onSuccessValues).toEqual({})
+        })
+      })
 
-      describe("behaviour with archivedAt: string", () => {
-        const archivedAt = "deletedAt";
+      describe('behaviour with archivedAt: string', () => {
+        const archivedAt = 'deletedAt'
 
         const Model = bookSchema
           .getArchivedSchema({
             archivedAt,
             onDelete: (data: any) => (onDeleteValues = data),
-            onSuccess: [(data: any) => (onSuccessValues = data)],
+            onSuccess: [(data: any) => (onSuccessValues = data)]
           })
-          .getModel();
-        const book = { id: 1, name: "Book name", price: 250 };
+          .getModel()
+        const book = { id: 1, name: 'Book name', price: 250 }
 
         it("should create properly and all 'onSuccess' handlers should be triggered in the handle success method returned from the create method of the model", async () => {
-          const { data, handleSuccess } = Model.create(book);
+          const { data, handleSuccess } = Model.create(book)
 
-          await handleSuccess();
+          await handleSuccess()
 
-          expect(data).toMatchObject(book);
-          expect(data[archivedAt]).toBeDefined();
+          expect(data).toMatchObject(book)
+          expect(data[archivedAt]).toBeDefined()
 
-          expect(onDeleteValues).toEqual({});
-          expect(onSuccessValues).toMatchObject(book);
-          expect(onSuccessValues[archivedAt]).toBeDefined();
-        });
+          expect(onDeleteValues).toEqual({})
+          expect(onSuccessValues).toMatchObject(book)
+          expect(onSuccessValues[archivedAt]).toBeDefined()
+        })
 
         it("should invoke all 'onDelete' handlers properly", async () => {
-          await Model.delete({ ...book, [archivedAt]: new Date() });
+          await Model.delete({ ...book, [archivedAt]: new Date() })
 
-          expect(onDeleteValues).toMatchObject(book);
-          expect(onDeleteValues[archivedAt]).toBeDefined();
-          expect(onSuccessValues).toEqual({});
-        });
-      });
-    });
+          expect(onDeleteValues).toMatchObject(book)
+          expect(onDeleteValues[archivedAt]).toBeDefined()
+          expect(onSuccessValues).toEqual({})
+        })
+      })
+    })
 
-    describe("options", () => {
-      const rules = ["onDelete", "onSuccess"];
+    describe('options', () => {
+      const rules = ['onDelete', 'onSuccess']
 
-      describe("valid", () => {
-        it("should accept any valid property in archived options", () => {
+      describe('valid', () => {
+        it('should accept any valid property in archived options', () => {
           const toPass = () =>
             bookSchema.getArchivedSchema({
-              archivedAt: "archived_at",
+              archivedAt: 'archived_at',
               onDelete: () => {},
-              onSuccess: () => {},
-            });
+              onSuccess: () => {}
+            })
 
-          expectNoFailure(toPass);
+          expectNoFailure(toPass)
 
-          toPass();
-        });
+          toPass()
+        })
 
-        it("should not crash if options are not passed to Archived Schema", () => {
-          const toPass = () => bookSchema.getArchivedSchema();
+        it('should not crash if options are not passed to Archived Schema', () => {
+          const toPass = () => bookSchema.getArchivedSchema()
 
-          expectNoFailure(toPass);
+          expectNoFailure(toPass)
 
-          toPass();
-        });
+          toPass()
+        })
 
         it("should accept 'archivedAt' as a string or boolean", () => {
-          const values = ["archived_at", true, false];
+          const values = ['archived_at', true, false]
 
           for (const archivedAt of values) {
-            const toPass = () => bookSchema.getArchivedSchema({ archivedAt });
+            const toPass = () => bookSchema.getArchivedSchema({ archivedAt })
 
-            expectNoFailure(toPass);
+            expectNoFailure(toPass)
 
-            toPass();
+            toPass()
           }
-        });
+        })
 
         it("should accept valid 'onDelete' & 'onSuccess' handlers", () => {
           const values = [
             () => {},
             () => ({}),
             [() => {}],
-            [() => {}, () => ({})],
-          ];
+            [() => {}, () => ({})]
+          ]
 
           for (const rule of rules)
             for (const value of values) {
               const toPass = () =>
                 bookSchema.getArchivedSchema({
-                  archivedAt: "archived_at",
-                  [rule]: value,
-                });
+                  archivedAt: 'archived_at',
+                  [rule]: value
+                })
 
-              expectNoFailure(toPass);
+              expectNoFailure(toPass)
 
-              toPass();
+              toPass()
             }
-        });
-      });
+        })
+      })
 
-      describe("invalid", () => {
-        const ErrorMessage = "Invalid Archived Schema";
+      describe('invalid', () => {
+        const ErrorMessage = 'Invalid Archived Schema'
 
-        it("should reject options that are not objects", () => {
-          const invalidOptions = [-1, 0, 1, null, true, false, [], () => {}];
+        it('should reject options that are not objects', () => {
+          const invalidOptions = [-1, 0, 1, null, true, false, [], () => {}]
 
           for (const option of invalidOptions) {
-            const toFail = () => bookSchema.getArchivedSchema(option);
+            const toFail = () => bookSchema.getArchivedSchema(option)
 
-            expectFailure(toFail, ErrorMessage);
+            expectFailure(toFail, ErrorMessage)
 
             try {
-              toFail();
+              toFail()
             } catch (err: any) {
               expect(err).toMatchObject({
                 message: ErrorMessage,
                 payload: expect.objectContaining({
-                  options: ["expected an object"],
+                  options: ['expected an object']
                 }),
-                statusCode: 500,
-              });
+                statusCode: 500
+              })
             }
           }
-        });
+        })
 
-        it("should reject any invalid property in archived options", () => {
+        it('should reject any invalid property in archived options', () => {
           const errorMessages = [
-            "a",
-            "b",
-            "createdAt",
-            "errors",
-            "updatedAt",
-            "timestamps",
-          ].map((prop) => `'${prop}' is not a valid archived option`);
+            'a',
+            'b',
+            'createdAt',
+            'errors',
+            'updatedAt',
+            'timestamps'
+          ].map((prop) => `'${prop}' is not a valid archived option`)
 
           const toFail = () =>
             bookSchema.getArchivedSchema({
               a: true,
               b: true,
-              createdAt: "createdAt",
-              errors: "throw",
-              updatedAt: "updatedAt",
-              timestamps: "throw",
-            });
+              createdAt: 'createdAt',
+              errors: 'throw',
+              updatedAt: 'updatedAt',
+              timestamps: 'throw'
+            })
 
-          expectFailure(toFail, ErrorMessage);
+          expectFailure(toFail, ErrorMessage)
 
           try {
-            toFail();
+            toFail()
           } catch (err: any) {
             expect(err).toMatchObject({
               message: ErrorMessage,
               payload: expect.objectContaining({
-                options: errorMessages,
+                options: errorMessages
               }),
-              statusCode: 500,
-            });
+              statusCode: 500
+            })
           }
-        });
+        })
 
         it("should reject 'archivedAt' if not of type string or boolean", () => {
-          const values = [{}, [], 1, -1, 0, () => {}, null];
+          const values = [{}, [], 1, -1, 0, () => {}, null]
 
           for (const archivedAt of values) {
-            const toFail = () => bookSchema.getArchivedSchema({ archivedAt });
+            const toFail = () => bookSchema.getArchivedSchema({ archivedAt })
 
-            expectFailure(toFail, ErrorMessage);
+            expectFailure(toFail, ErrorMessage)
 
             try {
-              toFail();
+              toFail()
             } catch (err: any) {
               expect(err).toMatchObject({
                 message: ErrorMessage,
                 payload: expect.objectContaining({
                   options: expect.arrayContaining([
-                    "'archivedAt' should be of type boolean | string",
-                  ]),
+                    "'archivedAt' should be of type boolean | string"
+                  ])
                 }),
-                statusCode: 500,
-              });
+                statusCode: 500
+              })
             }
           }
-        });
+        })
 
         it("should reject 'archivedAt' if empty string is provided", () => {
-          const values = ["", "  "];
+          const values = ['', '  ']
 
           for (const archivedAt of values) {
-            const toFail = () => bookSchema.getArchivedSchema({ archivedAt });
+            const toFail = () => bookSchema.getArchivedSchema({ archivedAt })
 
-            expectFailure(toFail, ErrorMessage);
+            expectFailure(toFail, ErrorMessage)
 
             try {
-              toFail();
+              toFail()
             } catch (err: any) {
               expect(err).toMatchObject({
                 message: ErrorMessage,
                 payload: expect.objectContaining({
                   options: expect.arrayContaining([
-                    "'archivedAt' cannot be an empty string",
-                  ]),
+                    "'archivedAt' cannot be an empty string"
+                  ])
                 }),
-                statusCode: 500,
-              });
+                statusCode: 500
+              })
             }
           }
-        });
+        })
 
         it("should reject 'archivedAt' if string provided is a property, virtual or timestamp of parent schema", () => {
           const values = [
-            "id",
-            "name",
-            "price",
-            "_price",
-            "createdAt",
-            "updatedAt",
-          ];
+            'id',
+            'name',
+            'price',
+            '_price',
+            'createdAt',
+            'updatedAt'
+          ]
 
           for (const archivedAt of values) {
-            const toFail = () => bookSchema.getArchivedSchema({ archivedAt });
+            const toFail = () => bookSchema.getArchivedSchema({ archivedAt })
 
-            expectFailure(toFail, ErrorMessage);
+            expectFailure(toFail, ErrorMessage)
 
             try {
-              toFail();
+              toFail()
             } catch (err: any) {
               expect(err).toMatchObject({
                 message: ErrorMessage,
                 payload: expect.objectContaining({
                   options: expect.arrayContaining([
-                    `'${archivedAt}' is a reserved property on your parent schema`,
-                  ]),
+                    `'${archivedAt}' is a reserved property on your parent schema`
+                  ])
                 }),
-                statusCode: 500,
-              });
+                statusCode: 500
+              })
             }
           }
-        });
+        })
 
         it("should reject invalid 'onDelete' & 'onSuccess' handlers", () => {
-          const values = [1, "", 0, false, true, null, {}];
+          const values = [1, '', 0, false, true, null, {}]
 
           for (const rule of rules)
             for (const value of values) {
               const toFail = () =>
                 bookSchema.getArchivedSchema({
-                  archivedAt: "archived_at",
-                  [rule]: value,
-                });
+                  archivedAt: 'archived_at',
+                  [rule]: value
+                })
 
-              expectFailure(toFail, ErrorMessage);
+              expectFailure(toFail, ErrorMessage)
 
               try {
-                toFail();
+                toFail()
               } catch (err: any) {
                 expect(err.payload).toEqual(
                   expect.objectContaining({
                     options: expect.arrayContaining([
-                      `The '${rule}' handler @[0] is not a function`,
-                    ]),
+                      `The '${rule}' handler @[0] is not a function`
+                    ])
                   })
-                );
+                )
               }
             }
-        });
-      });
-    });
-  });
-};
+        })
+      })
+    })
+  })
+}

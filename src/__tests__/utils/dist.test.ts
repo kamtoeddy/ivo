@@ -2,12 +2,12 @@ import {
   getDeepValue,
   getUnique,
   getUniqueBy,
-  serialize,
-} from "../../../dist/utils/getUniqueBy";
-import { belongsTo } from "../../../dist/utils/functions";
-import { isEqual } from "../../../dist/utils/isEqual";
+  serialize
+} from '../../../dist/utils/getUniqueBy'
+import { belongsTo } from '../../../dist/utils/functions'
+import { isEqual } from '../../../dist/utils/isEqual'
 
-import { commonUtilTests } from ".";
+import { commonUtilTests } from '.'
 
 commonUtilTests({
   belongsTo,
@@ -15,5 +15,5 @@ commonUtilTests({
   getUnique,
   getUniqueBy,
   serialize,
-  isEqual,
-});
+  isEqual
+})
