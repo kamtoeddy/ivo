@@ -13,6 +13,7 @@ export interface IStoreItem {
   _quantity: number
   _readOnlyLax1: string
   _readOnlyLax2: string
+  _readOnlyNoInit: any
   _virtualForDependentReadOnly?: any
   id: string
   name: string

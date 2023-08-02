@@ -41,17 +41,21 @@ type TypeOf<T> = Exclude<T, undefined>
 type BooleanSetter<I, O> = (context: Context<I, O>) => boolean
 type BooleanSetterWithSummary<I, O> = (summary: Summary<I, O> & {}) => boolean
 
-type DefaultSetter<K extends keyof (I & O), I, O> = (
+type DefaultSetter<K extends keyof O, I, O> = (
   context: Context<I, O>
-) => TypeOf<(I & O)[K]> | Promise<TypeOf<(I & O)[K]>>
+) => TypeOf<O[K]> | Promise<TypeOf<O[K]>>
 
 type RequiredSetter<I, O> = (
   summary: Summary<I, O> & {}
 ) => boolean | [boolean, string]
 
-type Resolver<K extends keyof (I & O), I, O> = (
+type Resolver<K extends keyof O, I, O> = (
   summary: Summary<I, O> & {}
-) => TypeOf<(I & O)[K]> | Promise<TypeOf<(I & O)[K]>>
+) => TypeOf<O[K]> | Promise<TypeOf<O[K]>>
+
+type VirtualResolver<K extends keyof I, I, O> = (
+  summary: Summary<I, O> & {}
+) => TypeOf<I[K]> | Promise<TypeOf<I[K]>>
 
 type StringKey<T> = Extract<keyof T, string>
 
@@ -71,8 +75,27 @@ namespace Schema {
   ) => any | Promise<any>
 
   export type Definitions<I, O = I, A = {}> = {
-    [K in keyof (I & O)]?: Property<K, I, O, A>
+    [K in keyof Merge<I, O>]?: K extends keyof (I | O)
+      ? Property<K, I, O>
+      : K extends keyof O
+      ? OutputProperty<K, I, O>
+      : K extends keyof I
+      ? Virtual<K, I, O, A>
+      : never
   }
+
+  type Property<K extends keyof (I | O), I, O> =
+    | OutputProperty<K, I, O>
+    | LaxProperty<K, I, O>
+    | Readonly_<K, I, O>
+    | ReadonlyNoInit<K, I, O>
+    | Required<K, I, O>
+    | RequiredBy<K, I, O>
+    | ReadonlyRequired<K, I, O>
+
+  type OutputProperty<K extends keyof O, I, O> =
+    | Constant<K, I, O>
+    | Dependent<K, I, O>
 
   export type Definitions_<I, O> = {
     [K in keyof I]?: Listenable<I, O> & {
@@ -84,7 +107,7 @@ namespace Schema {
       readonly?: boolean | 'lax'
       resolver?: Function
       required?: boolean | RequiredSetter<I, O>
-      sanitizer?: DefaultSetter<K, I, O>
+      sanitizer?: VirtualResolver<K, I, O>
       shouldInit?: false | BooleanSetter<I, O>
       shouldUpdate?: false | BooleanSetter<I, O>
       validator?: Function
@@ -101,32 +124,21 @@ namespace Schema {
     [K in StringKey<T>]?: StringKey<T>[]
   }
 
-  type Property<K extends keyof (I & O), I, O, A> =
-    | Constant<K, I, O>
-    | Dependent<K, I, O>
-    | LaxProperty<K, I, O>
-    | Readonly_<K, I, O>
-    | ReadonlyNoInit<K, I, O>
-    | Required<K, I, O>
-    | RequiredBy<K, I, O>
-    | ReadonlyRequired<K, I, O>
-    | Virtual<K, I, O, A>
-
   type Listenable<I, O> = {
     onDelete?: Handler<O> | NonEmptyArray<Handler<O>>
     onFailure?: FailureHandler<I, O> | NonEmptyArray<FailureHandler<I, O>>
     onSuccess?: SuccessHandler<I, O> | NonEmptyArray<SuccessHandler<I, O>>
   }
 
-  type Constant<K extends keyof (I & O), I, O = I> = {
+  type Constant<K extends keyof O, I, O = I> = {
     constant: true
     onDelete?: Handler<O> | NonEmptyArray<Handler<O>>
     onSuccess?: SuccessHandler<I, O> | NonEmptyArray<SuccessHandler<I, O>>
-    value: TypeOf<(I & O)[K]> | DefaultSetter<K, I, O>
+    value: TypeOf<O[K]> | DefaultSetter<K, I, O>
   }
 
-  type Dependent<K extends keyof (I & O), I, O = I> = {
-    default: TypeOf<(I & O)[K]> | DefaultSetter<K, I, O>
+  type Dependent<K extends keyof O, I, O = I> = {
+    default: TypeOf<O[K]> | DefaultSetter<K, I, O>
     dependent: true
     dependsOn:
       | Exclude<StringKey<Context<I, O>>, K>
@@ -137,30 +149,30 @@ namespace Schema {
     resolver: Resolver<K, I, O>
   }
 
-  type LaxProperty<K extends keyof (I & O), I, O = I> = Listenable<I, O> & {
-    default: TypeOf<(I & O)[K]> | DefaultSetter<K, I, O>
+  type LaxProperty<K extends keyof (I | O), I, O = I> = Listenable<I, O> & {
+    default: TypeOf<O[K]> | DefaultSetter<K, I, O>
     readonly?: 'lax'
     shouldInit?: false | BooleanSetter<I, O>
     shouldUpdate?: BooleanSetter<I, O>
     validator?: Validator<K, I, O>
   }
 
-  type Readonly_<K extends keyof (I & O), I, O = I> = Listenable<I, O> & {
-    default: TypeOf<(I & O)[K]> | DefaultSetter<K, I, O>
+  type Readonly_<K extends keyof (I | O), I, O = I> = Listenable<I, O> & {
+    default: TypeOf<O[K]> | DefaultSetter<K, I, O>
     readonly: 'lax'
     shouldUpdate?: BooleanSetter<I, O>
     validator: Validator<K, I, O>
   }
 
-  type ReadonlyNoInit<K extends keyof (I & O), I, O = I> = Listenable<I, O> & {
-    default: TypeOf<(I & O)[K]> | DefaultSetter<K, I, O>
+  type ReadonlyNoInit<K extends keyof (I | O), I, O = I> = Listenable<I, O> & {
+    default: TypeOf<O[K]> | DefaultSetter<K, I, O>
     readonly: true
     shouldInit: false | BooleanSetter<I, O>
     shouldUpdate?: BooleanSetter<I, O>
     validator?: Validator<K, I, O>
   }
 
-  type ReadonlyRequired<K extends keyof (I & O), I, O = I> = Listenable<
+  type ReadonlyRequired<K extends keyof (I | O), I, O = I> = Listenable<
     I,
     O
   > & {
@@ -168,14 +180,14 @@ namespace Schema {
     validator: Validator<K, I, O>
   }
 
-  type Required<K extends keyof (I & O), I, O = I> = Listenable<I, O> & {
+  type Required<K extends keyof (I | O), I, O = I> = Listenable<I, O> & {
     required: true
     shouldUpdate?: BooleanSetter<I, O>
     validator: Validator<K, I, O>
   }
 
-  type RequiredBy<K extends keyof (I & O), I, O = I> = Listenable<I, O> & {
-    default: TypeOf<(I & O)[K]> | DefaultSetter<K, I, O>
+  type RequiredBy<K extends keyof (I | O), I, O = I> = Listenable<I, O> & {
+    default: TypeOf<O[K]> | DefaultSetter<K, I, O>
     required: RequiredSetter<I, O>
     readonly?: true
     shouldInit?: BooleanSetter<I, O>
@@ -183,13 +195,13 @@ namespace Schema {
     validator: Validator<K, I, O>
   }
 
-  type Virtual<K extends keyof (I & O), I, O, A> = {
+  type Virtual<K extends keyof I, I, O, A> = {
     alias?: Exclude<StringKey<A>, K> extends undefined
       ? string
       : Exclude<StringKey<A>, K>
     required?: RequiredSetter<I, O>
     virtual: true
-    sanitizer?: Resolver<K, I, O>
+    sanitizer?: VirtualResolver<K, I, O>
     onFailure?: FailureHandler<I, O> | NonEmptyArray<FailureHandler<I, O>>
     onSuccess?: SuccessHandler<I, O> | NonEmptyArray<SuccessHandler<I, O>>
     shouldInit?: false | BooleanSetter<I, O>

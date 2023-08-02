@@ -23,14 +23,8 @@ const storeItemSchema = new Schema<IStoreItem, StoreItemType>(
     _readOnlyLax1: { default: '', readonly: 'lax' },
     _readOnlyLax2: { default: '', readonly: 'lax' },
     _readOnlyNoInit: { default: '', readonly: true, shouldInit: false },
-    _virtualForDependentReadOnly: {
-      virtual: true,
-      validator: () => true
-    },
-    id: {
-      readonly: true,
-      validator: validateString('Invalid id')
-    },
+    _virtualForDependentReadOnly: { virtual: true, validator: () => true },
+    id: { readonly: true, validator: validateString('Invalid id') },
     name: { required: true, validator: validateName },
     measureUnit: {
       required: true,
@@ -73,7 +67,7 @@ const storeItemSchema = new Schema<IStoreItem, StoreItemType>(
 function resolveQuantity({
   context: { quantity, _quantity, quantities }
 }: Summary<IStoreItem, StoreItemType>) {
-  const newQty = _quantity ?? (quantity as number)
+  const newQty = _quantity ?? quantity
 
   return quantities ? newQty + (quantities as number) : newQty
 }
@@ -81,7 +75,7 @@ function resolveQuantity({
 function onSuccess({
   context: { quantity, _quantity, quantities }
 }: Summary<IStoreItem, StoreItemType>) {
-  const newQty = _quantity ?? (quantity as number)
+  const newQty = _quantity ?? quantity
 
   return quantities ? newQty + (quantities as number) : newQty
 }
