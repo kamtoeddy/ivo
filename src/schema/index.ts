@@ -62,16 +62,13 @@ class Schema<
   }
 
   extend = <
-    U extends RealType<Merge<U, I>>,
+    U,
     T = O,
     A = {},
     V extends RealType<Merge<T, O>> = RealType<Merge<T, O>>
   >(
     definitions: Partial<ns.Definitions<U, T, A>>,
-    options: ns.ExtensionOptions<I, O, U, T> = {
-      ...defaultOptions,
-      remove: []
-    }
+    options: ns.ExtensionOptions<I, O, U, T> = { ...defaultOptions, remove: [] }
   ) => {
     const remove = toArray(options?.remove ?? [])
     delete options.remove
@@ -79,7 +76,7 @@ class Schema<
     type Input = RealType<U>
     type Output = RealType<V>
 
-    let _definitions = { ...this.definitions } as ns.Definitions<
+    let _definitions = { ...this.definitions } as any as ns.Definitions<
       RealType<Input>,
       RealType<Output>,
       A

@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# v3.3.1 <small><sup>02-08-2023</sup></small>
+
+- [Update] improve typescript types
+
 # v3.3.0 <small><sup>01-08-2023</sup></small>
 
 - [Add] added support for [`global shouldUpdate`](./v3.3.0/schema/definition/index.md#shouldupdate) rule
