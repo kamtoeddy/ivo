@@ -1,5 +1,5 @@
-import { StringKey } from '../schema/interfaces'
-import { ObjectType } from './interfaces'
+import { StringKey } from '../schema/types'
+import { ObjectType } from './types'
 
 export {
   belongsTo,

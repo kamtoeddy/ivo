@@ -1,4 +1,4 @@
-import { ObjectType } from './interfaces'
+import { ObjectType } from './types'
 
 export const getDeepValue = (data: ObjectType, key: string): any => {
   return key.split('.').reduce((prev, next) => prev?.[next], data)

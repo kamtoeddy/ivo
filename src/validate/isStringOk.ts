@@ -1,6 +1,6 @@
 import { makeResponse } from '../schema/utils'
 import { belongsTo } from '../utils/functions'
-import { IStringOptions } from '../utils/interfaces'
+import { IStringOptions } from '../utils/types'
 
 export function isStringOk(
   str: any,

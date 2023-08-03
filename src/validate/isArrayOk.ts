@@ -1,6 +1,6 @@
 import { makeResponse } from '../schema/utils'
 import { getUniqueBy } from '../utils/getUniqueBy'
-import { IArrayOptions } from '../utils/interfaces'
+import { IArrayOptions } from '../utils/types'
 
 const getOrder = (sortOrder: any) => {
   if (!['asc', 'desc'].includes(sortOrder)) return -1
