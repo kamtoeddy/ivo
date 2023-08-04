@@ -30,7 +30,7 @@ type User = {
   fullName: string
 }
 
-const userSchema = new Schema<UserInput, User>({
+const userSchema = new Schema<User, UserInput>({
   dob: { required: true, validator: validateDob },
   firstName: { required: true, validator: validateName },
   lastName: { required: true, validator: validateName },
@@ -87,8 +87,8 @@ type Input = {}
 
 type Output = {}
 
-type IContext = Context<Input, Output>
-type ISummary = Summary<Input, Output>
+type IContext = Context<Output, Input>
+type ISummary = Summary<Output, Input>
 
 type DeleteListener = (data: Readonly<Output>) => void | Promise<void>
 
@@ -109,7 +109,7 @@ type SchemaOptions = {
 
 const options: SchemaOptions = {}
 
-const schema = new Schema<Input, Output>(definitions, options)
+const schema = new Schema<Output, Input>(definitions, options)
 ```
 
 More details on the `Context` & `Summary` utiliies can be found [here](./life-cycles.md#the-operation-context)

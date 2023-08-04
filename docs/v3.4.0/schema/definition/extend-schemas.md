@@ -10,7 +10,7 @@ For any schema that inherits from another, call the extend method on the parent 
 Example:
 
 ```ts
-const userSchema = new Schema<Input, Output>(
+const userSchema = new Schema<Output, Input>(
   {
     firstName: { required: true, validator: validateName },
     fullName: {

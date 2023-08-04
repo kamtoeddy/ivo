@@ -1,4 +1,4 @@
-import { IStoreItem, StoreItemType } from '../storeItem/interfaces'
+import { IStoreItem, StoreItemType } from '../storeItem/types'
 
 export interface IOrderItem
   extends Omit<IStoreItem, '_readOnlyNoInit' | '_virtualForDependentReadOnly'> {

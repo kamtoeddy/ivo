@@ -1,6 +1,6 @@
-import { ResponseInput_ } from '../schema/interfaces'
+import { ResponseInput_ } from '../schema/types'
 import { makeResponse } from '../schema/utils'
-import { NumberRangeType } from '../utils/interfaces'
+import { NumberRangeType } from '../utils/types'
 
 export type RangeType = undefined | NumberRangeType
 

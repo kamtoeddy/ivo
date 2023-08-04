@@ -1,4 +1,4 @@
-import { VIRTUAL_RULES } from '../../../../schema/interfaces'
+import { VIRTUAL_RULES } from '../../../../schema/types'
 import { expectFailure, expectNoFailure, validator } from '../_utils'
 
 export const Test_VirtualProperties = ({ Schema, fx }: any) => {

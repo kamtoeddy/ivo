@@ -45,9 +45,9 @@ type Output = {
   updatedAt: Date
 }
 
-type ISummary = Summary<Input, Output>
+type ISummary = Summary<Output, Input>
 
-const userSchema = new Schema<Input, Output>(
+const userSchema = new Schema<Output, Input>(
   {
     firstName: {
       required: true,
@@ -189,29 +189,29 @@ await handleSuccess()
 
 ⚠️ If using with TypeScript, make sure to have `skipLibCheck: true` else your program will not compile because of a complex type used under the hood to infer some types
 
-- [Defining a schema](./docs/v3.3.0/schema/definition/index.md#defining-a-schema)
+- [Defining a schema](./docs/v3.4.0/schema/definition/index.md#defining-a-schema)
   - [constant properties](./docs/v3.0.0/schema/definition/constants.md#constant-properties)
   - [default values](./docs/v3.0.0/schema/definition/defaults.md#default-values)
-  - [dependent properties](./docs/v3.3.0/schema/definition/dependents.md#dependent-properties)
+  - [dependent properties](./docs/v3.4.0/schema/definition/dependents.md#dependent-properties)
   - [readonly properties](./docs/v3.0.0/schema/definition/readonly.md#readonly-properties)
-  - [required properties](./docs/v3.3.0/schema/definition/required.md#required-properties)
-  - [virtuals](./docs/v3.3.0/schema/definition/virtuals.md#virtual-properties)
-  - [validators](./docs/v3.3.0/validate/index.md#validators)
+  - [required properties](./docs/v3.4.0/schema/definition/required.md#required-properties)
+  - [virtuals](./docs/v3.4.0/schema/definition/virtuals.md#virtual-properties)
+  - [validators](./docs/v3.4.0/validate/index.md#validators)
     - [isArrayOk](./docs/v2.6.0/validate/isArrayOk.md)
     - [isBooleanOk](./docs/v2.6.0/validate/isBooleanOk.md)
     - [isEmailOk](./docs/v2.6.0/validate/isEmailOk.md)
     - [isNumberOk](./docs/v2.6.0/validate/isNumberOk.md)
-    - [isStringOk](./docs/v3.3.0/validate/isStringOk.md)
-- [Extending Schemas](./docs/v3.3.0/schema/definition/extend-schemas.md#extending-schemas)
-- [The Operation Context](./docs/v3.3.0/schema/definition/life-cycles.md#the-operation-context)
-- [The Operation Summary](./docs/v3.3.0/schema/definition/life-cycles.md#the-operation-summary)
-- [Life Cycles & Listeners](./docs/v3.3.0/schema/definition/life-cycles.md#life-cycle-listeners)
+    - [isStringOk](./docs/v3.4.0/validate/isStringOk.md)
+- [Extending Schemas](./docs/v3.4.0/schema/definition/extend-schemas.md#extending-schemas)
+- [The Operation Context](./docs/v3.4.0/schema/definition/life-cycles.md#the-operation-context)
+- [The Operation Summary](./docs/v3.4.0/schema/definition/life-cycles.md#the-operation-summary)
+- [Life Cycles & Listeners](./docs/v3.4.0/schema/definition/life-cycles.md#life-cycle-listeners)
 
-  - [onDelete](./docs/v3.3.0/schema/definition/life-cycles.md#ondelete)
-  - [onFailure](./docs/v3.3.0/schema/definition/life-cycles.md#onfailure)
-  - [onSuccess](./docs/v3.3.0/schema/definition/life-cycles.md#onsuccess)
+  - [onDelete](./docs/v3.4.0/schema/definition/life-cycles.md#ondelete)
+  - [onFailure](./docs/v3.4.0/schema/definition/life-cycles.md#onfailure)
+  - [onSuccess](./docs/v3.4.0/schema/definition/life-cycles.md#onsuccess)
 
-- [Options](./docs/v3.3.0/schema/definition/index.md#options)
+- [Options](./docs/v3.4.0/schema/definition/index.md#options)
 
 - [Changelog](./docs/CHANGELOG.md#changelog)
 

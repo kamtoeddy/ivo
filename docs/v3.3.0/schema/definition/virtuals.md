@@ -22,16 +22,16 @@ Example:
 ```ts
 import { Schema } from 'clean-schema'
 
-type UserDTO = {
+type UserInput = {
   blockUser?: boolean
 }
 
-type UserType = {
+type User = {
   isBlocked: boolean
 }
 
 // definition
-const User = new Schema<UserDTO, UserType>({
+const User = new Schema<UserInput, User>({
   blockUser: { virtual: true, validator: validateBoolean },
   isBlocked: {
     default: false,

@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# v3.4.0 <small><sup>04-08-2023</sup></small>
+
+- [Update] changed the signature of schemas
+
 # v3.3.1 <small><sup>02-08-2023</sup></small>
 
 - [Update] improve typescript types

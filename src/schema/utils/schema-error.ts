@@ -6,7 +6,7 @@ import {
   PayloadKey,
   SchemaErrorMessage,
   SchemaErrorProps
-} from '../../utils/interfaces'
+} from '../../utils/types'
 
 export class SchemaError extends Error {
   payload: ErrorPayload = {}

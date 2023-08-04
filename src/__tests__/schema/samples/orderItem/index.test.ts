@@ -1,5 +1,5 @@
 import { OrderItem } from '.'
-import { OrderItemType } from './interfaces'
+import { OrderItemType } from './types'
 
 describe('Testing schema of Orderitem (inherited schema)', () => {
   let orderItem: OrderItemType

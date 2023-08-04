@@ -5,12 +5,8 @@ export default Schema
 export { isEqual } from './utils/isEqual.js'
 export { Schema } from './schema'
 export * as validate from './validate'
+export * from './utils/isEqual'
 
 // types & interfaces
-export type {
-  Context,
-  Summary,
-  ISchema,
-  ValidatorResponse
-} from './schema/interfaces'
-export * from './utils/interfaces'
+export * from './utils/types'
+export * from './schema/types'

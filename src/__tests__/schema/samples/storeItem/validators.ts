@@ -4,9 +4,9 @@ import {
   IOtherQuantity,
   IStoreItem,
   StoreItemType
-} from './interfaces'
+} from './types'
 
-type SummaryType = Summary<IStoreItem, StoreItemType>
+type SummaryType = Summary<StoreItemType, IStoreItem>
 
 import { isArrayOk, isNumberOk, isStringOk } from '../../../../../dist/validate'
 import { findBy } from '../../utils'
