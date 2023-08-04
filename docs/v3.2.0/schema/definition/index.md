@@ -17,20 +17,20 @@ const userSchema = new Schema<I, O>(definitions, options)
 ```ts
 import { Schema } from 'clean-schema'
 
-type UserDTO = {
+type UserInput = {
   dob?: Date | null
   firstName: string
   lastName: string
 }
 
-type UserType = {
+type User = {
   dob?: Date | null
   firstName: string
   lastName: string
   fullName: string
 }
 
-const userSchema = new Schema<UserDTO, UserType>({
+const userSchema = new Schema<UserInput, User>({
   dob: { required: true, validator: validateDob },
   firstName: { required: true, validator: validateName },
   lastName: { required: true, validator: validateName },

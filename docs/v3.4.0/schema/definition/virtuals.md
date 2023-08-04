@@ -31,7 +31,7 @@ type User = {
 }
 
 // definition
-const User = new Schema<UserInput, User>({
+const User = new Schema<User, UserInput>({
   blockUser: { virtual: true, validator: validateBoolean },
   isBlocked: {
     default: false,
@@ -85,7 +85,7 @@ type Aliases = {
   quantity: number
 }
 
-const StoreItem = new Schema<Input, Output, Aliases>({
+const StoreItem = new Schema<Output, Input, Aliases>({
   quantity: {
     default: 0,
     dependent: true,
@@ -176,7 +176,7 @@ type Output = {
   name: string
 }
 
-const FileModel = new Schema<Input, Output>({
+const FileModel = new Schema<Output, Input>({
   id: { constant: true, value: generateID },
   metadata: {
     default: { size: 0, url: '' },
@@ -194,7 +194,7 @@ const FileModel = new Schema<Input, Output>({
   }
 }).getModel()
 
-async function sanitizeFile({ context: { file } }: Summary<Input, Output>) {
+async function sanitizeFile({ context: { file } }: Summary<Output, Input>) {
   // upload file
   const { size, url } = await uploadFile(file)
 

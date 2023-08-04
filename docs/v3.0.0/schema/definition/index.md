@@ -11,38 +11,38 @@ Clean schema considers a property to be properly defined if it is `dependent`, `
 The schema constructor also takes two generic interfaces you could use to improve on the type inference of your `InputType` & `OutputType`.
 
 ```ts
-const userSchema = new Schema<I, O>(definitions, options);
+const userSchema = new Schema<I, O>(definitions, options)
 ```
 
 ```ts
-import { Schema } from "clean-schema";
+import { Schema } from 'clean-schema'
 
-type UserDTO = {
-  dob?: Date | null;
-  firstName: string;
-  lastName: string;
-};
+type UserInput = {
+  dob?: Date | null
+  firstName: string
+  lastName: string
+}
 
-type UserType = {
-  dob?: Date | null;
-  firstName: string;
-  lastName: string;
-  fullName: string;
-};
+type User = {
+  dob?: Date | null
+  firstName: string
+  lastName: string
+  fullName: string
+}
 
-const userSchema = new Schema<UserDTO, UserType>({
+const userSchema = new Schema<UserInput, User>({
   dob: { required: true, validator: validateDob },
   firstName: { required: true, validator: validateName },
   lastName: { required: true, validator: validateName },
   fullName: {
-    default: "",
+    default: '',
     dependent: true,
-    dependsOn: ["firstName", "lastName"],
-    resolver: (ctx) => `${ctx.firstName} ${ctx.lastName}`,
-  },
-});
+    dependsOn: ['firstName', 'lastName'],
+    resolver: (ctx) => `${ctx.firstName} ${ctx.lastName}`
+  }
+})
 
-const UserModel = userSchema.getModel();
+const UserModel = userSchema.getModel()
 ```
 
 # Properties of a model
@@ -79,13 +79,13 @@ These methods are async because custom validators could be async as well.
 
 ```ts
 type Timestamp = {
-  createdAt?: string;
-  updatedAt?: string;
-};
+  createdAt?: string
+  updatedAt?: string
+}
 
 options: {
-  errors: "silent" | "throw";
-  timestamps: boolean | Timestamp;
+  errors: 'silent' | 'throw'
+  timestamps: boolean | Timestamp
 }
 ```
 
@@ -97,12 +97,12 @@ This is the structure of the error returned or thrown
 
 ```ts
 type SchemaError = {
-  message: string; // e.g. Validation Error
+  message: string // e.g. Validation Error
   payload: {
-    [key: string]: string[]; // e.g. name: ["Invalid name", "too long"]
-  };
-  statusCode: number; // e.g. 400
-};
+    [key: string]: string[] // e.g. name: ["Invalid name", "too long"]
+  }
+  statusCode: number // e.g. 400
+}
 ```
 
 ## timestamps
@@ -113,27 +113,27 @@ Overwrite one
 
 ```js
 let transactionSchema = new Schema(definitions, {
-  timestamps: { createdAt: "created_at" },
-});
+  timestamps: { createdAt: 'created_at' }
+})
 ```
 
 Or both
 
 ```js
 let transactionSchema = new Schema(definitions, {
-  timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
-});
+  timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
+})
 ```
 
 To use one timestamp alone, pass false for the timestamp key to eliminate
 
 ```js
 let transactionSchema = new Schema(definitions, {
-  timestamps: { createdAt: "created_at", updatedAt: false },
-});
+  timestamps: { createdAt: 'created_at', updatedAt: false }
+})
 
 // or
 let transactionSchema = new Schema(definitions, {
-  timestamps: { updatedAt: false },
-});
+  timestamps: { updatedAt: false }
+})
 ```
