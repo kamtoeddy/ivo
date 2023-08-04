@@ -1,37 +1,29 @@
-import { Summary, Schema } from '../../../../../dist'
+import { Schema } from '../../../../../dist'
 
-type IOSame = {
+type PublicOnly = {
   dob: Date | string
   name: string
 }
 
-const sameIO = new Schema<IOSame>({
+const publicOnly = new Schema<PublicOnly>({
   dob: { default: '' },
   name: { required: true, validator: () => true }
 }).getModel()
 
-sameIO.create({ dob: '', name: '' }).then(({ data }) => {
+publicOnly.create({ dob: '', name: '' }).then(({ data }) => {
   data?.dob
   data?.name
 })
 
 type PrivateOnly = {
   constants: string
-  dependents: string
 }
 const outputOnly = new Schema<PrivateOnly, {}>({
-  constants: { constant: true, value: '' },
-  dependents: {
-    default: '',
-    dependent: true,
-    dependsOn: 'constants',
-    resolver: () => ''
-  }
+  constants: { constant: true, value: '' }
 }).getModel()
 
-outputOnly.create({ yoo: '' }).then(({ data }) => {
+outputOnly.create({}).then(({ data }) => {
   data?.constants
-  data?.dependents
 })
 
 type PrivateAndPublicInput = {

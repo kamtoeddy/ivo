@@ -78,95 +78,15 @@ namespace Schema {
     summary: Summary<Output, Input> & {}
   ) => any | Promise<any>
 
-  // export type Definitions<Output,Input = Output, A = {}> = {
-  //   [K in keyof Merge<Output,Input>]?: K extends keyof (Output| Input,
-  //     ? PublicProperty<K, Output,Input>
-  //     : K extends keyof O
-  //     ? PrivateProperty<K, Output,Input>
-  //     : K extends keyof I
-  //     ? Virtual<K, Output,Input, A>
-  //     : never
-  // }
-
-  // export type Definitions<Output, Input = Output, Aliases = {}> = {
-  //   [K in keyof Merge<Output, Input>]?: K extends keyof Omit<
-  //     Output,
-  //     keyof Input
-  //   >
-  //     ? PrivateProperty<K, Output, Input>
-  //     : K extends keyof Omit<Input, keyof Output>
-  //     ? Virtual<K, Output, Input, Aliases>
-  //     : K extends keyof (Input | Output)
-  //     ? PublicProperty<K, Output, Input>
-  //     : never
-  // }
-  // export type Definitions<
-  //   Output,
-  //   Input = Output,
-  //   Aliases = {}
-  // > = Output extends Input
-  //   ? Input extends Output
-  //     ? { [K in keyof Output]: PublicProperty<K, Output, Input> }
-  //     : {
-  //         [K in keyof (Input | Output)]: K extends keyof Omit<
-  //           Output,
-  //           keyof Input
-  //         >
-  //           ? PrivateProperty<K, Output, Input>
-  //           : K extends keyof Omit<Input, keyof Output>
-  //           ? Virtual<K, Output, Input, Aliases>
-  //           : K extends keyof (Input | Output)
-  //           ? PublicProperty<K, Output, Input>
-  //           : never
-  //       }
-  //   : {
-  //       [K in keyof (Input | Output)]: K extends keyof Omit<Output, keyof Input>
-  //         ? PrivateProperty<K, Output, Input>
-  //         : K extends keyof Omit<Input, keyof Output>
-  //         ? Virtual<K, Output, Input, Aliases>
-  //         : K extends keyof (Input | Output)
-  //         ? PublicProperty<K, Output, Input>
-  //         : never
-  //     }
-
-  // {
-  //   [K in keyof Merge<Output, Input>]?: K extends keyof (Input | Output)
-  //     ? Output extends Input
-  //       ? Input extends Output
-  //         ? PublicProperty<K, Output, Input>
-  //         : PrivateProperty<K, Output, Input>
-  //       : PrivateProperty<K, Output, Input>
-  //     : never
-  //   // : K extends keyof Omit<Input, keyof Output>
-  //   // ? Virtual<K, Output, Input, Aliases>
-  //   // : K extends keyof (Input | Output)
-  //   // ? PublicProperty<K, Output, Input>
-  //   // : never
-  // }
-
-  export type Definitions<Output, Input = Output, A = {}> = {
-    [K in keyof Omit<Output, keyof Input>]?: K extends keyof Output
-      ? PrivateProperty<K, Output, Input>
-      : never
-  } & {
-    [K in keyof (Output | Input)]: K extends keyof (Output | Input)
+  export type Definitions<Output, Input = Output, Aliases = {}> = {
+    [K in keyof Merge<Output, Input>]?: K extends keyof (Input | Output)
       ? PublicProperty<K, Output, Input>
-      : never
-  } & {
-    [K in keyof Omit<Input, keyof Output>]: K extends keyof Input
-      ? Virtual<K, Output, Input, A>
+      : K extends keyof Omit<Output, keyof Input>
+      ? PrivateProperty<K, Output, Input>
+      : K extends keyof Omit<Input, keyof Output>
+      ? Virtual<K, Output, Input, Aliases>
       : never
   }
-
-  // export type Definitions<Output,Input = Output, A = {}> = {
-  //   [K in keyof Merge<Output,Input>]?: K extends keyof Omit<O, keyof I>
-  //     ? PrivateProperty<K, Output,Input>
-  //     : K extends keyof Omit<I, keyof O>
-  //     ? Virtual<K, Output,Input, A>
-  //     : K extends keyof (Output| Input,
-  //     ? PublicProperty<K, Output,Input>
-  //     : Property<any, Output,Input, A>
-  // }
 
   type PublicProperty<K extends keyof (Output | Input), Output, Input> =
     | LaxProperty<K, Output, Input>
@@ -175,25 +95,6 @@ namespace Schema {
     | Required<K, Output, Input>
     | RequiredBy<K, Output, Input>
     | RequiredReadonly<K, Output, Input>
-
-  // type PublicProperty<K extends keyof (Output| Input), Output,Input> = XOR<
-  //   LaxProperty<K, Output,Input>,
-  //   XOR<
-  //     ReadOnly<K, Output,Input>,
-  //     XOR<
-  //       ReadonlyNoInit<K, Output,Input>,
-  //       XOR<
-  //         Required<K, Output,Input>,
-  //         XOR<RequiredBy<K, Output,Input>, RequiredReadonly<K, Output,Input>>
-  //       >
-  //     >
-  //   >
-  // >
-
-  // type Property<K extends keyof (Output| Input), Output,Input, A> = XOR<
-  //   PublicProperty<K, Output,Input>,
-  //   XOR<PrivateProperty<K, Output,Input>, Virtual<K, Output,Input, A>>
-  // >
 
   type PrivateProperty<K extends keyof Output, Output, Input> = XOR<
     Constant<K, Output, Input>,
