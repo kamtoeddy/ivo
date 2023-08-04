@@ -45,9 +45,9 @@ type Output = {
   updatedAt: Date
 }
 
-type ISummary = Summary<Input, Output>
+type ISummary = Summary<Output, Input>
 
-const userSchema = new Schema<Input, Output>(
+const userSchema = new Schema<Output, Input>(
   {
     firstName: {
       required: true,
