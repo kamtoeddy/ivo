@@ -147,7 +147,9 @@ This could be a function or an array of functions with the `SuccessListener` sig
 
 ## setMissingDefaultsOnUpdate
 
-A boolean. If set to `true`, it'll check all defaultable properties of the existing data passed to the model's update method `Model.update(existingData, updates)`, for all the properties with value `undefined` it'll generate their default values update those values in the operation's context before validating the updates provided. If the update operation is successful, these missing values will also be added to the updated values returned if not present on the updated values as well. Default **false**
+A boolean. If set to `true`, it'll check all defaultable properties of the existing data passed to the model's update method `Model.update(existingData, updates)`, for all the properties with value `undefined` it'll generate their default values, add these them to the operation's context before validating the updates provided.
+
+If the update operation is successful, the newly generated default values will also be added to the updated values returned if not already present on the updated values. Default **false**
 
 ## shouldUpdate
 

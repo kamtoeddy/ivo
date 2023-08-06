@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-# v3.5.0 <small><sup>04-08-2023</sup></small>
+# v3.5.0 <small><sup>06-08-2023</sup></small>
 
 - [Add] added [`setMissingDefaultsOnUpdate`](./v3.5.0/index.md#setmissingdefaultsonupdate) to schema options
 

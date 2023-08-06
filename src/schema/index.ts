@@ -119,6 +119,8 @@ class ModelTool<
   Input extends RealType<Input> = Output,
   Aliases = {}
 > extends SchemaCore<Output, Input> {
+  private _regeneratedProps: StringKey<Output>[] = []
+
   constructor(schema: Schema<Output, Input, Aliases>) {
     super(schema.definitions as any, schema.options)
   }
@@ -353,6 +355,9 @@ class ModelTool<
     const isCreation = !isUpdate
 
     for (const prop of successFulChanges) {
+      if (this._regeneratedProps.includes(prop) && !isPropertyOn(prop, data))
+        continue
+
       const dependencies = this._getDependencies(prop)
 
       if (!dependencies.length) continue
@@ -449,6 +454,21 @@ class ModelTool<
     this.values = _values as Output
 
     this._initializeContexts()
+  }
+
+  private async _setMissingDefaults() {
+    this._regeneratedProps = this.props.filter((prop) => {
+      return this._isDefaultable(prop) && isEqual(this.values[prop], undefined)
+    })
+
+    await Promise.allSettled(
+      this._regeneratedProps.map(async (prop) => {
+        const value = await this._getDefaultValue(prop)
+
+        this._updateContext({ [prop]: value } as any)
+        this._updatePartialContext({ [prop]: value } as any)
+      })
+    )
   }
 
   private _useConfigProps = (obj: Partial<Output>, isUpdate = false) => {
@@ -816,6 +836,9 @@ class ModelTool<
 
     this._setValues(values, { allowVirtuals: false, allowTimestamps: true })
 
+    if (this._options?.setMissingDefaultsOnUpdate)
+      await this._setMissingDefaults()
+
     const validationError = new ErrorTool({ message: 'Validation Error' })
 
     if (!this._isGloballyUpdatable(changes as any))
@@ -886,6 +909,12 @@ class ModelTool<
       await this._handleFailure(updates, validationError, virtuals)
       return this._handleError(validationError.setMessage('Nothing to update'))
     }
+
+    if (this._options?.setMissingDefaultsOnUpdate)
+      this._regeneratedProps.forEach((prop) => {
+        if (isEqual(updates[prop], undefined))
+          updates[prop] = this.context[prop] as any
+      })
 
     const finalData = this._useConfigProps(updates, true)
 
