@@ -1,4 +1,4 @@
-import { Summary, IStringOptions } from '../../../../../dist'
+import { Summary, StringOptions } from '../../../../../dist'
 import {
   IOtherMeasureUnit,
   IOtherQuantity,
@@ -21,7 +21,7 @@ export const validateName = (val: any) => {
 
 export const validateString = (
   errorMessage = '',
-  options: IStringOptions = {}
+  options: StringOptions = {}
 ) => {
   return (val: any) => {
     const isValid = isStringOk(val, options)

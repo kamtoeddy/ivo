@@ -1,3 +1,5 @@
+import { XOR } from '../schema/types'
+
 export interface IArrayOptions<T> {
   empty?: boolean
   filter?: (data: T) => boolean | Promise<boolean>
@@ -39,10 +41,7 @@ export interface NumberRangeType {
   inclusiveTop?: boolean
 }
 
-export interface IStringOptions {
-  enums?: string[]
-  maxLength?: number
-  minLength?: number
-  regExp?: RegExp
-  trim?: boolean
-}
+export type StringOptions<T extends string = string> = XOR<
+  { enums: T[] },
+  { maxLength?: number; minLength?: number; regExp?: RegExp; trim?: boolean }
+>
