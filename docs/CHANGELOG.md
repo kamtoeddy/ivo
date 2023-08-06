@@ -2,13 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+# v3.5.0 <small><sup>06-08-2023</sup></small>
+
+- [Add] added [`setMissingDefaultsOnUpdate`](./v3.5.0/index.md#setmissingdefaultsonupdate) to schema options
+- [Update] updated types of `validate.isStringOk`
+
 # v3.4.0 <small><sup>04-08-2023</sup></small>
 
 - [Update] changed the signature of schemas
 
 # v3.3.1 <small><sup>02-08-2023</sup></small>
 
-- [Update] improve typescript types
+- [Update] improved typescript types
 
 # v3.3.0 <small><sup>01-08-2023</sup></small>
 

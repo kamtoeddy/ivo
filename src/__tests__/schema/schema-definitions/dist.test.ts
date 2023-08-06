@@ -18,6 +18,7 @@ import { Test_Validators } from './validators'
 import { Test_SchemaOnSuccess } from './options/on-success'
 import { Test_SchemaOnDelete } from './options/on-delete'
 import { Test_SchemaShouldUpdateOption } from './options/should-update'
+import { Test_SchemaSetMissingDefaultsOnUpdateOption } from './options/set-missing-defaults-on-update'
 
 const fx = makeFx(Schema)
 
@@ -40,5 +41,6 @@ Test_SchemaErrors({ Schema, fx })
 Test_SchemaOnDelete({ Schema, fx })
 Test_SchemaOnSuccess({ Schema, fx })
 Test_SchemaOptionFormat({ fx })
+Test_SchemaSetMissingDefaultsOnUpdateOption({ Schema, fx })
 Test_SchemaShouldUpdateOption({ Schema, fx })
 Test_SchemaTimestampOption({ Schema, fx })

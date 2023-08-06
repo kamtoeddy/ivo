@@ -27,6 +27,7 @@ import { ErrorTool } from './utils/schema-error'
 
 export const defaultOptions = {
   errors: 'silent',
+  setMissingDefaultsOnUpdate: false,
   shouldUpdate: true,
   timestamps: false
 } as ns.Options<any, any>
@@ -265,6 +266,18 @@ export abstract class SchemaCore<Output, Input> {
       if (!isValid.valid) error.add('onSuccess', isValid.reasons!).throw()
     }
 
+    if (isPropertyOn('setMissingDefaultsOnUpdate', this._options)) {
+      const typeProvided = typeof this._options.setMissingDefaultsOnUpdate
+
+      if (!['boolean', 'undefined'].includes(typeProvided))
+        error
+          .add(
+            'setMissingDefaultsOnUpdate',
+            "'setMissingDefaultsOnUpdate' should be a 'boolean'"
+          )
+          .throw()
+    }
+
     if (isPropertyOn('shouldUpdate', this._options)) {
       const typeProvided = typeof this._options.shouldUpdate
 
@@ -420,6 +433,8 @@ export abstract class SchemaCore<Output, Input> {
       | Validator<K, Output, Input>
       | undefined
   }
+
+  protected _isDefaultable = (prop: string) => isPropertyOn(prop, this.defaults)
 
   protected _isRuleInDefinition = (
     prop: string,

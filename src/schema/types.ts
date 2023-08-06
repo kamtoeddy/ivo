@@ -259,6 +259,7 @@ namespace Schema {
     onSuccess?:
       | SuccessHandler<Output, Input>
       | NonEmptyArray<SuccessHandler<Output, Input>>
+    setMissingDefaultsOnUpdate?: boolean
     shouldUpdate?: boolean | SetterWithSummary<boolean, Output, Input>
     timestamps?:
       | boolean
@@ -340,6 +341,7 @@ const ALLOWED_OPTIONS: Schema.OptionsKey<any, any>[] = [
   'errors',
   'onDelete',
   'onSuccess',
+  'setMissingDefaultsOnUpdate',
   'shouldUpdate',
   'timestamps'
 ]
