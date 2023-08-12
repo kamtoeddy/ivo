@@ -74,7 +74,7 @@ These methods are async because custom validators could be async as well.
 | sanitizer    | function                     | This could be used to transform a virtual property before their dependent properties get resolved. [more](./virtuals.md#sanitizer)                        |
 | shouldInit   | false \| function(): boolean | A boolean or setter that tells clean-schema whether or not a property should be initialized.                                                              |
 | shouldUpdate | false \| function(): boolean | A boolean or setter that tells clean-schema whether or not a property should be initialized.                                                              |
-| validator    | function                     | A function (async / sync) used to validated the value of a property. [more](../../validate/index.md#validators)                                           |
+| validator    | function                     | A function (async / sync) used to validated the value of a property. [more](../../../v3.2.0/validate/index.md#validators)                                 |
 | value        | any \| function              | value or setter of constant property. [more](../../../v3.0.0/schema/definition/constants.md#constant-properties`)                                         |
 | virtual      | boolean                      | a helper property that can be used to provide extra context but does not appear on instances of your model [more](./virtuals.md#virtual-properties)       |
 

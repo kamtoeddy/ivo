@@ -1,6 +1,6 @@
 # Defining a schema
 
-Clean schema considers a property to be properly defined if it is `dependent`, `readonly`, `required`, a `sideEffect` or has a `default` value other than _undefined_
+Clean schema considers a property to be properly defined if it is `dependent`, `readonly`, `required`, a `virtual` or has a `default` value other than _undefined_
 
 > N.B: Clean schema will throw an error if a property is not properly defined.
 > The Schema constructor accepts 2 arguments:
@@ -11,7 +11,7 @@ Clean schema considers a property to be properly defined if it is `dependent`, `
 The schema constructor also takes two generic interfaces you could use to improve on the type inference of your `InputType` & `OutputType`.
 
 ```ts
-const userSchema = new Schema<I, O>(definitions, options)
+const userSchema = new Schema<O, I>(definitions, options)
 ```
 
 ```ts
@@ -74,7 +74,7 @@ These methods are async because custom validators could be async as well.
 | sanitizer    | function                     | This could be used to transform a virtual property before their dependent properties get resolved. [more](../v3.4.0/schema/definition/virtuals.md#sanitizer)                  |
 | shouldInit   | false \| function(): boolean | A boolean or setter that tells clean-schema whether or not a property should be initialized.                                                                                  |
 | shouldUpdate | false \| function(): boolean | A boolean or setter that tells clean-schema whether or not a property should be initialized.                                                                                  |
-| validator    | function                     | A function (async / sync) used to validated the value of a property. [more](../v3.2.0/validate/index.md#validators)                                                           |
+| validator    | function                     | A function (async / sync) used to validated the value of a property. [more](../v3.4.0/validate/index.md#validators)                                                           |
 | value        | any \| function              | value or setter of constant property. [more](../v3.4.0/schema/definition/constants.md#constant-properties`)                                                                   |
 | virtual      | boolean                      | a helper property that can be used to provide extra context but does not appear on instances of your model [more](../v3.4.0/schema/definition/virtuals.md#virtual-properties) |
 
@@ -84,7 +84,6 @@ These methods are async because custom validators could be async as well.
 import type { Context, Summary } from 'clean-schema'
 
 type Input = {}
-
 type Output = {}
 
 type IContext = Context<Output, Input>

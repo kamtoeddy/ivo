@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+# v3.5.1 <small><sup>13-08-2023</sup></small>
+
+- [Docs] fix broken links in section on how to define a schema
+- [Fix] fix issue with isStringOk rejecting enums which are readonly arrays
+
 # v3.5.0 <small><sup>06-08-2023</sup></small>
 
 - [Add] added [`setMissingDefaultsOnUpdate`](./v3.5.0/index.md#setmissingdefaultsonupdate) to schema options

@@ -42,6 +42,6 @@ export interface NumberRangeType {
 }
 
 export type StringOptions<T extends string = string> = XOR<
-  { enums: T[] },
+  { enums: T[] | readonly T[] },
   { maxLength?: number; minLength?: number; regExp?: RegExp; trim?: boolean }
 >
