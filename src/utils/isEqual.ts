@@ -1,11 +1,11 @@
 export function isEqual(a: any, b: any) {
-  const typeOf_a = typeof a
+  const typeOfA = typeof a
 
-  if (typeOf_a != typeof b) return false
+  if (typeOfA != typeof b) return false
 
-  if (typeOf_a == 'undefined') return true
+  if (typeOfA == 'undefined') return true
 
-  if (['bigint', 'boolean', 'number', 'string', 'symbol'].includes(typeOf_a))
+  if (['bigint', 'boolean', 'number', 'string', 'symbol'].includes(typeOfA))
     return a == b
 
   return JSON.stringify(a) == JSON.stringify(b)

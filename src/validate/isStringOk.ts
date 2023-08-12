@@ -1,3 +1,4 @@
+import { ValidatorResponse } from '../schema/types'
 import { makeResponse } from '../schema/utils'
 import { belongsTo } from '../utils/functions'
 import { StringOptions } from '../utils/types'
@@ -11,14 +12,14 @@ export function isStringOk<T extends string = string>(
     regExp,
     trim = false
   }: StringOptions<T> = {}
-) {
+): ValidatorResponse<Exclude<T, undefined>> {
   if (belongsTo(str, [null, undefined]))
     return makeResponse({ reason: 'Unacceptable value', valid: false })
 
   if (enums)
-    return belongsTo(str, enums)
-      ? makeResponse<T>({ valid: true, validated: str })
-      : makeResponse<T>({ reason: 'Unacceptable value', valid: false })
+    return belongsTo(str, enums as any)
+      ? makeResponse({ valid: true, validated: str })
+      : makeResponse({ reason: 'Unacceptable value', valid: false })
 
   if (regExp && !regExp.test(str))
     return makeResponse({ reason: 'Unacceptable value', valid: false })
@@ -33,5 +34,5 @@ export function isStringOk<T extends string = string>(
   if (str.length > maxLength)
     return makeResponse({ reason: 'Too long', valid: false })
 
-  return makeResponse<T>({ valid: true, validated: str })
+  return makeResponse({ valid: true, validated: str })
 }

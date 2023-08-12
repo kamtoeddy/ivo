@@ -1,6 +1,6 @@
 # Defining a schema
 
-Clean schema considers a property to be properly defined if it is `dependent`, `readonly`, `required`, a `sideEffect` or has a `default` value other than _undefined_
+Clean schema considers a property to be properly defined if it is `dependent`, `readonly`, `required`, a `virtual` or has a `default` value other than _undefined_
 
 > N.B: Clean schema will throw an error if a property is not properly defined.
 > The Schema constructor accepts 2 arguments:
