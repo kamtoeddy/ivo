@@ -1,11 +1,11 @@
 import {
   getKeysAsProps,
-  isPropertyOn,
+  isEqual,
+  isKeyOf,
   sort,
   sortKeys,
   toArray
 } from '../utils/functions'
-import { isEqual } from '../utils/isEqual'
 import {
   Context,
   InternalValidatorResponse,
@@ -355,7 +355,7 @@ class ModelTool<
     const isCreation = !isUpdate
 
     for (const prop of successFulChanges) {
-      if (this._regeneratedProps.includes(prop) && !isPropertyOn(prop, data))
+      if (this._regeneratedProps.includes(prop) && !isKeyOf(prop, data))
         continue
 
       const dependencies = this._getDependencies(prop)
@@ -650,7 +650,7 @@ class ModelTool<
 
       const isLax = this._isLaxProp(prop)
 
-      const isProvided = isPropertyOn(prop, this.values)
+      const isProvided = isKeyOf(prop, this.values)
 
       const isLaxInit =
         isLax &&
@@ -661,7 +661,7 @@ class ModelTool<
         )
 
       const isRequiredInit =
-        this._isRequiredBy(prop) && isPropertyOn(prop, this.values)
+        this._isRequiredBy(prop) && isKeyOf(prop, this.values)
 
       if (
         (isLax &&
@@ -751,7 +751,7 @@ class ModelTool<
           values[prop as unknown as StringKey<Input>]
         )
 
-      const isProvided = isPropertyOn(prop, this.values)
+      const isProvided = isKeyOf(prop, this.values)
 
       const isLax = this._isLaxProp(prop)
 

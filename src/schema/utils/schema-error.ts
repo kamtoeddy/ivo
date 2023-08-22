@@ -1,4 +1,4 @@
-import { isPropertyOn, sortKeys, toArray } from '../../utils/functions'
+import { isKeyOf, sortKeys, toArray } from '../../utils/functions'
 import {
   ErrorPayload,
   ErrorToolProps,
@@ -44,7 +44,7 @@ export class ErrorTool extends Error {
     }
   }
 
-  private _has = (field: PayloadKey) => isPropertyOn(field, this.payload)
+  private _has = (field: PayloadKey) => isKeyOf(field, this.payload)
 
   private _setPayload = (payload: InputPayload) => {
     Object.entries(payload).forEach(([key, value]) => {

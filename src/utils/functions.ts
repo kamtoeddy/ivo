@@ -2,40 +2,71 @@ import { StringKey } from '../schema/types'
 import { ObjectType } from './types'
 
 export {
-  belongsTo,
   getKeysAsProps,
+  isEqual,
   isFunction,
+  isKeyOf,
+  isNullOrUndefined,
   isObject,
-  isPropertyOn,
+  isOneOf,
   toArray,
   sort,
   sortKeys
 }
 
-const belongsTo = (value: any, values: any[]) => values.includes(value)
-
-const getKeysAsProps = <T>(data: T) =>
-  Object.keys(data as object) as StringKey<T>[]
-
-const isFunction = (v: any): v is Function => typeof v === 'function'
-
-const isObject = (data: any): data is ObjectType => {
-  return data && typeof data === 'object' && !Array.isArray(data)
+function getKeysAsProps<T>(object: T) {
+  return Object.keys(object as object) as StringKey<T>[]
 }
 
-const isPropertyOn = (prop: string | number, object: any) =>
-  Object.hasOwnProperty.call(object, prop)
+function isEqual(a: any, b: any) {
+  const typeOfA = typeof a
 
-const toArray = <T>(value: T | T[]): T[] =>
-  Array.isArray(value) ? value : [value]
+  if (typeOfA != typeof b) return false
 
-const sort = <T>(data: T[]): T[] => data.sort((a, b) => (a < b ? -1 : 1))
+  if (typeOfA == 'undefined') return true
 
-function sortKeys<T extends ObjectType>(obj: T): T {
-  const keys = sort(Object.keys(obj))
+  if (['bigint', 'boolean', 'number', 'string', 'symbol'].includes(typeOfA))
+    return a == b
+
+  const refA = isNullOrUndefined(a) ? a : JSON.stringify(sortKeys(a))
+  const refB = isNullOrUndefined(b) ? b : JSON.stringify(sortKeys(b))
+
+  return refA == refB
+}
+
+function isFunction(value: any): value is Function {
+  return typeof value === 'function'
+}
+
+function isKeyOf(prop: string | number, object: any): prop is keyof object {
+  return Object.hasOwnProperty.call(object, prop)
+}
+
+function isNullOrUndefined(value: any): value is null | undefined {
+  return isOneOf(value, [null, undefined])
+}
+
+function isObject(value: any): value is ObjectType {
+  return value && typeof value === 'object' && !Array.isArray(value)
+}
+
+function isOneOf<T>(value: any, values: T[]): value is T {
+  return values.includes(value)
+}
+
+function toArray<T>(value: T | T[]): T[] {
+  return Array.isArray(value) ? value : [value]
+}
+
+function sort<T>(data: T[]): T[] {
+  return data.sort((a, b) => (a < b ? -1 : 1))
+}
+
+function sortKeys<T extends ObjectType>(object: T): T {
+  const keys = sort(Object.keys(object))
 
   return keys.reduce((prev, next: keyof T) => {
-    prev[next] = obj[next]
+    prev[next] = object[next]
 
     return prev
   }, {} as T)

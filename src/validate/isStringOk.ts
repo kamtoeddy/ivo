@@ -1,6 +1,6 @@
 import { ValidatorResponse } from '../schema/types'
 import { makeResponse } from '../schema/utils'
-import { belongsTo } from '../utils/functions'
+import { isOneOf } from '../utils/functions'
 import { StringOptions } from '../utils/types'
 
 export function isStringOk<T extends string = string>(
@@ -13,11 +13,11 @@ export function isStringOk<T extends string = string>(
     trim = false
   }: StringOptions<T> = {}
 ): ValidatorResponse<Exclude<T, undefined>> {
-  if (belongsTo(str, [null, undefined]))
+  if (isOneOf(str, [null, undefined]))
     return makeResponse({ reason: 'Unacceptable value', valid: false })
 
   if (enums)
-    return belongsTo(str, enums as any)
+    return isOneOf(str, enums as any)
       ? makeResponse({ valid: true, validated: str })
       : makeResponse({ reason: 'Unacceptable value', valid: false })
 

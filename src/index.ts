@@ -2,10 +2,9 @@ import { Schema } from './schema'
 
 export default Schema
 
-export { isEqual } from './utils/isEqual.js'
 export { Schema } from './schema'
+export * from './utils/functions'
 export * as validate from './validate'
-export * from './utils/isEqual'
 
 // types & interfaces
 export * from './utils/types'

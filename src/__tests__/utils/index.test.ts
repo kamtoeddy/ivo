@@ -4,8 +4,7 @@ import {
   getUniqueBy,
   serialize
 } from '../../utils/getUniqueBy'
-import { belongsTo } from '../../utils/functions'
-import { isEqual } from '../../utils/isEqual'
+import { belongsTo, isEqual } from '../../utils/functions'
 
 import { commonUtilTests } from '.'
 
