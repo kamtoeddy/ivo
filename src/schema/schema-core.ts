@@ -8,7 +8,7 @@ import {
   sort,
   sortKeys,
   toArray
-} from '../utils/functions'
+} from '../utils'
 import { ObjectType } from '../utils/types'
 import {
   DefinitionRule,
@@ -22,8 +22,7 @@ import {
   CONSTANT_RULES,
   VIRTUAL_RULES
 } from './types'
-import { OptionsTool } from './utils/options-tool'
-import { ErrorTool } from './utils/schema-error'
+import { ErrorTool, OptionsTool } from './utils'
 
 export const defaultOptions = {
   errors: 'silent',

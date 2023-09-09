@@ -1,3 +1,4 @@
+import { Schema } from '.'
 import { InputPayload } from '../utils/types'
 
 export type {
@@ -9,7 +10,7 @@ export type {
   Schema as ISchema,
   RealType,
   ResponseInput,
-  ResponseInput_,
+  ResponseInputObject,
   StringKey,
   TypeOf,
   Validator,
@@ -293,7 +294,7 @@ type InternalValidatorResponse<T> =
   | { valid: true; validated: T }
   | { otherReasons?: InputPayload; reasons: string[]; valid: false }
 
-type ResponseInput_<K extends keyof (Output & Input), Output, Input> =
+type ResponseInputObject<K extends keyof (Output & Input), Output, Input> =
   | { valid: true; validated?: TypeOf<(Output & Input)[K]> }
   | {
       otherReasons?: {
@@ -306,7 +307,7 @@ type ResponseInput_<K extends keyof (Output & Input), Output, Input> =
 
 type ResponseInput<K extends keyof (Output & Input), Output, Input> =
   | boolean
-  | (ResponseInput_<K, Output, Input> & {})
+  | (ResponseInputObject<K, Output, Input> & {})
 
 type Validator<K extends keyof (Output & Input), Output, Input> = (
   value: any,

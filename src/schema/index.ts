@@ -5,23 +5,22 @@ import {
   sort,
   sortKeys,
   toArray
-} from '../utils/functions'
+} from '../utils'
 import {
   Context,
   InternalValidatorResponse,
   Merge,
   ISchema as ns,
   RealType,
-  ResponseInput_,
+  ResponseInputObject,
   StringKey,
   Summary,
   ValidatorResponse
 } from './types'
 import { defaultOptions, SchemaCore } from './schema-core'
-import { makeResponse } from './utils'
-import { ErrorTool } from './utils/schema-error'
+import { ErrorTool, makeResponse } from './utils'
 
-export { Schema }
+export { Model, ModelTool, Schema }
 
 const validationFailedResponse = {
   valid: false,
@@ -532,7 +531,7 @@ class ModelTool<
   private _sanitizeValidationResponse = <T>(
     response: any,
     value: any
-  ): ResponseInput_<any, any, T> => {
+  ): ResponseInputObject<any, any, T> => {
     const responseType = typeof response
 
     if (responseType == 'boolean')
@@ -551,7 +550,7 @@ class ModelTool<
       return { valid: true, validated }
     }
 
-    const _response: ResponseInput_<any, any, T> = { valid: false }
+    const _response: ResponseInputObject<any, any, T> = { valid: false }
 
     if (response?.otherReasons) {
       const validProperties = getKeysAsProps(response.otherReasons).filter(
@@ -946,7 +945,7 @@ class ModelTool<
     const validator = this._getValidator(_prop as StringKey<Input>)
 
     if (validator) {
-      const res = (await validator(value, summary_)) as ResponseInput_<
+      const res = (await validator(value, summary_)) as ResponseInputObject<
         any,
         Input,
         (Input & Aliases)[K]

@@ -19,6 +19,7 @@ import { Test_SchemaOnSuccess } from './options/on-success'
 import { Test_SchemaOnDelete } from './options/on-delete'
 import { Test_SchemaShouldUpdateOption } from './options/should-update'
 import { Test_SchemaSetMissingDefaultsOnUpdateOption } from './options/set-missing-defaults-on-update'
+import { Test_SchemaEqualityDepth } from './options/equality-depth'
 
 const fx = makeFx(Schema)
 
@@ -38,6 +39,7 @@ Test_ShouldInitRule({ Schema, fx })
 Test_ShouldUpdateRule({ Schema, fx })
 
 Test_SchemaErrors({ Schema, fx })
+Test_SchemaEqualityDepth({ Schema, fx })
 Test_SchemaOnDelete({ Schema, fx })
 Test_SchemaOnSuccess({ Schema, fx })
 Test_SchemaOptionFormat({ fx })

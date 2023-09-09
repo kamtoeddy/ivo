@@ -1,6 +1,6 @@
 import { XOR } from '../schema/types'
 
-export interface IArrayOptions<T> {
+export interface ArrayOptions<T> {
   empty?: boolean
   filter?: (data: T) => boolean | Promise<boolean>
   modifier?: (data: T) => any | Promise<any>

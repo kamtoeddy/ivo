@@ -3,6 +3,8 @@ import { ObjectType } from './types'
 
 export {
   getKeysAsProps,
+  getUnique,
+  getUniqueBy,
   isEqual,
   isFunction,
   isKeyOf,
@@ -18,7 +20,7 @@ function getKeysAsProps<T>(object: T) {
   return Object.keys(object as object) as StringKey<T>[]
 }
 
-function isEqual(a: any, b: any) {
+function isEqual(a: any, b: any, depth: number = 1): boolean {
   const typeOfA = typeof a
 
   if (typeOfA != typeof b) return false
@@ -28,10 +30,20 @@ function isEqual(a: any, b: any) {
   if (['bigint', 'boolean', 'number', 'string', 'symbol'].includes(typeOfA))
     return a == b
 
-  const refA = isNullOrUndefined(a) ? a : JSON.stringify(sortKeys(a))
-  const refB = isNullOrUndefined(b) ? b : JSON.stringify(sortKeys(b))
+  if (isNullOrUndefined(a) || isNullOrUndefined(b)) return a == b
 
-  return refA == refB
+  let keysOfA = Object.keys(a),
+    keysOfB = Object.keys(b)
+
+  if (keysOfA.length != keysOfB.length) return false
+  ;(keysOfA = sort(keysOfA)), (keysOfB = sort(keysOfB))
+
+  if (JSON.stringify(keysOfA) != JSON.stringify(keysOfB)) return false
+
+  if (depth > 0 && keysOfA.length)
+    return keysOfA.every((key) => isEqual(a[key], b[key], depth - 1))
+
+  return JSON.stringify(sortKeys(a)) == JSON.stringify(sortKeys(b))
 }
 
 function isFunction(value: any): value is Function {
@@ -70,4 +82,34 @@ function sortKeys<T extends ObjectType>(object: T): T {
 
     return prev
   }, {} as T)
+}
+
+function getUnique<T>(list: T[]) {
+  let _list = list.map((dt) => _serialize(dt))
+
+  _list = Array.from(new Set(_list))
+
+  return _list.map((dt) => _serialize(dt, true))
+}
+
+function getUniqueBy<T>(list: T[], key?: string) {
+  if (!key) return getUnique(list)
+
+  const obj: ObjectType = {}
+
+  list.forEach((dt) => (obj[_getDeepValue(dt as ObjectType, key)] = dt))
+
+  return Object.values(obj) as T[]
+}
+
+function _getDeepValue(data: ObjectType, key: string): any {
+  return key.split('.').reduce((prev, next) => prev?.[next], data)
+}
+
+function _serialize(dt: any, revert = false) {
+  try {
+    return revert ? JSON.parse(dt) : JSON.stringify(dt)
+  } catch (err) {
+    return dt
+  }
 }
