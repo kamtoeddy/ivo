@@ -100,6 +100,7 @@ type Timestamp = {
 
 type SchemaOptions = {
   errors?: 'silent' | 'throw'
+  equalityDepth?: number
   onDelete?: DeleteListener | [DeleteListener]
   onSuccess?: SuccessListener | [SuccessListener]
   setMissingDefaultsOnUpdate?: boolean
@@ -134,6 +135,87 @@ type SchemaError = {
   }
   statusCode: number // e.g. 400
 }
+```
+
+## equalityDepth
+
+This is the number used to determine if the value of a property has changed during updates.
+
+To determine if a property has changed, it's value is compared against it's default value and previous value. Because object equality is not always straightforward, the `equalityDepth` provided is used to detrmine if properties of your schema that accept objects (which may have nested objects) as values have changed during updates
+
+The possible values allowed for this number range from `0` to `+Infinity`. The default value is `1`, which means **one level of nesting**.
+
+Here is a snippet to demonstrate how changing just the arragement of values of nested properties (without even changing their actual values) can affect the results of an update:
+
+```ts
+const user = {
+  name: 'John Doe',
+  bio: {
+    facebook: { displayName: 'john', handle: 'john3434' },
+    twitter: { displayName: 'John Doe', handle: 'john_on_twitter' }
+  }
+}
+
+// depth == 0
+
+Model.update(user, { bio: user.bio }).then(({ data, error }) => {
+  console.log(data) // null
+  console.log(error.message) // Nothing to update
+})
+
+// 👇 changing the positions of facebook & twitter in bio
+Model.update(user, {
+  bio: {
+    twitter: { displayName: 'John Doe', handle: 'john_on_twitter' },
+    facebook: { displayName: 'john', handle: 'john3434' }
+  }
+}).then(({ data, error }) => {
+  console.log(data)
+  // {
+  //   bio: {
+  //     facebook: { displayName: 'john', handle: 'john3434' },
+  //     twitter: { displayName: 'John Doe', handle: 'john_on_twitter' }
+  //     }
+  // }
+
+  console.log(error) // null
+})
+
+// depth == 1
+
+Model.update(user, { bio: user.bio }).then(({ data, error }) => {
+  console.log(data) // null
+  console.log(error.message) // Nothing to update
+})
+
+// 👇 changing the positions of facebook & twitter in bio
+Model.update(user, {
+  bio: {
+    twitter: { displayName: 'John Doe', handle: 'john_on_twitter' },
+    facebook: { displayName: 'john', handle: 'john3434' }
+  }
+}).then(({ data, error }) => {
+  console.log(data) // null
+  console.log(error.message) // Nothing to update
+})
+
+// 👇 changing the positions of facebook & twitter in bio and the positions of displayName & handle
+Model.update(user, {
+  bio: {
+    twitter: { handle: 'john_on_twitter', displayName: 'John Doe' },
+    facebook: { displayName: 'john', handle: 'john3434' }
+  }
+}).then(({ data, error }) => {
+  console.log(data)
+  // {
+  //   bio: {
+  //     facebook: { displayName: 'john', handle: 'john3434' },
+  //     twitter: { handle: 'john_on_twitter', displayName: 'John Doe' }
+  //     }
+  // }
+
+  console.log(error) // null
+})
 ```
 
 ## onDelete

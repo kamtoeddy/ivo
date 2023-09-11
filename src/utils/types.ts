@@ -1,6 +1,6 @@
 import { XOR } from '../schema/types'
 
-export interface ArrayOptions<T> {
+export type ArrayOptions<T> = {
   empty?: boolean
   filter?: (data: T) => boolean | Promise<boolean>
   modifier?: (data: T) => any | Promise<any>
@@ -10,6 +10,7 @@ export interface ArrayOptions<T> {
   unique?: boolean
   uniqueKey?: string
 }
+
 export type PayloadKey = number | string
 
 export type ErrorPayload = Record<PayloadKey, string[]>
@@ -21,21 +22,21 @@ export type SchemaErrorMessage =
   | 'Nothing to update'
   | 'Validation Error'
 
-export interface SchemaErrorProps {
+export type SchemaErrorProps = {
   message: SchemaErrorMessage
   payload?: ErrorPayload
   statusCode?: number
 }
 
-export interface ErrorToolProps {
+export type ErrorToolProps = {
   message: SchemaErrorMessage
   payload?: InputPayload
   statusCode?: number
 }
 
-export type ObjectType = Record<number | string, any> & {}
+export type ObjectType = Record<PayloadKey, any> & {}
 
-export interface NumberRangeType {
+export type NumberRangeType = {
   bounds: number[]
   inclusiveBottom?: boolean
   inclusiveTop?: boolean

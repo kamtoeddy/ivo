@@ -1,4 +1,4 @@
-import { Schema } from './schema'
+import { Schema } from '.'
 
 // TODO write tests to make sure this logic is respected
 
@@ -20,9 +20,7 @@ const data = {
 
 const value = { prop: data }
 
-const Model = new Schema({
-  prop: { default: data }
-}).getModel()
+const Model = new Schema({ prop: { default: data } }).getModel()
 
 Model.update(value, { prop: data }).then(({ data }) => {
   console.log(data)

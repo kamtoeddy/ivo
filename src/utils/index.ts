@@ -20,6 +20,14 @@ function getKeysAsProps<T>(object: T) {
   return Object.keys(object as object) as StringKey<T>[]
 }
 
+/**
+ * tell whether `a` & `b` are equals
+ * @param {any} a
+ * @param {any} b
+ * @param {number|undefined} depth how deep in nesting should equality checks be performed for objects
+ * @returns {boolean}
+ */
+
 function isEqual(a: any, b: any, depth: number = 1): boolean {
   const typeOfA = typeof a
 
