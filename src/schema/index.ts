@@ -298,7 +298,14 @@ class ModelTool<
 
     if (hasShouldUpdateRule && !isUpdatable) return false
 
-    return isReadonly && isEqual(this.defaults[propName], this.values[propName])
+    return (
+      isReadonly &&
+      isEqual(
+        this.defaults[propName],
+        this.values[propName],
+        this._options.equalityDepth
+      )
+    )
   }
 
   private _isValidProperty = (prop: string) => {
@@ -367,7 +374,7 @@ class ModelTool<
       if (
         isCreation &&
         (this._isDependentProp(prop) || this._isLaxProp(prop)) &&
-        isEqual(this.defaults[prop], data[prop])
+        isEqual(this.defaults[prop], data[prop], this._options.equalityDepth)
       )
         continue
 
@@ -385,7 +392,11 @@ class ModelTool<
       if (
         this._isReadonly(prop) &&
         !isCreation &&
-        !isEqual(this.values[prop], this.defaults[prop])
+        !isEqual(
+          this.values[prop],
+          this.defaults[prop],
+          this._options.equalityDepth
+        )
       )
         return
 
@@ -395,7 +406,11 @@ class ModelTool<
 
       if (
         !isCreation &&
-        isEqual(value, _ctx[prop as StringKey<Context<Output, Input>>])
+        isEqual(
+          value,
+          _ctx[prop as StringKey<Context<Output, Input>>],
+          this._options.equalityDepth
+        )
       )
         return
 
@@ -656,7 +671,8 @@ class ModelTool<
         isProvided &&
         !isEqual(
           this.values[prop as unknown as StringKey<Output>],
-          this.defaults[prop as unknown as StringKey<Output>]
+          this.defaults[prop as unknown as StringKey<Output>],
+          this._options.equalityDepth
         )
 
       const isRequiredInit =
@@ -872,7 +888,10 @@ class ModelTool<
         ? this._getVirtualByAlias(prop)!
         : prop) as unknown as StringKey<Output>
 
-      if (isEqual(validated, this.values[propName])) return
+      if (
+        isEqual(validated, this.values[propName], this._options.equalityDepth)
+      )
+        return
 
       if (this._isVirtual(propName)) virtuals.push(propName)
       else {

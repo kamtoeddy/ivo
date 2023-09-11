@@ -25,6 +25,7 @@ import {
 import { ErrorTool, OptionsTool } from './utils'
 
 export const defaultOptions = {
+  equalityDepth: 1,
   errors: 'silent',
   setMissingDefaultsOnUpdate: false,
   shouldUpdate: true,
@@ -240,6 +241,20 @@ export abstract class SchemaCore<Output, Input> {
     for (const option of options)
       if (!ALLOWED_OPTIONS.includes(option))
         error.add(option, 'Invalid option').throw()
+
+    if (isKeyOf('equalityDepth', this._options)) {
+      const typeProvided = typeof this._options.equalityDepth
+
+      if (typeProvided == 'undefined')
+        this._options.equalityDepth = defaultOptions.equalityDepth
+      else if (typeProvided != 'number' || this._options.equalityDepth! < 0)
+        error
+          .add(
+            'equalityDepth',
+            "'equalityDepth' must be a number between 0 and +Infinity"
+          )
+          .throw()
+    }
 
     if (isKeyOf('errors', this._options))
       if (!['silent', 'throw'].includes(this._options.errors!))

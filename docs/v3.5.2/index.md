@@ -99,8 +99,8 @@ type Timestamp = {
 }
 
 type SchemaOptions = {
-  errors?: 'silent' | 'throw'
   equalityDepth?: number
+  errors?: 'silent' | 'throw'
   onDelete?: DeleteListener | [DeleteListener]
   onSuccess?: SuccessListener | [SuccessListener]
   setMissingDefaultsOnUpdate?: boolean
@@ -114,28 +114,6 @@ const schema = new Schema<Output, Input>(definitions, options)
 ```
 
 More details on the `Context` & `Summary` utiliies can be found [here](../v3.4.0/schema/definition/life-cycles.md#the-operation-context)
-
-## errors
-
-This option is to specify the way the errors should be treated. If set to `silent`, the errors will be returned in the operation's resolved results but if set to `throw`, it will simply throw the error(you may want to use in a try-catch block). The default value is **`'silent'`**
-
-This is the structure of the error returned or thrown
-
-```ts
-type SchemaErrorMessage =
-  | 'Invalid Data'
-  | 'Invalid Schema'
-  | 'Nothing to update'
-  | 'Validation Error'
-
-type SchemaError = {
-  message: SchemaErrorMessage
-  payload: {
-    [key: string]: string[] // e.g. name: ["Invalid name", "too long"]
-  }
-  statusCode: number // e.g. 400
-}
-```
 
 ## equalityDepth
 
@@ -216,6 +194,28 @@ Model.update(user, {
 
   console.log(error) // null
 })
+```
+
+## errors
+
+This option is to specify the way the errors should be treated. If set to `silent`, the errors will be returned in the operation's resolved results but if set to `throw`, it will simply throw the error(you may want to use in a try-catch block). The default value is **`'silent'`**
+
+This is the structure of the error returned or thrown
+
+```ts
+type SchemaErrorMessage =
+  | 'Invalid Data'
+  | 'Invalid Schema'
+  | 'Nothing to update'
+  | 'Validation Error'
+
+type SchemaError = {
+  message: SchemaErrorMessage
+  payload: {
+    [key: string]: string[] // e.g. name: ["Invalid name", "too long"]
+  }
+  statusCode: number // e.g. 400
+}
 ```
 
 ## onDelete

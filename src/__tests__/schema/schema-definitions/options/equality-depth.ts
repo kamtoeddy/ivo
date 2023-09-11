@@ -1,81 +1,284 @@
 import {
   expectFailure,
   expectNoFailure,
-  getValidSchema,
-  validator
+  getValidSchema
+  // validator
 } from '../_utils'
 
 export const Test_SchemaEqualityDepth = ({ Schema, fx }: any) => {
   describe('Schema.options.equalityDepth', () => {
     describe('behaviour', () => {
-      const values = { id: 1, name: 'Book name', price: 100 }
-      let deletedValues: any = {}
+      const error = { message: 'Nothing to update' }
 
-      function onDelete_(prop = '') {
-        return (values: any) => (deletedValues[prop] = values)
+      const user = {
+        level_0_a: 'value',
+        level_0_b: {
+          level_1_a: { level_2_a: 'value', level_2_b: 'value' },
+          level_1_b: {
+            level_2_a: 'value',
+            level_2_b: {
+              level_3_a: 'value',
+              level_3_b: 'value',
+              level_3_c: { level_4_a: 'value', level_4_b: 'value' }
+            }
+          }
+        }
       }
 
-      beforeEach(() => (deletedValues = {}))
+      describe('behaviour with previous values', () => {
+        it('should respect the default equality depth(1)', async () => {
+          const Model = new Schema({
+            level_0_a: { default: '' },
+            level_0_b: { default: {} }
+          }).getModel()
 
-      describe('behaviour with other delete handlers', () => {
-        const Book = new Schema(
-          {
-            id: { constant: true, value: 1, onDelete: onDelete_('id') },
-            name: { required: true, validator, onDelete: onDelete_('name') },
-            price: {
-              default: null,
-              dependent: true,
-              dependsOn: '_setPrice',
-              resolver: ({ context }: any) => context._setPrice,
-              onDelete: onDelete_('price')
+          const changeToAllow = {
+            level_1_a: { level_2_b: 'value', level_2_a: 'value' },
+            level_1_b: {
+              level_2_b: {
+                level_3_b: 'value',
+                level_3_a: 'value',
+                level_3_c: { level_4_a: 'value', level_4_b: 'value' }
+              },
+              level_2_a: 'value'
+            }
+          }
+
+          const values_ = [
+            { changes: user, error },
+            {
+              changes: {
+                level_0_b: {
+                  level_1_a: { level_2_a: 'value', level_2_b: 'value' },
+                  level_1_b: {
+                    level_2_a: 'value',
+                    level_2_b: {
+                      level_3_a: 'value',
+                      level_3_b: 'value',
+                      level_3_c: { level_4_a: 'value', level_4_b: 'value' }
+                    }
+                  }
+                },
+                level_0_a: 'value'
+              },
+              error
             },
-            _setPrice: { virtual: true, validator }
-          },
-          { onDelete: onDelete_('global') }
-        ).getModel()
+            {
+              changes: {
+                level_0_b: {
+                  level_1_b: {
+                    level_2_b: {
+                      level_3_a: 'value',
+                      level_3_b: 'value',
+                      level_3_c: { level_4_a: 'value', level_4_b: 'value' }
+                    },
+                    level_2_a: 'value'
+                  },
+                  level_1_a: { level_2_b: 'value', level_2_a: 'value' }
+                },
+                level_0_a: 'value'
+              },
+              error
+            },
+            {
+              changes: {
+                level_0_b: changeToAllow,
+                level_0_a: 'value'
+              },
+              data: { level_0_b: changeToAllow }
+            }
+          ] as any[]
 
-        it("should trigger all 'delete' handlers on properties an global handlers", async () => {
-          await Book.delete(values)
+          for (const values of values_) {
+            const { data, error } = await Model.update(user, values.changes)
 
-          expect(deletedValues).toEqual({
-            id: values,
-            name: values,
-            price: values,
-            global: values
-          })
+            if (values.data) {
+              expect(error).toEqual(null)
+              expect(data).toMatchObject(values.data)
+            }
+
+            if (values.error) {
+              expect(data).toEqual(null)
+              expect(error).toMatchObject(values.error)
+            }
+          }
         })
-      })
 
-      describe('behaviour without other delete handlers', () => {
-        const Book = new Schema(
-          {
-            id: { constant: true, value: 1 },
-            name: { required: true, validator },
-            price: {
-              default: null,
-              dependent: true,
-              dependsOn: '_setPrice',
-              resolver: ({ context }: any) => context._setPrice
+        it('should respect the equality depth(0)', async () => {
+          const Model = new Schema(
+            {
+              level_0_a: { default: '' },
+              level_0_b: { default: {} }
             },
-            _setPrice: { virtual: true, validator }
-          },
-          { onDelete: [onDelete_('global'), onDelete_('global-1')] }
-        ).getModel()
+            { equalityDepth: 0 }
+          ).getModel()
 
-        it("should trigger all global 'delete' handlers", async () => {
-          await Book.delete(values)
+          const changeToAllow = {
+              level_0_b: {
+                level_1_b: {
+                  level_2_b: {
+                    level_3_a: 'value',
+                    level_3_b: 'value',
+                    level_3_c: { level_4_a: 'value', level_4_b: 'value' }
+                  },
+                  level_2_a: 'value'
+                },
+                level_1_a: { level_2_b: 'value', level_2_a: 'value' }
+              }
+            },
+            changeToAllow1 = {
+              level_1_a: { level_2_b: 'value', level_2_a: 'value' },
+              level_1_b: {
+                level_2_b: {
+                  level_3_b: 'value',
+                  level_3_a: 'value',
+                  level_3_c: { level_4_a: 'value', level_4_b: 'value' }
+                },
+                level_2_a: 'value'
+              }
+            }
 
-          expect(deletedValues).toEqual({ global: values, 'global-1': values })
+          const values_ = [
+            { changes: user, error },
+            {
+              changes: {
+                level_0_b: {
+                  level_1_a: { level_2_a: 'value', level_2_b: 'value' },
+                  level_1_b: {
+                    level_2_a: 'value',
+                    level_2_b: {
+                      level_3_a: 'value',
+                      level_3_b: 'value',
+                      level_3_c: { level_4_a: 'value', level_4_b: 'value' }
+                    }
+                  }
+                },
+                level_0_a: 'value'
+              },
+              error
+            },
+            {
+              changes: changeToAllow,
+              data: changeToAllow
+            },
+            {
+              changes: {
+                level_0_b: changeToAllow1,
+                level_0_a: 'value'
+              },
+              data: { level_0_b: changeToAllow1 }
+            }
+          ] as any[]
+
+          for (const values of values_) {
+            const { data, error } = await Model.update(user, values.changes)
+
+            if (values.data) {
+              expect(error).toEqual(null)
+              expect(data).toMatchObject(values.data)
+            }
+
+            if (values.error) {
+              expect(data).toEqual(null)
+              expect(error).toMatchObject(values.error)
+            }
+          }
+        })
+
+        it('should respect the equality depth(2)', async () => {
+          const Model = new Schema(
+            {
+              level_0_a: { default: '' },
+              level_0_b: { default: {} }
+            },
+            { equalityDepth: 2 }
+          ).getModel()
+
+          const values_ = [
+            { changes: user, error },
+            {
+              changes: {
+                level_0_b: {
+                  level_1_a: { level_2_a: 'value', level_2_b: 'value' },
+                  level_1_b: {
+                    level_2_a: 'value',
+                    level_2_b: {
+                      level_3_a: 'value',
+                      level_3_b: 'value',
+                      level_3_c: { level_4_a: 'value', level_4_b: 'value' }
+                    }
+                  }
+                },
+                level_0_a: 'value'
+              },
+              error
+            },
+            {
+              changes: {
+                level_0_b: {
+                  level_1_b: {
+                    level_2_b: {
+                      level_3_a: 'value',
+                      level_3_b: 'value',
+                      level_3_c: { level_4_a: 'value', level_4_b: 'value' }
+                    },
+                    level_2_a: 'value'
+                  },
+                  level_1_a: { level_2_b: 'value', level_2_a: 'value' }
+                }
+              },
+              error
+            },
+            {
+              changes: {
+                level_0_b: {
+                  level_1_a: { level_2_b: 'value', level_2_a: 'value' },
+                  level_1_b: {
+                    level_2_b: {
+                      level_3_b: 'value',
+                      level_3_a: 'value',
+                      level_3_c: { level_4_a: 'value', level_4_b: 'value' }
+                    },
+                    level_2_a: 'value'
+                  }
+                },
+                level_0_a: 'value'
+              },
+              error
+            }
+          ] as any[]
+
+          for (const values of values_) {
+            const { data, error } = await Model.update(user, values.changes)
+
+            if (values.data) {
+              expect(error).toEqual(null)
+              expect(data).toMatchObject(values.data)
+            }
+
+            if (values.error) {
+              expect(data).toEqual(null)
+              expect(error).toMatchObject(values.error)
+            }
+          }
         })
       })
     })
 
     describe('valid', () => {
-      it("should allow 'onDelete' as (() => any) | ((() => any)[])", () => {
-        const values = [() => {}, [() => {}]]
+      it("should allow 'equalityDepth' as number", () => {
+        const toPass = fx(getValidSchema(), { equalityDepth: 1 })
 
-        for (const onDelete of values) {
-          const toPass = fx(getValidSchema(), { onDelete })
+        expectNoFailure(toPass)
+
+        toPass()
+      })
+
+      it('should allow numbers >= 0', () => {
+        const values = [0, 1, 53, Infinity]
+
+        for (const equalityDepth of values) {
+          const toPass = fx(getValidSchema(), { equalityDepth })
 
           expectNoFailure(toPass)
 
@@ -85,21 +288,22 @@ export const Test_SchemaEqualityDepth = ({ Schema, fx }: any) => {
     })
 
     describe('invalid', () => {
-      it("should reject 'onDelete' other than (() => any) | ((() => any)[])", () => {
+      it("should reject 'equalityDepth' if not a number >= 0", () => {
         const invalidValues = [
-          1,
-          0,
-          -14,
+          -1,
+          [],
+          {},
+          () => '',
+          () => 23,
           true,
           false,
           'invalid',
           '',
-          null,
-          undefined
+          null
         ]
 
-        for (const onDelete of invalidValues) {
-          const toFail = fx(getValidSchema(), { onDelete })
+        for (const equalityDepth of invalidValues) {
+          const toFail = fx(getValidSchema(), { equalityDepth })
 
           expectFailure(toFail)
 
@@ -109,8 +313,8 @@ export const Test_SchemaEqualityDepth = ({ Schema, fx }: any) => {
             expect(err).toMatchObject({
               message: 'Invalid Schema',
               payload: {
-                onDelete: expect.arrayContaining([
-                  "The 'onDelete' handler @[0] is not a function"
+                equalityDepth: expect.arrayContaining([
+                  "'equalityDepth' must be a number between 0 and +Infinity"
                 ])
               },
               statusCode: 500

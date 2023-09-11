@@ -58,7 +58,10 @@ function isFunction(value: any): value is Function {
   return typeof value === 'function'
 }
 
-function isKeyOf(prop: string | number, object: any): prop is keyof object {
+function isKeyOf<T>(
+  prop: string | number | symbol,
+  object: T
+): prop is keyof T {
   return Object.hasOwnProperty.call(object, prop)
 }
 
