@@ -1,15 +1,17 @@
 import {
-  belongsTo,
+  ErrorTool,
+  OptionsTool,
   getKeysAsProps,
+  isEqual,
   isFunction,
+  isKeyOf,
   isObject,
-  isPropertyOn,
+  isOneOf,
   sort,
   sortKeys,
   toArray
-} from '../utils/functions'
+} from '../utils'
 import { ObjectType } from '../utils/types'
-import { isEqual } from '../utils/isEqual'
 import {
   DefinitionRule,
   Context,
@@ -22,10 +24,9 @@ import {
   CONSTANT_RULES,
   VIRTUAL_RULES
 } from './types'
-import { OptionsTool } from './utils/options-tool'
-import { ErrorTool } from './utils/schema-error'
 
 export const defaultOptions = {
+  equalityDepth: 1,
   errors: 'silent',
   setMissingDefaultsOnUpdate: false,
   shouldUpdate: true,
@@ -212,7 +213,7 @@ export abstract class SchemaCore<Output, Input> {
 
     return (
       readonly === true &&
-      belongsTo(shouldInit, [true, undefined]) &&
+      isOneOf(shouldInit, [true, undefined]) &&
       !this._isRequiredBy(prop)
     )
   }
@@ -242,11 +243,25 @@ export abstract class SchemaCore<Output, Input> {
       if (!ALLOWED_OPTIONS.includes(option))
         error.add(option, 'Invalid option').throw()
 
-    if (isPropertyOn('errors', this._options))
+    if (isKeyOf('equalityDepth', this._options)) {
+      const typeProvided = typeof this._options.equalityDepth
+
+      if (typeProvided == 'undefined')
+        this._options.equalityDepth = defaultOptions.equalityDepth
+      else if (typeProvided != 'number' || this._options.equalityDepth! < 0)
+        error
+          .add(
+            'equalityDepth',
+            "'equalityDepth' must be a number between 0 and +Infinity"
+          )
+          .throw()
+    }
+
+    if (isKeyOf('errors', this._options))
       if (!['silent', 'throw'].includes(this._options.errors!))
         error.add('errors', "should be 'silent' or 'throw'").throw()
 
-    if (isPropertyOn('onDelete', this._options)) {
+    if (isKeyOf('onDelete', this._options)) {
       const isValid = this._areHandlersOk(
         this._options.onDelete,
         'onDelete',
@@ -256,7 +271,7 @@ export abstract class SchemaCore<Output, Input> {
       if (!isValid.valid) error.add('onDelete', isValid.reasons!).throw()
     }
 
-    if (isPropertyOn('onSuccess', this._options)) {
+    if (isKeyOf('onSuccess', this._options)) {
       const isValid = this._areHandlersOk(
         this._options.onSuccess,
         'onSuccess',
@@ -266,7 +281,7 @@ export abstract class SchemaCore<Output, Input> {
       if (!isValid.valid) error.add('onSuccess', isValid.reasons!).throw()
     }
 
-    if (isPropertyOn('setMissingDefaultsOnUpdate', this._options)) {
+    if (isKeyOf('setMissingDefaultsOnUpdate', this._options)) {
       const typeProvided = typeof this._options.setMissingDefaultsOnUpdate
 
       if (!['boolean', 'undefined'].includes(typeProvided))
@@ -278,7 +293,7 @@ export abstract class SchemaCore<Output, Input> {
           .throw()
     }
 
-    if (isPropertyOn('shouldUpdate', this._options)) {
+    if (isKeyOf('shouldUpdate', this._options)) {
       const typeProvided = typeof this._options.shouldUpdate
 
       if (!['boolean', 'function'].includes(typeProvided))
@@ -290,7 +305,7 @@ export abstract class SchemaCore<Output, Input> {
           .throw()
     }
 
-    if (isPropertyOn('timestamps', this._options)) {
+    if (isKeyOf('timestamps', this._options)) {
       const isValid = this._isTimestampsOptionOk()
 
       if (!isValid.valid) error.add('timestamps', isValid.reason!).throw()
@@ -434,14 +449,14 @@ export abstract class SchemaCore<Output, Input> {
       | undefined
   }
 
-  protected _isDefaultable = (prop: string) => isPropertyOn(prop, this.defaults)
+  protected _isDefaultable = (prop: string) => isKeyOf(prop, this.defaults)
 
   protected _isRuleInDefinition = (
     prop: string,
     rules: DefinitionRule | DefinitionRule[]
   ): boolean => {
     for (const _prop of toArray(rules))
-      if (isPropertyOn(_prop, this._getDefinition(prop))) return true
+      if (isKeyOf(_prop, this._getDefinition(prop))) return true
 
     return false
   }
@@ -720,7 +735,7 @@ export abstract class SchemaCore<Output, Input> {
 
     const valid = false
 
-    if (!belongsTo(readonly, [true, 'lax']))
+    if (!isOneOf(readonly, [true, 'lax']))
       return {
         reason: "Readonly properties are either true | 'lax'",
         valid
@@ -755,7 +770,7 @@ export abstract class SchemaCore<Output, Input> {
         reason: 'Lax properties cannot have initialization blocked'
       }
 
-    if (!belongsTo(readonly, [true, 'lax']))
+    if (!isOneOf(readonly, [true, 'lax']))
       return {
         valid,
         reason: "Readonly properties have readonly true | 'lax'"

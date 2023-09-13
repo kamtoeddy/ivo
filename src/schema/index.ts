@@ -1,27 +1,27 @@
 import {
+  ErrorTool,
+  makeResponse,
   getKeysAsProps,
-  isPropertyOn,
+  isEqual,
+  isKeyOf,
   sort,
   sortKeys,
   toArray
-} from '../utils/functions'
-import { isEqual } from '../utils/isEqual'
+} from '../utils'
 import {
   Context,
   InternalValidatorResponse,
   Merge,
   ISchema as ns,
   RealType,
-  ResponseInput_,
+  ResponseInputObject,
   StringKey,
   Summary,
   ValidatorResponse
 } from './types'
 import { defaultOptions, SchemaCore } from './schema-core'
-import { makeResponse } from './utils'
-import { ErrorTool } from './utils/schema-error'
 
-export { Schema }
+export { Model, ModelTool, Schema }
 
 const validationFailedResponse = {
   valid: false,
@@ -299,7 +299,14 @@ class ModelTool<
 
     if (hasShouldUpdateRule && !isUpdatable) return false
 
-    return isReadonly && isEqual(this.defaults[propName], this.values[propName])
+    return (
+      isReadonly &&
+      isEqual(
+        this.defaults[propName],
+        this.values[propName],
+        this._options.equalityDepth
+      )
+    )
   }
 
   private _isValidProperty = (prop: string) => {
@@ -355,7 +362,7 @@ class ModelTool<
     const isCreation = !isUpdate
 
     for (const prop of successFulChanges) {
-      if (this._regeneratedProps.includes(prop) && !isPropertyOn(prop, data))
+      if (this._regeneratedProps.includes(prop) && !isKeyOf(prop, data))
         continue
 
       const dependencies = this._getDependencies(prop)
@@ -368,7 +375,7 @@ class ModelTool<
       if (
         isCreation &&
         (this._isDependentProp(prop) || this._isLaxProp(prop)) &&
-        isEqual(this.defaults[prop], data[prop])
+        isEqual(this.defaults[prop], data[prop], this._options.equalityDepth)
       )
         continue
 
@@ -386,7 +393,11 @@ class ModelTool<
       if (
         this._isReadonly(prop) &&
         !isCreation &&
-        !isEqual(this.values[prop], this.defaults[prop])
+        !isEqual(
+          this.values[prop],
+          this.defaults[prop],
+          this._options.equalityDepth
+        )
       )
         return
 
@@ -396,7 +407,11 @@ class ModelTool<
 
       if (
         !isCreation &&
-        isEqual(value, _ctx[prop as StringKey<Context<Output, Input>>])
+        isEqual(
+          value,
+          _ctx[prop as StringKey<Context<Output, Input>>],
+          this._options.equalityDepth
+        )
       )
         return
 
@@ -532,7 +547,7 @@ class ModelTool<
   private _sanitizeValidationResponse = <T>(
     response: any,
     value: any
-  ): ResponseInput_<any, any, T> => {
+  ): ResponseInputObject<any, any, T> => {
     const responseType = typeof response
 
     if (responseType == 'boolean')
@@ -551,7 +566,7 @@ class ModelTool<
       return { valid: true, validated }
     }
 
-    const _response: ResponseInput_<any, any, T> = { valid: false }
+    const _response: ResponseInputObject<any, any, T> = { valid: false }
 
     if (response?.otherReasons) {
       const validProperties = getKeysAsProps(response.otherReasons).filter(
@@ -650,18 +665,19 @@ class ModelTool<
 
       const isLax = this._isLaxProp(prop)
 
-      const isProvided = isPropertyOn(prop, this.values)
+      const isProvided = isKeyOf(prop, this.values)
 
       const isLaxInit =
         isLax &&
         isProvided &&
         !isEqual(
           this.values[prop as unknown as StringKey<Output>],
-          this.defaults[prop as unknown as StringKey<Output>]
+          this.defaults[prop as unknown as StringKey<Output>],
+          this._options.equalityDepth
         )
 
       const isRequiredInit =
-        this._isRequiredBy(prop) && isPropertyOn(prop, this.values)
+        this._isRequiredBy(prop) && isKeyOf(prop, this.values)
 
       if (
         (isLax &&
@@ -751,7 +767,7 @@ class ModelTool<
           values[prop as unknown as StringKey<Input>]
         )
 
-      const isProvided = isPropertyOn(prop, this.values)
+      const isProvided = isKeyOf(prop, this.values)
 
       const isLax = this._isLaxProp(prop)
 
@@ -873,7 +889,10 @@ class ModelTool<
         ? this._getVirtualByAlias(prop)!
         : prop) as unknown as StringKey<Output>
 
-      if (isEqual(validated, this.values[propName])) return
+      if (
+        isEqual(validated, this.values[propName], this._options.equalityDepth)
+      )
+        return
 
       if (this._isVirtual(propName)) virtuals.push(propName)
       else {
@@ -946,7 +965,7 @@ class ModelTool<
     const validator = this._getValidator(_prop as StringKey<Input>)
 
     if (validator) {
-      const res = (await validator(value, summary_)) as ResponseInput_<
+      const res = (await validator(value, summary_)) as ResponseInputObject<
         any,
         Input,
         (Input & Aliases)[K]

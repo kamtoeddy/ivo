@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+# v3.5.2 <small><sup>13-09-2023</sup></small>
+
+- [Add] added [`equalityDepth`](./v3.5.2/index.md#equalitydepth) to schema options
+- [Docs] fix broken links in various sections of docs
+
 # v3.5.1 <small><sup>13-08-2023</sup></small>
 
 - [Docs] fix broken links in section on how to define a schema

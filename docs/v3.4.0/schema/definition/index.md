@@ -8,10 +8,10 @@ Clean schema considers a property to be properly defined if it is `dependent`, `
 1. definitions (required)
 1. [options (optional)](#options)
 
-The schema constructor also takes two generic interfaces you could use to improve on the type inference of your `InputType` & `OutputType`.
+The schema constructor also takes two generic types you could use to improve on the type inference of your `Input` & `Output` data.
 
 ```ts
-const userSchema = new Schema<I, O>(definitions, options)
+const userSchema = new Schema<Output, Input>(definitions, options)
 ```
 
 ```ts

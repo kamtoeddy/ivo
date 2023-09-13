@@ -1,3 +1,4 @@
+import { Schema } from '.'
 import { InputPayload } from '../utils/types'
 
 export type {
@@ -9,7 +10,7 @@ export type {
   Schema as ISchema,
   RealType,
   ResponseInput,
-  ResponseInput_,
+  ResponseInputObject,
   StringKey,
   TypeOf,
   Validator,
@@ -254,6 +255,7 @@ namespace Schema {
   }
 
   export type Options<Output, Input> = {
+    equalityDepth?: number
     errors?: 'silent' | 'throw'
     onDelete?: Handler<Output> | NonEmptyArray<Handler<Output>>
     onSuccess?:
@@ -268,14 +270,9 @@ namespace Schema {
 
   export type OptionsKey<Output, Input> = StringKey<Options<Output, Input>>
 
-  export interface PrivateOptions {
-    timestamps: Timestamp
-  }
+  export type PrivateOptions = { timestamps: Timestamp }
 
-  export interface Timestamp {
-    createdAt: string
-    updatedAt: string
-  }
+  export type Timestamp = { createdAt: string; updatedAt: string }
 
   export type ExtensionOptions<ParentOutput, ParentInput, Output, Input> =
     Options<Output, Input> & {
@@ -293,7 +290,7 @@ type InternalValidatorResponse<T> =
   | { valid: true; validated: T }
   | { otherReasons?: InputPayload; reasons: string[]; valid: false }
 
-type ResponseInput_<K extends keyof (Output & Input), Output, Input> =
+type ResponseInputObject<K extends keyof (Output & Input), Output, Input> =
   | { valid: true; validated?: TypeOf<(Output & Input)[K]> }
   | {
       otherReasons?: {
@@ -306,7 +303,7 @@ type ResponseInput_<K extends keyof (Output & Input), Output, Input> =
 
 type ResponseInput<K extends keyof (Output & Input), Output, Input> =
   | boolean
-  | (ResponseInput_<K, Output, Input> & {})
+  | (ResponseInputObject<K, Output, Input> & {})
 
 type Validator<K extends keyof (Output & Input), Output, Input> = (
   value: any,
@@ -338,6 +335,7 @@ const DEFINITION_RULES = [
 type DefinitionRule = (typeof DEFINITION_RULES)[number]
 
 const ALLOWED_OPTIONS: Schema.OptionsKey<any, any>[] = [
+  'equalityDepth',
   'errors',
   'onDelete',
   'onSuccess',
