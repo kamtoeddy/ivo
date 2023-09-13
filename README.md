@@ -189,7 +189,7 @@ await handleSuccess()
 
 ⚠️ If using with TypeScript, make sure to have `skipLibCheck: true` else your program will not compile because of a complex type used under the hood to infer some types
 
-- [Defining a schema](./docs/v3.5.0/schema/definition/index.md#defining-a-schema)
+- [Defining a schema](./docs/v3.5.2/index.md#defining-a-schema)
   - [constant properties](./docs/v3.0.0/schema/definition/constants.md#constant-properties)
   - [default values](./docs/v3.0.0/schema/definition/defaults.md#default-values)
   - [dependent properties](./docs/v3.4.0/schema/definition/dependents.md#dependent-properties)
@@ -211,7 +211,7 @@ await handleSuccess()
   - [onFailure](./docs/v3.4.0/schema/definition/life-cycles.md#onfailure)
   - [onSuccess](./docs/v3.4.0/schema/definition/life-cycles.md#onsuccess)
 
-- [Options](./docs/v3.4.0/schema/definition/index.md#options)
+- [Options](./docs/v3.5.2/index.md#options)
 
 - [Changelog](./docs/CHANGELOG.md#changelog)
 
