@@ -1,4 +1,6 @@
 import {
+  ErrorTool,
+  OptionsTool,
   getKeysAsProps,
   isEqual,
   isFunction,
@@ -22,7 +24,6 @@ import {
   CONSTANT_RULES,
   VIRTUAL_RULES
 } from './types'
-import { ErrorTool, OptionsTool } from './utils'
 
 export const defaultOptions = {
   equalityDepth: 1,

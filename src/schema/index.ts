@@ -1,4 +1,6 @@
 import {
+  ErrorTool,
+  makeResponse,
   getKeysAsProps,
   isEqual,
   isKeyOf,
@@ -18,7 +20,6 @@ import {
   ValidatorResponse
 } from './types'
 import { defaultOptions, SchemaCore } from './schema-core'
-import { ErrorTool, makeResponse } from './utils'
 
 export { Model, ModelTool, Schema }
 

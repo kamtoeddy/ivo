@@ -1,11 +1,6 @@
-import { makeResponse } from '../schema/utils'
-import { ArrayOptions } from '../utils/types'
-import { ResponseInputObject } from '../schema/types'
-import { NumberRangeType } from '../utils/types'
-
-import { ValidatorResponse } from '../schema/types'
-import { getUniqueBy, isOneOf } from '../utils'
-import { StringOptions } from '../utils/types'
+import { getUniqueBy, isOneOf, makeResponse } from '../utils'
+import { ResponseInputObject, ValidatorResponse } from '../schema/types'
+import { ArrayOptions, NumberRangeType, StringOptions } from '../utils/types'
 
 export {
   isArrayOk,
