@@ -180,7 +180,7 @@ function getKeysAsProps<T>(object: T) {
  * @returns {boolean}
  */
 
-function isEqual(a: any, b: any, depth: number = 1): boolean {
+function isEqual(a: any, b: any, depth = 1): boolean {
   const typeOfA = typeof a
 
   if (typeOfA != typeof b) return false
