@@ -23,10 +23,10 @@ export {
   getKeysAsProps,
   getUnique,
   getUniqueBy,
+  hasAnyOf,
   isEqual,
   isFunction,
-  isKeyOf,
-  areKeysOf,
+  isPropertyOf,
   isNullOrUndefined,
   isObject,
   isOneOf,
@@ -144,7 +144,7 @@ class ErrorTool extends Error {
     }
   }
 
-  private _has = (field: PayloadKey) => isKeyOf(field, this.payload)
+  private _has = (field: PayloadKey) => isPropertyOf(field, this.payload)
 
   private _setPayload = (payload: InputPayload) => {
     Object.entries(payload).forEach(([key, value]) => {
@@ -199,6 +199,10 @@ function getKeysAsProps<T>(object: T) {
   return Object.keys(object as object) as StringKey<T>[]
 }
 
+function hasAnyOf(object: any, props: PayloadKey[]): boolean {
+  return toArray(props).some((prop) => isPropertyOf(prop, object))
+}
+
 /**
  * tell whether `a` & `b` are equals
  * @param {any} a
@@ -237,19 +241,6 @@ function isFunction(value: any): value is Function {
   return typeof value === 'function'
 }
 
-function isKeyOf<T>(
-  prop: string | number | symbol,
-  object: T
-): prop is keyof T {
-  return Object.hasOwnProperty.call(object, prop)
-}
-
-function areKeysOf<T>(props: PayloadKey[], object: T): boolean {
-  for (const prop of toArray(props)) if (isKeyOf(prop, object)) return true
-
-  return false
-}
-
 function isNullOrUndefined(value: any): value is null | undefined {
   return isOneOf(value, [null, undefined])
 }
@@ -260,6 +251,13 @@ function isObject(value: any): value is ObjectType {
 
 function isOneOf<T>(value: any, values: T[]): value is T {
   return values.includes(value)
+}
+
+function isPropertyOf<T>(
+  prop: string | number | symbol,
+  object: T
+): prop is keyof T {
+  return Object.hasOwnProperty.call(object, prop)
 }
 
 function toArray<T>(value: T | T[]): T[] {
