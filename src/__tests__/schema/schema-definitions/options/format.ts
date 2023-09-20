@@ -22,21 +22,21 @@ export const Test_SchemaOptionFormat = ({ fx }: any) => {
       }
     })
 
-    it('should reject empty objects', () => {
-      const toFail = fx(getValidSchema(), {})
+    // it('should reject empty objects', () => {
+    //   const toFail = fx(getValidSchema(), {})
 
-      expectFailure(toFail)
+    //   expectFailure(toFail)
 
-      try {
-        toFail()
-      } catch (err: any) {
-        expect(err.payload).toEqual(
-          expect.objectContaining({
-            'schema options': expect.arrayContaining(['Cannot be empty'])
-          })
-        )
-      }
-    })
+    //   try {
+    //     toFail()
+    //   } catch (err: any) {
+    //     expect(err.payload).toEqual(
+    //       expect.objectContaining({
+    //         'schema options': expect.arrayContaining(['Cannot be empty'])
+    //       })
+    //     )
+    //   }
+    // })
 
     it('should reject invalid option name', () => {
       const toFail = fx(getValidSchema(), { propertyName: true })

@@ -53,7 +53,7 @@ class Schema<
   get reservedKeys() {
     const props = [...this.props, ...this.virtuals] as string[]
 
-    const { createdAt, updatedAt } = this.optionsTool.getKeys()
+    const { createdAt, updatedAt } = this.timestampTool.getKeys()
 
     if (createdAt) props.push(createdAt)
     if (updatedAt) props.push(updatedAt)
@@ -452,8 +452,8 @@ class ModelTool<
     const keys = getKeysAsProps(values).filter((key) => {
       if (
         allowTimestamps &&
-        this.optionsTool.withTimestamps &&
-        this.optionsTool.isTimestampKey(key)
+        this.timestampTool.withTimestamps &&
+        this.timestampTool.isTimestampKey(key)
       )
         return true
 
@@ -487,9 +487,9 @@ class ModelTool<
   }
 
   private _useConfigProps = (obj: Partial<Output>, isUpdate = false) => {
-    if (!this.optionsTool.withTimestamps) return sortKeys(obj)
+    if (!this.timestampTool.withTimestamps) return sortKeys(obj)
 
-    const { createdAt, updatedAt } = this.optionsTool.getKeys()
+    const { createdAt, updatedAt } = this.timestampTool.getKeys()
 
     let results = { ...obj }
 
