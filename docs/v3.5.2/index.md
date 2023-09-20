@@ -119,7 +119,7 @@ More details on the `Context` & `Summary` utiliies can be found [here](../v3.4.0
 
 This is the number used to determine if the value of a property has changed during updates.
 
-To determine if a property has changed, it's value is compared against it's default value and previous value. Because object equality is not always straightforward, the `equalityDepth` provided is used to detrmine if properties of your schema that accept objects (which may have nested objects) as values have changed during updates
+To determine if a property has changed, it's value is compared against it's default value and previous value. Because object equality is not always straightforward, the `equalityDepth` provided is used to determine if properties of your schema that accept objects (which may have nested objects) as values have changed during updates
 
 The possible values allowed for this number range from `0` to `+Infinity`. The default value is `1`, which means **one level of nesting**.
 
