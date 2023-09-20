@@ -128,32 +128,16 @@ export abstract class SchemaCore<Output, Input> {
     alias: string
   ): StringKey<Input> | undefined => this.aliasToVirtualMap[alias]
 
-  private _getCircularDependenciesOf = (a: StringKey<Input>) => {
-    let circularDependencies: string[] = []
-
-    const _dependsOn = toArray<StringKey<Input>>(
-      this._getDefinition(a)?.dependsOn ?? []
-    )
-
-    for (const _prop of _dependsOn)
-      circularDependencies = [
-        ...circularDependencies,
-        ...this._getCircularDependenciesOf_a_in_b(a, _prop)
-      ]
-
-    return sort(Array.from(new Set(circularDependencies)))
-  }
-
-  private _getCircularDependenciesOf_a_in_b = (
+  private _getCircularDependenciesOf = (
     a: StringKey<Input>,
-    b: StringKey<Input>,
+    b: StringKey<Input> = a,
     visitedNodes: StringKey<Input>[] = []
   ) => {
     let circularDependencies: string[] = []
 
     if (!this._isDependentProp(b) || visitedNodes.includes(b)) return []
 
-    visitedNodes.push(b)
+    if (a != b) visitedNodes.push(b)
 
     const _dependsOn = toArray<StringKey<Input>>(
       this._getDefinition(b)?.dependsOn ?? []
@@ -164,12 +148,13 @@ export abstract class SchemaCore<Output, Input> {
       else if (this._isDependentProp(_prop))
         circularDependencies = [
           ...circularDependencies,
-          ...this._getCircularDependenciesOf_a_in_b(a, _prop, visitedNodes)
+          ...this._getCircularDependenciesOf(a, _prop, visitedNodes)
         ]
     }
 
     return sort(Array.from(new Set(circularDependencies)))
   }
+
   // < dependency map utils />
 
   private _areHandlersOk = (
