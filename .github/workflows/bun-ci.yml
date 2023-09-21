@@ -18,9 +18,9 @@ jobs:
       - uses: actions/checkout@v3
       - name: Use Bun.js v${{ matrix.bun-version }}
         uses: oven-sh/setup-bun@v1
-            with:
-              version: ${{ matrix.bun-version }}
-      - run: npm ci
-      - run: npm run build
-      - run: npm run lint
-      - run: npm run test:ci
+        with:
+          version: ${{ matrix.bun-version }}
+      - run: bun install
+      - run: bun run build
+      - run: bun run lint
+      - run: bun run test:ci
