@@ -989,6 +989,12 @@ export abstract class SchemaCore<Output, Input> {
 
     const { alias } = definition!
 
+    if (!isPropertyOf('virtual', definition))
+      return {
+        valid,
+        reason: 'Only virtual properties can have aliases'
+      }
+
     if (typeof alias !== 'string' || !alias.length)
       return {
         valid,
