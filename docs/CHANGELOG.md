@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# v3.5.3 <small><sup>21-09-2023</sup></small>
+
+- [Update] made sure the `alias` kayword if only allowed on virtual properties
+
 # v3.5.2 <small><sup>13-09-2023</sup></small>
 
 - [Add] added [`equalityDepth`](./v3.5.2/index.md#equalitydepth) to schema options

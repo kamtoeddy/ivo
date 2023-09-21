@@ -13,14 +13,14 @@ import {
 const storeItemSchema = new Schema<StoreItemType, IStoreItem>(
   {
     _dependentReadOnly: {
-      default: () => 0,
+      default: 0,
       dependsOn: '_virtualForDependentReadOnly',
       readonly: true,
       dependent: true,
       resolver: () => 1
     },
     _laxProp: { default: '', validator: validateString('Invalid lax prop') },
-    _readOnlyLax1: { default: '', readonly: 'lax' },
+    _readOnlyLax1: { default: () => '', readonly: 'lax' },
     _readOnlyLax2: { default: '', readonly: 'lax' },
     _readOnlyNoInit: { default: '', readonly: true, shouldInit: false },
     _virtualForDependentReadOnly: { virtual: true, validator: () => true },

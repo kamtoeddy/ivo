@@ -18,14 +18,15 @@ import {
 export {
   ErrorTool,
   SchemaError,
-  OptionsTool,
+  TimeStampTool,
   makeResponse,
   getKeysAsProps,
   getUnique,
   getUniqueBy,
+  hasAnyOf,
   isEqual,
   isFunction,
-  isKeyOf,
+  isPropertyOf,
   isNullOrUndefined,
   isObject,
   isOneOf,
@@ -54,17 +55,43 @@ function makeResponse<T = undefined>(input: ResponseInputObject<any, any, T>) {
 
 type TimestampKey = StringKey<ISchema.Timestamp>
 
-class OptionsTool {
+class TimeStampTool {
   private _keys: TimestampKey[]
   private timestamps: ISchema.Timestamp
 
-  constructor(config: ISchema.PrivateOptions) {
-    const { timestamps } = config
+  constructor(timestamps: ISchema.Options<any, any>['timestamps']) {
+    this.timestamps = this._makeTimestamps(timestamps)
 
-    this.timestamps = timestamps
-    this._keys = Object.keys(timestamps).filter(
+    this._keys = Object.keys(this.timestamps).filter(
       (key) => key.length > 0
     ) as TimestampKey[]
+  }
+
+  private _makeTimestamps(timestamps: ISchema.Options<any, any>['timestamps']) {
+    if (isEqual(timestamps, undefined)) return { createdAt: '', updatedAt: '' }
+
+    let createdAt = 'createdAt',
+      updatedAt = 'updatedAt'
+
+    if (!timestamps || timestamps === true)
+      return timestamps
+        ? { createdAt, updatedAt }
+        : { createdAt: '', updatedAt: '' }
+
+    const custom_createdAt = timestamps?.createdAt
+    const custom_updatedAt = timestamps?.updatedAt
+
+    if (custom_createdAt && typeof custom_createdAt == 'string')
+      createdAt = custom_createdAt.trim()
+
+    if (custom_createdAt === false) createdAt = ''
+
+    if (custom_updatedAt && typeof custom_updatedAt == 'string')
+      updatedAt = custom_updatedAt.trim()
+
+    if (custom_updatedAt === false) updatedAt = ''
+
+    return { createdAt, updatedAt }
   }
 
   getKeys = () => {
@@ -117,7 +144,7 @@ class ErrorTool extends Error {
     }
   }
 
-  private _has = (field: PayloadKey) => isKeyOf(field, this.payload)
+  private _has = (field: PayloadKey) => isPropertyOf(field, this.payload)
 
   private _setPayload = (payload: InputPayload) => {
     Object.entries(payload).forEach(([key, value]) => {
@@ -172,6 +199,10 @@ function getKeysAsProps<T>(object: T) {
   return Object.keys(object as object) as StringKey<T>[]
 }
 
+function hasAnyOf(object: any, props: PayloadKey[]): boolean {
+  return toArray(props).some((prop) => isPropertyOf(prop, object))
+}
+
 /**
  * tell whether `a` & `b` are equals
  * @param {any} a
@@ -210,13 +241,6 @@ function isFunction(value: any): value is Function {
   return typeof value === 'function'
 }
 
-function isKeyOf<T>(
-  prop: string | number | symbol,
-  object: T
-): prop is keyof T {
-  return Object.hasOwnProperty.call(object, prop)
-}
-
 function isNullOrUndefined(value: any): value is null | undefined {
   return isOneOf(value, [null, undefined])
 }
@@ -227,6 +251,13 @@ function isObject(value: any): value is ObjectType {
 
 function isOneOf<T>(value: any, values: T[]): value is T {
   return values.includes(value)
+}
+
+function isPropertyOf<T>(
+  prop: string | number | symbol,
+  object: T
+): prop is keyof T {
+  return Object.hasOwnProperty.call(object, prop)
 }
 
 function toArray<T>(value: T | T[]): T[] {

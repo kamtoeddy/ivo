@@ -3,7 +3,7 @@ import {
   makeResponse,
   getKeysAsProps,
   isEqual,
-  isKeyOf,
+  isPropertyOf,
   sort,
   sortKeys,
   toArray
@@ -53,7 +53,7 @@ class Schema<
   get reservedKeys() {
     const props = [...this.props, ...this.virtuals] as string[]
 
-    const { createdAt, updatedAt } = this.optionsTool.getKeys()
+    const { createdAt, updatedAt } = this.timestampTool.getKeys()
 
     if (createdAt) props.push(createdAt)
     if (updatedAt) props.push(updatedAt)
@@ -362,7 +362,7 @@ class ModelTool<
     const isCreation = !isUpdate
 
     for (const prop of successFulChanges) {
-      if (this._regeneratedProps.includes(prop) && !isKeyOf(prop, data))
+      if (this._regeneratedProps.includes(prop) && !isPropertyOf(prop, data))
         continue
 
       const dependencies = this._getDependencies(prop)
@@ -452,8 +452,8 @@ class ModelTool<
     const keys = getKeysAsProps(values).filter((key) => {
       if (
         allowTimestamps &&
-        this.optionsTool.withTimestamps &&
-        this.optionsTool.isTimestampKey(key)
+        this.timestampTool.withTimestamps &&
+        this.timestampTool.isTimestampKey(key)
       )
         return true
 
@@ -487,9 +487,9 @@ class ModelTool<
   }
 
   private _useConfigProps = (obj: Partial<Output>, isUpdate = false) => {
-    if (!this.optionsTool.withTimestamps) return sortKeys(obj)
+    if (!this.timestampTool.withTimestamps) return sortKeys(obj)
 
-    const { createdAt, updatedAt } = this.optionsTool.getKeys()
+    const { createdAt, updatedAt } = this.timestampTool.getKeys()
 
     let results = { ...obj }
 
@@ -665,7 +665,7 @@ class ModelTool<
 
       const isLax = this._isLaxProp(prop)
 
-      const isProvided = isKeyOf(prop, this.values)
+      const isProvided = isPropertyOf(prop, this.values)
 
       const isLaxInit =
         isLax &&
@@ -677,7 +677,7 @@ class ModelTool<
         )
 
       const isRequiredInit =
-        this._isRequiredBy(prop) && isKeyOf(prop, this.values)
+        this._isRequiredBy(prop) && isPropertyOf(prop, this.values)
 
       if (
         (isLax &&
@@ -767,7 +767,7 @@ class ModelTool<
           values[prop as unknown as StringKey<Input>]
         )
 
-      const isProvided = isKeyOf(prop, this.values)
+      const isProvided = isPropertyOf(prop, this.values)
 
       const isLax = this._isLaxProp(prop)
 

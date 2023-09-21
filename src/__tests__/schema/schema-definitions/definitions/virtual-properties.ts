@@ -1,4 +1,4 @@
-import { VIRTUAL_RULES } from '../../../../schema/types'
+import { DEFINITION_RULES, VIRTUAL_RULES } from '../../../../schema/types'
 import { expectFailure, expectNoFailure, validator } from '../_utils'
 
 export const Test_VirtualProperties = ({ Schema, fx }: any) => {
@@ -853,6 +853,45 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
 
     describe('invalid', () => {
       describe('alias', () => {
+        it('should reject alias if definition does not have the virtual keyword', () => {
+          const virtualProp = 'virtualProp'
+
+          const toFail = fx({
+            required: { alias: 'a1', required: true, validator },
+            readonly: { alias: 's2', readonly: true, validator },
+            lax1: { alias: 'a3', default: '' },
+            lax2: { alias: 'a5', default: '', validator },
+            dependentProp: {
+              alias: 'lol',
+              default: '',
+              dependent: true,
+              dependsOn: virtualProp,
+              resolver: () => ''
+            },
+            [virtualProp]: { virtual: true, validator }
+          })
+
+          expectFailure(toFail)
+
+          const expectedError = expect.arrayContaining([
+            'Only virtual properties can have aliases'
+          ])
+
+          try {
+            toFail()
+          } catch (err: any) {
+            expect(err.payload).toEqual(
+              expect.objectContaining({
+                required: expectedError,
+                readonly: expectedError,
+                lax1: expectedError,
+                lax2: expectedError,
+                dependentProp: expectedError
+              })
+            )
+          }
+        })
+
         it('should reject alias if non-empty string is provided', () => {
           const values = [-1, 1, true, false, undefined, '', null, [], {}]
 
@@ -1222,16 +1261,9 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
       })
 
       it('should reject any non virtual rule', () => {
-        const values = [
-          'constant',
-          'default',
-          'dependent',
-          'dependsOn',
-          'onDelete',
-          'readonly',
-          'resolver',
-          'value'
-        ]
+        const values = DEFINITION_RULES.filter(
+          (rule) => !VIRTUAL_RULES.includes(rule)
+        )
 
         for (const rule of values) {
           const toFail = fx({

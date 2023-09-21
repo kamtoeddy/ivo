@@ -1,7 +1,15 @@
-import { expectFailure, getValidSchema } from '../_utils'
+import { expectFailure, expectNoFailure, getValidSchema } from '../_utils'
 
 export const Test_SchemaOptionFormat = ({ fx }: any) => {
   describe('Schema.options', () => {
+    it('should allow empty objects', () => {
+      const toPass = fx(getValidSchema(), {})
+
+      expectNoFailure(toPass)
+
+      toPass()
+    })
+
     it('should reject non-object values', () => {
       const values = [null, false, true, 1, 'abc', []]
 
@@ -19,22 +27,6 @@ export const Test_SchemaOptionFormat = ({ fx }: any) => {
             })
           )
         }
-      }
-    })
-
-    it('should reject empty objects', () => {
-      const toFail = fx(getValidSchema(), {})
-
-      expectFailure(toFail)
-
-      try {
-        toFail()
-      } catch (err: any) {
-        expect(err.payload).toEqual(
-          expect.objectContaining({
-            'schema options': expect.arrayContaining(['Cannot be empty'])
-          })
-        )
       }
     })
 
