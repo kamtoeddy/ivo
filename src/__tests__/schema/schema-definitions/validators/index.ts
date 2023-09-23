@@ -1,3 +1,5 @@
+import { ERRORS } from '../../../..'
+
 export const Test_Validators = ({ Schema }: any) => {
   describe('Model.validate', () => {
     describe('should respect the validator provided', () => {
@@ -78,7 +80,7 @@ export const Test_Validators = ({ Schema }: any) => {
           [['Invalid Prop'], ['Invalid Prop']]
         ]
 
-        for (const [input, output] of messages) {
+        for (const [input, errors] of messages) {
           const Model = new Schema({
             prop: { default: '' },
             prop2: {
@@ -93,8 +95,8 @@ export const Test_Validators = ({ Schema }: any) => {
 
           expect(data).toBe(null)
           expect(error).toMatchObject({
-            message: 'Validation Error',
-            payload: { prop: output }
+            message: ERRORS.VALIDATION_ERROR,
+            payload: { prop: { errors, metadata: {} } }
           })
         }
       })
@@ -127,8 +129,13 @@ export const Test_Validators = ({ Schema }: any) => {
 
         expect(data).toBe(null)
         expect(error).toMatchObject({
-          message: 'Validation Error',
-          payload: { prop: ['validation failed'] }
+          message: ERRORS.VALIDATION_ERROR,
+          payload: {
+            prop: {
+              errors: expect.arrayContaining(['validation failed']),
+              metadata: {}
+            }
+          }
         })
       })
 
@@ -161,12 +168,17 @@ export const Test_Validators = ({ Schema }: any) => {
 
           expect(data).toBe(null)
           expect(error).toEqual({
-            message: 'Validation Error',
+            message: ERRORS.VALIDATION_ERROR,
             payload: {
-              prop: ['validation failed'],
-              prop1: ['validation failed']
-            },
-            statusCode: 400
+              prop: {
+                errors: expect.arrayContaining(['validation failed']),
+                metadata: {}
+              },
+              prop1: {
+                errors: expect.arrayContaining(['validation failed']),
+                metadata: {}
+              }
+            }
           })
         }
       })

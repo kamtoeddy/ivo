@@ -1,4 +1,6 @@
 import { DEFINITION_RULES, VIRTUAL_RULES } from '../../../../schema/types'
+import { ERRORS } from '../../../..'
+
 import { expectFailure, expectNoFailure, validator } from '../_utils'
 
 export const Test_VirtualProperties = ({ Schema, fx }: any) => {
@@ -161,7 +163,10 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               })
 
               expect(error.payload).toMatchObject({
-                qty: ['Invalid quantity']
+                qty: {
+                  errors: expect.arrayContaining(['Invalid quantity']),
+                  metadata: {}
+                }
               })
               expect(contextRecord).toEqual({})
             })
@@ -220,7 +225,10 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               const { error } = await Model.create({ qty: '12' })
 
               expect(error.payload).toMatchObject({
-                qty: ['Invalid quantity']
+                qty: {
+                  errors: expect.arrayContaining(['Invalid quantity']),
+                  metadata: {}
+                }
               })
               expect(contextRecord).toEqual({})
             })
@@ -268,7 +276,10 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               )
 
               expect(error.payload).toMatchObject({
-                qty: ['Invalid quantity']
+                qty: {
+                  errors: expect.arrayContaining(['Invalid quantity']),
+                  metadata: {}
+                }
               })
               expect(contextRecord).toEqual({})
             })
@@ -328,8 +339,14 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               expect(contextRecord).toEqual({ setQuantity: qty })
               expect(operation1.data).toBe(null)
               expect(operation1.error.payload).toEqual({
-                qty: ["'qty' is required!"],
-                setQuantity: ["'setQuantity' is required!"]
+                qty: {
+                  errors: expect.arrayContaining(["'qty' is required!"]),
+                  metadata: {}
+                },
+                setQuantity: {
+                  errors: ["'setQuantity' is required!"],
+                  metadata: {}
+                }
               })
 
               qty = -1000
@@ -338,8 +355,14 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               expect(contextRecord).toEqual({ setQuantity: qty })
               expect(operation2.data).toBe(null)
               expect(operation2.error.payload).toEqual({
-                qty: ['invalid quantity'],
-                setQuantity: ['invalid quantity']
+                qty: {
+                  errors: expect.arrayContaining(['invalid quantity']),
+                  metadata: {}
+                },
+                setQuantity: {
+                  errors: expect.arrayContaining(['invalid quantity']),
+                  metadata: {}
+                }
               })
             })
 
@@ -351,8 +374,14 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               expect(contextRecord).toEqual({ setQuantity: qty })
               expect(operation1.data).toBe(null)
               expect(operation1.error.payload).toEqual({
-                qty: ["'qty' is required!"],
-                setQuantity: ["'setQuantity' is required!"]
+                qty: {
+                  errors: expect.arrayContaining(["'qty' is required!"]),
+                  metadata: {}
+                },
+                setQuantity: {
+                  errors: ["'setQuantity' is required!"],
+                  metadata: {}
+                }
               })
 
               qty = -1000
@@ -361,8 +390,14 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               expect(contextRecord).toEqual({ setQuantity: qty })
               expect(operation2.data).toBe(null)
               expect(operation2.error.payload).toEqual({
-                qty: ['invalid quantity'],
-                setQuantity: ['invalid quantity']
+                qty: {
+                  errors: expect.arrayContaining(['invalid quantity']),
+                  metadata: {}
+                },
+                setQuantity: {
+                  errors: expect.arrayContaining(['invalid quantity']),
+                  metadata: {}
+                }
               })
             })
 
@@ -374,8 +409,16 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               expect(contextRecord).toEqual({ setQuantity: qty })
               expect(operation1.data).toBe(null)
               expect(operation1.error.payload).toEqual({
-                qty: ["'qty' is required!"],
-                setQuantity: ["'setQuantity' is required!"]
+                qty: {
+                  errors: expect.arrayContaining(["'qty' is required!"]),
+                  metadata: {}
+                },
+                setQuantity: {
+                  errors: expect.arrayContaining([
+                    "'setQuantity' is required!"
+                  ]),
+                  metadata: {}
+                }
               })
 
               qty = -1000
@@ -384,8 +427,14 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               expect(contextRecord).toEqual({ setQuantity: qty })
               expect(operation2.data).toBe(null)
               expect(operation2.error.payload).toEqual({
-                qty: ['invalid quantity'],
-                setQuantity: ['invalid quantity']
+                qty: {
+                  errors: expect.arrayContaining(['invalid quantity']),
+                  metadata: {}
+                },
+                setQuantity: {
+                  errors: expect.arrayContaining(['invalid quantity']),
+                  metadata: {}
+                }
               })
             })
           })
@@ -462,9 +511,8 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
 
               expect(contextRecord).toEqual({ setQuantity: 12 })
               expect(operation1.error).toEqual({
-                message: 'Nothing to update',
-                payload: {},
-                statusCode: 400
+                message: ERRORS.NOTHING_TO_UPDATE,
+                payload: {}
               })
               expect(operation1.data).toBe(null)
 

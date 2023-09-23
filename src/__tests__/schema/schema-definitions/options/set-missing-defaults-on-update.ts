@@ -1,3 +1,4 @@
+import { ERRORS } from '../../../..'
 import {
   expectFailure,
   expectNoFailure,
@@ -161,13 +162,12 @@ export const Test_SchemaSetMissingDefaultsOnUpdateOption = ({
             toFail()
           } catch (err: any) {
             expect(err).toMatchObject({
-              message: 'Invalid Schema',
+              message: ERRORS.INVALID_SCHEMA,
               payload: {
                 setMissingDefaultsOnUpdate: expect.arrayContaining([
                   "'setMissingDefaultsOnUpdate' should be a 'boolean'"
                 ])
-              },
-              statusCode: 500
+              }
             })
           }
         }

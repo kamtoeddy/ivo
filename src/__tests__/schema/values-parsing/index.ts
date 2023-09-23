@@ -1,18 +1,17 @@
+import { ERRORS } from '../../..'
+
 export const valuesParsing_Tests = ({ Schema }: any) => {
-  const expectPromiseFailure = (fx: Function, message = 'Invalid Schema') => {
+  const expectPromiseFailure = (
+    fx: Function,
+    message: string = ERRORS.INVALID_SCHEMA
+  ) => {
     expect(fx).rejects.toThrow(message)
   }
 
-  const expectNoFailure = (fx: Function) => {
-    expect(fx).not.toThrow()
-  }
+  const expectNoFailure = (fx: Function) => expect(fx).not.toThrow()
 
   describe('Values Parsing', () => {
-    const INVALID_DATA_ERROR = {
-      message: 'Invalid Data',
-      payload: {},
-      statusCode: 400
-    }
+    const INVALID_DATA_ERROR = { message: ERRORS.INVALID_DATA, payload: {} }
     const validData = { age: 15, name: 'Frank' }
     const invalidData = [1, -10, 0, false, true, '', 'true', null]
 
@@ -105,7 +104,7 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
           for (const val of invalidData) {
             const operation = async () => await User.delete(val)
 
-            expectPromiseFailure(operation, 'Invalid Data')
+            expectPromiseFailure(operation, ERRORS.INVALID_DATA)
 
             try {
               await operation()
@@ -188,7 +187,7 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
           for (const val of invalidData) {
             const operation = async () => await User.clone(val)
 
-            expectPromiseFailure(operation, 'Invalid Data')
+            expectPromiseFailure(operation, ERRORS.INVALID_DATA)
 
             try {
               await operation()
@@ -202,7 +201,7 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
           for (const val of invalidData) {
             const operation = async () => await User.create(val)
 
-            expectPromiseFailure(operation, 'Invalid Data')
+            expectPromiseFailure(operation, ERRORS.INVALID_DATA)
 
             try {
               await operation()
@@ -216,7 +215,7 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
           for (const val of invalidData) {
             const operation = async () => await User.delete(val)
 
-            expectPromiseFailure(operation, 'Invalid Data')
+            expectPromiseFailure(operation, ERRORS.INVALID_DATA)
 
             try {
               await operation()
@@ -231,7 +230,7 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
             const operation = async () =>
               await User.update(val, { name: 'yoo' })
 
-            expectPromiseFailure(operation, 'Invalid Data')
+            expectPromiseFailure(operation, ERRORS.INVALID_DATA)
 
             try {
               await operation()

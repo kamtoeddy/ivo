@@ -13,27 +13,6 @@ export type ArrayOptions<T> = {
 
 export type PayloadKey = number | string
 
-export type ErrorPayload = Record<PayloadKey, string[]>
-export type InputPayload = Record<PayloadKey, string | string[]>
-
-export type SchemaErrorMessage =
-  | 'Invalid Data'
-  | 'Invalid Schema'
-  | 'Nothing to update'
-  | 'Validation Error'
-
-export type SchemaErrorProps = {
-  message: SchemaErrorMessage
-  payload?: ErrorPayload
-  statusCode?: number
-}
-
-export type ErrorToolProps = {
-  message: SchemaErrorMessage
-  payload?: InputPayload
-  statusCode?: number
-}
-
 export type ObjectType = Record<PayloadKey, any> & {}
 
 export type NumberRangeType = {

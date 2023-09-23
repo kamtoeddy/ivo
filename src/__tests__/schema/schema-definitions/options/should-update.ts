@@ -1,3 +1,4 @@
+import { ERRORS } from '../../../..'
 import {
   expectFailure,
   expectNoFailure,
@@ -12,9 +13,8 @@ export const Test_SchemaShouldUpdateOption = ({ Schema, fx }: any) => {
       const update = { name: 'updated name' }
 
       const error = {
-        message: 'Nothing to update',
-        payload: {},
-        statusCode: 400
+        message: ERRORS.NOTHING_TO_UPDATE,
+        payload: {}
       }
       const options = [
         { data: update, error: null, shouldUpdate: true },
@@ -89,13 +89,12 @@ export const Test_SchemaShouldUpdateOption = ({ Schema, fx }: any) => {
             toFail()
           } catch (err: any) {
             expect(err).toMatchObject({
-              message: 'Invalid Schema',
+              message: ERRORS.INVALID_SCHEMA,
               payload: {
                 shouldUpdate: expect.arrayContaining([
                   "'shouldUpdate' should either be a 'boolean' or a 'function'"
                 ])
-              },
-              statusCode: 500
+              }
             })
           }
         }

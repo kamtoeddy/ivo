@@ -1,3 +1,4 @@
+import { ERRORS } from '../../../..'
 import { expectFailure, expectNoFailure, validator } from '../_utils'
 
 export const Test_ShouldUpdateRule = ({ Schema, fx }: any) => {
@@ -161,7 +162,7 @@ export const Test_ShouldUpdateRule = ({ Schema, fx }: any) => {
           )
 
           expect(data).toBe(null)
-          expect(error.message).toBe('Nothing to update')
+          expect(error.message).toBe(ERRORS.NOTHING_TO_UPDATE)
         })
 
         it("should update properties when 'shouldUpdate' resolved to 'true'", async () => {
@@ -205,7 +206,7 @@ export const Test_ShouldUpdateRule = ({ Schema, fx }: any) => {
           )
 
           expect(data).toBe(null)
-          expect(error.message).toBe('Nothing to update')
+          expect(error.message).toBe(ERRORS.NOTHING_TO_UPDATE)
         })
 
         describe('behaviour when shouldUpdate method returns nothing', () => {
@@ -222,7 +223,7 @@ export const Test_ShouldUpdateRule = ({ Schema, fx }: any) => {
 
             expect(data).toBe(null)
             expect(error).toMatchObject({
-              message: 'Nothing to update',
+              message: ERRORS.NOTHING_TO_UPDATE,
               payload: {}
             })
           })

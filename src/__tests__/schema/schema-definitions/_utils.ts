@@ -1,3 +1,5 @@
+import { ERRORS } from '../../..'
+
 export {
   expectFailure,
   expectNoFailure,
@@ -8,11 +10,17 @@ export {
   validator
 }
 
-const expectFailure = (fx: Function, message = 'Invalid Schema') => {
+const expectFailure = (
+  fx: Function,
+  message: string = ERRORS.INVALID_SCHEMA
+) => {
   expect(fx).toThrow(message)
 }
 
-const expectPromiseFailure = (fx: Function, message = 'Invalid Schema') => {
+const expectPromiseFailure = (
+  fx: Function,
+  message: string = ERRORS.INVALID_SCHEMA
+) => {
   expect(fx).rejects.toThrow(message)
 }
 

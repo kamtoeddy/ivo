@@ -1,3 +1,4 @@
+import { ERRORS } from '../../../..'
 import {
   expectFailure,
   expectNoFailure,
@@ -8,7 +9,7 @@ import {
 export const Test_SchemaEqualityDepth = ({ Schema, fx }: any) => {
   describe('Schema.options.equalityDepth', () => {
     describe('behaviour', () => {
-      const error = { message: 'Nothing to update' }
+      const error = { message: ERRORS.NOTHING_TO_UPDATE }
 
       const user = {
         level_0_a: 'value',
@@ -311,13 +312,12 @@ export const Test_SchemaEqualityDepth = ({ Schema, fx }: any) => {
             toFail()
           } catch (err: any) {
             expect(err).toMatchObject({
-              message: 'Invalid Schema',
+              message: ERRORS.INVALID_SCHEMA,
               payload: {
                 equalityDepth: expect.arrayContaining([
                   "'equalityDepth' must be a number between 0 and +Infinity"
                 ])
-              },
-              statusCode: 500
+              }
             })
           }
         }

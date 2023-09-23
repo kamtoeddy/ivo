@@ -1,5 +1,4 @@
 import {
-  ErrorTool,
   makeResponse,
   getKeysAsProps,
   isEqual,
@@ -19,6 +18,7 @@ import {
   Summary,
   ValidatorResponse
 } from './types'
+import { VALIDATION_ERRORS, ErrorTool } from './utils'
 import { defaultOptions, SchemaCore } from './schema-core'
 
 export { Model, ModelTool, Schema }
@@ -184,10 +184,12 @@ class ModelTool<
   }
 
   private _handleInvalidData = () =>
-    this._handleError(new ErrorTool({ message: 'Invalid Data' }))
+    this._handleError(
+      new ErrorTool({ message: VALIDATION_ERRORS.INVALID_DATA })
+    )
 
   private _handleRequiredBy = (data: Partial<Output>, isUpdate = false) => {
-    const error = new ErrorTool({ message: 'Validation Error' })
+    const error = new ErrorTool({ message: VALIDATION_ERRORS.VALIDATION_ERROR })
     const summary = this._getSummary(data, isUpdate)
 
     for (const prop of this.propsRequiredBy) {
@@ -525,7 +527,7 @@ class ModelTool<
       else error.add(prop, 'validation failed')
 
       return Object.entries(otherReasons).forEach(([key, reasons]) => {
-        error.add(key, reasons)
+        error.add(key, reasons as any)
       })
     }
 
@@ -607,7 +609,9 @@ class ModelTool<
     )
 
     let data = {} as Partial<Output>
-    const validationError = new ErrorTool({ message: 'Validation Error' })
+    const validationError = new ErrorTool({
+      message: VALIDATION_ERRORS.VALIDATION_ERROR
+    })
 
     const virtuals = getKeysAsProps<Partial<Output>>(values as any).filter(
       (prop) =>
@@ -736,7 +740,9 @@ class ModelTool<
     this._setValues(values)
 
     let data = {} as Partial<Output>
-    const validationError = new ErrorTool({ message: 'Validation Error' })
+    const validationError = new ErrorTool({
+      message: VALIDATION_ERRORS.VALIDATION_ERROR
+    })
 
     const virtuals = getKeysAsProps<Partial<Output>>(values as any).filter(
       (prop) =>
@@ -828,7 +834,7 @@ class ModelTool<
 
   delete = async (values: Output) => {
     if (!areValuesOk(values))
-      return new ErrorTool({ message: 'Invalid Data' }).throw()
+      return new ErrorTool({ message: VALIDATION_ERRORS.INVALID_DATA }).throw()
 
     this._setValues(values, { allowVirtuals: false, allowTimestamps: true })
 
@@ -855,10 +861,14 @@ class ModelTool<
     if (this._options?.setMissingDefaultsOnUpdate)
       await this._setMissingDefaults()
 
-    const validationError = new ErrorTool({ message: 'Validation Error' })
+    const validationError = new ErrorTool({
+      message: VALIDATION_ERRORS.VALIDATION_ERROR
+    })
 
     if (!this._isGloballyUpdatable(changes as any))
-      return this._handleError(validationError.setMessage('Nothing to update'))
+      return this._handleError(
+        validationError.setMessage(VALIDATION_ERRORS.NOTHING_TO_UPDATE)
+      )
 
     let updates = {} as Partial<Output>
 
@@ -926,7 +936,9 @@ class ModelTool<
 
     if (!Object.keys(updates).length) {
       await this._handleFailure(updates, validationError, virtuals)
-      return this._handleError(validationError.setMessage('Nothing to update'))
+      return this._handleError(
+        validationError.setMessage(VALIDATION_ERRORS.NOTHING_TO_UPDATE)
+      )
     }
 
     if (this._options?.setMissingDefaultsOnUpdate)

@@ -1,3 +1,4 @@
+import { ERRORS } from '../../../..'
 import {
   expectFailure,
   expectNoFailure,
@@ -237,16 +238,19 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
         it('should reject if condition is not met at creation', async () => {
           const toFail = () => Book.create({ bookId: 1, isPublished: true })
 
-          expectPromiseFailure(toFail, 'Validation Error')
+          expectPromiseFailure(toFail, ERRORS.VALIDATION_ERROR)
 
           try {
             await toFail()
           } catch (err: any) {
             expect(err.payload).toEqual(
               expect.objectContaining({
-                price: expect.arrayContaining([
-                  'A price is required to publish a book!'
-                ])
+                price: {
+                  errors: expect.arrayContaining([
+                    'A price is required to publish a book!'
+                  ]),
+                  metadata: {}
+                }
               })
             )
           }
@@ -272,16 +276,19 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
         it('should reject if condition is not met during cloning', async () => {
           const toFail = () => Book.clone({ bookId: 1, isPublished: true })
 
-          expectPromiseFailure(toFail, 'Validation Error')
+          expectPromiseFailure(toFail, ERRORS.VALIDATION_ERROR)
 
           try {
             await toFail()
           } catch (err: any) {
             expect(err.payload).toEqual(
               expect.objectContaining({
-                price: expect.arrayContaining([
-                  'A price is required to publish a book!'
-                ])
+                price: {
+                  errors: expect.arrayContaining([
+                    'A price is required to publish a book!'
+                  ]),
+                  metadata: {}
+                }
               })
             )
           }
@@ -319,16 +326,19 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
               { isPublished: true }
             )
 
-          expectPromiseFailure(toFail, 'Validation Error')
+          expectPromiseFailure(toFail, ERRORS.VALIDATION_ERROR)
 
           try {
             await toFail()
           } catch (err: any) {
             expect(err.payload).toEqual(
               expect.objectContaining({
-                price: expect.arrayContaining([
-                  'A price is required to publish a book!'
-                ])
+                price: {
+                  errors: expect.arrayContaining([
+                    'A price is required to publish a book!'
+                  ]),
+                  metadata: {}
+                }
               })
             )
           }
@@ -337,19 +347,25 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
         it('should reject if condition is not met during updates of readonly', async () => {
           const toFail = () => Book.update(book, { price: 101 })
 
-          expectPromiseFailure(toFail, 'Validation Error')
+          expectPromiseFailure(toFail, ERRORS.VALIDATION_ERROR)
 
           try {
             await toFail()
           } catch (err: any) {
             expect(err.payload).toEqual(
               expect.objectContaining({
-                priceReadonly: expect.arrayContaining([
-                  'A priceReadonly is required when price is 101!'
-                ]),
-                priceRequiredWithoutMessage: expect.arrayContaining([
-                  "'priceRequiredWithoutMessage' is required!"
-                ])
+                priceReadonly: {
+                  errors: expect.arrayContaining([
+                    'A priceReadonly is required when price is 101!'
+                  ]),
+                  metadata: {}
+                },
+                priceRequiredWithoutMessage: {
+                  errors: expect.arrayContaining([
+                    "'priceRequiredWithoutMessage' is required!"
+                  ]),
+                  metadata: {}
+                }
               })
             )
           }
@@ -368,7 +384,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
               { priceReadonly: 101 }
             )
 
-          expectPromiseFailure(toFail, 'Nothing to update')
+          expectPromiseFailure(toFail, ERRORS.NOTHING_TO_UPDATE)
         })
 
         describe('behaviour when nothing is returned from required function', () => {
@@ -440,8 +456,13 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
               expect(data).toBe(null)
 
               expect(error).toMatchObject({
-                message: 'Validation Error',
-                payload: { price: ["'price' is required!"] }
+                message: ERRORS.VALIDATION_ERROR,
+                payload: {
+                  price: {
+                    errors: expect.arrayContaining(["'price' is required!"]),
+                    metadata: {}
+                  }
+                }
               })
             })
 
@@ -457,8 +478,13 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
               expect(data).toBe(null)
 
               expect(error).toMatchObject({
-                message: 'Validation Error',
-                payload: { price: ["'price' is required!"] }
+                message: ERRORS.VALIDATION_ERROR,
+                payload: {
+                  price: {
+                    errors: expect.arrayContaining(["'price' is required!"]),
+                    metadata: {}
+                  }
+                }
               })
             })
 
@@ -474,8 +500,13 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
               expect(data).toBe(null)
 
               expect(error).toMatchObject({
-                message: 'Validation Error',
-                payload: { price: ["'price' is required!"] }
+                message: ERRORS.VALIDATION_ERROR,
+                payload: {
+                  price: {
+                    errors: expect.arrayContaining(["'price' is required!"]),
+                    metadata: {}
+                  }
+                }
               })
             })
           }
@@ -569,8 +600,13 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
 
               expect(data).toBe(null)
               expect(error).toMatchObject({
-                message: 'Validation Error',
-                payload: { _price: ["'_price' is required!"] }
+                message: ERRORS.VALIDATION_ERROR,
+                payload: {
+                  _price: {
+                    errors: expect.arrayContaining(["'_price' is required!"]),
+                    metadata: {}
+                  }
+                }
               })
             })
 
@@ -579,8 +615,13 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
 
               expect(data).toBe(null)
               expect(error).toMatchObject({
-                message: 'Validation Error',
-                payload: { _price: ["'_price' is required!"] }
+                message: ERRORS.VALIDATION_ERROR,
+                payload: {
+                  _price: {
+                    errors: expect.arrayContaining(["'_price' is required!"]),
+                    metadata: {}
+                  }
+                }
               })
             })
 
@@ -591,8 +632,13 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
 
               expect(data).toBe(null)
               expect(error).toMatchObject({
-                message: 'Validation Error',
-                payload: { _price: ["'_price' is required!"] }
+                message: ERRORS.VALIDATION_ERROR,
+                payload: {
+                  _price: {
+                    errors: expect.arrayContaining(["'_price' is required!"]),
+                    metadata: {}
+                  }
+                }
               })
             })
           })
@@ -620,8 +666,13 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
 
               expect(data).toBe(null)
               expect(error).toMatchObject({
-                message: 'Validation Error',
-                payload: { _price: ["'_price' is required!"] }
+                message: ERRORS.VALIDATION_ERROR,
+                payload: {
+                  _price: {
+                    errors: expect.arrayContaining(["'_price' is required!"]),
+                    metadata: {}
+                  }
+                }
               })
             })
 
@@ -630,8 +681,13 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
 
               expect(data).toBe(null)
               expect(error).toMatchObject({
-                message: 'Validation Error',
-                payload: { _price: ["'_price' is required!"] }
+                message: ERRORS.VALIDATION_ERROR,
+                payload: {
+                  _price: {
+                    errors: expect.arrayContaining(["'_price' is required!"]),
+                    metadata: {}
+                  }
+                }
               })
             })
 
@@ -670,8 +726,13 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
 
               expect(data).toBe(null)
               expect(error).toMatchObject({
-                message: 'Validation Error',
-                payload: { _price: ["'_price' is required!"] }
+                message: ERRORS.VALIDATION_ERROR,
+                payload: {
+                  _price: {
+                    errors: expect.arrayContaining(["'_price' is required!"]),
+                    metadata: {}
+                  }
+                }
               })
             })
 
@@ -680,8 +741,13 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
 
               expect(data).toBe(null)
               expect(error).toMatchObject({
-                message: 'Validation Error',
-                payload: { _price: ["'_price' is required!"] }
+                message: ERRORS.VALIDATION_ERROR,
+                payload: {
+                  _price: {
+                    errors: expect.arrayContaining(["'_price' is required!"]),
+                    metadata: {}
+                  }
+                }
               })
             })
 

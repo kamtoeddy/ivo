@@ -1,3 +1,4 @@
+import { ERRORS } from '../../../..'
 import {
   expectFailure,
   expectNoFailure,
@@ -107,13 +108,12 @@ export const Test_SchemaOnDelete = ({ Schema, fx }: any) => {
             toFail()
           } catch (err: any) {
             expect(err).toMatchObject({
-              message: 'Invalid Schema',
+              message: ERRORS.INVALID_SCHEMA,
               payload: {
                 onDelete: expect.arrayContaining([
                   "The 'onDelete' handler @[0] is not a function"
                 ])
-              },
-              statusCode: 500
+              }
             })
           }
         }

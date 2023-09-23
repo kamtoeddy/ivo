@@ -41,11 +41,12 @@
     "build": "tsc",
     "clean-up": "rm -rf coverage dist",
     "lint": "eslint . --ext .ts",
-    "test": "tsc & jest --verbose --watchAll",
-    "test-c": "tsc & jest --verbose --watchAll --coverage",
+    "test": "tsc & jest --verbose",
     "test:ci": "tsc && npm run lint && jest --verbose",
+    "tes:cov": "tsc & jest --verbose --watchAll --coverage",
+    "test:watch": "tsc & jest --verbose --watchAll",
     "prepare": "npm run clean-up && npm run build"
   },
   "types": "dist/index.d.ts",
-  "version": "3.5.3"
+  "version": "3.6.0"
 }

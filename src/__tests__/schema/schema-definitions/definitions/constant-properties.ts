@@ -1,3 +1,4 @@
+import { ERRORS } from '../../../..'
 import { expectFailure, expectNoFailure, pauseFor } from '../_utils'
 
 export const Test_ConstantProperties = ({ Schema, fx }: any) => {
@@ -59,7 +60,7 @@ export const Test_ConstantProperties = ({ Schema, fx }: any) => {
       it('should ignore constants during updates', () => {
         const toFail = User.update(user, { id: 25 })
 
-        expect(toFail).rejects.toThrow('Nothing to update')
+        expect(toFail).rejects.toThrow(ERRORS.NOTHING_TO_UPDATE)
       })
 
       it('should accept constant(true) & value(any | ()=>any)', () => {

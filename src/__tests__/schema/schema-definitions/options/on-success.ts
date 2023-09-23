@@ -1,3 +1,4 @@
+import { ERRORS } from '../../../..'
 import {
   expectFailure,
   expectNoFailure,
@@ -252,13 +253,12 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
             toFail()
           } catch (err: any) {
             expect(err).toMatchObject({
-              message: 'Invalid Schema',
+              message: ERRORS.INVALID_SCHEMA,
               payload: {
                 onSuccess: expect.arrayContaining([
                   "The 'onSuccess' handler @[0] is not a function"
                 ])
-              },
-              statusCode: 500
+              }
             })
           }
         }

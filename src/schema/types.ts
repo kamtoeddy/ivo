@@ -1,5 +1,5 @@
 import { Schema } from '.'
-import { InputPayload } from '../utils/types'
+import { InputPayload } from './utils'
 
 export type {
   Context,

@@ -1,3 +1,5 @@
+import { ERRORS } from '../../../..'
+
 export const commonTestData = {
   id: '1',
   name: 'beer',
@@ -47,7 +49,7 @@ export const CommonInheritanceTest = (
         const createWithoutReadonly = async () => await Model.create(testData1)
 
         await expect(createWithoutReadonly()).rejects.toThrow(
-          'Validation Error'
+          ERRORS.VALIDATION_ERROR
         )
       })
 
@@ -57,7 +59,7 @@ export const CommonInheritanceTest = (
         const createWithoutReadonly = async () => await Model.create(testData1)
 
         await expect(createWithoutReadonly()).rejects.toThrow(
-          'Validation Error'
+          ERRORS.VALIDATION_ERROR
         )
       })
 
@@ -193,7 +195,7 @@ export const CommonInheritanceTest = (
             quantity: 100
           })
 
-        expect(toFail).rejects.toThrow('Nothing to update')
+        expect(toFail).rejects.toThrow(ERRORS.NOTHING_TO_UPDATE)
       })
 
       it('should update on virtuals', async () => {
@@ -247,7 +249,7 @@ export const CommonInheritanceTest = (
           )
 
         await expect(updateReadOnlyProperty()).rejects.toThrow(
-          'Nothing to update'
+          ERRORS.NOTHING_TO_UPDATE
         )
       })
 
@@ -256,7 +258,7 @@ export const CommonInheritanceTest = (
           await Model.update(item, { quantityChangeCounter: 0 })
 
         await expect(updateReadOnlyProperty()).rejects.toThrow(
-          'Nothing to update'
+          ERRORS.NOTHING_TO_UPDATE
         )
       })
 
@@ -284,7 +286,7 @@ export const CommonInheritanceTest = (
           )
         }
 
-        await expect(updateToFail()).rejects.toThrow('Nothing to update')
+        await expect(updateToFail()).rejects.toThrow(ERRORS.NOTHING_TO_UPDATE)
       })
 
       it('should not update readonly properties that have changed', async () => {
@@ -295,7 +297,7 @@ export const CommonInheritanceTest = (
           })
 
         await expect(updateReadOnlyProperty()).rejects.toThrow(
-          'Nothing to update'
+          ERRORS.NOTHING_TO_UPDATE
         )
       })
     })
@@ -339,10 +341,12 @@ export const CommonInheritanceTest = (
         try {
           await Model.create({ ...commonTestData, name: '', _laxProp: [] })
         } catch (err: any) {
-          expect(err.message).toBe('Validation Error')
+          expect(err.message).toBe(ERRORS.VALIDATION_ERROR)
           expect(err.payload).toMatchObject({
-            _laxProp: ['Invalid lax prop', 'Too short'],
-            name: ['validation failed']
+            _laxProp: {
+              errors: expect.arrayContaining(['Invalid lax prop', 'Too short'])
+            },
+            name: { errors: expect.arrayContaining(['validation failed']) }
           })
         }
       }
@@ -355,10 +359,15 @@ export const CommonInheritanceTest = (
         try {
           await Model.clone(testData, { reset: ['name', '_laxProp'] })
         } catch (err: any) {
-          expect(err.message).toBe('Validation Error')
+          expect(err.message).toBe(ERRORS.VALIDATION_ERROR)
           expect(err.payload).toMatchObject({
-            _laxProp: ['Invalid lax prop', 'Unacceptable value'],
-            name: ['validation failed']
+            _laxProp: {
+              errors: expect.arrayContaining([
+                'Invalid lax prop',
+                'Unacceptable value'
+              ])
+            },
+            name: { errors: expect.arrayContaining(['validation failed']) }
           })
         }
       }
@@ -371,10 +380,12 @@ export const CommonInheritanceTest = (
         try {
           await Model.update(commonTestData, { name: '', _laxProp: [] })
         } catch (err: any) {
-          expect(err.message).toBe('Validation Error')
+          expect(err.message).toBe(ERRORS.VALIDATION_ERROR)
           expect(err.payload).toMatchObject({
-            _laxProp: ['Invalid lax prop', 'Too short'],
-            name: ['validation failed']
+            _laxProp: {
+              errors: expect.arrayContaining(['Invalid lax prop', 'Too short'])
+            },
+            name: { errors: expect.arrayContaining(['validation failed']) }
           })
         }
       }

@@ -1,3 +1,4 @@
+import { ERRORS } from '../../../..'
 import {
   expectFailure,
   expectNoFailure,
@@ -104,12 +105,17 @@ export const Test_SchemaErrors = ({ Schema, fx }: any) => {
 
           expect(error).toEqual(
             expect.objectContaining({
-              message: 'Validation Error',
+              message: ERRORS.VALIDATION_ERROR,
               payload: {
-                lax: ['Invalid value'],
-                required: ['Invalid value']
-              },
-              statusCode: 400
+                lax: {
+                  errors: expect.arrayContaining(['Invalid value']),
+                  metadata: {}
+                },
+                required: {
+                  errors: expect.arrayContaining(['Invalid value']),
+                  metadata: {}
+                }
+              }
             })
           )
         })
@@ -124,12 +130,17 @@ export const Test_SchemaErrors = ({ Schema, fx }: any) => {
 
           expect(error).toEqual(
             expect.objectContaining({
-              message: 'Validation Error',
+              message: ERRORS.VALIDATION_ERROR,
               payload: {
-                lax: ['Invalid value'],
-                required: ['Invalid value']
-              },
-              statusCode: 400
+                lax: {
+                  errors: expect.arrayContaining(['Invalid value']),
+                  metadata: {}
+                },
+                required: {
+                  errors: expect.arrayContaining(['Invalid value']),
+                  metadata: {}
+                }
+              }
             })
           )
         })
@@ -147,12 +158,17 @@ export const Test_SchemaErrors = ({ Schema, fx }: any) => {
 
           expect(error).toEqual(
             expect.objectContaining({
-              message: 'Validation Error',
+              message: ERRORS.VALIDATION_ERROR,
               payload: {
-                lax: ['Invalid value'],
-                required: ['Invalid value']
-              },
-              statusCode: 400
+                lax: {
+                  errors: expect.arrayContaining(['Invalid value']),
+                  metadata: {}
+                },
+                required: {
+                  errors: expect.arrayContaining(['Invalid value']),
+                  metadata: {}
+                }
+              }
             })
           )
         })
@@ -169,9 +185,8 @@ export const Test_SchemaErrors = ({ Schema, fx }: any) => {
 
           expect(error).toEqual(
             expect.objectContaining({
-              message: 'Nothing to update',
-              payload: {},
-              statusCode: 400
+              message: ERRORS.NOTHING_TO_UPDATE,
+              payload: {}
             })
           )
         })
@@ -187,19 +202,24 @@ export const Test_SchemaErrors = ({ Schema, fx }: any) => {
               required: ''
             })
 
-          expectPromiseFailure(toFail, 'Validation Error')
+          expectPromiseFailure(toFail, ERRORS.VALIDATION_ERROR)
 
           try {
             await toFail()
           } catch (err: any) {
             expect(err).toEqual(
               expect.objectContaining({
-                message: 'Validation Error',
+                message: ERRORS.VALIDATION_ERROR,
                 payload: {
-                  lax: ['Invalid value'],
-                  required: ['Invalid value']
-                },
-                statusCode: 400
+                  lax: {
+                    errors: expect.arrayContaining(['Invalid value']),
+                    metadata: {}
+                  },
+                  required: {
+                    errors: expect.arrayContaining(['Invalid value']),
+                    metadata: {}
+                  }
+                }
               })
             )
           }
@@ -214,19 +234,24 @@ export const Test_SchemaErrors = ({ Schema, fx }: any) => {
               required: ''
             })
 
-          expectPromiseFailure(toFail, 'Validation Error')
+          expectPromiseFailure(toFail, ERRORS.VALIDATION_ERROR)
 
           try {
             await toFail()
           } catch (err: any) {
             expect(err).toEqual(
               expect.objectContaining({
-                message: 'Validation Error',
+                message: ERRORS.VALIDATION_ERROR,
                 payload: {
-                  lax: ['Invalid value'],
-                  required: ['Invalid value']
-                },
-                statusCode: 400
+                  lax: {
+                    errors: expect.arrayContaining(['Invalid value']),
+                    metadata: {}
+                  },
+                  required: {
+                    errors: expect.arrayContaining(['Invalid value']),
+                    metadata: {}
+                  }
+                }
               })
             )
           }
@@ -244,19 +269,24 @@ export const Test_SchemaErrors = ({ Schema, fx }: any) => {
               { lax: false, required: '' }
             )
 
-          expectPromiseFailure(toFail, 'Validation Error')
+          expectPromiseFailure(toFail, ERRORS.VALIDATION_ERROR)
 
           try {
             await toFail()
           } catch (err: any) {
-            expect(err).toEqual(
+            expect(err).toMatchObject(
               expect.objectContaining({
-                message: 'Validation Error',
-                payload: {
-                  lax: ['Invalid value'],
-                  required: ['Invalid value']
-                },
-                statusCode: 400
+                message: ERRORS.VALIDATION_ERROR,
+                payload: expect.objectContaining({
+                  lax: {
+                    errors: expect.arrayContaining(['Invalid value']),
+                    metadata: {}
+                  },
+                  required: {
+                    errors: expect.arrayContaining(['Invalid value']),
+                    metadata: {}
+                  }
+                })
               })
             )
           }
@@ -273,16 +303,15 @@ export const Test_SchemaErrors = ({ Schema, fx }: any) => {
               { readonly: 'New val' }
             )
 
-          expectPromiseFailure(toFail, 'Nothing to update')
+          expectPromiseFailure(toFail, ERRORS.NOTHING_TO_UPDATE)
 
           try {
             await toFail()
           } catch (err: any) {
             expect(err).toEqual(
               expect.objectContaining({
-                message: 'Nothing to update',
-                payload: {},
-                statusCode: 400
+                message: ERRORS.NOTHING_TO_UPDATE,
+                payload: {}
               })
             )
           }

@@ -1,8 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-asserted-optional-chain */
 
 import {
-  ErrorTool,
-  TimeStampTool,
   getKeysAsProps,
   hasAnyOf,
   isEqual,
@@ -14,6 +12,7 @@ import {
   sortKeys,
   toArray
 } from '../utils'
+import { SchemaErrorTool, TimeStampTool } from './utils'
 import { ObjectType } from '../utils/types'
 import {
   DefinitionRule,
@@ -221,7 +220,7 @@ export abstract class SchemaCore<Output, Input> {
     Object.freeze(Object.assign({}, data)) as Readonly<T>
 
   protected _checkOptions = (options: ns.Options<Output, Input>) => {
-    const error = new ErrorTool({ message: 'Invalid Schema', statusCode: 500 })
+    const error = new SchemaErrorTool()
 
     if (!isObject(options))
       error.add('schema options', 'Must be an object').throw()
@@ -302,7 +301,7 @@ export abstract class SchemaCore<Output, Input> {
   protected _checkPropDefinitions = (
     definitions: ns.Definitions_<Output, Input>
   ) => {
-    const error = new ErrorTool({ message: 'Invalid Schema', statusCode: 500 })
+    const error = new SchemaErrorTool()
 
     if (!isObject(definitions)) error.throw()
 

@@ -1,3 +1,4 @@
+import { ERRORS } from '../../../..'
 import { expectFailure } from '../_utils'
 
 export const Test_BasicDefinitions = ({ fx }: any) => {
@@ -41,13 +42,12 @@ export const Test_BasicDefinitions = ({ fx }: any) => {
       } catch (err: any) {
         expect(err).toEqual(
           expect.objectContaining({
-            message: 'Invalid Schema',
+            message: ERRORS.INVALID_SCHEMA,
             payload: {
               emptyProp: [
                 'A property should at least be readonly, required, or have a default value'
               ]
-            },
-            statusCode: 500
+            }
           })
         )
       }
@@ -65,13 +65,12 @@ export const Test_BasicDefinitions = ({ fx }: any) => {
         } catch (err: any) {
           expect(err).toEqual(
             expect.objectContaining({
-              message: 'Invalid Schema',
+              message: ERRORS.INVALID_SCHEMA,
               payload: {
                 invalidProp0000: [
                   `Invalid property definition. Expected an object '{}' but received '${typeof definition}'`
                 ]
-              },
-              statusCode: 500
+              }
             })
           )
         }
@@ -87,11 +86,10 @@ export const Test_BasicDefinitions = ({ fx }: any) => {
       } catch (err: any) {
         expect(err).toEqual(
           expect.objectContaining({
-            message: 'Invalid Schema',
+            message: ERRORS.INVALID_SCHEMA,
             payload: {
               emptyProp: expect.arrayContaining(["'yoo' is not a valid rule"])
-            },
-            statusCode: 500
+            }
           })
         )
       }
