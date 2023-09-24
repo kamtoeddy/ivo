@@ -35,7 +35,11 @@ export const isCreditCardOkTest = ({
       falsyValues.forEach((value) => {
         const res = isCreditCardOk(value)
 
-        expect(res).toEqual({ reasons: ['Invalid card number'], valid: false })
+        expect(res).toEqual({
+          reasons: ['Invalid card number'],
+          valid: false,
+          metadata: null
+        })
 
         expect(res.validated).toBeUndefined()
       })

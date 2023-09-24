@@ -5,7 +5,8 @@ import {
   isPropertyOf,
   sort,
   sortKeys,
-  toArray
+  toArray,
+  isObject
 } from '../utils'
 import {
   Context,
@@ -24,8 +25,9 @@ import { defaultOptions, SchemaCore } from './schema-core'
 export { Model, ModelTool, Schema }
 
 const validationFailedResponse = {
-  valid: false,
-  reasons: ['validation failed']
+  metadata: null,
+  reasons: ['validation failed'],
+  valid: false
 }
 
 const areValuesOk = (values: any) => values && typeof values == 'object'
@@ -527,7 +529,7 @@ class ModelTool<
       else error.add(prop, 'validation failed')
 
       return Object.entries(otherReasons).forEach(([key, reasons]) => {
-        error.add(key, reasons as any)
+        error.add(key, reasons)
       })
     }
 
@@ -592,6 +594,9 @@ class ModelTool<
 
     if (!_response.reason && !_response.reasons && !_response.otherReasons)
       return validationFailedResponse
+
+    if (!response?.metadata || !isObject(response?.metadata))
+      _response.metadata = null
 
     return makeResponse(_response)
   }

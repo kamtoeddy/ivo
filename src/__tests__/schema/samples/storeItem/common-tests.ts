@@ -344,9 +344,9 @@ export const CommonInheritanceTest = (
           expect(err.message).toBe(ERRORS.VALIDATION_ERROR)
           expect(err.payload).toMatchObject({
             _laxProp: {
-              errors: expect.arrayContaining(['Invalid lax prop', 'Too short'])
+              reasons: expect.arrayContaining(['Invalid lax prop', 'Too short'])
             },
-            name: { errors: expect.arrayContaining(['validation failed']) }
+            name: { reasons: expect.arrayContaining(['validation failed']) }
           })
         }
       }
@@ -362,12 +362,12 @@ export const CommonInheritanceTest = (
           expect(err.message).toBe(ERRORS.VALIDATION_ERROR)
           expect(err.payload).toMatchObject({
             _laxProp: {
-              errors: expect.arrayContaining([
+              reasons: expect.arrayContaining([
                 'Invalid lax prop',
                 'Unacceptable value'
               ])
             },
-            name: { errors: expect.arrayContaining(['validation failed']) }
+            name: { reasons: expect.arrayContaining(['validation failed']) }
           })
         }
       }
@@ -383,9 +383,9 @@ export const CommonInheritanceTest = (
           expect(err.message).toBe(ERRORS.VALIDATION_ERROR)
           expect(err.payload).toMatchObject({
             _laxProp: {
-              errors: expect.arrayContaining(['Invalid lax prop', 'Too short'])
+              reasons: expect.arrayContaining(['Invalid lax prop', 'Too short'])
             },
-            name: { errors: expect.arrayContaining(['validation failed']) }
+            name: { reasons: expect.arrayContaining(['validation failed']) }
           })
         }
       }

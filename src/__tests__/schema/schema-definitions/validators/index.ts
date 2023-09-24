@@ -17,7 +17,11 @@ export const Test_Validators = ({ Schema }: any) => {
       it('should return the correct invalid message on validation failure', async () => {
         const res = await Model.validate('prop', 'yoo')
 
-        expect(res).toEqual({ valid: false, reasons: ['Invalid prop'] })
+        expect(res).toEqual({
+          valid: false,
+          reasons: ['Invalid prop'],
+          metadata: null
+        })
       })
 
       it('should respect the validator provided', async () => {
@@ -38,7 +42,11 @@ export const Test_Validators = ({ Schema }: any) => {
       it('should return the correct invalid message on validation failure', async () => {
         const res = await Model.validate('prop', 'yoo')
 
-        expect(res).toEqual({ valid: false, reasons: ['validation failed'] })
+        expect(res).toEqual({
+          valid: false,
+          reasons: ['validation failed'],
+          metadata: null
+        })
       })
 
       it('should respect the validator provided', async () => {
@@ -68,7 +76,11 @@ export const Test_Validators = ({ Schema }: any) => {
         it("should fail validation with 'validation failed' message when value returned from validator is invalid instead of crashing", async () => {
           const res = await Model.validate('prop', 'yoo')
 
-          expect(res).toEqual({ valid: false, reasons: ['validation failed'] })
+          expect(res).toEqual({
+            valid: false,
+            reasons: ['validation failed'],
+            metadata: null
+          })
         })
       }
     })
@@ -80,7 +92,7 @@ export const Test_Validators = ({ Schema }: any) => {
           [['Invalid Prop'], ['Invalid Prop']]
         ]
 
-        for (const [input, errors] of messages) {
+        for (const [input, reasons] of messages) {
           const Model = new Schema({
             prop: { default: '' },
             prop2: {
@@ -96,7 +108,7 @@ export const Test_Validators = ({ Schema }: any) => {
           expect(data).toBe(null)
           expect(error).toMatchObject({
             message: ERRORS.VALIDATION_ERROR,
-            payload: { prop: { errors, metadata: {} } }
+            payload: { prop: { reasons, metadata: null } }
           })
         }
       })
@@ -132,8 +144,8 @@ export const Test_Validators = ({ Schema }: any) => {
           message: ERRORS.VALIDATION_ERROR,
           payload: {
             prop: {
-              errors: expect.arrayContaining(['validation failed']),
-              metadata: {}
+              reasons: expect.arrayContaining(['validation failed']),
+              metadata: null
             }
           }
         })
@@ -171,12 +183,12 @@ export const Test_Validators = ({ Schema }: any) => {
             message: ERRORS.VALIDATION_ERROR,
             payload: {
               prop: {
-                errors: expect.arrayContaining(['validation failed']),
-                metadata: {}
+                reasons: expect.arrayContaining(['validation failed']),
+                metadata: null
               },
               prop1: {
-                errors: expect.arrayContaining(['validation failed']),
-                metadata: {}
+                reasons: expect.arrayContaining(['validation failed']),
+                metadata: null
               }
             }
           })

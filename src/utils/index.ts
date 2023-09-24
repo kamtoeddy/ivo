@@ -23,22 +23,26 @@ export {
   sortKeys
 }
 
-function makeResponse<T = undefined>(input: ResponseInputObject<any, any, T>) {
+function makeResponse<T = undefined>(
+  input: ResponseInputObject<any, any, T>
+): ValidatorResponse<TypeOf<T>> {
   if (input.valid) {
     const { valid, validated } = input
 
-    return { valid, validated } as ValidatorResponse<TypeOf<T>>
+    return { valid, validated }
   }
 
   // eslint-disable-next-line prefer-const
-  let { otherReasons, reason, reasons, valid } = input as any
+  let { metadata = null, otherReasons, reason, reasons, valid } = input as any
 
   if (reasons) reasons = toArray(reasons)
   else reasons = []
 
   if (reason) reasons = [...reasons, ...toArray(reason)]
 
-  return { otherReasons, reasons, valid } as ValidatorResponse<TypeOf<T>>
+  return { metadata, otherReasons, reasons, valid } as ValidatorResponse<
+    TypeOf<T>
+  >
 }
 
 function getKeysAsProps<T>(object: T) {

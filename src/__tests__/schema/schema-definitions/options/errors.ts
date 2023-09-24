@@ -108,12 +108,12 @@ export const Test_SchemaErrors = ({ Schema, fx }: any) => {
               message: ERRORS.VALIDATION_ERROR,
               payload: {
                 lax: {
-                  errors: expect.arrayContaining(['Invalid value']),
-                  metadata: {}
+                  reasons: expect.arrayContaining(['Invalid value']),
+                  metadata: null
                 },
                 required: {
-                  errors: expect.arrayContaining(['Invalid value']),
-                  metadata: {}
+                  reasons: expect.arrayContaining(['Invalid value']),
+                  metadata: null
                 }
               }
             })
@@ -133,12 +133,12 @@ export const Test_SchemaErrors = ({ Schema, fx }: any) => {
               message: ERRORS.VALIDATION_ERROR,
               payload: {
                 lax: {
-                  errors: expect.arrayContaining(['Invalid value']),
-                  metadata: {}
+                  reasons: expect.arrayContaining(['Invalid value']),
+                  metadata: null
                 },
                 required: {
-                  errors: expect.arrayContaining(['Invalid value']),
-                  metadata: {}
+                  reasons: expect.arrayContaining(['Invalid value']),
+                  metadata: null
                 }
               }
             })
@@ -161,12 +161,12 @@ export const Test_SchemaErrors = ({ Schema, fx }: any) => {
               message: ERRORS.VALIDATION_ERROR,
               payload: {
                 lax: {
-                  errors: expect.arrayContaining(['Invalid value']),
-                  metadata: {}
+                  reasons: expect.arrayContaining(['Invalid value']),
+                  metadata: null
                 },
                 required: {
-                  errors: expect.arrayContaining(['Invalid value']),
-                  metadata: {}
+                  reasons: expect.arrayContaining(['Invalid value']),
+                  metadata: null
                 }
               }
             })
@@ -212,12 +212,12 @@ export const Test_SchemaErrors = ({ Schema, fx }: any) => {
                 message: ERRORS.VALIDATION_ERROR,
                 payload: {
                   lax: {
-                    errors: expect.arrayContaining(['Invalid value']),
-                    metadata: {}
+                    reasons: expect.arrayContaining(['Invalid value']),
+                    metadata: null
                   },
                   required: {
-                    errors: expect.arrayContaining(['Invalid value']),
-                    metadata: {}
+                    reasons: expect.arrayContaining(['Invalid value']),
+                    metadata: null
                   }
                 }
               })
@@ -244,12 +244,12 @@ export const Test_SchemaErrors = ({ Schema, fx }: any) => {
                 message: ERRORS.VALIDATION_ERROR,
                 payload: {
                   lax: {
-                    errors: expect.arrayContaining(['Invalid value']),
-                    metadata: {}
+                    reasons: expect.arrayContaining(['Invalid value']),
+                    metadata: null
                   },
                   required: {
-                    errors: expect.arrayContaining(['Invalid value']),
-                    metadata: {}
+                    reasons: expect.arrayContaining(['Invalid value']),
+                    metadata: null
                   }
                 }
               })
@@ -279,12 +279,12 @@ export const Test_SchemaErrors = ({ Schema, fx }: any) => {
                 message: ERRORS.VALIDATION_ERROR,
                 payload: expect.objectContaining({
                   lax: {
-                    errors: expect.arrayContaining(['Invalid value']),
-                    metadata: {}
+                    reasons: expect.arrayContaining(['Invalid value']),
+                    metadata: null
                   },
                   required: {
-                    errors: expect.arrayContaining(['Invalid value']),
-                    metadata: {}
+                    reasons: expect.arrayContaining(['Invalid value']),
+                    metadata: null
                   }
                 })
               })

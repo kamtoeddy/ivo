@@ -164,8 +164,8 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
 
               expect(error.payload).toMatchObject({
                 qty: {
-                  errors: expect.arrayContaining(['Invalid quantity']),
-                  metadata: {}
+                  reasons: expect.arrayContaining(['Invalid quantity']),
+                  metadata: null
                 }
               })
               expect(contextRecord).toEqual({})
@@ -226,8 +226,8 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
 
               expect(error.payload).toMatchObject({
                 qty: {
-                  errors: expect.arrayContaining(['Invalid quantity']),
-                  metadata: {}
+                  reasons: expect.arrayContaining(['Invalid quantity']),
+                  metadata: null
                 }
               })
               expect(contextRecord).toEqual({})
@@ -277,8 +277,8 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
 
               expect(error.payload).toMatchObject({
                 qty: {
-                  errors: expect.arrayContaining(['Invalid quantity']),
-                  metadata: {}
+                  reasons: expect.arrayContaining(['Invalid quantity']),
+                  metadata: null
                 }
               })
               expect(contextRecord).toEqual({})
@@ -340,12 +340,12 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               expect(operation1.data).toBe(null)
               expect(operation1.error.payload).toEqual({
                 qty: {
-                  errors: expect.arrayContaining(["'qty' is required!"]),
-                  metadata: {}
+                  reasons: expect.arrayContaining(["'qty' is required!"]),
+                  metadata: null
                 },
                 setQuantity: {
-                  errors: ["'setQuantity' is required!"],
-                  metadata: {}
+                  reasons: ["'setQuantity' is required!"],
+                  metadata: null
                 }
               })
 
@@ -356,12 +356,12 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               expect(operation2.data).toBe(null)
               expect(operation2.error.payload).toEqual({
                 qty: {
-                  errors: expect.arrayContaining(['invalid quantity']),
-                  metadata: {}
+                  reasons: expect.arrayContaining(['invalid quantity']),
+                  metadata: null
                 },
                 setQuantity: {
-                  errors: expect.arrayContaining(['invalid quantity']),
-                  metadata: {}
+                  reasons: expect.arrayContaining(['invalid quantity']),
+                  metadata: null
                 }
               })
             })
@@ -375,12 +375,12 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               expect(operation1.data).toBe(null)
               expect(operation1.error.payload).toEqual({
                 qty: {
-                  errors: expect.arrayContaining(["'qty' is required!"]),
-                  metadata: {}
+                  reasons: expect.arrayContaining(["'qty' is required!"]),
+                  metadata: null
                 },
                 setQuantity: {
-                  errors: ["'setQuantity' is required!"],
-                  metadata: {}
+                  reasons: ["'setQuantity' is required!"],
+                  metadata: null
                 }
               })
 
@@ -391,12 +391,12 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               expect(operation2.data).toBe(null)
               expect(operation2.error.payload).toEqual({
                 qty: {
-                  errors: expect.arrayContaining(['invalid quantity']),
-                  metadata: {}
+                  reasons: expect.arrayContaining(['invalid quantity']),
+                  metadata: null
                 },
                 setQuantity: {
-                  errors: expect.arrayContaining(['invalid quantity']),
-                  metadata: {}
+                  reasons: expect.arrayContaining(['invalid quantity']),
+                  metadata: null
                 }
               })
             })
@@ -410,14 +410,14 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               expect(operation1.data).toBe(null)
               expect(operation1.error.payload).toEqual({
                 qty: {
-                  errors: expect.arrayContaining(["'qty' is required!"]),
-                  metadata: {}
+                  reasons: expect.arrayContaining(["'qty' is required!"]),
+                  metadata: null
                 },
                 setQuantity: {
-                  errors: expect.arrayContaining([
+                  reasons: expect.arrayContaining([
                     "'setQuantity' is required!"
                   ]),
-                  metadata: {}
+                  metadata: null
                 }
               })
 
@@ -428,12 +428,12 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               expect(operation2.data).toBe(null)
               expect(operation2.error.payload).toEqual({
                 qty: {
-                  errors: expect.arrayContaining(['invalid quantity']),
-                  metadata: {}
+                  reasons: expect.arrayContaining(['invalid quantity']),
+                  metadata: null
                 },
                 setQuantity: {
-                  errors: expect.arrayContaining(['invalid quantity']),
-                  metadata: {}
+                  reasons: expect.arrayContaining(['invalid quantity']),
+                  metadata: null
                 }
               })
             })

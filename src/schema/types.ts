@@ -1,5 +1,5 @@
 import { Schema } from '.'
-import { InputPayload } from './utils'
+import { FieldError, InputPayload } from './utils'
 
 export type {
   Context,
@@ -284,20 +284,29 @@ namespace Schema {
 
 type ValidatorResponse<T> =
   | { valid: true; validated: T }
-  | { reasons: string[]; valid: false }
+  | { metadata: FieldError['metadata']; reasons: string[]; valid: false }
 
 type InternalValidatorResponse<T> =
   | { valid: true; validated: T }
-  | { otherReasons?: InputPayload; reasons: string[]; valid: false }
+  | {
+      metadata?: FieldError['metadata']
+      otherReasons?: InputPayload
+      reasons: FieldError['reasons']
+      valid: false
+    }
 
 type ResponseInputObject<K extends keyof (Output & Input), Output, Input> =
   | { valid: true; validated?: TypeOf<(Output & Input)[K]> }
   | {
       otherReasons?: {
-        [Key in Exclude<keyof (Output & Input), K>]: string | string[]
+        [Key in Exclude<keyof (Output & Input), K>]:
+          | string
+          | string[]
+          | FieldError
       }
-      reason?: string
-      reasons?: string[]
+      metadata?: FieldError['metadata']
+      reason?: FieldError['reasons'][number]
+      reasons?: FieldError['reasons']
       valid: false
     }
 

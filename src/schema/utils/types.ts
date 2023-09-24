@@ -25,7 +25,10 @@ export type SchemaErrorToolProps = {
 }
 
 export type ValidationErrorMessage = keyof typeof VALIDATION_ERRORS
-export type FieldError = { errors: string[]; metadata: Record<PayloadKey, any> }
+export type FieldError = {
+  reasons: string[]
+  metadata: Record<PayloadKey, any> | null
+}
 export type ErrorPayload = Record<PayloadKey, FieldError>
 export type InputPayload = Record<PayloadKey, string | string[] | FieldError>
 
