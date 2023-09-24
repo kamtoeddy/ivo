@@ -198,12 +198,15 @@ function isNumberOk(num: any, { range }: { range?: RangeType } = {}) {
   return makeResponse<number>({ valid: true, validated: num })
 }
 
+const MAX_LENGTH = 255,
+  MIN_LENGTH = 1
+
 function isStringOk<T extends string = string>(
   str: any,
   {
     enums,
-    maxLength = 255,
-    minLength = 1,
+    maxLength = MAX_LENGTH,
+    minLength = MIN_LENGTH,
     regExp,
     trim = false
   }: StringOptions<T> = {}
@@ -214,7 +217,11 @@ function isStringOk<T extends string = string>(
   if (enums)
     return isOneOf(str, enums as any)
       ? makeResponse({ valid: true, validated: str })
-      : makeResponse({ reason: 'Unacceptable value', valid: false })
+      : makeResponse({
+          reason: 'Unacceptable value',
+          valid: false,
+          metadata: { allowed: enums }
+        })
 
   if (regExp && !regExp.test(str))
     return makeResponse({ reason: 'Unacceptable value', valid: false })
@@ -223,11 +230,24 @@ function isStringOk<T extends string = string>(
 
   if (trim) str = str.trim()
 
+  if (typeof maxLength != 'number' || maxLength < 0) maxLength = MAX_LENGTH
+
+  if (minLength > maxLength) minLength--
+
+  if (typeof minLength != 'number' || minLength < 0) minLength = MIN_LENGTH
+
+  if (minLength == 0 && minLength == maxLength) {
+    maxLength = MAX_LENGTH
+    minLength = MIN_LENGTH
+  }
+
+  const metadata = { maxLength, minLength }
+
   if (str.length < minLength)
-    return makeResponse({ reason: 'Too short', valid: false })
+    return makeResponse({ reason: 'Too short', valid: false, metadata })
 
   if (str.length > maxLength)
-    return makeResponse({ reason: 'Too long', valid: false })
+    return makeResponse({ reason: 'Too long', valid: false, metadata })
 
   return makeResponse({ valid: true, validated: str })
 }

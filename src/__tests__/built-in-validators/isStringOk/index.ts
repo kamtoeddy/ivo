@@ -1,3 +1,7 @@
+function getStringOfLength(length: number) {
+  return Array(length).fill('a').join('')
+}
+
 export const isStringOkTest = ({ isStringOk }: { isStringOk: Function }) => {
   describe('isStringOk', () => {
     it('should tell whether input is a valid string or not', () => {
@@ -24,16 +28,78 @@ export const isStringOkTest = ({ isStringOk }: { isStringOk: Function }) => {
       const falsy = [
         [null, ['Unacceptable value']],
         [undefined, ['Unacceptable value']],
-        ['', ['Too short']],
-        [Array(257).join('a'), ['Too long']]
+        ['', ['Too short'], { maxLength: 255, minLength: 1 }],
+        [Array(257).join('a'), ['Too long'], { maxLength: 255, minLength: 1 }]
       ]
 
-      for (const [value, reasons] of falsy) {
+      for (const [value, reasons, metadata = null] of falsy) {
         const res = isStringOk(value)
 
-        expect(res).toMatchObject({ reasons, valid: false })
+        expect(res).toMatchObject({ reasons, valid: false, metadata })
 
         expect(res.validated).toBeUndefined()
+      }
+    })
+
+    it('should respect minLength & maxLength options', () => {
+      const falsy = [
+        {
+          valid: true,
+          validated: 'valid',
+          value: 'valid'
+        },
+        {
+          valid: true,
+          value: getStringOfLength(20),
+          options: { maxLength: 21, minLength: 20 }
+        },
+        {
+          valid: true,
+          value: getStringOfLength(1),
+          options: { maxLength: 1, minLength: 2 },
+          metadata: { maxLength: 1, minLength: 1 }
+        },
+        {
+          valid: true,
+          value: getStringOfLength(1),
+          options: { maxLength: 0, minLength: 1 }
+        },
+        {
+          value: '',
+          reasons: ['Too short'],
+          metadata: { maxLength: 255, minLength: 1 }
+        },
+        {
+          value: '',
+          reasons: ['Too short'],
+          options: { minLength: 1 },
+          metadata: { maxLength: 255, minLength: 1 }
+        },
+        {
+          value: getStringOfLength(256),
+          reasons: ['Too long'],
+          metadata: { maxLength: 255, minLength: 1 }
+        },
+        {
+          value: getStringOfLength(251),
+          reasons: ['Too long'],
+          options: { maxLength: 250 },
+          metadata: { maxLength: 250, minLength: 1 }
+        }
+      ]
+
+      for (const {
+        valid = false,
+        value,
+        validated = value,
+        reasons = [],
+        options = {},
+        metadata = null
+      } of falsy) {
+        const res = isStringOk(value, options)
+
+        if (valid) expect(res).toMatchObject({ valid, validated })
+        else expect(res).toMatchObject({ reasons, valid, metadata })
       }
     })
 
@@ -64,6 +130,7 @@ export const isStringOkTest = ({ isStringOk }: { isStringOk: Function }) => {
         const res = isStringOk(value, { enums })
 
         expect(res).toMatchObject({
+          metadata: { allowed: enums },
           reasons: ['Unacceptable value'],
           valid: false
         })
