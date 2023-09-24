@@ -21,6 +21,13 @@ export type NumberRangeType = {
   inclusiveTop?: boolean
 }
 
+export type NumberRangeType_ = {
+  min: number | null
+  max: number | null
+  inclusiveBottom: boolean
+  inclusiveTop: boolean
+}
+
 export type StringOptions<T extends string = string> = XOR<
   { enums: T[] | readonly T[] },
   { maxLength?: number; minLength?: number; regExp?: RegExp; trim?: boolean }

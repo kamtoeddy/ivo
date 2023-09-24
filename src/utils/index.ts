@@ -40,9 +40,12 @@ function makeResponse<T = undefined>(
 
   if (reason) reasons = [...reasons, ...toArray(reason)]
 
-  return { metadata, otherReasons, reasons, valid } as ValidatorResponse<
-    TypeOf<T>
-  >
+  return {
+    metadata,
+    reasons,
+    valid,
+    ...(otherReasons && { otherReasons })
+  } as ValidatorResponse<TypeOf<T>>
 }
 
 function getKeysAsProps<T>(object: T) {
@@ -61,7 +64,7 @@ function hasAnyOf(object: any, props: PayloadKey[]): boolean {
  * @returns {boolean}
  */
 
-function isEqual(a: any, b: any, depth = 1): boolean {
+function isEqual<T>(a: any, b: T, depth = 1): a is T {
   const typeOfA = typeof a
 
   if (typeOfA != typeof b) return false
@@ -74,7 +77,7 @@ function isEqual(a: any, b: any, depth = 1): boolean {
   if (isNullOrUndefined(a) || isNullOrUndefined(b)) return a == b
 
   let keysOfA = Object.keys(a),
-    keysOfB = Object.keys(b)
+    keysOfB = Object.keys(b as any)
 
   if (keysOfA.length != keysOfB.length) return false
   ;(keysOfA = sort(keysOfA)), (keysOfB = sort(keysOfB))
@@ -82,9 +85,9 @@ function isEqual(a: any, b: any, depth = 1): boolean {
   if (JSON.stringify(keysOfA) != JSON.stringify(keysOfB)) return false
 
   if (depth > 0 && keysOfA.length)
-    return keysOfA.every((key) => isEqual(a[key], b[key], depth - 1))
+    return keysOfA.every((key) => isEqual(a[key], (b as any)[key], depth - 1))
 
-  return JSON.stringify(sortKeys(a)) == JSON.stringify(sortKeys(b))
+  return JSON.stringify(sortKeys(a)) == JSON.stringify(sortKeys(b as any))
 }
 
 function isFunction(value: any): value is Function {

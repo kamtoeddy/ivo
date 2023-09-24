@@ -595,8 +595,9 @@ class ModelTool<
     if (!_response.reason && !_response.reasons && !_response.otherReasons)
       return validationFailedResponse
 
-    if (!response?.metadata || !isObject(response?.metadata))
-      _response.metadata = null
+    if (response?.metadata && isObject(response.metadata))
+      _response.metadata = sortKeys(response.metadata)
+    else _response.metadata = null
 
     return makeResponse(_response)
   }

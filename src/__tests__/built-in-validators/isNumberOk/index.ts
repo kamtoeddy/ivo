@@ -123,7 +123,15 @@ export const isNumberOkTest = ({ isNumberOk }: { isNumberOk: Function }) => {
       pairsToFail.forEach(([num, range, error]) => {
         const res = isNumberOk(num, { range })
 
+        const [min, max] = range.bounds
+
         expect(res).toMatchObject({
+          metadata: {
+            max,
+            min,
+            inclusiveBottom: range?.inclusiveBottom ?? true,
+            inclusiveTop: range?.inclusiveTop ?? true
+          },
           reasons: [error],
           valid: false
         })

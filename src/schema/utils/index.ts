@@ -202,7 +202,10 @@ class ErrorTool extends Error {
           currentValues.reasons.push(reason)
 
         if (metadata && !isEqual(currentValues.metadata, metadata))
-          currentValues.metadata = { ...currentValues.metadata, ...metadata }
+          currentValues.metadata = {
+            ...(currentValues?.metadata ?? {}),
+            ...metadata
+          }
       })
 
       this.payload[field] = currentValues

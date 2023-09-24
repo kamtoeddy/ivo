@@ -1,6 +1,11 @@
-import { getUniqueBy, isOneOf, makeResponse } from '../utils'
+import { getUniqueBy, isEqual, isObject, isOneOf, makeResponse } from '../utils'
 import { ResponseInputObject, ValidatorResponse } from '../schema/types'
-import { ArrayOptions, NumberRangeType, StringOptions } from '../utils/types'
+import {
+  ArrayOptions,
+  NumberRangeType,
+  NumberRangeType_,
+  StringOptions
+} from '../utils/types'
 
 export {
   isArrayOk,
@@ -130,41 +135,62 @@ export type RangeType = undefined | NumberRangeType
 
 function _isInNumberRange(
   value: number,
-  range: NumberRangeType
+  range: NumberRangeType_
 ): ResponseInputObject<any, any, number> {
-  const { bounds, inclusiveBottom, inclusiveTop } = range
-  const [min, max] = bounds
+  const { max, min, inclusiveBottom, inclusiveTop } = range
 
-  if ((inclusiveBottom && value < min) || (!inclusiveBottom && value <= min))
-    return { reason: 'Too small', valid: false }
+  if (
+    !isEqual(min, null) &&
+    ((inclusiveBottom && value < min) || (!inclusiveBottom && value <= min))
+  )
+    return { reason: 'Too small', valid: false, metadata: range }
 
-  if ((inclusiveTop && value > max) || (!inclusiveTop && value >= max))
-    return { reason: 'Too large', valid: false }
+  if (
+    !isEqual(max, null) &&
+    ((inclusiveTop && value > max) || (!inclusiveTop && value >= max))
+  )
+    return { reason: 'Too large', valid: false, metadata: range }
 
   return { valid: true, validated: value }
 }
 
-function _makeNumberRage(range: RangeType): RangeType {
-  if (!range?.bounds) return undefined
+function _makeNumberRage(range: RangeType) {
+  if (!isObject(range) || !range?.bounds) return undefined
+
+  const range_ = {} as NumberRangeType_
+
+  range_.min = typeof range?.bounds[0] == 'number' ? range.bounds[0] : null
+  range_.max = typeof range?.bounds[1] == 'number' ? range.bounds[1] : null
 
   const { inclusiveBottom, inclusiveTop } = range
 
-  if (typeof inclusiveBottom !== 'boolean') range.inclusiveBottom = true
-  if (typeof inclusiveTop !== 'boolean') range.inclusiveTop = true
+  range_.inclusiveBottom =
+    typeof inclusiveBottom == 'boolean'
+      ? inclusiveBottom
+      : range_.inclusiveBottom ?? true
 
-  return range
+  range_.inclusiveTop =
+    typeof inclusiveTop == 'boolean'
+      ? inclusiveTop
+      : range_.inclusiveTop ?? true
+
+  return range_
 }
 
 function isNumberOk(num: any, { range }: { range?: RangeType } = {}) {
+  const range_ = _makeNumberRage(range)
+
   if (!['number', 'string'].includes(typeof num) || isNaN(num))
-    return makeResponse({ reason: 'Expected a number', valid: false })
+    return makeResponse({
+      reason: 'Expected a number',
+      valid: false,
+      metadata: range_
+    })
 
   num = Number(num)
 
-  range = _makeNumberRage(range)
-
-  if (range) {
-    const _isInRange = _isInNumberRange(num, range)
+  if (range_) {
+    const _isInRange = _isInNumberRange(num, range_)
 
     if (!_isInRange.valid) return makeResponse(_isInRange)
   }
