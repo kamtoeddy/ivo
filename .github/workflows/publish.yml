@@ -1,0 +1,32 @@
+name: Publish
+
+on:
+  push:
+    branches: ['main']
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+jobs:
+  bun-ci:
+    name: Bun CI
+    uses: ./.github/workflows/reusable-bun-ci.yml
+
+  node-ci:
+    name: Node CI
+    uses: ./.github/workflows/reusable-node-ci.yml
+
+  build:
+    needs: [bun-ci, node-ci]
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16.x
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run build
+      - name: Create Release Pull Request or Publish
+        id: changesets
+        uses: changesets/actions@v1
