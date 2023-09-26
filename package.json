@@ -5,7 +5,6 @@
   },
   "description": "schema builder for javascript environments",
   "devDependencies": {
-    "@changesets/cli": "^2.26.2",
     "@types/jest": "^28.1.8",
     "@typescript-eslint/eslint-plugin": "^5.58.0",
     "@typescript-eslint/parser": "^5.58.0",
@@ -48,5 +47,5 @@
     "prepare": "npm run clean-up && npm run build"
   },
   "types": "dist/index.d.ts",
-  "version": "3.5.3"
+  "version": "3.6.0"
 }
