@@ -4,6 +4,7 @@ export default Schema
 
 export { Schema } from './schema'
 export * as validate from './validate'
+export * from './validate'
 
 // types & interfaces
 export * from './utils'

@@ -1,11 +1,5 @@
-import { getUniqueBy, isEqual, isObject, isOneOf, makeResponse } from '../utils'
-import { ResponseInputObject, ValidatorResponse } from '../schema/types'
-import {
-  ArrayOptions,
-  NumberRangeType,
-  NumberRangeType_,
-  StringOptions
-} from '../utils/types'
+import { getUniqueBy, isEqual, isObject, isOneOf, makeResponse } from './utils'
+import { ResponseInputObject, ValidatorResponse, XOR } from './schema/types'
 
 export {
   isArrayOk,
@@ -14,6 +8,19 @@ export {
   isEmailOk,
   isNumberOk,
   isStringOk
+}
+
+export type { ArrayOptions, NumberRangeType, RangeType, StringOptions }
+
+type ArrayOptions<T> = {
+  empty?: boolean
+  filter?: (data: T) => boolean | Promise<boolean>
+  modifier?: (data: T) => any | Promise<any>
+  sorted?: boolean
+  sorter?: (a: T, b: T) => number
+  sortOrder?: 'asc' | 'desc'
+  unique?: boolean
+  uniqueKey?: string
 }
 
 async function isArrayOk<T>(
@@ -114,24 +121,35 @@ function _isCheckSumOk(values: number[]) {
   return 10 - (_getCheckSum(toCheck) % 10) === controlNumber
 }
 
-let emailRegExp =
+const EMAIL_REGEXP =
   /(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])/
 
 const invalidResponse = makeResponse({ reason: 'Invalid email', valid: false })
 
-const isEmailOk = (value: any, customRegExp?: RegExp) => {
+const isEmailOk = (value: any, regExp = EMAIL_REGEXP) => {
   if (typeof value !== 'string') return invalidResponse
 
   const validated = value?.trim()
 
-  if (customRegExp) emailRegExp = customRegExp
-
-  return emailRegExp.test(validated)
+  return regExp.test(validated)
     ? makeResponse<string>({ valid: true, validated })
     : invalidResponse
 }
 
-export type RangeType = undefined | NumberRangeType
+type NumberRangeType = {
+  bounds: number[]
+  inclusiveBottom?: boolean
+  inclusiveTop?: boolean
+}
+
+type NumberRangeType_ = {
+  min: number | null
+  max: number | null
+  inclusiveBottom: boolean
+  inclusiveTop: boolean
+}
+
+type RangeType = NumberRangeType
 
 function _isInNumberRange(
   value: number,
@@ -154,7 +172,7 @@ function _isInNumberRange(
   return { valid: true, validated: value }
 }
 
-function _makeNumberRage(range: RangeType) {
+function _makeNumberRage(range?: RangeType) {
   if (!isObject(range) || !range?.bounds) return undefined
 
   const range_ = {} as NumberRangeType_
@@ -200,6 +218,11 @@ function isNumberOk(num: any, { range }: { range?: RangeType } = {}) {
 
 const MAX_LENGTH = 255,
   MIN_LENGTH = 1
+
+type StringOptions<T extends string = string> = XOR<
+  { enums: T[] | readonly T[] },
+  { maxLength?: number; minLength?: number; regExp?: RegExp; trim?: boolean }
+>
 
 function isStringOk<T extends string = string>(
   str: any,

@@ -42,7 +42,7 @@
     "clean-up": "rm -rf coverage dist",
     "lint": "eslint . --ext .ts",
     "test": "tsc & jest --verbose",
-    "tes:cov": "tsc & jest --verbose --watchAll --coverage",
+    "tes:cov": "tsc & jest --verbose --coverage",
     "test:watch": "tsc & jest --verbose --watchAll",
     "prepare": "npm run clean-up && npm run build"
   },
