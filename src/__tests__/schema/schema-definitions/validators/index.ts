@@ -85,7 +85,7 @@ export const Test_Validators = ({ Schema }: any) => {
       }
     })
 
-    describe('OtherReasons', () => {
+    describe('otherReasons', () => {
       it('should add corresponding properties and error messages passed as otherReasons', async () => {
         const messages = [
           ['Invalid Prop', ['Invalid Prop']],
@@ -191,6 +191,32 @@ export const Test_Validators = ({ Schema }: any) => {
                 metadata: null
               }
             }
+          })
+        }
+      })
+    })
+
+    describe('metadata', () => {
+      it('should respect valid metadata provided by custom validators', async () => {
+        const info = [{ prop2: 'Invalid Prop' }]
+
+        for (const metadata of info) {
+          const Model = new Schema({
+            prop: { default: '' },
+            prop2: {
+              required: true,
+              validator() {
+                return { valid: false, metadata }
+              }
+            }
+          }).getModel()
+
+          const { data, error } = await Model.create()
+
+          expect(data).toBe(null)
+          expect(error).toMatchObject({
+            message: ERRORS.VALIDATION_ERROR,
+            payload: { prop2: expect.objectContaining({ metadata }) }
           })
         }
       })

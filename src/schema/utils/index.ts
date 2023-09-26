@@ -195,18 +195,18 @@ class ErrorTool extends Error {
     if (this._has(field)) {
       const currentValues = this.payload[field]
 
-      const { reasons, metadata } = _value
+      const { reasons = [], metadata } = _value
 
       reasons.forEach((reason) => {
         if (!currentValues.reasons.includes(reason))
           currentValues.reasons.push(reason)
-
-        if (metadata && !isEqual(currentValues.metadata, metadata))
-          currentValues.metadata = {
-            ...(currentValues?.metadata ?? {}),
-            ...metadata
-          }
       })
+
+      if (metadata && !isEqual(currentValues.metadata, metadata))
+        currentValues.metadata = {
+          ...(currentValues?.metadata ?? {}),
+          ...metadata
+        }
 
       this.payload[field] = currentValues
     } else this.payload[field] = _value
@@ -242,10 +242,7 @@ class ErrorTool extends Error {
 }
 
 function isFieldError(data: any): data is FieldError {
-  if (!isPropertyOf('reasons', data)) return false
-  if (!isPropertyOf('metadata', data)) return false
-
-  return true
+  return isPropertyOf('reasons', data) && isPropertyOf('metadata', data)
 }
 
 function makeFieldError(value: InputPayload[PayloadKey]): FieldError {

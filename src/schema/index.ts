@@ -28,7 +28,7 @@ const validationFailedResponse = {
   metadata: null,
   reasons: ['validation failed'],
   valid: false
-}
+} as ResponseInputObject<any, any, any>
 
 const areValuesOk = (values: any) => values && typeof values == 'object'
 
@@ -519,9 +519,11 @@ class ModelTool<
     )) as InternalValidatorResponse<Output[StringKey<Output>]>
 
     if (!isValid.valid) {
-      const { otherReasons, reasons } = isValid
+      const { otherReasons, reasons, metadata } = isValid
 
       const hasOtherReasons = !!otherReasons
+
+      if (metadata) error.add(prop, { reasons: [], metadata })
 
       if (!hasOtherReasons) return error.add(prop, reasons)
 
@@ -592,12 +594,16 @@ class ModelTool<
     if (response?.reason) _response.reason = response.reason
     if (response?.reasons) _response.reasons = response.reasons
 
-    if (!_response.reason && !_response.reasons && !_response.otherReasons)
-      return validationFailedResponse
-
     if (response?.metadata && isObject(response.metadata))
       _response.metadata = sortKeys(response.metadata)
     else _response.metadata = null
+
+    if (!_response.reason && !_response.reasons && !_response.otherReasons) {
+      if (_response.metadata)
+        (validationFailedResponse as any).metadata = _response.metadata
+
+      return validationFailedResponse
+    }
 
     return makeResponse(_response)
   }
