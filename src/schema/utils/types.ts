@@ -1,4 +1,4 @@
-import { PayloadKey } from '../../utils/types'
+import { PayloadKey } from '../../utils'
 
 export const SCHEMA_ERRORS = {
   INVALID_SCHEMA: 'INVALID_SCHEMA'

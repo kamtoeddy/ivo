@@ -1,4 +1,4 @@
-import { isStringOk } from '../../../../dist/validate'
+import { isStringOk } from '../../../../dist'
 import { isStringOkTest } from '.'
 
 isStringOkTest({ isStringOk })

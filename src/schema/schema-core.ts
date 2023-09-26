@@ -13,7 +13,7 @@ import {
   toArray
 } from '../utils'
 import { SchemaErrorTool, TimeStampTool } from './utils'
-import { ObjectType } from '../utils/types'
+import { ObjectType } from '../utils'
 import {
   DefinitionRule,
   Context,

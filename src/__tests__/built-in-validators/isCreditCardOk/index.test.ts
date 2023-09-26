@@ -1,4 +1,4 @@
-import { isCreditCardOk } from '../../../validate'
+import { isCreditCardOk } from '../../..'
 import { isCreditCardOkTest } from '.'
 
 isCreditCardOkTest({ isCreditCardOk })

@@ -1,4 +1,4 @@
-import { isArrayOk } from '../../../../dist/validate'
+import { isArrayOk } from '../../../../dist'
 import { isArrayOkTest } from '.'
 
 isArrayOkTest({ isArrayOk })

@@ -1,4 +1,4 @@
-import { isNumberOk } from "../../../validate";
-import { isNumberOkTest } from ".";
+import { isNumberOk } from '../../..'
+import { isNumberOkTest } from '.'
 
-isNumberOkTest({ isNumberOk });
+isNumberOkTest({ isNumberOk })

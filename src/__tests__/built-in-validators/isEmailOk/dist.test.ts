@@ -1,4 +1,4 @@
-import { isEmailOk } from '../../../../dist/validate'
+import { isEmailOk } from '../../../../dist'
 import { isEmailOkTest } from '.'
 
 isEmailOkTest({ isEmailOk })

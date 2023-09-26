@@ -1,4 +1,4 @@
-import { isArrayOk } from "../../../validate";
-import { isArrayOkTest } from ".";
+import { isArrayOk } from '../../..'
+import { isArrayOkTest } from '.'
 
-isArrayOkTest({ isArrayOk });
+isArrayOkTest({ isArrayOk })

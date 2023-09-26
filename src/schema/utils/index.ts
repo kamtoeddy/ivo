@@ -1,5 +1,5 @@
 import { isEqual, isPropertyOf, sortKeys, toArray } from '../../utils'
-import { PayloadKey } from '../../utils/types'
+import { PayloadKey } from '../../utils'
 import { ISchema, StringKey } from '../types'
 import {
   ErrorPayload,

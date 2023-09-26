@@ -3,8 +3,7 @@ import {
   StringKey,
   TypeOf,
   ValidatorResponse
-} from '../schema/types'
-import { ObjectType, PayloadKey } from './types'
+} from './schema/types'
 
 export {
   makeResponse,
@@ -22,6 +21,12 @@ export {
   sort,
   sortKeys
 }
+
+export type { ObjectType, PayloadKey }
+
+type PayloadKey = number | string
+
+type ObjectType = Record<PayloadKey, any> & {}
 
 function makeResponse<T = undefined>(
   input: ResponseInputObject<any, any, T>

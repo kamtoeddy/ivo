@@ -30,8 +30,6 @@ const validationFailedResponse = {
   valid: false
 } as ResponseInputObject<any, any, any>
 
-const areValuesOk = (values: any) => values && typeof values == 'object'
-
 class Schema<
   Output extends RealType<Output>,
   Input extends RealType<Input> = Output,
@@ -1040,4 +1038,8 @@ class Model<
 
     return this.modelTool._validate(prop, value, summary)
   }
+}
+
+function areValuesOk(values: any) {
+  return values && typeof values == 'object'
 }

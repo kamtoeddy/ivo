@@ -1,4 +1,4 @@
-import { isBooleanOk } from '../../../validate'
+import { isBooleanOk } from '../../..'
 import { isBooleanOkTest } from '.'
 
 isBooleanOkTest({ isBooleanOk })
