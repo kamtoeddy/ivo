@@ -147,7 +147,7 @@ class ModelTool<
     this._getSummary(this.values, isUpdate)
 
   private _handleError = async (
-    error: ErrorTool,
+    error: ErrorTool<StringKey<Input & Aliases>>,
     data?: Partial<Output>,
     virtuals: StringKey<Output>[] = []
   ) => {
@@ -160,7 +160,7 @@ class ModelTool<
 
   private _handleFailure = async (
     data: Partial<Output>,
-    error: ErrorTool,
+    error: ErrorTool<StringKey<Input & Aliases>>,
     virtuals: StringKey<Output>[] = []
   ) => {
     let props = [...getKeysAsProps({ ...data, ...error.payload }), ...virtuals]
@@ -505,7 +505,7 @@ class ModelTool<
 
   private _validateAndSet = async (
     operationData: Partial<Output> = {},
-    error: ErrorTool,
+    error: ErrorTool<StringKey<Input & Aliases>>,
     prop: StringKey<Output>,
     value: any,
     isUpdate = false
@@ -521,15 +521,15 @@ class ModelTool<
 
       const hasOtherReasons = !!otherReasons
 
-      if (metadata) error.add(prop, { reasons: [], metadata })
+      if (metadata) error.add(prop as any, { reasons: [], metadata })
 
-      if (!hasOtherReasons) return error.add(prop, reasons)
+      if (!hasOtherReasons) return error.add(prop as any, reasons)
 
-      if (reasons.length) error.add(prop, reasons)
-      else error.add(prop, 'validation failed')
+      if (reasons.length) error.add(prop as any, reasons)
+      else error.add(prop as any, 'validation failed')
 
       return Object.entries(otherReasons).forEach(([key, reasons]) => {
-        error.add(key, reasons)
+        error.add(key as any, reasons)
       })
     }
 
@@ -619,7 +619,7 @@ class ModelTool<
     )
 
     let data = {} as Partial<Output>
-    const validationError = new ErrorTool({
+    const validationError = new ErrorTool<StringKey<Input & Aliases>>({
       message: VALIDATION_ERRORS.VALIDATION_ERROR
     })
 
@@ -750,7 +750,7 @@ class ModelTool<
     this._setValues(values)
 
     let data = {} as Partial<Output>
-    const validationError = new ErrorTool({
+    const validationError = new ErrorTool<StringKey<Input & Aliases>>({
       message: VALIDATION_ERRORS.VALIDATION_ERROR
     })
 
@@ -871,7 +871,7 @@ class ModelTool<
     if (this._options?.setMissingDefaultsOnUpdate)
       await this._setMissingDefaults()
 
-    const validationError = new ErrorTool({
+    const validationError = new ErrorTool<StringKey<Input & Aliases>>({
       message: VALIDATION_ERRORS.VALIDATION_ERROR
     })
 
@@ -897,7 +897,8 @@ class ModelTool<
         this._getValidationSummary(true)
       )) as ValidatorResponse<Output[StringKey<Output>]>
 
-      if (!isValid.valid) return validationError.add(prop, isValid.reasons)
+      if (!isValid.valid)
+        return validationError.add(prop as any, isValid.reasons)
 
       let { validated } = isValid
 
