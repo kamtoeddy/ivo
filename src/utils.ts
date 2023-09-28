@@ -66,7 +66,7 @@ function hasAnyOf(object: any, props: PayloadKey[]): boolean {
  * @param  depth how deep in nesting should equality checks be performed for objects
  */
 
-function isEqual<T>(a: any, b: T, depth: number = 1): a is T {
+function isEqual<T>(a: any, b: T, depth = 1): a is T {
   if (!a || !b || (typeof a !== 'object' && typeof b !== 'object'))
     return a === b
 
