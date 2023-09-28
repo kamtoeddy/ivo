@@ -1017,13 +1017,18 @@ class Model<
 > {
   constructor(private modelTool: ModelTool<Output, Input, Aliases>) {}
 
-  clone = this.modelTool.clone
+  clone = (
+    values: Partial<Input & Aliases>,
+    options: ns.CloneOptions<Input> = { reset: [] }
+  ) => this.modelTool.clone(values, options)
 
-  create = this.modelTool.create
+  create = (values: Partial<Input & Aliases> = {}) =>
+    this.modelTool.create(values)
 
-  delete = this.modelTool.delete
+  delete = (values: Output) => this.modelTool.delete(values)
 
-  update = this.modelTool.update
+  update = (values: Output, changes: Partial<Input & Aliases>) =>
+    this.modelTool.update(values, changes)
 
   validate = async <K extends StringKey<Input & Aliases>>(
     prop: K,

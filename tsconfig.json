@@ -1,20 +1,36 @@
+// {
+//   "compilerOptions": {
+//     "declaration": true,
+//     "esModuleInterop": true,
+//     "forceConsistentCasingInFileNames": true,
+//     "lib": ["es2020", "es2017", "es7", "es6", "dom"],
+//     "module": "commonjs",
+//     "moduleResolution": "node",
+//     "noUnusedLocals": true,
+//     "noUnusedParameters": true,
+//     "outDir": "./dist",
+//     "rootDir": "./src",
+//     "strict": true,
+//     "skipLibCheck": true,
+//     "target": "es2017",
+//     "types": ["jest"]
+//   },
+//   "include": ["src"],
+//   "exclude": ["node_modules", "dist", "**/__tests__/*"]
+// }
 {
   "compilerOptions": {
-    "declaration": true,
+    "lib": ["ESNext", "DOM"],
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "node",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    "lib": ["es2020", "es2017", "es7", "es6", "dom"],
-    "module": "commonjs",
-    "moduleResolution": "node",
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "outDir": "./dist",
-    "rootDir": "./src",
     "strict": true,
-    "skipLibCheck": true,
-    "target": "es2017",
-    "types": ["jest"]
+    "noEmit": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
   },
-  "include": ["src"],
+  "include": ["."],
   "exclude": ["node_modules", "dist", "**/__tests__/*"]
 }

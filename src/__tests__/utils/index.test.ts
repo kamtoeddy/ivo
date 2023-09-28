@@ -1,4 +1,4 @@
-import { getUnique, getUniqueBy, isOneOf, isEqual } from '../../../dist/utils'
+import { getUnique, getUniqueBy, isOneOf, isEqual } from '../../utils'
 
 import { commonUtilTests } from '.'
 
