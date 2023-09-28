@@ -1,3 +1,5 @@
+import { describe, it, expect } from 'vitest'
+
 function getStringOfLength(length: number) {
   return Array(length).fill('a').join('')
 }

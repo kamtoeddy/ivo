@@ -1,3 +1,5 @@
+import { beforeEach, describe, it, expect } from 'vitest'
+
 import { ERRORS } from '../../../..'
 import {
   expectFailure,
@@ -16,7 +18,9 @@ export const Test_SchemaOnDelete = ({ Schema, fx }: any) => {
         return (values: any) => (deletedValues[prop] = values)
       }
 
-      beforeEach(() => (deletedValues = {}))
+      beforeEach(() => {
+        deletedValues = {}
+      })
 
       describe('behaviour with other delete handlers', () => {
         const Book = new Schema(

@@ -1,3 +1,5 @@
+import { describe, it, expect } from 'vitest'
+
 type CommonUtilsProps = { [key: string]: Function }
 
 export const commonUtilTests = ({

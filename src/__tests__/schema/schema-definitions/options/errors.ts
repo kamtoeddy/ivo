@@ -1,3 +1,5 @@
+import { beforeAll, describe, test, it, expect } from 'vitest'
+
 import { ERRORS } from '../../../..'
 import {
   expectFailure,
@@ -48,9 +50,9 @@ export const Test_SchemaErrors = ({ Schema, fx }: any) => {
         models = [silentModel, modelToThrow]
       })
 
-      describe('silent & throw with valid data', () => {
+      test('silent & throw with valid data', () => {
+        // create
         for (const model of models) {
-          // create
           it('should create normally', async () => {
             const { data } = await model.create({
               readonly: 'lax',

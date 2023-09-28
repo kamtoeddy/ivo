@@ -8,8 +8,8 @@ import {
 
 type SummaryType = Summary<StoreItemType, IStoreItem>
 
-import { isArrayOk, isNumberOk, isStringOk } from '../../../../../dist/validate'
-import { findBy } from '../../utils'
+import { isArrayOk, isNumberOk, isStringOk } from '../../../../..'
+import { findBy } from '../../_utils'
 
 export const validateName = (val: any) => {
   const isValid = isStringOk(val, { trim: true })

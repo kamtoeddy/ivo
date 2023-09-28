@@ -1,3 +1,5 @@
+import { describe, it, expect } from 'vitest'
+
 const people = [
   { name: 'James', bio: { displayName: 'james' }, age: 31 },
   { name: 'Mary', bio: { displayName: 'mary' }, age: 20 },

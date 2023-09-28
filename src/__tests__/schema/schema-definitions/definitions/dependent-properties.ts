@@ -1,3 +1,5 @@
+import { afterEach, describe, it, expect } from 'vitest'
+
 import { expectFailure, expectNoFailure, pauseFor, validator } from '../_utils'
 
 export const Test_DependentProperties = ({ Schema, fx }: any) => {

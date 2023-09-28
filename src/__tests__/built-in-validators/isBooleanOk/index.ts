@@ -1,3 +1,5 @@
+import { describe, it, expect } from 'vitest'
+
 export const isBooleanOkTest = ({ isBooleanOk }: { isBooleanOk: Function }) => {
   describe('Testing isBooleanOk', () => {
     it('should tell whether or not input values are booleans', () => {

@@ -1,3 +1,5 @@
+import { beforeEach, describe, it, expect, test } from 'vitest'
+
 import { expectFailure, expectNoFailure, validator } from '../_utils'
 
 export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
@@ -5,51 +7,60 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
     const rules = ['onDelete', 'onFailure', 'onSuccess']
 
     describe('valid', () => {
-      const values = [() => {}, () => ({}), [() => {}], [() => {}, () => ({})]]
+      test('valid', () => {
+        const values = [
+          () => {},
+          () => ({}),
+          [() => {}],
+          [() => {}, () => ({})]
+        ]
 
-      for (const rule of rules)
-        for (const value of values) {
-          const toPass = fx({
-            propertyName: {
-              default: '',
-              [rule]: value,
-              validator
-            }
-          })
+        for (const rule of rules)
+          for (const value of values) {
+            const toPass = fx({
+              propertyName: {
+                default: '',
+                [rule]: value,
+                validator
+              }
+            })
 
-          expectNoFailure(toPass)
+            expectNoFailure(toPass)
 
-          toPass()
-        }
+            toPass()
+          }
+      })
     })
 
     describe('invalid', () => {
-      const values = [1, '', 0, false, true, null, {}]
+      test('invalid', () => {
+        const values = [1, '', 0, false, true, null, {}]
 
-      for (const rule of rules)
-        for (const value of values) {
-          const toFail = fx({
-            propertyName: {
-              default: '',
-              [rule]: value,
-              validator
+        for (const rule of rules)
+          for (const value of values) {
+            const toFail = fx({
+              propertyName: {
+                default: '',
+                [rule]: value,
+                validator
+              }
+            })
+
+            expectFailure(toFail)
+
+            try {
+              toFail()
+            } catch (err: any) {
+              expect(err.payload).toEqual(
+                expect.objectContaining({
+                  propertyName: expect.arrayContaining([
+                    `The '${rule}' handler @[0] is not a function`
+                  ])
+                })
+              )
             }
-          })
-
-          expectFailure(toFail)
-
-          try {
-            toFail()
-          } catch (err: any) {
-            expect(err.payload).toEqual(
-              expect.objectContaining({
-                propertyName: expect.arrayContaining([
-                  `The '${rule}' handler @[0] is not a function`
-                ])
-              })
-            )
           }
-        }
+      })
     })
 
     describe('life cycle readonly ctx', () => {
@@ -104,7 +115,9 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
         }
       }).getModel()
 
-      beforeEach(() => (propChangeMap = {}))
+      beforeEach(() => {
+        propChangeMap = {}
+      })
 
       it('should reject handlers that try to mutate the onChange, onCreate & onSuccess ctx', async () => {
         const { handleSuccess } = await Model.create(validData)
@@ -175,7 +188,9 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
         prop3: { required: true, onDelete: onDelete('prop3'), validator }
       }).getModel()
 
-      beforeEach(() => (propChangeMap = {}))
+      beforeEach(() => {
+        propChangeMap = {}
+      })
 
       it('should trigger all onDelete handlers but for virtuals', async () => {
         await Model.delete({

@@ -1,4 +1,4 @@
-// import { any } from "../../validate/isNumberOk";
+import { describe, it, expect } from 'vitest'
 
 export const isNumberOkTest = ({ isNumberOk }: { isNumberOk: Function }) => {
   describe('isNumberOk', () => {

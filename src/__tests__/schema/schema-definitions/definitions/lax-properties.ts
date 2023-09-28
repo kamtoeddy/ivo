@@ -1,3 +1,5 @@
+import { describe, it, expect } from 'vitest'
+
 import { expectFailure, expectNoFailure } from '../_utils'
 
 export const Test_LaxProperties = ({ fx }: any) => {

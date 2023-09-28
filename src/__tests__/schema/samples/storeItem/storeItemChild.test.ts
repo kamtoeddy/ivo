@@ -1,3 +1,5 @@
+import { beforeAll, describe, it, expect } from 'vitest'
+
 import { CommonInheritanceTest, commonTestData } from './common-tests'
 import { StoreItemChild } from './storeItemChild'
 

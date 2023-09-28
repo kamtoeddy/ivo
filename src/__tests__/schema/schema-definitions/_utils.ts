@@ -1,3 +1,5 @@
+import { expect } from 'vitest'
+
 import { ERRORS } from '../../..'
 
 export {

@@ -1,3 +1,5 @@
+import { describe, test } from 'vitest'
+
 import { Schema } from '../../../schema'
 import { makeFx } from './_utils'
 
@@ -22,6 +24,10 @@ import { Test_SchemaSetMissingDefaultsOnUpdateOption } from './options/set-missi
 import { Test_SchemaEqualityDepth } from './options/equality-depth'
 
 const fx = makeFx(Schema)
+
+describe('Index', () => {
+  test.todo('tests')
+})
 
 Test_BasicDefinitions({ fx })
 
