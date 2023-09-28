@@ -40,6 +40,7 @@
   },
   "scripts": {
     "build": "tsup",
+    "build:watch": "tsup --watch",
     "clean-up": "rm -rf coverage dist",
     "lint": "eslint . --ext .ts",
     "test": "npm run build && vitest run",
