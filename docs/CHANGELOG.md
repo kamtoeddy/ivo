@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-# v3.6.0 <small><sup>[x][x]-[x][x]-2023</sup></small>
+# v4.0.0 <small><sup>[x][x]-[x][x]-2023</sup></small>
 
 - [Update] [`SchemaError`]()
 
