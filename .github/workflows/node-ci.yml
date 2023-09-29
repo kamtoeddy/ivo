@@ -2,7 +2,6 @@ name: NODE CI
 
 on:
   pull_request:
-    branches: ['main']
 
 jobs:
   build-and-test:
