@@ -21,8 +21,10 @@ export {
 export {
   ALLOWED_OPTIONS,
   CONSTANT_RULES,
-  Context,
   DEFINITION_RULES,
+  LIFE_CYCLES,
+  VIRTUAL_RULES,
+  Context,
   DefinitionRule,
   ISchema,
   Merge,
@@ -31,7 +33,6 @@ export {
   ResponseInput,
   ResponseInputObject,
   Summary,
-  VIRTUAL_RULES,
   ValidatorResponse,
   XOR
 } from './schema/types'

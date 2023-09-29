@@ -19,7 +19,13 @@ export type {
   XOR
 }
 
-export { ALLOWED_OPTIONS, CONSTANT_RULES, DEFINITION_RULES, VIRTUAL_RULES }
+export {
+  ALLOWED_OPTIONS,
+  CONSTANT_RULES,
+  DEFINITION_RULES,
+  LIFE_CYCLES,
+  VIRTUAL_RULES
+}
 
 type Context<Output, Input = Output> = Readonly<Merge<Output, Input>>
 
@@ -65,7 +71,7 @@ type VirtualResolver<K extends keyof Input, Output, Input> = (
 type StringKey<T> = Extract<keyof T, string>
 
 namespace Schema {
-  export type LifeCycles = 'onDelete' | 'onFailure' | 'onSuccess'
+  export type LifeCycle = (typeof LIFE_CYCLES)[number]
 
   export type OperationName = 'creation' | 'update'
 
@@ -364,6 +370,8 @@ const VIRTUAL_RULES = [
   'validator',
   'virtual'
 ]
+
+const LIFE_CYCLES = ['onDelete', 'onFailure', 'onSuccess'] as const
 
 type TypeFromPromise<T> = T extends Promise<infer I> ? I : T
 

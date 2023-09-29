@@ -24,7 +24,8 @@ import {
   ALLOWED_OPTIONS,
   DEFINITION_RULES,
   CONSTANT_RULES,
-  VIRTUAL_RULES
+  VIRTUAL_RULES,
+  LIFE_CYCLES
 } from './types'
 
 export const defaultOptions = {
@@ -34,8 +35,6 @@ export const defaultOptions = {
   shouldUpdate: true,
   timestamps: false
 } as ns.Options<any, any>
-
-const lifeCycleRules: ns.LifeCycles[] = ['onDelete', 'onFailure', 'onSuccess']
 
 export abstract class SchemaCore<Output, Input> {
   protected _definitions = {} as ns.Definitions_<Output, Input>
@@ -51,26 +50,27 @@ export abstract class SchemaCore<Output, Input> {
   protected values: Output = {} as Output
 
   // maps
-  protected aliasToVirtualMap: ns.AliasToVirtualMap<Input> = {}
-  protected dependencyMap: ns.DependencyMap<Input> = {}
-  protected virtualToAliasMap: ns.AliasToVirtualMap<Input> = {}
+  protected readonly aliasToVirtualMap: ns.AliasToVirtualMap<Input> = {}
+  protected readonly dependencyMap: ns.DependencyMap<Input> = {}
+  protected readonly virtualToAliasMap: ns.AliasToVirtualMap<Input> = {}
 
   // props
-  protected constants: StringKey<Input>[] = []
-  protected dependents: StringKey<Input>[] = []
-  protected laxProps: StringKey<Input>[] = []
-  protected props: StringKey<Output>[] = []
-  protected propsRequiredBy: StringKey<Input>[] = []
-  protected readonlyProps: StringKey<Input>[] = []
-  protected requiredProps: StringKey<Input>[] = []
-  protected virtuals: StringKey<Input>[] = []
+  protected readonly constants: StringKey<Input>[] = []
+  protected readonly dependents: StringKey<Input>[] = []
+  protected readonly laxProps: StringKey<Input>[] = []
+  protected readonly props: StringKey<Output>[] = []
+  protected readonly propsRequiredBy: StringKey<Input>[] = []
+  protected readonly readonlyProps: StringKey<Input>[] = []
+  protected readonly requiredProps: StringKey<Input>[] = []
+  protected readonly virtuals: StringKey<Input>[] = []
 
   // helpers
   protected timestampTool: TimeStampTool
 
   // handlers
-  protected globalDeleteHandlers: ns.Handler<Output>[] = []
-  protected globalSuccessHandlers: ns.SuccessHandler<Output, Input>[] = []
+  protected readonly globalDeleteHandlers: ns.Handler<Output>[] = []
+  protected readonly globalSuccessHandlers: ns.SuccessHandler<Output, Input>[] =
+    []
 
   constructor(
     definitions: ns.Definitions_<Output, Input>,
@@ -172,7 +172,7 @@ export abstract class SchemaCore<Output, Input> {
 
   private _areHandlersOk = (
     _handlers: any,
-    lifeCycle: ns.LifeCycles,
+    lifeCycle: ns.LifeCycle,
     global = false
   ) => {
     const reasons: string[] = []
@@ -431,7 +431,7 @@ export abstract class SchemaCore<Output, Input> {
     return results
   }
 
-  protected _getHandlers = <T>(prop: string, lifeCycle: ns.LifeCycles) =>
+  protected _getHandlers = <T>(prop: string, lifeCycle: ns.LifeCycle) =>
     toArray((this._getDefinition(prop)?.[lifeCycle] ?? []) as any) as T[]
 
   protected _getValidator = <K extends StringKey<Input>>(prop: K) => {
@@ -686,7 +686,7 @@ export abstract class SchemaCore<Output, Input> {
       )
 
     // onDelete, onFailure, & onSuccess
-    for (const rule of lifeCycleRules) {
+    for (const rule of LIFE_CYCLES) {
       if (!isPropertyOf(rule, definition)) continue
 
       const isValid = this._areHandlersOk(definition[rule], rule)
