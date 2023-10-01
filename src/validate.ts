@@ -1,5 +1,5 @@
 import { getUniqueBy, isEqual, isObject, isOneOf, makeResponse } from './utils'
-import { ResponseInputObject, ValidatorResponse, XOR } from './schema/types'
+import { ResponseInputObject, ValidationResponse, XOR } from './schema/types'
 
 export {
   isArrayOk,
@@ -233,7 +233,7 @@ function isStringOk<T extends string = string>(
     regExp,
     trim = false
   }: StringOptions<T> = {}
-): ValidatorResponse<Exclude<T, undefined>> {
+): ValidationResponse<Exclude<T, undefined>> {
   if (isOneOf(str, [null, undefined]))
     return makeResponse({ reason: 'Unacceptable value', valid: false })
 

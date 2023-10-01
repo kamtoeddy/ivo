@@ -29,12 +29,15 @@ export type FieldError = {
   reasons: string[]
   metadata: Record<PayloadKey, any> | null
 }
-export type ErrorPayload = Record<PayloadKey, FieldError>
+export type ErrorPayload<Keys extends PayloadKey = PayloadKey> = {
+  [K in Keys]?: FieldError
+}
+
 export type InputPayload = Record<PayloadKey, string | string[] | FieldError>
 
-export type ValidationErrorProps = {
+export type ValidationErrorProps<Keys extends PayloadKey = PayloadKey> = {
   message: ValidationErrorMessage
-  payload?: ErrorPayload
+  payload?: ErrorPayload<Keys>
 }
 
 export type ValidationErrorToolProps = {

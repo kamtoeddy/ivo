@@ -153,17 +153,19 @@ class SchemaErrorTool extends Error {
   }
 }
 
-class ValidationError extends Error {
-  payload: ErrorPayload = {}
+class ValidationError<
+  OutputKeys extends PayloadKey = PayloadKey
+> extends Error {
+  payload: ErrorPayload<OutputKeys> = {}
 
-  constructor({ message, payload = {} }: ValidationErrorProps) {
+  constructor({ message, payload = {} }: ValidationErrorProps<OutputKeys>) {
     super(message)
     this.payload = payload
   }
 }
 
-class ErrorTool extends Error {
-  payload: ErrorPayload = {}
+class ErrorTool<OutputKeys extends PayloadKey = PayloadKey> extends Error {
+  payload: ErrorPayload<OutputKeys> = {}
   private _initMessage: ValidationErrorMessage
 
   constructor({ message, payload = {} }: ValidationErrorToolProps) {
@@ -183,17 +185,19 @@ class ErrorTool extends Error {
     }
   }
 
-  private _has = (field: PayloadKey) => isPropertyOf(field, this.payload)
+  private _has = (field: OutputKeys) => isPropertyOf(field, this.payload)
 
   private _setPayload = (payload: InputPayload) => {
-    Object.entries(payload).forEach(([key, value]) => this.add(key, value))
+    Object.entries(payload).forEach(([key, value]) =>
+      this.add(key as OutputKeys, value)
+    )
   }
 
-  add(field: PayloadKey, value?: InputPayload[PayloadKey]) {
+  add(field: OutputKeys, value?: InputPayload[OutputKeys]) {
     const _value = makeFieldError(value ?? [])
 
     if (this._has(field)) {
-      const currentValues = this.payload[field]
+      const currentValues = this.payload[field]!
 
       const { reasons = [], metadata } = _value
 
@@ -214,7 +218,7 @@ class ErrorTool extends Error {
     return this
   }
 
-  remove = (field: PayloadKey) => {
+  remove = (field: OutputKeys) => {
     delete this.payload?.[field]
 
     return this

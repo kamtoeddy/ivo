@@ -9,17 +9,23 @@ export type {
   Summary,
   Schema as ISchema,
   RealType,
-  ResponseInput,
   ResponseInputObject,
   StringKey,
   TypeOf,
   Validator,
+  ValidationResponse,
   ValidatorResponse,
   InternalValidatorResponse,
   XOR
 }
 
-export { ALLOWED_OPTIONS, CONSTANT_RULES, DEFINITION_RULES, VIRTUAL_RULES }
+export {
+  ALLOWED_OPTIONS,
+  CONSTANT_RULES,
+  DEFINITION_RULES,
+  LIFE_CYCLES,
+  VIRTUAL_RULES
+}
 
 type Context<Output, Input = Output> = Readonly<Merge<Output, Input>>
 
@@ -65,7 +71,7 @@ type VirtualResolver<K extends keyof Input, Output, Input> = (
 type StringKey<T> = Extract<keyof T, string>
 
 namespace Schema {
-  export type LifeCycles = 'onDelete' | 'onFailure' | 'onSuccess'
+  export type LifeCycle = (typeof LIFE_CYCLES)[number]
 
   export type OperationName = 'creation' | 'update'
 
@@ -282,7 +288,7 @@ namespace Schema {
     }
 }
 
-type ValidatorResponse<T> =
+type ValidationResponse<T> =
   | { valid: true; validated: T }
   | { metadata: FieldError['metadata']; reasons: string[]; valid: false }
 
@@ -310,14 +316,16 @@ type ResponseInputObject<K extends keyof (Output & Input), Output, Input> =
       valid: false
     }
 
-type ResponseInput<K extends keyof (Output & Input), Output, Input> =
+type ValidatorResponse<K extends keyof (Output & Input), Output, Input> =
   | boolean
   | (ResponseInputObject<K, Output, Input> & {})
 
 type Validator<K extends keyof (Output & Input), Output, Input> = (
   value: any,
   summary: Summary<Output, Input> & {}
-) => ResponseInput<K, Output, Input> | Promise<ResponseInput<K, Output, Input>>
+) =>
+  | ValidatorResponse<K, Output, Input>
+  | Promise<ValidatorResponse<K, Output, Input>>
 
 type NonEmptyArray<T> = [T, ...T[]]
 
@@ -364,6 +372,8 @@ const VIRTUAL_RULES = [
   'validator',
   'virtual'
 ]
+
+const LIFE_CYCLES = ['onDelete', 'onFailure', 'onSuccess'] as const
 
 type TypeFromPromise<T> = T extends Promise<infer I> ? I : T
 
