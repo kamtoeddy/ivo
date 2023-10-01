@@ -2,7 +2,7 @@ import {
   ResponseInputObject,
   StringKey,
   TypeOf,
-  ValidatorResponse
+  ValidationResponse
 } from './schema/types'
 
 export {
@@ -30,7 +30,7 @@ type ObjectType = Record<PayloadKey, any> & {}
 
 function makeResponse<T = undefined>(
   input: ResponseInputObject<any, any, T>
-): ValidatorResponse<TypeOf<T>> {
+): ValidationResponse<TypeOf<T>> {
   if (input.valid) {
     const { valid, validated } = input
 
@@ -50,7 +50,7 @@ function makeResponse<T = undefined>(
     reasons,
     valid,
     ...(otherReasons && { otherReasons })
-  } as ValidatorResponse<TypeOf<T>>
+  } as ValidationResponse<TypeOf<T>>
 }
 
 function getKeysAsProps<T>(object: T) {

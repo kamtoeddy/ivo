@@ -30,9 +30,8 @@ export {
   Merge,
   NonEmptyArray,
   RealType,
-  ResponseInput,
-  ResponseInputObject,
-  Summary,
   ValidatorResponse,
+  Summary,
+  ValidationResponse,
   XOR
 } from './schema/types'

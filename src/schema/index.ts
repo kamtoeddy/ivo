@@ -17,7 +17,7 @@ import {
   ResponseInputObject,
   StringKey,
   Summary,
-  ValidatorResponse
+  ValidationResponse
 } from './types'
 import { VALIDATION_ERRORS, ErrorTool } from './utils'
 import { defaultOptions, SchemaCore } from './schema-core'
@@ -895,7 +895,7 @@ class ModelTool<
         prop as any,
         value,
         this._getValidationSummary(true)
-      )) as ValidatorResponse<Output[StringKey<Output>]>
+      )) as ValidationResponse<Output[StringKey<Output>]>
 
       if (!isValid.valid)
         return validationError.add(prop as any, isValid.reasons)
