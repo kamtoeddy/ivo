@@ -19,19 +19,12 @@ export {
   toArray
 } from './utils'
 export {
-  ALLOWED_OPTIONS,
-  CONSTANT_RULES,
-  DEFINITION_RULES,
-  LIFE_CYCLES,
-  VIRTUAL_RULES,
   Context,
-  DefinitionRule,
   ISchema,
   Merge,
   NonEmptyArray,
   RealType,
-  ValidatorResponse,
   Summary,
-  ValidationResponse,
+  ValidatorResponse,
   XOR
 } from './schema/types'

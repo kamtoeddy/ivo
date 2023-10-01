@@ -1,6 +1,6 @@
 import { beforeEach, describe, it, expect } from 'vitest'
 
-import { DEFINITION_RULES, VIRTUAL_RULES } from '../../../../src'
+import { DEFINITION_RULES, VIRTUAL_RULES } from '../../../../src/schema/types'
 import { ERRORS } from '../../../../dist'
 
 import { expectFailure, expectNoFailure, validator } from '../_utils'

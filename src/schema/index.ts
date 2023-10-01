@@ -11,7 +11,6 @@ import {
 import {
   Context,
   InternalValidatorResponse,
-  Merge,
   ISchema as ns,
   RealType,
   ResponseInputObject,
@@ -62,12 +61,9 @@ class Schema<
   }
 
   extend = <
-    ExtendedOutput,
-    ExtendedInput = Output,
-    Aliases = {},
-    V extends RealType<Merge<ExtendedOutput, Output>> = RealType<
-      Merge<ExtendedOutput, Output>
-    >
+    ExtendedOutput extends RealType<ExtendedOutput>,
+    ExtendedInput extends RealType<ExtendedInput> = ExtendedOutput,
+    Aliases = {}
   >(
     definitions: Partial<
       ns.Definitions<ExtendedOutput, ExtendedInput, Aliases>
@@ -77,20 +73,14 @@ class Schema<
       Input,
       ExtendedOutput,
       ExtendedInput
-    > = {
-      ...defaultOptions,
-      remove: []
-    }
+    > = { ...defaultOptions, remove: [] }
   ) => {
     const remove = toArray(options?.remove ?? [])
     delete options.remove
 
-    type ExtendedInput_ = RealType<ExtendedInput>
-    type ExtendedOutput_ = RealType<V>
-
     let _definitions = { ...this.definitions } as any as ns.Definitions<
-      RealType<ExtendedOutput_>,
-      RealType<ExtendedInput_>,
+      ExtendedOutput,
+      ExtendedInput,
       Aliases
     >
 
@@ -101,13 +91,9 @@ class Schema<
 
     _definitions = { ..._definitions, ...definitions }
 
-    return new Schema<
-      RealType<ExtendedOutput_>,
-      RealType<ExtendedInput_>,
-      Aliases
-    >(
+    return new Schema<ExtendedOutput, ExtendedInput, Aliases>(
       _definitions,
-      options as ns.Options<RealType<ExtendedOutput_>, RealType<ExtendedInput_>>
+      options as ns.Options<ExtendedOutput, ExtendedInput>
     )
   }
 
