@@ -93,7 +93,7 @@ class Schema<
 
     return new Schema<ExtendedOutput, ExtendedInput, Aliases>(
       _definitions,
-      options as ns.Options<ExtendedOutput, ExtendedInput>
+      options
     )
   }
 
