@@ -256,7 +256,7 @@ namespace Schema {
   }
 
   // options
-  export interface CloneOptions<T> {
+  export type CloneOptions<T> = {
     reset?: StringKey<T> | StringKey<T>[]
   }
 

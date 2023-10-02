@@ -12,7 +12,8 @@ import {
   ValidationErrorProps,
   ValidationErrorMessage,
   ValidationErrorToolProps,
-  SCHEMA_ERRORS
+  SCHEMA_ERRORS,
+  IValidationError
 } from './types'
 
 export * from './types'
@@ -164,40 +165,38 @@ class ValidationError<
   }
 }
 
-class ErrorTool<OutputKeys extends PayloadKey = PayloadKey> extends Error {
-  payload: ErrorPayload<OutputKeys> = {}
-  private _initMessage: ValidationErrorMessage
+class ErrorTool<OutputKeys extends PayloadKey = PayloadKey>
+  extends Error
+  implements IValidationError<OutputKeys>
+{
+  private _payload: ErrorPayload<OutputKeys> = {}
 
-  constructor({ message, payload = {} }: ValidationErrorToolProps) {
+  constructor(public message: ValidationErrorToolProps['message']) {
     super(message)
-    this._initMessage = message
-    this._setPayload(payload)
   }
 
   get isPayloadLoaded() {
-    return Object.keys(this.payload).length > 0
+    return Object.keys(this._payload).length > 0
   }
 
   get summary() {
     return {
       message: this.message as ValidationErrorMessage,
-      payload: sortKeys(this.payload)
+      payload: sortKeys(this._payload)
     }
   }
 
-  private _has = (field: OutputKeys) => isPropertyOf(field, this.payload)
-
-  private _setPayload = (payload: InputPayload) => {
-    Object.entries(payload).forEach(([key, value]) =>
-      this.add(key as OutputKeys, value)
-    )
+  get payload() {
+    return this._payload
   }
+
+  private _has = (field: OutputKeys) => isPropertyOf(field, this._payload)
 
   add(field: OutputKeys, value?: InputPayload[OutputKeys]) {
     const _value = makeFieldError(value ?? [])
 
     if (this._has(field)) {
-      const currentValues = this.payload[field]!
+      const currentValues = this._payload[field]!
 
       const { reasons = [], metadata } = _value
 
@@ -212,21 +211,8 @@ class ErrorTool<OutputKeys extends PayloadKey = PayloadKey> extends Error {
           ...metadata
         }
 
-      this.payload[field] = currentValues
-    } else this.payload[field] = _value
-
-    return this
-  }
-
-  remove = (field: OutputKeys) => {
-    delete this.payload?.[field]
-
-    return this
-  }
-
-  reset = () => {
-    this.message = this._initMessage
-    this.payload = {}
+      this._payload[field] = currentValues
+    } else this._payload[field] = _value
 
     return this
   }
@@ -238,10 +224,7 @@ class ErrorTool<OutputKeys extends PayloadKey = PayloadKey> extends Error {
   }
 
   throw = () => {
-    const summary = this.summary
-    this.reset()
-
-    throw new ValidationError(summary)
+    throw new ValidationError(this.summary)
   }
 }
 

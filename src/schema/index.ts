@@ -170,12 +170,10 @@ class ModelTool<
   }
 
   private _handleInvalidData = () =>
-    this._handleError(
-      new ErrorTool({ message: VALIDATION_ERRORS.INVALID_DATA })
-    )
+    this._handleError(new ErrorTool(VALIDATION_ERRORS.INVALID_DATA))
 
   private _handleRequiredBy = (data: Partial<Output>, isUpdate = false) => {
-    const error = new ErrorTool({ message: VALIDATION_ERRORS.VALIDATION_ERROR })
+    const error = new ErrorTool(VALIDATION_ERRORS.VALIDATION_ERROR)
     const summary = this._getSummary(data, isUpdate)
 
     for (const prop of this.propsRequiredBy) {
@@ -605,9 +603,9 @@ class ModelTool<
     )
 
     let data = {} as Partial<Output>
-    const validationError = new ErrorTool<StringKey<Input & Aliases>>({
-      message: VALIDATION_ERRORS.VALIDATION_ERROR
-    })
+    const validationError = new ErrorTool<StringKey<Input & Aliases>>(
+      VALIDATION_ERRORS.VALIDATION_ERROR
+    )
 
     const virtuals = getKeysAsProps<Partial<Output>>(values as any).filter(
       (prop) =>
@@ -736,9 +734,9 @@ class ModelTool<
     this._setValues(values)
 
     let data = {} as Partial<Output>
-    const validationError = new ErrorTool<StringKey<Input & Aliases>>({
-      message: VALIDATION_ERRORS.VALIDATION_ERROR
-    })
+    const validationError = new ErrorTool<StringKey<Input & Aliases>>(
+      VALIDATION_ERRORS.VALIDATION_ERROR
+    )
 
     const virtuals = getKeysAsProps<Partial<Output>>(values as any).filter(
       (prop) =>
@@ -830,7 +828,7 @@ class ModelTool<
 
   delete = async (values: Output) => {
     if (!areValuesOk(values))
-      return new ErrorTool({ message: VALIDATION_ERRORS.INVALID_DATA }).throw()
+      return new ErrorTool(VALIDATION_ERRORS.INVALID_DATA).throw()
 
     this._setValues(values, { allowVirtuals: false, allowTimestamps: true })
 
@@ -857,9 +855,9 @@ class ModelTool<
     if (this._options?.setMissingDefaultsOnUpdate)
       await this._setMissingDefaults()
 
-    const validationError = new ErrorTool<StringKey<Input & Aliases>>({
-      message: VALIDATION_ERRORS.VALIDATION_ERROR
-    })
+    const validationError = new ErrorTool<StringKey<Input & Aliases>>(
+      VALIDATION_ERRORS.VALIDATION_ERROR
+    )
 
     if (!this._isGloballyUpdatable(changes as any))
       return this._handleError(

@@ -44,3 +44,15 @@ export type ValidationErrorToolProps = {
   message: ValidationErrorMessage
   payload?: InputPayload
 }
+
+export interface IValidationError<OutputKeys extends PayloadKey = PayloadKey>
+  extends Error {
+  message: ValidationErrorMessage
+  get isPayloadLoaded(): boolean
+  get summary(): Record<PayloadKey, any>
+  get payload(): {
+    [K in OutputKeys]?: any
+  }
+  setMessage(message: ValidationErrorMessage): this
+  throw(): never
+}
