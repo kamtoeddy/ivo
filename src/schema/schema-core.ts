@@ -82,8 +82,8 @@ export abstract class SchemaCore<Output, Input> {
     this._checkPropDefinitions(definitions)
     this._checkOptions(options)
 
-    this._definitions = definitions
-    this._options = { ...defaultOptions, ...options }
+    this._definitions = sortKeys(definitions)
+    this._options = sortKeys({ ...defaultOptions, ...options })
 
     this.timestampTool = new TimeStampTool(this._options.timestamps)
   }

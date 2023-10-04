@@ -11,6 +11,7 @@ import {
 import {
   Context,
   InternalValidatorResponse,
+  LIFE_CYCLES,
   ISchema as ns,
   RealType,
   ResponseInputObject,
@@ -73,12 +74,12 @@ class Schema<
       Input,
       ExtendedOutput,
       ExtendedInput
-    > = { ...defaultOptions, remove: [] }
+    > = {}
   ) => {
     const remove = toArray(options?.remove ?? [])
     delete options.remove
 
-    let _definitions = { ...this.definitions } as any as ns.Definitions<
+    const _definitions = { ...this.definitions } as unknown as ns.Definitions<
       ExtendedOutput,
       ExtendedInput,
       Aliases
@@ -89,11 +90,17 @@ class Schema<
         delete _definitions?.[prop as unknown as keyof typeof _definitions]
     )
 
-    _definitions = { ..._definitions, ...definitions }
+    const options_ = {} as ns.Options<ExtendedOutput, ExtendedInput>
+
+    getKeysAsProps(this.options)
+      .filter((prop) => ![...LIFE_CYCLES, 'shouldUpdate'].includes(prop as any))
+      .forEach((prop) => {
+        options_[prop] = this.options[prop] as any
+      })
 
     return new Schema<ExtendedOutput, ExtendedInput, Aliases>(
-      _definitions,
-      options
+      { ..._definitions, ...definitions },
+      { ...options_, ...options }
     )
   }
 

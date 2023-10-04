@@ -8,7 +8,7 @@ export interface IOtherMeasureUnit {
   name: string
 }
 
-export interface IStoreItem {
+export interface StoreItemInput {
   _laxProp: string
   _quantity: number
   _readOnlyLax1: string
@@ -23,7 +23,7 @@ export interface IStoreItem {
   otherMeasureUnits: IOtherMeasureUnit[]
 }
 
-export interface StoreItemType {
+export interface StoreItem {
   _dependentReadOnly: number
   _laxProp: string
   _readOnlyLax1: string
@@ -40,6 +40,6 @@ export interface StoreItemType {
   u_At: string
 }
 
-export interface IStoreItemChild extends IStoreItem {
+export interface IStoreItemChild extends StoreItemInput {
   childID: string
 }

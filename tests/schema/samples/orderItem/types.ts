@@ -1,11 +1,14 @@
-import { IStoreItem, StoreItemType } from '../storeItem/types'
+import { StoreItem, StoreItemInput } from '../storeItem/types'
 
-export interface IOrderItem
-  extends Omit<IStoreItem, '_readOnlyNoInit' | '_virtualForDependentReadOnly'> {
+export interface OrderItemInput
+  extends Omit<
+    StoreItemInput,
+    '_readOnlyNoInit' | '_virtualForDependentReadOnly'
+  > {
   costPrice: number
 }
 
-export type OrderItemType = Omit<
-  StoreItemType,
+export type OrderItem = Omit<
+  StoreItem,
   '_readOnlyNoInit' | '_dependentReadOnly'
 > & { costPrice: number }

@@ -1,5 +1,5 @@
 import { Summary, Schema } from '../../../../dist'
-import { StoreItemType, IStoreItem } from './types'
+import type { StoreItem, StoreItemInput } from './types'
 import {
   sanitizeQuantities,
   validateName,
@@ -10,7 +10,7 @@ import {
   validateString
 } from './validators'
 
-const storeItemSchema = new Schema<StoreItemType, IStoreItem>(
+const storeItemSchema = new Schema<StoreItem, StoreItemInput>(
   {
     _dependentReadOnly: {
       default: 0,
@@ -66,7 +66,7 @@ const storeItemSchema = new Schema<StoreItemType, IStoreItem>(
 
 function resolveQuantity({
   context: { quantity, _quantity, quantities }
-}: Summary<StoreItemType, IStoreItem>) {
+}: Summary<StoreItem, StoreItemInput>) {
   const newQty = _quantity ?? quantity
 
   return quantities ? newQty + (quantities as number) : newQty
@@ -74,7 +74,7 @@ function resolveQuantity({
 
 function onSuccess({
   context: { quantity, _quantity, quantities }
-}: Summary<StoreItemType, IStoreItem>) {
+}: Summary<StoreItem, StoreItemInput>) {
   const newQty = _quantity ?? quantity
 
   return quantities ? newQty + (quantities as number) : newQty
