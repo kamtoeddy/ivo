@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file.
 # v4.0.0 <small><sup>[x][x]-[x][x]-2023</sup></small>
 
 - [Update] [`SchemaError`]()
+- [Add] `__getOptions__` method to operation context
+- [Deprecate] `dependent: true` rule in schema definition. Dependent properties only need `dependsOn` & a `resolver` function
 
 # v3.5.3 <small><sup>21-09-2023</sup></small>
 

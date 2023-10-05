@@ -509,7 +509,7 @@ export abstract class SchemaCore<Output, Input> {
 
     const valid = false
 
-    if (dependent !== true)
+    if (!isEqual(dependent, undefined) && dependent !== true)
       return {
         valid,
         reason: "Dependent properties must have dependent as 'true'"
@@ -609,17 +609,14 @@ export abstract class SchemaCore<Output, Input> {
     } else if (isPropertyOf('value', definition))
       reasons.push("'value' rule can only be used with constant properties")
 
-    if (isPropertyOf('dependent', definition)) {
+    if (hasAnyOf(definition, ['dependent', 'dependsOn'])) {
       const { valid, reason } = this.__isDependentProp(prop, definition)
 
       if (valid) {
         this.dependents.push(prop)
         this._addDependencies(prop, definition.dependsOn!)
       } else reasons.push(reason!)
-    } else if (hasAnyOf(definition, ['dependsOn', 'resolver']))
-      reasons.push(
-        'dependsOn & resolver rules can only belong to dependent properties'
-      )
+    }
 
     if (isPropertyOf('readonly', definition)) {
       const { valid, reason } = this.__isReadonly(definition)

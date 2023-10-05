@@ -16,7 +16,6 @@ const storeItemSchema = new Schema<StoreItem, StoreItemInput>(
       default: 0,
       dependsOn: '_virtualForDependentReadOnly',
       readonly: true,
-      dependent: true,
       resolver: () => 1
     },
     _laxProp: { default: '', validator: validateString('Invalid lax prop') },

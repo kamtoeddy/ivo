@@ -487,6 +487,17 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
         }
       })
 
+      it('should allow dependsOn + resolver & no dependent', () => {
+        const toPass = fx({
+          dependentProp: { default: '', dependsOn: 'prop', resolver },
+          prop: { default: '' }
+        })
+
+        expectNoFailure(toPass)
+
+        toPass()
+      })
+
       it("should accept life cycle listeners except 'onFailure'", () => {
         const lifeCycles = ['onDelete', 'onSuccess']
         const values = [() => {}, () => ({}), [() => {}, () => ({})]]
@@ -599,27 +610,6 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
             expect.objectContaining({
               dependentProp: expect.arrayContaining([
                 `Cannot establish dependency with '${invalidProp}' as it is neither a property nor a virtual of your model`
-              ])
-            })
-          )
-        }
-      })
-
-      it('should reject no dependent + dependsOn or resolver', () => {
-        const toFail = fx({
-          dependentProp: { default: '', dependsOn: 'prop', resolver },
-          prop: { default: '' }
-        })
-
-        expectFailure(toFail)
-
-        try {
-          toFail()
-        } catch (err: any) {
-          expect(err.payload).toMatchObject(
-            expect.objectContaining({
-              dependentProp: expect.arrayContaining([
-                'dependsOn & resolver rules can only belong to dependent properties'
               ])
             })
           )

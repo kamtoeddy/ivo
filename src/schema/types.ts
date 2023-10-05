@@ -158,7 +158,8 @@ namespace Schema {
 
   type Dependent<K extends keyof Output, Output, Input = Output> = {
     default: TypeOf<Output[K]> | AsyncSetter<Output[K], Output, Input>
-    dependent: true
+    /** @deprecated `dependsOn` & a `resolver` function are enough to make a property dependent */
+    dependent?: true
     dependsOn:
       | Exclude<StringKey<Context<Output, Input>>, K>
       | Exclude<StringKey<Context<Output, Input>>, K>[]
