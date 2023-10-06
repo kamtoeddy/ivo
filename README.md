@@ -205,7 +205,7 @@ await handleSuccess()
 - [Extending Schemas](./docs/v4.0.0/definitions/extend-schemas.md#extending-schemas)
 - [The Operation Context](./docs/v3.4.0/schema/definition/life-cycles.md#the-operation-context)
 - [The Operation Summary](./docs/v3.4.0/schema/definition/life-cycles.md#the-operation-summary)
-- [Life Cycles & Listeners](./docs/v3.4.0/schema/definition/life-cycles.md#life-cycle-listeners)
+- [Life Cycles & Handlers](./docs/v3.4.0/schema/definition/life-cycles.md#life-cycle-listeners)
 
   - [onDelete](./docs/v3.4.0/schema/definition/life-cycles.md#ondelete)
   - [onFailure](./docs/v3.4.0/schema/definition/life-cycles.md#onfailure)

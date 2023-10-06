@@ -159,6 +159,44 @@ export const Test_ExtendedSchemas = ({ Schema }: any) => {
           expect(data.uAt).toBeDefined()
         })
       })
+
+      describe('useParentOptions', () => {
+        it('should respect "useParentOptions" option if enabled', async () => {
+          const options = [undefined, true]
+          for (const useParentOptions of options) {
+            const Model = new Schema(
+              { id: { constant: true, value: 1 } },
+              { timestamps: { updatedAt: 'u_At' } }
+            )
+              .extend({ name: { default: '' } }, { useParentOptions })
+              .getModel()
+
+            const { data, error } = await Model.create()
+
+            expect(error).toBeNull()
+            expect(data).toMatchObject({ id: 1, name: '' })
+            expect(data.createdAt).toBeDefined()
+            expect(data.u_At).toBeDefined()
+          }
+        })
+
+        it('should respect "useParentOptions" option if enabled', async () => {
+          const Model = new Schema(
+            { id: { constant: true, value: 1 } },
+            { timestamps: { updatedAt: 'u_At' } }
+          )
+            .extend({ name: { default: '' } }, { useParentOptions: false })
+            .getModel()
+
+          const { data, error } = await Model.create()
+
+          expect(error).toBeNull()
+          expect(data).toMatchObject({ id: 1, name: '' })
+          expect(data.createdAt).toBeUndefined()
+          expect(data.updatedAt).toBeUndefined()
+          expect(data.u_At).toBeUndefined()
+        })
+      })
     })
   })
 }

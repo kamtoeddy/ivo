@@ -76,8 +76,7 @@ class Schema<
       ExtendedInput
     > = {}
   ) => {
-    const remove = toArray(options?.remove ?? [])
-    delete options.remove
+    const { remove = [], useParentOptions = true, ...rest } = options
 
     const _definitions = { ...this.definitions } as unknown as ns.Definitions<
       ExtendedOutput,
@@ -85,22 +84,24 @@ class Schema<
       Aliases
     >
 
-    remove?.forEach(
-      (prop) =>
-        delete _definitions?.[prop as unknown as keyof typeof _definitions]
+    toArray(remove ?? [])?.forEach(
+      (prop) => delete (_definitions as any)?.[prop]
     )
 
     const options_ = {} as ns.Options<ExtendedOutput, ExtendedInput>
 
-    getKeysAsProps(this.options)
-      .filter((prop) => ![...LIFE_CYCLES, 'shouldUpdate'].includes(prop as any))
-      .forEach((prop) => {
-        options_[prop] = this.options[prop] as any
-      })
+    if (useParentOptions)
+      getKeysAsProps(this.options)
+        .filter(
+          (prop) => ![...LIFE_CYCLES, 'shouldUpdate'].includes(prop as any)
+        )
+        .forEach((prop) => {
+          options_[prop] = this.options[prop] as any
+        })
 
     return new Schema<ExtendedOutput, ExtendedInput, Aliases>(
       { ..._definitions, ...definitions },
-      { ...options_, ...options }
+      { ...options_, ...rest }
     )
   }
 

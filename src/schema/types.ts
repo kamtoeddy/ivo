@@ -286,6 +286,7 @@ namespace Schema {
       remove?:
         | StringKey<Merge<ParentInput, ParentOutput>>
         | StringKey<Merge<ParentInput, ParentOutput>>[]
+      useParentOptions?: boolean
     }
 }
 

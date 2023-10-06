@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 - [Update] [`SchemaError`]()
 - [Add] `__getOptions__` method to operation context
+- [Add] `useParentOptions` to options of extended schemas to opt in/out of parent options
 - [Deprecate] `dependent: true` rule in schema definition. Dependent properties only need `dependsOn` & a `resolver` function
 
 # v3.5.3 <small><sup>21-09-2023</sup></small>
