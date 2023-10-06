@@ -96,7 +96,7 @@ class SchemaErrorTool extends Error {
     return Object.keys(this.payload).length > 0
   }
 
-  get summary() {
+  get data() {
     return {
       message: this.message as SchemaErrorMessage,
       payload: sortKeys(this.payload)
@@ -147,7 +147,7 @@ class SchemaErrorTool extends Error {
   }
 
   throw = () => {
-    const summary = this.summary
+    const summary = this.data
     this.reset()
 
     throw new SchemaError(summary)
@@ -165,21 +165,21 @@ class ValidationError<
   }
 }
 
-class ErrorTool<OutputKeys extends PayloadKey = PayloadKey>
+class ErrorTool<PayloadKeys extends PayloadKey = PayloadKey>
   extends Error
-  implements IValidationError<OutputKeys>
+  implements IValidationError<PayloadKeys>
 {
-  private _payload: ErrorPayload<OutputKeys> = {}
+  private _payload: ErrorPayload<PayloadKeys> = {}
 
   constructor(public message: ValidationErrorToolProps['message']) {
     super(message)
   }
 
-  get isPayloadLoaded() {
+  get isLoaded() {
     return Object.keys(this._payload).length > 0
   }
 
-  get summary() {
+  get data() {
     return {
       message: this.message as ValidationErrorMessage,
       payload: sortKeys(this._payload)
@@ -190,9 +190,9 @@ class ErrorTool<OutputKeys extends PayloadKey = PayloadKey>
     return this._payload
   }
 
-  private _has = (field: OutputKeys) => isPropertyOf(field, this._payload)
+  private _has = (field: PayloadKeys) => isPropertyOf(field, this._payload)
 
-  add(field: OutputKeys, value?: InputPayload[OutputKeys]) {
+  add(field: PayloadKeys, value?: InputPayload[PayloadKeys]) {
     const _value = makeFieldError(value ?? [])
 
     if (this._has(field)) {
@@ -224,7 +224,7 @@ class ErrorTool<OutputKeys extends PayloadKey = PayloadKey>
   }
 
   throw = () => {
-    throw new ValidationError(this.summary)
+    throw new ValidationError(this.data)
   }
 }
 

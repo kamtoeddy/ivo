@@ -148,7 +148,7 @@ class ModelTool<
 
     return this._options.errors === 'throw'
       ? error.throw()
-      : { data: null, error: error.summary, handleSuccess: null }
+      : { data: null, error: error.data, handleSuccess: null }
   }
 
   private _handleFailure = async (
@@ -711,12 +711,12 @@ class ModelTool<
 
     await Promise.allSettled(validations)
 
-    if (validationError.isPayloadLoaded)
+    if (validationError.isLoaded)
       return this._handleError(validationError, data, virtuals)
 
     const requiredError = this._handleRequiredBy(data)
 
-    if (requiredError.isPayloadLoaded)
+    if (requiredError.isLoaded)
       return this._handleError(requiredError, data, virtuals)
 
     await this._handleSanitizationOfVirtuals(data)
@@ -809,12 +809,12 @@ class ModelTool<
 
     await Promise.allSettled(validations)
 
-    if (validationError.isPayloadLoaded)
+    if (validationError.isLoaded)
       return this._handleError(validationError, data, virtuals)
 
     const requiredError = this._handleRequiredBy(data)
 
-    if (requiredError.isPayloadLoaded)
+    if (requiredError.isLoaded)
       return this._handleError(requiredError, data, virtuals)
 
     await this._handleSanitizationOfVirtuals(data)
@@ -920,12 +920,12 @@ class ModelTool<
 
     await Promise.allSettled(validations)
 
-    if (validationError.isPayloadLoaded)
+    if (validationError.isLoaded)
       return this._handleError(validationError, updates, virtuals)
 
     const requiredError = this._handleRequiredBy(updates, true)
 
-    if (requiredError.isPayloadLoaded)
+    if (requiredError.isLoaded)
       return this._handleError(requiredError, updates, virtuals)
 
     await this._handleSanitizationOfVirtuals(updates, true)
