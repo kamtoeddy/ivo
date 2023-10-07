@@ -1,11 +1,12 @@
-import { Schema } from '../../../../dist'
-import { KeyOf } from '../../../../src/schema/types'
 import {
   FieldError,
-  IValidationError,
-  IValidationErrorData
-} from '../../../../src/schema/utils'
-import { PayloadKey } from '../../../../src/utils'
+  IErrorTool,
+  // IValidationError,
+  KeyOf,
+  FieldKey,
+  Schema,
+  IValidationError
+} from '../../../../dist'
 
 type Input = {
   name: string
@@ -59,33 +60,34 @@ extended.create().then(({ error }) => {
 
 type ErrorData<Keys> = { errors: { key: Keys; message: string }[] }
 
-class VError<Keys> implements IValidationError<ErrorData<Keys>> {
+class VError<Keys> implements IErrorTool<ErrorData<Keys>> {
   constructor(public message) {}
-  get data(): IValidationErrorData<ErrorData<Keys>> {
+
+  get error(): IValidationError<ErrorData<Keys>> {
     throw new Error('Method not implemented.')
   }
 
   add(
-    field: PayloadKey,
+    field: FieldKey,
     value?: string | string[] | FieldError | undefined
   ): this {
     throw new Error('Method not implemented.')
   }
 
-  // get data() {
-  //   return { message: this.message, errors: [] }
-  // }
   get isLoaded(): boolean {
     throw new Error('Method not implemented.')
   }
+
   get fields(): any {
     throw new Error('Method not implemented.')
   }
+
   setMessage(
     message: 'INVALID_DATA' | 'NOTHING_TO_UPDATE' | 'VALIDATION_ERROR'
   ): this {
     throw new Error('Method not implemented.')
   }
+
   throw(): never {
     throw new Error('Method not implemented.')
   }

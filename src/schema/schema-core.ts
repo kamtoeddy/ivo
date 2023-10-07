@@ -13,8 +13,8 @@ import {
   toArray
 } from '../utils'
 import {
-  ErrorTool,
-  IValidationError,
+  DefaultErrorTool,
+  IErrorTool,
   SchemaErrorTool,
   TimeStampTool
 } from './utils'
@@ -35,7 +35,7 @@ import {
 
 export const defaultOptions = {
   equalityDepth: 1,
-  validationError: ErrorTool,
+  errorTool: DefaultErrorTool,
   errors: 'silent',
   setMissingDefaultsOnUpdate: false,
   shouldUpdate: true,
@@ -45,7 +45,7 @@ export const defaultOptions = {
 export abstract class SchemaCore<
   Input,
   Output,
-  ValidationError extends IValidationError<any>
+  ValidationError extends IErrorTool<any>
 > {
   protected _definitions = {} as ns.Definitions_<Input, Output>
   protected _options: ns.InternalOptions<Input, Output, ValidationError>
@@ -96,8 +96,8 @@ export abstract class SchemaCore<
     this._definitions = sortKeys(definitions)
     this._options = sortKeys({ ...defaultOptions, ...options }) as any
 
-    if (!this._options.validationError)
-      this._options.validationError = ErrorTool as any
+    if (!this._options.errorTool)
+      this._options.errorTool = DefaultErrorTool as any
 
     this.timestampTool = new TimeStampTool(this._options.timestamps)
   }

@@ -22,11 +22,11 @@ export {
   sortKeys
 }
 
-export type { ObjectType, PayloadKey }
+export type { ObjectType, FieldKey }
 
-type PayloadKey = number | string
+type FieldKey = number | string
 
-type ObjectType = Record<PayloadKey, any> & {}
+type ObjectType = Record<FieldKey, any> & {}
 
 function makeResponse<T = undefined>(
   input: ValidatorResponseObject<T>
@@ -57,7 +57,7 @@ function getKeysAsProps<T>(object: T) {
   return Object.keys(object as object) as KeyOf<T>[]
 }
 
-function hasAnyOf(object: any, props: PayloadKey[]): boolean {
+function hasAnyOf(object: any, props: FieldKey[]): boolean {
   return toArray(props).some((prop) => isPropertyOf(prop, object))
 }
 

@@ -7,7 +7,7 @@ import {
   sortKeys,
   toArray,
   isObject,
-  PayloadKey
+  FieldKey
 } from '../utils'
 import {
   Context,
@@ -20,7 +20,7 @@ import {
   Summary,
   ValidationResponse
 } from './types'
-import { VALIDATION_ERRORS, ErrorTool, IValidationError } from './utils'
+import { VALIDATION_ERRORS, DefaultErrorTool, IErrorTool } from './utils'
 import { defaultOptions, SchemaCore } from './schema-core'
 
 export { Model, ModelTool, Schema }
@@ -31,22 +31,22 @@ const validationFailedResponse = {
   valid: false
 } as ValidatorResponseObject<any>
 
-type DefaultExtendedError<
-  ParentError,
-  Keys extends PayloadKey
-> = ParentError extends ErrorTool<any> ? ErrorTool<Keys> : ParentError
+type DefaultExtendedErrorTool<
+  ParentErrorTool,
+  Keys extends FieldKey
+> = ParentErrorTool extends DefaultErrorTool<any>
+  ? DefaultErrorTool<Keys>
+  : ParentErrorTool
 
 class Schema<
   Input extends RealType<Input>,
   Output extends RealType<Output> = Input,
   Aliases = {},
-  ValidationError extends IValidationError<any> = ErrorTool<
-    KeyOf<Input & Aliases>
-  >
-> extends SchemaCore<Input, Output, ValidationError> {
+  ErrorTool extends IErrorTool<any> = DefaultErrorTool<KeyOf<Input & Aliases>>
+> extends SchemaCore<Input, Output, ErrorTool> {
   constructor(
     definitions: ns.Definitions<Input, Output, Aliases>,
-    options: ns.Options<Input, Output, ValidationError> = defaultOptions
+    options: ns.Options<Input, Output, ErrorTool> = defaultOptions
   ) {
     super(definitions as any as ns.Definitions_<Input, Output>, options)
   }
@@ -74,8 +74,8 @@ class Schema<
     ExtendedInput extends RealType<ExtendedInput>,
     ExtendedOutput extends RealType<ExtendedOutput> = ExtendedInput,
     Aliases = {},
-    ExtendedValidationError extends IValidationError<any> = DefaultExtendedError<
-      ValidationError,
+    ExtendedErrorTool extends IErrorTool<any> = DefaultExtendedErrorTool<
+      ErrorTool,
       KeyOf<ExtendedInput & Aliases>
     >
   >(
@@ -87,7 +87,7 @@ class Schema<
       Input,
       ExtendedInput,
       ExtendedOutput,
-      ExtendedValidationError
+      ExtendedErrorTool
     > = {}
   ) => {
     const { remove = [], useParentOptions = true, ...rest } = options
@@ -105,7 +105,7 @@ class Schema<
     const options_ = {} as ns.Options<
       ExtendedInput,
       ExtendedOutput,
-      ExtendedValidationError
+      ExtendedErrorTool
     >
 
     if (useParentOptions)
@@ -121,25 +121,23 @@ class Schema<
       ExtendedInput,
       ExtendedOutput,
       Aliases,
-      ExtendedValidationError
+      ExtendedErrorTool
     >({ ..._definitions, ...definitions }, { ...options_, ...rest })
   }
 
   getModel = () =>
-    new Model(new ModelTool<Input, Output, Aliases, ValidationError>(this))
+    new Model(new ModelTool<Input, Output, Aliases, ErrorTool>(this))
 }
 
 class ModelTool<
   Input extends RealType<Input>,
   Output extends RealType<Output> = Input,
   Aliases = {},
-  ValidationError extends IValidationError<any> = ErrorTool<
-    KeyOf<Input & Aliases>
-  >
-> extends SchemaCore<Input, Output, ValidationError> {
+  ErrorTool extends IErrorTool<any> = DefaultErrorTool<KeyOf<Input & Aliases>>
+> extends SchemaCore<Input, Output, ErrorTool> {
   private _regeneratedProps: KeyOf<Output>[] = []
 
-  constructor(schema: Schema<Input, Output, Aliases, ValidationError>) {
+  constructor(schema: Schema<Input, Output, Aliases, ErrorTool>) {
     super(schema.definitions as any, schema.options)
   }
 
@@ -182,27 +180,27 @@ class ModelTool<
     this._getSummary(this.values, isUpdate)
 
   private async _handleError(
-    error: ValidationError,
+    errorTool: ErrorTool,
     data?: Partial<Output>,
     virtuals: KeyOf<Output>[] = []
   ) {
-    if (data) await this._handleFailure(data, error, virtuals)
+    if (data) await this._handleFailure(data, errorTool, virtuals)
 
     return this._options.errors === 'throw'
-      ? error.throw()
+      ? errorTool.throw()
       : {
           data: null,
-          error: error.data as ValidationError['data'],
+          error: errorTool.error as ErrorTool['error'],
           handleSuccess: null
         }
   }
 
   private async _handleFailure(
     data: Partial<Output>,
-    error: ValidationError,
+    errorTool: ErrorTool,
     virtuals: KeyOf<Output>[] = []
   ) {
-    let props = [...getKeysAsProps(data), ...error.fields, ...virtuals]
+    let props = [...getKeysAsProps(data), ...errorTool.fields, ...virtuals]
 
     props = Array.from(new Set(props))
 
@@ -224,11 +222,11 @@ class ModelTool<
 
   private _handleInvalidData = () =>
     this._handleError(
-      new this._options.validationError(VALIDATION_ERRORS.INVALID_DATA)
+      new this._options.errorTool(VALIDATION_ERRORS.INVALID_DATA)
     )
 
   private _handleRequiredBy(data: Partial<Output>, isUpdate = false) {
-    const error = new this._options.validationError(
+    const errorTool = new this._options.errorTool(
       VALIDATION_ERRORS.VALIDATION_ERROR
     )
     const summary = this._getSummary(data, isUpdate)
@@ -240,7 +238,7 @@ class ModelTool<
         (isRequired && !isUpdate) ||
         (isRequired && isUpdate && this._isUpdatable(prop))
       ) {
-        error.add(prop, message)
+        errorTool.add(prop, message)
 
         const alias = this._getAliasByVirtual(prop)
 
@@ -251,11 +249,11 @@ class ModelTool<
             ? `'${alias}' is required!`
             : message
 
-        error.add(alias as any, _message)
+        errorTool.add(alias as any, _message)
       }
     }
 
-    return error
+    return errorTool
   }
 
   private async _handleSanitizationOfVirtuals(
@@ -546,7 +544,7 @@ class ModelTool<
 
   private async _validateAndSet(
     operationData: Partial<Output> = {},
-    error: ValidationError,
+    error: ErrorTool,
     prop: KeyOf<Output>,
     value: any,
     isUpdate = false
@@ -661,7 +659,7 @@ class ModelTool<
 
     let data = await this._generateConstants()
 
-    const validationError = new this._options.validationError(
+    const errorTool = new this._options.errorTool(
       VALIDATION_ERRORS.VALIDATION_ERROR
     )
 
@@ -699,7 +697,7 @@ class ModelTool<
       if (isAlias && !isDependent)
         return this._validateAndSet(
           data,
-          validationError,
+          errorTool,
           prop,
           values[prop as unknown as KeyOf<Input>]
         )
@@ -748,7 +746,7 @@ class ModelTool<
 
       return this._validateAndSet(
         data,
-        validationError,
+        errorTool,
         prop,
         this.values[prop as unknown as KeyOf<Output>]
       )
@@ -756,13 +754,12 @@ class ModelTool<
 
     await Promise.allSettled(validations)
 
-    if (validationError.isLoaded)
-      return this._handleError(validationError, data, virtuals)
+    if (errorTool.isLoaded) return this._handleError(errorTool, data, virtuals)
 
-    const requiredError = this._handleRequiredBy(data)
+    const requiredErrorTool = this._handleRequiredBy(data)
 
-    if (requiredError.isLoaded)
-      return this._handleError(requiredError, data, virtuals)
+    if (requiredErrorTool.isLoaded)
+      return this._handleError(requiredErrorTool, data, virtuals)
 
     await this._handleSanitizationOfVirtuals(data)
 
@@ -787,7 +784,7 @@ class ModelTool<
 
     let data = await this._generateConstants()
 
-    const validationError = new this._options.validationError(
+    const errorTool = new this._options.errorTool(
       VALIDATION_ERRORS.VALIDATION_ERROR
     )
 
@@ -809,7 +806,7 @@ class ModelTool<
       if (this._isVirtualAlias(prop) && !this._isDependentProp(prop))
         return this._validateAndSet(
           data,
-          validationError,
+          errorTool,
           prop,
           values[prop as unknown as KeyOf<Input>]
         )
@@ -839,18 +836,12 @@ class ModelTool<
         return this._updateContext(validCtxUpdate)
       }
 
-      return this._validateAndSet(
-        data,
-        validationError,
-        prop,
-        this.values[prop]
-      )
+      return this._validateAndSet(data, errorTool, prop, this.values[prop])
     })
 
     await Promise.allSettled(validations)
 
-    if (validationError.isLoaded)
-      return this._handleError(validationError, data, virtuals)
+    if (errorTool.isLoaded) return this._handleError(errorTool, data, virtuals)
 
     const requiredError = this._handleRequiredBy(data)
 
@@ -875,7 +866,7 @@ class ModelTool<
 
   async delete(values: Output) {
     if (!areValuesOk(values))
-      return new ErrorTool(VALIDATION_ERRORS.INVALID_DATA).throw()
+      return new DefaultErrorTool(VALIDATION_ERRORS.INVALID_DATA).throw()
 
     this._setValues(values, { allowVirtuals: false, allowTimestamps: true })
 
@@ -902,13 +893,13 @@ class ModelTool<
     if (this._options?.setMissingDefaultsOnUpdate)
       await this._setMissingDefaults()
 
-    const validationError = new this._options.validationError(
+    const errorTool = new this._options.errorTool(
       VALIDATION_ERRORS.VALIDATION_ERROR
     )
 
     if (!this._isGloballyUpdatable(changes as any))
       return this._handleError(
-        validationError.setMessage(VALIDATION_ERRORS.NOTHING_TO_UPDATE)
+        errorTool.setMessage(VALIDATION_ERRORS.NOTHING_TO_UPDATE)
       )
 
     let updates = {} as Partial<Output>
@@ -928,8 +919,7 @@ class ModelTool<
         this._getValidationSummary(true)
       )) as ValidationResponse<Output[KeyOf<Output>]>
 
-      if (!isValid.valid)
-        return validationError.add(prop as any, isValid.reasons)
+      if (!isValid.valid) return errorTool.add(prop as any, isValid.reasons)
 
       let { validated } = isValid
 
@@ -960,13 +950,13 @@ class ModelTool<
 
     await Promise.allSettled(validations)
 
-    if (validationError.isLoaded)
-      return this._handleError(validationError, updates, virtuals)
+    if (errorTool.isLoaded)
+      return this._handleError(errorTool, updates, virtuals)
 
-    const requiredError = this._handleRequiredBy(updates, true)
+    const requiredErrorTool = this._handleRequiredBy(updates, true)
 
-    if (requiredError.isLoaded)
-      return this._handleError(requiredError, updates, virtuals)
+    if (requiredErrorTool.isLoaded)
+      return this._handleError(requiredErrorTool, updates, virtuals)
 
     await this._handleSanitizationOfVirtuals(updates, true)
 
@@ -977,9 +967,9 @@ class ModelTool<
     )
 
     if (!Object.keys(updates).length) {
-      await this._handleFailure(updates, validationError, virtuals)
+      await this._handleFailure(updates, errorTool, virtuals)
       return this._handleError(
-        validationError.setMessage(VALIDATION_ERRORS.NOTHING_TO_UPDATE)
+        errorTool.setMessage(VALIDATION_ERRORS.NOTHING_TO_UPDATE)
       )
     }
 
@@ -1044,12 +1034,10 @@ class Model<
   Input extends RealType<Input>,
   Output extends RealType<Output>,
   Aliases = {},
-  ValidationError extends IValidationError<any> = ErrorTool<
-    KeyOf<Input & Aliases>
-  >
+  ErrorTool extends IErrorTool<any> = DefaultErrorTool<KeyOf<Input & Aliases>>
 > {
   constructor(
-    private modelTool: ModelTool<Input, Output, Aliases, ValidationError>
+    private modelTool: ModelTool<Input, Output, Aliases, ErrorTool>
   ) {}
 
   clone = (

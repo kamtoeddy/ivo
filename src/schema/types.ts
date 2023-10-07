@@ -1,6 +1,6 @@
 import { Schema } from '.'
-import { PayloadKey } from '../utils'
-import { FieldError, IValidationError, InputPayload } from './utils'
+import { FieldKey } from '../utils'
+import { FieldError, IErrorTool, InputPayload } from './utils'
 
 export type {
   Context,
@@ -267,10 +267,11 @@ namespace Schema {
   export type InternalOptions<
     Input,
     Output,
-    ValidationError extends IValidationError<any>
+    ErrorTool extends IErrorTool<any>
   > = {
     equalityDepth?: number
     errors?: 'silent' | 'throw'
+    errorTool: Constructable<ErrorTool>
     onDelete?: Handler<Output> | NonEmptyArray<Handler<Output>>
     onSuccess?:
       | SuccessHandler<Input, Output>
@@ -280,16 +281,12 @@ namespace Schema {
     timestamps?:
       | boolean
       | { createdAt?: boolean | string; updatedAt?: boolean | string }
-    validationError: Constructable<ValidationError>
   }
 
-  export type Options<
-    Input,
-    Output,
-    ValidationError extends IValidationError<any>
-  > = {
+  export type Options<Input, Output, ErrorTool extends IErrorTool<any>> = {
     equalityDepth?: number
     errors?: 'silent' | 'throw'
+    errorTool?: ErrorTool
     onDelete?: Handler<Output> | NonEmptyArray<Handler<Output>>
     onSuccess?:
       | SuccessHandler<Input, Output>
@@ -299,14 +296,13 @@ namespace Schema {
     timestamps?:
       | boolean
       | { createdAt?: boolean | string; updatedAt?: boolean | string }
-    validationError?: ValidationError
   }
 
   export type OptionsKey<
     Input,
     Output,
-    ValidationError extends IValidationError<any>
-  > = KeyOf<Options<Input, Output, ValidationError>>
+    ErrorTool extends IErrorTool<any>
+  > = KeyOf<Options<Input, Output, ErrorTool>>
 
   export type PrivateOptions = { timestamps: Timestamp }
 
@@ -317,7 +313,7 @@ namespace Schema {
     ParentOutput,
     Input,
     Output,
-    ValidationError extends IValidationError<any>
+    ValidationError extends IErrorTool<any>
   > = Options<Input, Output, ValidationError> & {
     remove?:
       | KeyOf<Merge<ParentInput, ParentOutput>>
@@ -342,7 +338,7 @@ type InternalValidatorResponse<T> =
 type ValidatorResponseObject<T> =
   | { valid: true; validated?: T }
   | {
-      otherReasons?: Record<PayloadKey, string | string[] | FieldError>
+      otherReasons?: Record<FieldKey, string | string[] | FieldError>
       metadata?: FieldError['metadata']
       reason?: FieldError['reasons'][number]
       reasons?: FieldError['reasons']
@@ -385,12 +381,12 @@ type DefinitionRule = (typeof DEFINITION_RULES)[number]
 const ALLOWED_OPTIONS: Schema.OptionsKey<any, any, any>[] = [
   'equalityDepth',
   'errors',
+  'errorTool',
   'onDelete',
   'onSuccess',
   'setMissingDefaultsOnUpdate',
   'shouldUpdate',
-  'timestamps',
-  'validationError'
+  'timestamps'
 ]
 const CONSTANT_RULES = ['constant', 'onDelete', 'onSuccess', 'value']
 const VIRTUAL_RULES = [
