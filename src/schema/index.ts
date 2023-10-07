@@ -15,7 +15,7 @@ import {
   LIFE_CYCLES,
   ISchema as ns,
   RealType,
-  ResponseInputObject,
+  ValidatorResponseObject,
   KeyOf,
   Summary,
   ValidationResponse
@@ -29,7 +29,7 @@ const validationFailedResponse = {
   metadata: null,
   reasons: ['validation failed'],
   valid: false
-} as ResponseInputObject<any, any, any>
+} as ValidatorResponseObject<any>
 
 type DefaultExtendedError<
   ParentError,
@@ -37,18 +37,18 @@ type DefaultExtendedError<
 > = ParentError extends ErrorTool<any> ? ErrorTool<Keys> : ParentError
 
 class Schema<
-  Output extends RealType<Output>,
-  Input extends RealType<Input> = Output,
+  Input extends RealType<Input>,
+  Output extends RealType<Output> = Input,
   Aliases = {},
   ValidationError extends IValidationError<any> = ErrorTool<
     KeyOf<Input & Aliases>
   >
-> extends SchemaCore<Output, Input> {
+> extends SchemaCore<Input, Output, ValidationError> {
   constructor(
-    definitions: ns.Definitions<Output, Input, Aliases>,
-    options: ns.Options<Output, Input, ValidationError> = defaultOptions
+    definitions: ns.Definitions<Input, Output, Aliases>,
+    options: ns.Options<Input, Output, ValidationError> = defaultOptions
   ) {
-    super(definitions as any as ns.Definitions_<Output, Input>, options)
+    super(definitions as any as ns.Definitions_<Input, Output>, options)
   }
 
   get definitions() {
@@ -71,8 +71,8 @@ class Schema<
   }
 
   extend = <
-    ExtendedOutput extends RealType<ExtendedOutput>,
-    ExtendedInput extends RealType<ExtendedInput> = ExtendedOutput,
+    ExtendedInput extends RealType<ExtendedInput>,
+    ExtendedOutput extends RealType<ExtendedOutput> = ExtendedInput,
     Aliases = {},
     ExtendedValidationError extends IValidationError<any> = DefaultExtendedError<
       ValidationError,
@@ -80,21 +80,21 @@ class Schema<
     >
   >(
     definitions: Partial<
-      ns.Definitions<ExtendedOutput, ExtendedInput, Aliases>
+      ns.Definitions<ExtendedInput, ExtendedOutput, Aliases>
     >,
     options: ns.ExtensionOptions<
       Output,
       Input,
-      ExtendedOutput,
       ExtendedInput,
+      ExtendedOutput,
       ExtendedValidationError
     > = {}
   ) => {
     const { remove = [], useParentOptions = true, ...rest } = options
 
     const _definitions = { ...this.definitions } as unknown as ns.Definitions<
-      ExtendedOutput,
       ExtendedInput,
+      ExtendedOutput,
       Aliases
     >
 
@@ -103,8 +103,8 @@ class Schema<
     )
 
     const options_ = {} as ns.Options<
-      ExtendedOutput,
       ExtendedInput,
+      ExtendedOutput,
       ExtendedValidationError
     >
 
@@ -118,28 +118,28 @@ class Schema<
         })
 
     return new Schema<
-      ExtendedOutput,
       ExtendedInput,
+      ExtendedOutput,
       Aliases,
       ExtendedValidationError
     >({ ..._definitions, ...definitions }, { ...options_, ...rest })
   }
 
   getModel = () =>
-    new Model(new ModelTool<Output, Input, Aliases, ValidationError>(this))
+    new Model(new ModelTool<Input, Output, Aliases, ValidationError>(this))
 }
 
 class ModelTool<
-  Output extends RealType<Output>,
-  Input extends RealType<Input> = Output,
+  Input extends RealType<Input>,
+  Output extends RealType<Output> = Input,
   Aliases = {},
   ValidationError extends IValidationError<any> = ErrorTool<
     KeyOf<Input & Aliases>
   >
-> extends SchemaCore<Output, Input> {
+> extends SchemaCore<Input, Output, ValidationError> {
   private _regeneratedProps: KeyOf<Output>[] = []
 
-  constructor(schema: Schema<Output, Input, Aliases, ValidationError>) {
+  constructor(schema: Schema<Input, Output, Aliases, ValidationError>) {
     super(schema.definitions as any, schema.options)
   }
 
@@ -175,14 +175,14 @@ class ModelTool<
       operation,
       previousValues,
       values
-    }) as Summary<Output, Input>
+    }) as Summary<Input, Output>
   }
 
   private _getValidationSummary = (isUpdate = false) =>
     this._getSummary(this.values, isUpdate)
 
   private async _handleError(
-    error: ErrorTool<KeyOf<Input & Aliases>>,
+    error: ValidationError,
     data?: Partial<Output>,
     virtuals: KeyOf<Output>[] = []
   ) {
@@ -199,7 +199,7 @@ class ModelTool<
 
   private async _handleFailure(
     data: Partial<Output>,
-    error: ErrorTool<KeyOf<Input & Aliases>>,
+    error: ValidationError,
     virtuals: KeyOf<Output>[] = []
   ) {
     let props = [...getKeysAsProps(data), ...error.fields, ...virtuals]
@@ -209,7 +209,7 @@ class ModelTool<
     const ctx = this._getContext()
 
     const cleanups = props.map(async (prop) => {
-      const handlers = this._getHandlers<ns.FailureHandler<Output, Input>>(
+      const handlers = this._getHandlers<ns.FailureHandler<Input, Output>>(
         prop,
         'onFailure'
       )
@@ -223,10 +223,12 @@ class ModelTool<
   }
 
   private _handleInvalidData = () =>
-    this._handleError(new ErrorTool(VALIDATION_ERRORS.INVALID_DATA))
+    this._handleError(
+      new this._options.validationError(VALIDATION_ERRORS.INVALID_DATA)
+    )
 
   private _handleRequiredBy(data: Partial<Output>, isUpdate = false) {
-    const error = new ErrorTool<KeyOf<Input & Aliases>>(
+    const error = new this._options.validationError(
       VALIDATION_ERRORS.VALIDATION_ERROR
     )
     const summary = this._getSummary(data, isUpdate)
@@ -365,12 +367,12 @@ class ModelTool<
 
     const successProps = getKeysAsProps(partialCtx)
 
-    let successListeners = [] as ns.SuccessHandler<Output, Input>[]
+    let successListeners = [] as ns.SuccessHandler<Input, Output>[]
 
     const summary = this._getSummary(data, isUpdate)
 
     for (const prop of successProps) {
-      const handlers = this._getHandlers<ns.SuccessHandler<Output, Input>>(
+      const handlers = this._getHandlers<ns.SuccessHandler<Input, Output>>(
         prop,
         'onSuccess'
       )
@@ -391,7 +393,7 @@ class ModelTool<
 
   private async _resolveDependentChanges(
     data: Partial<Output>,
-    ctx: Partial<Output> | Partial<Context<Output, Input>>,
+    ctx: Partial<Output> | Partial<Context<Input, Output>>,
     isUpdate = false
   ) {
     let _updates = { ...data }
@@ -450,7 +452,7 @@ class ModelTool<
         !isCreation &&
         isEqual(
           value,
-          _ctx[prop as KeyOf<Context<Output, Input>>],
+          _ctx[prop as KeyOf<Context<Input, Output>>],
           this._options.equalityDepth
         )
       )
@@ -544,7 +546,7 @@ class ModelTool<
 
   private async _validateAndSet(
     operationData: Partial<Output> = {},
-    error: ErrorTool<KeyOf<Input & Aliases>>,
+    error: ValidationError,
     prop: KeyOf<Output>,
     value: any,
     isUpdate = false
@@ -590,7 +592,7 @@ class ModelTool<
   private _sanitizeValidationResponse<T>(
     response: any,
     value: any
-  ): ResponseInputObject<any, any, T> {
+  ): ValidatorResponseObject<T> {
     const responseType = typeof response
 
     if (responseType == 'boolean')
@@ -609,7 +611,7 @@ class ModelTool<
       return { valid: true, validated }
     }
 
-    const _response: ResponseInputObject<any, any, T> = { valid: false }
+    const _response: ValidatorResponseObject<T> = { valid: false }
 
     if (response?.otherReasons) {
       const validProperties = getKeysAsProps(response.otherReasons).filter(
@@ -659,7 +661,7 @@ class ModelTool<
 
     let data = await this._generateConstants()
 
-    const validationError = new ErrorTool<KeyOf<Input & Aliases>>(
+    const validationError = new this._options.validationError(
       VALIDATION_ERRORS.VALIDATION_ERROR
     )
 
@@ -785,7 +787,7 @@ class ModelTool<
 
     let data = await this._generateConstants()
 
-    const validationError = new ErrorTool<KeyOf<Input & Aliases>>(
+    const validationError = new this._options.validationError(
       VALIDATION_ERRORS.VALIDATION_ERROR
     )
 
@@ -900,7 +902,7 @@ class ModelTool<
     if (this._options?.setMissingDefaultsOnUpdate)
       await this._setMissingDefaults()
 
-    const validationError = new ErrorTool<KeyOf<Input & Aliases>>(
+    const validationError = new this._options.validationError(
       VALIDATION_ERRORS.VALIDATION_ERROR
     )
 
@@ -1002,7 +1004,7 @@ class ModelTool<
   async _validateInternally<K extends KeyOf<Input & Aliases>>(
     prop: K,
     value: any,
-    summary_: Summary<Output, Input>
+    summary_: Summary<Input, Output>
   ) {
     if (!this._isValidProperty(prop))
       return makeResponse<(Input & Aliases)[K]>({
@@ -1017,9 +1019,7 @@ class ModelTool<
     const validator = this._getValidator(_prop as KeyOf<Input>)
 
     if (validator) {
-      const res = (await validator(value, summary_)) as ResponseInputObject<
-        any,
-        Input,
+      const res = (await validator(value, summary_)) as ValidatorResponseObject<
         (Input & Aliases)[K]
       >
 
@@ -1032,7 +1032,7 @@ class ModelTool<
   async _validate<K extends KeyOf<Input & Aliases>>(
     prop: K,
     value: any,
-    summary_: Summary<Output, Input>
+    summary_: Summary<Input, Output>
   ) {
     const res = await this._validateInternally(prop, value, summary_)
 
@@ -1041,15 +1041,15 @@ class ModelTool<
 }
 
 class Model<
+  Input extends RealType<Input>,
   Output extends RealType<Output>,
-  Input extends RealType<Input> = Output,
   Aliases = {},
   ValidationError extends IValidationError<any> = ErrorTool<
     KeyOf<Input & Aliases>
   >
 > {
   constructor(
-    private modelTool: ModelTool<Output, Input, Aliases, ValidationError>
+    private modelTool: ModelTool<Input, Output, Aliases, ValidationError>
   ) {}
 
   clone = (
@@ -1071,7 +1071,7 @@ class Model<
       operation: 'creation',
       previousValues: undefined,
       values: {}
-    } as unknown as Summary<Output, Input>)
+    } as unknown as Summary<Input, Output>)
   }
 }
 

@@ -1,8 +1,8 @@
 import { storeItemSchema } from '../storeItem'
 import { validatePrice } from '../storeItem/validators'
-import type { OrderItem, OrderItemInput } from './types'
+import type { IOrderItem, OrderItemInput } from './types'
 
-const orderItemSchema = storeItemSchema.extend<OrderItem, OrderItemInput>(
+const orderItemSchema = storeItemSchema.extend<OrderItemInput, IOrderItem>(
   {
     costPrice: { readonly: true, validator: validatePrice },
     price: { readonly: true, validator: validatePrice }

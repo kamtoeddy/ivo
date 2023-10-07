@@ -56,6 +56,7 @@ export interface IValidationError<ErrorData> extends Error {
   get isLoaded(): boolean
   /** array of fields that have failed validation */
   get fields(): string[]
+  add(field: PayloadKey, value?: InputPayload[PayloadKey]): this
   setMessage(message: ValidationErrorMessage): this
   throw(): never
 }

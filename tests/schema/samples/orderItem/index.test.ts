@@ -1,10 +1,10 @@
 import { beforeAll, describe, it, expect } from 'vitest'
 
 import { OrderItem } from '.'
-import { OrderItemType } from './types'
+import { IOrderItem } from './types'
 
 describe('Testing schema of Orderitem (inherited schema)', () => {
-  let orderItem: OrderItemType
+  let orderItem: IOrderItem
 
   beforeAll(async () => {
     orderItem = (

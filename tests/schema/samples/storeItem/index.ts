@@ -10,7 +10,7 @@ import {
   validateString
 } from './validators'
 
-const storeItemSchema = new Schema<StoreItem, StoreItemInput>(
+const storeItemSchema = new Schema<StoreItemInput, StoreItem>(
   {
     _dependentReadOnly: {
       default: 0,
@@ -65,7 +65,7 @@ const storeItemSchema = new Schema<StoreItem, StoreItemInput>(
 
 function resolveQuantity({
   context: { quantity, _quantity, quantities }
-}: Summary<StoreItem, StoreItemInput>) {
+}: Summary<StoreItemInput, StoreItem>) {
   const newQty = _quantity ?? quantity
 
   return quantities ? newQty + (quantities as number) : newQty
@@ -73,7 +73,7 @@ function resolveQuantity({
 
 function onSuccess({
   context: { quantity, _quantity, quantities }
-}: Summary<StoreItem, StoreItemInput>) {
+}: Summary<StoreItemInput, StoreItem>) {
   const newQty = _quantity ?? quantity
 
   return quantities ? newQty + (quantities as number) : newQty

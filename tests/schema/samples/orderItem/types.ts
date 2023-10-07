@@ -8,7 +8,7 @@ export interface OrderItemInput
   costPrice: number
 }
 
-export type OrderItem = Omit<
+export type IOrderItem = Omit<
   StoreItem,
   '_readOnlyNoInit' | '_dependentReadOnly'
 > & { costPrice: number }

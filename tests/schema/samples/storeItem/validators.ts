@@ -6,7 +6,7 @@ import {
   StoreItem
 } from './types'
 
-type SummaryType = Summary<StoreItem, StoreItemInput>
+type SummaryType = Summary<StoreItemInput, StoreItem>
 
 import { isArrayOk, isNumberOk, isStringOk } from '../../../../src'
 import { findBy } from '../../_utils'

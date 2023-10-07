@@ -1,4 +1,5 @@
 import { Schema } from '.'
+import { PayloadKey } from '../utils'
 import { FieldError, IValidationError, InputPayload } from './utils'
 
 export type {
@@ -10,11 +11,11 @@ export type {
   Summary,
   Schema as ISchema,
   RealType,
-  ResponseInputObject,
   TypeOf,
   Validator,
   ValidationResponse,
   ValidatorResponse,
+  ValidatorResponseObject,
   InternalValidatorResponse,
   XOR
 }
@@ -24,22 +25,23 @@ export {
   CONSTANT_RULES,
   DEFINITION_RULES,
   LIFE_CYCLES,
+  OPERATIONS,
   VIRTUAL_RULES
 }
 
-type Context<Output, Input = Output> = Readonly<Merge<Output, Input>>
+type Context<Input, Output = Input> = Readonly<Merge<Input, Output>>
 
-type Summary<Output, Input = Output> = (
+type Summary<Input, Output = Input> = (
   | Readonly<{
       changes: null
-      context: Context<Output, Input>
+      context: Context<Input, Output>
       operation: 'creation'
       previousValues: null
       values: Readonly<Output>
     }>
   | Readonly<{
       changes: Partial<RealType<Output>>
-      context: Context<Output, Input>
+      context: Context<Input, Output>
       operation: 'update'
       previousValues: Readonly<Output>
       values: Readonly<Output>
@@ -48,24 +50,24 @@ type Summary<Output, Input = Output> = (
 
 type TypeOf<T> = Exclude<T, undefined>
 
-type AsyncSetter<T, Output, Input> = (
-  context: Context<Output, Input> & {}
+type AsyncSetter<T, Input, Output> = (
+  context: Context<Input, Output> & {}
 ) => TypeOf<T> | Promise<TypeOf<T>>
 
-type Setter<T, Output, Input> = (
-  context: Context<Output, Input> & {}
+type Setter<T, Input, Output> = (
+  context: Context<Input, Output> & {}
 ) => TypeOf<T>
 
-type SetterWithSummary<T, Output, Input> = (
-  summary: Summary<Output, Input> & {}
+type SetterWithSummary<T, Input, Output> = (
+  summary: Summary<Input, Output> & {}
 ) => TypeOf<T>
 
-type Resolver<K extends keyof Output, Output, Input> = (
-  summary: Summary<Output, Input> & {}
+type Resolver<K extends keyof Output, Input, Output> = (
+  summary: Summary<Input, Output> & {}
 ) => TypeOf<Output[K]> | Promise<TypeOf<Output[K]>>
 
-type VirtualResolver<K extends keyof Input, Output, Input> = (
-  summary: Summary<Output, Input> & {}
+type VirtualResolver<K extends keyof Input, Input, Output> = (
+  summary: Summary<Input, Output> & {}
 ) => TypeOf<Input[K]> | Promise<TypeOf<Input[K]>>
 
 type KeyOf<T> = Extract<keyof T, string>
@@ -73,43 +75,43 @@ type KeyOf<T> = Extract<keyof T, string>
 namespace Schema {
   export type LifeCycle = (typeof LIFE_CYCLES)[number]
 
-  export type OperationName = 'creation' | 'update'
+  export type OperationName = (typeof OPERATIONS)[number]
 
   export type Handler<Output> = (data: Readonly<Output>) => any | Promise<any>
 
-  export type FailureHandler<Output, Input> = (
-    context: Context<Output, Input> & {}
+  export type FailureHandler<Input, Output> = (
+    context: Context<Input, Output> & {}
   ) => any | Promise<any>
 
-  export type SuccessHandler<Output, Input> = (
-    summary: Summary<Output, Input> & {}
+  export type SuccessHandler<Input, Output> = (
+    summary: Summary<Input, Output> & {}
   ) => any | Promise<any>
 
-  export type Definitions<Output, Input = Output, Aliases = {}> = {
-    [K in keyof Merge<Output, Input>]?: K extends keyof (Input | Output)
-      ? PublicProperty<K, Output, Input>
+  export type Definitions<Input, Output, Aliases = {}> = {
+    [K in keyof (Input & Output)]?: K extends keyof (Input | Output)
+      ? PublicProperty<K, Input, Output>
       : K extends keyof Omit<Output, keyof Input>
-      ? PrivateProperty<K, Output, Input>
+      ? PrivateProperty<K, Input, Output>
       : K extends keyof Omit<Input, keyof Output>
       ? Virtual<K, Output, Input, Aliases>
       : never
   }
 
-  type PublicProperty<K extends keyof (Output | Input), Output, Input> =
-    | LaxProperty<K, Output, Input>
-    | ReadOnly<K, Output, Input>
-    | ReadonlyNoInit<K, Output, Input>
-    | Required<K, Output, Input>
-    | RequiredBy<K, Output, Input>
-    | RequiredReadonly<K, Output, Input>
+  type PublicProperty<K extends keyof (Output | Input), Input, Output> =
+    | LaxProperty<K, Input, Output>
+    | ReadOnly<K, Input, Output>
+    | ReadonlyNoInit<K, Input, Output>
+    | Required<K, Input, Output>
+    | RequiredBy<K, Input, Output>
+    | RequiredReadonly<K, Input, Output>
 
-  type PrivateProperty<K extends keyof Output, Output, Input> = XOR<
-    Constant<K, Output, Input>,
-    Dependent<K, Output, Input>
+  type PrivateProperty<K extends keyof Output, Input, Output> = XOR<
+    Constant<K, Input, Output>,
+    Dependent<K, Input, Output>
   >
 
-  export type Definitions_<Output, Input> = {
-    [K in keyof Input]?: Listenable<Output, Input> & {
+  export type Definitions_<Input, Output> = {
+    [K in keyof Input]?: Listenable<Input, Output> & {
       alias?: string
       constant?: any
       default?: any
@@ -119,10 +121,10 @@ namespace Schema {
       resolver?: Function
       required?:
         | boolean
-        | SetterWithSummary<boolean | [boolean, string], Output, Input>
-      sanitizer?: VirtualResolver<K, Output, Input>
-      shouldInit?: false | Setter<boolean, Output, Input>
-      shouldUpdate?: false | Setter<boolean, Output, Input>
+        | SetterWithSummary<boolean | [boolean, string], Input, Output>
+      sanitizer?: VirtualResolver<K, Input, Output>
+      shouldInit?: false | Setter<boolean, Input, Output>
+      shouldUpdate?: false | Setter<boolean, Input, Output>
       validator?: Function
       value?: any
       virtual?: boolean
@@ -137,123 +139,120 @@ namespace Schema {
     [K in KeyOf<T>]?: KeyOf<T>[]
   }
 
-  type Listenable<Output, Input> = {
+  type Listenable<Input, Output> = {
     onDelete?: Handler<Output> | NonEmptyArray<Handler<Output>>
     onFailure?:
-      | FailureHandler<Output, Input>
-      | NonEmptyArray<FailureHandler<Output, Input>>
+      | FailureHandler<Input, Output>
+      | NonEmptyArray<FailureHandler<Input, Output>>
     onSuccess?:
-      | SuccessHandler<Output, Input>
-      | NonEmptyArray<SuccessHandler<Output, Input>>
+      | SuccessHandler<Input, Output>
+      | NonEmptyArray<SuccessHandler<Input, Output>>
   }
 
-  type Constant<K extends keyof Output, Output, Input = Output> = {
+  type Constant<K extends keyof Output, Input, Output> = {
     constant: true
     onDelete?: Handler<Output> | NonEmptyArray<Handler<Output>>
     onSuccess?:
-      | SuccessHandler<Output, Input>
-      | NonEmptyArray<SuccessHandler<Output, Input>>
-    value: TypeOf<Output[K]> | AsyncSetter<Output[K], Output, Input>
+      | SuccessHandler<Input, Output>
+      | NonEmptyArray<SuccessHandler<Input, Output>>
+    value: TypeOf<Output[K]> | AsyncSetter<Output[K], Input, Output>
   }
 
-  type Dependent<K extends keyof Output, Output, Input = Output> = {
-    default: TypeOf<Output[K]> | AsyncSetter<Output[K], Output, Input>
+  type Dependent<K extends keyof Output, Input, Output> = {
+    default: TypeOf<Output[K]> | AsyncSetter<Output[K], Input, Output>
     /** @deprecated `dependsOn` & a `resolver` function are enough to make a property dependent */
     dependent?: true
     dependsOn:
-      | Exclude<KeyOf<Context<Output, Input>>, K>
-      | Exclude<KeyOf<Context<Output, Input>>, K>[]
+      | Exclude<KeyOf<Context<Input, Output>>, K>
+      | Exclude<KeyOf<Context<Input, Output>>, K>[]
     onDelete?: Handler<Output> | NonEmptyArray<Handler<Output>>
     onSuccess?:
-      | SuccessHandler<Output, Input>
-      | NonEmptyArray<SuccessHandler<Output, Input>>
+      | SuccessHandler<Input, Output>
+      | NonEmptyArray<SuccessHandler<Input, Output>>
     readonly?: true
-    resolver: Resolver<K, Output, Input>
+    resolver: Resolver<K, Input, Output>
   }
 
   type LaxProperty<
     K extends keyof (Output | Input),
-    Output,
-    Input = Output
-  > = Listenable<Output, Input> & {
-    default: TypeOf<Output[K]> | AsyncSetter<Output[K], Output, Input>
+    Input,
+    Output
+  > = Listenable<Input, Output> & {
+    default: TypeOf<Output[K]> | AsyncSetter<Output[K], Input, Output>
     readonly?: 'lax'
-    shouldInit?: false | Setter<boolean, Output, Input>
-    shouldUpdate?: Setter<boolean, Output, Input>
-    validator?: Validator<K, Output, Input>
+    shouldInit?: false | Setter<boolean, Input, Output>
+    shouldUpdate?: Setter<boolean, Input, Output>
+    validator?: Validator<K, Input, Output>
   }
 
-  type ReadOnly<
-    K extends keyof (Output | Input),
-    Output,
-    Input = Output
-  > = Listenable<Output, Input> & {
-    default: TypeOf<Output[K]> | AsyncSetter<Output[K], Output, Input>
+  type ReadOnly<K extends keyof (Output | Input), Input, Output> = Listenable<
+    Input,
+    Output
+  > & {
+    default: TypeOf<Output[K]> | AsyncSetter<Output[K], Input, Output>
     readonly: 'lax'
-    shouldUpdate?: Setter<boolean, Output, Input>
-    validator: Validator<K, Output, Input>
+    shouldUpdate?: Setter<boolean, Input, Output>
+    validator: Validator<K, Input, Output>
   }
 
   type ReadonlyNoInit<
     K extends keyof (Output | Input),
-    Output,
-    Input = Output
-  > = Listenable<Output, Input> & {
-    default: TypeOf<Output[K]> | AsyncSetter<Output[K], Output, Input>
+    Input,
+    Output
+  > = Listenable<Input, Output> & {
+    default: TypeOf<Output[K]> | AsyncSetter<Output[K], Input, Output>
     readonly: true
-    shouldInit: false | Setter<boolean, Output, Input>
-    shouldUpdate?: Setter<boolean, Output, Input>
-    validator?: Validator<K, Output, Input>
+    shouldInit: false | Setter<boolean, Input, Output>
+    shouldUpdate?: Setter<boolean, Input, Output>
+    validator?: Validator<K, Input, Output>
   }
 
   type RequiredReadonly<
     K extends keyof (Output | Input),
-    Output,
-    Input = Output
-  > = Listenable<Output, Input> & {
+    Input,
+    Output
+  > = Listenable<Input, Output> & {
     readonly: true
-    validator: Validator<K, Output, Input>
+    validator: Validator<K, Input, Output>
   }
 
-  type Required<
-    K extends keyof (Output | Input),
-    Output,
-    Input = Output
-  > = Listenable<Output, Input> & {
+  type Required<K extends keyof (Output | Input), Input, Output> = Listenable<
+    Input,
+    Output
+  > & {
     required: true
-    shouldUpdate?: Setter<boolean, Output, Input>
-    validator: Validator<K, Output, Input>
+    shouldUpdate?: Setter<boolean, Input, Output>
+    validator: Validator<K, Input, Output>
   }
 
-  type RequiredBy<
-    K extends keyof (Output | Input),
-    Output,
-    Input = Output
-  > = Listenable<Output, Input> & {
-    default: TypeOf<Output[K]> | AsyncSetter<Output[K], Output, Input>
-    required: SetterWithSummary<boolean | [boolean, string], Output, Input>
+  type RequiredBy<K extends keyof (Output | Input), Input, Output> = Listenable<
+    Input,
+    Output
+  > & {
+    default: TypeOf<Output[K]> | AsyncSetter<Output[K], Input, Output>
+    required: SetterWithSummary<boolean | [boolean, string], Input, Output>
     readonly?: true
-    shouldInit?: Setter<boolean, Output, Input>
-    shouldUpdate?: Setter<boolean, Output, Input>
-    validator: Validator<K, Output, Input>
+    shouldInit?: Setter<boolean, Input, Output>
+    shouldUpdate?: Setter<boolean, Input, Output>
+    validator: Validator<K, Input, Output>
   }
 
   type Virtual<K extends keyof Input, Output, Input, A> = {
     alias?: Exclude<KeyOf<A>, K> extends undefined
       ? string
       : Exclude<KeyOf<A>, K>
-    required?: SetterWithSummary<boolean | [boolean, string], Output, Input>
+    required?: SetterWithSummary<boolean | [boolean, string], Input, Output>
     virtual: true
-    sanitizer?: VirtualResolver<K, Output, Input>
+    sanitizer?: VirtualResolver<K, Input, Output>
     onFailure?:
-      | FailureHandler<Output, Input>
-      | NonEmptyArray<FailureHandler<Output, Input>>
+      | FailureHandler<Input, Output>
+      | NonEmptyArray<FailureHandler<Input, Output>>
     onSuccess?:
-      | SuccessHandler<Output, Input>
-      | NonEmptyArray<SuccessHandler<Output, Input>>
-    shouldInit?: false | Setter<boolean, Output, Input>
-    shouldUpdate?: false | Setter<boolean, Output, Input>
-    validator: Validator<K, Output, Input>
+      | SuccessHandler<Input, Output>
+      | NonEmptyArray<SuccessHandler<Input, Output>>
+    shouldInit?: false | Setter<boolean, Input, Output>
+    shouldUpdate?: false | Setter<boolean, Input, Output>
+    validator: Validator<K, Input, Output>
   }
 
   // options
@@ -261,42 +260,65 @@ namespace Schema {
     reset?: KeyOf<T> | KeyOf<T>[]
   }
 
-  export type Options<
-    Output,
+  interface Constructable<T> {
+    new (...args: any): T
+  }
+
+  export type InternalOptions<
     Input,
+    Output,
     ValidationError extends IValidationError<any>
   > = {
     equalityDepth?: number
-    validationError?: ValidationError
     errors?: 'silent' | 'throw'
     onDelete?: Handler<Output> | NonEmptyArray<Handler<Output>>
     onSuccess?:
-      | SuccessHandler<Output, Input>
-      | NonEmptyArray<SuccessHandler<Output, Input>>
+      | SuccessHandler<Input, Output>
+      | NonEmptyArray<SuccessHandler<Input, Output>>
     setMissingDefaultsOnUpdate?: boolean
-    shouldUpdate?: boolean | SetterWithSummary<boolean, Output, Input>
+    shouldUpdate?: boolean | SetterWithSummary<boolean, Input, Output>
     timestamps?:
       | boolean
       | { createdAt?: boolean | string; updatedAt?: boolean | string }
+    validationError: Constructable<ValidationError>
+  }
+
+  export type Options<
+    Input,
+    Output,
+    ValidationError extends IValidationError<any>
+  > = {
+    equalityDepth?: number
+    errors?: 'silent' | 'throw'
+    onDelete?: Handler<Output> | NonEmptyArray<Handler<Output>>
+    onSuccess?:
+      | SuccessHandler<Input, Output>
+      | NonEmptyArray<SuccessHandler<Input, Output>>
+    setMissingDefaultsOnUpdate?: boolean
+    shouldUpdate?: boolean | SetterWithSummary<boolean, Input, Output>
+    timestamps?:
+      | boolean
+      | { createdAt?: boolean | string; updatedAt?: boolean | string }
+    validationError?: ValidationError
   }
 
   export type OptionsKey<
-    Output,
     Input,
+    Output,
     ValidationError extends IValidationError<any>
-  > = KeyOf<Options<Output, Input, ValidationError>>
+  > = KeyOf<Options<Input, Output, ValidationError>>
 
   export type PrivateOptions = { timestamps: Timestamp }
 
   export type Timestamp = { createdAt: string; updatedAt: string }
 
   export type ExtensionOptions<
-    ParentOutput,
     ParentInput,
-    Output,
+    ParentOutput,
     Input,
+    Output,
     ValidationError extends IValidationError<any>
-  > = Options<Output, Input, ValidationError> & {
+  > = Options<Input, Output, ValidationError> & {
     remove?:
       | KeyOf<Merge<ParentInput, ParentOutput>>
       | KeyOf<Merge<ParentInput, ParentOutput>>[]
@@ -317,31 +339,24 @@ type InternalValidatorResponse<T> =
       valid: false
     }
 
-type ResponseInputObject<K extends keyof (Output & Input), Output, Input> =
-  | { valid: true; validated?: TypeOf<(Output & Input)[K]> }
+type ValidatorResponseObject<T> =
+  | { valid: true; validated?: T }
   | {
-      otherReasons?: {
-        [Key in Exclude<keyof (Output & Input), K>]:
-          | string
-          | string[]
-          | FieldError
-      }
+      otherReasons?: Record<PayloadKey, string | string[] | FieldError>
       metadata?: FieldError['metadata']
       reason?: FieldError['reasons'][number]
       reasons?: FieldError['reasons']
       valid: false
     }
 
-type ValidatorResponse<K extends keyof (Output & Input), Output, Input> =
-  | boolean
-  | (ResponseInputObject<K, Output, Input> & {})
+type ValidatorResponse<T> = boolean | (ValidatorResponseObject<T> & {})
 
-type Validator<K extends keyof (Output & Input), Output, Input> = (
+type Validator<K extends keyof Input, Input, Output> = (
   value: any,
-  summary: Summary<Output, Input> & {}
+  summary: Summary<Input, Output> & {}
 ) =>
-  | ValidatorResponse<K, Output, Input>
-  | Promise<ValidatorResponse<K, Output, Input>>
+  | ValidatorResponse<TypeOf<Input[K]>>
+  | Promise<ValidatorResponse<TypeOf<Input[K]>>>
 
 type NonEmptyArray<T> = [T, ...T[]]
 
@@ -374,7 +389,8 @@ const ALLOWED_OPTIONS: Schema.OptionsKey<any, any, any>[] = [
   'onSuccess',
   'setMissingDefaultsOnUpdate',
   'shouldUpdate',
-  'timestamps'
+  'timestamps',
+  'validationError'
 ]
 const CONSTANT_RULES = ['constant', 'onDelete', 'onSuccess', 'value']
 const VIRTUAL_RULES = [
@@ -390,6 +406,7 @@ const VIRTUAL_RULES = [
 ]
 
 const LIFE_CYCLES = ['onDelete', 'onFailure', 'onSuccess'] as const
+const OPERATIONS = ['creation', 'update'] as const
 
 type TypeFromPromise<T> = T extends Promise<infer I> ? I : T
 

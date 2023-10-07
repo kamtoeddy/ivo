@@ -1,5 +1,5 @@
 import {
-  ResponseInputObject,
+  ValidatorResponseObject,
   KeyOf,
   TypeOf,
   ValidationResponse
@@ -29,12 +29,12 @@ type PayloadKey = number | string
 type ObjectType = Record<PayloadKey, any> & {}
 
 function makeResponse<T = undefined>(
-  input: ResponseInputObject<any, any, T>
+  input: ValidatorResponseObject<T>
 ): ValidationResponse<TypeOf<T>> {
   if (input.valid) {
     const { valid, validated } = input
 
-    return { valid, validated }
+    return { valid, validated } as ValidationResponse<TypeOf<T>>
   }
 
   // eslint-disable-next-line prefer-const

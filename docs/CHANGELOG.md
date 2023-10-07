@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 # v4.0.0 <small><sup>[x][x]-[x][x]-2023</sup></small>
 
+- [Update] change order of Input & Output types passed to schema constructor
 - [Update] [`SchemaError`]()
 - [Add] `__getOptions__` method to operation context
 - [Add] `useParentOptions` to options of extended schemas to opt in/out of parent options

@@ -1,5 +1,9 @@
 import { getUniqueBy, isEqual, isObject, isOneOf, makeResponse } from './utils'
-import { ResponseInputObject, ValidationResponse, XOR } from './schema/types'
+import {
+  ValidatorResponseObject,
+  ValidationResponse,
+  XOR
+} from './schema/types'
 
 export {
   isArrayOk,
@@ -154,7 +158,7 @@ type RangeType = NumberRangeType
 function _isInNumberRange(
   value: number,
   range: NumberRangeType_
-): ResponseInputObject<any, any, number> {
+): ValidatorResponseObject<number> {
   const { max, min, inclusiveBottom, inclusiveTop } = range
 
   if (
@@ -239,7 +243,7 @@ function isStringOk<T extends string = string>(
 
   if (enums)
     return isOneOf(str, enums as any)
-      ? makeResponse({ valid: true, validated: str })
+      ? makeResponse({ valid: true, validated: str as Exclude<T, undefined> })
       : makeResponse({
           reason: 'Unacceptable value',
           valid: false,

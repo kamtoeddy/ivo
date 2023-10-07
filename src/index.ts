@@ -26,5 +26,6 @@ export {
   RealType,
   Summary,
   ValidatorResponse,
+  ValidatorResponseObject,
   XOR
 } from './schema/types'

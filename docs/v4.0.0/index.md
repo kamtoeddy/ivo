@@ -11,7 +11,7 @@ Clean schema considers a property to be properly defined if it is `dependent`, `
 The schema constructor also takes two generic types you could use to improve on the type inference of your `Input` & `Output` data.
 
 ```ts
-const userSchema = new Schema<Output, Input>(definitions, options)
+const userSchema = new Schema<Input, Output>(definitions, options)
 ```
 
 ```ts
@@ -30,7 +30,7 @@ type User = {
   fullName: string
 }
 
-const userSchema = new Schema<User, UserInput>({
+const userSchema = new Schema<UserInput, User>({
   dob: { required: true, validator: validateDob },
   firstName: { required: true, validator: validateName },
   lastName: { required: true, validator: validateName },
@@ -86,8 +86,8 @@ import type { Context, Summary } from 'clean-schema'
 type Input = {}
 type Output = {}
 
-type IContext = Context<Output, Input>
-type ISummary = Summary<Output, Input>
+type IContext = Context<Input, Output>
+type ISummary = Summary<Input, Output>
 
 type DeleteListener = (data: Readonly<Output>) => void | Promise<void>
 
@@ -110,7 +110,7 @@ type SchemaOptions = {
 
 const options: SchemaOptions = {}
 
-const schema = new Schema<Output, Input>(definitions, options)
+const schema = new Schema<Input, Output>(definitions, options)
 ```
 
 More details on the `Context` & `Summary` utiliies can be found [here](../v3.4.0/schema/definition/life-cycles.md#the-operation-context)

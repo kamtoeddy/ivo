@@ -12,7 +12,12 @@ import {
   sortKeys,
   toArray
 } from '../utils'
-import { SchemaErrorTool, TimeStampTool } from './utils'
+import {
+  ErrorTool,
+  IValidationError,
+  SchemaErrorTool,
+  TimeStampTool
+} from './utils'
 import { ObjectType } from '../utils'
 import {
   DefinitionRule,
@@ -30,22 +35,27 @@ import {
 
 export const defaultOptions = {
   equalityDepth: 1,
+  validationError: ErrorTool,
   errors: 'silent',
   setMissingDefaultsOnUpdate: false,
   shouldUpdate: true,
   timestamps: false
 } as ns.Options<any, any, any>
 
-export abstract class SchemaCore<Output, Input> {
-  protected _definitions = {} as ns.Definitions_<Output, Input>
-  protected _options: ns.Options<Output, Input, any>
+export abstract class SchemaCore<
+  Input,
+  Output,
+  ValidationError extends IValidationError<any>
+> {
+  protected _definitions = {} as ns.Definitions_<Input, Output>
+  protected _options: ns.InternalOptions<Input, Output, ValidationError>
 
   // contexts & values
-  protected context: Context<Output, Input> = {} as Context<Output, Input>
+  protected context: Context<Input, Output> = {} as Context<Input, Output>
   protected defaults: Partial<Output> = {}
-  protected partialContext: Context<Output, Input> = {} as Context<
-    Output,
-    Input
+  protected partialContext: Context<Input, Output> = {} as Context<
+    Input,
+    Output
   >
   protected values: Output = {} as Output
 
@@ -69,35 +79,38 @@ export abstract class SchemaCore<Output, Input> {
 
   // handlers
   protected readonly globalDeleteHandlers: ns.Handler<Output>[] = []
-  protected readonly globalSuccessHandlers: ns.SuccessHandler<Output, Input>[] =
+  protected readonly globalSuccessHandlers: ns.SuccessHandler<Input, Output>[] =
     []
 
   constructor(
-    definitions: ns.Definitions_<Output, Input>,
-    options: ns.Options<Output, Input, any> = defaultOptions as ns.Options<
-      Output,
+    definitions: ns.Definitions_<Input, Output>,
+    options: ns.Options<Input, Output, any> = defaultOptions as ns.Options<
       Input,
-      any
+      Output,
+      ValidationError
     >
   ) {
     this._checkPropDefinitions(definitions)
     this._checkOptions(options)
 
     this._definitions = sortKeys(definitions)
-    this._options = sortKeys({ ...defaultOptions, ...options })
+    this._options = sortKeys({ ...defaultOptions, ...options }) as any
+
+    if (!this._options.validationError)
+      this._options.validationError = ErrorTool as any
 
     this.timestampTool = new TimeStampTool(this._options.timestamps)
   }
 
   // < context methods >
   protected _getContext = () =>
-    this._getFrozenCopy(sortKeys(this.context)) as Context<Output, Input>
+    this._getFrozenCopy(sortKeys(this.context)) as Context<Input, Output>
 
   protected _getPartialContext = () => this._getFrozenCopy(this.partialContext)
 
   protected _initializeContexts = () => {
-    this.context = { ...this.values } as Context<Output, Input>
-    this.partialContext = {} as Context<Output, Input>
+    this.context = { ...this.values } as Context<Input, Output>
+    this.partialContext = {} as Context<Input, Output>
   }
 
   protected _updateContext = (updates: Partial<Input>) => {
@@ -136,7 +149,7 @@ export abstract class SchemaCore<Output, Input> {
     propertyB = property,
     visitedNodes = []
   }: {
-    definitions: ns.Definitions_<Output, Input>
+    definitions: ns.Definitions_<Input, Output>
     property: KeyOf<Input>
     propertyB?: KeyOf<Input>
     visitedNodes?: KeyOf<Input>[]
@@ -192,7 +205,7 @@ export abstract class SchemaCore<Output, Input> {
 
       if (lifeCycle == 'onSuccess')
         return this.globalSuccessHandlers.push(
-          handler as ns.SuccessHandler<Output, Input>
+          handler as ns.SuccessHandler<Input, Output>
         )
     })
 
@@ -219,7 +232,7 @@ export abstract class SchemaCore<Output, Input> {
   protected _getFrozenCopy = <T>(data: T): Readonly<T> =>
     Object.freeze(Object.assign({}, data)) as Readonly<T>
 
-  protected _checkOptions = (options: ns.Options<Output, Input, any>) => {
+  protected _checkOptions = (options: ns.Options<Input, Output, any>) => {
     const error = new SchemaErrorTool()
 
     if (!isObject(options))
@@ -300,7 +313,7 @@ export abstract class SchemaCore<Output, Input> {
   }
 
   protected _checkPropDefinitions = (
-    definitions: ns.Definitions_<Output, Input>
+    definitions: ns.Definitions_<Input, Output>
   ) => {
     const error = new SchemaErrorTool()
 
@@ -405,7 +418,7 @@ export abstract class SchemaCore<Output, Input> {
 
   protected _getRequiredState = (
     prop: string,
-    summary: Summary<Output, Input>
+    summary: Summary<Input, Output>
   ): [boolean, string] => {
     const { required } = this._getDefinition(prop)
 
@@ -437,7 +450,7 @@ export abstract class SchemaCore<Output, Input> {
 
   protected _getValidator = <K extends KeyOf<Input>>(prop: K) => {
     return this._getDefinition(prop)?.validator as
-      | Validator<K, Output, Input>
+      | Validator<K, Input, Output>
       | undefined
   }
 
@@ -454,7 +467,7 @@ export abstract class SchemaCore<Output, Input> {
   }
 
   private __isConstantProp = (
-    definition: ns.Definitions_<Output, Input>[KeyOf<Input>]
+    definition: ns.Definitions_<Input, Output>[KeyOf<Input>]
   ) => {
     const { constant, value } = definition!
 
@@ -497,7 +510,7 @@ export abstract class SchemaCore<Output, Input> {
 
   private __isDependentProp = (
     prop: KeyOf<Input>,
-    definition: ns.Definitions_<Output, Input>[KeyOf<Input>]
+    definition: ns.Definitions_<Input, Output>[KeyOf<Input>]
   ) => {
     const {
       default: _default,
@@ -581,7 +594,7 @@ export abstract class SchemaCore<Output, Input> {
 
   private __isPropDefinitionOk = (
     prop: KeyOf<Input>,
-    definition: ns.Definitions_<Output, Input>[KeyOf<Input>]
+    definition: ns.Definitions_<Input, Output>[KeyOf<Input>]
   ) => {
     const propertyTypeProvided = typeof definition
 
@@ -727,7 +740,7 @@ export abstract class SchemaCore<Output, Input> {
   }
 
   private __isReadonly = (
-    definition: ns.Definitions_<Output, Input>[KeyOf<Input>]
+    definition: ns.Definitions_<Input, Output>[KeyOf<Input>]
   ) => {
     const {
       default: _default,
@@ -781,7 +794,7 @@ export abstract class SchemaCore<Output, Input> {
   }
 
   private __isRequiredCommon = (
-    definition: ns.Definitions_<Output, Input>[KeyOf<Input>]
+    definition: ns.Definitions_<Input, Output>[KeyOf<Input>]
   ) => {
     const valid = false
 
@@ -798,7 +811,7 @@ export abstract class SchemaCore<Output, Input> {
   }
 
   private __isRequired = (
-    definition: ns.Definitions_<Output, Input>[KeyOf<Input>]
+    definition: ns.Definitions_<Input, Output>[KeyOf<Input>]
   ) => {
     const valid = false
 
@@ -836,7 +849,7 @@ export abstract class SchemaCore<Output, Input> {
   }
 
   private __isRequiredBy = (
-    definition: ns.Definitions_<Output, Input>[KeyOf<Input>]
+    definition: ns.Definitions_<Input, Output>[KeyOf<Input>]
   ) => {
     const valid = false
 
@@ -867,7 +880,7 @@ export abstract class SchemaCore<Output, Input> {
   }
 
   private __isShouldInitConfigOk = (
-    definition: ns.Definitions_<Output, Input>[KeyOf<Input>]
+    definition: ns.Definitions_<Input, Output>[KeyOf<Input>]
   ) => {
     const { shouldInit } = definition!
 
@@ -891,7 +904,7 @@ export abstract class SchemaCore<Output, Input> {
   }
 
   private __isShouldUpdateConfigOk = (
-    definition: ns.Definitions_<Output, Input>[KeyOf<Input>]
+    definition: ns.Definitions_<Input, Output>[KeyOf<Input>]
   ) => {
     const { readonly, shouldInit, shouldUpdate } = definition!
     const valid = false
@@ -926,7 +939,7 @@ export abstract class SchemaCore<Output, Input> {
   }
 
   private __isVirtualRequiredBy = (
-    definition: ns.Definitions_<Output, Input>[KeyOf<Input>]
+    definition: ns.Definitions_<Input, Output>[KeyOf<Input>]
   ) => {
     if (isPropertyOf('shouldInit', definition))
       return {
@@ -942,7 +955,7 @@ export abstract class SchemaCore<Output, Input> {
   }
 
   private __isVirtual = (
-    definition: ns.Definitions_<Output, Input>[KeyOf<Input>]
+    definition: ns.Definitions_<Input, Output>[KeyOf<Input>]
   ) => {
     const valid = false
 
@@ -980,7 +993,7 @@ export abstract class SchemaCore<Output, Input> {
 
   private __isVirtualAliasOk = (
     prop: KeyOf<Input>,
-    definition: ns.Definitions_<Output, Input>[KeyOf<Input>]
+    definition: ns.Definitions_<Input, Output>[KeyOf<Input>]
   ) => {
     const valid = false
 
@@ -1033,7 +1046,7 @@ export abstract class SchemaCore<Output, Input> {
   }
 
   private _isTimestampsOptionOk(
-    timestamps: ns.Options<Output, Input, any>['timestamps']
+    timestamps: ns.Options<Input, Output, any>['timestamps']
   ) {
     const valid = false
 
@@ -1074,11 +1087,11 @@ export abstract class SchemaCore<Output, Input> {
   }
 
   private _isValidatorOk = (
-    definition: ns.Definitions_<Output, Input>[KeyOf<Input>]
+    definition: ns.Definitions_<Input, Output>[KeyOf<Input>]
   ) => isFunction(definition?.validator)
 
   private __isLax = (
-    definition: ns.Definitions_<Output, Input>[KeyOf<Input>]
+    definition: ns.Definitions_<Input, Output>[KeyOf<Input>]
   ) => {
     const { readonly, shouldInit } = definition!
 
