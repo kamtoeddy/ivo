@@ -45,21 +45,17 @@ export type ValidationErrorToolProps = {
   payload?: InputPayload
 }
 
-type ValidationErrorData<Keys extends PayloadKey = PayloadKey> = {
+export type ValidationErrorData<Keys extends PayloadKey = PayloadKey> = {
   message: ValidationErrorMessage
   payload: ErrorPayload<Keys>
 }
 
-export interface IValidationError<
-  PayloadKeys extends PayloadKey = PayloadKey,
-  ErrorData = ValidationErrorData<PayloadKeys>
-> extends Error {
+export interface IValidationError<ErrorData> extends Error {
   message: ValidationErrorMessage
   get data(): ErrorData
   get isLoaded(): boolean
-  get payload(): {
-    [K in PayloadKeys]?: any
-  }
+  /** array of fields that have failed validation */
+  get fields(): string[]
   setMessage(message: ValidationErrorMessage): this
   throw(): never
 }

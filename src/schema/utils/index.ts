@@ -1,5 +1,10 @@
-import { isEqual, isPropertyOf, sortKeys, toArray } from '../../utils'
-import { PayloadKey } from '../../utils'
+import {
+  isEqual,
+  isPropertyOf,
+  PayloadKey,
+  sortKeys,
+  toArray
+} from '../../utils'
 import { ISchema, KeyOf } from '../types'
 import {
   ErrorPayload,
@@ -13,7 +18,8 @@ import {
   ValidationErrorMessage,
   ValidationErrorToolProps,
   SCHEMA_ERRORS,
-  IValidationError
+  IValidationError,
+  ValidationErrorData
 } from './types'
 
 export * from './types'
@@ -26,7 +32,7 @@ class TimeStampTool {
   private _keys: TimestampKey[]
   private timestamps: ISchema.Timestamp
 
-  constructor(timestamps: ISchema.Options<any, any>['timestamps']) {
+  constructor(timestamps: ISchema.Options<any, any, any>['timestamps']) {
     this.timestamps = this._makeTimestamps(timestamps)
 
     this._keys = Object.keys(this.timestamps).filter(
@@ -34,7 +40,9 @@ class TimeStampTool {
     ) as TimestampKey[]
   }
 
-  private _makeTimestamps(timestamps: ISchema.Options<any, any>['timestamps']) {
+  private _makeTimestamps(
+    timestamps: ISchema.Options<any, any, any>['timestamps']
+  ) {
     if (isEqual(timestamps, undefined)) return { createdAt: '', updatedAt: '' }
 
     let createdAt = 'createdAt',
@@ -167,7 +175,7 @@ class ValidationError<
 
 class ErrorTool<PayloadKeys extends PayloadKey = PayloadKey>
   extends Error
-  implements IValidationError<PayloadKeys>
+  implements IValidationError<ValidationErrorData<PayloadKeys>>
 {
   private _payload: ErrorPayload<PayloadKeys> = {}
 
@@ -186,8 +194,8 @@ class ErrorTool<PayloadKeys extends PayloadKey = PayloadKey>
     }
   }
 
-  get payload() {
-    return this._payload
+  get fields() {
+    return Object.keys(this._payload)
   }
 
   private _has = (field: PayloadKeys) => isPropertyOf(field, this._payload)
@@ -217,7 +225,7 @@ class ErrorTool<PayloadKeys extends PayloadKey = PayloadKey>
     return this
   }
 
-  setMessage = (message: ValidationErrorMessage) => {
+  setMessage(message: ValidationErrorMessage) {
     this.message = message
 
     return this

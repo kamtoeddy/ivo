@@ -1,5 +1,5 @@
 import { Schema } from '.'
-import { FieldError, InputPayload } from './utils'
+import { FieldError, IValidationError, InputPayload } from './utils'
 
 export type {
   Context,
@@ -261,8 +261,13 @@ namespace Schema {
     reset?: KeyOf<T> | KeyOf<T>[]
   }
 
-  export type Options<Output, Input> = {
+  export type Options<
+    Output,
+    Input,
+    ValidationError extends IValidationError<any>
+  > = {
     equalityDepth?: number
+    validationError?: ValidationError
     errors?: 'silent' | 'throw'
     onDelete?: Handler<Output> | NonEmptyArray<Handler<Output>>
     onSuccess?:
@@ -275,19 +280,28 @@ namespace Schema {
       | { createdAt?: boolean | string; updatedAt?: boolean | string }
   }
 
-  export type OptionsKey<Output, Input> = KeyOf<Options<Output, Input>>
+  export type OptionsKey<
+    Output,
+    Input,
+    ValidationError extends IValidationError<any>
+  > = KeyOf<Options<Output, Input, ValidationError>>
 
   export type PrivateOptions = { timestamps: Timestamp }
 
   export type Timestamp = { createdAt: string; updatedAt: string }
 
-  export type ExtensionOptions<ParentOutput, ParentInput, Output, Input> =
-    Options<Output, Input> & {
-      remove?:
-        | KeyOf<Merge<ParentInput, ParentOutput>>
-        | KeyOf<Merge<ParentInput, ParentOutput>>[]
-      useParentOptions?: boolean
-    }
+  export type ExtensionOptions<
+    ParentOutput,
+    ParentInput,
+    Output,
+    Input,
+    ValidationError extends IValidationError<any>
+  > = Options<Output, Input, ValidationError> & {
+    remove?:
+      | KeyOf<Merge<ParentInput, ParentOutput>>
+      | KeyOf<Merge<ParentInput, ParentOutput>>[]
+    useParentOptions?: boolean
+  }
 }
 
 type ValidationResponse<T> =
@@ -353,7 +367,7 @@ const DEFINITION_RULES = [
 
 type DefinitionRule = (typeof DEFINITION_RULES)[number]
 
-const ALLOWED_OPTIONS: Schema.OptionsKey<any, any>[] = [
+const ALLOWED_OPTIONS: Schema.OptionsKey<any, any, any>[] = [
   'equalityDepth',
   'errors',
   'onDelete',

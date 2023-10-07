@@ -34,11 +34,11 @@ export const defaultOptions = {
   setMissingDefaultsOnUpdate: false,
   shouldUpdate: true,
   timestamps: false
-} as ns.Options<any, any>
+} as ns.Options<any, any, any>
 
 export abstract class SchemaCore<Output, Input> {
   protected _definitions = {} as ns.Definitions_<Output, Input>
-  protected _options: ns.Options<Output, Input>
+  protected _options: ns.Options<Output, Input, any>
 
   // contexts & values
   protected context: Context<Output, Input> = {} as Context<Output, Input>
@@ -74,9 +74,10 @@ export abstract class SchemaCore<Output, Input> {
 
   constructor(
     definitions: ns.Definitions_<Output, Input>,
-    options: ns.Options<Output, Input> = defaultOptions as ns.Options<
+    options: ns.Options<Output, Input, any> = defaultOptions as ns.Options<
       Output,
-      Input
+      Input,
+      any
     >
   ) {
     this._checkPropDefinitions(definitions)
@@ -218,7 +219,7 @@ export abstract class SchemaCore<Output, Input> {
   protected _getFrozenCopy = <T>(data: T): Readonly<T> =>
     Object.freeze(Object.assign({}, data)) as Readonly<T>
 
-  protected _checkOptions = (options: ns.Options<Output, Input>) => {
+  protected _checkOptions = (options: ns.Options<Output, Input, any>) => {
     const error = new SchemaErrorTool()
 
     if (!isObject(options))
@@ -226,7 +227,8 @@ export abstract class SchemaCore<Output, Input> {
 
     const optionsProvided = Object.keys(options) as ns.OptionsKey<
       Output,
-      Input
+      Input,
+      any
     >[]
 
     if (!optionsProvided.length) return
@@ -1031,7 +1033,7 @@ export abstract class SchemaCore<Output, Input> {
   }
 
   private _isTimestampsOptionOk(
-    timestamps: ns.Options<Output, Input>['timestamps']
+    timestamps: ns.Options<Output, Input, any>['timestamps']
   ) {
     const valid = false
 
