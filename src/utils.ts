@@ -1,6 +1,6 @@
 import {
   ResponseInputObject,
-  StringKey,
+  KeyOf,
   TypeOf,
   ValidationResponse
 } from './schema/types'
@@ -54,7 +54,7 @@ function makeResponse<T = undefined>(
 }
 
 function getKeysAsProps<T>(object: T) {
-  return Object.keys(object as object) as StringKey<T>[]
+  return Object.keys(object as object) as KeyOf<T>[]
 }
 
 function hasAnyOf(object: any, props: PayloadKey[]): boolean {

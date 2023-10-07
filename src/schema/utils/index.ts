@@ -1,6 +1,6 @@
 import { isEqual, isPropertyOf, sortKeys, toArray } from '../../utils'
 import { PayloadKey } from '../../utils'
-import { ISchema, StringKey } from '../types'
+import { ISchema, KeyOf } from '../types'
 import {
   ErrorPayload,
   FieldError,
@@ -20,7 +20,7 @@ export * from './types'
 
 export { ErrorTool, SchemaErrorTool, SchemaError, TimeStampTool }
 
-type TimestampKey = StringKey<ISchema.Timestamp>
+type TimestampKey = KeyOf<ISchema.Timestamp>
 
 class TimeStampTool {
   private _keys: TimestampKey[]

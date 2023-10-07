@@ -18,7 +18,7 @@ import {
   DefinitionRule,
   Context,
   ISchema as ns,
-  StringKey,
+  KeyOf,
   Summary,
   Validator,
   ALLOWED_OPTIONS,
@@ -55,14 +55,14 @@ export abstract class SchemaCore<Output, Input> {
   protected readonly virtualToAliasMap: ns.AliasToVirtualMap<Input> = {}
 
   // props
-  protected readonly constants: StringKey<Input>[] = []
-  protected readonly dependents: StringKey<Input>[] = []
-  protected readonly laxProps: StringKey<Input>[] = []
-  protected readonly props: StringKey<Output>[] = []
-  protected readonly propsRequiredBy: StringKey<Input>[] = []
-  protected readonly readonlyProps: StringKey<Input>[] = []
-  protected readonly requiredProps: StringKey<Input>[] = []
-  protected readonly virtuals: StringKey<Input>[] = []
+  protected readonly constants: KeyOf<Output>[] = []
+  protected readonly dependents: KeyOf<Output>[] = []
+  protected readonly laxProps: KeyOf<Input>[] = []
+  protected readonly props: KeyOf<Output>[] = []
+  protected readonly propsRequiredBy: KeyOf<Input>[] = []
+  protected readonly readonlyProps: KeyOf<Input>[] = []
+  protected readonly requiredProps: KeyOf<Input>[] = []
+  protected readonly virtuals: KeyOf<Input>[] = []
 
   // helpers
   protected timestampTool: TimeStampTool
@@ -110,10 +110,10 @@ export abstract class SchemaCore<Output, Input> {
 
   // < dependency map utils >
   private _addDependencies = (
-    prop: StringKey<Input>,
-    dependsOn: StringKey<Input> | StringKey<Input>[]
+    prop: KeyOf<Input>,
+    dependsOn: KeyOf<Input> | KeyOf<Input>[]
   ) => {
-    const _dependsOn = toArray(dependsOn) as StringKey<Input>[]
+    const _dependsOn = toArray(dependsOn) as KeyOf<Input>[]
 
     for (const _prop of _dependsOn)
       if (this.dependencyMap[_prop]) this.dependencyMap[_prop]?.push(prop)
@@ -121,14 +121,13 @@ export abstract class SchemaCore<Output, Input> {
   }
 
   protected _getDependencies = (prop: string) =>
-    this.dependencyMap[prop as StringKey<Input>] ?? []
+    this.dependencyMap[prop as KeyOf<Input>] ?? []
 
-  protected _getAliasByVirtual = (prop: StringKey<Input>): string | undefined =>
+  protected _getAliasByVirtual = (prop: KeyOf<Input>): string | undefined =>
     this.virtualToAliasMap[prop]
 
-  protected _getVirtualByAlias = (
-    alias: string
-  ): StringKey<Input> | undefined => this.aliasToVirtualMap[alias]
+  protected _getVirtualByAlias = (alias: string): KeyOf<Input> | undefined =>
+    this.aliasToVirtualMap[alias]
 
   private _getCircularDependenciesOf = ({
     definitions,
@@ -137,9 +136,9 @@ export abstract class SchemaCore<Output, Input> {
     visitedNodes = []
   }: {
     definitions: ns.Definitions_<Output, Input>
-    property: StringKey<Input>
-    propertyB?: StringKey<Input>
-    visitedNodes?: StringKey<Input>[]
+    property: KeyOf<Input>
+    propertyB?: KeyOf<Input>
+    visitedNodes?: KeyOf<Input>[]
   }) => {
     let circularDependencies: string[] = []
 
@@ -148,7 +147,7 @@ export abstract class SchemaCore<Output, Input> {
 
     if (property != propertyB) visitedNodes.push(propertyB)
 
-    const _dependsOn = toArray<StringKey<Input>>(
+    const _dependsOn = toArray<KeyOf<Input>>(
       definitions?.[propertyB]?.dependsOn ?? []
     )
 
@@ -336,11 +335,11 @@ export abstract class SchemaCore<Output, Input> {
 
     // make sure every virtual has atleast one dependency
     for (const prop of this.dependents) {
-      const definition = definitions?.[prop]!
+      const definition = (definitions as any)?.[prop]!
 
-      const _dependsOn = toArray<StringKey<Input>>(definition?.dependsOn ?? [])
+      const _dependsOn = toArray<KeyOf<Input>>(definition?.dependsOn ?? [])
 
-      if (_dependsOn.includes(prop))
+      if (_dependsOn.includes(prop as any))
         error.add(prop, 'A property cannot depend on itself')
 
       const dependsOnConstantProp = _dependsOn.some(this._isConstant)
@@ -352,7 +351,7 @@ export abstract class SchemaCore<Output, Input> {
       const circularRelationShips = this._getCircularDependenciesOf({
         definitions,
         property: prop
-      })
+      } as any)
 
       for (const _prop of circularRelationShips)
         error.add(prop, `Circular dependency identified with '${_prop}'`)
@@ -373,17 +372,17 @@ export abstract class SchemaCore<Output, Input> {
   }
 
   protected _getDefinition = (prop: string) =>
-    this._definitions[prop as StringKey<Input>]!
+    this._definitions[prop as KeyOf<Input>]!
 
   protected _getDefaultValue = async (prop: string) => {
     const _default = this._getDefinition(prop)?.default
 
     const value = isFunction(_default)
       ? await _default(this._getContext())
-      : this.defaults[prop as StringKey<Output>]
+      : this.defaults[prop as KeyOf<Output>]
 
     return isEqual(value, undefined)
-      ? this.values[prop as StringKey<Output>]
+      ? this.values[prop as KeyOf<Output>]
       : value
   }
 
@@ -434,7 +433,7 @@ export abstract class SchemaCore<Output, Input> {
   protected _getHandlers = <T>(prop: string, lifeCycle: ns.LifeCycle) =>
     toArray((this._getDefinition(prop)?.[lifeCycle] ?? []) as any) as T[]
 
-  protected _getValidator = <K extends StringKey<Input>>(prop: K) => {
+  protected _getValidator = <K extends KeyOf<Input>>(prop: K) => {
     return this._getDefinition(prop)?.validator as
       | Validator<K, Output, Input>
       | undefined
@@ -453,7 +452,7 @@ export abstract class SchemaCore<Output, Input> {
   }
 
   private __isConstantProp = (
-    definition: ns.Definitions_<Output, Input>[StringKey<Input>]
+    definition: ns.Definitions_<Output, Input>[KeyOf<Input>]
   ) => {
     const { constant, value } = definition!
 
@@ -492,11 +491,11 @@ export abstract class SchemaCore<Output, Input> {
   }
 
   protected _isConstant = (prop: string) =>
-    this.constants.includes(prop as StringKey<Input>)
+    this.constants.includes(prop as KeyOf<Output>)
 
   private __isDependentProp = (
-    prop: StringKey<Input>,
-    definition: ns.Definitions_<Output, Input>[StringKey<Input>]
+    prop: KeyOf<Input>,
+    definition: ns.Definitions_<Output, Input>[KeyOf<Input>]
   ) => {
     const {
       default: _default,
@@ -527,7 +526,7 @@ export abstract class SchemaCore<Output, Input> {
         reason: 'Dependent properties must depend on atleast one property'
       }
 
-    if (toArray(dependsOn).includes(prop as StringKey<Input>))
+    if (toArray(dependsOn).includes(prop as KeyOf<Input>))
       return { valid, reason: 'A property cannot depend on itself' }
 
     if (isEqual(resolver, undefined))
@@ -570,17 +569,17 @@ export abstract class SchemaCore<Output, Input> {
   }
 
   protected _isDependentProp = (prop: string) =>
-    this.dependents.includes(prop as StringKey<Input>)
+    this.dependents.includes(prop as KeyOf<Output>)
 
   protected _isLaxProp = (prop: string) =>
-    this.laxProps.includes(prop as StringKey<Input>)
+    this.laxProps.includes(prop as KeyOf<Input>)
 
   protected _isProp = (prop: string) =>
-    this.props.includes(prop as StringKey<Output>)
+    this.props.includes(prop as KeyOf<Output>)
 
   private __isPropDefinitionOk = (
-    prop: StringKey<Input>,
-    definition: ns.Definitions_<Output, Input>[StringKey<Input>]
+    prop: KeyOf<Input>,
+    definition: ns.Definitions_<Output, Input>[KeyOf<Input>]
   ) => {
     const propertyTypeProvided = typeof definition
 
@@ -605,7 +604,7 @@ export abstract class SchemaCore<Output, Input> {
     if (isPropertyOf('constant', definition)) {
       const { valid, reason } = this.__isConstantProp(definition)
 
-      valid ? this.constants.push(prop) : reasons.push(reason!)
+      valid ? this.constants.push(prop as any) : reasons.push(reason!)
     } else if (isPropertyOf('value', definition))
       reasons.push("'value' rule can only be used with constant properties")
 
@@ -613,7 +612,7 @@ export abstract class SchemaCore<Output, Input> {
       const { valid, reason } = this.__isDependentProp(prop, definition)
 
       if (valid) {
-        this.dependents.push(prop)
+        this.dependents.push(prop as any)
         this._addDependencies(prop, definition.dependsOn!)
       } else reasons.push(reason!)
     }
@@ -652,7 +651,7 @@ export abstract class SchemaCore<Output, Input> {
         const alias = definition?.alias!
 
         this.aliasToVirtualMap[alias] = prop
-        this.virtualToAliasMap[prop] = alias as StringKey<Input>
+        this.virtualToAliasMap[prop] = alias as KeyOf<Input>
       } else reasons.push(reason!)
     }
 
@@ -716,7 +715,7 @@ export abstract class SchemaCore<Output, Input> {
       this.props.push(prop as any)
 
       if (hasDefaultRule)
-        this.defaults[prop as unknown as StringKey<Output>] =
+        this.defaults[prop as unknown as KeyOf<Output>] =
           typeof definition.default == 'function'
             ? undefined
             : definition.default
@@ -726,7 +725,7 @@ export abstract class SchemaCore<Output, Input> {
   }
 
   private __isReadonly = (
-    definition: ns.Definitions_<Output, Input>[StringKey<Input>]
+    definition: ns.Definitions_<Output, Input>[KeyOf<Input>]
   ) => {
     const {
       default: _default,
@@ -780,7 +779,7 @@ export abstract class SchemaCore<Output, Input> {
   }
 
   private __isRequiredCommon = (
-    definition: ns.Definitions_<Output, Input>[StringKey<Input>]
+    definition: ns.Definitions_<Output, Input>[KeyOf<Input>]
   ) => {
     const valid = false
 
@@ -797,7 +796,7 @@ export abstract class SchemaCore<Output, Input> {
   }
 
   private __isRequired = (
-    definition: ns.Definitions_<Output, Input>[StringKey<Input>]
+    definition: ns.Definitions_<Output, Input>[KeyOf<Input>]
   ) => {
     const valid = false
 
@@ -835,7 +834,7 @@ export abstract class SchemaCore<Output, Input> {
   }
 
   private __isRequiredBy = (
-    definition: ns.Definitions_<Output, Input>[StringKey<Input>]
+    definition: ns.Definitions_<Output, Input>[KeyOf<Input>]
   ) => {
     const valid = false
 
@@ -866,7 +865,7 @@ export abstract class SchemaCore<Output, Input> {
   }
 
   private __isShouldInitConfigOk = (
-    definition: ns.Definitions_<Output, Input>[StringKey<Input>]
+    definition: ns.Definitions_<Output, Input>[KeyOf<Input>]
   ) => {
     const { shouldInit } = definition!
 
@@ -890,7 +889,7 @@ export abstract class SchemaCore<Output, Input> {
   }
 
   private __isShouldUpdateConfigOk = (
-    definition: ns.Definitions_<Output, Input>[StringKey<Input>]
+    definition: ns.Definitions_<Output, Input>[KeyOf<Input>]
   ) => {
     const { readonly, shouldInit, shouldUpdate } = definition!
     const valid = false
@@ -925,7 +924,7 @@ export abstract class SchemaCore<Output, Input> {
   }
 
   private __isVirtualRequiredBy = (
-    definition: ns.Definitions_<Output, Input>[StringKey<Input>]
+    definition: ns.Definitions_<Output, Input>[KeyOf<Input>]
   ) => {
     if (isPropertyOf('shouldInit', definition))
       return {
@@ -941,7 +940,7 @@ export abstract class SchemaCore<Output, Input> {
   }
 
   private __isVirtual = (
-    definition: ns.Definitions_<Output, Input>[StringKey<Input>]
+    definition: ns.Definitions_<Output, Input>[KeyOf<Input>]
   ) => {
     const valid = false
 
@@ -978,8 +977,8 @@ export abstract class SchemaCore<Output, Input> {
   }
 
   private __isVirtualAliasOk = (
-    prop: StringKey<Input>,
-    definition: ns.Definitions_<Output, Input>[StringKey<Input>]
+    prop: KeyOf<Input>,
+    definition: ns.Definitions_<Output, Input>[KeyOf<Input>]
   ) => {
     const valid = false
 
@@ -1013,7 +1012,7 @@ export abstract class SchemaCore<Output, Input> {
     return { valid: true }
   }
 
-  private __isVirtualAliasOk2 = (alias: string | StringKey<Input>) => {
+  private __isVirtualAliasOk2 = (alias: string | KeyOf<Input>) => {
     const prop = this._getVirtualByAlias(alias)!
 
     const invalidResponse = {
@@ -1023,7 +1022,7 @@ export abstract class SchemaCore<Output, Input> {
 
     const isDependentOnVirtual = (
       this._getDependencies(prop) as string[]
-    )?.includes(alias as StringKey<Input>)
+    )?.includes(alias as KeyOf<Input>)
 
     return (this._isProp(alias) && !isDependentOnVirtual) ||
       this._isVirtual(alias)
@@ -1073,11 +1072,11 @@ export abstract class SchemaCore<Output, Input> {
   }
 
   private _isValidatorOk = (
-    definition: ns.Definitions_<Output, Input>[StringKey<Input>]
+    definition: ns.Definitions_<Output, Input>[KeyOf<Input>]
   ) => isFunction(definition?.validator)
 
   private __isLax = (
-    definition: ns.Definitions_<Output, Input>[StringKey<Input>]
+    definition: ns.Definitions_<Output, Input>[KeyOf<Input>]
   ) => {
     const { readonly, shouldInit } = definition!
 
@@ -1106,18 +1105,18 @@ export abstract class SchemaCore<Output, Input> {
   }
 
   protected _isReadonly = (prop: string) =>
-    this.readonlyProps.includes(prop as StringKey<Input>)
+    this.readonlyProps.includes(prop as KeyOf<Input>)
 
   protected _isRequired = (prop: string) =>
-    this.requiredProps.includes(prop as StringKey<Input>)
+    this.requiredProps.includes(prop as KeyOf<Input>)
 
   protected _isRequiredBy = (prop: string) =>
-    this.propsRequiredBy.includes(prop as StringKey<Input>)
+    this.propsRequiredBy.includes(prop as KeyOf<Input>)
 
   protected _isVirtualAlias = (prop: string) => !!this.aliasToVirtualMap[prop]
 
   protected _isVirtual = (prop: string) =>
-    this.virtuals.includes(prop as StringKey<Input>)
+    this.virtuals.includes(prop as KeyOf<Input>)
 
   protected _isVirtualInit = (prop: string, value: any = undefined) => {
     const isAlias = this._isVirtualAlias(prop)

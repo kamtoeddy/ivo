@@ -4,13 +4,13 @@ import { FieldError, InputPayload } from './utils'
 export type {
   Context,
   DefinitionRule,
+  KeyOf,
   Merge,
   NonEmptyArray,
   Summary,
   Schema as ISchema,
   RealType,
   ResponseInputObject,
-  StringKey,
   TypeOf,
   Validator,
   ValidationResponse,
@@ -68,7 +68,7 @@ type VirtualResolver<K extends keyof Input, Output, Input> = (
   summary: Summary<Output, Input> & {}
 ) => TypeOf<Input[K]> | Promise<TypeOf<Input[K]>>
 
-type StringKey<T> = Extract<keyof T, string>
+type KeyOf<T> = Extract<keyof T, string>
 
 namespace Schema {
   export type LifeCycle = (typeof LIFE_CYCLES)[number]
@@ -114,7 +114,7 @@ namespace Schema {
       constant?: any
       default?: any
       dependent?: boolean
-      dependsOn?: StringKey<Input> | StringKey<Input>[]
+      dependsOn?: KeyOf<Input> | KeyOf<Input>[]
       readonly?: boolean | 'lax'
       resolver?: Function
       required?:
@@ -129,12 +129,12 @@ namespace Schema {
     }
   }
 
-  export type AliasToVirtualMap<T> = Record<string, StringKey<T>>
+  export type AliasToVirtualMap<T> = Record<string, KeyOf<T>>
 
-  export type VirtualToAliasMap<T> = Record<StringKey<T>, string>
+  export type VirtualToAliasMap<T> = Record<KeyOf<T>, string>
 
   export type DependencyMap<T> = {
-    [K in StringKey<T>]?: StringKey<T>[]
+    [K in KeyOf<T>]?: KeyOf<T>[]
   }
 
   type Listenable<Output, Input> = {
@@ -161,8 +161,8 @@ namespace Schema {
     /** @deprecated `dependsOn` & a `resolver` function are enough to make a property dependent */
     dependent?: true
     dependsOn:
-      | Exclude<StringKey<Context<Output, Input>>, K>
-      | Exclude<StringKey<Context<Output, Input>>, K>[]
+      | Exclude<KeyOf<Context<Output, Input>>, K>
+      | Exclude<KeyOf<Context<Output, Input>>, K>[]
     onDelete?: Handler<Output> | NonEmptyArray<Handler<Output>>
     onSuccess?:
       | SuccessHandler<Output, Input>
@@ -239,9 +239,9 @@ namespace Schema {
   }
 
   type Virtual<K extends keyof Input, Output, Input, A> = {
-    alias?: Exclude<StringKey<A>, K> extends undefined
+    alias?: Exclude<KeyOf<A>, K> extends undefined
       ? string
-      : Exclude<StringKey<A>, K>
+      : Exclude<KeyOf<A>, K>
     required?: SetterWithSummary<boolean | [boolean, string], Output, Input>
     virtual: true
     sanitizer?: VirtualResolver<K, Output, Input>
@@ -258,7 +258,7 @@ namespace Schema {
 
   // options
   export type CloneOptions<T> = {
-    reset?: StringKey<T> | StringKey<T>[]
+    reset?: KeyOf<T> | KeyOf<T>[]
   }
 
   export type Options<Output, Input> = {
@@ -275,7 +275,7 @@ namespace Schema {
       | { createdAt?: boolean | string; updatedAt?: boolean | string }
   }
 
-  export type OptionsKey<Output, Input> = StringKey<Options<Output, Input>>
+  export type OptionsKey<Output, Input> = KeyOf<Options<Output, Input>>
 
   export type PrivateOptions = { timestamps: Timestamp }
 
@@ -284,8 +284,8 @@ namespace Schema {
   export type ExtensionOptions<ParentOutput, ParentInput, Output, Input> =
     Options<Output, Input> & {
       remove?:
-        | StringKey<Merge<ParentInput, ParentOutput>>
-        | StringKey<Merge<ParentInput, ParentOutput>>[]
+        | KeyOf<Merge<ParentInput, ParentOutput>>
+        | KeyOf<Merge<ParentInput, ParentOutput>>[]
       useParentOptions?: boolean
     }
 }

@@ -15,7 +15,7 @@ import {
   ISchema as ns,
   RealType,
   ResponseInputObject,
-  StringKey,
+  KeyOf,
   Summary,
   ValidationResponse
 } from './types'
@@ -113,13 +113,30 @@ class ModelTool<
   Input extends RealType<Input> = Output,
   Aliases = {}
 > extends SchemaCore<Output, Input> {
-  private _regeneratedProps: StringKey<Output>[] = []
+  private _regeneratedProps: KeyOf<Output>[] = []
 
   constructor(schema: Schema<Output, Input, Aliases>) {
     super(schema.definitions as any, schema.options)
   }
 
-  private _getSummary = (data: Partial<Output>, isUpdate = false) => {
+  private async _generateConstants() {
+    const data = {} as Partial<Output>
+
+    await Promise.allSettled(
+      this.constants.map(async (prop) => {
+        data[prop] = await this._getConstantValue(prop)
+
+        const validCtxUpdate = { [prop]: data[prop] as any } as any
+
+        this._updatePartialContext(validCtxUpdate)
+        return this._updateContext(validCtxUpdate)
+      })
+    )
+
+    return data
+  }
+
+  private _getSummary(data: Partial<Output>, isUpdate = false) {
     const changes = isUpdate ? data : null,
       context = this._getContext(),
       operation = isUpdate ? 'update' : 'creation',
@@ -140,11 +157,11 @@ class ModelTool<
   private _getValidationSummary = (isUpdate = false) =>
     this._getSummary(this.values, isUpdate)
 
-  private _handleError = async (
-    error: ErrorTool<StringKey<Input & Aliases>>,
+  private async _handleError(
+    error: ErrorTool<KeyOf<Input & Aliases>>,
     data?: Partial<Output>,
-    virtuals: StringKey<Output>[] = []
-  ) => {
+    virtuals: KeyOf<Output>[] = []
+  ) {
     if (data) await this._handleFailure(data, error, virtuals)
 
     return this._options.errors === 'throw'
@@ -152,11 +169,11 @@ class ModelTool<
       : { data: null, error: error.data, handleSuccess: null }
   }
 
-  private _handleFailure = async (
+  private async _handleFailure(
     data: Partial<Output>,
-    error: ErrorTool<StringKey<Input & Aliases>>,
-    virtuals: StringKey<Output>[] = []
-  ) => {
+    error: ErrorTool<KeyOf<Input & Aliases>>,
+    virtuals: KeyOf<Output>[] = []
+  ) {
     let props = [...getKeysAsProps({ ...data, ...error.payload }), ...virtuals]
 
     props = Array.from(new Set(props))
@@ -180,7 +197,7 @@ class ModelTool<
   private _handleInvalidData = () =>
     this._handleError(new ErrorTool(VALIDATION_ERRORS.INVALID_DATA))
 
-  private _handleRequiredBy = (data: Partial<Output>, isUpdate = false) => {
+  private _handleRequiredBy(data: Partial<Output>, isUpdate = false) {
     const error = new ErrorTool(VALIDATION_ERRORS.VALIDATION_ERROR)
     const summary = this._getSummary(data, isUpdate)
 
@@ -209,11 +226,11 @@ class ModelTool<
     return error
   }
 
-  private _handleSanitizationOfVirtuals = async (
+  private async _handleSanitizationOfVirtuals(
     data: Partial<Output>,
     isUpdate = false
-  ) => {
-    const sanitizers: [StringKey<Input>, Function][] = []
+  ) {
+    const sanitizers: [KeyOf<Input>, Function][] = []
 
     const partialCtx = this._getPartialContext()
 
@@ -224,7 +241,7 @@ class ModelTool<
     for (const prop of successFulVirtuals) {
       const [isSanitizable, sanitizer] = this._isSanitizable(prop, !isUpdate)
 
-      if (isSanitizable) sanitizers.push([prop as StringKey<Input>, sanitizer])
+      if (isSanitizable) sanitizers.push([prop as KeyOf<Input>, sanitizer])
     }
 
     const summary = this._getSummary(data, isUpdate)
@@ -238,10 +255,10 @@ class ModelTool<
     await Promise.allSettled(sanitizations)
   }
 
-  private _isSanitizable = (
+  private _isSanitizable(
     prop: string,
     isCreation: boolean
-  ): [false, undefined] | [true, Function] => {
+  ): [false, undefined] | [true, Function] {
     const { sanitizer, shouldInit } = this._getDefinition(prop)
 
     if (!sanitizer) return [false, undefined]
@@ -251,7 +268,7 @@ class ModelTool<
     return [true, sanitizer]
   }
 
-  private _isGloballyUpdatable = (changes: any) => {
+  private _isGloballyUpdatable(changes: any) {
     const { shouldUpdate = defaultOptions.shouldUpdate! } = this._options
 
     if (typeof shouldUpdate == 'boolean') return shouldUpdate
@@ -259,7 +276,7 @@ class ModelTool<
     return shouldUpdate(this._getSummary(changes, true))
   }
 
-  private _isUpdatable = (prop: string, value?: any) => {
+  private _isUpdatable(prop: string, value?: any) {
     const isAlias = this._isVirtualAlias(prop),
       isVirtual = this._isVirtual(prop)
 
@@ -274,7 +291,7 @@ class ModelTool<
 
     const propName = (
       isAlias ? this._getVirtualByAlias(prop)! : prop
-    ) as StringKey<Output>
+    ) as KeyOf<Output>
 
     const hasShouldUpdateRule = this._isRuleInDefinition(
       propName,
@@ -313,7 +330,7 @@ class ModelTool<
     return this._isProp(prop) || this._isVirtual(prop) || isAlias
   }
 
-  private _makeHandleSuccess = (data: Partial<Output>, isUpdate = false) => {
+  private _makeHandleSuccess(data: Partial<Output>, isUpdate = false) {
     const partialCtx = this._getPartialContext()
 
     const successProps = getKeysAsProps(partialCtx)
@@ -342,16 +359,16 @@ class ModelTool<
     }
   }
 
-  private _resolveDependentChanges = async (
+  private async _resolveDependentChanges(
     data: Partial<Output>,
     ctx: Partial<Output> | Partial<Context<Output, Input>>,
     isUpdate = false
-  ) => {
+  ) {
     let _updates = { ...data }
 
     const successFulChanges = getKeysAsProps(ctx)
 
-    let toResolve = [] as StringKey<Output>[]
+    let toResolve = [] as KeyOf<Output>[]
 
     const isCreation = !isUpdate
 
@@ -403,7 +420,7 @@ class ModelTool<
         !isCreation &&
         isEqual(
           value,
-          _ctx[prop as StringKey<Context<Output, Input>>],
+          _ctx[prop as KeyOf<Context<Output, Input>>],
           this._options.equalityDepth
         )
       )
@@ -480,7 +497,7 @@ class ModelTool<
     )
   }
 
-  private _useConfigProps = (obj: Partial<Output>, isUpdate = false) => {
+  private _useConfigProps(obj: Partial<Output>, isUpdate = false) {
     if (!this.timestampTool.withTimestamps) return sortKeys(obj)
 
     const { createdAt, updatedAt } = this.timestampTool.getKeys()
@@ -495,18 +512,18 @@ class ModelTool<
     return sortKeys(results)
   }
 
-  private _validateAndSet = async (
+  private async _validateAndSet(
     operationData: Partial<Output> = {},
-    error: ErrorTool<StringKey<Input & Aliases>>,
-    prop: StringKey<Output>,
+    error: ErrorTool<KeyOf<Input & Aliases>>,
+    prop: KeyOf<Output>,
     value: any,
     isUpdate = false
-  ) => {
+  ) {
     const isValid = (await this._validateInternally(
       prop as any,
       value,
       this._getValidationSummary(isUpdate)
-    )) as InternalValidatorResponse<Output[StringKey<Output>]>
+    )) as InternalValidatorResponse<Output[KeyOf<Output>]>
 
     if (!isValid.valid) {
       const { otherReasons, reasons, metadata } = isValid
@@ -532,7 +549,7 @@ class ModelTool<
     const propName = isAlias ? this._getVirtualByAlias(prop)! : prop
 
     if (!this._isVirtual(propName))
-      operationData[propName as StringKey<Output>] = validated
+      operationData[propName as KeyOf<Output>] = validated
 
     const validCtxUpdate = { [propName]: validated } as unknown as any
 
@@ -540,10 +557,10 @@ class ModelTool<
     this._updatePartialContext(validCtxUpdate)
   }
 
-  private _sanitizeValidationResponse = <T>(
+  private _sanitizeValidationResponse<T>(
     response: any,
     value: any
-  ): ResponseInputObject<any, any, T> => {
+  ): ResponseInputObject<any, any, T> {
     const responseType = typeof response
 
     if (responseType == 'boolean')
@@ -598,47 +615,42 @@ class ModelTool<
     return makeResponse(_response)
   }
 
-  clone = async (
+  async clone(
     values: Partial<Input & Aliases>,
     options: ns.CloneOptions<Input> = { reset: [] }
-  ) => {
+  ) {
     if (!areValuesOk(values)) return this._handleInvalidData()
 
     this._setValues(values)
 
-    const reset = toArray<StringKey<Input>>(options.reset ?? []).filter(
+    const reset = toArray<KeyOf<Input>>(options.reset ?? []).filter(
       this._isProp
     )
 
-    let data = {} as Partial<Output>
-    const validationError = new ErrorTool<StringKey<Input & Aliases>>(
+    let data = await this._generateConstants()
+
+    const validationError = new ErrorTool<KeyOf<Input & Aliases>>(
       VALIDATION_ERRORS.VALIDATION_ERROR
     )
 
     const virtuals = getKeysAsProps<Partial<Output>>(values as any).filter(
       (prop) =>
-        this._isVirtualInit(prop, values[prop as unknown as StringKey<Input>])
+        this._isVirtualInit(prop, values[prop as unknown as KeyOf<Input>])
     )
 
-    const props = [...this.props, ...virtuals]
+    const props = [
+      ...this.props.filter((prop) => !this._isConstant(prop)),
+      ...virtuals
+    ]
 
     const validations = props.map(async (prop) => {
-      if (this._isConstant(prop)) {
-        data[prop] = await this._getConstantValue(prop)
-
-        const validCtxUpdate = { [prop]: data[prop] as any } as any
-
-        this._updatePartialContext(validCtxUpdate)
-        return this._updateContext(validCtxUpdate)
-      }
-
       const isAlias = this._isVirtualAlias(prop),
         isDependent = this._isDependentProp(prop)
 
       if (isDependent && !isAlias) {
         const value = reset.includes(prop as any)
           ? await this._getDefaultValue(prop)
-          : this.values[prop as unknown as StringKey<Output>]
+          : this.values[prop as unknown as KeyOf<Output>]
 
         data[prop] = value
 
@@ -657,7 +669,7 @@ class ModelTool<
           data,
           validationError,
           prop,
-          values[prop as unknown as StringKey<Input>]
+          values[prop as unknown as KeyOf<Input>]
         )
 
       if (reset.includes(prop as any)) {
@@ -677,8 +689,8 @@ class ModelTool<
         isLax &&
         isProvided &&
         !isEqual(
-          this.values[prop as unknown as StringKey<Output>],
-          this.defaults[prop as unknown as StringKey<Output>],
+          this.values[prop as unknown as KeyOf<Output>],
+          this.defaults[prop as unknown as KeyOf<Output>],
           this._options.equalityDepth
         )
 
@@ -706,7 +718,7 @@ class ModelTool<
         data,
         validationError,
         prop,
-        this.values[prop as unknown as StringKey<Output>]
+        this.values[prop as unknown as KeyOf<Output>]
       )
     })
 
@@ -736,33 +748,28 @@ class ModelTool<
     }
   }
 
-  create = async (values: Partial<Input & Aliases> = {}) => {
+  async create(values: Partial<Input & Aliases> = {}) {
     if (!areValuesOk(values)) return this._handleInvalidData()
 
     this._setValues(values)
 
-    let data = {} as Partial<Output>
-    const validationError = new ErrorTool<StringKey<Input & Aliases>>(
+    let data = await this._generateConstants()
+
+    const validationError = new ErrorTool<KeyOf<Input & Aliases>>(
       VALIDATION_ERRORS.VALIDATION_ERROR
     )
 
     const virtuals = getKeysAsProps<Partial<Output>>(values as any).filter(
       (prop) =>
-        this._isVirtualInit(prop, values[prop as unknown as StringKey<Input>])
+        this._isVirtualInit(prop, values[prop as unknown as KeyOf<Input>])
     )
 
-    const props = [...this.props, ...virtuals]
+    const props = [
+      ...this.props.filter((prop) => !this._isConstant(prop)),
+      ...virtuals
+    ]
 
     const validations = props.map(async (prop) => {
-      if (this._isConstant(prop)) {
-        data[prop] = await this._getConstantValue(prop)
-
-        const validCtxUpdate = { [prop]: data[prop] as any } as any
-
-        this._updatePartialContext(validCtxUpdate)
-        return this._updateContext(validCtxUpdate)
-      }
-
       const isVirtualInit = virtuals.includes(prop)
 
       if (this._isVirtual(prop) && !isVirtualInit) return
@@ -772,7 +779,7 @@ class ModelTool<
           data,
           validationError,
           prop,
-          values[prop as unknown as StringKey<Input>]
+          values[prop as unknown as KeyOf<Input>]
         )
 
       const isProvided = isPropertyOf(prop, this.values)
@@ -834,7 +841,7 @@ class ModelTool<
     }
   }
 
-  delete = async (values: Output) => {
+  async delete(values: Output) {
     if (!areValuesOk(values))
       return new ErrorTool(VALIDATION_ERRORS.INVALID_DATA).throw()
 
@@ -855,7 +862,7 @@ class ModelTool<
     await Promise.allSettled(cleanups)
   }
 
-  update = async (values: Output, changes: Partial<Input & Aliases>) => {
+  async update(values: Output, changes: Partial<Input & Aliases>) {
     if (!areValuesOk(values)) return this._handleInvalidData()
 
     this._setValues(values, { allowVirtuals: false, allowTimestamps: true })
@@ -863,7 +870,7 @@ class ModelTool<
     if (this._options?.setMissingDefaultsOnUpdate)
       await this._setMissingDefaults()
 
-    const validationError = new ErrorTool<StringKey<Input & Aliases>>(
+    const validationError = new ErrorTool<KeyOf<Input & Aliases>>(
       VALIDATION_ERRORS.VALIDATION_ERROR
     )
 
@@ -878,16 +885,16 @@ class ModelTool<
       this._isUpdatable(prop, changes[prop])
     )
 
-    const linkedProps: StringKey<Output>[] = []
-    const virtuals: StringKey<Output>[] = []
+    const linkedProps: KeyOf<Output>[] = []
+    const virtuals: KeyOf<Output>[] = []
 
     const validations = toUpdate.map(async (prop) => {
-      const value = changes[prop] as unknown as Output[StringKey<Output>]
+      const value = changes[prop] as unknown as Output[KeyOf<Output>]
       const isValid = (await this._validate(
         prop as any,
         value,
         this._getValidationSummary(true)
-      )) as ValidationResponse<Output[StringKey<Output>]>
+      )) as ValidationResponse<Output[KeyOf<Output>]>
 
       if (!isValid.valid)
         return validationError.add(prop as any, isValid.reasons)
@@ -900,7 +907,7 @@ class ModelTool<
 
       const propName = (isAlias
         ? this._getVirtualByAlias(prop)!
-        : prop) as unknown as StringKey<Output>
+        : prop) as unknown as KeyOf<Output>
 
       if (
         isEqual(validated, this.values[propName], this._options.equalityDepth)
@@ -909,7 +916,7 @@ class ModelTool<
 
       if (this._isVirtual(propName)) virtuals.push(propName)
       else {
-        updates[propName as StringKey<Output>] = validated
+        updates[propName as KeyOf<Output>] = validated
         linkedProps.push(propName)
       }
 
@@ -962,11 +969,11 @@ class ModelTool<
     }
   }
 
-  _validateInternally = async <K extends StringKey<Input & Aliases>>(
+  async _validateInternally<K extends KeyOf<Input & Aliases>>(
     prop: K,
     value: any,
     summary_: Summary<Output, Input>
-  ) => {
+  ) {
     if (!this._isValidProperty(prop))
       return makeResponse<(Input & Aliases)[K]>({
         valid: false,
@@ -977,7 +984,7 @@ class ModelTool<
 
     const _prop = isAlias ? this._getVirtualByAlias(prop) : prop
 
-    const validator = this._getValidator(_prop as StringKey<Input>)
+    const validator = this._getValidator(_prop as KeyOf<Input>)
 
     if (validator) {
       const res = (await validator(value, summary_)) as ResponseInputObject<
@@ -992,11 +999,11 @@ class ModelTool<
     return makeResponse<(Input & Aliases)[K]>({ valid: true, validated: value })
   }
 
-  _validate = async <K extends StringKey<Input & Aliases>>(
+  async _validate<K extends KeyOf<Input & Aliases>>(
     prop: K,
     value: any,
     summary_: Summary<Output, Input>
-  ) => {
+  ) {
     const res = await this._validateInternally(prop, value, summary_)
 
     return makeResponse<(Input & Aliases)[K]>(res)
@@ -1023,18 +1030,13 @@ class Model<
   update = (values: Output, changes: Partial<Input & Aliases>) =>
     this.modelTool.update(values, changes)
 
-  validate = async <K extends StringKey<Input & Aliases>>(
-    prop: K,
-    value: any
-  ) => {
-    const summary = {
+  validate = <K extends KeyOf<Input & Aliases>>(prop: K, value: any) => {
+    return this.modelTool._validate(prop, value, {
       context: {},
       operation: 'creation',
       previousValues: undefined,
       values: {}
-    } as unknown as Summary<Output, Input>
-
-    return this.modelTool._validate(prop, value, summary)
+    } as unknown as Summary<Output, Input>)
   }
 }
 
