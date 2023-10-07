@@ -1,6 +1,10 @@
 import { Schema } from '../../../../dist'
 import { KeyOf } from '../../../../src/schema/types'
-import { FieldError, IValidationError } from '../../../../src/schema/utils'
+import {
+  FieldError,
+  IValidationError,
+  IValidationErrorData
+} from '../../../../src/schema/utils'
 import { PayloadKey } from '../../../../src/utils'
 
 type Input = {
@@ -49,16 +53,18 @@ const extended = schema
   })
   .getModel()
 
-extended.create().then(({ data }) => {
-  data?.age
+extended.create().then(({ error }) => {
+  error?.errors[0].key == 'dob'
 })
 
-type ErrorData<Keys> = { key: Keys; message: string }[]
+type ErrorData<Keys> = { errors: { key: Keys; message: string }[] }
 
-class VError<Keys> extends Error implements IValidationError<ErrorData<Keys>> {
-  constructor(public message: IValidationError<ErrorData<Keys>>['message']) {
-    super(message)
+class VError<Keys> implements IValidationError<ErrorData<Keys>> {
+  constructor(public message) {}
+  get data(): IValidationErrorData<ErrorData<Keys>> {
+    throw new Error('Method not implemented.')
   }
+
   add(
     field: PayloadKey,
     value?: string | string[] | FieldError | undefined
@@ -66,9 +72,9 @@ class VError<Keys> extends Error implements IValidationError<ErrorData<Keys>> {
     throw new Error('Method not implemented.')
   }
 
-  get data(): ErrorData<Keys> {
-    return {} as ErrorData<Keys>
-  }
+  // get data() {
+  //   return { message: this.message, errors: [] }
+  // }
   get isLoaded(): boolean {
     throw new Error('Method not implemented.')
   }
@@ -83,6 +89,4 @@ class VError<Keys> extends Error implements IValidationError<ErrorData<Keys>> {
   throw(): never {
     throw new Error('Method not implemented.')
   }
-  name: string
-  stack?: string | undefined
 }

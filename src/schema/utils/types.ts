@@ -45,18 +45,20 @@ export type ValidationErrorToolProps = {
   payload?: InputPayload
 }
 
-export type ValidationErrorData<Keys extends PayloadKey = PayloadKey> = {
+export type IValidationErrorData<ExtraData = {}> = ({
   message: ValidationErrorMessage
-  payload: ErrorPayload<Keys>
-}
+} & ExtraData) & {}
 
-export interface IValidationError<ErrorData> extends Error {
+export interface IValidationError<ExtraData = {}> {
   message: ValidationErrorMessage
-  get data(): ErrorData
-  get isLoaded(): boolean
+  get data(): IValidationErrorData<ExtraData>
   /** array of fields that have failed validation */
   get fields(): string[]
+  /** determines if validation has failed */
+  get isLoaded(): boolean
   add(field: PayloadKey, value?: InputPayload[PayloadKey]): this
+  /** method to set the value of the validation error message */
   setMessage(message: ValidationErrorMessage): this
+  /** throws a custom error when validation fails & Schema.option.errors == 'throws' */
   throw(): never
 }

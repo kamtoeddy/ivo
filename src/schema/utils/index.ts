@@ -18,8 +18,7 @@ import {
   ValidationErrorMessage,
   ValidationErrorToolProps,
   SCHEMA_ERRORS,
-  IValidationError,
-  ValidationErrorData
+  IValidationError
 } from './types'
 
 export * from './types'
@@ -92,11 +91,11 @@ class SchemaError extends Error {
   }
 }
 
-class SchemaErrorTool extends Error {
+class SchemaErrorTool {
+  message: SchemaErrorMessage = SCHEMA_ERRORS.INVALID_SCHEMA
   payload: SchemaErrorPayload = {}
 
   constructor({ payload = {} }: SchemaErrorProps = {}) {
-    super(SCHEMA_ERRORS.INVALID_SCHEMA)
     this._setPayload(payload)
   }
 
@@ -162,9 +161,7 @@ class SchemaErrorTool extends Error {
   }
 }
 
-class ValidationError<
-  OutputKeys extends PayloadKey = PayloadKey
-> extends Error {
+class ValidationError<OutputKeys extends PayloadKey> extends Error {
   payload: ErrorPayload<OutputKeys> = {}
 
   constructor({ message, payload = {} }: ValidationErrorProps<OutputKeys>) {
@@ -174,18 +171,11 @@ class ValidationError<
 }
 
 class ErrorTool<PayloadKeys extends PayloadKey = PayloadKey>
-  extends Error
-  implements IValidationError<ValidationErrorData<PayloadKeys>>
+  implements IValidationError<{ payload: ErrorPayload<PayloadKeys> }>
 {
   private _payload: ErrorPayload<PayloadKeys> = {}
 
-  constructor(public message: ValidationErrorToolProps['message']) {
-    super(message)
-  }
-
-  get isLoaded() {
-    return Object.keys(this._payload).length > 0
-  }
+  constructor(public message: ValidationErrorToolProps['message']) {}
 
   get data() {
     return {
@@ -196,6 +186,10 @@ class ErrorTool<PayloadKeys extends PayloadKey = PayloadKey>
 
   get fields() {
     return Object.keys(this._payload)
+  }
+
+  get isLoaded() {
+    return Object.keys(this._payload).length > 0
   }
 
   private _has = (field: PayloadKeys) => isPropertyOf(field, this._payload)
