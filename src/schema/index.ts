@@ -7,7 +7,8 @@ import {
   sortKeys,
   toArray,
   isObject,
-  FieldKey
+  FieldKey,
+  getSetValuesAsProps
 } from '../utils'
 import {
   Context,
@@ -60,7 +61,10 @@ class Schema<
   }
 
   get reservedKeys() {
-    const props = [...this.props, ...this.virtuals] as string[]
+    const props = [
+      ...this.props.values(),
+      ...this.virtuals.values()
+    ] as string[]
 
     const { createdAt, updatedAt } = this.timestampTool.getKeys()
 
@@ -145,7 +149,7 @@ class ModelTool<
     const data = {} as Partial<Output>
 
     await Promise.allSettled(
-      this.constants.map(async (prop) => {
+      getSetValuesAsProps(this.constants).map(async (prop) => {
         data[prop] = await this._getConstantValue(prop)
 
         const validCtxUpdate = { [prop]: data[prop] as any } as any
@@ -513,7 +517,7 @@ class ModelTool<
   }
 
   private async _setMissingDefaults() {
-    this._regeneratedProps = this.props.filter((prop) => {
+    this._regeneratedProps = getSetValuesAsProps(this.props).filter((prop) => {
       return this._isDefaultable(prop) && isEqual(this.values[prop], undefined)
     })
 
@@ -669,7 +673,9 @@ class ModelTool<
     )
 
     const props = [
-      ...this.props.filter((prop) => !this._isConstant(prop)),
+      ...getSetValuesAsProps(this.props).filter(
+        (prop) => !this._isConstant(prop)
+      ),
       ...virtuals
     ]
 
@@ -794,7 +800,9 @@ class ModelTool<
     )
 
     const props = [
-      ...this.props.filter((prop) => !this._isConstant(prop)),
+      ...getSetValuesAsProps(this.props).filter(
+        (prop) => !this._isConstant(prop)
+      ),
       ...virtuals
     ]
 
@@ -874,7 +882,7 @@ class ModelTool<
 
     const data = this._getFrozenCopy(this.values)
 
-    this.props.map(async (prop) => {
+    getSetValuesAsProps(this.props).map(async (prop) => {
       const handlers_ = this._getHandlers<ns.Handler<Output>>(prop, 'onDelete')
 
       if (handlers_.length) handlers = handlers.concat(handlers_)

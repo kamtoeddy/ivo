@@ -8,6 +8,7 @@ import {
 export {
   makeResponse,
   getKeysAsProps,
+  getSetValuesAsProps,
   getUnique,
   getUniqueBy,
   hasAnyOf,
@@ -55,6 +56,10 @@ function makeResponse<T = undefined>(
 
 function getKeysAsProps<T>(object: T) {
   return Object.keys(object as object) as KeyOf<T>[]
+}
+
+function getSetValuesAsProps<T>(set: Set<T>) {
+  return Array.from(set.values()) as T[]
 }
 
 function hasAnyOf(object: any, props: FieldKey[]): boolean {

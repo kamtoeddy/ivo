@@ -65,14 +65,14 @@ export abstract class SchemaCore<
   protected readonly virtualToAliasMap: ns.AliasToVirtualMap<Input> = {}
 
   // props
-  protected readonly constants: KeyOf<Output>[] = []
-  protected readonly dependents: KeyOf<Output>[] = []
-  protected readonly laxProps: KeyOf<Input>[] = []
-  protected readonly props: KeyOf<Output>[] = []
-  protected readonly propsRequiredBy: KeyOf<Input>[] = []
-  protected readonly readonlyProps: KeyOf<Input>[] = []
-  protected readonly requiredProps: KeyOf<Input>[] = []
-  protected readonly virtuals: KeyOf<Input>[] = []
+  protected readonly constants = new Set<KeyOf<Output>>()
+  protected readonly dependents = new Set<KeyOf<Output>>()
+  protected readonly laxProps = new Set<KeyOf<Input>>()
+  protected readonly props = new Set<KeyOf<Output>>()
+  protected readonly propsRequiredBy = new Set<KeyOf<Input>>()
+  protected readonly readonlyProps = new Set<KeyOf<Input>>()
+  protected readonly requiredProps = new Set<KeyOf<Input>>()
+  protected readonly virtuals = new Set<KeyOf<Input>>()
 
   // helpers
   protected timestampTool: TimeStampTool
@@ -506,7 +506,7 @@ export abstract class SchemaCore<
   }
 
   protected _isConstant = (prop: string) =>
-    this.constants.includes(prop as KeyOf<Output>)
+    this.constants.has(prop as KeyOf<Output>)
 
   private __isDependentProp = (
     prop: KeyOf<Input>,
@@ -584,13 +584,12 @@ export abstract class SchemaCore<
   }
 
   protected _isDependentProp = (prop: string) =>
-    this.dependents.includes(prop as KeyOf<Output>)
+    this.dependents.has(prop as KeyOf<Output>)
 
   protected _isLaxProp = (prop: string) =>
-    this.laxProps.includes(prop as KeyOf<Input>)
+    this.laxProps.has(prop as KeyOf<Input>)
 
-  protected _isProp = (prop: string) =>
-    this.props.includes(prop as KeyOf<Output>)
+  protected _isProp = (prop: string) => this.props.has(prop as KeyOf<Output>)
 
   private __isPropDefinitionOk = (
     prop: KeyOf<Input>,
@@ -619,7 +618,7 @@ export abstract class SchemaCore<
     if (isPropertyOf('constant', definition)) {
       const { valid, reason } = this.__isConstantProp(definition)
 
-      valid ? this.constants.push(prop as any) : reasons.push(reason!)
+      valid ? this.constants.add(prop as any) : reasons.push(reason!)
     } else if (isPropertyOf('value', definition))
       reasons.push("'value' rule can only be used with constant properties")
 
@@ -627,7 +626,7 @@ export abstract class SchemaCore<
       const { valid, reason } = this.__isDependentProp(prop, definition)
 
       if (valid) {
-        this.dependents.push(prop as any)
+        this.dependents.add(prop as any)
         this._addDependencies(prop, definition.dependsOn!)
       } else reasons.push(reason!)
     }
@@ -635,7 +634,7 @@ export abstract class SchemaCore<
     if (isPropertyOf('readonly', definition)) {
       const { valid, reason } = this.__isReadonly(definition)
 
-      valid ? this.readonlyProps.push(prop) : reasons.push(reason!)
+      valid ? this.readonlyProps.add(prop) : reasons.push(reason!)
     }
 
     if (isPropertyOf('required', definition)) {
@@ -644,18 +643,18 @@ export abstract class SchemaCore<
       if (typeof required == 'function') {
         const { valid, reason } = this.__isRequiredBy(definition)
 
-        valid ? this.propsRequiredBy.push(prop) : reasons.push(reason!)
+        valid ? this.propsRequiredBy.add(prop) : reasons.push(reason!)
       } else {
         const { valid, reason } = this.__isRequired(definition)
 
-        valid ? this.requiredProps.push(prop) : reasons.push(reason!)
+        valid ? this.requiredProps.add(prop) : reasons.push(reason!)
       }
     }
 
     if (isPropertyOf('virtual', definition)) {
       const { valid, reason } = this.__isVirtual(definition)
 
-      valid ? this.virtuals.push(prop) : reasons.push(reason!)
+      valid ? this.virtuals.add(prop) : reasons.push(reason!)
     } else if (isPropertyOf('sanitizer', definition))
       reasons.push("'sanitizer' is only valid on virtuals")
 
@@ -705,7 +704,7 @@ export abstract class SchemaCore<
       if (!isValid.valid) reasons = reasons.concat(isValid.reasons!)
     }
 
-    if (this.__isLax(definition)) this.laxProps.push(prop)
+    if (this.__isLax(definition)) this.laxProps.add(prop)
 
     const hasDefaultRule = isPropertyOf('default', definition)
 
@@ -727,7 +726,7 @@ export abstract class SchemaCore<
     const valid = reasons.length <= 0
 
     if (valid && !this._isVirtual(prop)) {
-      this.props.push(prop as any)
+      this.props.add(prop as any)
 
       if (hasDefaultRule)
         this.defaults[prop as unknown as KeyOf<Output>] =
@@ -1120,18 +1119,18 @@ export abstract class SchemaCore<
   }
 
   protected _isReadonly = (prop: string) =>
-    this.readonlyProps.includes(prop as KeyOf<Input>)
+    this.readonlyProps.has(prop as KeyOf<Input>)
 
   protected _isRequired = (prop: string) =>
-    this.requiredProps.includes(prop as KeyOf<Input>)
+    this.requiredProps.has(prop as KeyOf<Input>)
 
   protected _isRequiredBy = (prop: string) =>
-    this.propsRequiredBy.includes(prop as KeyOf<Input>)
+    this.propsRequiredBy.has(prop as KeyOf<Input>)
 
   protected _isVirtualAlias = (prop: string) => !!this.aliasToVirtualMap[prop]
 
   protected _isVirtual = (prop: string) =>
-    this.virtuals.includes(prop as KeyOf<Input>)
+    this.virtuals.has(prop as KeyOf<Input>)
 
   protected _isVirtualInit = (prop: string, value: any = undefined) => {
     const isAlias = this._isVirtualAlias(prop)
