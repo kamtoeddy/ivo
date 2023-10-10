@@ -9,7 +9,7 @@ import {
   isObject,
   FieldKey,
   getSetValuesAsProps
-} from '../utils'
+} from '../utils';
 import {
   Context,
   InternalValidatorResponse,
@@ -20,24 +20,29 @@ import {
   KeyOf,
   Summary,
   ValidationResponse
-} from './types'
-import { VALIDATION_ERRORS, DefaultErrorTool, IErrorTool } from './utils'
-import { defaultOptions, SchemaCore } from './schema-core'
+} from './types';
+import {
+  VALIDATION_ERRORS,
+  DefaultErrorTool,
+  IErrorTool,
+  makeFieldError
+} from './utils';
+import { defaultOptions, SchemaCore } from './schema-core';
 
-export { Model, ModelTool, Schema }
+export { Model, ModelTool, Schema };
 
 const validationFailedResponse = {
   metadata: null,
   reasons: ['validation failed'],
   valid: false
-} as ValidatorResponseObject<any>
+} as ValidatorResponseObject<any>;
 
 type DefaultExtendedErrorTool<
   ParentErrorTool,
   Keys extends FieldKey
 > = ParentErrorTool extends DefaultErrorTool<any>
   ? DefaultErrorTool<Keys>
-  : ParentErrorTool
+  : ParentErrorTool;
 
 class Schema<
   Input extends RealType<Input>,
@@ -49,29 +54,29 @@ class Schema<
     definitions: ns.Definitions<Input, Output, Aliases>,
     options: ns.Options<Input, Output, ErrorTool> = defaultOptions
   ) {
-    super(definitions as any as ns.Definitions_<Input, Output>, options)
+    super(definitions as any as ns.Definitions_<Input, Output>, options);
   }
 
   get definitions() {
-    return this._definitions as any as ns.Definitions<Input, Output, Aliases>
+    return this._definitions as any as ns.Definitions<Input, Output, Aliases>;
   }
 
   get options() {
-    return this._options
+    return this._options;
   }
 
   get reservedKeys() {
     const props = [
       ...this.props.values(),
       ...this.virtuals.values()
-    ] as string[]
+    ] as string[];
 
-    const { createdAt, updatedAt } = this.timestampTool.getKeys()
+    const { createdAt, updatedAt } = this.timestampTool.getKeys();
 
-    if (createdAt) props.push(createdAt)
-    if (updatedAt) props.push(updatedAt)
+    if (createdAt) props.push(createdAt);
+    if (updatedAt) props.push(updatedAt);
 
-    return sort(props)
+    return sort(props);
   }
 
   extend = <
@@ -94,23 +99,23 @@ class Schema<
       ExtendedErrorTool
     > = {}
   ) => {
-    const { remove = [], useParentOptions = true, ...rest } = options
+    const { remove = [], useParentOptions = true, ...rest } = options;
 
     const _definitions = { ...this.definitions } as unknown as ns.Definitions<
       ExtendedInput,
       ExtendedOutput,
       Aliases
-    >
+    >;
 
     toArray(remove ?? [])?.forEach(
       (prop) => delete (_definitions as any)?.[prop]
-    )
+    );
 
     const options_ = {} as ns.Options<
       ExtendedInput,
       ExtendedOutput,
       ExtendedErrorTool
-    >
+    >;
 
     if (useParentOptions)
       getKeysAsProps(this.options)
@@ -118,19 +123,19 @@ class Schema<
           (prop) => ![...LIFE_CYCLES, 'shouldUpdate'].includes(prop as any)
         )
         .forEach((prop) => {
-          options_[prop] = this.options[prop] as any
-        })
+          options_[prop] = this.options[prop] as any;
+        });
 
     return new Schema<
       ExtendedInput,
       ExtendedOutput,
       Aliases,
       ExtendedErrorTool
-    >({ ..._definitions, ...definitions }, { ...options_, ...rest })
-  }
+    >({ ..._definitions, ...definitions }, { ...options_, ...rest });
+  };
 
   getModel = () =>
-    new Model(new ModelTool<Input, Output, Aliases, ErrorTool>(this))
+    new Model(new ModelTool<Input, Output, Aliases, ErrorTool>(this));
 }
 
 class ModelTool<
@@ -139,27 +144,27 @@ class ModelTool<
   Aliases = {},
   ErrorTool extends IErrorTool<any> = DefaultErrorTool<KeyOf<Input & Aliases>>
 > extends SchemaCore<Input, Output, ErrorTool> {
-  private _regeneratedProps: KeyOf<Output>[] = []
+  private _regeneratedProps: KeyOf<Output>[] = [];
 
   constructor(schema: Schema<Input, Output, Aliases, ErrorTool>) {
-    super(schema.definitions as any, schema.options)
+    super(schema.definitions as any, schema.options);
   }
 
   private async _generateConstants() {
-    const data = {} as Partial<Output>
+    const data = {} as Partial<Output>;
 
     await Promise.allSettled(
       getSetValuesAsProps(this.constants).map(async (prop) => {
-        data[prop] = await this._getConstantValue(prop)
+        data[prop] = await this._getConstantValue(prop);
 
-        const validCtxUpdate = { [prop]: data[prop] as any } as any
+        const validCtxUpdate = { [prop]: data[prop] as any } as any;
 
-        this._updatePartialContext(validCtxUpdate)
-        return this._updateContext(validCtxUpdate)
+        this._updatePartialContext(validCtxUpdate);
+        return this._updateContext(validCtxUpdate);
       })
-    )
+    );
 
-    return data
+    return data;
   }
 
   private _getSummary(data: Partial<Output>, isUpdate = false) {
@@ -169,7 +174,7 @@ class ModelTool<
       previousValues = isUpdate ? this._getFrozenCopy(this.values) : null,
       values = this._getFrozenCopy(
         isUpdate ? { ...this.values, ...data } : (data as Output)
-      )
+      );
 
     return this._getFrozenCopy({
       changes,
@@ -177,26 +182,26 @@ class ModelTool<
       operation,
       previousValues,
       values
-    }) as Summary<Input, Output>
+    }) as Summary<Input, Output>;
   }
 
   private _getValidationSummary = (isUpdate = false) =>
-    this._getSummary(this.values, isUpdate)
+    this._getSummary(this.values, isUpdate);
 
   private async _handleError(
     errorTool: ErrorTool,
     data?: Partial<Output>,
     virtuals: KeyOf<Output>[] = []
   ) {
-    if (data) await this._handleFailure(data, errorTool, virtuals)
+    if (data) await this._handleFailure(data, errorTool, virtuals);
 
-    return this._options.errors === 'throw'
-      ? errorTool.throw()
-      : {
-          data: null,
-          error: errorTool.error as ErrorTool['error'],
-          handleSuccess: null
-        }
+    if (this._options.errors === 'throw') throw errorTool.error;
+
+    return {
+      data: null,
+      error: errorTool.data as ErrorTool['data'],
+      handleSuccess: null
+    };
   }
 
   private async _handleFailure(
@@ -204,115 +209,115 @@ class ModelTool<
     errorTool: ErrorTool,
     virtuals: KeyOf<Output>[] = []
   ) {
-    let props = [...getKeysAsProps(data), ...errorTool.fields, ...virtuals]
+    let props = [...getKeysAsProps(data), ...errorTool.fields, ...virtuals];
 
-    props = Array.from(new Set(props))
+    props = Array.from(new Set(props));
 
-    const ctx = this._getContext()
+    const ctx = this._getContext();
 
     const cleanups = props.map(async (prop) => {
       const handlers = this._getHandlers<ns.FailureHandler<Input, Output>>(
         prop,
         'onFailure'
-      )
+      );
 
-      const _cleanups = handlers.map(async (handler) => await handler(ctx))
+      const _cleanups = handlers.map(async (handler) => await handler(ctx));
 
-      await Promise.allSettled(_cleanups)
-    })
+      await Promise.allSettled(_cleanups);
+    });
 
-    await Promise.allSettled(cleanups)
+    await Promise.allSettled(cleanups);
   }
 
   private _handleInvalidData = () =>
     this._handleError(
       new this._options.errorTool(VALIDATION_ERRORS.INVALID_DATA)
-    )
+    );
 
   private _handleRequiredBy(data: Partial<Output>, isUpdate = false) {
     const errorTool = new this._options.errorTool(
       VALIDATION_ERRORS.VALIDATION_ERROR
-    )
-    const summary = this._getSummary(data, isUpdate)
+    );
+    const summary = this._getSummary(data, isUpdate);
 
     for (const prop of this.propsRequiredBy) {
-      const [isRequired, message] = this._getRequiredState(prop, summary)
+      const [isRequired, message] = this._getRequiredState(prop, summary);
 
       if (
         (isRequired && !isUpdate) ||
         (isRequired && isUpdate && this._isUpdatable(prop))
       ) {
-        errorTool.add(prop, message)
+        errorTool.add(prop, makeFieldError(message));
 
-        const alias = this._getAliasByVirtual(prop)
+        const alias = this._getAliasByVirtual(prop);
 
-        if (!alias) continue
+        if (!alias) continue;
 
         const _message =
           message == `'${prop}' is required!`
             ? `'${alias}' is required!`
-            : message
+            : message;
 
-        errorTool.add(alias as any, _message)
+        errorTool.add(alias as any, makeFieldError(_message));
       }
     }
 
-    return errorTool
+    return errorTool;
   }
 
   private async _handleSanitizationOfVirtuals(
     data: Partial<Output>,
     isUpdate = false
   ) {
-    const sanitizers: [KeyOf<Input>, Function][] = []
+    const sanitizers: [KeyOf<Input>, Function][] = [];
 
-    const partialCtx = this._getPartialContext()
+    const partialCtx = this._getPartialContext();
 
     const successFulVirtuals = getKeysAsProps(partialCtx).filter(
       this._isVirtual
-    )
+    );
 
     for (const prop of successFulVirtuals) {
-      const [isSanitizable, sanitizer] = this._isSanitizable(prop, !isUpdate)
+      const [isSanitizable, sanitizer] = this._isSanitizable(prop, !isUpdate);
 
-      if (isSanitizable) sanitizers.push([prop as KeyOf<Input>, sanitizer])
+      if (isSanitizable) sanitizers.push([prop as KeyOf<Input>, sanitizer]);
     }
 
-    const summary = this._getSummary(data, isUpdate)
+    const summary = this._getSummary(data, isUpdate);
 
     const sanitizations = sanitizers.map(async ([prop, sanitizer]) => {
-      const resolvedValue = await sanitizer(summary)
+      const resolvedValue = await sanitizer(summary);
 
-      this._updateContext({ [prop]: resolvedValue } as any)
-    })
+      this._updateContext({ [prop]: resolvedValue } as any);
+    });
 
-    await Promise.allSettled(sanitizations)
+    await Promise.allSettled(sanitizations);
   }
 
   private _isSanitizable(
     prop: string,
     isCreation: boolean
   ): [false, undefined] | [true, Function] {
-    const { sanitizer, shouldInit } = this._getDefinition(prop)
+    const { sanitizer, shouldInit } = this._getDefinition(prop);
 
-    if (!sanitizer) return [false, undefined]
+    if (!sanitizer) return [false, undefined];
 
-    if (isCreation && isEqual(shouldInit, false)) return [false, undefined]
+    if (isCreation && isEqual(shouldInit, false)) return [false, undefined];
 
-    return [true, sanitizer]
+    return [true, sanitizer];
   }
 
   private _isGloballyUpdatable(changes: any) {
-    const { shouldUpdate = defaultOptions.shouldUpdate! } = this._options
+    const { shouldUpdate = defaultOptions.shouldUpdate! } = this._options;
 
-    if (typeof shouldUpdate == 'boolean') return shouldUpdate
+    if (typeof shouldUpdate == 'boolean') return shouldUpdate;
 
-    return shouldUpdate(this._getSummary(changes, true))
+    return shouldUpdate(this._getSummary(changes, true));
   }
 
   private _isUpdatable(prop: string, value?: any) {
     const isAlias = this._isVirtualAlias(prop),
-      isVirtual = this._isVirtual(prop)
+      isVirtual = this._isVirtual(prop);
 
     if (
       (!this._isProp(prop) ||
@@ -321,28 +326,28 @@ class ModelTool<
       !isVirtual &&
       !isAlias
     )
-      return false
+      return false;
 
     const propName = (
       isAlias ? this._getVirtualByAlias(prop)! : prop
-    ) as KeyOf<Output>
+    ) as KeyOf<Output>;
 
     const hasShouldUpdateRule = this._isRuleInDefinition(
       propName,
       'shouldUpdate'
-    )
+    );
 
-    const extraCtx = isAlias ? { [propName]: value } : {}
+    const extraCtx = isAlias ? { [propName]: value } : {};
 
-    const isUpdatable = this._getValueBy(propName, 'shouldUpdate', extraCtx)
+    const isUpdatable = this._getValueBy(propName, 'shouldUpdate', extraCtx);
 
-    if (isVirtual) return hasShouldUpdateRule ? isUpdatable : true
+    if (isVirtual) return hasShouldUpdateRule ? isUpdatable : true;
 
-    const isReadonly = this._isReadonly(propName)
+    const isReadonly = this._isReadonly(propName);
 
-    if (!isReadonly) return hasShouldUpdateRule ? isUpdatable : true
+    if (!isReadonly) return hasShouldUpdateRule ? isUpdatable : true;
 
-    if (hasShouldUpdateRule && !isUpdatable) return false
+    if (hasShouldUpdateRule && !isUpdatable) return false;
 
     return (
       isReadonly &&
@@ -351,46 +356,46 @@ class ModelTool<
         this.values[propName],
         this._options.equalityDepth
       )
-    )
+    );
   }
 
   private _isValidProperty = (prop: string) => {
-    if (this._isConstant(prop)) return false
+    if (this._isConstant(prop)) return false;
 
-    const isAlias = this._isVirtualAlias(prop)
+    const isAlias = this._isVirtualAlias(prop);
 
-    if (this._isDependentProp(prop) && !isAlias) return false
+    if (this._isDependentProp(prop) && !isAlias) return false;
 
-    return this._isProp(prop) || this._isVirtual(prop) || isAlias
-  }
+    return this._isProp(prop) || this._isVirtual(prop) || isAlias;
+  };
 
   private _makeHandleSuccess(data: Partial<Output>, isUpdate = false) {
-    const partialCtx = this._getPartialContext()
+    const partialCtx = this._getPartialContext();
 
-    const successProps = getKeysAsProps(partialCtx)
+    const successProps = getKeysAsProps(partialCtx);
 
-    let successListeners = [] as ns.SuccessHandler<Input, Output>[]
+    let successListeners = [] as ns.SuccessHandler<Input, Output>[];
 
-    const summary = this._getSummary(data, isUpdate)
+    const summary = this._getSummary(data, isUpdate);
 
     for (const prop of successProps) {
       const handlers = this._getHandlers<ns.SuccessHandler<Input, Output>>(
         prop,
         'onSuccess'
-      )
+      );
 
-      successListeners = successListeners.concat(handlers)
+      successListeners = successListeners.concat(handlers);
     }
 
-    successListeners = successListeners.concat(this.globalSuccessHandlers)
+    successListeners = successListeners.concat(this.globalSuccessHandlers);
 
     return async () => {
       const successOperations = successListeners.map(
         async (handler) => await handler(summary)
-      )
+      );
 
-      await Promise.allSettled(successOperations)
-    }
+      await Promise.allSettled(successOperations);
+    };
   }
 
   private async _resolveDependentChanges(
@@ -398,41 +403,41 @@ class ModelTool<
     ctx: Partial<Output> | Partial<Context<Input, Output>>,
     isUpdate = false
   ) {
-    let _updates = { ...data }
+    let _updates = { ...data };
 
-    const successFulChanges = getKeysAsProps(ctx)
+    const successFulChanges = getKeysAsProps(ctx);
 
-    let toResolve = [] as KeyOf<Output>[]
+    let toResolve = [] as KeyOf<Output>[];
 
-    const isCreation = !isUpdate
+    const isCreation = !isUpdate;
 
     for (const prop of successFulChanges) {
       if (this._regeneratedProps.includes(prop) && !isPropertyOf(prop, data))
-        continue
+        continue;
 
-      const dependencies = this._getDependencies(prop)
+      const dependencies = this._getDependencies(prop);
 
-      if (!dependencies.length) continue
+      if (!dependencies.length) continue;
 
       if (isCreation && this._isVirtual(prop) && !this._isVirtualInit(prop))
-        continue
+        continue;
 
       if (
         isCreation &&
         (this._isDependentProp(prop) || this._isLaxProp(prop)) &&
         isEqual(this.defaults[prop], data[prop], this._options.equalityDepth)
       )
-        continue
+        continue;
 
-      toResolve = toResolve.concat(dependencies as any)
+      toResolve = toResolve.concat(dependencies as any);
     }
 
-    toResolve = Array.from(new Set(toResolve))
+    toResolve = Array.from(new Set(toResolve));
 
-    const values = isUpdate ? data : { ...this.values, ...data }
+    const values = isUpdate ? data : { ...this.values, ...data };
 
     const _ctx = this._getContext(),
-      summary = this._getSummary(values, isUpdate)
+      summary = this._getSummary(values, isUpdate);
 
     const operations = toResolve.map(async (prop) => {
       if (
@@ -444,11 +449,11 @@ class ModelTool<
           this._options.equalityDepth
         )
       )
-        return
+        return;
 
-      const resolver = this._getDefinition(prop).resolver!
+      const resolver = this._getDefinition(prop).resolver!;
 
-      const value = await resolver(summary)
+      const value = await resolver(summary);
 
       if (
         !isCreation &&
@@ -458,27 +463,27 @@ class ModelTool<
           this._options.equalityDepth
         )
       )
-        return
+        return;
 
-      data[prop] = value
+      data[prop] = value;
 
-      const updates = { [prop]: value } as any
+      const updates = { [prop]: value } as any;
 
-      this._updateContext(updates)
-      this._updatePartialContext(updates)
+      this._updateContext(updates);
+      this._updatePartialContext(updates);
 
       const _data = await this._resolveDependentChanges(
         data,
         updates as unknown as Output,
         isUpdate
-      )
+      );
 
-      return (_updates = { ..._updates, ..._data })
-    })
+      return (_updates = { ..._updates, ..._data });
+    });
 
-    await Promise.allSettled(operations)
+    await Promise.allSettled(operations);
 
-    return _updates
+    return _updates;
   }
 
   private _setValues(
@@ -487,8 +492,8 @@ class ModelTool<
       allowVirtuals = true,
       allowTimestamps = false
     }: {
-      allowVirtuals?: boolean
-      allowTimestamps?: boolean
+      allowVirtuals?: boolean;
+      allowTimestamps?: boolean;
     } = {
       allowVirtuals: true,
       allowTimestamps: false
@@ -500,50 +505,50 @@ class ModelTool<
         this.timestampTool.withTimestamps &&
         this.timestampTool.isTimestampKey(key)
       )
-        return true
+        return true;
 
-      if (allowVirtuals && this._isVirtual(key)) return true
+      if (allowVirtuals && this._isVirtual(key)) return true;
 
-      return this._isProp(key)
-    })
+      return this._isProp(key);
+    });
 
-    const _values = {} as any
+    const _values = {} as any;
 
-    sort(keys).forEach((key) => (_values[key] = values[key]))
+    sort(keys).forEach((key) => (_values[key] = values[key]));
 
-    this.values = _values as Output
+    this.values = _values as Output;
 
-    this._initializeContexts()
+    this._initializeContexts();
   }
 
   private async _setMissingDefaults() {
     this._regeneratedProps = getSetValuesAsProps(this.props).filter((prop) => {
-      return this._isDefaultable(prop) && isEqual(this.values[prop], undefined)
-    })
+      return this._isDefaultable(prop) && isEqual(this.values[prop], undefined);
+    });
 
     await Promise.allSettled(
       this._regeneratedProps.map(async (prop) => {
-        const value = await this._getDefaultValue(prop)
+        const value = await this._getDefaultValue(prop);
 
-        this._updateContext({ [prop]: value } as any)
-        this._updatePartialContext({ [prop]: value } as any)
+        this._updateContext({ [prop]: value } as any);
+        this._updatePartialContext({ [prop]: value } as any);
       })
-    )
+    );
   }
 
   private _useConfigProps(obj: Partial<Output>, isUpdate = false) {
-    if (!this.timestampTool.withTimestamps) return sortKeys(obj)
+    if (!this.timestampTool.withTimestamps) return sortKeys(obj);
 
-    const { createdAt, updatedAt } = this.timestampTool.getKeys()
+    const { createdAt, updatedAt } = this.timestampTool.getKeys();
 
-    let results = { ...obj }
+    let results = { ...obj };
 
-    if (updatedAt) results = { ...results, [updatedAt]: new Date() }
+    if (updatedAt) results = { ...results, [updatedAt]: new Date() };
 
     if (!isUpdate && createdAt)
-      results = { ...results, [createdAt]: new Date() }
+      results = { ...results, [createdAt]: new Date() };
 
-    return sortKeys(results)
+    return sortKeys(results);
   }
 
   private async _validateAndSet(
@@ -557,148 +562,150 @@ class ModelTool<
       prop as any,
       value,
       this._getValidationSummary(isUpdate)
-    )) as InternalValidatorResponse<Output[KeyOf<Output>]>
+    )) as InternalValidatorResponse<Output[KeyOf<Output>]>;
 
     if (!isValid.valid) {
-      const { otherReasons, reasons, metadata } = isValid
+      const { otherReasons, reasons, metadata } = isValid;
 
-      const hasOtherReasons = !!otherReasons
+      const hasOtherReasons = !!otherReasons;
 
-      if (metadata) error.add(prop as any, { reasons: [], metadata })
+      if (metadata) error.add(prop as any, { reasons: [], metadata });
 
-      if (!hasOtherReasons) return error.add(prop as any, reasons)
+      const fieldError = makeFieldError(reasons);
 
-      if (reasons.length) error.add(prop as any, reasons)
-      else error.add(prop as any, 'validation failed')
+      if (!hasOtherReasons) return error.add(prop as any, fieldError);
+
+      if (reasons.length) error.add(prop as any, fieldError);
+      else error.add(prop as any, makeFieldError('validation failed'));
 
       return Object.entries(otherReasons).forEach(([key, reasons]) => {
-        error.add(key as any, reasons)
-      })
+        error.add(key as any, makeFieldError(reasons));
+      });
     }
 
-    const { validated } = isValid
+    const { validated } = isValid;
 
-    const isAlias = this._isVirtualAlias(prop)
+    const isAlias = this._isVirtualAlias(prop);
 
-    const propName = isAlias ? this._getVirtualByAlias(prop)! : prop
+    const propName = isAlias ? this._getVirtualByAlias(prop)! : prop;
 
     if (!this._isVirtual(propName))
-      operationData[propName as KeyOf<Output>] = validated
+      operationData[propName as KeyOf<Output>] = validated;
 
-    const validCtxUpdate = { [propName]: validated } as unknown as any
+    const validCtxUpdate = { [propName]: validated } as unknown as any;
 
-    this._updateContext(validCtxUpdate)
-    this._updatePartialContext(validCtxUpdate)
+    this._updateContext(validCtxUpdate);
+    this._updatePartialContext(validCtxUpdate);
   }
 
   private _sanitizeValidationResponse<T>(
     response: any,
     value: any
   ): ValidatorResponseObject<T> {
-    const responseType = typeof response
+    const responseType = typeof response;
 
     if (responseType == 'boolean')
       return response
         ? { valid: true, validated: value }
-        : validationFailedResponse
+        : validationFailedResponse;
 
     if (!response && (responseType != 'object' || Array.isArray(response)))
-      return validationFailedResponse
+      return validationFailedResponse;
 
     if (response?.valid) {
       const validated = isEqual(response?.validated, undefined)
         ? value
-        : response.validated
+        : response.validated;
 
-      return { valid: true, validated }
+      return { valid: true, validated };
     }
 
-    const _response: ValidatorResponseObject<T> = { valid: false }
+    const _response: ValidatorResponseObject<T> = { valid: false };
 
     if (response?.otherReasons) {
       const validProperties = getKeysAsProps(response.otherReasons).filter(
         this._isValidProperty
-      )
+      );
 
-      const otherReasons = {} as Record<string, any>
+      const otherReasons = {} as Record<string, any>;
 
       for (const prop of validProperties)
         otherReasons[prop] = toArray(response.otherReasons[prop]).map(
           (value) => {
-            return typeof value === 'string' ? value : 'validation failed'
+            return typeof value === 'string' ? value : 'validation failed';
           }
-        )
+        );
 
-      _response.otherReasons = otherReasons
+      _response.otherReasons = otherReasons;
     }
 
-    if (response?.reason) _response.reason = response.reason
-    if (response?.reasons) _response.reasons = response.reasons
+    if (response?.reason) _response.reason = response.reason;
+    if (response?.reasons) _response.reasons = response.reasons;
 
     if (response?.metadata && isObject(response.metadata))
-      _response.metadata = sortKeys(response.metadata)
-    else _response.metadata = null
+      _response.metadata = sortKeys(response.metadata);
+    else _response.metadata = null;
 
     if (!_response.reason && !_response.reasons && !_response.otherReasons) {
       if (_response.metadata)
-        (validationFailedResponse as any).metadata = _response.metadata
+        (validationFailedResponse as any).metadata = _response.metadata;
 
-      return validationFailedResponse
+      return validationFailedResponse;
     }
 
-    return makeResponse(_response)
+    return makeResponse(_response);
   }
 
   async clone(
     values: Partial<Input & Aliases>,
     options: ns.CloneOptions<Input> = { reset: [] }
   ) {
-    if (!areValuesOk(values)) return this._handleInvalidData()
+    if (!areValuesOk(values)) return this._handleInvalidData();
 
-    this._setValues(values)
+    this._setValues(values);
 
     const reset = toArray<KeyOf<Input>>(options.reset ?? []).filter(
       this._isProp
-    )
+    );
 
-    let data = await this._generateConstants()
+    let data = await this._generateConstants();
 
     const errorTool = new this._options.errorTool(
       VALIDATION_ERRORS.VALIDATION_ERROR
-    )
+    );
 
     const virtuals = getKeysAsProps<Partial<Output>>(values as any).filter(
       (prop) =>
         this._isVirtualInit(prop, values[prop as unknown as KeyOf<Input>])
-    )
+    );
 
     const props = [
       ...getSetValuesAsProps(this.props).filter(
         (prop) => !this._isConstant(prop)
       ),
       ...virtuals
-    ]
+    ];
 
     const validations = props.map(async (prop) => {
       const isAlias = this._isVirtualAlias(prop),
-        isDependent = this._isDependentProp(prop)
+        isDependent = this._isDependentProp(prop);
 
       if (isDependent && !isAlias) {
         const value = reset.includes(prop as any)
           ? await this._getDefaultValue(prop)
-          : this.values[prop as unknown as KeyOf<Output>]
+          : this.values[prop as unknown as KeyOf<Output>];
 
-        data[prop] = value
+        data[prop] = value;
 
-        const validCtxUpdate = { [prop]: data[prop] } as unknown as any
+        const validCtxUpdate = { [prop]: data[prop] } as unknown as any;
 
-        this._updatePartialContext(validCtxUpdate)
-        return this._updateContext(validCtxUpdate)
+        this._updatePartialContext(validCtxUpdate);
+        return this._updateContext(validCtxUpdate);
       }
 
-      const isVirtualInit = virtuals.includes(prop)
+      const isVirtualInit = virtuals.includes(prop);
 
-      if (this._isVirtual(prop) && !isVirtualInit) return
+      if (this._isVirtual(prop) && !isVirtualInit) return;
 
       if (isAlias && !isDependent)
         return this._validateAndSet(
@@ -706,20 +713,20 @@ class ModelTool<
           errorTool,
           prop,
           values[prop as unknown as KeyOf<Input>]
-        )
+        );
 
       if (reset.includes(prop as any)) {
-        data[prop] = await this._getDefaultValue(prop)
+        data[prop] = await this._getDefaultValue(prop);
 
-        const validCtxUpdate = { [prop]: data[prop] } as unknown as any
+        const validCtxUpdate = { [prop]: data[prop] } as unknown as any;
 
-        this._updatePartialContext(validCtxUpdate)
-        return this._updateContext(validCtxUpdate)
+        this._updatePartialContext(validCtxUpdate);
+        return this._updateContext(validCtxUpdate);
       }
 
-      const isLax = this._isLaxProp(prop)
+      const isLax = this._isLaxProp(prop);
 
-      const isProvided = isPropertyOf(prop, this.values)
+      const isProvided = isPropertyOf(prop, this.values);
 
       const isLaxInit =
         isLax &&
@@ -728,10 +735,10 @@ class ModelTool<
           this.values[prop as unknown as KeyOf<Output>],
           this.defaults[prop as unknown as KeyOf<Output>],
           this._options.equalityDepth
-        )
+        );
 
       const isRequiredInit =
-        this._isRequiredBy(prop) && isPropertyOf(prop, this.values)
+        this._isRequiredBy(prop) && isPropertyOf(prop, this.values);
 
       if (
         (isLax &&
@@ -742,12 +749,12 @@ class ModelTool<
           !isLaxInit &&
           !isRequiredInit)
       ) {
-        data[prop] = await this._getDefaultValue(prop)
+        data[prop] = await this._getDefaultValue(prop);
 
-        const validCtxUpdate = { [prop]: data[prop] } as unknown as any
+        const validCtxUpdate = { [prop]: data[prop] } as unknown as any;
 
-        this._updatePartialContext(validCtxUpdate)
-        return this._updateContext(validCtxUpdate)
+        this._updatePartialContext(validCtxUpdate);
+        return this._updateContext(validCtxUpdate);
       }
 
       return this._validateAndSet(
@@ -755,61 +762,61 @@ class ModelTool<
         errorTool,
         prop,
         this.values[prop as unknown as KeyOf<Output>]
-      )
-    })
+      );
+    });
 
-    await Promise.allSettled(validations)
+    await Promise.allSettled(validations);
 
-    if (errorTool.isLoaded) return this._handleError(errorTool, data, virtuals)
+    if (errorTool.isLoaded) return this._handleError(errorTool, data, virtuals);
 
-    const requiredErrorTool = this._handleRequiredBy(data)
+    const requiredErrorTool = this._handleRequiredBy(data);
 
     if (requiredErrorTool.isLoaded)
-      return this._handleError(requiredErrorTool, data, virtuals)
+      return this._handleError(requiredErrorTool, data, virtuals);
 
-    await this._handleSanitizationOfVirtuals(data)
+    await this._handleSanitizationOfVirtuals(data);
 
-    data = await this._resolveDependentChanges(data, this._getPartialContext())
+    data = await this._resolveDependentChanges(data, this._getPartialContext());
 
-    const finalData = this._useConfigProps(data)
+    const finalData = this._useConfigProps(data);
 
-    this._updateContext(finalData as any)
-    this._updatePartialContext(finalData as any)
+    this._updateContext(finalData as any);
+    this._updatePartialContext(finalData as any);
 
     return {
       data: finalData as Output,
       error: null,
       handleSuccess: this._makeHandleSuccess(finalData)
-    }
+    };
   }
 
   async create(values: Partial<Input & Aliases> = {}) {
-    if (!areValuesOk(values)) return this._handleInvalidData()
+    if (!areValuesOk(values)) return this._handleInvalidData();
 
-    this._setValues(values)
+    this._setValues(values);
 
-    let data = await this._generateConstants()
+    let data = await this._generateConstants();
 
     const errorTool = new this._options.errorTool(
       VALIDATION_ERRORS.VALIDATION_ERROR
-    )
+    );
 
     const virtuals = getKeysAsProps<Partial<Output>>(values as any).filter(
       (prop) =>
         this._isVirtualInit(prop, values[prop as unknown as KeyOf<Input>])
-    )
+    );
 
     const props = [
       ...getSetValuesAsProps(this.props).filter(
         (prop) => !this._isConstant(prop)
       ),
       ...virtuals
-    ]
+    ];
 
     const validations = props.map(async (prop) => {
-      const isVirtualInit = virtuals.includes(prop)
+      const isVirtualInit = virtuals.includes(prop);
 
-      if (this._isVirtual(prop) && !isVirtualInit) return
+      if (this._isVirtual(prop) && !isVirtualInit) return;
 
       if (this._isVirtualAlias(prop) && !this._isDependentProp(prop))
         return this._validateAndSet(
@@ -817,15 +824,15 @@ class ModelTool<
           errorTool,
           prop,
           values[prop as unknown as KeyOf<Input>]
-        )
+        );
 
-      const isProvided = isPropertyOf(prop, this.values)
+      const isProvided = isPropertyOf(prop, this.values);
 
-      const isLax = this._isLaxProp(prop)
+      const isLax = this._isLaxProp(prop);
 
-      const isLaxInit = isLax && isProvided
+      const isLaxInit = isLax && isProvided;
 
-      const isRequiredInit = this._isRequiredBy(prop) && isProvided
+      const isRequiredInit = this._isRequiredBy(prop) && isProvided;
 
       if (
         (isLax &&
@@ -836,167 +843,168 @@ class ModelTool<
           !isLaxInit &&
           !isRequiredInit)
       ) {
-        data[prop] = await this._getDefaultValue(prop)
+        data[prop] = await this._getDefaultValue(prop);
 
-        const validCtxUpdate = { [prop]: data[prop] as any } as any
+        const validCtxUpdate = { [prop]: data[prop] as any } as any;
 
-        this._updatePartialContext(validCtxUpdate)
-        return this._updateContext(validCtxUpdate)
+        this._updatePartialContext(validCtxUpdate);
+        return this._updateContext(validCtxUpdate);
       }
 
-      return this._validateAndSet(data, errorTool, prop, this.values[prop])
-    })
+      return this._validateAndSet(data, errorTool, prop, this.values[prop]);
+    });
 
-    await Promise.allSettled(validations)
+    await Promise.allSettled(validations);
 
-    if (errorTool.isLoaded) return this._handleError(errorTool, data, virtuals)
+    if (errorTool.isLoaded) return this._handleError(errorTool, data, virtuals);
 
-    const requiredError = this._handleRequiredBy(data)
+    const requiredError = this._handleRequiredBy(data);
 
     if (requiredError.isLoaded)
-      return this._handleError(requiredError, data, virtuals)
+      return this._handleError(requiredError, data, virtuals);
 
-    await this._handleSanitizationOfVirtuals(data)
+    await this._handleSanitizationOfVirtuals(data);
 
-    data = await this._resolveDependentChanges(data, this._getPartialContext())
+    data = await this._resolveDependentChanges(data, this._getPartialContext());
 
-    const finalData = this._useConfigProps(data)
+    const finalData = this._useConfigProps(data);
 
-    this._updateContext(finalData as any)
-    this._updatePartialContext(finalData as any)
+    this._updateContext(finalData as any);
+    this._updatePartialContext(finalData as any);
 
     return {
       data: finalData as Output,
       error: null,
       handleSuccess: this._makeHandleSuccess(finalData)
-    }
+    };
   }
 
   async delete(values: Output) {
     if (!areValuesOk(values))
-      return new DefaultErrorTool(VALIDATION_ERRORS.INVALID_DATA).throw()
+      throw new DefaultErrorTool(VALIDATION_ERRORS.INVALID_DATA).error;
 
-    this._setValues(values, { allowVirtuals: false, allowTimestamps: true })
+    this._setValues(values, { allowVirtuals: false, allowTimestamps: true });
 
-    let handlers: ns.Handler<Output>[] = [...this.globalDeleteHandlers]
+    let handlers: ns.Handler<Output>[] = [...this.globalDeleteHandlers];
 
-    const data = this._getFrozenCopy(this.values)
+    const data = this._getFrozenCopy(this.values);
 
     getSetValuesAsProps(this.props).map(async (prop) => {
-      const handlers_ = this._getHandlers<ns.Handler<Output>>(prop, 'onDelete')
+      const handlers_ = this._getHandlers<ns.Handler<Output>>(prop, 'onDelete');
 
-      if (handlers_.length) handlers = handlers.concat(handlers_)
-    })
+      if (handlers_.length) handlers = handlers.concat(handlers_);
+    });
 
-    const cleanups = handlers.map(async (handler) => await handler(data))
+    const cleanups = handlers.map(async (handler) => await handler(data));
 
-    await Promise.allSettled(cleanups)
+    await Promise.allSettled(cleanups);
   }
 
   async update(values: Output, changes: Partial<Input & Aliases>) {
-    if (!areValuesOk(values)) return this._handleInvalidData()
+    if (!areValuesOk(values)) return this._handleInvalidData();
 
-    this._setValues(values, { allowVirtuals: false, allowTimestamps: true })
+    this._setValues(values, { allowVirtuals: false, allowTimestamps: true });
 
     if (this._options?.setMissingDefaultsOnUpdate)
-      await this._setMissingDefaults()
+      await this._setMissingDefaults();
 
     const errorTool = new this._options.errorTool(
       VALIDATION_ERRORS.VALIDATION_ERROR
-    )
+    );
 
     if (!this._isGloballyUpdatable(changes as any))
       return this._handleError(
         errorTool.setMessage(VALIDATION_ERRORS.NOTHING_TO_UPDATE)
-      )
+      );
 
-    let updates = {} as Partial<Output>
+    let updates = {} as Partial<Output>;
 
     const toUpdate = getKeysAsProps(changes ?? {}).filter((prop) =>
       this._isUpdatable(prop, changes[prop])
-    )
+    );
 
-    const linkedProps: KeyOf<Output>[] = []
-    const virtuals: KeyOf<Output>[] = []
+    const linkedProps: KeyOf<Output>[] = [];
+    const virtuals: KeyOf<Output>[] = [];
 
     const validations = toUpdate.map(async (prop) => {
-      const value = changes[prop] as unknown as Output[KeyOf<Output>]
+      const value = changes[prop] as unknown as Output[KeyOf<Output>];
       const isValid = (await this._validate(
         prop as any,
         value,
         this._getValidationSummary(true)
-      )) as ValidationResponse<Output[KeyOf<Output>]>
+      )) as ValidationResponse<Output[KeyOf<Output>]>;
 
-      if (!isValid.valid) return errorTool.add(prop as any, isValid.reasons)
+      if (!isValid.valid)
+        return errorTool.add(prop as any, makeFieldError(isValid.reasons));
 
-      let { validated } = isValid
+      let { validated } = isValid;
 
-      if (isEqual(validated, undefined)) validated = value
+      if (isEqual(validated, undefined)) validated = value;
 
-      const isAlias = this._isVirtualAlias(prop)
+      const isAlias = this._isVirtualAlias(prop);
 
       const propName = (isAlias
         ? this._getVirtualByAlias(prop)!
-        : prop) as unknown as KeyOf<Output>
+        : prop) as unknown as KeyOf<Output>;
 
       if (
         isEqual(validated, this.values[propName], this._options.equalityDepth)
       )
-        return
+        return;
 
-      if (this._isVirtual(propName)) virtuals.push(propName)
+      if (this._isVirtual(propName)) virtuals.push(propName);
       else {
-        updates[propName as KeyOf<Output>] = validated
-        linkedProps.push(propName)
+        updates[propName as KeyOf<Output>] = validated;
+        linkedProps.push(propName);
       }
 
-      const validCtxUpdate = { [propName]: validated } as unknown as any
+      const validCtxUpdate = { [propName]: validated } as unknown as any;
 
-      this._updateContext(validCtxUpdate)
-      this._updatePartialContext(validCtxUpdate)
-    })
+      this._updateContext(validCtxUpdate);
+      this._updatePartialContext(validCtxUpdate);
+    });
 
-    await Promise.allSettled(validations)
+    await Promise.allSettled(validations);
 
     if (errorTool.isLoaded)
-      return this._handleError(errorTool, updates, virtuals)
+      return this._handleError(errorTool, updates, virtuals);
 
-    const requiredErrorTool = this._handleRequiredBy(updates, true)
+    const requiredErrorTool = this._handleRequiredBy(updates, true);
 
     if (requiredErrorTool.isLoaded)
-      return this._handleError(requiredErrorTool, updates, virtuals)
+      return this._handleError(requiredErrorTool, updates, virtuals);
 
-    await this._handleSanitizationOfVirtuals(updates, true)
+    await this._handleSanitizationOfVirtuals(updates, true);
 
     updates = await this._resolveDependentChanges(
       updates,
       this._getPartialContext(),
       true
-    )
+    );
 
     if (!Object.keys(updates).length) {
-      await this._handleFailure(updates, errorTool, virtuals)
+      await this._handleFailure(updates, errorTool, virtuals);
       return this._handleError(
         errorTool.setMessage(VALIDATION_ERRORS.NOTHING_TO_UPDATE)
-      )
+      );
     }
 
     if (this._options?.setMissingDefaultsOnUpdate)
       this._regeneratedProps.forEach((prop) => {
         if (isEqual(updates[prop], undefined))
-          updates[prop] = this.context[prop] as any
-      })
+          updates[prop] = this.context[prop] as any;
+      });
 
-    const finalData = this._useConfigProps(updates, true)
+    const finalData = this._useConfigProps(updates, true);
 
-    this._updateContext(finalData as any)
-    this._updatePartialContext(finalData as any)
+    this._updateContext(finalData as any);
+    this._updatePartialContext(finalData as any);
 
     return {
       data: finalData as Partial<Output>,
       error: null,
       handleSuccess: this._makeHandleSuccess(finalData, true)
-    }
+    };
   }
 
   async _validateInternally<K extends KeyOf<Input & Aliases>>(
@@ -1008,23 +1016,26 @@ class ModelTool<
       return makeResponse<(Input & Aliases)[K]>({
         valid: false,
         reason: 'Invalid property'
-      })
+      });
 
-    const isAlias = this._isVirtualAlias(prop)
+    const isAlias = this._isVirtualAlias(prop);
 
-    const _prop = isAlias ? this._getVirtualByAlias(prop) : prop
+    const _prop = isAlias ? this._getVirtualByAlias(prop) : prop;
 
-    const validator = this._getValidator(_prop as KeyOf<Input>)
+    const validator = this._getValidator(_prop as KeyOf<Input>);
 
     if (validator) {
       const res = (await validator(value, summary_)) as ValidatorResponseObject<
         (Input & Aliases)[K]
-      >
+      >;
 
-      return this._sanitizeValidationResponse<(Input & Aliases)[K]>(res, value)
+      return this._sanitizeValidationResponse<(Input & Aliases)[K]>(res, value);
     }
 
-    return makeResponse<(Input & Aliases)[K]>({ valid: true, validated: value })
+    return makeResponse<(Input & Aliases)[K]>({
+      valid: true,
+      validated: value
+    });
   }
 
   async _validate<K extends KeyOf<Input & Aliases>>(
@@ -1032,9 +1043,9 @@ class ModelTool<
     value: any,
     summary_: Summary<Input, Output>
   ) {
-    const res = await this._validateInternally(prop, value, summary_)
+    const res = await this._validateInternally(prop, value, summary_);
 
-    return makeResponse<(Input & Aliases)[K]>(res)
+    return makeResponse<(Input & Aliases)[K]>(res);
   }
 }
 
@@ -1051,15 +1062,15 @@ class Model<
   clone = (
     values: Partial<Input & Aliases>,
     options: ns.CloneOptions<Input> = { reset: [] }
-  ) => this.modelTool.clone(values, options)
+  ) => this.modelTool.clone(values, options);
 
   create = (values: Partial<Input & Aliases> = {}) =>
-    this.modelTool.create(values)
+    this.modelTool.create(values);
 
-  delete = (values: Output) => this.modelTool.delete(values)
+  delete = (values: Output) => this.modelTool.delete(values);
 
   update = (values: Output, changes: Partial<Input & Aliases>) =>
-    this.modelTool.update(values, changes)
+    this.modelTool.update(values, changes);
 
   validate = <K extends KeyOf<Input & Aliases>>(prop: K, value: any) => {
     return this.modelTool._validate(prop, value, {
@@ -1067,10 +1078,10 @@ class Model<
       operation: 'creation',
       previousValues: undefined,
       values: {}
-    } as unknown as Summary<Input, Output>)
-  }
+    } as unknown as Summary<Input, Output>);
+  };
 }
 
 function areValuesOk(values: any) {
-  return values && typeof values == 'object'
+  return values && typeof values == 'object';
 }
