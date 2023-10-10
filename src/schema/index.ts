@@ -19,7 +19,7 @@ import {
   ValidatorResponseObject,
   KeyOf,
   Summary,
-  ValidationResponse
+  InvalidValidatorResponse
 } from './types';
 import {
   VALIDATION_ERRORS,
@@ -553,7 +553,7 @@ class ModelTool<
 
   private async _validateAndSet(
     operationData: Partial<Output> = {},
-    error: ErrorTool,
+    errorTool: ErrorTool,
     prop: KeyOf<Output>,
     value: any,
     isUpdate = false
@@ -564,35 +564,48 @@ class ModelTool<
       this._getValidationSummary(isUpdate)
     )) as InternalValidatorResponse<Output[KeyOf<Output>]>;
 
-    if (!isValid.valid) {
-      const { otherReasons, reasons, metadata } = isValid;
+    if (isValid.valid)
+      return this._setValidValue(operationData, prop, isValid.validated);
 
-      const hasOtherReasons = !!otherReasons;
+    this._handleInvalidValue(errorTool, prop, isValid);
+  }
 
-      if (metadata) error.add(prop as any, { reasons: [], metadata });
+  private async _handleInvalidValue(
+    errorTool: ErrorTool,
+    prop: KeyOf<Input & Output & Aliases>,
+    validationResponse: InvalidValidatorResponse
+  ) {
+    const { otherReasons, reasons, metadata } = validationResponse;
 
-      const fieldError = makeFieldError(reasons);
+    const hasOtherReasons = !!otherReasons;
 
-      if (!hasOtherReasons) return error.add(prop as any, fieldError);
+    if (metadata) errorTool.add(prop, { reasons: [], metadata });
 
-      if (reasons.length) error.add(prop as any, fieldError);
-      else error.add(prop as any, makeFieldError('validation failed'));
+    const fieldError = makeFieldError(reasons);
 
-      return Object.entries(otherReasons).forEach(([key, reasons]) => {
-        error.add(key as any, makeFieldError(reasons));
-      });
-    }
+    if (!hasOtherReasons) return errorTool.add(prop, fieldError);
 
-    const { validated } = isValid;
+    if (reasons.length) errorTool.add(prop, fieldError);
+    else errorTool.add(prop, makeFieldError('validation failed'));
 
+    return Object.entries(otherReasons).forEach(([key, reasons]) => {
+      errorTool.add(key, makeFieldError(reasons));
+    });
+  }
+
+  private async _setValidValue(
+    operationData: Partial<Output> = {},
+    prop: KeyOf<Output>,
+    value: Output[KeyOf<Output>]
+  ) {
     const isAlias = this._isVirtualAlias(prop);
 
     const propName = isAlias ? this._getVirtualByAlias(prop)! : prop;
 
     if (!this._isVirtual(propName))
-      operationData[propName as KeyOf<Output>] = validated;
+      operationData[propName as KeyOf<Output>] = value;
 
-    const validCtxUpdate = { [propName]: validated } as unknown as any;
+    const validCtxUpdate = { [propName]: value } as unknown as any;
 
     this._updateContext(validCtxUpdate);
     this._updatePartialContext(validCtxUpdate);
@@ -919,23 +932,24 @@ class ModelTool<
 
     let updates = {} as Partial<Output>;
 
-    const toUpdate = getKeysAsProps(changes ?? {}).filter((prop) =>
-      this._isUpdatable(prop, changes[prop])
-    );
+    const toUpdate = getKeysAsProps<Output & Aliases>(
+      (changes ?? {}) as any
+    ).filter((prop) => this._isUpdatable(prop, (changes as any)[prop]));
 
     const linkedProps: KeyOf<Output>[] = [];
     const virtuals: KeyOf<Output>[] = [];
 
     const validations = toUpdate.map(async (prop) => {
-      const value = changes[prop] as unknown as Output[KeyOf<Output>];
-      const isValid = (await this._validate(
+      const value = (changes as any)[prop] as Output[KeyOf<Output>];
+
+      const isValid = (await this._validateInternally(
         prop as any,
         value,
         this._getValidationSummary(true)
-      )) as ValidationResponse<Output[KeyOf<Output>]>;
+      )) as InternalValidatorResponse<Output[KeyOf<Output>]>;
 
       if (!isValid.valid)
-        return errorTool.add(prop as any, makeFieldError(isValid.reasons));
+        return this._handleInvalidValue(errorTool, prop, isValid);
 
       let { validated } = isValid;
 

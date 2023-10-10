@@ -22,6 +22,7 @@ export type {
   ValidatorResponse,
   ValidatorResponseObject,
   InternalValidatorResponse,
+  InvalidValidatorResponse,
   XOR
 };
 
@@ -329,12 +330,14 @@ type ValidationResponse<T> =
 
 type InternalValidatorResponse<T> =
   | { valid: true; validated: T }
-  | {
-      metadata?: FieldError['metadata'];
-      otherReasons?: InputPayload;
-      reasons: FieldError['reasons'];
-      valid: false;
-    };
+  | InvalidValidatorResponse;
+
+type InvalidValidatorResponse = {
+  metadata?: FieldError['metadata'];
+  otherReasons?: InputPayload;
+  reasons: FieldError['reasons'];
+  valid: false;
+};
 
 type ValidatorResponseObject<T> =
   | { valid: true; validated?: T }
