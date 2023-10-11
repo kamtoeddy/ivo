@@ -271,8 +271,8 @@ namespace Schema {
     Output,
     ErrorTool extends IErrorTool<any>
   > = {
+    ErrorTool: Constructable<ErrorTool>;
     equalityDepth: number;
-    errorTool: Constructable<ErrorTool>;
     errors: 'silent' | 'throw';
     onDelete?: Handler<Output> | NonEmptyArray<Handler<Output>>;
     onSuccess?:
@@ -286,8 +286,8 @@ namespace Schema {
   };
 
   export type Options<Input, Output, ErrorTool extends IErrorTool<any>> = {
+    ErrorTool?: Constructable<ErrorTool>;
     equalityDepth?: number;
-    errorTool?: Constructable<ErrorTool>;
     errors?: 'silent' | 'throw';
     onDelete?: Handler<Output> | NonEmptyArray<Handler<Output>>;
     onSuccess?:
@@ -337,6 +337,7 @@ type InvalidValidatorResponse = {
   otherReasons?: InputPayload;
   reasons: FieldError['reasons'];
   valid: false;
+  value: any;
 };
 
 type ValidatorResponseObject<T> =
@@ -347,6 +348,7 @@ type ValidatorResponseObject<T> =
       reason?: FieldError['reasons'][number];
       reasons?: FieldError['reasons'];
       valid: false;
+      value?: any;
     };
 
 type ValidatorResponse<T> = boolean | (ValidatorResponseObject<T> & {});
@@ -383,9 +385,9 @@ const DEFINITION_RULES = [
 type DefinitionRule = (typeof DEFINITION_RULES)[number];
 
 const ALLOWED_OPTIONS: Schema.OptionsKey<any, any, any>[] = [
+  'ErrorTool',
   'equalityDepth',
   'errors',
-  'errorTool',
   'onDelete',
   'onSuccess',
   'setMissingDefaultsOnUpdate',

@@ -50,7 +50,7 @@ interface IErrorTool<ExtraData extends ObjectType = {}> {
   get isLoaded(): boolean;
 
   /** used to append a field to your final validation error */
-  add(field: FieldKey, value: FieldError): this;
+  add(field: FieldKey, error: FieldError, value?: any): this;
 
   /** method to set the value of the validation error message */
   setMessage(message: ValidationErrorMessage): this;

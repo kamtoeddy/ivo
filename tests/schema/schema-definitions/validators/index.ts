@@ -17,10 +17,12 @@ export const Test_Validators = ({ Schema }: any) => {
       }).getModel();
 
       it('should return the correct invalid message on validation failure', async () => {
-        const res = await Model.validate('prop', 'yoo');
+        const value = 'yoo';
+        const res = await Model.validate('prop', value);
 
         expect(res).toEqual({
           valid: false,
+          value,
           reasons: ['Invalid prop'],
           metadata: null
         });
@@ -42,10 +44,12 @@ export const Test_Validators = ({ Schema }: any) => {
       }).getModel();
 
       it('should return the correct invalid message on validation failure', async () => {
-        const res = await Model.validate('prop', 'yoo');
+        const value = 'yoo';
+        const res = await Model.validate('prop', value);
 
         expect(res).toEqual({
           valid: false,
+          value,
           reasons: ['validation failed'],
           metadata: null
         });
@@ -76,10 +80,12 @@ export const Test_Validators = ({ Schema }: any) => {
         }).getModel();
 
         it("should fail validation with 'validation failed' message when value returned from validator is invalid instead of crashing", async () => {
-          const res = await Model.validate('prop', 'yoo');
+          const value = 'yoo';
+          const res = await Model.validate('prop', value);
 
           expect(res).toEqual({
             valid: false,
+            value,
             reasons: ['validation failed'],
             metadata: null
           });

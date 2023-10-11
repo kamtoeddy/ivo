@@ -35,7 +35,7 @@ import {
 
 export const defaultOptions = {
   equalityDepth: 1,
-  errorTool: DefaultErrorTool,
+  ErrorTool: DefaultErrorTool,
   errors: 'silent',
   setMissingDefaultsOnUpdate: false,
   shouldUpdate: true,
@@ -96,8 +96,8 @@ export abstract class SchemaCore<
     this._definitions = sortKeys(definitions);
     this._options = sortKeys({ ...defaultOptions, ...options }) as any;
 
-    if (!this._options.errorTool)
-      this._options.errorTool = DefaultErrorTool as any;
+    if (!this._options.ErrorTool)
+      this._options.ErrorTool = DefaultErrorTool as any;
 
     this.timestampTool = new TimeStampTool(this._options.timestamps);
   }

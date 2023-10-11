@@ -1,53 +1,50 @@
 import { KeyOf, Schema } from '../../../../dist';
 import { VError } from './error-tool';
+import { EInput, EOutput, Input, Output } from './types';
 
-type Input = {
-  name: string;
-  dob: string;
-};
+export { UserModel, UserModel_ErrorThrow, EUserModel, EUserModel_ErrorThrow };
 
-type Output = {
-  name: string;
-  dob: string;
-  age: string;
-};
-
-const schema = new Schema<Input, Output, {}, VError<KeyOf<Input>>>(
+const userSchema = new Schema<Input, Output, {}, VError<KeyOf<Input>>>(
   {
-    age: { default: '', dependsOn: 'dob', resolver: () => '' },
-    dob: {
+    firstName: {
       default: '',
-      validator: () => ({ valid: false, reason: 'Invalid date' })
+      validator: (v) => ({
+        valid: false,
+        reason: 'Invalid first name',
+        metadata: { hint: 'try harder 😜', valueProvided: v }
+      })
     },
-    name: { default: '', validator: () => false }
+    fullName: {
+      default: '',
+      dependsOn: ['firstName', 'lastName'],
+      resolver: ({ context: { firstName, lastName } }) =>
+        `${firstName}-${lastName}`
+    },
+    lastName: { default: '', validator: () => false }
   },
-  { errorTool: VError, errors: 'throw' }
+  { ErrorTool: VError }
 );
 
-const model = schema.getModel();
+const UserModel = userSchema.getModel();
+const UserModel_ErrorThrow = userSchema
+  .extend({}, { errors: 'throw' })
+  .getModel();
 
-console.time('perf');
+const EUserSchema = userSchema.extend<EInput, EOutput>(
+  {
+    full_name: {
+      default: '',
+      dependsOn: ['firstName', 'lastName'],
+      resolver: ({ context: { firstName, lastName } }) =>
+        `${firstName}-${lastName}`
+    }
+  },
+  { remove: 'fullName' }
+);
 
-//   throw new VError('lol').throw();
-model
-  .create({ dob: new Date().toISOString(), name: 'lol' })
-  .then(({ data, error }) => {
-    error?.errors[0]?.field == 'dob';
+const EUserModel = EUserSchema.getModel();
 
-    console.log(data ?? error);
-  })
-  .catch((err) => {
-    console.log({ ...err });
-  });
-
-// const extended = schema
-//   .extend<EInput, EOutput>({
-//     lol: { default: '' },
-//     dependent: { default: '', dependsOn: 'lol', resolver: () => '' },
-//     v: { virtual: true, validator: () => true }
-//   })
-//   .getModel()
-
-// extended.create().then(({ error }) => {
-//   error?.errors[0].key == 'dob'
-// })
+const EUserModel_ErrorThrow = EUserSchema.extend(
+  {},
+  { errors: 'throw' }
+).getModel();

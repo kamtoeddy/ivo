@@ -1,27 +1,23 @@
-export type { Input, Output };
+export type { Input, Output, EInput, EOutput };
 
 type Input = {
-  name: string;
-  dob: string;
+  firstName: string;
+  lastName: string;
 };
 
 type Output = {
-  name: string;
-  dob: string;
-  age: string;
+  firstName: string;
+  fullName: string;
+  lastName: string;
 };
 
-// type EInput = {
-//   name: string
-//   dob: string
-//   lol: string
-//   v: string
-// }
+type EInput = {
+  firstName: string;
+  lastName: string;
+};
 
-// type EOutput = {
-//   age: number
-//   dependent: string
-//   dob: string
-//   lol: string
-//   name: string
-// }
+type EOutput = {
+  firstName: string;
+  full_name: string;
+  lastName: string;
+};
