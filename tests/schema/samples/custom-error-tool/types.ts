@@ -1,4 +1,6 @@
-export type { Input, Output, EInput, EOutput };
+export type { Ctx_Options, Input, Output, EInput, EOutput };
+
+type Ctx_Options = { lang: string };
 
 type Input = {
   firstName: string;

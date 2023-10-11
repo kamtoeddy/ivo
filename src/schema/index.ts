@@ -8,7 +8,8 @@ import {
   toArray,
   isObject,
   FieldKey,
-  getSetValuesAsProps
+  getSetValuesAsProps,
+  ObjectType
 } from '../utils';
 import {
   Context,
@@ -42,13 +43,14 @@ class Schema<
   Input extends RealType<Input>,
   Output extends RealType<Output> = Input,
   Aliases = {},
-  ErrorTool extends IErrorTool<any> = DefaultErrorTool<KeyOf<Input & Aliases>>
-> extends SchemaCore<Input, Output, ErrorTool> {
+  ErrorTool extends IErrorTool<any> = DefaultErrorTool<KeyOf<Input & Aliases>>,
+  CtxOptions extends ObjectType = {}
+> extends SchemaCore<Input, Output, ErrorTool, CtxOptions> {
   constructor(
-    definitions: ns.Definitions<Input, Output, Aliases>,
-    options: ns.Options<Input, Output, ErrorTool> = defaultOptions
+    definitions: ns.Definitions<Input, Output, Aliases, CtxOptions>,
+    options: ns.Options<Input, Output, ErrorTool, CtxOptions> = defaultOptions
   ) {
-    super(definitions as any as ns.Definitions_<Input, Output>, options);
+    super(definitions as any as ns.Definitions_<Input, Output>, options as any);
   }
 
   get definitions() {
@@ -80,17 +82,19 @@ class Schema<
     ExtendedErrorTool extends IErrorTool<any> = DefaultExtendedErrorTool<
       ErrorTool,
       KeyOf<ExtendedInput & Aliases>
-    >
+    >,
+    ExtendedCtxOptions extends ObjectType = CtxOptions
   >(
     definitions: Partial<
-      ns.Definitions<ExtendedInput, ExtendedOutput, Aliases>
+      ns.Definitions<ExtendedInput, ExtendedOutput, Aliases, ExtendedCtxOptions>
     >,
     options: ns.ExtensionOptions<
       Output,
       Input,
       ExtendedInput,
       ExtendedOutput,
-      ExtendedErrorTool
+      ExtendedErrorTool,
+      ExtendedCtxOptions
     > = {}
   ) => {
     const { remove = [], useParentOptions = true, ...rest } = options;
@@ -98,7 +102,8 @@ class Schema<
     const _definitions = { ...this.definitions } as unknown as ns.Definitions<
       ExtendedInput,
       ExtendedOutput,
-      Aliases
+      Aliases,
+      ExtendedCtxOptions
     >;
 
     toArray(remove ?? [])?.forEach(
@@ -108,7 +113,8 @@ class Schema<
     const options_ = {} as ns.Options<
       ExtendedInput,
       ExtendedOutput,
-      ExtendedErrorTool
+      ExtendedErrorTool,
+      ExtendedCtxOptions
     >;
 
     if (useParentOptions)
@@ -124,12 +130,15 @@ class Schema<
       ExtendedInput,
       ExtendedOutput,
       Aliases,
-      ExtendedErrorTool
+      ExtendedErrorTool,
+      ExtendedCtxOptions
     >({ ..._definitions, ...definitions }, { ...options_, ...rest });
   };
 
   getModel() {
-    return new Model(new ModelTool<Input, Output, Aliases, ErrorTool>(this));
+    return new Model(
+      new ModelTool<Input, Output, Aliases, ErrorTool, CtxOptions>(this)
+    );
   }
 }
 
@@ -137,12 +146,13 @@ class ModelTool<
   Input extends RealType<Input>,
   Output extends RealType<Output> = Input,
   Aliases = {},
-  ErrorTool extends IErrorTool<any> = DefaultErrorTool<KeyOf<Input & Aliases>>
-> extends SchemaCore<Input, Output, ErrorTool> {
+  ErrorTool extends IErrorTool<any> = DefaultErrorTool<KeyOf<Input & Aliases>>,
+  CtxOptions extends ObjectType = {}
+> extends SchemaCore<Input, Output, ErrorTool, CtxOptions> {
   private _regeneratedProps: KeyOf<Output>[] = [];
 
-  constructor(schema: Schema<Input, Output, Aliases, ErrorTool>) {
-    super(schema.definitions as any, schema.options);
+  constructor(schema: Schema<Input, Output, Aliases, ErrorTool, CtxOptions>) {
+    super(schema.definitions as any, schema.options as any);
   }
 
   private async _generateConstants() {
@@ -179,7 +189,7 @@ class ModelTool<
       operation,
       previousValues,
       values
-    }) as Summary<Input, Output>;
+    }) as Summary<Input, Output, CtxOptions>;
   }
 
   private _getValidationSummary = (isUpdate = false) =>
@@ -228,21 +238,26 @@ class ModelTool<
 
   private _handleInvalidData = () =>
     this._handleError(
-      new this._options.ErrorTool(VALIDATION_ERRORS.INVALID_DATA)
+      new this._options.ErrorTool(
+        VALIDATION_ERRORS.INVALID_DATA,
+        this._getContextOptions()
+      )
     );
 
   private _handleRequiredBy(data: Partial<Output>, isUpdate = false) {
-    const errorTool = new this._options.ErrorTool(
-      VALIDATION_ERRORS.VALIDATION_ERROR
-    );
     const summary = this._getSummary(data, isUpdate);
+
+    const errorTool = new this._options.ErrorTool(
+      VALIDATION_ERRORS.VALIDATION_ERROR,
+      summary.context.__getOptions__()
+    );
 
     for (const prop of this.propsRequiredBy) {
       const [isRequired, message] = this._getRequiredState(prop, summary);
 
       if (
         (isRequired && !isUpdate) ||
-        (isRequired && isUpdate && this._isUpdatable(prop))
+        (isRequired && isUpdate && this._isUpdatable(prop, undefined))
       ) {
         const value = (data as any)[prop];
 
@@ -314,7 +329,7 @@ class ModelTool<
     return shouldUpdate(this._getSummary(changes, true));
   }
 
-  private _isUpdatable(prop: string, value?: any) {
+  private _isUpdatable(prop: string, value: any = undefined) {
     const isAlias = this._isVirtualAlias(prop),
       isVirtual = this._isVirtual(prop);
 
@@ -371,7 +386,7 @@ class ModelTool<
 
     const successProps = getKeysAsProps(partialCtx);
 
-    let successListeners = [] as ns.SuccessHandler<Input, Output>[];
+    let successListeners = [] as ns.SuccessHandler<Input, Output, CtxOptions>[];
 
     const summary = this._getSummary(data, isUpdate);
 
@@ -397,12 +412,14 @@ class ModelTool<
 
   private async _resolveDependentChanges(
     data: Partial<Output>,
-    ctx: Partial<Output> | Partial<Context<Input, Output>>,
+    ctx: Partial<Context<Input, Output>>,
     isUpdate = false
   ) {
     let _updates = { ...data };
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { __getOptions__, ...context } = ctx;
 
-    const successFulChanges = getKeysAsProps(ctx);
+    const successFulChanges = getKeysAsProps<Output>(context as any);
 
     let toResolve = [] as KeyOf<Output>[];
 
@@ -471,7 +488,7 @@ class ModelTool<
 
       const _data = await this._resolveDependentChanges(
         data,
-        updates as unknown as Output,
+        updates as any,
         isUpdate
       );
 
@@ -549,7 +566,7 @@ class ModelTool<
   }
 
   private async _validateAndSet(
-    operationData: Partial<Output> = {},
+    operationData: Partial<Output>,
     errorTool: ErrorTool,
     prop: KeyOf<Output>,
     value: any
@@ -670,20 +687,23 @@ class ModelTool<
 
   async clone(
     values: Partial<Input & Aliases>,
-    options: ns.CloneOptions<Input> = { reset: [] }
+    options?: ns.CloneOptions<Input, CtxOptions>
   ) {
+    const ctxOpts = this._updateContextOptions(options?.contextOptions ?? {});
+
     if (!areValuesOk(values)) return this._handleInvalidData();
 
     this._setValues(values);
 
-    const reset = toArray<KeyOf<Input>>(options.reset ?? []).filter(
+    const reset = toArray<KeyOf<Input>>(options?.reset ?? []).filter(
       this._isProp
     );
 
     let data = await this._generateConstants();
 
     const errorTool = new this._options.ErrorTool(
-      VALIDATION_ERRORS.VALIDATION_ERROR
+      VALIDATION_ERRORS.VALIDATION_ERROR,
+      ctxOpts
     );
 
     const virtuals = getKeysAsProps<Partial<Output>>(values as any).filter(
@@ -755,7 +775,7 @@ class ModelTool<
       if (
         (isLax &&
           this._isRuleInDefinition(prop, 'shouldInit') &&
-          !this._getValueBy(prop, 'shouldInit')) ||
+          !this._getValueBy(prop, 'shouldInit', {})) ||
         (!isVirtualInit &&
           !this._canInit(prop) &&
           !isLaxInit &&
@@ -788,7 +808,10 @@ class ModelTool<
 
     await this._handleSanitizationOfVirtuals(data);
 
-    data = await this._resolveDependentChanges(data, this._getPartialContext());
+    data = await this._resolveDependentChanges(
+      data,
+      this._getPartialContext() as any
+    );
 
     const finalData = this._useConfigProps(data);
 
@@ -802,7 +825,12 @@ class ModelTool<
     };
   }
 
-  async create(values: Partial<Input & Aliases> = {}) {
+  async create(
+    values: Partial<Input & Aliases> = {},
+    ctxOptions: Partial<CtxOptions> = {}
+  ) {
+    const ctxOpts = this._updateContextOptions(ctxOptions);
+
     if (!areValuesOk(values)) return this._handleInvalidData();
 
     this._setValues(values);
@@ -810,7 +838,8 @@ class ModelTool<
     let data = await this._generateConstants();
 
     const errorTool = new this._options.ErrorTool(
-      VALIDATION_ERRORS.VALIDATION_ERROR
+      VALIDATION_ERRORS.VALIDATION_ERROR,
+      ctxOpts
     );
 
     const virtuals = getKeysAsProps<Partial<Output>>(values as any).filter(
@@ -849,7 +878,7 @@ class ModelTool<
       if (
         (isLax &&
           this._isRuleInDefinition(prop, 'shouldInit') &&
-          !this._getValueBy(prop, 'shouldInit')) ||
+          !this._getValueBy(prop, 'shouldInit', {})) ||
         (!isVirtualInit &&
           !this._canInit(prop) &&
           !isLaxInit &&
@@ -877,7 +906,10 @@ class ModelTool<
 
     await this._handleSanitizationOfVirtuals(data);
 
-    data = await this._resolveDependentChanges(data, this._getPartialContext());
+    data = await this._resolveDependentChanges(
+      data,
+      this._getPartialContext() as any
+    );
 
     const finalData = this._useConfigProps(data);
 
@@ -891,18 +923,31 @@ class ModelTool<
     };
   }
 
-  async delete(values: Output) {
+  async delete(values: Output, contextOptions: Partial<CtxOptions> = {}) {
+    const ctxOptions = this._updateContextOptions(contextOptions);
+
     if (!areValuesOk(values))
-      throw new DefaultErrorTool(VALIDATION_ERRORS.INVALID_DATA).error;
+      throw new this._options.ErrorTool(
+        VALIDATION_ERRORS.INVALID_DATA,
+        ctxOptions
+      ).error;
 
     this._setValues(values, { allowVirtuals: false, allowTimestamps: true });
 
-    let handlers: ns.Handler<Output>[] = [...this.globalDeleteHandlers];
+    let handlers: ns.Handler<Output, CtxOptions>[] = [
+      ...this.globalDeleteHandlers
+    ];
 
-    const data = this._getFrozenCopy(this.values);
+    const data = this._getFrozenCopy({
+      ...this.values,
+      __getOptions__: () => ctxOptions
+    });
 
     getSetValuesAsProps(this.props).map(async (prop) => {
-      const handlers_ = this._getHandlers<ns.Handler<Output>>(prop, 'onDelete');
+      const handlers_ = this._getHandlers<ns.Handler<Output, CtxOptions>>(
+        prop,
+        'onDelete'
+      );
 
       if (handlers_.length) handlers = handlers.concat(handlers_);
     });
@@ -912,7 +957,13 @@ class ModelTool<
     await Promise.allSettled(cleanups);
   }
 
-  async update(values: Output, changes: Partial<Input & Aliases>) {
+  async update(
+    values: Output,
+    changes: Partial<Input & Aliases>,
+    ctxOptions: Partial<CtxOptions> = {}
+  ) {
+    const ctxOpts = this._updateContextOptions(ctxOptions);
+
     if (!areValuesOk(values)) return this._handleInvalidData();
 
     this._setValues(values, { allowVirtuals: false, allowTimestamps: true });
@@ -921,7 +972,8 @@ class ModelTool<
       await this._setMissingDefaults();
 
     const errorTool = new this._options.ErrorTool(
-      VALIDATION_ERRORS.NOTHING_TO_UPDATE
+      VALIDATION_ERRORS.NOTHING_TO_UPDATE,
+      ctxOpts
     );
 
     if (!this._isGloballyUpdatable(changes as any))
@@ -991,7 +1043,7 @@ class ModelTool<
 
     updates = await this._resolveDependentChanges(
       updates,
-      this._getPartialContext(),
+      this._getPartialContext() as any,
       true
     );
 
@@ -1067,32 +1119,45 @@ class Model<
   Input extends RealType<Input>,
   Output extends RealType<Output>,
   Aliases = {},
-  ErrorTool extends IErrorTool<any> = DefaultErrorTool<KeyOf<Input & Aliases>>
+  ErrorTool extends IErrorTool<any> = DefaultErrorTool<KeyOf<Input & Aliases>>,
+  CtxOptions extends ObjectType = {}
 > {
   constructor(
-    private modelTool: ModelTool<Input, Output, Aliases, ErrorTool>
+    private modelTool: ModelTool<Input, Output, Aliases, ErrorTool, CtxOptions>
   ) {}
 
   clone = (
     values: Partial<Input & Aliases>,
-    options: ns.CloneOptions<Input> = { reset: [] }
+    options?: ns.CloneOptions<Input, CtxOptions>
   ) => this.modelTool.clone(values, options);
 
-  create = (values: Partial<Input & Aliases> = {}) =>
-    this.modelTool.create(values);
+  create = (
+    values: Partial<Input & Aliases> = {},
+    contextOptions: Partial<CtxOptions> = {}
+  ) => this.modelTool.create(values, contextOptions);
 
-  delete = (values: Output) => this.modelTool.delete(values);
+  delete = (values: Output, contextOptions: Partial<CtxOptions> = {}) =>
+    this.modelTool.delete(values, contextOptions);
 
-  update = (values: Output, changes: Partial<Input & Aliases>) =>
-    this.modelTool.update(values, changes);
+  update = (
+    values: Output,
+    changes: Partial<Input & Aliases>,
+    contextOptions: Partial<CtxOptions> = {}
+  ) => this.modelTool.update(values, changes, contextOptions);
 
-  validate = <K extends KeyOf<Input & Aliases>>(prop: K, value: any) => {
+  validate = <K extends KeyOf<Input & Aliases>>(
+    prop: K,
+    value: any,
+    contextOptions: Partial<CtxOptions> = {}
+  ) => {
+    if (!isObject(contextOptions)) contextOptions = {};
+
     return this.modelTool._validate(prop, value, {
-      context: {},
+      context: { __getOptions__: () => contextOptions },
       operation: 'creation',
-      previousValues: undefined,
+      previousValues: null,
       values: {}
-    } as unknown as Summary<Input, Output>);
+    } as Summary<Input, Output>);
   };
 }
 

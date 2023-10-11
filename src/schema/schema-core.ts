@@ -30,7 +30,8 @@ import {
   DEFINITION_RULES,
   CONSTANT_RULES,
   VIRTUAL_RULES,
-  LIFE_CYCLES
+  LIFE_CYCLES,
+  PartialContext
 } from './types';
 
 export const defaultOptions = {
@@ -45,18 +46,23 @@ export const defaultOptions = {
 export abstract class SchemaCore<
   Input,
   Output,
-  ValidationError extends IErrorTool<any>
+  ErrorTool extends IErrorTool<any>,
+  CtxOptions extends ObjectType = {}
 > {
   protected _definitions = {} as ns.Definitions_<Input, Output>;
-  protected _options: ns.InternalOptions<Input, Output, ValidationError>;
+  protected _options: ns.InternalOptions<Input, Output, ErrorTool, CtxOptions>;
 
   // contexts & values
-  protected context: Context<Input, Output> = {} as Context<Input, Output>;
-  protected defaults: Partial<Output> = {};
-  protected partialContext: Context<Input, Output> = {} as Context<
+  protected context: Context<Input, Output, CtxOptions> = {} as Context<
     Input,
-    Output
+    Output,
+    CtxOptions
   >;
+  protected contextOptions: CtxOptions = {} as CtxOptions;
+
+  protected defaults: Partial<Output> = {};
+  protected partialContext: PartialContext<Input, Output> =
+    {} as PartialContext<Input, Output>;
   protected values: Output = {} as Output;
 
   // maps
@@ -78,16 +84,20 @@ export abstract class SchemaCore<
   protected timestampTool: TimeStampTool;
 
   // handlers
-  protected readonly globalDeleteHandlers: ns.Handler<Output>[] = [];
-  protected readonly globalSuccessHandlers: ns.SuccessHandler<Input, Output>[] =
+  protected readonly globalDeleteHandlers: ns.Handler<Output, CtxOptions>[] =
     [];
+  protected readonly globalSuccessHandlers: ns.SuccessHandler<
+    Input,
+    Output,
+    CtxOptions
+  >[] = [];
 
   constructor(
     definitions: ns.Definitions_<Input, Output>,
     options: ns.Options<Input, Output, any> = defaultOptions as ns.Options<
       Input,
       Output,
-      ValidationError
+      ErrorTool
     >
   ) {
     this._checkPropDefinitions(definitions);
@@ -103,23 +113,33 @@ export abstract class SchemaCore<
   }
 
   // < context methods >
-  protected _getContext = (previousValues: Partial<Output> | null = null) =>
-    this._getFrozenCopy(
-      sortKeys({ ...previousValues, ...this.context })
-    ) as Context<Input, Output>;
+  protected _getContext(previousValues: Partial<Output> | null = null) {
+    const values = { ...previousValues, ...this.context } as any;
+
+    return this._getFrozenCopy({
+      ...sortKeys(values),
+      __getOptions__: () => this._getContextOptions()
+    }) as Context<Input, Output, CtxOptions>;
+  }
+
+  protected _getContextOptions = () => this._getFrozenCopy(this.contextOptions);
 
   protected _getPartialContext = () => this._getFrozenCopy(this.partialContext);
 
   protected _initializeContexts = () => {
-    this.context = { ...this.defaults, ...this.values } as Context<
-      Input,
-      Output
-    >;
-    this.partialContext = {} as Context<Input, Output>;
+    this.context = { ...this.defaults, ...this.values } as any;
+    this.partialContext = {} as PartialContext<Input, Output>;
   };
 
   protected _updateContext = (updates: Partial<Input>) => {
     this.context = { ...this.context, ...updates };
+  };
+
+  protected _updateContextOptions = (options: Partial<CtxOptions>) => {
+    if (isObject(options))
+      this.contextOptions = { ...this.contextOptions, ...options };
+
+    return this._getContextOptions();
   };
 
   protected _updatePartialContext = (updates: Partial<Input>) => {
@@ -206,7 +226,9 @@ export abstract class SchemaCore<
       if (!global) return;
 
       if (lifeCycle == 'onDelete')
-        return this.globalDeleteHandlers.push(handler as ns.Handler<Output>);
+        return this.globalDeleteHandlers.push(
+          handler as ns.Handler<Output, CtxOptions>
+        );
 
       if (lifeCycle == 'onSuccess')
         return this.globalSuccessHandlers.push(

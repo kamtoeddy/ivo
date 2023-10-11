@@ -5,6 +5,7 @@ import {
   FieldKey,
   VALIDATION_ERRORS
 } from '../../../../dist';
+import { Ctx_Options } from './types';
 
 type vError<Keys> = {
   field: Keys;
@@ -20,14 +21,16 @@ const { INVALID_DATA, VALIDATION_ERROR } = VALIDATION_ERRORS;
 export class VError<Keys> implements IErrorTool<ErrorData<Keys>> {
   private _errors = new Map<FieldKey, vError<Keys>>();
 
-  constructor(public message) {}
+  constructor(public message, private ctxOptions: Ctx_Options) {}
 
   private getVMessage() {
+    const { lang } = this.ctxOptions;
+
     return this.message == VALIDATION_ERROR
-      ? 'validation'
+      ? `validation${lang ? ' -' + lang : ''}`
       : this.message == INVALID_DATA
-      ? 'invalid-data'
-      : 'no-update';
+      ? `invalid-data${lang ? ' -' + lang : ''}`
+      : `no-update${lang ? ' -' + lang : ''}`;
   }
 
   get data(): IValidationError<ErrorData<Keys>> {

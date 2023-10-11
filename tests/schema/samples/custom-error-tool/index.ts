@@ -1,18 +1,30 @@
 import { KeyOf, Schema } from '../../../../dist';
 import { VError } from './error-tool';
-import { EInput, EOutput, Input, Output } from './types';
+import { Ctx_Options, EInput, EOutput, Input, Output } from './types';
 
 export { UserModel, UserModel_ErrorThrow, EUserModel, EUserModel_ErrorThrow };
 
-const userSchema = new Schema<Input, Output, {}, VError<KeyOf<Input>>>(
+const userSchema = new Schema<
+  Input,
+  Output,
+  {},
+  VError<KeyOf<Input>>,
+  Ctx_Options
+>(
   {
     firstName: {
       default: '',
-      validator: (v) => ({
-        valid: false,
-        reason: 'Invalid first name',
-        metadata: { hint: 'try harder 😜', valueProvided: v }
-      })
+      validator: (v, { context: { __getOptions__ } }) => {
+        const { lang } = __getOptions__();
+
+        if (lang) return true;
+
+        return {
+          valid: false,
+          reason: 'Invalid first name',
+          metadata: { hint: 'try harder 😜', valueProvided: v }
+        };
+      }
     },
     fullName: {
       default: '',
@@ -20,7 +32,10 @@ const userSchema = new Schema<Input, Output, {}, VError<KeyOf<Input>>>(
       resolver: ({ context: { firstName, lastName } }) =>
         `${firstName}-${lastName}`
     },
-    lastName: { default: '', validator: () => false }
+    lastName: {
+      default: '',
+      validator: (_, { context }) => !!context.__getOptions__().lang
+    }
   },
   { ErrorTool: VError }
 );

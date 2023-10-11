@@ -1,5 +1,5 @@
 import { Schema } from '.';
-import { FieldKey } from '../utils';
+import { FieldKey, ObjectType } from '../utils';
 import {
   FieldError,
   IErrorTool,
@@ -13,6 +13,7 @@ export type {
   KeyOf,
   Merge,
   NonEmptyArray,
+  PartialContext,
   Summary,
   Schema as ISchema,
   RealType,
@@ -35,19 +36,31 @@ export {
   VIRTUAL_RULES
 };
 
-type Context<Input, Output = Input> = Readonly<Merge<Input, Output>>;
+type Context<
+  Input,
+  Output = Input,
+  CtxOptions extends ObjectType = {}
+> = Readonly<
+  Merge<Input, Output> & { __getOptions__: () => Readonly<CtxOptions> }
+> & {};
 
-type Summary<Input, Output = Input> = (
+type DeleteContext<Output, CtxOptions extends ObjectType = {}> = Readonly<
+  Output & { __getOptions__: () => Readonly<CtxOptions> }
+> & {};
+
+type PartialContext<Input, Output = Input> = Readonly<Merge<Input, Output>>;
+
+type Summary<Input, Output = Input, CtxOptions extends ObjectType = {}> = (
   | Readonly<{
       changes: null;
-      context: Context<Input, Output>;
+      context: Context<Input, Output, CtxOptions>;
       operation: 'creation';
       previousValues: null;
       values: Readonly<Output>;
     }>
   | Readonly<{
       changes: Partial<RealType<Output>>;
-      context: Context<Input, Output>;
+      context: Context<Input, Output, CtxOptions>;
       operation: 'update';
       previousValues: Readonly<Output>;
       values: Readonly<Output>;
@@ -56,24 +69,34 @@ type Summary<Input, Output = Input> = (
 
 type TypeOf<T> = Exclude<T, undefined>;
 
-type AsyncSetter<T, Input, Output> = (
-  context: Context<Input, Output> & {}
+type AsyncSetter<T, Input, Output, CtxOptions extends ObjectType = {}> = (
+  context: Context<Input, Output, CtxOptions>
 ) => TypeOf<T> | Promise<TypeOf<T>>;
 
-type Setter<T, Input, Output> = (
-  context: Context<Input, Output> & {}
+type Setter<T, Input, Output, CtxOptions extends ObjectType = {}> = (
+  context: Context<Input, Output, CtxOptions>
 ) => TypeOf<T>;
 
-type SetterWithSummary<T, Input, Output> = (
-  summary: Summary<Input, Output> & {}
+type SetterWithSummary<T, Input, Output, CtxOptions extends ObjectType = {}> = (
+  summary: Summary<Input, Output, CtxOptions> & {}
 ) => TypeOf<T>;
 
-type Resolver<K extends keyof Output, Input, Output> = (
-  summary: Summary<Input, Output> & {}
+type Resolver<
+  K extends keyof Output,
+  Input,
+  Output,
+  CtxOptions extends ObjectType = {}
+> = (
+  summary: Summary<Input, Output, CtxOptions> & {}
 ) => TypeOf<Output[K]> | Promise<TypeOf<Output[K]>>;
 
-type VirtualResolver<K extends keyof Input, Input, Output> = (
-  summary: Summary<Input, Output> & {}
+type VirtualResolver<
+  K extends keyof Input,
+  Input,
+  Output,
+  CtxOptions extends ObjectType = {}
+> = (
+  summary: Summary<Input, Output, CtxOptions> & {}
 ) => TypeOf<Input[K]> | Promise<TypeOf<Input[K]>>;
 
 type KeyOf<T> = Extract<keyof T, string>;
@@ -83,37 +106,58 @@ namespace Schema {
 
   export type OperationName = (typeof OPERATIONS)[number];
 
-  export type Handler<Output> = (data: Readonly<Output>) => any | Promise<any>;
-
-  export type FailureHandler<Input, Output> = (
-    context: Context<Input, Output> & {}
+  export type Handler<Output, CtxOptions extends ObjectType> = (
+    data: DeleteContext<Output, CtxOptions>
   ) => any | Promise<any>;
 
-  export type SuccessHandler<Input, Output> = (
-    summary: Summary<Input, Output> & {}
-  ) => any | Promise<any>;
+  export type FailureHandler<
+    Input,
+    Output,
+    CtxOptions extends ObjectType = {}
+  > = (context: Context<Input, Output, CtxOptions> & {}) => any | Promise<any>;
 
-  export type Definitions<Input, Output, Aliases = {}> = {
+  export type SuccessHandler<
+    Input,
+    Output,
+    CtxOptions extends ObjectType = {}
+  > = (summary: Summary<Input, Output, CtxOptions> & {}) => any | Promise<any>;
+
+  export type Definitions<
+    Input,
+    Output,
+    Aliases = {},
+    CtxOptions extends ObjectType = {}
+  > = {
     [K in keyof (Input & Output)]?: K extends keyof (Input | Output)
-      ? PublicProperty<K, Input, Output>
+      ? PublicProperty<K, Input, Output, CtxOptions>
       : K extends keyof Omit<Output, keyof Input>
-      ? PrivateProperty<K, Input, Output>
+      ? PrivateProperty<K, Input, Output, CtxOptions>
       : K extends keyof Omit<Input, keyof Output>
-      ? Virtual<K, Output, Input, Aliases>
+      ? Virtual<K, Output, Input, Aliases, CtxOptions>
       : never;
   };
 
-  type PublicProperty<K extends keyof (Output | Input), Input, Output> =
-    | LaxProperty<K, Input, Output>
-    | ReadOnly<K, Input, Output>
-    | ReadonlyNoInit<K, Input, Output>
-    | Required<K, Input, Output>
-    | RequiredBy<K, Input, Output>
-    | RequiredReadonly<K, Input, Output>;
+  type PublicProperty<
+    K extends keyof (Output | Input),
+    Input,
+    Output,
+    CtxOptions extends ObjectType = {}
+  > =
+    | LaxProperty<K, Input, Output, CtxOptions>
+    | ReadOnly<K, Input, Output, CtxOptions>
+    | ReadonlyNoInit<K, Input, Output, CtxOptions>
+    | Required<K, Input, Output, CtxOptions>
+    | RequiredBy<K, Input, Output, CtxOptions>
+    | RequiredReadonly<K, Input, Output, CtxOptions>;
 
-  type PrivateProperty<K extends keyof Output, Input, Output> = XOR<
-    Constant<K, Input, Output>,
-    Dependent<K, Input, Output>
+  type PrivateProperty<
+    K extends keyof Output,
+    Input,
+    Output,
+    CtxOptions extends ObjectType = {}
+  > = XOR<
+    Constant<K, Input, Output, CtxOptions>,
+    Dependent<K, Input, Output, CtxOptions>
   >;
 
   export type Definitions_<Input, Output> = {
@@ -145,156 +189,222 @@ namespace Schema {
     [K in KeyOf<T>]?: KeyOf<T>[];
   };
 
-  type Listenable<Input, Output> = {
-    onDelete?: Handler<Output> | NonEmptyArray<Handler<Output>>;
+  type Listenable<Input, Output, CtxOptions extends ObjectType = {}> = {
+    onDelete?:
+      | Handler<Output, CtxOptions>
+      | NonEmptyArray<Handler<Output, CtxOptions>>;
     onFailure?:
-      | FailureHandler<Input, Output>
-      | NonEmptyArray<FailureHandler<Input, Output>>;
+      | FailureHandler<Input, Output, CtxOptions>
+      | NonEmptyArray<FailureHandler<Input, Output, CtxOptions>>;
     onSuccess?:
-      | SuccessHandler<Input, Output>
-      | NonEmptyArray<SuccessHandler<Input, Output>>;
+      | SuccessHandler<Input, Output, CtxOptions>
+      | NonEmptyArray<SuccessHandler<Input, Output, CtxOptions>>;
   };
 
-  type Constant<K extends keyof Output, Input, Output> = {
+  type Constant<
+    K extends keyof Output,
+    Input,
+    Output,
+    CtxOptions extends ObjectType = {}
+  > = {
     constant: true;
-    onDelete?: Handler<Output> | NonEmptyArray<Handler<Output>>;
+    onDelete?:
+      | Handler<Output, CtxOptions>
+      | NonEmptyArray<Handler<Output, CtxOptions>>;
     onSuccess?:
-      | SuccessHandler<Input, Output>
-      | NonEmptyArray<SuccessHandler<Input, Output>>;
-    value: TypeOf<Output[K]> | AsyncSetter<Output[K], Input, Output>;
+      | SuccessHandler<Input, Output, CtxOptions>
+      | NonEmptyArray<SuccessHandler<Input, Output, CtxOptions>>;
+    value:
+      | TypeOf<Output[K]>
+      | AsyncSetter<Output[K], Input, Output, CtxOptions>;
   };
 
-  type Dependent<K extends keyof Output, Input, Output> = {
+  type Dependent<
+    K extends keyof Output,
+    Input,
+    Output,
+    CtxOptions extends ObjectType = {}
+  > = {
     default: TypeOf<Output[K]> | AsyncSetter<Output[K], Input, Output>;
     /** @deprecated `dependsOn` & a `resolver` function are enough to make a property dependent */
     dependent?: true;
     dependsOn:
-      | Exclude<KeyOf<Context<Input, Output>>, K>
-      | Exclude<KeyOf<Context<Input, Output>>, K>[];
-    onDelete?: Handler<Output> | NonEmptyArray<Handler<Output>>;
+      | Exclude<KeyOf<Context<Input, Output, CtxOptions>>, K>
+      | Exclude<KeyOf<Context<Input, Output, CtxOptions>>, K>[];
+    onDelete?:
+      | Handler<Output, CtxOptions>
+      | NonEmptyArray<Handler<Output, CtxOptions>>;
     onSuccess?:
-      | SuccessHandler<Input, Output>
-      | NonEmptyArray<SuccessHandler<Input, Output>>;
+      | SuccessHandler<Input, Output, CtxOptions>
+      | NonEmptyArray<SuccessHandler<Input, Output, CtxOptions>>;
     readonly?: true;
-    resolver: Resolver<K, Input, Output>;
+    resolver: Resolver<K, Input, Output, CtxOptions>;
   };
 
   type LaxProperty<
     K extends keyof (Output | Input),
     Input,
-    Output
+    Output,
+    CtxOptions extends ObjectType = {}
   > = Listenable<Input, Output> & {
-    default: TypeOf<Output[K]> | AsyncSetter<Output[K], Input, Output>;
+    default:
+      | TypeOf<Output[K]>
+      | AsyncSetter<Output[K], Input, Output, CtxOptions>;
     readonly?: 'lax';
-    shouldInit?: false | Setter<boolean, Input, Output>;
-    shouldUpdate?: Setter<boolean, Input, Output>;
-    validator?: Validator<K, Input, Output>;
+    shouldInit?: false | Setter<boolean, Input, Output, CtxOptions>;
+    shouldUpdate?: Setter<boolean, Input, Output, CtxOptions>;
+    validator?: Validator<K, Input, Output, CtxOptions>;
   };
 
-  type ReadOnly<K extends keyof (Output | Input), Input, Output> = Listenable<
+  type ReadOnly<
+    K extends keyof (Output | Input),
     Input,
-    Output
-  > & {
-    default: TypeOf<Output[K]> | AsyncSetter<Output[K], Input, Output>;
+    Output,
+    CtxOptions extends ObjectType = {}
+  > = Listenable<Input, Output, CtxOptions> & {
+    default:
+      | TypeOf<Output[K]>
+      | AsyncSetter<Output[K], Input, Output, CtxOptions>;
     readonly: 'lax';
-    shouldUpdate?: Setter<boolean, Input, Output>;
-    validator: Validator<K, Input, Output>;
+    shouldUpdate?: Setter<boolean, Input, Output, CtxOptions>;
+    validator: Validator<K, Input, Output, CtxOptions>;
   };
 
   type ReadonlyNoInit<
     K extends keyof (Output | Input),
     Input,
-    Output
-  > = Listenable<Input, Output> & {
-    default: TypeOf<Output[K]> | AsyncSetter<Output[K], Input, Output>;
+    Output,
+    CtxOptions extends ObjectType = {}
+  > = Listenable<Input, Output, CtxOptions> & {
+    default:
+      | TypeOf<Output[K]>
+      | AsyncSetter<Output[K], Input, Output, CtxOptions>;
     readonly: true;
-    shouldInit: false | Setter<boolean, Input, Output>;
-    shouldUpdate?: Setter<boolean, Input, Output>;
-    validator?: Validator<K, Input, Output>;
+    shouldInit: false | Setter<boolean, Input, Output, CtxOptions>;
+    shouldUpdate?: Setter<boolean, Input, Output, CtxOptions>;
+    validator?: Validator<K, Input, Output, CtxOptions>;
   };
 
   type RequiredReadonly<
     K extends keyof (Output | Input),
     Input,
-    Output
-  > = Listenable<Input, Output> & {
+    Output,
+    CtxOptions extends ObjectType = {}
+  > = Listenable<Input, Output, CtxOptions> & {
     readonly: true;
-    validator: Validator<K, Input, Output>;
+    validator: Validator<K, Input, Output, CtxOptions>;
   };
 
-  type Required<K extends keyof (Output | Input), Input, Output> = Listenable<
+  type Required<
+    K extends keyof (Output | Input),
     Input,
-    Output
-  > & {
+    Output,
+    CtxOptions extends ObjectType = {}
+  > = Listenable<Input, Output, CtxOptions> & {
     required: true;
-    shouldUpdate?: Setter<boolean, Input, Output>;
-    validator: Validator<K, Input, Output>;
+    shouldUpdate?: Setter<boolean, Input, Output, CtxOptions>;
+    validator: Validator<K, Input, Output, CtxOptions>;
   };
 
-  type RequiredBy<K extends keyof (Output | Input), Input, Output> = Listenable<
+  type RequiredBy<
+    K extends keyof (Output | Input),
     Input,
-    Output
-  > & {
-    default: TypeOf<Output[K]> | AsyncSetter<Output[K], Input, Output>;
-    required: SetterWithSummary<boolean | [boolean, string], Input, Output>;
+    Output,
+    CtxOptions extends ObjectType = {}
+  > = Listenable<Input, Output, CtxOptions> & {
+    default:
+      | TypeOf<Output[K]>
+      | AsyncSetter<Output[K], Input, Output, CtxOptions>;
+    required: SetterWithSummary<
+      boolean | [boolean, string],
+      Input,
+      Output,
+      CtxOptions
+    >;
     readonly?: true;
-    shouldInit?: Setter<boolean, Input, Output>;
-    shouldUpdate?: Setter<boolean, Input, Output>;
-    validator: Validator<K, Input, Output>;
+    shouldInit?: Setter<boolean, Input, Output, CtxOptions>;
+    shouldUpdate?: Setter<boolean, Input, Output, CtxOptions>;
+    validator: Validator<K, Input, Output, CtxOptions>;
   };
 
-  type Virtual<K extends keyof Input, Output, Input, A> = {
-    alias?: Exclude<KeyOf<A>, K> extends undefined
+  type Virtual<
+    K extends keyof Input,
+    Output,
+    Input,
+    Aliases,
+    CtxOptions extends ObjectType = {}
+  > = {
+    alias?: Exclude<KeyOf<Aliases>, K> extends undefined
       ? string
-      : Exclude<KeyOf<A>, K>;
-    required?: SetterWithSummary<boolean | [boolean, string], Input, Output>;
+      : Exclude<KeyOf<Aliases>, K>;
+    required?: SetterWithSummary<
+      boolean | [boolean, string],
+      Input,
+      Output,
+      CtxOptions
+    >;
     virtual: true;
-    sanitizer?: VirtualResolver<K, Input, Output>;
+    sanitizer?: VirtualResolver<K, Input, Output, CtxOptions>;
     onFailure?:
-      | FailureHandler<Input, Output>
-      | NonEmptyArray<FailureHandler<Input, Output>>;
+      | FailureHandler<Input, Output, CtxOptions>
+      | NonEmptyArray<FailureHandler<Input, Output, CtxOptions>>;
     onSuccess?:
-      | SuccessHandler<Input, Output>
-      | NonEmptyArray<SuccessHandler<Input, Output>>;
-    shouldInit?: false | Setter<boolean, Input, Output>;
-    shouldUpdate?: false | Setter<boolean, Input, Output>;
-    validator: Validator<K, Input, Output>;
+      | SuccessHandler<Input, Output, CtxOptions>
+      | NonEmptyArray<SuccessHandler<Input, Output, CtxOptions>>;
+    shouldInit?: false | Setter<boolean, Input, Output, CtxOptions>;
+    shouldUpdate?: false | Setter<boolean, Input, Output, CtxOptions>;
+    validator: Validator<K, Input, Output, CtxOptions>;
   };
 
   // options
-  export type CloneOptions<T> = {
+  export type CloneOptions<T, CtxOptions> = {
     reset?: KeyOf<T> | KeyOf<T>[];
+    contextOptions?: Partial<CtxOptions>;
   };
 
   export type InternalOptions<
     Input,
     Output,
-    ErrorTool extends IErrorTool<any>
+    ErrorTool extends IErrorTool<any>,
+    CtxOptions extends ObjectType = {}
   > = {
-    ErrorTool: Constructable<ErrorTool>;
+    ErrorTool: ErrorToolClass<ErrorTool, CtxOptions>;
     equalityDepth: number;
     errors: 'silent' | 'throw';
-    onDelete?: Handler<Output> | NonEmptyArray<Handler<Output>>;
+    onDelete?:
+      | Handler<Output, CtxOptions>
+      | NonEmptyArray<Handler<Output, CtxOptions>>;
     onSuccess?:
-      | SuccessHandler<Input, Output>
-      | NonEmptyArray<SuccessHandler<Input, Output>>;
+      | SuccessHandler<Input, Output, CtxOptions>
+      | NonEmptyArray<SuccessHandler<Input, Output, CtxOptions>>;
     setMissingDefaultsOnUpdate?: boolean;
-    shouldUpdate?: boolean | SetterWithSummary<boolean, Input, Output>;
+    shouldUpdate?:
+      | boolean
+      | SetterWithSummary<boolean, Input, Output, CtxOptions>;
     timestamps?:
       | boolean
       | { createdAt?: boolean | string; updatedAt?: boolean | string };
   };
 
-  export type Options<Input, Output, ErrorTool extends IErrorTool<any>> = {
-    ErrorTool?: Constructable<ErrorTool>;
+  export type Options<
+    Input,
+    Output,
+    ErrorTool extends IErrorTool<any>,
+    CtxOptions extends ObjectType = {}
+  > = {
+    ErrorTool?: ErrorToolClass<ErrorTool, CtxOptions>;
     equalityDepth?: number;
     errors?: 'silent' | 'throw';
-    onDelete?: Handler<Output> | NonEmptyArray<Handler<Output>>;
+    onDelete?:
+      | Handler<Output, CtxOptions>
+      | NonEmptyArray<Handler<Output, CtxOptions>>;
     onSuccess?:
-      | SuccessHandler<Input, Output>
-      | NonEmptyArray<SuccessHandler<Input, Output>>;
+      | SuccessHandler<Input, Output, CtxOptions>
+      | NonEmptyArray<SuccessHandler<Input, Output, CtxOptions>>;
     setMissingDefaultsOnUpdate?: boolean;
-    shouldUpdate?: boolean | SetterWithSummary<boolean, Input, Output>;
+    shouldUpdate?:
+      | boolean
+      | SetterWithSummary<boolean, Input, Output, CtxOptions>;
     timestamps?:
       | boolean
       | { createdAt?: boolean | string; updatedAt?: boolean | string };
@@ -315,8 +425,9 @@ namespace Schema {
     ParentOutput,
     Input,
     Output,
-    ValidationError extends IErrorTool<any>
-  > = Options<Input, Output, ValidationError> & {
+    ErrorTool extends IErrorTool<any>,
+    CtxOptions extends ObjectType = {}
+  > = Options<Input, Output, ErrorTool, CtxOptions> & {
     remove?:
       | KeyOf<Merge<ParentInput, ParentOutput>>
       | KeyOf<Merge<ParentInput, ParentOutput>>[];
@@ -353,9 +464,14 @@ type ValidatorResponseObject<T> =
 
 type ValidatorResponse<T> = boolean | (ValidatorResponseObject<T> & {});
 
-type Validator<K extends keyof Input, Input, Output> = (
+type Validator<
+  K extends keyof Input,
+  Input,
+  Output,
+  CtxOptions extends ObjectType = {}
+> = (
   value: any,
-  summary: Summary<Input, Output> & {}
+  summary: Summary<Input, Output, CtxOptions> & {}
 ) =>
   | ValidatorResponse<TypeOf<Input[K]>>
   | Promise<ValidatorResponse<TypeOf<Input[K]>>>;
@@ -412,8 +528,8 @@ const OPERATIONS = ['creation', 'update'] as const;
 
 type TypeFromPromise<T> = T extends Promise<infer I> ? I : T;
 
-interface Constructable<T> {
-  new (message: ValidationErrorMessage): T;
+interface ErrorToolClass<ErrorTool, CtxOptions extends ObjectType> {
+  new (message: ValidationErrorMessage, ctxOptions: CtxOptions): ErrorTool;
 }
 
 type RealType_<T> = T extends (...args: any) => infer I ? I : T;

@@ -1,26 +1,26 @@
-import { beforeEach, describe, it, expect } from 'vitest'
+import { beforeEach, describe, it, expect } from 'vitest';
 
-import { ERRORS } from '../../../../dist'
+import { ERRORS } from '../../../../dist';
 import {
   expectFailure,
   expectNoFailure,
   getValidSchema,
   validator
-} from '../_utils'
+} from '../_utils';
 
 export const Test_SchemaOnDelete = ({ Schema, fx }: any) => {
   describe('Schema.options.onDelete', () => {
     describe('behaviour', () => {
-      const values = { id: 1, name: 'Book name', price: 100 }
-      let deletedValues: any = {}
+      const values = { id: 1, name: 'Book name', price: 100 };
+      let deletedValues: any = {};
 
       function onDelete_(prop = '') {
-        return (values: any) => (deletedValues[prop] = values)
+        return (values: any) => (deletedValues[prop] = values);
       }
 
       beforeEach(() => {
-        deletedValues = {}
-      })
+        deletedValues = {};
+      });
 
       describe('behaviour with other delete handlers', () => {
         const Book = new Schema(
@@ -37,19 +37,19 @@ export const Test_SchemaOnDelete = ({ Schema, fx }: any) => {
             _setPrice: { virtual: true, validator }
           },
           { onDelete: onDelete_('global') }
-        ).getModel()
+        ).getModel();
 
         it("should trigger all 'delete' handlers on properties an global handlers", async () => {
-          await Book.delete(values)
+          await Book.delete(values);
 
-          expect(deletedValues).toEqual({
+          expect(deletedValues).toMatchObject({
             id: values,
             name: values,
             price: values,
             global: values
-          })
-        })
-      })
+          });
+        });
+      });
 
       describe('behaviour without other delete handlers', () => {
         const Book = new Schema(
@@ -65,29 +65,32 @@ export const Test_SchemaOnDelete = ({ Schema, fx }: any) => {
             _setPrice: { virtual: true, validator }
           },
           { onDelete: [onDelete_('global'), onDelete_('global-1')] }
-        ).getModel()
+        ).getModel();
 
         it("should trigger all global 'delete' handlers", async () => {
-          await Book.delete(values)
+          await Book.delete(values);
 
-          expect(deletedValues).toEqual({ global: values, 'global-1': values })
-        })
-      })
-    })
+          expect(deletedValues).toMatchObject({
+            global: values,
+            'global-1': values
+          });
+        });
+      });
+    });
 
     describe('valid', () => {
       it("should allow 'onDelete' as (() => any) | ((() => any)[])", () => {
-        const values = [() => {}, [() => {}]]
+        const values = [() => {}, [() => {}]];
 
         for (const onDelete of values) {
-          const toPass = fx(getValidSchema(), { onDelete })
+          const toPass = fx(getValidSchema(), { onDelete });
 
-          expectNoFailure(toPass)
+          expectNoFailure(toPass);
 
-          toPass()
+          toPass();
         }
-      })
-    })
+      });
+    });
 
     describe('invalid', () => {
       it("should reject 'onDelete' other than (() => any) | ((() => any)[])", () => {
@@ -101,15 +104,15 @@ export const Test_SchemaOnDelete = ({ Schema, fx }: any) => {
           '',
           null,
           undefined
-        ]
+        ];
 
         for (const onDelete of invalidValues) {
-          const toFail = fx(getValidSchema(), { onDelete })
+          const toFail = fx(getValidSchema(), { onDelete });
 
-          expectFailure(toFail)
+          expectFailure(toFail);
 
           try {
-            toFail()
+            toFail();
           } catch (err: any) {
             expect(err).toMatchObject({
               message: ERRORS.INVALID_SCHEMA,
@@ -118,10 +121,10 @@ export const Test_SchemaOnDelete = ({ Schema, fx }: any) => {
                   "The 'onDelete' handler @[0] is not a function"
                 ])
               }
-            })
+            });
           }
         }
-      })
-    })
-  })
-}
+      });
+    });
+  });
+};

@@ -44,7 +44,7 @@ export const Test_SchemaSetMissingDefaultsOnUpdateOption = ({
           await handleSuccess();
 
           expect(data).toEqual(updates);
-          expect(summary).toEqual({
+          expect(summary).toMatchObject({
             changes: updates,
             context: { dependent: '', lax: 'lax', ...updates },
             operation: 'update',
@@ -99,7 +99,7 @@ export const Test_SchemaSetMissingDefaultsOnUpdateOption = ({
           await handleSuccess();
 
           expect(data).toEqual(changes);
-          expect(summary).toEqual({
+          expect(summary).toMatchObject({
             changes,
             context: changes,
             operation: 'update',
@@ -126,7 +126,7 @@ export const Test_SchemaSetMissingDefaultsOnUpdateOption = ({
           await handleSuccess();
 
           expect(data).toEqual(changes);
-          expect(summary).toEqual({
+          expect(summary).toMatchObject({
             changes,
             context: changes,
             operation: 'update',
