@@ -36,7 +36,7 @@ const EUserSchema = userSchema.extend<EInput, EOutput>(
       default: '',
       dependsOn: ['firstName', 'lastName'],
       resolver: ({ context: { firstName, lastName } }) =>
-        `${firstName}-${lastName}`
+        `${firstName} ${lastName}`
     }
   },
   { remove: 'fullName' }

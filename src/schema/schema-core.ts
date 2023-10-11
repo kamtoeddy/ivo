@@ -103,13 +103,18 @@ export abstract class SchemaCore<
   }
 
   // < context methods >
-  protected _getContext = () =>
-    this._getFrozenCopy(sortKeys(this.context)) as Context<Input, Output>;
+  protected _getContext = (previousValues: Partial<Output> | null = null) =>
+    this._getFrozenCopy(
+      sortKeys({ ...previousValues, ...this.context })
+    ) as Context<Input, Output>;
 
   protected _getPartialContext = () => this._getFrozenCopy(this.partialContext);
 
   protected _initializeContexts = () => {
-    this.context = { ...this.values } as Context<Input, Output>;
+    this.context = { ...this.defaults, ...this.values } as Context<
+      Input,
+      Output
+    >;
     this.partialContext = {} as Context<Input, Output>;
   };
 
