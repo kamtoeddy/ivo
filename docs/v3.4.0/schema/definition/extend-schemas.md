@@ -14,25 +14,25 @@ const userSchema = new Schema<Output, Input>(
   {
     firstName: { required: true, validator: validateName },
     fullName: {
-      default: "",
+      default: '',
       dependent: true,
-      dependsOn: ["firstName", "lastName"],
-      resolver: getFullName,
+      dependsOn: ['firstName', 'lastName'],
+      resolver: getFullName
     },
     isBlocked: { default: false, validator: validateBoolean },
     id: { readonly: true, validator: validateId },
     lastName: { required: true, validator: validateName },
-    lastSeen: { default: "", shouldInit: false },
+    lastSeen: { default: '', shouldInit: false },
     password: { required: true, validator: validatePassword },
-    role: role: { constant: true, value: "User" },
+    role: { constant: true, value: 'User' }
   },
   { timestamps: true }
-);
+)
 
 const adminSchema = userSchema.extend(
   {
-    role: { constant: true, value: "Admin" },
+    role: { constant: true, value: 'Admin' }
   },
-  { timestamps: true, remove: "dob" }
-);
+  { timestamps: true, remove: 'dob' }
+)
 ```

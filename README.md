@@ -45,9 +45,9 @@ type Output = {
   updatedAt: Date
 }
 
-type ISummary = Summary<Output, Input>
+type ISummary = Summary<Input, Output>
 
-const userSchema = new Schema<Output, Input>(
+const userSchema = new Schema<Input, Output>(
   {
     firstName: {
       required: true,
@@ -202,16 +202,16 @@ await handleSuccess()
     - [isEmailOk](./docs/v2.6.0/validate/isEmailOk.md)
     - [isNumberOk](./docs/v2.6.0/validate/isNumberOk.md)
     - [isStringOk](./docs/v3.4.0/validate/isStringOk.md)
-- [Extending Schemas](./docs/v3.4.0/schema/definition/extend-schemas.md#extending-schemas)
+- [Extending Schemas](./docs/v4.0.0/definitions/extend-schemas.md#extending-schemas)
 - [The Operation Context](./docs/v3.4.0/schema/definition/life-cycles.md#the-operation-context)
 - [The Operation Summary](./docs/v3.4.0/schema/definition/life-cycles.md#the-operation-summary)
-- [Life Cycles & Listeners](./docs/v3.4.0/schema/definition/life-cycles.md#life-cycle-listeners)
+- [Life Cycles & Handlers](./docs/v3.4.0/schema/definition/life-cycles.md#life-cycle-listeners)
 
   - [onDelete](./docs/v3.4.0/schema/definition/life-cycles.md#ondelete)
   - [onFailure](./docs/v3.4.0/schema/definition/life-cycles.md#onfailure)
   - [onSuccess](./docs/v3.4.0/schema/definition/life-cycles.md#onsuccess)
 
-- [Options](./docs/v3.5.2/index.md#options)
+- [Options](./docs/v4.0.0/index.md#options)
 
 - [Changelog](./docs/CHANGELOG.md#changelog)
 

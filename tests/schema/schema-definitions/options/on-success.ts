@@ -1,25 +1,25 @@
-import { beforeEach, describe, it, expect } from 'vitest'
+import { beforeEach, describe, it, expect } from 'vitest';
 
-import { ERRORS } from '../../../../dist'
+import { ERRORS } from '../../../../dist';
 import {
   expectFailure,
   expectNoFailure,
   getValidSchema,
   validator
-} from '../_utils'
+} from '../_utils';
 
 export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
   describe('Schema.options.onSuccess', () => {
     describe('behaviour', () => {
-      let successValues: any = {}
+      let successValues: any = {};
 
       function onSuccess_(prop = '') {
-        return (summary: any) => (successValues[prop] = summary)
+        return (summary: any) => (successValues[prop] = summary);
       }
 
       beforeEach(() => {
-        successValues = {}
-      })
+        successValues = {};
+      });
 
       describe('behaviour with other success listeners', () => {
         const Book = new Schema(
@@ -40,44 +40,44 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
             }
           },
           { onSuccess: onSuccess_('global') }
-        ).getModel()
+        ).getModel();
 
         it("should trigger all 'success' listeners at creation", async () => {
           const { data, handleSuccess } = await Book.create({
             name: 'Book name',
             _setPrice: 100
-          })
+          });
 
-          await handleSuccess()
+          await handleSuccess();
 
-          const values = { id: 1, name: 'Book name', price: 100 }
+          const values = { id: 1, name: 'Book name', price: 100 };
           const summary = {
             changes: null,
             context: { ...values, _setPrice: 100 },
             operation: 'creation',
             previousValues: null,
             values: values
-          }
+          };
 
-          expect(data).toEqual(values)
-          expect(successValues).toEqual({
+          expect(data).toEqual(values);
+          expect(successValues).toMatchObject({
             id: summary,
             name: summary,
             price: summary,
             _setPrice: summary,
             global: summary
-          })
-        })
+          });
+        });
 
         it("should trigger all 'success' listeners during cloning ", async () => {
-          const book = { id: 1, name: 'Book name', price: 100 }
+          const book = { id: 1, name: 'Book name', price: 100 };
 
           const { data, handleSuccess } = await Book.clone({
             ...book,
             _setPrice: 100
-          })
+          });
 
-          await handleSuccess()
+          await handleSuccess();
 
           const summary = {
             changes: null,
@@ -85,28 +85,28 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
             operation: 'creation',
             previousValues: null,
             values: book
-          }
+          };
 
-          expect(data).toEqual(book)
-          expect(successValues).toEqual({
+          expect(data).toEqual(book);
+          expect(successValues).toMatchObject({
             id: summary,
             name: summary,
             price: summary,
             _setPrice: summary,
             global: summary
-          })
-        })
+          });
+        });
 
         it("should trigger all 'success' listeners during updates ", async () => {
-          const book = { id: 1, name: 'Book name', price: 100 }
+          const book = { id: 1, name: 'Book name', price: 100 };
 
           const { data, handleSuccess } = await Book.update(book, {
             _setPrice: 200
-          })
+          });
 
-          await handleSuccess()
+          await handleSuccess();
 
-          const values = { ...book, price: 200 }
+          const values = { ...book, price: 200 };
 
           const summary = {
             changes: data,
@@ -114,16 +114,16 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
             operation: 'update',
             previousValues: book,
             values: values
-          }
+          };
 
-          expect(data).toEqual({ price: 200 })
-          expect(successValues).toEqual({
+          expect(data).toEqual({ price: 200 });
+          expect(successValues).toMatchObject({
             price: summary,
             _setPrice: summary,
             global: summary
-          })
-        })
-      })
+          });
+        });
+      });
 
       describe('behaviour without other success listeners', () => {
         const Book = new Schema(
@@ -139,41 +139,41 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
             _setPrice: { virtual: true, validator }
           },
           { onSuccess: [onSuccess_('global'), onSuccess_('global-1')] }
-        ).getModel()
+        ).getModel();
 
         it("should trigger all 'success' listeners at creation", async () => {
           const { data, handleSuccess } = await Book.create({
             name: 'Book name',
             _setPrice: 100
-          })
+          });
 
-          await handleSuccess()
+          await handleSuccess();
 
-          const values = { id: 1, name: 'Book name', price: 100 }
+          const values = { id: 1, name: 'Book name', price: 100 };
           const summary = {
             changes: null,
             context: { ...values, _setPrice: 100 },
             operation: 'creation',
             previousValues: null,
             values: values
-          }
+          };
 
-          expect(data).toEqual(values)
-          expect(successValues).toEqual({
+          expect(data).toEqual(values);
+          expect(successValues).toMatchObject({
             global: summary,
             'global-1': summary
-          })
-        })
+          });
+        });
 
         it("should trigger all 'success' listeners during cloning ", async () => {
-          const book = { id: 1, name: 'Book name', price: 100 }
+          const book = { id: 1, name: 'Book name', price: 100 };
 
           const { data, handleSuccess } = await Book.clone({
             ...book,
             _setPrice: 100
-          })
+          });
 
-          await handleSuccess()
+          await handleSuccess();
 
           const summary = {
             changes: null,
@@ -181,25 +181,25 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
             operation: 'creation',
             previousValues: null,
             values: book
-          }
+          };
 
-          expect(data).toEqual(book)
-          expect(successValues).toEqual({
+          expect(data).toEqual(book);
+          expect(successValues).toMatchObject({
             global: summary,
             'global-1': summary
-          })
-        })
+          });
+        });
 
         it("should trigger all 'success' listeners during updates ", async () => {
-          const book = { id: 1, name: 'Book name', price: 100 }
+          const book = { id: 1, name: 'Book name', price: 100 };
 
           const { data, handleSuccess } = await Book.update(book, {
             _setPrice: 200
-          })
+          });
 
-          await handleSuccess()
+          await handleSuccess();
 
-          const values = { ...book, price: 200 }
+          const values = { ...book, price: 200 };
 
           const summary = {
             changes: data,
@@ -207,30 +207,30 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
             operation: 'update',
             previousValues: book,
             values: values
-          }
+          };
 
-          expect(data).toEqual({ price: 200 })
-          expect(successValues).toEqual({
+          expect(data).toEqual({ price: 200 });
+          expect(successValues).toMatchObject({
             global: summary,
             'global-1': summary
-          })
-        })
-      })
-    })
+          });
+        });
+      });
+    });
 
     describe('valid', () => {
       it("should allow 'onSuccess' as (() => any) | ((() => any)[])", () => {
-        const values = [() => {}, [() => {}]]
+        const values = [() => {}, [() => {}]];
 
         for (const onSuccess of values) {
-          const toPass = fx(getValidSchema(), { onSuccess })
+          const toPass = fx(getValidSchema(), { onSuccess });
 
-          expectNoFailure(toPass)
+          expectNoFailure(toPass);
 
-          toPass()
+          toPass();
         }
-      })
-    })
+      });
+    });
 
     describe('invalid', () => {
       it("should reject 'onSuccess' other than (() => any) | ((() => any)[])", () => {
@@ -244,15 +244,15 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
           '',
           null,
           undefined
-        ]
+        ];
 
         for (const onSuccess of invalidValues) {
-          const toFail = fx(getValidSchema(), { onSuccess })
+          const toFail = fx(getValidSchema(), { onSuccess });
 
-          expectFailure(toFail)
+          expectFailure(toFail);
 
           try {
-            toFail()
+            toFail();
           } catch (err: any) {
             expect(err).toMatchObject({
               message: ERRORS.INVALID_SCHEMA,
@@ -261,10 +261,10 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
                   "The 'onSuccess' handler @[0] is not a function"
                 ])
               }
-            })
+            });
           }
         }
-      })
-    })
-  })
-}
+      });
+    });
+  });
+};

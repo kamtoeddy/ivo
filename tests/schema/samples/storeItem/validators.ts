@@ -2,11 +2,11 @@ import { Summary, StringOptions } from '../../../../dist'
 import {
   IOtherMeasureUnit,
   IOtherQuantity,
-  IStoreItem,
-  StoreItemType
+  StoreItemInput,
+  StoreItem
 } from './types'
 
-type SummaryType = Summary<StoreItemType, IStoreItem>
+type SummaryType = Summary<StoreItemInput, StoreItem>
 
 import { isArrayOk, isNumberOk, isStringOk } from '../../../../src'
 import { findBy } from '../../_utils'
@@ -67,7 +67,7 @@ export const validatePrice = (value: any) =>
 export const validateQuantity = (value: any) =>
   isNumberOk(value, { range: { bounds: [0] } })
 
-export const validateOtherQuantity = (value: any, ctx: IStoreItem) => {
+export const validateOtherQuantity = (value: any, ctx: StoreItemInput) => {
   const mu = getMeasureUnit(ctx.otherMeasureUnits!, value?.name)
 
   const isValidQty = isNumberOk(value?.quantity, {

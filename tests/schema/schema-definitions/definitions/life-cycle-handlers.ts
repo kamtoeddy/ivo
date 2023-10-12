@@ -1,10 +1,10 @@
-import { beforeEach, describe, it, expect, test } from 'vitest'
+import { beforeEach, describe, it, expect, test } from 'vitest';
 
-import { expectFailure, expectNoFailure, validator } from '../_utils'
+import { expectFailure, expectNoFailure, validator } from '../_utils';
 
 export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
   describe('life cycle handlers', () => {
-    const rules = ['onDelete', 'onFailure', 'onSuccess']
+    const rules = ['onDelete', 'onFailure', 'onSuccess'];
 
     describe('valid', () => {
       test('valid', () => {
@@ -13,7 +13,7 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
           () => ({}),
           [() => {}],
           [() => {}, () => ({})]
-        ]
+        ];
 
         for (const rule of rules)
           for (const value of values) {
@@ -23,18 +23,18 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
                 [rule]: value,
                 validator
               }
-            })
+            });
 
-            expectNoFailure(toPass)
+            expectNoFailure(toPass);
 
-            toPass()
+            toPass();
           }
-      })
-    })
+      });
+    });
 
     describe('invalid', () => {
       test('invalid', () => {
-        const values = [1, '', 0, false, true, null, {}]
+        const values = [1, '', 0, false, true, null, {}];
 
         for (const rule of rules)
           for (const value of values) {
@@ -44,12 +44,12 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
                 [rule]: value,
                 validator
               }
-            })
+            });
 
-            expectFailure(toFail)
+            expectFailure(toFail);
 
             try {
-              toFail()
+              toFail();
             } catch (err: any) {
               expect(err.payload).toEqual(
                 expect.objectContaining({
@@ -57,33 +57,33 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
                     `The '${rule}' handler @[0] is not a function`
                   ])
                 })
-              )
+              );
             }
           }
-      })
-    })
+      });
+    });
 
     describe('life cycle readonly ctx', () => {
-      const rules = ['onDelete', 'onFailure', 'onSuccess']
+      const rules = ['onDelete', 'onFailure', 'onSuccess'];
 
-      let propChangeMap: any = {}
+      let propChangeMap: any = {};
 
-      const validData = { constant: 1, prop1: '1', prop2: '2', prop3: '3' }
+      const validData = { constant: 1, prop1: '1', prop2: '2', prop3: '3' };
       const allProps = ['constant', 'prop1', 'prop2', 'prop3'],
-        props = ['prop1', 'prop2', 'prop3']
+        props = ['prop1', 'prop2', 'prop3'];
 
       const handle =
         (rule = '', prop = '') =>
         ({ context }: any) => {
           try {
-            context[prop] = 1
+            context[prop] = 1;
           } catch (err) {
-            if (!propChangeMap[rule]) propChangeMap[rule] = {}
+            if (!propChangeMap[rule]) propChangeMap[rule] = {};
 
-            propChangeMap[rule][prop] = true
+            propChangeMap[rule][prop] = true;
           }
-        }
-      const validator = (value: any) => ({ valid: !!value })
+        };
+      const validator = (value: any) => ({ valid: !!value });
 
       const Model = new Schema({
         constant: {
@@ -113,69 +113,74 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
           onSuccess: handle('onSuccess', 'prop3'),
           validator
         }
-      }).getModel()
+      }).getModel();
 
       beforeEach(() => {
-        propChangeMap = {}
-      })
+        propChangeMap = {};
+      });
 
       it('should reject handlers that try to mutate the onChange, onCreate & onSuccess ctx', async () => {
-        const { handleSuccess } = await Model.create(validData)
+        const { handleSuccess } = await Model.create(validData);
 
-        await handleSuccess?.()
+        await handleSuccess?.();
 
-        expect(propChangeMap.onSuccess.constant).toBe(true)
-      })
+        expect(propChangeMap.onSuccess.constant).toBe(true);
+      });
 
       it('should reject handlers that try to mutate the onDelete ctx', async () => {
-        await Model.delete(validData)
+        await Model.delete(validData);
 
         for (const prop of allProps)
-          expect(propChangeMap.onDelete[prop]).toBe(true)
-      })
+          expect(propChangeMap.onDelete[prop]).toBe(true);
+      });
 
       it('should reject handlers that try to mutate the onFailure(clone) ctx', async () => {
-        await Model.clone({ prop1: '', prop2: '', prop3: '' })
+        await Model.clone({ prop1: '', prop2: '', prop3: '' });
 
         for (const prop of props)
           for (const rule of rules) {
-            const result = rule == 'onFailure' ? true : undefined
+            const result = rule == 'onFailure' ? true : undefined;
 
-            expect(propChangeMap?.[rule]?.[prop]).toBe(result)
+            expect(propChangeMap?.[rule]?.[prop]).toBe(result);
           }
-      })
+      });
 
       it('should reject handlers that try to mutate the onFailure(create) ctx', async () => {
-        await Model.create({ prop1: '', prop2: '', prop3: '' })
+        await Model.create({ prop1: '', prop2: '', prop3: '' });
 
         for (const prop of props)
           for (const rule of rules) {
-            const result = rule == 'onFailure' ? true : undefined
+            const result = rule == 'onFailure' ? true : undefined;
 
-            expect(propChangeMap?.[rule]?.[prop]).toBe(result)
+            expect(propChangeMap?.[rule]?.[prop]).toBe(result);
           }
-      })
+      });
 
       it('should reject handlers that try to mutate the onFailure(update) ctx', async () => {
-        await Model.update(validData, { prop1: '', prop2: '', prop3: '' })
+        await Model.update(validData, { prop1: '', prop2: '', prop3: '' });
 
         for (const prop of props)
           for (const rule of rules) {
-            const result = rule == 'onFailure' ? true : undefined
+            const result = rule == 'onFailure' ? true : undefined;
 
-            expect(propChangeMap?.[rule]?.[prop]).toBe(result)
+            expect(propChangeMap?.[rule]?.[prop]).toBe(result);
           }
-      })
-    })
+      });
+    });
 
     describe('onDelete', () => {
-      let propChangeMap: any = {}
+      const contextOptions = { lang: 'en' };
 
-      const onDelete =
-        (prop = '') =>
-        () =>
-          (propChangeMap[prop] = true)
-      const validator = () => ({ valid: false })
+      let cxtOptions: any = {},
+        propChangeMap: any = {};
+
+      const onDelete = (prop = '') => {
+        return ({ __getOptions__ }) => {
+          cxtOptions[prop] = __getOptions__();
+          propChangeMap[prop] = true;
+        };
+      };
+      const validator = () => ({ valid: false });
 
       const Model = new Schema({
         constant: {
@@ -186,38 +191,48 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
         prop1: { required: true, onDelete: onDelete('prop1'), validator },
         prop2: { required: true, onDelete: onDelete('prop2'), validator },
         prop3: { required: true, onDelete: onDelete('prop3'), validator }
-      }).getModel()
+      }).getModel();
 
       beforeEach(() => {
-        propChangeMap = {}
-      })
+        cxtOptions = {};
+        propChangeMap = {};
+      });
 
       it('should trigger all onDelete handlers but for virtuals', async () => {
-        await Model.delete({
-          constant: true,
-          prop1: true,
-          prop2: true,
-          prop3: true,
-          prop4: true
-        })
+        await Model.delete(
+          {
+            constant: true,
+            prop1: true,
+            prop2: true,
+            prop3: true,
+            prop4: true
+          },
+          contextOptions
+        );
 
+        expect(cxtOptions).toEqual({
+          constant: contextOptions,
+          prop1: contextOptions,
+          prop2: contextOptions,
+          prop3: contextOptions
+        });
         expect(propChangeMap).toEqual({
           constant: true,
           prop1: true,
           prop2: true,
           prop3: true
-        })
-      })
-    })
+        });
+      });
+    });
 
     describe('onFailure', () => {
       it('should reject onFailure & no validator', () => {
-        const toFail = fx({ prop: { default: '', onFailure: () => {} } })
+        const toFail = fx({ prop: { default: '', onFailure: () => {} } });
 
-        expectFailure(toFail)
+        expectFailure(toFail);
 
         try {
-          toFail()
+          toFail();
         } catch (err: any) {
           expect(err.payload).toMatchObject(
             expect.objectContaining({
@@ -225,19 +240,23 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
                 "'onFailure' can only be used with properties that support and have validators"
               ])
             })
-          )
+          );
         }
-      })
+      });
 
       describe('behaviour', () => {
-        let onFailureCount: any = {}
+        const contextOptions = { lang: 'en' };
+
+        let cxtOptions: any = {},
+          onFailureCount: any = {};
 
         function incrementOnFailureCountOf(prop: string) {
-          return () => {
-            onFailureCount[prop] = (onFailureCount[prop] ?? 0) + 1
-          }
+          return ({ __getOptions__ }) => {
+            cxtOptions[prop] = __getOptions__();
+            onFailureCount[prop] = (onFailureCount[prop] ?? 0) + 1;
+          };
         }
-        const validator = () => ({ valid: false })
+        const validator = () => ({ valid: false });
 
         const Model = new Schema({
           prop1: {
@@ -268,113 +287,162 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
             ],
             validator
           }
-        }).getModel()
+        }).getModel();
 
         beforeEach(() => {
-          onFailureCount = {}
-        })
+          cxtOptions = {};
+          onFailureCount = {};
+        });
 
         describe('creation', () => {
           it('should call onFailure handlers at creation', async () => {
-            const { error } = await Model.create({ prop1: false })
+            const { error } = await Model.create(
+              { prop1: false },
+              contextOptions
+            );
 
-            expect(error).toBeDefined()
-            expect(onFailureCount).toEqual({ prop1: 1, prop2: 2 })
-          })
+            expect(error).toBeDefined();
+            expect(cxtOptions).toEqual({
+              prop1: contextOptions,
+              prop2: contextOptions
+            });
+            expect(onFailureCount).toEqual({ prop1: 1, prop2: 2 });
+          });
 
           it('should call onFailure handlers at creation with virtuals', async () => {
-            const { error } = await Model.create({
-              prop1: false,
-              virtualProp: 'Yes'
-            })
+            const { error } = await Model.create(
+              {
+                prop1: false,
+                virtualProp: 'Yes'
+              },
+              contextOptions
+            );
 
-            expect(error).toBeDefined()
+            expect(error).toBeDefined();
+            expect(error).toBeDefined();
+            expect(cxtOptions).toEqual({
+              prop1: contextOptions,
+              prop2: contextOptions,
+              virtualProp: contextOptions
+            });
             expect(onFailureCount).toEqual({
               prop1: 1,
               prop2: 2,
               virtualProp: 3
-            })
-          })
+            });
+          });
 
           it('should call onFailure handlers during cloning', async () => {
-            const { error } = await Model.clone({ prop1: '' })
+            const { error } = await Model.clone({ prop1: '' }, contextOptions);
 
-            expect(error).toBeDefined()
-            expect(onFailureCount).toEqual({ prop1: 1, prop2: 2 })
-          })
+            expect(error).toBeDefined();
+            expect(cxtOptions).toEqual({
+              prop1: contextOptions,
+              prop2: contextOptions
+            });
+            expect(onFailureCount).toEqual({ prop1: 1, prop2: 2 });
+          });
 
           it('should call onFailure handlers during cloning with virtuals', async () => {
-            const { error } = await Model.clone({
-              prop1: '',
-              virtualProp: 'Yes'
-            })
+            const { error } = await Model.clone(
+              {
+                prop1: '',
+                virtualProp: 'Yes'
+              },
+              contextOptions
+            );
 
-            expect(error).toBeDefined()
+            expect(error).toBeDefined();
+            expect(cxtOptions).toEqual({
+              prop1: contextOptions,
+              prop2: contextOptions,
+              virtualProp: contextOptions
+            });
             expect(onFailureCount).toEqual({
               prop1: 1,
               prop2: 2,
               virtualProp: 3
-            })
-          })
-        })
+            });
+          });
+        });
 
         describe('updates', () => {
           it('should call onFailure handlers during updates', async () => {
-            const { error } = await Model.update({}, { prop1: '' })
+            const { error } = await Model.update(
+              {},
+              { prop1: '' },
+              contextOptions
+            );
 
-            expect(error).toBeDefined()
-            expect(onFailureCount).toEqual({ prop1: 1 })
-          })
+            expect(error).toBeDefined();
+            expect(cxtOptions).toEqual({ prop1: contextOptions });
+            expect(onFailureCount).toEqual({ prop1: 1 });
+          });
 
           it('should call onFailure handlers during updates with virtuals', async () => {
             const data = [
-              [{ virtualProp: '' }, { virtualProp: 3 }],
+              [
+                { virtualProp: '' },
+                { virtualProp: 3 },
+                { virtualProp: contextOptions }
+              ],
               [
                 { prop1: '', virtualProp: '' },
-                { prop1: 1, virtualProp: 3 }
+                { prop1: 1, virtualProp: 3 },
+                { prop1: contextOptions, virtualProp: contextOptions }
               ]
-            ]
+            ];
 
-            for (const [changes, results] of data) {
-              onFailureCount = {}
+            for (const [changes, results, ctxOpts] of data) {
+              onFailureCount = {};
 
-              const { error } = await Model.update({}, changes)
+              const { error } = await Model.update({}, changes, contextOptions);
 
-              expect(error).toBeDefined()
-              expect(onFailureCount).toEqual(results)
+              expect(error).toBeDefined();
+              expect(cxtOptions).toEqual(ctxOpts);
+              expect(onFailureCount).toEqual(results);
             }
-          })
+          });
 
           it('should call onFailure handlers during updates & nothing to update', async () => {
-            const { error } = await Model.update({ prop1: 2 }, { prop1: 35 })
+            const { error } = await Model.update(
+              { prop1: 2 },
+              { prop1: 35 },
+              contextOptions
+            );
 
-            expect(error).toBeDefined()
-            expect(onFailureCount).toEqual({ prop1: 1 })
-          })
-        })
-      })
-    })
+            expect(error).toBeDefined();
+            expect(cxtOptions).toEqual({ prop1: contextOptions });
+            expect(onFailureCount).toEqual({ prop1: 1 });
+          });
+        });
+      });
+    });
 
     describe('onSuccess', () => {
-      let initialData = {
+      const contextOptions = { lang: 'en' };
+
+      let cxtOptions: any = {},
+        initialData = {
           dependent: false,
           lax: 'changed',
           readonly: 'changed',
           readonlyLax: '',
           required: 'changed'
         },
-        propChangeMap: any = {},
-        onSuccessValues: any = {}
+        onSuccessValues: any = {},
+        propChangeMap: any = {};
 
       const onSuccess =
         (prop = '') =>
         (summary: any) => {
-          propChangeMap[prop] = true
-          onSuccessValues[prop] = summary
-          onSuccessValues.__ctx = summary.context
-        }
+          cxtOptions[prop] = summary.context.__getOptions__();
+          onSuccessValues[prop] = summary;
+          onSuccessValues.__ctx = summary.context;
+          propChangeMap[prop] = true;
+        };
 
-      const validator = () => ({ valid: true })
+      const validator = () => ({ valid: true });
 
       const Model = new Schema({
         dependent: {
@@ -401,37 +469,50 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
           onSuccess: onSuccess('required'),
           validator
         }
-      }).getModel()
+      }).getModel();
 
       beforeEach(() => {
-        propChangeMap = {}
-        onSuccessValues = {}
-      })
+        cxtOptions = {};
+        onSuccessValues = {};
+        propChangeMap = {};
+      });
 
       // creation
       it('should call onSuccess handlers at creation', async () => {
-        const { data, error, handleSuccess } = await Model.create({
-          required: true,
-          readonly: true
-        })
+        const { data, error, handleSuccess } = await Model.create(
+          {
+            required: true,
+            readonly: true
+          },
+          contextOptions
+        );
 
-        await handleSuccess()
+        await handleSuccess();
 
-        expect(error).toBe(null)
+        expect(error).toBe(null);
+
+        expect(cxtOptions).toEqual({
+          dependent: contextOptions,
+          lax: contextOptions,
+          readonly: contextOptions,
+          readonlyLax: contextOptions,
+          required: contextOptions
+        });
+
         expect(propChangeMap).toEqual({
           dependent: true,
           lax: true,
           readonly: true,
           readonlyLax: true,
           required: true
-        })
+        });
 
         const changes = null,
           context = onSuccessValues.__ctx,
           operation = 'creation',
           previousValues = null,
           values = data,
-          summary = { changes, context, operation, previousValues, values }
+          summary = { changes, context, operation, previousValues, values };
 
         expect(onSuccessValues).toMatchObject({
           dependent: summary,
@@ -439,8 +520,8 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
           readonly: summary,
           readonlyLax: summary,
           required: summary
-        })
-      })
+        });
+      });
 
       // cloning
       it('should call onSuccess handlers during cloning', async () => {
@@ -450,26 +531,36 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
           readonly: true,
           readonlyLax: '',
           required: true
-        }
-        const { data, error, handleSuccess } = await Model.clone(initialData)
+        };
+        const { data, error, handleSuccess } = await Model.clone(initialData, {
+          contextOptions
+        });
 
-        await handleSuccess()
+        await handleSuccess();
 
-        expect(error).toBe(null)
+        expect(error).toBe(null);
+        expect(cxtOptions).toEqual({
+          dependent: contextOptions,
+          lax: contextOptions,
+          readonly: contextOptions,
+          readonlyLax: contextOptions,
+          required: contextOptions
+        });
+
         expect(propChangeMap).toEqual({
           dependent: true,
           lax: true,
           readonly: true,
           readonlyLax: true,
           required: true
-        })
+        });
 
         const changes = null,
           context = onSuccessValues.__ctx,
           operation = 'creation',
           previousValues = null,
           values = { ...initialData, ...data },
-          summary = { changes, context, operation, previousValues, values }
+          summary = { changes, context, operation, previousValues, values };
 
         expect(onSuccessValues).toMatchObject({
           dependent: summary,
@@ -477,21 +568,28 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
           readonly: summary,
           readonlyLax: summary,
           required: summary
-        })
-      })
+        });
+      });
 
       // updates
       it('should call onSuccess handlers during updates with lax props', async () => {
-        const { data, error, handleSuccess } = await Model.update(initialData, {
-          lax: true
-        })
+        const { data, error, handleSuccess } = await Model.update(
+          initialData,
+          {
+            lax: true
+          },
+          contextOptions
+        );
 
-        await handleSuccess()
+        await handleSuccess();
 
-        expect(error).toBe(null)
-        expect(propChangeMap).toEqual({ lax: true })
+        expect(error).toBe(null);
+        expect(cxtOptions).toEqual({
+          lax: contextOptions
+        });
+        expect(propChangeMap).toEqual({ lax: true });
 
-        const operation = 'update'
+        const operation = 'update';
 
         expect(onSuccessValues).toMatchObject({
           lax: expect.objectContaining({
@@ -501,31 +599,39 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
             previousValues: initialData,
             values: { ...initialData, lax: true }
           })
-        })
-      })
+        });
+      });
 
       it('should call onSuccess handlers during updates with readonlyLax & dependent', async () => {
-        const { data, error, handleSuccess } = await Model.update(initialData, {
-          readonlyLax: true
-        })
+        const { data, error, handleSuccess } = await Model.update(
+          initialData,
+          {
+            readonlyLax: true
+          },
+          contextOptions
+        );
 
-        await handleSuccess()
+        await handleSuccess();
 
-        expect(error).toBe(null)
-        expect(propChangeMap).toEqual({ dependent: true, readonlyLax: true })
+        expect(error).toBe(null);
+        expect(cxtOptions).toEqual({
+          dependent: contextOptions,
+          readonlyLax: contextOptions
+        });
+        expect(propChangeMap).toEqual({ dependent: true, readonlyLax: true });
 
         const changes = data,
           context = onSuccessValues.__ctx,
           operation = 'update',
           previousValues = initialData,
           values = { ...initialData, ...data },
-          summary = { changes, context, operation, previousValues, values }
+          summary = { changes, context, operation, previousValues, values };
 
         expect(onSuccessValues).toMatchObject({
           dependent: summary,
           readonlyLax: summary
-        })
-      })
-    })
-  })
-}
+        });
+      });
+    });
+  });
+};

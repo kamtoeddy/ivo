@@ -7,9 +7,10 @@ export * as validate from './validate'
 export * from './validate'
 
 export { ERRORS, SCHEMA_ERRORS, VALIDATION_ERRORS } from './schema/utils'
+
 export {
   ObjectType,
-  PayloadKey,
+  FieldKey,
   getKeysAsProps,
   isEqual,
   isFunction,
@@ -20,11 +21,20 @@ export {
 } from './utils'
 export {
   Context,
+  KeyOf,
   ISchema,
   Merge,
   NonEmptyArray,
   RealType,
   Summary,
   ValidatorResponse,
+  ValidatorResponseObject,
   XOR
 } from './schema/types'
+export {
+  FieldError,
+  IErrorTool,
+  IValidationError,
+  InputPayload,
+  ValidationErrorMessage
+} from './schema/utils'
