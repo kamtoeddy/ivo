@@ -625,7 +625,7 @@ class ModelTool<
   }
 
   private _sanitizeValidationResponse<T>(
-    response: any,
+    response: ValidatorResponseObject<any>,
     value: any
   ): ValidatorResponseObject<T> {
     const responseType = typeof response;
@@ -635,7 +635,7 @@ class ModelTool<
         ? { valid: true, validated: value }
         : getValidationFailedResponse(value);
 
-    if (!response && (responseType != 'object' || Array.isArray(response)))
+    if (!response && responseType != 'object')
       return getValidationFailedResponse(value);
 
     if (response?.valid) {
@@ -655,12 +655,38 @@ class ModelTool<
 
       const otherReasons = {} as Record<string, any>;
 
-      for (const prop of validProperties)
-        otherReasons[prop] = toArray(response.otherReasons[prop]).map(
-          (value) => {
-            return typeof value === 'string' ? value : 'validation failed';
-          }
-        );
+      for (const prop of validProperties) {
+        const fieldError = response.otherReasons[prop];
+
+        const isArray = Array.isArray(fieldError),
+          isString = typeof fieldError == 'string';
+
+        if (!isObject(fieldError) && !isArray && !isString) {
+          otherReasons[prop] = 'validation failed';
+
+          continue;
+        }
+
+        if (isArray) {
+          const message = (fieldError as any[]).filter(
+            (v) => typeof v == 'string'
+          );
+
+          otherReasons[prop] = message.length ? message : 'validation failed';
+
+          continue;
+        }
+
+        if (isString) {
+          const message = fieldError.trim();
+
+          otherReasons[prop] = message.length ? message : 'validation failed';
+
+          continue;
+        }
+
+        otherReasons[prop] = fieldError;
+      }
 
       _response.otherReasons = otherReasons;
     }

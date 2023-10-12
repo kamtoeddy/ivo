@@ -45,14 +45,14 @@ class DefaultErrorTool<PayloadKeys extends FieldKey = FieldKey>
 
     const currentValues = this._payload[field]!;
 
-    const { reasons = [], metadata } = value;
+    const { reasons, metadata } = value;
 
     reasons.forEach((reason) => {
       if (!currentValues.reasons.includes(reason))
         currentValues.reasons.push(reason);
     });
 
-    if (metadata && !isEqual(currentValues.metadata, metadata))
+    if (metadata && !isEqual(currentValues?.metadata, metadata))
       currentValues.metadata = {
         ...(currentValues?.metadata ?? {}),
         ...metadata

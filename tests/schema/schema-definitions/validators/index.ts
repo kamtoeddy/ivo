@@ -102,7 +102,7 @@ export const Test_Validators = ({ Schema }: any) => {
 
         for (const [input, reasons] of messages) {
           const Model = new Schema({
-            prop: { default: '' },
+            prop: { default: '', validator: () => false },
             prop2: {
               required: true,
               validator() {
@@ -111,12 +111,20 @@ export const Test_Validators = ({ Schema }: any) => {
             }
           }).getModel();
 
-          const { data, error } = await Model.create({});
+          const { data, error } = await Model.create({ prop: 'invalid' });
 
           expect(data).toBe(null);
           expect(error).toMatchObject({
             message: ERRORS.VALIDATION_ERROR,
-            payload: { prop: { reasons, metadata: null } }
+            payload: {
+              prop: {
+                reasons: expect.arrayContaining([
+                  'validation failed',
+                  ...reasons
+                ]),
+                metadata: null
+              }
+            }
           });
         }
       });
@@ -226,6 +234,47 @@ export const Test_Validators = ({ Schema }: any) => {
             expect(error).toMatchObject({
               message: ERRORS.VALIDATION_ERROR,
               payload: { prop2: expect.objectContaining({ metadata }) }
+            });
+          }
+        });
+
+        it('should respect valid metadata provided by custom validators', async () => {
+          const info = [{ prop2: 'Invalid Prop' }];
+          const propMetadata = { message1: 'try again' };
+
+          for (const metadata of info) {
+            const Model = new Schema({
+              prop: {
+                default: '',
+                validator: () => ({
+                  valid: false,
+                  metadata: { message: 'too bad' }
+                })
+              },
+              prop2: {
+                required: true,
+                validator() {
+                  return {
+                    valid: false,
+                    metadata,
+                    otherReasons: { prop: { metadata: propMetadata } }
+                  };
+                }
+              }
+            }).getModel();
+
+            const { data, error } = await Model.create({ prop: 'invalid' });
+
+            expect(data).toBe(null);
+            expect(error).toMatchObject({
+              message: ERRORS.VALIDATION_ERROR,
+              payload: {
+                prop: expect.objectContaining({
+                  metadata: { message: 'too bad', ...propMetadata },
+                  reasons: expect.arrayContaining(['validation failed'])
+                }),
+                prop2: expect.objectContaining({ metadata })
+              }
             });
           }
         });
