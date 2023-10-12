@@ -109,7 +109,7 @@ function isNullOrUndefined(value: any): value is null | undefined {
   return isOneOf(value, [null, undefined]);
 }
 
-function isObject(value: any): value is ObjectType {
+function isObject<T extends ObjectType>(value: any): value is T {
   return value && typeof value === 'object' && !Array.isArray(value);
 }
 

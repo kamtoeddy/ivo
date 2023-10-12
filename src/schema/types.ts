@@ -48,7 +48,7 @@ type DeleteContext<Output, CtxOptions extends ObjectType = {}> = Readonly<
   Output & { __getOptions__: () => Readonly<CtxOptions> }
 > & {};
 
-type PartialContext<Input, Output = Input> = Readonly<Merge<Input, Output>>;
+type PartialContext<Input, Output> = Readonly<Merge<Input, Output>>;
 
 type Summary<Input, Output = Input, CtxOptions extends ObjectType = {}> = (
   | Readonly<{
@@ -81,6 +81,19 @@ type SetterWithSummary<T, Input, Output, CtxOptions extends ObjectType = {}> = (
   summary: Summary<Input, Output, CtxOptions> & {}
 ) => TypeOf<T>;
 
+type AsyncShouldUpdateResponse<CtxOptions extends ObjectType = {}> = {
+  update: boolean;
+  ctxOptionsUpdate?: Partial<CtxOptions>;
+};
+
+type AsyncShouldUpdate<Input, Output, CtxOptions extends ObjectType = {}> = (
+  summary: Summary<Input, Output, CtxOptions> & {}
+) =>
+  | boolean
+  | AsyncShouldUpdateResponse
+  | Promise<boolean>
+  | Promise<AsyncShouldUpdateResponse>;
+
 type Resolver<
   K extends keyof Output,
   Input,
@@ -104,7 +117,7 @@ type KeyOf<T> = Extract<keyof T, string>;
 namespace Schema {
   export type LifeCycle = (typeof LIFE_CYCLES)[number];
 
-  export type OperationName = (typeof OPERATIONS)[number];
+  export type Operation = (typeof OPERATIONS)[number];
 
   export type Handler<Output, CtxOptions extends ObjectType> = (
     data: DeleteContext<Output, CtxOptions>
@@ -378,9 +391,7 @@ namespace Schema {
       | SuccessHandler<Input, Output, CtxOptions>
       | NonEmptyArray<SuccessHandler<Input, Output, CtxOptions>>;
     setMissingDefaultsOnUpdate?: boolean;
-    shouldUpdate?:
-      | boolean
-      | SetterWithSummary<boolean, Input, Output, CtxOptions>;
+    shouldUpdate?: boolean | AsyncShouldUpdate<Input, Output, CtxOptions>;
     timestamps?:
       | boolean
       | { createdAt?: boolean | string; updatedAt?: boolean | string };
@@ -402,9 +413,7 @@ namespace Schema {
       | SuccessHandler<Input, Output, CtxOptions>
       | NonEmptyArray<SuccessHandler<Input, Output, CtxOptions>>;
     setMissingDefaultsOnUpdate?: boolean;
-    shouldUpdate?:
-      | boolean
-      | SetterWithSummary<boolean, Input, Output, CtxOptions>;
+    shouldUpdate?: boolean | AsyncShouldUpdate<Input, Output, CtxOptions>;
     timestamps?:
       | boolean
       | { createdAt?: boolean | string; updatedAt?: boolean | string };

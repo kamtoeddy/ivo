@@ -321,12 +321,19 @@ class ModelTool<
     return [true, sanitizer];
   }
 
-  private _isGloballyUpdatable(changes: any) {
+  private async _isGloballyUpdatable(changes: any) {
     const { shouldUpdate = defaultOptions.shouldUpdate! } = this._options;
 
     if (typeof shouldUpdate == 'boolean') return shouldUpdate;
 
-    return shouldUpdate(this._getSummary(changes, true));
+    const response = await shouldUpdate(this._getSummary(changes, true));
+
+    if (typeof response == 'boolean') return response;
+
+    if (response?.ctxOptionsUpdate)
+      this._updateContextOptions(response.ctxOptionsUpdate);
+
+    return !!response?.update;
   }
 
   private _isUpdatable(prop: string, value: any = undefined) {
@@ -1002,7 +1009,7 @@ class ModelTool<
       ctxOpts
     );
 
-    if (!this._isGloballyUpdatable(changes as any))
+    if (!(await this._isGloballyUpdatable(changes as any)))
       return this._handleError(errorTool);
 
     errorTool.setMessage(VALIDATION_ERRORS.VALIDATION_ERROR);
