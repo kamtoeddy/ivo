@@ -14,38 +14,38 @@ $ npm i clean-schema
 
 ```js
 // Using Nodejs `require`
-const { Schema } = require('clean-schema')
+const { Schema } = require('clean-schema');
 
 // Using ES6 imports
-import { Schema } from 'clean-schema'
+import { Schema } from 'clean-schema';
 ```
 
 # Defining a schema
 
 ```ts
-import { Schema, type Summary } from 'clean-schema'
+import { Schema, type Summary } from 'clean-schema';
 
-type UserRole = 'admin' | 'user'
+type UserRole = 'admin' | 'user';
 
 type Input = {
-  firstName: string
-  lastName: string
-  password: string
-  role?: UserRole
-}
+  firstName: string;
+  lastName: string;
+  password: string;
+  role?: UserRole;
+};
 
 type Output = {
-  createdAt: Date
-  firstName: string
-  fullName: string
-  id: number
-  lastName: string
-  password: string
-  role: UserRole
-  updatedAt: Date
-}
+  createdAt: Date;
+  firstName: string;
+  fullName: string;
+  id: number;
+  lastName: string;
+  password: string;
+  role: UserRole;
+  updatedAt: Date;
+};
 
-type ISummary = Summary<Input, Output>
+type ISummary = Summary<Input, Output>;
 
 const userSchema = new Schema<Input, Output>(
   {
@@ -68,70 +68,70 @@ const userSchema = new Schema<Input, Output>(
     role: { default: 'user', shouldInit: false, validator: validateRole }
   },
   { timestamps: true }
-)
+);
 
 // resolvers
 function getFullName({ context: { firstName, lastName } }: ISummary) {
-  return `${firstName} ${lastName}`
+  return `${firstName} ${lastName}`;
 }
 
 function generateUserId() {
-  return Math.random() * 1e18
+  return Math.random() * 1e18;
 }
 
 function hashPassword(value) {
-  return Math.random().toString(value.length)
+  return Math.random().toString(value.length);
 }
 
 // validators
 function validatePassword(value) {
-  const isValidString = validateString()(value)
+  const isValidString = validateString()(value);
 
-  if (!isValidString.valid) return isValidString
+  if (!isValidString.valid) return isValidString;
 
-  let validated = isValidString.validated
+  let validated = isValidString.validated;
 
-  const valid = validated.length >= 8
+  const valid = validated.length >= 8;
 
-  if (!valid) return { valid, reason: 'minimum characters should be 8' }
+  if (!valid) return { valid, reason: 'minimum characters should be 8' };
 
-  return { valid, validated: hashPassword(validated) }
+  return { valid, validated: hashPassword(validated) };
 }
 
 function validateRole(value) {
-  const isValidString = validateString()(value)
+  const isValidString = validateString()(value);
 
-  if (!isValidString.valid) return isValidString
+  if (!isValidString.valid) return isValidString;
 
-  const valid = ['admin', 'user'].includes(validated)
+  const valid = ['admin', 'user'].includes(validated);
 
-  if (!valid) return { valid, reason: 'invalid user role' }
+  if (!valid) return { valid, reason: 'invalid user role' };
 
-  return { valid, validated: isValidString.validated }
+  return { valid, validated: isValidString.validated };
 }
 
 function validateString(message = '') {
   return (value) => {
-    const typeProvided = typeof value
+    const typeProvided = typeof value;
 
     if (typeProvided != 'string') {
-      const reason = message || `expected a string but got '${typeProvided}'`
+      const reason = message || `expected a string but got '${typeProvided}'`;
 
-      return { valid: false, reason }
+      return { valid: false, reason };
     }
 
-    return { valid: true, validated: value.trim() }
-  }
+    return { valid: true, validated: value.trim() };
+  };
 }
 
 // get the model
-const UserModel = userSchema.getModel()
+const UserModel = userSchema.getModel();
 ```
 
 # Creating an entity
 
 ```ts
-import userDb from 'db-of-choice' // use any db that supports the information you are modelling
+import userDb from 'db-of-choice'; // use any db that supports the information you are modelling
 
 const { data: user, handleSuccess } = await UserModel.create({
   firstName: 'John',
@@ -142,9 +142,9 @@ const { data: user, handleSuccess } = await UserModel.create({
   name: 'John Doe',
   password: 'au_34ibUv^T-adjInFjj',
   role: 'admin'
-})
+});
 
-console.log(user)
+console.log(user);
 //  {
 //   createdAt: new Date(),
 //   firstName: "John",
@@ -156,38 +156,36 @@ console.log(user)
 //   updatedAt: new Date(),
 // };
 
-await userDb.insert(user)
+await userDb.insert(user);
 
-await handleSuccess()
+await handleSuccess();
 ```
 
 # Updating an entity
 
 ```ts
-const user = await userDb.findById(18927934748659724)
+const user = await userDb.findById(18927934748659724);
 
-if (!user) throw new Error('User not found')
+if (!user) throw new Error('User not found');
 
 const { data, handleSuccess } = await UserModel.update(user, {
   firstName: 'Peter',
   id: 2,
   age: 34,
   fullName: 'Tony Stark'
-})
+});
 
 // age is ignored because it is not a valid property
 // fullName is ignored because it is dependent
 // id is ignored because it is a constant
-console.log(data) // { firstName: "Peter", fullName: "Peter Doe", updatedAt: new Date() }
+console.log(data); // { firstName: "Peter", fullName: "Peter Doe", updatedAt: new Date() }
 
-await userDb.updateOne({ id: user.id }, data)
+await userDb.updateOne({ id: user.id }, data);
 
-await handleSuccess()
+await handleSuccess();
 ```
 
 ## Docs
-
-⚠️ If using with TypeScript, make sure to have `skipLibCheck: true` else your program will not compile because of a complex type used under the hood to infer some types
 
 - [Defining a schema](./docs/v3.5.2/index.md#defining-a-schema)
   - [constant properties](./docs/v3.0.0/schema/definition/constants.md#constant-properties)

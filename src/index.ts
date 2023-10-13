@@ -1,12 +1,12 @@
-import { Schema } from './schema'
+import { Schema } from './schema';
 
-export default Schema
+export default Schema;
 
-export { Schema } from './schema'
-export * as validate from './validate'
-export * from './validate'
+export { Schema } from './schema';
+export * as validate from './validate';
+export * from './validate';
 
-export { ERRORS, SCHEMA_ERRORS, VALIDATION_ERRORS } from './schema/utils'
+export { ERRORS, SCHEMA_ERRORS, VALIDATION_ERRORS } from './schema/utils';
 
 export {
   ObjectType,
@@ -18,11 +18,10 @@ export {
   isObject,
   isPropertyOf,
   toArray
-} from './utils'
+} from './utils';
 export {
   Context,
   KeyOf,
-  ISchema,
   Merge,
   NonEmptyArray,
   RealType,
@@ -30,11 +29,11 @@ export {
   ValidatorResponse,
   ValidatorResponseObject,
   XOR
-} from './schema/types'
+} from './schema/types';
 export {
   FieldError,
   IErrorTool,
   IValidationError,
   InputPayload,
   ValidationErrorMessage
-} from './schema/utils'
+} from './schema/utils';

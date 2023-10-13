@@ -1,4 +1,3 @@
-import { Schema } from '.';
 import { FieldKey, ObjectType } from '../utils';
 import {
   FieldError,
@@ -12,10 +11,10 @@ export type {
   DefinitionRule,
   KeyOf,
   Merge,
+  NS,
   NonEmptyArray,
   PartialContext,
   Summary,
-  Schema as ISchema,
   RealType,
   TypeOf,
   Validator,
@@ -114,7 +113,7 @@ type VirtualResolver<
 
 type KeyOf<T> = Extract<keyof T, string>;
 
-namespace Schema {
+namespace NS {
   export type LifeCycle = (typeof LIFE_CYCLES)[number];
 
   export type Operation = (typeof OPERATIONS)[number];
@@ -509,7 +508,7 @@ const DEFINITION_RULES = [
 
 type DefinitionRule = (typeof DEFINITION_RULES)[number];
 
-const ALLOWED_OPTIONS: Schema.OptionsKey<any, any, any>[] = [
+const ALLOWED_OPTIONS: NS.OptionsKey<any, any, any>[] = [
   'ErrorTool',
   'equalityDepth',
   'errors',
@@ -535,11 +534,11 @@ const VIRTUAL_RULES = [
 const LIFE_CYCLES = ['onDelete', 'onFailure', 'onSuccess'] as const;
 const OPERATIONS = ['creation', 'update'] as const;
 
-type TypeFromPromise<T> = T extends Promise<infer I> ? I : T;
-
 interface ErrorToolClass<ErrorTool, CtxOptions extends ObjectType> {
   new (message: ValidationErrorMessage, ctxOptions: CtxOptions): ErrorTool;
 }
+
+type TypeFromPromise<T> = T extends Promise<infer I> ? I : T;
 
 type RealType_<T> = T extends (...args: any) => infer I ? I : T;
 
@@ -559,6 +558,7 @@ type Merge<A, B> = {
     undefined
   >;
 };
+
 type Without<T, U> = { [P in Exclude<keyof T, keyof U>]?: never };
 
 type XOR<T, U> = (T | U extends object

@@ -15,7 +15,7 @@ import {
   Context,
   InternalValidatorResponse,
   LIFE_CYCLES,
-  ISchema as ns,
+  NS,
   RealType,
   ValidatorResponseObject,
   KeyOf,
@@ -47,14 +47,14 @@ class Schema<
   CtxOptions extends ObjectType = {}
 > extends SchemaCore<Input, Output, ErrorTool, CtxOptions> {
   constructor(
-    definitions: ns.Definitions<Input, Output, Aliases, CtxOptions>,
-    options: ns.Options<Input, Output, ErrorTool, CtxOptions> = defaultOptions
+    definitions: NS.Definitions<Input, Output, Aliases, CtxOptions>,
+    options: NS.Options<Input, Output, ErrorTool, CtxOptions> = defaultOptions
   ) {
-    super(definitions as any as ns.Definitions_<Input, Output>, options as any);
+    super(definitions as any as NS.Definitions_<Input, Output>, options as any);
   }
 
   get definitions() {
-    return this._definitions as any as ns.Definitions<Input, Output, Aliases>;
+    return this._definitions as any as NS.Definitions<Input, Output, Aliases>;
   }
 
   get options() {
@@ -75,7 +75,7 @@ class Schema<
     return sort(props);
   }
 
-  extend = <
+  extend<
     ExtendedInput extends RealType<ExtendedInput>,
     ExtendedOutput extends RealType<ExtendedOutput> = ExtendedInput,
     Aliases = {},
@@ -85,10 +85,13 @@ class Schema<
     >,
     ExtendedCtxOptions extends ObjectType = CtxOptions
   >(
-    definitions: Partial<
-      ns.Definitions<ExtendedInput, ExtendedOutput, Aliases, ExtendedCtxOptions>
+    definitions: NS.Definitions<
+      ExtendedInput,
+      ExtendedOutput,
+      Aliases,
+      ExtendedCtxOptions
     >,
-    options: ns.ExtensionOptions<
+    options: NS.ExtensionOptions<
       Output,
       Input,
       ExtendedInput,
@@ -96,10 +99,10 @@ class Schema<
       ExtendedErrorTool,
       ExtendedCtxOptions
     > = {}
-  ) => {
+  ) {
     const { remove = [], useParentOptions = true, ...rest } = options;
 
-    const _definitions = { ...this.definitions } as unknown as ns.Definitions<
+    const _definitions = { ...this.definitions } as unknown as NS.Definitions<
       ExtendedInput,
       ExtendedOutput,
       Aliases,
@@ -110,7 +113,7 @@ class Schema<
       (prop) => delete (_definitions as any)?.[prop]
     );
 
-    const options_ = {} as ns.Options<
+    const options_ = {} as NS.Options<
       ExtendedInput,
       ExtendedOutput,
       ExtendedErrorTool,
@@ -133,7 +136,7 @@ class Schema<
       ExtendedErrorTool,
       ExtendedCtxOptions
     >({ ..._definitions, ...definitions }, { ...options_, ...rest });
-  };
+  }
 
   getModel() {
     return new Model(
@@ -223,7 +226,7 @@ class ModelTool<
     const ctx = this._getContext();
 
     const cleanups = props.map(async (prop) => {
-      const handlers = this._getHandlers<ns.FailureHandler<Input, Output>>(
+      const handlers = this._getHandlers<NS.FailureHandler<Input, Output>>(
         prop,
         'onFailure'
       );
@@ -393,12 +396,12 @@ class ModelTool<
 
     const successProps = getKeysAsProps(partialCtx);
 
-    let successListeners = [] as ns.SuccessHandler<Input, Output, CtxOptions>[];
+    let successListeners = [] as NS.SuccessHandler<Input, Output, CtxOptions>[];
 
     const summary = this._getSummary(data, isUpdate);
 
     for (const prop of successProps) {
-      const handlers = this._getHandlers<ns.SuccessHandler<Input, Output>>(
+      const handlers = this._getHandlers<NS.SuccessHandler<Input, Output>>(
         prop,
         'onSuccess'
       );
@@ -720,7 +723,7 @@ class ModelTool<
 
   async clone(
     values: Partial<Input & Aliases>,
-    options?: ns.CloneOptions<Input, CtxOptions>
+    options?: NS.CloneOptions<Input, CtxOptions>
   ) {
     const ctxOpts = this._updateContextOptions(options?.contextOptions ?? {});
 
@@ -967,7 +970,7 @@ class ModelTool<
 
     this._setValues(values, { allowVirtuals: false, allowTimestamps: true });
 
-    let handlers: ns.Handler<Output, CtxOptions>[] = [
+    let handlers: NS.Handler<Output, CtxOptions>[] = [
       ...this.globalDeleteHandlers
     ];
 
@@ -977,7 +980,7 @@ class ModelTool<
     });
 
     getSetValuesAsProps(this.props).map(async (prop) => {
-      const handlers_ = this._getHandlers<ns.Handler<Output, CtxOptions>>(
+      const handlers_ = this._getHandlers<NS.Handler<Output, CtxOptions>>(
         prop,
         'onDelete'
       );
@@ -1161,7 +1164,7 @@ class Model<
 
   clone = (
     values: Partial<Input & Aliases>,
-    options?: ns.CloneOptions<Input, CtxOptions>
+    options?: NS.CloneOptions<Input, CtxOptions>
   ) => this.modelTool.clone(values, options);
 
   create = (

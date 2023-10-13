@@ -22,7 +22,7 @@ import { ObjectType } from '../utils';
 import {
   DefinitionRule,
   Context,
-  ISchema as ns,
+  NS as ns,
   KeyOf,
   Summary,
   Validator,
