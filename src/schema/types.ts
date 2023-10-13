@@ -8,6 +8,7 @@ import {
 
 export type {
   Context,
+  DeleteContext,
   DefinitionRule,
   KeyOf,
   Merge,

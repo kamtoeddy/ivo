@@ -11,24 +11,24 @@ Clean schema considers a property to be properly defined if it is `dependent`, `
 The schema constructor also takes two generic types you could use to improve on the type inference of your `Input` & `Output` data.
 
 ```ts
-const userSchema = new Schema<Input, Output>(definitions, options)
+const userSchema = new Schema<Input, Output>(definitions, options);
 ```
 
 ```ts
-import { Schema } from 'clean-schema'
+import { Schema } from 'clean-schema';
 
 type UserInput = {
-  dob: Date | null
-  firstName: string
-  lastName: string
-}
+  dob: Date | null;
+  firstName: string;
+  lastName: string;
+};
 
 type User = {
-  dob: Date | null
-  firstName: string
-  lastName: string
-  fullName: string
-}
+  dob: Date | null;
+  firstName: string;
+  lastName: string;
+  fullName: string;
+};
 
 const userSchema = new Schema<UserInput, User>({
   dob: { required: true, validator: validateDob },
@@ -39,12 +39,12 @@ const userSchema = new Schema<UserInput, User>({
     dependent: true,
     dependsOn: ['firstName', 'lastName'],
     resolver({ context: { firstName, lastName } }) {
-      return `${firstName} ${lastName}`
+      return `${firstName} ${lastName}`;
     }
   }
-})
+});
 
-const UserModel = userSchema.getModel()
+const UserModel = userSchema.getModel();
 ```
 
 # Properties of a model
@@ -132,14 +132,14 @@ const user = {
     facebook: { displayName: 'john', handle: 'john3434' },
     twitter: { displayName: 'John Doe', handle: 'john_on_twitter' }
   }
-}
+};
 
 // depth == 0
 
 Model.update(user, { bio: user.bio }).then(({ data, error }) => {
-  console.log(data) // null
-  console.log(error.message) // Nothing to update
-})
+  console.log(data); // null
+  console.log(error.message); // Nothing to update
+});
 
 // 👇 changing the positions of facebook & twitter in bio
 Model.update(user, {
@@ -148,7 +148,7 @@ Model.update(user, {
     facebook: { displayName: 'john', handle: 'john3434' }
   }
 }).then(({ data, error }) => {
-  console.log(data)
+  console.log(data);
   // {
   //   bio: {
   //     facebook: { displayName: 'john', handle: 'john3434' },
@@ -156,15 +156,15 @@ Model.update(user, {
   //     }
   // }
 
-  console.log(error) // null
-})
+  console.log(error); // null
+});
 
 // depth == 1
 
 Model.update(user, { bio: user.bio }).then(({ data, error }) => {
-  console.log(data) // null
-  console.log(error.message) // Nothing to update
-})
+  console.log(data); // null
+  console.log(error.message); // Nothing to update
+});
 
 // 👇 changing the positions of facebook & twitter in bio
 Model.update(user, {
@@ -173,9 +173,9 @@ Model.update(user, {
     facebook: { displayName: 'john', handle: 'john3434' }
   }
 }).then(({ data, error }) => {
-  console.log(data) // null
-  console.log(error.message) // Nothing to update
-})
+  console.log(data); // null
+  console.log(error.message); // Nothing to update
+});
 
 // 👇 changing the positions of facebook & twitter in bio and the positions of displayName & handle
 Model.update(user, {
@@ -184,7 +184,7 @@ Model.update(user, {
     facebook: { displayName: 'john', handle: 'john3434' }
   }
 }).then(({ data, error }) => {
-  console.log(data)
+  console.log(data);
   // {
   //   bio: {
   //     facebook: { displayName: 'john', handle: 'john3434' },
@@ -192,8 +192,8 @@ Model.update(user, {
   //     }
   // }
 
-  console.log(error) // null
-})
+  console.log(error); // null
+});
 ```
 
 ## errors
@@ -207,24 +207,24 @@ type SchemaErrorMessage =
   | 'Invalid Data'
   | 'Invalid Schema'
   | 'Nothing to update'
-  | 'Validation Error'
+  | 'Validation Error';
 
 type SchemaError = {
-  message: SchemaErrorMessage
+  message: SchemaErrorMessage;
   payload: {
-    [key: string]: string[] // e.g. name: ["Invalid name", "too long"]
-  }
-  statusCode: number // e.g. 400
-}
+    [key: string]: string[]; // e.g. name: ["Invalid name", "too long"]
+  };
+  statusCode: number; // e.g. 400
+};
 ```
 
 ## onDelete
 
-This could be a function or an array of functions with the `DeleteListener` signature above. These functions would be triggered together with the onDelete listeners of individual properties when the `Model.delete` method is invoked. See more [here](../v3.4.0/schema/definition/life-cycles.md#ondelete)
+This could be a function or an array of functions with the `DeleteListener` signature above. These functions would be triggered together with the onDelete listeners of individual properties when the `Model.delete` method is invoked. See more [here](./life-cycles.md#ondelete)
 
 ## onSuccess
 
-This could be a function or an array of functions with the `SuccessListener` signature above. These functions would be triggered together with the onSuccess listeners of individual properties when the handleSuccess method is invoked at creation & during updates of any property. See more [here](../v3.4.0/schema/definition/life-cycles.md#onsuccess)
+This could be a function or an array of functions with the `SuccessListener` signature above. These functions would be triggered together with the onSuccess listeners of individual properties when the handleSuccess method is invoked at creation & during updates of any property. See more [here](./life-cycles.md#onsuccess)
 
 ## setMissingDefaultsOnUpdate
 
@@ -238,6 +238,30 @@ A boolean or a function that expects the operation's summary and returns a boole
 
 If it's value or computed value if true, validations for updates will proceed else, the operation will fail with error message `Nothing to update`
 
+Unlike the shouldUpdate rule available on individual properties, this function can be asynchronous and can also be used to update the [context's options](life-cycles.md#context-options)
+
+```ts
+new Schema(
+  {
+    id: { constant: true, value: generateId }
+  },
+  {
+    async shouldUpdate() {
+      if (condition1) return false;
+      if (condition2) return true;
+
+      if (condition3) return { update: false };
+      if (condition4) return { update: true };
+
+      if (condition5)
+        return { update: false, ctxOptionsUpdate: { lang: 'en' } };
+
+      return { update: true, ctxOptionsUpdate: { lang: 'de' } };
+    }
+  }
+);
+```
+
 ## timestamps
 
 If timestamps is set to true, you'll automatically have the `createdAt` and `updatedAt` properties attached to instances of your model at creation, cloning & update. But you can overwrite the options and use your own properties like in the example below. Default **false**
@@ -247,7 +271,7 @@ Overwrite one
 ```js
 let transactionSchema = new Schema(definitions, {
   timestamps: { createdAt: 'created_at' }
-})
+});
 ```
 
 Or both
@@ -255,7 +279,7 @@ Or both
 ```js
 let transactionSchema = new Schema(definitions, {
   timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
-})
+});
 ```
 
 To use one timestamp alone, pass false for the timestamp key to eliminate
@@ -263,10 +287,10 @@ To use one timestamp alone, pass false for the timestamp key to eliminate
 ```js
 let transactionSchema = new Schema(definitions, {
   timestamps: { createdAt: 'created_at', updatedAt: false }
-})
+});
 
 // or
 let transactionSchema = new Schema(definitions, {
   timestamps: { updatedAt: false }
-})
+});
 ```

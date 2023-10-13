@@ -21,6 +21,7 @@ export {
 } from './utils';
 export {
   Context,
+  DeleteContext,
   KeyOf,
   Merge,
   NonEmptyArray,
