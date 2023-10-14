@@ -49,7 +49,7 @@
     "test:watch": "npm run build && vitest",
     "prepare": "npm run clean-up && npm run build"
   },
-  "version": "4.0.0-beta.2",
+  "version": "4.0.0",
   "keywords": [
     "schema",
     "validation"

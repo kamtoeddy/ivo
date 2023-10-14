@@ -459,9 +459,9 @@ export abstract class SchemaCore<
 
     const datatype = typeof results;
 
-    if (datatype !== 'boolean' && !Array.isArray(results)) return [false, ''];
+    if (datatype != 'boolean' && !Array.isArray(results)) return [false, ''];
 
-    if (datatype === 'boolean')
+    if (datatype == 'boolean')
       return [results as boolean, results ? fallbackMessage : ''];
 
     results = results as [boolean, string];

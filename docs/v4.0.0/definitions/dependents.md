@@ -4,11 +4,11 @@ If set to **`true`**, any external attempt to modify the value of the said prope
 
 One such property `must` have the following rules:
 
-- **default**: This is a [value or function](../../../v3.0.0/schema/definition/defaults.md#default-values) that will be used as (or used to generate a) default value for the said property
+- **default**: This is a [value or function](./defaults.md#default-values) that will be used as (or used to generate a) default value for the said property
 - **dependsOn**: Atleast one other property or side effect of your model the said property should depend on. It could be a string or an array of properties.
 - **resolver**: A function (sync or async) that would be invoked to generate the said property's new value when any of it's dependencies changes
 
-It could aslo be used in combination with other rules like [**readonly**](../../../v1.4.10/schema/definition/readonly.md#readonly-properties), [**life cycle handlers**](./life-cycles.md#life-cycle-handlers), etc. but **`cannot be required`**.
+It could aslo be used in combination with other rules like [**readonly**](./readonly.md#readonly-properties), [**life cycle handlers**](../life-cycles.md#life-cycle-handlers), etc. but **`cannot be required`**.
 
 > Out of the box, dependent is assumed to be **`false`** for every property
 
@@ -27,9 +27,7 @@ type Output = {
   lastName: string;
 };
 
-type ISummary = Summary<Output, Input>;
-
-const userSchema = new Schema<Output, Input>({
+const userSchema = new Schema<Input, Output>({
   firstName: { required: true, validator: validateName },
   fullName: {
     default: '',
@@ -40,7 +38,7 @@ const userSchema = new Schema<Output, Input>({
   lastName: { required: true, validator: validateName }
 });
 
-function getFullName({ context }: ISummary) {
+function getFullName({ context }: Summary<Input, Output>) {
   const { firstName, lastName } = context;
 
   return `${firstName} ${lastName}`;
