@@ -1,11 +1,40 @@
-import { Schema } from './schema'
+import { Schema } from './schema';
 
-export default Schema
+export default Schema;
 
-export { Schema } from './schema'
-export * from './utils'
-export * as validate from './validate'
+export { Schema } from './schema';
+export * as validate from './validate';
+export * from './validate';
 
-// types & interfaces
-export * from './utils/types'
-export * from './schema/types'
+export { ERRORS, SCHEMA_ERRORS, VALIDATION_ERRORS } from './schema/utils';
+
+export {
+  ObjectType,
+  FieldKey,
+  getKeysAsProps,
+  isEqual,
+  isFunction,
+  isNullOrUndefined,
+  isObject,
+  isPropertyOf,
+  toArray
+} from './utils';
+export {
+  Context,
+  DeleteContext,
+  KeyOf,
+  Merge,
+  NonEmptyArray,
+  RealType,
+  Summary,
+  ValidatorResponse,
+  ValidatorResponseObject,
+  XOR
+} from './schema/types';
+export {
+  FieldError,
+  IErrorTool,
+  IValidationError,
+  InputPayload,
+  ValidationErrorMessage
+} from './schema/utils';

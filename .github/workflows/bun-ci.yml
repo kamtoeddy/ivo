@@ -1,13 +1,10 @@
 name: BUN CI
 
 on:
-  push:
-    branches: ['main']
   pull_request:
-    branches: ['main']
 
 jobs:
-  build:
+  build-and-test:
     runs-on: ubuntu-latest
 
     strategy:
@@ -20,7 +17,15 @@ jobs:
         uses: oven-sh/setup-bun@v1
         with:
           version: ${{ matrix.bun-version }}
-      - run: bun install
-      - run: bun run build
-      - run: bun run lint
-      - run: bun run test:ci
+
+      - name: 📦 Install dependencies
+        run: bun install
+
+      - name: ⚒️ Build
+        run: bun run build
+
+      - name: 🚨 Lint
+        run: bun run lint
+
+      - name: 🧪 Test
+        run: bun run test

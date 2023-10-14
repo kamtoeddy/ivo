@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+# v4.0.0 <small><sup>14-10-2023</sup></small>
+
+Breaking Changes
+
+- [Update] change order of `Input` & `Output` types passed to Schema constructor
+- [Update] update the structure of validation error
+
+New Features
+
+- [Add] [`__getOptions__`](./v4.0.0/life-cycles.md#context-options) method to operation context
+- [Add] [`errorTool`](./v4.0.0/index.md#errortool) to option to help with custom validation errors
+- [Add] [`useParentOptions`](./v4.0.0/index.md#useparentoptions) to options of extended schemas to opt in/out of parent options
+
+Other Updates
+
+- [Update] Update SchemaError by remove statusCode
+- [Update] make `dependent: true` rule in schema definition optional. Dependent properties only need `dependsOn` & a `resolver` function
+- [Doc] update docs & broken links
+- [Fix] numerous bug fixes
+
 # v3.5.3 <small><sup>21-09-2023</sup></small>
 
 - [Update] made sure the `alias` kayword if only allowed on virtual properties
