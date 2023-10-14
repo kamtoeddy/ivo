@@ -119,7 +119,7 @@ const options: SchemaOptions = {}
 const schema = new Schema<Input, Output>(definitions, options)
 ```
 
-More details on the `Context` & `Summary` utiliies can be found [here](./definitions/life-cycles.md#the-operation-context)
+More details on the `Context` & `Summary` utiliies can be found [here](./life-cycles.md#the-operation-context)
 
 ## equalityDepth
 
@@ -248,10 +248,10 @@ This is the structure of the error returned or thrown
 
 ```ts
 type SchemaErrorMessage =
-  | 'Invalid Data'
-  | 'Invalid Schema'
-  | 'Nothing to update'
-  | 'Validation Error';
+  | 'INVALID_DATA'
+  | 'INVALID_SCHEMA'
+  | 'NOTHING_TO_UPDATE'
+  | 'VALIDATION_ERROR';
 
 type SchemaError = {
   message: SchemaErrorMessage;
@@ -298,9 +298,9 @@ new Schema(
       if (condition4) return { update: true };
 
       if (condition5)
-        return { update: false, ctxOptionsUpdate: { lang: 'en' } };
+        return { update: false, contextOptionsUpdate: { lang: 'en' } };
 
-      return { update: true, ctxOptionsUpdate: { lang: 'de' } };
+      return { update: true, contextOptionsUpdate: { lang: 'de' } };
     }
   }
 );

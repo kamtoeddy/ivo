@@ -1,16 +1,15 @@
 # Dependent Properties
 
-If set to **`true`**, any external attempt to modify the value of the said property will be ignored; making it's value solely modifiable via the life cycle listeners and side effects.
+Any external attempt to modify the value of the a dependent property will be ignored; making it's value solely modifiable via their resolver functions.
 
 One such property `must` have the following rules:
 
 - **default**: This is a [value or function](./defaults.md#default-values) that will be used as (or used to generate a) default value for the said property
 - **dependsOn**: Atleast one other property or side effect of your model the said property should depend on. It could be a string or an array of properties.
 - **resolver**: A function (sync or async) that would be invoked to generate the said property's new value when any of it's dependencies changes
+- **dependent (optional)**: A boolean that acts more like a label to be more descriptive
 
 It could aslo be used in combination with other rules like [**readonly**](./readonly.md#readonly-properties), [**life cycle handlers**](../life-cycles.md#life-cycle-handlers), etc. but **`cannot be required`**.
-
-> Out of the box, dependent is assumed to be **`false`** for every property
 
 Example:
 
@@ -21,6 +20,7 @@ type Input = {
   firstName: string;
   lastName: string;
 };
+
 type Output = {
   firstName: string;
   fullName: string;

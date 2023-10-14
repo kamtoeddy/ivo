@@ -19,7 +19,7 @@ const options = {
     isInclusiveBottom: false
   }
 };
-console.log(isNumberOk(10, options)); // { reasons: ["too small"], valid: false, metadata:{ min:10, max: 10.5, inclusiveBottom:false,  inclusiveTop: true } }
+console.log(isNumberOk(10, options)); // { reasons: ["too small"], valid: false, metadata:{ min: 10, max: 10.5, inclusiveBottom: false,  inclusiveTop: true } }
 
 console.log(isNumberOk(10.01, options)); // { valid: true, validated: 10.01, metadata }
 

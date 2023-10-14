@@ -12,7 +12,7 @@ These properties are used to manipulate dependent properties at the level of you
 - They can have (**`shouldUpdate === false`**) or `shouldUpdate` as a function
 - They can have `required` as a function
 - They can have [aliases](#aliases)
-- They can have [sanitizers](#aliases)
+- They can have [sanitizers](#sanitizer)
 - They **CANNOT** be dependent, defaulted, strictly required nor readonly
 
 > Out of the box, virtual is **`false`**

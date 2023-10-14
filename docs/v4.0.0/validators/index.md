@@ -3,10 +3,15 @@
 Validators are expected to behave as below
 
 ```ts
-import type { Summary } from "clean-schema";
+import type { Summary } from 'clean-schema';
 
 type Input = {}; // the input type of your model
 type Output = {}; // the output type of your model
+
+type FieldError = {
+  reasons: string[];
+  metadata?: Record<string, any> | null;
+};
 
 type ValidationResults =
   | boolean
@@ -15,36 +20,30 @@ type ValidationResults =
       validated?: keyof Input[K]; // the validated values passed which could have been formated in the custom validator (i.e made ready for the db). "K" here represents the property being validated
     }
   | {
-      metadata?: Record<string,ant>; // an object that will contain extra info on why validation failed
+      metadata?: Record<string, any>; // an object that will contain extra info on why validation failed
       reason?: string; // the reason the validation failed e.g. "Invalid name"
       reasons?: string[]; // the reasons the validation failed e.g. ["Invalid name", "Special characters are not allowed"] or ["Invalid name"]
       otherReasons?: {
-        [K in keyof Input]: string | string[];
+        [K in keyof Input]: string | string[] | FieldError;
       };
       valid: false;
     };
 
-const validator1 = (
-  value: any,
-  summary: Summary<Output, Input>
-) => {
+function validator1(value: any, summary: Summary<Input, Output>) {
   // validation logic here
 
   if (valid) return { valid, validated };
 
   return { reason, valid };
-};
+}
 
-const validator2 = (
-  value: any,
-  summary: Summary<Output, Input>
-) {
+function validator2(value: any, summary: Summary<Input, Output>) {
   // validation logic here
 
-  if (valid) return false
+  if (valid) return false;
 
-  return true
-};
+  return true;
+}
 ```
 
 In the code snippet above we have 2 validators; `validator1` and `validator2`
@@ -58,7 +57,7 @@ Although both work just the same, we `validator1` is recommended because:
 
 ## Built-in validation helpers
 
-Clean-schema has some built-in validators. Feel free to use or build you own validators based on these:
+Here are some built-in validators you could use study to build your own validators:
 
 - [isArrayOk](./isArrayOk.md)
 - [isBooleanOk](./isBooleanOk.md)
