@@ -71,7 +71,7 @@ export const Test_SchemaShouldUpdateOption = ({ Schema, fx }: any) => {
         }
       });
 
-      it('should respect the "ctxOptionsUpdate" returned if returned from shouldUpdate', async () => {
+      it('should respect the "contextOptionsUpdate" returned if returned from shouldUpdate', async () => {
         const contextOptions = { lang: 'en' };
 
         let ctxOptionsStats: any = {};
@@ -90,7 +90,7 @@ export const Test_SchemaShouldUpdateOption = ({ Schema, fx }: any) => {
             error,
             shouldUpdate: shouldUpdate({
               update: false,
-              ctxOptionsUpdate: { lang: '' }
+              contextOptionsUpdate: { lang: '' }
             })
           },
           {
@@ -99,7 +99,7 @@ export const Test_SchemaShouldUpdateOption = ({ Schema, fx }: any) => {
             error: null,
             shouldUpdate: shouldUpdate({
               update: true,
-              ctxOptionsUpdate: { lang: 'fr', ctx: true }
+              contextOptionsUpdate: { lang: 'fr', ctx: true }
             })
           },
           {
@@ -108,7 +108,7 @@ export const Test_SchemaShouldUpdateOption = ({ Schema, fx }: any) => {
             error,
             shouldUpdate: AsyncShouldUpdate({
               update: false,
-              ctxOptionsUpdate: { lang: 'de' }
+              contextOptionsUpdate: { lang: 'de' }
             })
           },
           {
@@ -117,7 +117,7 @@ export const Test_SchemaShouldUpdateOption = ({ Schema, fx }: any) => {
             error: null,
             shouldUpdate: AsyncShouldUpdate({
               update: true,
-              ctxOptionsUpdate: { lang: 'fr', async: true }
+              contextOptionsUpdate: { lang: 'fr', async: true }
             })
           }
         ];

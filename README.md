@@ -214,5 +214,3 @@ await handleSuccess();
 - [Internationalization](./docs/v4.0.0/life-cycles.md#context-options)
 
 - [Changelog](./docs/CHANGELOG.md#changelog)
-
-## Happy coding! 😎

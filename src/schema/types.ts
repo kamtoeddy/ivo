@@ -83,7 +83,7 @@ type SetterWithSummary<T, Input, Output, CtxOptions extends ObjectType = {}> = (
 
 type AsyncShouldUpdateResponse<CtxOptions extends ObjectType = {}> = {
   update: boolean;
-  ctxOptionsUpdate?: Partial<CtxOptions>;
+  contextOptionsUpdate?: Partial<CtxOptions>;
 };
 
 type AsyncShouldUpdate<Input, Output, CtxOptions extends ObjectType = {}> = (

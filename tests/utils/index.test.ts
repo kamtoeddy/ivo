@@ -1,5 +1,17 @@
-import { getUnique, getUniqueBy, isOneOf, isEqual } from '../../src/utils'
+import {
+  getUnique,
+  getUniqueBy,
+  isOneOf,
+  isEqual,
+  isNullOrUndefined
+} from '../../src/utils';
 
-import { commonUtilTests } from '.'
+import { commonUtilTests } from '.';
 
-commonUtilTests({ isOneOf, getUnique, getUniqueBy, isEqual })
+commonUtilTests({
+  isOneOf,
+  getUnique,
+  getUniqueBy,
+  isEqual,
+  isNullOrUndefined
+});

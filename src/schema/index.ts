@@ -333,8 +333,8 @@ class ModelTool<
 
     if (typeof response == 'boolean') return response;
 
-    if (response?.ctxOptionsUpdate)
-      this._updateContextOptions(response.ctxOptionsUpdate);
+    if (response?.contextOptionsUpdate)
+      this._updateContextOptions(response.contextOptionsUpdate);
 
     return !!response?.update;
   }

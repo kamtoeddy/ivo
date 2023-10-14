@@ -2,11 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
-# v4.0.0 <small><sup>[x][x]-10-2023</sup></small>
+# v4.0.0 <small><sup>14-10-2023</sup></small>
 
 Breaking Changes
 
 - [Update] change order of `Input` & `Output` types passed to Schema constructor
+- [Update] update the structure of validation error
 
 New Features
 

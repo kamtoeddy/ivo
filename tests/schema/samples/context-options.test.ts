@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
 import {
   UserModel,
@@ -6,6 +6,7 @@ import {
   EUserModel,
   EUserModel_ErrorThrow
 } from './custom-error-tool';
+import Schema from '../../../dist';
 
 const contextOptions = { lang: 'en' };
 
@@ -214,6 +215,60 @@ describe('Context options', () => {
 
         expect(data).not.toBeNull();
         expect(error).toBeNull();
+      });
+    });
+  });
+
+  describe('RequiredBy', () => {
+    const contextOptions = { lang: 'en' };
+    const validator = () => true;
+    function handleRequired(prop: string) {
+      return ({ context: { __getOptions__ } }) => {
+        ctxOptions[prop] = __getOptions__();
+
+        return false;
+      };
+    }
+
+    const Model = new Schema<any, any, any, any, typeof contextOptions>({
+      name: { default: '', required: handleRequired('name'), validator },
+      price: { default: '', required: handleRequired('price'), validator }
+    }).getModel();
+
+    let ctxOptions: any = {};
+
+    afterEach(() => {
+      ctxOptions = {};
+    });
+
+    it('provided "contextOptions" should be accessible in requiredBy methods during cloning', async () => {
+      await Model.clone({ name: 'test', price: 4 }, { contextOptions });
+
+      expect(ctxOptions).toEqual({
+        name: contextOptions,
+        price: contextOptions
+      });
+    });
+
+    it('provided "contextOptions" should be accessible in requiredBy methods at creation', async () => {
+      await Model.create({ name: 'test', price: 4 }, contextOptions);
+
+      expect(ctxOptions).toEqual({
+        name: contextOptions,
+        price: contextOptions
+      });
+    });
+
+    it('provided "contextOptions" should be accessible in requiredBy methods during updates', async () => {
+      await Model.update(
+        { name: 'test', price: 4 },
+        { name: 'updateds', price: 4 },
+        contextOptions
+      );
+
+      expect(ctxOptions).toEqual({
+        name: contextOptions,
+        price: contextOptions
       });
     });
   });
