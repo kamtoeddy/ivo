@@ -1,4 +1,4 @@
-import { isStringOk } from '../../../dist'
-import { isStringOkTest } from '.'
+import { isStringOk } from '../../../src';
+import { isStringOkTest } from '.';
 
-isStringOkTest({ isStringOk })
+isStringOkTest({ isStringOk });

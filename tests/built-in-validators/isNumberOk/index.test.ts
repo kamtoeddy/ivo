@@ -1,4 +1,4 @@
-import { isNumberOk } from '../../../dist'
-import { isNumberOkTest } from '.'
+import { isNumberOk } from '../../../src';
+import { isNumberOkTest } from '.';
 
-isNumberOkTest({ isNumberOk })
+isNumberOkTest({ isNumberOk });

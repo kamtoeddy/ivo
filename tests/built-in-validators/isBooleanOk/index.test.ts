@@ -1,4 +1,4 @@
-import { isBooleanOk } from '../../../dist'
-import { isBooleanOkTest } from '.'
+import { isBooleanOk } from '../../../src';
+import { isBooleanOkTest } from '.';
 
-isBooleanOkTest({ isBooleanOk })
+isBooleanOkTest({ isBooleanOk });

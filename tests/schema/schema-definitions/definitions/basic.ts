@@ -1,9 +1,9 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect } from 'vitest';
 
-import { ERRORS } from '../../../../dist'
-import { expectFailure } from '../_utils'
+import { ERRORS } from '../../../../dist';
+import { expectFailure } from '../_utils';
 
-export const Test_BasicDefinitions = ({ fx }: any) => {
+export const Test_BasicDefinitions = ({ fx, Schema }: any) => {
   describe('Schema definitions', () => {
     it('should reject if property definitions is not an object', () => {
       const values = [
@@ -16,31 +16,31 @@ export const Test_BasicDefinitions = ({ fx }: any) => {
         -10,
         true,
         []
-      ]
+      ];
 
-      for (const value of values) expectFailure(fx(value))
-    })
+      for (const value of values) expectFailure(fx(value));
+    });
 
     it('should reject if property definitions has no property', () => {
-      const toFail = fx({})
+      const toFail = fx({});
 
-      expectFailure(toFail)
+      expectFailure(toFail);
 
       try {
-        toFail()
+        toFail();
       } catch (err: any) {
         expect(err.payload).toMatchObject({
           'schema properties': ['Insufficient Schema properties']
-        })
+        });
       }
-    })
+    });
 
     it("should reject if a property's definition is an empty object", () => {
-      const toFail = fx({ emptyProp: {} })
-      expectFailure(toFail)
+      const toFail = fx({ emptyProp: {} });
+      expectFailure(toFail);
 
       try {
-        toFail()
+        toFail();
       } catch (err: any) {
         expect(err).toEqual(
           expect.objectContaining({
@@ -51,19 +51,19 @@ export const Test_BasicDefinitions = ({ fx }: any) => {
               ]
             }
           })
-        )
+        );
       }
-    })
+    });
 
     it("should reject if a property's definition is not an object", () => {
-      const invalidDefinitions = [true, false, [], 1, -1, '', 'invalid']
+      const invalidDefinitions = [true, false, [], 1, -1, '', 'invalid'];
 
       for (const definition of invalidDefinitions) {
-        const toFail = fx({ invalidProp0000: definition })
-        expectFailure(toFail)
+        const toFail = fx({ invalidProp0000: definition });
+        expectFailure(toFail);
 
         try {
-          toFail()
+          toFail();
         } catch (err: any) {
           expect(err).toEqual(
             expect.objectContaining({
@@ -74,17 +74,17 @@ export const Test_BasicDefinitions = ({ fx }: any) => {
                 ]
               }
             })
-          )
+          );
         }
       }
-    })
+    });
 
     it("should reject if a property's definition has an invalid rule", () => {
-      const toFail = fx({ emptyProp: { default: '', yoo: true } })
-      expectFailure(toFail)
+      const toFail = fx({ emptyProp: { default: '', yoo: true } });
+      expectFailure(toFail);
 
       try {
-        toFail()
+        toFail();
       } catch (err: any) {
         expect(err).toEqual(
           expect.objectContaining({
@@ -93,8 +93,31 @@ export const Test_BasicDefinitions = ({ fx }: any) => {
               emptyProp: expect.arrayContaining(["'yoo' is not a valid rule"])
             }
           })
-        )
+        );
       }
-    })
-  })
-}
+    });
+
+    it('should allow access to reservedKeys of valid schemas', () => {
+      const schema = new Schema(
+        {
+          id: { constant: true, value: 1 },
+          dependent: { default: '', dependsOn: 'virtual', resolver: () => '' },
+          lax: { default: true },
+          virtual: { virtual: true, validator: () => true }
+        },
+        { timestamps: { createdAt: 'c_At' } }
+      );
+
+      expect(schema.reservedKeys).toEqual(
+        expect.arrayContaining([
+          'c_At',
+          'dependent',
+          'id',
+          'lax',
+          'updatedAt',
+          'virtual'
+        ])
+      );
+    });
+  });
+};

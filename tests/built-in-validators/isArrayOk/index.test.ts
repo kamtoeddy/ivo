@@ -1,4 +1,4 @@
-import { isArrayOk } from '../../../dist'
-import { isArrayOkTest } from '.'
+import { isArrayOk } from '../../../src';
+import { isArrayOkTest } from '.';
 
-isArrayOkTest({ isArrayOk })
+isArrayOkTest({ isArrayOk });
