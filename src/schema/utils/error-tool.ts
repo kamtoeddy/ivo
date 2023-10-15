@@ -13,13 +13,10 @@ class DefaultErrorTool<PayloadKeys extends FieldKey = FieldKey>
 {
   private _payload: ErrorPayload<PayloadKeys> = {};
 
-  constructor(public message: ValidationErrorMessage) {}
+  constructor(private message: ValidationErrorMessage) {}
 
   get data() {
-    return {
-      message: this.message!,
-      payload: sortKeys(this._payload)
-    };
+    return { message: this.message, payload: sortKeys(this._payload) };
   }
 
   get error() {

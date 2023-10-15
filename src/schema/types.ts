@@ -119,7 +119,7 @@ namespace NS {
 
   export type Operation = (typeof OPERATIONS)[number];
 
-  export type Handler<Output, CtxOptions extends ObjectType> = (
+  export type DeleteHandler<Output, CtxOptions extends ObjectType> = (
     data: DeleteContext<Output, CtxOptions>
   ) => any | Promise<any>;
 
@@ -146,7 +146,7 @@ namespace NS {
       : K extends keyof Omit<Output, keyof Input>
       ? PrivateProperty<K, Input, Output, CtxOptions>
       : K extends keyof Omit<Input, keyof Output>
-      ? Virtual<K, Output, Input, Aliases, CtxOptions>
+      ? Virtual<K, Input, Output, Aliases, CtxOptions>
       : never;
   };
 
@@ -204,8 +204,8 @@ namespace NS {
 
   type Listenable<Input, Output, CtxOptions extends ObjectType = {}> = {
     onDelete?:
-      | Handler<Output, CtxOptions>
-      | NonEmptyArray<Handler<Output, CtxOptions>>;
+      | DeleteHandler<Output, CtxOptions>
+      | NonEmptyArray<DeleteHandler<Output, CtxOptions>>;
     onFailure?:
       | FailureHandler<Input, Output, CtxOptions>
       | NonEmptyArray<FailureHandler<Input, Output, CtxOptions>>;
@@ -222,8 +222,8 @@ namespace NS {
   > = {
     constant: true;
     onDelete?:
-      | Handler<Output, CtxOptions>
-      | NonEmptyArray<Handler<Output, CtxOptions>>;
+      | DeleteHandler<Output, CtxOptions>
+      | NonEmptyArray<DeleteHandler<Output, CtxOptions>>;
     onSuccess?:
       | SuccessHandler<Input, Output, CtxOptions>
       | NonEmptyArray<SuccessHandler<Input, Output, CtxOptions>>;
@@ -245,8 +245,8 @@ namespace NS {
       | Exclude<KeyOf<Context<Input, Output, CtxOptions>>, K>
       | Exclude<KeyOf<Context<Input, Output, CtxOptions>>, K>[];
     onDelete?:
-      | Handler<Output, CtxOptions>
-      | NonEmptyArray<Handler<Output, CtxOptions>>;
+      | DeleteHandler<Output, CtxOptions>
+      | NonEmptyArray<DeleteHandler<Output, CtxOptions>>;
     onSuccess?:
       | SuccessHandler<Input, Output, CtxOptions>
       | NonEmptyArray<SuccessHandler<Input, Output, CtxOptions>>;
@@ -342,8 +342,8 @@ namespace NS {
 
   type Virtual<
     K extends keyof Input,
-    Output,
     Input,
+    Output,
     Aliases,
     CtxOptions extends ObjectType = {}
   > = {
@@ -385,8 +385,8 @@ namespace NS {
     equalityDepth: number;
     errors: 'silent' | 'throw';
     onDelete?:
-      | Handler<Output, CtxOptions>
-      | NonEmptyArray<Handler<Output, CtxOptions>>;
+      | DeleteHandler<Output, CtxOptions>
+      | NonEmptyArray<DeleteHandler<Output, CtxOptions>>;
     onSuccess?:
       | SuccessHandler<Input, Output, CtxOptions>
       | NonEmptyArray<SuccessHandler<Input, Output, CtxOptions>>;
@@ -407,8 +407,8 @@ namespace NS {
     equalityDepth?: number;
     errors?: 'silent' | 'throw';
     onDelete?:
-      | Handler<Output, CtxOptions>
-      | NonEmptyArray<Handler<Output, CtxOptions>>;
+      | DeleteHandler<Output, CtxOptions>
+      | NonEmptyArray<DeleteHandler<Output, CtxOptions>>;
     onSuccess?:
       | SuccessHandler<Input, Output, CtxOptions>
       | NonEmptyArray<SuccessHandler<Input, Output, CtxOptions>>;

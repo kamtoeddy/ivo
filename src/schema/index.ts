@@ -970,7 +970,7 @@ class ModelTool<
 
     this._setValues(values, { allowVirtuals: false, allowTimestamps: true });
 
-    let handlers: NS.Handler<Output, CtxOptions>[] = [
+    let handlers: NS.DeleteHandler<Output, CtxOptions>[] = [
       ...this.globalDeleteHandlers
     ];
 
@@ -980,7 +980,7 @@ class ModelTool<
     });
 
     getSetValuesAsProps(this.props).map(async (prop) => {
-      const handlers_ = this._getHandlers<NS.Handler<Output, CtxOptions>>(
+      const handlers_ = this._getHandlers<NS.DeleteHandler<Output, CtxOptions>>(
         prop,
         'onDelete'
       );

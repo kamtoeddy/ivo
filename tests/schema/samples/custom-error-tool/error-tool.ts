@@ -26,11 +26,14 @@ export class VError<Keys> implements IErrorTool<ErrorData<Keys>> {
   private getVMessage() {
     const { lang } = this.ctxOptions;
 
-    return this.message == VALIDATION_ERROR
-      ? `validation${lang ? ' -' + lang : ''}`
-      : this.message == INVALID_DATA
-      ? `invalid-data${lang ? ' -' + lang : ''}`
-      : `no-update${lang ? ' -' + lang : ''}`;
+    const message =
+      this.message == VALIDATION_ERROR
+        ? 'validation'
+        : this.message == INVALID_DATA
+        ? 'invalid-data'
+        : 'no-update';
+
+    return `${message}${lang ? ' -' + lang : ''}`;
   }
 
   get data(): IValidationError<ErrorData<Keys>> {

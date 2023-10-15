@@ -22,6 +22,7 @@ export {
 export {
   Context,
   DeleteContext,
+  OPERATIONS,
   KeyOf,
   Merge,
   NonEmptyArray,

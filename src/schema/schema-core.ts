@@ -84,8 +84,10 @@ export abstract class SchemaCore<
   protected timestampTool: TimeStampTool;
 
   // handlers
-  protected readonly globalDeleteHandlers: ns.Handler<Output, CtxOptions>[] =
-    [];
+  protected readonly globalDeleteHandlers: ns.DeleteHandler<
+    Output,
+    CtxOptions
+  >[] = [];
   protected readonly globalSuccessHandlers: ns.SuccessHandler<
     Input,
     Output,
@@ -227,7 +229,7 @@ export abstract class SchemaCore<
 
       if (lifeCycle == 'onDelete')
         return this.globalDeleteHandlers.push(
-          handler as ns.Handler<Output, CtxOptions>
+          handler as ns.DeleteHandler<Output, CtxOptions>
         );
 
       if (lifeCycle == 'onSuccess')
