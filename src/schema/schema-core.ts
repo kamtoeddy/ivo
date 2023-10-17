@@ -776,7 +776,8 @@ export abstract class SchemaCore<
       dependent,
       readonly,
       required,
-      shouldInit
+      shouldInit,
+      shouldUpdate
     } = definition!;
 
     const valid = false;
@@ -811,6 +812,12 @@ export abstract class SchemaCore<
       return {
         valid,
         reason: 'Lax properties cannot have initialization blocked'
+      };
+
+    if (readonly === 'lax' && isEqual(shouldUpdate, false))
+      return {
+        valid,
+        reason: 'Readonly(lax) properties cannot have updates strictly blocked'
       };
 
     if (!isOneOf(readonly, [true, 'lax']))
@@ -949,12 +956,6 @@ export abstract class SchemaCore<
       return {
         valid,
         reason: "Both 'shouldInit' & 'shouldUpdate' cannot be 'false'"
-      };
-
-    if (shouldUpdate === false && !isPropertyOf('virtual', definition))
-      return {
-        valid,
-        reason: "Only 'Virtuals' are allowed to have 'shouldUpdate' as 'false'"
       };
 
     if (readonly === true && isEqual(shouldInit, undefined))

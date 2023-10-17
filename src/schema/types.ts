@@ -232,6 +232,13 @@ namespace NS {
       | AsyncSetter<Output[K], Input, Output, CtxOptions>;
   };
 
+  type Dependables<
+    K extends keyof Output,
+    Input,
+    Output,
+    CtxOptions extends ObjectType = {}
+  > = Exclude<KeyOf<Context<Input, Output, CtxOptions>>, K | '__getOptions__'>;
+
   type Dependent<
     K extends keyof Output,
     Input,
@@ -239,11 +246,10 @@ namespace NS {
     CtxOptions extends ObjectType = {}
   > = {
     default: TypeOf<Output[K]> | AsyncSetter<Output[K], Input, Output>;
-    /** @deprecated `dependsOn` & a `resolver` function are enough to make a property dependent */
     dependent?: true;
     dependsOn:
-      | Exclude<KeyOf<Context<Input, Output, CtxOptions>>, K>
-      | Exclude<KeyOf<Context<Input, Output, CtxOptions>>, K>[];
+      | Dependables<K, Input, Output, CtxOptions>
+      | Dependables<K, Input, Output, CtxOptions>[];
     onDelete?:
       | DeleteHandler<Output, CtxOptions>
       | NonEmptyArray<DeleteHandler<Output, CtxOptions>>;
@@ -254,20 +260,39 @@ namespace NS {
     resolver: Resolver<K, Input, Output, CtxOptions>;
   };
 
+  type InitAndUpdateBlockable<
+    Input,
+    Output,
+    CtxOptions extends ObjectType = {}
+  > = XOR<
+    {
+      shouldInit?: Setter<boolean, Input, Output, CtxOptions>;
+      shouldUpdate?: Setter<boolean, Input, Output, CtxOptions>;
+    },
+    XOR<
+      {
+        shouldInit?: false | Setter<boolean, Input, Output, CtxOptions>;
+        shouldUpdate?: Setter<boolean, Input, Output, CtxOptions>;
+      },
+      {
+        shouldInit?: Setter<boolean, Input, Output, CtxOptions>;
+        shouldUpdate?: false | Setter<boolean, Input, Output, CtxOptions>;
+      }
+    >
+  >;
+
   type LaxProperty<
     K extends keyof (Output | Input),
     Input,
     Output,
     CtxOptions extends ObjectType = {}
-  > = Listenable<Input, Output> & {
-    default:
-      | TypeOf<Output[K]>
-      | AsyncSetter<Output[K], Input, Output, CtxOptions>;
-    readonly?: 'lax';
-    shouldInit?: false | Setter<boolean, Input, Output, CtxOptions>;
-    shouldUpdate?: Setter<boolean, Input, Output, CtxOptions>;
-    validator?: Validator<K, Input, Output, CtxOptions>;
-  };
+  > = Listenable<Input, Output> &
+    InitAndUpdateBlockable<Input, Output, CtxOptions> & {
+      default:
+        | TypeOf<Output[K]>
+        | AsyncSetter<Output[K], Input, Output, CtxOptions>;
+      validator?: Validator<K, Input, Output, CtxOptions>;
+    };
 
   type ReadOnly<
     K extends keyof (Output | Input),
@@ -315,7 +340,7 @@ namespace NS {
     CtxOptions extends ObjectType = {}
   > = Listenable<Input, Output, CtxOptions> & {
     required: true;
-    shouldUpdate?: Setter<boolean, Input, Output, CtxOptions>;
+    shouldUpdate?: false | Setter<boolean, Input, Output, CtxOptions>;
     validator: Validator<K, Input, Output, CtxOptions>;
   };
 
@@ -346,7 +371,7 @@ namespace NS {
     Output,
     Aliases,
     CtxOptions extends ObjectType = {}
-  > = {
+  > = InitAndUpdateBlockable<Input, Output, CtxOptions> & {
     alias?: Exclude<KeyOf<Aliases>, K> extends undefined
       ? string
       : Exclude<KeyOf<Aliases>, K>;
@@ -364,8 +389,6 @@ namespace NS {
     onSuccess?:
       | SuccessHandler<Input, Output, CtxOptions>
       | NonEmptyArray<SuccessHandler<Input, Output, CtxOptions>>;
-    shouldInit?: false | Setter<boolean, Input, Output, CtxOptions>;
-    shouldUpdate?: false | Setter<boolean, Input, Output, CtxOptions>;
     validator: Validator<K, Input, Output, CtxOptions>;
   };
 

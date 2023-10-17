@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+# v4.0.1 <small><sup>18-10-2023</sup></small>
+
+- [Fix] fix issue with `__getOptions__` key being suggested as dependable of dependent properties
+- [Update] update typings & signatures of definitions of `shouldInit` & `shouldUpdate` rules
+
 # v4.0.0 <small><sup>14-10-2023</sup></small>
 
 Breaking Changes
