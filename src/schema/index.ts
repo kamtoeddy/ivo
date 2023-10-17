@@ -168,6 +168,7 @@ class ModelTool<
         const validCtxUpdate = { [prop]: data[prop] as any } as any;
 
         this._updatePartialContext(validCtxUpdate);
+
         return this._updateContext(validCtxUpdate);
       })
     );
@@ -768,6 +769,7 @@ class ModelTool<
         const validCtxUpdate = { [prop]: data[prop] } as unknown as any;
 
         this._updatePartialContext(validCtxUpdate);
+
         return this._updateContext(validCtxUpdate);
       }
 
@@ -789,6 +791,7 @@ class ModelTool<
         const validCtxUpdate = { [prop]: data[prop] } as unknown as any;
 
         this._updatePartialContext(validCtxUpdate);
+
         return this._updateContext(validCtxUpdate);
       }
 
@@ -822,6 +825,7 @@ class ModelTool<
         const validCtxUpdate = { [prop]: data[prop] } as unknown as any;
 
         this._updatePartialContext(validCtxUpdate);
+
         return this._updateContext(validCtxUpdate);
       }
 
@@ -925,6 +929,7 @@ class ModelTool<
         const validCtxUpdate = { [prop]: data[prop] as any } as any;
 
         this._updatePartialContext(validCtxUpdate);
+
         return this._updateContext(validCtxUpdate);
       }
 
@@ -1087,6 +1092,7 @@ class ModelTool<
       errorTool.setMessage(VALIDATION_ERRORS.NOTHING_TO_UPDATE);
 
       await this._handleFailure(updates, errorTool, virtuals);
+
       return this._handleError(errorTool);
     }
 
