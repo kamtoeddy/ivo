@@ -9,8 +9,7 @@ import { Test_ReadonlyProperties } from './definitions/readonly-properties';
 import { Test_RequiredProperties } from './definitions/required-properties';
 import { Test_VirtualProperties } from './definitions/virtual-properties';
 import { Test_LifeCycleHandlers } from './definitions/life-cycle-handlers';
-import { Test_ShouldInitRule } from './definitions/should-init-rule';
-import { Test_ShouldUpdateRule } from './definitions/should-update-rule';
+import { Test_ShouldInitAndUpdateRules } from './definitions/should-init-and-update-rule';
 import { Test_SchemaErrors } from './options/errors';
 import { Test_SchemaOptionFormat } from './options/format';
 import { Test_SchemaTimestampOption } from './options/timestamps';
@@ -42,8 +41,7 @@ Test_RequiredProperties({ Schema, fx });
 Test_VirtualProperties({ Schema, fx });
 
 Test_LifeCycleHandlers({ Schema, fx });
-Test_ShouldInitRule({ Schema, fx });
-Test_ShouldUpdateRule({ Schema, fx });
+Test_ShouldInitAndUpdateRules({ Schema, fx });
 
 Test_SchemaErrors({ Schema, fx });
 Test_SchemaEqualityDepth({ Schema, fx });

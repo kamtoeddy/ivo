@@ -204,7 +204,7 @@ Model.update(user, {
 
 ## errorTool
 
-This is a class which will be used to manage your validation errors, hence giving you the power to have custom validation errors. See example in `tests/schema/samples/custom-error-tool`
+This is a class which will be used to manage your validation errors, hence giving you the power to have custom validation errors. See example [here](../../tests/schema/samples/custom-error-tool/index.ts)
 
 ```ts
 import type { ValidationErrorMessage, IErrorTool } from 'clean-schema';
