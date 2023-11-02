@@ -43,9 +43,9 @@ class Schema<
   Input extends RealType<Input>,
   Output extends RealType<Output> = Input,
   Aliases = {},
-  ErrorTool extends IErrorTool<any> = DefaultErrorTool<KeyOf<Input & Aliases>>,
-  CtxOptions extends ObjectType = {}
-> extends SchemaCore<Input, Output, ErrorTool, CtxOptions> {
+  CtxOptions extends ObjectType = {},
+  ErrorTool extends IErrorTool<any> = DefaultErrorTool<KeyOf<Input & Aliases>>
+> extends SchemaCore<Input, Output, CtxOptions, ErrorTool> {
   constructor(
     definitions: NS.Definitions<Input, Output, Aliases, CtxOptions>,
     options: NS.Options<Input, Output, ErrorTool, CtxOptions> = defaultOptions
@@ -79,11 +79,11 @@ class Schema<
     ExtendedInput extends RealType<ExtendedInput>,
     ExtendedOutput extends RealType<ExtendedOutput> = ExtendedInput,
     Aliases = {},
+    ExtendedCtxOptions extends ObjectType = CtxOptions,
     ExtendedErrorTool extends IErrorTool<any> = DefaultExtendedErrorTool<
       ErrorTool,
       KeyOf<ExtendedInput & Aliases>
-    >,
-    ExtendedCtxOptions extends ObjectType = CtxOptions
+    >
   >(
     definitions: NS.Definitions<
       ExtendedInput,
@@ -133,14 +133,14 @@ class Schema<
       ExtendedInput,
       ExtendedOutput,
       Aliases,
-      ExtendedErrorTool,
-      ExtendedCtxOptions
+      ExtendedCtxOptions,
+      ExtendedErrorTool
     >({ ..._definitions, ...definitions }, { ...options_, ...rest });
   }
 
   getModel() {
     return new Model(
-      new ModelTool<Input, Output, Aliases, ErrorTool, CtxOptions>(this)
+      new ModelTool<Input, Output, Aliases, CtxOptions, ErrorTool>(this)
     );
   }
 }
@@ -149,12 +149,12 @@ class ModelTool<
   Input extends RealType<Input>,
   Output extends RealType<Output> = Input,
   Aliases = {},
-  ErrorTool extends IErrorTool<any> = DefaultErrorTool<KeyOf<Input & Aliases>>,
-  CtxOptions extends ObjectType = {}
-> extends SchemaCore<Input, Output, ErrorTool, CtxOptions> {
+  CtxOptions extends ObjectType = {},
+  ErrorTool extends IErrorTool<any> = DefaultErrorTool<KeyOf<Input & Aliases>>
+> extends SchemaCore<Input, Output, CtxOptions, ErrorTool> {
   private _regeneratedProps: KeyOf<Output>[] = [];
 
-  constructor(schema: Schema<Input, Output, Aliases, ErrorTool, CtxOptions>) {
+  constructor(schema: Schema<Input, Output, Aliases, CtxOptions, ErrorTool>) {
     super(schema.definitions as any, schema.options as any);
   }
 
@@ -1161,11 +1161,11 @@ class Model<
   Input extends RealType<Input>,
   Output extends RealType<Output>,
   Aliases = {},
-  ErrorTool extends IErrorTool<any> = DefaultErrorTool<KeyOf<Input & Aliases>>,
-  CtxOptions extends ObjectType = {}
+  CtxOptions extends ObjectType = {},
+  ErrorTool extends IErrorTool<any> = DefaultErrorTool<KeyOf<Input & Aliases>>
 > {
   constructor(
-    private modelTool: ModelTool<Input, Output, Aliases, ErrorTool, CtxOptions>
+    private modelTool: ModelTool<Input, Output, Aliases, CtxOptions, ErrorTool>
   ) {}
 
   clone = (

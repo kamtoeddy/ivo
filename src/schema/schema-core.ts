@@ -46,11 +46,11 @@ export const defaultOptions = {
 export abstract class SchemaCore<
   Input,
   Output,
-  ErrorTool extends IErrorTool<any>,
-  CtxOptions extends ObjectType = {}
+  CtxOptions extends ObjectType,
+  ErrorTool extends IErrorTool<any>
 > {
   protected _definitions = {} as ns.Definitions_<Input, Output>;
-  protected _options: ns.InternalOptions<Input, Output, ErrorTool, CtxOptions>;
+  protected _options: ns.InternalOptions<Input, Output>;
 
   // contexts & values
   protected context: Context<Input, Output, CtxOptions> = {} as Context<

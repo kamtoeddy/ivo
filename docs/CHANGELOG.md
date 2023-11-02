@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# v4.0.2 <small><sup>02-11-2023</sup></small>
+
+- [Update] swapped positions of Context Options and ErrorTool generics in schema signatures
+
 # v4.0.1 <small><sup>18-10-2023</sup></small>
 
 - [Fix] fix issue with `__getOptions__` key being suggested as dependable of dependent properties
