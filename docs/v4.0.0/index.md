@@ -116,7 +116,7 @@ type SchemaOptions = {
 
 const options: SchemaOptions = {}
 
-const schema = new Schema<Input, Output>(definitions, options)
+const schema = new Schema<Input, Output, CtxOptions, ErrorToolClass>(definitions, options)
 ```
 
 More details on the `Context` & `Summary` utiliies can be found [here](./life-cycles.md#the-operation-context)
@@ -258,7 +258,6 @@ type SchemaError = {
   payload: {
     [key: string]: string[]; // e.g. name: ["Invalid name", "too long"]
   };
-  statusCode: number; // e.g. 400
 };
 ```
 

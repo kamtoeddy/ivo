@@ -401,8 +401,8 @@ namespace NS {
   export type InternalOptions<
     Input,
     Output,
-    ErrorTool extends IErrorTool<any>,
-    CtxOptions extends ObjectType = {}
+    CtxOptions extends ObjectType = {},
+    ErrorTool extends IErrorTool<any> = any
   > = {
     ErrorTool: ErrorToolClass<ErrorTool, CtxOptions>;
     equalityDepth: number;
@@ -423,7 +423,7 @@ namespace NS {
   export type Options<
     Input,
     Output,
-    ErrorTool extends IErrorTool<any>,
+    ErrorTool extends IErrorTool<any> = any,
     CtxOptions extends ObjectType = {}
   > = {
     ErrorTool?: ErrorToolClass<ErrorTool, CtxOptions>;

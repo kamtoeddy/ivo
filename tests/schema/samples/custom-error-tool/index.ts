@@ -8,8 +8,8 @@ const userSchema = new Schema<
   Input,
   Output,
   {},
-  VError<KeyOf<Input>>,
-  Ctx_Options
+  Ctx_Options,
+  VError<KeyOf<Input>>
 >(
   {
     firstName: {
