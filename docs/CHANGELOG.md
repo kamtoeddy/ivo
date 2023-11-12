@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# v4.1.0 <small><sup>[x][x]-11-2023</sup></small>
+
+- [Add] add `errorWithAliasOnly` config for virtual properties
+
 # v4.0.2 <small><sup>02-11-2023</sup></small>
 
 - [Update] swapped positions of Context Options and ErrorTool generics in schema signatures
