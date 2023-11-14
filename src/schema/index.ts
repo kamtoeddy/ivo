@@ -265,11 +265,13 @@ class ModelTool<
       ) {
         const value = (data as any)[prop];
 
-        errorTool.add(prop, makeFieldError(message), value);
-
         const alias = this._getAliasByVirtual(prop);
 
-        if (!alias) continue;
+        if (!alias) {
+          errorTool.add(prop, makeFieldError(message), value);
+
+          continue;
+        }
 
         const _message =
           message == `'${prop}' is required!`
@@ -277,6 +279,10 @@ class ModelTool<
             : message;
 
         errorTool.add(alias as any, makeFieldError(_message), value);
+
+        if (this._shouldErrorWithAliasOnly(prop)) continue;
+
+        errorTool.add(prop, makeFieldError(message), value);
       }
     }
 
