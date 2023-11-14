@@ -187,13 +187,13 @@ await handleSuccess();
 
 ## Docs
 
-- [Defining a schema](./docs/v4.0.0/index.md#defining-a-schema)
+- [Defining a schema](./docs/v4.1.0/index.md#defining-a-schema)
   - [constant properties](./docs/v4.0.0/definitions/constants.md#constant-properties)
   - [default values](./docs/v4.0.0/definitions/defaults.md#default-values)
   - [dependent properties](./docs/v4.0.0/definitions/dependents.md#dependent-properties)
   - [readonly properties](./docs/v4.0.0/definitions/readonly.md#readonly-properties)
   - [required properties](./docs/v4.0.0/definitions/required.md#required-properties)
-  - [virtuals](./docs/v4.0.0/definitions/virtuals.md#virtual-properties)
+  - [virtuals](./docs/v4.1.0/virtuals.md#virtual-properties)
   - [validators](./docs/v4.0.0/validators/index.md#validators)
     - [isArrayOk](./docs/v4.0.0/validators/isArrayOk.md)
     - [isBooleanOk](./docs/v4.0.0/validators/isBooleanOk.md)

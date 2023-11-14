@@ -61,22 +61,22 @@ These methods are async because custom validators could be async as well.
 
 # Accepted rules
 
-| Property     | Type                         | Description                                                                                                                                                     |
-| ------------ | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| constant     | boolean                      | use with **`value`** rule to specify a property with a forever constant value. [more](./definitions/constants.md#constant-properties)                           |
-| default      | any \| function              | the default value of a propterty. [more](./definitions/defaults.md#default-values)                                                                              |
-| dependent    | boolean                      | to block the direct modification of a property. [more](./definitions/dependents.md#dependent-properties)                                                        |
-| onDelete     | function \| function[ ]      | executed when the delete method of a model is invoked [more](./life-cycles.md#ondelete)                                                                         |
-| onFailure    | function \| function[ ]      | executed after an unsucessful operation [more](./life-cycles.md#onfailure)                                                                                      |
-| onSuccess    | function \| function[ ]      | executed after a sucessful operation [more](./life-cycles.md#onsuccess)                                                                                         |
-| readonly     | boolean \| 'lax'             | a propterty whose value should not change [more](./definitions/readonly.md#readonly-properties)                                                                 |
-| required     | boolean \| function          | a property that must be set during an operation [more](./definitions/required.md#required-properties)                                                           |
-| sanitizer    | function                     | This could be used to transform a virtual property before their dependent properties get resolved. [more](./definitions/virtuals.md#sanitizer)                  |
-| shouldInit   | false \| function(): boolean | A boolean or setter that tells clean-schema whether or not a property should be initialized.                                                                    |
-| shouldUpdate | false \| function(): boolean | A boolean or setter that tells clean-schema whether or not a property should be initialized.                                                                    |
-| validator    | function                     | A function (async / sync) used to validated the value of a property. [more](../v3.4.0/validate/index.md#validators)                                             |
-| value        | any \| function              | value or setter of constant property. [more](./definitions/constants.md#constant-properties`)                                                                   |
-| virtual      | boolean                      | a helper property that can be used to provide extra context but does not appear on instances of your model [more](./definitions/virtuals.md#virtual-properties) |
+| Property     | Type                         | Description                                                                                                                                         |
+| ------------ | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| constant     | boolean                      | use with **`value`** rule to specify a property with a forever constant value. [more](../v4.0.0/definitions/constants.md#constant-properties)       |
+| default      | any \| function              | the default value of a propterty. [more](../v4.0.0/definitions/defaults.md#default-values)                                                          |
+| dependent    | boolean                      | to block the direct modification of a property. [more](../v4.0.0/definitions/dependents.md#dependent-properties)                                    |
+| onDelete     | function \| function[ ]      | executed when the delete method of a model is invoked [more](../v4.0.0/life-cycles.md#ondelete)                                                     |
+| onFailure    | function \| function[ ]      | executed after an unsucessful operation [more](../v4.0.0/life-cycles.md#onfailure)                                                                  |
+| onSuccess    | function \| function[ ]      | executed after a sucessful operation [more](../v4.0.0/life-cycles.md#onsuccess)                                                                     |
+| readonly     | boolean \| 'lax'             | a propterty whose value should not change [more](../v4.0.0/definitions/readonly.md#readonly-properties)                                             |
+| required     | boolean \| function          | a property that must be set during an operation [more](../v4.0.0/definitions/required.md#required-properties)                                       |
+| sanitizer    | function                     | This could be used to transform a virtual property before their dependent properties get resolved. [more](./virtuals.md#sanitizer)                  |
+| shouldInit   | false \| function(): boolean | A boolean or setter that tells clean-schema whether or not a property should be initialized.                                                        |
+| shouldUpdate | false \| function(): boolean | A boolean or setter that tells clean-schema whether or not a property should be initialized.                                                        |
+| validator    | function                     | A function (async / sync) used to validated the value of a property. [more](../v3.4.0/validate/index.md#validators)                                 |
+| value        | any \| function              | value or setter of constant property. [more](../v4.0.0/definitions/constants.md#constant-properties`)                                               |
+| virtual      | boolean                      | a helper property that can be used to provide extra context but does not appear on instances of your model [more](./virtuals.md#virtual-properties) |
 
 # Options
 
@@ -119,7 +119,7 @@ const options: SchemaOptions = {}
 const schema = new Schema<Input, Output, CtxOptions, ErrorToolClass>(definitions, options)
 ```
 
-More details on the `Context` & `Summary` utiliies can be found [here](./life-cycles.md#the-operation-context)
+More details on the `Context` & `Summary` utiliies can be found [here](../v4.0.0/life-cycles.md#the-operation-context)
 
 ## equalityDepth
 
@@ -263,11 +263,11 @@ type SchemaError = {
 
 ## onDelete
 
-This could be a function or an array of functions with the `DeleteListener` signature above. These functions would be triggered together with the onDelete listeners of individual properties when the `Model.delete` method is invoked. See more [here](./life-cycles.md#ondelete)
+This could be a function or an array of functions with the `DeleteListener` signature above. These functions would be triggered together with the onDelete listeners of individual properties when the `Model.delete` method is invoked. See more [here](../v4.0.0/life-cycles.md#ondelete)
 
 ## onSuccess
 
-This could be a function or an array of functions with the `SuccessListener` signature above. These functions would be triggered together with the onSuccess listeners of individual properties when the handleSuccess method is invoked at creation & during updates of any property. See more [here](./life-cycles.md#onsuccess)
+This could be a function or an array of functions with the `SuccessListener` signature above. These functions would be triggered together with the onSuccess listeners of individual properties when the handleSuccess method is invoked at creation & during updates of any property. See more [here](../v4.0.0/life-cycles.md#onsuccess)
 
 ## setMissingDefaultsOnUpdate
 
