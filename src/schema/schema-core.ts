@@ -453,7 +453,7 @@ export abstract class SchemaCore<
 
     if (!required) return [false, ''];
 
-    const fallbackMessage = `'${prop}' is required!`;
+    const fallbackMessage = `'${prop}' is required`;
 
     if (!isFunction(required)) return [required, fallbackMessage];
 

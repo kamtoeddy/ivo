@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# v4.1.0 <small><sup>15-11-2023</sup></small>
+
+- [Update] improve precedence of virtual properties and their aliases
+
 # v4.0.2 <small><sup>02-11-2023</sup></small>
 
 - [Update] swapped positions of Context Options and ErrorTool generics in schema signatures
