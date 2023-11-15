@@ -1,38 +1,38 @@
-import { beforeAll, describe, test, it, expect } from 'vitest'
+import { beforeAll, describe, test, it, expect } from 'vitest';
 
-import { ERRORS } from '../../../../dist'
+import { ERRORS } from '../../../../dist';
 import {
   expectFailure,
   expectNoFailure,
   expectPromiseFailure,
   getValidSchema
-} from '../_utils'
+} from '../_utils';
 
 export const Test_SchemaErrors = ({ Schema, fx }: any) => {
   describe('Schema.options.errors', () => {
     it("should allow 'silent' | 'throw'", () => {
-      const values = ['silent', 'throw']
+      const values = ['silent', 'throw'];
 
       for (const errors of values) {
-        const toPass = fx(getValidSchema(), { errors })
+        const toPass = fx(getValidSchema(), { errors });
 
-        expectNoFailure(toPass)
+        expectNoFailure(toPass);
 
-        toPass()
+        toPass();
       }
-    })
+    });
 
     describe('valid', () => {
       let silentModel: any,
         modelToThrow: any,
-        models: any[] = []
+        models: any[] = [];
 
       beforeAll(() => {
         const validator = (value: any) => {
           return value
             ? { valid: true }
-            : { reason: 'Invalid value', valid: false }
-        }
+            : { reason: 'Invalid value', valid: false };
+        };
 
         const definition = {
           lax: { default: 'lax-default', validator },
@@ -42,13 +42,13 @@ export const Test_SchemaErrors = ({ Schema, fx }: any) => {
             validator
           },
           required: { required: true, validator }
-        }
+        };
 
-        silentModel = new Schema(definition).getModel()
-        modelToThrow = new Schema(definition, { errors: 'throw' }).getModel()
+        silentModel = new Schema(definition).getModel();
+        modelToThrow = new Schema(definition, { errors: 'throw' }).getModel();
 
-        models = [silentModel, modelToThrow]
-      })
+        models = [silentModel, modelToThrow];
+      });
 
       test('silent & throw with valid data', () => {
         // create
@@ -57,28 +57,28 @@ export const Test_SchemaErrors = ({ Schema, fx }: any) => {
             const { data } = await model.create({
               readonly: 'lax',
               required: true
-            })
+            });
 
             expect(data).toEqual({
               lax: 'lax-default',
               readonly: 'lax',
               required: true
-            })
-          })
+            });
+          });
 
           // clone
           it('should clone normally', async () => {
             const { data } = await model.clone({
               readonly: 'lax',
               required: true
-            })
+            });
 
             expect(data).toEqual({
               lax: 'lax-default',
               readonly: 'lax',
               required: true
-            })
-          })
+            });
+          });
 
           // update
           it('should update normally', async () => {
@@ -89,12 +89,12 @@ export const Test_SchemaErrors = ({ Schema, fx }: any) => {
                 required: true
               },
               { required: 'required' }
-            )
+            );
 
-            expect(data).toEqual({ required: 'required' })
-          })
+            expect(data).toEqual({ required: 'required' });
+          });
         }
-      })
+      });
 
       describe('silent', () => {
         // create
@@ -103,7 +103,7 @@ export const Test_SchemaErrors = ({ Schema, fx }: any) => {
             lax: false,
             readonly: 'lax',
             required: ''
-          })
+          });
 
           expect(error).toEqual(
             expect.objectContaining({
@@ -119,33 +119,8 @@ export const Test_SchemaErrors = ({ Schema, fx }: any) => {
                 }
               }
             })
-          )
-        })
-
-        // clone
-        it('should reject invalid props on clone', async () => {
-          const { error } = await silentModel.clone({
-            lax: false,
-            readonly: 'lax',
-            required: ''
-          })
-
-          expect(error).toEqual(
-            expect.objectContaining({
-              message: ERRORS.VALIDATION_ERROR,
-              payload: {
-                lax: {
-                  reasons: expect.arrayContaining(['Invalid value']),
-                  metadata: null
-                },
-                required: {
-                  reasons: expect.arrayContaining(['Invalid value']),
-                  metadata: null
-                }
-              }
-            })
-          )
-        })
+          );
+        });
 
         // update
         it('should reject invalid props on update', async () => {
@@ -156,7 +131,7 @@ export const Test_SchemaErrors = ({ Schema, fx }: any) => {
               required: true
             },
             { lax: false, required: '' }
-          )
+          );
 
           expect(error).toEqual(
             expect.objectContaining({
@@ -172,8 +147,8 @@ export const Test_SchemaErrors = ({ Schema, fx }: any) => {
                 }
               }
             })
-          )
-        })
+          );
+        });
 
         it('should reject on nothing to update', async () => {
           const { error } = await silentModel.update(
@@ -183,16 +158,16 @@ export const Test_SchemaErrors = ({ Schema, fx }: any) => {
               required: true
             },
             { readonly: 'New val' }
-          )
+          );
 
           expect(error).toEqual(
             expect.objectContaining({
               message: ERRORS.NOTHING_TO_UPDATE,
               payload: {}
             })
-          )
-        })
-      })
+          );
+        });
+      });
 
       describe('throw', () => {
         // create
@@ -202,12 +177,12 @@ export const Test_SchemaErrors = ({ Schema, fx }: any) => {
               lax: false,
               readonly: 'lax',
               required: ''
-            })
+            });
 
-          expectPromiseFailure(toFail, ERRORS.VALIDATION_ERROR)
+          expectPromiseFailure(toFail, ERRORS.VALIDATION_ERROR);
 
           try {
-            await toFail()
+            await toFail();
           } catch (err: any) {
             expect(err).toEqual(
               expect.objectContaining({
@@ -223,41 +198,9 @@ export const Test_SchemaErrors = ({ Schema, fx }: any) => {
                   }
                 }
               })
-            )
+            );
           }
-        })
-
-        // clone
-        it('should reject invalid props on clone', async () => {
-          const toFail = () =>
-            modelToThrow.clone({
-              lax: false,
-              readonly: 'lax',
-              required: ''
-            })
-
-          expectPromiseFailure(toFail, ERRORS.VALIDATION_ERROR)
-
-          try {
-            await toFail()
-          } catch (err: any) {
-            expect(err).toEqual(
-              expect.objectContaining({
-                message: ERRORS.VALIDATION_ERROR,
-                payload: {
-                  lax: {
-                    reasons: expect.arrayContaining(['Invalid value']),
-                    metadata: null
-                  },
-                  required: {
-                    reasons: expect.arrayContaining(['Invalid value']),
-                    metadata: null
-                  }
-                }
-              })
-            )
-          }
-        })
+        });
 
         // update
         it('should reject invalid props on update', async () => {
@@ -269,12 +212,12 @@ export const Test_SchemaErrors = ({ Schema, fx }: any) => {
                 required: true
               },
               { lax: false, required: '' }
-            )
+            );
 
-          expectPromiseFailure(toFail, ERRORS.VALIDATION_ERROR)
+          expectPromiseFailure(toFail, ERRORS.VALIDATION_ERROR);
 
           try {
-            await toFail()
+            await toFail();
           } catch (err: any) {
             expect(err).toMatchObject(
               expect.objectContaining({
@@ -290,9 +233,9 @@ export const Test_SchemaErrors = ({ Schema, fx }: any) => {
                   }
                 })
               })
-            )
+            );
           }
-        })
+        });
 
         it('should reject on nothing to update', async () => {
           const toFail = () =>
@@ -303,35 +246,35 @@ export const Test_SchemaErrors = ({ Schema, fx }: any) => {
                 required: true
               },
               { readonly: 'New val' }
-            )
+            );
 
-          expectPromiseFailure(toFail, ERRORS.NOTHING_TO_UPDATE)
+          expectPromiseFailure(toFail, ERRORS.NOTHING_TO_UPDATE);
 
           try {
-            await toFail()
+            await toFail();
           } catch (err: any) {
             expect(err).toEqual(
               expect.objectContaining({
                 message: ERRORS.NOTHING_TO_UPDATE,
                 payload: {}
               })
-            )
+            );
           }
-        })
-      })
-    })
+        });
+      });
+    });
 
     describe('invalid', () => {
       it("should reject anything other than ('silent' | 'throw')", () => {
-        const values = ['silence', 1, null, false, true, 'throws', [], {}]
+        const values = ['silence', 1, null, false, true, 'throws', [], {}];
 
         for (const errors of values) {
-          const toFail = fx(getValidSchema(), { errors })
+          const toFail = fx(getValidSchema(), { errors });
 
-          expectFailure(toFail)
+          expectFailure(toFail);
 
           try {
-            toFail()
+            toFail();
           } catch (err: any) {
             expect(err.payload).toEqual(
               expect.objectContaining({
@@ -339,10 +282,10 @@ export const Test_SchemaErrors = ({ Schema, fx }: any) => {
                   "should be 'silent' or 'throw'"
                 ])
               })
-            )
+            );
           }
         }
-      })
-    })
-  })
-}
+      });
+    });
+  });
+};

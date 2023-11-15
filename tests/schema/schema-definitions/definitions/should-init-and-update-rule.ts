@@ -191,19 +191,6 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
           });
         });
 
-        it('should respect callable should init when condition passes during cloning', async () => {
-          const { data } = await Model.clone({
-            env: 'test',
-            isBlocked: 'yes'
-          });
-
-          expect(data).toMatchObject({
-            env: 'test',
-            isBlocked: 'yes',
-            laxProp: 0
-          });
-        });
-
         it('should respect callable should init when condition passes at creation', async () => {
           const { data } = await Model.create({
             env: 'test',
@@ -225,12 +212,6 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
 
           it('should assume initialization as falsy if shouldInit method returns nothing at creation', async () => {
             const { data } = await Model.create({ isBlocked: 'yes' });
-
-            expect(data).toMatchObject({ isBlocked: false, laxProp: 0 });
-          });
-
-          it('should assume initialization as falsy if shouldInit method returns nothing during cloning', async () => {
-            const { data } = await Model.clone({ isBlocked: true, laxProp: 0 });
 
             expect(data).toMatchObject({ isBlocked: false, laxProp: 0 });
           });
@@ -324,50 +305,8 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
           expect(sanitizedValues).toEqual({});
         });
 
-        it("should ignore virtuals at creation(cloning) when their shouldInit handler returns 'false'", async () => {
-          const { data, handleSuccess } = await Model.clone({
-            dependent: '',
-            laxProp: 'Peter',
-            virtual: true
-          });
-
-          await handleSuccess();
-
-          expect(data).toEqual({ dependent: '', laxProp: 'Peter' });
-
-          expect(onSuccessStats).toEqual({ dependent: 1 });
-
-          expect(onSuccessValues).toEqual({ dependent: '' });
-
-          expect(sanitizedValues).toEqual({});
-        });
-
         it("should respect virtuals at creation when their shouldInit handler returns 'true'", async () => {
           const { data, handleSuccess } = await Model.create({
-            laxProp: 'allow virtual',
-            virtual: true
-          });
-
-          await handleSuccess();
-
-          expect(data).toEqual({
-            dependent: 'changed',
-            laxProp: 'allow virtual'
-          });
-
-          expect(onSuccessStats).toEqual({ dependent: 1, virtual: 3 });
-
-          expect(onSuccessValues).toEqual({
-            dependent: 'changed',
-            virtual: 'sanitized'
-          });
-
-          expect(sanitizedValues).toEqual({ virtual: 'sanitized' });
-        });
-
-        it("should respect virtuals at creation(cloning) when their shouldInit handler returns 'true'", async () => {
-          const { data, handleSuccess } = await Model.clone({
-            dependent: '',
             laxProp: 'allow virtual',
             virtual: true
           });

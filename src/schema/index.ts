@@ -746,150 +746,6 @@ class ModelTool<
     return makeResponse(_response) as ValidatorResponseObject<T>;
   }
 
-  async clone(
-    input: Partial<Input & Aliases>,
-    options?: NS.CloneOptions<Input, CtxOptions>
-  ) {
-    const ctxOpts = this._updateContextOptions(options?.contextOptions ?? {});
-
-    if (!areValuesOk(input)) return this._handleInvalidData();
-
-    const _input = this._cleanInput(input);
-
-    this._setValues({ ...input, ..._input });
-
-    const reset = toArray<KeyOf<Input>>(options?.reset ?? []).filter(
-      this._isProp
-    );
-
-    let data = await this._generateConstants();
-
-    const errorTool = new this._options.ErrorTool(
-      VALIDATION_ERRORS.VALIDATION_ERROR,
-      ctxOpts
-    );
-
-    const virtuals = getKeysAsProps<Partial<Output>>(_input).filter((prop) =>
-      this._isVirtualInit(prop, _input[prop as unknown as KeyOf<Input>])
-    );
-
-    const props = [
-      ...getSetValuesAsProps(this.props).filter(
-        (prop) => !this._isConstant(prop)
-      ),
-      ...virtuals
-    ];
-
-    const validations = props.map(async (prop) => {
-      const isAlias = this._isVirtualAlias(prop),
-        isDependent = this._isDependentProp(prop);
-
-      if (isDependent && !isAlias) {
-        const value = reset.includes(prop as any)
-          ? await this._getDefaultValue(prop)
-          : this.values[prop as unknown as KeyOf<Output>];
-
-        data[prop] = value;
-
-        const validCtxUpdate = { [prop]: data[prop] } as unknown as any;
-
-        this._updatePartialContext(validCtxUpdate);
-
-        return this._updateContext(validCtxUpdate);
-      }
-
-      const isVirtualInit = virtuals.includes(prop);
-
-      if (this._isVirtual(prop) && !isVirtualInit) return;
-
-      if (isAlias && !isDependent)
-        return this._validateAndSet(
-          data,
-          errorTool,
-          prop,
-          _input[prop as unknown as KeyOf<Input>]
-        );
-
-      if (reset.includes(prop as any)) {
-        data[prop] = await this._getDefaultValue(prop);
-
-        const validCtxUpdate = { [prop]: data[prop] } as unknown as any;
-
-        this._updatePartialContext(validCtxUpdate);
-
-        return this._updateContext(validCtxUpdate);
-      }
-
-      const isLax = this._isLaxProp(prop);
-
-      const isProvided = isPropertyOf(prop, this.values);
-
-      const isLaxInit =
-        isLax &&
-        isProvided &&
-        !isEqual(
-          this.values[prop as unknown as KeyOf<Output>],
-          this.defaults[prop as unknown as KeyOf<Output>],
-          this._options.equalityDepth
-        );
-
-      const isRequiredInit =
-        this._isRequiredBy(prop) && isPropertyOf(prop, this.values);
-
-      if (
-        (isLax &&
-          this._isRuleInDefinition(prop, 'shouldInit') &&
-          !this._getValueBy(prop, 'shouldInit', {})) ||
-        (!isVirtualInit &&
-          !this._canInit(prop) &&
-          !isLaxInit &&
-          !isRequiredInit)
-      ) {
-        data[prop] = await this._getDefaultValue(prop);
-
-        const validCtxUpdate = { [prop]: data[prop] } as unknown as any;
-
-        this._updatePartialContext(validCtxUpdate);
-
-        return this._updateContext(validCtxUpdate);
-      }
-
-      return this._validateAndSet(
-        data,
-        errorTool,
-        prop,
-        this.values[prop as unknown as KeyOf<Output>]
-      );
-    });
-
-    await Promise.allSettled(validations);
-
-    if (errorTool.isLoaded) return this._handleError(errorTool, data, virtuals);
-
-    const requiredErrorTool = this._handleRequiredBy(data);
-
-    if (requiredErrorTool.isLoaded)
-      return this._handleError(requiredErrorTool, data, virtuals);
-
-    await this._handleSanitizationOfVirtuals(data);
-
-    data = await this._resolveDependentChanges(
-      data,
-      this._getPartialContext() as any
-    );
-
-    const finalData = this._useConfigProps(data);
-
-    this._updateContext(finalData as any);
-    this._updatePartialContext(finalData as any);
-
-    return {
-      data: finalData as Output,
-      error: null,
-      handleSuccess: this._makeHandleSuccess(finalData)
-    };
-  }
-
   async create(
     input: Partial<Input & Aliases> = {},
     ctxOptions: Partial<CtxOptions> = {}
@@ -900,7 +756,7 @@ class ModelTool<
 
     const _input = this._cleanInput(input);
 
-    this._setValues({ ...input, ..._input });
+    this._setValues(_input);
 
     let data = await this._generateConstants();
 
@@ -1053,9 +909,9 @@ class ModelTool<
 
     let updates = {} as Partial<Output>;
 
-    const toUpdate = getKeysAsProps<Output & Aliases>(
-      (_changes ?? {}) as any
-    ).filter((prop) => this._isUpdatable(prop, (_changes as any)[prop]));
+    const toUpdate = getKeysAsProps<Output & Aliases>(_changes as any).filter(
+      (prop) => this._isUpdatable(prop, (_changes as any)[prop])
+    );
 
     const linkedProps: KeyOf<Output>[] = [];
     const virtuals: KeyOf<Output>[] = [];
@@ -1196,11 +1052,6 @@ class Model<
   constructor(
     private modelTool: ModelTool<Input, Output, Aliases, CtxOptions, ErrorTool>
   ) {}
-
-  clone = (
-    values: Partial<Input & Aliases>,
-    options?: NS.CloneOptions<Input, CtxOptions>
-  ) => this.modelTool.clone(values, options);
 
   create = (
     values: Partial<Input & Aliases> = {},

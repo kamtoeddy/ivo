@@ -1,22 +1,22 @@
-import { afterEach, describe, it, expect } from 'vitest'
+import { afterEach, describe, it, expect } from 'vitest';
 
-import { expectFailure, expectNoFailure, pauseFor, validator } from '../_utils'
+import { expectFailure, expectNoFailure, pauseFor, validator } from '../_utils';
 
 export const Test_DependentProperties = ({ Schema, fx }: any) => {
   describe('dependent', () => {
-    const resolver = () => 1
+    const resolver = () => 1;
 
     describe('behaviour', () => {
-      let onDeleteStats = {} as Record<string, number | undefined>
-      let onSuccessStats = {} as Record<string, number | undefined>
-      let resolversCalledStats = {} as Record<string, number | undefined>
+      let onDeleteStats = {} as Record<string, number | undefined>;
+      let onSuccessStats = {} as Record<string, number | undefined>;
+      let resolversCalledStats = {} as Record<string, number | undefined>;
 
       const successCountOfDependentProps = {
         dependentProp: 4,
         dependentProp_1: 1,
         dependentProp_2: 3,
         dependentProp_3: 1
-      }
+      };
 
       const Model = new Schema({
         laxProp: { default: '' },
@@ -76,59 +76,59 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
           ],
           onSuccess: [incrementOnSuccessCountOf('dependentProp_3')]
         }
-      }).getModel()
+      }).getModel();
 
       function incrementOnDeleteCountOf(prop: string) {
         return () => {
-          const previousCount = onDeleteStats[prop] ?? 0
+          const previousCount = onDeleteStats[prop] ?? 0;
 
-          onDeleteStats[prop] = previousCount + 1
-        }
+          onDeleteStats[prop] = previousCount + 1;
+        };
       }
 
       function incrementOnSuccessCountOf(prop: string) {
         return () => {
-          const previousCount = onSuccessStats[prop] ?? 0
+          const previousCount = onSuccessStats[prop] ?? 0;
 
-          onSuccessStats[prop] = previousCount + 1
-        }
+          onSuccessStats[prop] = previousCount + 1;
+        };
       }
 
       function incrementResolveCountOf(prop: string) {
-        const previousCount = resolversCalledStats[prop] ?? 0
+        const previousCount = resolversCalledStats[prop] ?? 0;
 
-        resolversCalledStats[prop] = previousCount + 1
+        resolversCalledStats[prop] = previousCount + 1;
       }
 
       function resolverOfDependentProp({
         context: { laxProp, laxProp_1 }
       }: any) {
-        incrementResolveCountOf('dependentProp')
+        incrementResolveCountOf('dependentProp');
 
-        return laxProp.length + laxProp_1.length
+        return laxProp.length + laxProp_1.length;
       }
 
       function resolverOfDependentProp_1({ context: { dependentProp } }: any) {
-        incrementResolveCountOf('dependentProp_1')
+        incrementResolveCountOf('dependentProp_1');
 
-        return dependentProp + 1
+        return dependentProp + 1;
       }
 
       function asyncResolver(prop: string) {
         return async ({ context: { dependentProp } }: any) => {
-          incrementResolveCountOf(prop)
+          incrementResolveCountOf(prop);
 
-          await pauseFor()
+          await pauseFor();
 
-          return dependentProp + 2
-        }
+          return dependentProp + 2;
+        };
       }
 
       afterEach(() => {
-        onDeleteStats = {}
-        onSuccessStats = {}
-        resolversCalledStats = {}
-      })
+        onDeleteStats = {};
+        onSuccessStats = {};
+        resolversCalledStats = {};
+      });
 
       describe('creation', () => {
         it('should resolve dependent properties correctly at creation', async () => {
@@ -138,9 +138,9 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
             dependentProp_1: 34,
             dependentProp_2: 17,
             dependentProp_3: 1
-          })
+          });
 
-          await handleSuccess?.()
+          await handleSuccess?.();
 
           expect(data).toEqual({
             laxProp: '',
@@ -150,11 +150,11 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
             dependentProp_1: 0,
             dependentProp_2: 0,
             dependentProp_3: 2
-          })
+          });
 
-          expect(resolversCalledStats).toEqual({ dependentProp_3: 1 })
-          expect(onSuccessStats).toEqual(successCountOfDependentProps)
-        })
+          expect(resolversCalledStats).toEqual({ dependentProp_3: 1 });
+          expect(onSuccessStats).toEqual(successCountOfDependentProps);
+        });
 
         it('should resolve dependencies of dependent properties if provided at creation', async () => {
           const { data, handleSuccess } = await Model.create({
@@ -163,9 +163,9 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
             dependentProp: 0,
             dependentProp_1: 0,
             dependentProp_2: 0
-          })
+          });
 
-          await handleSuccess()
+          await handleSuccess();
 
           expect(data).toEqual({
             laxProp: '',
@@ -175,147 +175,17 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
             dependentProp_1: 6,
             dependentProp_2: 7,
             dependentProp_3: 0
-          })
+          });
 
           expect(resolversCalledStats).toEqual({
             dependentProp: 1,
             dependentProp_1: 1,
             dependentProp_2: 1
-          })
+          });
 
-          expect(onSuccessStats).toEqual(successCountOfDependentProps)
-        })
-      })
-
-      describe('cloning', () => {
-        it("should have all correct properties and values at creation with 'clone' method", async () => {
-          const { data: clone, handleSuccess } = await Model.clone({
-            laxProp: '',
-            laxProp_1: '',
-            laxProp_2: 'value based pricing',
-            dependentProp: 0,
-            dependentProp_1: 0,
-            dependentProp_2: 0,
-            dependentProp_3: 2
-          })
-
-          await handleSuccess()
-
-          expect(clone).toMatchObject({
-            laxProp: '',
-            laxProp_1: '',
-            laxProp_2: 'value based pricing',
-            dependentProp: 0,
-            dependentProp_1: 0,
-            dependentProp_2: 0,
-            dependentProp_3: 2
-          })
-
-          expect(resolversCalledStats).toEqual({ dependentProp_3: 1 })
-
-          expect(onSuccessStats).toEqual(successCountOfDependentProps)
-        })
-
-        it("should respect 'reset' option at creation with 'clone' method", async () => {
-          const { data: clone, handleSuccess } = await Model.clone(
-            {
-              laxProp: '',
-              laxProp_1: '',
-              laxProp_2: 'value based pricing',
-              dependentProp: 20,
-              dependentProp_1: 1302,
-              dependentProp_2: 10,
-              dependentProp_3: 350
-            },
-            {
-              reset: ['dependentProp', 'dependentProp_1', 'dependentProp_2']
-            }
-          )
-
-          await handleSuccess()
-
-          expect(clone).toMatchObject({
-            laxProp: '',
-            laxProp_1: '',
-            laxProp_2: 'value based pricing',
-            dependentProp: 0,
-            dependentProp_1: 0,
-            dependentProp_2: 0,
-            dependentProp_3: 2
-          })
-
-          expect(resolversCalledStats).toEqual({ dependentProp_3: 1 })
-
-          expect(onSuccessStats).toEqual(successCountOfDependentProps)
-        })
-
-        it('should resolve dependencies of dependent properties if provided at creation(cloning)', async () => {
-          const { data, handleSuccess } = await Model.clone({
-            laxProp: '',
-            laxProp_1: 'hello',
-            laxProp_2: '',
-            dependentProp: 5,
-            dependentProp_1: 6,
-            dependentProp_2: 7,
-            dependentProp_3: 0
-          })
-
-          await handleSuccess()
-
-          expect(data).toEqual({
-            laxProp: '',
-            laxProp_1: 'hello',
-            laxProp_2: '',
-            dependentProp: 5,
-            dependentProp_1: 6,
-            dependentProp_2: 7,
-            dependentProp_3: 0
-          })
-
-          expect(resolversCalledStats).toEqual({
-            dependentProp: 1,
-            dependentProp_1: 2,
-            dependentProp_2: 2
-          })
-
-          expect(onSuccessStats).toEqual(successCountOfDependentProps)
-        })
-
-        it("should resolve dependencies of dependent properties if provided at creation(cloning) and also respect the 'reset' option", async () => {
-          const { data, handleSuccess } = await Model.clone(
-            {
-              laxProp: '',
-              laxProp_1: 'hello',
-              laxProp_2: '',
-              dependentProp: 5,
-              dependentProp_1: 6,
-              dependentProp_2: 7,
-              dependentProp_3: 0
-            },
-            { reset: 'dependentProp' }
-          )
-
-          await handleSuccess()
-
-          expect(data).toEqual({
-            laxProp: '',
-            laxProp_1: 'hello',
-            laxProp_2: '',
-            dependentProp: 5,
-            dependentProp_1: 6,
-            dependentProp_2: 7,
-            dependentProp_3: 0
-          })
-
-          expect(resolversCalledStats).toEqual({
-            dependentProp: 1,
-            dependentProp_1: 1,
-            dependentProp_2: 1
-          })
-
-          expect(onSuccessStats).toEqual(successCountOfDependentProps)
-        })
-      })
+          expect(onSuccessStats).toEqual(successCountOfDependentProps);
+        });
+      });
 
       describe('updates', () => {
         it('should have all correct properties and values after updates', async () => {
@@ -336,16 +206,16 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
               dependentProp_2: 72,
               dependentProp_3: 702
             }
-          )
+          );
 
-          await handleSuccess()
+          await handleSuccess();
 
-          expect(updates).toMatchObject({ laxProp_2: 'hey' })
+          expect(updates).toMatchObject({ laxProp_2: 'hey' });
 
-          expect(resolversCalledStats).toEqual({ dependentProp_3: 1 })
+          expect(resolversCalledStats).toEqual({ dependentProp_3: 1 });
 
-          expect(onSuccessStats).toEqual({})
-        })
+          expect(onSuccessStats).toEqual({});
+        });
 
         it('should resolve dependencies of dependent properties if provided during updates', async () => {
           const { data, handleSuccess } = await Model.update(
@@ -362,9 +232,9 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
               laxProp: 'hello',
               laxProp_1: 'world'
             }
-          )
+          );
 
-          await handleSuccess()
+          await handleSuccess();
 
           expect(data).toEqual({
             laxProp: 'hello',
@@ -372,18 +242,18 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
             dependentProp: 10,
             dependentProp_1: 11,
             dependentProp_2: 12
-          })
+          });
 
-          const { dependentProp_3, ...stats } = successCountOfDependentProps
+          const { dependentProp_3, ...stats } = successCountOfDependentProps;
 
           expect(resolversCalledStats).toEqual({
             dependentProp: 1,
             dependentProp_1: 1,
             dependentProp_2: 1
-          })
+          });
 
-          expect(onSuccessStats).toEqual(stats)
-        })
+          expect(onSuccessStats).toEqual(stats);
+        });
 
         it('should not resolve readonly dependent properties that have changed if provided during updates', async () => {
           const { data, handleSuccess } = await Model.update(
@@ -396,29 +266,29 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
               dependentProp_3: 0
             },
             { laxProp: '', laxProp_1: 'hey' }
-          )
+          );
 
-          await handleSuccess()
+          await handleSuccess();
 
           expect(data).toEqual({
             laxProp: '',
             laxProp_1: 'hey',
             dependentProp: 3,
             dependentProp_1: 4
-          })
+          });
 
           const stats = {
             dependentProp: 1,
             dependentProp_1: 1
-          }
+          };
 
-          expect(resolversCalledStats).toEqual(stats)
+          expect(resolversCalledStats).toEqual(stats);
 
           expect(onSuccessStats).toEqual({
             dependentProp: 4,
             dependentProp_1: 1
-          })
-        })
+          });
+        });
 
         it('should not consider new resolved values of dependent properties if they are not different from previous values during updates', async () => {
           const { data, handleSuccess } = await Model.update(
@@ -431,17 +301,17 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
               dependentProp_3: 0
             },
             { laxProp: '', laxProp_1: 'hey' }
-          )
+          );
 
-          await handleSuccess()
+          await handleSuccess();
 
-          expect(data).toEqual({ laxProp: '', laxProp_1: 'hey' })
+          expect(data).toEqual({ laxProp: '', laxProp_1: 'hey' });
 
-          expect(resolversCalledStats).toEqual({ dependentProp: 1 })
+          expect(resolversCalledStats).toEqual({ dependentProp: 1 });
 
-          expect(onSuccessStats).toEqual({})
-        })
-      })
+          expect(onSuccessStats).toEqual({});
+        });
+      });
 
       describe('deletion', () => {
         it('should have all correct properties and values at creation', async () => {
@@ -453,7 +323,7 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
             dependentProp_1: 0,
             dependentProp_2: 0,
             dependentProp_3: 2
-          })
+          });
 
           expect(onDeleteStats).toEqual({
             laxProp_2: 1,
@@ -461,14 +331,14 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
             dependentProp_1: 1,
             dependentProp_2: 2,
             dependentProp_3: 2
-          })
-        })
-      })
-    })
+          });
+        });
+      });
+    });
 
     describe('valid', () => {
       it('should accept dependent & default(any | function)', () => {
-        const values = ['', 1, false, true, null, {}, []]
+        const values = ['', 1, false, true, null, {}, []];
 
         for (const value of values) {
           const toPass = fx({
@@ -479,28 +349,28 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
               resolver
             },
             prop: { default: '' }
-          })
+          });
 
-          expectNoFailure(toPass)
+          expectNoFailure(toPass);
 
-          toPass()
+          toPass();
         }
-      })
+      });
 
       it('should allow dependsOn + resolver & no dependent', () => {
         const toPass = fx({
           dependentProp: { default: '', dependsOn: 'prop', resolver },
           prop: { default: '' }
-        })
+        });
 
-        expectNoFailure(toPass)
+        expectNoFailure(toPass);
 
-        toPass()
-      })
+        toPass();
+      });
 
       it("should accept life cycle listeners except 'onFailure'", () => {
-        const lifeCycles = ['onDelete', 'onSuccess']
-        const values = [() => {}, () => ({}), [() => {}, () => ({})]]
+        const lifeCycles = ['onDelete', 'onSuccess'];
+        const values = [() => {}, () => ({}), [() => {}, () => ({})]];
 
         for (const lifeCycle of lifeCycles) {
           for (const value of values) {
@@ -513,21 +383,21 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
                 [lifeCycle]: value
               },
               prop: { default: '' }
-            })
+            });
 
-            expectNoFailure(toPass)
+            expectNoFailure(toPass);
 
-            toPass()
+            toPass();
           }
         }
-      })
+      });
 
       it('should accept dependsOn & resolver', () => {
         const values = [
           'prop',
           ['prop', 'prop1'],
           ['prop', 'prop1', 'prop2', 'prop3']
-        ]
+        ];
 
         for (const dependsOn of values) {
           const toPass = fx({
@@ -541,13 +411,13 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
             prop1: { default: '' },
             prop2: { default: '' },
             prop3: { default: '' }
-          })
+          });
 
-          expectNoFailure(toPass)
+          expectNoFailure(toPass);
 
-          toPass()
+          toPass();
         }
-      })
+      });
 
       it('should allow a dependent prop to depend on another dependent prop (non-circular)', () => {
         const toPass = fx({
@@ -564,12 +434,12 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
             resolver
           },
           prop: { default: '' }
-        })
+        });
 
-        expectNoFailure(toPass)
+        expectNoFailure(toPass);
 
-        toPass()
-      })
+        toPass();
+      });
 
       it('should allow a dependency on virtuals', () => {
         const toPass = fx({
@@ -580,17 +450,17 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
             resolver
           },
           virtualProp: { virtual: true, validator: resolver }
-        })
+        });
 
-        expectNoFailure(toPass)
+        expectNoFailure(toPass);
 
-        toPass()
-      })
-    })
+        toPass();
+      });
+    });
 
     describe('invalid', () => {
       it('should reject dependency on non-properties', () => {
-        const invalidProp = 'invalidProp'
+        const invalidProp = 'invalidProp';
 
         const toFail = fx({
           dependentProp: {
@@ -599,12 +469,12 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
             dependsOn: invalidProp,
             resolver
           }
-        })
+        });
 
-        expectFailure(toFail)
+        expectFailure(toFail);
 
         try {
-          toFail()
+          toFail();
         } catch (err: any) {
           expect(err.payload).toMatchObject(
             expect.objectContaining({
@@ -612,9 +482,9 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
                 `Cannot establish dependency with '${invalidProp}' as it is neither a property nor a virtual of your model`
               ])
             })
-          )
+          );
         }
-      })
+      });
 
       it('should not allow property to depend on itself', () => {
         const toFail = fx({
@@ -624,12 +494,12 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
             dependsOn: 'dependentProp',
             resolver
           }
-        })
+        });
 
-        expectFailure(toFail)
+        expectFailure(toFail);
 
         try {
-          toFail()
+          toFail();
         } catch (err: any) {
           expect(err.payload).toMatchObject(
             expect.objectContaining({
@@ -637,9 +507,9 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
                 'A property cannot depend on itself'
               ])
             })
-          )
+          );
         }
-      })
+      });
 
       it('should not allow property to depend on a constant property', () => {
         const toFail = fx({
@@ -653,12 +523,12 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
             dependsOn: 'constantProp',
             resolver
           }
-        })
+        });
 
-        expectFailure(toFail)
+        expectFailure(toFail);
 
         try {
-          toFail()
+          toFail();
         } catch (err: any) {
           expect(err.payload).toMatchObject(
             expect.objectContaining({
@@ -666,9 +536,9 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
                 'A property cannot depend on a constant property'
               ])
             })
-          )
+          );
         }
-      })
+      });
 
       it('should identify circular dependencies and reject', () => {
         const toFail = fx({
@@ -709,12 +579,12 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
             resolver
           },
           prop: { default: '' }
-        })
+        });
 
-        expectFailure(toFail)
+        expectFailure(toFail);
 
         try {
-          toFail()
+          toFail();
         } catch (err: any) {
           expect(err.payload).toMatchObject(
             expect.objectContaining({
@@ -738,17 +608,17 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
                 "Circular dependency identified with 'D'"
               ])
             })
-          )
+          );
         }
-      })
+      });
 
       it('should reject dependent + missing default', () => {
-        const toFail = fx({ dependentProp: { dependent: true } })
+        const toFail = fx({ dependentProp: { dependent: true } });
 
-        expectFailure(toFail)
+        expectFailure(toFail);
 
         try {
-          toFail()
+          toFail();
         } catch (err: any) {
           expect(err.payload).toMatchObject(
             expect.objectContaining({
@@ -756,19 +626,19 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
                 'Dependent properties must have a default value'
               ])
             })
-          )
+          );
         }
-      })
+      });
 
       it('should reject dependent + missing dependsOn', () => {
         const toFail = fx({
           propertyName: { dependent: true, default: '', resolver }
-        })
+        });
 
-        expectFailure(toFail)
+        expectFailure(toFail);
 
         try {
-          toFail()
+          toFail();
         } catch (err: any) {
           expect(err.payload).toMatchObject(
             expect.objectContaining({
@@ -776,20 +646,20 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
                 'Dependent properties must depend on atleast one property'
               ])
             })
-          )
+          );
         }
-      })
+      });
 
       it('should reject dependent + missing resolver', () => {
         const toFail = fx({
           dependentProp: { dependent: true, default: '', dependsOn: 'prop' },
           prop: { default: '' }
-        })
+        });
 
-        expectFailure(toFail)
+        expectFailure(toFail);
 
         try {
-          toFail()
+          toFail();
         } catch (err: any) {
           expect(err.payload).toMatchObject(
             expect.objectContaining({
@@ -797,12 +667,12 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
                 'Dependent properties must have a resolver'
               ])
             })
-          )
+          );
         }
-      })
+      });
 
       it('should reject dependent & shouldInit', () => {
-        const values = [false, true]
+        const values = [false, true];
 
         for (const shouldInit of values) {
           const toFail = fx({
@@ -814,12 +684,12 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
               shouldInit
             },
             prop: { default: '' }
-          })
+          });
 
-          expectFailure(toFail)
+          expectFailure(toFail);
 
           try {
-            toFail()
+            toFail();
           } catch (err: any) {
             expect(err.payload).toEqual(
               expect.objectContaining({
@@ -827,10 +697,10 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
                   'Dependent properties cannot have shouldInit rule'
                 ])
               })
-            )
+            );
           }
         }
-      })
+      });
 
       it('should reject dependent & readonly(lax)', () => {
         const toFail = fx({
@@ -842,12 +712,12 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
             readonly: 'lax'
           },
           prop: { default: '' }
-        })
+        });
 
-        expectFailure(toFail)
+        expectFailure(toFail);
 
         try {
-          toFail()
+          toFail();
         } catch (err: any) {
           expect(err.payload).toEqual(
             expect.objectContaining({
@@ -855,12 +725,12 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
                 "Dependent properties cannot be readonly 'lax'"
               ])
             })
-          )
+          );
         }
-      })
+      });
 
       it('should reject dependent & validator', () => {
-        const values = [null, '', 1, true, false, validator]
+        const values = [null, '', 1, true, false, validator];
 
         for (const validator of values) {
           const toFail = fx({
@@ -872,12 +742,12 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
               validator
             },
             prop: { default: '' }
-          })
+          });
 
-          expectFailure(toFail)
+          expectFailure(toFail);
 
           try {
-            toFail()
+            toFail();
           } catch (err: any) {
             expect(err.payload).toMatchObject(
               expect.objectContaining({
@@ -885,10 +755,10 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
                   'Dependent properties cannot be validated'
                 ])
               })
-            )
+            );
           }
         }
-      })
+      });
 
       it('should reject dependent & required', () => {
         const toFail = fx({
@@ -900,12 +770,12 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
             required: true
           },
           prop: { default: '' }
-        })
+        });
 
-        expectFailure(toFail)
+        expectFailure(toFail);
 
         try {
-          toFail()
+          toFail();
         } catch (err: any) {
           expect(err.payload).toEqual(
             expect.objectContaining({
@@ -913,15 +783,15 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
                 'Dependent properties cannot be required'
               ])
             })
-          )
+          );
         }
-      })
+      });
 
       it('should reject dependent + requiredBy', () => {
         const toFail = fx({
           dependentProp: {
             required() {
-              return true
+              return true;
             },
             requiredError: "'dependentProp' is required",
             dependent: true,
@@ -930,12 +800,12 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
             resolver: () => 1
           },
           prop: { default: '' }
-        })
+        });
 
-        expectFailure(toFail)
+        expectFailure(toFail);
 
         try {
-          toFail()
+          toFail();
         } catch (err: any) {
           expect(err.payload).toMatchObject(
             expect.objectContaining({
@@ -943,9 +813,9 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
                 'Dependent properties cannot be required'
               ])
             })
-          )
+          );
         }
-      })
-    })
-  })
-}
+      });
+    });
+  });
+};
