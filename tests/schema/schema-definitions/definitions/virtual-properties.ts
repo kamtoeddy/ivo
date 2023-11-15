@@ -30,32 +30,6 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
           toPass();
         });
 
-        it('should allow errorWithAliasOnly with alias', () => {
-          const values = [true, false];
-
-          for (const errorWithAliasOnly of values) {
-            const toPass = fx({
-              dependentProp: {
-                default: '',
-                dependent: true,
-                dependsOn: 'propertyName',
-                resolver: () => ''
-              },
-              propertyName: {
-                alias: 'alias',
-                errorWithAliasOnly,
-                virtual: true,
-                sanitizer: () => '',
-                validator
-              }
-            });
-
-            expectNoFailure(toPass);
-
-            toPass();
-          }
-        });
-
         it('should allow alias if it is the same as a related dependency of the virtual', () => {
           const dependentProp = 'dependentProp';
           const virtualProp = 'virtualProp';
@@ -368,7 +342,7 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               expect(operation1.data).toBe(null);
               expect(operation1.error.payload).toEqual({
                 qty: {
-                  reasons: expect.arrayContaining(["'qty' is required!"]),
+                  reasons: expect.arrayContaining(["'qty' is required"]),
                   metadata: null
                 }
               });
@@ -395,7 +369,7 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               expect(operation1.data).toBe(null);
               expect(operation1.error.payload).toEqual({
                 qty: {
-                  reasons: expect.arrayContaining(["'qty' is required!"]),
+                  reasons: expect.arrayContaining(["'qty' is required"]),
                   metadata: null
                 }
               });
@@ -422,7 +396,7 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               expect(operation1.data).toBe(null);
               expect(operation1.error.payload).toEqual({
                 qty: {
-                  reasons: expect.arrayContaining(["'qty' is required!"]),
+                  reasons: expect.arrayContaining(["'qty' is required"]),
                   metadata: null
                 }
               });
@@ -532,138 +506,288 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
           });
         });
 
-        describe('behaviour of errorWithAliasOnly', () => {
-          describe('default behaviour', () => {
-            const Model = new Schema({
-              dependent: {
-                default: 0.0,
-                dependsOn: '_virtual',
-                resolver: () => 1
-              },
-              _virtual: {
-                alias: 'virtual',
-                virtual: true,
-                required: () => true,
-                validator: (v: any) => v == 'valid'
-              }
-            }).getModel();
+        describe('behaviour with validation & required errors', () => {
+          const Model = new Schema({
+            dependent: {
+              default: 0.0,
+              dependsOn: '_virtual',
+              resolver: () => 1
+            },
+            _virtual: {
+              alias: 'virtual',
+              virtual: true,
+              required: () => true,
+              validator: (v: any) => v == 'valid'
+            }
+          }).getModel();
 
-            describe('cloning', () => {
-              const validData = { dependent: 20 };
+          describe('cloning', () => {
+            const validData = { dependent: 20 };
 
-              it('should return virtual name as error key if provided and validation fails during cloning', async () => {
-                const { error } = await Model.clone({
-                  ...validData,
-                  _virtual: 2000
-                });
-
-                expect(error.payload).toMatchObject({
-                  _virtual: {
-                    reasons: expect.arrayContaining(['validation failed']),
-                    metadata: null
-                  }
-                });
-                expect(error.payload.virtual).toBeUndefined();
+            it('should return virtual name as error key if provided and validation fails during cloning', async () => {
+              const { error } = await Model.clone({
+                ...validData,
+                _virtual: 2000
               });
 
-              it('should return alias name as error key if provided and validation fails during cloning', async () => {
-                const { error } = await Model.clone({
-                  ...validData,
-                  virtual: '5'
-                });
-
-                expect(error.payload).toMatchObject({
-                  virtual: {
-                    reasons: expect.arrayContaining(['validation failed']),
-                    metadata: null
-                  }
-                });
-                expect(error.payload._virtual).toBeUndefined();
+              expect(error.payload).toMatchObject({
+                _virtual: {
+                  reasons: expect.arrayContaining(['validation failed']),
+                  metadata: null
+                }
               });
-
-              it('should return alias name as error key in case of required error during cloning', async () => {
-                let { error } = await Model.clone({
-                  ...validData,
-                  virtual: 'valid'
-                });
-
-                expect(error.payload).toMatchObject({
-                  virtual: {
-                    reasons: expect.arrayContaining(["'virtual' is required!"]),
-                    metadata: null
-                  }
-                });
-                expect(error.payload._virtual).toBeUndefined();
-
-                error = (await Model.clone({ ...validData, _virtual: 'valid' }))
-                  .error;
-
-                expect(error.payload).toMatchObject({
-                  virtual: {
-                    reasons: expect.arrayContaining(["'virtual' is required!"]),
-                    metadata: null
-                  }
-                });
-                expect(error.payload._virtual).toBeUndefined();
-              });
+              expect(error.payload.virtual).toBeUndefined();
             });
 
-            describe('creation', () => {
-              it('should return virtual name as error key if provided and validation fails at creation', async () => {
-                const { error } = await Model.create({
-                  _virtual: 2000
-                });
-
-                expect(error.payload).toMatchObject({
-                  _virtual: {
-                    reasons: expect.arrayContaining(['validation failed']),
-                    metadata: null
-                  }
-                });
-                expect(error.payload.virtual).toBeUndefined();
+            it('should return alias name as error key if provided and validation fails during cloning', async () => {
+              const { error } = await Model.clone({
+                ...validData,
+                virtual: '5'
               });
 
-              it('should return alias name as error key if provided and validation fails at creation', async () => {
-                const { error } = await Model.create({
-                  virtual: '5'
-                });
+              expect(error.payload).toMatchObject({
+                virtual: {
+                  reasons: expect.arrayContaining(['validation failed']),
+                  metadata: null
+                }
+              });
+              expect(error.payload._virtual).toBeUndefined();
+            });
 
-                expect(error.payload).toMatchObject({
-                  virtual: {
-                    reasons: expect.arrayContaining(['validation failed']),
-                    metadata: null
-                  }
-                });
-                expect(error.payload._virtual).toBeUndefined();
+            it('should return alias name as error key in case of required error during cloning', async () => {
+              let { error } = await Model.clone({
+                ...validData,
+                virtual: 'valid'
               });
 
-              it('should return alias name as error key in case of required error at creation', async () => {
-                let { error } = await Model.create({
-                  virtual: 'valid'
-                });
-
-                expect(error.payload).toMatchObject({
-                  virtual: {
-                    reasons: expect.arrayContaining(["'virtual' is required!"]),
-                    metadata: null
-                  }
-                });
-                expect(error.payload._virtual).toBeUndefined();
-
-                error = (
-                  await Model.create({
-                    _virtual: 'valid'
-                  })
-                ).error;
-
-                expect(error.payload).toMatchObject({
-                  virtual: {
-                    reasons: expect.arrayContaining(["'virtual' is required!"]),
-                    metadata: null
-                  }
-                });
-                expect(error.payload._virtual).toBeUndefined();
+              expect(error.payload).toMatchObject({
+                virtual: {
+                  reasons: expect.arrayContaining(["'virtual' is required"]),
+                  metadata: null
+                }
               });
+              expect(error.payload._virtual).toBeUndefined();
+
+              error = (await Model.clone({ ...validData, _virtual: 'valid' }))
+                .error;
+
+              expect(error.payload).toMatchObject({
+                virtual: {
+                  reasons: expect.arrayContaining(["'virtual' is required"]),
+                  metadata: null
+                }
+              });
+              expect(error.payload._virtual).toBeUndefined();
+            });
+
+            it('should return respect precedence between alias and virtual property if both are provided during cloning', async () => {
+              let { error } = await Model.clone({
+                ...validData,
+                _virtual: 'test',
+                virtual: 'test'
+              });
+
+              expect(error.payload).toMatchObject({
+                virtual: {
+                  reasons: expect.arrayContaining(['validation failed']),
+                  metadata: null
+                }
+              });
+              expect(error.payload._virtual).toBeUndefined();
+
+              error = (
+                await Model.clone({
+                  ...validData,
+                  virtual: 'test',
+                  _virtual: 'test'
+                })
+              ).error;
+
+              expect(error.payload).toMatchObject({
+                _virtual: {
+                  reasons: expect.arrayContaining(['validation failed']),
+                  metadata: null
+                }
+              });
+              expect(error.payload.virtual).toBeUndefined();
+            });
+          });
+
+          describe('creation', () => {
+            it('should return virtual name as error key if provided and validation fails at creation', async () => {
+              const { error } = await Model.create({
+                _virtual: 2000
+              });
+
+              expect(error.payload).toMatchObject({
+                _virtual: {
+                  reasons: expect.arrayContaining(['validation failed']),
+                  metadata: null
+                }
+              });
+              expect(error.payload.virtual).toBeUndefined();
+            });
+
+            it('should return alias name as error key if provided and validation fails at creation', async () => {
+              const { error } = await Model.create({
+                virtual: '5'
+              });
+
+              expect(error.payload).toMatchObject({
+                virtual: {
+                  reasons: expect.arrayContaining(['validation failed']),
+                  metadata: null
+                }
+              });
+              expect(error.payload._virtual).toBeUndefined();
+            });
+
+            it('should return alias name as error key in case of required error at creation', async () => {
+              let { error } = await Model.create({
+                virtual: 'valid'
+              });
+
+              expect(error.payload).toMatchObject({
+                virtual: {
+                  reasons: expect.arrayContaining(["'virtual' is required"]),
+                  metadata: null
+                }
+              });
+              expect(error.payload._virtual).toBeUndefined();
+
+              error = (
+                await Model.create({
+                  _virtual: 'valid'
+                })
+              ).error;
+
+              expect(error.payload).toMatchObject({
+                virtual: {
+                  reasons: expect.arrayContaining(["'virtual' is required"]),
+                  metadata: null
+                }
+              });
+              expect(error.payload._virtual).toBeUndefined();
+            });
+
+            it('should return respect precedence between alias and virtual property if both are provided at creation', async () => {
+              let { error } = await Model.create({
+                _virtual: 'test',
+                virtual: 'test'
+              });
+
+              expect(error.payload).toMatchObject({
+                virtual: {
+                  reasons: expect.arrayContaining(['validation failed']),
+                  metadata: null
+                }
+              });
+              expect(error.payload._virtual).toBeUndefined();
+
+              error = (
+                await Model.create({
+                  virtual: 'test',
+                  _virtual: 'test'
+                })
+              ).error;
+
+              expect(error.payload).toMatchObject({
+                _virtual: {
+                  reasons: expect.arrayContaining(['validation failed']),
+                  metadata: null
+                }
+              });
+              expect(error.payload.virtual).toBeUndefined();
+            });
+          });
+
+          describe('updates', () => {
+            const validData = { dependent: 20 };
+
+            it('should return virtual name as error key if provided and validation fails during updates', async () => {
+              const { error } = await Model.update(validData, {
+                _virtual: 2
+              });
+
+              expect(error.payload).toMatchObject({
+                _virtual: {
+                  reasons: expect.arrayContaining(['validation failed']),
+                  metadata: null
+                }
+              });
+              expect(error.payload.virtual).toBeUndefined();
+            });
+
+            it('should return alias name as error key if provided and validation fails during updates', async () => {
+              const { error } = await Model.update(validData, {
+                virtual: '5'
+              });
+
+              expect(error.payload).toMatchObject({
+                virtual: {
+                  reasons: expect.arrayContaining(['validation failed']),
+                  metadata: null
+                }
+              });
+              expect(error.payload._virtual).toBeUndefined();
+            });
+
+            it('should return alias name as error key in case of required error during updates', async () => {
+              let { error } = await Model.update(validData, {
+                virtual: 'valid'
+              });
+
+              expect(error.payload).toMatchObject({
+                virtual: {
+                  reasons: expect.arrayContaining(["'virtual' is required"]),
+                  metadata: null
+                }
+              });
+              expect(error.payload._virtual).toBeUndefined();
+
+              error = (
+                await Model.update(validData, {
+                  _virtual: 'valid'
+                })
+              ).error;
+
+              expect(error.payload).toMatchObject({
+                virtual: {
+                  reasons: expect.arrayContaining(["'virtual' is required"]),
+                  metadata: null
+                }
+              });
+              expect(error.payload._virtual).toBeUndefined();
+            });
+
+            it('should return respect precedence between alias and virtual property if both are provided during updates', async () => {
+              let { error } = await Model.update(validData, {
+                _virtual: 'test',
+                virtual: 'test'
+              });
+
+              expect(error.payload).toMatchObject({
+                virtual: {
+                  reasons: expect.arrayContaining(['validation failed']),
+                  metadata: null
+                }
+              });
+              expect(error.payload._virtual).toBeUndefined();
+
+              error = (
+                await Model.update(validData, {
+                  virtual: 'test',
+                  _virtual: 'test'
+                })
+              ).error;
+
+              expect(error.payload).toMatchObject({
+                _virtual: {
+                  reasons: expect.arrayContaining(['validation failed']),
+                  metadata: null
+                }
+              });
+              expect(error.payload.virtual).toBeUndefined();
             });
           });
         });
@@ -1289,86 +1413,6 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
                 ])
               })
             );
-          }
-        });
-
-        it('should reject errorWithAliasOnly without alias', () => {
-          const values = [true, false];
-
-          for (const errorWithAliasOnly of values) {
-            const toFail = fx({
-              dependentProp: {
-                default: '',
-                dependent: true,
-                dependsOn: 'propertyName',
-                resolver: () => ''
-              },
-              propertyName: {
-                errorWithAliasOnly,
-                virtual: true,
-                sanitizer: () => '',
-                validator
-              }
-            });
-
-            expectFailure(toFail);
-
-            try {
-              toFail();
-            } catch (err: any) {
-              expect(err.payload).toEqual(
-                expect.objectContaining({
-                  propertyName: [
-                    '"errorWithAliasOnly" only works with aliases but none has been privided'
-                  ]
-                })
-              );
-            }
-          }
-        });
-
-        it('should reject errorWithAliasOnly is not a boolean value', () => {
-          const values = [
-            -1,
-            2,
-            0,
-            null,
-            undefined,
-            'lol',
-            {},
-            [],
-            Symbol,
-            () => {}
-          ];
-
-          for (const errorWithAliasOnly of values) {
-            const toFail = fx({
-              dependentProp: {
-                default: '',
-                dependent: true,
-                dependsOn: 'propertyName',
-                resolver: () => ''
-              },
-              propertyName: {
-                alias: 'alias',
-                errorWithAliasOnly,
-                virtual: true,
-                sanitizer: () => '',
-                validator
-              }
-            });
-
-            expectFailure(toFail);
-
-            try {
-              toFail();
-            } catch (err: any) {
-              expect(err.payload).toEqual(
-                expect.objectContaining({
-                  propertyName: ['"errorWithAliasOnly" must be a boolean']
-                })
-              );
-            }
           }
         });
       });

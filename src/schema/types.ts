@@ -180,7 +180,6 @@ namespace NS {
       default?: any;
       dependent?: boolean;
       dependsOn?: KeyOf<Input> | KeyOf<Input>[];
-      errorWithAliasOnly?: boolean;
       readonly?: boolean | 'lax';
       resolver?: Function;
       required?:
@@ -376,7 +375,6 @@ namespace NS {
     alias?: Exclude<KeyOf<Aliases>, K> extends undefined
       ? string
       : Exclude<KeyOf<Aliases>, K>;
-    errorWithAliasOnly?: boolean;
     required?: SetterWithSummary<
       boolean | [boolean, string],
       Input,
@@ -518,7 +516,6 @@ const DEFINITION_RULES = [
   'default',
   'dependent',
   'dependsOn',
-  'errorWithAliasOnly',
   'onDelete',
   'onFailure',
   'onSuccess',
@@ -548,7 +545,6 @@ const ALLOWED_OPTIONS: NS.OptionsKey<any, any, any>[] = [
 const CONSTANT_RULES = ['constant', 'onDelete', 'onSuccess', 'value'];
 const VIRTUAL_RULES = [
   'alias',
-  'errorWithAliasOnly',
   'sanitizer',
   'onFailure',
   'onSuccess',

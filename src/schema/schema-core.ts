@@ -167,10 +167,6 @@ export abstract class SchemaCore<
   protected _getAliasByVirtual = (prop: KeyOf<Input>): string | undefined =>
     this.virtualToAliasMap[prop];
 
-  protected _shouldErrorWithAliasOnly = (prop: KeyOf<Input>) =>
-    this._isVirtual(prop) &&
-    isOneOf(this._definitions[prop]?.errorWithAliasOnly, [true, undefined]);
-
   protected _getVirtualByAlias = (alias: string): KeyOf<Input> | undefined =>
     this.aliasToVirtualMap[alias];
 
@@ -457,7 +453,7 @@ export abstract class SchemaCore<
 
     if (!required) return [false, ''];
 
-    const fallbackMessage = `'${prop}' is required!`;
+    const fallbackMessage = `'${prop}' is required`;
 
     if (!isFunction(required)) return [required, fallbackMessage];
 
@@ -1021,18 +1017,6 @@ export abstract class SchemaCore<
           ', '
         )}) as rules`
       };
-
-    if (hasAnyOf(definition, ['errorWithAliasOnly'])) {
-      if (!hasAnyOf(definition, ['alias']))
-        return {
-          valid,
-          reason:
-            '"errorWithAliasOnly" only works with aliases but none has been privided'
-        };
-
-      if (typeof definition?.errorWithAliasOnly !== 'boolean')
-        return { valid, reason: '"errorWithAliasOnly" must be a boolean' };
-    }
 
     return { valid: true };
   };

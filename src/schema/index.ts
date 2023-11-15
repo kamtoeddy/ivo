@@ -274,15 +274,11 @@ class ModelTool<
         }
 
         const _message =
-          message == `'${prop}' is required!`
-            ? `'${alias}' is required!`
+          message == `'${prop}' is required`
+            ? `'${alias}' is required`
             : message;
 
         errorTool.add(alias as any, makeFieldError(_message), value);
-
-        if (this._shouldErrorWithAliasOnly(prop)) continue;
-
-        errorTool.add(prop, makeFieldError(message), value);
       }
     }
 
@@ -517,6 +513,28 @@ class ModelTool<
     return _updates;
   }
 
+  private _cleanInput(input: Partial<Input | Aliases>) {
+    const props = getKeysAsProps(input).filter(this._isValidProperty);
+
+    const values = {} as any;
+
+    for (const prop of props) {
+      values[prop] = input[prop];
+
+      if (this._isVirtual(prop)) {
+        const alias = this._getAliasByVirtual(prop);
+
+        if (alias && values[alias]) delete values[alias];
+      } else if (this._isVirtualAlias(prop)) {
+        const virtual = this._getVirtualByAlias(prop);
+
+        if (virtual && values[virtual]) delete values[virtual];
+      }
+    }
+
+    return values;
+  }
+
   private _setValues(
     values: Partial<Input | Output | Aliases>,
     {
@@ -729,14 +747,16 @@ class ModelTool<
   }
 
   async clone(
-    values: Partial<Input & Aliases>,
+    input: Partial<Input & Aliases>,
     options?: NS.CloneOptions<Input, CtxOptions>
   ) {
     const ctxOpts = this._updateContextOptions(options?.contextOptions ?? {});
 
-    if (!areValuesOk(values)) return this._handleInvalidData();
+    if (!areValuesOk(input)) return this._handleInvalidData();
 
-    this._setValues(values);
+    const _input = this._cleanInput(input);
+
+    this._setValues({ ...input, ..._input });
 
     const reset = toArray<KeyOf<Input>>(options?.reset ?? []).filter(
       this._isProp
@@ -749,9 +769,8 @@ class ModelTool<
       ctxOpts
     );
 
-    const virtuals = getKeysAsProps<Partial<Output>>(values as any).filter(
-      (prop) =>
-        this._isVirtualInit(prop, values[prop as unknown as KeyOf<Input>])
+    const virtuals = getKeysAsProps<Partial<Output>>(_input).filter((prop) =>
+      this._isVirtualInit(prop, _input[prop as unknown as KeyOf<Input>])
     );
 
     const props = [
@@ -788,7 +807,7 @@ class ModelTool<
           data,
           errorTool,
           prop,
-          values[prop as unknown as KeyOf<Input>]
+          _input[prop as unknown as KeyOf<Input>]
         );
 
       if (reset.includes(prop as any)) {
@@ -872,14 +891,16 @@ class ModelTool<
   }
 
   async create(
-    values: Partial<Input & Aliases> = {},
+    input: Partial<Input & Aliases> = {},
     ctxOptions: Partial<CtxOptions> = {}
   ) {
     const ctxOpts = this._updateContextOptions(ctxOptions);
 
-    if (!areValuesOk(values)) return this._handleInvalidData();
+    if (!areValuesOk(input)) return this._handleInvalidData();
 
-    this._setValues(values);
+    const _input = this._cleanInput(input);
+
+    this._setValues({ ...input, ..._input });
 
     let data = await this._generateConstants();
 
@@ -888,9 +909,8 @@ class ModelTool<
       ctxOpts
     );
 
-    const virtuals = getKeysAsProps<Partial<Output>>(values as any).filter(
-      (prop) =>
-        this._isVirtualInit(prop, values[prop as unknown as KeyOf<Input>])
+    const virtuals = getKeysAsProps<Partial<Output>>(_input).filter((prop) =>
+      this._isVirtualInit(prop, _input[prop as unknown as KeyOf<Input>])
     );
 
     const props = [
@@ -910,7 +930,7 @@ class ModelTool<
           data,
           errorTool,
           prop,
-          values[prop as unknown as KeyOf<Input>]
+          _input[prop as unknown as KeyOf<Input>]
         );
 
       const isProvided = isPropertyOf(prop, this.values);
@@ -1011,7 +1031,8 @@ class ModelTool<
   ) {
     const ctxOpts = this._updateContextOptions(ctxOptions);
 
-    if (!areValuesOk(values)) return this._handleInvalidData();
+    if (!areValuesOk(values) || !areValuesOk(changes))
+      return this._handleInvalidData();
 
     this._setValues(values, { allowVirtuals: false, allowTimestamps: true });
 
@@ -1023,7 +1044,9 @@ class ModelTool<
       ctxOpts
     );
 
-    if (!(await this._isGloballyUpdatable(changes as any)))
+    const _changes = this._cleanInput(changes);
+
+    if (!(await this._isGloballyUpdatable(_changes)))
       return this._handleError(errorTool);
 
     errorTool.setMessage(VALIDATION_ERRORS.VALIDATION_ERROR);
@@ -1031,14 +1054,14 @@ class ModelTool<
     let updates = {} as Partial<Output>;
 
     const toUpdate = getKeysAsProps<Output & Aliases>(
-      (changes ?? {}) as any
-    ).filter((prop) => this._isUpdatable(prop, (changes as any)[prop]));
+      (_changes ?? {}) as any
+    ).filter((prop) => this._isUpdatable(prop, (_changes as any)[prop]));
 
     const linkedProps: KeyOf<Output>[] = [];
     const virtuals: KeyOf<Output>[] = [];
 
     const validations = toUpdate.map(async (prop) => {
-      const value = (changes as any)[prop] as Output[KeyOf<Output>];
+      const value = (_changes as any)[prop] as Output[KeyOf<Output>];
 
       const isValid = (await this._validateInternally(
         prop as any,
