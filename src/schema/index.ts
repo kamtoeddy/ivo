@@ -585,39 +585,6 @@ class ModelTool<
     );
   }
 
-  private _useConfigProps(obj: Partial<Output>, isUpdate = false) {
-    if (!this.timestampTool.withTimestamps) return sortKeys(obj);
-
-    const { createdAt, updatedAt } = this.timestampTool.getKeys();
-
-    let results = { ...obj };
-
-    if (updatedAt) results = { ...results, [updatedAt]: new Date() };
-
-    if (!isUpdate && createdAt)
-      results = { ...results, [createdAt]: new Date() };
-
-    return sortKeys(results);
-  }
-
-  private async _validateAndSet(
-    operationData: Partial<Output>,
-    errorTool: ErrorTool,
-    prop: KeyOf<Output>,
-    value: any
-  ) {
-    const isValid = (await this._validateInternally(
-      prop as any,
-      value,
-      this._getValidationSummary(false)
-    )) as InternalValidatorResponse<Output[KeyOf<Output>]>;
-
-    if (isValid.valid)
-      return this._setValidValue(operationData, prop, isValid.validated);
-
-    this._handleInvalidValue(errorTool, prop, isValid);
-  }
-
   private async _handleInvalidValue(
     errorTool: ErrorTool,
     prop: KeyOf<Input & Output & Aliases>,
@@ -744,6 +711,71 @@ class ModelTool<
     }
 
     return makeResponse(_response) as ValidatorResponseObject<T>;
+  }
+
+  private _useConfigProps(obj: Partial<Output>, isUpdate = false) {
+    if (!this.timestampTool.withTimestamps) return sortKeys(obj);
+
+    const { createdAt, updatedAt } = this.timestampTool.getKeys();
+
+    let results = { ...obj };
+
+    if (updatedAt) results = { ...results, [updatedAt]: new Date() };
+
+    if (!isUpdate && createdAt)
+      results = { ...results, [createdAt]: new Date() };
+
+    return sortKeys(results);
+  }
+
+  private async _validateAndSet(
+    operationData: Partial<Output>,
+    errorTool: ErrorTool,
+    prop: KeyOf<Output>,
+    value: any
+  ) {
+    const isValid = (await this._validate(
+      prop as any,
+      value,
+      this._getValidationSummary(false)
+    )) as InternalValidatorResponse<Output[KeyOf<Output>]>;
+
+    if (isValid.valid)
+      return this._setValidValue(operationData, prop, isValid.validated);
+
+    this._handleInvalidValue(errorTool, prop, isValid);
+  }
+
+  private async _validate<K extends KeyOf<Input & Aliases>>(
+    prop: K,
+    value: any,
+    summary_: Summary<Input, Output>
+  ) {
+    if (!this._isValidProperty(prop))
+      return makeResponse<(Input & Aliases)[K]>({
+        valid: false,
+        value,
+        reason: 'Invalid property'
+      });
+
+    const isAlias = this._isVirtualAlias(prop);
+
+    const _prop = isAlias ? this._getVirtualByAlias(prop) : prop;
+
+    const validator = this._getValidator(_prop as KeyOf<Input>);
+
+    if (validator) {
+      const res = (await validator(value, summary_)) as ValidatorResponseObject<
+        (Input & Aliases)[K]
+      >;
+
+      return this._sanitizeValidationResponse<(Input & Aliases)[K]>(res, value);
+    }
+
+    return makeResponse<(Input & Aliases)[K]>({
+      valid: true,
+      validated: value
+    });
   }
 
   async create(
@@ -919,7 +951,7 @@ class ModelTool<
     const validations = toUpdate.map(async (prop) => {
       const value = (_changes as any)[prop] as Output[KeyOf<Output>];
 
-      const isValid = (await this._validateInternally(
+      const isValid = (await this._validate(
         prop as any,
         value,
         this._getValidationSummary(true)
@@ -998,48 +1030,6 @@ class ModelTool<
       handleSuccess: this._makeHandleSuccess(finalData, true)
     };
   }
-
-  async _validateInternally<K extends KeyOf<Input & Aliases>>(
-    prop: K,
-    value: any,
-    summary_: Summary<Input, Output>
-  ) {
-    if (!this._isValidProperty(prop))
-      return makeResponse<(Input & Aliases)[K]>({
-        valid: false,
-        value,
-        reason: 'Invalid property'
-      });
-
-    const isAlias = this._isVirtualAlias(prop);
-
-    const _prop = isAlias ? this._getVirtualByAlias(prop) : prop;
-
-    const validator = this._getValidator(_prop as KeyOf<Input>);
-
-    if (validator) {
-      const res = (await validator(value, summary_)) as ValidatorResponseObject<
-        (Input & Aliases)[K]
-      >;
-
-      return this._sanitizeValidationResponse<(Input & Aliases)[K]>(res, value);
-    }
-
-    return makeResponse<(Input & Aliases)[K]>({
-      valid: true,
-      validated: value
-    });
-  }
-
-  async _validate<K extends KeyOf<Input & Aliases>>(
-    prop: K,
-    value: any,
-    summary_: Summary<Input, Output>
-  ) {
-    const res = await this._validateInternally(prop, value, summary_);
-
-    return makeResponse<(Input & Aliases)[K]>(res as any);
-  }
 }
 
 class Model<
@@ -1066,21 +1056,6 @@ class Model<
     changes: Partial<Input & Aliases>,
     contextOptions: Partial<CtxOptions> = {}
   ) => this.modelTool.update(values, changes, contextOptions);
-
-  validate = <K extends KeyOf<Input & Aliases>>(
-    prop: K,
-    value: any,
-    contextOptions: Partial<CtxOptions> = {}
-  ) => {
-    if (!isObject(contextOptions)) contextOptions = {};
-
-    return this.modelTool._validate(prop, value, {
-      context: { __getOptions__: () => contextOptions },
-      operation: 'creation',
-      previousValues: null,
-      values: {}
-    } as Summary<Input, Output>);
-  };
 }
 
 function areValuesOk(values: any) {
