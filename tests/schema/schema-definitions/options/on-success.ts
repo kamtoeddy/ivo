@@ -69,34 +69,6 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
           });
         });
 
-        it("should trigger all 'success' listeners during cloning ", async () => {
-          const book = { id: 1, name: 'Book name', price: 100 };
-
-          const { data, handleSuccess } = await Book.clone({
-            ...book,
-            _setPrice: 100
-          });
-
-          await handleSuccess();
-
-          const summary = {
-            changes: null,
-            context: { ...book, _setPrice: 100 },
-            operation: 'creation',
-            previousValues: null,
-            values: book
-          };
-
-          expect(data).toEqual(book);
-          expect(successValues).toMatchObject({
-            id: summary,
-            name: summary,
-            price: summary,
-            _setPrice: summary,
-            global: summary
-          });
-        });
-
         it("should trigger all 'success' listeners during updates ", async () => {
           const book = { id: 1, name: 'Book name', price: 100 };
 
@@ -159,31 +131,6 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
           };
 
           expect(data).toEqual(values);
-          expect(successValues).toMatchObject({
-            global: summary,
-            'global-1': summary
-          });
-        });
-
-        it("should trigger all 'success' listeners during cloning ", async () => {
-          const book = { id: 1, name: 'Book name', price: 100 };
-
-          const { data, handleSuccess } = await Book.clone({
-            ...book,
-            _setPrice: 100
-          });
-
-          await handleSuccess();
-
-          const summary = {
-            changes: null,
-            context: { ...book, _setPrice: 100 },
-            operation: 'creation',
-            previousValues: null,
-            values: book
-          };
-
-          expect(data).toEqual(book);
           expect(successValues).toMatchObject({
             global: summary,
             'global-1': summary

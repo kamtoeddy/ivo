@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+# v4.2.0 <small><sup>15-11-2023</sup></small>
+
+- [Remove] remove support for `Model.clone`
+- [Remove] remove support for `Model.validate`
+- [Fix] fix precedence issues between virtuals and their aliases with `Model.create`
+
 # v4.1.0 <small><sup>15-11-2023</sup></small>
 
 - [Update] improve precedence of virtual properties and their aliases

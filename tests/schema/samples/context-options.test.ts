@@ -13,22 +13,6 @@ const contextOptions = { lang: 'en' };
 describe('Context options', () => {
   describe('Base Model', () => {
     describe('Schema.options.errors == silent', () => {
-      it('should respect ctx options with Model.clone', async () => {
-        const firstName = 'name',
-          lastName = 'lname';
-
-        const { data, error } = await UserModel.clone(
-          {
-            firstName,
-            lastName
-          },
-          { contextOptions }
-        );
-
-        expect(data).not.toBeNull();
-        expect(error).toBeNull();
-      });
-
       it('should respect ctx options with Model.create', async () => {
         const firstName = 'name',
           lastName = '';
@@ -64,22 +48,6 @@ describe('Context options', () => {
     });
 
     describe('Schema.options.errors == throw', () => {
-      it('should respect ctx options with Model.clone', async () => {
-        const firstName = 'name',
-          lastName = 'lname';
-
-        const { data, error } = await UserModel_ErrorThrow.clone(
-          {
-            firstName,
-            lastName
-          },
-          { contextOptions }
-        );
-
-        expect(data).not.toBeNull();
-        expect(error).toBeNull();
-      });
-
       it('should respect ctx options with Model.create', async () => {
         const firstName = 'name',
           lastName = '';
@@ -117,22 +85,6 @@ describe('Context options', () => {
 
   describe('Extended Model', () => {
     describe('Schema.options.errors == silent', () => {
-      it('should respect ctx options with Model.clone', async () => {
-        const firstName = 'name',
-          lastName = 'lname';
-
-        const { data, error } = await EUserModel.clone(
-          {
-            firstName,
-            lastName
-          },
-          { contextOptions }
-        );
-
-        expect(data).not.toBeNull();
-        expect(error).toBeNull();
-      });
-
       it('should respect ctx options with Model.create', async () => {
         const firstName = 'name',
           lastName = '';
@@ -168,22 +120,6 @@ describe('Context options', () => {
     });
 
     describe('Schema.options.errors == throw', () => {
-      it('should respect ctx options with Model.clone', async () => {
-        const firstName = 'name',
-          lastName = 'lname';
-
-        const { data, error } = await EUserModel_ErrorThrow.clone(
-          {
-            firstName,
-            lastName
-          },
-          { contextOptions }
-        );
-
-        expect(data).not.toBeNull();
-        expect(error).toBeNull();
-      });
-
       it('should respect ctx options with Model.create', async () => {
         const firstName = 'name',
           lastName = '';
@@ -230,7 +166,7 @@ describe('Context options', () => {
       };
     }
 
-    const Model = new Schema<any, any, any, any, typeof contextOptions>({
+    const Model = new Schema<any, any, any, typeof contextOptions>({
       name: { default: '', required: handleRequired('name'), validator },
       price: { default: '', required: handleRequired('price'), validator }
     }).getModel();
@@ -239,15 +175,6 @@ describe('Context options', () => {
 
     afterEach(() => {
       ctxOptions = {};
-    });
-
-    it('provided "contextOptions" should be accessible in requiredBy methods during cloning', async () => {
-      await Model.clone({ name: 'test', price: 4 }, { contextOptions });
-
-      expect(ctxOptions).toEqual({
-        name: contextOptions,
-        price: contextOptions
-      });
     });
 
     it('provided "contextOptions" should be accessible in requiredBy methods at creation', async () => {

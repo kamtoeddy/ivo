@@ -54,66 +54,6 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
           toPass();
         });
 
-        describe('Model.validate', () => {
-          function validator(v: any) {
-            return v === true
-              ? { valid: true, validated: 'validated' }
-              : { valid: false };
-          }
-
-          it('should call the validator of corresponding virtual when alias is passed to Model.validate method', async () => {
-            const Model = new Schema({
-              dependentProp: {
-                default: '',
-                dependent: true,
-                dependsOn: 'virtualProp',
-                resolver: () => {}
-              },
-              virtualProp: {
-                alias: 'alias',
-                virtual: true,
-                validator
-              }
-            }).getModel();
-
-            const res = await Model.validate('alias', true);
-
-            expect(res.valid).toBe(true);
-            expect(res.validated).toBe('validated');
-
-            const res1 = await Model.validate('alias', false);
-
-            expect(res1.valid).toBe(false);
-            expect(res1?.validated).toBeUndefined();
-          });
-
-          it("should not reject with 'invalid property error' if Model.validate is passed an alias with same name as a dependent property", async () => {
-            const Model = new Schema({
-              dependentProp: {
-                default: '',
-                dependent: true,
-                dependsOn: 'virtualProp',
-                resolver: () => {}
-              },
-              virtualProp: {
-                alias: 'dependentProp',
-                virtual: true,
-                validator
-              }
-            }).getModel();
-
-            const res = await Model.validate('dependentProp', true);
-
-            expect(res.valid).toBe(true);
-            expect(res.validated).toBe('validated');
-
-            const res1 = await Model.validate('alias', false);
-
-            expect(res1.valid).toBe(false);
-            expect(res1?.validated).toBeUndefined();
-          });
-        });
-
         describe('behaviour', () => {
           let contextRecord = {} as Record<string, number | undefined>;
 
@@ -143,53 +83,6 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
 
           beforeEach(() => {
             contextRecord = {};
-          });
-
-          describe('cloning', () => {
-            it('should respect alias if provided during cloning', async () => {
-              const { data } = await Model.clone({
-                id: 1,
-                quantity: 2000,
-                qty: 5
-              });
-
-              expect(data).toMatchObject({ id: 1, quantity: 5 });
-              expect(contextRecord).toEqual({});
-            });
-
-            it('should return alias errors with alias name in error payload during cloning', async () => {
-              const { error } = await Model.create({
-                id: 1,
-                quantity: 2000,
-                qty: '5'
-              });
-
-              expect(error.payload).toMatchObject({
-                qty: {
-                  reasons: expect.arrayContaining(['Invalid quantity']),
-                  metadata: null
-                }
-              });
-              expect(contextRecord).toEqual({});
-            });
-
-            it('should respect precedence of virtual property and alias if both are provided during cloning', async () => {
-              const operation1 = await Model.clone({
-                id: 1,
-                qty: 12,
-                setQuantity: 50
-              });
-
-              expect(operation1.data).toMatchObject({ id: 1, quantity: 50 });
-
-              const operation2 = await Model.clone({
-                id: 1,
-                setQuantity: 20,
-                qty: 1
-              });
-
-              expect(operation2.data).toMatchObject({ id: 1, quantity: 1 });
-            });
           });
 
           describe('creation', () => {
@@ -360,33 +253,6 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               });
             });
 
-            it("should respect 'required' rule of virtual property even when alias is provided during cloning", async () => {
-              let qty = -100;
-              const entity = { id: 1, quantity: 100 };
-              const operation1 = await Model.clone({ ...entity, qty });
-
-              expect(contextRecord).toEqual({ setQuantity: qty });
-              expect(operation1.data).toBe(null);
-              expect(operation1.error.payload).toEqual({
-                qty: {
-                  reasons: expect.arrayContaining(["'qty' is required"]),
-                  metadata: null
-                }
-              });
-
-              qty = -1000;
-              const operation2 = await Model.clone({ ...entity, qty });
-
-              expect(contextRecord).toEqual({ setQuantity: qty });
-              expect(operation2.data).toBe(null);
-              expect(operation2.error.payload).toEqual({
-                qty: {
-                  reasons: expect.arrayContaining(['invalid quantity']),
-                  metadata: null
-                }
-              });
-            });
-
             it("should respect 'required' rule of virtual property even when alias is provided during updates", async () => {
               let qty = -100;
               const entity = { id: 1, quantity: 100 };
@@ -455,28 +321,6 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               expect(operation2.data).toEqual({ id: 1, quantity: 75 });
             });
 
-            it("should respect 'shouldInit' rule of virtual property even when alias is provided during cloning", async () => {
-              const operation1 = await Model.clone({
-                id: 1,
-                quantity: 0,
-                qty: -75
-              });
-
-              expect(contextRecord).toEqual({ setQuantity: -75 });
-              expect(operation1.error).toBe(null);
-              expect(operation1.data).toEqual({ id: 1, quantity: 0 });
-
-              const operation2 = await Model.clone({
-                id: 1,
-                quantity: 0,
-                qty: 75
-              });
-
-              expect(contextRecord).toEqual({ setQuantity: 75 });
-              expect(operation2.error).toBe(null);
-              expect(operation2.data).toEqual({ id: 1, quantity: 75 });
-            });
-
             it("should respect 'shouldUpdate' rule of virtual property even when alias is provided during updates", async () => {
               const operation1 = await Model.update(
                 { id: 1, quantity: 75 },
@@ -506,7 +350,7 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
           });
         });
 
-        describe('behaviour with validation & required errors', () => {
+        describe('behaviour with validation & required errors and alias with different name', () => {
           const Model = new Schema({
             dependent: {
               default: 0.0,
@@ -520,98 +364,6 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               validator: (v: any) => v == 'valid'
             }
           }).getModel();
-
-          describe('cloning', () => {
-            const validData = { dependent: 20 };
-
-            it('should return virtual name as error key if provided and validation fails during cloning', async () => {
-              const { error } = await Model.clone({
-                ...validData,
-                _virtual: 2000
-              });
-
-              expect(error.payload).toMatchObject({
-                _virtual: {
-                  reasons: expect.arrayContaining(['validation failed']),
-                  metadata: null
-                }
-              });
-              expect(error.payload.virtual).toBeUndefined();
-            });
-
-            it('should return alias name as error key if provided and validation fails during cloning', async () => {
-              const { error } = await Model.clone({
-                ...validData,
-                virtual: '5'
-              });
-
-              expect(error.payload).toMatchObject({
-                virtual: {
-                  reasons: expect.arrayContaining(['validation failed']),
-                  metadata: null
-                }
-              });
-              expect(error.payload._virtual).toBeUndefined();
-            });
-
-            it('should return alias name as error key in case of required error during cloning', async () => {
-              let { error } = await Model.clone({
-                ...validData,
-                virtual: 'valid'
-              });
-
-              expect(error.payload).toMatchObject({
-                virtual: {
-                  reasons: expect.arrayContaining(["'virtual' is required"]),
-                  metadata: null
-                }
-              });
-              expect(error.payload._virtual).toBeUndefined();
-
-              error = (await Model.clone({ ...validData, _virtual: 'valid' }))
-                .error;
-
-              expect(error.payload).toMatchObject({
-                virtual: {
-                  reasons: expect.arrayContaining(["'virtual' is required"]),
-                  metadata: null
-                }
-              });
-              expect(error.payload._virtual).toBeUndefined();
-            });
-
-            it('should return respect precedence between alias and virtual property if both are provided during cloning', async () => {
-              let { error } = await Model.clone({
-                ...validData,
-                _virtual: 'test',
-                virtual: 'test'
-              });
-
-              expect(error.payload).toMatchObject({
-                virtual: {
-                  reasons: expect.arrayContaining(['validation failed']),
-                  metadata: null
-                }
-              });
-              expect(error.payload._virtual).toBeUndefined();
-
-              error = (
-                await Model.clone({
-                  ...validData,
-                  virtual: 'test',
-                  _virtual: 'test'
-                })
-              ).error;
-
-              expect(error.payload).toMatchObject({
-                _virtual: {
-                  reasons: expect.arrayContaining(['validation failed']),
-                  metadata: null
-                }
-              });
-              expect(error.payload.virtual).toBeUndefined();
-            });
-          });
 
           describe('creation', () => {
             it('should return virtual name as error key if provided and validation fails at creation', async () => {
@@ -788,6 +540,200 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
                 }
               });
               expect(error.payload.virtual).toBeUndefined();
+            });
+          });
+        });
+
+        describe('behaviour with validation & required errors and alias with name of dependent prop', () => {
+          const Model = new Schema({
+            dependent: {
+              default: 0.0,
+              dependsOn: '_virtual',
+              resolver: () => 1
+            },
+            _virtual: {
+              alias: 'dependent',
+              virtual: true,
+              required: () => true,
+              validator: (v: any) => v == 'valid'
+            }
+          }).getModel();
+
+          describe('creation', () => {
+            it('should return virtual name as error key if provided and validation fails at creation', async () => {
+              const { error } = await Model.create({
+                _virtual: 2000
+              });
+
+              expect(error.payload).toMatchObject({
+                _virtual: {
+                  reasons: expect.arrayContaining(['validation failed']),
+                  metadata: null
+                }
+              });
+              expect(error.payload.dependent).toBeUndefined();
+            });
+
+            it('should return alias name as error key if provided and validation fails at creation', async () => {
+              const { error } = await Model.create({
+                dependent: '5'
+              });
+
+              expect(error.payload).toMatchObject({
+                dependent: {
+                  reasons: expect.arrayContaining(['validation failed']),
+                  metadata: null
+                }
+              });
+              expect(error.payload._virtual).toBeUndefined();
+            });
+
+            it('should return alias name as error key in case of required error at creation', async () => {
+              let { error } = await Model.create({
+                dependent: 'valid'
+              });
+
+              expect(error.payload).toMatchObject({
+                dependent: {
+                  reasons: expect.arrayContaining(["'dependent' is required"]),
+                  metadata: null
+                }
+              });
+              expect(error.payload._virtual).toBeUndefined();
+
+              error = (
+                await Model.create({
+                  _virtual: 'valid'
+                })
+              ).error;
+
+              expect(error.payload).toMatchObject({
+                dependent: {
+                  reasons: expect.arrayContaining(["'dependent' is required"]),
+                  metadata: null
+                }
+              });
+              expect(error.payload._virtual).toBeUndefined();
+            });
+
+            it('should return respect precedence between alias and virtual property if both are provided at creation', async () => {
+              let { error } = await Model.create({
+                _virtual: 'test',
+                dependent: 'test'
+              });
+
+              expect(error.payload).toMatchObject({
+                dependent: {
+                  reasons: expect.arrayContaining(['validation failed']),
+                  metadata: null
+                }
+              });
+              expect(error.payload._virtual).toBeUndefined();
+
+              error = (
+                await Model.create({
+                  dependent: 'test',
+                  _virtual: 'test'
+                })
+              ).error;
+
+              expect(error.payload).toMatchObject({
+                _virtual: {
+                  reasons: expect.arrayContaining(['validation failed']),
+                  metadata: null
+                }
+              });
+              expect(error.payload.dependent).toBeUndefined();
+            });
+          });
+
+          describe('updates', () => {
+            const validData = { dependent: 20 };
+
+            it('should return virtual name as error key if provided and validation fails during updates', async () => {
+              const { error } = await Model.update(validData, {
+                _virtual: 2
+              });
+
+              expect(error.payload).toMatchObject({
+                _virtual: {
+                  reasons: expect.arrayContaining(['validation failed']),
+                  metadata: null
+                }
+              });
+              expect(error.payload.dependent).toBeUndefined();
+            });
+
+            it('should return alias name as error key if provided and validation fails during updates', async () => {
+              const { error } = await Model.update(validData, {
+                dependent: '5'
+              });
+
+              expect(error.payload).toMatchObject({
+                dependent: {
+                  reasons: expect.arrayContaining(['validation failed']),
+                  metadata: null
+                }
+              });
+              expect(error.payload._virtual).toBeUndefined();
+            });
+
+            it('should return alias name as error key in case of required error during updates', async () => {
+              let { error } = await Model.update(validData, {
+                dependent: 'valid'
+              });
+
+              expect(error.payload).toMatchObject({
+                dependent: {
+                  reasons: expect.arrayContaining(["'dependent' is required"]),
+                  metadata: null
+                }
+              });
+              expect(error.payload._virtual).toBeUndefined();
+
+              error = (
+                await Model.update(validData, {
+                  _virtual: 'valid'
+                })
+              ).error;
+
+              expect(error.payload).toMatchObject({
+                dependent: {
+                  reasons: expect.arrayContaining(["'dependent' is required"]),
+                  metadata: null
+                }
+              });
+              expect(error.payload._virtual).toBeUndefined();
+            });
+
+            it('should return respect precedence between alias and virtual property if both are provided during updates', async () => {
+              let { error } = await Model.update(validData, {
+                _virtual: 'test',
+                dependent: 'test'
+              });
+
+              expect(error.payload).toMatchObject({
+                dependent: {
+                  reasons: expect.arrayContaining(['validation failed']),
+                  metadata: null
+                }
+              });
+              expect(error.payload._virtual).toBeUndefined();
+
+              error = (
+                await Model.update(validData, {
+                  dependent: 'test',
+                  _virtual: 'test'
+                })
+              ).error;
+
+              expect(error.payload).toMatchObject({
+                _virtual: {
+                  reasons: expect.arrayContaining(['validation failed']),
+                  metadata: null
+                }
+              });
+              expect(error.payload.dependent).toBeUndefined();
             });
           });
         });
@@ -1025,26 +971,6 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
             });
           });
 
-          it('should respect sanitizer at creation(cloning)', async () => {
-            const { data } = await User.clone({
-              dependentSideNoInit: '',
-              dependentSideInit: true,
-              name: 'Peter',
-              virtualWithSanitizer: true,
-              virtualWithSanitizerNoInit: true
-            });
-
-            expect(data).toEqual({
-              dependentSideInit: 'one',
-              dependentSideNoInit: '',
-              name: 'Peter'
-            });
-
-            expect(sanitizedValues).toEqual({
-              virtualWithSanitizer: 'sanitized'
-            });
-          });
-
           it('should respect virtualInits & virtualNoInit at creation', async () => {
             const { data: user, handleSuccess } = await User.create({
               dependentSideNoInit: '',
@@ -1081,41 +1007,6 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
             expect(sanitizedValues).toEqual({
               virtualWithSanitizer: 'sanitized'
             });
-          });
-
-          it('should respect virtualInits & virtualNoInit at creation(cloning)', async () => {
-            const { data: user, handleSuccess } = await User.clone(
-              {
-                dependentSideNoInit: 'bignw ',
-                dependentSideInit: 'iehvhgwop',
-                name: 'Peter',
-                virtualInit: true,
-                virtualNoInit: true
-              },
-              { reset: ['dependentSideInit', 'dependentSideNoInit'] }
-            );
-
-            await handleSuccess();
-
-            expect(user).toEqual({
-              dependentSideInit: 'one',
-              dependentSideNoInit: '',
-              name: 'Peter'
-            });
-
-            expect(onSuccessStats).toEqual({
-              dependentSideInit: 1,
-              dependentSideNoInit: 1,
-              virtualInit: 1
-            });
-
-            expect(onSuccessValues).toEqual({
-              dependentSideInit: 'one',
-              dependentSideNoInit: '',
-              virtualInit: true
-            });
-
-            expect(sanitizedValues).toEqual({});
           });
         });
 

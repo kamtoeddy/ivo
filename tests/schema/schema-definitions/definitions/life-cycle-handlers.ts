@@ -134,17 +134,6 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
           expect(propChangeMap.onDelete[prop]).toBe(true);
       });
 
-      it('should reject handlers that try to mutate the onFailure(clone) ctx', async () => {
-        await Model.clone({ prop1: '', prop2: '', prop3: '' });
-
-        for (const prop of props)
-          for (const rule of rules) {
-            const result = rule == 'onFailure' ? true : undefined;
-
-            expect(propChangeMap?.[rule]?.[prop]).toBe(result);
-          }
-      });
-
       it('should reject handlers that try to mutate the onFailure(create) ctx', async () => {
         await Model.create({ prop1: '', prop2: '', prop3: '' });
 
@@ -331,39 +320,6 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
               virtualProp: 3
             });
           });
-
-          it('should call onFailure handlers during cloning', async () => {
-            const { error } = await Model.clone({ prop1: '' }, contextOptions);
-
-            expect(error).toBeDefined();
-            expect(cxtOptions).toEqual({
-              prop1: contextOptions,
-              prop2: contextOptions
-            });
-            expect(onFailureCount).toEqual({ prop1: 1, prop2: 2 });
-          });
-
-          it('should call onFailure handlers during cloning with virtuals', async () => {
-            const { error } = await Model.clone(
-              {
-                prop1: '',
-                virtualProp: 'Yes'
-              },
-              contextOptions
-            );
-
-            expect(error).toBeDefined();
-            expect(cxtOptions).toEqual({
-              prop1: contextOptions,
-              prop2: contextOptions,
-              virtualProp: contextOptions
-            });
-            expect(onFailureCount).toEqual({
-              prop1: 1,
-              prop2: 2,
-              virtualProp: 3
-            });
-          });
         });
 
         describe('updates', () => {
@@ -512,54 +468,6 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
           operation = 'creation',
           previousValues = null,
           values = data,
-          summary = { changes, context, operation, previousValues, values };
-
-        expect(onSuccessValues).toMatchObject({
-          dependent: summary,
-          lax: summary,
-          readonly: summary,
-          readonlyLax: summary,
-          required: summary
-        });
-      });
-
-      // cloning
-      it('should call onSuccess handlers during cloning', async () => {
-        const initialData = {
-          dependent: false,
-          lax: '',
-          readonly: true,
-          readonlyLax: '',
-          required: true
-        };
-        const { data, error, handleSuccess } = await Model.clone(initialData, {
-          contextOptions
-        });
-
-        await handleSuccess();
-
-        expect(error).toBe(null);
-        expect(cxtOptions).toEqual({
-          dependent: contextOptions,
-          lax: contextOptions,
-          readonly: contextOptions,
-          readonlyLax: contextOptions,
-          required: contextOptions
-        });
-
-        expect(propChangeMap).toEqual({
-          dependent: true,
-          lax: true,
-          readonly: true,
-          readonlyLax: true,
-          required: true
-        });
-
-        const changes = null,
-          context = onSuccessValues.__ctx,
-          operation = 'creation',
-          previousValues = null,
-          values = { ...initialData, ...data },
           summary = { changes, context, operation, previousValues, values };
 
         expect(onSuccessValues).toMatchObject({
