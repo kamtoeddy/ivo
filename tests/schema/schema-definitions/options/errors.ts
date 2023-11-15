@@ -66,20 +66,6 @@ export const Test_SchemaErrors = ({ Schema, fx }: any) => {
             });
           });
 
-          // clone
-          it('should clone normally', async () => {
-            const { data } = await model.clone({
-              readonly: 'lax',
-              required: true
-            });
-
-            expect(data).toEqual({
-              lax: 'lax-default',
-              readonly: 'lax',
-              required: true
-            });
-          });
-
           // update
           it('should update normally', async () => {
             const { data } = await model.update(

@@ -392,12 +392,6 @@ namespace NS {
     validator: Validator<K, Input, Output, CtxOptions>;
   };
 
-  // options
-  export type CloneOptions<T, CtxOptions> = {
-    reset?: KeyOf<T> | KeyOf<T>[];
-    contextOptions?: Partial<CtxOptions>;
-  };
-
   export type InternalOptions<
     Input,
     Output,
