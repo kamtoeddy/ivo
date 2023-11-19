@@ -79,7 +79,7 @@ These methods are async because custom validators could be async as well.
 # Options
 
 ```ts
-import type { Context, Summary,ValidationErrorMessage } from 'clean-schema'
+import type { Context, Summary, ValidationErrorMessage } from 'clean-schema'
 
 type Input = {}
 type Output = {}
@@ -338,4 +338,4 @@ let transactionSchema = new Schema(definitions, {
 
 ## useParentOptions
 
-When extending schemas, extended schemas automatically inherit all options(except life cycle methods) of base schema. Setting `useParentOptions: false` in extended schema option will prevent this behaviour
+When extending schemas, extended schemas automatically inherit all options(except life cycle methods) of base schema. Setting `useParentOptions: false` in extended schema option will prevent this behaviour. Default is `true`
