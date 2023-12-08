@@ -1,9 +1,9 @@
 {
   "author": "kamtoeddy",
   "bugs": {
-    "url": "https://github.com/kamtoeddy/clean-schema/issues"
+    "url": "https://github.com/kamtoeddy/ivo/issues"
   },
-  "description": "schema builder for javascript environments",
+  "description": "A different approach to schema valitation",
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^5.58.0",
     "@typescript-eslint/parser": "^5.58.0",
@@ -33,12 +33,12 @@
   "files": [
     "dist"
   ],
-  "homepage": "https://github.com/kamtoeddy/clean-schema#readme",
+  "homepage": "https://github.com/kamtoeddy/ivo#readme",
   "license": "MIT",
-  "name": "clean-schema",
+  "name": "ivo",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/kamtoeddy/clean-schema.git"
+    "url": "git+https://github.com/kamtoeddy/ivo.git"
   },
   "scripts": {
     "build": "tsup",
@@ -50,7 +50,7 @@
     "test:watch": "npm run build && vitest",
     "prepare": "npm run clean-up && npm run build"
   },
-  "version": "4.2.0",
+  "version": "0.0.1",
   "keywords": [
     "schema",
     "validation"

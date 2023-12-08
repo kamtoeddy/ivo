@@ -1,29 +1,29 @@
 # Foreword
 
-Clean-schema is a user story focused utility that helps you build factory methods to manage entities and their values in your domain.
+ivo is a user story focused utility that helps you build factory methods to manage entities and their values in your domain.
 
 In short, it is an event-driven schema validator which provides an interface for you to clearly define the behaviour of your entities at creation and during updates.
 
 # Installation
 
 ```bash
-$ npm i clean-schema
+$ npm i ivo
 ```
 
 # Importing
 
 ```js
 // Using Nodejs `require`
-const { Schema } = require('clean-schema');
+const { Schema } = require('ivo');
 
 // Using ES6 imports
-import { Schema } from 'clean-schema';
+import { Schema } from 'ivo';
 ```
 
 # Defining a schema
 
 ```ts
-import { Schema, type Summary } from 'clean-schema';
+import { Schema, type Summary } from 'ivo';
 
 type UserRole = 'admin' | 'user';
 
@@ -138,30 +138,30 @@ await userDb.updateById(user.id, data);
 
 ## Docs
 
-- [Defining a schema](./docs/v4.2.0/index.md#defining-a-schema)
-  - [constant properties](./docs/v4.2.0/definitions/constants.md#constant-properties)
-  - [default values](./docs/v4.2.0/definitions/defaults.md#default-values)
-  - [dependent properties](./docs/v4.2.0/definitions/dependents.md#dependent-properties)
-  - [readonly properties](./docs/v4.2.0/definitions/readonly.md#readonly-properties)
-  - [required properties](./docs/v4.2.0/definitions/required.md#required-properties)
-  - [virtuals](./docs/v4.2.0/definitions/virtuals.md#virtual-properties)
-  - [validators](./docs/v4.2.0/validators/index.md#validators)
-    - [isArrayOk](./docs/v4.2.0/validators/isArrayOk.md)
-    - [isBooleanOk](./docs/v4.2.0/validators/isBooleanOk.md)
-    - [isEmailOk](./docs/v4.2.0/validators/isEmailOk.md)
-    - [isNumberOk](./docs/v4.2.0/validators/isNumberOk.md)
-    - [isStringOk](./docs/v4.2.0/validators/isStringOk.md)
-- [Extending Schemas](./docs/v4.2.0/definitions/extend-schemas.md#extending-schemas)
-- [The Operation Context](./docs/v4.2.0/life-cycles.md#the-operation-contextt)
-- [The Operation Summary](./docs/v4.2.0/life-cycles.md#the-operation-summary)
-- [Life Cycles & Handlers](./docs/v4.2.0/life-cycles.md#life-cycle-listeners)
+- [Defining a schema](./docs/v0.0.1/index.md#defining-a-schema)
+  - [constant properties](./docs/v0.0.1/definitions/constants.md#constant-properties)
+  - [default values](./docs/v0.0.1/definitions/defaults.md#default-values)
+  - [dependent properties](./docs/v0.0.1/definitions/dependents.md#dependent-properties)
+  - [readonly properties](./docs/v0.0.1/definitions/readonly.md#readonly-properties)
+  - [required properties](./docs/v0.0.1/definitions/required.md#required-properties)
+  - [virtuals](./docs/v0.0.1/definitions/virtuals.md#virtual-properties)
+  - [validators](./docs/v0.0.1/validators/index.md#validators)
+    - [isArrayOk](./docs/v0.0.1/validators/isArrayOk.md)
+    - [isBooleanOk](./docs/v0.0.1/validators/isBooleanOk.md)
+    - [isEmailOk](./docs/v0.0.1/validators/isEmailOk.md)
+    - [isNumberOk](./docs/v0.0.1/validators/isNumberOk.md)
+    - [isStringOk](./docs/v0.0.1/validators/isStringOk.md)
+- [Extending Schemas](./docs/v0.0.1/definitions/extend-schemas.md#extending-schemas)
+- [The Operation Context](./docs/v0.0.1/life-cycles.md#the-operation-contextt)
+- [The Operation Summary](./docs/v0.0.1/life-cycles.md#the-operation-summary)
+- [Life Cycles & Handlers](./docs/v0.0.1/life-cycles.md#life-cycle-listeners)
 
-  - [onDelete](./docs/v4.2.0/life-cycles.md#ondelete)
-  - [onFailure](./docs/v4.2.0/life-cycles.md#onfailure)
-  - [onSuccess](./docs/v4.2.0/life-cycles.md#onsuccess)
+  - [onDelete](./docs/v0.0.1/life-cycles.md#ondelete)
+  - [onFailure](./docs/v0.0.1/life-cycles.md#onfailure)
+  - [onSuccess](./docs/v0.0.1/life-cycles.md#onsuccess)
 
-- [Options](./docs/v4.2.0/index.md#options)
-- [Custom validation errors](./docs/v4.2.0/index.md#errortool)
-- [Internationalization](./docs/v4.2.0/life-cycles.md#context-options)
+- [Options](./docs/v0.0.1/index.md#options)
+- [Custom validation errors](./docs/v0.0.1/index.md#errortool)
+- [Internationalization](./docs/v0.0.1/life-cycles.md#context-options)
 
 - [Changelog](./docs/CHANGELOG.md#changelog)
