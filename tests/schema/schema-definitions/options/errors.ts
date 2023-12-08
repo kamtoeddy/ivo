@@ -50,24 +50,21 @@ export const Test_SchemaErrors = ({ Schema, fx }: any) => {
         models = [silentModel, modelToThrow];
       });
 
-      test('silent & throw with valid data', () => {
-        // create
-        for (const model of models) {
-          it('should create normally', async () => {
-            const { data } = await model.create({
-              readonly: 'lax',
-              required: true
-            });
-
-            expect(data).toEqual({
-              lax: 'lax-default',
-              readonly: 'lax',
-              required: true
-            });
+      test.each(models)(
+        'should create normally with silent & throw with valid data',
+        async (model) => {
+          const { data } = await model.create({
+            readonly: 'lax',
+            required: true
           });
 
-          // update
-          it('should update normally', async () => {
+          expect(data).toEqual({
+            lax: 'lax-default',
+            readonly: 'lax',
+            required: true
+          });
+
+          {
             const { data } = await model.update(
               {
                 lax: 'lax-default',
@@ -78,9 +75,9 @@ export const Test_SchemaErrors = ({ Schema, fx }: any) => {
             );
 
             expect(data).toEqual({ required: 'required' });
-          });
+          }
         }
-      });
+      );
 
       describe('silent', () => {
         // create
