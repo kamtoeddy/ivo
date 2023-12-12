@@ -139,6 +139,7 @@ await userDb.updateById(user.id, data);
 ## Docs
 
 - [Defining a schema](./docs/v0.0.1/index.md#defining-a-schema)
+  - [allowed values](./docs/v0.0.1/index.md#accepted-rules)
   - [constant properties](./docs/v0.0.1/definitions/constants.md#constant-properties)
   - [default values](./docs/v0.0.1/definitions/defaults.md#default-values)
   - [dependent properties](./docs/v0.0.1/definitions/dependents.md#dependent-properties)
