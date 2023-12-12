@@ -762,7 +762,7 @@ class ModelTool<
 
     const _prop = isAlias ? this._getVirtualByAlias(prop) : prop;
 
-    const validator = this._getValidator(_prop as KeyOf<Input>);
+    const validator = this._getValidator(_prop as any);
 
     if (validator) {
       const res = (await validator(value, summary_)) as ValidatorResponseObject<

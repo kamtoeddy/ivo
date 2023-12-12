@@ -21,6 +21,7 @@ import { Test_SchemaSetMissingDefaultsOnUpdateOption } from './options/set-missi
 import { Test_SchemaEqualityDepth } from './options/equality-depth';
 import { describe, test } from 'vitest';
 import { Test_ExtendedSchemas } from './definitions/extended-schemas';
+import { Test_EnumeratedProperties } from './definitions/enumerated';
 
 const fx = makeFx(Schema);
 
@@ -34,6 +35,7 @@ Test_Validators({ Schema });
 
 Test_ConstantProperties({ Schema, fx });
 Test_DependentProperties({ Schema, fx });
+Test_EnumeratedProperties({ Schema, fx });
 Test_ExtendedSchemas({ Schema });
 Test_LaxProperties({ Schema, fx });
 Test_ReadonlyProperties({ Schema, fx });

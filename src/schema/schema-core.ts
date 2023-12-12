@@ -10,7 +10,8 @@ import {
   isOneOf,
   sort,
   sortKeys,
-  toArray
+  toArray,
+  getUnique
 } from '../utils';
 import {
   DefaultErrorTool,
@@ -73,6 +74,7 @@ export abstract class SchemaCore<
   // props
   protected readonly constants = new Set<KeyOf<Output>>();
   protected readonly dependents = new Set<KeyOf<Output>>();
+  protected readonly enumerated = new Set<KeyOf<Input>>();
   protected readonly laxProps = new Set<KeyOf<Input>>();
   protected readonly props = new Set<KeyOf<Output>>();
   protected readonly propsRequiredBy = new Set<KeyOf<Input>>();
@@ -477,8 +479,8 @@ export abstract class SchemaCore<
   protected _getHandlers = <T>(prop: string, lifeCycle: ns.LifeCycle) =>
     toArray((this._getDefinition(prop)?.[lifeCycle] ?? []) as any) as T[];
 
-  protected _getValidator = <K extends KeyOf<Input>>(prop: K) => {
-    return this._getDefinition(prop)?.validator as
+  protected _getValidator = <K extends keyof (Output | Input)>(prop: K) => {
+    return this._getDefinition(prop as any)?.validator as
       | Validator<K, Input, Output>
       | undefined;
   };
@@ -537,6 +539,8 @@ export abstract class SchemaCore<
 
   protected _isConstant = (prop: string) =>
     this.constants.has(prop as KeyOf<Output>);
+
+  protected _isEnumerated = (prop: string) => this.enumerated.has(prop as any);
 
   private __isDependentProp = (
     prop: KeyOf<Input>,
@@ -645,6 +649,24 @@ export abstract class SchemaCore<
       for (const rule of invalidRulesProvided)
         reasons.push(`'${rule}' is not a valid rule`);
 
+    if (isPropertyOf('allow', definition)) {
+      const { valid, reason } = this.__isEnumerated(definition);
+
+      if (valid) this.enumerated.add(prop);
+      else reasons.push(reason!);
+    }
+
+    if (isPropertyOf('alias', definition)) {
+      const { valid, reason } = this.__isVirtualAliasOk(prop, definition);
+
+      if (valid) {
+        const alias = definition?.alias!;
+
+        this.aliasToVirtualMap[alias] = prop;
+        this.virtualToAliasMap[prop] = alias as KeyOf<Input>;
+      } else reasons.push(reason!);
+    }
+
     if (isPropertyOf('constant', definition)) {
       const { valid, reason } = this.__isConstantProp(definition);
 
@@ -687,17 +709,6 @@ export abstract class SchemaCore<
       valid ? this.virtuals.add(prop) : reasons.push(reason!);
     } else if (isPropertyOf('sanitizer', definition))
       reasons.push("'sanitizer' is only valid on virtuals");
-
-    if (isPropertyOf('alias', definition)) {
-      const { valid, reason } = this.__isVirtualAliasOk(prop, definition);
-
-      if (valid) {
-        const alias = definition?.alias!;
-
-        this.aliasToVirtualMap[alias] = prop;
-        this.virtualToAliasMap[prop] = alias as KeyOf<Input>;
-      } else reasons.push(reason!);
-    }
 
     if (isPropertyOf('shouldInit', definition)) {
       const { valid, reason } = this.__isShouldInitConfigOk(definition);
@@ -766,6 +777,45 @@ export abstract class SchemaCore<
     }
 
     return { reasons, valid };
+  };
+
+  private __isEnumerated = (
+    definition: ns.Definitions_<Input, Output>[KeyOf<Input>]
+  ) => {
+    const { allow } = definition!;
+
+    const valid = false;
+
+    if (!Array.isArray(allow))
+      return {
+        reason: 'Allowed values must be an array',
+        valid
+      };
+
+    const allowed = getUnique(allow);
+
+    if (allowed.length < allow.length)
+      return {
+        reason: 'Allowed values must be an array of unique values',
+        valid
+      };
+
+    if (allowed.length < 2)
+      return {
+        reason: 'Allowed values must have at least 2 values',
+        valid
+      };
+
+    if (
+      isPropertyOf('default', definition) &&
+      !isOneOf(definition?.default, allow as any)
+    )
+      return {
+        reason: 'The default value must be an allowed value',
+        valid
+      };
+
+    return { valid: true };
   };
 
   private __isReadonly = (

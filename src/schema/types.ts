@@ -156,13 +156,15 @@ namespace NS {
     Input,
     Output,
     CtxOptions extends ObjectType = {}
-  > =
-    | LaxProperty<K, Input, Output, CtxOptions>
-    | ReadOnly<K, Input, Output, CtxOptions>
-    | ReadonlyNoInit<K, Input, Output, CtxOptions>
-    | Required<K, Input, Output, CtxOptions>
-    | RequiredBy<K, Input, Output, CtxOptions>
-    | RequiredReadonly<K, Input, Output, CtxOptions>;
+  > = Allowable<Output[K]> &
+    (
+      | LaxProperty<K, Input, Output, CtxOptions>
+      | ReadOnly<K, Input, Output, CtxOptions>
+      | ReadonlyNoInit<K, Input, Output, CtxOptions>
+      | Required<K, Input, Output, CtxOptions>
+      | RequiredBy<K, Input, Output, CtxOptions>
+      | RequiredReadonly<K, Input, Output, CtxOptions>
+    );
 
   type PrivateProperty<
     K extends keyof Output,
@@ -176,6 +178,7 @@ namespace NS {
 
   export type Definitions_<Input, Output> = {
     [K in keyof Input]?: Listenable<Input, Output> & {
+      allow?: Readonly<ArrayOfMinSizeTwo<any>>;
       alias?: string;
       constant?: any;
       default?: any;
@@ -233,6 +236,10 @@ namespace NS {
       | AsyncSetter<Output[K], Input, Output, CtxOptions>;
   };
 
+  type Allowable<T> = {
+    allow?: Readonly<ArrayOfMinSizeTwo<T>>;
+  };
+
   type Dependables<
     K extends keyof Output,
     Input,
@@ -250,7 +257,7 @@ namespace NS {
     dependent?: true;
     dependsOn:
       | Dependables<K, Input, Output, CtxOptions>
-      | Dependables<K, Input, Output, CtxOptions>[];
+      | ArrayOfMinSizeOne<Dependables<K, Input, Output, CtxOptions>>;
     onDelete?:
       | DeleteHandler<Output, CtxOptions>
       | ArrayOfMinSizeOne<DeleteHandler<Output, CtxOptions>>;
@@ -372,26 +379,27 @@ namespace NS {
     Output,
     Aliases,
     CtxOptions extends ObjectType = {}
-  > = InitAndUpdateBlockable<Input, Output, CtxOptions> & {
-    alias?: Exclude<KeyOf<Aliases>, K> extends undefined
-      ? string
-      : Exclude<KeyOf<Aliases>, K>;
-    required?: SetterWithSummary<
-      boolean | [boolean, string],
-      Input,
-      Output,
-      CtxOptions
-    >;
-    virtual: true;
-    sanitizer?: VirtualResolver<K, Input, Output, CtxOptions>;
-    onFailure?:
-      | FailureHandler<Input, Output, CtxOptions>
-      | ArrayOfMinSizeOne<FailureHandler<Input, Output, CtxOptions>>;
-    onSuccess?:
-      | SuccessHandler<Input, Output, CtxOptions>
-      | ArrayOfMinSizeOne<SuccessHandler<Input, Output, CtxOptions>>;
-    validator: Validator<K, Input, Output, CtxOptions>;
-  };
+  > = InitAndUpdateBlockable<Input, Output, CtxOptions> &
+    Allowable<Input[K]> & {
+      alias?: Exclude<KeyOf<Aliases>, K> extends undefined
+        ? string
+        : Exclude<KeyOf<Aliases>, K>;
+      required?: SetterWithSummary<
+        boolean | [boolean, string],
+        Input,
+        Output,
+        CtxOptions
+      >;
+      virtual: true;
+      sanitizer?: VirtualResolver<K, Input, Output, CtxOptions>;
+      onFailure?:
+        | FailureHandler<Input, Output, CtxOptions>
+        | ArrayOfMinSizeOne<FailureHandler<Input, Output, CtxOptions>>;
+      onSuccess?:
+        | SuccessHandler<Input, Output, CtxOptions>
+        | ArrayOfMinSizeOne<SuccessHandler<Input, Output, CtxOptions>>;
+      validator: VirtualValidator<K, Input, Output, CtxOptions>;
+    };
 
   export type InternalOptions<
     Input,
@@ -492,6 +500,18 @@ type ValidatorResponseObject<T> =
 type ValidatorResponse<T> = boolean | (ValidatorResponseObject<T> & {});
 
 type Validator<
+  K extends keyof (Output | Input),
+  Input,
+  Output,
+  CtxOptions extends ObjectType = {}
+> = (
+  value: any,
+  summary: Summary<Input, Output, CtxOptions> & {}
+) =>
+  | ValidatorResponse<TypeOf<Output[K]>>
+  | Promise<ValidatorResponse<TypeOf<Output[K]>>>;
+
+type VirtualValidator<
   K extends keyof Input,
   Input,
   Output,
@@ -504,10 +524,11 @@ type Validator<
   | Promise<ValidatorResponse<TypeOf<Input[K]>>>;
 
 type ArrayOfMinSizeOne<T> = [T, ...T[]];
-type ArrayOfMinSizeTwo<T> = [T, T, ...T[]] & {};
+type ArrayOfMinSizeTwo<T> = [T, T, ...T[]];
 
 const DEFINITION_RULES = [
   'alias',
+  'allow',
   'constant',
   'default',
   'dependent',
@@ -541,6 +562,7 @@ const ALLOWED_OPTIONS: NS.OptionsKey<any, any, any>[] = [
 const CONSTANT_RULES = ['constant', 'onDelete', 'onSuccess', 'value'];
 const VIRTUAL_RULES = [
   'alias',
+  'allow',
   'sanitizer',
   'onFailure',
   'onSuccess',
