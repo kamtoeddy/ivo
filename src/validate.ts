@@ -2,7 +2,8 @@ import { getUniqueBy, isEqual, isObject, isOneOf, makeResponse } from './utils';
 import {
   ValidatorResponseObject,
   ValidationResponse,
-  XOR
+  XOR,
+  ArrayOfMinSizeTwo
 } from './schema/types';
 
 export {
@@ -199,10 +200,24 @@ function _makeNumberRage(range?: RangeType) {
   return range_;
 }
 
+type NumberOptions<T extends number = number> = XOR<
+  { allow: Readonly<ArrayOfMinSizeTwo<T>> },
+  { range?: RangeType }
+>;
+
 function isNumberOk<T extends number = number>(
   num: any,
-  { range }: { range?: RangeType } = {}
+  { allow, range }: NumberOptions = {}
 ): ValidationResponse<Exclude<T, undefined>> {
+  if (allow)
+    return isOneOf(num, allow as any)
+      ? makeResponse({ valid: true, validated: num as Exclude<T, undefined> })
+      : makeResponse({
+          reason: 'Unacceptable value',
+          valid: false,
+          metadata: { allowed: allow }
+        });
+
   const range_ = _makeNumberRage(range);
 
   if (!['number', 'string'].includes(typeof num) || isNaN(num))
@@ -227,14 +242,14 @@ const MAX_LENGTH = 255,
   MIN_LENGTH = 1;
 
 type StringOptions<T extends string = string> = XOR<
-  { enums: T[] | readonly T[] },
+  { allow: Readonly<ArrayOfMinSizeTwo<T>> },
   { maxLength?: number; minLength?: number; regExp?: RegExp; trim?: boolean }
 >;
 
 function isStringOk<T extends string = string>(
   str: any,
   {
-    enums,
+    allow,
     maxLength = MAX_LENGTH,
     minLength = MIN_LENGTH,
     regExp,
@@ -244,13 +259,13 @@ function isStringOk<T extends string = string>(
   if (isOneOf(str, [null, undefined]))
     return makeResponse({ reason: 'Unacceptable value', valid: false });
 
-  if (enums)
-    return isOneOf(str, enums as any)
+  if (allow)
+    return isOneOf(str, allow as any)
       ? makeResponse({ valid: true, validated: str as Exclude<T, undefined> })
       : makeResponse({
           reason: 'Unacceptable value',
           valid: false,
-          metadata: { allowed: enums }
+          metadata: { allowed: allow }
         });
 
   if (regExp && !regExp.test(str))

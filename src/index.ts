@@ -25,7 +25,7 @@ export {
   OPERATIONS,
   KeyOf,
   Merge,
-  NonEmptyArray,
+  ArrayOfMinSizeOne as NonEmptyArray,
   RealType,
   Summary,
   ValidatorResponse,

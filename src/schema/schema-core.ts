@@ -782,7 +782,7 @@ export abstract class SchemaCore<
 
     const valid = false;
 
-    if (!isOneOf(readonly, [true, 'lax']))
+    if (!isOneOf(readonly, [true, 'lax'] as any))
       return {
         reason: "Readonly properties are either true | 'lax'",
         valid
@@ -818,12 +818,6 @@ export abstract class SchemaCore<
       return {
         valid,
         reason: 'Readonly(lax) properties cannot have updates strictly blocked'
-      };
-
-    if (!isOneOf(readonly, [true, 'lax']))
-      return {
-        valid,
-        reason: "Readonly properties have readonly true | 'lax'"
       };
 
     return { valid: true };

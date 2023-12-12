@@ -7,13 +7,14 @@ import {
 } from './utils';
 
 export type {
+  ArrayOfMinSizeOne,
+  ArrayOfMinSizeTwo,
   Context,
   DeleteContext,
   DefinitionRule,
   KeyOf,
   Merge,
   NS,
-  NonEmptyArray,
   PartialContext,
   Summary,
   RealType,
@@ -205,13 +206,13 @@ namespace NS {
   type Listenable<Input, Output, CtxOptions extends ObjectType = {}> = {
     onDelete?:
       | DeleteHandler<Output, CtxOptions>
-      | NonEmptyArray<DeleteHandler<Output, CtxOptions>>;
+      | ArrayOfMinSizeOne<DeleteHandler<Output, CtxOptions>>;
     onFailure?:
       | FailureHandler<Input, Output, CtxOptions>
-      | NonEmptyArray<FailureHandler<Input, Output, CtxOptions>>;
+      | ArrayOfMinSizeOne<FailureHandler<Input, Output, CtxOptions>>;
     onSuccess?:
       | SuccessHandler<Input, Output, CtxOptions>
-      | NonEmptyArray<SuccessHandler<Input, Output, CtxOptions>>;
+      | ArrayOfMinSizeOne<SuccessHandler<Input, Output, CtxOptions>>;
   };
 
   type Constant<
@@ -223,10 +224,10 @@ namespace NS {
     constant: true;
     onDelete?:
       | DeleteHandler<Output, CtxOptions>
-      | NonEmptyArray<DeleteHandler<Output, CtxOptions>>;
+      | ArrayOfMinSizeOne<DeleteHandler<Output, CtxOptions>>;
     onSuccess?:
       | SuccessHandler<Input, Output, CtxOptions>
-      | NonEmptyArray<SuccessHandler<Input, Output, CtxOptions>>;
+      | ArrayOfMinSizeOne<SuccessHandler<Input, Output, CtxOptions>>;
     value:
       | TypeOf<Output[K]>
       | AsyncSetter<Output[K], Input, Output, CtxOptions>;
@@ -252,10 +253,10 @@ namespace NS {
       | Dependables<K, Input, Output, CtxOptions>[];
     onDelete?:
       | DeleteHandler<Output, CtxOptions>
-      | NonEmptyArray<DeleteHandler<Output, CtxOptions>>;
+      | ArrayOfMinSizeOne<DeleteHandler<Output, CtxOptions>>;
     onSuccess?:
       | SuccessHandler<Input, Output, CtxOptions>
-      | NonEmptyArray<SuccessHandler<Input, Output, CtxOptions>>;
+      | ArrayOfMinSizeOne<SuccessHandler<Input, Output, CtxOptions>>;
     readonly?: true;
     resolver: Resolver<K, Input, Output, CtxOptions>;
   };
@@ -385,10 +386,10 @@ namespace NS {
     sanitizer?: VirtualResolver<K, Input, Output, CtxOptions>;
     onFailure?:
       | FailureHandler<Input, Output, CtxOptions>
-      | NonEmptyArray<FailureHandler<Input, Output, CtxOptions>>;
+      | ArrayOfMinSizeOne<FailureHandler<Input, Output, CtxOptions>>;
     onSuccess?:
       | SuccessHandler<Input, Output, CtxOptions>
-      | NonEmptyArray<SuccessHandler<Input, Output, CtxOptions>>;
+      | ArrayOfMinSizeOne<SuccessHandler<Input, Output, CtxOptions>>;
     validator: Validator<K, Input, Output, CtxOptions>;
   };
 
@@ -403,10 +404,10 @@ namespace NS {
     errors: 'silent' | 'throw';
     onDelete?:
       | DeleteHandler<Output, CtxOptions>
-      | NonEmptyArray<DeleteHandler<Output, CtxOptions>>;
+      | ArrayOfMinSizeOne<DeleteHandler<Output, CtxOptions>>;
     onSuccess?:
       | SuccessHandler<Input, Output, CtxOptions>
-      | NonEmptyArray<SuccessHandler<Input, Output, CtxOptions>>;
+      | ArrayOfMinSizeOne<SuccessHandler<Input, Output, CtxOptions>>;
     setMissingDefaultsOnUpdate?: boolean;
     shouldUpdate?: boolean | AsyncShouldUpdate<Input, Output, CtxOptions>;
     timestamps?:
@@ -425,10 +426,10 @@ namespace NS {
     errors?: 'silent' | 'throw';
     onDelete?:
       | DeleteHandler<Output, CtxOptions>
-      | NonEmptyArray<DeleteHandler<Output, CtxOptions>>;
+      | ArrayOfMinSizeOne<DeleteHandler<Output, CtxOptions>>;
     onSuccess?:
       | SuccessHandler<Input, Output, CtxOptions>
-      | NonEmptyArray<SuccessHandler<Input, Output, CtxOptions>>;
+      | ArrayOfMinSizeOne<SuccessHandler<Input, Output, CtxOptions>>;
     setMissingDefaultsOnUpdate?: boolean;
     shouldUpdate?: boolean | AsyncShouldUpdate<Input, Output, CtxOptions>;
     timestamps?:
@@ -502,7 +503,8 @@ type Validator<
   | ValidatorResponse<TypeOf<Input[K]>>
   | Promise<ValidatorResponse<TypeOf<Input[K]>>>;
 
-type NonEmptyArray<T> = [T, ...T[]];
+type ArrayOfMinSizeOne<T> = [T, ...T[]];
+type ArrayOfMinSizeTwo<T> = [T, T, ...T[]] & {};
 
 const DEFINITION_RULES = [
   'alias',

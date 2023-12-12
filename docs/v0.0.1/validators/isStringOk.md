@@ -14,9 +14,9 @@ isStringOk('Hello World!', {
 
 console.log(
   isStringOk('pineapple', {
-    enums: ['apple', 'banana', 'watermelon']
+    allow: ['apple', 'banana', 'watermelon']
   })
-); // { reasons: ["Unacceptable value"], valid: false }
+); // { reasons: ["Unacceptable value"], valid: false, metadata :{ allowed: ['apple', 'banana', 'watermelon'] } }
 ```
 
 ### Parameters
@@ -30,7 +30,7 @@ console.log(
 
 | Property  | Type      | Description                                                                       |
 | --------- | --------- | --------------------------------------------------------------------------------- |
-| enums     | string[ ] | The set of values the string is expected to belong to. Default: **undefined**     |
+| allow     | string[ ] | The set of values the string is expected to belong to. Default: **undefined**     |
 | maxLength | number    | The maximum number of characters the string is expected to have. Default: **225** |
 | minLength | number    | The minimum number of characters the string is expected to have. Default: **1**   |
 | regExp    | RegExp    | A regular expression the string is expected to match. Default: **undefined**      |

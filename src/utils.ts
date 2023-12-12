@@ -4,7 +4,8 @@ import {
   ValidatorResponseObject,
   KeyOf,
   TypeOf,
-  ValidationResponse
+  ValidationResponse,
+  ArrayOfMinSizeTwo
 } from './schema/types';
 
 export {
@@ -113,7 +114,7 @@ function isObject<T extends ObjectType>(value: any): value is T {
   return value && typeof value === 'object' && !Array.isArray(value);
 }
 
-function isOneOf<T>(value: any, values: T[]): value is T {
+function isOneOf<T>(value: any, values: ArrayOfMinSizeTwo<T>): value is T {
   return values.includes(value);
 }
 

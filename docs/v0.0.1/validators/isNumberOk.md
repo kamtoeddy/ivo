@@ -6,12 +6,14 @@ To validate numbers. Especially within a range
 import { isNumberOk } from 'ivo';
 
 // 👇 here is the signature of the metadata returned on failure
-type Metadata = {
-  min: number | null;
-  max: number | null;
-  inclusiveBottom: boolean;
-  inclusiveTop: boolean;
-};
+type Metadata =
+  | { allowed: number[] }
+  | {
+      min: number | null;
+      max: number | null;
+      inclusiveBottom: boolean;
+      inclusiveTop: boolean;
+    };
 
 const options = {
   range: {
@@ -24,6 +26,8 @@ console.log(isNumberOk(10, options)); // { reasons: ["too small"], valid: false,
 console.log(isNumberOk(10.01, options)); // { valid: true, validated: 10.01, metadata }
 
 console.log(isNumberOk('10.05', options)); // { valid: true, validated: 10.05, metadata }
+
+console.log(isNumberOk(30, { allow: [0, -1, 35] })); // { reasons: ["Unacceptable value"], valid: false, metadata :{ allowed: [0, -1, 35] } }
 ```
 
 ### Parameters
