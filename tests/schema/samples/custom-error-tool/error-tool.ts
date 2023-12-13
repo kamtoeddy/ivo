@@ -16,7 +16,7 @@ type vError<Keys> = {
 
 type ErrorData<Keys> = { errors: vError<Keys>[] };
 
-const { INVALID_DATA, VALIDATION_ERROR } = VALIDATION_ERRORS;
+const { VALIDATION_ERROR } = VALIDATION_ERRORS;
 
 export class VError<Keys> implements IErrorTool<ErrorData<Keys>> {
   private _errors = new Map<FieldKey, vError<Keys>>();
@@ -27,11 +27,7 @@ export class VError<Keys> implements IErrorTool<ErrorData<Keys>> {
     const { lang } = this.ctxOptions;
 
     const message =
-      this.message == VALIDATION_ERROR
-        ? 'validation'
-        : this.message == INVALID_DATA
-        ? 'invalid-data'
-        : 'no-update';
+      this.message == VALIDATION_ERROR ? 'validation' : 'no-update';
 
     return `${message}${lang ? ' -' + lang : ''}`;
   }

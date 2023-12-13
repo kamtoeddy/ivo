@@ -240,14 +240,6 @@ class ModelTool<
     await Promise.allSettled(cleanups);
   }
 
-  private _handleInvalidData = () =>
-    this._handleError(
-      new this._options.ErrorTool(
-        VALIDATION_ERRORS.INVALID_DATA,
-        this._getContextOptions()
-      )
-    );
-
   private _handleRequiredBy(data: Partial<Output>, isUpdate = false) {
     const summary = this._getSummary(data, isUpdate);
 
@@ -784,7 +776,7 @@ class ModelTool<
   ) {
     const ctxOpts = this._updateContextOptions(ctxOptions);
 
-    if (!areValuesOk(input)) return this._handleInvalidData();
+    if (!areValuesOk(input)) input = {};
 
     const _input = this._cleanInput(input);
 
@@ -883,7 +875,7 @@ class ModelTool<
 
     if (!areValuesOk(values))
       throw new this._options.ErrorTool(
-        VALIDATION_ERRORS.INVALID_DATA,
+        VALIDATION_ERRORS.VALIDATION_ERROR,
         ctxOptions
       ).error;
 
@@ -919,18 +911,18 @@ class ModelTool<
   ) {
     const ctxOpts = this._updateContextOptions(ctxOptions);
 
+    const errorTool = new this._options.ErrorTool(
+      VALIDATION_ERRORS.NOTHING_TO_UPDATE,
+      ctxOpts
+    );
+
     if (!areValuesOk(values) || !areValuesOk(changes))
-      return this._handleInvalidData();
+      return this._handleError(errorTool, {}, []);
 
     this._setValues(values, { allowVirtuals: false, allowTimestamps: true });
 
     if (this._options?.setMissingDefaultsOnUpdate)
       await this._setMissingDefaults();
-
-    const errorTool = new this._options.ErrorTool(
-      VALIDATION_ERRORS.NOTHING_TO_UPDATE,
-      ctxOpts
-    );
 
     const _changes = this._cleanInput(changes);
 

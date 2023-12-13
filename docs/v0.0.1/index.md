@@ -247,7 +247,6 @@ This is the structure of the error returned or thrown
 
 ```ts
 type SchemaErrorMessage =
-  | 'INVALID_DATA'
   | 'INVALID_SCHEMA'
   | 'NOTHING_TO_UPDATE'
   | 'VALIDATION_ERROR';
