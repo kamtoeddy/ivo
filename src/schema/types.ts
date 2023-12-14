@@ -15,6 +15,7 @@ export type {
   KeyOf,
   Merge,
   NS,
+  NotAllowedError,
   PartialContext,
   Summary,
   RealType,
@@ -73,6 +74,8 @@ type TypeOf<T> = Exclude<T, undefined>;
 type AsyncSetter<T, Input, Output, CtxOptions extends ObjectType = {}> = (
   context: Context<Input, Output, CtxOptions>
 ) => TypeOf<T> | Promise<TypeOf<T>>;
+
+type NotAllowedError = string | string[] | FieldError;
 
 type Setter<T, Input, Output, CtxOptions extends ObjectType = {}> = (
   context: Context<Input, Output, CtxOptions>
@@ -156,7 +159,7 @@ namespace NS {
     Input,
     Output,
     CtxOptions extends ObjectType = {}
-  > = Allowable<Output[K]> &
+  > = Enumerable<Output[K]> &
     (
       | LaxProperty<K, Input, Output, CtxOptions>
       | ReadOnly<K, Input, Output, CtxOptions>
@@ -236,8 +239,11 @@ namespace NS {
       | AsyncSetter<Output[K], Input, Output, CtxOptions>;
   };
 
-  type Allowable<T> = {
+  type Enumerable<T> = {
     allow?: Readonly<ArrayOfMinSizeTwo<T>>;
+    notAllowedError?:
+      | NotAllowedError
+      | ((value: any, allowedValues: ArrayOfMinSizeTwo<T>) => NotAllowedError);
   };
 
   type Dependables<
@@ -380,7 +386,7 @@ namespace NS {
     Aliases,
     CtxOptions extends ObjectType = {}
   > = InitAndUpdateBlockable<Input, Output, CtxOptions> &
-    Allowable<Input[K]> & {
+    Enumerable<Input[K]> & {
       alias?: Exclude<KeyOf<Aliases>, K> extends undefined
         ? string
         : Exclude<KeyOf<Aliases>, K>;
