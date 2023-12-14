@@ -74,7 +74,10 @@ export abstract class SchemaCore<
   // props
   protected readonly constants = new Set<KeyOf<Output>>();
   protected readonly dependents = new Set<KeyOf<Output>>();
-  protected readonly enumerated = new Set<KeyOf<Input>>();
+  protected readonly enumeratedPropsToAllowedValuesMap = new Map<
+    string,
+    Set<any>
+  >();
   protected readonly laxProps = new Set<KeyOf<Input>>();
   protected readonly props = new Set<KeyOf<Output>>();
   protected readonly propsRequiredBy = new Set<KeyOf<Input>>();
@@ -540,7 +543,8 @@ export abstract class SchemaCore<
   protected _isConstant = (prop: string) =>
     this.constants.has(prop as KeyOf<Output>);
 
-  protected _isEnumerated = (prop: string) => this.enumerated.has(prop as any);
+  protected _isEnumerated = (prop: string) =>
+    this.enumeratedPropsToAllowedValuesMap.has(prop);
 
   private __isDependentProp = (
     prop: KeyOf<Input>,
@@ -652,7 +656,11 @@ export abstract class SchemaCore<
     if (isPropertyOf('allow', definition)) {
       const { valid, reason } = this.__isEnumerated(definition);
 
-      if (valid) this.enumerated.add(prop);
+      if (valid)
+        this.enumeratedPropsToAllowedValuesMap.set(
+          prop,
+          new Set(definition.allow)
+        );
       else reasons.push(reason!);
     }
 

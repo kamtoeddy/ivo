@@ -752,16 +752,35 @@ class ModelTool<
 
     const isAlias = this._isVirtualAlias(prop);
 
-    const _prop = isAlias ? this._getVirtualByAlias(prop) : prop;
+    const _prop = (isAlias ? this._getVirtualByAlias(prop) : prop)!;
+
+    const allowedValues = this.enumeratedPropsToAllowedValuesMap.get(_prop);
+
+    if (allowedValues && !allowedValues.has(value))
+      return makeResponse<(Input & Aliases)[K]>({
+        valid: false,
+        value,
+        reason: 'value not allowed',
+        metadata: { allowed: Array.from(allowedValues) }
+      });
 
     const validator = this._getValidator(_prop as any);
 
     if (validator) {
-      const res = (await validator(value, summary_)) as ValidatorResponseObject<
-        (Input & Aliases)[K]
-      >;
+      const res = this._sanitizeValidationResponse<(Input & Aliases)[K]>(
+        (await validator(value, summary_)) as ValidatorResponseObject<
+          (Input & Aliases)[K]
+        >,
+        value
+      );
 
-      return this._sanitizeValidationResponse<(Input & Aliases)[K]>(res, value);
+      if (allowedValues && res.valid && !allowedValues.has(res.validated))
+        return makeResponse<(Input & Aliases)[K]>({
+          valid: true,
+          validated: value
+        });
+
+      return res;
     }
 
     return makeResponse<(Input & Aliases)[K]>({
