@@ -62,7 +62,7 @@ async function isArrayOk<T>(
 
       sorter = (a, b) => (a < b ? order : -order);
     }
-    _array = await Promise.all(_array.sort(sorter));
+    _array = await Promise.all(_array.toSorted(sorter));
   }
 
   return makeResponse<T[]>({ valid: true, validated: _array });

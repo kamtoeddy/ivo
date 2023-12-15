@@ -69,15 +69,15 @@ export abstract class SchemaCore<
   // maps
   protected readonly aliasToVirtualMap: ns.AliasToVirtualMap<Input> = {};
   protected readonly dependencyMap: ns.DependencyMap<Input> = {};
+  protected readonly enumeratedPropsToAllowedValuesMap = new Map<
+    string,
+    Set<any>
+  >();
   protected readonly virtualToAliasMap: ns.AliasToVirtualMap<Input> = {};
 
   // props
   protected readonly constants = new Set<KeyOf<Output>>();
   protected readonly dependents = new Set<KeyOf<Output>>();
-  protected readonly enumeratedPropsToAllowedValuesMap = new Map<
-    string,
-    Set<any>
-  >();
   protected readonly laxProps = new Set<KeyOf<Input>>();
   protected readonly props = new Set<KeyOf<Output>>();
   protected readonly propsRequiredBy = new Set<KeyOf<Input>>();
