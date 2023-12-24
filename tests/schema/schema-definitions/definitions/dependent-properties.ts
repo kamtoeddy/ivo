@@ -27,7 +27,6 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
         },
         dependentProp: {
           default: 0,
-          dependent: true,
           dependsOn: ['laxProp', 'laxProp_1'],
           resolver: resolverOfDependentProp,
           onDelete: [
@@ -43,7 +42,6 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
         },
         dependentProp_1: {
           default: 0,
-          dependent: true,
           dependsOn: 'dependentProp',
           resolver: resolverOfDependentProp_1,
           onDelete: incrementOnDeleteCountOf('dependentProp_1'),
@@ -51,7 +49,6 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
         },
         dependentProp_2: {
           default: 0,
-          dependent: true,
           dependsOn: 'dependentProp',
           readonly: true,
           resolver: asyncResolver('dependentProp_2'),
@@ -67,7 +64,6 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
         },
         dependentProp_3: {
           default: 0,
-          dependent: true,
           dependsOn: 'laxProp_2',
           resolver: asyncResolver('dependentProp_3'),
           onDelete: [
@@ -228,10 +224,7 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
               dependentProp_2: 0,
               dependentProp_3: 0
             },
-            {
-              laxProp: 'hello',
-              laxProp_1: 'world'
-            }
+            { laxProp: 'hello', laxProp_1: 'world' }
           );
 
           await handleSuccess();
@@ -342,12 +335,7 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
 
         for (const value of values) {
           const toPass = fx({
-            dependentProp: {
-              default: value,
-              dependent: true,
-              dependsOn: 'prop',
-              resolver
-            },
+            dependentProp: { default: value, dependsOn: 'prop', resolver },
             prop: { default: '' }
           });
 
@@ -377,7 +365,6 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
             const toPass = fx({
               dependentProp: {
                 default: value,
-                dependent: true,
                 dependsOn: 'prop',
                 resolver,
                 [lifeCycle]: value
@@ -401,12 +388,7 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
 
         for (const dependsOn of values) {
           const toPass = fx({
-            dependentProp: {
-              default: '',
-              dependent: true,
-              dependsOn,
-              resolver
-            },
+            dependentProp: { default: '', dependsOn, resolver },
             prop: { default: '' },
             prop1: { default: '' },
             prop2: { default: '' },
@@ -421,15 +403,9 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
 
       it('should allow a dependent prop to depend on another dependent prop (non-circular)', () => {
         const toPass = fx({
-          dependentProp1: {
-            default: '',
-            dependent: true,
-            dependsOn: 'prop',
-            resolver
-          },
+          dependentProp1: { default: '', dependsOn: 'prop', resolver },
           dependentProp2: {
             default: '',
-            dependent: true,
             dependsOn: 'dependentProp1',
             resolver
           },
@@ -443,12 +419,7 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
 
       it('should allow a dependency on virtuals', () => {
         const toPass = fx({
-          dependentProp: {
-            default: '',
-            dependent: true,
-            dependsOn: 'virtualProp',
-            resolver
-          },
+          dependentProp: { default: '', dependsOn: 'virtualProp', resolver },
           virtualProp: { virtual: true, validator: resolver }
         });
 
@@ -463,12 +434,7 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
         const invalidProp = 'invalidProp';
 
         const toFail = fx({
-          dependentProp: {
-            dependent: true,
-            default: '',
-            dependsOn: invalidProp,
-            resolver
-          }
+          dependentProp: { default: '', dependsOn: invalidProp, resolver }
         });
 
         expectFailure(toFail);
@@ -488,12 +454,7 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
 
       it('should not allow property to depend on itself', () => {
         const toFail = fx({
-          dependentProp: {
-            dependent: true,
-            default: '',
-            dependsOn: 'dependentProp',
-            resolver
-          }
+          dependentProp: { default: '', dependsOn: 'dependentProp', resolver }
         });
 
         expectFailure(toFail);
@@ -513,16 +474,8 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
 
       it('should not allow property to depend on a constant property', () => {
         const toFail = fx({
-          constantProp: {
-            constant: true,
-            value: ''
-          },
-          dependentProp: {
-            dependent: true,
-            default: '',
-            dependsOn: 'constantProp',
-            resolver
-          }
+          constantProp: { constant: true, value: '' },
+          dependentProp: { default: '', dependsOn: 'constantProp', resolver }
         });
 
         expectFailure(toFail);
@@ -542,42 +495,12 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
 
       it('should identify circular dependencies and reject', () => {
         const toFail = fx({
-          A: {
-            default: '',
-            dependent: true,
-            dependsOn: ['B', 'C', 'D'],
-            resolver
-          },
-          B: {
-            default: '',
-            dependent: true,
-            dependsOn: ['A', 'C', 'E'],
-            resolver
-          },
-          C: {
-            default: '',
-            dependent: true,
-            dependsOn: ['A'],
-            resolver
-          },
-          D: {
-            default: '',
-            dependent: true,
-            dependsOn: 'E',
-            resolver
-          },
-          E: {
-            default: '',
-            dependent: true,
-            dependsOn: 'A',
-            resolver
-          },
-          F: {
-            default: '',
-            dependent: true,
-            dependsOn: 'prop',
-            resolver
-          },
+          A: { default: '', dependsOn: ['B', 'C', 'D'], resolver },
+          B: { default: '', dependsOn: ['A', 'C', 'E'], resolver },
+          C: { default: '', dependsOn: ['A'], resolver },
+          D: { default: '', dependsOn: 'E', resolver },
+          E: { default: '', dependsOn: 'A', resolver },
+          F: { default: '', dependsOn: 'prop', resolver },
           prop: { default: '' }
         });
 
@@ -612,28 +535,8 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
         }
       });
 
-      it('should reject dependent + missing default', () => {
-        const toFail = fx({ dependentProp: { dependent: true } });
-
-        expectFailure(toFail);
-
-        try {
-          toFail();
-        } catch (err: any) {
-          expect(err.payload).toMatchObject(
-            expect.objectContaining({
-              dependentProp: expect.arrayContaining([
-                'Dependent properties must have a default value'
-              ])
-            })
-          );
-        }
-      });
-
       it('should reject dependent + missing dependsOn', () => {
-        const toFail = fx({
-          propertyName: { dependent: true, default: '', resolver }
-        });
+        const toFail = fx({ propertyName: { default: '', resolver } });
 
         expectFailure(toFail);
 
@@ -643,7 +546,7 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
           expect(err.payload).toMatchObject(
             expect.objectContaining({
               propertyName: expect.arrayContaining([
-                'Dependent properties must depend on atleast one property'
+                'Dependent properties must depend on at least one property'
               ])
             })
           );
@@ -652,7 +555,7 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
 
       it('should reject dependent + missing resolver', () => {
         const toFail = fx({
-          dependentProp: { dependent: true, default: '', dependsOn: 'prop' },
+          dependentProp: { default: '', dependsOn: 'prop' },
           prop: { default: '' }
         });
 
@@ -677,7 +580,6 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
         for (const shouldInit of values) {
           const toFail = fx({
             dependentProp: {
-              dependent: true,
               default: '',
               dependsOn: 'prop',
               resolver,
@@ -706,7 +608,6 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
         const toFail = fx({
           dependentProp: {
             default: '',
-            dependent: true,
             dependsOn: 'prop',
             resolver,
             readonly: 'lax'
@@ -736,7 +637,6 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
           const toFail = fx({
             dependentProp: {
               default: '',
-              dependent: true,
               dependsOn: 'prop',
               resolver,
               validator
@@ -764,7 +664,6 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
         const toFail = fx({
           dependentProp: {
             default: '',
-            dependent: true,
             dependsOn: 'prop',
             resolver,
             required: true
@@ -793,8 +692,6 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
             required() {
               return true;
             },
-            requiredError: "'dependentProp' is required",
-            dependent: true,
             default: '',
             dependsOn: 'prop',
             resolver: () => 1

@@ -155,22 +155,12 @@ export abstract class SchemaCore<
   // < context methods />
 
   // < dependency map utils >
-  private _addDependencies = (
-    prop: KeyOf<Input>,
-    dependsOn: KeyOf<Input> | KeyOf<Input>[]
-  ) => {
-    const _dependsOn = toArray(dependsOn) as KeyOf<Input>[];
-
-    for (const _prop of _dependsOn)
-      if (this.dependencyMap[_prop]) this.dependencyMap[_prop]?.push(prop);
-      else this.dependencyMap[_prop] = [prop];
-  };
-
-  protected _getDependencies = (prop: string) =>
-    this.dependencyMap[prop as KeyOf<Input>] ?? [];
 
   protected _getAliasByVirtual = (prop: KeyOf<Input>): string | undefined =>
     this.virtualToAliasMap[prop];
+
+  protected _getDependencies = (prop: string) =>
+    this.dependencyMap[prop as KeyOf<Input>] ?? [];
 
   protected _getVirtualByAlias = (alias: string): KeyOf<Input> | undefined =>
     this.aliasToVirtualMap[alias];
@@ -213,6 +203,16 @@ export abstract class SchemaCore<
     return sort(Array.from(new Set(circularDependencies)));
   };
 
+  private _setDependencies = (
+    prop: KeyOf<Input>,
+    dependsOn: KeyOf<Input> | KeyOf<Input>[]
+  ) => {
+    const _dependsOn = toArray(dependsOn) as KeyOf<Input>[];
+
+    for (const _prop of _dependsOn)
+      if (this.dependencyMap[_prop]) this.dependencyMap[_prop]?.push(prop);
+      else this.dependencyMap[_prop] = [prop];
+  };
   // < dependency map utils />
 
   private _areHandlersOk = (
@@ -364,14 +364,14 @@ export abstract class SchemaCore<
       if (!isDefOk.valid) error.add(prop, isDefOk.reasons!);
     }
 
-    // make sure every virtual property has atleast one dependency
+    // make sure every virtual property has at least one dependency
     for (const prop of this.virtuals) {
       const dependencies = this._getDependencies(prop);
 
       if (!dependencies.length)
         error.add(
           prop,
-          'A virtual property must have atleast one property that depends on it'
+          'A virtual property must have at least one property that depends on it'
         );
     }
 
@@ -382,7 +382,7 @@ export abstract class SchemaCore<
       if (!isValid.valid) error.add(prop, isValid.reason);
     }
 
-    // make sure every virtual has atleast one dependency
+    // make sure every virtual has at least one dependency
     for (const prop of this.dependents) {
       const definition = (definitions as any)?.[prop]!;
 
@@ -552,7 +552,6 @@ export abstract class SchemaCore<
   ) => {
     const {
       default: _default,
-      dependent,
       dependsOn,
       shouldInit,
       readonly,
@@ -560,12 +559,6 @@ export abstract class SchemaCore<
     } = definition!;
 
     const valid = false;
-
-    if (!isEqual(dependent, undefined) && dependent !== true)
-      return {
-        valid,
-        reason: "Dependent properties must have dependent as 'true'"
-      };
 
     if (isEqual(_default, undefined))
       return {
@@ -576,7 +569,7 @@ export abstract class SchemaCore<
     if (isEqual(dependsOn, undefined) || !dependsOn?.length)
       return {
         valid,
-        reason: 'Dependent properties must depend on atleast one property'
+        reason: 'Dependent properties must depend on at least one property'
       };
 
     if (toArray(dependsOn).includes(prop as KeyOf<Input>))
@@ -682,12 +675,12 @@ export abstract class SchemaCore<
     } else if (isPropertyOf('value', definition))
       reasons.push("'value' rule can only be used with constant properties");
 
-    if (hasAnyOf(definition, ['dependent', 'dependsOn'])) {
+    if (hasAnyOf(definition, ['dependsOn', 'resolver'])) {
       const { valid, reason } = this.__isDependentProp(prop, definition);
 
       if (valid) {
         this.dependents.add(prop as any);
-        this._addDependencies(prop, definition.dependsOn!);
+        this._setDependencies(prop, definition.dependsOn!);
       } else reasons.push(reason!);
     }
 
@@ -777,11 +770,8 @@ export abstract class SchemaCore<
     if (valid && !this._isVirtual(prop)) {
       this.props.add(prop as any);
 
-      if (hasDefaultRule)
-        this.defaults[prop as unknown as KeyOf<Output>] =
-          typeof definition.default == 'function'
-            ? undefined
-            : definition.default;
+      if (hasDefaultRule && typeof definition.default !== 'function')
+        this.defaults[prop as unknown as KeyOf<Output>] = definition.default;
     }
 
     return { reasons, valid };
@@ -831,7 +821,6 @@ export abstract class SchemaCore<
   ) => {
     const {
       default: _default,
-      dependent,
       readonly,
       required,
       shouldInit,
@@ -853,11 +842,13 @@ export abstract class SchemaCore<
           'Strictly readonly properties are required. Either use a callable required + readonly(true) or remove the required rule'
       };
 
-    if (readonly === 'lax' && !isEqual(dependent, undefined))
+    const hasDependentRule = isPropertyOf('dependsOn', definition);
+
+    if (readonly === 'lax' && hasDependentRule)
       return { valid, reason: 'Readonly(lax) properties cannot be dependent' };
 
     if (
-      (readonly === 'lax' || dependent === true || shouldInit === false) &&
+      (readonly === 'lax' || hasDependentRule || shouldInit === false) &&
       isEqual(_default, undefined)
     )
       return {
@@ -886,7 +877,7 @@ export abstract class SchemaCore<
   ) => {
     const valid = false;
 
-    if (isPropertyOf('dependent', definition))
+    if (isPropertyOf('dependsOn', definition))
       return {
         valid,
         reason: 'Required properties cannot be dependent'
@@ -1090,7 +1081,7 @@ export abstract class SchemaCore<
     if (typeof alias !== 'string' || !alias.length)
       return {
         valid,
-        reason: 'An alias must be a string with atleast 1 character'
+        reason: 'An alias must be a string with at least 1 character'
       };
 
     if (alias == prop)

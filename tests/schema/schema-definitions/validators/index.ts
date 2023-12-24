@@ -45,7 +45,6 @@ export const Test_Validators = ({ Schema }: any) => {
           constant: { constant: true, value: 1 },
           dependent: {
             default: '',
-            dependent: true,
             dependsOn: 'prop',
             resolver: () => ''
           },

@@ -812,19 +812,36 @@ class ModelTool<
       this._isVirtualInit(prop, _input[prop as unknown as KeyOf<Input>])
     );
 
-    const props = [
-      ...getSetValuesAsProps(this.props).filter(
-        (prop) => !this._isConstant(prop)
-      ),
-      ...virtuals
-    ];
+    const props = Array.from(
+      new Set([
+        ...getSetValuesAsProps(this.props).filter(
+          (prop) => !this._isConstant(prop)
+        ),
+        ...virtuals
+      ])
+    );
 
     const validations = props.map(async (prop) => {
       const isVirtualInit = virtuals.includes(prop);
 
       if (this._isVirtual(prop) && !isVirtualInit) return;
 
-      if (this._isVirtualAlias(prop) && !this._isDependentProp(prop))
+      const isDependent = this._isDependentProp(prop),
+        isVirtualAlias = virtuals.includes(prop);
+
+      if (isDependent) {
+        data[prop] = await this._getDefaultValue(prop);
+
+        const validCtxUpdate = { [prop]: data[prop] as any } as any;
+
+        this._updatePartialContext(validCtxUpdate);
+
+        this._updateContext(validCtxUpdate);
+
+        if (!isVirtualAlias) return;
+      }
+
+      if (isVirtualAlias)
         return this._validateAndSet(
           data,
           errorTool,
@@ -952,9 +969,9 @@ class ModelTool<
 
     let updates = {} as Partial<Output>;
 
-    const toUpdate = getKeysAsProps<Output & Aliases>(_changes as any).filter(
-      (prop) => this._isUpdatable(prop, (_changes as any)[prop])
-    );
+    const toUpdate = Array.from(
+      new Set(getKeysAsProps<Output & Aliases>(_changes as any))
+    ).filter((prop) => this._isUpdatable(prop, (_changes as any)[prop]));
 
     const linkedProps: KeyOf<Output>[] = [];
     const virtuals: KeyOf<Output>[] = [];

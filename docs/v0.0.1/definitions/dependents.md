@@ -5,9 +5,8 @@ Any external attempt to modify the value of the a dependent property will be ign
 One such property `must` have the following rules:
 
 - **default**: This is a [value or function](./defaults.md#default-values) that will be used as (or used to generate a) default value for the said property
-- **dependsOn**: Atleast one other property or side effect of your model the said property should depend on. It could be a string or an array of properties.
+- **dependsOn**: At least one other property or side effect of your model the said property should depend on. It could be a string or an array of properties.
 - **resolver**: A function (sync or async) that would be invoked to generate the said property's new value when any of it's dependencies changes
-- **dependent (optional)**: A boolean that acts more like a label to be more descriptive
 
 It could aslo be used in combination with other rules like [**readonly**](./readonly.md#readonly-properties), [**life cycle handlers**](../life-cycles.md#life-cycle-handlers), etc. but **`cannot be required`**.
 
@@ -31,7 +30,6 @@ const userSchema = new Schema<Input, Output>({
   firstName: { required: true, validator: validateName },
   fullName: {
     default: '',
-    dependent: true,
     dependsOn: ['firstName', 'lastName'],
     resolver: getFullName
   },

@@ -28,7 +28,6 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
             name: { required: true, validator, onSuccess: onSuccess_('name') },
             price: {
               default: null,
-              dependent: true,
               dependsOn: '_setPrice',
               resolver: ({ context }: any) => context._setPrice,
               onSuccess: onSuccess_('price')
@@ -104,7 +103,6 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
             name: { required: true, validator },
             price: {
               default: null,
-              dependent: true,
               dependsOn: '_setPrice',
               resolver: ({ context }: any) => context._setPrice
             },

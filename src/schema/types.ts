@@ -185,7 +185,6 @@ namespace NS {
       alias?: string;
       constant?: any;
       default?: any;
-      dependent?: boolean;
       dependsOn?: KeyOf<Input> | KeyOf<Input>[];
       readonly?: boolean | 'lax';
       resolver?: Function;
@@ -260,7 +259,6 @@ namespace NS {
     CtxOptions extends ObjectType = {}
   > = {
     default: TypeOf<Output[K]> | AsyncSetter<Output[K], Input, Output>;
-    dependent?: true;
     dependsOn:
       | Dependables<K, Input, Output, CtxOptions>
       | ArrayOfMinSizeOne<Dependables<K, Input, Output, CtxOptions>>;
@@ -537,7 +535,6 @@ const DEFINITION_RULES = [
   'allow',
   'constant',
   'default',
-  'dependent',
   'dependsOn',
   'onDelete',
   'onFailure',

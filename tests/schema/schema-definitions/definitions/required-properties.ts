@@ -509,7 +509,6 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
               name: { default: '' },
               price: {
                 default: null,
-                dependent: true,
                 dependsOn: '_price',
                 resolver: ({ context: { _price } }: any) => _price
               },
@@ -560,7 +559,6 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
               name: { default: '' },
               price: {
                 default: null,
-                dependent: true,
                 dependsOn: '_price',
                 resolver: ({ context: { _price } }: any) => _price
               },
@@ -604,7 +602,6 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
               name: { default: '' },
               price: {
                 default: null,
-                dependent: true,
                 dependsOn: '_price',
                 resolver: ({ context: { _price } }: any) => _price
               },
@@ -650,10 +647,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
     describe('invalid', () => {
       it('should reject requiredBy & no default', () => {
         const toFail = fx({
-          propertyName: {
-            required: () => true,
-            validator
-          }
+          propertyName: { required: () => true, validator }
         });
 
         expectFailure(toFail);
@@ -675,7 +669,6 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
         const toFail = fx({
           dependentProp: {
             default: 'value',
-            dependent: true,
             dependsOn: 'prop',
             resolver: () => 1,
             required: () => true,

@@ -23,7 +23,6 @@ export const Test_SchemaSetMissingDefaultsOnUpdateOption = ({
               id: { constant: true, value: 1 },
               dependent: {
                 default: '',
-                dependent: true,
                 dependsOn: 'lax',
                 resolver: ({ context }: any) => context.lax
               },
@@ -62,13 +61,11 @@ export const Test_SchemaSetMissingDefaultsOnUpdateOption = ({
             id: { constant: true, value: 1 },
             dependent: {
               default: '',
-              dependent: true,
               dependsOn: 'lax',
               resolver: ({ context }: any) => context.lax
             },
             dependent_1: {
               default: '',
-              dependent: true,
               dependsOn: 'dependent',
               resolver: ({ context }: any) => context.dependent
             },

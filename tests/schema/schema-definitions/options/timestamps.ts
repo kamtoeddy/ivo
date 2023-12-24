@@ -475,7 +475,6 @@ export const Test_SchemaTimestampOption = ({ Schema, fx }: any) => {
                 {
                   dependentProp: {
                     default: '',
-                    dependent: true,
                     dependsOn: 'virtualProp',
                     resolver: () => ''
                   },

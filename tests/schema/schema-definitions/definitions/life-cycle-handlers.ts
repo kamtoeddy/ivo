@@ -263,7 +263,6 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
           },
           dependentProp: {
             default: '',
-            dependent: true,
             dependsOn: 'virtualProp',
             resolver: () => ''
           },
@@ -403,7 +402,6 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
       const Model = new Schema({
         dependent: {
           default: false,
-          dependent: true,
           dependsOn: 'readonlyLax',
           onSuccess: onSuccess('dependent'),
           resolver: () => true

@@ -6,7 +6,7 @@ These properties are used to manipulate dependent properties at the level of you
 
   - `virtual: true`
   - A validator and
-  - Atleast one property that depends on it
+  - At least one property that depends on it
 
 - They can have (**`shouldInit === false`**) or `shouldInit` as a function
 - They can have (**`shouldUpdate === false`**) or `shouldUpdate` as a function

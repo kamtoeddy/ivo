@@ -38,7 +38,6 @@ const storeItemSchema = new Schema<StoreItemInput, StoreItem>(
     },
     quantity: {
       default: 0,
-      dependent: true,
       dependsOn: ['_quantity', 'quantities'],
       resolver: resolveQuantity
     },
@@ -49,7 +48,6 @@ const storeItemSchema = new Schema<StoreItemInput, StoreItem>(
     },
     quantityChangeCounter: {
       default: 0,
-      dependent: true,
       dependsOn: 'quantity',
       resolver({ context: { quantityChangeCounter } }) {
         return quantityChangeCounter! + 1;

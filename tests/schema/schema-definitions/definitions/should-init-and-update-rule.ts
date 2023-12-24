@@ -232,7 +232,6 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
             {
               dependent: {
                 default: '',
-                dependent: true,
                 dependsOn: 'virtual',
                 resolver: () => 'changed',
                 onSuccess: onSuccess('dependent')
@@ -394,7 +393,6 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
           const toPass = fx({
             dependentProp: {
               default: '',
-              dependent: true,
               dependsOn: 'virtual',
               resolver: () => ''
             },
@@ -428,14 +426,12 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
         const Model = new Schema({
           dependentProp: {
             default: false,
-            dependent: true,
             dependsOn: 'virtual',
             resolver: ({ context }: any) => context.virtual,
             onSuccess: incrementOnSuccessCountOf('dependentProp')
           },
           dependentProp_1: {
             default: false,
-            dependent: true,
             dependsOn: 'virtual_1',
             resolver: ({ context }: any) => context.virtual_1,
             onSuccess: incrementOnSuccessCountOf('dependentProp_1')
