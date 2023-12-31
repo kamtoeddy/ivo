@@ -44,6 +44,27 @@ export const Test_EnumeratedProperties = ({ fx, Schema }: any) => {
 
         toPass();
       });
+
+      // describe('allow as an object', () => {
+      //   it('should not reject if "allow" rule is an object with values and error as only keys', () => {
+      //     const toPass = fx({
+      //       dependent: {
+      //         default: true,
+      //         dependsOn: 'virtual',
+      //         resolver: validator
+      //       },
+      //       virtual: {
+      //         virtual: true,
+      //         allow: { values: [null, 'lolz', -1], error: 'value not allowed' },
+      //         validator
+      //       }
+      //     });
+
+      //     expectNoFailure(toPass);
+
+      //     toPass();
+      //   });
+      // });
     });
 
     describe('invalid', () => {
@@ -137,6 +158,116 @@ export const Test_EnumeratedProperties = ({ fx, Schema }: any) => {
             });
           }
         }
+      });
+
+      describe('allow as an object', () => {
+        it('should reject if values array is not provided', () => {
+          const toFail = fx({ prop: { allow: {} } });
+
+          expectFailure(toFail);
+
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toMatchObject({
+              prop: ['Allowed values must be an array']
+            });
+          }
+        });
+
+        it('should reject if non-array value is provided', () => {
+          const invalidValues = [
+            null,
+            undefined,
+            new Number(),
+            new String(),
+            Symbol(),
+            2,
+            -10,
+            true,
+            () => {},
+            {}
+          ];
+
+          for (const values of invalidValues) {
+            const toFail = fx({ prop: { allow: { values } } });
+
+            expectFailure(toFail);
+
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err.payload).toMatchObject({
+                prop: ['Allowed values must be an array']
+              });
+            }
+          }
+        });
+
+        it('should reject if allowed values provided are not unique', () => {
+          const invalidValues = [
+            [1, 2, 2, 4, 5],
+            ['lol', 59, 'lol', null],
+            [true, false, true],
+            [{}, {}],
+            [{ id: 'lol' }, { id: 'lol' }]
+          ];
+
+          for (const values of invalidValues) {
+            const toFail = fx({ prop: { allow: { values } } });
+
+            expectFailure(toFail);
+
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err.payload).toMatchObject({
+                prop: ['Allowed values must be an array of unique values']
+              });
+            }
+          }
+        });
+
+        it('should reject if allowed values provided are less than 2', () => {
+          const invalidValues = [[], ['lol']];
+
+          for (const values of invalidValues) {
+            const toFail = fx({ prop: { allow: { values } } });
+
+            expectFailure(toFail);
+
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err.payload).toMatchObject({
+                prop: ['Allowed values must have at least 2 values']
+              });
+            }
+          }
+        });
+
+        it('should reject if default value provided is not an allowed value', () => {
+          const data = [
+            ['lol', [null, 'lolz', -1]],
+            [null, [1, 4, 'lol', undefined]]
+          ];
+
+          for (const [_default, values] of data) {
+            const toFail = fx({
+              prop: { default: _default, allow: { values } }
+            });
+
+            expectFailure(toFail);
+
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err.payload).toMatchObject({
+                prop: ['The default value must be an allowed value']
+              });
+            }
+          }
+        });
       });
     });
 

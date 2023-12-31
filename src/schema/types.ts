@@ -15,7 +15,6 @@ export type {
   KeyOf,
   Merge,
   NS,
-  NotAllowedError,
   PartialContext,
   Summary,
   RealType,
@@ -187,7 +186,17 @@ namespace NS {
 
   export type Definitions_<Input, Output> = {
     [K in keyof Input]?: Listenable<Input, Output> & {
-      allow?: Readonly<ArrayOfMinSizeTwo<any>>;
+      allow?:
+        | Readonly<ArrayOfMinSizeTwo<any>>
+        | {
+            values: Readonly<ArrayOfMinSizeTwo<any>>;
+            error?:
+              | NotAllowedError
+              | ((
+                  value: any,
+                  allowedValues: ArrayOfMinSizeTwo<any>
+                ) => NotAllowedError);
+          };
       alias?: string;
       constant?: any;
       default?: any;
@@ -243,10 +252,17 @@ namespace NS {
   };
 
   type Enumerable<T> = {
-    allow?: Readonly<ArrayOfMinSizeTwo<T>>;
-    notAllowedError?:
-      | NotAllowedError
-      | ((value: any, allowedValues: ArrayOfMinSizeTwo<T>) => NotAllowedError);
+    allow?:
+      | Readonly<ArrayOfMinSizeTwo<T>>
+      | {
+          values: Readonly<ArrayOfMinSizeTwo<T>>;
+          error?:
+            | NotAllowedError
+            | ((
+                value: any,
+                allowedValues: ArrayOfMinSizeTwo<T>
+              ) => NotAllowedError);
+        };
   };
 
   type Dependables<

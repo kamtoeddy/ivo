@@ -665,12 +665,16 @@ export abstract class SchemaCore<
     if (isPropertyOf('allow', definition)) {
       const { valid, reason } = this.__isEnumerated(definition);
 
-      if (valid)
+      if (valid) {
+        const allowedValues = Array.isArray(definition.allow)
+          ? (definition.allow as any)
+          : definition.allow!.values;
+
         this.enumeratedPropsToAllowedValuesMap.set(
           prop,
-          new Set(definition.allow)
+          new Set(allowedValues)
         );
-      else reasons.push(reason!);
+      } else reasons.push(reason!);
     }
 
     if (isPropertyOf('alias', definition)) {
@@ -794,27 +798,38 @@ export abstract class SchemaCore<
   };
 
   private __isEnumerated = (
-    definition: ns.Definitions_<Input, Output>[KeyOf<Input>]
-  ) => {
-    const { allow } = definition!;
+    definition: ns.Definitions_<Input, Output>[KeyOf<Input>],
+    isRecursion = false
+  ): { valid: boolean; reason?: string } => {
+    const { allow } = definition!,
+      valid = false,
+      isObjectLike = isObject(allow);
 
-    const valid = false;
+    if (isObjectLike && !isRecursion) {
+      const res = this.__isEnumerated(definition, true);
 
-    if (!Array.isArray(allow))
+      if (!res.valid) return res;
+
+      return { valid: true };
+    }
+
+    const allowedValues = (isObjectLike
+      ? allow.values
+      : allow) as unknown as any[];
+
+    if (!Array.isArray(allowedValues))
       return {
         reason: 'Allowed values must be an array',
         valid
       };
 
-    const allowed = getUnique(allow);
-
-    if (allowed.length < allow.length)
+    if (getUnique(allowedValues).length != allowedValues.length)
       return {
         reason: 'Allowed values must be an array of unique values',
         valid
       };
 
-    if (allowed.length < 2)
+    if (allowedValues.length < 2)
       return {
         reason: 'Allowed values must have at least 2 values',
         valid
@@ -822,7 +837,7 @@ export abstract class SchemaCore<
 
     if (
       isPropertyOf('default', definition) &&
-      !isOneOf(definition?.default, allow as any)
+      !isOneOf(definition?.default, allowedValues as any)
     )
       return {
         reason: 'The default value must be an allowed value',
