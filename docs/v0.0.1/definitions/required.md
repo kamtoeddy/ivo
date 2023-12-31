@@ -17,9 +17,15 @@ const userSchema = new Schema({
 
 ## Conditionally Required Properties
 
-Such a property is required depending on the summary of the operation. The value of **`required`** must be a function that returns `boolean` | `[boolean, string | undefined]`.
+```ts
+type RequiredError =
+  | string
+  | { reason?: string | string[]; metadata?: object | null };
+```
 
-`[boolean, string]` represents [required, requiredError]. If the required error is not provided or if the value provided for requiredError is not a string, `[propertyName] is required!` would be used.
+Such a property is required depending on the summary of the operation. The value of **`required`** must be a function that returns `boolean` | `[boolean, RequiredError]`.
+
+If the required error is not provided or if the value provided for requiredError is not a string, `[propertyName] is required!` would be used.
 
 If nothing is returned, the operation will proceed with `required: false`
 

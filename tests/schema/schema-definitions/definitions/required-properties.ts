@@ -388,67 +388,142 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
         });
 
         describe('behaviour when a non-string value is returned as message from required function', () => {
-          const invalidMessages = [
-            null,
-            undefined,
-            [],
-            {},
-            1,
-            0,
-            -12,
-            () => {}
-          ];
-
-          for (const message of invalidMessages) {
-            const Book = new Schema({
-              bookId: { required: true, validator },
-              isPublished: { default: false, validator },
-              name: { default: '', validator },
-              price: {
-                default: null,
-                required: () => [true, message],
-                validator: validator
-              }
-            }).getModel();
-
-            it('should reject with proper required error message at creation', async () => {
-              const { data, error } = await Book.create({ bookId: 1 });
-
-              expect(data).toBe(null);
-
-              expect(error).toMatchObject({
-                message: ERRORS.VALIDATION_ERROR,
-                payload: {
-                  price: {
-                    reasons: expect.arrayContaining(["'price' is required"]),
-                    metadata: null
-                  }
+          describe('should respect InputField', () => {
+            const responses = [
+              [{ reason: 'lol' }, { reasons: expect.arrayContaining(['lol']) }],
+              [
+                { reason: 'lol', metadata: { shouldWork: true } },
+                {
+                  reasons: expect.arrayContaining(['lol']),
+                  metadata: { shouldWork: true }
                 }
-              });
-            });
-
-            it('should reject with proper required error message during updates', async () => {
-              const book = {
-                bookId: 1,
-                isPublished: false,
-                name: '',
-                price: null
-              };
-              const { data, error } = await Book.update(book, { name: 'yooo' });
-
-              expect(data).toBe(null);
-
-              expect(error).toMatchObject({
-                message: ERRORS.VALIDATION_ERROR,
-                payload: {
-                  price: {
-                    reasons: expect.arrayContaining(["'price' is required"]),
-                    metadata: null
-                  }
+              ],
+              [
+                { reason: '', metadata: null },
+                {
+                  reasons: expect.arrayContaining(["'price' is required"]),
+                  metadata: null
                 }
+              ],
+              [
+                { metadata: null },
+                {
+                  reasons: expect.arrayContaining(["'price' is required"]),
+                  metadata: null
+                }
+              ],
+              [{}, { reasons: expect.arrayContaining(["'price' is required"]) }]
+            ];
+
+            for (const [provided, expected] of responses) {
+              const Book = new Schema({
+                bookId: { required: true, validator },
+                isPublished: { default: false, validator },
+                name: { default: '', validator },
+                price: {
+                  default: null,
+                  required: () => [true, provided],
+                  validator: validator
+                }
+              }).getModel();
+
+              it('should reject with proper required error message at creation', async () => {
+                const { data, error } = await Book.create({ bookId: 1 });
+
+                expect(data).toBe(null);
+
+                expect(error).toMatchObject({
+                  message: ERRORS.VALIDATION_ERROR,
+                  payload: { price: expected }
+                });
               });
-            });
-          }
+
+              it('should reject with proper required error message during updates', async () => {
+                const book = {
+                  bookId: 1,
+                  isPublished: false,
+                  name: '',
+                  price: null
+                };
+                const { data, error } = await Book.update(book, {
+                  name: 'yooo'
+                });
+
+                expect(data).toBe(null);
+
+                expect(error).toMatchObject({
+                  message: ERRORS.VALIDATION_ERROR,
+                  payload: { price: expected }
+                });
+              });
+            }
+          });
+
+          describe('should ignore unsupported types', () => {
+            const invalidMessages = [
+              null,
+              undefined,
+              [],
+              {},
+              1,
+              0,
+              -12,
+              () => {}
+            ];
+
+            for (const message of invalidMessages) {
+              const Book = new Schema({
+                bookId: { required: true, validator },
+                isPublished: { default: false, validator },
+                name: { default: '', validator },
+                price: {
+                  default: null,
+                  required: () => [true, message],
+                  validator: validator
+                }
+              }).getModel();
+
+              it('should reject with proper required error message at creation', async () => {
+                const { data, error } = await Book.create({ bookId: 1 });
+
+                expect(data).toBe(null);
+
+                expect(error).toMatchObject({
+                  message: ERRORS.VALIDATION_ERROR,
+                  payload: {
+                    price: {
+                      reasons: expect.arrayContaining(["'price' is required"]),
+                      metadata: null
+                    }
+                  }
+                });
+              });
+
+              it('should reject with proper required error message during updates', async () => {
+                const book = {
+                  bookId: 1,
+                  isPublished: false,
+                  name: '',
+                  price: null
+                };
+                const { data, error } = await Book.update(book, {
+                  name: 'yooo'
+                });
+
+                expect(data).toBe(null);
+
+                expect(error).toMatchObject({
+                  message: ERRORS.VALIDATION_ERROR,
+                  payload: {
+                    price: {
+                      reasons: expect.arrayContaining(["'price' is required"]),
+                      metadata: null
+                    }
+                  }
+                });
+              });
+            }
+          });
         });
 
         describe('behaviour when a value returned by required function is not boolean nor array', () => {

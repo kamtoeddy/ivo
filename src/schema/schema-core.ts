@@ -15,9 +15,13 @@ import {
 } from '../utils';
 import {
   DefaultErrorTool,
+  FieldError,
   IErrorTool,
+  InputFieldError,
   SchemaErrorTool,
-  TimeStampTool
+  TimeStampTool,
+  isInputFieldError,
+  makeFieldError
 } from './utils';
 import { ObjectType } from '../utils';
 import {
@@ -453,7 +457,7 @@ export abstract class SchemaCore<
   protected _getRequiredState = (
     prop: string,
     summary: Summary<Input, Output>
-  ): [boolean, string] => {
+  ): [boolean, string | FieldError] => {
     const { required } = this._getDefinition(prop);
 
     if (!required) return [false, ''];
@@ -464,19 +468,31 @@ export abstract class SchemaCore<
 
     let results = required(summary);
 
-    const datatype = typeof results;
+    const isBoolean = typeof results == 'boolean';
 
-    if (datatype != 'boolean' && !Array.isArray(results)) return [false, ''];
+    if (!isBoolean && !Array.isArray(results)) return [false, ''];
 
-    if (datatype == 'boolean')
-      return [results as boolean, results ? fallbackMessage : ''];
+    if (isBoolean) return [results as boolean, results ? fallbackMessage : ''];
 
-    results = results as [boolean, string];
+    const [isRequired, message] = results as [
+        boolean,
+        string | InputFieldError
+      ],
+      isString = typeof message == 'string';
 
-    if (!results[1] || typeof results[1] != 'string')
-      results[1] = fallbackMessage;
+    if (!isRequired || (!isString && !isInputFieldError(message)))
+      return [isRequired, fallbackMessage];
 
-    return results;
+    if (isString) return [true, message || fallbackMessage];
+
+    const fieldError = makeFieldError(message, fallbackMessage);
+
+    return [
+      true,
+      isPropertyOf('metadata', message)
+        ? fieldError
+        : ({ reasons: fieldError.reasons } as any)
+    ];
   };
 
   protected _getHandlers = <T>(prop: string, lifeCycle: ns.LifeCycle) =>

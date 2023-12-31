@@ -5,7 +5,9 @@ export { ERRORS, SCHEMA_ERRORS, VALIDATION_ERRORS };
 export type {
   ErrorPayload,
   FieldError,
+  FullInputFieldError,
   IErrorTool,
+  InputFieldError,
   InputPayload,
   IValidationError,
   ValidationErrorMessage
@@ -21,10 +23,22 @@ const VALIDATION_ERRORS = {
 const ERRORS = { ...SCHEMA_ERRORS, ...VALIDATION_ERRORS } as const;
 
 type ValidationErrorMessage = keyof typeof VALIDATION_ERRORS;
+
 type FieldError = {
   reasons: string[];
   metadata: Record<FieldKey, any> | null;
 };
+
+type FullInputFieldError = {
+  reason: FieldError['reasons'][number] | FieldError['reasons'];
+  metadata: FieldError['metadata'];
+};
+
+type InputFieldError =
+  | FullInputFieldError
+  | { reason: FullInputFieldError['reason'] }
+  | { metadata: FullInputFieldError['metadata'] };
+
 type ErrorPayload<Keys extends FieldKey = FieldKey> = {
   [K in Keys]?: FieldError;
 };

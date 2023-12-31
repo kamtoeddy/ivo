@@ -26,7 +26,9 @@ import {
   VALIDATION_ERRORS,
   DefaultErrorTool,
   IErrorTool,
-  makeFieldError
+  makeFieldError,
+  isInputFieldError,
+  InputFieldError
 } from './utils';
 import { defaultOptions, SchemaCore } from './schema-core';
 
@@ -653,7 +655,10 @@ class ModelTool<
           this._isValidProperty(prop.split('.')?.[0])
       );
 
-      const otherReasons = {} as Record<string, any>;
+      const otherReasons = {} as Record<
+        string,
+        string | string[] | InputFieldError
+      >;
 
       for (const prop of validProperties) {
         const fieldError = response.reason[prop];
@@ -661,18 +666,18 @@ class ModelTool<
         const isArray = Array.isArray(fieldError),
           isString = typeof fieldError == 'string';
 
-        if (!isObject(fieldError) && !isArray && !isString) {
-          otherReasons[prop] = 'validation failed';
+        if (isInputFieldError(fieldError)) {
+          otherReasons[prop] = fieldError as InputFieldError;
 
           continue;
         }
 
         if (isArray) {
-          const message = (fieldError as any[]).filter(
+          const messages = (fieldError as any[]).filter(
             (v) => typeof v == 'string'
           );
 
-          otherReasons[prop] = message.length ? message : 'validation failed';
+          otherReasons[prop] = messages.length ? messages : 'validation failed';
 
           continue;
         }
@@ -685,7 +690,7 @@ class ModelTool<
           continue;
         }
 
-        otherReasons[prop] = fieldError;
+        otherReasons[prop] = 'validation failed';
       }
 
       _response.reason = otherReasons;

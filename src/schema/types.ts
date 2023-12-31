@@ -1,5 +1,10 @@
 import { ObjectType } from '../utils';
-import { FieldError, IErrorTool, ValidationErrorMessage } from './utils';
+import {
+  FieldError,
+  IErrorTool,
+  InputFieldError,
+  ValidationErrorMessage
+} from './utils';
 
 export type {
   ArrayOfMinSizeOne,
@@ -71,15 +76,15 @@ type AsyncSetter<T, Input, Output, CtxOptions extends ObjectType = {}> = (
   context: Context<Input, Output, CtxOptions>
 ) => TypeOf<T> | Promise<TypeOf<T>>;
 
-type NotAllowedError = string | string[] | FieldError;
+type NotAllowedError = string | string[] | InputFieldError;
 
 type Setter<T, Input, Output, CtxOptions extends ObjectType = {}> = (
   context: Context<Input, Output, CtxOptions>
 ) => TypeOf<T>;
 
-type SetterWithSummary<T, Input, Output, CtxOptions extends ObjectType = {}> = (
+type RequiredHandler<Input, Output, CtxOptions extends ObjectType = {}> = (
   summary: Summary<Input, Output, CtxOptions> & {}
-) => TypeOf<T>;
+) => TypeOf<boolean | [boolean, string] | [boolean, InputFieldError]>;
 
 type AsyncShouldUpdateResponse<CtxOptions extends ObjectType = {}> = {
   update: boolean;
@@ -185,9 +190,7 @@ namespace NS {
       dependsOn?: KeyOf<Input> | KeyOf<Input>[];
       readonly?: boolean | 'lax';
       resolver?: Function;
-      required?:
-        | boolean
-        | SetterWithSummary<boolean | [boolean, string], Input, Output>;
+      required?: boolean | RequiredHandler<Input, Output, {}>;
       sanitizer?: VirtualResolver<K, Input, Output>;
       shouldInit?: false | Setter<boolean, Input, Output>;
       shouldUpdate?: false | Setter<boolean, Input, Output>;
@@ -368,12 +371,7 @@ namespace NS {
     default:
       | TypeOf<Output[K]>
       | AsyncSetter<Output[K], Input, Output, CtxOptions>;
-    required: SetterWithSummary<
-      boolean | [boolean, string],
-      Input,
-      Output,
-      CtxOptions
-    >;
+    required: RequiredHandler<Input, Output, CtxOptions>;
     readonly?: true;
     shouldInit?: Setter<boolean, Input, Output, CtxOptions>;
     shouldUpdate?: Setter<boolean, Input, Output, CtxOptions>;
@@ -391,12 +389,7 @@ namespace NS {
       alias?: Exclude<KeyOf<Aliases>, K> extends undefined
         ? string
         : Exclude<KeyOf<Aliases>, K>;
-      required?: SetterWithSummary<
-        boolean | [boolean, string],
-        Input,
-        Output,
-        CtxOptions
-      >;
+      required?: RequiredHandler<Input, Output, CtxOptions>;
       virtual: true;
       sanitizer?: VirtualResolver<K, Input, Output, CtxOptions>;
       onFailure?:
@@ -498,11 +491,6 @@ type ValidatorResponseObject<T, Input = {}, Aliases = {}> =
 
 type ResponseErrorObject<Input = {}, Aliases = {}> = {
   [K in KeyOf<Input & Aliases>]: string | string[] | InputFieldError;
-};
-
-type InputFieldError = {
-  reason: FieldError['reasons'][number] | FieldError['reasons'];
-  metadata?: FieldError['metadata'];
 };
 
 type ValidatorResponse<T, Input, Aliases = {}> =
