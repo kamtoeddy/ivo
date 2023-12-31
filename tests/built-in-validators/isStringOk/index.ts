@@ -24,7 +24,6 @@ export const isStringOkTest = ({ isStringOk }: { isStringOk: Function }) => {
         expect(res).toMatchObject({ valid: true, validated: value });
 
         expect(res.reason).toBeUndefined();
-        expect(res.reasons).toBeUndefined();
       }
 
       const falsy = [
@@ -34,10 +33,10 @@ export const isStringOkTest = ({ isStringOk }: { isStringOk: Function }) => {
         [Array(257).join('a'), ['Too long'], { maxLength: 255, minLength: 1 }]
       ];
 
-      for (const [value, reasons, metadata = null] of falsy) {
+      for (const [value, reason, metadata = null] of falsy) {
         const res = isStringOk(value);
 
-        expect(res).toMatchObject({ reasons, valid: false, metadata });
+        expect(res).toMatchObject({ reason, valid: false, metadata });
 
         expect(res.validated).toBeUndefined();
       }
@@ -68,23 +67,23 @@ export const isStringOkTest = ({ isStringOk }: { isStringOk: Function }) => {
         },
         {
           value: '',
-          reasons: ['Too short'],
+          reason: ['Too short'],
           metadata: { maxLength: 255, minLength: 1 }
         },
         {
           value: '',
-          reasons: ['Too short'],
+          reason: ['Too short'],
           options: { minLength: 1 },
           metadata: { maxLength: 255, minLength: 1 }
         },
         {
           value: getStringOfLength(256),
-          reasons: ['Too long'],
+          reason: ['Too long'],
           metadata: { maxLength: 255, minLength: 1 }
         },
         {
           value: getStringOfLength(251),
-          reasons: ['Too long'],
+          reason: ['Too long'],
           options: { maxLength: 250 },
           metadata: { maxLength: 250, minLength: 1 }
         }
@@ -94,14 +93,14 @@ export const isStringOkTest = ({ isStringOk }: { isStringOk: Function }) => {
         valid = false,
         value,
         validated = value,
-        reasons = [],
+        reason = [],
         options = {},
         metadata = null
       } of falsy) {
         const res = isStringOk(value, options);
 
         if (valid) expect(res).toMatchObject({ valid, validated });
-        else expect(res).toMatchObject({ reasons, valid, metadata });
+        else expect(res).toMatchObject({ reason, valid, metadata });
       }
     });
 
@@ -111,7 +110,6 @@ export const isStringOkTest = ({ isStringOk }: { isStringOk: Function }) => {
       expect(res).toMatchObject({ valid: true, validated: '1' });
 
       expect(res.reason).toBeUndefined();
-      expect(res.reasons).toBeUndefined();
     });
 
     it('should accept only enumerated values if any', () => {
@@ -123,7 +121,6 @@ export const isStringOkTest = ({ isStringOk }: { isStringOk: Function }) => {
         expect(res).toMatchObject({ valid: true, validated: value });
 
         expect(res.reason).toBeUndefined();
-        expect(res.reasons).toBeUndefined();
       }
 
       const falsy = ['Admin', 'ADMIN', 'superadmin', 'Moderators'];
@@ -133,7 +130,7 @@ export const isStringOkTest = ({ isStringOk }: { isStringOk: Function }) => {
 
         expect(res).toMatchObject({
           metadata: { allowed: allow },
-          reasons: ['Unacceptable value'],
+          reason: ['Unacceptable value'],
           valid: false
         });
 
@@ -154,7 +151,6 @@ export const isStringOkTest = ({ isStringOk }: { isStringOk: Function }) => {
         expect(res).toMatchObject({ valid: true, validated });
 
         expect(res.reason).toBeUndefined();
-        expect(res.reasons).toBeUndefined();
       }
 
       for (const [value] of data) {
@@ -163,7 +159,6 @@ export const isStringOkTest = ({ isStringOk }: { isStringOk: Function }) => {
         expect(res).toMatchObject({ valid: true, validated: value });
 
         expect(res.reason).toBeUndefined();
-        expect(res.reasons).toBeUndefined();
       }
     });
 
@@ -178,7 +173,6 @@ export const isStringOkTest = ({ isStringOk }: { isStringOk: Function }) => {
         expect(res).toMatchObject({ valid: true, validated: value });
 
         expect(res.reason).toBeUndefined();
-        expect(res.reasons).toBeUndefined();
       }
 
       const falsy = ['12', '%%', '.  ', '__'];
@@ -187,7 +181,7 @@ export const isStringOkTest = ({ isStringOk }: { isStringOk: Function }) => {
         const res = isStringOk(value, { regExp });
 
         expect(res).toMatchObject({
-          reasons: ['Unacceptable value'],
+          reason: ['Unacceptable value'],
           valid: false
         });
 

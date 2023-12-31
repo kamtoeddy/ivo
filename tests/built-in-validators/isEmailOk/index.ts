@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect } from 'vitest';
 
 export const isEmailOkTest = ({ isEmailOk }: { isEmailOk: Function }) => {
   describe('isEmailOk', () => {
@@ -7,55 +7,53 @@ export const isEmailOkTest = ({ isEmailOk }: { isEmailOk: Function }) => {
         'example@gmail.com',
         'james71@hotmail.co.uk',
         ' james71@hotmail.co.uk'
-      ]
+      ];
 
       for (const value of truthy) {
-        const res = isEmailOk(value)
+        const res = isEmailOk(value);
 
-        expect(res).toMatchObject({ valid: true, validated: value.trim() })
+        expect(res).toMatchObject({ valid: true, validated: value.trim() });
 
-        expect(res.reason).toBeUndefined()
-        expect(res.reasons).toBeUndefined()
+        expect(res.reason).toBeUndefined();
       }
 
-      const falsy = [1, null, false, '', '@gmail.com', 'james71@..uk']
+      const falsy = [1, null, false, '', '@gmail.com', 'james71@..uk'];
 
       for (const value of falsy) {
-        const res = isEmailOk(value)
+        const res = isEmailOk(value);
 
-        expect(res).toMatchObject({ reasons: ['Invalid email'], valid: false })
+        expect(res).toMatchObject({ reason: ['Invalid email'], valid: false });
 
-        expect(res.validated).toBeUndefined()
+        expect(res.validated).toBeUndefined();
       }
-    })
+    });
 
     it('should respect custom regular expression', () => {
-      const regExp = /\w+@\w.\w/
+      const regExp = /\w+@\w.\w/;
 
       const truthy = [
         'example@gmail.com',
         'james71@hotmail.co.uk',
         ' james71@hotmail.co.uk'
-      ]
+      ];
 
       for (const value of truthy) {
-        const res = isEmailOk(value, regExp)
+        const res = isEmailOk(value, regExp);
 
-        expect(res).toMatchObject({ valid: true, validated: value.trim() })
+        expect(res).toMatchObject({ valid: true, validated: value.trim() });
 
-        expect(res.reason).toBeUndefined()
-        expect(res.reasons).toBeUndefined()
+        expect(res.reason).toBeUndefined();
       }
 
-      const falsy = [1, null, false, '', '@gmail.com', 'james71@..uk']
+      const falsy = [1, null, false, '', '@gmail.com', 'james71@..uk'];
 
       for (const value of falsy) {
-        const res = isEmailOk(value)
+        const res = isEmailOk(value);
 
-        expect(res).toMatchObject({ reasons: ['Invalid email'], valid: false })
+        expect(res).toMatchObject({ reason: ['Invalid email'], valid: false });
 
-        expect(res.validated).toBeUndefined()
+        expect(res.validated).toBeUndefined();
       }
-    })
-  })
-}
+    });
+  });
+};

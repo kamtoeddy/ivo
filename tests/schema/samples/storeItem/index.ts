@@ -1,4 +1,4 @@
-import { Summary, Schema, isStringOk } from '../../../../dist';
+import { Summary, Schema } from '../../../../dist';
 import type { StoreItem, StoreItemInput } from './types';
 import {
   sanitizeQuantities,

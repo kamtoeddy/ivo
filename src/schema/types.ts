@@ -1,10 +1,5 @@
-import { FieldKey, ObjectType } from '../utils';
-import {
-  FieldError,
-  IErrorTool,
-  InputPayload,
-  ValidationErrorMessage
-} from './utils';
+import { ObjectType } from '../utils';
+import { FieldError, IErrorTool, ValidationErrorMessage } from './utils';
 
 export type {
   ArrayOfMinSizeOne,
@@ -19,6 +14,7 @@ export type {
   PartialContext,
   Summary,
   RealType,
+  ResponseErrorObject,
   TypeOf,
   Validator,
   ValidationResponse,
@@ -146,7 +142,7 @@ namespace NS {
     CtxOptions extends ObjectType = {}
   > = {
     [K in keyof (Input & Output)]?: K extends keyof (Input | Output)
-      ? PublicProperty<K, Input, Output, CtxOptions>
+      ? PublicProperty<K, Input, Output, Aliases, CtxOptions>
       : K extends keyof Omit<Output, keyof Input>
       ? PrivateProperty<K, Input, Output, CtxOptions>
       : K extends keyof Omit<Input, keyof Output>
@@ -158,15 +154,16 @@ namespace NS {
     K extends keyof (Output | Input),
     Input,
     Output,
+    Aliases,
     CtxOptions extends ObjectType = {}
   > = Enumerable<Output[K]> &
     (
-      | LaxProperty<K, Input, Output, CtxOptions>
-      | ReadOnly<K, Input, Output, CtxOptions>
-      | ReadonlyNoInit<K, Input, Output, CtxOptions>
-      | Required<K, Input, Output, CtxOptions>
-      | RequiredBy<K, Input, Output, CtxOptions>
-      | RequiredReadonly<K, Input, Output, CtxOptions>
+      | LaxProperty<K, Input, Output, Aliases, CtxOptions>
+      | ReadOnly<K, Input, Output, Aliases, CtxOptions>
+      | ReadonlyNoInit<K, Input, Output, Aliases, CtxOptions>
+      | Required<K, Input, Output, Aliases, CtxOptions>
+      | RequiredBy<K, Input, Output, Aliases, CtxOptions>
+      | RequiredReadonly<K, Input, Output, Aliases, CtxOptions>
     );
 
   type PrivateProperty<
@@ -297,19 +294,21 @@ namespace NS {
     K extends keyof (Output | Input),
     Input,
     Output,
+    Aliases,
     CtxOptions extends ObjectType = {}
   > = Listenable<Input, Output> &
     InitAndUpdateBlockable<Input, Output, CtxOptions> & {
       default:
         | TypeOf<Output[K]>
         | AsyncSetter<Output[K], Input, Output, CtxOptions>;
-      validator?: Validator<K, Input, Output, CtxOptions>;
+      validator?: Validator<K, Input, Output, Aliases, CtxOptions>;
     };
 
   type ReadOnly<
     K extends keyof (Output | Input),
     Input,
     Output,
+    Aliases,
     CtxOptions extends ObjectType = {}
   > = Listenable<Input, Output, CtxOptions> & {
     default:
@@ -317,13 +316,14 @@ namespace NS {
       | AsyncSetter<Output[K], Input, Output, CtxOptions>;
     readonly: 'lax';
     shouldUpdate?: Setter<boolean, Input, Output, CtxOptions>;
-    validator: Validator<K, Input, Output, CtxOptions>;
+    validator: Validator<K, Input, Output, Aliases, CtxOptions>;
   };
 
   type ReadonlyNoInit<
     K extends keyof (Output | Input),
     Input,
     Output,
+    Aliases,
     CtxOptions extends ObjectType = {}
   > = Listenable<Input, Output, CtxOptions> & {
     default:
@@ -332,34 +332,37 @@ namespace NS {
     readonly: true;
     shouldInit: false | Setter<boolean, Input, Output, CtxOptions>;
     shouldUpdate?: Setter<boolean, Input, Output, CtxOptions>;
-    validator?: Validator<K, Input, Output, CtxOptions>;
+    validator?: Validator<K, Input, Output, Aliases, CtxOptions>;
   };
 
   type RequiredReadonly<
     K extends keyof (Output | Input),
     Input,
     Output,
+    Aliases,
     CtxOptions extends ObjectType = {}
   > = Listenable<Input, Output, CtxOptions> & {
     readonly: true;
-    validator: Validator<K, Input, Output, CtxOptions>;
+    validator: Validator<K, Input, Output, Aliases, CtxOptions>;
   };
 
   type Required<
     K extends keyof (Output | Input),
     Input,
     Output,
+    Aliases,
     CtxOptions extends ObjectType = {}
   > = Listenable<Input, Output, CtxOptions> & {
     required: true;
     shouldUpdate?: false | Setter<boolean, Input, Output, CtxOptions>;
-    validator: Validator<K, Input, Output, CtxOptions>;
+    validator: Validator<K, Input, Output, Aliases, CtxOptions>;
   };
 
   type RequiredBy<
     K extends keyof (Output | Input),
     Input,
     Output,
+    Aliases,
     CtxOptions extends ObjectType = {}
   > = Listenable<Input, Output, CtxOptions> & {
     default:
@@ -374,7 +377,7 @@ namespace NS {
     readonly?: true;
     shouldInit?: Setter<boolean, Input, Output, CtxOptions>;
     shouldUpdate?: Setter<boolean, Input, Output, CtxOptions>;
-    validator: Validator<K, Input, Output, CtxOptions>;
+    validator: Validator<K, Input, Output, Aliases, CtxOptions>;
   };
 
   type Virtual<
@@ -402,7 +405,7 @@ namespace NS {
       onSuccess?:
         | SuccessHandler<Input, Output, CtxOptions>
         | ArrayOfMinSizeOne<SuccessHandler<Input, Output, CtxOptions>>;
-      validator: VirtualValidator<K, Input, Output, CtxOptions>;
+      validator: VirtualValidator<K, Input, Output, Aliases, CtxOptions>;
     };
 
   export type InternalOptions<
@@ -476,56 +479,61 @@ namespace NS {
 
 type ValidationResponse<T> =
   | { valid: true; validated: T }
-  | { metadata: FieldError['metadata']; reasons: string[]; valid: false };
+  | { metadata: FieldError['metadata']; reason: string[]; valid: false };
+
+type InvalidValidatorResponse<Input = {}, Aliases = {}> = {
+  metadata?: FieldError['metadata'];
+  reason?: string | string[] | ResponseErrorObject<Input, Aliases>;
+  valid: false;
+  value?: any;
+};
 
 type InternalValidatorResponse<T> =
   | { valid: true; validated: T }
   | InvalidValidatorResponse;
 
-type InvalidValidatorResponse = {
-  metadata?: FieldError['metadata'];
-  otherReasons?: InputPayload;
-  reasons: FieldError['reasons'];
-  valid: false;
-  value: any;
+type ValidatorResponseObject<T, Input = {}, Aliases = {}> =
+  | { valid: true; validated?: T }
+  | InvalidValidatorResponse<Input, Aliases>;
+
+type ResponseErrorObject<Input = {}, Aliases = {}> = {
+  [K in KeyOf<Input & Aliases>]: string | string[] | InputFieldError;
 };
 
-type ValidatorResponseObject<T> =
-  | { valid: true; validated?: T }
-  | {
-      otherReasons?: Record<FieldKey, string | string[] | FieldError>;
-      metadata?: FieldError['metadata'];
-      reason?: FieldError['reasons'][number];
-      reasons?: FieldError['reasons'];
-      valid: false;
-      value?: any;
-    };
+type InputFieldError = {
+  reason: FieldError['reasons'][number] | FieldError['reasons'];
+  metadata?: FieldError['metadata'];
+};
 
-type ValidatorResponse<T> = boolean | (ValidatorResponseObject<T> & {});
+type ValidatorResponse<T, Input, Aliases = {}> =
+  | boolean
+  | (ValidatorResponseObject<T, Input, Aliases> & {});
 
 type Validator<
   K extends keyof (Output | Input),
   Input,
   Output,
+  Aliases = {},
   CtxOptions extends ObjectType = {}
 > = (
   value: any,
   summary: Summary<Input, Output, CtxOptions> & {}
 ) =>
-  | ValidatorResponse<TypeOf<Output[K]>>
-  | Promise<ValidatorResponse<TypeOf<Output[K]>>>;
+  | ValidatorResponse<TypeOf<Output[K]>, Input, Aliases>
+  | Promise<ValidatorResponse<TypeOf<Output[K]>, Input, Aliases>>;
 
 type VirtualValidator<
   K extends keyof Input,
   Input,
   Output,
+  Aliases = {},
   CtxOptions extends ObjectType = {}
 > = (
   value: any,
   summary: Summary<Input, Output, CtxOptions> & {}
 ) =>
-  | ValidatorResponse<TypeOf<Input[K]>>
-  | Promise<ValidatorResponse<TypeOf<Input[K]>>>;
+  | ValidatorResponse<TypeOf<Input[K]>, Input, Aliases>
+  | Promise<ValidatorResponse<TypeOf<Input[K]>, Input, Aliases>>;
 
 type ArrayOfMinSizeOne<T> = [T, ...T[]];
 type ArrayOfMinSizeTwo<T> = [T, T, ...T[]];

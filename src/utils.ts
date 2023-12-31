@@ -30,7 +30,11 @@ export type { ObjectType, FieldKey };
 
 type FieldKey = number | string;
 
-type ObjectType = Record<FieldKey, any> & {};
+type ObjectType<T = Record<FieldKey, any>> = T extends object
+  ? T extends any[]
+    ? never
+    : T & {}
+  : never;
 
 function makeResponse<T = undefined>(
   input: ValidatorResponseObject<T>
@@ -41,26 +45,17 @@ function makeResponse<T = undefined>(
     return { valid, validated } as ValidationResponse<TypeOf<T>>;
   }
 
-  let {
-    metadata = null,
-    otherReasons,
-    reason,
-    reasons,
-    valid,
-    value
-  } = input as any;
+  let { metadata = null, reason, valid, value } = input;
 
-  if (reasons) reasons = toArray(reasons);
-  else reasons = [];
-
-  if (reason) reasons = [...reasons, ...toArray(reason)];
+  if (reason) {
+    if (!isObject(reason)) reason = toArray(reason);
+  } else reason = [];
 
   return {
     metadata,
-    reasons,
+    reason,
     valid,
-    value,
-    ...(otherReasons && { otherReasons })
+    value
   } as ValidationResponse<TypeOf<T>>;
 }
 
@@ -110,7 +105,7 @@ function isNullOrUndefined(value: any): value is null | undefined {
   return isOneOf(value, [null, undefined]);
 }
 
-function isObject<T extends ObjectType>(value: any): value is T {
+function isObject<T extends ObjectType>(value: any): value is ObjectType<T> {
   return value && typeof value === 'object' && !Array.isArray(value);
 }
 

@@ -17,10 +17,10 @@ import {
   LIFE_CYCLES,
   NS,
   RealType,
-  ValidatorResponseObject,
   KeyOf,
   Summary,
-  InvalidValidatorResponse
+  InvalidValidatorResponse,
+  ValidatorResponseObject
 } from './types';
 import {
   VALIDATION_ERRORS,
@@ -582,22 +582,24 @@ class ModelTool<
     prop: KeyOf<Input & Output & Aliases>,
     validationResponse: InvalidValidatorResponse
   ) {
-    const { otherReasons, reasons, metadata, value } = validationResponse;
+    const { reason, metadata, value } = validationResponse;
+
+    if (isObject(reason)) {
+      if (metadata) errorTool.add(prop, { metadata, reasons: [] }, value);
+
+      return Object.entries(reason).forEach(([key, message]) => {
+        errorTool.add(key, makeFieldError(message));
+      });
+    }
 
     const fieldError = makeFieldError(
-      reasons.length ? reasons : 'validation failed'
+      // @ts-ignore
+      reason?.length ? reason : 'validation failed'
     );
 
     if (metadata) fieldError.metadata = metadata;
 
     errorTool.add(prop, fieldError, value);
-
-    return (
-      otherReasons &&
-      Object.entries(otherReasons).forEach(([key, reasons]) => {
-        errorTool.add(key, makeFieldError(reasons));
-      })
-    );
   }
 
   private async _setValidValue(
@@ -619,7 +621,7 @@ class ModelTool<
   }
 
   private _sanitizeValidationResponse<T>(
-    response: ValidatorResponseObject<any>,
+    response: ValidatorResponseObject<T>,
     value: any
   ): ValidatorResponseObject<T> {
     const responseType = typeof response;
@@ -640,17 +642,21 @@ class ModelTool<
       return { valid: true, validated };
     }
 
-    const _response: ValidatorResponseObject<T> = { valid: false, value };
+    const _response: InvalidValidatorResponse = { valid: false, value } as any;
 
-    if (response?.otherReasons) {
-      const validProperties = getKeysAsProps(response.otherReasons).filter(
-        this._isValidProperty
+    if (response?.reason) _response.reason = response.reason;
+
+    if (isObject(response?.reason)) {
+      const validProperties = getKeysAsProps(response.reason).filter(
+        (prop) =>
+          this._isValidProperty(prop) ||
+          this._isValidProperty(prop.split('.')?.[0])
       );
 
       const otherReasons = {} as Record<string, any>;
 
       for (const prop of validProperties) {
-        const fieldError = response.otherReasons[prop];
+        const fieldError = response.reason[prop];
 
         const isArray = Array.isArray(fieldError),
           isString = typeof fieldError == 'string';
@@ -682,17 +688,14 @@ class ModelTool<
         otherReasons[prop] = fieldError;
       }
 
-      _response.otherReasons = otherReasons;
+      _response.reason = otherReasons;
     }
-
-    if (response?.reason) _response.reason = response.reason;
-    if (response?.reasons) _response.reasons = response.reasons;
 
     if (response?.metadata && isObject(response.metadata))
       _response.metadata = sortKeys(response.metadata);
     else _response.metadata = null;
 
-    if (!_response.reason && !_response.reasons && !_response.otherReasons) {
+    if (!_response.reason) {
       if (_response.metadata)
         return {
           ...getValidationFailedResponse(value),
@@ -702,7 +705,7 @@ class ModelTool<
       return getValidationFailedResponse(value);
     }
 
-    return makeResponse(_response) as ValidatorResponseObject<T>;
+    return makeResponse(_response);
   }
 
   private _useConfigProps(obj: Partial<Output>, isUpdate = false) {
@@ -1093,7 +1096,7 @@ function areValuesOk(values: any) {
 function getValidationFailedResponse(value: any) {
   return {
     metadata: null,
-    reasons: ['validation failed'],
+    reason: ['validation failed'],
     valid: false,
     value
   } as ValidatorResponseObject<any>;

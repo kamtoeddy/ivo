@@ -21,11 +21,12 @@ type ValidationResults =
     }
   | {
       metadata?: Record<string, any>; // an object that will contain extra info on why validation failed
-      reason?: string; // the reason the validation failed e.g. "Invalid name"
-      reasons?: string[]; // the reasons the validation failed e.g. ["Invalid name", "Special characters are not allowed"] or ["Invalid name"]
-      otherReasons?: {
-        [K in keyof Input]: string | string[] | FieldError;
-      };
+      reason?:
+        | string
+        | string[]
+        | {
+            [K in keyof (Input & Aliases)]: FieldError; // dot notation here works if first key is a property, virtual or alias e.g: { "address.street": "too short", "address.zipCode": "invalid code" }
+          };
       valid: false;
     };
 

@@ -4,20 +4,20 @@ import { ERRORS } from '../../../../dist';
 
 export const Test_Validators = ({ Schema }: any) => {
   describe('Validators', () => {
-    describe('otherReasons', () => {
-      it('should add corresponding properties and error messages passed as otherReasons', async () => {
+    describe('reason as object', () => {
+      it('should add corresponding properties and error messages passed with reason as an object', async () => {
         const messages = [
           ['Invalid Prop', ['Invalid Prop']],
           [['Invalid Prop'], ['Invalid Prop']]
         ];
 
-        for (const [input, reasons] of messages) {
+        for (const [input, reason] of messages) {
           const Model = new Schema({
             prop: { default: '', validator: () => false },
             prop2: {
               required: true,
               validator() {
-                return { valid: false, otherReasons: { prop: input } };
+                return { valid: false, reason: { prop: input } };
               }
             }
           }).getModel();
@@ -31,7 +31,7 @@ export const Test_Validators = ({ Schema }: any) => {
               prop: {
                 reasons: expect.arrayContaining([
                   'validation failed',
-                  ...reasons
+                  ...reason
                 ]),
                 metadata: null
               }
@@ -40,7 +40,7 @@ export const Test_Validators = ({ Schema }: any) => {
         }
       });
 
-      it('should ignore keys of otherReasons that are not properties, aliases or are constants or dependents', async () => {
+      it('should ignore keys of "reason object" that are not properties, aliases or are constants or dependents', async () => {
         const Model = new Schema({
           constant: { constant: true, value: 1 },
           dependent: {
@@ -53,7 +53,7 @@ export const Test_Validators = ({ Schema }: any) => {
             validator() {
               return {
                 valid: false,
-                otherReasons: {
+                'reason object': {
                   constant: 'invalid constant',
                   dependent: 'invalid dependent',
                   invalidProp: 'invalid prop'
@@ -77,7 +77,7 @@ export const Test_Validators = ({ Schema }: any) => {
         });
       });
 
-      it('should ignore non-strings or array values passed to otherReasons', async () => {
+      it('should ignore non-strings or array values passed to "reason object"', async () => {
         const invalidMessages = [
           null,
           true,
@@ -97,7 +97,7 @@ export const Test_Validators = ({ Schema }: any) => {
             prop: {
               required: true,
               validator() {
-                return { valid: false, otherReasons: { prop1: message } };
+                return { valid: false, reason: { prop1: message } };
               }
             }
           }).getModel();
@@ -108,10 +108,6 @@ export const Test_Validators = ({ Schema }: any) => {
           expect(error).toEqual({
             message: ERRORS.VALIDATION_ERROR,
             payload: {
-              prop: {
-                reasons: expect.arrayContaining(['validation failed']),
-                metadata: null
-              },
               prop1: {
                 reasons: expect.arrayContaining(['validation failed']),
                 metadata: null
@@ -119,6 +115,169 @@ export const Test_Validators = ({ Schema }: any) => {
             }
           });
         }
+      });
+
+      describe('should respect nested props derived from props/aliased passed to "reason object"', () => {
+        const Model = new Schema({
+          dependent: { default: '', dependsOn: 'virtual', resolver: () => '' },
+          aliasedDependent: {
+            default: '',
+            dependsOn: 'virtualWithAlias',
+            resolver: () => ''
+          },
+          name: {
+            required: true,
+            validator() {
+              return {
+                valid: false,
+                reason: {
+                  'name.first': 'Invalid first name',
+                  'name.last': 'Invalid last name',
+                  'lol.shouldReject': 'lol',
+                  shouldReject: 'lol'
+                }
+              };
+            }
+          },
+          virtual: {
+            virtual: true,
+            validator() {
+              return {
+                valid: false,
+                reason: {
+                  virtual: 'Invalid value'
+                }
+              };
+            }
+          },
+          virtualWithAlias: {
+            virtual: true,
+            alias: 'aliasedDependent',
+            validator() {
+              return {
+                valid: false,
+                reason: {
+                  aliasedDependent: 'Invalid value provided'
+                }
+              };
+            }
+          }
+        }).getModel();
+
+        describe('creation', () => {
+          it('should reject properly at creation', async () => {
+            const { data, error } = await Model.create({
+              virtual: '',
+              virtualWithAlias: ''
+            });
+
+            expect(data).toBe(null);
+            expect(error).toEqual({
+              message: ERRORS.VALIDATION_ERROR,
+              payload: {
+                'name.first': {
+                  reasons: expect.arrayContaining(['Invalid first name']),
+                  metadata: null
+                },
+                'name.last': {
+                  reasons: expect.arrayContaining(['Invalid last name']),
+                  metadata: null
+                },
+                virtual: {
+                  reasons: expect.arrayContaining(['Invalid value']),
+                  metadata: null
+                },
+                aliasedDependent: {
+                  reasons: expect.arrayContaining(['Invalid value provided']),
+                  metadata: null
+                }
+              }
+            });
+          });
+
+          it('should reject properly at creation when virtual alias is provided', async () => {
+            const { data, error } = await Model.create({
+              aliasedDependent: ''
+            });
+
+            expect(data).toBe(null);
+            expect(error).toEqual({
+              message: ERRORS.VALIDATION_ERROR,
+              payload: {
+                'name.first': {
+                  reasons: expect.arrayContaining(['Invalid first name']),
+                  metadata: null
+                },
+                'name.last': {
+                  reasons: expect.arrayContaining(['Invalid last name']),
+                  metadata: null
+                },
+                aliasedDependent: {
+                  reasons: expect.arrayContaining(['Invalid value provided']),
+                  metadata: null
+                }
+              }
+            });
+          });
+        });
+
+        describe('updates', () => {
+          it('should reject properly during updates', async () => {
+            const { data, error } = await Model.update(
+              { aliasedDependent: '', dependent: '', name: undefined },
+              { virtualWithAlias: '', virtual: '', name: 'lol' }
+            );
+
+            expect(data).toBe(null);
+            expect(error).toEqual({
+              message: ERRORS.VALIDATION_ERROR,
+              payload: {
+                'name.first': {
+                  reasons: expect.arrayContaining(['Invalid first name']),
+                  metadata: null
+                },
+                'name.last': {
+                  reasons: expect.arrayContaining(['Invalid last name']),
+                  metadata: null
+                },
+                virtual: {
+                  reasons: expect.arrayContaining(['Invalid value']),
+                  metadata: null
+                },
+                aliasedDependent: {
+                  reasons: expect.arrayContaining(['Invalid value provided']),
+                  metadata: null
+                }
+              }
+            });
+          });
+
+          it('should reject properly during updates when virtual alias is provided', async () => {
+            const { data, error } = await Model.update(
+              { aliasedDependent: '', dependent: '', name: undefined },
+              { aliasedDependent: '', name: 'lol' }
+            );
+
+            expect(data).toBe(null);
+            expect(error).toEqual({
+              message: ERRORS.VALIDATION_ERROR,
+              payload: {
+                'name.first': {
+                  reasons: expect.arrayContaining(['Invalid first name']),
+                  metadata: null
+                },
+                'name.last': {
+                  reasons: expect.arrayContaining(['Invalid last name']),
+                  metadata: null
+                },
+                aliasedDependent: {
+                  reasons: expect.arrayContaining(['Invalid value provided']),
+                  metadata: null
+                }
+              }
+            });
+          });
+        });
       });
     });
 
@@ -167,7 +326,7 @@ export const Test_Validators = ({ Schema }: any) => {
                   return {
                     valid: false,
                     metadata,
-                    otherReasons: { prop: { metadata: propMetadata } }
+                    reason: { prop: { metadata: propMetadata } }
                   };
                 }
               }

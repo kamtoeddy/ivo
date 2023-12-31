@@ -12,7 +12,6 @@ export const isNumberOkTest = ({ isNumberOk }: { isNumberOk: Function }) => {
         expect(res).toMatchObject({ valid: true, validated: value });
 
         expect(res.reason).toBeUndefined();
-        expect(res.reasons).toBeUndefined();
       }
 
       // fasly values that will be parsed
@@ -33,7 +32,6 @@ export const isNumberOkTest = ({ isNumberOk }: { isNumberOk: Function }) => {
         });
 
         expect(res.reason).toBeUndefined();
-        expect(res.reasons).toBeUndefined();
       }
 
       // falsy values
@@ -43,7 +41,7 @@ export const isNumberOkTest = ({ isNumberOk }: { isNumberOk: Function }) => {
         const res = isNumberOk(value);
 
         expect(res).toMatchObject({
-          reasons: ['Expected a number'],
+          reason: ['Expected a number'],
           valid: false
         });
 
@@ -99,7 +97,6 @@ export const isNumberOkTest = ({ isNumberOk }: { isNumberOk: Function }) => {
         expect(res).toMatchObject({ valid: true, validated: num });
 
         expect(res.reason).toBeUndefined();
-        expect(res.reasons).toBeUndefined();
       });
 
       // falsy values
@@ -132,7 +129,7 @@ export const isNumberOkTest = ({ isNumberOk }: { isNumberOk: Function }) => {
             inclusiveBottom: range?.inclusiveBottom ?? true,
             inclusiveTop: range?.inclusiveTop ?? true
           },
-          reasons: [error],
+          reason: [error],
           valid: false
         });
 
@@ -149,7 +146,6 @@ export const isNumberOkTest = ({ isNumberOk }: { isNumberOk: Function }) => {
         expect(res).toMatchObject({ valid: true, validated: value });
 
         expect(res.reason).toBeUndefined();
-        expect(res.reasons).toBeUndefined();
       }
 
       const falsy = [2, 10, 11, undefined];
@@ -159,7 +155,7 @@ export const isNumberOkTest = ({ isNumberOk }: { isNumberOk: Function }) => {
 
         expect(res).toMatchObject({
           metadata: { allowed: allow },
-          reasons: ['Unacceptable value'],
+          reason: ['Unacceptable value'],
           valid: false
         });
 
