@@ -84,7 +84,11 @@ type Setter<T, Input, Output, CtxOptions extends ObjectType = {}> = (
 
 type RequiredHandler<Input, Output, CtxOptions extends ObjectType = {}> = (
   summary: Summary<Input, Output, CtxOptions> & {}
-) => TypeOf<boolean | [boolean, string] | [boolean, InputFieldError]>;
+) =>
+  | boolean
+  | [boolean, string]
+  | [boolean, InputFieldError]
+  | Promise<boolean | [boolean, string] | [boolean, InputFieldError]>;
 
 type AsyncShouldUpdateResponse<CtxOptions extends ObjectType = {}> = {
   update: boolean;

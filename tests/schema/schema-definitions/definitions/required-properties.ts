@@ -716,6 +716,74 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
             });
           });
         });
+
+        describe('behaviour with asychronous required setters', () => {
+          const book = { name: 'book name', price: 10 };
+
+          const Book = new Schema({
+            name: { default: '' },
+            price: {
+              default: null,
+              dependsOn: '_price',
+              resolver: ({ context: { _price } }: any) => _price
+            },
+            _price: {
+              virtual: true,
+              required({ context: { _price } }: any) {
+                return Promise.resolve(_price == undefined);
+              },
+              validator: validator
+            }
+          }).getModel();
+
+          describe('creation', () => {
+            it('should reject when condition is not met', async () => {
+              const { data, error } = await Book.create({});
+
+              expect(data).toBe(null);
+              expect(error).toMatchObject({
+                message: ERRORS.VALIDATION_ERROR,
+                payload: {
+                  _price: {
+                    reasons: expect.arrayContaining(["'_price' is required"]),
+                    metadata: null
+                  }
+                }
+              });
+            });
+
+            it('should allow when condition is met', async () => {
+              const { data, error } = await Book.create({ _price: 20 });
+
+              expect(error).toBe(null);
+              expect(data).toMatchObject({ name: '', price: 20 });
+            });
+          });
+
+          describe('updates', () => {
+            it('should reject when condition is not met', async () => {
+              const { data, error } = await Book.update(book, {});
+
+              expect(data).toBe(null);
+              expect(error).toMatchObject({
+                message: ERRORS.VALIDATION_ERROR,
+                payload: {
+                  _price: {
+                    reasons: expect.arrayContaining(["'_price' is required"]),
+                    metadata: null
+                  }
+                }
+              });
+            });
+
+            it('should allow when condition is met', async () => {
+              const { data, error } = await Book.update(book, { _price: 20 });
+
+              expect(error).toBe(null);
+              expect(data).toMatchObject({ price: 20 });
+            });
+          });
+        });
       });
     });
 

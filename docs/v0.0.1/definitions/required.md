@@ -23,7 +23,7 @@ type RequiredError =
   | { reason?: string | string[]; metadata?: object | null };
 ```
 
-Such a property is required depending on the summary of the operation. The value of **`required`** must be a function that returns `boolean` | `[boolean, RequiredError]`.
+Such a property is required depending on the summary of the operation. The value of **`required`** must be a function that returns `boolean` | `[boolean, RequiredError]` | `Promise<boolean | [boolean, RequiredError]>`.
 
 If the required error is not provided or if the value provided for requiredError is not a string, `[propertyName] is required!` would be used.
 

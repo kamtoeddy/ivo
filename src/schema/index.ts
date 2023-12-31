@@ -242,7 +242,7 @@ class ModelTool<
     await Promise.allSettled(cleanups);
   }
 
-  private _handleRequiredBy(data: Partial<Output>, isUpdate = false) {
+  private async _handleRequiredBy(data: Partial<Output>, isUpdate = false) {
     const summary = this._getSummary(data, isUpdate);
 
     const errorTool = new this._options.ErrorTool(
@@ -250,31 +250,36 @@ class ModelTool<
       summary.context.__getOptions__()
     );
 
-    for (const prop of this.propsRequiredBy) {
-      const [isRequired, message] = this._getRequiredState(prop, summary);
+    await Promise.allSettled(
+      Array.from(this.propsRequiredBy.keys()).map(async (prop) => {
+        const [isRequired, message] = await this._getRequiredState(
+          prop,
+          summary
+        );
 
-      if (
-        (isRequired && !isUpdate) ||
-        (isRequired && isUpdate && this._isUpdatable(prop, undefined))
-      ) {
-        const value = (data as any)[prop];
+        if (
+          (isRequired && !isUpdate) ||
+          (isRequired && isUpdate && this._isUpdatable(prop, undefined))
+        ) {
+          const value = (data as any)[prop];
 
-        const alias = this._getAliasByVirtual(prop);
+          const alias = this._getAliasByVirtual(prop);
 
-        if (!alias) {
-          errorTool.add(prop, makeFieldError(message), value);
+          if (!alias) {
+            errorTool.add(prop, makeFieldError(message), value);
 
-          continue;
+            return;
+          }
+
+          const _message =
+            message == `'${prop}' is required`
+              ? `'${alias}' is required`
+              : message;
+
+          errorTool.add(alias as any, makeFieldError(_message), value);
         }
-
-        const _message =
-          message == `'${prop}' is required`
-            ? `'${alias}' is required`
-            : message;
-
-        errorTool.add(alias as any, makeFieldError(_message), value);
-      }
-    }
+      })
+    );
 
     return errorTool;
   }
@@ -890,7 +895,7 @@ class ModelTool<
 
     if (errorTool.isLoaded) return this._handleError(errorTool, data, virtuals);
 
-    const requiredError = this._handleRequiredBy(data);
+    const requiredError = await this._handleRequiredBy(data);
 
     if (requiredError.isLoaded)
       return this._handleError(requiredError, data, virtuals);
@@ -1028,7 +1033,7 @@ class ModelTool<
     if (errorTool.isLoaded)
       return this._handleError(errorTool, updates, virtuals);
 
-    const requiredErrorTool = this._handleRequiredBy(updates, true);
+    const requiredErrorTool = await this._handleRequiredBy(updates, true);
 
     if (requiredErrorTool.isLoaded)
       return this._handleError(requiredErrorTool, updates, virtuals);

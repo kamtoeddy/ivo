@@ -454,10 +454,10 @@ export abstract class SchemaCore<
       : value;
   };
 
-  protected _getRequiredState = (
+  protected _getRequiredState = async (
     prop: string,
     summary: Summary<Input, Output>
-  ): [boolean, string | FieldError] => {
+  ): Promise<[boolean, string | FieldError]> => {
     const { required } = this._getDefinition(prop);
 
     if (!required) return [false, ''];
@@ -466,7 +466,7 @@ export abstract class SchemaCore<
 
     if (!isFunction(required)) return [required, fallbackMessage];
 
-    let results = required(summary);
+    const results = await required(summary);
 
     const isBoolean = typeof results == 'boolean';
 
