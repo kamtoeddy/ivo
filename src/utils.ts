@@ -16,7 +16,7 @@ export {
   getUniqueBy,
   hasAnyOf,
   isEqual,
-  isFunction,
+  isFunctionLike,
   isNullOrUndefined,
   isOneOf,
   isPropertyOf,
@@ -97,7 +97,7 @@ function isEqual<T>(a: any, b: T, depth = 1): a is T {
   return JSON.stringify(sortKeys(a)) == JSON.stringify(sortKeys(b as any));
 }
 
-function isFunction<T extends Function>(value: any): value is T {
+function isFunctionLike<T extends Function>(value: any): value is T {
   return typeof value === 'function';
 }
 

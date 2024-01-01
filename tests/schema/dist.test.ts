@@ -21,7 +21,7 @@ import { Test_SchemaShouldUpdateOption } from './options/should-update';
 import { Test_SchemaSetMissingDefaultsOnUpdateOption } from './options/set-missing-defaults-on-update';
 import { Test_SchemaEqualityDepth } from './options/equality-depth';
 import { Test_ExtendedSchemas } from './definitions/extended-schemas';
-import { Test_EnumeratedProperties } from './definitions/enumerated-properties';
+import { Test_AllowedValues } from './definitions/allowed-values';
 import { Test_Validators } from './validators';
 import { valuesParsing_Tests } from './values-parsing';
 
@@ -38,7 +38,7 @@ valuesParsing_Tests({ Schema });
 
 Test_ConstantProperties({ Schema, fx });
 Test_DependentProperties({ Schema, fx });
-Test_EnumeratedProperties({ Schema, fx });
+Test_AllowedValues({ Schema, fx });
 Test_ExtendedSchemas({ Schema });
 Test_LaxProperties({ Schema, fx });
 Test_ReadonlyProperties({ Schema, fx });

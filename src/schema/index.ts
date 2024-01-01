@@ -767,7 +767,7 @@ class ModelTool<
 
     const _prop = (isAlias ? this._getVirtualByAlias(prop) : prop)!;
 
-    const allowedValues = this.enumeratedPropsToAllowedValuesMap.get(_prop);
+    const allowedValues = this.propsToAllowedValuesMap.get(_prop);
 
     if (allowedValues && !allowedValues.has(value))
       return makeResponse<(Input & Aliases)[K]>({

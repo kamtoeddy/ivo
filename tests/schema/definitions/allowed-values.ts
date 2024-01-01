@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 
 import { expectFailure, expectNoFailure, validator } from '../_utils';
 
-export const Test_EnumeratedProperties = ({ fx, Schema }: any) => {
-  describe('allow rule', () => {
+export const Test_AllowedValues = ({ fx, Schema }: any) => {
+  describe('allowed values', () => {
     describe('valid', () => {
       it('should not reject if allowed values provided are >= 2', () => {
         const values = [
@@ -45,26 +45,72 @@ export const Test_EnumeratedProperties = ({ fx, Schema }: any) => {
         toPass();
       });
 
-      // describe('allow as an object', () => {
-      //   it('should not reject if "allow" rule is an object with values and error as only keys', () => {
-      //     const toPass = fx({
-      //       dependent: {
-      //         default: true,
-      //         dependsOn: 'virtual',
-      //         resolver: validator
-      //       },
-      //       virtual: {
-      //         virtual: true,
-      //         allow: { values: [null, 'lolz', -1], error: 'value not allowed' },
-      //         validator
-      //       }
-      //     });
+      describe('allow as an object', () => {
+        it('should not reject if "values" is the only key provided', () => {
+          const toPass = fx({
+            dependent: {
+              default: null,
+              allow: { values: [null, 'lolz', -1] }
+            }
+          });
 
-      //     expectNoFailure(toPass);
+          expectNoFailure(toPass);
 
-      //     toPass();
-      //   });
-      // });
+          toPass();
+        });
+
+        it('should not reject if "values" & "error" are both provided', () => {
+          const toPass = fx({
+            dependent: {
+              default: null,
+              allow: { error: 'value not allowed', values: [null, 'lolz', -1] }
+            }
+          });
+
+          expectNoFailure(toPass);
+
+          toPass();
+        });
+
+        it('should not reject if validator is provided', () => {
+          const toPass = fx({
+            dependent: {
+              default: null,
+              allow: { error: 'value not allowed', values: [null, 'lolz', -1] },
+              validator
+            }
+          });
+
+          expectNoFailure(toPass);
+
+          toPass();
+        });
+
+        it('should not reject with errors valid formats', () => {
+          const errors = [
+            'value not allowed',
+            ['value not allowed', 'try again'],
+            { reason: 'invalid value' },
+            { reason: 'invalid value', metadata: {} },
+            { metadata: {} },
+            () => ''
+          ];
+
+          for (const error of errors) {
+            const toPass = fx({
+              dependent: {
+                default: null,
+                allow: { error, values: [null, 'lolz', -1] },
+                validator
+              }
+            });
+
+            expectNoFailure(toPass);
+
+            toPass();
+          }
+        });
+      });
     });
 
     describe('invalid', () => {
@@ -266,6 +312,62 @@ export const Test_EnumeratedProperties = ({ fx, Schema }: any) => {
                 prop: ['The default value must be an allowed value']
               });
             }
+          }
+        });
+
+        it('should reject if error is provided and is of invalid type', () => {
+          const errors = [
+            null,
+            true,
+            false,
+            {},
+            { key: 'value' },
+            -1,
+            0,
+            1,
+            [null, true, false, {}, { key: 'value' }, -1, 0, 1]
+          ];
+
+          for (const error of errors) {
+            const toFail = fx({
+              prop: {
+                default: null,
+                allow: { error, values: [null, 'lolz', -1] }
+              }
+            });
+
+            expectFailure(toFail);
+
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err.payload).toMatchObject({
+                prop: [
+                  'The error field of the allow rule can only accept a string, array of strings, InputFieldError or an function that returns any of the above mentioned'
+                ]
+              });
+            }
+          }
+        });
+
+        it('should reject if an invalid config key is passed', () => {
+          const toFail = fx({
+            prop: {
+              default: null,
+              allow: { key: 'value', values: [null, 'lolz', -1] }
+            }
+          });
+
+          expectFailure(toFail);
+
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toMatchObject({
+              prop: [
+                'The "allow" rule only accepts "error" & "values" as configuration. Please remove the extra keys'
+              ]
+            });
           }
         });
       });

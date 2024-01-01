@@ -4,7 +4,7 @@ import {
   getKeysAsProps,
   hasAnyOf,
   isEqual,
-  isFunction,
+  isFunctionLike,
   isPropertyOf,
   isRecordLike,
   isOneOf,
@@ -73,10 +73,7 @@ export abstract class SchemaCore<
   // maps
   protected readonly aliasToVirtualMap: ns.AliasToVirtualMap<Input> = {};
   protected readonly dependencyMap: ns.DependencyMap<Input> = {};
-  protected readonly enumeratedPropsToAllowedValuesMap = new Map<
-    string,
-    Set<any>
-  >();
+  protected readonly propsToAllowedValuesMap = new Map<string, Set<any>>();
   protected readonly virtualToAliasMap: ns.AliasToVirtualMap<Input> = {};
 
   // props
@@ -229,7 +226,7 @@ export abstract class SchemaCore<
     const handlers = toArray(_handlers);
 
     handlers.forEach((handler, i) => {
-      if (!isFunction(handler))
+      if (!isFunctionLike(handler))
         return reasons.push(
           `The '${lifeCycle}' handler @[${i}] is not a function`
         );
@@ -424,13 +421,58 @@ export abstract class SchemaCore<
     if (error.isPayloadLoaded) error.throw();
   };
 
+  protected _hasAllowedValues = (prop: string) =>
+    this.propsToAllowedValuesMap.has(prop);
+
+  protected _isConstant = (prop: string) =>
+    this.constants.has(prop as KeyOf<Output>);
+
+  protected _isDependentProp = (prop: string) =>
+    this.dependents.has(prop as KeyOf<Output>);
+
+  protected _isLaxProp = (prop: string) =>
+    this.laxProps.has(prop as KeyOf<Input>);
+
+  protected _isProp = (prop: string) => this.props.has(prop as KeyOf<Output>);
+
+  protected _isReadonly = (prop: string) =>
+    this.readonlyProps.has(prop as KeyOf<Input>);
+
+  protected _isRequired = (prop: string) =>
+    this.requiredProps.has(prop as KeyOf<Input>);
+
+  protected _isRequiredBy = (prop: string) =>
+    this.propsRequiredBy.has(prop as KeyOf<Input>);
+
+  protected _isVirtualAlias = (prop: string) => !!this.aliasToVirtualMap[prop];
+
+  protected _isVirtual = (prop: string) =>
+    this.virtuals.has(prop as KeyOf<Input>);
+
+  protected _isVirtualInit = (prop: string, value: any = undefined) => {
+    const isAlias = this._isVirtualAlias(prop);
+
+    if (!this._isVirtual(prop) && !isAlias) return false;
+
+    const definitionName = isAlias ? this._getVirtualByAlias(prop)! : prop;
+
+    const { shouldInit } = this._getDefinition(definitionName);
+
+    const extraCtx = isAlias ? { [definitionName]: value } : {};
+
+    return (
+      isEqual(shouldInit, undefined) ||
+      this._getValueBy(definitionName, 'shouldInit', extraCtx)
+    );
+  };
+
   protected _getDefinition = (prop: string) =>
     this._definitions[prop as KeyOf<Input>]!;
 
   protected _getDefaultValue = async (prop: string) => {
     const _default = this._getDefinition(prop)?.default;
 
-    const value = isFunction(_default)
+    const value = isFunctionLike(_default)
       ? await _default(this._getContext())
       : this.defaults[prop as KeyOf<Output>];
 
@@ -449,7 +491,7 @@ export abstract class SchemaCore<
   ) => {
     const value = this._getDefinition(prop)?.[rule];
 
-    return isFunction(value)
+    return isFunctionLike(value)
       ? value({ ...this._getContext(), ...extraCtx })
       : value;
   };
@@ -464,7 +506,7 @@ export abstract class SchemaCore<
 
     const fallbackMessage = `'${prop}' is required`;
 
-    if (!isFunction(required)) return [required, fallbackMessage];
+    if (!isFunctionLike(required)) return [required, fallbackMessage];
 
     const results = await required(summary);
 
@@ -502,6 +544,80 @@ export abstract class SchemaCore<
     return this._getDefinition(prop as any)?.validator as
       | Validator<K, Input, Output>
       | undefined;
+  };
+
+  private __hasAllowedValues = (
+    definition: ns.Definitions_<Input, Output>[KeyOf<Input>],
+    isRecursion = false
+  ): { valid: boolean; reason?: string } => {
+    const { allow } = definition!,
+      valid = false,
+      isObject = isRecordLike(allow);
+
+    if (isObject && !isRecursion) {
+      const res = this.__hasAllowedValues(definition, true);
+
+      if (!res.valid) return res;
+
+      if (isPropertyOf('error', allow)) {
+        const invalidErrorTypeMessage =
+          'The error field of the allow rule can only accept a string, array of strings, InputFieldError or an function that returns any of the above mentioned';
+
+        const error = (allow as any).error,
+          isArray = Array.isArray(error),
+          isFunction = isFunctionLike(error),
+          isString = typeof error == 'string';
+
+        if (
+          (!isArray && !isFunction && !isString && !isInputFieldError(error)) ||
+          (isArray && error.some((v) => typeof v != 'string'))
+        )
+          return {
+            valid,
+            reason: invalidErrorTypeMessage
+          };
+      }
+
+      if (Object.keys(allow).some((k) => !['error', 'values'].includes(k)))
+        return {
+          valid,
+          reason:
+            'The "allow" rule only accepts "error" & "values" as configuration. Please remove the extra keys'
+        };
+
+      return { valid: true };
+    }
+
+    const allowedValues = (isObject ? allow.values : allow) as unknown as any[];
+
+    if (!Array.isArray(allowedValues))
+      return {
+        reason: 'Allowed values must be an array',
+        valid
+      };
+
+    if (getUnique(allowedValues).length != allowedValues.length)
+      return {
+        reason: 'Allowed values must be an array of unique values',
+        valid
+      };
+
+    if (allowedValues.length < 2)
+      return {
+        reason: 'Allowed values must have at least 2 values',
+        valid
+      };
+
+    if (
+      isPropertyOf('default', definition) &&
+      !isOneOf(definition?.default, allowedValues as any)
+    )
+      return {
+        reason: 'The default value must be an allowed value',
+        valid
+      };
+
+    return { valid: true };
   };
 
   protected _isDefaultable = (prop: string) =>
@@ -556,12 +672,6 @@ export abstract class SchemaCore<
     return { valid: true };
   };
 
-  protected _isConstant = (prop: string) =>
-    this.constants.has(prop as KeyOf<Output>);
-
-  protected _isEnumerated = (prop: string) =>
-    this.enumeratedPropsToAllowedValuesMap.has(prop);
-
   private __isDependentProp = (
     prop: KeyOf<Input>,
     definition: ns.Definitions_<Input, Output>[KeyOf<Input>]
@@ -597,7 +707,7 @@ export abstract class SchemaCore<
         reason: 'Dependent properties must have a resolver'
       };
 
-    if (!isFunction(resolver))
+    if (!isFunctionLike(resolver))
       return {
         valid,
         reason: 'The resolver of a dependent property must be a function'
@@ -630,14 +740,6 @@ export abstract class SchemaCore<
     return { valid: true };
   };
 
-  protected _isDependentProp = (prop: string) =>
-    this.dependents.has(prop as KeyOf<Output>);
-
-  protected _isLaxProp = (prop: string) =>
-    this.laxProps.has(prop as KeyOf<Input>);
-
-  protected _isProp = (prop: string) => this.props.has(prop as KeyOf<Output>);
-
   private __isPropDefinitionOk = (
     prop: KeyOf<Input>,
     definition: ns.Definitions_<Input, Output>[KeyOf<Input>]
@@ -663,17 +765,14 @@ export abstract class SchemaCore<
         reasons.push(`'${rule}' is not a valid rule`);
 
     if (isPropertyOf('allow', definition)) {
-      const { valid, reason } = this.__isEnumerated(definition);
+      const { valid, reason } = this.__hasAllowedValues(definition);
 
       if (valid) {
         const allowedValues = Array.isArray(definition.allow)
           ? (definition.allow as any)
           : definition.allow!.values;
 
-        this.enumeratedPropsToAllowedValuesMap.set(
-          prop,
-          new Set(allowedValues)
-        );
+        this.propsToAllowedValuesMap.set(prop, new Set(allowedValues));
       } else reasons.push(reason!);
     }
 
@@ -795,54 +894,6 @@ export abstract class SchemaCore<
     }
 
     return { reasons, valid };
-  };
-
-  private __isEnumerated = (
-    definition: ns.Definitions_<Input, Output>[KeyOf<Input>],
-    isRecursion = false
-  ): { valid: boolean; reason?: string } => {
-    const { allow } = definition!,
-      valid = false,
-      isObject = isRecordLike(allow);
-
-    if (isObject && !isRecursion) {
-      const res = this.__isEnumerated(definition, true);
-
-      if (!res.valid) return res;
-
-      return { valid: true };
-    }
-
-    const allowedValues = (isObject ? allow.values : allow) as unknown as any[];
-
-    if (!Array.isArray(allowedValues))
-      return {
-        reason: 'Allowed values must be an array',
-        valid
-      };
-
-    if (getUnique(allowedValues).length != allowedValues.length)
-      return {
-        reason: 'Allowed values must be an array of unique values',
-        valid
-      };
-
-    if (allowedValues.length < 2)
-      return {
-        reason: 'Allowed values must have at least 2 values',
-        valid
-      };
-
-    if (
-      isPropertyOf('default', definition) &&
-      !isOneOf(definition?.default, allowedValues as any)
-    )
-      return {
-        reason: 'The default value must be an allowed value',
-        valid
-      };
-
-    return { valid: true };
   };
 
   private __isReadonly = (
@@ -994,7 +1045,7 @@ export abstract class SchemaCore<
 
     const valid = false;
 
-    if (shouldInit !== false && !isFunction(shouldInit))
+    if (shouldInit !== false && !isFunctionLike(shouldInit))
       return {
         valid,
         reason:
@@ -1017,7 +1068,7 @@ export abstract class SchemaCore<
     const { readonly, shouldInit, shouldUpdate } = definition!;
     const valid = false;
 
-    if (shouldUpdate !== false && !isFunction(shouldUpdate))
+    if (shouldUpdate !== false && !isFunctionLike(shouldUpdate))
       return {
         valid,
         reason:
@@ -1069,7 +1120,7 @@ export abstract class SchemaCore<
     if (!this._isValidatorOk(definition))
       return { valid, reason: 'Invalid validator' };
 
-    if (isPropertyOf('sanitizer', definition) && !isFunction(sanitizer))
+    if (isPropertyOf('sanitizer', definition) && !isFunctionLike(sanitizer))
       return { valid, reason: "'sanitizer' must be a function" };
 
     if (isPropertyOf('required', definition)) {
@@ -1188,10 +1239,6 @@ export abstract class SchemaCore<
     return { valid: true };
   }
 
-  private _isValidatorOk = (
-    definition: ns.Definitions_<Input, Output>[KeyOf<Input>]
-  ) => isFunction(definition?.validator);
-
   private __isLax = (
     definition: ns.Definitions_<Input, Output>[KeyOf<Input>]
   ) => {
@@ -1221,34 +1268,7 @@ export abstract class SchemaCore<
     return true;
   };
 
-  protected _isReadonly = (prop: string) =>
-    this.readonlyProps.has(prop as KeyOf<Input>);
-
-  protected _isRequired = (prop: string) =>
-    this.requiredProps.has(prop as KeyOf<Input>);
-
-  protected _isRequiredBy = (prop: string) =>
-    this.propsRequiredBy.has(prop as KeyOf<Input>);
-
-  protected _isVirtualAlias = (prop: string) => !!this.aliasToVirtualMap[prop];
-
-  protected _isVirtual = (prop: string) =>
-    this.virtuals.has(prop as KeyOf<Input>);
-
-  protected _isVirtualInit = (prop: string, value: any = undefined) => {
-    const isAlias = this._isVirtualAlias(prop);
-
-    if (!this._isVirtual(prop) && !isAlias) return false;
-
-    const definitionName = isAlias ? this._getVirtualByAlias(prop)! : prop;
-
-    const { shouldInit } = this._getDefinition(definitionName);
-
-    const extraCtx = isAlias ? { [definitionName]: value } : {};
-
-    return (
-      isEqual(shouldInit, undefined) ||
-      this._getValueBy(definitionName, 'shouldInit', extraCtx)
-    );
-  };
+  private _isValidatorOk = (
+    definition: ns.Definitions_<Input, Output>[KeyOf<Input>]
+  ) => isFunctionLike(definition?.validator);
 }
