@@ -264,9 +264,6 @@ export abstract class SchemaCore<
     );
   };
 
-  protected _getFrozenCopy = <T>(data: T): Readonly<T> =>
-    Object.freeze(Object.assign({}, data)) as Readonly<T>;
-
   protected _checkOptions = (options: ns.Options<Input, Output, any>) => {
     const error = new SchemaErrorTool();
 
@@ -427,6 +424,9 @@ export abstract class SchemaCore<
   protected _isConstant = (prop: string) =>
     this.constants.has(prop as KeyOf<Output>);
 
+  protected _isDefaultable = (prop: string) =>
+    isPropertyOf(prop, this.defaults);
+
   protected _isDependentProp = (prop: string) =>
     this.dependents.has(prop as KeyOf<Output>);
 
@@ -443,6 +443,16 @@ export abstract class SchemaCore<
 
   protected _isRequiredBy = (prop: string) =>
     this.propsRequiredBy.has(prop as KeyOf<Input>);
+
+  protected _isRuleInDefinition = (
+    prop: string,
+    rules: DefinitionRule | DefinitionRule[]
+  ): boolean => {
+    for (const _prop of toArray(rules))
+      if (isPropertyOf(_prop, this._getDefinition(prop))) return true;
+
+    return false;
+  };
 
   protected _isVirtualAlias = (prop: string) => !!this.aliasToVirtualMap[prop];
 
@@ -466,6 +476,9 @@ export abstract class SchemaCore<
     );
   };
 
+  protected _getConstantValue = async (prop: string) =>
+    this._getValueBy(prop, 'value');
+
   protected _getDefinition = (prop: string) =>
     this._definitions[prop as KeyOf<Input>]!;
 
@@ -481,20 +494,11 @@ export abstract class SchemaCore<
       : value;
   };
 
-  protected _getConstantValue = async (prop: string) =>
-    this._getValueBy(prop, 'value');
+  protected _getFrozenCopy = <T>(data: T): Readonly<T> =>
+    Object.freeze(Object.assign({}, data)) as Readonly<T>;
 
-  protected _getValueBy = (
-    prop: string,
-    rule: DefinitionRule,
-    extraCtx: ObjectType = {}
-  ) => {
-    const value = this._getDefinition(prop)?.[rule];
-
-    return isFunctionLike(value)
-      ? value({ ...this._getContext(), ...extraCtx })
-      : value;
-  };
+  protected _getHandlers = <T>(prop: string, lifeCycle: ns.LifeCycle) =>
+    toArray((this._getDefinition(prop)?.[lifeCycle] ?? []) as any) as T[];
 
   protected _getRequiredState = async (
     prop: string,
@@ -537,14 +541,27 @@ export abstract class SchemaCore<
     ];
   };
 
-  protected _getHandlers = <T>(prop: string, lifeCycle: ns.LifeCycle) =>
-    toArray((this._getDefinition(prop)?.[lifeCycle] ?? []) as any) as T[];
+  protected _getValueBy = (
+    prop: string,
+    rule: DefinitionRule,
+    extraCtx: ObjectType = {}
+  ) => {
+    const value = this._getDefinition(prop)?.[rule];
+
+    return isFunctionLike(value)
+      ? value({ ...this._getContext(), ...extraCtx })
+      : value;
+  };
 
   protected _getValidator = <K extends keyof (Output | Input)>(prop: K) => {
     return this._getDefinition(prop as any)?.validator as
       | Validator<K, Input, Output>
       | undefined;
   };
+
+  private _isValidatorOk = (
+    definition: ns.Definitions_<Input, Output>[KeyOf<Input>]
+  ) => isFunctionLike(definition?.validator);
 
   private __hasAllowedValues = (
     definition: ns.Definitions_<Input, Output>[KeyOf<Input>],
@@ -618,19 +635,6 @@ export abstract class SchemaCore<
       };
 
     return { valid: true };
-  };
-
-  protected _isDefaultable = (prop: string) =>
-    isPropertyOf(prop, this.defaults);
-
-  protected _isRuleInDefinition = (
-    prop: string,
-    rules: DefinitionRule | DefinitionRule[]
-  ): boolean => {
-    for (const _prop of toArray(rules))
-      if (isPropertyOf(_prop, this._getDefinition(prop))) return true;
-
-    return false;
   };
 
   private __isConstantProp = (
@@ -1198,6 +1202,35 @@ export abstract class SchemaCore<
       : { valid: true };
   };
 
+  private __isLax = (
+    definition: ns.Definitions_<Input, Output>[KeyOf<Input>]
+  ) => {
+    const { readonly, shouldInit } = definition!;
+
+    // Lax properties must have a default value nor setter
+    if (isEqual(definition?.default, undefined)) return false;
+
+    // Lax properties cannot be dependent
+    if (isPropertyOf('dependent', definition)) return false;
+
+    // Lax properties cannot be required
+    if (isPropertyOf('required', definition)) return false;
+
+    // Lax properties cannot be virtual
+    if (isPropertyOf('virtual', definition)) return false;
+
+    // only readonly(lax) are lax props &
+    // Lax properties cannot have initialization blocked
+    if (
+      (isPropertyOf('readonly', definition) && readonly !== 'lax') ||
+      (isPropertyOf('shouldInit', definition) &&
+        typeof shouldInit != 'function')
+    )
+      return false;
+
+    return true;
+  };
+
   private _isTimestampsOptionOk(
     timestamps: ns.Options<Input, Output, any>['timestamps']
   ) {
@@ -1238,37 +1271,4 @@ export abstract class SchemaCore<
 
     return { valid: true };
   }
-
-  private __isLax = (
-    definition: ns.Definitions_<Input, Output>[KeyOf<Input>]
-  ) => {
-    const { readonly, shouldInit } = definition!;
-
-    // Lax properties must have a default value nor setter
-    if (isEqual(definition?.default, undefined)) return false;
-
-    // Lax properties cannot be dependent
-    if (isPropertyOf('dependent', definition)) return false;
-
-    // Lax properties cannot be required
-    if (isPropertyOf('required', definition)) return false;
-
-    // Lax properties cannot be virtual
-    if (isPropertyOf('virtual', definition)) return false;
-
-    // only readonly(lax) are lax props &
-    // Lax properties cannot have initialization blocked
-    if (
-      (isPropertyOf('readonly', definition) && readonly !== 'lax') ||
-      (isPropertyOf('shouldInit', definition) &&
-        typeof shouldInit != 'function')
-    )
-      return false;
-
-    return true;
-  };
-
-  private _isValidatorOk = (
-    definition: ns.Definitions_<Input, Output>[KeyOf<Input>]
-  ) => isFunctionLike(definition?.validator);
 }
