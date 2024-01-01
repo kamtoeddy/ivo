@@ -35,7 +35,6 @@ const User = new Schema<UserInput, User>({
   blockUser: { virtual: true, validator: validateBoolean },
   isBlocked: {
     default: false,
-    dependent: true,
     dependsOn: 'blockUser',
     resolver: ({ context: { blockUser } }) => blockUser
   }
@@ -88,7 +87,6 @@ type Aliases = {
 const StoreItem = new Schema<Input, Output, Aliases>({
   quantity: {
     default: 0,
-    dependent: true,
     dependsOn: '_virtualQuantity',
     resolver: ({ context: { _virtualQuantity } }) => _virtualQuantity
   },
@@ -130,7 +128,6 @@ Example 2: Alias with unrelated name
 const StoreItem = new Schema({
   quantity: {
     default: 0,
-    dependent: true,
     dependsOn: '_virtualQuantity',
     resolver: ({ context: { _virtualQuantity } }) => _virtualQuantity
   },
@@ -180,7 +177,6 @@ const FileModel = new Schema<Input, Output>({
   id: { constant: true, value: generateID },
   metadata: {
     default: { size: 0, url: '' },
-    dependent: true,
     dependsOn: 'file',
     resolver({ context: { file } }) {
       return file as FileMetadata;

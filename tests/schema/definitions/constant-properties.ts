@@ -1,7 +1,7 @@
 import { beforeAll, describe, it, expect } from 'vitest';
 
-import { ERRORS } from '../../../../dist';
-import { expectFailure, expectNoFailure, pauseFor } from '../_utils';
+import { ERRORS } from '../../../dist';
+import { expectFailure, expectNoFailure } from '../_utils';
 
 export const Test_ConstantProperties = ({ Schema, fx }: any) => {
   describe('constant', () => {
@@ -22,10 +22,8 @@ export const Test_ConstantProperties = ({ Schema, fx }: any) => {
           { errors: 'throw' }
         ).getModel();
 
-        async function asyncSetter() {
-          await pauseFor(5);
-
-          return 20;
+        function asyncSetter() {
+          return Promise.resolve(20);
         }
 
         user = (await User.create({ id: 2, parentId: [], laxProp: 2 })).data;

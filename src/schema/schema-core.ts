@@ -6,7 +6,7 @@ import {
   isEqual,
   isFunction,
   isPropertyOf,
-  isObject,
+  isRecordLike,
   isOneOf,
   sort,
   sortKeys,
@@ -147,7 +147,7 @@ export abstract class SchemaCore<
   };
 
   protected _updateContextOptions = (options: Partial<CtxOptions>) => {
-    if (isObject(options))
+    if (isRecordLike(options))
       this.contextOptions = { ...this.contextOptions, ...options };
 
     return this._getContextOptions();
@@ -273,7 +273,7 @@ export abstract class SchemaCore<
   protected _checkOptions = (options: ns.Options<Input, Output, any>) => {
     const error = new SchemaErrorTool();
 
-    if (!isObject(options))
+    if (!isRecordLike(options))
       error.add('schema options', 'Must be an object').throw();
 
     const optionsProvided = Object.keys(options) as ns.OptionsKey<
@@ -355,7 +355,7 @@ export abstract class SchemaCore<
   ) => {
     const error = new SchemaErrorTool();
 
-    if (!isObject(definitions)) error.throw();
+    if (!isRecordLike(definitions)) error.throw();
 
     const props = getKeysAsProps(definitions);
 
@@ -644,7 +644,7 @@ export abstract class SchemaCore<
   ) => {
     const propertyTypeProvided = typeof definition;
 
-    if (!isObject(definition))
+    if (!isRecordLike(definition))
       return {
         reasons: [
           `Invalid property definition. Expected an object '{}' but received '${propertyTypeProvided}'`
@@ -803,9 +803,9 @@ export abstract class SchemaCore<
   ): { valid: boolean; reason?: string } => {
     const { allow } = definition!,
       valid = false,
-      isObjectLike = isObject(allow);
+      isObject = isRecordLike(allow);
 
-    if (isObjectLike && !isRecursion) {
+    if (isObject && !isRecursion) {
       const res = this.__isEnumerated(definition, true);
 
       if (!res.valid) return res;
@@ -813,9 +813,7 @@ export abstract class SchemaCore<
       return { valid: true };
     }
 
-    const allowedValues = (isObjectLike
-      ? allow.values
-      : allow) as unknown as any[];
+    const allowedValues = (isObject ? allow.values : allow) as unknown as any[];
 
     if (!Array.isArray(allowedValues))
       return {
@@ -1158,7 +1156,7 @@ export abstract class SchemaCore<
 
     if (typeProveded === 'boolean') return { valid: true };
 
-    if (!isObject(timestamps))
+    if (!isRecordLike(timestamps))
       return {
         valid,
         reason: "should be 'boolean' or 'non null object'"

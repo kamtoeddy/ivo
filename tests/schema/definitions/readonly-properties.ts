@@ -113,7 +113,6 @@ export const Test_ReadonlyProperties = ({ Schema, fx }: any) => {
       it('should reject readonly(true) + dependent & no default', () => {
         const toFail = fx({
           dependentProp: {
-            dependent: true,
             dependsOn: 'prop',
             resolver: () => 1
           },
@@ -138,7 +137,6 @@ export const Test_ReadonlyProperties = ({ Schema, fx }: any) => {
       it('should reject readonly(lax) + dependent', () => {
         const toFail = fx({
           dependentProp: {
-            dependent: true,
             default: '',
             dependsOn: 'prop',
             resolver: () => 1,

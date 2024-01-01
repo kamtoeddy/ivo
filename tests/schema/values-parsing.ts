@@ -1,6 +1,6 @@
 import { beforeAll, describe, it, expect } from 'vitest';
 
-import { ERRORS } from '../../../dist';
+import { ERRORS } from '../../dist';
 
 export const valuesParsing_Tests = ({ Schema }: any) => {
   const expectPromiseFailure = (

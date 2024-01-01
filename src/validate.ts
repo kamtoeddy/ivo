@@ -1,4 +1,10 @@
-import { getUniqueBy, isEqual, isObject, isOneOf, makeResponse } from './utils';
+import {
+  getUniqueBy,
+  isEqual,
+  isRecordLike,
+  isOneOf,
+  makeResponse
+} from './utils';
 import {
   ValidatorResponseObject,
   ValidationResponse,
@@ -178,7 +184,7 @@ function _isInNumberRange(
 }
 
 function _makeNumberRage(range?: RangeType) {
-  if (!isObject(range) || !range?.bounds) return undefined;
+  if (!isRecordLike(range) || !range?.bounds) return undefined;
 
   const range_ = {} as NumberRangeType_;
 

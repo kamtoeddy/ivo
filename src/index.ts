@@ -15,8 +15,8 @@ export {
   isEqual,
   isFunction,
   isNullOrUndefined,
-  isObject,
   isPropertyOf,
+  isRecordLike,
   toArray
 } from './utils';
 export {

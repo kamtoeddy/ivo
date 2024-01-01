@@ -1,17 +1,17 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect } from 'vitest';
 
-import { ERRORS } from '../../../../dist'
+import { ERRORS } from '../../../dist';
 import {
   expectFailure,
   expectNoFailure,
   getValidSchema
   // validator
-} from '../_utils'
+} from '../_utils';
 
 export const Test_SchemaEqualityDepth = ({ Schema, fx }: any) => {
   describe('Schema.options.equalityDepth', () => {
     describe('behaviour', () => {
-      const error = { message: ERRORS.NOTHING_TO_UPDATE }
+      const error = { message: ERRORS.NOTHING_TO_UPDATE };
 
       const user = {
         level_0_a: 'value',
@@ -26,14 +26,14 @@ export const Test_SchemaEqualityDepth = ({ Schema, fx }: any) => {
             }
           }
         }
-      }
+      };
 
       describe('behaviour with previous values', () => {
         it('should respect the default equality depth(1)', async () => {
           const Model = new Schema({
             level_0_a: { default: '' },
             level_0_b: { default: {} }
-          }).getModel()
+          }).getModel();
 
           const changeToAllow = {
             level_1_a: { level_2_b: 'value', level_2_a: 'value' },
@@ -45,7 +45,7 @@ export const Test_SchemaEqualityDepth = ({ Schema, fx }: any) => {
               },
               level_2_a: 'value'
             }
-          }
+          };
 
           const values_ = [
             { changes: user, error },
@@ -90,22 +90,22 @@ export const Test_SchemaEqualityDepth = ({ Schema, fx }: any) => {
               },
               data: { level_0_b: changeToAllow }
             }
-          ] as any[]
+          ] as any[];
 
           for (const values of values_) {
-            const { data, error } = await Model.update(user, values.changes)
+            const { data, error } = await Model.update(user, values.changes);
 
             if (values.data) {
-              expect(error).toEqual(null)
-              expect(data).toMatchObject(values.data)
+              expect(error).toEqual(null);
+              expect(data).toMatchObject(values.data);
             }
 
             if (values.error) {
-              expect(data).toEqual(null)
-              expect(error).toMatchObject(values.error)
+              expect(data).toEqual(null);
+              expect(error).toMatchObject(values.error);
             }
           }
-        })
+        });
 
         it('should respect the equality depth(0)', async () => {
           const Model = new Schema(
@@ -114,7 +114,7 @@ export const Test_SchemaEqualityDepth = ({ Schema, fx }: any) => {
               level_0_b: { default: {} }
             },
             { equalityDepth: 0 }
-          ).getModel()
+          ).getModel();
 
           const changeToAllow = {
               level_0_b: {
@@ -139,7 +139,7 @@ export const Test_SchemaEqualityDepth = ({ Schema, fx }: any) => {
                 },
                 level_2_a: 'value'
               }
-            }
+            };
 
           const values_ = [
             { changes: user, error },
@@ -171,22 +171,22 @@ export const Test_SchemaEqualityDepth = ({ Schema, fx }: any) => {
               },
               data: { level_0_b: changeToAllow1 }
             }
-          ] as any[]
+          ] as any[];
 
           for (const values of values_) {
-            const { data, error } = await Model.update(user, values.changes)
+            const { data, error } = await Model.update(user, values.changes);
 
             if (values.data) {
-              expect(error).toEqual(null)
-              expect(data).toMatchObject(values.data)
+              expect(error).toEqual(null);
+              expect(data).toMatchObject(values.data);
             }
 
             if (values.error) {
-              expect(data).toEqual(null)
-              expect(error).toMatchObject(values.error)
+              expect(data).toEqual(null);
+              expect(error).toMatchObject(values.error);
             }
           }
-        })
+        });
 
         it('should respect the equality depth(2)', async () => {
           const Model = new Schema(
@@ -195,7 +195,7 @@ export const Test_SchemaEqualityDepth = ({ Schema, fx }: any) => {
               level_0_b: { default: {} }
             },
             { equalityDepth: 2 }
-          ).getModel()
+          ).getModel();
 
           const values_ = [
             { changes: user, error },
@@ -249,46 +249,46 @@ export const Test_SchemaEqualityDepth = ({ Schema, fx }: any) => {
               },
               error
             }
-          ] as any[]
+          ] as any[];
 
           for (const values of values_) {
-            const { data, error } = await Model.update(user, values.changes)
+            const { data, error } = await Model.update(user, values.changes);
 
             if (values.data) {
-              expect(error).toEqual(null)
-              expect(data).toMatchObject(values.data)
+              expect(error).toEqual(null);
+              expect(data).toMatchObject(values.data);
             }
 
             if (values.error) {
-              expect(data).toEqual(null)
-              expect(error).toMatchObject(values.error)
+              expect(data).toEqual(null);
+              expect(error).toMatchObject(values.error);
             }
           }
-        })
-      })
-    })
+        });
+      });
+    });
 
     describe('valid', () => {
       it("should allow 'equalityDepth' as number", () => {
-        const toPass = fx(getValidSchema(), { equalityDepth: 1 })
+        const toPass = fx(getValidSchema(), { equalityDepth: 1 });
 
-        expectNoFailure(toPass)
+        expectNoFailure(toPass);
 
-        toPass()
-      })
+        toPass();
+      });
 
       it('should allow numbers >= 0', () => {
-        const values = [0, 1, 53, Infinity]
+        const values = [0, 1, 53, Infinity];
 
         for (const equalityDepth of values) {
-          const toPass = fx(getValidSchema(), { equalityDepth })
+          const toPass = fx(getValidSchema(), { equalityDepth });
 
-          expectNoFailure(toPass)
+          expectNoFailure(toPass);
 
-          toPass()
+          toPass();
         }
-      })
-    })
+      });
+    });
 
     describe('invalid', () => {
       it("should reject 'equalityDepth' if not a number >= 0", () => {
@@ -303,15 +303,15 @@ export const Test_SchemaEqualityDepth = ({ Schema, fx }: any) => {
           'invalid',
           '',
           null
-        ]
+        ];
 
         for (const equalityDepth of invalidValues) {
-          const toFail = fx(getValidSchema(), { equalityDepth })
+          const toFail = fx(getValidSchema(), { equalityDepth });
 
-          expectFailure(toFail)
+          expectFailure(toFail);
 
           try {
-            toFail()
+            toFail();
           } catch (err: any) {
             expect(err).toMatchObject({
               message: ERRORS.INVALID_SCHEMA,
@@ -320,10 +320,10 @@ export const Test_SchemaEqualityDepth = ({ Schema, fx }: any) => {
                   "'equalityDepth' must be a number between 0 and +Infinity"
                 ])
               }
-            })
+            });
           }
         }
-      })
-    })
-  })
-}
+      });
+    });
+  });
+};

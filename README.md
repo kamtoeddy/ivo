@@ -55,7 +55,6 @@ const userSchema = new Schema<Input, Output>(
     },
     fullName: {
       default: '',
-      dependent: true,
       dependsOn: ['firstName', 'lastName'],
       resolver: getFullName
     },

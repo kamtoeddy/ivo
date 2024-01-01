@@ -1,6 +1,6 @@
 import { afterEach, describe, it, expect } from 'vitest';
 
-import { expectFailure, expectNoFailure, pauseFor, validator } from '../_utils';
+import { expectFailure, expectNoFailure, validator } from '../_utils';
 
 export const Test_DependentProperties = ({ Schema, fx }: any) => {
   describe('dependent', () => {
@@ -111,12 +111,10 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
       }
 
       function asyncResolver(prop: string) {
-        return async ({ context: { dependentProp } }: any) => {
+        return ({ context: { dependentProp } }: any) => {
           incrementResolveCountOf(prop);
 
-          await pauseFor();
-
-          return dependentProp + 2;
+          return Promise.resolve(dependentProp + 2);
         };
       }
 

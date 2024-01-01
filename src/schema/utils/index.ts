@@ -2,7 +2,7 @@ import {
   isPropertyOf,
   FieldKey,
   toArray,
-  isObject,
+  isRecordLike,
   isEqual
 } from '../../utils';
 import {
@@ -20,7 +20,7 @@ export * from './timestamp-tool';
 export { isInputFieldError, makeFieldError };
 
 function isFieldError(data: any): data is FieldError {
-  if (!isObject(data) || isEqual({}, data)) return false;
+  if (!isRecordLike(data) || isEqual({}, data)) return false;
 
   if (
     !isPropertyOf('metadata', data) ||
@@ -33,7 +33,7 @@ function isFieldError(data: any): data is FieldError {
 }
 
 function isInputFieldError(data: any): data is Partial<FullInputFieldError> {
-  if (!isObject(data) || isEqual({}, data)) return false;
+  if (!isRecordLike(data) || isEqual({}, data)) return false;
 
   if (isPropertyOf('reasons', data)) return false;
 
@@ -55,7 +55,7 @@ function isInputFieldError(data: any): data is Partial<FullInputFieldError> {
 }
 
 function isFieldErrorMetadata(data: any): data is FieldError['metadata'] {
-  return data?.metadata == null || isObject(data?.metadata);
+  return data?.metadata == null || isRecordLike(data?.metadata);
 }
 
 function makeFieldError(
@@ -64,7 +64,7 @@ function makeFieldError(
 ): FieldError {
   if (isFieldError(value)) return value;
 
-  if (!isObject(value)) return { reasons: toArray(value), metadata: null };
+  if (!isRecordLike(value)) return { reasons: toArray(value), metadata: null };
 
   if (isInputFieldError(value))
     return {

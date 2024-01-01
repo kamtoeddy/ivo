@@ -36,7 +36,6 @@ const userSchema = new Schema<UserInput, User>({
   lastName: { required: true, validator: validateName },
   fullName: {
     default: '',
-    dependent: true,
     dependsOn: ['firstName', 'lastName'],
     resolver({ context: { firstName, lastName } }) {
       return `${firstName} ${lastName}`;

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 
-import { ERRORS } from '../../../../dist';
+import { ERRORS } from '../../dist';
 
 export const Test_Validators = ({ Schema }: any) => {
   describe('Validators', () => {

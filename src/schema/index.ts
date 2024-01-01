@@ -6,7 +6,7 @@ import {
   sort,
   sortKeys,
   toArray,
-  isObject,
+  isRecordLike,
   FieldKey,
   getSetValuesAsProps,
   ObjectType
@@ -591,7 +591,7 @@ class ModelTool<
   ) {
     const { reason, metadata, value } = validationResponse;
 
-    if (isObject(reason)) {
+    if (isRecordLike(reason)) {
       if (metadata) errorTool.add(prop, { metadata, reasons: [] }, value);
 
       return Object.entries(reason).forEach(([key, message]) => {
@@ -653,7 +653,7 @@ class ModelTool<
 
     if (response?.reason) _response.reason = response.reason;
 
-    if (isObject(response?.reason)) {
+    if (isRecordLike(response?.reason)) {
       const validProperties = getKeysAsProps(response.reason).filter(
         (prop) =>
           this._isValidProperty(prop) ||
@@ -701,7 +701,7 @@ class ModelTool<
       _response.reason = otherReasons;
     }
 
-    if (response?.metadata && isObject(response.metadata))
+    if (response?.metadata && isRecordLike(response.metadata))
       _response.metadata = sortKeys(response.metadata);
     else _response.metadata = null;
 

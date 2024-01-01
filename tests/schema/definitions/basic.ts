@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 
-import { ERRORS } from '../../../../dist';
+import { ERRORS } from '../../../dist';
 import { expectFailure } from '../_utils';
 
 export const Test_BasicDefinitions = ({ fx, Schema }: any) => {

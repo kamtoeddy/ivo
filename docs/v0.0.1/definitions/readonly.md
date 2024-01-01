@@ -19,7 +19,6 @@ const orderSchema = new Schema({
   completedAt: {
     default: '',
     readonly: true,
-    dependent: true,
     dependsOn: 'isComplete',
     resolver: ({ isComplete }) => (isComplete ? new Date() : '')
   },

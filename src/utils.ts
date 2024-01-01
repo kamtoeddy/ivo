@@ -17,10 +17,10 @@ export {
   hasAnyOf,
   isEqual,
   isFunction,
-  isPropertyOf,
   isNullOrUndefined,
-  isObject,
   isOneOf,
+  isPropertyOf,
+  isRecordLike,
   toArray,
   sort,
   sortKeys
@@ -48,7 +48,7 @@ function makeResponse<T = undefined>(
   let { metadata = null, reason, valid, value } = input;
 
   if (reason) {
-    if (!isObject(reason)) reason = toArray(reason);
+    if (!isRecordLike(reason)) reason = toArray(reason);
   } else reason = [];
 
   return {
@@ -97,7 +97,7 @@ function isEqual<T>(a: any, b: T, depth = 1): a is T {
   return JSON.stringify(sortKeys(a)) == JSON.stringify(sortKeys(b as any));
 }
 
-function isFunction(value: any): value is Function {
+function isFunction<T extends Function>(value: any): value is T {
   return typeof value === 'function';
 }
 
@@ -105,12 +105,14 @@ function isNullOrUndefined(value: any): value is null | undefined {
   return isOneOf(value, [null, undefined]);
 }
 
-function isObject<T extends ObjectType>(value: any): value is ObjectType<T> {
-  return value && typeof value === 'object' && !Array.isArray(value);
-}
-
 function isOneOf<T>(value: any, values: ArrayOfMinSizeTwo<T>): value is T {
   return values.includes(value);
+}
+
+function isRecordLike<T extends ObjectType>(
+  value: any
+): value is ObjectType<T> {
+  return value && typeof value === 'object' && !Array.isArray(value);
 }
 
 function isPropertyOf<T>(
