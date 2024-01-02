@@ -20,7 +20,8 @@ import {
   KeyOf,
   Summary,
   InvalidValidatorResponse,
-  ValidatorResponseObject
+  ValidatorResponseObject,
+  Validator
 } from './types';
 import {
   VALIDATION_ERRORS,
@@ -31,6 +32,7 @@ import {
   InputFieldError
 } from './utils';
 import { defaultOptions, SchemaCore } from './schema-core';
+import { isFunctionLike } from '..';
 
 export { Model, ModelTool, Schema };
 
@@ -40,6 +42,8 @@ type DefaultExtendedErrorTool<
 > = ParentErrorTool extends DefaultErrorTool<any>
   ? DefaultErrorTool<Keys>
   : ParentErrorTool;
+
+const NotAllowedError = 'value not allowed';
 
 class Schema<
   Input extends RealType<Input>,
@@ -160,6 +164,28 @@ class ModelTool<
     super(schema.definitions as any, schema.options as any);
   }
 
+  private _cleanInput(input: Partial<Input | Aliases>) {
+    const props = getKeysAsProps(input).filter(this._isValidProperty);
+
+    const values = {} as any;
+
+    for (const prop of props) {
+      values[prop] = input[prop];
+
+      if (this._isVirtual(prop)) {
+        const alias = this._getAliasByVirtual(prop);
+
+        if (alias && values[alias]) delete values[alias];
+      } else if (this._isVirtualAlias(prop)) {
+        const virtual = this._getVirtualByAlias(prop);
+
+        if (virtual && values[virtual]) delete values[virtual];
+      }
+    }
+
+    return values;
+  }
+
   private async _generateConstants() {
     const data = {} as Partial<Output>;
 
@@ -200,6 +226,34 @@ class ModelTool<
 
   private _getValidationSummary = (isUpdate = false) =>
     this._getSummary(this.values, isUpdate);
+
+  private _getValidator = <K extends keyof (Output | Input)>(prop: K) => {
+    return this._getDefinition(prop as any)?.validator as
+      | Validator<K, Input, Output>
+      | undefined;
+  };
+
+  private _getNotAllowedError(prop: string, value: any) {
+    const allow = this._getDefinition(prop as any)?.allow;
+
+    if (Array.isArray(allow)) return NotAllowedError;
+
+    const error = (allow as any).error;
+
+    if (Array.isArray(error) || isInputFieldError(error)) return error;
+
+    if (isFunctionLike(error)) {
+      const message = error(value, allow?.values);
+
+      if (typeof message == 'string') return message || NotAllowedError;
+
+      if (Array.isArray(message)) return message;
+
+      return isInputFieldError(message) ? message : NotAllowedError;
+    }
+
+    return error || NotAllowedError;
+  }
 
   private async _handleError(
     errorTool: ErrorTool,
@@ -512,28 +566,6 @@ class ModelTool<
     return _updates;
   }
 
-  private _cleanInput(input: Partial<Input | Aliases>) {
-    const props = getKeysAsProps(input).filter(this._isValidProperty);
-
-    const values = {} as any;
-
-    for (const prop of props) {
-      values[prop] = input[prop];
-
-      if (this._isVirtual(prop)) {
-        const alias = this._getAliasByVirtual(prop);
-
-        if (alias && values[alias]) delete values[alias];
-      } else if (this._isVirtualAlias(prop)) {
-        const virtual = this._getVirtualByAlias(prop);
-
-        if (virtual && values[virtual]) delete values[virtual];
-      }
-    }
-
-    return values;
-  }
-
   private _setValues(
     values: Partial<Input | Output | Aliases>,
     {
@@ -769,13 +801,16 @@ class ModelTool<
 
     const allowedValues = this.propsToAllowedValuesMap.get(_prop);
 
-    if (allowedValues && !allowedValues.has(value))
+    if (allowedValues && !allowedValues.has(value)) {
+      const fieldError = makeFieldError(this._getNotAllowedError(_prop, value));
+
       return makeResponse<(Input & Aliases)[K]>({
         valid: false,
         value,
-        reason: 'value not allowed',
-        metadata: { allowed: Array.from(allowedValues) }
+        reason: fieldError.reasons,
+        metadata: fieldError.metadata || { allowed: Array.from(allowedValues) }
       });
+    }
 
     const validator = this._getValidator(_prop as any);
 

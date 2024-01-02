@@ -1,0 +1,43 @@
+## Allowed Values
+
+This is used to specify the values that should be accepted for a property. It can be used without a validator but if a validator is provided, the values would first be checked against this list before being passed to the validator
+
+Example:
+
+```ts
+import { Schema } from 'ivo';
+
+const userSchema = new Schema({
+  role: { default: 'user', allow: ['admin', 'moderator', 'user'] },
+  name: { required: true, validator: validateName }
+});
+```
+
+## `NotAllowedError`:
+
+If you need to specify custom errors to handle invalid values, you could do it like in the example below
+
+```ts
+import { Schema } from 'ivo';
+
+const userSchema = new Schema({
+  role: {
+    default: 'user',
+    allow: {
+      values: ['admin', 'moderator', 'user'],
+      error: 'Invalid role provided'
+    }
+  },
+  name: { required: true, validator: validateName }
+});
+
+// the error above can match the following type
+type NotAllowedError =
+  | string
+  | string[]
+  | InputFieldError
+  | ((
+      valueProvided: any,
+      allowedValues: any[]
+    ) => string | string[] | InputFieldError);
+```

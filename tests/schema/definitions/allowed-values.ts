@@ -393,10 +393,9 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
             const { data, error } = await Model.create({ prop: true });
 
             expect(data).toBe(null);
-
             expect(error.payload).toMatchObject({
               prop: expect.objectContaining({
-                reasons: ['value not allowed'],
+                reasons: expect.arrayContaining(['value not allowed']),
                 metadata
               })
             });
@@ -421,10 +420,9 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
             );
 
             expect(data).toBe(null);
-
             expect(error.payload).toMatchObject({
               prop: expect.objectContaining({
-                reasons: ['value not allowed'],
+                reasons: expect.arrayContaining(['value not allowed']),
                 metadata
               })
             });
@@ -646,7 +644,7 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
 
               expect(error.payload).toMatchObject({
                 prop: expect.objectContaining({
-                  reasons: ['value not allowed'],
+                  reasons: expect.arrayContaining(['value not allowed']),
                   metadata
                 })
               });
@@ -674,7 +672,7 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
 
               expect(error.payload).toMatchObject({
                 prop: expect.objectContaining({
-                  reasons: ['value not allowed'],
+                  reasons: expect.arrayContaining(['value not allowed']),
                   metadata
                 })
               });
@@ -874,6 +872,226 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
               expect(error).toBe(null);
               expect(data).toMatchObject({ dependent: 'allowed' });
             });
+          });
+        });
+
+        describe('error', () => {
+          describe('error as a string', () => {
+            describe('if string is empty', () => {
+              const Model = new Schema({
+                prop: {
+                  default: metadata.allowed[0],
+                  allow: { error: '', values: metadata.allowed }
+                }
+              }).getModel();
+
+              it('should return default error message at creation', async () => {
+                const { data, error } = await Model.create({ prop: 'Invalid' });
+
+                expect(data).toBe(null);
+                expect(error.payload).toMatchObject({
+                  prop: expect.objectContaining({
+                    reasons: expect.arrayContaining(['value not allowed'])
+                  })
+                });
+              });
+
+              it('should return default error message during updates', async () => {
+                const { data, error } = await Model.update(
+                  { prop: metadata.allowed[0] },
+                  { prop: 'Invalid' }
+                );
+
+                expect(data).toBe(null);
+                expect(error.payload).toMatchObject({
+                  prop: expect.objectContaining({
+                    reasons: expect.arrayContaining(['value not allowed'])
+                  })
+                });
+              });
+            });
+
+            describe('if string is not empty', () => {
+              const errorMessage = 'Value not allowed. lol';
+
+              const Model = new Schema({
+                prop: {
+                  default: metadata.allowed[0],
+                  allow: { error: errorMessage, values: metadata.allowed }
+                }
+              }).getModel();
+
+              it('should return default error message at creation', async () => {
+                const { data, error } = await Model.create({ prop: 'Invalid' });
+
+                expect(data).toBe(null);
+                expect(error.payload).toMatchObject({
+                  prop: expect.objectContaining({
+                    reasons: expect.arrayContaining([errorMessage])
+                  })
+                });
+              });
+
+              it('should return default error message during updates', async () => {
+                const { data, error } = await Model.update(
+                  { prop: metadata.allowed[0] },
+                  { prop: 'Invalid' }
+                );
+
+                expect(data).toBe(null);
+                expect(error.payload).toMatchObject({
+                  prop: expect.objectContaining({
+                    reasons: expect.arrayContaining([errorMessage])
+                  })
+                });
+              });
+            });
+          });
+
+          describe('error as array of strings', () => {
+            const errorMessages = ['Value not allowed. lol', 'try again'];
+
+            const Model = new Schema({
+              prop: {
+                default: metadata.allowed[0],
+                allow: { error: errorMessages, values: metadata.allowed }
+              }
+            }).getModel();
+
+            it('should return default error message at creation', async () => {
+              const { data, error } = await Model.create({ prop: 'Invalid' });
+
+              expect(data).toBe(null);
+              expect(error.payload).toMatchObject({
+                prop: expect.objectContaining({
+                  reasons: expect.arrayContaining(errorMessages)
+                })
+              });
+            });
+
+            it('should return default error message during updates', async () => {
+              const { data, error } = await Model.update(
+                { prop: metadata.allowed[0] },
+                { prop: 'Invalid' }
+              );
+
+              expect(data).toBe(null);
+              expect(error.payload).toMatchObject({
+                prop: expect.objectContaining({
+                  reasons: expect.arrayContaining(errorMessages)
+                })
+              });
+            });
+          });
+
+          describe('error as InputFieldError', () => {
+            const errorMessages = [
+              [{ reason: 'Invalid lol' }, { reasons: ['Invalid lol'] }],
+              [
+                {
+                  reason: 'failed again',
+                  metadata: { allowed: metadata.allowed }
+                },
+                {
+                  reasons: ['failed again'],
+                  metadata: { allowed: metadata.allowed }
+                }
+              ]
+            ];
+
+            for (const [error, expected] of errorMessages) {
+              const Model = new Schema({
+                prop: {
+                  default: metadata.allowed[0],
+                  allow: { error, values: metadata.allowed }
+                }
+              }).getModel();
+
+              it('should return default error message at creation', async () => {
+                const { data, error } = await Model.create({ prop: 'Invalid' });
+
+                expect(data).toBe(null);
+                expect(error.payload).toMatchObject({
+                  prop: expect.objectContaining(expected)
+                });
+              });
+
+              it('should return default error message during updates', async () => {
+                const { data, error } = await Model.update(
+                  { prop: metadata.allowed[0] },
+                  { prop: 'Invalid' }
+                );
+
+                expect(data).toBe(null);
+                expect(error.payload).toMatchObject({
+                  prop: expect.objectContaining(expected)
+                });
+              });
+            }
+          });
+
+          describe('error as function', () => {
+            const errorMessages = [
+              [() => '', { reasons: ['value not allowed'] }],
+              [() => ({}), { reasons: ['value not allowed'] }],
+              [() => null, { reasons: ['value not allowed'] }],
+              [() => undefined, { reasons: ['value not allowed'] }],
+              [() => -1, { reasons: ['value not allowed'] }],
+              [() => 0, { reasons: ['value not allowed'] }],
+              [() => 1, { reasons: ['value not allowed'] }],
+              [() => true, { reasons: ['value not allowed'] }],
+              [() => false, { reasons: ['value not allowed'] }],
+              [() => 'Invalid lol', { reasons: ['Invalid lol'] }],
+              [
+                () => ['invalid as array', 'Invalid lol'],
+                { reasons: ['invalid as array', 'Invalid lol'] }
+              ],
+              [
+                () => ({ metadata: { valid: false } }),
+                { metadata: { valid: false } }
+              ],
+              [() => ({ reason: 'Invalid lol' }), { reasons: ['Invalid lol'] }],
+              [
+                () => ({
+                  reason: 'failed again',
+                  metadata: { allowed: metadata.allowed }
+                }),
+                {
+                  reasons: ['failed again'],
+                  metadata: { allowed: metadata.allowed }
+                }
+              ]
+            ];
+
+            for (const [error, expected] of errorMessages) {
+              const Model = new Schema({
+                prop: {
+                  default: metadata.allowed[0],
+                  allow: { error, values: metadata.allowed }
+                }
+              }).getModel();
+
+              it('should return default error message at creation', async () => {
+                const { data, error } = await Model.create({ prop: 'Invalid' });
+
+                expect(data).toBe(null);
+                expect(error.payload).toMatchObject({
+                  prop: expect.objectContaining(expected)
+                });
+              });
+
+              it('should return default error message during updates', async () => {
+                const { data, error } = await Model.update(
+                  { prop: metadata.allowed[0] },
+                  { prop: 'Invalid' }
+                );
+
+                expect(data).toBe(null);
+                expect(error.payload).toMatchObject({
+                  prop: expect.objectContaining(expected)
+                });
+              });
+            }
           });
         });
       });

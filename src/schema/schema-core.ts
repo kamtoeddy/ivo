@@ -30,7 +30,6 @@ import {
   NS as ns,
   KeyOf,
   Summary,
-  Validator,
   ALLOWED_OPTIONS,
   DEFINITION_RULES,
   CONSTANT_RULES,
@@ -120,7 +119,6 @@ export abstract class SchemaCore<
     this.timestampTool = new TimeStampTool(this._options.timestamps);
   }
 
-  // < context methods >
   protected _getContext(previousValues: Partial<Output> | null = null) {
     const values = { ...previousValues, ...this.context } as any;
 
@@ -153,9 +151,6 @@ export abstract class SchemaCore<
   protected _updatePartialContext = (updates: Partial<Input>) => {
     this.partialContext = { ...this.partialContext, ...updates };
   };
-  // < context methods />
-
-  // < dependency map utils >
 
   protected _getAliasByVirtual = (prop: KeyOf<Input>): string | undefined =>
     this.virtualToAliasMap[prop];
@@ -214,7 +209,6 @@ export abstract class SchemaCore<
       if (this.dependencyMap[_prop]) this.dependencyMap[_prop]?.push(prop);
       else this.dependencyMap[_prop] = [prop];
   };
-  // < dependency map utils />
 
   private _areHandlersOk = (
     _handlers: any,
@@ -551,12 +545,6 @@ export abstract class SchemaCore<
     return isFunctionLike(value)
       ? value({ ...this._getContext(), ...extraCtx })
       : value;
-  };
-
-  protected _getValidator = <K extends keyof (Output | Input)>(prop: K) => {
-    return this._getDefinition(prop as any)?.validator as
-      | Validator<K, Input, Output>
-      | undefined;
   };
 
   private _isValidatorOk = (

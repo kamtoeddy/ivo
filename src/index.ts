@@ -13,7 +13,7 @@ export {
   FieldKey,
   getKeysAsProps,
   isEqual,
-  isFunctionLike as isFunction,
+  isFunctionLike,
   isNullOrUndefined,
   isPropertyOf,
   isRecordLike,
