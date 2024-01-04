@@ -24,23 +24,81 @@ type C = {
 
 ## Context Options
 
-This is a way of providing extra information (releted or not related to you schema) to operations like creation, updates and deletion.A good usecase would be internationalization (i18n)
+This is a way of providing extra information (releted or not related to you schema) to operations like creation, updates and deletion. Some good usecases would be **dependency injection (DI)** and **internationalization (i18n)**
 
 How to use:
 
 ```ts
-// 1) pass it to related operations
+type UserInput = {
+  email: string;
+  name: string;
+};
+
+type User = {
+  email: string;
+  id: string;
+  name: string;
+};
+
+interface UserRepo {
+  findByEmail: (email: User['email']) => Promise<User | null>;
+  //  ... other methods
+}
+
+type CtxOptions = {
+  lang: 'en' | 'de' | 'fr'; // lang for i18n
+  userRepo: UserRepo; // userRepo for DI
+};
+
+// 1) define your schema
+const Model = new Schema<UserInput, User, CtxOptions>({
+  id: { constant: true, value: generateUserId },
+  email: {
+    required: true,
+    async validator(value, { context }) {
+      if (!isEmail(value))
+        return { valid: false, reason: 'Invalid email provided' };
+
+      const { userRepo } = context.__getOptions__();
+
+      const isEmailTaken = await userRepo.findByEmail(value);
+
+      return isEmailTaken
+        ? { valid: false, reason: 'email already taken' }
+        : true;
+    }
+  },
+  name: { required: true, validator: validateName }
+}).getModel();
+
+// 2) pass it to related operations
+import { userRepo } from 'data-access/users';
 
 // creating an entity   👇
-Model.create(input, { lang: 'en' });
+Model.create(input, { lang: 'en', userRepo });
 
 // updating an entity             👇
-Model.update(entity, changes, { lang: 'en' });
+Model.update(entity, changes, { lang: 'en', userRepo });
 
 // deleting an entity    👇
-Model.delete(entity, { lang: 'en' });
+Model.delete(entity, { lang: 'en', userRepo });
 
-// if you pass a shouldUpdate option to your schema, you can update the contetx's options like below
+// 3) within your schema, wherever the operation context is available, you can use the __getOptions__ method of the context to access the options you provided
+
+// in a validator
+function validateName(value, sumary: Summary<UserInput, User, CtxOptions>) {
+  const { context } = summary;
+  const { lang } = context.__getOptions__();
+
+  // ... further processing
+
+  return true;
+}
+```
+
+> if you pass a shouldUpdate option to your schema like in the example below, you can update the context's options. Any value passed to `contextOptionsUpdate` will replace any previous value in the ctx options; meaning a partial update. Use with care
+
+```js
 Schema(
   {},
   {
@@ -49,18 +107,6 @@ Schema(
     }
   }
 );
-
-// 2) within your schema, wherever the operation context is available, you can use the __getOptions__ method of the context to access the options you provided
-
-// in a validator
-function validateUsername(value, sumary: Summary<Input, Output, CtxOptions>) {
-  const { context } = summary;
-  const { lang } = context.__getOptions__();
-
-  // ... further processing
-
-  return true;
-}
 ```
 
 # The Operation Summary
@@ -71,8 +117,8 @@ import type { Context, Summary } from 'ivo';
 type Input = {};
 type Output = {};
 
-type IContext = Context<Output, Input>;
-type ISummary = Summary<Output, Input>;
+type IContext = Context<Input, Output>;
+type ISummary = Summary<Input, Output>;
 
 // 👇 S below is the same as `ISummary`
 // 👇 this is what `ISummary` looks like
@@ -92,7 +138,7 @@ type S =
       values: Readonly<Output>;
     }>;
 
-const Model = new Schema<Output, Input>(definitions).getModel();
+const Model = new Schema<Input, Output>(definitions).getModel();
 
 type Handler = (context: IContext) => void | Promise<void>;
 

@@ -194,7 +194,7 @@ namespace NS {
               | NotAllowedError
               | ((
                   value: any,
-                  allowedValues: ArrayOfMinSizeTwo<any>
+                  allowedValues: ArrayOfMinSizeOne<any>
                 ) => NotAllowedError);
           };
       alias?: string;
@@ -260,7 +260,7 @@ namespace NS {
             | NotAllowedError
             | ((
                 value: any,
-                allowedValues: ArrayOfMinSizeTwo<T>
+                allowedValues: ArrayOfMinSizeOne<T>
               ) => NotAllowedError);
         };
   };

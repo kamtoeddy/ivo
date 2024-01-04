@@ -31,7 +31,7 @@ type Input = {
   firstName: string;
   lastName: string;
   password: string;
-  role?: UserRole;
+  role: UserRole;
 };
 
 type Output = {
@@ -157,6 +157,6 @@ await userDb.updateById(user.id, data);
 
 - [Options](./docs/v0.0.1/index.md#options)
 - [Custom validation errors](./docs/v0.0.1/index.md#errortool)
-- [Internationalization](./docs/v0.0.1/life-cycles.md#context-options)
+- [Extra features](./docs/v0.0.1/life-cycles.md#context-options)
 
 - [Changelog](./docs/CHANGELOG.md#changelog)
