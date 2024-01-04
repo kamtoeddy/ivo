@@ -9,6 +9,7 @@ import {
 export type {
   ArrayOfMinSizeOne,
   ArrayOfMinSizeTwo,
+  ArrayOfMinSizeN,
   Context,
   DeleteContext,
   DefinitionRule,
@@ -543,8 +544,18 @@ type VirtualValidator<
   | ValidatorResponse<TypeOf<Input[K]>, Input, Aliases>
   | Promise<ValidatorResponse<TypeOf<Input[K]>, Input, Aliases>>;
 
-type ArrayOfMinSizeOne<T> = [T, ...T[]];
-type ArrayOfMinSizeTwo<T> = [T, T, ...T[]];
+type ArrayOfMinSizeOne<T> = ArrayOfMinSizeN<T, 1>;
+type ArrayOfMinSizeTwo<T> = ArrayOfMinSizeN<T, 2>;
+
+type ArrayOfMinSizeN<
+  T,
+  Size extends number,
+  Current extends T[] = []
+> = `${Size}` extends `-${string}` | `${string}.${string}` // reject negative & floats
+  ? never
+  : Current['length'] extends Size
+  ? Current
+  : ArrayOfMinSizeN<T, Size, [T, ...Current]>;
 
 const DEFINITION_RULES = [
   'alias',
