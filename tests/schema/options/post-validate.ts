@@ -21,6 +21,35 @@ export const Test_SchemaOptionPostValidate = ({ fx }: any) => {
         }
       });
 
+      it("should allow 'postValidate' if some or all the properties to post validate are virtuals", () => {
+        const values = [
+          { properties: ['virtual', 'propertyName2'], handler() {} },
+          [{ properties: ['virtual', 'virtual2'], handler() {} }]
+        ];
+
+        for (const postValidate of values) {
+          const toPass = fx(
+            getValidSchema(
+              {},
+              {
+                dependent: {
+                  default: '',
+                  dependsOn: ['virtual', 'virtual2'],
+                  resolver() {}
+                },
+                virtual: { virtual: true, validator() {} },
+                virtual2: { virtual: true, validator() {} }
+              }
+            ),
+            { postValidate }
+          );
+
+          expectNoFailure(toPass);
+
+          toPass();
+        }
+      });
+
       describe('single config', () => {
         it("should reject 'postValidate' as invaild single config", () => {
           const invalidPostValidateSingleConfig = [

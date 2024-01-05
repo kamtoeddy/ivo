@@ -434,6 +434,14 @@ export abstract class SchemaCore<
   protected _isDependentProp = (prop: string) =>
     this.dependents.has(prop as KeyOf<Output>);
 
+  protected _isInputProp = (prop: string) => {
+    return (
+      (this._isProp(prop) || this._isVirtual(prop)) &&
+      !this._isConstant(prop) &&
+      !this._isDependentProp(prop)
+    );
+  };
+
   protected _isLaxProp = (prop: string) =>
     this.laxProps.has(prop as KeyOf<Input>);
 
@@ -478,12 +486,6 @@ export abstract class SchemaCore<
       isEqual(shouldInit, undefined) ||
       this._getValueBy(definitionName, 'shouldInit', extraCtx)
     );
-  };
-
-  protected _isInputProp = (prop: string) => {
-    if (!this._isProp(prop)) return false;
-
-    return !this._isConstant(prop) && !this._isDependentProp(prop);
   };
 
   protected _getConstantValue = async (prop: string) =>

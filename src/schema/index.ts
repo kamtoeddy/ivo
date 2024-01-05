@@ -173,7 +173,7 @@ class ModelTool<
   }
 
   private _cleanInput(input: Partial<Input | Aliases>) {
-    const props = getKeysAsProps(input).filter(this._isValidProperty);
+    const props = getKeysAsProps(input).filter(this._isInputOrAlias);
 
     const values = {} as any;
 
@@ -445,15 +445,8 @@ class ModelTool<
     return !isEqual(this.values[propName], value, this._options.equalityDepth);
   }
 
-  private _isValidProperty = (prop: string) => {
-    if (this._isConstant(prop)) return false;
-
-    const isAlias = this._isVirtualAlias(prop);
-
-    if (this._isDependentProp(prop) && !isAlias) return false;
-
-    return this._isProp(prop) || this._isVirtual(prop) || isAlias;
-  };
+  private _isInputOrAlias = (prop: string) =>
+    this._isInputProp(prop) || this._isVirtualAlias(prop);
 
   private _makeHandleSuccess(data: Partial<Output>, isUpdate = false) {
     const partialCtx = this._getPartialContext();
@@ -696,8 +689,8 @@ class ModelTool<
     if (isRecordLike(response?.reason)) {
       const validProperties = getKeysAsProps(response.reason).filter(
         (prop) =>
-          this._isValidProperty(prop) ||
-          this._isValidProperty(prop.split('.')?.[0])
+          this._isInputOrAlias(prop) ||
+          this._isInputOrAlias(prop.split('.')?.[0])
       );
 
       const otherReasons = {} as Record<
@@ -796,7 +789,7 @@ class ModelTool<
     value: any,
     summary_: Summary<Input, Output>
   ) {
-    if (!this._isValidProperty(prop))
+    if (!this._isInputOrAlias(prop))
       return makeResponse<(Input & Aliases)[K]>({
         valid: false,
         value,
