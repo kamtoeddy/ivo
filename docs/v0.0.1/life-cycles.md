@@ -83,7 +83,9 @@ Model.update(entity, changes, { lang: 'en', userRepo });
 // deleting an entity    👇
 Model.delete(entity, { lang: 'en', userRepo });
 
-// 3) within your schema, wherever the operation context is available, you can use the __getOptions__ method of the context to access the options you provided
+// 3) within your schema, wherever the operation context is available,
+//  you can use the __getOptions__ method of
+// the context to access the options you provided
 
 // in a validator
 function validateName(value, sumary: Summary<UserInput, User, CtxOptions>) {
@@ -117,8 +119,8 @@ import type { Context, Summary } from 'ivo';
 type Input = {};
 type Output = {};
 
-type IContext = Context<Input, Output>;
-type ISummary = Summary<Input, Output>;
+type IContext = Context<Input, Output, CtxOptions>;
+type ISummary = Summary<Input, Output, CtxOptions>;
 
 // 👇 S below is the same as `ISummary`
 // 👇 this is what `ISummary` looks like
