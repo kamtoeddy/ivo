@@ -404,17 +404,9 @@ class ModelTool<
   }
 
   private _isUpdatable(prop: string, value: any = undefined) {
-    const isAlias = this._isVirtualAlias(prop),
-      isVirtual = this._isVirtual(prop);
+    if (!this._isInputOrAlias(prop)) return false;
 
-    if (
-      (!this._isProp(prop) ||
-        this._isConstant(prop) ||
-        this._isDependentProp(prop)) &&
-      !isVirtual &&
-      !isAlias
-    )
-      return false;
+    const isAlias = this._isVirtualAlias(prop);
 
     const propName = (
       isAlias ? this._getVirtualByAlias(prop)! : prop
@@ -429,7 +421,7 @@ class ModelTool<
 
     const isUpdatable = this._getValueBy(propName, 'shouldUpdate', extraCtx);
 
-    if (isVirtual) return hasShouldUpdateRule ? isUpdatable : true;
+    if (this._isVirtual(prop)) return hasShouldUpdateRule ? isUpdatable : true;
 
     const isReadonly = this._isReadonly(propName);
 
@@ -446,7 +438,7 @@ class ModelTool<
   }
 
   private _isInputOrAlias = (prop: string) =>
-    this._isInputProp(prop) || this._isVirtualAlias(prop);
+    this._isVirtualAlias(prop) || this._isInputProp(prop);
 
   private _makeHandleSuccess(data: Partial<Output>, isUpdate = false) {
     const partialCtx = this._getPartialContext();
@@ -898,13 +890,10 @@ class ModelTool<
           _input[prop as unknown as KeyOf<Input>]
         );
 
-      const isProvided = isPropertyOf(prop, this.values);
-
-      const isLax = this._isLaxProp(prop);
-
-      const isLaxInit = isLax && isProvided;
-
-      const isRequiredInit = this._isRequiredBy(prop) && isProvided;
+      const isProvided = isPropertyOf(prop, this.values),
+        isLax = this._isLaxProp(prop),
+        isLaxInit = isLax && isProvided,
+        isRequiredInit = this._isRequiredBy(prop) && isProvided;
 
       if (
         (isLax &&
