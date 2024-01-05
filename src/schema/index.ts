@@ -54,7 +54,13 @@ class Schema<
 > extends SchemaCore<Input, Output, CtxOptions, ErrorTool> {
   constructor(
     definitions: NS.Definitions<Input, Output, Aliases, CtxOptions>,
-    options: NS.Options<Input, Output, ErrorTool, CtxOptions> = defaultOptions
+    options: NS.Options<
+      Input,
+      Output,
+      Aliases,
+      ErrorTool,
+      CtxOptions
+    > = defaultOptions
   ) {
     super(definitions as any as NS.Definitions_<Input, Output>, options as any);
   }
@@ -98,10 +104,11 @@ class Schema<
       ExtendedCtxOptions
     >,
     options: NS.ExtensionOptions<
-      Output,
       Input,
+      Output,
       ExtendedInput,
       ExtendedOutput,
+      Aliases,
       ExtendedErrorTool,
       ExtendedCtxOptions
     > = {}
@@ -122,6 +129,7 @@ class Schema<
     const options_ = {} as NS.Options<
       ExtendedInput,
       ExtendedOutput,
+      Aliases,
       ExtendedErrorTool,
       ExtendedCtxOptions
     >;

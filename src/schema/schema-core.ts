@@ -38,6 +38,9 @@ import {
   PartialContext
 } from './types';
 
+const invalidPostValidateSingleConfig =
+  'The "postValidate" option must be an object with keys "properties" and "handler" or an array of "PostValidateConfig"';
+
 export const defaultOptions = {
   equalityDepth: 1,
   ErrorTool: DefaultErrorTool,
@@ -54,7 +57,7 @@ export abstract class SchemaCore<
   ErrorTool extends IErrorTool<any>
 > {
   protected _definitions = {} as ns.Definitions_<Input, Output>;
-  protected _options: ns.InternalOptions<Input, Output>;
+  protected _options: ns.InternalOptions<Input, Output, CtxOptions>;
 
   // contexts & values
   protected context: Context<Input, Output, CtxOptions> = {} as Context<
@@ -267,6 +270,7 @@ export abstract class SchemaCore<
     const optionsProvided = Object.keys(options) as ns.OptionsKey<
       Output,
       Input,
+      any,
       any
     >[];
 
@@ -329,6 +333,12 @@ export abstract class SchemaCore<
             "'shouldUpdate' should either be a 'boolean' or a 'function'"
           )
           .throw();
+    }
+
+    if (isPropertyOf('postValidate', options)) {
+      const isValid = this._isPostValidateOptionOk(options.postValidate);
+
+      if (!isValid.valid) error.add('postValidate', isValid.reason!).throw();
     }
 
     if (isPropertyOf('timestamps', options)) {
@@ -470,6 +480,12 @@ export abstract class SchemaCore<
     );
   };
 
+  protected _isInputProp = (prop: string) => {
+    if (!this._isProp(prop)) return false;
+
+    return !this._isConstant(prop) && !this._isDependentProp(prop);
+  };
+
   protected _getConstantValue = async (prop: string) =>
     this._getValueBy(prop, 'value');
 
@@ -566,7 +582,7 @@ export abstract class SchemaCore<
 
       if (isPropertyOf('error', allow)) {
         const invalidErrorTypeMessage =
-          'The error field of the allow rule can only accept a string, array of strings, InputFieldError or an function that returns any of the above mentioned';
+          'The "error" field of the allow rule can only accept a string, array of strings, InputFieldError or an function that returns any of the above mentioned';
 
         const error = (allow as any).error,
           isArray = Array.isArray(error),
@@ -1218,6 +1234,64 @@ export abstract class SchemaCore<
 
     return true;
   };
+
+  private _isPostValidateSingleConfigOk(value: any) {
+    const valid = false;
+
+    if (
+      !isPropertyOf('properties', value) ||
+      !isPropertyOf('handler', value) ||
+      Object.keys(value).length > 2
+    )
+      return {
+        valid,
+        reason: invalidPostValidateSingleConfig
+      };
+
+    if (!Array.isArray(value.properties))
+      return {
+        valid,
+        reason:
+          '"properties" must be an array of at least 2 input properties of your schema'
+      };
+
+    const properties = getUnique(value.properties).filter(this._isInputProp);
+
+    if (properties.length < 2)
+      return {
+        valid,
+        reason:
+          '"properties" must be an array of at least 2 input properties of your schema'
+      };
+
+    if (!isFunctionLike(value.handler))
+      return { valid, reason: '"handler" must be a function' };
+
+    return { valid: true };
+  }
+
+  private _isPostValidateOptionOk(
+    postValidateOption: ns.Options<Input, Output, any>['postValidate']
+  ) {
+    const valid = false;
+
+    const isArray = Array.isArray(postValidateOption),
+      isObject = isRecordLike(postValidateOption);
+
+    if (!postValidateOption || (!isArray && !isObject))
+      return {
+        valid,
+        reason: invalidPostValidateSingleConfig
+      };
+
+    if (isObject) {
+      const isValid = this._isPostValidateSingleConfigOk(postValidateOption);
+
+      if (!isValid.valid) return isValid;
+    }
+
+    return { valid: true };
+  }
 
   private _isTimestampsOptionOk(
     timestamps: ns.Options<Input, Output, any>['timestamps']

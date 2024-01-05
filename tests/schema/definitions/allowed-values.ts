@@ -343,7 +343,7 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
             } catch (err: any) {
               expect(err.payload).toMatchObject({
                 prop: [
-                  'The error field of the allow rule can only accept a string, array of strings, InputFieldError or an function that returns any of the above mentioned'
+                  'The "error" field of the allow rule can only accept a string, array of strings, InputFieldError or an function that returns any of the above mentioned'
                 ]
               });
             }

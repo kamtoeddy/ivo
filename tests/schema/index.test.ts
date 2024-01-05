@@ -24,6 +24,7 @@ import { Test_SchemaEqualityDepth } from './options/equality-depth';
 import { Test_ExtendedSchemas } from './definitions/extended-schemas';
 import { Test_AllowedValues } from './definitions/allowed-values';
 import { valuesParsing_Tests } from './values-parsing';
+import { Test_SchemaOptionPostValidate } from './options/post-validate';
 
 const fx = makeFx(Schema);
 
@@ -56,3 +57,4 @@ Test_SchemaOptionFormat({ fx });
 Test_SchemaSetMissingDefaultsOnUpdateOption({ Schema, fx });
 Test_SchemaShouldUpdateOption({ Schema, fx });
 Test_SchemaTimestampOption({ Schema, fx });
+Test_SchemaOptionPostValidate({ Schema, fx });

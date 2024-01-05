@@ -72,17 +72,17 @@ type Summary<Input, Output = Input, CtxOptions extends ObjectType = {}> = (
 
 type TypeOf<T> = Exclude<T, undefined>;
 
-type AsyncSetter<T, Input, Output, CtxOptions extends ObjectType = {}> = (
+type AsyncSetter<T, Input, Output, CtxOptions extends ObjectType> = (
   context: Context<Input, Output, CtxOptions>
 ) => TypeOf<T> | Promise<TypeOf<T>>;
 
 type NotAllowedError = string | string[] | InputFieldError;
 
-type Setter<T, Input, Output, CtxOptions extends ObjectType = {}> = (
+type Setter<T, Input, Output, CtxOptions extends ObjectType> = (
   context: Context<Input, Output, CtxOptions>
 ) => TypeOf<T>;
 
-type RequiredHandler<Input, Output, CtxOptions extends ObjectType = {}> = (
+type RequiredHandler<Input, Output, CtxOptions extends ObjectType> = (
   summary: Summary<Input, Output, CtxOptions> & {}
 ) =>
   | boolean
@@ -107,7 +107,7 @@ type Resolver<
   K extends keyof Output,
   Input,
   Output,
-  CtxOptions extends ObjectType = {}
+  CtxOptions extends ObjectType
 > = (
   summary: Summary<Input, Output, CtxOptions> & {}
 ) => TypeOf<Output[K]> | Promise<TypeOf<Output[K]>>;
@@ -116,10 +116,26 @@ type VirtualResolver<
   K extends keyof Input,
   Input,
   Output,
-  CtxOptions extends ObjectType = {}
+  CtxOptions extends ObjectType
 > = (
-  summary: Summary<Input, Output, CtxOptions> & {}
+  summary: Summary<Input, Output, CtxOptions>
 ) => TypeOf<Input[K]> | Promise<TypeOf<Input[K]>>;
+
+type PostValidationConfig<
+  Input,
+  Output,
+  Aliases,
+  CtxOptions extends ObjectType
+> = {
+  properties: ArrayOfMinSizeTwo<KeyOf<Input>>;
+  handler: (
+    summary: Summary<Input, Output, CtxOptions>,
+    propertiesProvided: KeyOf<Input>[]
+  ) =>
+    | void
+    | ResponseErrorObject<Input, Aliases>
+    | Promise<void | ResponseErrorObject<Input, Aliases>>;
+};
 
 type KeyOf<T> = Extract<keyof T, string>;
 
@@ -205,9 +221,9 @@ namespace NS {
       readonly?: boolean | 'lax';
       resolver?: Function;
       required?: boolean | RequiredHandler<Input, Output, {}>;
-      sanitizer?: VirtualResolver<K, Input, Output>;
-      shouldInit?: false | Setter<boolean, Input, Output>;
-      shouldUpdate?: false | Setter<boolean, Input, Output>;
+      sanitizer?: VirtualResolver<K, Input, Output, any>;
+      shouldInit?: false | Setter<boolean, Input, Output, any>;
+      shouldUpdate?: false | Setter<boolean, Input, Output, any>;
       validator?: Function;
       value?: any;
       virtual?: boolean;
@@ -238,7 +254,7 @@ namespace NS {
     K extends keyof Output,
     Input,
     Output,
-    CtxOptions extends ObjectType = {}
+    CtxOptions extends ObjectType
   > = {
     constant: true;
     onDelete?:
@@ -270,16 +286,18 @@ namespace NS {
     K extends keyof Output,
     Input,
     Output,
-    CtxOptions extends ObjectType = {}
+    CtxOptions extends ObjectType
   > = Exclude<KeyOf<Context<Input, Output, CtxOptions>>, K | '__getOptions__'>;
 
   type Dependent<
     K extends keyof Output,
     Input,
     Output,
-    CtxOptions extends ObjectType = {}
+    CtxOptions extends ObjectType
   > = {
-    default: TypeOf<Output[K]> | AsyncSetter<Output[K], Input, Output>;
+    default:
+      | TypeOf<Output[K]>
+      | AsyncSetter<Output[K], Input, Output, CtxOptions>;
     dependsOn:
       | Dependables<K, Input, Output, CtxOptions>
       | ArrayOfMinSizeOne<Dependables<K, Input, Output, CtxOptions>>;
@@ -296,7 +314,7 @@ namespace NS {
   type InitAndUpdateBlockable<
     Input,
     Output,
-    CtxOptions extends ObjectType = {}
+    CtxOptions extends ObjectType
   > = XOR<
     {
       shouldInit?: Setter<boolean, Input, Output, CtxOptions>;
@@ -319,7 +337,7 @@ namespace NS {
     Input,
     Output,
     Aliases,
-    CtxOptions extends ObjectType = {}
+    CtxOptions extends ObjectType
   > = Listenable<Input, Output> &
     InitAndUpdateBlockable<Input, Output, CtxOptions> & {
       default:
@@ -333,7 +351,7 @@ namespace NS {
     Input,
     Output,
     Aliases,
-    CtxOptions extends ObjectType = {}
+    CtxOptions extends ObjectType
   > = Listenable<Input, Output, CtxOptions> & {
     default:
       | TypeOf<Output[K]>
@@ -348,7 +366,7 @@ namespace NS {
     Input,
     Output,
     Aliases,
-    CtxOptions extends ObjectType = {}
+    CtxOptions extends ObjectType
   > = Listenable<Input, Output, CtxOptions> & {
     default:
       | TypeOf<Output[K]>
@@ -364,7 +382,7 @@ namespace NS {
     Input,
     Output,
     Aliases,
-    CtxOptions extends ObjectType = {}
+    CtxOptions extends ObjectType
   > = Listenable<Input, Output, CtxOptions> & {
     readonly: true;
     validator: Validator<K, Input, Output, Aliases, CtxOptions>;
@@ -375,7 +393,7 @@ namespace NS {
     Input,
     Output,
     Aliases,
-    CtxOptions extends ObjectType = {}
+    CtxOptions extends ObjectType
   > = Listenable<Input, Output, CtxOptions> & {
     required: true;
     shouldUpdate?: false | Setter<boolean, Input, Output, CtxOptions>;
@@ -387,7 +405,7 @@ namespace NS {
     Input,
     Output,
     Aliases,
-    CtxOptions extends ObjectType = {}
+    CtxOptions extends ObjectType
   > = Listenable<Input, Output, CtxOptions> & {
     default:
       | TypeOf<Output[K]>
@@ -404,7 +422,7 @@ namespace NS {
     Input,
     Output,
     Aliases,
-    CtxOptions extends ObjectType = {}
+    CtxOptions extends ObjectType
   > = InitAndUpdateBlockable<Input, Output, CtxOptions> &
     Enumerable<Input[K]> & {
       alias?: Exclude<KeyOf<Aliases>, K> extends undefined
@@ -425,7 +443,7 @@ namespace NS {
   export type InternalOptions<
     Input,
     Output,
-    CtxOptions extends ObjectType = {},
+    CtxOptions extends ObjectType,
     ErrorTool extends IErrorTool<any> = any
   > = {
     ErrorTool: ErrorToolClass<ErrorTool, CtxOptions>;
@@ -437,6 +455,9 @@ namespace NS {
     onSuccess?:
       | SuccessHandler<Input, Output, CtxOptions>
       | ArrayOfMinSizeOne<SuccessHandler<Input, Output, CtxOptions>>;
+    postValidate?:
+      | PostValidationConfig<Input, Output, any, CtxOptions>
+      | ArrayOfMinSizeOne<PostValidationConfig<Input, Output, any, CtxOptions>>;
     setMissingDefaultsOnUpdate?: boolean;
     shouldUpdate?: boolean | AsyncShouldUpdate<Input, Output, CtxOptions>;
     timestamps?:
@@ -447,6 +468,7 @@ namespace NS {
   export type Options<
     Input,
     Output,
+    Aliases,
     ErrorTool extends IErrorTool<any> = any,
     CtxOptions extends ObjectType = {}
   > = {
@@ -459,6 +481,11 @@ namespace NS {
     onSuccess?:
       | SuccessHandler<Input, Output, CtxOptions>
       | ArrayOfMinSizeOne<SuccessHandler<Input, Output, CtxOptions>>;
+    postValidate?:
+      | PostValidationConfig<Input, Output, Aliases, CtxOptions>
+      | ArrayOfMinSizeOne<
+          PostValidationConfig<Input, Output, Aliases, CtxOptions>
+        >;
     setMissingDefaultsOnUpdate?: boolean;
     shouldUpdate?: boolean | AsyncShouldUpdate<Input, Output, CtxOptions>;
     timestamps?:
@@ -469,8 +496,9 @@ namespace NS {
   export type OptionsKey<
     Input,
     Output,
+    Aliases,
     ErrorTool extends IErrorTool<any>
-  > = KeyOf<Options<Input, Output, ErrorTool>>;
+  > = KeyOf<Options<Input, Output, Aliases, ErrorTool>>;
 
   export type PrivateOptions = { timestamps: Timestamp };
 
@@ -481,9 +509,10 @@ namespace NS {
     ParentOutput,
     Input,
     Output,
+    Aliases,
     ErrorTool extends IErrorTool<any>,
     CtxOptions extends ObjectType = {}
-  > = Options<Input, Output, ErrorTool, CtxOptions> & {
+  > = Options<Input, Output, Aliases, ErrorTool, CtxOptions> & {
     remove?:
       | KeyOf<Merge<ParentInput, ParentOutput>>
       | KeyOf<Merge<ParentInput, ParentOutput>>[];
@@ -579,12 +608,13 @@ const DEFINITION_RULES = [
 
 type DefinitionRule = (typeof DEFINITION_RULES)[number];
 
-const ALLOWED_OPTIONS: NS.OptionsKey<any, any, any>[] = [
+const ALLOWED_OPTIONS: NS.OptionsKey<any, any, any, any>[] = [
   'ErrorTool',
   'equalityDepth',
   'errors',
   'onDelete',
   'onSuccess',
+  'postValidate',
   'setMissingDefaultsOnUpdate',
   'shouldUpdate',
   'timestamps'
