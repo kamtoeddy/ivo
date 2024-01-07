@@ -5,7 +5,7 @@ For any schema that inherits from another, call the extend method on the parent 
 > N.B:
 >
 > - To overwrite a property, you just do it in the property definitions.
-> - All options are inherited except lifecycles and [shouldUpdate](../index.md#shouldupdate) options
+> - [postValidate](../index.md#postvalidate), [shouldUpdate](../index.md#shouldupdate) and lifecycles are the only options that are not inherited
 
 Example:
 

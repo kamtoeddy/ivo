@@ -81,7 +81,7 @@ const UserModel = userSchema.getModel();
 # Creating an entity
 
 ```ts
-import userDb from 'db-of-choice'; // use any db that supports the information you are modelling
+import userDb from 'db-of-choice';
 
 const { data, error } = await UserModel.create({
   firstName: 'John',

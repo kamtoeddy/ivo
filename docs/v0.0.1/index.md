@@ -266,6 +266,10 @@ This could be a function or an array of functions with the `DeleteListener` sign
 
 This could be a function or an array of functions with the `SuccessListener` signature above. These functions would be triggered together with the onSuccess listeners of individual properties when the handleSuccess method is invoked at creation & during updates of any property. See more [here](./life-cycles.md#onsuccess)
 
+## postValidate
+
+To validate integrity of more than one field after initial validation. More on this [here](./validators/index.md#post-validation)
+
 ## setMissingDefaultsOnUpdate
 
 A boolean. If set to `true`, it'll check all defaultable properties of the existing data passed to the model's update method `Model.update(existingData, updates)`, for all the properties with value `undefined` it'll generate their default values, add these them to the operation's context before validating the updates provided.
