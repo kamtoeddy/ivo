@@ -17,6 +17,8 @@ export type {
   Merge,
   NS,
   PartialContext,
+  PostValidationConfig,
+  PostValidationHandler,
   Summary,
   RealType,
   ResponseErrorObject,
@@ -121,6 +123,19 @@ type VirtualResolver<
   summary: Summary<Input, Output, CtxOptions>
 ) => TypeOf<Input[K]> | Promise<TypeOf<Input[K]>>;
 
+type PostValidationHandler<
+  Input,
+  Output,
+  Aliases,
+  CtxOptions extends ObjectType
+> = (
+  summary: Summary<Input, Output, CtxOptions>,
+  propertiesProvided: KeyOf<Input>[]
+) =>
+  | void
+  | ResponseErrorObject<Input, Aliases>
+  | Promise<void | ResponseErrorObject<Input, Aliases>>;
+
 type PostValidationConfig<
   Input,
   Output,
@@ -128,13 +143,7 @@ type PostValidationConfig<
   CtxOptions extends ObjectType
 > = {
   properties: ArrayOfMinSizeTwo<KeyOf<Input>>;
-  handler: (
-    summary: Summary<Input, Output, CtxOptions>,
-    propertiesProvided: KeyOf<Input>[]
-  ) =>
-    | void
-    | ResponseErrorObject<Input, Aliases>
-    | Promise<void | ResponseErrorObject<Input, Aliases>>;
+  handler: PostValidationHandler<Input, Output, Aliases, CtxOptions>;
 };
 
 type KeyOf<T> = Extract<keyof T, string>;

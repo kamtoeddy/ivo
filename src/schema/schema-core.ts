@@ -35,11 +35,10 @@ import {
   CONSTANT_RULES,
   VIRTUAL_RULES,
   LIFE_CYCLES,
-  PartialContext
+  PartialContext,
+  PostValidationConfig,
+  PostValidationHandler
 } from './types';
-
-const invalidPostValidateSingleConfig =
-  'The "postValidate" option must be an object with keys "properties" and "handler" or an array of "PostValidateConfig"';
 
 export const defaultOptions = {
   equalityDepth: 1,
@@ -49,6 +48,39 @@ export const defaultOptions = {
   shouldUpdate: true,
   timestamps: false
 } as ns.Options<any, any, any>;
+
+type InvalidPostValidateConfigMessage =
+  | 'default'
+  | 'handler-must-be-function'
+  | 'properties-must-be-input-array';
+
+export function getInvalidPostValidateConfigMessage(
+  index?: number,
+  message: InvalidPostValidateConfigMessage = 'default'
+) {
+  const hasIndex = typeof index == 'number';
+
+  if (message == 'default')
+    return `The "postValidate" option${
+      hasIndex ? ` at index ${index},` : ''
+    } must be an object with keys "properties" and "handler" or an array of "PostValidateConfig"`;
+
+  if (message == 'properties-must-be-input-array')
+    return `${
+      hasIndex ? `Config at index ${index}:  ` : ''
+    }"properties" must be an array of at least 2 input properties of your schema`;
+
+  return `${
+    hasIndex ? `Config at index ${index}:  ` : ''
+  }"handler" must be a function`;
+}
+
+export function getInvalidPostValidateConfigMessageForRepeatedProperties(
+  index: number,
+  existingIndex: number
+) {
+  return `Config at index ${index} has the same properties as config at index ${existingIndex}`;
+}
 
 export abstract class SchemaCore<
   Input,
@@ -77,6 +109,18 @@ export abstract class SchemaCore<
   protected readonly dependencyMap: ns.DependencyMap<Input> = {};
   protected readonly propsToAllowedValuesMap = new Map<string, Set<any>>();
   protected readonly virtualToAliasMap: ns.AliasToVirtualMap<Input> = {};
+  protected readonly postValidatorToHandlerMap = new Map<
+    number,
+    PostValidationHandler<Input, Output, any, {}>
+  >();
+  protected readonly postValidatorPropsToValidatorIndexMap = new Map<
+    string,
+    number
+  >();
+  protected readonly propsToPostValidatorIndicesMap = new Map<
+    string,
+    Set<number>
+  >();
 
   // props
   protected readonly constants = new Set<KeyOf<Output>>();
@@ -1237,24 +1281,27 @@ export abstract class SchemaCore<
     return true;
   };
 
-  private _isPostValidateSingleConfigOk(value: any) {
+  private _isPostValidateSingleConfigOk(value: any, index?: number) {
     const valid = false;
 
     if (
+      !value ||
       !isPropertyOf('properties', value) ||
       !isPropertyOf('handler', value) ||
       Object.keys(value).length > 2
     )
       return {
         valid,
-        reason: invalidPostValidateSingleConfig
+        reason: getInvalidPostValidateConfigMessage(index)
       };
 
     if (!Array.isArray(value.properties))
       return {
         valid,
-        reason:
-          '"properties" must be an array of at least 2 input properties of your schema'
+        reason: getInvalidPostValidateConfigMessage(
+          index,
+          'properties-must-be-input-array'
+        )
       };
 
     const properties = getUnique(value.properties).filter(this._isInputProp);
@@ -1262,12 +1309,51 @@ export abstract class SchemaCore<
     if (properties.length < 2)
       return {
         valid,
-        reason:
-          '"properties" must be an array of at least 2 input properties of your schema'
+        reason: getInvalidPostValidateConfigMessage(
+          index,
+          'properties-must-be-input-array'
+        )
       };
 
     if (!isFunctionLike(value.handler))
-      return { valid, reason: '"handler" must be a function' };
+      return {
+        valid,
+        reason: getInvalidPostValidateConfigMessage(
+          index,
+          'handler-must-be-function'
+        )
+      };
+
+    return { valid: true };
+  }
+
+  private _registerPostValidator(
+    { properties, handler }: PostValidationConfig<Input, Output, any, {}>,
+    index: number
+  ) {
+    const sortedProps = sort(properties),
+      sortedPropsId = sortedProps.toString();
+
+    if (this.postValidatorPropsToValidatorIndexMap.has(sortedPropsId))
+      return {
+        valid: false,
+        reason: getInvalidPostValidateConfigMessageForRepeatedProperties(
+          index,
+          this.postValidatorPropsToValidatorIndexMap.get(sortedPropsId)!
+        )
+      };
+
+    sortedProps.forEach((prop) => {
+      const validatorIndicesSet =
+        this.propsToPostValidatorIndicesMap.get(prop) ?? new Set();
+
+      validatorIndicesSet.add(index);
+
+      this.propsToPostValidatorIndicesMap.set(prop, validatorIndicesSet);
+    });
+
+    this.postValidatorToHandlerMap.set(index, handler);
+    this.postValidatorPropsToValidatorIndexMap.set(sortedPropsId, index);
 
     return { valid: true };
   }
@@ -1277,22 +1363,46 @@ export abstract class SchemaCore<
   ) {
     const valid = false;
 
-    const isArray = Array.isArray(postValidateOption),
-      isObject = isRecordLike(postValidateOption);
+    const isObject = isRecordLike(postValidateOption);
 
-    if (!postValidateOption || (!isArray && !isObject))
+    if (
+      !postValidateOption ||
+      (!Array.isArray(postValidateOption) && !isObject)
+    )
       return {
         valid,
-        reason: invalidPostValidateSingleConfig
+        reason: getInvalidPostValidateConfigMessage()
       };
 
     if (isObject) {
       const isValid = this._isPostValidateSingleConfigOk(postValidateOption);
 
       if (!isValid.valid) return isValid;
+
+      this._registerPostValidator(postValidateOption as any, 0);
+
+      return { valid: true };
     }
 
-    return { valid: true };
+    const configs: PostValidationConfig<Input, Output, any, {}>[] =
+        postValidateOption,
+      reasons: string[] = [];
+
+    configs.forEach((config, i) => {
+      const isValid = this._isPostValidateSingleConfigOk(config, i);
+
+      if (!isValid.valid) reasons.push(isValid.reason!);
+    });
+
+    if (reasons.length) return { valid: false, reason: reasons };
+
+    configs.forEach((config, i) => {
+      const isValid = this._registerPostValidator(config, i);
+
+      if (!isValid.valid) reasons.push(isValid.reason!);
+    });
+
+    return reasons.length ? { valid: false, reason: reasons } : { valid: true };
   }
 
   private _isTimestampsOptionOk(
