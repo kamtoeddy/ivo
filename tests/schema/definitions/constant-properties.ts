@@ -174,7 +174,7 @@ export const Test_ConstantProperties = ({ Schema, fx }: any) => {
         }
       });
 
-      it('should reject (constant & value) + any other rule(!onCreate)', () => {
+      it('should reject (constant & value) + any other non constant rule', () => {
         const rules = [
           'default',
           'dependsOn',

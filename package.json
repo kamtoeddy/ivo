@@ -1,9 +1,27 @@
 {
+  "name": "ivo",
   "author": "kamtoeddy",
+  "description": "A different approach to schema valitation",
+  "version": "1.0.0",
+  "license": "MIT",
+  "homepage": "https://github.com/kamtoeddy/ivo#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kamtoeddy/ivo.git"
+  },
   "bugs": {
     "url": "https://github.com/kamtoeddy/ivo/issues"
   },
-  "description": "A different approach to schema valitation",
+  "scripts": {
+    "build": "tsup",
+    "build:watch": "tsup --watch",
+    "clean-up": "rm -rf coverage dist",
+    "lint": "tsc --noEmit && eslint \"src/**/*.ts*\"",
+    "test": "npm run build && vitest run",
+    "test:cov": "npm run build && vitest run --coverage",
+    "test:watch": "npm run build && vitest",
+    "prepare": "npm run clean-up && npm run build"
+  },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^5.58.0",
     "@typescript-eslint/parser": "^5.58.0",
@@ -21,24 +39,6 @@
   "files": [
     "dist"
   ],
-  "homepage": "https://github.com/kamtoeddy/ivo#readme",
-  "license": "MIT",
-  "name": "ivo",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/kamtoeddy/ivo.git"
-  },
-  "scripts": {
-    "build": "tsup",
-    "build:watch": "tsup --watch",
-    "clean-up": "rm -rf coverage dist",
-    "lint": "tsc --noEmit && eslint \"src/**/*.ts*\"",
-    "test": "npm run build && vitest run",
-    "test:cov": "npm run build && vitest run --coverage",
-    "test:watch": "npm run build && vitest",
-    "prepare": "npm run clean-up && npm run build"
-  },
-  "version": "0.0.1",
   "keywords": [
     "schema",
     "validation"

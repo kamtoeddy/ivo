@@ -1,6 +1,6 @@
 # Validators
 
-Validators are expected to behave as below
+A validator is a function that assesses the validity of a property (meaning one validator per property). It can be sync/async but is expected to behave as below
 
 ```ts
 import type { Summary } from 'ivo';
@@ -17,7 +17,7 @@ type ValidationResults =
   | boolean
   | {
       valid: true; // tells if data was valid or not
-      validated?: keyof Input[K]; // the validated values passed which could have been formated in the custom validator (i.e made ready for the db). "K" here represents the property being validated
+      validated?: Input[K]; // the validated values passed which could have been formated in the custom validator (i.e made ready for the db). "K" here represents the property being validated
     }
   | {
       metadata?: Record<string, any>; // an object that will contain extra info on why validation failed

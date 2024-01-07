@@ -119,7 +119,7 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
         propChangeMap = {};
       });
 
-      it('should reject handlers that try to mutate the onChange, onCreate & onSuccess ctx', async () => {
+      it('should reject handlers that try to mutate the onSuccess ctx', async () => {
         const { handleSuccess } = await Model.create(validData);
 
         await handleSuccess?.();

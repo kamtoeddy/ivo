@@ -1,6 +1,6 @@
 ## Constant Properties
 
-This type of property is set at creation or cloning and never changes.
+This type of property is set at creation and never changes.
 
 - It requires 2 rules:
 
