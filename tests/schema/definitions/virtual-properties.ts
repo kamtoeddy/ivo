@@ -977,6 +977,46 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
             });
           });
         });
+
+        describe('behaviour with errors thrown in the sanitizer', () => {
+          const Model = new Schema({
+            dependent: {
+              default: '',
+              dependsOn: 'virtual',
+              resolver: ({ context }) => context.virtual
+            },
+            virtual: {
+              virtual: true,
+              sanitizer() {
+                throw new Error('lolol');
+              },
+              validator: () => true
+            }
+          }).getModel();
+
+          const values = [null, '', 1, 0, -1, true, false, [], {}];
+
+          it('should use the validated value at creation', async () => {
+            for (const virtual of values) {
+              const { data, error } = await Model.create({ virtual });
+
+              expect(error).toBeNull();
+              expect(data).toMatchObject({ dependent: virtual });
+            }
+          });
+
+          it('should use the validated value during updates', async () => {
+            for (const virtual of values) {
+              const { data, error } = await Model.update(
+                { dependent: 'lolol' },
+                { virtual }
+              );
+
+              expect(error).toBeNull();
+              expect(data).toMatchObject({ dependent: virtual });
+            }
+          });
+        });
       });
     });
 
