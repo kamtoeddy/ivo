@@ -375,5 +375,57 @@ export const Test_Validators = ({ Schema }: any) => {
         });
       });
     });
+
+    describe('behaviour with errors thrown in the validator', () => {
+      const Model = new Schema({
+        prop1: {
+          default: '',
+          validator() {
+            throw new Error('lolol');
+          }
+        },
+        prop2: {
+          default: '',
+          validator: () => false
+        }
+      }).getModel();
+
+      it("should return the 'an error occurred at creation'", async () => {
+        const { data, error } = await Model.create({ prop1: '', prop2: '' });
+
+        expect(data).toBeNull();
+        expect(error).toMatchObject({
+          message: ERRORS.VALIDATION_ERROR,
+          payload: expect.objectContaining({
+            prop1: expect.objectContaining({
+              reasons: expect.arrayContaining(['An error occurred'])
+            }),
+            prop2: expect.objectContaining({
+              reasons: expect.arrayContaining(['validation failed'])
+            })
+          })
+        });
+      });
+
+      it("should return the 'an error occurred during updates'", async () => {
+        const { data, error } = await Model.update(
+          { prop1: '', prop2: '' },
+          { prop1: 'updated', prop2: 'updated' }
+        );
+
+        expect(data).toBeNull();
+        expect(error).toMatchObject({
+          message: ERRORS.VALIDATION_ERROR,
+          payload: expect.objectContaining({
+            prop1: expect.objectContaining({
+              reasons: expect.arrayContaining(['An error occurred'])
+            }),
+            prop2: expect.objectContaining({
+              reasons: expect.arrayContaining(['validation failed'])
+            })
+          })
+        });
+      });
+    });
   });
 };

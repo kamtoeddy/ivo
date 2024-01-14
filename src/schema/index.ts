@@ -808,12 +808,21 @@ class ModelTool<
     const validator = this._getValidator(_prop as any);
 
     if (validator) {
-      const res = this._sanitizeValidationResponse<(Input & Aliases)[K]>(
-        (await validator(value, summary_)) as ValidatorResponseObject<
-          (Input & Aliases)[K]
-        >,
-        value
-      );
+      let res: ValidatorResponseObject<(Input & Aliases)[K]>;
+
+      try {
+        res = this._sanitizeValidationResponse<(Input & Aliases)[K]>(
+          (await validator(value, summary_)) as ValidatorResponseObject<
+            (Input & Aliases)[K]
+          >,
+          value
+        );
+      } catch (_) {
+        return makeResponse<(Input & Aliases)[K]>({
+          valid: false,
+          reason: 'An error occurred'
+        });
+      }
 
       if (allowedValues && res.valid && !allowedValues.has(res.validated))
         return makeResponse<(Input & Aliases)[K]>({
