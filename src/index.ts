@@ -20,10 +20,8 @@ export {
   toArray
 } from './utils';
 export {
-  ArrayOfMinSizeN,
   Context,
   DeleteContext,
-  OPERATIONS,
   KeyOf,
   Merge,
   ArrayOfMinSizeOne as NonEmptyArray,

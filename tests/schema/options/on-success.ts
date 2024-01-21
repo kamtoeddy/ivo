@@ -53,7 +53,7 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
           const summary = {
             changes: null,
             context: { ...values, _setPrice: 100 },
-            operation: 'creation',
+            isUpdate: false,
             previousValues: null,
             values: values
           };
@@ -82,7 +82,7 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
           const summary = {
             changes: data,
             context: { ...values, _setPrice: 200 },
-            operation: 'update',
+            isUpdate: true,
             previousValues: book,
             values: values
           };
@@ -123,7 +123,7 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
           const summary = {
             changes: null,
             context: { ...values, _setPrice: 100 },
-            operation: 'creation',
+            isUpdate: false,
             previousValues: null,
             values: values
           };
@@ -149,7 +149,7 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
           const summary = {
             changes: data,
             context: { ...values, _setPrice: 200 },
-            operation: 'update',
+            isUpdate: true,
             previousValues: book,
             values: values
           };

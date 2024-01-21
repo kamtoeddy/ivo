@@ -589,8 +589,8 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
             },
             _price: {
               virtual: true,
-              required({ context: { _price }, operation }: any) {
-                return _price == undefined && operation == 'creation';
+              required({ context: { _price }, isUpdate }: any) {
+                return _price == undefined && !isUpdate;
               },
               validator: validator
             }

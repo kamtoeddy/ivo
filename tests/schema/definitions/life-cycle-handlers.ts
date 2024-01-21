@@ -463,10 +463,10 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
 
         const changes = null,
           context = onSuccessValues.__ctx,
-          operation = 'creation',
+          isUpdate = false,
           previousValues = null,
           values = data,
-          summary = { changes, context, operation, previousValues, values };
+          summary = { changes, context, isUpdate, previousValues, values };
 
         expect(onSuccessValues).toMatchObject({
           dependent: summary,
@@ -495,13 +495,11 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
         });
         expect(propChangeMap).toEqual({ lax: true });
 
-        const operation = 'update';
-
         expect(onSuccessValues).toMatchObject({
           lax: expect.objectContaining({
             changes: data,
             context: onSuccessValues.__ctx,
-            operation,
+            isUpdate: true,
             previousValues: initialData,
             values: { ...initialData, lax: true }
           })
@@ -528,10 +526,10 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
 
         const changes = data,
           context = onSuccessValues.__ctx,
-          operation = 'update',
+          isUpdate = true,
           previousValues = initialData,
           values = { ...initialData, ...data },
-          summary = { changes, context, operation, previousValues, values };
+          summary = { changes, context, isUpdate, previousValues, values };
 
         expect(onSuccessValues).toMatchObject({
           dependent: summary,

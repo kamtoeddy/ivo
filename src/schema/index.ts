@@ -218,7 +218,6 @@ class ModelTool<
 
   private _getSummary(data: Partial<Output>, isUpdate = false) {
     const changes = isUpdate ? data : null,
-      operation = isUpdate ? 'update' : 'creation',
       previousValues = isUpdate ? this._getFrozenCopy(this.values) : null,
       context = this._getContext(isUpdate ? previousValues : null),
       values = this._getFrozenCopy(
@@ -230,7 +229,7 @@ class ModelTool<
     return this._getFrozenCopy({
       changes,
       context,
-      operation,
+      isUpdate,
       previousValues,
       values
     }) as Summary<Input, Output, CtxOptions>;

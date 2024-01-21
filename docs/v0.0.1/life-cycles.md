@@ -1,6 +1,6 @@
 # The Operation Context
 
-This is an object comprized of values of the instance during a life cycle operation ( cloning, creation or update ) plus any side effect values (if present during the operation) defined in your schema.
+This is an object comprized of values of the instance during a life cycle operation ( creation or update ) plus any virtual properties (if present during the operation) defined in your schema.
 
 This object also has a method `__getOptions__` that return a readonly copy of the context options provided at creation, updates and deletions. [more here](#context-options)
 
@@ -128,14 +128,14 @@ type S =
   | Readonly<{
       changes: null;
       context: IContext;
-      operation: 'creation';
+      isUpdate: false;
       previousValues: null;
       values: Readonly<Output>;
     }>
   | Readonly<{
       changes: Partial<Readonly<Output>>;
       context: IContext;
-      operation: 'update';
+      isUpdate: true;
       previousValues: Readonly<Output>;
       values: Readonly<Output>;
     }>;
@@ -178,9 +178,9 @@ A void function or array of void functions(async / sync) you want to execute eve
 
 A void function or array of void functions(async / sync) you want to execute every time the **`create`** & **`update`** operations are successful. Handlers for this event should expect the operation's summary as only parameter. Default **[ ]**. They are expected to respect the `type HandlerWithSummary` as shown above
 
-As from `v2.5.0`, these handlers have to be triggered manually by invoking the handleSuccess method of the operation's results object returned by the create & update methods of your models.
+These handlers have to be triggered manually by invoking the handleSuccess method of the operation's results object returned by the create & update methods of your models.
 
-If the operation is unsuccessful, `data` and `handleSuccess` will be `null`
+> N.B: If the operation is unsuccessful, `data` and `handleSuccess` will be `null`
 
 ```js
 const { data, error, handleSuccess } = await UserModel.create(userData);

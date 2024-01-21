@@ -9,7 +9,6 @@ import {
 export type {
   ArrayOfMinSizeOne,
   ArrayOfMinSizeTwo,
-  ArrayOfMinSizeN,
   Context,
   DeleteContext,
   DefinitionRule,
@@ -37,7 +36,6 @@ export {
   CONSTANT_RULES,
   DEFINITION_RULES,
   LIFE_CYCLES,
-  OPERATIONS,
   VIRTUAL_RULES
 };
 
@@ -59,14 +57,14 @@ type Summary<Input, Output = Input, CtxOptions extends ObjectType = {}> = (
   | Readonly<{
       changes: null;
       context: Context<Input, Output, CtxOptions>;
-      operation: 'creation';
+      isUpdate: false;
       previousValues: null;
       values: Readonly<Output>;
     }>
   | Readonly<{
       changes: Partial<RealType<Output>>;
       context: Context<Input, Output, CtxOptions>;
-      operation: 'update';
+      isUpdate: true;
       previousValues: Readonly<Output>;
       values: Readonly<Output>;
     }>
@@ -150,8 +148,6 @@ type KeyOf<T> = Extract<keyof T, string>;
 
 namespace NS {
   export type LifeCycle = (typeof LIFE_CYCLES)[number];
-
-  export type Operation = (typeof OPERATIONS)[number];
 
   export type DeleteHandler<Output, CtxOptions extends ObjectType> = (
     data: DeleteContext<Output, CtxOptions>
@@ -582,18 +578,8 @@ type VirtualValidator<
   | ValidatorResponse<TypeOf<Input[K]>, Input, Aliases>
   | Promise<ValidatorResponse<TypeOf<Input[K]>, Input, Aliases>>;
 
-type ArrayOfMinSizeOne<T> = ArrayOfMinSizeN<T, 1>;
-type ArrayOfMinSizeTwo<T> = ArrayOfMinSizeN<T, 2>;
-
-type ArrayOfMinSizeN<
-  T,
-  Size extends number,
-  Current extends T[] = []
-> = `${Size}` extends `-${string}` | `${string}.${string}` // reject negative & floats
-  ? never
-  : Current['length'] extends Size
-  ? Current
-  : ArrayOfMinSizeN<T, Size, [T, ...Current]>;
+type ArrayOfMinSizeOne<T> = [T, ...T[]];
+type ArrayOfMinSizeTwo<T> = [T, T, ...T[]];
 
 const DEFINITION_RULES = [
   'alias',
@@ -643,7 +629,6 @@ const VIRTUAL_RULES = [
 ];
 
 const LIFE_CYCLES = ['onDelete', 'onFailure', 'onSuccess'] as const;
-const OPERATIONS = ['creation', 'update'] as const;
 
 interface ErrorToolClass<ErrorTool, CtxOptions extends ObjectType> {
   new (message: ValidationErrorMessage, ctxOptions: CtxOptions): ErrorTool;

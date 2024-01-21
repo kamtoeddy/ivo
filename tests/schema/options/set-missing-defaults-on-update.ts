@@ -46,7 +46,7 @@ export const Test_SchemaSetMissingDefaultsOnUpdateOption = ({
           expect(summary).toMatchObject({
             changes: updates,
             context: { dependent: '', lax: 'lax', ...updates },
-            operation: 'update',
+            isUpdate: true,
             previousValues,
             values: updates
           });
@@ -99,7 +99,7 @@ export const Test_SchemaSetMissingDefaultsOnUpdateOption = ({
           expect(summary).toMatchObject({
             changes,
             context: changes,
-            operation: 'update',
+            isUpdate: true,
             previousValues,
             values: changes
           });
@@ -126,7 +126,7 @@ export const Test_SchemaSetMissingDefaultsOnUpdateOption = ({
           expect(summary).toMatchObject({
             changes,
             context: changes,
-            operation: 'update',
+            isUpdate: true,
             previousValues,
             values: changes
           });
