@@ -42,3 +42,5 @@ function getFullName({ context }: Summary<Input, Output>) {
   return `${firstName} ${lastName}`;
 }
 ```
+
+> N.B: if the resolver happens to throw an error, the value of the property will be `null` at creation but if this happens during an update, the property will be ignored.

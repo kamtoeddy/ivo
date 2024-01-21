@@ -56,6 +56,8 @@ Although both work just the same, we `validator1` is recommended because:
 
 > N.B: if the validator does not return a validated value or it is undefined, the direct value passed will be used even `undefined`.
 
+> N.B: if the validator happens to throw an error, the validation of the said property will fail with reason `an error occurred`
+
 ## Post validation
 
 If you find the need to perform multiple validation steps on more than one field, you can achieve this with the `postValidate` option of your schema.
@@ -116,6 +118,8 @@ const schema = new Schema(definitions, {
 ```
 
 > N.B: **This option is not inherited during schema extension**
+
+> N.B: if the post-validator happens to throw an error, the validation of the provided properties related to this validator will all fail with reason `an error occurred`
 
 ## Built-in validation helpers
 

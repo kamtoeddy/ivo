@@ -157,6 +157,8 @@ This should be used when your virtual property may exist in more than one form. 
 
 A good usecase would be when a dealing with file uploads. The example below shows how you could upload a file to a file or cloud storage, get the metadata you'll need to persist as metadata. After sanitization, the resolver of properties that depend (`metadata` in our case) on the these virtuals are run with the new values of the virtual properties
 
+> N.B: if the sanitizer happens to throw an error, the value before sanitization will be used
+
 ```ts
 import { Schema, type Summary } from 'ivo';
 

@@ -54,3 +54,5 @@ const bookSchema = new Schema<Book>({
   }
 });
 ```
+
+> N.B: if the required function happens to throw an error, the value of the required state of the property will be `false`
