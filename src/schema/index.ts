@@ -199,7 +199,11 @@ class ModelTool<
 
     await Promise.allSettled(
       getSetValuesAsProps(this.constants).map(async (prop) => {
-        data[prop] = await this._getConstantValue(prop);
+        try {
+          data[prop] = await this._getConstantValue(prop);
+        } catch (_) {
+          data[prop] = null as any;
+        }
 
         const validCtxUpdate = { [prop]: data[prop] as any } as any;
 
