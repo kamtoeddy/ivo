@@ -325,6 +325,55 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
           });
         });
       });
+
+      describe('behaviour with errors thrown in the resolver', () => {
+        const Model = new Schema({
+          prop: { default: '' },
+          dependent: {
+            default: '',
+            dependsOn: 'prop',
+            resolver() {
+              throw new Error('lolol');
+            }
+          },
+          dependent1: {
+            default: '',
+            dependsOn: 'dependent',
+            resolver() {
+              throw new Error('lolol');
+            }
+          },
+          dependent2: {
+            default: '',
+            dependsOn: ['dependent', 'prop'],
+            resolver() {
+              throw new Error('lolol');
+            }
+          }
+        }).getModel();
+
+        it("should set dependent to null if error occurred resolving at creation'", async () => {
+          const { data, error } = await Model.create({ prop: 'test' });
+
+          expect(error).toBeNull();
+          expect(data).toEqual({
+            dependent: null,
+            dependent1: null,
+            dependent2: null,
+            prop: 'test'
+          });
+        });
+
+        it('should ignore dependent properties that error when resolving during updates', async () => {
+          const { data, error } = await Model.update(
+            { dependent: '', dependent1: '', dependent2: '', prop: '' },
+            { prop: 'updated' }
+          );
+
+          expect(error).toBeNull();
+          expect(data).toEqual({ prop: 'updated' });
+        });
+      });
     });
 
     describe('valid', () => {

@@ -530,7 +530,13 @@ class ModelTool<
 
       const resolver = this._getDefinition(prop).resolver!;
 
-      const value = await resolver(summary);
+      let value;
+
+      try {
+        value = await resolver(summary);
+      } catch (_) {
+        value = isCreation ? null : summary.previousValues?.[prop];
+      }
 
       if (
         !isCreation &&
