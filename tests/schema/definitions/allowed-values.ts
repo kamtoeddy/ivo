@@ -641,7 +641,6 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
               const { data, error } = await Model.create({ prop: true });
 
               expect(data).toBe(null);
-
               expect(error.payload).toMatchObject({
                 prop: expect.objectContaining({
                   reasons: expect.arrayContaining(['value not allowed']),
@@ -669,7 +668,6 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
               );
 
               expect(data).toBe(null);
-
               expect(error.payload).toMatchObject({
                 prop: expect.objectContaining({
                   reasons: expect.arrayContaining(['value not allowed']),
@@ -1092,6 +1090,45 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
                 });
               });
             }
+
+            describe('behaviour with errors thrown in the error setter', () => {
+              const Model = new Schema({
+                prop: {
+                  default: 'lol',
+                  allow: {
+                    values: ['lol', 'lolol'],
+                    error() {
+                      throw new Error('lolol');
+                    }
+                  }
+                }
+              }).getModel();
+
+              it("should return 'an error occurred' at creation", async () => {
+                const { data, error } = await Model.create({ prop: '' });
+
+                expect(data).toBe(null);
+                expect(error.payload).toMatchObject({
+                  prop: expect.objectContaining({
+                    reasons: expect.arrayContaining(['value not allowed'])
+                  })
+                });
+              });
+
+              it("should return 'an error occurred' during updates", async () => {
+                const { data, error } = await Model.update(
+                  { prop: 'lol' },
+                  { prop: '' }
+                );
+
+                expect(data).toBe(null);
+                expect(error.payload).toMatchObject({
+                  prop: expect.objectContaining({
+                    reasons: expect.arrayContaining(['value not allowed'])
+                  })
+                });
+              });
+            });
           });
         });
       });

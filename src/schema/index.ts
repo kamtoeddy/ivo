@@ -255,13 +255,19 @@ class ModelTool<
     if (Array.isArray(error) || isInputFieldError(error)) return error;
 
     if (isFunctionLike(error)) {
-      const message = error(value, allow?.values);
+      let message;
 
-      if (typeof message == 'string') return message || NotAllowedError;
+      try {
+        message = error(value, allow?.values);
+      } finally {
+        if (!message) return NotAllowedError;
 
-      if (Array.isArray(message)) return message;
+        if (typeof message == 'string') return message || NotAllowedError;
 
-      return isInputFieldError(message) ? message : NotAllowedError;
+        if (Array.isArray(message)) return message;
+
+        return isInputFieldError(message) ? message : NotAllowedError;
+      }
     }
 
     return error || NotAllowedError;
