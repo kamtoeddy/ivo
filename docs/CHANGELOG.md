@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-# v1.0.0 <small><sup>[x][x]-01-2024</sup></small>
+# v1.0.0 <small><sup>[x][x]-[x][x]-2024</sup></small>
 
 first release
 

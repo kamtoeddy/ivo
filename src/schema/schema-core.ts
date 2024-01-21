@@ -473,7 +473,7 @@ export abstract class SchemaCore<
     this.constants.has(prop as KeyOf<Output>);
 
   protected _isDefaultable = (prop: string) =>
-    isPropertyOf(prop, this.defaults);
+    isPropertyOf('default', this._getDefinition(prop));
 
   protected _isDependentProp = (prop: string) =>
     this.dependents.has(prop as KeyOf<Output>);
@@ -541,9 +541,15 @@ export abstract class SchemaCore<
   protected _getDefaultValue = async (prop: string) => {
     const _default = this._getDefinition(prop)?.default;
 
-    const value = isFunctionLike(_default)
-      ? await _default(this._getContext())
-      : this.defaults[prop as KeyOf<Output>];
+    let value;
+
+    try {
+      value = isFunctionLike(_default)
+        ? await _default(this._getContext())
+        : this.defaults[prop as KeyOf<Output>];
+    } catch (_) {
+      value = null;
+    }
 
     return isEqual(value, undefined)
       ? this.values[prop as KeyOf<Output>]
