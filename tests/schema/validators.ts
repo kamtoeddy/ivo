@@ -390,7 +390,7 @@ export const Test_Validators = ({ Schema }: any) => {
         }
       }).getModel();
 
-      it("should return the 'an error occurred at creation'", async () => {
+      it("should return 'an error occurred' at creation", async () => {
         const { data, error } = await Model.create({ prop1: '', prop2: '' });
 
         expect(data).toBeNull();
@@ -407,7 +407,7 @@ export const Test_Validators = ({ Schema }: any) => {
         });
       });
 
-      it("should return the 'an error occurred during updates'", async () => {
+      it("should return 'an error occurred' during updates", async () => {
         const { data, error } = await Model.update(
           { prop1: '', prop2: '' },
           { prop1: 'updated', prop2: 'updated' }
