@@ -19,7 +19,7 @@ const userSchema = new Schema({
   dateJoined: { constant: true, value: () => new Date() },
   id: {
     constant: true,
-    value: (ctx) => `${ctx.userName}-${Date.now}`
+    value: (ctx) => `${ctx.userName}-${Date.now}` // ⚠️ possible but not safe because it runs before values get validated
   },
   role: { constant: true, value: 'user' },
   userName: { required: true, validator: validateUserName }

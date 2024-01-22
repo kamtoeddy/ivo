@@ -8,14 +8,12 @@ These properties are used to manipulate dependent properties at the level of you
   - A validator and
   - At least one property that depends on it
 
-- They can have (**`shouldInit === false`**) or `shouldInit` as a function
-- They can have (**`shouldUpdate === false`**) or `shouldUpdate` as a function
+- They can have (**`shouldInit: false`**) or `shouldInit` as a function
+- They can have (**`shouldUpdate: false`**) or `shouldUpdate` as a function
 - They can have `required` as a function
 - They can have [aliases](#aliases)
 - They can have [sanitizers](#sanitizer)
 - They **CANNOT** be dependent, defaulted, strictly required nor readonly
-
-> Out of the box, virtual is **`false`**
 
 Example:
 
@@ -147,9 +145,7 @@ const { data: item2 } = await StoreItem.create({ qty: 100 });
 console.log(item1, item2); // { quantity: 100 } { quantity: 100 }
 ```
 
-> N.B: Virtual properties can only be accessed with their aliases outside of your schema. This is to say that virtual properties should not be accessed on [`operation contexts`](../life-cycles.md#the-operation-context) with their aliases
-
-Aliases are available on the `create` & `update` methods of your models
+> N.B: Do not try to access virtuals on the [`operation context`](../life-cycles.md#the-operation-context) with their aliases because they are not recognised there. Aliases only work when passed to the `create` & `update` methods of your models
 
 ## Sanitizer
 

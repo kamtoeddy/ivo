@@ -1,8 +1,6 @@
 # Required Properties
 
-A property with `required === true` is one that must be initialised at creation. It must have a validator and cannot have a default value (nor setter)
-
-> Out of the box, required is **`false`**
+A property with `required: true` is one that must be provided at creation. It must have a validator and cannot have a default value
 
 Example:
 
@@ -25,9 +23,11 @@ type RequiredError =
 
 Such a property is required depending on the summary of the operation. The value of **`required`** must be a function that returns `boolean` | `[boolean, RequiredError]` | `Promise<boolean | [boolean, RequiredError]>`.
 
-If the required error is not provided or if the value provided for requiredError is not a string, `[propertyName] is required!` would be used.
+> N.B: If the required error is not provided or if the value provided for requiredError is not a string, `[propertyName] is required!` will be used.
 
-If nothing is returned, the operation will proceed with `required: false`
+> N.B: If nothing is returned, the operation will proceed with `required: false`
+
+> N.B: if the required function happens to throw an error, the operation will proceed with `required: false`
 
 Example:
 
@@ -54,5 +54,3 @@ const bookSchema = new Schema<Book>({
   }
 });
 ```
-
-> N.B: if the required function happens to throw an error, the value of the required state of the property will be `false`
