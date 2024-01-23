@@ -128,6 +128,7 @@ type S =
   | Readonly<{
       changes: null;
       context: IContext;
+      inputValues: Partial<Input>;
       isUpdate: false;
       previousValues: null;
       values: Readonly<Output>;
@@ -135,6 +136,7 @@ type S =
   | Readonly<{
       changes: Partial<Readonly<Output>>;
       context: IContext;
+      inputValues: Partial<Input>;
       isUpdate: true;
       previousValues: Readonly<Output>;
       values: Readonly<Output>;
