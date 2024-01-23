@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 
 import { ERRORS } from '../../../dist';
 import {
@@ -111,6 +111,8 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
 
   describe('requiredBy', () => {
     describe('behaviour', () => {
+      let callsPerProp = {} as any;
+
       const book = {
         bookId: 1,
         isPublished: false,
@@ -125,6 +127,10 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
         return { valid, validated };
       }
 
+      function recordCalls(prop: string) {
+        callsPerProp[prop] = true;
+      }
+
       const Book = new Schema(
         {
           bookId: { required: true, validator },
@@ -133,6 +139,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
             default: null,
             required({ context: { isPublished, price } }: any) {
               const isRequired = isPublished && price == null;
+              recordCalls('price');
               return [isRequired, 'A price is required to publish a book!'];
             },
             validator: validatePrice
@@ -142,6 +149,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
             readonly: true,
             required({ context: { price, priceReadonly } }: any) {
               const isRequired = price == 101 && priceReadonly == null;
+              recordCalls('priceReadonly');
               return [
                 isRequired,
                 'A priceReadonly is required when price is 101!'
@@ -152,153 +160,212 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
           priceRequiredWithoutMessage: {
             default: null,
             readonly: true,
-            required: ({ context: { price, priceReadonly } }: any) =>
-              price == 101 && priceReadonly == null,
+            required: ({ context: { price, priceReadonly } }: any) => {
+              recordCalls('priceRequiredWithoutMessage');
+              return price == 101 && priceReadonly == null;
+            },
             validator: validatePrice
           }
         },
         { errors: 'throw' }
       ).getModel();
 
-      it('should create normally', async () => {
-        const toPass = () => Book.create({ bookId: 1 });
-
-        expectNoFailure(toPass);
-
-        const { data } = await toPass();
-
-        expect(data).toEqual(book);
+      beforeEach(() => {
+        callsPerProp = {};
       });
 
-      it('should pass if condition is met at creation', async () => {
-        const toPass = () =>
-          Book.create({ bookId: 1, isPublished: true, price: 2000 });
+      describe('creation', () => {
+        it('should create normally', async () => {
+          const toPass = () => Book.create({ bookId: 1 });
 
-        expectNoFailure(toPass);
+          expectNoFailure(toPass);
 
-        const { data } = await toPass();
+          const { data } = await toPass();
 
-        expect(data).toEqual({
-          bookId: 1,
-          isPublished: true,
-          price: 2000,
-          priceReadonly: null,
-          priceRequiredWithoutMessage: null
+          expect(data).toEqual(book);
+          expect(callsPerProp).toEqual({
+            price: true,
+            priceReadonly: true,
+            priceRequiredWithoutMessage: true
+          });
+        });
+
+        it('should pass if condition is met at creation', async () => {
+          const toPass = () =>
+            Book.create({ bookId: 1, isPublished: true, price: 2000 });
+
+          expectNoFailure(toPass);
+
+          const { data } = await toPass();
+
+          expect(data).toEqual({
+            bookId: 1,
+            isPublished: true,
+            price: 2000,
+            priceReadonly: null,
+            priceRequiredWithoutMessage: null
+          });
+          expect(callsPerProp).toEqual({
+            price: true,
+            priceReadonly: true,
+            priceRequiredWithoutMessage: true
+          });
+        });
+
+        it('should reject if condition is not met at creation', async () => {
+          const toFail = () => Book.create({ bookId: 1, isPublished: true });
+
+          expectPromiseFailure(toFail, ERRORS.VALIDATION_ERROR);
+
+          try {
+            await toFail();
+          } catch (err: any) {
+            expect(err.payload).toEqual(
+              expect.objectContaining({
+                price: {
+                  reasons: expect.arrayContaining([
+                    'A price is required to publish a book!'
+                  ]),
+                  metadata: null
+                }
+              })
+            );
+          }
+
+          expect(callsPerProp).toEqual({
+            price: true,
+            priceReadonly: true,
+            priceRequiredWithoutMessage: true
+          });
         });
       });
 
-      it('should reject if condition is not met at creation', async () => {
-        const toFail = () => Book.create({ bookId: 1, isPublished: true });
-
-        expectPromiseFailure(toFail, ERRORS.VALIDATION_ERROR);
-
-        try {
-          await toFail();
-        } catch (err: any) {
-          expect(err.payload).toEqual(
-            expect.objectContaining({
-              price: {
-                reasons: expect.arrayContaining([
-                  'A price is required to publish a book!'
-                ]),
-                metadata: null
-              }
-            })
-          );
-        }
-      });
-
-      it('should pass if condition is met during updates', async () => {
-        const toPass = () =>
-          Book.update(
-            { bookId: 1, isPublished: false, price: null },
-            { isPublished: true, price: 20 }
-          );
-
-        expectNoFailure(toPass);
-
-        const { data } = await toPass();
-
-        expect(data).toEqual({ isPublished: true, price: 20 });
-      });
-
-      it('should pass if condition is met during updates of readonly', async () => {
-        const toPass = () =>
-          Book.update(book, { price: 101, priceReadonly: 201 });
-
-        expectNoFailure(toPass);
-
-        const { data } = await toPass();
-
-        expect(data).toEqual({ price: 101, priceReadonly: 201 });
-      });
-
-      it('should reject if condition is not met during updates', async () => {
-        const toFail = () =>
-          Book.update(
-            { bookId: 1, isPublished: false, price: null },
-            { isPublished: true }
-          );
-
-        expectPromiseFailure(toFail, ERRORS.VALIDATION_ERROR);
-
-        try {
-          await toFail();
-        } catch (err: any) {
-          expect(err.payload).toEqual(
-            expect.objectContaining({
-              price: {
-                reasons: expect.arrayContaining([
-                  'A price is required to publish a book!'
-                ]),
-                metadata: null
-              }
-            })
-          );
-        }
-      });
-
-      it('should reject if condition is not met during updates of readonly', async () => {
-        const toFail = () => Book.update(book, { price: 101 });
-
-        expectPromiseFailure(toFail, ERRORS.VALIDATION_ERROR);
-
-        try {
-          await toFail();
-        } catch (err: any) {
-          expect(err.payload).toEqual(
-            expect.objectContaining({
-              priceReadonly: {
-                reasons: expect.arrayContaining([
-                  'A priceReadonly is required when price is 101!'
-                ]),
-                metadata: null
+      describe('updates', () => {
+        it('should pass if condition is met during updates', async () => {
+          const toPass = () =>
+            Book.update(
+              {
+                bookId: 1,
+                isPublished: false,
+                price: null,
+                priceReadonly: null,
+                priceRequiredWithoutMessage: null
               },
-              priceRequiredWithoutMessage: {
-                reasons: expect.arrayContaining([
-                  "'priceRequiredWithoutMessage' is required"
-                ]),
-                metadata: null
-              }
-            })
-          );
-        }
-      });
+              { isPublished: true, price: 20 }
+            );
 
-      it('should not update callable readonly prop that has changed', async () => {
-        const toFail = () =>
-          Book.update(
+          expectNoFailure(toPass);
+
+          const { data } = await toPass();
+
+          expect(data).toEqual({ isPublished: true, price: 20 });
+          expect(callsPerProp).toEqual({
+            price: true,
+            priceReadonly: true,
+            priceRequiredWithoutMessage: true
+          });
+        });
+
+        it('should pass if condition is met during updates of readonly', async () => {
+          const toPass = () =>
+            Book.update(book, { price: 101, priceReadonly: 201 });
+
+          expectNoFailure(toPass);
+
+          const { data } = await toPass();
+
+          expect(data).toEqual({ price: 101, priceReadonly: 201 });
+          expect(callsPerProp).toEqual({
+            price: true,
+            priceReadonly: true,
+            priceRequiredWithoutMessage: true
+          });
+        });
+
+        it('should reject if condition is not met during updates', async () => {
+          const toFail = () =>
+            Book.update(
+              {
+                bookId: 1,
+                isPublished: false,
+                price: null,
+                priceReadonly: null
+              },
+              { isPublished: true }
+            );
+
+          expectPromiseFailure(toFail, ERRORS.VALIDATION_ERROR);
+
+          try {
+            await toFail();
+          } catch (err: any) {
+            expect(err.payload).toEqual(
+              expect.objectContaining({
+                price: {
+                  reasons: expect.arrayContaining([
+                    'A price is required to publish a book!'
+                  ]),
+                  metadata: null
+                }
+              })
+            );
+          }
+
+          expect(callsPerProp).toEqual({ price: true, priceReadonly: true });
+        });
+
+        it('should reject if condition is not met during updates of readonly', async () => {
+          const toFail = () => Book.update(book, { price: 101 });
+
+          expectPromiseFailure(toFail, ERRORS.VALIDATION_ERROR);
+
+          try {
+            await toFail();
+          } catch (err: any) {
+            expect(err.payload).toEqual(
+              expect.objectContaining({
+                priceReadonly: {
+                  reasons: expect.arrayContaining([
+                    'A priceReadonly is required when price is 101!'
+                  ]),
+                  metadata: null
+                },
+                priceRequiredWithoutMessage: {
+                  reasons: expect.arrayContaining([
+                    "'priceRequiredWithoutMessage' is required"
+                  ]),
+                  metadata: null
+                }
+              })
+            );
+          }
+
+          expect(callsPerProp).toEqual({
+            price: true,
+            priceReadonly: true,
+            priceRequiredWithoutMessage: true
+          });
+        });
+
+        it('should not update callable readonly prop that has changed', async () => {
+          const { data, error } = await Book.update(
             {
               bookId: 1,
               isPublished: false,
               price: null,
-              priceReadonly: 201,
+              priceReadonly: 3000,
               priceRequiredWithoutMessage: null
             },
-            { priceReadonly: 101 }
+            { priceReadonly: 101, priceRequiredWithoutMessage: 2000 }
           );
 
-        expectPromiseFailure(toFail, ERRORS.NOTHING_TO_UPDATE);
+          expect(error).toBeNull();
+          expect(data).toEqual({ priceRequiredWithoutMessage: 2000 });
+          expect(callsPerProp).toEqual({
+            price: true,
+            priceRequiredWithoutMessage: true
+          });
+        });
       });
 
       describe('behaviour when nothing is returned from required function', () => {

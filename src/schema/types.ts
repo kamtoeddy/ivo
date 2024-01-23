@@ -57,6 +57,7 @@ type Summary<Input, Output = Input, CtxOptions extends ObjectType = {}> = (
   | Readonly<{
       changes: null;
       context: Context<Input, Output, CtxOptions>;
+      inputValues: Partial<RealType<Input>>;
       isUpdate: false;
       previousValues: null;
       values: Readonly<Output>;
@@ -64,6 +65,7 @@ type Summary<Input, Output = Input, CtxOptions extends ObjectType = {}> = (
   | Readonly<{
       changes: Partial<RealType<Output>>;
       context: Context<Input, Output, CtxOptions>;
+      inputValues: Partial<RealType<Input>>;
       isUpdate: true;
       previousValues: Readonly<Output>;
       values: Readonly<Output>;

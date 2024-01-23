@@ -21,7 +21,7 @@ Example:
 import { Schema } from 'ivo';
 
 type UserInput = {
-  blockUser?: boolean;
+  blockUser: boolean;
 };
 
 type User = {
@@ -56,7 +56,7 @@ The same concept applies to the `update` operation.
 
 ## Aliases
 
-An alias is an extra **external** name for a virtual property. This means that a virtual property with an alias can be accessed by it's name or it's alias. It's that simple 😊
+An alias is just an extra **external** name for a virtual property
 
 ### How to define an alias
 

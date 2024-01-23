@@ -167,6 +167,7 @@ class ModelTool<
   ErrorTool extends IErrorTool<any> = DefaultErrorTool<KeyOf<Input & Aliases>>
 > extends SchemaCore<Input, Output, CtxOptions, ErrorTool> {
   private _regeneratedProps: KeyOf<Output>[] = [];
+  private inputValues: Partial<RealType<Input>> = {};
 
   constructor(schema: Schema<Input, Output, Aliases, CtxOptions, ErrorTool>) {
     super(schema.definitions as any, schema.options as any);
@@ -190,6 +191,8 @@ class ModelTool<
         if (virtual && values[virtual]) delete values[virtual];
       }
     }
+
+    this.inputValues = values;
 
     return values;
   }
@@ -229,6 +232,7 @@ class ModelTool<
     return this._getFrozenCopy({
       changes,
       context,
+      inputValues: this.inputValues,
       isUpdate,
       previousValues,
       values
@@ -314,41 +318,56 @@ class ModelTool<
   }
 
   private async _handleRequiredBy(data: Partial<Output>, isUpdate = false) {
-    const summary = this._getSummary(data, isUpdate);
+    const summary = this._getSummary(data, isUpdate),
+      context = summary.context;
 
     const errorTool = new this._options.ErrorTool(
       VALIDATION_ERRORS.VALIDATION_ERROR,
-      summary.context.__getOptions__()
+      context.__getOptions__()
     );
 
     await Promise.allSettled(
       Array.from(this.propsRequiredBy.keys()).map(async (prop) => {
+        let isUpdatable = false;
+
+        if (isUpdate && this._isReadonly(prop)) {
+          isUpdatable = this._isUpdatable(
+            prop,
+            (summary.inputValues as any)?.[prop]
+          );
+
+          if (!isUpdatable) return;
+        }
+
         const [isRequired, message] = await this._getRequiredState(
           prop,
           summary
         );
 
         if (
-          (isRequired && !isUpdate) ||
-          (isRequired && isUpdate && this._isUpdatable(prop, undefined))
-        ) {
-          const value = (data as any)[prop];
+          !isRequired ||
+          (isUpdate &&
+            !isUpdatable &&
+            !this._isUpdatable(prop, (summary.inputValues as any)?.[prop]))
+        )
+          return;
 
-          const alias = this._getAliasByVirtual(prop);
+        const value = (data as any)[prop];
 
-          if (!alias) {
-            errorTool.add(prop, makeFieldError(message), value);
+        const alias = this._getAliasByVirtual(prop);
 
-            return;
-          }
+        if (!alias) {
+          errorTool.add(prop, makeFieldError(message), value);
 
-          const _message =
-            message == `'${prop}' is required`
-              ? `'${alias}' is required`
-              : message;
-
-          errorTool.add(alias as any, makeFieldError(_message), value);
+          return;
         }
+
+        const _message =
+          message == `'${prop}' is required`
+            ? `'${alias}' is required`
+            : message;
+
+        errorTool.add(alias as any, makeFieldError(_message), value);
       })
     );
 

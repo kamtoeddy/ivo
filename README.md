@@ -1,8 +1,6 @@
 # Foreword
 
-ivo is a user story focused utility that helps you build factory methods to manage entities and their values in your domain.
-
-In short, it is an event-driven schema validator which provides an interface for you to clearly define the behaviour of your entities at creation and during updates.
+ivo is a user story focused event-driven schema validator which provides an interface for you to clearly define the behaviour of your entities at creation and during updates
 
 # Installation
 
@@ -81,7 +79,7 @@ const UserModel = userSchema.getModel();
 # Creating an entity
 
 ```ts
-import userDb from 'db-of-choice';
+import userRepository from './user-repo.js';
 
 const { data, error } = await UserModel.create({
   firstName: 'John',
@@ -108,13 +106,13 @@ console.log(data);
 //   updatedAt: new Date(),
 // };
 
-await userDb.insert(data);
+await userRepository.insert(data);
 ```
 
 # Updating an entity
 
 ```ts
-const user = await userDb.findById(18927934748659724);
+const user = await userRepository.findById(18927934748659724);
 
 if (!user) return handleError({ message: 'User not found' });
 
@@ -132,7 +130,7 @@ if (error) return handleError(error);
 // id is ignored because it is a constant
 console.log(data); // { firstName: "Peter", fullName: "Peter Doe", updatedAt: new Date() }
 
-await userDb.updateById(user.id, data);
+await userRepository.updateById(user.id, data);
 ```
 
 ## Docs
