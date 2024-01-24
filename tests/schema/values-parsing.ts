@@ -32,7 +32,7 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
         it('should allow for create method of model to be empty', async () => {
           const { data, error } = await User.create();
 
-          expect(error).toBe(null);
+          expect(error).toBeNull();
 
           expect(data).toEqual({ age: 10, id: 1, name: '' });
         });
@@ -40,7 +40,7 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
         it('should set values properly at creation', async () => {
           const { data, error } = await User.create(validData);
 
-          expect(error).toBe(null);
+          expect(error).toBeNull();
 
           expect(data).toEqual({ ...validData, id: 1 });
         });
@@ -57,7 +57,7 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
 
           const { data, error } = await User.update(user, { name });
 
-          expect(error).toBe(null);
+          expect(error).toBeNull();
 
           expect(data).toEqual({ name });
         });
@@ -72,7 +72,7 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
 
             const { data, error } = await operation();
 
-            expect(error).toBe(null);
+            expect(error).toBeNull();
 
             expect(data).toEqual({ age: 10, id: 1, name: '' });
           }
@@ -101,7 +101,7 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
 
             const { data, error } = await operation();
 
-            expect(data).toBe(null);
+            expect(data).toBeNull();
 
             expect(error).toEqual({
               message: ERRORS.NOTHING_TO_UPDATE,
@@ -130,7 +130,7 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
         it('should set values properly at creation', async () => {
           const { data, error } = await User.create(validData);
 
-          expect(error).toBe(null);
+          expect(error).toBeNull();
 
           expect(data).toEqual({ ...validData, id: 1 });
         });
@@ -147,7 +147,7 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
 
           const { data, error } = await User.update(user, { name });
 
-          expect(error).toBe(null);
+          expect(error).toBeNull();
 
           expect(data).toEqual({ name });
         });
@@ -162,7 +162,7 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
 
             const { data, error } = await operation();
 
-            expect(error).toBe(null);
+            expect(error).toBeNull();
             expect(data).toEqual({ age: 10, id: 1, name: '' });
           }
         });

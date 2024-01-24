@@ -275,11 +275,11 @@ namespace NS {
       | AsyncSetter<Output[K], Input, Output, CtxOptions>;
   };
 
-  type Enumerable<T> = {
+  type Enumerable<T, V extends T | Readonly<T> = T> = {
     allow?:
-      | Readonly<ArrayOfMinSizeTwo<T>>
+      | ArrayOfMinSizeTwo<V>
       | {
-          values: Readonly<ArrayOfMinSizeTwo<T>>;
+          values: ArrayOfMinSizeTwo<V>;
           error?:
             | NotAllowedError
             | ((
@@ -401,11 +401,19 @@ namespace NS {
     Output,
     Aliases,
     CtxOptions extends ObjectType
-  > = Listenable<Input, Output, CtxOptions> & {
-    required: true;
-    shouldUpdate?: false | Setter<boolean, Input, Output, CtxOptions>;
-    validator: Validator<K, Input, Output, Aliases, CtxOptions>;
-  };
+  > = Listenable<Input, Output, CtxOptions> &
+    (
+      | {
+          required: true;
+          shouldUpdate?: false | Setter<boolean, Input, Output, CtxOptions>;
+          validator: Validator<K, Input, Output, Aliases, CtxOptions>;
+        }
+      | (Enumerable<Input[K]> & {
+          required: true;
+          shouldUpdate?: false | Setter<boolean, Input, Output, CtxOptions>;
+          validator?: Validator<K, Input, Output, Aliases, CtxOptions>;
+        })
+    );
 
   type RequiredBy<
     K extends keyof (Output | Input),

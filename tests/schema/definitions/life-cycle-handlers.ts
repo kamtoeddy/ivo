@@ -443,7 +443,7 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
 
         await handleSuccess();
 
-        expect(error).toBe(null);
+        expect(error).toBeNull();
 
         expect(cxtOptions).toEqual({
           dependent: contextOptions,
@@ -489,7 +489,7 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
 
         await handleSuccess();
 
-        expect(error).toBe(null);
+        expect(error).toBeNull();
         expect(cxtOptions).toEqual({
           lax: contextOptions
         });
@@ -517,7 +517,7 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
 
         await handleSuccess();
 
-        expect(error).toBe(null);
+        expect(error).toBeNull();
         expect(cxtOptions).toEqual({
           dependent: contextOptions,
           readonlyLax: contextOptions

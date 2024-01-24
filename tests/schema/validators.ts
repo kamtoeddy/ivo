@@ -24,7 +24,7 @@ export const Test_Validators = ({ Schema }: any) => {
 
           const { data, error } = await Model.create({ prop: 'invalid' });
 
-          expect(data).toBe(null);
+          expect(data).toBeNull();
           expect(error).toMatchObject({
             message: ERRORS.VALIDATION_ERROR,
             payload: {
@@ -65,7 +65,7 @@ export const Test_Validators = ({ Schema }: any) => {
 
         const { data, error } = await Model.create({});
 
-        expect(data).toBe(null);
+        expect(data).toBeNull();
         expect(error).toMatchObject({
           message: ERRORS.VALIDATION_ERROR,
           payload: {
@@ -104,7 +104,7 @@ export const Test_Validators = ({ Schema }: any) => {
 
           const { data, error } = await Model.create({});
 
-          expect(data).toBe(null);
+          expect(data).toBeNull();
           expect(error).toEqual({
             message: ERRORS.VALIDATION_ERROR,
             payload: {
@@ -171,7 +171,7 @@ export const Test_Validators = ({ Schema }: any) => {
               virtualWithAlias: ''
             });
 
-            expect(data).toBe(null);
+            expect(data).toBeNull();
             expect(error).toEqual({
               message: ERRORS.VALIDATION_ERROR,
               payload: {
@@ -200,7 +200,7 @@ export const Test_Validators = ({ Schema }: any) => {
               aliasedDependent: ''
             });
 
-            expect(data).toBe(null);
+            expect(data).toBeNull();
             expect(error).toEqual({
               message: ERRORS.VALIDATION_ERROR,
               payload: {
@@ -228,7 +228,7 @@ export const Test_Validators = ({ Schema }: any) => {
               { virtualWithAlias: '', virtual: '', name: 'lol' }
             );
 
-            expect(data).toBe(null);
+            expect(data).toBeNull();
             expect(error).toEqual({
               message: ERRORS.VALIDATION_ERROR,
               payload: {
@@ -258,7 +258,7 @@ export const Test_Validators = ({ Schema }: any) => {
               { aliasedDependent: '', name: 'lol' }
             );
 
-            expect(data).toBe(null);
+            expect(data).toBeNull();
             expect(error).toEqual({
               message: ERRORS.VALIDATION_ERROR,
               payload: {
@@ -299,7 +299,7 @@ export const Test_Validators = ({ Schema }: any) => {
 
             const { data, error } = await Model.create();
 
-            expect(data).toBe(null);
+            expect(data).toBeNull();
             expect(error).toMatchObject({
               message: ERRORS.VALIDATION_ERROR,
               payload: { prop2: expect.objectContaining({ metadata }) }
@@ -334,7 +334,7 @@ export const Test_Validators = ({ Schema }: any) => {
 
             const { data, error } = await Model.create({ prop: 'invalid' });
 
-            expect(data).toBe(null);
+            expect(data).toBeNull();
             expect(error).toMatchObject({
               message: ERRORS.VALIDATION_ERROR,
               payload: {
@@ -366,7 +366,7 @@ export const Test_Validators = ({ Schema }: any) => {
 
             const { data, error } = await Model.update({}, { prop2: '' });
 
-            expect(data).toBe(null);
+            expect(data).toBeNull();
             expect(error).toMatchObject({
               message: ERRORS.VALIDATION_ERROR,
               payload: { prop2: expect.objectContaining({ metadata }) }

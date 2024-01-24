@@ -1023,7 +1023,7 @@ export abstract class SchemaCore<
         reason: 'Required properties cannot be dependent'
       };
 
-    if (!this._isValidatorOk(definition))
+    if (!this._isValidatorOk(definition) && !isPropertyOf('allow', definition))
       return { valid, reason: 'Required properties must have a validator' };
 
     return { valid: true };
@@ -1078,6 +1078,13 @@ export abstract class SchemaCore<
       return {
         valid,
         reason: 'Callable required properties must have required as a function'
+      };
+
+    if (isPropertyOf('allow', definition))
+      return {
+        valid,
+        reason:
+          '"allow" rule is cannot be applied to conditionally required properties'
       };
 
     const hasVirtualRule = isPropertyOf('virtual', definition);

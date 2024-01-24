@@ -18,6 +18,16 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
 
         toPass();
       });
+
+      it('should allow required: true + allow alone', () => {
+        const toPass = fx({
+          propertyName: { required: true, allow: [1, 2, 435, 45] }
+        });
+
+        expectNoFailure(toPass);
+
+        toPass();
+      });
     });
 
     describe('invalid', () => {
@@ -447,7 +457,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
             it('should reject with proper required error message at creation', async () => {
               const { data, error } = await Book.create({ bookId: 1 });
 
-              expect(data).toBe(null);
+              expect(data).toBeNull();
 
               expect(error).toMatchObject({
                 message: ERRORS.VALIDATION_ERROR,
@@ -466,7 +476,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
                 name: 'yooo'
               });
 
-              expect(data).toBe(null);
+              expect(data).toBeNull();
 
               expect(error).toMatchObject({
                 message: ERRORS.VALIDATION_ERROR,
@@ -503,7 +513,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
             it('should reject with proper required error message at creation', async () => {
               const { data, error } = await Book.create({ bookId: 1 });
 
-              expect(data).toBe(null);
+              expect(data).toBeNull();
 
               expect(error).toMatchObject({
                 message: ERRORS.VALIDATION_ERROR,
@@ -527,7 +537,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
                 name: 'yooo'
               });
 
-              expect(data).toBe(null);
+              expect(data).toBeNull();
 
               expect(error).toMatchObject({
                 message: ERRORS.VALIDATION_ERROR,
@@ -616,7 +626,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
           it('should reject at creation', async () => {
             const { data, error } = await Book.create({});
 
-            expect(data).toBe(null);
+            expect(data).toBeNull();
             expect(error).toMatchObject({
               message: ERRORS.VALIDATION_ERROR,
               payload: {
@@ -633,7 +643,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
               name: 'updated name'
             });
 
-            expect(data).toBe(null);
+            expect(data).toBeNull();
             expect(error).toMatchObject({
               message: ERRORS.VALIDATION_ERROR,
               payload: {
@@ -666,7 +676,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
           it('should reject at creation', async () => {
             const { data, error } = await Book.create({});
 
-            expect(data).toBe(null);
+            expect(data).toBeNull();
             expect(error).toMatchObject({
               message: ERRORS.VALIDATION_ERROR,
               payload: {
@@ -684,7 +694,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
               name
             });
 
-            expect(error).toBe(null);
+            expect(error).toBeNull();
             expect(data).toEqual({ name });
           });
         });
@@ -710,7 +720,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
           it('should reject at creation', async () => {
             const { data, error } = await Book.create({});
 
-            expect(data).toBe(null);
+            expect(data).toBeNull();
             expect(error).toMatchObject({
               message: ERRORS.VALIDATION_ERROR,
               payload: {
@@ -728,7 +738,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
               name
             });
 
-            expect(error).toBe(null);
+            expect(error).toBeNull();
             expect(data).toEqual({ name });
           });
         });
@@ -757,7 +767,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
           it('should reject when condition is not met', async () => {
             const { data, error } = await Book.create({});
 
-            expect(data).toBe(null);
+            expect(data).toBeNull();
             expect(error).toMatchObject({
               message: ERRORS.VALIDATION_ERROR,
               payload: {
@@ -772,7 +782,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
           it('should allow when condition is met', async () => {
             const { data, error } = await Book.create({ _price: 20 });
 
-            expect(error).toBe(null);
+            expect(error).toBeNull();
             expect(data).toMatchObject({ name: '', price: 20 });
           });
         });
@@ -781,7 +791,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
           it('should reject when condition is not met', async () => {
             const { data, error } = await Book.update(book, {});
 
-            expect(data).toBe(null);
+            expect(data).toBeNull();
             expect(error).toMatchObject({
               message: ERRORS.VALIDATION_ERROR,
               payload: {
@@ -796,7 +806,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
           it('should allow when condition is met', async () => {
             const { data, error } = await Book.update(book, { _price: 20 });
 
-            expect(error).toBe(null);
+            expect(error).toBeNull();
             expect(data).toMatchObject({ price: 20 });
           });
         });
@@ -926,6 +936,26 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
             expect.objectContaining({
               dependentProp: expect.arrayContaining([
                 'Required properties cannot be dependent'
+              ])
+            })
+          );
+        }
+      });
+
+      it('should reject requiredBy + allow', () => {
+        const toFail = fx({
+          prop: { required: () => true, allow: [1, 2, 435, 45], validator }
+        });
+
+        expectFailure(toFail);
+
+        try {
+          toFail();
+        } catch (err: any) {
+          expect(err.payload).toMatchObject(
+            expect.objectContaining({
+              prop: expect.arrayContaining([
+                '"allow" rule is cannot be applied to conditionally required properties'
               ])
             })
           );
