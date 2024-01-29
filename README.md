@@ -11,7 +11,7 @@ $ npm i ivo
 # Importing
 
 ```js
-// Using Nodejs `require`
+// Using Nodejs "require"
 const { Schema } = require('ivo');
 
 // Using ES6 imports
@@ -23,53 +23,67 @@ import { Schema } from 'ivo';
 ```ts
 import { Schema, type Summary } from 'ivo';
 
-type UserRole = 'admin' | 'user';
-
-type Input = {
-  firstName: string;
-  lastName: string;
-  password: string;
-  role: UserRole;
+type User = {
+  id: string;
+  createdAt: string;
+  email: null | string;
+  username: string;
+  phoneNumber: null | string;
+  updatedAt: string;
+  usernameUpdatableFrom: null | Date;
 };
 
-type Output = {
-  createdAt: Date;
-  firstName: string;
-  fullName: string;
-  id: number;
-  lastName: string;
-  password: string;
-  role: UserRole;
-  updatedAt: Date;
+type UserInput = {
+  email: string;
+  username: string;
+  phoneNumber: string;
 };
 
-type ISummary = Summary<Input, Output>;
-
-const userSchema = new Schema<Input, Output>(
+const userSchema = new Schema<UserInput, User>(
   {
-    firstName: {
-      required: true,
-      validator: validateString('invalid first name')
-    },
-    fullName: {
-      default: '',
-      dependsOn: ['firstName', 'lastName'],
-      resolver: getFullName
-    },
     id: { constant: true, value: generateUserId },
-    lastName: {
-      required: true,
-      validator: validateString('invalid last name')
+    email: {
+      default: null,
+      required: isEmailOrPhoneRequired,
+      validator: validateUserEmail
     },
-    password: { required: true, validator: validatePassword },
-    role: { default: 'user', shouldInit: false, validator: validateRole }
+    username: {
+      required: true,
+      shouldUpdate({ usernameUpdatableFrom }) {
+        if (!usernameUpdatableFrom) return true;
+
+        return (
+          new Date().getTime() >= new Date(usernameUpdatableFrom).getTime()
+        );
+      },
+      validator: validateUsername
+    },
+    phoneNumber: {
+      default: null,
+      required: isEmailOrPhoneRequired,
+      validator: validatePhoneNumber
+    },
+    usernameUpdatableFrom: {
+      default: null,
+      dependsOn: 'username',
+      resolver({ isUpdate }) {
+        if (!isUpdate) return null;
+
+        const now = new Date();
+
+        now.setDate(now.getDate() + 30);
+
+        return now;
+      }
+    }
   },
   { timestamps: true }
 );
 
-// resolvers
-function getFullName({ context: { firstName, lastName } }: ISummary) {
-  return `${firstName} ${lastName}`;
+function isEmailOrPhoneRequired({
+  context: { email, phoneNumber }
+}: Summary<UserInput, User>) {
+  return [!email && !phoneNumber, 'Provide "email" or "phone" number'] as const;
 }
 
 // get the model
@@ -79,58 +93,69 @@ const UserModel = userSchema.getModel();
 # Creating an entity
 
 ```ts
-import userRepository from './user-repo.js';
-
 const { data, error } = await UserModel.create({
-  firstName: 'John',
-  fullName: 'Mr. James',
-  id: 1,
-  lastName: 'Doe',
-  lastSeen: new Date(),
-  name: 'John Doe',
-  password: 'au_34ibUv^T-adjInFjj',
-  role: 'admin'
+  email: 'txpz@mail.com',
+  id: 1, // constant property -> will be ignored
+  name: 'John Doe', // not on schema -> will be ignored
+  username: 'txpz',
+  usernameUpdatableFrom: new Date() // dependent property -> will be ignored
 });
 
 if (error) return handleError(error);
 
 console.log(data);
-//  {
+// {
 //   createdAt: new Date(),
-//   firstName: "John",
-//   fullName: "John Doe",
+//   email: 'txpz@mail.com',
 //   id: 18927934748659724,
-//   lastName: "Doe",
-//   password: "**************",
-//   role: "user",
+//   phoneNumber: null,
 //   updatedAt: new Date(),
-// };
+//   username: 'txpz',
+//   usernameUpdatableFrom: null
+// }
 
-await userRepository.insert(data);
+// data is safe to dump in db
+await userDb.insertOne(data);
 ```
 
 # Updating an entity
 
 ```ts
-const user = await userRepository.findById(18927934748659724);
+const user = await userDb.findById(18927934748659724);
 
 if (!user) return handleError({ message: 'User not found' });
 
 const { data, error } = await UserModel.update(user, {
-  firstName: 'Peter',
-  id: 2,
-  age: 34,
-  fullName: 'Tony Stark'
+  usernameUpdatableFrom: new Date(), // dependent property -> will be ignored
+  id: 2, // constant property -> will be ignored
+  age: 34, // not on schema -> will be ignored
+  userame: 'txpz-1'
 });
 
 if (error) return handleError(error);
 
-// age is ignored because it is not a valid property
-// fullName is ignored because it is dependent
-// id is ignored because it is a constant
-console.log(data); // { firstName: "Peter", fullName: "Peter Doe", updatedAt: new Date() }
+console.log(data);
+// {
+//    userame: 'txpz-1',
+//    usernameUpdatableFrom: Date, // value returned from resolver -> 30days from now
+//   updatedAt: new Date()
+// }
 
-await userRepository.updateById(user.id, data);
+await userDb.updateById(user.id, data);
+```
+
+```ts
+// updating 'username' again will not work
+
+const { error } = await UserModel.update(user, {
+  userame: 'txpz-2' // shouldUpdate rule will return false -> will be ignored
+});
+
+console.log(error);
+// {
+//   message: 'NOTHING_TO_UPDATE',
+//   payload: {}
+// }
 ```
 
 ## Docs

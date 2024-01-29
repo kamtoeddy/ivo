@@ -1,13 +1,18 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 
 import { ERRORS } from '../../../dist';
 import {
   getInvalidPostValidateConfigMessage,
   getInvalidPostValidateConfigMessageForRepeatedProperties
 } from '../../../src/schema/schema-core';
-import { expectFailure, expectNoFailure, getValidSchema } from '../_utils';
+import {
+  expectFailure,
+  expectNoFailure,
+  getValidSchema,
+  validator
+} from '../_utils';
 
-export const Test_SchemaOptionPostValidate = ({ fx }: any) => {
+export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
   describe('Schema.options.postValidate', () => {
     describe('config', () => {
       describe('single config', () => {
@@ -526,6 +531,223 @@ export const Test_SchemaOptionPostValidate = ({ fx }: any) => {
                 }
               });
             }
+          });
+        });
+      });
+    });
+
+    describe('behaviour', () => {
+      let providedPropertiesStats = {} as any;
+      let summaryStats = {} as any;
+
+      function handlePostValidate(
+        prop: string,
+        summary: any,
+        propsProvided: string[]
+      ) {
+        summaryStats[prop] = summary;
+
+        if (propsProvided.includes(prop))
+          providedPropertiesStats[prop] =
+            (providedPropertiesStats[prop] ?? 0) + 1;
+      }
+
+      function makePostValidator(properties: string[]) {
+        return {
+          properties,
+          handler(summary: any, propsProvided: string[]) {
+            for (const prop of properties)
+              handlePostValidate(prop, summary, propsProvided);
+          }
+        };
+      }
+
+      describe('should properly trigger post-validators', () => {
+        describe('behaviour with single post-validators', () => {
+          const Model = new Schema(
+            {
+              dependent: {
+                default: '',
+                dependsOn: ['virtual', 'virtual2'],
+                resolver: validator
+              },
+              lax: { default: '' },
+              readonly: { readonly: true, validator },
+              readonlyLax: { default: '', readonly: 'lax', validator },
+              required: { required: true, validator },
+              virtual: { virtual: true, validator },
+              virtual2: { virtual: true, validator }
+            },
+            {
+              postValidate: makePostValidator([
+                'lax',
+                'required',
+                'readonly',
+                'readonlyLax',
+                'virtual',
+                'virtual2'
+              ])
+            }
+          ).getModel();
+
+          afterEach(() => {
+            summaryStats = {};
+            providedPropertiesStats = {};
+          });
+
+          it('should trigger all post-validators at creation', async () => {
+            const { error } = await Model.create();
+
+            expect(error).toBeNull();
+            expect(providedPropertiesStats).toEqual({
+              lax: 1,
+              required: 1,
+              readonly: 1,
+              readonlyLax: 1
+            });
+          });
+
+          it('should not trigger post-validators of virtuals not provided at creation', async () => {
+            const { error } = await Model.create({ virtual2: true });
+
+            expect(error).toBeNull();
+            expect(providedPropertiesStats).toEqual({
+              lax: 1,
+              required: 1,
+              readonly: 1,
+              readonlyLax: 1,
+              virtual2: 1
+            });
+          });
+
+          it('should only trigger post-validators of props provided during updates', async () => {
+            const { error } = await Model.update(
+              { lax: 2, required: 1, readonly: 1, readonlyLax: 1 },
+              {
+                lax: true,
+                required: true,
+                readonly: true,
+                readonlyLax: true,
+                virtual: true,
+                virtual2: true
+              }
+            );
+
+            expect(error).toBeNull();
+            expect(providedPropertiesStats).toEqual({
+              lax: 1,
+              required: 1,
+              virtual: 1,
+              virtual2: 1
+            });
+          });
+
+          it('should only trigger post-validators of readonly props that have not changed during updates', async () => {
+            const { error } = await Model.update(
+              { lax: 2, required: 1, readonly: 1, readonlyLax: '' },
+              {
+                readonly: true,
+                readonlyLax: true
+              }
+            );
+
+            expect(error).toBeNull();
+            expect(providedPropertiesStats).toEqual({ readonlyLax: 1 });
+          });
+        });
+
+        describe('behaviour with multiple post-validators', () => {
+          const Model = new Schema(
+            {
+              dependent: {
+                default: '',
+                dependsOn: ['virtual', 'virtual2'],
+                resolver: validator
+              },
+              lax: { default: '' },
+              readonly: { readonly: true, validator },
+              readonlyLax: { default: '', readonly: 'lax', validator },
+              required: { required: true, validator },
+              virtual: { virtual: true, validator },
+              virtual2: { virtual: true, validator }
+            },
+            {
+              postValidate: [
+                makePostValidator([
+                  'lax',
+                  'required',
+                  'readonly',
+                  'readonlyLax'
+                ]),
+                makePostValidator(['lax', 'virtual']),
+                makePostValidator(['virtual', 'virtual2'])
+              ]
+            }
+          ).getModel();
+
+          afterEach(() => {
+            summaryStats = {};
+            providedPropertiesStats = {};
+          });
+
+          it('should trigger all post-validators at creation', async () => {
+            const { error } = await Model.create();
+
+            expect(error).toBeNull();
+            expect(providedPropertiesStats).toEqual({
+              lax: 2,
+              required: 1,
+              readonly: 1,
+              readonlyLax: 1
+            });
+          });
+
+          it('should not trigger post-validators of virtuals not provided at creation', async () => {
+            const { error } = await Model.create({ virtual2: true });
+
+            expect(error).toBeNull();
+            expect(providedPropertiesStats).toEqual({
+              lax: 2,
+              required: 1,
+              readonly: 1,
+              readonlyLax: 1,
+              virtual2: 1
+            });
+          });
+
+          it('should only trigger post-validators of props provided during updates', async () => {
+            const { error } = await Model.update(
+              { lax: 2, required: 1, readonly: 1, readonlyLax: 1 },
+              {
+                lax: true,
+                required: true,
+                readonly: true,
+                readonlyLax: true,
+                virtual: true,
+                virtual2: true
+              }
+            );
+
+            expect(error).toBeNull();
+            expect(providedPropertiesStats).toEqual({
+              lax: 2,
+              required: 1,
+              virtual: 2,
+              virtual2: 1
+            });
+          });
+
+          it('should only trigger post-validators of readonly props that have not changed during updates', async () => {
+            const { error } = await Model.update(
+              { lax: 2, required: 1, readonly: 1, readonlyLax: '' },
+              {
+                readonly: true,
+                readonlyLax: true
+              }
+            );
+
+            expect(error).toBeNull();
+            expect(providedPropertiesStats).toEqual({ readonlyLax: 1 });
           });
         });
       });

@@ -374,6 +374,60 @@ class ModelTool<
     return errorTool;
   }
 
+  private async _handlePostValidations(
+    data: Partial<Output>,
+    isUpdate = false
+  ) {
+    const summary = this._getSummary(data, isUpdate),
+      context = summary.context;
+
+    const errorTool = new this._options.ErrorTool(
+      VALIDATION_ERRORS.VALIDATION_ERROR,
+      context.__getOptions__()
+    );
+
+    const handlerIds = new Set<number>(),
+      handlerIdToProps = new Map<number, Set<string>>();
+
+    for (const [
+      prop,
+      handlerSetId
+    ] of this.propsToPostValidatorIndicesMap.entries()) {
+      const isVirtual = this._isVirtual(prop);
+
+      if (isVirtual && !isPropertyOf(prop, summary.inputValues)) continue;
+
+      if (isUpdate && !isVirtual && !isPropertyOf(prop, summary.changes))
+        continue;
+
+      for (const id of handlerSetId.values()) {
+        handlerIds.add(id);
+
+        const set = handlerIdToProps.get(id) ?? new Set();
+        handlerIdToProps.set(id, set.add(prop));
+      }
+    }
+
+    const handlers = Array.from(handlerIds).map((id) => ({
+      id,
+      handler: this.postValidatorToHandlerMap.get(id)!
+    }));
+
+    await Promise.allSettled(
+      handlers.map(({ id, handler }) =>
+        handler(
+          summary,
+          Array.from(handlerIdToProps.get(id)!) as Extract<
+            keyof Input,
+            string
+          >[]
+        )
+      )
+    );
+
+    return errorTool;
+  }
+
   private async _handleSanitizationOfVirtuals(
     data: Partial<Output>,
     isUpdate = false
@@ -968,6 +1022,11 @@ class ModelTool<
     if (requiredError.isLoaded)
       return this._handleError(requiredError, data, virtuals);
 
+    const postValidationError = await this._handlePostValidations(data);
+
+    if (postValidationError.isLoaded)
+      return this._handleError(postValidationError, data, virtuals);
+
     await this._handleSanitizationOfVirtuals(data);
 
     data = await this._resolveDependentChanges(
@@ -1105,6 +1164,14 @@ class ModelTool<
 
     if (requiredErrorTool.isLoaded)
       return this._handleError(requiredErrorTool, updates, virtuals);
+
+    const postValidationError = await this._handlePostValidations(
+      updates,
+      true
+    );
+
+    if (postValidationError.isLoaded)
+      return this._handleError(postValidationError, updates, virtuals);
 
     await this._handleSanitizationOfVirtuals(updates, true);
 
