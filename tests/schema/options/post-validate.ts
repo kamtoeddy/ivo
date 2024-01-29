@@ -3,7 +3,8 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { ERRORS } from '../../../dist';
 import {
   getInvalidPostValidateConfigMessage,
-  getInvalidPostValidateConfigMessageForRepeatedProperties
+  getInvalidPostValidateConfigMessageForRepeatedProperties,
+  getInvalidPostValidateConfigMessageForSubsetProperties
 } from '../../../src/schema/schema-core';
 import {
   expectFailure,
@@ -259,18 +260,30 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
         ];
 
         describe('valid', () => {
-          it("should allow 'postValidate' as an array of valid configs", () => {
+          it("should allow 'postValidate' as an array of non-subset valid configs", () => {
+            const validPostValidConfig = [
+              { properties: ['propertyName1', 'p1', 'p3'], handler() {} },
+              { properties: ['propertyName1', 'p1', 'p2'], handler() {} },
+              { properties: ['p1', 'p2', 'p3'], handler() {} },
+              { properties: ['v1', 'v2'], handler() {} },
+              { properties: ['p1', 'v2'], handler() {} },
+              { properties: ['v1', 'p2'], handler() {} }
+            ];
+
             const toPass = fx(
               getValidSchema(
                 {},
                 {
                   dependent: {
                     default: '',
-                    dependsOn: ['virtual', 'virtual2'],
+                    dependsOn: ['v1', 'v2'],
                     resolver() {}
                   },
-                  virtual: { virtual: true, validator() {} },
-                  virtual2: { virtual: true, validator() {} }
+                  p1: { default: true, validator() {} },
+                  p2: { default: true, validator() {} },
+                  p3: { default: true, validator() {} },
+                  v1: { virtual: true, validator() {} },
+                  v2: { virtual: true, validator() {} }
                 }
               ),
               { postValidate: validPostValidConfig }
@@ -517,6 +530,91 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                 }
               ),
               { postValidate: configs.map((ci) => ci[0]) }
+            );
+
+            expectFailure(toFail);
+
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err).toMatchObject({
+                message: ERRORS.INVALID_SCHEMA,
+                payload: {
+                  postValidate: expect.arrayContaining(reasons)
+                }
+              });
+            }
+          });
+
+          it('should reject if any config is the subset of another', () => {
+            const configs = [
+              [
+                ['p1', 'p2'],
+                [
+                  getInvalidPostValidateConfigMessageForSubsetProperties(0, 2),
+                  getInvalidPostValidateConfigMessageForSubsetProperties(0, 3),
+                  getInvalidPostValidateConfigMessageForSubsetProperties(0, 4)
+                ]
+              ],
+              [
+                ['p1', 'v1'],
+                [
+                  getInvalidPostValidateConfigMessageForSubsetProperties(1, 2),
+                  getInvalidPostValidateConfigMessageForSubsetProperties(1, 3)
+                ]
+              ],
+              [['p1', 'p2', 'v1', 'v2'], []],
+              [
+                ['p1', 'p2', 'v1'],
+                [getInvalidPostValidateConfigMessageForSubsetProperties(3, 2)]
+              ],
+              [
+                ['p1', 'p2', 'v2'],
+                [getInvalidPostValidateConfigMessageForSubsetProperties(4, 2)]
+              ],
+              [
+                ['p2', 'v1'],
+                [
+                  getInvalidPostValidateConfigMessageForSubsetProperties(5, 2),
+                  getInvalidPostValidateConfigMessageForSubsetProperties(5, 3),
+                  getInvalidPostValidateConfigMessageForSubsetProperties(5, 7)
+                ]
+              ],
+              [
+                ['p2', 'v2'],
+                [getInvalidPostValidateConfigMessageForSubsetProperties(6, 2)]
+              ],
+              [
+                ['p2', 'v1', 'v2'],
+                [getInvalidPostValidateConfigMessageForSubsetProperties(7, 2)]
+              ]
+            ];
+
+            const reasons = configs
+              .map((c) => c[1])
+              .reduce((prev, v) => [...prev, ...v]);
+
+            const toFail = fx(
+              getValidSchema(
+                {},
+                {
+                  dependent: {
+                    default: '',
+                    dependsOn: ['v1', 'v2'],
+                    resolver() {}
+                  },
+                  p1: { default: '' },
+                  p2: { default: '' },
+                  v1: { virtual: true, validator() {} },
+                  v2: { virtual: true, validator() {} }
+                }
+              ),
+              {
+                postValidate: configs.map((c) => ({
+                  properties: c[0],
+                  handler() {}
+                }))
+              }
             );
 
             expectFailure(toFail);

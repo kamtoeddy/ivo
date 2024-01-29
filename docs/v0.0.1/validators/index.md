@@ -92,19 +92,19 @@ As illustrated in the example above, the PostValidateConfig is an object that ex
 > **If the postValidate option is an array, every set of properties has to be unique for each config**
 
 ```ts
-// ❌ this will result in a schema error
-const schema = new Schema(definitions, {
-  postValidate: [
-    { properties: ['email', 'username'], handler },
-    { properties: ['email', 'username'], handler }
-  ]
-});
-
-// ❌ this will also result in a schema error
+// ❌ both configs have wxactly the same properties
 const schema = new Schema(definitions, {
   postValidate: [
     { properties: ['email', 'username'], handler },
     { properties: ['username', 'email'], handler }
+  ]
+});
+
+// ❌ subsets are not allowed
+const schema = new Schema(definitions, {
+  postValidate: [
+    { properties: ['email', 'username', 'date_of_birth'], handler },
+    { properties: ['email', 'username'], handler }
   ]
 });
 
