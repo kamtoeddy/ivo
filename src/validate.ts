@@ -248,7 +248,7 @@ const MAX_LENGTH = 255,
   MIN_LENGTH = 1;
 
 type StringOptions<T extends string = string> = XOR<
-  { allow: Readonly<ArrayOfMinSizeTwo<T>> },
+  { allow: ArrayOfMinSizeTwo<T> | Readonly<ArrayOfMinSizeTwo<T>> },
   { maxLength?: number; minLength?: number; regExp?: RegExp; trim?: boolean }
 >;
 

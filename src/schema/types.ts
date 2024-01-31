@@ -558,7 +558,7 @@ type ValidatorResponseObject<T, Input = {}, Aliases = {}> =
   | InvalidValidatorResponse<Input, Aliases>;
 
 type ResponseErrorObject<Input = {}, Aliases = {}> = {
-  [K in KeyOf<Input & Aliases>]: string | string[] | InputFieldError;
+  [K in KeyOf<Input & Aliases>]?: string | string[] | InputFieldError;
 };
 
 type ValidatorResponse<T, Input, Aliases = {}> =

@@ -47,14 +47,6 @@ const userSchema = new Schema<UserInput, User>(
       required: isEmailOrPhoneRequired,
       validator: validateUserEmail
     },
-    username: {
-      required: true,
-      shouldUpdate({ usernameUpdatableFrom }) {
-        if (!usernameUpdatableFrom) return true;
-
-        return (
-          new Date().getTime() >= new Date(usernameUpdatableFrom).getTime()
-        );
       },
       validator: validateUsername
     },
@@ -63,6 +55,14 @@ const userSchema = new Schema<UserInput, User>(
       required: isEmailOrPhoneRequired,
       validator: validatePhoneNumber
     },
+    username: {
+      required: true,
+      shouldUpdate({ usernameUpdatableFrom }) {
+        if (!usernameUpdatableFrom) return true;
+
+        return (
+          new Date().getTime() >= new Date(usernameUpdatableFrom).getTime()
+        );
     usernameUpdatableFrom: {
       default: null,
       dependsOn: 'username',
@@ -95,10 +95,10 @@ const UserModel = userSchema.getModel();
 ```ts
 const { data, error } = await UserModel.create({
   email: 'txpz@mail.com',
-  id: 1, // constant property -> will be ignored
-  name: 'John Doe', // not on schema -> will be ignored
+  id: 1, // will be ignored because it is a constant property
+  name: 'John Doe', // will be ignored because it is not on schema
   username: 'txpz',
-  usernameUpdatableFrom: new Date() // dependent property -> will be ignored
+  usernameUpdatableFrom: new Date() // will be ignored because it is a dependent property
 });
 
 if (error) return handleError(error);
@@ -148,7 +148,7 @@ await userDb.updateById(user.id, data);
 // updating 'username' again will not work
 
 const { error } = await UserModel.update(user, {
-  userame: 'txpz-2' // shouldUpdate rule will return false -> will be ignored
+  userame: 'txpz-2' // will be ignored because shouldUpdate rule will return false
 });
 
 console.log(error);
