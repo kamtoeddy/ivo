@@ -127,7 +127,7 @@ function toArray<T>(value: T | T[]): T[] {
 }
 
 function sort<T>(data: T[]): T[] {
-  return data.toSorted((a, b) => (a < b ? -1 : 1));
+  return [...data].sort((a, b) => (a < b ? -1 : 1));
 }
 
 function sortKeys<T extends ObjectType>(object: T): T {
