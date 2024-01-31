@@ -1,104 +1,101 @@
-import { Schema } from '../../../../dist'
+import { Schema } from '../../dist';
 
 type PublicOnly = {
-  dob: Date | string
-  name: string
-}
+  dob: Date | string;
+  name: string;
+};
 
 const publicOnly = new Schema<PublicOnly>({
   dob: { default: '' },
   name: { required: true, validator: () => true }
-}).getModel()
+}).getModel();
 
 publicOnly.create({ dob: '', name: '' }).then(({ data }) => {
-  data?.dob
-  data?.name
-})
+  data?.dob;
+  data?.name;
+});
 
 type PrivateOnly = {
-  constants: string
-}
-const outputOnly = new Schema<PrivateOnly, {}>({
+  constants: string;
+};
+const outputOnly = new Schema<{}, PrivateOnly>({
   constants: { constant: true, value: '' }
-}).getModel()
+}).getModel();
 
 outputOnly.create({}).then(({ data }) => {
-  data?.constants
-})
+  data?.constants;
+});
 
 type PrivateAndPublicInput = {
-  public: string
-}
+  public: string;
+};
 
 type PrivateAndPublic = {
-  constants: string
-  dependents: string
-  public: string
-}
+  constants: string;
+  dependents: string;
+  public: string;
+};
 
-const privatesAndPublic = new Schema<PrivateAndPublic, PrivateAndPublicInput>({
+const privatesAndPublic = new Schema<PrivateAndPublicInput, PrivateAndPublic>({
   constants: { constant: true, value: '' },
   dependents: {
     default: '',
-    dependent: true,
     dependsOn: 'public',
     resolver: () => ''
   },
   public: { required: true, validator: () => true }
-}).getModel()
+}).getModel();
 
 privatesAndPublic.create({ public: '' }).then(({ data }) => {
-  data?.constants
-  data?.dependents
-  data?.public
-})
+  data?.constants;
+  data?.dependents;
+  data?.public;
+});
 
 type VirtualsAndPrivateInput = {
-  virtual: string
-}
+  virtual: string;
+};
 
 type VirtualsAndPrivate = {
-  dependents: string
-}
+  dependents: string;
+};
 
 const virtualsAndPrivate = new Schema<
-  VirtualsAndPrivate,
-  VirtualsAndPrivateInput
+  VirtualsAndPrivateInput,
+  VirtualsAndPrivate
 >({
   dependents: {
     default: '',
-    dependent: true,
     dependsOn: 'virtual',
     resolver: () => ''
   },
   virtual: { virtual: true, validator: () => true }
-}).getModel()
+}).getModel();
 
 virtualsAndPrivate.create({ virtual: '' }).then(({ data }) => {
-  data?.dependents
-})
+  data?.dependents;
+});
 
 type VirtualsPublicAndPrivateInput = {
-  virtual: string
-}
+  virtual: string;
+};
 
 type VirtualsPublicAndPrivate = {
-  dependents: string
-}
+  dependents: string;
+};
 
 const virtualsPublicAndPrivate = new Schema<
-  VirtualsPublicAndPrivate,
-  VirtualsPublicAndPrivateInput
+  VirtualsPublicAndPrivateInput,
+  VirtualsPublicAndPrivate
 >({
   dependents: {
     default: '',
-    dependent: true,
     dependsOn: 'virtual',
     resolver: () => ''
   },
   virtual: { virtual: true, validator: () => true }
-}).getModel()
+}).getModel();
 
 virtualsPublicAndPrivate.create({ virtual: '' }).then(({ data }) => {
-  data?.dependents
-})
+  data?.dependents;
+});

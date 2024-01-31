@@ -13,19 +13,18 @@ export {
   FieldKey,
   getKeysAsProps,
   isEqual,
-  isFunction,
+  isFunctionLike,
   isNullOrUndefined,
-  isObject,
   isPropertyOf,
+  isRecordLike,
   toArray
 } from './utils';
 export {
   Context,
   DeleteContext,
-  OPERATIONS,
   KeyOf,
   Merge,
-  NonEmptyArray,
+  ArrayOfMinSizeOne as NonEmptyArray,
   RealType,
   Summary,
   ValidatorResponse,

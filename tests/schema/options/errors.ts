@@ -1,6 +1,6 @@
 import { beforeAll, describe, test, it, expect } from 'vitest';
 
-import { ERRORS } from '../../../../dist';
+import { ERRORS } from '../../../dist';
 import {
   expectFailure,
   expectNoFailure,

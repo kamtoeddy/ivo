@@ -5,7 +5,7 @@ For any schema that inherits from another, call the extend method on the parent 
 > N.B:
 >
 > - To overwrite a property, you just do it in the property definitions.
-> - From v4, all options are inherited except lifecycles and [shouldUpdate](../index.md#shouldupdate) options
+> - [postValidate](../index.md#postvalidate), [shouldUpdate](../index.md#shouldupdate) and lifecycles are the only options that are not inherited
 
 Example:
 
@@ -17,12 +17,12 @@ const baseSchema = new Schema(
     name: { default: '' }
   },
   { timestamps: true }
-)
+);
 
 const childSchema = baseSchema.extend(
   {
     name: { default: 'default-name' }
   },
   { timestamps: { createdAt: 'cAt' }, remove: 'dob' }
-)
+);
 ```

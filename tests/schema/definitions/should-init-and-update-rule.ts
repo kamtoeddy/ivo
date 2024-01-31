@@ -1,6 +1,6 @@
 import { afterEach, beforeAll, beforeEach, describe, it, expect } from 'vitest';
 
-import { ERRORS } from '../../../../dist';
+import { ERRORS } from '../../../dist';
 import { expectFailure, expectNoFailure, validator } from '../_utils';
 
 export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
@@ -232,7 +232,6 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
             {
               dependent: {
                 default: '',
-                dependent: true,
                 dependsOn: 'virtual',
                 resolver: () => 'changed',
                 onSuccess: onSuccess('dependent')
@@ -394,7 +393,6 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
           const toPass = fx({
             dependentProp: {
               default: '',
-              dependent: true,
               dependsOn: 'virtual',
               resolver: () => ''
             },
@@ -428,14 +426,12 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
         const Model = new Schema({
           dependentProp: {
             default: false,
-            dependent: true,
             dependsOn: 'virtual',
             resolver: ({ context }: any) => context.virtual,
             onSuccess: incrementOnSuccessCountOf('dependentProp')
           },
           dependentProp_1: {
             default: false,
-            dependent: true,
             dependsOn: 'virtual_1',
             resolver: ({ context }: any) => context.virtual_1,
             onSuccess: incrementOnSuccessCountOf('dependentProp_1')
@@ -477,7 +473,7 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
             { laxProp: 'yoyo', virtual: true, virtual_1: true }
           );
 
-          expect(data).toBe(null);
+          expect(data).toBeNull();
           expect(error.message).toBe(ERRORS.NOTHING_TO_UPDATE);
         });
 
@@ -494,7 +490,7 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
 
           await handleSuccess();
 
-          expect(error).toBe(null);
+          expect(error).toBeNull();
           expect(data).toEqual({ dependentProp_1: true, laxProp: 'yoyo' });
 
           expect(onSuccessStats).toEqual({
@@ -521,7 +517,7 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
             { laxProp: 'yoyo' }
           );
 
-          expect(data).toBe(null);
+          expect(data).toBeNull();
           expect(error.message).toBe(ERRORS.NOTHING_TO_UPDATE);
         });
 
@@ -537,7 +533,7 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
               { isBlocked: true }
             );
 
-            expect(data).toBe(null);
+            expect(data).toBeNull();
             expect(error).toMatchObject({
               message: ERRORS.NOTHING_TO_UPDATE,
               payload: {}

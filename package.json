@@ -1,44 +1,16 @@
 {
-  "author": "kamtoeddy",
-  "bugs": {
-    "url": "https://github.com/kamtoeddy/ivo/issues"
-  },
-  "description": "A different approach to schema valitation",
-  "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^5.58.0",
-    "@typescript-eslint/parser": "^5.58.0",
-    "@vitest/coverage-v8": "^1.0.2",
-    "eslint": "^8.38.0",
-    "eslint-plugin-import": "^2.28.1",
-    "tsup": "^7.2.0",
-    "typescript": "^4.9.5",
-    "vitest": "^1.0.2"
-  },
-  "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "import": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
-      },
-      "require": {
-        "types": "./dist/index.d.cts",
-        "default": "./dist/index.cjs"
-      }
-    }
-  },
-  "sideEffects": false,
-  "files": [
-    "dist"
-  ],
-  "homepage": "https://github.com/kamtoeddy/ivo#readme",
-  "license": "MIT",
   "name": "ivo",
+  "author": "kamtoeddy",
+  "description": "A different approach to schema valitation",
+  "version": "1.0.0",
+  "license": "MIT",
+  "homepage": "https://github.com/kamtoeddy/ivo#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kamtoeddy/ivo.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kamtoeddy/ivo/issues"
   },
   "scripts": {
     "build": "tsup",
@@ -50,7 +22,23 @@
     "test:watch": "npm run build && vitest",
     "prepare": "npm run clean-up && npm run build"
   },
-  "version": "0.0.1",
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.58.0",
+    "@typescript-eslint/parser": "^5.58.0",
+    "@vitest/coverage-v8": "^1.2.2",
+    "eslint": "^8.55.0",
+    "eslint-plugin-import": "^2.28.1",
+    "tsup": "^7.2.0",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.2"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
   "keywords": [
     "schema",
     "validation"

@@ -1,6 +1,6 @@
 import { beforeAll, describe, it, expect } from 'vitest';
 
-import { ERRORS } from '../../../dist';
+import { ERRORS } from '../../dist';
 
 export const valuesParsing_Tests = ({ Schema }: any) => {
   const expectPromiseFailure = (
@@ -13,7 +13,7 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
   const expectNoFailure = (fx: Function) => expect(fx).not.toThrow();
 
   describe('Values Parsing', () => {
-    const INVALID_DATA_ERROR = { message: ERRORS.INVALID_DATA, payload: {} };
+    const errorMessage = { message: ERRORS.VALIDATION_ERROR, payload: {} };
     const validData = { age: 15, name: 'Frank' };
     const invalidData = [1, -10, 0, false, true, '', 'true', null];
 
@@ -32,7 +32,7 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
         it('should allow for create method of model to be empty', async () => {
           const { data, error } = await User.create();
 
-          expect(error).toBe(null);
+          expect(error).toBeNull();
 
           expect(data).toEqual({ age: 10, id: 1, name: '' });
         });
@@ -40,7 +40,7 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
         it('should set values properly at creation', async () => {
           const { data, error } = await User.create(validData);
 
-          expect(error).toBe(null);
+          expect(error).toBeNull();
 
           expect(data).toEqual({ ...validData, id: 1 });
         });
@@ -57,14 +57,14 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
 
           const { data, error } = await User.update(user, { name });
 
-          expect(error).toBe(null);
+          expect(error).toBeNull();
 
           expect(data).toEqual({ name });
         });
       });
 
       describe('invalid data', () => {
-        it('should reject invalid data at creation', async () => {
+        it('should ignore invalid data at creation', async () => {
           for (const val of invalidData) {
             const operation = async () => await User.create(val);
 
@@ -72,9 +72,9 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
 
             const { data, error } = await operation();
 
-            expect(data).toBe(null);
+            expect(error).toBeNull();
 
-            expect(error).toEqual(INVALID_DATA_ERROR);
+            expect(data).toEqual({ age: 10, id: 1, name: '' });
           }
         });
 
@@ -82,12 +82,12 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
           for (const val of invalidData) {
             const operation = async () => await User.delete(val);
 
-            expectPromiseFailure(operation, ERRORS.INVALID_DATA);
+            expectPromiseFailure(operation, ERRORS.VALIDATION_ERROR);
 
             try {
               await operation();
             } catch (err: any) {
-              expect(err).toMatchObject(INVALID_DATA_ERROR);
+              expect(err).toMatchObject(errorMessage);
             }
           }
         });
@@ -101,9 +101,12 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
 
             const { data, error } = await operation();
 
-            expect(data).toBe(null);
+            expect(data).toBeNull();
 
-            expect(error).toEqual(INVALID_DATA_ERROR);
+            expect(error).toEqual({
+              message: ERRORS.NOTHING_TO_UPDATE,
+              payload: {}
+            });
           }
         });
       });
@@ -127,7 +130,7 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
         it('should set values properly at creation', async () => {
           const { data, error } = await User.create(validData);
 
-          expect(error).toBe(null);
+          expect(error).toBeNull();
 
           expect(data).toEqual({ ...validData, id: 1 });
         });
@@ -144,7 +147,7 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
 
           const { data, error } = await User.update(user, { name });
 
-          expect(error).toBe(null);
+          expect(error).toBeNull();
 
           expect(data).toEqual({ name });
         });
@@ -155,13 +158,12 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
           for (const val of invalidData) {
             const operation = async () => await User.create(val);
 
-            expectPromiseFailure(operation, ERRORS.INVALID_DATA);
+            expectNoFailure(operation);
 
-            try {
-              await operation();
-            } catch (err: any) {
-              expect(err).toMatchObject(INVALID_DATA_ERROR);
-            }
+            const { data, error } = await operation();
+
+            expect(error).toBeNull();
+            expect(data).toEqual({ age: 10, id: 1, name: '' });
           }
         });
 
@@ -169,12 +171,12 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
           for (const val of invalidData) {
             const operation = async () => await User.delete(val);
 
-            expectPromiseFailure(operation, ERRORS.INVALID_DATA);
+            expectPromiseFailure(operation, ERRORS.VALIDATION_ERROR);
 
             try {
               await operation();
             } catch (err: any) {
-              expect(err).toMatchObject(INVALID_DATA_ERROR);
+              expect(err).toMatchObject(errorMessage);
             }
           }
         });
@@ -184,12 +186,15 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
             const operation = async () =>
               await User.update(val, { name: 'yoo' });
 
-            expectPromiseFailure(operation, ERRORS.INVALID_DATA);
+            expectPromiseFailure(operation, ERRORS.NOTHING_TO_UPDATE);
 
             try {
               await operation();
             } catch (err: any) {
-              expect(err).toMatchObject(INVALID_DATA_ERROR);
+              expect(err).toMatchObject({
+                message: ERRORS.NOTHING_TO_UPDATE,
+                payload: {}
+              });
             }
           }
         });

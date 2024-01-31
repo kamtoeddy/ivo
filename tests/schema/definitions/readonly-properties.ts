@@ -1,6 +1,6 @@
-import { beforeAll, describe, it, expect } from 'vitest'
+import { beforeAll, describe, it, expect } from 'vitest';
 
-import { expectFailure, expectNoFailure, validator } from '../_utils'
+import { expectFailure, expectNoFailure, validator } from '../_utils';
 
 export const Test_ReadonlyProperties = ({ Schema, fx }: any) => {
   describe('readonly', () => {
@@ -9,18 +9,17 @@ export const Test_ReadonlyProperties = ({ Schema, fx }: any) => {
         const toPass = fx({
           dependentProp: {
             default: 'value',
-            dependent: true,
             dependsOn: 'prop',
             resolver: () => 1,
             readonly: true
           },
           prop: { default: '' }
-        })
+        });
 
-        expectNoFailure(toPass)
+        expectNoFailure(toPass);
 
-        toPass()
-      })
+        toPass();
+      });
 
       it('should allow readonly(true) + requiredBy', () => {
         const toPass = fx({
@@ -30,15 +29,15 @@ export const Test_ReadonlyProperties = ({ Schema, fx }: any) => {
             required: () => true,
             validator
           }
-        })
+        });
 
-        expectNoFailure(toPass)
+        expectNoFailure(toPass);
 
-        toPass()
-      })
+        toPass();
+      });
 
       describe('behaviour', () => {
-        let Model: any
+        let Model: any;
 
         beforeAll(() => {
           Model = new Schema({
@@ -46,37 +45,37 @@ export const Test_ReadonlyProperties = ({ Schema, fx }: any) => {
             name: {
               default: 'Default Name'
             }
-          }).getModel()
-        })
+          }).getModel();
+        });
 
         it('should not modify readonly props that have changed via life cycle listeners at creation', async () => {
-          const { data } = await Model.create({ age: 25 })
+          const { data } = await Model.create({ age: 25 });
 
-          expect(data).toMatchObject({ age: 25, name: 'Default Name' })
-        })
+          expect(data).toMatchObject({ age: 25, name: 'Default Name' });
+        });
 
         it('should not modify readonly props that have changed via life cycle listeners during updates', async () => {
           const { data } = await Model.update(
             { age: null, name: 'Default Name' },
             { age: 25, name: 'YoYo' }
-          )
+          );
 
-          expect(data).toMatchObject({ age: 25, name: 'YoYo' })
-        })
-      })
-    })
+          expect(data).toMatchObject({ age: 25, name: 'YoYo' });
+        });
+      });
+    });
 
     describe('invalid', () => {
       it("should reject !readonly(true | 'lax')", () => {
-        const values = [1, '', null, undefined, false]
+        const values = [1, '', null, undefined, false];
 
         for (const readonly of values) {
-          const toFail = fx({ propertyName: { readonly } })
+          const toFail = fx({ propertyName: { readonly } });
 
-          expectFailure(toFail)
+          expectFailure(toFail);
 
           try {
-            toFail()
+            toFail();
           } catch (err: any) {
             expect(err.payload).toEqual(
               expect.objectContaining({
@@ -84,21 +83,21 @@ export const Test_ReadonlyProperties = ({ Schema, fx }: any) => {
                   "Readonly properties are either true | 'lax'"
                 ])
               })
-            )
+            );
           }
         }
-      })
+      });
 
       it('should reject readonly & required', () => {
-        const values = [true, false]
+        const values = [true, false];
 
         for (const required of values) {
-          const toFail = fx({ propertyName: { readonly: true, required } })
+          const toFail = fx({ propertyName: { readonly: true, required } });
 
-          expectFailure(toFail)
+          expectFailure(toFail);
 
           try {
-            toFail()
+            toFail();
           } catch (err: any) {
             expect(err.payload).toEqual(
               expect.objectContaining({
@@ -106,25 +105,24 @@ export const Test_ReadonlyProperties = ({ Schema, fx }: any) => {
                   'Strictly readonly properties are required. Either use a callable required + readonly(true) or remove the required rule'
                 ])
               })
-            )
+            );
           }
         }
-      })
+      });
 
       it('should reject readonly(true) + dependent & no default', () => {
         const toFail = fx({
           dependentProp: {
-            dependent: true,
             dependsOn: 'prop',
             resolver: () => 1
           },
           prop: { default: '' }
-        })
+        });
 
-        expectFailure(toFail)
+        expectFailure(toFail);
 
         try {
-          toFail()
+          toFail();
         } catch (err: any) {
           expect(err.payload).toEqual(
             expect.objectContaining({
@@ -132,26 +130,25 @@ export const Test_ReadonlyProperties = ({ Schema, fx }: any) => {
                 'Dependent properties must have a default value'
               ])
             })
-          )
+          );
         }
-      })
+      });
 
       it('should reject readonly(lax) + dependent', () => {
         const toFail = fx({
           dependentProp: {
-            dependent: true,
             default: '',
             dependsOn: 'prop',
             resolver: () => 1,
             readonly: 'lax'
           },
           prop: { default: '' }
-        })
+        });
 
-        expectFailure(toFail)
+        expectFailure(toFail);
 
         try {
-          toFail()
+          toFail();
         } catch (err: any) {
           expect(err.payload).toEqual(
             expect.objectContaining({
@@ -159,38 +156,38 @@ export const Test_ReadonlyProperties = ({ Schema, fx }: any) => {
                 'Readonly(lax) properties cannot be dependent'
               ])
             })
-          )
+          );
         }
-      })
+      });
 
       it('should reject readonly(lax) & no default', () => {
-        const toFail = fx({ propertyName: { readonly: 'lax' } })
+        const toFail = fx({ propertyName: { readonly: 'lax' } });
 
-        expectFailure(toFail)
+        expectFailure(toFail);
 
         try {
-          toFail()
+          toFail();
         } catch (err: any) {
           expect.objectContaining({
             propertyName: expect.arrayContaining([
               'Readonly properties must have a default value or a default setter'
             ])
-          })
+          });
         }
-      })
+      });
 
       it('should reject readonly(lax) & !shouldInit(undefined)', () => {
-        const values = [false, true]
+        const values = [false, true];
 
         for (const shouldInit of values) {
           const toFail = fx({
             propertyName: { default: '', readonly: 'lax', shouldInit }
-          })
+          });
 
-          expectFailure(toFail)
+          expectFailure(toFail);
 
           try {
-            toFail()
+            toFail();
           } catch (err: any) {
             expect(err.payload).toEqual(
               expect.objectContaining({
@@ -198,10 +195,10 @@ export const Test_ReadonlyProperties = ({ Schema, fx }: any) => {
                   'Lax properties cannot have initialization blocked'
                 ])
               })
-            )
+            );
           }
         }
-      })
-    })
-  })
-}
+      });
+    });
+  });
+};

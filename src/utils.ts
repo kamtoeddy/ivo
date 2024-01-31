@@ -4,7 +4,8 @@ import {
   ValidatorResponseObject,
   KeyOf,
   TypeOf,
-  ValidationResponse
+  ValidationResponse,
+  ArrayOfMinSizeTwo
 } from './schema/types';
 
 export {
@@ -15,11 +16,11 @@ export {
   getUniqueBy,
   hasAnyOf,
   isEqual,
-  isFunction,
-  isPropertyOf,
+  isFunctionLike,
   isNullOrUndefined,
-  isObject,
   isOneOf,
+  isPropertyOf,
+  isRecordLike,
   toArray,
   sort,
   sortKeys
@@ -29,7 +30,11 @@ export type { ObjectType, FieldKey };
 
 type FieldKey = number | string;
 
-type ObjectType = Record<FieldKey, any> & {};
+type ObjectType<T = Record<FieldKey, any>> = T extends object
+  ? T extends any[]
+    ? never
+    : T & {}
+  : never;
 
 function makeResponse<T = undefined>(
   input: ValidatorResponseObject<T>
@@ -40,26 +45,17 @@ function makeResponse<T = undefined>(
     return { valid, validated } as ValidationResponse<TypeOf<T>>;
   }
 
-  let {
-    metadata = null,
-    otherReasons,
-    reason,
-    reasons,
-    valid,
-    value
-  } = input as any;
+  let { metadata = null, reason, valid, value } = input;
 
-  if (reasons) reasons = toArray(reasons);
-  else reasons = [];
-
-  if (reason) reasons = [...reasons, ...toArray(reason)];
+  if (reason) {
+    if (!isRecordLike(reason)) reason = toArray(reason);
+  } else reason = [];
 
   return {
     metadata,
-    reasons,
+    reason,
     valid,
-    value,
-    ...(otherReasons && { otherReasons })
+    value
   } as ValidationResponse<TypeOf<T>>;
 }
 
@@ -101,7 +97,7 @@ function isEqual<T>(a: any, b: T, depth = 1): a is T {
   return JSON.stringify(sortKeys(a)) == JSON.stringify(sortKeys(b as any));
 }
 
-function isFunction(value: any): value is Function {
+function isFunctionLike<T extends Function>(value: any): value is T {
   return typeof value === 'function';
 }
 
@@ -109,12 +105,14 @@ function isNullOrUndefined(value: any): value is null | undefined {
   return isOneOf(value, [null, undefined]);
 }
 
-function isObject<T extends ObjectType>(value: any): value is T {
-  return value && typeof value === 'object' && !Array.isArray(value);
+function isOneOf<T>(value: any, values: ArrayOfMinSizeTwo<T>): value is T {
+  return values.includes(value);
 }
 
-function isOneOf<T>(value: any, values: T[]): value is T {
-  return values.includes(value);
+function isRecordLike<T extends ObjectType>(
+  value: any
+): value is ObjectType<T> {
+  return value && typeof value === 'object' && !Array.isArray(value);
 }
 
 function isPropertyOf<T>(
@@ -129,7 +127,7 @@ function toArray<T>(value: T | T[]): T[] {
 }
 
 function sort<T>(data: T[]): T[] {
-  return data.sort((a, b) => (a < b ? -1 : 1));
+  return [...data].sort((a, b) => (a < b ? -1 : 1));
 }
 
 function sortKeys<T extends ObjectType>(object: T): T {

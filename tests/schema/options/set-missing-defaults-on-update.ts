@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 
-import { ERRORS } from '../../../../dist';
+import { ERRORS } from '../../../dist';
 import {
   expectFailure,
   expectNoFailure,
@@ -23,7 +23,6 @@ export const Test_SchemaSetMissingDefaultsOnUpdateOption = ({
               id: { constant: true, value: 1 },
               dependent: {
                 default: '',
-                dependent: true,
                 dependsOn: 'lax',
                 resolver: ({ context }: any) => context.lax
               },
@@ -47,7 +46,7 @@ export const Test_SchemaSetMissingDefaultsOnUpdateOption = ({
           expect(summary).toMatchObject({
             changes: updates,
             context: { dependent: '', lax: 'lax', ...updates },
-            operation: 'update',
+            isUpdate: true,
             previousValues,
             values: updates
           });
@@ -62,13 +61,11 @@ export const Test_SchemaSetMissingDefaultsOnUpdateOption = ({
             id: { constant: true, value: 1 },
             dependent: {
               default: '',
-              dependent: true,
               dependsOn: 'lax',
               resolver: ({ context }: any) => context.lax
             },
             dependent_1: {
               default: '',
-              dependent: true,
               dependsOn: 'dependent',
               resolver: ({ context }: any) => context.dependent
             },
@@ -102,7 +99,7 @@ export const Test_SchemaSetMissingDefaultsOnUpdateOption = ({
           expect(summary).toMatchObject({
             changes,
             context: changes,
-            operation: 'update',
+            isUpdate: true,
             previousValues,
             values: changes
           });
@@ -129,7 +126,7 @@ export const Test_SchemaSetMissingDefaultsOnUpdateOption = ({
           expect(summary).toMatchObject({
             changes,
             context: changes,
-            operation: 'update',
+            isUpdate: true,
             previousValues,
             values: changes
           });

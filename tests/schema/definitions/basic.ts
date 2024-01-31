@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 
-import { ERRORS } from '../../../../dist';
+import { ERRORS } from '../../../dist';
 import { expectFailure } from '../_utils';
 
 export const Test_BasicDefinitions = ({ fx, Schema }: any) => {
@@ -118,6 +118,38 @@ export const Test_BasicDefinitions = ({ fx, Schema }: any) => {
           'virtual'
         ])
       );
+    });
+  });
+
+  describe('behaviour of schema when errors thrown in setter of default values', () => {
+    const Model = new Schema(
+      {
+        prop: {
+          default() {
+            throw new Error('lolol');
+          }
+        },
+        prop1: { default: '' }
+      },
+      { setMissingDefaultsOnUpdate: true }
+    ).getModel();
+
+    it('should set value as default on error generating default value at creation', async () => {
+      const { data, error } = await Model.create();
+
+      expect(error).toBeNull();
+      expect(data).toMatchObject({ prop: null, prop1: '' });
+    });
+
+    it("should set value as default on error generating default value during updates'", async () => {
+      const { data, error } = await Model.update(
+        { prop1: '' },
+        { prop1: 'updated' },
+        { debug: true }
+      );
+
+      expect(error).toBeNull();
+      expect(data).toMatchObject({ prop: null, prop1: 'updated' });
     });
   });
 };

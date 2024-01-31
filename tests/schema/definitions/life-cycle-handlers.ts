@@ -119,7 +119,7 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
         propChangeMap = {};
       });
 
-      it('should reject handlers that try to mutate the onChange, onCreate & onSuccess ctx', async () => {
+      it('should reject handlers that try to mutate the onSuccess ctx', async () => {
         const { handleSuccess } = await Model.create(validData);
 
         await handleSuccess?.();
@@ -263,7 +263,6 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
           },
           dependentProp: {
             default: '',
-            dependent: true,
             dependsOn: 'virtualProp',
             resolver: () => ''
           },
@@ -403,7 +402,6 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
       const Model = new Schema({
         dependent: {
           default: false,
-          dependent: true,
           dependsOn: 'readonlyLax',
           onSuccess: onSuccess('dependent'),
           resolver: () => true
@@ -445,7 +443,7 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
 
         await handleSuccess();
 
-        expect(error).toBe(null);
+        expect(error).toBeNull();
 
         expect(cxtOptions).toEqual({
           dependent: contextOptions,
@@ -465,10 +463,10 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
 
         const changes = null,
           context = onSuccessValues.__ctx,
-          operation = 'creation',
+          isUpdate = false,
           previousValues = null,
           values = data,
-          summary = { changes, context, operation, previousValues, values };
+          summary = { changes, context, isUpdate, previousValues, values };
 
         expect(onSuccessValues).toMatchObject({
           dependent: summary,
@@ -491,19 +489,17 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
 
         await handleSuccess();
 
-        expect(error).toBe(null);
+        expect(error).toBeNull();
         expect(cxtOptions).toEqual({
           lax: contextOptions
         });
         expect(propChangeMap).toEqual({ lax: true });
 
-        const operation = 'update';
-
         expect(onSuccessValues).toMatchObject({
           lax: expect.objectContaining({
             changes: data,
             context: onSuccessValues.__ctx,
-            operation,
+            isUpdate: true,
             previousValues: initialData,
             values: { ...initialData, lax: true }
           })
@@ -521,7 +517,7 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
 
         await handleSuccess();
 
-        expect(error).toBe(null);
+        expect(error).toBeNull();
         expect(cxtOptions).toEqual({
           dependent: contextOptions,
           readonlyLax: contextOptions
@@ -530,10 +526,10 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
 
         const changes = data,
           context = onSuccessValues.__ctx,
-          operation = 'update',
+          isUpdate = true,
           previousValues = initialData,
           values = { ...initialData, ...data },
-          summary = { changes, context, operation, previousValues, values };
+          summary = { changes, context, isUpdate, previousValues, values };
 
         expect(onSuccessValues).toMatchObject({
           dependent: summary,

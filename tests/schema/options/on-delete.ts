@@ -1,6 +1,6 @@
 import { beforeEach, describe, it, expect } from 'vitest';
 
-import { ERRORS } from '../../../../dist';
+import { ERRORS } from '../../../dist';
 import {
   expectFailure,
   expectNoFailure,
@@ -29,7 +29,6 @@ export const Test_SchemaOnDelete = ({ Schema, fx }: any) => {
             name: { required: true, validator, onDelete: onDelete_('name') },
             price: {
               default: null,
-              dependent: true,
               dependsOn: '_setPrice',
               resolver: ({ context }: any) => context._setPrice,
               onDelete: onDelete_('price')
@@ -58,7 +57,6 @@ export const Test_SchemaOnDelete = ({ Schema, fx }: any) => {
             name: { required: true, validator },
             price: {
               default: null,
-              dependent: true,
               dependsOn: '_setPrice',
               resolver: ({ context }: any) => context._setPrice
             },

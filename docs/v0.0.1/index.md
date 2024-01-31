@@ -36,7 +36,6 @@ const userSchema = new Schema<UserInput, User>({
   lastName: { required: true, validator: validateName },
   fullName: {
     default: '',
-    dependent: true,
     dependsOn: ['firstName', 'lastName'],
     resolver({ context: { firstName, lastName } }) {
       return `${firstName} ${lastName}`;
@@ -61,9 +60,10 @@ These methods are async because custom validators could be async as well.
 
 | Property     | Type                         | Description                                                                                                                                                     |
 | ------------ | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| allow        | any[ ] \| object             | used to specify the values that should be accepted for a property. [See more](./definitions/allowed-values.md#allowed-values)                                   |
 | constant     | boolean                      | use with **`value`** rule to specify a property with a forever constant value. [more](./definitions/constants.md#constant-properties)                           |
 | default      | any \| function              | the default value of a propterty. [more](./definitions/defaults.md#default-values)                                                                              |
-| dependent    | boolean                      | to block the direct modification of a property. [more](./definitions/dependents.md#dependent-properties)                                                        |
+| dependsOn    | string \| string[ ]          | a property or list of property the said property depends on. [more](./definitions/dependents.md#dependent-properties)                                           |
 | onDelete     | function \| function[ ]      | executed when the delete method of a model is invoked [more](./life-cycles.md#ondelete)                                                                         |
 | onFailure    | function \| function[ ]      | executed after an unsucessful operation [more](./life-cycles.md#onfailure)                                                                                      |
 | onSuccess    | function \| function[ ]      | executed after a sucessful operation [more](./life-cycles.md#onsuccess)                                                                                         |
@@ -246,7 +246,6 @@ This is the structure of the error returned or thrown
 
 ```ts
 type SchemaErrorMessage =
-  | 'INVALID_DATA'
   | 'INVALID_SCHEMA'
   | 'NOTHING_TO_UPDATE'
   | 'VALIDATION_ERROR';
@@ -266,6 +265,10 @@ This could be a function or an array of functions with the `DeleteListener` sign
 ## onSuccess
 
 This could be a function or an array of functions with the `SuccessListener` signature above. These functions would be triggered together with the onSuccess listeners of individual properties when the handleSuccess method is invoked at creation & during updates of any property. See more [here](./life-cycles.md#onsuccess)
+
+## postValidate
+
+To validate integrity of more than one field after initial validation. More on this [here](./validators/index.md#post-validation)
 
 ## setMissingDefaultsOnUpdate
 

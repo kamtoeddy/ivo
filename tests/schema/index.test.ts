@@ -1,6 +1,6 @@
 import { describe, test } from 'vitest';
 
-import { Schema } from '../../../src';
+import { Schema } from '../../src';
 import { makeFx } from './_utils';
 
 import { Test_BasicDefinitions } from './definitions/basic';
@@ -22,6 +22,9 @@ import { Test_SchemaShouldUpdateOption } from './options/should-update';
 import { Test_SchemaSetMissingDefaultsOnUpdateOption } from './options/set-missing-defaults-on-update';
 import { Test_SchemaEqualityDepth } from './options/equality-depth';
 import { Test_ExtendedSchemas } from './definitions/extended-schemas';
+import { Test_AllowedValues } from './definitions/allowed-values';
+import { valuesParsing_Tests } from './values-parsing';
+import { Test_SchemaOptionPostValidate } from './options/post-validate';
 
 const fx = makeFx(Schema);
 
@@ -32,9 +35,11 @@ describe('Index', () => {
 Test_BasicDefinitions({ fx, Schema });
 
 Test_Validators({ Schema });
+valuesParsing_Tests({ Schema });
 
 Test_ConstantProperties({ Schema, fx });
 Test_DependentProperties({ Schema, fx });
+Test_AllowedValues({ Schema, fx });
 Test_ExtendedSchemas({ Schema });
 Test_LaxProperties({ Schema, fx });
 Test_ReadonlyProperties({ Schema, fx });
@@ -52,3 +57,4 @@ Test_SchemaOptionFormat({ fx });
 Test_SchemaSetMissingDefaultsOnUpdateOption({ Schema, fx });
 Test_SchemaShouldUpdateOption({ Schema, fx });
 Test_SchemaTimestampOption({ Schema, fx });
+Test_SchemaOptionPostValidate({ Schema, fx });

@@ -199,4 +199,73 @@ describe('Context options', () => {
       });
     });
   });
+
+  describe('should accept functions properly', () => {
+    let called = false;
+
+    function ctxHandler() {
+      called = true;
+    }
+
+    const Model = new Schema<
+      { name: string },
+      { name: string },
+      {},
+      { ctxHandler: () => any }
+    >({
+      name: {
+        default: '',
+        validator(_, { context: { __getOptions__ } }) {
+          __getOptions__().ctxHandler();
+          return true;
+        },
+        onDelete({ __getOptions__ }) {
+          __getOptions__().ctxHandler();
+        },
+        onSuccess({ context: { __getOptions__ } }) {
+          __getOptions__().ctxHandler();
+        }
+      }
+    }).getModel();
+
+    afterEach(() => {
+      called = false;
+    });
+
+    it('should allow provided function in ctx options at creation', async () => {
+      expect(called).toBe(false);
+
+      await Model.create({ name: 'lol' }, { ctxHandler });
+
+      expect(called).toBe(true);
+    });
+
+    it('should allow provided function in ctx options onSuccess after creation', async () => {
+      expect(called).toBe(false);
+
+      const { handleSuccess } = await Model.create({}, { ctxHandler });
+
+      expect(called).toBe(false);
+
+      handleSuccess?.();
+
+      expect(called).toBe(true);
+    });
+
+    it('should allow provided function in ctx options during updates', async () => {
+      expect(called).toBe(false);
+
+      await Model.update({ name: 'lol' }, { name: 'updated' }, { ctxHandler });
+
+      expect(called).toBe(true);
+    });
+
+    it('should allow provided function in ctx options on deletion', async () => {
+      expect(called).toBe(false);
+
+      await Model.delete({ name: 'lol' }, { ctxHandler });
+
+      expect(called).toBe(true);
+    });
+  });
 });

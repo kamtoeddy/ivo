@@ -1,6 +1,6 @@
 import { beforeEach, describe, it, expect } from 'vitest';
 
-import { ERRORS } from '../../../../dist';
+import { ERRORS } from '../../../dist';
 import {
   expectFailure,
   expectNoFailure,
@@ -28,7 +28,6 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
             name: { required: true, validator, onSuccess: onSuccess_('name') },
             price: {
               default: null,
-              dependent: true,
               dependsOn: '_setPrice',
               resolver: ({ context }: any) => context._setPrice,
               onSuccess: onSuccess_('price')
@@ -54,7 +53,7 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
           const summary = {
             changes: null,
             context: { ...values, _setPrice: 100 },
-            operation: 'creation',
+            isUpdate: false,
             previousValues: null,
             values: values
           };
@@ -83,7 +82,7 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
           const summary = {
             changes: data,
             context: { ...values, _setPrice: 200 },
-            operation: 'update',
+            isUpdate: true,
             previousValues: book,
             values: values
           };
@@ -104,7 +103,6 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
             name: { required: true, validator },
             price: {
               default: null,
-              dependent: true,
               dependsOn: '_setPrice',
               resolver: ({ context }: any) => context._setPrice
             },
@@ -125,7 +123,7 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
           const summary = {
             changes: null,
             context: { ...values, _setPrice: 100 },
-            operation: 'creation',
+            isUpdate: false,
             previousValues: null,
             values: values
           };
@@ -151,7 +149,7 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
           const summary = {
             changes: data,
             context: { ...values, _setPrice: 200 },
-            operation: 'update',
+            isUpdate: true,
             previousValues: book,
             values: values
           };

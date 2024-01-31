@@ -6,16 +6,14 @@ These properties are used to manipulate dependent properties at the level of you
 
   - `virtual: true`
   - A validator and
-  - Atleast one property that depends on it
+  - At least one property that depends on it
 
-- They can have (**`shouldInit === false`**) or `shouldInit` as a function
-- They can have (**`shouldUpdate === false`**) or `shouldUpdate` as a function
+- They can have (**`shouldInit: false`**) or `shouldInit` as a function
+- They can have (**`shouldUpdate: false`**) or `shouldUpdate` as a function
 - They can have `required` as a function
 - They can have [aliases](#aliases)
 - They can have [sanitizers](#sanitizer)
 - They **CANNOT** be dependent, defaulted, strictly required nor readonly
-
-> Out of the box, virtual is **`false`**
 
 Example:
 
@@ -23,7 +21,7 @@ Example:
 import { Schema } from 'ivo';
 
 type UserInput = {
-  blockUser?: boolean;
+  blockUser: boolean;
 };
 
 type User = {
@@ -35,7 +33,6 @@ const User = new Schema<UserInput, User>({
   blockUser: { virtual: true, validator: validateBoolean },
   isBlocked: {
     default: false,
-    dependent: true,
     dependsOn: 'blockUser',
     resolver: ({ context: { blockUser } }) => blockUser
   }
@@ -59,7 +56,7 @@ The same concept applies to the `update` operation.
 
 ## Aliases
 
-An alias is an extra **external** name for a virtual property. This means that a virtual property with an alias can be accessed by it's name or it's alias. It's that simple 😊
+An alias is just an extra **external** name for a virtual property
 
 ### How to define an alias
 
@@ -88,7 +85,6 @@ type Aliases = {
 const StoreItem = new Schema<Input, Output, Aliases>({
   quantity: {
     default: 0,
-    dependent: true,
     dependsOn: '_virtualQuantity',
     resolver: ({ context: { _virtualQuantity } }) => _virtualQuantity
   },
@@ -130,7 +126,6 @@ Example 2: Alias with unrelated name
 const StoreItem = new Schema({
   quantity: {
     default: 0,
-    dependent: true,
     dependsOn: '_virtualQuantity',
     resolver: ({ context: { _virtualQuantity } }) => _virtualQuantity
   },
@@ -150,15 +145,15 @@ const { data: item2 } = await StoreItem.create({ qty: 100 });
 console.log(item1, item2); // { quantity: 100 } { quantity: 100 }
 ```
 
-> N.B: Virtual properties can only be accessed with their aliases outside of your schema. This is to say that virtual properties should not be accessed on [`operation contexts`](../life-cycles.md#the-operation-context) with their aliases
-
-Aliases are available on the `create` & `update` methods of your models
+> N.B: Do not try to access virtuals on the [`operation context`](../life-cycles.md#the-operation-context) with their aliases because they are not recognised there. Aliases only work when passed to the `create` & `update` methods of your models
 
 ## Sanitizer
 
 This should be used when your virtual property may exist in more than one form. This function is executed immediately the validation step is complete. This function could be synchronous or asynchronous and has access to only one argument, the [operation summary](../life-cycles.md#the-operation-summary)
 
 A good usecase would be when a dealing with file uploads. The example below shows how you could upload a file to a file or cloud storage, get the metadata you'll need to persist as metadata. After sanitization, the resolver of properties that depend (`metadata` in our case) on the these virtuals are run with the new values of the virtual properties
+
+> N.B: if the sanitizer happens to throw an error, the value before sanitization will be used
 
 ```ts
 import { Schema, type Summary } from 'ivo';
@@ -180,7 +175,6 @@ const FileModel = new Schema<Input, Output>({
   id: { constant: true, value: generateID },
   metadata: {
     default: { size: 0, url: '' },
-    dependent: true,
     dependsOn: 'file',
     resolver({ context: { file } }) {
       return file as FileMetadata;

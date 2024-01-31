@@ -1,5 +1,5 @@
-import { Summary, Schema } from '../../../../dist'
-import type { StoreItem, StoreItemInput } from './types'
+import { Summary, Schema } from '../../../../dist';
+import type { StoreItem, StoreItemInput } from './types';
 import {
   sanitizeQuantities,
   validateName,
@@ -8,7 +8,7 @@ import {
   validateQuantities,
   validateQuantity,
   validateString
-} from './validators'
+} from './validators';
 
 const storeItemSchema = new Schema<StoreItemInput, StoreItem>(
   {
@@ -38,7 +38,6 @@ const storeItemSchema = new Schema<StoreItemInput, StoreItem>(
     },
     quantity: {
       default: 0,
-      dependent: true,
       dependsOn: ['_quantity', 'quantities'],
       resolver: resolveQuantity
     },
@@ -49,10 +48,9 @@ const storeItemSchema = new Schema<StoreItemInput, StoreItem>(
     },
     quantityChangeCounter: {
       default: 0,
-      dependent: true,
       dependsOn: 'quantity',
       resolver({ context: { quantityChangeCounter } }) {
-        return quantityChangeCounter! + 1
+        return quantityChangeCounter! + 1;
       }
     }
   },
@@ -61,24 +59,24 @@ const storeItemSchema = new Schema<StoreItemInput, StoreItem>(
     onSuccess,
     timestamps: { createdAt: 'c_At', updatedAt: 'u_At' }
   }
-)
+);
 
 function resolveQuantity({
   context: { quantity, _quantity, quantities }
 }: Summary<StoreItemInput, StoreItem>) {
-  const newQty = _quantity ?? quantity
+  const newQty = _quantity ?? quantity;
 
-  return quantities ? newQty + (quantities as number) : newQty
+  return quantities ? newQty + (quantities as number) : newQty;
 }
 
 function onSuccess({
   context: { quantity, _quantity, quantities }
 }: Summary<StoreItemInput, StoreItem>) {
-  const newQty = _quantity ?? quantity
+  const newQty = _quantity ?? quantity;
 
-  return quantities ? newQty + (quantities as number) : newQty
+  return quantities ? newQty + (quantities as number) : newQty;
 }
 
-const StoreItem = storeItemSchema.getModel()
+const StoreItem = storeItemSchema.getModel();
 
-export { StoreItem, storeItemSchema }
+export { StoreItem, storeItemSchema };

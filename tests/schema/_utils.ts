@@ -1,24 +1,65 @@
-import { isEqual, ObjectType } from '../../dist'
+import { expect } from 'vitest';
+import { ERRORS, isEqual, ObjectType } from '../../dist';
 
-export { findBy, getSubObject }
+export {
+  expectFailure,
+  expectNoFailure,
+  expectPromiseFailure,
+  findBy,
+  getSubObject,
+  getValidSchema,
+  makeFx,
+  validator
+};
+
+function expectFailure(fx: Function, message: string = ERRORS.INVALID_SCHEMA) {
+  expect(fx).toThrow(message);
+}
+
+function expectPromiseFailure(
+  fx: Function,
+  message: string = ERRORS.INVALID_SCHEMA
+) {
+  expect(fx).rejects.toThrow(message);
+}
+
+function expectNoFailure(fx: Function) {
+  expect(fx).not.toThrow();
+}
 
 function findBy<T>(list: T[] = [], determinant: any): T | undefined {
   return list.find((dt) => {
-    const sub = getSubObject(dt as ObjectType, determinant)
+    const sub = getSubObject(dt as ObjectType, determinant);
 
-    return isEqual(determinant, sub)
-  })
+    return isEqual(determinant, sub);
+  });
+}
+
+function getDeepValue(data: ObjectType, key: string): any {
+  return key.split('.').reduce((prev, next) => prev?.[next], data);
 }
 
 function getSubObject(obj: ObjectType, sampleSub: ObjectType) {
   const _obj: ObjectType = {},
-    keys = Object.keys(sampleSub)
+    keys = Object.keys(sampleSub);
 
-  keys.forEach((key) => (_obj[key] = getDeepValue(obj, key)))
+  keys.forEach((key) => (_obj[key] = getDeepValue(obj, key)));
 
-  return _obj
+  return _obj;
 }
 
-function getDeepValue(data: ObjectType, key: string): any {
-  return key.split('.').reduce((prev, next) => prev?.[next], data)
+function getValidSchema(extraDefinition = {}, extraProps = {}) {
+  return {
+    propertyName1: { default: '', validator, ...extraDefinition },
+    propertyName2: { default: '', validator },
+    ...extraProps
+  };
 }
+
+const makeFx =
+  (Schema: any) =>
+  (definition: any = undefined, options: any = { timestamps: false }) =>
+  () =>
+    new Schema(definition, options);
+
+const validator = () => ({ valid: true });

@@ -1,8 +1,6 @@
 # Required Properties
 
-A property with `required === true` is one that must be initialised at creation and cloning. It must have a validator and cannot have a default value (nor setter)
-
-> Out of the box, required is **`false`**
+A property with `required: true` is one that must be provided at creation. It must have a validator and cannot have a default value
 
 Example:
 
@@ -17,11 +15,19 @@ const userSchema = new Schema({
 
 ## Conditionally Required Properties
 
-Such a property is required depending on the summary of the operation. The value of **`required`** must be a function that returns `boolean` | `[boolean, string | undefined]`.
+```ts
+type RequiredError =
+  | string
+  | { reason?: string | string[]; metadata?: object | null };
+```
 
-`[boolean, string]` represents [required, requiredError]. If the required error is not provided or if the value provided for requiredError is not a string, `[propertyName] is required!` would be used.
+Such a property is required depending on the summary of the operation. The value of **`required`** must be a function that returns `boolean` | `[boolean, RequiredError]` | `Promise<boolean | [boolean, RequiredError]>`.
 
-If nothing is returned, the operation will proceed with `required: false`
+> N.B: If the required error is not provided or if the value provided for requiredError is not a string, `[propertyName] is required!` will be used.
+
+> N.B: If nothing is returned, the operation will proceed with `required: false`
+
+> N.B: if the required function happens to throw an error, the operation will proceed with `required: false`
 
 Example:
 

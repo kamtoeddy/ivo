@@ -1,22 +1,26 @@
-import { FieldKey, ObjectType } from '../utils';
+import { ObjectType } from '../utils';
 import {
   FieldError,
   IErrorTool,
-  InputPayload,
+  InputFieldError,
   ValidationErrorMessage
 } from './utils';
 
 export type {
+  ArrayOfMinSizeOne,
+  ArrayOfMinSizeTwo,
   Context,
   DeleteContext,
   DefinitionRule,
   KeyOf,
   Merge,
   NS,
-  NonEmptyArray,
   PartialContext,
+  PostValidationConfig,
+  PostValidationHandler,
   Summary,
   RealType,
+  ResponseErrorObject,
   TypeOf,
   Validator,
   ValidationResponse,
@@ -32,7 +36,6 @@ export {
   CONSTANT_RULES,
   DEFINITION_RULES,
   LIFE_CYCLES,
-  OPERATIONS,
   VIRTUAL_RULES
 };
 
@@ -54,14 +57,16 @@ type Summary<Input, Output = Input, CtxOptions extends ObjectType = {}> = (
   | Readonly<{
       changes: null;
       context: Context<Input, Output, CtxOptions>;
-      operation: 'creation';
+      inputValues: Partial<RealType<Input>>;
+      isUpdate: false;
       previousValues: null;
       values: Readonly<Output>;
     }>
   | Readonly<{
       changes: Partial<RealType<Output>>;
       context: Context<Input, Output, CtxOptions>;
-      operation: 'update';
+      inputValues: Partial<RealType<Input>>;
+      isUpdate: true;
       previousValues: Readonly<Output>;
       values: Readonly<Output>;
     }>
@@ -69,17 +74,26 @@ type Summary<Input, Output = Input, CtxOptions extends ObjectType = {}> = (
 
 type TypeOf<T> = Exclude<T, undefined>;
 
-type AsyncSetter<T, Input, Output, CtxOptions extends ObjectType = {}> = (
+type AsyncSetter<T, Input, Output, CtxOptions extends ObjectType> = (
   context: Context<Input, Output, CtxOptions>
 ) => TypeOf<T> | Promise<TypeOf<T>>;
 
-type Setter<T, Input, Output, CtxOptions extends ObjectType = {}> = (
+type NotAllowedError = string | string[] | InputFieldError;
+
+type Setter<T, Input, Output, CtxOptions extends ObjectType> = (
   context: Context<Input, Output, CtxOptions>
 ) => TypeOf<T>;
 
-type SetterWithSummary<T, Input, Output, CtxOptions extends ObjectType = {}> = (
+type RequiredHandlerRes =
+  | boolean
+  | [boolean, string]
+  | [boolean, InputFieldError]
+  | readonly [boolean, string]
+  | readonly [boolean, InputFieldError];
+
+type RequiredHandler<Input, Output, CtxOptions extends ObjectType> = (
   summary: Summary<Input, Output, CtxOptions> & {}
-) => TypeOf<T>;
+) => RequiredHandlerRes | Promise<RequiredHandlerRes>;
 
 type AsyncShouldUpdateResponse<CtxOptions extends ObjectType = {}> = {
   update: boolean;
@@ -98,7 +112,7 @@ type Resolver<
   K extends keyof Output,
   Input,
   Output,
-  CtxOptions extends ObjectType = {}
+  CtxOptions extends ObjectType
 > = (
   summary: Summary<Input, Output, CtxOptions> & {}
 ) => TypeOf<Output[K]> | Promise<TypeOf<Output[K]>>;
@@ -107,17 +121,38 @@ type VirtualResolver<
   K extends keyof Input,
   Input,
   Output,
-  CtxOptions extends ObjectType = {}
+  CtxOptions extends ObjectType
 > = (
-  summary: Summary<Input, Output, CtxOptions> & {}
+  summary: Summary<Input, Output, CtxOptions>
 ) => TypeOf<Input[K]> | Promise<TypeOf<Input[K]>>;
+
+type PostValidationHandler<
+  Input,
+  Output,
+  Aliases,
+  CtxOptions extends ObjectType
+> = (
+  summary: Summary<Input, Output, CtxOptions>,
+  propertiesProvided: KeyOf<Input>[]
+) =>
+  | void
+  | ResponseErrorObject<Input, Aliases>
+  | Promise<void | ResponseErrorObject<Input, Aliases>>;
+
+type PostValidationConfig<
+  Input,
+  Output,
+  Aliases,
+  CtxOptions extends ObjectType
+> = {
+  properties: ArrayOfMinSizeTwo<KeyOf<Input>>;
+  handler: PostValidationHandler<Input, Output, Aliases, CtxOptions>;
+};
 
 type KeyOf<T> = Extract<keyof T, string>;
 
 namespace NS {
   export type LifeCycle = (typeof LIFE_CYCLES)[number];
-
-  export type Operation = (typeof OPERATIONS)[number];
 
   export type DeleteHandler<Output, CtxOptions extends ObjectType> = (
     data: DeleteContext<Output, CtxOptions>
@@ -142,7 +177,7 @@ namespace NS {
     CtxOptions extends ObjectType = {}
   > = {
     [K in keyof (Input & Output)]?: K extends keyof (Input | Output)
-      ? PublicProperty<K, Input, Output, CtxOptions>
+      ? PublicProperty<K, Input, Output, Aliases, CtxOptions>
       : K extends keyof Omit<Output, keyof Input>
       ? PrivateProperty<K, Input, Output, CtxOptions>
       : K extends keyof Omit<Input, keyof Output>
@@ -154,14 +189,17 @@ namespace NS {
     K extends keyof (Output | Input),
     Input,
     Output,
+    Aliases,
     CtxOptions extends ObjectType = {}
-  > =
-    | LaxProperty<K, Input, Output, CtxOptions>
-    | ReadOnly<K, Input, Output, CtxOptions>
-    | ReadonlyNoInit<K, Input, Output, CtxOptions>
-    | Required<K, Input, Output, CtxOptions>
-    | RequiredBy<K, Input, Output, CtxOptions>
-    | RequiredReadonly<K, Input, Output, CtxOptions>;
+  > = Enumerable<Output[K]> &
+    (
+      | LaxProperty<K, Input, Output, Aliases, CtxOptions>
+      | ReadOnly<K, Input, Output, Aliases, CtxOptions>
+      | ReadonlyNoInit<K, Input, Output, Aliases, CtxOptions>
+      | Required<K, Input, Output, Aliases, CtxOptions>
+      | RequiredBy<K, Input, Output, Aliases, CtxOptions>
+      | RequiredReadonly<K, Input, Output, Aliases, CtxOptions>
+    );
 
   type PrivateProperty<
     K extends keyof Output,
@@ -175,19 +213,27 @@ namespace NS {
 
   export type Definitions_<Input, Output> = {
     [K in keyof Input]?: Listenable<Input, Output> & {
+      allow?:
+        | Readonly<ArrayOfMinSizeTwo<any>>
+        | {
+            values: Readonly<ArrayOfMinSizeTwo<any>>;
+            error?:
+              | NotAllowedError
+              | ((
+                  value: any,
+                  allowedValues: ArrayOfMinSizeOne<any>
+                ) => NotAllowedError);
+          };
       alias?: string;
       constant?: any;
       default?: any;
-      dependent?: boolean;
       dependsOn?: KeyOf<Input> | KeyOf<Input>[];
       readonly?: boolean | 'lax';
       resolver?: Function;
-      required?:
-        | boolean
-        | SetterWithSummary<boolean | [boolean, string], Input, Output>;
-      sanitizer?: VirtualResolver<K, Input, Output>;
-      shouldInit?: false | Setter<boolean, Input, Output>;
-      shouldUpdate?: false | Setter<boolean, Input, Output>;
+      required?: boolean | RequiredHandler<Input, Output, {}>;
+      sanitizer?: VirtualResolver<K, Input, Output, any>;
+      shouldInit?: false | Setter<boolean, Input, Output, any>;
+      shouldUpdate?: false | Setter<boolean, Input, Output, any>;
       validator?: Function;
       value?: any;
       virtual?: boolean;
@@ -205,57 +251,72 @@ namespace NS {
   type Listenable<Input, Output, CtxOptions extends ObjectType = {}> = {
     onDelete?:
       | DeleteHandler<Output, CtxOptions>
-      | NonEmptyArray<DeleteHandler<Output, CtxOptions>>;
+      | ArrayOfMinSizeOne<DeleteHandler<Output, CtxOptions>>;
     onFailure?:
       | FailureHandler<Input, Output, CtxOptions>
-      | NonEmptyArray<FailureHandler<Input, Output, CtxOptions>>;
+      | ArrayOfMinSizeOne<FailureHandler<Input, Output, CtxOptions>>;
     onSuccess?:
       | SuccessHandler<Input, Output, CtxOptions>
-      | NonEmptyArray<SuccessHandler<Input, Output, CtxOptions>>;
+      | ArrayOfMinSizeOne<SuccessHandler<Input, Output, CtxOptions>>;
   };
 
   type Constant<
     K extends keyof Output,
     Input,
     Output,
-    CtxOptions extends ObjectType = {}
+    CtxOptions extends ObjectType
   > = {
     constant: true;
     onDelete?:
       | DeleteHandler<Output, CtxOptions>
-      | NonEmptyArray<DeleteHandler<Output, CtxOptions>>;
+      | ArrayOfMinSizeOne<DeleteHandler<Output, CtxOptions>>;
     onSuccess?:
       | SuccessHandler<Input, Output, CtxOptions>
-      | NonEmptyArray<SuccessHandler<Input, Output, CtxOptions>>;
+      | ArrayOfMinSizeOne<SuccessHandler<Input, Output, CtxOptions>>;
     value:
       | TypeOf<Output[K]>
       | AsyncSetter<Output[K], Input, Output, CtxOptions>;
+  };
+
+  type Enumerable<T, V extends T | Readonly<T> = T> = {
+    allow?:
+      | ArrayOfMinSizeTwo<V>
+      | {
+          values: ArrayOfMinSizeTwo<V>;
+          error?:
+            | NotAllowedError
+            | ((
+                value: any,
+                allowedValues: ArrayOfMinSizeOne<T>
+              ) => NotAllowedError);
+        };
   };
 
   type Dependables<
     K extends keyof Output,
     Input,
     Output,
-    CtxOptions extends ObjectType = {}
+    CtxOptions extends ObjectType
   > = Exclude<KeyOf<Context<Input, Output, CtxOptions>>, K | '__getOptions__'>;
 
   type Dependent<
     K extends keyof Output,
     Input,
     Output,
-    CtxOptions extends ObjectType = {}
+    CtxOptions extends ObjectType
   > = {
-    default: TypeOf<Output[K]> | AsyncSetter<Output[K], Input, Output>;
-    dependent?: true;
+    default:
+      | TypeOf<Output[K]>
+      | AsyncSetter<Output[K], Input, Output, CtxOptions>;
     dependsOn:
       | Dependables<K, Input, Output, CtxOptions>
-      | Dependables<K, Input, Output, CtxOptions>[];
+      | ArrayOfMinSizeOne<Dependables<K, Input, Output, CtxOptions>>;
     onDelete?:
       | DeleteHandler<Output, CtxOptions>
-      | NonEmptyArray<DeleteHandler<Output, CtxOptions>>;
+      | ArrayOfMinSizeOne<DeleteHandler<Output, CtxOptions>>;
     onSuccess?:
       | SuccessHandler<Input, Output, CtxOptions>
-      | NonEmptyArray<SuccessHandler<Input, Output, CtxOptions>>;
+      | ArrayOfMinSizeOne<SuccessHandler<Input, Output, CtxOptions>>;
     readonly?: true;
     resolver: Resolver<K, Input, Output, CtxOptions>;
   };
@@ -263,7 +324,7 @@ namespace NS {
   type InitAndUpdateBlockable<
     Input,
     Output,
-    CtxOptions extends ObjectType = {}
+    CtxOptions extends ObjectType
   > = XOR<
     {
       shouldInit?: Setter<boolean, Input, Output, CtxOptions>;
@@ -285,34 +346,37 @@ namespace NS {
     K extends keyof (Output | Input),
     Input,
     Output,
-    CtxOptions extends ObjectType = {}
+    Aliases,
+    CtxOptions extends ObjectType
   > = Listenable<Input, Output> &
     InitAndUpdateBlockable<Input, Output, CtxOptions> & {
       default:
         | TypeOf<Output[K]>
         | AsyncSetter<Output[K], Input, Output, CtxOptions>;
-      validator?: Validator<K, Input, Output, CtxOptions>;
+      validator?: Validator<K, Input, Output, Aliases, CtxOptions>;
     };
 
   type ReadOnly<
     K extends keyof (Output | Input),
     Input,
     Output,
-    CtxOptions extends ObjectType = {}
+    Aliases,
+    CtxOptions extends ObjectType
   > = Listenable<Input, Output, CtxOptions> & {
     default:
       | TypeOf<Output[K]>
       | AsyncSetter<Output[K], Input, Output, CtxOptions>;
     readonly: 'lax';
     shouldUpdate?: Setter<boolean, Input, Output, CtxOptions>;
-    validator: Validator<K, Input, Output, CtxOptions>;
+    validator: Validator<K, Input, Output, Aliases, CtxOptions>;
   };
 
   type ReadonlyNoInit<
     K extends keyof (Output | Input),
     Input,
     Output,
-    CtxOptions extends ObjectType = {}
+    Aliases,
+    CtxOptions extends ObjectType
   > = Listenable<Input, Output, CtxOptions> & {
     default:
       | TypeOf<Output[K]>
@@ -320,49 +384,55 @@ namespace NS {
     readonly: true;
     shouldInit: false | Setter<boolean, Input, Output, CtxOptions>;
     shouldUpdate?: Setter<boolean, Input, Output, CtxOptions>;
-    validator?: Validator<K, Input, Output, CtxOptions>;
+    validator?: Validator<K, Input, Output, Aliases, CtxOptions>;
   };
 
   type RequiredReadonly<
     K extends keyof (Output | Input),
     Input,
     Output,
-    CtxOptions extends ObjectType = {}
+    Aliases,
+    CtxOptions extends ObjectType
   > = Listenable<Input, Output, CtxOptions> & {
     readonly: true;
-    validator: Validator<K, Input, Output, CtxOptions>;
+    validator: Validator<K, Input, Output, Aliases, CtxOptions>;
   };
 
   type Required<
     K extends keyof (Output | Input),
     Input,
     Output,
-    CtxOptions extends ObjectType = {}
-  > = Listenable<Input, Output, CtxOptions> & {
-    required: true;
-    shouldUpdate?: false | Setter<boolean, Input, Output, CtxOptions>;
-    validator: Validator<K, Input, Output, CtxOptions>;
-  };
+    Aliases,
+    CtxOptions extends ObjectType
+  > = Listenable<Input, Output, CtxOptions> &
+    (
+      | {
+          required: true;
+          shouldUpdate?: false | Setter<boolean, Input, Output, CtxOptions>;
+          validator: Validator<K, Input, Output, Aliases, CtxOptions>;
+        }
+      | (Enumerable<Input[K]> & {
+          required: true;
+          shouldUpdate?: false | Setter<boolean, Input, Output, CtxOptions>;
+          validator?: Validator<K, Input, Output, Aliases, CtxOptions>;
+        })
+    );
 
   type RequiredBy<
     K extends keyof (Output | Input),
     Input,
     Output,
-    CtxOptions extends ObjectType = {}
+    Aliases,
+    CtxOptions extends ObjectType
   > = Listenable<Input, Output, CtxOptions> & {
     default:
       | TypeOf<Output[K]>
       | AsyncSetter<Output[K], Input, Output, CtxOptions>;
-    required: SetterWithSummary<
-      boolean | [boolean, string],
-      Input,
-      Output,
-      CtxOptions
-    >;
+    required: RequiredHandler<Input, Output, CtxOptions>;
     readonly?: true;
     shouldInit?: Setter<boolean, Input, Output, CtxOptions>;
     shouldUpdate?: Setter<boolean, Input, Output, CtxOptions>;
-    validator: Validator<K, Input, Output, CtxOptions>;
+    validator: Validator<K, Input, Output, Aliases, CtxOptions>;
   };
 
   type Virtual<
@@ -370,32 +440,28 @@ namespace NS {
     Input,
     Output,
     Aliases,
-    CtxOptions extends ObjectType = {}
-  > = InitAndUpdateBlockable<Input, Output, CtxOptions> & {
-    alias?: Exclude<KeyOf<Aliases>, K> extends undefined
-      ? string
-      : Exclude<KeyOf<Aliases>, K>;
-    required?: SetterWithSummary<
-      boolean | [boolean, string],
-      Input,
-      Output,
-      CtxOptions
-    >;
-    virtual: true;
-    sanitizer?: VirtualResolver<K, Input, Output, CtxOptions>;
-    onFailure?:
-      | FailureHandler<Input, Output, CtxOptions>
-      | NonEmptyArray<FailureHandler<Input, Output, CtxOptions>>;
-    onSuccess?:
-      | SuccessHandler<Input, Output, CtxOptions>
-      | NonEmptyArray<SuccessHandler<Input, Output, CtxOptions>>;
-    validator: Validator<K, Input, Output, CtxOptions>;
-  };
+    CtxOptions extends ObjectType
+  > = InitAndUpdateBlockable<Input, Output, CtxOptions> &
+    Enumerable<Input[K]> & {
+      alias?: Exclude<KeyOf<Aliases>, K> extends undefined
+        ? string
+        : Exclude<KeyOf<Aliases>, K>;
+      required?: RequiredHandler<Input, Output, CtxOptions>;
+      virtual: true;
+      sanitizer?: VirtualResolver<K, Input, Output, CtxOptions>;
+      onFailure?:
+        | FailureHandler<Input, Output, CtxOptions>
+        | ArrayOfMinSizeOne<FailureHandler<Input, Output, CtxOptions>>;
+      onSuccess?:
+        | SuccessHandler<Input, Output, CtxOptions>
+        | ArrayOfMinSizeOne<SuccessHandler<Input, Output, CtxOptions>>;
+      validator: VirtualValidator<K, Input, Output, Aliases, CtxOptions>;
+    };
 
   export type InternalOptions<
     Input,
     Output,
-    CtxOptions extends ObjectType = {},
+    CtxOptions extends ObjectType,
     ErrorTool extends IErrorTool<any> = any
   > = {
     ErrorTool: ErrorToolClass<ErrorTool, CtxOptions>;
@@ -403,10 +469,13 @@ namespace NS {
     errors: 'silent' | 'throw';
     onDelete?:
       | DeleteHandler<Output, CtxOptions>
-      | NonEmptyArray<DeleteHandler<Output, CtxOptions>>;
+      | ArrayOfMinSizeOne<DeleteHandler<Output, CtxOptions>>;
     onSuccess?:
       | SuccessHandler<Input, Output, CtxOptions>
-      | NonEmptyArray<SuccessHandler<Input, Output, CtxOptions>>;
+      | ArrayOfMinSizeOne<SuccessHandler<Input, Output, CtxOptions>>;
+    postValidate?:
+      | PostValidationConfig<Input, Output, any, CtxOptions>
+      | ArrayOfMinSizeOne<PostValidationConfig<Input, Output, any, CtxOptions>>;
     setMissingDefaultsOnUpdate?: boolean;
     shouldUpdate?: boolean | AsyncShouldUpdate<Input, Output, CtxOptions>;
     timestamps?:
@@ -417,6 +486,7 @@ namespace NS {
   export type Options<
     Input,
     Output,
+    Aliases,
     ErrorTool extends IErrorTool<any> = any,
     CtxOptions extends ObjectType = {}
   > = {
@@ -425,10 +495,15 @@ namespace NS {
     errors?: 'silent' | 'throw';
     onDelete?:
       | DeleteHandler<Output, CtxOptions>
-      | NonEmptyArray<DeleteHandler<Output, CtxOptions>>;
+      | ArrayOfMinSizeOne<DeleteHandler<Output, CtxOptions>>;
     onSuccess?:
       | SuccessHandler<Input, Output, CtxOptions>
-      | NonEmptyArray<SuccessHandler<Input, Output, CtxOptions>>;
+      | ArrayOfMinSizeOne<SuccessHandler<Input, Output, CtxOptions>>;
+    postValidate?:
+      | PostValidationConfig<Input, Output, Aliases, CtxOptions>
+      | ArrayOfMinSizeOne<
+          PostValidationConfig<Input, Output, Aliases, CtxOptions>
+        >;
     setMissingDefaultsOnUpdate?: boolean;
     shouldUpdate?: boolean | AsyncShouldUpdate<Input, Output, CtxOptions>;
     timestamps?:
@@ -439,8 +514,9 @@ namespace NS {
   export type OptionsKey<
     Input,
     Output,
+    Aliases,
     ErrorTool extends IErrorTool<any>
-  > = KeyOf<Options<Input, Output, ErrorTool>>;
+  > = KeyOf<Options<Input, Output, Aliases, ErrorTool>>;
 
   export type PrivateOptions = { timestamps: Timestamp };
 
@@ -451,9 +527,10 @@ namespace NS {
     ParentOutput,
     Input,
     Output,
+    Aliases,
     ErrorTool extends IErrorTool<any>,
     CtxOptions extends ObjectType = {}
-  > = Options<Input, Output, ErrorTool, CtxOptions> & {
+  > = Options<Input, Output, Aliases, ErrorTool, CtxOptions> & {
     remove?:
       | KeyOf<Merge<ParentInput, ParentOutput>>
       | KeyOf<Merge<ParentInput, ParentOutput>>[];
@@ -463,52 +540,65 @@ namespace NS {
 
 type ValidationResponse<T> =
   | { valid: true; validated: T }
-  | { metadata: FieldError['metadata']; reasons: string[]; valid: false };
+  | { metadata: FieldError['metadata']; reason: string[]; valid: false };
+
+type InvalidValidatorResponse<Input = {}, Aliases = {}> = {
+  metadata?: FieldError['metadata'];
+  reason?: string | string[] | ResponseErrorObject<Input, Aliases>;
+  valid: false;
+  value?: any;
+};
 
 type InternalValidatorResponse<T> =
   | { valid: true; validated: T }
   | InvalidValidatorResponse;
 
-type InvalidValidatorResponse = {
-  metadata?: FieldError['metadata'];
-  otherReasons?: InputPayload;
-  reasons: FieldError['reasons'];
-  valid: false;
-  value: any;
+type ValidatorResponseObject<T, Input = {}, Aliases = {}> =
+  | { valid: true; validated?: T }
+  | InvalidValidatorResponse<Input, Aliases>;
+
+type ResponseErrorObject<Input = {}, Aliases = {}> = {
+  [K in KeyOf<Input & Aliases>]?: string | string[] | InputFieldError;
 };
 
-type ValidatorResponseObject<T> =
-  | { valid: true; validated?: T }
-  | {
-      otherReasons?: Record<FieldKey, string | string[] | FieldError>;
-      metadata?: FieldError['metadata'];
-      reason?: FieldError['reasons'][number];
-      reasons?: FieldError['reasons'];
-      valid: false;
-      value?: any;
-    };
-
-type ValidatorResponse<T> = boolean | (ValidatorResponseObject<T> & {});
+type ValidatorResponse<T, Input, Aliases = {}> =
+  | boolean
+  | (ValidatorResponseObject<T, Input, Aliases> & {});
 
 type Validator<
-  K extends keyof Input,
+  K extends keyof (Output | Input),
   Input,
   Output,
+  Aliases = {},
   CtxOptions extends ObjectType = {}
 > = (
   value: any,
   summary: Summary<Input, Output, CtxOptions> & {}
 ) =>
-  | ValidatorResponse<TypeOf<Input[K]>>
-  | Promise<ValidatorResponse<TypeOf<Input[K]>>>;
+  | ValidatorResponse<TypeOf<Output[K]>, Input, Aliases>
+  | Promise<ValidatorResponse<TypeOf<Output[K]>, Input, Aliases>>;
 
-type NonEmptyArray<T> = [T, ...T[]];
+type VirtualValidator<
+  K extends keyof Input,
+  Input,
+  Output,
+  Aliases = {},
+  CtxOptions extends ObjectType = {}
+> = (
+  value: any,
+  summary: Summary<Input, Output, CtxOptions> & {}
+) =>
+  | ValidatorResponse<TypeOf<Input[K]>, Input, Aliases>
+  | Promise<ValidatorResponse<TypeOf<Input[K]>, Input, Aliases>>;
+
+type ArrayOfMinSizeOne<T> = [T, ...T[]];
+type ArrayOfMinSizeTwo<T> = [T, T, ...T[]];
 
 const DEFINITION_RULES = [
   'alias',
+  'allow',
   'constant',
   'default',
-  'dependent',
   'dependsOn',
   'onDelete',
   'onFailure',
@@ -526,12 +616,13 @@ const DEFINITION_RULES = [
 
 type DefinitionRule = (typeof DEFINITION_RULES)[number];
 
-const ALLOWED_OPTIONS: NS.OptionsKey<any, any, any>[] = [
+const ALLOWED_OPTIONS: NS.OptionsKey<any, any, any, any>[] = [
   'ErrorTool',
   'equalityDepth',
   'errors',
   'onDelete',
   'onSuccess',
+  'postValidate',
   'setMissingDefaultsOnUpdate',
   'shouldUpdate',
   'timestamps'
@@ -539,6 +630,7 @@ const ALLOWED_OPTIONS: NS.OptionsKey<any, any, any>[] = [
 const CONSTANT_RULES = ['constant', 'onDelete', 'onSuccess', 'value'];
 const VIRTUAL_RULES = [
   'alias',
+  'allow',
   'sanitizer',
   'onFailure',
   'onSuccess',
@@ -550,7 +642,6 @@ const VIRTUAL_RULES = [
 ];
 
 const LIFE_CYCLES = ['onDelete', 'onFailure', 'onSuccess'] as const;
-const OPERATIONS = ['creation', 'update'] as const;
 
 interface ErrorToolClass<ErrorTool, CtxOptions extends ObjectType> {
   new (message: ValidationErrorMessage, ctxOptions: CtxOptions): ErrorTool;

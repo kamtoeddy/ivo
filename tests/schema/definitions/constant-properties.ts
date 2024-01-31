@@ -1,7 +1,7 @@
 import { beforeAll, describe, it, expect } from 'vitest';
 
-import { ERRORS } from '../../../../dist';
-import { expectFailure, expectNoFailure, pauseFor } from '../_utils';
+import { ERRORS } from '../../../dist';
+import { expectFailure, expectNoFailure } from '../_utils';
 
 export const Test_ConstantProperties = ({ Schema, fx }: any) => {
   describe('constant', () => {
@@ -22,10 +22,8 @@ export const Test_ConstantProperties = ({ Schema, fx }: any) => {
           { errors: 'throw' }
         ).getModel();
 
-        async function asyncSetter() {
-          await pauseFor(5);
-
-          return 20;
+        function asyncSetter() {
+          return Promise.resolve(20);
         }
 
         user = (await User.create({ id: 2, parentId: [], laxProp: 2 })).data;
@@ -176,10 +174,9 @@ export const Test_ConstantProperties = ({ Schema, fx }: any) => {
         }
       });
 
-      it('should reject (constant & value) + any other rule(!onCreate)', () => {
+      it('should reject (constant & value) + any other non constant rule', () => {
         const rules = [
           'default',
-          'dependent',
           'dependsOn',
           'onFailure',
           'readonly',
@@ -210,6 +207,24 @@ export const Test_ConstantProperties = ({ Schema, fx }: any) => {
             );
           }
         }
+      });
+    });
+
+    describe('behaviour with errors thrown in the value generator', () => {
+      const Model = new Schema({
+        constant: {
+          constant: true,
+          value() {
+            throw new Error('lolol');
+          }
+        }
+      }).getModel();
+
+      it('should set value of constant to null if value could not be generated properly', async () => {
+        const { data, error } = await Model.create();
+
+        expect(error).toBeNull();
+        expect(data).toMatchObject({ constant: null });
       });
     });
   });
