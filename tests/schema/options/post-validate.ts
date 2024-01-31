@@ -877,7 +877,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
           }
         });
 
-        it('should respect errors returned in post-validators', async () => {
+        it('should respect errors returned in post-validators(sync & async)', async () => {
           const resolver = ({ context }: any) => context.v;
 
           const Model = new Schema(
@@ -911,7 +911,9 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                 {
                   properties: ['p1', 'p2'],
                   handler: ({ context: { v } }: any) =>
-                    v == 'allow' ? false : { p1: 'failed to validate' }
+                    Promise.resolve(
+                      v == 'allow' ? false : { p1: 'failed to validate' }
+                    )
                 }
               ]
             }
