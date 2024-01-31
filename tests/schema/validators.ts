@@ -390,7 +390,7 @@ export const Test_Validators = ({ Schema }: any) => {
         }
       }).getModel();
 
-      it("should return 'an error occurred' at creation", async () => {
+      it("should return 'validation failed' at creation", async () => {
         const { data, error } = await Model.create({ prop1: '', prop2: '' });
 
         expect(data).toBeNull();
@@ -398,7 +398,7 @@ export const Test_Validators = ({ Schema }: any) => {
           message: ERRORS.VALIDATION_ERROR,
           payload: expect.objectContaining({
             prop1: expect.objectContaining({
-              reasons: expect.arrayContaining(['An error occurred'])
+              reasons: expect.arrayContaining(['validation failed'])
             }),
             prop2: expect.objectContaining({
               reasons: expect.arrayContaining(['validation failed'])
@@ -407,7 +407,7 @@ export const Test_Validators = ({ Schema }: any) => {
         });
       });
 
-      it("should return 'an error occurred' during updates", async () => {
+      it("should return 'validation failed' during updates", async () => {
         const { data, error } = await Model.update(
           { prop1: '', prop2: '' },
           { prop1: 'updated', prop2: 'updated' }
@@ -418,7 +418,7 @@ export const Test_Validators = ({ Schema }: any) => {
           message: ERRORS.VALIDATION_ERROR,
           payload: expect.objectContaining({
             prop1: expect.objectContaining({
-              reasons: expect.arrayContaining(['An error occurred'])
+              reasons: expect.arrayContaining(['validation failed'])
             }),
             prop2: expect.objectContaining({
               reasons: expect.arrayContaining(['validation failed'])

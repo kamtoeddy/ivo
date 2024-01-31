@@ -44,6 +44,7 @@ type DefaultExtendedErrorTool<
   : ParentErrorTool;
 
 const NotAllowedError = 'value not allowed';
+const validationFailedFieldError = makeFieldError('validation failed');
 
 class Schema<
   Input extends RealType<Input>,
@@ -338,7 +339,15 @@ class ModelTool<
     ] of this.propsToPostValidatorIndicesMap.entries()) {
       const isVirtual = this._isVirtual(prop);
 
-      if (isVirtual && !isPropertyOf(prop, summary.inputValues)) continue;
+      if (isVirtual) {
+        const alias = this._getAliasByVirtual(prop as any);
+
+        if (
+          !isPropertyOf(prop, summary.inputValues) &&
+          (!alias || !isPropertyOf(alias, summary.inputValues))
+        )
+          continue;
+      }
 
       if (isUpdate && !isVirtual && !isPropertyOf(prop, summary.changes))
         continue;
@@ -358,20 +367,34 @@ class ModelTool<
 
     await Promise.allSettled(
       handlers.map(async ({ id, handler }) => {
-        const res = await handler(
-          summary,
-          Array.from(handlerIdToProps.get(id)!) as Extract<
-            keyof Input,
-            string
-          >[]
-        );
+        const propsProvided = Array.from(handlerIdToProps.get(id)!) as Extract<
+          keyof Input,
+          string
+        >[];
 
-        if (!isRecordLike(res)) return;
+        try {
+          const res = await handler(summary, propsProvided);
 
-        for (const [prop, error] of Object.entries(
-          this._handleObjectValidationResponse(res)
-        ))
-          errorTool.add(prop, makeFieldError(error));
+          if (!isRecordLike(res)) return;
+
+          for (const [prop, error] of Object.entries(
+            this._handleObjectValidationResponse(res)
+          ))
+            errorTool.add(prop, makeFieldError(error));
+        } catch (_) {
+          for (const prop of propsProvided) {
+            const alias = this._getAliasByVirtual(prop as any);
+
+            let errorField: string | undefined;
+
+            if (alias && isPropertyOf(alias, summary.inputValues))
+              errorField = alias;
+            else if (isPropertyOf(prop, summary.inputValues)) errorField = prop;
+
+            if (errorField)
+              errorTool.add(errorField, validationFailedFieldError);
+          }
+        }
       })
     );
 
@@ -917,7 +940,7 @@ class ModelTool<
       } catch (_) {
         return makeResponse<(Input & Aliases)[K]>({
           valid: false,
-          reason: 'An error occurred'
+          reason: 'validation failed'
         });
       }
 

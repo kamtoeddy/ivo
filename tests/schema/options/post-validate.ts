@@ -897,6 +897,8 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                   handler({ context: { v }, isUpdate }: any) {
                     if (v == 'allow') return;
 
+                    if (v == 'throw') throw new Error('lol');
+
                     return isUpdate
                       ? { d1: 'lolz' }
                       : {
@@ -910,10 +912,13 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                 },
                 {
                   properties: ['p1', 'p2'],
-                  handler: ({ context: { v } }: any) =>
-                    Promise.resolve(
+                  handler: ({ context: { v } }: any) => {
+                    if (v == 'throw') throw new Error('lol');
+
+                    return Promise.resolve(
                       v == 'allow' ? false : { p1: 'failed to validate' }
-                    )
+                    );
+                  }
                 }
               ]
             }
@@ -969,6 +974,62 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
           });
           expect(res4.error).toBeNull();
           expect(res4.data).toEqual({ p1: 'data' });
+
+          const res5 = await Model.create({
+            p1: 'provided',
+            p2: 'provided',
+            p4: 'provided',
+            v: 'throw'
+          });
+          expect(res5.data).toBeNull();
+          expect(Object.keys(res5.error.payload).length).toBe(3);
+          expect(res5.error.payload).toMatchObject({
+            p1: expect.objectContaining({
+              reasons: ['validation failed']
+            }),
+            p2: expect.objectContaining({
+              reasons: ['validation failed']
+            }),
+            v: expect.objectContaining({
+              reasons: ['validation failed']
+            })
+          });
+
+          const res6 = await Model.update(
+            {},
+            { p1: 'updated', p2: 'updated', v: 'throw' }
+          );
+          expect(res6.data).toBeNull();
+          expect(Object.keys(res6.error.payload).length).toBe(3);
+          expect(res6.error.payload).toEqual({
+            p1: expect.objectContaining({
+              reasons: ['validation failed']
+            }),
+            p2: expect.objectContaining({
+              reasons: ['validation failed']
+            }),
+            v: expect.objectContaining({
+              reasons: ['validation failed']
+            })
+          });
+
+          const res7 = await Model.create({ d1: 'throw' });
+          expect(res7.data).toBeNull();
+          expect(Object.keys(res7.error.payload).length).toBe(1);
+          expect(res7.error.payload).toMatchObject({
+            d1: expect.objectContaining({
+              reasons: ['validation failed']
+            })
+          });
+
+          const res8 = await Model.update({}, { d1: 'throw' });
+          expect(res8.data).toBeNull();
+          expect(Object.keys(res8.error.payload).length).toBe(1);
+          expect(res8.error.payload).toEqual({
+            d1: expect.objectContaining({
+              reasons: ['validation failed']
+            })
+          });
         });
       });
     });

@@ -1230,7 +1230,7 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
                 }
               }).getModel();
 
-              it("should return 'an error occurred' at creation", async () => {
+              it('should return proper errors at creation', async () => {
                 const { data, error } = await Model.create({ prop: '' });
 
                 expect(data).toBeNull();
@@ -1241,7 +1241,7 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
                 });
               });
 
-              it("should return 'an error occurred' during updates", async () => {
+              it('should return proper errors during updates', async () => {
                 const { data, error } = await Model.update(
                   { prop: 'lol' },
                   { prop: '' }
