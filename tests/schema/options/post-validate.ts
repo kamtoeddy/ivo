@@ -844,6 +844,131 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
           });
         });
       });
+
+      describe('values returned from post-validators should be handled accordingly', () => {
+        it('should ignore non-object-like values', async () => {
+          const values = [-1, 0, 1, '', 'lol', undefined, null, () => {}, []];
+
+          for (const value of values) {
+            const Model = new Schema(
+              {
+                p1: { default: '' },
+                p2: { default: '' }
+              },
+              {
+                postValidate: { properties: ['p1', 'p2'], handler: () => value }
+              }
+            ).getModel();
+
+            const { data, error } = await Model.create();
+
+            expect(error).toBeNull();
+            expect(data).toEqual({ p1: '', p2: '' });
+
+            const updates = { p1: 'updated', p2: 'updated' };
+
+            const { data: updated, error: error2 } = await Model.update(
+              data,
+              updates
+            );
+
+            expect(error2).toBeNull();
+            expect(updated).toEqual(updates);
+          }
+        });
+
+        it('should respect errors returned in post-validators', async () => {
+          const resolver = ({ context }: any) => context.v;
+
+          const Model = new Schema(
+            {
+              p1: { default: '' },
+              p2: { default: '' },
+              p3: { default: '' },
+              p4: { default: '' },
+              d1: { default: '', dependsOn: 'v', resolver },
+              d2: { default: '', dependsOn: 'v', resolver },
+              v: { alias: 'd1', virtual: true, validator }
+            },
+            {
+              postValidate: [
+                {
+                  properties: ['p1', 'v'],
+                  handler({ context: { v }, isUpdate }: any) {
+                    if (v == 'allow') return;
+
+                    return isUpdate
+                      ? { d1: 'lolz' }
+                      : {
+                          p1: 'p1',
+                          p2: ['p2'],
+                          p3: ['error1', 'error2'],
+                          p4: null,
+                          v: { reason: 'error', metadata: { lol: true } }
+                        };
+                  }
+                },
+                {
+                  properties: ['p1', 'p2'],
+                  handler: ({ context: { v } }: any) =>
+                    v == 'allow' ? false : { p1: 'failed to validate' }
+                }
+              ]
+            }
+          ).getModel();
+
+          const res = await Model.create();
+
+          expect(res.data).toBeNull();
+          expect(res.error.payload).toMatchObject({
+            p1: expect.objectContaining({
+              reasons: expect.arrayContaining(['p1', 'failed to validate'])
+            }),
+            p2: expect.objectContaining({
+              reasons: expect.arrayContaining(['p2'])
+            }),
+            p3: expect.objectContaining({
+              reasons: expect.arrayContaining(['error1', 'error2'])
+            }),
+            p4: expect.objectContaining({
+              reasons: expect.arrayContaining(['validation failed'])
+            }),
+            v: expect.objectContaining({
+              reasons: expect.arrayContaining(['error']),
+              metadata: { lol: true }
+            })
+          });
+
+          const res2 = await Model.update({}, { p2: 'updated', v: 'updated' });
+          expect(res2.data).toBeNull();
+          expect(res2.error.payload).toMatchObject({
+            p1: expect.objectContaining({
+              reasons: expect.arrayContaining(['failed to validate'])
+            }),
+            d1: expect.objectContaining({
+              reasons: expect.arrayContaining(['lolz'])
+            })
+          });
+
+          const res3 = await Model.create({ v: 'allow' });
+          expect(res3.error).toBeNull();
+          expect(res3.data).toEqual({
+            p1: '',
+            p2: '',
+            p3: '',
+            p4: '',
+            d1: 'allow',
+            d2: 'allow'
+          });
+
+          const res4 = await Model.update(res3.data, {
+            p1: 'data',
+            v: 'allow'
+          });
+          expect(res4.error).toBeNull();
+          expect(res4.data).toEqual({ p1: 'data' });
+        });
+      });
     });
   });
 };

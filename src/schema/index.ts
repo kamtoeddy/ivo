@@ -317,6 +317,67 @@ class ModelTool<
     await Promise.allSettled(cleanups);
   }
 
+  private async _handlePostValidations(
+    data: Partial<Output>,
+    isUpdate = false
+  ) {
+    const summary = this._getSummary(data, isUpdate),
+      context = summary.context;
+
+    const errorTool = new this._options.ErrorTool(
+      VALIDATION_ERRORS.VALIDATION_ERROR,
+      context.__getOptions__()
+    );
+
+    const handlerIds = new Set<number>(),
+      handlerIdToProps = new Map<number, Set<string>>();
+
+    for (const [
+      prop,
+      handlerSetId
+    ] of this.propsToPostValidatorIndicesMap.entries()) {
+      const isVirtual = this._isVirtual(prop);
+
+      if (isVirtual && !isPropertyOf(prop, summary.inputValues)) continue;
+
+      if (isUpdate && !isVirtual && !isPropertyOf(prop, summary.changes))
+        continue;
+
+      for (const id of handlerSetId.values()) {
+        handlerIds.add(id);
+
+        const set = handlerIdToProps.get(id) ?? new Set();
+        handlerIdToProps.set(id, set.add(prop));
+      }
+    }
+
+    const handlers = Array.from(handlerIds).map((id) => ({
+      id,
+      handler: this.postValidatorToHandlerMap.get(id)!
+    }));
+
+    await Promise.allSettled(
+      handlers.map(async ({ id, handler }) => {
+        const res = await handler(
+          summary,
+          Array.from(handlerIdToProps.get(id)!) as Extract<
+            keyof Input,
+            string
+          >[]
+        );
+
+        if (!isRecordLike(res)) return;
+
+        for (const [prop, error] of Object.entries(
+          this._handleObjectValidationResponse(res)
+        ))
+          errorTool.add(prop, makeFieldError(error));
+      })
+    );
+
+    return errorTool;
+  }
+
   private async _handleRequiredBy(data: Partial<Output>, isUpdate = false) {
     const summary = this._getSummary(data, isUpdate),
       context = summary.context;
@@ -369,60 +430,6 @@ class ModelTool<
 
         errorTool.add(alias as any, makeFieldError(_message), value);
       })
-    );
-
-    return errorTool;
-  }
-
-  private async _handlePostValidations(
-    data: Partial<Output>,
-    isUpdate = false
-  ) {
-    const summary = this._getSummary(data, isUpdate),
-      context = summary.context;
-
-    const errorTool = new this._options.ErrorTool(
-      VALIDATION_ERRORS.VALIDATION_ERROR,
-      context.__getOptions__()
-    );
-
-    const handlerIds = new Set<number>(),
-      handlerIdToProps = new Map<number, Set<string>>();
-
-    for (const [
-      prop,
-      handlerSetId
-    ] of this.propsToPostValidatorIndicesMap.entries()) {
-      const isVirtual = this._isVirtual(prop);
-
-      if (isVirtual && !isPropertyOf(prop, summary.inputValues)) continue;
-
-      if (isUpdate && !isVirtual && !isPropertyOf(prop, summary.changes))
-        continue;
-
-      for (const id of handlerSetId.values()) {
-        handlerIds.add(id);
-
-        const set = handlerIdToProps.get(id) ?? new Set();
-        handlerIdToProps.set(id, set.add(prop));
-      }
-    }
-
-    const handlers = Array.from(handlerIds).map((id) => ({
-      id,
-      handler: this.postValidatorToHandlerMap.get(id)!
-    }));
-
-    await Promise.allSettled(
-      handlers.map(({ id, handler }) =>
-        handler(
-          summary,
-          Array.from(handlerIdToProps.get(id)!) as Extract<
-            keyof Input,
-            string
-          >[]
-        )
-      )
     );
 
     return errorTool;
@@ -740,6 +747,53 @@ class ModelTool<
     this._updatePartialContext(validCtxUpdate);
   }
 
+  private _handleObjectValidationResponse(data: Record<string, any>) {
+    const validProperties = getKeysAsProps(data).filter(
+      (prop) =>
+        this._isInputOrAlias(prop) || this._isInputOrAlias(prop.split('.')?.[0])
+    );
+
+    const otherReasons = {} as Record<
+      string,
+      string | string[] | InputFieldError
+    >;
+
+    for (const prop of validProperties) {
+      const fieldError = data[prop];
+
+      const isArray = Array.isArray(fieldError),
+        isString = typeof fieldError == 'string';
+
+      if (isInputFieldError(fieldError)) {
+        otherReasons[prop] = fieldError as InputFieldError;
+
+        continue;
+      }
+
+      if (isArray) {
+        const messages = (fieldError as any[]).filter(
+          (v) => typeof v == 'string'
+        );
+
+        otherReasons[prop] = messages.length ? messages : 'validation failed';
+
+        continue;
+      }
+
+      if (isString) {
+        const message = fieldError.trim();
+
+        otherReasons[prop] = message.length ? message : 'validation failed';
+
+        continue;
+      }
+
+      otherReasons[prop] = 'validation failed';
+    }
+
+    return otherReasons;
+  }
+
   private _sanitizeValidationResponse<T>(
     response: ValidatorResponseObject<T>,
     value: any
@@ -766,53 +820,8 @@ class ModelTool<
 
     if (response?.reason) _response.reason = response.reason;
 
-    if (isRecordLike(response?.reason)) {
-      const validProperties = getKeysAsProps(response.reason).filter(
-        (prop) =>
-          this._isInputOrAlias(prop) ||
-          this._isInputOrAlias(prop.split('.')?.[0])
-      );
-
-      const otherReasons = {} as Record<
-        string,
-        string | string[] | InputFieldError
-      >;
-
-      for (const prop of validProperties) {
-        const fieldError = response.reason[prop];
-
-        const isArray = Array.isArray(fieldError),
-          isString = typeof fieldError == 'string';
-
-        if (isInputFieldError(fieldError)) {
-          otherReasons[prop] = fieldError as InputFieldError;
-
-          continue;
-        }
-
-        if (isArray) {
-          const messages = (fieldError as any[]).filter(
-            (v) => typeof v == 'string'
-          );
-
-          otherReasons[prop] = messages.length ? messages : 'validation failed';
-
-          continue;
-        }
-
-        if (isString) {
-          const message = fieldError.trim();
-
-          otherReasons[prop] = message.length ? message : 'validation failed';
-
-          continue;
-        }
-
-        otherReasons[prop] = 'validation failed';
-      }
-
-      _response.reason = otherReasons;
-    }
+    if (isRecordLike(response?.reason))
+      _response.reason = this._handleObjectValidationResponse(response.reason);
 
     if (response?.metadata && isRecordLike(response.metadata))
       _response.metadata = sortKeys(response.metadata);
