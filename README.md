@@ -47,9 +47,6 @@ const userSchema = new Schema<UserInput, User>(
       required: isEmailOrPhoneRequired,
       validator: validateUserEmail
     },
-      },
-      validator: validateUsername
-    },
     phoneNumber: {
       default: null,
       required: isEmailOrPhoneRequired,
@@ -63,6 +60,9 @@ const userSchema = new Schema<UserInput, User>(
         return (
           new Date().getTime() >= new Date(usernameUpdatableFrom).getTime()
         );
+      },
+      validator: validateUsername
+    },
     usernameUpdatableFrom: {
       default: null,
       dependsOn: 'username',
