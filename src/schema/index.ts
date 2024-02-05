@@ -9,7 +9,8 @@ import {
   isRecordLike,
   FieldKey,
   getSetValuesAsProps,
-  ObjectType
+  ObjectType,
+  isFunctionLike
 } from '../utils';
 import {
   Context,
@@ -32,7 +33,6 @@ import {
   InputFieldError
 } from './utils';
 import { defaultOptions, SchemaCore } from './schema-core';
-import { isFunctionLike } from '..';
 
 export { Model, ModelTool, Schema };
 

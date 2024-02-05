@@ -2,7 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
-# v1.0.0 <small><sup>01-02-2024</sup></small>
+# v1.0.2 <small><sup>06-02-2024</sup></small>
+
+[Fix]: fix bugs related to use with cjs
+
+# v1.0.1 <small><sup>01-02-2024</sup></small>
 
 first release
 

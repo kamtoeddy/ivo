@@ -8,8 +8,7 @@ import {
 import {
   ValidatorResponseObject,
   ValidationResponse,
-  XOR,
-  ArrayOfMinSizeTwo
+  XOR
 } from './schema/types';
 
 export {
@@ -207,7 +206,7 @@ function _makeNumberRage(range?: RangeType) {
 }
 
 type NumberOptions<T extends number = number> = XOR<
-  { allow: Readonly<ArrayOfMinSizeTwo<T>> },
+  { allow: T[] | readonly T[] },
   { range?: RangeType }
 >;
 
@@ -248,7 +247,7 @@ const MAX_LENGTH = 255,
   MIN_LENGTH = 1;
 
 type StringOptions<T extends string = string> = XOR<
-  { allow: ArrayOfMinSizeTwo<T> | Readonly<ArrayOfMinSizeTwo<T>> },
+  { allow: T[] | readonly T[] },
   { maxLength?: number; minLength?: number; regExp?: RegExp; trim?: boolean }
 >;
 
