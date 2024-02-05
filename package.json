@@ -2,7 +2,7 @@
   "name": "ivo",
   "author": "kamtoeddy",
   "description": "A different approach to schema valitation",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "license": "MIT",
   "homepage": "https://github.com/kamtoeddy/ivo#readme",
   "repository": {
@@ -12,6 +12,29 @@
   "bugs": {
     "url": "https://github.com/kamtoeddy/ivo/issues"
   },
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "schema",
+    "validation"
+  ],
   "scripts": {
     "build": "tsup",
     "build:watch": "tsup --watch",
@@ -31,16 +54,5 @@
     "tsup": "^7.2.0",
     "typescript": "^5.3.3",
     "vitest": "^1.2.2"
-  },
-  "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "sideEffects": false,
-  "files": [
-    "dist"
-  ],
-  "keywords": [
-    "schema",
-    "validation"
-  ]
+  }
 }
