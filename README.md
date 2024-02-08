@@ -26,11 +26,11 @@ import { Schema, type Summary } from 'ivo';
 type User = {
   id: string;
   createdAt: string;
-  email: null | string;
+  email: string | null;
   username: string;
-  phoneNumber: null | string;
+  phoneNumber: string | null;
   updatedAt: string;
-  usernameUpdatableFrom: null | Date;
+  usernameUpdatableFrom: Date | null;
 };
 
 type UserInput = {
@@ -136,8 +136,8 @@ if (error) return handleError(error);
 
 console.log(data);
 // {
-//    userame: 'txpz-1',
-//    usernameUpdatableFrom: Date, // value returned from resolver -> 30days from now
+//   userame: 'txpz-1',
+//   usernameUpdatableFrom: Date, // value returned from resolver -> 30days from now
 //   updatedAt: new Date()
 // }
 
