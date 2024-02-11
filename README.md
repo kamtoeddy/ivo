@@ -94,10 +94,10 @@ const UserModel = userSchema.getModel();
 
 ```ts
 const { data, error } = await UserModel.create({
-  email: 'txpz@mail.com',
-  id: 1, // will be ignored because it is a constant property
+  email: 'kamtoeddy@mail.com',
+  id: 5, // will be ignored because it is a constant property
   name: 'John Doe', // will be ignored because it is not on schema
-  username: 'txpz',
+  username: 'kamto_eddy',
   usernameUpdatableFrom: new Date() // will be ignored because it is a dependent property
 });
 
@@ -106,11 +106,11 @@ if (error) return handleError(error);
 console.log(data);
 // {
 //   createdAt: new Date(),
-//   email: 'txpz@mail.com',
-//   id: 18927934748659724,
+//   email: 'kamtoeddy@mail.com',
+//   id: 101,
 //   phoneNumber: null,
 //   updatedAt: new Date(),
-//   username: 'txpz',
+//   username: 'kamto_eddy',
 //   usernameUpdatableFrom: null
 // }
 
@@ -121,22 +121,22 @@ await userDb.insertOne(data);
 # Updating an entity
 
 ```ts
-const user = await userDb.findById(18927934748659724);
+const user = await userDb.findById(101);
 
 if (!user) return handleError({ message: 'User not found' });
 
 const { data, error } = await UserModel.update(user, {
   usernameUpdatableFrom: new Date(), // dependent property -> will be ignored
-  id: 2, // constant property -> will be ignored
+  id: 75, // constant property -> will be ignored
   age: 34, // not on schema -> will be ignored
-  userame: 'txpz-1'
+  userame: 'kamtoeddy'
 });
 
 if (error) return handleError(error);
 
 console.log(data);
 // {
-//   userame: 'txpz-1',
+//   userame: 'kamtoeddy',
 //   usernameUpdatableFrom: Date, // value returned from resolver -> 30days from now
 //   updatedAt: new Date()
 // }
@@ -148,7 +148,7 @@ await userDb.updateById(user.id, data);
 // updating 'username' again will not work
 
 const { error } = await UserModel.update(user, {
-  userame: 'txpz-2' // will be ignored because shouldUpdate rule will return false
+  userame: 'kamto-eddy' // will be ignored because shouldUpdate rule will return false
 });
 
 console.log(error);

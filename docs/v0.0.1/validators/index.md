@@ -41,7 +41,7 @@ function validator1(value: any, summary: Summary<Input, Output>) {
 function validator2(value: any, summary: Summary<Input, Output>) {
   // validation logic here
 
-  if (valid) return false;
+  if (!valid) return false;
 
   return true;
 }
@@ -115,6 +115,76 @@ const schema = new Schema(definitions, {
     { properties: ['role', 'username'], handler }
   ]
 });
+```
+
+Example:
+
+```ts
+type EventInput = {
+  host: User['id'];
+  guests: User['id'][];
+  startTime: Date;
+  stopTime: Date;
+};
+
+type Event = { id: number } & EventInput;
+```
+
+Assuming the structure above reperesents an event (entity) in an event management system you are building. This event has an id, host, guests, startTime and stopTime as properties and the requirements are as follows:
+
+- the host and guests must be ids of valid users in the system
+- startTime must be greater than stopTime
+- only the id of the event cannot be changed
+- whenever host, guests, startTime or stopTime are modified, you have to make sure that the new state of the event respects the availability of the host and all guests i.e. host and guests should not be booked for another event in the said time frame
+
+With the above requirements, it is clear we have to perform individual validations for host, guests, startTime and stopTime followed by a cross field validation for all 4 properties
+
+```ts
+const Model = new Schema(
+  {
+    id: { constant: true, value: generateEventId },
+    host: { required: true, validator: validateHostId },
+    guests: { required: true, validator: validateGuestIds },
+    startTime: { required: true, validator: validateStartTime },
+    stopTime: { required: true, validator: validateStopTime }
+  },
+  {
+    postValidate: {
+      properties: ['host', 'guests', 'startTime', 'stopTime'],
+      async handler({ context }: Summary<EventInput, Event>) {
+        // this is triggered when the individual
+        // validations have all been successful
+
+        const { host, guests, startTime, stopTime } = context;
+
+        const [isHostAvailable, guestsAvailable] = await Promise.all([
+          await isHostAvailableBetween(host, startTime, stopTime),
+          await getGuestsAvailableBetween(guests, startTime, stopTime)
+        ]);
+
+        const areAllGuestsAvailable = guestsAvailable.length == guests.length;
+
+        if (isHostAvailable && areAllGuestsAvailable) return;
+
+        const errors = {};
+
+        if (!isHostAvailable) errors['host'] = 'Host not available';
+
+        if (!areAllGuestsAvailable)
+          errors['guests'] = {
+            reason: 'Some guests are not available',
+            metadata: {
+              unAvailableGuests: guests.filter(
+                (g) => !guestsAvailable.includes(g)
+              )
+            }
+          };
+
+        return errors;
+      }
+    }
+  }
+).getModel();
 ```
 
 > N.B: **This option is not inherited during schema extension**

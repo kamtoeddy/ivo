@@ -104,8 +104,9 @@ type SchemaOptions = {
   equalityDepth?: number
   errorTool?: ErrorToolClass // more on this below 👇
   errors?: 'silent' | 'throw'
-  onDelete?: DeleteListener | [DeleteListener]
-  onSuccess?: SuccessListener | [SuccessListener]
+  onDelete?: DeleteListener | DeleteListener[]
+  onSuccess?: SuccessListener | SuccessListener[]
+  postValidate?: PostValidationConfig | PostValidationConfig[]
   setMissingDefaultsOnUpdate?: boolean
   shouldUpdate?: boolean | (summary: ISummary) => boolean
   timestamps?: boolean | Timestamp
@@ -253,7 +254,10 @@ type SchemaErrorMessage =
 type SchemaError = {
   message: SchemaErrorMessage;
   payload: {
-    [key: string]: string[]; // e.g. name: ["Invalid name", "too long"]
+    [key: string]: {
+      reasons: string[]; // e.g. name: ["Invalid name", "too long"]
+      metadata: any;
+    };
   };
 };
 ```
