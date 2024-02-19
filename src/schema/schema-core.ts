@@ -624,7 +624,33 @@ export abstract class SchemaCore<
 
   private _isValidatorOk = (
     definition: ns.Definitions_<Input, Output>[KeyOf<Input>]
-  ) => isFunctionLike(definition?.validator);
+  ) => {
+    const { validator } = definition!,
+      valid = false;
+
+    if (Array.isArray(validator)) {
+      if (validator.length != 2)
+        return {
+          valid,
+          reason: 'Validator array may contain exactly 2 functions'
+        };
+
+      const isPrimaryOk = isFunctionLike(validator[0]),
+        isSecondaryOk = isFunctionLike(validator[1]);
+
+      if (isPrimaryOk && isSecondaryOk) return { valid: true };
+
+      if (!isPrimaryOk && isSecondaryOk)
+        return { valid, reason: 'Validator at index 0 is invalid' };
+
+      if (isPrimaryOk && !isSecondaryOk)
+        return { valid, reason: 'Validator at index 1 is invalid' };
+
+      return { valid, reason: 'Invalid validators' };
+    }
+
+    return { valid: isFunctionLike(validator), reason: 'Invalid validator' };
+  };
 
   private __hasAllowedValues = (
     definition: ns.Definitions_<Input, Output>[KeyOf<Input>],
@@ -909,11 +935,10 @@ export abstract class SchemaCore<
       if (!valid) reasons.push(reason!);
     }
 
-    if (
-      isPropertyOf('validator', definition) &&
-      !this._isValidatorOk(definition)
-    )
-      reasons.push('Invalid validator');
+    const isValidatorOk = this._isValidatorOk(definition);
+
+    if (isPropertyOf('validator', definition) && !isValidatorOk.valid)
+      reasons.push(isValidatorOk.reason!);
 
     if (
       isPropertyOf('onFailure', definition) &&
@@ -1030,7 +1055,10 @@ export abstract class SchemaCore<
         reason: 'Required properties cannot be dependent'
       };
 
-    if (!this._isValidatorOk(definition) && !isPropertyOf('allow', definition))
+    if (
+      !isPropertyOf('validator', definition) &&
+      !isPropertyOf('allow', definition)
+    )
       return { valid, reason: 'Required properties must have a validator' };
 
     return { valid: true };
@@ -1191,8 +1219,9 @@ export abstract class SchemaCore<
     if (virtual !== true)
       return { valid, reason: "Virtuals must have virtual as 'true'" };
 
-    if (!this._isValidatorOk(definition))
-      return { valid, reason: 'Invalid validator' };
+    const isValidatorOk = this._isValidatorOk(definition);
+
+    if (!isValidatorOk.valid) return { valid, reason: isValidatorOk.reason };
 
     if (isPropertyOf('sanitizer', definition) && !isFunctionLike(sanitizer))
       return { valid, reason: "'sanitizer' must be a function" };

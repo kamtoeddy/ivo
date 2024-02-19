@@ -243,8 +243,12 @@ class ModelTool<
   private _getValidationSummary = (isUpdate = false) =>
     this._getSummary(this.values, isUpdate);
 
-  private _getValidator = <K extends keyof (Output | Input)>(prop: K) => {
-    return this._getDefinition(prop as any)?.validator as
+  private _getPrimaryValidator = <K extends keyof (Output | Input)>(
+    prop: K
+  ) => {
+    const { validator } = this._getDefinition(prop as any);
+
+    return (Array.isArray(validator) ? validator[0] : validator) as
       | Validator<K, Input, Output>
       | undefined;
   };
@@ -925,7 +929,7 @@ class ModelTool<
       });
     }
 
-    const validator = this._getValidator(_prop as any);
+    const validator = this._getPrimaryValidator(_prop as any);
 
     if (validator) {
       let res: ValidatorResponseObject<(Input & Aliases)[K]>;

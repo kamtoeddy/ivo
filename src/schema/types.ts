@@ -234,7 +234,7 @@ namespace NS {
       sanitizer?: VirtualResolver<K, Input, Output, any>;
       shouldInit?: false | Setter<boolean, Input, Output, any>;
       shouldUpdate?: false | Setter<boolean, Input, Output, any>;
-      validator?: Function;
+      validator?: Function | [Function, Function];
       value?: any;
       virtual?: boolean;
     };
@@ -353,7 +353,12 @@ namespace NS {
       default:
         | TypeOf<Output[K]>
         | AsyncSetter<Output[K], Input, Output, CtxOptions>;
-      validator?: Validator<K, Input, Output, Aliases, CtxOptions>;
+      validator?:
+        | Validator<K, Input, Output, Aliases, CtxOptions>
+        | [
+            Validator<K, Input, Output, Aliases, CtxOptions>,
+            SecondaryValidator<Output[K], Input, Output, Aliases, CtxOptions>
+          ];
     };
 
   type ReadOnly<
@@ -368,7 +373,12 @@ namespace NS {
       | AsyncSetter<Output[K], Input, Output, CtxOptions>;
     readonly: 'lax';
     shouldUpdate?: Setter<boolean, Input, Output, CtxOptions>;
-    validator: Validator<K, Input, Output, Aliases, CtxOptions>;
+    validator:
+      | Validator<K, Input, Output, Aliases, CtxOptions>
+      | [
+          Validator<K, Input, Output, Aliases, CtxOptions>,
+          SecondaryValidator<Output[K], Input, Output, Aliases, CtxOptions>
+        ];
   };
 
   type ReadonlyNoInit<
@@ -384,7 +394,12 @@ namespace NS {
     readonly: true;
     shouldInit: false | Setter<boolean, Input, Output, CtxOptions>;
     shouldUpdate?: Setter<boolean, Input, Output, CtxOptions>;
-    validator?: Validator<K, Input, Output, Aliases, CtxOptions>;
+    validator?:
+      | Validator<K, Input, Output, Aliases, CtxOptions>
+      | [
+          Validator<K, Input, Output, Aliases, CtxOptions>,
+          SecondaryValidator<Output[K], Input, Output, Aliases, CtxOptions>
+        ];
   };
 
   type RequiredReadonly<
@@ -395,7 +410,12 @@ namespace NS {
     CtxOptions extends ObjectType
   > = Listenable<Input, Output, CtxOptions> & {
     readonly: true;
-    validator: Validator<K, Input, Output, Aliases, CtxOptions>;
+    validator:
+      | Validator<K, Input, Output, Aliases, CtxOptions>
+      | [
+          Validator<K, Input, Output, Aliases, CtxOptions>,
+          SecondaryValidator<Output[K], Input, Output, Aliases, CtxOptions>
+        ];
   };
 
   type Required<
@@ -409,12 +429,34 @@ namespace NS {
       | {
           required: true;
           shouldUpdate?: false | Setter<boolean, Input, Output, CtxOptions>;
-          validator: Validator<K, Input, Output, Aliases, CtxOptions>;
+          validator:
+            | Validator<K, Input, Output, Aliases, CtxOptions>
+            | [
+                Validator<K, Input, Output, Aliases, CtxOptions>,
+                SecondaryValidator<
+                  Output[K],
+                  Input,
+                  Output,
+                  Aliases,
+                  CtxOptions
+                >
+              ];
         }
       | (Enumerable<Input[K]> & {
           required: true;
           shouldUpdate?: false | Setter<boolean, Input, Output, CtxOptions>;
-          validator?: Validator<K, Input, Output, Aliases, CtxOptions>;
+          validator?:
+            | Validator<K, Input, Output, Aliases, CtxOptions>
+            | [
+                Validator<K, Input, Output, Aliases, CtxOptions>,
+                SecondaryValidator<
+                  Output[K],
+                  Input,
+                  Output,
+                  Aliases,
+                  CtxOptions
+                >
+              ];
         })
     );
 
@@ -432,7 +474,12 @@ namespace NS {
     readonly?: true;
     shouldInit?: Setter<boolean, Input, Output, CtxOptions>;
     shouldUpdate?: Setter<boolean, Input, Output, CtxOptions>;
-    validator: Validator<K, Input, Output, Aliases, CtxOptions>;
+    validator:
+      | Validator<K, Input, Output, Aliases, CtxOptions>
+      | [
+          Validator<K, Input, Output, Aliases, CtxOptions>,
+          SecondaryValidator<Output[K], Input, Output, Aliases, CtxOptions>
+        ];
   };
 
   type Virtual<
@@ -455,7 +502,12 @@ namespace NS {
       onSuccess?:
         | SuccessHandler<Input, Output, CtxOptions>
         | ArrayOfMinSizeOne<SuccessHandler<Input, Output, CtxOptions>>;
-      validator: VirtualValidator<K, Input, Output, Aliases, CtxOptions>;
+      validator:
+        | VirtualValidator<K, Input, Output, Aliases, CtxOptions>
+        | [
+            VirtualValidator<K, Input, Output, Aliases, CtxOptions>,
+            SecondaryValidator<Input[K], Input, Output, Aliases, CtxOptions>
+          ];
     };
 
   export type InternalOptions<
@@ -577,6 +629,19 @@ type Validator<
 ) =>
   | ValidatorResponse<TypeOf<Output[K]>, Input, Aliases>
   | Promise<ValidatorResponse<TypeOf<Output[K]>, Input, Aliases>>;
+
+type SecondaryValidator<
+  T,
+  Input,
+  Output,
+  Aliases = {},
+  CtxOptions extends ObjectType = {}
+> = (
+  value: T,
+  summary: Summary<Input, Output, CtxOptions> & {}
+) =>
+  | ValidatorResponse<T, Input, Aliases>
+  | Promise<ValidatorResponse<T, Input, Aliases>>;
 
 type VirtualValidator<
   K extends keyof Input,
