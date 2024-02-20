@@ -322,6 +322,148 @@ class ModelTool<
     await Promise.allSettled(cleanups);
   }
 
+  private async _handleCreationPrimaryValidations(
+    data: Partial<Output>,
+    input: any
+  ) {
+    const errorTool = new this._options.ErrorTool(
+      VALIDATION_ERRORS.VALIDATION_ERROR,
+      this.contextOptions
+    );
+
+    const virtuals = getKeysAsProps<Partial<Output>>(input).filter((prop) =>
+      this._isVirtualInit(prop, input[prop as unknown as KeyOf<Input>])
+    );
+
+    const props = Array.from(
+      new Set([
+        ...getSetValuesAsProps(this.props).filter(
+          (prop) => !this._isConstant(prop)
+        ),
+        ...virtuals
+      ])
+    );
+
+    const validations = props.map(async (prop) => {
+      const isVirtualInit = virtuals.includes(prop);
+
+      if (this._isVirtual(prop) && !isVirtualInit) return;
+
+      const isDependent = this._isDependentProp(prop),
+        isVirtualAlias = virtuals.includes(prop);
+
+      if (isDependent) {
+        data[prop] = await this._getDefaultValue(prop);
+
+        const validCtxUpdate = { [prop]: data[prop] as any } as any;
+
+        this._updatePartialContext(validCtxUpdate);
+
+        this._updateContext(validCtxUpdate);
+
+        if (!isVirtualAlias) return;
+      }
+
+      if (isVirtualAlias)
+        return this._validateAndSet(
+          data,
+          errorTool,
+          prop,
+          input[prop as unknown as KeyOf<Input>]
+        );
+
+      const isProvided = isPropertyOf(prop, this.values),
+        isLax = this._isLaxProp(prop),
+        isLaxInit = isLax && isProvided,
+        isRequiredInit = this._isRequiredBy(prop) && isProvided;
+
+      if (
+        (isLax &&
+          this._isRuleInDefinition(prop, 'shouldInit') &&
+          !this._getValueBy(prop, 'shouldInit', {})) ||
+        (!isVirtualInit &&
+          !this._canInit(prop) &&
+          !isLaxInit &&
+          !isRequiredInit)
+      ) {
+        data[prop] = await this._getDefaultValue(prop);
+
+        const validCtxUpdate = { [prop]: data[prop] as any } as any;
+
+        this._updatePartialContext(validCtxUpdate);
+
+        return this._updateContext(validCtxUpdate);
+      }
+
+      return this._validateAndSet(data, errorTool, prop, this.values[prop]);
+    });
+
+    await Promise.allSettled(validations);
+
+    return {
+      data,
+      error: errorTool,
+      virtuals
+    };
+  }
+
+  private async _handleUpdatePrimaryValidations(
+    changes: Partial<Input & Aliases>
+  ) {
+    const errorTool = new this._options.ErrorTool(
+      VALIDATION_ERRORS.VALIDATION_ERROR,
+      this.contextOptions
+    );
+
+    const updates = {} as Partial<Output>;
+
+    const toUpdate = Array.from(
+      new Set(getKeysAsProps<Output & Aliases>(changes as any))
+    ).filter((prop) => this._isUpdatable(prop, (changes as any)[prop]));
+
+    const virtuals: KeyOf<Output>[] = [];
+
+    const validations = toUpdate.map(async (prop) => {
+      const value = (changes as any)[prop] as Output[KeyOf<Output>];
+
+      const isValid = (await this._validate(
+        prop as any,
+        value,
+        this._getValidationSummary(true)
+      )) as InternalValidatorResponse<Output[KeyOf<Output>]>;
+
+      if (!isValid.valid)
+        return this._handleInvalidValue(errorTool, prop, isValid);
+
+      let { validated } = isValid;
+
+      if (isEqual(validated, undefined)) validated = value;
+
+      const isAlias = this._isVirtualAlias(prop);
+
+      const propName = (isAlias
+        ? this._getVirtualByAlias(prop)!
+        : prop) as unknown as KeyOf<Output>;
+
+      if (
+        isEqual(validated, this.values[propName], this._options.equalityDepth)
+      )
+        return;
+
+      if (this._isVirtual(propName)) virtuals.push(propName);
+      else updates[propName as KeyOf<Output>] = validated;
+
+      const validCtxUpdate = { [propName]: validated } as unknown as any;
+
+      this._updateContext(validCtxUpdate);
+      this._updatePartialContext(validCtxUpdate);
+    });
+
+    await Promise.allSettled(validations);
+
+    return { updates, error: errorTool, virtuals };
+  }
+
   private async _handlePostValidations(
     data: Partial<Output>,
     isUpdate = false
@@ -967,7 +1109,7 @@ class ModelTool<
     input: Partial<Input & Aliases> = {},
     ctxOptions: Partial<CtxOptions> = {}
   ) {
-    const ctxOpts = this._updateContextOptions(ctxOptions);
+    this._updateContextOptions(ctxOptions);
 
     if (!areValuesOk(input)) input = {};
 
@@ -977,81 +1119,15 @@ class ModelTool<
 
     let data = await this._generateConstants();
 
-    const errorTool = new this._options.ErrorTool(
-      VALIDATION_ERRORS.VALIDATION_ERROR,
-      ctxOpts
-    );
+    const {
+      data: dt,
+      error,
+      virtuals
+    } = await this._handleCreationPrimaryValidations(data, _input);
 
-    const virtuals = getKeysAsProps<Partial<Output>>(_input).filter((prop) =>
-      this._isVirtualInit(prop, _input[prop as unknown as KeyOf<Input>])
-    );
+    if (error.isLoaded) return this._handleError(error, data, virtuals);
 
-    const props = Array.from(
-      new Set([
-        ...getSetValuesAsProps(this.props).filter(
-          (prop) => !this._isConstant(prop)
-        ),
-        ...virtuals
-      ])
-    );
-
-    const validations = props.map(async (prop) => {
-      const isVirtualInit = virtuals.includes(prop);
-
-      if (this._isVirtual(prop) && !isVirtualInit) return;
-
-      const isDependent = this._isDependentProp(prop),
-        isVirtualAlias = virtuals.includes(prop);
-
-      if (isDependent) {
-        data[prop] = await this._getDefaultValue(prop);
-
-        const validCtxUpdate = { [prop]: data[prop] as any } as any;
-
-        this._updatePartialContext(validCtxUpdate);
-
-        this._updateContext(validCtxUpdate);
-
-        if (!isVirtualAlias) return;
-      }
-
-      if (isVirtualAlias)
-        return this._validateAndSet(
-          data,
-          errorTool,
-          prop,
-          _input[prop as unknown as KeyOf<Input>]
-        );
-
-      const isProvided = isPropertyOf(prop, this.values),
-        isLax = this._isLaxProp(prop),
-        isLaxInit = isLax && isProvided,
-        isRequiredInit = this._isRequiredBy(prop) && isProvided;
-
-      if (
-        (isLax &&
-          this._isRuleInDefinition(prop, 'shouldInit') &&
-          !this._getValueBy(prop, 'shouldInit', {})) ||
-        (!isVirtualInit &&
-          !this._canInit(prop) &&
-          !isLaxInit &&
-          !isRequiredInit)
-      ) {
-        data[prop] = await this._getDefaultValue(prop);
-
-        const validCtxUpdate = { [prop]: data[prop] as any } as any;
-
-        this._updatePartialContext(validCtxUpdate);
-
-        return this._updateContext(validCtxUpdate);
-      }
-
-      return this._validateAndSet(data, errorTool, prop, this.values[prop]);
-    });
-
-    await Promise.allSettled(validations);
-
-    if (errorTool.isLoaded) return this._handleError(errorTool, data, virtuals);
+    data = dt;
 
     const requiredError = await this._handleRequiredBy(data);
 
@@ -1141,60 +1217,15 @@ class ModelTool<
     if (!(await this._isGloballyUpdatable(_changes)))
       return this._handleError(errorTool);
 
-    errorTool.setMessage(VALIDATION_ERRORS.VALIDATION_ERROR);
+    const {
+      error,
+      updates: dt,
+      virtuals
+    } = await this._handleUpdatePrimaryValidations(_changes);
 
-    let updates = {} as Partial<Output>;
+    if (error.isLoaded) return this._handleError(error, dt, virtuals);
 
-    const toUpdate = Array.from(
-      new Set(getKeysAsProps<Output & Aliases>(_changes as any))
-    ).filter((prop) => this._isUpdatable(prop, (_changes as any)[prop]));
-
-    const linkedProps: KeyOf<Output>[] = [];
-    const virtuals: KeyOf<Output>[] = [];
-
-    const validations = toUpdate.map(async (prop) => {
-      const value = (_changes as any)[prop] as Output[KeyOf<Output>];
-
-      const isValid = (await this._validate(
-        prop as any,
-        value,
-        this._getValidationSummary(true)
-      )) as InternalValidatorResponse<Output[KeyOf<Output>]>;
-
-      if (!isValid.valid)
-        return this._handleInvalidValue(errorTool, prop, isValid);
-
-      let { validated } = isValid;
-
-      if (isEqual(validated, undefined)) validated = value;
-
-      const isAlias = this._isVirtualAlias(prop);
-
-      const propName = (isAlias
-        ? this._getVirtualByAlias(prop)!
-        : prop) as unknown as KeyOf<Output>;
-
-      if (
-        isEqual(validated, this.values[propName], this._options.equalityDepth)
-      )
-        return;
-
-      if (this._isVirtual(propName)) virtuals.push(propName);
-      else {
-        updates[propName as KeyOf<Output>] = validated;
-        linkedProps.push(propName);
-      }
-
-      const validCtxUpdate = { [propName]: validated } as unknown as any;
-
-      this._updateContext(validCtxUpdate);
-      this._updatePartialContext(validCtxUpdate);
-    });
-
-    await Promise.allSettled(validations);
-
-    if (errorTool.isLoaded)
-      return this._handleError(errorTool, updates, virtuals);
+    let updates = dt;
 
     const requiredErrorTool = await this._handleRequiredBy(updates, true);
 
