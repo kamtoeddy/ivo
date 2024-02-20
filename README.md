@@ -94,10 +94,10 @@ const UserModel = userSchema.getModel();
 
 ```ts
 const { data, error } = await UserModel.create({
-  email: 'kamtoeddy@mail.com',
+  email: 'john.doe@mail.com',
   id: 5, // will be ignored because it is a constant property
   name: 'John Doe', // will be ignored because it is not on schema
-  username: 'kamto_eddy',
+  username: 'john_doe',
   usernameUpdatableFrom: new Date() // will be ignored because it is a dependent property
 });
 
@@ -106,11 +106,11 @@ if (error) return handleError(error);
 console.log(data);
 // {
 //   createdAt: new Date(),
-//   email: 'kamtoeddy@mail.com',
+//   email: 'john.doe@mail.com',
 //   id: 101,
 //   phoneNumber: null,
 //   updatedAt: new Date(),
-//   username: 'kamto_eddy',
+//   username: 'john_doe',
 //   usernameUpdatableFrom: null
 // }
 
@@ -129,14 +129,14 @@ const { data, error } = await UserModel.update(user, {
   usernameUpdatableFrom: new Date(), // dependent property -> will be ignored
   id: 75, // constant property -> will be ignored
   age: 34, // not on schema -> will be ignored
-  userame: 'kamtoeddy'
+  userame: 'johndoe'
 });
 
 if (error) return handleError(error);
 
 console.log(data);
 // {
-//   userame: 'kamtoeddy',
+//   userame: 'johndoe',
 //   usernameUpdatableFrom: Date, // value returned from resolver -> 30days from now
 //   updatedAt: new Date()
 // }
@@ -148,7 +148,7 @@ await userDb.updateById(user.id, data);
 // updating 'username' again will not work
 
 const { error } = await UserModel.update(user, {
-  userame: 'kamto-eddy' // will be ignored because shouldUpdate rule will return false
+  userame: 'john-doe' // will be ignored because shouldUpdate rule will return false
 });
 
 console.log(error);

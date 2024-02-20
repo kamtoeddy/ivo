@@ -217,6 +217,31 @@ const Model = new Schema(
 
 > N.B: if the post-validator happens to throw an error, the validation of the provided properties related to this validator will all fail with reason `validation failed`
 
+## Validation flow
+
+Data validation can occur in multiple stages depending on your schema's configuration
+
+1. Primary validation
+
+   - At this stage, primary validators are triggered, default and constant values are assigned or generated
+
+   - The operation's context here is not safe because it is just made up of raw input but can be updated by the validated values returned from validators
+
+1. Conditional required validation
+
+   - Here, conditional required properties are evaluated
+   - The operation's context here is already safe because of the validated values from the Primary validation stage would have been used to update the context
+   - The operation's context cannot be updated at this stage
+
+1. Secondary validation
+
+   - This is where secondary validators get triggered
+   - The operation's context here is also safe because of the Primary validation and can be updated by the validated values returned from validators
+
+1. Post validation
+   - Here, post-validation checks are evaluated with a safe operation context
+   - The operation's context cannot be updated at this stage
+
 ## Built-in validation helpers
 
 Here are some built-in validators you could use study to build your own validators:
