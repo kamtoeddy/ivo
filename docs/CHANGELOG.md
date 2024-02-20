@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-# v1.1.0 <small><sup>[x][x]-[x][x]-2024</sup></small>
+# v1.1.0 <small><sup>20-02-2024</sup></small>
 
 - [Add] support for upto 2 validators per property (Primary & Secondary)
 

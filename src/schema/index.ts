@@ -244,11 +244,21 @@ class ModelTool<
     this._getSummary(this.values, isUpdate);
 
   private _getPrimaryValidator = <K extends keyof (Output | Input)>(
-    prop: K
+    prop: string
   ) => {
     const { validator } = this._getDefinition(prop as any);
 
     return (Array.isArray(validator) ? validator[0] : validator) as
+      | Validator<K, Input, Output>
+      | undefined;
+  };
+
+  private _getSecondaryValidator = <K extends keyof (Output | Input)>(
+    prop: string
+  ) => {
+    const { validator } = this._getDefinition(prop as any);
+
+    return (Array.isArray(validator) ? validator[1] : undefined) as
       | Validator<K, Input, Output>
       | undefined;
   };
@@ -326,7 +336,7 @@ class ModelTool<
     data: Partial<Output>,
     input: any
   ) {
-    const errorTool = new this._options.ErrorTool(
+    const error = new this._options.ErrorTool(
       VALIDATION_ERRORS.VALIDATION_ERROR,
       this.contextOptions
     );
@@ -358,7 +368,6 @@ class ModelTool<
         const validCtxUpdate = { [prop]: data[prop] as any } as any;
 
         this._updatePartialContext(validCtxUpdate);
-
         this._updateContext(validCtxUpdate);
 
         if (!isVirtualAlias) return;
@@ -367,7 +376,7 @@ class ModelTool<
       if (isVirtualAlias)
         return this._validateAndSet(
           data,
-          errorTool,
+          error,
           prop,
           input[prop as unknown as KeyOf<Input>]
         );
@@ -389,39 +398,33 @@ class ModelTool<
         data[prop] = await this._getDefaultValue(prop);
 
         const validCtxUpdate = { [prop]: data[prop] as any } as any;
-
         this._updatePartialContext(validCtxUpdate);
 
         return this._updateContext(validCtxUpdate);
       }
 
-      return this._validateAndSet(data, errorTool, prop, this.values[prop]);
+      return this._validateAndSet(data, error, prop, this.values[prop]);
     });
 
     await Promise.allSettled(validations);
 
-    return {
-      data,
-      error: errorTool,
-      virtuals
-    };
+    return { data, error, virtuals };
   }
 
   private async _handleUpdatePrimaryValidations(
     changes: Partial<Input & Aliases>
   ) {
-    const errorTool = new this._options.ErrorTool(
+    const error = new this._options.ErrorTool(
       VALIDATION_ERRORS.VALIDATION_ERROR,
       this.contextOptions
     );
 
     const updates = {} as Partial<Output>;
+    const virtuals: KeyOf<Output>[] = [];
 
     const toUpdate = Array.from(
       new Set(getKeysAsProps<Output & Aliases>(changes as any))
     ).filter((prop) => this._isUpdatable(prop, (changes as any)[prop]));
-
-    const virtuals: KeyOf<Output>[] = [];
 
     const validations = toUpdate.map(async (prop) => {
       const value = (changes as any)[prop] as Output[KeyOf<Output>];
@@ -432,8 +435,7 @@ class ModelTool<
         this._getValidationSummary(true)
       )) as InternalValidatorResponse<Output[KeyOf<Output>]>;
 
-      if (!isValid.valid)
-        return this._handleInvalidValue(errorTool, prop, isValid);
+      if (!isValid.valid) return this._handleInvalidValue(error, prop, isValid);
 
       let { validated } = isValid;
 
@@ -461,7 +463,89 @@ class ModelTool<
 
     await Promise.allSettled(validations);
 
-    return { updates, error: errorTool, virtuals };
+    return { error, updates, virtuals };
+  }
+
+  private async _handleSecondaryValidations(
+    data: Partial<Output>,
+    isUpdate = false
+  ) {
+    const summary = this._getSummary(data, isUpdate),
+      context = summary.context;
+
+    const error = new this._options.ErrorTool(
+      VALIDATION_ERRORS.VALIDATION_ERROR,
+      context.__getOptions__()
+    );
+
+    const props: [KeyOf<Output>, string | undefined][] = [];
+
+    for (const prop of this.propsWithSecondaryValidators.values()) {
+      const isVirtual = this._isVirtual(prop);
+
+      let alias: string | undefined;
+
+      if (isVirtual) {
+        alias = this._getAliasByVirtual(prop as any);
+
+        if (
+          !isPropertyOf(prop, summary.inputValues) &&
+          (!alias || !isPropertyOf(alias, summary.inputValues))
+        )
+          continue;
+      }
+
+      if (isUpdate && !isVirtual && !isPropertyOf(prop, summary.changes))
+        continue;
+
+      props.push([prop as KeyOf<Output>, alias]);
+    }
+
+    const validations = props.map(async ([prop, alias]) => {
+      const validator = this._getSecondaryValidator(prop);
+
+      if (!validator) return;
+
+      const value = summary.context?.[prop] as Output[KeyOf<Output>];
+
+      let isValid: ValidatorResponseObject<any>;
+
+      try {
+        isValid = this._sanitizeValidationResponse<any>(
+          (await validator(value, summary)) as ValidatorResponseObject<any>,
+          value
+        );
+      } catch (_) {
+        isValid = makeResponse<any>({
+          valid: false,
+          reason: 'validation failed'
+        });
+      }
+
+      if (!isValid.valid) {
+        const _prop =
+          alias && isPropertyOf(alias, summary.inputValues) ? alias : prop;
+
+        return this._handleInvalidValue(error, _prop as any, isValid);
+      }
+
+      let { validated } = isValid;
+
+      if (isEqual(validated, undefined)) validated = value;
+      if (isEqual(validated, this.values[prop], this._options.equalityDepth))
+        return;
+
+      if (!this._isVirtual(prop)) data[prop as KeyOf<Output>] = validated;
+
+      const validCtxUpdate = { [prop]: validated } as unknown as any;
+
+      this._updateContext(validCtxUpdate);
+      this._updatePartialContext(validCtxUpdate);
+    });
+
+    await Promise.allSettled(validations);
+
+    return error;
   }
 
   private async _handlePostValidations(
@@ -1130,12 +1214,13 @@ class ModelTool<
     data = dt;
 
     const requiredError = await this._handleRequiredBy(data);
-
     if (requiredError.isLoaded)
       return this._handleError(requiredError, data, virtuals);
 
-    const postValidationError = await this._handlePostValidations(data);
+    const error2 = await this._handleSecondaryValidations(data);
+    if (error2.isLoaded) return this._handleError(error2, data, virtuals);
 
+    const postValidationError = await this._handlePostValidations(data);
     if (postValidationError.isLoaded)
       return this._handleError(postValidationError, data, virtuals);
 
@@ -1199,13 +1284,13 @@ class ModelTool<
   ) {
     const ctxOpts = this._updateContextOptions(ctxOptions);
 
-    const errorTool = new this._options.ErrorTool(
+    const errorNothingToUpdate = new this._options.ErrorTool(
       VALIDATION_ERRORS.NOTHING_TO_UPDATE,
       ctxOpts
     );
 
     if (!areValuesOk(values) || !areValuesOk(changes))
-      return this._handleError(errorTool, {}, []);
+      return this._handleError(errorNothingToUpdate, {}, []);
 
     this._setValues(values, { allowVirtuals: false, allowTimestamps: true });
 
@@ -1215,7 +1300,7 @@ class ModelTool<
     const _changes = this._cleanInput(changes);
 
     if (!(await this._isGloballyUpdatable(_changes)))
-      return this._handleError(errorTool);
+      return this._handleError(errorNothingToUpdate);
 
     const {
       error,
@@ -1228,15 +1313,16 @@ class ModelTool<
     let updates = dt;
 
     const requiredErrorTool = await this._handleRequiredBy(updates, true);
-
     if (requiredErrorTool.isLoaded)
       return this._handleError(requiredErrorTool, updates, virtuals);
+
+    const error2 = await this._handleSecondaryValidations(updates, true);
+    if (error2.isLoaded) return this._handleError(error2, updates, virtuals);
 
     const postValidationError = await this._handlePostValidations(
       updates,
       true
     );
-
     if (postValidationError.isLoaded)
       return this._handleError(postValidationError, updates, virtuals);
 
@@ -1249,11 +1335,11 @@ class ModelTool<
     );
 
     if (!Object.keys(updates).length) {
-      errorTool.setMessage(VALIDATION_ERRORS.NOTHING_TO_UPDATE);
+      errorNothingToUpdate.setMessage(VALIDATION_ERRORS.NOTHING_TO_UPDATE);
 
-      await this._handleFailure(updates, errorTool, virtuals);
+      await this._handleFailure(updates, errorNothingToUpdate, virtuals);
 
-      return this._handleError(errorTool);
+      return this._handleError(errorNothingToUpdate);
     }
 
     if (this._options?.setMissingDefaultsOnUpdate)

@@ -634,7 +634,7 @@ export abstract class SchemaCore<
       if (validator.length != 2)
         return {
           valid,
-          reason: 'Validator array may contain exactly 2 functions'
+          reason: 'Validator array must contain exactly 2 functions'
         };
 
       const isPrimaryOk = isFunctionLike(validator[0]),

@@ -23,6 +23,12 @@ import { Schema } from 'ivo';
 ```ts
 import { Schema, type Summary } from 'ivo';
 
+type UserInput = {
+  email: string;
+  username: string;
+  phoneNumber: string;
+};
+
 type User = {
   id: string;
   createdAt: string;
@@ -31,12 +37,6 @@ type User = {
   phoneNumber: string | null;
   updatedAt: string;
   usernameUpdatableFrom: Date | null;
-};
-
-type UserInput = {
-  email: string;
-  username: string;
-  phoneNumber: string;
 };
 
 const userSchema = new Schema<UserInput, User>(

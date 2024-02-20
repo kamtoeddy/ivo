@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 
 import { ERRORS } from '../../dist';
 import { expectFailure, expectNoFailure, validator } from './_utils';
@@ -94,7 +94,7 @@ export const Test_Validators = ({ Schema, fx }: any) => {
               [validator, validator, validator]
             ];
 
-            const message = 'Validator array may contain exactly 2 functions';
+            const message = 'Validator array must contain exactly 2 functions';
 
             for (const validatorArr of invalidValidators) {
               const toFail = fx({
@@ -621,53 +621,288 @@ export const Test_Validators = ({ Schema, fx }: any) => {
           });
         });
       });
-    });
 
-    describe('behaviour with errors thrown in the validator', () => {
-      const Model = new Schema({
-        prop1: {
-          default: '',
-          validator() {
-            throw new Error('lolol');
-          }
-        },
-        prop2: { default: '', validator: () => false }
-      }).getModel();
+      describe('behaviour with errors thrown in the validator', () => {
+        const Model = new Schema({
+          prop1: {
+            default: '',
+            validator() {
+              throw new Error('lolol');
+            }
+          },
+          prop2: { default: '', validator: () => false }
+        }).getModel();
 
-      it("should return 'validation failed' at creation", async () => {
-        const { data, error } = await Model.create({ prop1: '', prop2: '' });
+        it("should return 'validation failed' at creation", async () => {
+          const { data, error } = await Model.create({ prop1: '', prop2: '' });
 
-        expect(data).toBeNull();
-        expect(error).toMatchObject({
-          message: ERRORS.VALIDATION_ERROR,
-          payload: expect.objectContaining({
-            prop1: expect.objectContaining({
-              reasons: expect.arrayContaining(['validation failed'])
-            }),
-            prop2: expect.objectContaining({
-              reasons: expect.arrayContaining(['validation failed'])
+          expect(data).toBeNull();
+          expect(error).toMatchObject({
+            message: ERRORS.VALIDATION_ERROR,
+            payload: expect.objectContaining({
+              prop1: expect.objectContaining({
+                reasons: expect.arrayContaining(['validation failed'])
+              }),
+              prop2: expect.objectContaining({
+                reasons: expect.arrayContaining(['validation failed'])
+              })
             })
-          })
+          });
+        });
+
+        it("should return 'validation failed' during updates", async () => {
+          const { data, error } = await Model.update(
+            { prop1: '', prop2: '' },
+            { prop1: 'updated', prop2: 'updated' }
+          );
+
+          expect(data).toBeNull();
+          expect(error).toMatchObject({
+            message: ERRORS.VALIDATION_ERROR,
+            payload: expect.objectContaining({
+              prop1: expect.objectContaining({
+                reasons: expect.arrayContaining(['validation failed'])
+              }),
+              prop2: expect.objectContaining({
+                reasons: expect.arrayContaining(['validation failed'])
+              })
+            })
+          });
         });
       });
 
-      it("should return 'validation failed' during updates", async () => {
-        const { data, error } = await Model.update(
-          { prop1: '', prop2: '' },
-          { prop1: 'updated', prop2: 'updated' }
-        );
+      describe('behaviour with secondary validators (validation array)', () => {
+        let valuesProvided = {} as any;
+        let summaryStats = {} as any;
 
-        expect(data).toBeNull();
-        expect(error).toMatchObject({
-          message: ERRORS.VALIDATION_ERROR,
-          payload: expect.objectContaining({
-            prop1: expect.objectContaining({
-              reasons: expect.arrayContaining(['validation failed'])
-            }),
-            prop2: expect.objectContaining({
-              reasons: expect.arrayContaining(['validation failed'])
-            })
-          })
+        function makeSecondaryValidator(prop: string) {
+          return (value: any, summary: any) => {
+            summaryStats[prop] = summary;
+
+            valuesProvided[prop] = value;
+
+            return true;
+          };
+        }
+
+        describe('should properly trigger secondary validators', () => {
+          const Model = new Schema({
+            dependent: {
+              default: '',
+              dependsOn: ['virtual', 'virtual2'],
+              resolver: validator
+            },
+            lax: { default: '' },
+            readonly: {
+              readonly: true,
+              validator: [validator, makeSecondaryValidator('readonly')]
+            },
+            readonlyLax: {
+              default: '',
+              readonly: 'lax',
+              validator: [validator, makeSecondaryValidator('readonlyLax')]
+            },
+            required: {
+              required: true,
+              validator: [validator, makeSecondaryValidator('required')]
+            },
+            virtual: {
+              virtual: true,
+              validator: [validator, makeSecondaryValidator('virtual')]
+            },
+            virtual2: {
+              virtual: true,
+              validator: [validator, makeSecondaryValidator('virtual2')]
+            }
+          }).getModel();
+
+          afterEach(() => {
+            summaryStats = {};
+            valuesProvided = {};
+          });
+
+          it('should trigger all secondary validators at creation', async () => {
+            const { error } = await Model.create();
+
+            expect(error).toBeNull();
+            expect(valuesProvided).toEqual({
+              readonly: undefined,
+              readonlyLax: '',
+              required: undefined
+            });
+          });
+
+          it('should not trigger secondary validators of virtuals not provided at creation', async () => {
+            const { error } = await Model.create({ virtual2: true });
+
+            expect(error).toBeNull();
+            expect(valuesProvided).toEqual({
+              readonly: undefined,
+              readonlyLax: '',
+              required: undefined,
+              virtual2: true
+            });
+          });
+
+          it('should only trigger secondary validators of props provided during updates', async () => {
+            const { error } = await Model.update(
+              { lax: 2, required: 1, readonly: 1, readonlyLax: 1 },
+              {
+                lax: true,
+                required: true,
+                readonly: true,
+                readonlyLax: true,
+                virtual: true,
+                virtual2: true
+              }
+            );
+
+            expect(error).toBeNull();
+            expect(valuesProvided).toEqual({
+              required: true,
+              virtual: true,
+              virtual2: true
+            });
+          });
+
+          it('should only trigger secondary validators of readonly props that have not changed during updates', async () => {
+            const { error } = await Model.update(
+              { lax: 2, required: 1, readonly: 1, readonlyLax: '' },
+              { readonly: true, readonlyLax: true }
+            );
+
+            expect(error).toBeNull();
+            expect(valuesProvided).toEqual({ readonlyLax: true });
+          });
+        });
+
+        describe('values returned from secondary validators should be handled accordingly', () => {
+          it('should treat invalid values returned from secondary validators validation failed errors', async () => {
+            const values = [-1, 0, 1, '', 'lol', undefined, null, () => {}, []];
+
+            for (const value of values) {
+              const Model = new Schema({
+                p1: { default: '' },
+                p2: { default: '', validator: [validator, () => value] }
+              }).getModel();
+
+              const { data, error } = await Model.create();
+
+              expect(data).toBeNull();
+              expect(error).toMatchObject({
+                message: ERRORS.VALIDATION_ERROR,
+                payload: {
+                  p2: expect.objectContaining({
+                    reasons: expect.arrayContaining(['validation failed'])
+                  })
+                }
+              });
+
+              const { data: updates, error: error2 } = await Model.update(
+                { p1: 'p1', p2: '' },
+                { p1: 'updated', p2: 'updated' }
+              );
+
+              expect(updates).toBeNull();
+              expect(error2).toMatchObject({
+                message: ERRORS.VALIDATION_ERROR,
+                payload: {
+                  p2: expect.objectContaining({
+                    reasons: expect.arrayContaining(['validation failed'])
+                  })
+                }
+              });
+            }
+          });
+
+          it('should respect errors returned in secondary validators(sync & async)', async () => {
+            const resolver = ({ context }: any) => context.v;
+
+            const Model = new Schema({
+              p1: {
+                default: '',
+                validator: [
+                  validator,
+                  (_, { isUpdate }) => ({
+                    reason: isUpdate ? 'failed to validate' : 'p1'
+                  })
+                ]
+              },
+              p2: {
+                default: '',
+                validator: [validator, () => ({ reason: ['p2'] })]
+              },
+              p3: {
+                default: '',
+                validator: [validator, () => ({ reason: ['error1', 'error2'] })]
+              },
+              p4: {
+                default: '',
+                validator: [validator, () => null]
+              },
+              d1: { default: '', dependsOn: 'v', resolver },
+              d2: { default: '', dependsOn: 'v', resolver },
+              v: {
+                alias: 'd1',
+                virtual: true,
+                validator: [
+                  validator,
+                  function (v: any, { isUpdate }: any) {
+                    if (v == 'throw') throw new Error('lol');
+
+                    return isUpdate
+                      ? { reason: ['lolz'] }
+                      : { reason: 'error', metadata: { lol: true } };
+                  }
+                ]
+              }
+            }).getModel();
+
+            const res = await Model.create({ v: true });
+
+            expect(res.data).toBeNull();
+            expect(res.error.payload).toMatchObject({
+              p1: expect.objectContaining({
+                reasons: expect.arrayContaining(['p1'])
+              }),
+              p2: expect.objectContaining({
+                reasons: expect.arrayContaining(['p2'])
+              }),
+              p3: expect.objectContaining({
+                reasons: expect.arrayContaining(['error1', 'error2'])
+              }),
+              p4: expect.objectContaining({
+                reasons: expect.arrayContaining(['validation failed'])
+              }),
+              v: expect.objectContaining({
+                reasons: expect.arrayContaining(['error']),
+                metadata: { lol: true }
+              })
+            });
+
+            const res2 = await Model.update(
+              {},
+              { p1: true, p2: 'updated', d1: 'updated' }
+            );
+            expect(res2.data).toBeNull();
+            expect(res2.error.payload).toMatchObject({
+              p1: expect.objectContaining({
+                reasons: expect.arrayContaining(['failed to validate'])
+              }),
+              p2: expect.objectContaining({
+                reasons: expect.arrayContaining(['p2'])
+              }),
+              d1: expect.objectContaining({
+                reasons: expect.arrayContaining(['lolz'])
+              })
+            });
+
+            const res3 = await Model.create({ v: 'throw' });
+            expect(res3.data).toBeNull();
+            expect(res3.error.payload).toMatchObject({
+              v: expect.objectContaining({ reasons: ['validation failed'] })
+            });
+          });
         });
       });
     });
