@@ -23,6 +23,12 @@ import { Schema } from 'ivo';
 ```ts
 import { Schema, type Summary } from 'ivo';
 
+type UserInput = {
+  email: string;
+  username: string;
+  phoneNumber: string;
+};
+
 type User = {
   id: string;
   createdAt: string;
@@ -31,12 +37,6 @@ type User = {
   phoneNumber: string | null;
   updatedAt: string;
   usernameUpdatableFrom: Date | null;
-};
-
-type UserInput = {
-  email: string;
-  username: string;
-  phoneNumber: string;
 };
 
 const userSchema = new Schema<UserInput, User>(
@@ -94,10 +94,10 @@ const UserModel = userSchema.getModel();
 
 ```ts
 const { data, error } = await UserModel.create({
-  email: 'kamtoeddy@mail.com',
+  email: 'john.doe@mail.com',
   id: 5, // will be ignored because it is a constant property
   name: 'John Doe', // will be ignored because it is not on schema
-  username: 'kamto_eddy',
+  username: 'john_doe',
   usernameUpdatableFrom: new Date() // will be ignored because it is a dependent property
 });
 
@@ -106,11 +106,11 @@ if (error) return handleError(error);
 console.log(data);
 // {
 //   createdAt: new Date(),
-//   email: 'kamtoeddy@mail.com',
+//   email: 'john.doe@mail.com',
 //   id: 101,
 //   phoneNumber: null,
 //   updatedAt: new Date(),
-//   username: 'kamto_eddy',
+//   username: 'john_doe',
 //   usernameUpdatableFrom: null
 // }
 
@@ -129,14 +129,14 @@ const { data, error } = await UserModel.update(user, {
   usernameUpdatableFrom: new Date(), // dependent property -> will be ignored
   id: 75, // constant property -> will be ignored
   age: 34, // not on schema -> will be ignored
-  userame: 'kamtoeddy'
+  userame: 'johndoe'
 });
 
 if (error) return handleError(error);
 
 console.log(data);
 // {
-//   userame: 'kamtoeddy',
+//   userame: 'johndoe',
 //   usernameUpdatableFrom: Date, // value returned from resolver -> 30days from now
 //   updatedAt: new Date()
 // }
@@ -148,7 +148,7 @@ await userDb.updateById(user.id, data);
 // updating 'username' again will not work
 
 const { error } = await UserModel.update(user, {
-  userame: 'kamto-eddy' // will be ignored because shouldUpdate rule will return false
+  userame: 'john-doe' // will be ignored because shouldUpdate rule will return false
 });
 
 console.log(error);
@@ -160,26 +160,26 @@ console.log(error);
 
 ## Docs
 
-- [Defining a schema](./docs/v0.0.1/index.md#defining-a-schema)
-  - [allowed values](./docs/v0.0.1/definitions/allowed-values.md#allowed-values)
-  - [constant properties](./docs/v0.0.1/definitions/constants.md#constant-properties)
-  - [default values](./docs/v0.0.1/definitions/defaults.md#default-values)
-  - [dependent properties](./docs/v0.0.1/definitions/dependents.md#dependent-properties)
-  - [readonly properties](./docs/v0.0.1/definitions/readonly.md#readonly-properties)
-  - [required properties](./docs/v0.0.1/definitions/required.md#required-properties)
-  - [virtual properties](./docs/v0.0.1/definitions/virtuals.md#virtual-properties)
-  - [validators](./docs/v0.0.1/validators/index.md#validators)
-- [Extending Schemas](./docs/v0.0.1/definitions/extend-schemas.md#extending-schemas)
-- [The Operation Context](./docs/v0.0.1/life-cycles.md#the-operation-contextt)
-- [The Operation Summary](./docs/v0.0.1/life-cycles.md#the-operation-summary)
-- [Life Cycles & Handlers](./docs/v0.0.1/life-cycles.md#life-cycle-listeners)
+- [Defining a schema](./docs/v1.1.0/index.md#defining-a-schema)
+  - [allowed values](./docs/v1.1.0/definitions/allowed-values.md#allowed-values)
+  - [constant properties](./docs/v1.1.0/definitions/constants.md#constant-properties)
+  - [default values](./docs/v1.1.0/definitions/defaults.md#default-values)
+  - [dependent properties](./docs/v1.1.0/definitions/dependents.md#dependent-properties)
+  - [readonly properties](./docs/v1.1.0/definitions/readonly.md#readonly-properties)
+  - [required properties](./docs/v1.1.0/definitions/required.md#required-properties)
+  - [virtual properties](./docs/v1.1.0/definitions/virtuals.md#virtual-properties)
+  - [validators](./docs/v1.1.0/validators/index.md#validators)
+- [Extending Schemas](./docs/v1.1.0/definitions/extend-schemas.md#extending-schemas)
+- [The Operation Context](./docs/v1.1.0/life-cycles.md#the-operation-contextt)
+- [The Operation Summary](./docs/v1.1.0/life-cycles.md#the-operation-summary)
+- [Life Cycles & Handlers](./docs/v1.1.0/life-cycles.md#life-cycle-listeners)
 
-  - [onDelete](./docs/v0.0.1/life-cycles.md#ondelete)
-  - [onFailure](./docs/v0.0.1/life-cycles.md#onfailure)
-  - [onSuccess](./docs/v0.0.1/life-cycles.md#onsuccess)
+  - [onDelete](./docs/v1.1.0/life-cycles.md#ondelete)
+  - [onFailure](./docs/v1.1.0/life-cycles.md#onfailure)
+  - [onSuccess](./docs/v1.1.0/life-cycles.md#onsuccess)
 
-- [Options](./docs/v0.0.1/index.md#options)
-- [Custom validation errors](./docs/v0.0.1/index.md#errortool)
-- [Extra features](./docs/v0.0.1/life-cycles.md#context-options)
+- [Options](./docs/v1.1.0/index.md#options)
+- [Custom validation errors](./docs/v1.1.0/index.md#errortool)
+- [Extra features](./docs/v1.1.0/life-cycles.md#context-options)
 
 - [Changelog](./docs/CHANGELOG.md#changelog)

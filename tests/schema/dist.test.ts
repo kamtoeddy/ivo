@@ -32,9 +32,9 @@ describe('Dist', () => {
   test.todo('tests');
 });
 
-Test_BasicDefinitions({ fx, Schema });
+Test_BasicDefinitions({ Schema, fx });
 
-Test_Validators({ Schema });
+Test_Validators({ Schema, fx });
 valuesParsing_Tests({ Schema });
 
 Test_ConstantProperties({ Schema, fx });

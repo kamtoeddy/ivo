@@ -15,7 +15,7 @@ import {
 
 export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
   describe('Schema.options.postValidate', () => {
-    describe('config', () => {
+    describe('signature', () => {
       describe('single config', () => {
         describe('valid', () => {
           it("should allow 'postValidate' as valid config", () => {
