@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-# v1.2.0 <small><sup>20-02-2024</sup></small>
+# v1.2.0 <small><sup>22-02-2024</sup></small>
 
 - [Fix] issue with `DeletionContext` being exported as `DeleteContext`
 - [Test] clean-up tests related to post-validation and secondary validations

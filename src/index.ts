@@ -3,7 +3,6 @@ import { Schema } from './schema';
 export default Schema;
 
 export { Schema } from './schema';
-export * as validate from './validate';
 export * from './validate';
 
 export { ERRORS, SCHEMA_ERRORS, VALIDATION_ERRORS } from './schema/utils';
@@ -21,7 +20,7 @@ export {
 } from './utils';
 export {
   Context,
-  DeleteContext,
+  DeletionContext,
   KeyOf,
   Merge,
   ArrayOfMinSizeOne as NonEmptyArray,

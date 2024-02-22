@@ -10,7 +10,7 @@ export type {
   ArrayOfMinSizeOne,
   ArrayOfMinSizeTwo,
   Context,
-  DeleteContext,
+  DeletionContext,
   DefinitionRule,
   KeyOf,
   Merge,
@@ -47,7 +47,7 @@ type Context<
   Merge<Input, Output> & { __getOptions__: () => Readonly<CtxOptions> }
 > & {};
 
-type DeleteContext<Output, CtxOptions extends ObjectType = {}> = Readonly<
+type DeletionContext<Output, CtxOptions extends ObjectType = {}> = Readonly<
   Output & { __getOptions__: () => Readonly<CtxOptions> }
 > & {};
 
@@ -155,7 +155,7 @@ namespace NS {
   export type LifeCycle = (typeof LIFE_CYCLES)[number];
 
   export type DeleteHandler<Output, CtxOptions extends ObjectType> = (
-    data: DeleteContext<Output, CtxOptions>
+    data: DeletionContext<Output, CtxOptions>
   ) => any | Promise<any>;
 
   export type FailureHandler<
