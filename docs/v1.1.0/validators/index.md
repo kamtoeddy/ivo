@@ -65,11 +65,12 @@ function validator2(value: any) {
 }
 
 const Model = new Schema({
-  prop1: {
-    default: null,
-    validator: [primaryValidator, secondaryValidator]
-  },
-  prop2: { default: null, validator: primaryValidator }
+  dateOfBirth: { required: true, validator: isValidDateOfBirth },
+  email: {
+    required: true,
+    //          👇 primary & 👇 secondary validators
+    validator: [isEmailOk, isEmailUnique]
+  }
 });
 ```
 
