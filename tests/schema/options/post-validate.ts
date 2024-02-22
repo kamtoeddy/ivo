@@ -630,32 +630,37 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
     });
 
     describe('behaviour', () => {
-      let providedPropertiesStats = {} as any;
-      let summaryStats = {} as any;
-
-      function handlePostValidate(
-        prop: string,
-        summary: any,
-        propsProvided: string[]
-      ) {
-        summaryStats[prop] = summary;
-
-        if (propsProvided.includes(prop))
-          providedPropertiesStats[prop] =
-            (providedPropertiesStats[prop] ?? 0) + 1;
-      }
-
-      function makePostValidator(properties: string[]) {
-        return {
-          properties,
-          handler(summary: any, propsProvided: string[]) {
-            for (const prop of properties)
-              handlePostValidate(prop, summary, propsProvided);
-          }
-        };
-      }
-
       describe('should properly trigger post-validators', () => {
+        let providedPropertiesStats = {} as any;
+        let summaryStats = {} as any;
+
+        function handlePostValidate(
+          prop: string,
+          summary: any,
+          propsProvided: string[]
+        ) {
+          summaryStats[prop] = summary;
+
+          if (propsProvided.includes(prop))
+            providedPropertiesStats[prop] =
+              (providedPropertiesStats[prop] ?? 0) + 1;
+        }
+
+        function makePostValidator(properties: string[]) {
+          return {
+            properties,
+            handler(summary: any, propsProvided: string[]) {
+              for (const prop of properties)
+                handlePostValidate(prop, summary, propsProvided);
+            }
+          };
+        }
+
+        afterEach(() => {
+          summaryStats = {};
+          providedPropertiesStats = {};
+        });
+
         describe('behaviour with single post-validators', () => {
           const Model = new Schema(
             {
@@ -682,11 +687,6 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
               ])
             }
           ).getModel();
-
-          afterEach(() => {
-            summaryStats = {};
-            providedPropertiesStats = {};
-          });
 
           it('should trigger all post-validators at creation', async () => {
             const { error } = await Model.create();
