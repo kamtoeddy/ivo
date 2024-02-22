@@ -713,12 +713,12 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
             });
           });
 
-          it('should only trigger post-validators of props provided during updates', async () => {
+          it('should only trigger post-validators of props that change during updates', async () => {
             const { error } = await Model.update(
               { lax: 2, required: 1, readonly: 1, readonlyLax: 1 },
               {
                 lax: true,
-                required: true,
+                required: 1,
                 readonly: true,
                 readonlyLax: true,
                 virtual: true,
@@ -729,7 +729,6 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
             expect(error).toBeNull();
             expect(providedPropertiesStats).toEqual({
               lax: 1,
-              required: 1,
               virtual: 1,
               virtual2: 1
             });
