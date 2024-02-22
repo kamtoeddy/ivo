@@ -744,12 +744,12 @@ export const Test_Validators = ({ Schema, fx }: any) => {
             });
           });
 
-          it('should only trigger secondary validators of props provided during updates', async () => {
+          it('should only trigger secondary validators of props that change during updates', async () => {
             const { error } = await Model.update(
               { lax: 2, required: 1, readonly: 1, readonlyLax: 1 },
               {
                 lax: true,
-                required: true,
+                required: 1,
                 readonly: true,
                 readonlyLax: true,
                 virtual: true,
@@ -758,11 +758,7 @@ export const Test_Validators = ({ Schema, fx }: any) => {
             );
 
             expect(error).toBeNull();
-            expect(valuesProvided).toEqual({
-              required: true,
-              virtual: true,
-              virtual2: true
-            });
+            expect(valuesProvided).toEqual({ virtual: true, virtual2: true });
           });
 
           it('should only trigger secondary validators of readonly props that have not changed during updates', async () => {
