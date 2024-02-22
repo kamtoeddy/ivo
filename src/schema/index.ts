@@ -332,6 +332,31 @@ class ModelTool<
     await Promise.allSettled(cleanups);
   }
 
+  private async _handleInvalidValue(
+    errorTool: ErrorTool,
+    prop: KeyOf<Input & Output & Aliases>,
+    validationResponse: InvalidValidatorResponse
+  ) {
+    const { reason, metadata, value } = validationResponse;
+
+    if (isRecordLike(reason)) {
+      if (metadata) errorTool.add(prop, { metadata, reasons: [] }, value);
+
+      return Object.entries(reason).forEach(([key, message]) => {
+        errorTool.add(key, makeFieldError(message));
+      });
+    }
+
+    const fieldError = makeFieldError(
+      // @ts-ignore
+      reason?.length ? reason : 'validation failed'
+    );
+
+    if (metadata) fieldError.metadata = metadata;
+
+    errorTool.add(prop, fieldError, value);
+  }
+
   private async _handleCreationPrimaryValidations(
     data: Partial<Output>,
     input: any
@@ -455,7 +480,7 @@ class ModelTool<
       if (this._isVirtual(propName)) virtuals.push(propName);
       else updates[propName as KeyOf<Output>] = validated;
 
-      const validCtxUpdate = { [propName]: validated } as unknown as any;
+      const validCtxUpdate = { [propName]: validated } as any;
 
       this._updateContext(validCtxUpdate);
       this._updatePartialContext(validCtxUpdate);
@@ -481,6 +506,8 @@ class ModelTool<
     const props: [KeyOf<Output>, string | undefined][] = [];
 
     for (const prop of this.propsWithSecondaryValidators.values()) {
+      if (!isUpdate && !this._isInitAllowed(prop)) continue;
+
       const isVirtual = this._isVirtual(prop);
 
       let alias: string | undefined;
@@ -489,13 +516,13 @@ class ModelTool<
         alias = this._getAliasByVirtual(prop as any);
 
         if (
-          !isPropertyOf(prop, summary.inputValues) &&
+          !isPropertyOf(prop, this.partialContext) &&
           (!alias || !isPropertyOf(alias, summary.inputValues))
         )
           continue;
       }
 
-      if (isUpdate && !isVirtual && !isPropertyOf(prop, summary.changes))
+      if (isUpdate && !isVirtual && !isPropertyOf(prop, this.partialContext))
         continue;
 
       props.push([prop as KeyOf<Output>, alias]);
@@ -537,7 +564,7 @@ class ModelTool<
 
       if (!this._isVirtual(prop)) data[prop as KeyOf<Output>] = validated;
 
-      const validCtxUpdate = { [prop]: validated } as unknown as any;
+      const validCtxUpdate = { [prop]: validated } as any;
 
       this._updateContext(validCtxUpdate);
       this._updatePartialContext(validCtxUpdate);
@@ -717,6 +744,53 @@ class ModelTool<
     await Promise.allSettled(sanitizations);
   }
 
+  private _handleObjectValidationResponse(data: Record<string, any>) {
+    const validProperties = getKeysAsProps(data).filter(
+      (prop) =>
+        this._isInputOrAlias(prop) || this._isInputOrAlias(prop.split('.')?.[0])
+    );
+
+    const otherReasons = {} as Record<
+      string,
+      string | string[] | InputFieldError
+    >;
+
+    for (const prop of validProperties) {
+      const fieldError = data[prop];
+
+      const isArray = Array.isArray(fieldError),
+        isString = typeof fieldError == 'string';
+
+      if (isInputFieldError(fieldError)) {
+        otherReasons[prop] = fieldError as InputFieldError;
+
+        continue;
+      }
+
+      if (isArray) {
+        const messages = (fieldError as any[]).filter(
+          (v) => typeof v == 'string'
+        );
+
+        otherReasons[prop] = messages.length ? messages : 'validation failed';
+
+        continue;
+      }
+
+      if (isString) {
+        const message = fieldError.trim();
+
+        otherReasons[prop] = message.length ? message : 'validation failed';
+
+        continue;
+      }
+
+      otherReasons[prop] = 'validation failed';
+    }
+
+    return otherReasons;
+  }
+
   private _isSanitizable(
     prop: string,
     isCreation: boolean
@@ -761,7 +835,7 @@ class ModelTool<
 
     const extraCtx = isAlias ? { [propName]: value } : {};
 
-    const isUpdatable = this._getValueBy(propName, 'shouldUpdate', extraCtx);
+    const isUpdatable = this._isUpdateAllowed(propName, extraCtx);
 
     if (this._isVirtual(prop)) return hasShouldUpdateRule ? isUpdatable : true;
 
@@ -957,31 +1031,6 @@ class ModelTool<
     );
   }
 
-  private async _handleInvalidValue(
-    errorTool: ErrorTool,
-    prop: KeyOf<Input & Output & Aliases>,
-    validationResponse: InvalidValidatorResponse
-  ) {
-    const { reason, metadata, value } = validationResponse;
-
-    if (isRecordLike(reason)) {
-      if (metadata) errorTool.add(prop, { metadata, reasons: [] }, value);
-
-      return Object.entries(reason).forEach(([key, message]) => {
-        errorTool.add(key, makeFieldError(message));
-      });
-    }
-
-    const fieldError = makeFieldError(
-      // @ts-ignore
-      reason?.length ? reason : 'validation failed'
-    );
-
-    if (metadata) fieldError.metadata = metadata;
-
-    errorTool.add(prop, fieldError, value);
-  }
-
   private async _setValidValue(
     operationData: Partial<Output> = {},
     prop: KeyOf<Output>,
@@ -994,57 +1043,10 @@ class ModelTool<
     if (!this._isVirtual(propName))
       operationData[propName as KeyOf<Output>] = value;
 
-    const validCtxUpdate = { [propName]: value } as unknown as any;
+    const validCtxUpdate = { [propName]: value } as any;
 
     this._updateContext(validCtxUpdate);
     this._updatePartialContext(validCtxUpdate);
-  }
-
-  private _handleObjectValidationResponse(data: Record<string, any>) {
-    const validProperties = getKeysAsProps(data).filter(
-      (prop) =>
-        this._isInputOrAlias(prop) || this._isInputOrAlias(prop.split('.')?.[0])
-    );
-
-    const otherReasons = {} as Record<
-      string,
-      string | string[] | InputFieldError
-    >;
-
-    for (const prop of validProperties) {
-      const fieldError = data[prop];
-
-      const isArray = Array.isArray(fieldError),
-        isString = typeof fieldError == 'string';
-
-      if (isInputFieldError(fieldError)) {
-        otherReasons[prop] = fieldError as InputFieldError;
-
-        continue;
-      }
-
-      if (isArray) {
-        const messages = (fieldError as any[]).filter(
-          (v) => typeof v == 'string'
-        );
-
-        otherReasons[prop] = messages.length ? messages : 'validation failed';
-
-        continue;
-      }
-
-      if (isString) {
-        const message = fieldError.trim();
-
-        otherReasons[prop] = message.length ? message : 'validation failed';
-
-        continue;
-      }
-
-      otherReasons[prop] = 'validation failed';
-    }
-
-    return otherReasons;
   }
 
   private _sanitizeValidationResponse<T>(

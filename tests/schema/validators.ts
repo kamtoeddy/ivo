@@ -672,20 +672,25 @@ export const Test_Validators = ({ Schema, fx }: any) => {
       });
 
       describe('behaviour with secondary validators (validation array)', () => {
-        let valuesProvided = {} as any;
-        let summaryStats = {} as any;
-
-        function makeSecondaryValidator(prop: string) {
-          return (value: any, summary: any) => {
-            summaryStats[prop] = summary;
-
-            valuesProvided[prop] = value;
-
-            return true;
-          };
-        }
-
         describe('should properly trigger secondary validators', () => {
+          let valuesProvided = {} as any;
+          let summaryStats = {} as any;
+
+          function makeSecondaryValidator(prop: string) {
+            return (value: any, summary: any) => {
+              summaryStats[prop] = summary;
+
+              valuesProvided[prop] = value;
+
+              return true;
+            };
+          }
+
+          afterEach(() => {
+            summaryStats = {};
+            valuesProvided = {};
+          });
+
           const Model = new Schema({
             dependent: {
               default: '',
@@ -769,6 +774,109 @@ export const Test_Validators = ({ Schema, fx }: any) => {
 
             expect(error).toBeNull();
             expect(valuesProvided).toEqual({ readonlyLax: true });
+          });
+
+          describe('should respect "shouldInit" & "shouldUpdate" rules', async () => {
+            let stats: any = {};
+
+            function makeSecondaryValidator(prop: string) {
+              return [
+                () => {
+                  if (!stats[prop]) stats[prop] = {};
+
+                  stats[prop].primary = true;
+
+                  return true;
+                },
+                () => {
+                  if (!stats[prop]) stats[prop] = {};
+
+                  stats[prop].secondary = true;
+
+                  return true;
+                }
+              ];
+            }
+
+            function resetStats() {
+              stats = {};
+            }
+
+            afterEach(resetStats);
+
+            it('should respect "shouldInit" rule', async () => {
+              const Model = new Schema({
+                lax: {
+                  default: '',
+                  shouldInit: false,
+                  validator: makeSecondaryValidator('lax')
+                },
+                dependent: {
+                  default: '',
+                  dependsOn: ['v1', 'v2'],
+                  resolver: () => ''
+                },
+                v1: {
+                  virtual: true,
+                  validator: makeSecondaryValidator('v1')
+                },
+                v2: {
+                  virtual: true,
+                  shouldInit: false,
+                  validator: makeSecondaryValidator('v2')
+                }
+              }).getModel();
+
+              await Model.create();
+              expect(stats).toEqual({});
+
+              await Model.create({ lax: true, v2: true });
+              expect(stats).toEqual({});
+
+              await Model.create({ lax: true, v1: true, v2: true });
+              expect(stats).toEqual({ v1: { primary: true, secondary: true } });
+            });
+
+            it('should respect "shouldUpdate" rule', async () => {
+              const Model = new Schema({
+                lax: {
+                  default: '',
+                  shouldUpdate: false,
+                  validator: makeSecondaryValidator('lax')
+                },
+                dependent: {
+                  default: '',
+                  dependsOn: ['v1', 'v2'],
+                  resolver: () => ''
+                },
+                v1: {
+                  virtual: true,
+                  validator: makeSecondaryValidator('v1')
+                },
+                v2: {
+                  virtual: true,
+                  shouldUpdate: false,
+                  validator: makeSecondaryValidator('v2')
+                }
+              }).getModel();
+
+              const data = { dependent: true, lax: true };
+
+              await Model.update(data, {});
+              expect(stats).toEqual({});
+
+              await Model.update(data, { lax: 1, v2: true });
+              expect(stats).toEqual({});
+
+              await Model.update(data, { v1: true });
+              expect(stats).toEqual({ v1: { primary: true, secondary: true } });
+
+              resetStats();
+
+              expect(stats).toEqual({});
+              await Model.update(data, { lax: true, v1: true, v2: true });
+              expect(stats).toEqual({ v1: { primary: true, secondary: true } });
+            });
           });
         });
 

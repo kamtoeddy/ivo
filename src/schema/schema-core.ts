@@ -298,17 +298,23 @@ export abstract class SchemaCore<
     return { valid: true };
   };
 
+  protected _isInitAllowed = (prop: string) => {
+    return isOneOf(this._getValueBy(prop, 'shouldInit'), [true, undefined]);
+  };
+
+  protected _isUpdateAllowed = (prop: string, extraCtx: ObjectType = {}) => {
+    return this._getValueBy(prop, 'shouldUpdate', extraCtx);
+  };
+
   protected _canInit = (prop: string) => {
     if (this._isDependentProp(prop)) return false;
     if (this._isRequired(prop)) return true;
 
     const { readonly } = this._getDefinition(prop);
 
-    const shouldInit = this._getValueBy(prop, 'shouldInit');
-
     return (
       readonly === true &&
-      isOneOf(shouldInit, [true, undefined]) &&
+      this._isInitAllowed(prop) &&
       !this._isRequiredBy(prop)
     );
   };
