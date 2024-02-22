@@ -298,12 +298,18 @@ export abstract class SchemaCore<
     return { valid: true };
   };
 
-  protected _isInitAllowed = (prop: string) => {
-    return isOneOf(this._getValueBy(prop, 'shouldInit'), [true, undefined]);
+  protected _isInitAllowed = (prop: string, extraCtx: ObjectType = {}) => {
+    const { shouldInit } = this._getDefinition(prop);
+    if (isOneOf(shouldInit, [true, undefined])) return true;
+
+    return this._getValueBy(prop, 'shouldInit', extraCtx) === true;
   };
 
   protected _isUpdateAllowed = (prop: string, extraCtx: ObjectType = {}) => {
-    return this._getValueBy(prop, 'shouldUpdate', extraCtx);
+    const { shouldUpdate } = this._getDefinition(prop);
+    if (isOneOf(shouldUpdate, [true, undefined])) return true;
+
+    return this._getValueBy(prop, 'shouldUpdate', extraCtx) === true;
   };
 
   protected _canInit = (prop: string) => {
@@ -542,7 +548,7 @@ export abstract class SchemaCore<
 
     return (
       isEqual(shouldInit, undefined) ||
-      this._getValueBy(definitionName, 'shouldInit', extraCtx)
+      this._isInitAllowed(definitionName, extraCtx)
     );
   };
 
