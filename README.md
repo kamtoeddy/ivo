@@ -45,12 +45,12 @@ const userSchema = new Schema<UserInput, User>(
     email: {
       default: null,
       required: isEmailOrPhoneRequired,
-      validator: validateUserEmail
+      validator: validateUserEmail,
     },
     phoneNumber: {
       default: null,
       required: isEmailOrPhoneRequired,
-      validator: validatePhoneNumber
+      validator: validatePhoneNumber,
     },
     username: {
       required: true,
@@ -61,7 +61,7 @@ const userSchema = new Schema<UserInput, User>(
           new Date().getTime() >= new Date(usernameUpdatableFrom).getTime()
         );
       },
-      validator: validateUsername
+      validator: validateUsername,
     },
     usernameUpdatableFrom: {
       default: null,
@@ -70,18 +70,17 @@ const userSchema = new Schema<UserInput, User>(
         if (!isUpdate) return null;
 
         const now = new Date();
-
         now.setDate(now.getDate() + 30);
 
         return now;
-      }
-    }
+      },
+    },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 function isEmailOrPhoneRequired({
-  context: { email, phoneNumber }
+  context: { email, phoneNumber },
 }: Summary<UserInput, User>) {
   return [!email && !phoneNumber, 'Provide "email" or "phone" number'] as const;
 }
@@ -98,7 +97,7 @@ const { data, error } = await UserModel.create({
   id: 5, // will be ignored because it is a constant property
   name: 'John Doe', // will be ignored because it is not on schema
   username: 'john_doe',
-  usernameUpdatableFrom: new Date() // will be ignored because it is a dependent property
+  usernameUpdatableFrom: new Date(), // will be ignored because it is a dependent property
 });
 
 if (error) return handleError(error);
@@ -129,14 +128,14 @@ const { data, error } = await UserModel.update(user, {
   usernameUpdatableFrom: new Date(), // dependent property -> will be ignored
   id: 75, // constant property -> will be ignored
   age: 34, // not on schema -> will be ignored
-  userame: 'johndoe'
+  username: 'johndoe',
 });
 
 if (error) return handleError(error);
 
 console.log(data);
 // {
-//   userame: 'johndoe',
+//   username: 'johndoe',
 //   usernameUpdatableFrom: Date, // value returned from resolver -> 30days from now
 //   updatedAt: new Date()
 // }
@@ -148,7 +147,7 @@ await userDb.updateById(user.id, data);
 // updating 'username' again will not work
 
 const { error } = await UserModel.update(user, {
-  userame: 'john-doe' // will be ignored because shouldUpdate rule will return false
+  username: 'john-doe', // will be ignored because shouldUpdate rule will return false
 });
 
 console.log(error);
