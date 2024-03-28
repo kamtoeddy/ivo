@@ -11,7 +11,7 @@ import {
   sort,
   sortKeys,
   toArray,
-  getUnique
+  getUnique,
 } from '../utils';
 import {
   DefaultErrorTool,
@@ -21,7 +21,7 @@ import {
   SchemaErrorTool,
   TimeStampTool,
   isInputFieldError,
-  makeFieldError
+  makeFieldError,
 } from './utils';
 import { ObjectType } from '../utils';
 import {
@@ -37,7 +37,7 @@ import {
   LIFE_CYCLES,
   PartialContext,
   PostValidationConfig,
-  PostValidationHandler
+  PostValidationHandler,
 } from './types';
 
 export const defaultOptions = {
@@ -46,7 +46,7 @@ export const defaultOptions = {
   errors: 'silent',
   setMissingDefaultsOnUpdate: false,
   shouldUpdate: true,
-  timestamps: false
+  timestamps: false,
 } as ns.Options<any, any, any>;
 
 type InvalidPostValidateConfigMessage =
@@ -56,7 +56,7 @@ type InvalidPostValidateConfigMessage =
 
 export function getInvalidPostValidateConfigMessage(
   index?: number,
-  message: InvalidPostValidateConfigMessage = 'default'
+  message: InvalidPostValidateConfigMessage = 'default',
 ) {
   const hasIndex = typeof index == 'number';
 
@@ -77,14 +77,14 @@ export function getInvalidPostValidateConfigMessage(
 
 export function getInvalidPostValidateConfigMessageForRepeatedProperties(
   index: number,
-  existingIndex: number
+  existingIndex: number,
 ) {
   return `Config at index ${index} has the same properties as config at index ${existingIndex}`;
 }
 
 export function getInvalidPostValidateConfigMessageForSubsetProperties(
   index: number,
-  parentIndex: number
+  parentIndex: number,
 ) {
   return `Properties of config at index ${index} is a subset of properties of config at index ${parentIndex}`;
 }
@@ -93,7 +93,7 @@ export abstract class SchemaCore<
   Input,
   Output,
   CtxOptions extends ObjectType,
-  ErrorTool extends IErrorTool<any>
+  ErrorTool extends IErrorTool<any>,
 > {
   protected _definitions = {} as ns.Definitions_<Input, Output>;
   protected _options: ns.InternalOptions<Input, Output, CtxOptions>;
@@ -159,8 +159,9 @@ export abstract class SchemaCore<
     options: ns.Options<Input, Output, any> = defaultOptions as ns.Options<
       Input,
       Output,
+      {},
       ErrorTool
-    >
+    >,
   ) {
     this._checkPropDefinitions(definitions);
     this._checkOptions(options);
@@ -179,7 +180,7 @@ export abstract class SchemaCore<
 
     return this._getFrozenCopy({
       ...sortKeys(values),
-      __getOptions__: () => this._getContextOptions()
+      __getOptions__: () => this._getContextOptions(),
     }) as Context<Input, Output, CtxOptions>;
   }
 
@@ -220,7 +221,7 @@ export abstract class SchemaCore<
     definitions,
     property,
     propertyB = property,
-    visitedNodes = []
+    visitedNodes = [],
   }: {
     definitions: ns.Definitions_<Input, Output>;
     property: KeyOf<Input>;
@@ -235,7 +236,7 @@ export abstract class SchemaCore<
     if (property != propertyB) visitedNodes.push(propertyB);
 
     const _dependsOn = toArray<KeyOf<Input>>(
-      definitions?.[propertyB]?.dependsOn ?? []
+      definitions?.[propertyB]?.dependsOn ?? [],
     );
 
     for (const _prop of _dependsOn)
@@ -247,8 +248,8 @@ export abstract class SchemaCore<
             definitions,
             property,
             propertyB: _prop,
-            visitedNodes
-          })
+            visitedNodes,
+          }),
         ];
 
     return sort(Array.from(new Set(circularDependencies)));
@@ -256,7 +257,7 @@ export abstract class SchemaCore<
 
   private _setDependencies = (
     prop: KeyOf<Input>,
-    dependsOn: KeyOf<Input> | KeyOf<Input>[]
+    dependsOn: KeyOf<Input> | KeyOf<Input>[],
   ) => {
     const _dependsOn = toArray(dependsOn) as KeyOf<Input>[];
 
@@ -268,7 +269,7 @@ export abstract class SchemaCore<
   private _areHandlersOk = (
     _handlers: any,
     lifeCycle: ns.LifeCycle,
-    global = false
+    global = false,
   ) => {
     const reasons: string[] = [];
 
@@ -277,19 +278,19 @@ export abstract class SchemaCore<
     handlers.forEach((handler, i) => {
       if (!isFunctionLike(handler))
         return reasons.push(
-          `The '${lifeCycle}' handler @[${i}] is not a function`
+          `The '${lifeCycle}' handler @[${i}] is not a function`,
         );
 
       if (!global) return;
 
       if (lifeCycle == 'onDelete')
         return this.globalDeleteHandlers.push(
-          handler as ns.DeleteHandler<Output, CtxOptions>
+          handler as ns.DeleteHandler<Output, CtxOptions>,
         );
 
       if (lifeCycle == 'onSuccess')
         return this.globalSuccessHandlers.push(
-          handler as ns.SuccessHandler<Input, Output>
+          handler as ns.SuccessHandler<Input, Output>,
         );
     });
 
@@ -354,7 +355,7 @@ export abstract class SchemaCore<
         error
           .add(
             'equalityDepth',
-            "'equalityDepth' must be a number between 0 and +Infinity"
+            "'equalityDepth' must be a number between 0 and +Infinity",
           )
           .throw();
     }
@@ -382,7 +383,7 @@ export abstract class SchemaCore<
         error
           .add(
             'setMissingDefaultsOnUpdate',
-            "'setMissingDefaultsOnUpdate' should be a 'boolean'"
+            "'setMissingDefaultsOnUpdate' should be a 'boolean'",
           )
           .throw();
     }
@@ -394,7 +395,7 @@ export abstract class SchemaCore<
         error
           .add(
             'shouldUpdate',
-            "'shouldUpdate' should either be a 'boolean' or a 'function'"
+            "'shouldUpdate' should either be a 'boolean' or a 'function'",
           )
           .throw();
     }
@@ -413,7 +414,7 @@ export abstract class SchemaCore<
   };
 
   protected _checkPropDefinitions = (
-    definitions: ns.Definitions_<Input, Output>
+    definitions: ns.Definitions_<Input, Output>,
   ) => {
     const error = new SchemaErrorTool();
 
@@ -437,7 +438,7 @@ export abstract class SchemaCore<
       if (!dependencies.length)
         error.add(
           prop,
-          'A virtual property must have at least one property that depends on it'
+          'A virtual property must have at least one property that depends on it',
         );
     }
 
@@ -465,7 +466,7 @@ export abstract class SchemaCore<
       // check against circular dependencies
       const circularRelationShips = this._getCircularDependenciesOf({
         definitions,
-        property: prop
+        property: prop,
       } as any);
 
       for (const _prop of circularRelationShips)
@@ -473,13 +474,13 @@ export abstract class SchemaCore<
 
       // check against dependencies on invalid properties
       const invalidProps = _dependsOn.filter(
-        (p) => !(this._isProp(p) || this._isVirtual(p))
+        (p) => !(this._isProp(p) || this._isVirtual(p)),
       );
 
       for (const _prop of invalidProps)
         error.add(
           prop,
-          `Cannot establish dependency with '${_prop}' as it is neither a property nor a virtual of your model`
+          `Cannot establish dependency with '${_prop}' as it is neither a property nor a virtual of your model`,
         );
     }
 
@@ -522,7 +523,7 @@ export abstract class SchemaCore<
 
   protected _isRuleInDefinition = (
     prop: string,
-    rules: DefinitionRule | DefinitionRule[]
+    rules: DefinitionRule | DefinitionRule[],
   ): boolean => {
     for (const _prop of toArray(rules))
       if (isPropertyOf(_prop, this._getDefinition(prop))) return true;
@@ -584,7 +585,7 @@ export abstract class SchemaCore<
 
   protected _getRequiredState = async (
     prop: string,
-    summary: Summary<Input, Output>
+    summary: Summary<Input, Output>,
   ): Promise<[boolean, string | FieldError]> => {
     const { required } = this._getDefinition(prop);
 
@@ -604,7 +605,7 @@ export abstract class SchemaCore<
 
     const [isRequired, message] = results as [
         boolean,
-        string | InputFieldError
+        string | InputFieldError,
       ],
       isString = typeof message == 'string';
 
@@ -619,14 +620,14 @@ export abstract class SchemaCore<
       true,
       isPropertyOf('metadata', message)
         ? fieldError
-        : ({ reasons: fieldError.reasons } as any)
+        : ({ reasons: fieldError.reasons } as any),
     ];
   };
 
   protected _getValueBy = (
     prop: string,
     rule: DefinitionRule,
-    extraCtx: ObjectType = {}
+    extraCtx: ObjectType = {},
   ) => {
     const value = this._getDefinition(prop)?.[rule];
 
@@ -637,7 +638,7 @@ export abstract class SchemaCore<
 
   private _isValidatorOk = (
     prop: string,
-    definition: ns.Definitions_<Input, Output>[KeyOf<Input>]
+    definition: ns.Definitions_<Input, Output>[KeyOf<Input>],
   ) => {
     const { validator } = definition!,
       valid = false;
@@ -646,7 +647,7 @@ export abstract class SchemaCore<
       if (validator.length != 2)
         return {
           valid,
-          reason: 'Validator array must contain exactly 2 functions'
+          reason: 'Validator array must contain exactly 2 functions',
         };
 
       const isPrimaryOk = isFunctionLike(validator[0]),
@@ -672,7 +673,7 @@ export abstract class SchemaCore<
 
   private __hasAllowedValues = (
     definition: ns.Definitions_<Input, Output>[KeyOf<Input>],
-    isRecursion = false
+    isRecursion = false,
   ): { valid: boolean; reason?: string } => {
     const { allow } = definition!,
       valid = false,
@@ -698,7 +699,7 @@ export abstract class SchemaCore<
         )
           return {
             valid,
-            reason: invalidErrorTypeMessage
+            reason: invalidErrorTypeMessage,
           };
       }
 
@@ -706,7 +707,7 @@ export abstract class SchemaCore<
         return {
           valid,
           reason:
-            'The "allow" rule only accepts "error" & "values" as configuration. Please remove the extra keys'
+            'The "allow" rule only accepts "error" & "values" as configuration. Please remove the extra keys',
         };
 
       return { valid: true };
@@ -717,19 +718,19 @@ export abstract class SchemaCore<
     if (!Array.isArray(allowedValues))
       return {
         reason: 'Allowed values must be an array',
-        valid
+        valid,
       };
 
     if (getUnique(allowedValues).length != allowedValues.length)
       return {
         reason: 'Allowed values must be an array of unique values',
-        valid
+        valid,
       };
 
     if (allowedValues.length < 2)
       return {
         reason: 'Allowed values must have at least 2 values',
-        valid
+        valid,
       };
 
     if (
@@ -738,14 +739,14 @@ export abstract class SchemaCore<
     )
       return {
         reason: 'The default value must be an allowed value',
-        valid
+        valid,
       };
 
     return { valid: true };
   };
 
   private __isConstantProp = (
-    definition: ns.Definitions_<Input, Output>[KeyOf<Input>]
+    definition: ns.Definitions_<Input, Output>[KeyOf<Input>],
   ) => {
     const { constant, value } = definition!;
 
@@ -754,30 +755,30 @@ export abstract class SchemaCore<
     if (constant !== true)
       return {
         valid,
-        reason: "Constant properties must have constant as 'true'"
+        reason: "Constant properties must have constant as 'true'",
       };
 
     if (!isPropertyOf('value', definition))
       return {
         valid,
-        reason: 'Constant properties must have a value or setter'
+        reason: 'Constant properties must have a value or setter',
       };
 
     if (isEqual(value, undefined))
       return {
         valid,
-        reason: "Constant properties cannot have 'undefined' as value"
+        reason: "Constant properties cannot have 'undefined' as value",
       };
 
     const unAcceptedRules = DEFINITION_RULES.filter(
-      (rule) => !CONSTANT_RULES.includes(rule)
+      (rule) => !CONSTANT_RULES.includes(rule),
     );
 
     if (hasAnyOf(definition, unAcceptedRules))
       return {
         valid,
         reason:
-          "Constant properties can only have ('constant' & 'value') or 'onDelete' | 'onSuccess'"
+          "Constant properties can only have ('constant' & 'value') or 'onDelete' | 'onSuccess'",
       };
 
     return { valid: true };
@@ -785,14 +786,14 @@ export abstract class SchemaCore<
 
   private __isDependentProp = (
     prop: KeyOf<Input>,
-    definition: ns.Definitions_<Input, Output>[KeyOf<Input>]
+    definition: ns.Definitions_<Input, Output>[KeyOf<Input>],
   ) => {
     const {
       default: _default,
       dependsOn,
       shouldInit,
       readonly,
-      resolver
+      resolver,
     } = definition!;
 
     const valid = false;
@@ -800,13 +801,13 @@ export abstract class SchemaCore<
     if (isEqual(_default, undefined))
       return {
         valid,
-        reason: 'Dependent properties must have a default value'
+        reason: 'Dependent properties must have a default value',
       };
 
     if (isEqual(dependsOn, undefined) || !dependsOn?.length)
       return {
         valid,
-        reason: 'Dependent properties must depend on at least one property'
+        reason: 'Dependent properties must depend on at least one property',
       };
 
     if (toArray(dependsOn).includes(prop as KeyOf<Input>))
@@ -815,25 +816,25 @@ export abstract class SchemaCore<
     if (isEqual(resolver, undefined))
       return {
         valid,
-        reason: 'Dependent properties must have a resolver'
+        reason: 'Dependent properties must have a resolver',
       };
 
     if (!isFunctionLike(resolver))
       return {
         valid,
-        reason: 'The resolver of a dependent property must be a function'
+        reason: 'The resolver of a dependent property must be a function',
       };
 
     if (isPropertyOf('validator', definition))
       return {
         valid,
-        reason: 'Dependent properties cannot be validated'
+        reason: 'Dependent properties cannot be validated',
       };
 
     if (isPropertyOf('required', definition))
       return {
         valid,
-        reason: 'Dependent properties cannot be required'
+        reason: 'Dependent properties cannot be required',
       };
 
     if (readonly === 'lax')
@@ -842,7 +843,7 @@ export abstract class SchemaCore<
     if (!isEqual(shouldInit, undefined))
       return {
         valid,
-        reason: 'Dependent properties cannot have shouldInit rule'
+        reason: 'Dependent properties cannot have shouldInit rule',
       };
 
     if (isPropertyOf('virtual', definition))
@@ -853,22 +854,22 @@ export abstract class SchemaCore<
 
   private __isPropDefinitionOk = (
     prop: KeyOf<Input>,
-    definition: ns.Definitions_<Input, Output>[KeyOf<Input>]
+    definition: ns.Definitions_<Input, Output>[KeyOf<Input>],
   ) => {
     const propertyTypeProvided = typeof definition;
 
     if (!isRecordLike(definition))
       return {
         reasons: [
-          `Invalid property definition. Expected an object '{}' but received '${propertyTypeProvided}'`
+          `Invalid property definition. Expected an object '{}' but received '${propertyTypeProvided}'`,
         ],
-        valid: false
+        valid: false,
       };
 
     let reasons: string[] = [];
 
     const invalidRulesProvided = getKeysAsProps(definition).filter(
-      (r) => !DEFINITION_RULES.includes(r as DefinitionRule)
+      (r) => !DEFINITION_RULES.includes(r as DefinitionRule),
     );
 
     if (invalidRulesProvided.length)
@@ -963,7 +964,7 @@ export abstract class SchemaCore<
       !isPropertyOf('validator', definition)
     )
       reasons.push(
-        "'onFailure' can only be used with properties that support and have validators"
+        "'onFailure' can only be used with properties that support and have validators",
       );
 
     // onDelete, onFailure, & onSuccess
@@ -990,7 +991,7 @@ export abstract class SchemaCore<
       !reasons.length
     ) {
       reasons.push(
-        'A property should at least be readonly, required, or have a default value'
+        'A property should at least be readonly, required, or have a default value',
       );
     }
 
@@ -1007,14 +1008,14 @@ export abstract class SchemaCore<
   };
 
   private __isReadonly = (
-    definition: ns.Definitions_<Input, Output>[KeyOf<Input>]
+    definition: ns.Definitions_<Input, Output>[KeyOf<Input>],
   ) => {
     const {
       default: _default,
       readonly,
       required,
       shouldInit,
-      shouldUpdate
+      shouldUpdate,
     } = definition!;
 
     const valid = false;
@@ -1022,14 +1023,14 @@ export abstract class SchemaCore<
     if (!isOneOf(readonly, [true, 'lax'] as any))
       return {
         reason: "Readonly properties are either true | 'lax'",
-        valid
+        valid,
       };
 
     if (isPropertyOf('required', definition) && typeof required != 'function')
       return {
         valid,
         reason:
-          'Strictly readonly properties are required. Either use a callable required + readonly(true) or remove the required rule'
+          'Strictly readonly properties are required. Either use a callable required + readonly(true) or remove the required rule',
       };
 
     const hasDependentRule = isPropertyOf('dependsOn', definition);
@@ -1044,33 +1045,33 @@ export abstract class SchemaCore<
       return {
         valid,
         reason:
-          'readonly properties must have a default value or a default setter'
+          'readonly properties must have a default value or a default setter',
       };
 
     if (readonly === 'lax' && !isEqual(shouldInit, undefined))
       return {
         valid,
-        reason: 'Lax properties cannot have initialization blocked'
+        reason: 'Lax properties cannot have initialization blocked',
       };
 
     if (readonly === 'lax' && isEqual(shouldUpdate, false))
       return {
         valid,
-        reason: 'Readonly(lax) properties cannot have updates strictly blocked'
+        reason: 'Readonly(lax) properties cannot have updates strictly blocked',
       };
 
     return { valid: true };
   };
 
   private __isRequiredCommon = (
-    definition: ns.Definitions_<Input, Output>[KeyOf<Input>]
+    definition: ns.Definitions_<Input, Output>[KeyOf<Input>],
   ) => {
     const valid = false;
 
     if (isPropertyOf('dependsOn', definition))
       return {
         valid,
-        reason: 'Required properties cannot be dependent'
+        reason: 'Required properties cannot be dependent',
       };
 
     if (
@@ -1083,34 +1084,34 @@ export abstract class SchemaCore<
   };
 
   private __isRequired = (
-    definition: ns.Definitions_<Input, Output>[KeyOf<Input>]
+    definition: ns.Definitions_<Input, Output>[KeyOf<Input>],
   ) => {
     const valid = false;
 
     if (definition?.required !== true)
       return {
         valid,
-        reason: "Required properties must have required as 'true'"
+        reason: "Required properties must have required as 'true'",
       };
 
     if (isPropertyOf('default', definition))
       return {
         valid,
         reason:
-          'Strictly required properties cannot have a default value or setter'
+          'Strictly required properties cannot have a default value or setter',
       };
 
     if (isPropertyOf('readonly', definition))
       return {
         valid,
-        reason: 'Strictly required properties cannot be readonly'
+        reason: 'Strictly required properties cannot be readonly',
       };
 
     if (isPropertyOf('shouldInit', definition))
       return {
         valid,
         reason:
-          'Strictly Required properties cannot have a initialization blocked'
+          'Strictly Required properties cannot have a initialization blocked',
       };
 
     const isRequiredCommon = this.__isRequiredCommon(definition);
@@ -1121,7 +1122,7 @@ export abstract class SchemaCore<
   };
 
   private __isRequiredBy = (
-    definition: ns.Definitions_<Input, Output>[KeyOf<Input>]
+    definition: ns.Definitions_<Input, Output>[KeyOf<Input>],
   ) => {
     const valid = false;
 
@@ -1130,14 +1131,14 @@ export abstract class SchemaCore<
     if (requiredType !== 'function')
       return {
         valid,
-        reason: 'Callable required properties must have required as a function'
+        reason: 'Callable required properties must have required as a function',
       };
 
     if (isPropertyOf('allow', definition))
       return {
         valid,
         reason:
-          '"allow" rule is cannot be applied to conditionally required properties'
+          '"allow" rule is cannot be applied to conditionally required properties',
       };
 
     const hasVirtualRule = isPropertyOf('virtual', definition);
@@ -1146,7 +1147,7 @@ export abstract class SchemaCore<
       return {
         valid,
         reason:
-          'Callable required properties must have a default value or setter'
+          'Callable required properties must have a default value or setter',
       };
 
     if (!hasVirtualRule) {
@@ -1159,7 +1160,7 @@ export abstract class SchemaCore<
   };
 
   private __isShouldInitConfigOk = (
-    definition: ns.Definitions_<Input, Output>[KeyOf<Input>]
+    definition: ns.Definitions_<Input, Output>[KeyOf<Input>],
   ) => {
     const { shouldInit } = definition!;
 
@@ -1169,21 +1170,21 @@ export abstract class SchemaCore<
       return {
         valid,
         reason:
-          "The initialization of a property can only be blocked if the 'shouldinit' rule is set to 'false' or a function that returns a boolean"
+          "The initialization of a property can only be blocked if the 'shouldinit' rule is set to 'false' or a function that returns a boolean",
       };
 
     if (!hasAnyOf(definition, ['default', 'virtual']))
       return {
         valid,
         reason:
-          'A property with initialization blocked must have a default value'
+          'A property with initialization blocked must have a default value',
       };
 
     return { valid: true };
   };
 
   private __isShouldUpdateConfigOk = (
-    definition: ns.Definitions_<Input, Output>[KeyOf<Input>]
+    definition: ns.Definitions_<Input, Output>[KeyOf<Input>],
   ) => {
     const { readonly, shouldInit, shouldUpdate } = definition!;
     const valid = false;
@@ -1192,32 +1193,32 @@ export abstract class SchemaCore<
       return {
         valid,
         reason:
-          "'shouldUpdate' only accepts false or a function that returns a boolean"
+          "'shouldUpdate' only accepts false or a function that returns a boolean",
       };
 
     if (shouldInit === false && shouldUpdate === false)
       return {
         valid,
-        reason: "Both 'shouldInit' & 'shouldUpdate' cannot be 'false'"
+        reason: "Both 'shouldInit' & 'shouldUpdate' cannot be 'false'",
       };
 
     if (readonly === true && isEqual(shouldInit, undefined))
       return {
         valid,
         reason:
-          "Cannot block the update of 'readonly' properties that do not have initialization('shouldInit') blocked. Either add 'shouldInit' or use readonly: 'lax'"
+          "Cannot block the update of 'readonly' properties that do not have initialization('shouldInit') blocked. Either add 'shouldInit' or use readonly: 'lax'",
       };
 
     return { valid: true };
   };
 
   private __isVirtualRequiredBy = (
-    definition: ns.Definitions_<Input, Output>[KeyOf<Input>]
+    definition: ns.Definitions_<Input, Output>[KeyOf<Input>],
   ) => {
     if (isPropertyOf('shouldInit', definition))
       return {
         valid: false,
-        reason: 'Required virtuals cannot have initialization blocked'
+        reason: 'Required virtuals cannot have initialization blocked',
       };
 
     const isRequiredBy = this.__isRequiredBy(definition);
@@ -1229,7 +1230,7 @@ export abstract class SchemaCore<
 
   private __isVirtual = (
     prop: string,
-    definition: ns.Definitions_<Input, Output>[KeyOf<Input>]
+    definition: ns.Definitions_<Input, Output>[KeyOf<Input>],
   ) => {
     const valid = false;
 
@@ -1252,15 +1253,15 @@ export abstract class SchemaCore<
     }
 
     const invalidVirtualRules = DEFINITION_RULES.filter(
-      (rule) => !VIRTUAL_RULES.includes(rule)
+      (rule) => !VIRTUAL_RULES.includes(rule),
     );
 
     if (hasAnyOf(definition, invalidVirtualRules))
       return {
         valid,
         reason: `Virtual properties can only have (${VIRTUAL_RULES.join(
-          ', '
-        )}) as rules`
+          ', ',
+        )}) as rules`,
       };
 
     return { valid: true };
@@ -1268,7 +1269,7 @@ export abstract class SchemaCore<
 
   private __isVirtualAliasOk = (
     prop: KeyOf<Input>,
-    definition: ns.Definitions_<Input, Output>[KeyOf<Input>]
+    definition: ns.Definitions_<Input, Output>[KeyOf<Input>],
   ) => {
     const valid = false;
 
@@ -1277,26 +1278,26 @@ export abstract class SchemaCore<
     if (!isPropertyOf('virtual', definition))
       return {
         valid,
-        reason: 'Only virtual properties can have aliases'
+        reason: 'Only virtual properties can have aliases',
       };
 
     if (typeof alias !== 'string' || !alias.length)
       return {
         valid,
-        reason: 'An alias must be a string with at least 1 character'
+        reason: 'An alias must be a string with at least 1 character',
       };
 
     if (alias == prop)
       return {
         valid,
-        reason: 'An alias cannot be the same as the virtual property'
+        reason: 'An alias cannot be the same as the virtual property',
       };
 
     const isTakenBy = this._getVirtualByAlias(alias);
     if (isTakenBy)
       return {
         valid,
-        reason: `Sorry, alias provided '${alias}' already belongs to property '${isTakenBy}'`
+        reason: `Sorry, alias provided '${alias}' already belongs to property '${isTakenBy}'`,
       };
 
     return { valid: true };
@@ -1307,7 +1308,7 @@ export abstract class SchemaCore<
 
     const invalidResponse = {
       valid: false,
-      reason: `'${alias}' cannot be used as the alias of '${prop}' because it is the name of an existing property on your schema. To use an alias that matches another property on your schema, this property must be dependent on the said virtual property`
+      reason: `'${alias}' cannot be used as the alias of '${prop}' because it is the name of an existing property on your schema. To use an alias that matches another property on your schema, this property must be dependent on the said virtual property`,
     } as any;
 
     const isDependentOnVirtual = (
@@ -1321,7 +1322,7 @@ export abstract class SchemaCore<
   };
 
   private __isLax = (
-    definition: ns.Definitions_<Input, Output>[KeyOf<Input>]
+    definition: ns.Definitions_<Input, Output>[KeyOf<Input>],
   ) => {
     const { readonly, shouldInit } = definition!;
 
@@ -1360,7 +1361,7 @@ export abstract class SchemaCore<
     )
       return {
         valid,
-        reason: getInvalidPostValidateConfigMessage(index)
+        reason: getInvalidPostValidateConfigMessage(index),
       };
 
     if (!Array.isArray(value.properties))
@@ -1368,8 +1369,8 @@ export abstract class SchemaCore<
         valid,
         reason: getInvalidPostValidateConfigMessage(
           index,
-          'properties-must-be-input-array'
-        )
+          'properties-must-be-input-array',
+        ),
       };
 
     const properties = getUnique(value.properties).filter(this._isInputProp);
@@ -1379,8 +1380,8 @@ export abstract class SchemaCore<
         valid,
         reason: getInvalidPostValidateConfigMessage(
           index,
-          'properties-must-be-input-array'
-        )
+          'properties-must-be-input-array',
+        ),
       };
 
     if (!isFunctionLike(value.handler))
@@ -1388,8 +1389,8 @@ export abstract class SchemaCore<
         valid,
         reason: getInvalidPostValidateConfigMessage(
           index,
-          'handler-must-be-function'
-        )
+          'handler-must-be-function',
+        ),
       };
 
     return { valid: true };
@@ -1397,7 +1398,7 @@ export abstract class SchemaCore<
 
   private _registerPostValidator(
     { properties, handler }: PostValidationConfig<Input, Output, any, {}>,
-    index: number
+    index: number,
   ) {
     const sortedProps = sort(properties),
       sortedPropsId = sortedProps.toString();
@@ -1407,8 +1408,8 @@ export abstract class SchemaCore<
         valid: false,
         reason: getInvalidPostValidateConfigMessageForRepeatedProperties(
           index,
-          this.postValidatorPropsToValidatorIndexMap.get(sortedPropsId)!
-        )
+          this.postValidatorPropsToValidatorIndexMap.get(sortedPropsId)!,
+        ),
       };
 
     sortedProps.forEach((prop) => {
@@ -1427,7 +1428,7 @@ export abstract class SchemaCore<
   }
 
   private _isPostValidateOptionOk(
-    postValidateOption: ns.Options<Input, Output, any>['postValidate']
+    postValidateOption: ns.Options<Input, Output, any>['postValidate'],
   ) {
     const valid = false;
 
@@ -1439,7 +1440,7 @@ export abstract class SchemaCore<
     )
       return {
         valid,
-        reason: getInvalidPostValidateConfigMessage()
+        reason: getInvalidPostValidateConfigMessage(),
       };
 
     if (isObject) {
@@ -1476,7 +1477,7 @@ export abstract class SchemaCore<
 
         if (props.every((p) => properties.includes(p)))
           return reasons.push(
-            getInvalidPostValidateConfigMessageForSubsetProperties(i, i2)
+            getInvalidPostValidateConfigMessageForSubsetProperties(i, i2),
           );
       });
     });
@@ -1485,7 +1486,7 @@ export abstract class SchemaCore<
   }
 
   private _isTimestampsOptionOk(
-    timestamps: ns.Options<Input, Output, any>['timestamps']
+    timestamps: ns.Options<Input, Output, any>['timestamps'],
   ) {
     const valid = false;
 
@@ -1496,7 +1497,7 @@ export abstract class SchemaCore<
     if (!isRecordLike(timestamps))
       return {
         valid,
-        reason: "should be 'boolean' or 'non null object'"
+        reason: "should be 'boolean' or 'non null object'",
       };
 
     if (!Object.keys(timestamps!).length)

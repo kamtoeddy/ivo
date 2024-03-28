@@ -10,7 +10,7 @@ import {
   FieldKey,
   getSetValuesAsProps,
   ObjectType,
-  isFunctionLike
+  isFunctionLike,
 } from '../utils';
 import {
   Context,
@@ -22,7 +22,7 @@ import {
   Summary,
   InvalidValidatorResponse,
   ValidatorResponseObject,
-  Validator
+  Validator,
 } from './types';
 import {
   VALIDATION_ERRORS,
@@ -30,7 +30,7 @@ import {
   IErrorTool,
   makeFieldError,
   isInputFieldError,
-  InputFieldError
+  InputFieldError,
 } from './utils';
 import { defaultOptions, SchemaCore } from './schema-core';
 
@@ -38,7 +38,7 @@ export { Model, ModelTool, Schema };
 
 type DefaultExtendedErrorTool<
   ParentErrorTool,
-  Keys extends FieldKey
+  Keys extends FieldKey,
 > = ParentErrorTool extends DefaultErrorTool<any>
   ? DefaultErrorTool<Keys>
   : ParentErrorTool;
@@ -51,7 +51,7 @@ class Schema<
   Output extends RealType<Output> = Input,
   Aliases = {},
   CtxOptions extends ObjectType = {},
-  ErrorTool extends IErrorTool<any> = DefaultErrorTool<KeyOf<Input & Aliases>>
+  ErrorTool extends IErrorTool<any> = DefaultErrorTool<KeyOf<Input & Aliases>>,
 > extends SchemaCore<Input, Output, CtxOptions, ErrorTool> {
   constructor(
     definitions: NS.Definitions<Input, Output, Aliases, CtxOptions>,
@@ -61,7 +61,7 @@ class Schema<
       Aliases,
       ErrorTool,
       CtxOptions
-    > = defaultOptions
+    > = defaultOptions,
   ) {
     super(definitions as any as NS.Definitions_<Input, Output>, options as any);
   }
@@ -77,7 +77,7 @@ class Schema<
   get reservedKeys() {
     const props = [
       ...this.props.values(),
-      ...this.virtuals.values()
+      ...this.virtuals.values(),
     ] as string[];
 
     const { createdAt, updatedAt } = this.timestampTool.getKeys();
@@ -96,7 +96,7 @@ class Schema<
     ExtendedErrorTool extends IErrorTool<any> = DefaultExtendedErrorTool<
       ErrorTool,
       KeyOf<ExtendedInput & Aliases>
-    >
+    >,
   >(
     definitions: NS.Definitions<
       ExtendedInput,
@@ -112,7 +112,7 @@ class Schema<
       Aliases,
       ExtendedErrorTool,
       ExtendedCtxOptions
-    > = {}
+    > = {},
   ) {
     const { remove = [], useParentOptions = true, ...rest } = options;
 
@@ -124,7 +124,7 @@ class Schema<
     >;
 
     toArray(remove ?? [])?.forEach(
-      (prop) => delete (_definitions as any)?.[prop]
+      (prop) => delete (_definitions as any)?.[prop],
     );
 
     const options_ = {} as NS.Options<
@@ -138,7 +138,7 @@ class Schema<
     if (useParentOptions)
       getKeysAsProps(this.options)
         .filter(
-          (prop) => ![...LIFE_CYCLES, 'shouldUpdate'].includes(prop as any)
+          (prop) => ![...LIFE_CYCLES, 'shouldUpdate'].includes(prop as any),
         )
         .forEach((prop) => {
           options_[prop] = this.options[prop] as any;
@@ -155,17 +155,17 @@ class Schema<
 
   getModel() {
     return new Model(
-      new ModelTool<Input, Output, Aliases, CtxOptions, ErrorTool>(this)
+      new ModelTool<Input, Output, Aliases, CtxOptions, ErrorTool>(this),
     );
   }
 }
 
 class ModelTool<
   Input extends RealType<Input>,
-  Output extends RealType<Output> = Input,
+  Output extends RealType<Output>,
   Aliases = {},
   CtxOptions extends ObjectType = {},
-  ErrorTool extends IErrorTool<any> = DefaultErrorTool<KeyOf<Input & Aliases>>
+  ErrorTool extends IErrorTool<any> = DefaultErrorTool<KeyOf<Input & Aliases>>,
 > extends SchemaCore<Input, Output, CtxOptions, ErrorTool> {
   private _regeneratedProps: KeyOf<Output>[] = [];
   private inputValues: Partial<RealType<Input>> = {};
@@ -214,7 +214,7 @@ class ModelTool<
         this._updatePartialContext(validCtxUpdate);
 
         return this._updateContext(validCtxUpdate);
-      })
+      }),
     );
 
     return data;
@@ -227,7 +227,7 @@ class ModelTool<
       values = this._getFrozenCopy(
         isUpdate
           ? { ...previousValues, ...this.values, ...data }
-          : { ...this.defaults, ...data }
+          : { ...this.defaults, ...data },
       );
 
     return this._getFrozenCopy({
@@ -236,7 +236,7 @@ class ModelTool<
       inputValues: this.inputValues,
       isUpdate,
       previousValues,
-      values
+      values,
     }) as Summary<Input, Output, CtxOptions>;
   }
 
@@ -244,7 +244,7 @@ class ModelTool<
     this._getSummary(this.values, isUpdate);
 
   private _getPrimaryValidator = <K extends keyof (Output | Input)>(
-    prop: string
+    prop: string,
   ) => {
     const { validator } = this._getDefinition(prop as any);
 
@@ -254,7 +254,7 @@ class ModelTool<
   };
 
   private _getSecondaryValidator = <K extends keyof (Output | Input)>(
-    prop: string
+    prop: string,
   ) => {
     const { validator } = this._getDefinition(prop as any);
 
@@ -294,7 +294,7 @@ class ModelTool<
   private async _handleError(
     errorTool: ErrorTool,
     data?: Partial<Output>,
-    virtuals: KeyOf<Output>[] = []
+    virtuals: KeyOf<Output>[] = [],
   ) {
     if (data) await this._handleFailure(data, errorTool, virtuals);
 
@@ -303,14 +303,14 @@ class ModelTool<
     return {
       data: null,
       error: errorTool.data as ErrorTool['data'],
-      handleSuccess: null
+      handleSuccess: null,
     };
   }
 
   private async _handleFailure(
     data: Partial<Output>,
     errorTool: ErrorTool,
-    virtuals: KeyOf<Output>[] = []
+    virtuals: KeyOf<Output>[] = [],
   ) {
     let props = [...getKeysAsProps(data), ...errorTool.fields, ...virtuals];
 
@@ -321,7 +321,7 @@ class ModelTool<
     const cleanups = props.map(async (prop) => {
       const handlers = this._getHandlers<NS.FailureHandler<Input, Output>>(
         prop,
-        'onFailure'
+        'onFailure',
       );
 
       const _cleanups = handlers.map(async (handler) => await handler(ctx));
@@ -335,7 +335,7 @@ class ModelTool<
   private async _handleInvalidValue(
     errorTool: ErrorTool,
     prop: KeyOf<Input & Output & Aliases>,
-    validationResponse: InvalidValidatorResponse
+    validationResponse: InvalidValidatorResponse,
   ) {
     const { reason, metadata, value } = validationResponse;
 
@@ -349,7 +349,7 @@ class ModelTool<
 
     const fieldError = makeFieldError(
       // @ts-ignore
-      reason?.length ? reason : 'validation failed'
+      reason?.length ? reason : 'validation failed',
     );
 
     if (metadata) fieldError.metadata = metadata;
@@ -359,24 +359,24 @@ class ModelTool<
 
   private async _handleCreationPrimaryValidations(
     data: Partial<Output>,
-    input: any
+    input: any,
   ) {
     const error = new this._options.ErrorTool(
       VALIDATION_ERRORS.VALIDATION_ERROR,
-      this.contextOptions
+      this.contextOptions,
     );
 
     const virtuals = getKeysAsProps<Partial<Output>>(input).filter((prop) =>
-      this._isVirtualInit(prop, input[prop as unknown as KeyOf<Input>])
+      this._isVirtualInit(prop, input[prop as unknown as KeyOf<Input>]),
     );
 
     const props = Array.from(
       new Set([
         ...getSetValuesAsProps(this.props).filter(
-          (prop) => !this._isConstant(prop)
+          (prop) => !this._isConstant(prop),
         ),
-        ...virtuals
-      ])
+        ...virtuals,
+      ]),
     );
 
     const validations = props.map(async (prop) => {
@@ -403,7 +403,7 @@ class ModelTool<
           data,
           error,
           prop,
-          input[prop as unknown as KeyOf<Input>]
+          input[prop as unknown as KeyOf<Input>],
         );
 
       const isProvided = isPropertyOf(prop, this.values),
@@ -437,18 +437,18 @@ class ModelTool<
   }
 
   private async _handleUpdatePrimaryValidations(
-    changes: Partial<Input & Aliases>
+    changes: Partial<Input & Aliases>,
   ) {
     const error = new this._options.ErrorTool(
       VALIDATION_ERRORS.VALIDATION_ERROR,
-      this.contextOptions
+      this.contextOptions,
     );
 
     const updates = {} as Partial<Output>;
     const virtuals: KeyOf<Output>[] = [];
 
     const toUpdate = Array.from(
-      new Set(getKeysAsProps<Output & Aliases>(changes as any))
+      new Set(getKeysAsProps<Output & Aliases>(changes as any)),
     ).filter((prop) => this._isUpdatable(prop, (changes as any)[prop]));
 
     const validations = toUpdate.map(async (prop) => {
@@ -457,7 +457,7 @@ class ModelTool<
       const isValid = (await this._validate(
         prop as any,
         value,
-        this._getValidationSummary(true)
+        this._getValidationSummary(true),
       )) as InternalValidatorResponse<Output[KeyOf<Output>]>;
 
       if (!isValid.valid) return this._handleInvalidValue(error, prop, isValid);
@@ -493,14 +493,14 @@ class ModelTool<
 
   private async _handleSecondaryValidations(
     data: Partial<Output>,
-    isUpdate = false
+    isUpdate = false,
   ) {
     const summary = this._getSummary(data, isUpdate),
       context = summary.context;
 
     const error = new this._options.ErrorTool(
       VALIDATION_ERRORS.VALIDATION_ERROR,
-      context.__getOptions__()
+      context.__getOptions__(),
     );
 
     const props: [KeyOf<Output>, string | undefined][] = [];
@@ -540,12 +540,12 @@ class ModelTool<
       try {
         isValid = this._sanitizeValidationResponse<any>(
           (await validator(value, summary)) as ValidatorResponseObject<any>,
-          value
+          value,
         );
       } catch (_) {
         isValid = makeResponse<any>({
           valid: false,
-          reason: 'validation failed'
+          reason: 'validation failed',
         });
       }
 
@@ -577,14 +577,14 @@ class ModelTool<
 
   private async _handlePostValidations(
     data: Partial<Output>,
-    isUpdate = false
+    isUpdate = false,
   ) {
     const summary = this._getSummary(data, isUpdate),
       context = summary.context;
 
     const errorTool = new this._options.ErrorTool(
       VALIDATION_ERRORS.VALIDATION_ERROR,
-      context.__getOptions__()
+      context.__getOptions__(),
     );
 
     const handlerIds = new Set<number>(),
@@ -592,7 +592,7 @@ class ModelTool<
 
     for (const [
       prop,
-      handlerSetId
+      handlerSetId,
     ] of this.propsToPostValidatorIndicesMap.entries()) {
       const isVirtual = this._isVirtual(prop);
 
@@ -619,7 +619,7 @@ class ModelTool<
 
     const handlers = Array.from(handlerIds).map((id) => ({
       id,
-      handler: this.postValidatorToHandlerMap.get(id)!
+      handler: this.postValidatorToHandlerMap.get(id)!,
     }));
 
     await Promise.allSettled(
@@ -635,7 +635,7 @@ class ModelTool<
           if (!isRecordLike(res)) return;
 
           for (const [prop, error] of Object.entries(
-            this._handleObjectValidationResponse(res)
+            this._handleObjectValidationResponse(res),
           ))
             errorTool.add(prop, makeFieldError(error));
         } catch (_) {
@@ -652,7 +652,7 @@ class ModelTool<
               errorTool.add(errorField, validationFailedFieldError);
           }
         }
-      })
+      }),
     );
 
     return errorTool;
@@ -664,7 +664,7 @@ class ModelTool<
 
     const errorTool = new this._options.ErrorTool(
       VALIDATION_ERRORS.VALIDATION_ERROR,
-      context.__getOptions__()
+      context.__getOptions__(),
     );
 
     await Promise.allSettled(
@@ -674,7 +674,7 @@ class ModelTool<
         if (isUpdate && this._isReadonly(prop)) {
           isUpdatable = this._isUpdatable(
             prop,
-            (summary.inputValues as any)?.[prop]
+            (summary.inputValues as any)?.[prop],
           );
 
           if (!isUpdatable) return;
@@ -682,7 +682,7 @@ class ModelTool<
 
         const [isRequired, message] = await this._getRequiredState(
           prop,
-          summary
+          summary,
         );
 
         if (
@@ -709,7 +709,7 @@ class ModelTool<
             : message;
 
         errorTool.add(alias as any, makeFieldError(_message), value);
-      })
+      }),
     );
 
     return errorTool;
@@ -717,14 +717,14 @@ class ModelTool<
 
   private async _handleSanitizationOfVirtuals(
     data: Partial<Output>,
-    isUpdate = false
+    isUpdate = false,
   ) {
     const sanitizers: [KeyOf<Input>, Function][] = [];
 
     const partialCtx = this._getPartialContext();
 
     const successFulVirtuals = getKeysAsProps(partialCtx).filter(
-      this._isVirtual
+      this._isVirtual,
     );
 
     for (const prop of successFulVirtuals) {
@@ -747,7 +747,8 @@ class ModelTool<
   private _handleObjectValidationResponse(data: Record<string, any>) {
     const validProperties = getKeysAsProps(data).filter(
       (prop) =>
-        this._isInputOrAlias(prop) || this._isInputOrAlias(prop.split('.')?.[0])
+        this._isInputOrAlias(prop) ||
+        this._isInputOrAlias(prop.split('.')?.[0]),
     );
 
     const otherReasons = {} as Record<
@@ -769,7 +770,7 @@ class ModelTool<
 
       if (isArray) {
         const messages = (fieldError as any[]).filter(
-          (v) => typeof v == 'string'
+          (v) => typeof v == 'string',
         );
 
         otherReasons[prop] = messages.length ? messages : 'validation failed';
@@ -793,7 +794,7 @@ class ModelTool<
 
   private _isSanitizable(
     prop: string,
-    isCreation: boolean
+    isCreation: boolean,
   ): [false, undefined] | [true, Function] {
     const { sanitizer, shouldInit } = this._getDefinition(prop);
 
@@ -830,7 +831,7 @@ class ModelTool<
 
     const hasShouldUpdateRule = this._isRuleInDefinition(
       propName,
-      'shouldUpdate'
+      'shouldUpdate',
     );
 
     const extraCtx = isAlias ? { [propName]: value } : {};
@@ -847,7 +848,7 @@ class ModelTool<
       return isEqual(
         this.defaults[propName],
         this.values[propName],
-        this._options.equalityDepth
+        this._options.equalityDepth,
       );
 
     return !isEqual(this.values[propName], value, this._options.equalityDepth);
@@ -868,7 +869,7 @@ class ModelTool<
     for (const prop of successProps) {
       const handlers = this._getHandlers<NS.SuccessHandler<Input, Output>>(
         prop,
-        'onSuccess'
+        'onSuccess',
       );
 
       successListeners = successListeners.concat(handlers);
@@ -878,7 +879,7 @@ class ModelTool<
 
     return async () => {
       const successOperations = successListeners.map(
-        async (handler) => await handler(summary)
+        async (handler) => await handler(summary),
       );
 
       await Promise.allSettled(successOperations);
@@ -888,7 +889,7 @@ class ModelTool<
   private async _resolveDependentChanges(
     data: Partial<Output>,
     ctx: Partial<Context<Input, Output>>,
-    isUpdate = false
+    isUpdate = false,
   ) {
     let _updates = { ...data };
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -935,7 +936,7 @@ class ModelTool<
         !isEqual(
           this.values[prop],
           this.defaults[prop],
-          this._options.equalityDepth
+          this._options.equalityDepth,
         )
       )
         return;
@@ -955,7 +956,7 @@ class ModelTool<
         isEqual(
           value,
           _ctx[prop as KeyOf<Context<Input, Output>>],
-          this._options.equalityDepth
+          this._options.equalityDepth,
         )
       )
         return;
@@ -970,7 +971,7 @@ class ModelTool<
       const _data = await this._resolveDependentChanges(
         data,
         updates as any,
-        isUpdate
+        isUpdate,
       );
 
       return (_updates = { ..._updates, ..._data });
@@ -985,14 +986,14 @@ class ModelTool<
     values: Partial<Input | Output | Aliases>,
     {
       allowVirtuals = true,
-      allowTimestamps = false
+      allowTimestamps = false,
     }: {
       allowVirtuals?: boolean;
       allowTimestamps?: boolean;
     } = {
       allowVirtuals: true,
-      allowTimestamps: false
-    }
+      allowTimestamps: false,
+    },
   ) {
     const keys = getKeysAsProps(values).filter((key) => {
       if (
@@ -1027,14 +1028,14 @@ class ModelTool<
 
         this._updateContext({ [prop]: value } as any);
         this._updatePartialContext({ [prop]: value } as any);
-      })
+      }),
     );
   }
 
   private async _setValidValue(
     operationData: Partial<Output> = {},
     prop: KeyOf<Output>,
-    value: Output[KeyOf<Output>]
+    value: Output[KeyOf<Output>],
   ) {
     const isAlias = this._isVirtualAlias(prop);
 
@@ -1051,7 +1052,7 @@ class ModelTool<
 
   private _sanitizeValidationResponse<T>(
     response: ValidatorResponseObject<T>,
-    value: any
+    value: any,
   ): ValidatorResponseObject<T> {
     const responseType = typeof response;
 
@@ -1086,7 +1087,7 @@ class ModelTool<
       if (_response.metadata)
         return {
           ...getValidationFailedResponse(value),
-          metadata: _response.metadata
+          metadata: _response.metadata,
         } as any;
 
       return getValidationFailedResponse(value);
@@ -1114,12 +1115,12 @@ class ModelTool<
     operationData: Partial<Output>,
     errorTool: ErrorTool,
     prop: KeyOf<Output>,
-    value: any
+    value: any,
   ) {
     const isValid = (await this._validate(
       prop as any,
       value,
-      this._getValidationSummary(false)
+      this._getValidationSummary(false),
     )) as InternalValidatorResponse<Output[KeyOf<Output>]>;
 
     if (isValid.valid)
@@ -1131,13 +1132,13 @@ class ModelTool<
   private async _validate<K extends KeyOf<Input & Aliases>>(
     prop: K,
     value: any,
-    summary_: Summary<Input, Output>
+    summary_: Summary<Input, Output>,
   ) {
     if (!this._isInputOrAlias(prop))
       return makeResponse<(Input & Aliases)[K]>({
         valid: false,
         value,
-        reason: 'Invalid property'
+        reason: 'Invalid property',
       });
 
     const isAlias = this._isVirtualAlias(prop);
@@ -1153,7 +1154,7 @@ class ModelTool<
         valid: false,
         value,
         reason: fieldError.reasons,
-        metadata: fieldError.metadata || { allowed: Array.from(allowedValues) }
+        metadata: fieldError.metadata || { allowed: Array.from(allowedValues) },
       });
     }
 
@@ -1167,19 +1168,19 @@ class ModelTool<
           (await validator(value, summary_)) as ValidatorResponseObject<
             (Input & Aliases)[K]
           >,
-          value
+          value,
         );
       } catch (_) {
         return makeResponse<(Input & Aliases)[K]>({
           valid: false,
-          reason: 'validation failed'
+          reason: 'validation failed',
         });
       }
 
       if (allowedValues && res.valid && !allowedValues.has(res.validated))
         return makeResponse<(Input & Aliases)[K]>({
           valid: true,
-          validated: value
+          validated: value,
         });
 
       return res;
@@ -1187,13 +1188,13 @@ class ModelTool<
 
     return makeResponse<(Input & Aliases)[K]>({
       valid: true,
-      validated: value
+      validated: value,
     });
   }
 
   async create(
     input: Partial<Input & Aliases> = {},
-    ctxOptions: Partial<CtxOptions> = {}
+    ctxOptions: Partial<CtxOptions> = {},
   ) {
     this._updateContextOptions(ctxOptions);
 
@@ -1208,7 +1209,7 @@ class ModelTool<
     const {
       data: dt,
       error,
-      virtuals
+      virtuals,
     } = await this._handleCreationPrimaryValidations(data, _input);
 
     if (error.isLoaded) return this._handleError(error, data, virtuals);
@@ -1230,7 +1231,7 @@ class ModelTool<
 
     data = await this._resolveDependentChanges(
       data,
-      this._getPartialContext() as any
+      this._getPartialContext() as any,
     );
 
     const finalData = this._useConfigProps(data);
@@ -1241,7 +1242,7 @@ class ModelTool<
     return {
       data: finalData as Output,
       error: null,
-      handleSuccess: this._makeHandleSuccess(finalData)
+      handleSuccess: this._makeHandleSuccess(finalData),
     };
   }
 
@@ -1251,24 +1252,24 @@ class ModelTool<
     if (!areValuesOk(values))
       throw new this._options.ErrorTool(
         VALIDATION_ERRORS.VALIDATION_ERROR,
-        ctxOptions
+        ctxOptions,
       ).error;
 
     this._setValues(values, { allowVirtuals: false, allowTimestamps: true });
 
     let handlers: NS.DeleteHandler<Output, CtxOptions>[] = [
-      ...this.globalDeleteHandlers
+      ...this.globalDeleteHandlers,
     ];
 
     const data = this._getFrozenCopy({
       ...this.values,
-      __getOptions__: () => ctxOptions
+      __getOptions__: () => ctxOptions,
     });
 
     getSetValuesAsProps(this.props).map(async (prop) => {
       const handlers_ = this._getHandlers<NS.DeleteHandler<Output, CtxOptions>>(
         prop,
-        'onDelete'
+        'onDelete',
       );
 
       if (handlers_.length) handlers = handlers.concat(handlers_);
@@ -1282,13 +1283,13 @@ class ModelTool<
   async update(
     values: Output,
     changes: Partial<Input & Aliases>,
-    ctxOptions: Partial<CtxOptions> = {}
+    ctxOptions: Partial<CtxOptions> = {},
   ) {
     const ctxOpts = this._updateContextOptions(ctxOptions);
 
     const errorNothingToUpdate = new this._options.ErrorTool(
       VALIDATION_ERRORS.NOTHING_TO_UPDATE,
-      ctxOpts
+      ctxOpts,
     );
 
     if (!areValuesOk(values) || !areValuesOk(changes))
@@ -1307,7 +1308,7 @@ class ModelTool<
     const {
       error,
       updates: dt,
-      virtuals
+      virtuals,
     } = await this._handleUpdatePrimaryValidations(_changes);
 
     if (error.isLoaded) return this._handleError(error, dt, virtuals);
@@ -1323,7 +1324,7 @@ class ModelTool<
 
     const postValidationError = await this._handlePostValidations(
       updates,
-      true
+      true,
     );
     if (postValidationError.isLoaded)
       return this._handleError(postValidationError, updates, virtuals);
@@ -1333,7 +1334,7 @@ class ModelTool<
     updates = await this._resolveDependentChanges(
       updates,
       this._getPartialContext() as any,
-      true
+      true,
     );
 
     if (!Object.keys(updates).length) {
@@ -1358,7 +1359,7 @@ class ModelTool<
     return {
       data: finalData as Partial<Output>,
       error: null,
-      handleSuccess: this._makeHandleSuccess(finalData, true)
+      handleSuccess: this._makeHandleSuccess(finalData, true),
     };
   }
 }
@@ -1368,15 +1369,15 @@ class Model<
   Output extends RealType<Output>,
   Aliases = {},
   CtxOptions extends ObjectType = {},
-  ErrorTool extends IErrorTool<any> = DefaultErrorTool<KeyOf<Input & Aliases>>
+  ErrorTool extends IErrorTool<any> = DefaultErrorTool<KeyOf<Input & Aliases>>,
 > {
   constructor(
-    private modelTool: ModelTool<Input, Output, Aliases, CtxOptions, ErrorTool>
+    private modelTool: ModelTool<Input, Output, Aliases, CtxOptions, ErrorTool>,
   ) {}
 
   create = (
     values: Partial<Input & Aliases> = {},
-    contextOptions: Partial<CtxOptions> = {}
+    contextOptions: Partial<CtxOptions> = {},
   ) => this.modelTool.create(values, contextOptions);
 
   delete = (values: Output, contextOptions: Partial<CtxOptions> = {}) =>
@@ -1385,7 +1386,7 @@ class Model<
   update = (
     values: Output,
     changes: Partial<Input & Aliases>,
-    contextOptions: Partial<CtxOptions> = {}
+    contextOptions: Partial<CtxOptions> = {},
   ) => this.modelTool.update(values, changes, contextOptions);
 }
 
@@ -1398,6 +1399,6 @@ function getValidationFailedResponse(value: any) {
     metadata: null,
     reason: ['validation failed'],
     valid: false,
-    value
+    value,
   } as ValidatorResponseObject<any>;
 }
