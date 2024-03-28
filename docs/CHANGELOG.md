@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# v1.2.2 <small><sup>28-03-2024</sup></small>
+
+- Improve type inference of schema definition
+
 # v1.2.1 <small><sup>22-02-2024</sup></small>
 
 - Fixed issue causing secondary validators not to respect `shouldInit` & `shouldUpdate` rules
