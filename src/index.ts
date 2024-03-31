@@ -3,7 +3,7 @@ import { Schema } from './schema';
 export default Schema;
 
 export { Schema } from './schema';
-export * from './validate';
+export * from './validators';
 
 export { ERRORS, SCHEMA_ERRORS, VALIDATION_ERRORS } from './schema/utils';
 
@@ -16,7 +16,7 @@ export {
   isNullOrUndefined,
   isPropertyOf,
   isRecordLike,
-  toArray
+  toArray,
 } from './utils';
 export {
   Context,
@@ -28,12 +28,12 @@ export {
   Summary,
   ValidatorResponse,
   ValidatorResponseObject,
-  XOR
+  XOR,
 } from './schema/types';
 export {
   FieldError,
   IErrorTool,
   IValidationError,
   InputPayload,
-  ValidationErrorMessage
+  ValidationErrorMessage,
 } from './schema/utils';

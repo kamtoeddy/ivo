@@ -15,7 +15,7 @@ export const isStringOkTest = ({ isStringOk }: { isStringOk: Function }) => {
         ' valid string with spaces ',
         'valid string with at the end  ',
         '  valid string with spaces infront',
-        Array(40 + 1).join('a')
+        Array(40 + 1).join('a'),
       ];
 
       for (const value of truthy) {
@@ -30,7 +30,7 @@ export const isStringOkTest = ({ isStringOk }: { isStringOk: Function }) => {
         [null, ['Unacceptable value']],
         [undefined, ['Unacceptable value']],
         ['', ['Too short'], { maxLength: 255, minLength: 1 }],
-        [Array(257).join('a'), ['Too long'], { maxLength: 255, minLength: 1 }]
+        [Array(257).join('a'), ['Too long'], { maxLength: 255, minLength: 1 }],
       ];
 
       for (const [value, reason, metadata = null] of falsy) {
@@ -47,46 +47,46 @@ export const isStringOkTest = ({ isStringOk }: { isStringOk: Function }) => {
         {
           valid: true,
           validated: 'valid',
-          value: 'valid'
+          value: 'valid',
         },
         {
           valid: true,
           value: getStringOfLength(20),
-          options: { maxLength: 21, minLength: 20 }
+          options: { maxLength: 21, minLength: 20 },
         },
         {
           valid: true,
           value: getStringOfLength(1),
           options: { maxLength: 1, minLength: 2 },
-          metadata: { maxLength: 1, minLength: 1 }
+          metadata: { maxLength: 1, minLength: 1 },
         },
         {
           valid: true,
           value: getStringOfLength(1),
-          options: { maxLength: 0, minLength: 1 }
+          options: { maxLength: 0, minLength: 1 },
         },
         {
           value: '',
           reason: ['Too short'],
-          metadata: { maxLength: 255, minLength: 1 }
+          metadata: { maxLength: 255, minLength: 1 },
         },
         {
           value: '',
           reason: ['Too short'],
           options: { minLength: 1 },
-          metadata: { maxLength: 255, minLength: 1 }
+          metadata: { maxLength: 255, minLength: 1 },
         },
         {
           value: getStringOfLength(256),
           reason: ['Too long'],
-          metadata: { maxLength: 255, minLength: 1 }
+          metadata: { maxLength: 255, minLength: 1 },
         },
         {
           value: getStringOfLength(251),
           reason: ['Too long'],
           options: { maxLength: 250 },
-          metadata: { maxLength: 250, minLength: 1 }
-        }
+          metadata: { maxLength: 250, minLength: 1 },
+        },
       ];
 
       for (const {
@@ -95,7 +95,7 @@ export const isStringOkTest = ({ isStringOk }: { isStringOk: Function }) => {
         validated = value,
         reason = [],
         options = {},
-        metadata = null
+        metadata = null,
       } of falsy) {
         const res = isStringOk(value, options);
 
@@ -104,12 +104,15 @@ export const isStringOkTest = ({ isStringOk }: { isStringOk: Function }) => {
       }
     });
 
-    it('should cast numbers to strings', () => {
+    it('should not cast numbers to strings', () => {
       const res = isStringOk(1);
 
-      expect(res).toMatchObject({ valid: true, validated: '1' });
+      expect(res).toMatchObject({
+        valid: false,
+        reason: expect.arrayContaining(['Unacceptable value']),
+      });
 
-      expect(res.reason).toBeUndefined();
+      expect(res.validated).toBeUndefined();
     });
 
     it('should accept only enumerated values if any', () => {
@@ -131,7 +134,7 @@ export const isStringOkTest = ({ isStringOk }: { isStringOk: Function }) => {
         expect(res).toMatchObject({
           metadata: { allowed: allow },
           reason: ['Unacceptable value'],
-          valid: false
+          valid: false,
         });
 
         expect(res.validated).toBeUndefined();
@@ -142,7 +145,7 @@ export const isStringOkTest = ({ isStringOk }: { isStringOk: Function }) => {
       const data = [
         [' admin', 'admin'],
         ['moderator ', 'moderator'],
-        [' user ', 'user']
+        [' user ', 'user'],
       ];
 
       for (const [value, validated] of data) {
@@ -182,7 +185,7 @@ export const isStringOkTest = ({ isStringOk }: { isStringOk: Function }) => {
 
         expect(res).toMatchObject({
           reason: ['Unacceptable value'],
-          valid: false
+          valid: false,
         });
 
         expect(res.validated).toBeUndefined();

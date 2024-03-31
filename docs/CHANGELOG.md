@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# v1.2.3 <small><sup>31-03-2024</sup></small>
+
+- Fix issue with built-in validator casting non-nullable values to string
+
 # v1.2.2 <small><sup>28-03-2024</sup></small>
 
 - Improve type inference of schema definition
