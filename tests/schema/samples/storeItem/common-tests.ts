@@ -14,15 +14,15 @@ export const commonTestData = {
   otherMeasureUnits: [
     { coefficient: 24, name: 'crate24' },
     { coefficient: 5, name: 'tray' },
-    { coefficient: 12, name: 'crate' }
+    { coefficient: 12, name: 'crate' },
   ],
-  _quantity: 100
+  _quantity: 100,
 };
 
 export const CommonInheritanceTest = (
   schemaName = '',
   Model: any,
-  testData = commonTestData
+  testData = commonTestData,
 ) => {
   describe(`behaviour shared via inheritance for '${schemaName}'`, () => {
     let item: any;
@@ -39,9 +39,9 @@ export const CommonInheritanceTest = (
           otherMeasureUnits: [
             { coefficient: 12, name: 'crate' },
             { coefficient: 24, name: 'crate24' },
-            { coefficient: 5, name: 'tray' }
+            { coefficient: 5, name: 'tray' },
           ],
-          quantity: 100
+          quantity: 100,
         });
       });
 
@@ -51,7 +51,7 @@ export const CommonInheritanceTest = (
         const createWithoutReadonly = async () => await Model.create(testData1);
 
         await expect(createWithoutReadonly()).rejects.toThrow(
-          ERRORS.VALIDATION_ERROR
+          ERRORS.VALIDATION_ERROR,
         );
       });
 
@@ -61,13 +61,13 @@ export const CommonInheritanceTest = (
         const createWithoutReadonly = async () => await Model.create(testData1);
 
         await expect(createWithoutReadonly()).rejects.toThrow(
-          ERRORS.VALIDATION_ERROR
+          ERRORS.VALIDATION_ERROR,
         );
       });
 
       it('should reject dependent properties', () => {
         expect(item).toMatchObject({
-          _dependentReadOnly: 0
+          _dependentReadOnly: 0,
         });
       });
 
@@ -79,7 +79,7 @@ export const CommonInheritanceTest = (
         expect(item).toMatchObject({
           _readOnlyLax1: 'lax1 set',
           _readOnlyLax2: '',
-          _readOnlyNoInit: ''
+          _readOnlyNoInit: '',
         });
       });
     });
@@ -88,13 +88,13 @@ export const CommonInheritanceTest = (
       it('should update the relevant properties', async () => {
         const update = await Model.update(item, {
           name: 'Castel',
-          _quantity: 10
+          _quantity: 10,
         });
 
         expect(update.data).toMatchObject({
           name: 'Castel',
           quantityChangeCounter: 2,
-          quantity: 10
+          quantity: 10,
         });
       });
 
@@ -104,7 +104,7 @@ export const CommonInheritanceTest = (
             name: 'beer',
             price: 5,
             measureUnit: 'bottle',
-            quantity: 100
+            quantity: 100,
           });
 
         expect(toFail).rejects.toThrow(ERRORS.NOTHING_TO_UPDATE);
@@ -115,13 +115,13 @@ export const CommonInheritanceTest = (
           quantities: [
             { quantity: 1, name: 'crate24' },
             { name: 'crate', quantity: 2 },
-            { name: 'tray', quantity: 5 }
-          ]
+            { name: 'tray', quantity: 5 },
+          ],
         });
 
         expect(update.data).toMatchObject({
           quantityChangeCounter: 2,
-          quantity: 173
+          quantity: 173,
         });
       });
 
@@ -132,36 +132,36 @@ export const CommonInheritanceTest = (
           quantities: [
             { quantity: 1, name: 'crate24' },
             { name: 'crate', quantity: 2 },
-            { name: 'tray', quantity: 5 }
-          ]
+            { name: 'tray', quantity: 5 },
+          ],
         });
 
         expect(update.data).toMatchObject({
           name: 'Castel',
           quantityChangeCounter: 2,
-          quantity: 83
+          quantity: 83,
         });
       });
 
       it('should update lax properties not initialized at creation', async () => {
         const { data: update } = await Model.update(item, {
-          _readOnlyLax2: 'haha'
+          _readOnlyLax2: 'haha',
         });
 
         expect(update).toMatchObject({
-          _readOnlyLax2: 'haha'
+          _readOnlyLax2: 'haha',
         });
 
         const updateReadOnlyProperty = async () =>
           await Model.update(
             { ...item, ...update },
             {
-              _readOnlyLax2: 'lax1 set again'
-            }
+              _readOnlyLax2: 'lax1 set again',
+            },
           );
 
         await expect(updateReadOnlyProperty()).rejects.toThrow(
-          ERRORS.NOTHING_TO_UPDATE
+          ERRORS.NOTHING_TO_UPDATE,
         );
       });
 
@@ -170,31 +170,31 @@ export const CommonInheritanceTest = (
           await Model.update(item, { quantityChangeCounter: 0 });
 
         await expect(updateReadOnlyProperty()).rejects.toThrow(
-          ERRORS.NOTHING_TO_UPDATE
+          ERRORS.NOTHING_TO_UPDATE,
         );
       });
 
       it('should update dependent properties on virtuals', async () => {
         const { data: update } = await Model.update(item, {
-          _virtualForDependentReadOnly: 'haha'
+          _virtualForDependentReadOnly: 'haha',
         });
 
         expect(update).toMatchObject({
-          _dependentReadOnly: 1
+          _dependentReadOnly: 1,
         });
       });
 
       it('should not update readonly dependent properties that have changed', async () => {
         const { data: update } = await Model.update(item, {
-          _virtualForDependentReadOnly: 'haha'
+          _virtualForDependentReadOnly: 'haha',
         });
 
         const updateToFail = async () => {
           await Model.update(
             { ...item, ...update },
             {
-              _virtualForDependentReadOnly: 'haha'
-            }
+              _virtualForDependentReadOnly: 'haha',
+            },
           );
         };
 
@@ -205,11 +205,11 @@ export const CommonInheritanceTest = (
         const updateReadOnlyProperty = async () =>
           await Model.update(item, {
             id: '2',
-            _readOnlyLax1: 'lax1 set again'
+            _readOnlyLax1: 'lax1 set again',
           });
 
         await expect(updateReadOnlyProperty()).rejects.toThrow(
-          ERRORS.NOTHING_TO_UPDATE
+          ERRORS.NOTHING_TO_UPDATE,
         );
       });
     });
@@ -224,8 +224,8 @@ export const CommonInheritanceTest = (
           ...testData,
           quantities: [
             { name: 'crate24', quantity: 1 },
-            { name: 'tray', quantity: 1 }
-          ]
+            { name: 'tray', quantity: 1 },
+          ],
         })
       ).data;
     });
@@ -240,9 +240,9 @@ export const CommonInheritanceTest = (
         otherMeasureUnits: [
           { coefficient: 12, name: 'crate' },
           { coefficient: 24, name: 'crate24' },
-          { coefficient: 5, name: 'tray' }
+          { coefficient: 5, name: 'tray' },
         ],
-        quantity: 129
+        quantity: 129,
       });
     });
   });
@@ -256,9 +256,12 @@ export const CommonInheritanceTest = (
           expect(err.message).toBe(ERRORS.VALIDATION_ERROR);
           expect(err.payload).toMatchObject({
             _laxProp: {
-              reasons: expect.arrayContaining(['Invalid lax prop', 'Too short'])
+              reasons: expect.arrayContaining([
+                'Invalid lax prop',
+                'Unacceptable value',
+              ]),
             },
-            name: { reasons: expect.arrayContaining(['validation failed']) }
+            name: { reasons: expect.arrayContaining(['validation failed']) },
           });
         }
       };
@@ -274,9 +277,12 @@ export const CommonInheritanceTest = (
           expect(err.message).toBe(ERRORS.VALIDATION_ERROR);
           expect(err.payload).toMatchObject({
             _laxProp: {
-              reasons: expect.arrayContaining(['Invalid lax prop', 'Too short'])
+              reasons: expect.arrayContaining([
+                'Invalid lax prop',
+                'Unacceptable value',
+              ]),
             },
-            name: { reasons: expect.arrayContaining(['validation failed']) }
+            name: { reasons: expect.arrayContaining(['validation failed']) },
           });
         }
       };

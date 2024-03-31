@@ -3,12 +3,12 @@ import {
   isEqual,
   isRecordLike,
   isOneOf,
-  makeResponse
+  makeResponse,
 } from './utils';
 import {
   ValidatorResponseObject,
   ValidationResponse,
-  XOR
+  XOR,
 } from './schema/types';
 
 export {
@@ -17,7 +17,7 @@ export {
   isCreditCardOk,
   isEmailOk,
   isNumberOk,
-  isStringOk
+  isStringOk,
 };
 
 export type { ArrayOptions, NumberRangeType, RangeType, StringOptions };
@@ -43,8 +43,8 @@ async function isArrayOk<T>(
     sorter,
     sortOrder = 'asc',
     unique = true,
-    uniqueKey = ''
-  }: ArrayOptions<T> = {}
+    uniqueKey = '',
+  }: ArrayOptions<T> = {},
 ) {
   if (!Array.isArray(arr))
     return makeResponse({ reason: 'Expected an array', valid: false });
@@ -88,7 +88,7 @@ function isBooleanOk(value: any) {
 
 const failResponse = makeResponse({
   reason: 'Invalid card number',
-  valid: false
+  valid: false,
 });
 
 const isCreditCardOk = (value: any) => {
@@ -163,7 +163,7 @@ type RangeType = NumberRangeType;
 
 function _isInNumberRange(
   value: number,
-  range: NumberRangeType_
+  range: NumberRangeType_,
 ): ValidatorResponseObject<number> {
   const { max, min, inclusiveBottom, inclusiveTop } = range;
 
@@ -212,7 +212,7 @@ type NumberOptions<T extends number = number> = XOR<
 
 function isNumberOk<T extends number = number>(
   num: any,
-  { allow, range }: NumberOptions = {}
+  { allow, range }: NumberOptions = {},
 ): ValidationResponse<Exclude<T, undefined>> {
   if (allow)
     return isOneOf(num, allow as any)
@@ -220,7 +220,7 @@ function isNumberOk<T extends number = number>(
       : makeResponse({
           reason: 'Unacceptable value',
           valid: false,
-          metadata: { allowed: allow }
+          metadata: { allowed: allow },
         });
 
   const range_ = _makeNumberRage(range);
@@ -229,7 +229,7 @@ function isNumberOk<T extends number = number>(
     return makeResponse({
       reason: 'Expected a number',
       valid: false,
-      metadata: range_
+      metadata: range_,
     });
 
   num = Number(num);
@@ -258,10 +258,10 @@ function isStringOk<T extends string = string>(
     maxLength = MAX_LENGTH,
     minLength = MIN_LENGTH,
     regExp,
-    trim = false
-  }: StringOptions<T> = {}
+    trim = false,
+  }: StringOptions<T> = {},
 ): ValidationResponse<Exclude<T, undefined>> {
-  if (isOneOf(str, [null, undefined]))
+  if (typeof str !== 'string')
     return makeResponse({ reason: 'Unacceptable value', valid: false });
 
   if (allow)
@@ -270,7 +270,7 @@ function isStringOk<T extends string = string>(
       : makeResponse({
           reason: 'Unacceptable value',
           valid: false,
-          metadata: { allowed: allow }
+          metadata: { allowed: allow },
         });
 
   if (regExp && !regExp.test(str))
