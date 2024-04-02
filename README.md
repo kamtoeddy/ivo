@@ -31,21 +31,21 @@ type UserInput = {
 
 type User = {
   id: string;
-  createdAt: string;
+  createdAt: Date;
   email: string | null;
   username: string;
   phoneNumber: string | null;
-  updatedAt: string;
+  updatedAt: Date;
   usernameUpdatableFrom: Date | null;
 };
 
 const userSchema = new Schema<UserInput, User>(
   {
-    id: { constant: true, value: generateUserId },
+    id: { constant: true, value: generateUserID },
     email: {
       default: null,
       required: isEmailOrPhoneRequired,
-      validator: validateUserEmail,
+      validator: [validateEmail, makeSureEmailIsUnique],
     },
     phoneNumber: {
       default: null,
@@ -54,6 +54,7 @@ const userSchema = new Schema<UserInput, User>(
     },
     username: {
       required: true,
+      validator: [validateUsername, makeSureUsernameIsUnique],
       shouldUpdate({ usernameUpdatableFrom }) {
         if (!usernameUpdatableFrom) return true;
 
@@ -61,7 +62,6 @@ const userSchema = new Schema<UserInput, User>(
           new Date().getTime() >= new Date(usernameUpdatableFrom).getTime()
         );
       },
-      validator: validateUsername,
     },
     usernameUpdatableFrom: {
       default: null,
@@ -83,6 +83,20 @@ function isEmailOrPhoneRequired({
   context: { email, phoneNumber },
 }: Summary<UserInput, User>) {
   return [!email && !phoneNumber, 'Provide "email" or "phone" number'] as const;
+}
+
+async function makeSureEmailIsUnique(email: string) {
+  const userWithEmail = await usersDb.findByEmail(email);
+
+  return userWithEmail ? { valid: false, reason: 'Email already taken' } : true;
+}
+
+async function makeSureUsernameIsUnique(username: string) {
+  const userWithUsername = await usersDb.findByUsername(username);
+
+  return userWithUsername
+    ? { valid: false, reason: 'Username already taken' }
+    : true;
 }
 
 // get the model
@@ -114,13 +128,13 @@ console.log(data);
 // }
 
 // data is safe to dump in db
-await userDb.insertOne(data);
+await usersDb.insertOne(data);
 ```
 
 # Updating an entity
 
 ```ts
-const user = await userDb.findById(101);
+const user = await usersDb.findByID(101);
 
 if (!user) return handleError({ message: 'User not found' });
 
@@ -140,7 +154,7 @@ console.log(data);
 //   updatedAt: new Date()
 // }
 
-await userDb.updateById(user.id, data);
+await usersDb.updateByID(user.id, data);
 ```
 
 ```ts
