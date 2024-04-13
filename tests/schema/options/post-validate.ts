@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach, test } from 'bun:test';
+import { beforeEach, describe, it, expect, afterEach, test } from 'bun:test';
 
 import { ERRORS } from '../../../dist';
 import {
@@ -1107,6 +1107,55 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
               reasons: ['validation failed'],
             }),
           });
+        });
+      });
+
+      describe('behaviour when updating ctxOptions from within post-validators', () => {
+        let ctxValue: any = {};
+
+        beforeEach(() => {
+          ctxValue = {};
+        });
+
+        const Model = new Schema(
+          { p1: { default: '' }, p2: { default: '' } },
+          {
+            postValidate: {
+              properties: ['p1', 'p2'],
+              handler: ({ context: { __updateOptions__ } }) => {
+                __updateOptions__({ updated: true });
+
+                return true;
+              },
+            },
+            onSuccess({ context: { __getOptions__ } }) {
+              ctxValue = __getOptions__();
+            },
+          },
+        ).getModel();
+
+        it('should respect ctx updates at creation', async () => {
+          expect(ctxValue).toEqual({});
+
+          const { handleSuccess } = await Model.create();
+
+          await handleSuccess();
+
+          expect(ctxValue).toEqual({ updated: true });
+        });
+
+        it('should respect ctx updates during updates', async () => {
+          expect(ctxValue).toEqual({});
+
+          const { handleSuccess } = await Model.update(
+            { p1: '', p2: '3' },
+            { p1: true },
+            { initial: true },
+          );
+
+          await handleSuccess();
+
+          expect(ctxValue).toEqual({ updated: true, initial: true });
         });
       });
     });

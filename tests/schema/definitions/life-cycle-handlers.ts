@@ -66,7 +66,8 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
     describe('life cycle readonly ctx', () => {
       const rules = ['onDelete', 'onFailure', 'onSuccess'];
 
-      let propChangeMap: any = {};
+      let propChangeMap: any = {},
+        ctxHasUpdateMethod: any = {};
 
       const validData = { constant: 1, prop1: '1', prop2: '2', prop3: '3' };
       const allProps = ['constant', 'prop1', 'prop2', 'prop3'],
@@ -75,6 +76,8 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
       const handle =
         (rule = '', prop = '') =>
         ({ context }: any) => {
+          ctxHasUpdateMethod[rule] = !!context?.__updateOptions__;
+
           try {
             context[prop] = 1;
           } catch (err) {
@@ -117,6 +120,7 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
 
       beforeEach(() => {
         propChangeMap = {};
+        ctxHasUpdateMethod = {};
       });
 
       it('should reject handlers that try to mutate the onSuccess ctx', async () => {
@@ -125,6 +129,7 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
         await handleSuccess?.();
 
         expect(propChangeMap.onSuccess.constant).toBe(true);
+        expect(ctxHasUpdateMethod).toEqual({ onSuccess: false });
       });
 
       it('should reject handlers that try to mutate the onDelete ctx', async () => {
@@ -132,6 +137,8 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
 
         for (const prop of allProps)
           expect(propChangeMap.onDelete[prop]).toBe(true);
+
+        expect(ctxHasUpdateMethod).toEqual({ onDelete: false });
       });
 
       it('should reject handlers that try to mutate the onFailure(create) ctx', async () => {
@@ -143,6 +150,8 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
 
             expect(propChangeMap?.[rule]?.[prop]).toBe(result);
           }
+
+        expect(ctxHasUpdateMethod).toEqual({ onFailure: false });
       });
 
       it('should reject handlers that try to mutate the onFailure(update) ctx', async () => {
@@ -154,6 +163,8 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
 
             expect(propChangeMap?.[rule]?.[prop]).toBe(result);
           }
+
+        expect(ctxHasUpdateMethod).toEqual({ onFailure: false });
       });
     });
 
