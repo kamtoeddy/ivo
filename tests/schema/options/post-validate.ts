@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from 'bun:test';
+import { describe, it, expect, afterEach, test } from 'bun:test';
 
 import { ERRORS } from '../../../dist';
 import {
@@ -102,30 +102,50 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
             }
           });
 
-          it("should reject if 'properties' is not an array or does not contain valid input keys of schema", () => {
-            const values = [
-              -1,
-              0,
-              1,
-              null,
-              undefined,
-              true,
-              false,
-              '',
-              'invalid',
-              {},
-              { properties: [] },
-              { handler: [] },
-              () => {},
-              [],
-              ['lol'],
-              ['lol', 'lolol'],
-              ['propertyName1', 'lolol'],
-              ['propertyName1', 'propertyName1'],
-              ['propertyName1', 'dependent'],
+          describe("should reject if 'properties' is not an array or does not contain valid input keys of schema", () => {
+            const commonError = [
+              '"properties" must be an array of at least 2 input properties of your schema',
             ];
 
-            for (const properties of values) {
+            const values = [
+              [-1, commonError],
+              [0, commonError],
+              [1, commonError],
+              [null, commonError],
+              [undefined, commonError],
+              [true, commonError],
+              [false, commonError],
+              ['', commonError],
+              ['invalid', commonError],
+              [{}, commonError],
+              [{ properties: [] }, commonError],
+              [{ handler: [] }, commonError],
+              [() => {}, commonError],
+              [[], commonError],
+              [['lol'], commonError],
+              [
+                ['lol', 'lolol'],
+                [
+                  '"lol" cannot be post-validated',
+                  '"lolol" cannot be post-validated',
+                ],
+              ],
+              [
+                ['propertyName1', 'lolol'],
+                ['"lolol" cannot be post-validated'],
+              ],
+              [['propertyName1', 'propertyName1'], commonError],
+              [
+                ['propertyName1', 'propertyName2', 'lol'],
+                ['"lol" cannot be post-validated'],
+              ],
+              [
+                ['propertyName1', 'dependent'],
+                ['"dependent" cannot be post-validated'],
+              ],
+            ] as const;
+
+            test.each(values)('', (properties, errors) => {
               const toFail = fx(
                 getValidSchema(
                   {},
@@ -137,9 +157,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                     },
                   },
                 ),
-                {
-                  postValidate: { properties, handler() {} },
-                },
+                { postValidate: { properties, handler() {} } },
               );
 
               expectFailure(toFail);
@@ -149,14 +167,10 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
               } catch (err: any) {
                 expect(err).toMatchObject({
                   message: ERRORS.INVALID_SCHEMA,
-                  payload: {
-                    postValidate: expect.arrayContaining([
-                      '"properties" must be an array of at least 2 input properties of your schema',
-                    ]),
-                  },
+                  payload: { postValidate: expect.arrayContaining(errors) },
                 });
               }
-            }
+            });
           });
 
           it("should reject if 'handler' is not a function", () => {
@@ -355,10 +369,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
               () => {},
               [],
               ['lol'],
-              ['lol', 'lolol'],
-              ['propertyName1', 'lolol'],
               ['propertyName1', 'propertyName1'],
-              ['propertyName1', 'dependent'],
             ].map((properties) => ({ properties, handler() {} }));
 
             const reasons = configs.map((_, i) =>
@@ -390,6 +401,67 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
               expect(err).toMatchObject({
                 message: ERRORS.INVALID_SCHEMA,
                 payload: { postValidate: expect.arrayContaining(reasons) },
+              });
+            }
+          });
+
+          it("should reject if 'properties' of any config a property that cannot be post-validated", () => {
+            const values = [
+              [
+                ['lol', 'lolol'],
+                [
+                  'Config at index 0: "lol" cannot be post-validated',
+                  'Config at index 0: "lolol" cannot be post-validated',
+                ],
+              ],
+              [
+                ['propertyName1', 'lolol'],
+                ['Config at index 1: "lolol" cannot be post-validated'],
+              ],
+              [
+                ['propertyName1', 'propertyName2', 'lol'],
+                ['Config at index 2: "lol" cannot be post-validated'],
+              ],
+              [
+                ['propertyName1', 'dependent'],
+                ['Config at index 3: "dependent" cannot be post-validated'],
+              ],
+            ] as const;
+
+            // @ts-ignore
+            const { configs, errors } = values.reduce(
+              // @ts-ignore
+              (acc, [properties, err]) => {
+                return {
+                  configs: [...acc.configs, { properties, handler() {} }],
+                  errors: [...acc.errors, ...err],
+                };
+              },
+              { configs: [], errors: [] },
+            );
+
+            const toFail = fx(
+              getValidSchema(
+                {},
+                {
+                  dependent: {
+                    default: '',
+                    dependsOn: 'propertyName1',
+                    resolver() {},
+                  },
+                },
+              ),
+              { postValidate: configs },
+            );
+
+            expectFailure(toFail);
+
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err).toMatchObject({
+                message: ERRORS.INVALID_SCHEMA,
+                payload: { postValidate: expect.arrayContaining(errors) },
               });
             }
           });

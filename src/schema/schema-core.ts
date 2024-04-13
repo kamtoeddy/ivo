@@ -1379,7 +1379,7 @@ export abstract class SchemaCore<
         ),
       };
 
-    const properties = getUnique(value.properties).filter(this._isInputProp);
+    const properties = getUnique(value.properties);
 
     if (properties.length < 2)
       return {
@@ -1389,6 +1389,19 @@ export abstract class SchemaCore<
           'properties-must-be-input-array',
         ),
       };
+
+    const reasons: string[] = [];
+
+    for (const prop of properties)
+      if (!this._isInputProp(prop) && !this._isVirtual(prop)) {
+        if (index != undefined)
+          reasons.push(
+            `Config at index ${index}: "${prop}" cannot be post-validated`,
+          );
+        else reasons.push(`"${prop}" cannot be post-validated`);
+      }
+
+    if (reasons.length) return { valid, reason: reasons };
 
     if (!isFunctionLike(value.handler))
       return {
@@ -1460,13 +1473,18 @@ export abstract class SchemaCore<
     }
 
     const configs: PostValidationConfig<Input, Output, any, {}>[] =
-        postValidateOption,
-      reasons: string[] = [];
+      postValidateOption;
+    let reasons: string[] = [];
 
     configs.forEach((config, i) => {
       const isValid = this._isPostValidateSingleConfigOk(config, i);
 
-      if (!isValid.valid) reasons.push(isValid.reason!);
+      if (!isValid.valid) {
+        const reason = isValid.reason!;
+
+        if (Array.isArray(reason)) reasons = reasons.concat(reason);
+        else reasons.push(reason);
+      }
     });
 
     if (reasons.length) return { valid: false, reason: reasons };
