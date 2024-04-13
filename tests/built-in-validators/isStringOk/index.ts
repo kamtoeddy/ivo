@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'bun:test';
 
 function getStringOfLength(length: number) {
   return Array(length).fill('a').join('');

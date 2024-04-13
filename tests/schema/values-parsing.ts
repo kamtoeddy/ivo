@@ -1,17 +1,9 @@
-import { beforeAll, describe, it, expect } from 'vitest';
+import { beforeAll, describe, it, expect } from 'bun:test';
 
 import { ERRORS } from '../../dist';
+import { expectFailure, expectNoFailure } from './_utils';
 
 export const valuesParsing_Tests = ({ Schema }: any) => {
-  const expectPromiseFailure = (
-    fx: Function,
-    message: string = ERRORS.INVALID_SCHEMA
-  ) => {
-    expect(fx).rejects.toThrow(message);
-  };
-
-  const expectNoFailure = (fx: Function) => expect(fx).not.toThrow();
-
   describe('Values Parsing', () => {
     const errorMessage = { message: ERRORS.VALIDATION_ERROR, payload: {} };
     const validData = { age: 15, name: 'Frank' };
@@ -24,7 +16,7 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
         User = new Schema({
           age: { default: 10 },
           id: { constant: true, value: 1 },
-          name: { default: '' }
+          name: { default: '' },
         }).getModel();
       });
 
@@ -47,7 +39,7 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
 
         it('should set values properly during deletion', async () => {
           expectNoFailure(
-            async () => await User.delete({ ...validData, id: 1 })
+            async () => await User.delete({ ...validData, id: 1 }),
           );
         });
 
@@ -80,9 +72,9 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
 
         it('should reject invalid data during deletion', async () => {
           for (const val of invalidData) {
-            const operation = async () => await User.delete(val);
+            const operation = () => User.delete(val);
 
-            expectPromiseFailure(operation, ERRORS.VALIDATION_ERROR);
+            expectFailure(operation, ERRORS.VALIDATION_ERROR);
 
             try {
               await operation();
@@ -105,7 +97,7 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
 
             expect(error).toEqual({
               message: ERRORS.NOTHING_TO_UPDATE,
-              payload: {}
+              payload: {},
             });
           }
         });
@@ -120,9 +112,9 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
           {
             age: { default: 10 },
             id: { constant: true, value: 1 },
-            name: { default: '' }
+            name: { default: '' },
           },
-          { errors: 'throw' }
+          { errors: 'throw' },
         ).getModel();
       });
 
@@ -137,7 +129,7 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
 
         it('should set values properly during deletion', async () => {
           expectNoFailure(
-            async () => await User.delete({ ...validData, id: 1 })
+            async () => await User.delete({ ...validData, id: 1 }),
           );
         });
 
@@ -169,9 +161,9 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
 
         it('should reject invalid data during deletion', async () => {
           for (const val of invalidData) {
-            const operation = async () => await User.delete(val);
+            const operation = () => User.delete(val);
 
-            expectPromiseFailure(operation, ERRORS.VALIDATION_ERROR);
+            expectFailure(operation, ERRORS.VALIDATION_ERROR);
 
             try {
               await operation();
@@ -186,14 +178,14 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
             const operation = async () =>
               await User.update(val, { name: 'yoo' });
 
-            expectPromiseFailure(operation, ERRORS.NOTHING_TO_UPDATE);
+            expectFailure(operation, ERRORS.NOTHING_TO_UPDATE);
 
             try {
               await operation();
             } catch (err: any) {
               expect(err).toMatchObject({
                 message: ERRORS.NOTHING_TO_UPDATE,
-                payload: {}
+                payload: {},
               });
             }
           }

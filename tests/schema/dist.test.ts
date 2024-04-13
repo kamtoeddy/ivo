@@ -1,5 +1,3 @@
-import { describe, test } from 'vitest';
-
 import { Schema } from '../../dist';
 import { makeFx } from './_utils';
 
@@ -27,10 +25,6 @@ import { valuesParsing_Tests } from './values-parsing';
 import { Test_SchemaOptionPostValidate } from './options/post-validate';
 
 const fx = makeFx(Schema);
-
-describe('Dist', () => {
-  test.todo('tests');
-});
 
 Test_BasicDefinitions({ Schema, fx });
 

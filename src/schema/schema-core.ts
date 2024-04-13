@@ -197,6 +197,12 @@ export abstract class SchemaCore<
     this.context = { ...this.context, ...updates };
   };
 
+  protected _initializeContextOptions = (options: Partial<CtxOptions>) => {
+    this.contextOptions = {} as CtxOptions;
+
+    return this._updateContextOptions(options);
+  };
+
   protected _updateContextOptions = (options: Partial<CtxOptions>) => {
     if (isRecordLike(options))
       this.contextOptions = { ...this.contextOptions, ...options };

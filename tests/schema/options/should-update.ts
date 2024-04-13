@@ -1,11 +1,11 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'bun:test';
 
 import { ERRORS } from '../../../dist';
 import {
   expectFailure,
   expectNoFailure,
   getValidSchema,
-  validator
+  validator,
 } from '../_utils';
 
 export const Test_SchemaShouldUpdateOption = ({ Schema, fx }: any) => {
@@ -16,7 +16,7 @@ export const Test_SchemaShouldUpdateOption = ({ Schema, fx }: any) => {
 
       const error = {
         message: ERRORS.NOTHING_TO_UPDATE,
-        payload: {}
+        payload: {},
       };
 
       const options = [
@@ -30,17 +30,17 @@ export const Test_SchemaShouldUpdateOption = ({ Schema, fx }: any) => {
         {
           data: update,
           error: null,
-          shouldUpdate: () => Promise.resolve(true)
+          shouldUpdate: () => Promise.resolve(true),
         },
         {
           data: null,
           error,
-          shouldUpdate: () => Promise.resolve({ update: false })
+          shouldUpdate: () => Promise.resolve({ update: false }),
         },
         {
           data: update,
           error: null,
-          shouldUpdate: () => Promise.resolve({ update: true })
+          shouldUpdate: () => Promise.resolve({ update: true }),
         },
         // falsy values
         { data: null, error, shouldUpdate: () => 0 },
@@ -51,7 +51,7 @@ export const Test_SchemaShouldUpdateOption = ({ Schema, fx }: any) => {
         { data: null, error, shouldUpdate: () => {} },
         { data: null, error, shouldUpdate: () => ({}) },
         { data: null, error, shouldUpdate: () => null },
-        { data: null, error, shouldUpdate: () => undefined }
+        { data: null, error, shouldUpdate: () => undefined },
       ];
 
       it('should respect the "shouldUpdate" rule accordingly', async () => {
@@ -59,9 +59,9 @@ export const Test_SchemaShouldUpdateOption = ({ Schema, fx }: any) => {
           const Model = new Schema(
             {
               name: { required: true, validator },
-              price: { required: true, validator }
+              price: { required: true, validator },
             },
-            { shouldUpdate: option.shouldUpdate }
+            { shouldUpdate: option.shouldUpdate },
           ).getModel();
 
           const { data, error } = await Model.update(book, update);
@@ -82,7 +82,7 @@ export const Test_SchemaShouldUpdateOption = ({ Schema, fx }: any) => {
             ctx: contextOptions,
             data: update,
             error: null,
-            shouldUpdate: shouldUpdate({ update: true })
+            shouldUpdate: shouldUpdate({ update: true }),
           },
           {
             ctx: { lang: '' },
@@ -90,8 +90,8 @@ export const Test_SchemaShouldUpdateOption = ({ Schema, fx }: any) => {
             error,
             shouldUpdate: shouldUpdate({
               update: false,
-              contextOptionsUpdate: { lang: '' }
-            })
+              contextOptionsUpdate: { lang: '' },
+            }),
           },
           {
             ctx: { lang: 'fr', ctx: true },
@@ -99,8 +99,8 @@ export const Test_SchemaShouldUpdateOption = ({ Schema, fx }: any) => {
             error: null,
             shouldUpdate: shouldUpdate({
               update: true,
-              contextOptionsUpdate: { lang: 'fr', ctx: true }
-            })
+              contextOptionsUpdate: { lang: 'fr', ctx: true },
+            }),
           },
           {
             ctx: { lang: 'de' },
@@ -108,8 +108,8 @@ export const Test_SchemaShouldUpdateOption = ({ Schema, fx }: any) => {
             error,
             shouldUpdate: AsyncShouldUpdate({
               update: false,
-              contextOptionsUpdate: { lang: 'de' }
-            })
+              contextOptionsUpdate: { lang: 'de' },
+            }),
           },
           {
             ctx: { lang: 'fr', async: true },
@@ -117,9 +117,9 @@ export const Test_SchemaShouldUpdateOption = ({ Schema, fx }: any) => {
             error: null,
             shouldUpdate: AsyncShouldUpdate({
               update: true,
-              contextOptionsUpdate: { lang: 'fr', async: true }
-            })
-          }
+              contextOptionsUpdate: { lang: 'fr', async: true },
+            }),
+          },
         ];
 
         function AsyncShouldUpdate(v) {
@@ -150,15 +150,15 @@ export const Test_SchemaShouldUpdateOption = ({ Schema, fx }: any) => {
           const Model = new Schema(
             {
               name: { required: true, validator },
-              price: { required: true, validator }
+              price: { required: true, validator },
             },
-            { shouldUpdate: option.shouldUpdate }
+            { shouldUpdate: option.shouldUpdate },
           ).getModel();
 
           const { data, error } = await Model.update(
             book,
             update,
-            contextOptions
+            contextOptions,
           );
 
           expect(data).toEqual(option.data);
@@ -196,7 +196,7 @@ export const Test_SchemaShouldUpdateOption = ({ Schema, fx }: any) => {
           'invalid',
           '',
           null,
-          undefined
+          undefined,
         ];
 
         for (const shouldUpdate of invalidValues) {
@@ -211,9 +211,9 @@ export const Test_SchemaShouldUpdateOption = ({ Schema, fx }: any) => {
               message: ERRORS.INVALID_SCHEMA,
               payload: {
                 shouldUpdate: expect.arrayContaining([
-                  "'shouldUpdate' should either be a 'boolean' or a 'function'"
-                ])
-              }
+                  "'shouldUpdate' should either be a 'boolean' or a 'function'",
+                ]),
+              },
             });
           }
         }

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'bun:test';
 
 export const isNumberOkTest = ({ isNumberOk }: { isNumberOk: Function }) => {
   describe('isNumberOk', () => {
@@ -20,7 +20,7 @@ export const isNumberOkTest = ({ isNumberOk }: { isNumberOk: Function }) => {
       const parsedByValueMap: Record<string, number> = {
         '-1': -1,
         '': 0,
-        '1': 1
+        '1': 1,
       };
 
       for (let value of falsyButParsed) {
@@ -28,7 +28,7 @@ export const isNumberOkTest = ({ isNumberOk }: { isNumberOk: Function }) => {
 
         expect(res).toMatchObject({
           valid: true,
-          validated: parsedByValueMap[value]
+          validated: parsedByValueMap[value],
         });
 
         expect(res.reason).toBeUndefined();
@@ -42,7 +42,7 @@ export const isNumberOkTest = ({ isNumberOk }: { isNumberOk: Function }) => {
 
         expect(res).toMatchObject({
           reason: ['Expected a number'],
-          valid: false
+          valid: false,
         });
 
         expect(res.validated).toBeUndefined();
@@ -55,15 +55,15 @@ export const isNumberOkTest = ({ isNumberOk }: { isNumberOk: Function }) => {
       const zero_Twelve_Ex: any = {
         bounds: [0, 12],
         inclusiveBottom: false,
-        inclusiveTop: false
+        inclusiveTop: false,
       };
       const zero_Twelve_ExBottom: any = {
         bounds: [0, 12],
-        inclusiveBottom: false
+        inclusiveBottom: false,
       };
       const zero_Twelve_ExTop: any = {
         bounds: [0, 12],
-        inclusiveTop: false
+        inclusiveTop: false,
       };
 
       const pairsToPass: [number, any][] = [
@@ -88,7 +88,7 @@ export const isNumberOkTest = ({ isNumberOk }: { isNumberOk: Function }) => {
         [0, zero_Twelve_ExTop],
         [5, zero_Twelve_ExTop],
         [10.75, zero_Twelve_ExTop],
-        [11.99, zero_Twelve_ExTop]
+        [11.99, zero_Twelve_ExTop],
       ];
 
       pairsToPass.forEach(([num, range]) => {
@@ -114,7 +114,7 @@ export const isNumberOkTest = ({ isNumberOk }: { isNumberOk: Function }) => {
 
         // exclusive top
         [12, zero_Twelve_ExTop, 'Too large'],
-        [12.01, zero_Twelve_ExTop, 'Too large']
+        [12.01, zero_Twelve_ExTop, 'Too large'],
       ];
 
       pairsToFail.forEach(([num, range, error]) => {
@@ -127,10 +127,10 @@ export const isNumberOkTest = ({ isNumberOk }: { isNumberOk: Function }) => {
             max,
             min,
             inclusiveBottom: range?.inclusiveBottom ?? true,
-            inclusiveTop: range?.inclusiveTop ?? true
+            inclusiveTop: range?.inclusiveTop ?? true,
           },
           reason: [error],
-          valid: false
+          valid: false,
         });
 
         expect(res.validated).toBeUndefined();
@@ -156,7 +156,7 @@ export const isNumberOkTest = ({ isNumberOk }: { isNumberOk: Function }) => {
         expect(res).toMatchObject({
           metadata: { allowed: allow },
           reason: ['Unacceptable value'],
-          valid: false
+          valid: false,
         });
 
         expect(res.validated).toBeUndefined();

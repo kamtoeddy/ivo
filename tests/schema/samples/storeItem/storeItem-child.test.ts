@@ -1,4 +1,4 @@
-import { beforeAll, describe, it, expect } from 'vitest';
+import { beforeAll, describe, it, expect } from 'bun:test';
 
 import { CommonInheritanceTest, commonTestData } from './common-tests';
 import { StoreItemChild } from './storeItem-child';
@@ -26,7 +26,7 @@ describe('Testing non-inherited properties for StoreItemChild', () => {
   it('should have the correct properties after updates', async () => {
     const { data: update } = await StoreItemChild.update(item, {
       childID: '12',
-      name: 'Guiness '
+      name: 'Guiness ',
     } as any);
 
     expect(update!.childID).toBe(undefined);

@@ -1,11 +1,11 @@
-import { beforeEach, describe, it, expect } from 'vitest';
+import { beforeEach, describe, it, expect } from 'bun:test';
 
 import { ERRORS } from '../../../dist';
 import {
   expectFailure,
   expectNoFailure,
   getValidSchema,
-  validator
+  validator,
 } from '../_utils';
 
 export const Test_SchemaOnDelete = ({ Schema, fx }: any) => {
@@ -31,11 +31,11 @@ export const Test_SchemaOnDelete = ({ Schema, fx }: any) => {
               default: null,
               dependsOn: '_setPrice',
               resolver: ({ context }: any) => context._setPrice,
-              onDelete: onDelete_('price')
+              onDelete: onDelete_('price'),
             },
-            _setPrice: { virtual: true, validator }
+            _setPrice: { virtual: true, validator },
           },
-          { onDelete: onDelete_('global') }
+          { onDelete: onDelete_('global') },
         ).getModel();
 
         it("should trigger all 'delete' handlers on properties an global handlers", async () => {
@@ -45,7 +45,7 @@ export const Test_SchemaOnDelete = ({ Schema, fx }: any) => {
             id: values,
             name: values,
             price: values,
-            global: values
+            global: values,
           });
         });
       });
@@ -58,11 +58,11 @@ export const Test_SchemaOnDelete = ({ Schema, fx }: any) => {
             price: {
               default: null,
               dependsOn: '_setPrice',
-              resolver: ({ context }: any) => context._setPrice
+              resolver: ({ context }: any) => context._setPrice,
             },
-            _setPrice: { virtual: true, validator }
+            _setPrice: { virtual: true, validator },
           },
-          { onDelete: [onDelete_('global'), onDelete_('global-1')] }
+          { onDelete: [onDelete_('global'), onDelete_('global-1')] },
         ).getModel();
 
         it("should trigger all global 'delete' handlers", async () => {
@@ -70,7 +70,7 @@ export const Test_SchemaOnDelete = ({ Schema, fx }: any) => {
 
           expect(deletedValues).toMatchObject({
             global: values,
-            'global-1': values
+            'global-1': values,
           });
         });
       });
@@ -101,7 +101,7 @@ export const Test_SchemaOnDelete = ({ Schema, fx }: any) => {
           'invalid',
           '',
           null,
-          undefined
+          undefined,
         ];
 
         for (const onDelete of invalidValues) {
@@ -116,9 +116,9 @@ export const Test_SchemaOnDelete = ({ Schema, fx }: any) => {
               message: ERRORS.INVALID_SCHEMA,
               payload: {
                 onDelete: expect.arrayContaining([
-                  "The 'onDelete' handler @[0] is not a function"
-                ])
-              }
+                  "The 'onDelete' handler @[0] is not a function",
+                ]),
+              },
             });
           }
         }

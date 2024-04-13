@@ -1,16 +1,16 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'bun:test';
 
 export const isCreditCardOkTest = ({
-  isCreditCardOk
+  isCreditCardOk,
 }: {
   isCreditCardOk: Function;
 }) => {
-  describe('Testing isCreditCardOk', () => {
+  describe('isCreditCardOk', () => {
     const truthyValues = [
       [5420596721435293, 5420596721435293],
       ['5420596721435293', '5420596721435293'],
       ['5420596721435293 ', '5420596721435293'],
-      ['5420596721435293 ', '5420596721435293']
+      ['5420596721435293 ', '5420596721435293'],
     ];
 
     it('should tell whether a character is a valid credit card number', () => {
@@ -30,7 +30,7 @@ export const isCreditCardOkTest = ({
         '',
         '123-2342-25-6750',
         4187622910505690,
-        '4187622910505690'
+        '4187622910505690',
       ];
 
       falsyValues.forEach((value) => {
@@ -39,7 +39,7 @@ export const isCreditCardOkTest = ({
         expect(res).toEqual({
           reason: ['Invalid card number'],
           valid: false,
-          metadata: null
+          metadata: null,
         });
 
         expect(res.validated).toBeUndefined();

@@ -26,7 +26,7 @@ import {
 } from './types';
 import {
   VALIDATION_ERRORS,
-  DefaultErrorTool,
+  type DefaultErrorTool,
   IErrorTool,
   makeFieldError,
   isInputFieldError,
@@ -93,16 +93,14 @@ class Schema<
     ExtendedOutput extends RealType<ExtendedOutput> = ExtendedInput,
     Aliases = {},
     ExtendedCtxOptions extends ObjectType = CtxOptions,
+    // @ts-ignore
     ExtendedErrorTool extends IErrorTool<any> = DefaultExtendedErrorTool<
       ErrorTool,
       KeyOf<ExtendedInput & Aliases>
     >,
   >(
-    definitions: NS.Definitions<
-      ExtendedInput,
-      ExtendedOutput,
-      Aliases,
-      ExtendedCtxOptions
+    definitions: Partial<
+      NS.Definitions<ExtendedInput, ExtendedOutput, Aliases, ExtendedCtxOptions>
     >,
     options: NS.ExtensionOptions<
       Input,
@@ -1196,7 +1194,7 @@ class ModelTool<
     input: Partial<Input & Aliases> = {},
     ctxOptions: Partial<CtxOptions> = {},
   ) {
-    this._updateContextOptions(ctxOptions);
+    this._initializeContextOptions(ctxOptions);
 
     if (!areValuesOk(input)) input = {};
 
@@ -1247,7 +1245,7 @@ class ModelTool<
   }
 
   async delete(values: Output, contextOptions: Partial<CtxOptions> = {}) {
-    const ctxOptions = this._updateContextOptions(contextOptions);
+    const ctxOptions = this._initializeContextOptions(contextOptions);
 
     if (!areValuesOk(values))
       throw new this._options.ErrorTool(
@@ -1285,7 +1283,7 @@ class ModelTool<
     changes: Partial<Input & Aliases>,
     ctxOptions: Partial<CtxOptions> = {},
   ) {
-    const ctxOpts = this._updateContextOptions(ctxOptions);
+    const ctxOpts = this._initializeContextOptions(ctxOptions);
 
     const errorNothingToUpdate = new this._options.ErrorTool(
       VALIDATION_ERRORS.NOTHING_TO_UPDATE,

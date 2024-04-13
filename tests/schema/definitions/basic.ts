@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'bun:test';
 
 import { ERRORS } from '../../../dist';
 import { expectFailure } from '../_utils';
@@ -15,7 +15,7 @@ export const Test_BasicDefinitions = ({ fx, Schema }: any) => {
         2,
         -10,
         true,
-        []
+        [],
       ];
 
       for (const value of values) expectFailure(fx(value));
@@ -30,7 +30,7 @@ export const Test_BasicDefinitions = ({ fx, Schema }: any) => {
         toFail();
       } catch (err: any) {
         expect(err.payload).toMatchObject({
-          'schema properties': ['Insufficient Schema properties']
+          'schema properties': ['Insufficient Schema properties'],
         });
       }
     });
@@ -47,10 +47,10 @@ export const Test_BasicDefinitions = ({ fx, Schema }: any) => {
             message: ERRORS.INVALID_SCHEMA,
             payload: {
               emptyProp: [
-                'A property should at least be readonly, required, or have a default value'
-              ]
-            }
-          })
+                'A property should at least be readonly, required, or have a default value',
+              ],
+            },
+          }),
         );
       }
     });
@@ -70,10 +70,10 @@ export const Test_BasicDefinitions = ({ fx, Schema }: any) => {
               message: ERRORS.INVALID_SCHEMA,
               payload: {
                 invalidProp0000: [
-                  `Invalid property definition. Expected an object '{}' but received '${typeof definition}'`
-                ]
-              }
-            })
+                  `Invalid property definition. Expected an object '{}' but received '${typeof definition}'`,
+                ],
+              },
+            }),
           );
         }
       }
@@ -90,9 +90,9 @@ export const Test_BasicDefinitions = ({ fx, Schema }: any) => {
           expect.objectContaining({
             message: ERRORS.INVALID_SCHEMA,
             payload: {
-              emptyProp: expect.arrayContaining(["'yoo' is not a valid rule"])
-            }
-          })
+              emptyProp: expect.arrayContaining(["'yoo' is not a valid rule"]),
+            },
+          }),
         );
       }
     });
@@ -103,9 +103,9 @@ export const Test_BasicDefinitions = ({ fx, Schema }: any) => {
           id: { constant: true, value: 1 },
           dependent: { default: '', dependsOn: 'virtual', resolver: () => '' },
           lax: { default: true },
-          virtual: { virtual: true, validator: () => true }
+          virtual: { virtual: true, validator: () => true },
         },
-        { timestamps: { createdAt: 'c_At' } }
+        { timestamps: { createdAt: 'c_At' } },
       );
 
       expect(schema.reservedKeys).toEqual(
@@ -115,8 +115,8 @@ export const Test_BasicDefinitions = ({ fx, Schema }: any) => {
           'id',
           'lax',
           'updatedAt',
-          'virtual'
-        ])
+          'virtual',
+        ]),
       );
     });
   });
@@ -127,11 +127,11 @@ export const Test_BasicDefinitions = ({ fx, Schema }: any) => {
         prop: {
           default() {
             throw new Error('lolol');
-          }
+          },
         },
-        prop1: { default: '' }
+        prop1: { default: '' },
       },
-      { setMissingDefaultsOnUpdate: true }
+      { setMissingDefaultsOnUpdate: true },
     ).getModel();
 
     it('should set value as default on error generating default value at creation', async () => {
@@ -145,7 +145,7 @@ export const Test_BasicDefinitions = ({ fx, Schema }: any) => {
       const { data, error } = await Model.update(
         { prop1: '' },
         { prop1: 'updated' },
-        { debug: true }
+        { debug: true },
       );
 
       expect(error).toBeNull();

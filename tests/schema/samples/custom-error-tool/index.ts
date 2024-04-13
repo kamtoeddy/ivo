@@ -22,22 +22,22 @@ const userSchema = new Schema<
         return {
           valid: false,
           reason: 'Invalid first name',
-          metadata: { hint: 'try harder 😜', valueProvided: v }
+          metadata: { hint: 'try harder 😜', valueProvided: v },
         };
-      }
+      },
     },
     fullName: {
       default: '',
       dependsOn: ['firstName', 'lastName'],
       resolver: ({ context: { firstName, lastName } }) =>
-        `${firstName}-${lastName}`
+        `${firstName}-${lastName}`,
     },
     lastName: {
       default: '',
-      validator: (_, { context }) => !!context.__getOptions__().lang
-    }
+      validator: (_, { context }) => !!context.__getOptions__().lang,
+    },
   },
-  { ErrorTool: VError }
+  { ErrorTool: VError },
 );
 
 const UserModel = userSchema.getModel();
@@ -51,15 +51,15 @@ const EUserSchema = userSchema.extend<EInput, EOutput>(
       default: '',
       dependsOn: ['firstName', 'lastName'],
       resolver: ({ context: { firstName, lastName } }) =>
-        `${firstName} ${lastName}`
-    }
+        `${firstName} ${lastName}`,
+    },
   },
-  { remove: 'fullName' }
+  { remove: 'fullName' },
 );
 
 const EUserModel = EUserSchema.getModel();
 
 const EUserModel_ErrorThrow = EUserSchema.extend(
   {},
-  { errors: 'throw' }
+  { errors: 'throw' },
 ).getModel();

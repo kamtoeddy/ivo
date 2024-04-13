@@ -1,16 +1,16 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'bun:test';
 
 import { ERRORS } from '../../../dist';
 import {
   expectFailure,
   expectNoFailure,
   getValidSchema,
-  validator
+  validator,
 } from '../_utils';
 
 export const Test_SchemaSetMissingDefaultsOnUpdateOption = ({
   Schema,
-  fx
+  fx,
 }: any) => {
   describe('Schema.options.setMissingDefaultsOnUpdate', () => {
     describe('behaviour', () => {
@@ -24,12 +24,15 @@ export const Test_SchemaSetMissingDefaultsOnUpdateOption = ({
               dependent: {
                 default: '',
                 dependsOn: 'lax',
-                resolver: ({ context }: any) => context.lax
+                resolver: ({ context }: any) => context.lax,
               },
               lax: { default: 'lax', validator },
-              prop: { default: '', validator }
+              prop: { default: '', validator },
             },
-            { setMissingDefaultsOnUpdate, onSuccess: (s: any) => (summary = s) }
+            {
+              setMissingDefaultsOnUpdate,
+              onSuccess: (s: any) => (summary = s),
+            },
           ).getModel();
 
           const previousValues = { prop: '' },
@@ -37,7 +40,7 @@ export const Test_SchemaSetMissingDefaultsOnUpdateOption = ({
 
           const { data, handleSuccess } = await Model.update(
             previousValues,
-            updates
+            updates,
           );
 
           await handleSuccess();
@@ -48,7 +51,7 @@ export const Test_SchemaSetMissingDefaultsOnUpdateOption = ({
             context: { dependent: '', lax: 'lax', ...updates },
             isUpdate: true,
             previousValues,
-            values: updates
+            values: updates,
           });
         }
       });
@@ -62,20 +65,20 @@ export const Test_SchemaSetMissingDefaultsOnUpdateOption = ({
             dependent: {
               default: '',
               dependsOn: 'lax',
-              resolver: ({ context }: any) => context.lax
+              resolver: ({ context }: any) => context.lax,
             },
             dependent_1: {
               default: '',
               dependsOn: 'dependent',
-              resolver: ({ context }: any) => context.dependent
+              resolver: ({ context }: any) => context.dependent,
             },
             lax: { default: 'lax', validator },
-            prop: { default: '', validator }
+            prop: { default: '', validator },
           },
           {
             setMissingDefaultsOnUpdate: true,
-            onSuccess: (s: any) => (summary = s)
-          }
+            onSuccess: (s: any) => (summary = s),
+          },
         ).getModel();
 
         it('should generate default values if "setMissingDefaultsOnUpdate" is true', async () => {
@@ -85,12 +88,12 @@ export const Test_SchemaSetMissingDefaultsOnUpdateOption = ({
             dependent: '',
             dependent_1: '',
             lax: 'lax',
-            ...updates
+            ...updates,
           };
 
           const { data, handleSuccess } = await Model.update(
             previousValues,
-            updates
+            updates,
           );
 
           await handleSuccess();
@@ -101,7 +104,7 @@ export const Test_SchemaSetMissingDefaultsOnUpdateOption = ({
             context: changes,
             isUpdate: true,
             previousValues,
-            values: changes
+            values: changes,
           });
         });
 
@@ -112,12 +115,12 @@ export const Test_SchemaSetMissingDefaultsOnUpdateOption = ({
             dependent: updates.lax,
             dependent_1: updates.lax,
             prop: '',
-            ...updates
+            ...updates,
           };
 
           const { data, handleSuccess } = await Model.update(
             previousValues,
-            updates
+            updates,
           );
 
           await handleSuccess();
@@ -128,7 +131,7 @@ export const Test_SchemaSetMissingDefaultsOnUpdateOption = ({
             context: changes,
             isUpdate: true,
             previousValues,
-            values: changes
+            values: changes,
           });
         });
       });
@@ -164,9 +167,9 @@ export const Test_SchemaSetMissingDefaultsOnUpdateOption = ({
               message: ERRORS.INVALID_SCHEMA,
               payload: {
                 setMissingDefaultsOnUpdate: expect.arrayContaining([
-                  "'setMissingDefaultsOnUpdate' should be a 'boolean'"
-                ])
-              }
+                  "'setMissingDefaultsOnUpdate' should be a 'boolean'",
+                ]),
+              },
             });
           }
         }

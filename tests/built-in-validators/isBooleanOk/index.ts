@@ -1,7 +1,7 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'bun:test';
 
 export const isBooleanOkTest = ({ isBooleanOk }: { isBooleanOk: Function }) => {
-  describe('Testing isBooleanOk', () => {
+  describe('isBooleanOk', () => {
     it('should tell whether or not input values are booleans', () => {
       // truthy values
 
@@ -24,7 +24,7 @@ export const isBooleanOkTest = ({ isBooleanOk }: { isBooleanOk: Function }) => {
 
         expect(res).toMatchObject({
           reason: ['Expected a boolean'],
-          valid: false
+          valid: false,
         });
 
         expect(res.validated).toBeUndefined();

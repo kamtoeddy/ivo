@@ -1,11 +1,11 @@
-import { beforeEach, describe, it, expect } from 'vitest';
+import { beforeEach, describe, it, expect } from 'bun:test';
 
 import { ERRORS } from '../../../dist';
 import {
   expectFailure,
   expectNoFailure,
   getValidSchema,
-  validator
+  validator,
 } from '../_utils';
 
 export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
@@ -30,21 +30,21 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
               default: null,
               dependsOn: '_setPrice',
               resolver: ({ context }: any) => context._setPrice,
-              onSuccess: onSuccess_('price')
+              onSuccess: onSuccess_('price'),
             },
             _setPrice: {
               virtual: true,
               validator,
-              onSuccess: onSuccess_('_setPrice')
-            }
+              onSuccess: onSuccess_('_setPrice'),
+            },
           },
-          { onSuccess: onSuccess_('global') }
+          { onSuccess: onSuccess_('global') },
         ).getModel();
 
         it("should trigger all 'success' listeners at creation", async () => {
           const { data, handleSuccess } = await Book.create({
             name: 'Book name',
-            _setPrice: 100
+            _setPrice: 100,
           });
 
           await handleSuccess();
@@ -55,7 +55,7 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
             context: { ...values, _setPrice: 100 },
             isUpdate: false,
             previousValues: null,
-            values: values
+            values: values,
           };
 
           expect(data).toEqual(values);
@@ -64,7 +64,7 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
             name: summary,
             price: summary,
             _setPrice: summary,
-            global: summary
+            global: summary,
           });
         });
 
@@ -72,7 +72,7 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
           const book = { id: 1, name: 'Book name', price: 100 };
 
           const { data, handleSuccess } = await Book.update(book, {
-            _setPrice: 200
+            _setPrice: 200,
           });
 
           await handleSuccess();
@@ -84,14 +84,14 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
             context: { ...values, _setPrice: 200 },
             isUpdate: true,
             previousValues: book,
-            values: values
+            values: values,
           };
 
           expect(data).toEqual({ price: 200 });
           expect(successValues).toMatchObject({
             price: summary,
             _setPrice: summary,
-            global: summary
+            global: summary,
           });
         });
       });
@@ -104,17 +104,17 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
             price: {
               default: null,
               dependsOn: '_setPrice',
-              resolver: ({ context }: any) => context._setPrice
+              resolver: ({ context }: any) => context._setPrice,
             },
-            _setPrice: { virtual: true, validator }
+            _setPrice: { virtual: true, validator },
           },
-          { onSuccess: [onSuccess_('global'), onSuccess_('global-1')] }
+          { onSuccess: [onSuccess_('global'), onSuccess_('global-1')] },
         ).getModel();
 
         it("should trigger all 'success' listeners at creation", async () => {
           const { data, handleSuccess } = await Book.create({
             name: 'Book name',
-            _setPrice: 100
+            _setPrice: 100,
           });
 
           await handleSuccess();
@@ -125,13 +125,13 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
             context: { ...values, _setPrice: 100 },
             isUpdate: false,
             previousValues: null,
-            values: values
+            values: values,
           };
 
           expect(data).toEqual(values);
           expect(successValues).toMatchObject({
             global: summary,
-            'global-1': summary
+            'global-1': summary,
           });
         });
 
@@ -139,7 +139,7 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
           const book = { id: 1, name: 'Book name', price: 100 };
 
           const { data, handleSuccess } = await Book.update(book, {
-            _setPrice: 200
+            _setPrice: 200,
           });
 
           await handleSuccess();
@@ -151,13 +151,13 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
             context: { ...values, _setPrice: 200 },
             isUpdate: true,
             previousValues: book,
-            values: values
+            values: values,
           };
 
           expect(data).toEqual({ price: 200 });
           expect(successValues).toMatchObject({
             global: summary,
-            'global-1': summary
+            'global-1': summary,
           });
         });
       });
@@ -188,7 +188,7 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
           'invalid',
           '',
           null,
-          undefined
+          undefined,
         ];
 
         for (const onSuccess of invalidValues) {
@@ -203,9 +203,9 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
               message: ERRORS.INVALID_SCHEMA,
               payload: {
                 onSuccess: expect.arrayContaining([
-                  "The 'onSuccess' handler @[0] is not a function"
-                ])
-              }
+                  "The 'onSuccess' handler @[0] is not a function",
+                ]),
+              },
             });
           }
         }

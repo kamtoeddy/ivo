@@ -1,12 +1,7 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'bun:test';
 
 import { ERRORS } from '../../../dist';
-import {
-  expectFailure,
-  expectNoFailure,
-  getValidSchema
-  // validator
-} from '../_utils';
+import { expectFailure, expectNoFailure, getValidSchema } from '../_utils';
 
 export const Test_SchemaEqualityDepth = ({ Schema, fx }: any) => {
   describe('Schema.options.equalityDepth', () => {
@@ -22,17 +17,17 @@ export const Test_SchemaEqualityDepth = ({ Schema, fx }: any) => {
             level_2_b: {
               level_3_a: 'value',
               level_3_b: 'value',
-              level_3_c: { level_4_a: 'value', level_4_b: 'value' }
-            }
-          }
-        }
+              level_3_c: { level_4_a: 'value', level_4_b: 'value' },
+            },
+          },
+        },
       };
 
       describe('behaviour with previous values', () => {
         it('should respect the default equality depth(1)', async () => {
           const Model = new Schema({
             level_0_a: { default: '' },
-            level_0_b: { default: {} }
+            level_0_b: { default: {} },
           }).getModel();
 
           const changeToAllow = {
@@ -41,10 +36,10 @@ export const Test_SchemaEqualityDepth = ({ Schema, fx }: any) => {
               level_2_b: {
                 level_3_b: 'value',
                 level_3_a: 'value',
-                level_3_c: { level_4_a: 'value', level_4_b: 'value' }
+                level_3_c: { level_4_a: 'value', level_4_b: 'value' },
               },
-              level_2_a: 'value'
-            }
+              level_2_a: 'value',
+            },
           };
 
           const values_ = [
@@ -58,13 +53,13 @@ export const Test_SchemaEqualityDepth = ({ Schema, fx }: any) => {
                     level_2_b: {
                       level_3_a: 'value',
                       level_3_b: 'value',
-                      level_3_c: { level_4_a: 'value', level_4_b: 'value' }
-                    }
-                  }
+                      level_3_c: { level_4_a: 'value', level_4_b: 'value' },
+                    },
+                  },
                 },
-                level_0_a: 'value'
+                level_0_a: 'value',
               },
-              error
+              error,
             },
             {
               changes: {
@@ -73,23 +68,23 @@ export const Test_SchemaEqualityDepth = ({ Schema, fx }: any) => {
                     level_2_b: {
                       level_3_a: 'value',
                       level_3_b: 'value',
-                      level_3_c: { level_4_a: 'value', level_4_b: 'value' }
+                      level_3_c: { level_4_a: 'value', level_4_b: 'value' },
                     },
-                    level_2_a: 'value'
+                    level_2_a: 'value',
                   },
-                  level_1_a: { level_2_b: 'value', level_2_a: 'value' }
+                  level_1_a: { level_2_b: 'value', level_2_a: 'value' },
                 },
-                level_0_a: 'value'
+                level_0_a: 'value',
               },
-              error
+              error,
             },
             {
               changes: {
                 level_0_b: changeToAllow,
-                level_0_a: 'value'
+                level_0_a: 'value',
               },
-              data: { level_0_b: changeToAllow }
-            }
+              data: { level_0_b: changeToAllow },
+            },
           ] as any[];
 
           for (const values of values_) {
@@ -111,9 +106,9 @@ export const Test_SchemaEqualityDepth = ({ Schema, fx }: any) => {
           const Model = new Schema(
             {
               level_0_a: { default: '' },
-              level_0_b: { default: {} }
+              level_0_b: { default: {} },
             },
-            { equalityDepth: 0 }
+            { equalityDepth: 0 },
           ).getModel();
 
           const changeToAllow = {
@@ -122,12 +117,12 @@ export const Test_SchemaEqualityDepth = ({ Schema, fx }: any) => {
                   level_2_b: {
                     level_3_a: 'value',
                     level_3_b: 'value',
-                    level_3_c: { level_4_a: 'value', level_4_b: 'value' }
+                    level_3_c: { level_4_a: 'value', level_4_b: 'value' },
                   },
-                  level_2_a: 'value'
+                  level_2_a: 'value',
                 },
-                level_1_a: { level_2_b: 'value', level_2_a: 'value' }
-              }
+                level_1_a: { level_2_b: 'value', level_2_a: 'value' },
+              },
             },
             changeToAllow1 = {
               level_1_a: { level_2_b: 'value', level_2_a: 'value' },
@@ -135,10 +130,10 @@ export const Test_SchemaEqualityDepth = ({ Schema, fx }: any) => {
                 level_2_b: {
                   level_3_b: 'value',
                   level_3_a: 'value',
-                  level_3_c: { level_4_a: 'value', level_4_b: 'value' }
+                  level_3_c: { level_4_a: 'value', level_4_b: 'value' },
                 },
-                level_2_a: 'value'
-              }
+                level_2_a: 'value',
+              },
             };
 
           const values_ = [
@@ -152,25 +147,25 @@ export const Test_SchemaEqualityDepth = ({ Schema, fx }: any) => {
                     level_2_b: {
                       level_3_a: 'value',
                       level_3_b: 'value',
-                      level_3_c: { level_4_a: 'value', level_4_b: 'value' }
-                    }
-                  }
+                      level_3_c: { level_4_a: 'value', level_4_b: 'value' },
+                    },
+                  },
                 },
-                level_0_a: 'value'
+                level_0_a: 'value',
               },
-              error
+              error,
             },
             {
               changes: changeToAllow,
-              data: changeToAllow
+              data: changeToAllow,
             },
             {
               changes: {
                 level_0_b: changeToAllow1,
-                level_0_a: 'value'
+                level_0_a: 'value',
               },
-              data: { level_0_b: changeToAllow1 }
-            }
+              data: { level_0_b: changeToAllow1 },
+            },
           ] as any[];
 
           for (const values of values_) {
@@ -192,9 +187,9 @@ export const Test_SchemaEqualityDepth = ({ Schema, fx }: any) => {
           const Model = new Schema(
             {
               level_0_a: { default: '' },
-              level_0_b: { default: {} }
+              level_0_b: { default: {} },
             },
-            { equalityDepth: 2 }
+            { equalityDepth: 2 },
           ).getModel();
 
           const values_ = [
@@ -208,13 +203,13 @@ export const Test_SchemaEqualityDepth = ({ Schema, fx }: any) => {
                     level_2_b: {
                       level_3_a: 'value',
                       level_3_b: 'value',
-                      level_3_c: { level_4_a: 'value', level_4_b: 'value' }
-                    }
-                  }
+                      level_3_c: { level_4_a: 'value', level_4_b: 'value' },
+                    },
+                  },
                 },
-                level_0_a: 'value'
+                level_0_a: 'value',
               },
-              error
+              error,
             },
             {
               changes: {
@@ -223,14 +218,14 @@ export const Test_SchemaEqualityDepth = ({ Schema, fx }: any) => {
                     level_2_b: {
                       level_3_a: 'value',
                       level_3_b: 'value',
-                      level_3_c: { level_4_a: 'value', level_4_b: 'value' }
+                      level_3_c: { level_4_a: 'value', level_4_b: 'value' },
                     },
-                    level_2_a: 'value'
+                    level_2_a: 'value',
                   },
-                  level_1_a: { level_2_b: 'value', level_2_a: 'value' }
-                }
+                  level_1_a: { level_2_b: 'value', level_2_a: 'value' },
+                },
               },
-              error
+              error,
             },
             {
               changes: {
@@ -240,15 +235,15 @@ export const Test_SchemaEqualityDepth = ({ Schema, fx }: any) => {
                     level_2_b: {
                       level_3_b: 'value',
                       level_3_a: 'value',
-                      level_3_c: { level_4_a: 'value', level_4_b: 'value' }
+                      level_3_c: { level_4_a: 'value', level_4_b: 'value' },
                     },
-                    level_2_a: 'value'
-                  }
+                    level_2_a: 'value',
+                  },
                 },
-                level_0_a: 'value'
+                level_0_a: 'value',
               },
-              error
-            }
+              error,
+            },
           ] as any[];
 
           for (const values of values_) {
@@ -302,7 +297,7 @@ export const Test_SchemaEqualityDepth = ({ Schema, fx }: any) => {
           false,
           'invalid',
           '',
-          null
+          null,
         ];
 
         for (const equalityDepth of invalidValues) {
@@ -317,9 +312,9 @@ export const Test_SchemaEqualityDepth = ({ Schema, fx }: any) => {
               message: ERRORS.INVALID_SCHEMA,
               payload: {
                 equalityDepth: expect.arrayContaining([
-                  "'equalityDepth' must be a number between 0 and +Infinity"
-                ])
-              }
+                  "'equalityDepth' must be a number between 0 and +Infinity",
+                ]),
+              },
             });
           }
         }

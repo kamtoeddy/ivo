@@ -1,10 +1,10 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'bun:test';
 
 import {
   UserModel,
   UserModel_ErrorThrow,
   EUserModel,
-  EUserModel_ErrorThrow
+  EUserModel_ErrorThrow,
 } from './custom-error-tool';
 import Schema from '../../../dist';
 
@@ -20,9 +20,9 @@ describe('Context options', () => {
         const { data, error } = await UserModel.create(
           {
             firstName,
-            lastName
+            lastName,
           },
-          contextOptions
+          contextOptions,
         );
 
         expect(data).not.toBeNull();
@@ -34,12 +34,12 @@ describe('Context options', () => {
           lastName = '';
 
         const { data, error } = await UserModel.update(
-          { firstName: 'John', fullName: '', lastName: 'lopa' },
+          { firstName: 'John', fullName: '', lastName: 'doe' },
           {
             firstName,
-            lastName
+            lastName,
           },
-          contextOptions
+          contextOptions,
         );
 
         expect(data).not.toBeNull();
@@ -55,9 +55,9 @@ describe('Context options', () => {
         const { data, error } = await UserModel_ErrorThrow.create(
           {
             firstName,
-            lastName
+            lastName,
           },
-          contextOptions
+          contextOptions,
         );
 
         expect(data).not.toBeNull();
@@ -69,12 +69,12 @@ describe('Context options', () => {
           lastName = 'lname';
 
         const { data, error } = await UserModel_ErrorThrow.update(
-          { firstName: 'John', fullName: '', lastName: 'lopa' },
+          { firstName: 'John', fullName: '', lastName: 'doe' },
           {
             firstName,
-            lastName
+            lastName,
           },
-          contextOptions
+          contextOptions,
         );
 
         expect(data).not.toBeNull();
@@ -92,9 +92,9 @@ describe('Context options', () => {
         const { data, error } = await EUserModel.create(
           {
             firstName,
-            lastName
+            lastName,
           },
-          contextOptions
+          contextOptions,
         );
 
         expect(data).not.toBeNull();
@@ -106,12 +106,12 @@ describe('Context options', () => {
           lastName = '';
 
         const { data, error } = await EUserModel.update(
-          { firstName: 'John', full_name: '', lastName: 'lopa' },
+          { firstName: 'John', full_name: '', lastName: 'doe' },
           {
             firstName,
-            lastName
+            lastName,
           },
-          contextOptions
+          contextOptions,
         );
 
         expect(data).not.toBeNull();
@@ -127,9 +127,9 @@ describe('Context options', () => {
         const { data, error } = await EUserModel_ErrorThrow.create(
           {
             firstName,
-            lastName
+            lastName,
           },
-          contextOptions
+          contextOptions,
         );
 
         expect(data).not.toBeNull();
@@ -141,12 +141,12 @@ describe('Context options', () => {
           lastName = 'lname';
 
         const { data, error } = await EUserModel_ErrorThrow.update(
-          { firstName: 'John', full_name: '', lastName: 'lopa' },
+          { firstName: 'John', full_name: '', lastName: 'doe' },
           {
             firstName,
-            lastName
+            lastName,
           },
-          contextOptions
+          contextOptions,
         );
 
         expect(data).not.toBeNull();
@@ -168,7 +168,7 @@ describe('Context options', () => {
 
     const Model = new Schema<any, any, any, typeof contextOptions>({
       name: { default: '', required: handleRequired('name'), validator },
-      price: { default: '', required: handleRequired('price'), validator }
+      price: { default: '', required: handleRequired('price'), validator },
     }).getModel();
 
     let ctxOptions: any = {};
@@ -182,7 +182,7 @@ describe('Context options', () => {
 
       expect(ctxOptions).toEqual({
         name: contextOptions,
-        price: contextOptions
+        price: contextOptions,
       });
     });
 
@@ -190,12 +190,12 @@ describe('Context options', () => {
       await Model.update(
         { name: 'test', price: 4 },
         { name: 'updateds', price: 4 },
-        contextOptions
+        contextOptions,
       );
 
       expect(ctxOptions).toEqual({
         name: contextOptions,
-        price: contextOptions
+        price: contextOptions,
       });
     });
   });
@@ -224,8 +224,8 @@ describe('Context options', () => {
         },
         onSuccess({ context: { __getOptions__ } }) {
           __getOptions__().ctxHandler();
-        }
-      }
+        },
+      },
     }).getModel();
 
     afterEach(() => {

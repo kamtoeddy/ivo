@@ -1,8 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'bun:test';
 
 import { VALIDATION_ERRORS } from '../../../dist';
 
-import { expectPromiseFailure } from '../_utils';
+import { expectFailure } from '../_utils';
 
 export const Test_ExtendedSchemas = ({ Schema }: any) => {
   describe('Extended Schema', () => {
@@ -11,20 +11,20 @@ export const Test_ExtendedSchemas = ({ Schema }: any) => {
         it('should respect "errors" option from baseSchema if enabled', async () => {
           const Model = new Schema(
             { id: { constant: true, value: 1 } },
-            { errors: 'throw' }
+            { errors: 'throw' },
           )
             .extend({ name: { default: '', validator: () => false } })
             .getModel();
 
           const toFail = () => Model.create({ name: 'lol' });
 
-          expectPromiseFailure(toFail, VALIDATION_ERRORS.VALIDATION_ERROR);
+          expectFailure(toFail, VALIDATION_ERRORS.VALIDATION_ERROR);
         });
 
         it('should respect overwritten "errors" option in child schema', async () => {
           const Model = new Schema(
             { id: { constant: true, value: 1 } },
-            { errors: 'silent' }
+            { errors: 'silent' },
           )
             .extend({ name: { default: '', validator: () => false } })
             .getModel();
@@ -40,14 +40,14 @@ export const Test_ExtendedSchemas = ({ Schema }: any) => {
         it('should respect "setMissingDefaultsOnUpdate" option if enabled in base schema', async () => {
           const Model = new Schema(
             { id: { constant: true, value: 1 } },
-            { setMissingDefaultsOnUpdate: true }
+            { setMissingDefaultsOnUpdate: true },
           )
             .extend({ age: { default: 12 }, name: { default: '' } })
             .getModel();
 
           const { data, error } = await Model.update(
             { id: 1, name: '' },
-            { name: 'updated' }
+            { name: 'updated' },
           );
 
           expect(error).toBeNull();
@@ -61,7 +61,7 @@ export const Test_ExtendedSchemas = ({ Schema }: any) => {
 
           const { data, error } = await Model.update(
             { id: 1, name: '' },
-            { name: 'updated' }
+            { name: 'updated' },
           );
 
           expect(error).toBeNull();
@@ -72,17 +72,17 @@ export const Test_ExtendedSchemas = ({ Schema }: any) => {
         it('should respect "setMissingDefaultsOnUpdate" option if overwritten in child schema', async () => {
           const Model = new Schema(
             { id: { constant: true, value: 1 } },
-            { setMissingDefaultsOnUpdate: true }
+            { setMissingDefaultsOnUpdate: true },
           )
             .extend(
               { age: { default: 12 }, name: { default: '' } },
-              { setMissingDefaultsOnUpdate: false }
+              { setMissingDefaultsOnUpdate: false },
             )
             .getModel();
 
           const { data, error } = await Model.update(
             { id: 1, name: '' },
-            { name: 'updated' }
+            { name: 'updated' },
           );
 
           expect(error).toBeNull();
@@ -95,14 +95,14 @@ export const Test_ExtendedSchemas = ({ Schema }: any) => {
         it('should ignore "shouldUpdate" option even if provided in base schema', async () => {
           const Model = new Schema(
             { id: { constant: true, value: 1 } },
-            { shouldUpdate: false }
+            { shouldUpdate: false },
           )
             .extend({ name: { default: '' } })
             .getModel();
 
           const { data, error } = await Model.update(
             { id: 1, name: '' },
-            { name: 'updated' }
+            { name: 'updated' },
           );
 
           expect(error).toBeNull();
@@ -114,7 +114,7 @@ export const Test_ExtendedSchemas = ({ Schema }: any) => {
         it('should respect "timestamps" option from baseSchema if enabled', async () => {
           const Model = new Schema(
             { id: { constant: true, value: 1 } },
-            { timestamps: { updatedAt: 'u_At' } }
+            { timestamps: { updatedAt: 'u_At' } },
           )
             .extend({ name: { default: '' } })
             .getModel();
@@ -130,7 +130,7 @@ export const Test_ExtendedSchemas = ({ Schema }: any) => {
         it('should respect "timestamps" option from baseSchema if not enabled', async () => {
           const Model = new Schema(
             { id: { constant: true, value: 1 } },
-            { timestamps: false }
+            { timestamps: false },
           )
             .extend({ name: { default: '' } })
             .getModel();
@@ -146,7 +146,7 @@ export const Test_ExtendedSchemas = ({ Schema }: any) => {
         it('should respect overwritten "timestamps" option from baseSchema', async () => {
           const Model = new Schema(
             { id: { constant: true, value: 1 } },
-            { timestamps: { createdAt: 'c_at', updatedAt: 'uAt' } }
+            { timestamps: { createdAt: 'c_at', updatedAt: 'uAt' } },
           )
             .extend({ name: { default: '' } })
             .getModel();
@@ -166,7 +166,7 @@ export const Test_ExtendedSchemas = ({ Schema }: any) => {
           for (const useParentOptions of options) {
             const Model = new Schema(
               { id: { constant: true, value: 1 } },
-              { timestamps: { updatedAt: 'u_At' } }
+              { timestamps: { updatedAt: 'u_At' } },
             )
               .extend({ name: { default: '' } }, { useParentOptions })
               .getModel();
@@ -183,7 +183,7 @@ export const Test_ExtendedSchemas = ({ Schema }: any) => {
         it('should respect "useParentOptions" option if enabled', async () => {
           const Model = new Schema(
             { id: { constant: true, value: 1 } },
-            { timestamps: { updatedAt: 'u_At' } }
+            { timestamps: { updatedAt: 'u_At' } },
           )
             .extend({ name: { default: '' } }, { useParentOptions: false })
             .getModel();

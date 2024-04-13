@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach } from 'bun:test';
 
 import { ERRORS } from '../../dist';
 import { expectFailure, expectNoFailure, validator } from './_utils';
@@ -14,9 +14,9 @@ export const Test_Validators = ({ Schema, fx }: any) => {
             dependent: {
               default: '',
               dependsOn: 'virtual',
-              resolver: () => ''
+              resolver: () => '',
             },
-            virtual: { virtual: true, validator }
+            virtual: { virtual: true, validator },
           });
 
           expectNoFailure(toPass);
@@ -33,9 +33,9 @@ export const Test_Validators = ({ Schema, fx }: any) => {
             dependent: {
               default: '',
               dependsOn: 'virtual',
-              resolver: () => ''
+              resolver: () => '',
             },
-            virtual: { virtual: true, validator: validatorArr }
+            virtual: { virtual: true, validator: validatorArr },
           });
 
           expectNoFailure(toPass);
@@ -55,9 +55,9 @@ export const Test_Validators = ({ Schema, fx }: any) => {
               dependent: {
                 default: '',
                 dependsOn: 'virtual',
-                resolver: () => ''
+                resolver: () => '',
               },
-              virtual: { virtual: true, validator }
+              virtual: { virtual: true, validator },
             });
 
             expectFailure(toFail);
@@ -68,7 +68,7 @@ export const Test_Validators = ({ Schema, fx }: any) => {
               expect(err.payload).toMatchObject({
                 prop: expect.arrayContaining(['Invalid validator']),
                 prop2: expect.arrayContaining(['Invalid validator']),
-                virtual: expect.arrayContaining(['Invalid validator'])
+                virtual: expect.arrayContaining(['Invalid validator']),
               });
             }
           }
@@ -84,14 +84,14 @@ export const Test_Validators = ({ Schema, fx }: any) => {
             null,
             undefined,
             {},
-            []
+            [],
           ];
 
           it('should reject if array provided is not of length 2', () => {
             const invalidValidators = [
               [],
               [validator],
-              [validator, validator, validator]
+              [validator, validator, validator],
             ];
 
             const message = 'Validator array must contain exactly 2 functions';
@@ -101,17 +101,17 @@ export const Test_Validators = ({ Schema, fx }: any) => {
                 prop: { default: '', validator: validatorArr },
                 prop2: {
                   required: true,
-                  validator: validatorArr
+                  validator: validatorArr,
                 },
                 dependent: {
                   default: '',
                   dependsOn: 'virtual',
-                  resolver: () => ''
+                  resolver: () => '',
                 },
                 virtual: {
                   virtual: true,
-                  validator: validatorArr
-                }
+                  validator: validatorArr,
+                },
               });
 
               expectFailure(toFail);
@@ -122,7 +122,7 @@ export const Test_Validators = ({ Schema, fx }: any) => {
                 expect(err.payload).toMatchObject({
                   prop: expect.arrayContaining([message]),
                   prop2: expect.arrayContaining([message]),
-                  virtual: expect.arrayContaining([message])
+                  virtual: expect.arrayContaining([message]),
                 });
               }
             }
@@ -134,17 +134,17 @@ export const Test_Validators = ({ Schema, fx }: any) => {
                 prop: { default: '', validator: [invalidValidator, validator] },
                 prop2: {
                   required: true,
-                  validator: [invalidValidator, validator]
+                  validator: [invalidValidator, validator],
                 },
                 dependent: {
                   default: '',
                   dependsOn: 'virtual',
-                  resolver: () => ''
+                  resolver: () => '',
                 },
                 virtual: {
                   virtual: true,
-                  validator: [invalidValidator, validator]
-                }
+                  validator: [invalidValidator, validator],
+                },
               });
 
               expectFailure(toFail);
@@ -154,14 +154,14 @@ export const Test_Validators = ({ Schema, fx }: any) => {
               } catch (err) {
                 expect(err.payload).toMatchObject({
                   prop: expect.arrayContaining([
-                    'Validator at index 0 is invalid'
+                    'Validator at index 0 is invalid',
                   ]),
                   prop2: expect.arrayContaining([
-                    'Validator at index 0 is invalid'
+                    'Validator at index 0 is invalid',
                   ]),
                   virtual: expect.arrayContaining([
-                    'Validator at index 0 is invalid'
-                  ])
+                    'Validator at index 0 is invalid',
+                  ]),
                 });
               }
             }
@@ -173,17 +173,17 @@ export const Test_Validators = ({ Schema, fx }: any) => {
                 prop: { default: '', validator: [validator, invalidValidator] },
                 prop2: {
                   required: true,
-                  validator: [validator, invalidValidator]
+                  validator: [validator, invalidValidator],
                 },
                 dependent: {
                   default: '',
                   dependsOn: 'virtual',
-                  resolver: () => ''
+                  resolver: () => '',
                 },
                 virtual: {
                   virtual: true,
-                  validator: [validator, invalidValidator]
-                }
+                  validator: [validator, invalidValidator],
+                },
               });
 
               expectFailure(toFail);
@@ -193,14 +193,14 @@ export const Test_Validators = ({ Schema, fx }: any) => {
               } catch (err) {
                 expect(err.payload).toMatchObject({
                   prop: expect.arrayContaining([
-                    'Validator at index 1 is invalid'
+                    'Validator at index 1 is invalid',
                   ]),
                   prop2: expect.arrayContaining([
-                    'Validator at index 1 is invalid'
+                    'Validator at index 1 is invalid',
                   ]),
                   virtual: expect.arrayContaining([
-                    'Validator at index 1 is invalid'
-                  ])
+                    'Validator at index 1 is invalid',
+                  ]),
                 });
               }
             }
@@ -211,21 +211,21 @@ export const Test_Validators = ({ Schema, fx }: any) => {
               const toFail = fx({
                 prop: {
                   default: '',
-                  validator: [invalidValidator, invalidValidator]
+                  validator: [invalidValidator, invalidValidator],
                 },
                 prop2: {
                   required: true,
-                  validator: [invalidValidator, invalidValidator]
+                  validator: [invalidValidator, invalidValidator],
                 },
                 dependent: {
                   default: '',
                   dependsOn: 'virtual',
-                  resolver: () => ''
+                  resolver: () => '',
                 },
                 virtual: {
                   virtual: true,
-                  validator: [invalidValidator, invalidValidator]
-                }
+                  validator: [invalidValidator, invalidValidator],
+                },
               });
 
               expectFailure(toFail);
@@ -236,7 +236,7 @@ export const Test_Validators = ({ Schema, fx }: any) => {
                 expect(err.payload).toMatchObject({
                   prop: expect.arrayContaining(['Invalid validators']),
                   prop2: expect.arrayContaining(['Invalid validators']),
-                  virtual: expect.arrayContaining(['Invalid validators'])
+                  virtual: expect.arrayContaining(['Invalid validators']),
                 });
               }
             }
@@ -250,7 +250,7 @@ export const Test_Validators = ({ Schema, fx }: any) => {
         it('should add corresponding properties and error messages passed with reason as an object', async () => {
           const messages = [
             ['Invalid Prop', ['Invalid Prop']],
-            [['Invalid Prop'], ['Invalid Prop']]
+            [['Invalid Prop'], ['Invalid Prop']],
           ];
 
           for (const [input, reason] of messages) {
@@ -260,8 +260,8 @@ export const Test_Validators = ({ Schema, fx }: any) => {
                 required: true,
                 validator() {
                   return { valid: false, reason: { prop: input } };
-                }
-              }
+                },
+              },
             }).getModel();
 
             const { data, error } = await Model.create({ prop: 'invalid' });
@@ -273,11 +273,11 @@ export const Test_Validators = ({ Schema, fx }: any) => {
                 prop: {
                   reasons: expect.arrayContaining([
                     'validation failed',
-                    ...reason
+                    ...reason,
                   ]),
-                  metadata: null
-                }
-              }
+                  metadata: null,
+                },
+              },
             });
           }
         });
@@ -288,7 +288,7 @@ export const Test_Validators = ({ Schema, fx }: any) => {
             dependent: {
               default: '',
               dependsOn: 'prop',
-              resolver: () => ''
+              resolver: () => '',
             },
             prop: {
               required: true,
@@ -298,11 +298,11 @@ export const Test_Validators = ({ Schema, fx }: any) => {
                   'reason object': {
                     constant: 'invalid constant',
                     dependent: 'invalid dependent',
-                    invalidProp: 'invalid prop'
-                  }
+                    invalidProp: 'invalid prop',
+                  },
                 };
-              }
-            }
+              },
+            },
           }).getModel();
 
           const { data, error } = await Model.create({});
@@ -313,9 +313,9 @@ export const Test_Validators = ({ Schema, fx }: any) => {
             payload: {
               prop: {
                 reasons: expect.arrayContaining(['validation failed']),
-                metadata: null
-              }
-            }
+                metadata: null,
+              },
+            },
           });
         });
 
@@ -330,7 +330,7 @@ export const Test_Validators = ({ Schema, fx }: any) => {
             14,
             {},
             () => {},
-            [() => {}]
+            [() => {}],
           ];
 
           for (const message of invalidMessages) {
@@ -340,8 +340,8 @@ export const Test_Validators = ({ Schema, fx }: any) => {
                 required: true,
                 validator() {
                   return { valid: false, reason: { prop1: message } };
-                }
-              }
+                },
+              },
             }).getModel();
 
             const { data, error } = await Model.create({});
@@ -352,9 +352,9 @@ export const Test_Validators = ({ Schema, fx }: any) => {
               payload: {
                 prop1: {
                   reasons: expect.arrayContaining(['validation failed']),
-                  metadata: null
-                }
-              }
+                  metadata: null,
+                },
+              },
             });
           }
         });
@@ -364,12 +364,12 @@ export const Test_Validators = ({ Schema, fx }: any) => {
             dependent: {
               default: '',
               dependsOn: 'virtual',
-              resolver: () => ''
+              resolver: () => '',
             },
             aliasedDependent: {
               default: '',
               dependsOn: 'virtualWithAlias',
-              resolver: () => ''
+              resolver: () => '',
             },
             name: {
               required: true,
@@ -380,10 +380,10 @@ export const Test_Validators = ({ Schema, fx }: any) => {
                     'name.first': 'Invalid first name',
                     'name.last': 'Invalid last name',
                     'lol.shouldReject': 'lol',
-                    shouldReject: 'lol'
-                  }
+                    shouldReject: 'lol',
+                  },
                 };
-              }
+              },
             },
             virtual: {
               virtual: true,
@@ -391,10 +391,10 @@ export const Test_Validators = ({ Schema, fx }: any) => {
                 return {
                   valid: false,
                   reason: {
-                    virtual: 'Invalid value'
-                  }
+                    virtual: 'Invalid value',
+                  },
                 };
-              }
+              },
             },
             virtualWithAlias: {
               virtual: true,
@@ -403,18 +403,18 @@ export const Test_Validators = ({ Schema, fx }: any) => {
                 return {
                   valid: false,
                   reason: {
-                    aliasedDependent: 'Invalid value provided'
-                  }
+                    aliasedDependent: 'Invalid value provided',
+                  },
                 };
-              }
-            }
+              },
+            },
           }).getModel();
 
           describe('creation', () => {
             it('should reject properly at creation', async () => {
               const { data, error } = await Model.create({
                 virtual: '',
-                virtualWithAlias: ''
+                virtualWithAlias: '',
               });
 
               expect(data).toBeNull();
@@ -423,27 +423,27 @@ export const Test_Validators = ({ Schema, fx }: any) => {
                 payload: {
                   'name.first': {
                     reasons: expect.arrayContaining(['Invalid first name']),
-                    metadata: null
+                    metadata: null,
                   },
                   'name.last': {
                     reasons: expect.arrayContaining(['Invalid last name']),
-                    metadata: null
+                    metadata: null,
                   },
                   virtual: {
                     reasons: expect.arrayContaining(['Invalid value']),
-                    metadata: null
+                    metadata: null,
                   },
                   aliasedDependent: {
                     reasons: expect.arrayContaining(['Invalid value provided']),
-                    metadata: null
-                  }
-                }
+                    metadata: null,
+                  },
+                },
               });
             });
 
             it('should reject properly at creation when virtual alias is provided', async () => {
               const { data, error } = await Model.create({
-                aliasedDependent: ''
+                aliasedDependent: '',
               });
 
               expect(data).toBeNull();
@@ -452,17 +452,17 @@ export const Test_Validators = ({ Schema, fx }: any) => {
                 payload: {
                   'name.first': {
                     reasons: expect.arrayContaining(['Invalid first name']),
-                    metadata: null
+                    metadata: null,
                   },
                   'name.last': {
                     reasons: expect.arrayContaining(['Invalid last name']),
-                    metadata: null
+                    metadata: null,
                   },
                   aliasedDependent: {
                     reasons: expect.arrayContaining(['Invalid value provided']),
-                    metadata: null
-                  }
-                }
+                    metadata: null,
+                  },
+                },
               });
             });
           });
@@ -471,7 +471,7 @@ export const Test_Validators = ({ Schema, fx }: any) => {
             it('should reject properly during updates', async () => {
               const { data, error } = await Model.update(
                 { aliasedDependent: '', dependent: '', name: undefined },
-                { virtualWithAlias: '', virtual: '', name: 'lol' }
+                { virtualWithAlias: '', virtual: '', name: 'lol' },
               );
 
               expect(data).toBeNull();
@@ -480,28 +480,28 @@ export const Test_Validators = ({ Schema, fx }: any) => {
                 payload: {
                   'name.first': {
                     reasons: expect.arrayContaining(['Invalid first name']),
-                    metadata: null
+                    metadata: null,
                   },
                   'name.last': {
                     reasons: expect.arrayContaining(['Invalid last name']),
-                    metadata: null
+                    metadata: null,
                   },
                   virtual: {
                     reasons: expect.arrayContaining(['Invalid value']),
-                    metadata: null
+                    metadata: null,
                   },
                   aliasedDependent: {
                     reasons: expect.arrayContaining(['Invalid value provided']),
-                    metadata: null
-                  }
-                }
+                    metadata: null,
+                  },
+                },
               });
             });
 
             it('should reject properly during updates when virtual alias is provided', async () => {
               const { data, error } = await Model.update(
                 { aliasedDependent: '', dependent: '', name: undefined },
-                { aliasedDependent: '', name: 'lol' }
+                { aliasedDependent: '', name: 'lol' },
               );
 
               expect(data).toBeNull();
@@ -510,17 +510,17 @@ export const Test_Validators = ({ Schema, fx }: any) => {
                 payload: {
                   'name.first': {
                     reasons: expect.arrayContaining(['Invalid first name']),
-                    metadata: null
+                    metadata: null,
                   },
                   'name.last': {
                     reasons: expect.arrayContaining(['Invalid last name']),
-                    metadata: null
+                    metadata: null,
                   },
                   aliasedDependent: {
                     reasons: expect.arrayContaining(['Invalid value provided']),
-                    metadata: null
-                  }
-                }
+                    metadata: null,
+                  },
+                },
               });
             });
           });
@@ -539,8 +539,8 @@ export const Test_Validators = ({ Schema, fx }: any) => {
                   required: true,
                   validator() {
                     return { valid: false, metadata };
-                  }
-                }
+                  },
+                },
               }).getModel();
 
               const { data, error } = await Model.create();
@@ -548,7 +548,7 @@ export const Test_Validators = ({ Schema, fx }: any) => {
               expect(data).toBeNull();
               expect(error).toMatchObject({
                 message: ERRORS.VALIDATION_ERROR,
-                payload: { prop2: expect.objectContaining({ metadata }) }
+                payload: { prop2: expect.objectContaining({ metadata }) },
               });
             }
           });
@@ -563,8 +563,8 @@ export const Test_Validators = ({ Schema, fx }: any) => {
                   default: '',
                   validator: () => ({
                     valid: false,
-                    metadata: { message: 'too bad' }
-                  })
+                    metadata: { message: 'too bad' },
+                  }),
                 },
                 prop2: {
                   required: true,
@@ -572,10 +572,10 @@ export const Test_Validators = ({ Schema, fx }: any) => {
                     return {
                       valid: false,
                       metadata,
-                      reason: { prop: { metadata: propMetadata } }
+                      reason: { prop: { metadata: propMetadata } },
                     };
-                  }
-                }
+                  },
+                },
               }).getModel();
 
               const { data, error } = await Model.create({ prop: 'invalid' });
@@ -586,10 +586,10 @@ export const Test_Validators = ({ Schema, fx }: any) => {
                 payload: {
                   prop: expect.objectContaining({
                     metadata: { message: 'too bad', ...propMetadata },
-                    reasons: expect.arrayContaining(['validation failed'])
+                    reasons: expect.arrayContaining(['validation failed']),
                   }),
-                  prop2: expect.objectContaining({ metadata })
-                }
+                  prop2: expect.objectContaining({ metadata }),
+                },
               });
             }
           });
@@ -606,8 +606,8 @@ export const Test_Validators = ({ Schema, fx }: any) => {
                   required: true,
                   validator() {
                     return { valid: false, metadata };
-                  }
-                }
+                  },
+                },
               }).getModel();
 
               const { data, error } = await Model.update({}, { prop2: '' });
@@ -615,7 +615,7 @@ export const Test_Validators = ({ Schema, fx }: any) => {
               expect(data).toBeNull();
               expect(error).toMatchObject({
                 message: ERRORS.VALIDATION_ERROR,
-                payload: { prop2: expect.objectContaining({ metadata }) }
+                payload: { prop2: expect.objectContaining({ metadata }) },
               });
             }
           });
@@ -628,9 +628,9 @@ export const Test_Validators = ({ Schema, fx }: any) => {
             default: '',
             validator() {
               throw new Error('lolol');
-            }
+            },
           },
-          prop2: { default: '', validator: () => false }
+          prop2: { default: '', validator: () => false },
         }).getModel();
 
         it("should return 'validation failed' at creation", async () => {
@@ -641,19 +641,19 @@ export const Test_Validators = ({ Schema, fx }: any) => {
             message: ERRORS.VALIDATION_ERROR,
             payload: expect.objectContaining({
               prop1: expect.objectContaining({
-                reasons: expect.arrayContaining(['validation failed'])
+                reasons: expect.arrayContaining(['validation failed']),
               }),
               prop2: expect.objectContaining({
-                reasons: expect.arrayContaining(['validation failed'])
-              })
-            })
+                reasons: expect.arrayContaining(['validation failed']),
+              }),
+            }),
           });
         });
 
         it("should return 'validation failed' during updates", async () => {
           const { data, error } = await Model.update(
             { prop1: '', prop2: '' },
-            { prop1: 'updated', prop2: 'updated' }
+            { prop1: 'updated', prop2: 'updated' },
           );
 
           expect(data).toBeNull();
@@ -661,12 +661,12 @@ export const Test_Validators = ({ Schema, fx }: any) => {
             message: ERRORS.VALIDATION_ERROR,
             payload: expect.objectContaining({
               prop1: expect.objectContaining({
-                reasons: expect.arrayContaining(['validation failed'])
+                reasons: expect.arrayContaining(['validation failed']),
               }),
               prop2: expect.objectContaining({
-                reasons: expect.arrayContaining(['validation failed'])
-              })
-            })
+                reasons: expect.arrayContaining(['validation failed']),
+              }),
+            }),
           });
         });
       });
@@ -695,30 +695,30 @@ export const Test_Validators = ({ Schema, fx }: any) => {
             dependent: {
               default: '',
               dependsOn: ['virtual', 'virtual2'],
-              resolver: validator
+              resolver: validator,
             },
             lax: { default: '' },
             readonly: {
               readonly: true,
-              validator: [validator, makeSecondaryValidator('readonly')]
+              validator: [validator, makeSecondaryValidator('readonly')],
             },
             readonlyLax: {
               default: '',
               readonly: 'lax',
-              validator: [validator, makeSecondaryValidator('readonlyLax')]
+              validator: [validator, makeSecondaryValidator('readonlyLax')],
             },
             required: {
               required: true,
-              validator: [validator, makeSecondaryValidator('required')]
+              validator: [validator, makeSecondaryValidator('required')],
             },
             virtual: {
               virtual: true,
-              validator: [validator, makeSecondaryValidator('virtual')]
+              validator: [validator, makeSecondaryValidator('virtual')],
             },
             virtual2: {
               virtual: true,
-              validator: [validator, makeSecondaryValidator('virtual2')]
-            }
+              validator: [validator, makeSecondaryValidator('virtual2')],
+            },
           }).getModel();
 
           afterEach(() => {
@@ -733,7 +733,7 @@ export const Test_Validators = ({ Schema, fx }: any) => {
             expect(valuesProvided).toEqual({
               readonly: undefined,
               readonlyLax: '',
-              required: undefined
+              required: undefined,
             });
           });
 
@@ -745,7 +745,7 @@ export const Test_Validators = ({ Schema, fx }: any) => {
               readonly: undefined,
               readonlyLax: '',
               required: undefined,
-              virtual2: true
+              virtual2: true,
             });
           });
 
@@ -758,8 +758,8 @@ export const Test_Validators = ({ Schema, fx }: any) => {
                 readonly: true,
                 readonlyLax: true,
                 virtual: true,
-                virtual2: true
-              }
+                virtual2: true,
+              },
             );
 
             expect(error).toBeNull();
@@ -769,7 +769,7 @@ export const Test_Validators = ({ Schema, fx }: any) => {
           it('should only trigger secondary validators of readonly props that have not changed during updates', async () => {
             const { error } = await Model.update(
               { lax: 2, required: 1, readonly: 1, readonlyLax: '' },
-              { readonly: true, readonlyLax: true }
+              { readonly: true, readonlyLax: true },
             );
 
             expect(error).toBeNull();
@@ -794,7 +794,7 @@ export const Test_Validators = ({ Schema, fx }: any) => {
                   stats[prop].secondary = true;
 
                   return true;
-                }
+                },
               ];
             }
 
@@ -809,22 +809,22 @@ export const Test_Validators = ({ Schema, fx }: any) => {
                 lax: {
                   default: '',
                   shouldInit: false,
-                  validator: makeSecondaryValidator('lax')
+                  validator: makeSecondaryValidator('lax'),
                 },
                 dependent: {
                   default: '',
                   dependsOn: ['v1', 'v2'],
-                  resolver: () => ''
+                  resolver: () => '',
                 },
                 v1: {
                   virtual: true,
-                  validator: makeSecondaryValidator('v1')
+                  validator: makeSecondaryValidator('v1'),
                 },
                 v2: {
                   virtual: true,
                   shouldInit: false,
-                  validator: makeSecondaryValidator('v2')
-                }
+                  validator: makeSecondaryValidator('v2'),
+                },
               }).getModel();
 
               await Model.create();
@@ -842,22 +842,22 @@ export const Test_Validators = ({ Schema, fx }: any) => {
                 lax: {
                   default: '',
                   shouldUpdate: false,
-                  validator: makeSecondaryValidator('lax')
+                  validator: makeSecondaryValidator('lax'),
                 },
                 dependent: {
                   default: '',
                   dependsOn: ['v1', 'v2'],
-                  resolver: () => ''
+                  resolver: () => '',
                 },
                 v1: {
                   virtual: true,
-                  validator: makeSecondaryValidator('v1')
+                  validator: makeSecondaryValidator('v1'),
                 },
                 v2: {
                   virtual: true,
                   shouldUpdate: false,
-                  validator: makeSecondaryValidator('v2')
-                }
+                  validator: makeSecondaryValidator('v2'),
+                },
               }).getModel();
 
               const data = { dependent: true, lax: true };
@@ -887,7 +887,7 @@ export const Test_Validators = ({ Schema, fx }: any) => {
             for (const value of values) {
               const Model = new Schema({
                 p1: { default: '' },
-                p2: { default: '', validator: [validator, () => value] }
+                p2: { default: '', validator: [validator, () => value] },
               }).getModel();
 
               const { data, error } = await Model.create();
@@ -897,14 +897,14 @@ export const Test_Validators = ({ Schema, fx }: any) => {
                 message: ERRORS.VALIDATION_ERROR,
                 payload: {
                   p2: expect.objectContaining({
-                    reasons: expect.arrayContaining(['validation failed'])
-                  })
-                }
+                    reasons: expect.arrayContaining(['validation failed']),
+                  }),
+                },
               });
 
               const { data: updates, error: error2 } = await Model.update(
                 { p1: 'p1', p2: '' },
-                { p1: 'updated', p2: 'updated' }
+                { p1: 'updated', p2: 'updated' },
               );
 
               expect(updates).toBeNull();
@@ -912,9 +912,9 @@ export const Test_Validators = ({ Schema, fx }: any) => {
                 message: ERRORS.VALIDATION_ERROR,
                 payload: {
                   p2: expect.objectContaining({
-                    reasons: expect.arrayContaining(['validation failed'])
-                  })
-                }
+                    reasons: expect.arrayContaining(['validation failed']),
+                  }),
+                },
               });
             }
           });
@@ -928,21 +928,24 @@ export const Test_Validators = ({ Schema, fx }: any) => {
                 validator: [
                   validator,
                   (_, { isUpdate }) => ({
-                    reason: isUpdate ? 'failed to validate' : 'p1'
-                  })
-                ]
+                    reason: isUpdate ? 'failed to validate' : 'p1',
+                  }),
+                ],
               },
               p2: {
                 default: '',
-                validator: [validator, () => ({ reason: ['p2'] })]
+                validator: [validator, () => ({ reason: ['p2'] })],
               },
               p3: {
                 default: '',
-                validator: [validator, () => ({ reason: ['error1', 'error2'] })]
+                validator: [
+                  validator,
+                  () => ({ reason: ['error1', 'error2'] }),
+                ],
               },
               p4: {
                 default: '',
-                validator: [validator, () => null]
+                validator: [validator, () => null],
               },
               d1: { default: '', dependsOn: 'v', resolver },
               d2: { default: '', dependsOn: 'v', resolver },
@@ -957,9 +960,9 @@ export const Test_Validators = ({ Schema, fx }: any) => {
                     return isUpdate
                       ? { reason: ['lolz'] }
                       : { reason: 'error', metadata: { lol: true } };
-                  }
-                ]
-              }
+                  },
+                ],
+              },
             }).getModel();
 
             const res = await Model.create({ v: true });
@@ -967,44 +970,44 @@ export const Test_Validators = ({ Schema, fx }: any) => {
             expect(res.data).toBeNull();
             expect(res.error.payload).toMatchObject({
               p1: expect.objectContaining({
-                reasons: expect.arrayContaining(['p1'])
+                reasons: expect.arrayContaining(['p1']),
               }),
               p2: expect.objectContaining({
-                reasons: expect.arrayContaining(['p2'])
+                reasons: expect.arrayContaining(['p2']),
               }),
               p3: expect.objectContaining({
-                reasons: expect.arrayContaining(['error1', 'error2'])
+                reasons: expect.arrayContaining(['error1', 'error2']),
               }),
               p4: expect.objectContaining({
-                reasons: expect.arrayContaining(['validation failed'])
+                reasons: expect.arrayContaining(['validation failed']),
               }),
               v: expect.objectContaining({
                 reasons: expect.arrayContaining(['error']),
-                metadata: { lol: true }
-              })
+                metadata: { lol: true },
+              }),
             });
 
             const res2 = await Model.update(
               {},
-              { p1: true, p2: 'updated', d1: 'updated' }
+              { p1: true, p2: 'updated', d1: 'updated' },
             );
             expect(res2.data).toBeNull();
             expect(res2.error.payload).toMatchObject({
               p1: expect.objectContaining({
-                reasons: expect.arrayContaining(['failed to validate'])
+                reasons: expect.arrayContaining(['failed to validate']),
               }),
               p2: expect.objectContaining({
-                reasons: expect.arrayContaining(['p2'])
+                reasons: expect.arrayContaining(['p2']),
               }),
               d1: expect.objectContaining({
-                reasons: expect.arrayContaining(['lolz'])
-              })
+                reasons: expect.arrayContaining(['lolz']),
+              }),
             });
 
             const res3 = await Model.create({ v: 'throw' });
             expect(res3.data).toBeNull();
             expect(res3.error.payload).toMatchObject({
-              v: expect.objectContaining({ reasons: ['validation failed'] })
+              v: expect.objectContaining({ reasons: ['validation failed'] }),
             });
           });
         });

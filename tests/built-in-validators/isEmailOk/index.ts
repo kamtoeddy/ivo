@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'bun:test';
 
 export const isEmailOkTest = ({ isEmailOk }: { isEmailOk: Function }) => {
   describe('isEmailOk', () => {
@@ -6,7 +6,7 @@ export const isEmailOkTest = ({ isEmailOk }: { isEmailOk: Function }) => {
       const truthy = [
         'example@gmail.com',
         'james71@hotmail.co.uk',
-        ' james71@hotmail.co.uk'
+        ' james71@hotmail.co.uk',
       ];
 
       for (const value of truthy) {
@@ -34,7 +34,7 @@ export const isEmailOkTest = ({ isEmailOk }: { isEmailOk: Function }) => {
       const truthy = [
         'example@gmail.com',
         'james71@hotmail.co.uk',
-        ' james71@hotmail.co.uk'
+        ' james71@hotmail.co.uk',
       ];
 
       for (const value of truthy) {

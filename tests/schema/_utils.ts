@@ -1,26 +1,18 @@
-import { expect } from 'vitest';
+import { expect } from 'bun:test';
 import { ERRORS, isEqual, ObjectType } from '../../dist';
 
 export {
   expectFailure,
   expectNoFailure,
-  expectPromiseFailure,
   findBy,
   getSubObject,
   getValidSchema,
   makeFx,
-  validator
+  validator,
 };
 
 function expectFailure(fx: Function, message: string = ERRORS.INVALID_SCHEMA) {
   expect(fx).toThrow(message);
-}
-
-function expectPromiseFailure(
-  fx: Function,
-  message: string = ERRORS.INVALID_SCHEMA
-) {
-  expect(fx).rejects.toThrow(message);
 }
 
 function expectNoFailure(fx: Function) {
@@ -52,7 +44,7 @@ function getValidSchema(extraDefinition = {}, extraProps = {}) {
   return {
     propertyName1: { default: '', validator, ...extraDefinition },
     propertyName2: { default: '', validator },
-    ...extraProps
+    ...extraProps,
   };
 }
 

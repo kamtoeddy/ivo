@@ -1,4 +1,4 @@
-import { beforeAll, describe, it, expect } from 'vitest';
+import { beforeAll, describe, it, expect } from 'bun:test';
 
 import { ERRORS } from '../../../../dist';
 
@@ -107,7 +107,7 @@ export const CommonInheritanceTest = (
             quantity: 100,
           });
 
-        expect(toFail).rejects.toThrow(ERRORS.NOTHING_TO_UPDATE);
+        expect(toFail).toThrow(ERRORS.NOTHING_TO_UPDATE);
       });
 
       it('should update on virtuals', async () => {
