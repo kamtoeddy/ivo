@@ -9,8 +9,6 @@ import {
 export type {
   ArrayOfMinSizeOne,
   ArrayOfMinSizeTwo,
-  Context,
-  DeletionContext,
   DefinitionRule,
   KeyOf,
   Merge,
@@ -18,12 +16,19 @@ export type {
   PartialContext,
   PostValidationConfig,
   PostValidationHandler,
-  Summary,
   RealType,
   ResponseErrorObject,
   TypeOf,
   Validator,
   ValidationResponse,
+  // ctx
+  Context,
+  DeletionContext,
+  ImmutableContext,
+  MutableContext,
+  // summary
+  ImmutableSummary,
+  MutableSummary,
   ValidatorResponse,
   ValidatorResponseObject,
   InternalValidatorResponse,
@@ -47,16 +52,37 @@ type Context<
   Merge<Input, Output> & { __getOptions__: () => Readonly<CtxOptions> }
 > & {};
 
+type ImmutableContext<
+  Input,
+  Output = Input,
+  CtxOptions extends ObjectType = {},
+> = Context<Input, Output, CtxOptions>;
+
+type MutableContext<
+  Input,
+  Output = Input,
+  CtxOptions extends ObjectType = {},
+> = Readonly<
+  Merge<Input, Output> & {
+    __getOptions__: () => Readonly<CtxOptions>;
+    __updateOptions__: (updates: Partial<CtxOptions>) => void;
+  }
+> & {};
+
 type DeletionContext<Output, CtxOptions extends ObjectType = {}> = Readonly<
   Output & { __getOptions__: () => Readonly<CtxOptions> }
 > & {};
 
 type PartialContext<Input, Output> = Readonly<Merge<Input, Output>>;
 
-type Summary<Input, Output = Input, CtxOptions extends ObjectType = {}> = (
+type ImmutableSummary<
+  Input,
+  Output = Input,
+  CtxOptions extends ObjectType = {},
+> = (
   | Readonly<{
       changes: null;
-      context: Context<Input, Output, CtxOptions>;
+      context: ImmutableContext<Input, Output, CtxOptions>;
       inputValues: Partial<RealType<Input>>;
       isUpdate: false;
       previousValues: null;
@@ -64,7 +90,30 @@ type Summary<Input, Output = Input, CtxOptions extends ObjectType = {}> = (
     }>
   | Readonly<{
       changes: Partial<RealType<Output>>;
-      context: Context<Input, Output, CtxOptions>;
+      context: ImmutableContext<Input, Output, CtxOptions>;
+      inputValues: Partial<RealType<Input>>;
+      isUpdate: true;
+      previousValues: Readonly<Output>;
+      values: Readonly<Output>;
+    }>
+) & {};
+
+type MutableSummary<
+  Input,
+  Output = Input,
+  CtxOptions extends ObjectType = {},
+> = (
+  | Readonly<{
+      changes: null;
+      context: MutableContext<Input, Output, CtxOptions>;
+      inputValues: Partial<RealType<Input>>;
+      isUpdate: false;
+      previousValues: null;
+      values: Readonly<Output>;
+    }>
+  | Readonly<{
+      changes: Partial<RealType<Output>>;
+      context: MutableContext<Input, Output, CtxOptions>;
       inputValues: Partial<RealType<Input>>;
       isUpdate: true;
       previousValues: Readonly<Output>;
@@ -75,13 +124,13 @@ type Summary<Input, Output = Input, CtxOptions extends ObjectType = {}> = (
 type TypeOf<T> = Exclude<T, undefined>;
 
 type AsyncSetter<T, Input, Output, CtxOptions extends ObjectType> = (
-  context: Context<Input, Output, CtxOptions>,
+  context: MutableContext<Input, Output, CtxOptions>,
 ) => TypeOf<T> | Promise<TypeOf<T>>;
 
 type NotAllowedError = string | string[] | InputFieldError;
 
 type Setter<T, Input, Output, CtxOptions extends ObjectType> = (
-  context: Context<Input, Output, CtxOptions>,
+  context: MutableContext<Input, Output, CtxOptions>,
 ) => TypeOf<T>;
 
 type RequiredHandlerRes =
@@ -92,21 +141,12 @@ type RequiredHandlerRes =
   | readonly [boolean, InputFieldError];
 
 type RequiredHandler<Input, Output, CtxOptions extends ObjectType> = (
-  summary: Summary<Input, Output, CtxOptions> & {},
+  summary: MutableSummary<Input, Output, CtxOptions> & {},
 ) => RequiredHandlerRes | Promise<RequiredHandlerRes>;
 
-type AsyncShouldUpdateResponse<CtxOptions extends ObjectType = {}> = {
-  update: boolean;
-  contextOptionsUpdate?: Partial<CtxOptions>;
-};
-
 type AsyncShouldUpdate<Input, Output, CtxOptions extends ObjectType = {}> = (
-  summary: Summary<Input, Output, CtxOptions> & {},
-) =>
-  | boolean
-  | AsyncShouldUpdateResponse
-  | Promise<boolean>
-  | Promise<AsyncShouldUpdateResponse>;
+  summary: MutableSummary<Input, Output, CtxOptions> & {},
+) => boolean | Promise<boolean>;
 
 type Resolver<
   K extends keyof Output,
@@ -114,7 +154,7 @@ type Resolver<
   Output,
   CtxOptions extends ObjectType,
 > = (
-  summary: Summary<Input, Output, CtxOptions> & {},
+  summary: MutableSummary<Input, Output, CtxOptions> & {},
 ) => TypeOf<Output[K]> | Promise<TypeOf<Output[K]>>;
 
 type VirtualResolver<
@@ -123,7 +163,7 @@ type VirtualResolver<
   Output,
   CtxOptions extends ObjectType,
 > = (
-  summary: Summary<Input, Output, CtxOptions>,
+  summary: MutableSummary<Input, Output, CtxOptions>,
 ) => TypeOf<Input[K]> | Promise<TypeOf<Input[K]>>;
 
 type PostValidationHandler<
@@ -132,7 +172,7 @@ type PostValidationHandler<
   Aliases,
   CtxOptions extends ObjectType,
 > = (
-  summary: Summary<Input, Output, CtxOptions>,
+  summary: MutableSummary<Input, Output, CtxOptions>,
   propertiesProvided: KeyOf<Input>[],
 ) =>
   | void
@@ -162,13 +202,17 @@ namespace NS {
     Input,
     Output,
     CtxOptions extends ObjectType = {},
-  > = (context: Context<Input, Output, CtxOptions> & {}) => any | Promise<any>;
+  > = (
+    context: ImmutableContext<Input, Output, CtxOptions> & {},
+  ) => any | Promise<any>;
 
   export type SuccessHandler<
     Input,
     Output,
     CtxOptions extends ObjectType = {},
-  > = (summary: Summary<Input, Output, CtxOptions> & {}) => any | Promise<any>;
+  > = (
+    summary: ImmutableSummary<Input, Output, CtxOptions> & {},
+  ) => any | Promise<any>;
 
   export type Definitions<
     Input,
@@ -314,7 +358,10 @@ namespace NS {
     Input,
     Output,
     CtxOptions extends ObjectType,
-  > = Exclude<KeyOf<Context<Input, Output, CtxOptions>>, K | '__getOptions__'>;
+  > = Exclude<
+    KeyOf<MutableContext<Input, Output, CtxOptions>>,
+    K | '__getOptions__' | '__updateOptions__'
+  >;
 
   type Dependent<
     K extends keyof Output,
@@ -642,7 +689,7 @@ type Validator<
   CtxOptions extends ObjectType = {},
 > = (
   value: any,
-  summary: Summary<Input, Output, CtxOptions> & {},
+  summary: MutableSummary<Input, Output, CtxOptions> & {},
 ) =>
   | ValidatorResponse<TypeOf<Output[K]>, Input, Aliases>
   | Promise<ValidatorResponse<TypeOf<Output[K]>, Input, Aliases>>;
@@ -655,7 +702,7 @@ type SecondaryValidator<
   CtxOptions extends ObjectType = {},
 > = (
   value: T,
-  summary: Summary<Input, Output, CtxOptions> & {},
+  summary: MutableSummary<Input, Output, CtxOptions> & {},
 ) =>
   | ValidatorResponse<T, Input, Aliases>
   | Promise<ValidatorResponse<T, Input, Aliases>>;
@@ -668,7 +715,7 @@ type VirtualValidator<
   CtxOptions extends ObjectType = {},
 > = (
   value: any,
-  summary: Summary<Input, Output, CtxOptions> & {},
+  summary: MutableSummary<Input, Output, CtxOptions> & {},
 ) =>
   | ValidatorResponse<TypeOf<Input[K]>, Input, Aliases>
   | Promise<ValidatorResponse<TypeOf<Input[K]>, Input, Aliases>>;

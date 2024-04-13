@@ -1,12 +1,12 @@
-import { Summary, StringOptions } from '../../../../dist';
+import { StringOptions, MutableSummary } from '../../../../dist';
 import {
   IOtherMeasureUnit,
   IOtherQuantity,
   StoreItemInput,
-  StoreItem
+  StoreItem,
 } from './types';
 
-type SummaryType = Summary<StoreItemInput, StoreItem>;
+type SummaryType = MutableSummary<StoreItemInput, StoreItem>;
 
 import { isArrayOk, isNumberOk, isStringOk } from '../../../../src';
 import { findBy } from '../../_utils';
@@ -21,7 +21,7 @@ export const validateName = (val: any) => {
 
 export const validateString = (
   errorMessage = '',
-  options: StringOptions = {}
+  options: StringOptions = {},
 ) => {
   return (val: any) => {
     const isValid = isStringOk(val, options);
@@ -35,7 +35,7 @@ export const validateString = (
 
 export const validateOtherUnit = (value: any) => {
   const isValidCoeff = isNumberOk(value?.coefficient, {
-    range: { bounds: [0], inclusiveBottom: false }
+    range: { bounds: [0], inclusiveBottom: false },
   });
   const isValidName = isStringOk(value?.name);
 
@@ -45,8 +45,8 @@ export const validateOtherUnit = (value: any) => {
     valid: true,
     validated: {
       coefficient: isValidCoeff.validated,
-      name: isValidName.validated
-    }
+      name: isValidName.validated,
+    },
   };
 };
 
@@ -57,7 +57,7 @@ export const validateOtherUnits = (value: any) => {
     filter: (v) => validateOtherUnit(v).valid,
     modifier: (v) => validateOtherUnit(v).validated,
     sorter: (a, b) => (a.name < b.name ? -1 : 1),
-    uniqueKey: 'name'
+    uniqueKey: 'name',
   });
 };
 
@@ -71,38 +71,38 @@ export const validateOtherQuantity = (value: any, ctx: StoreItemInput) => {
   const mu = getMeasureUnit(ctx.otherMeasureUnits!, value?.name);
 
   const isValidQty = isNumberOk(value?.quantity, {
-    range: { bounds: [0], inclusiveBottom: false }
+    range: { bounds: [0], inclusiveBottom: false },
   });
 
   if (!mu || !isValidQty.valid) return { valid: false };
 
   return {
     valid: true,
-    validated: { name: value.name, quantity: isValidQty.validated }
+    validated: { name: value.name, quantity: isValidQty.validated },
   };
 };
 
 export const validateQuantities = async (
   value: any,
-  { context }: SummaryType
+  { context }: SummaryType,
 ) => {
   return isArrayOk<IOtherQuantity>(value, {
     empty: true,
     unique: false,
     filter: (v) => validateOtherQuantity(v, context).valid,
-    modifier: (v) => validateOtherQuantity(v, context).validated
+    modifier: (v) => validateOtherQuantity(v, context).validated,
   });
 };
 
 const getMeasureUnit = (
   otherMeasureUnits: IOtherMeasureUnit[],
-  name: string
+  name: string,
 ) => {
   return findBy(otherMeasureUnits, { name });
 };
 
 export const sanitizeQuantities = ({
-  context: { quantities, otherMeasureUnits }
+  context: { quantities, otherMeasureUnits },
 }: SummaryType) => {
   return (quantities as IOtherQuantity[]).reduce((prev, { name, quantity }) => {
     const mu = getMeasureUnit(otherMeasureUnits!, name);

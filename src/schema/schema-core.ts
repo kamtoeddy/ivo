@@ -26,10 +26,8 @@ import {
 import { ObjectType } from '../utils';
 import {
   DefinitionRule,
-  Context,
   NS as ns,
   KeyOf,
-  Summary,
   ALLOWED_OPTIONS,
   DEFINITION_RULES,
   CONSTANT_RULES,
@@ -38,6 +36,8 @@ import {
   PartialContext,
   PostValidationConfig,
   PostValidationHandler,
+  Context,
+  MutableSummary,
 } from './types';
 
 export const defaultOptions = {
@@ -47,7 +47,7 @@ export const defaultOptions = {
   setMissingDefaultsOnUpdate: false,
   shouldUpdate: true,
   timestamps: false,
-} as ns.Options<any, any, any>;
+} as ns.Options<any, any, any, any, any>;
 
 type InvalidPostValidateConfigMessage =
   | 'default'
@@ -99,16 +99,11 @@ export abstract class SchemaCore<
   protected _options: ns.InternalOptions<Input, Output, CtxOptions>;
 
   // contexts & values
-  protected context: Context<Input, Output, CtxOptions> = {} as Context<
-    Input,
-    Output,
-    CtxOptions
-  >;
+  protected context = {} as Context<Input, Output, CtxOptions>;
   protected contextOptions: CtxOptions = {} as CtxOptions;
 
   protected defaults: Partial<Output> = {};
-  protected partialContext: PartialContext<Input, Output> =
-    {} as PartialContext<Input, Output>;
+  protected partialContext = {} as PartialContext<Input, Output>;
   protected values: Output = {} as Output;
 
   // maps
@@ -188,7 +183,7 @@ export abstract class SchemaCore<
 
   protected _getPartialContext = () => this._getFrozenCopy(this.partialContext);
 
-  protected _initializeContexts = () => {
+  protected _initializeImmutableContexts = () => {
     this.context = { ...this.defaults, ...this.values } as any;
     this.partialContext = {} as PartialContext<Input, Output>;
   };
@@ -591,7 +586,7 @@ export abstract class SchemaCore<
 
   protected _getRequiredState = async (
     prop: string,
-    summary: Summary<Input, Output>,
+    summary: MutableSummary<Input, Output>,
   ): Promise<[boolean, string | FieldError]> => {
     const { required } = this._getDefinition(prop);
 

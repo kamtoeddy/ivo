@@ -19,13 +19,17 @@ export {
   toArray,
 } from './utils';
 export type {
-  Context,
+  // ctx
   DeletionContext,
+  ImmutableContext,
+  MutableContext,
+  // summary
+  ImmutableSummary,
+  MutableSummary,
   KeyOf,
   Merge,
   ArrayOfMinSizeOne as NonEmptyArray,
   RealType,
-  Summary,
   ValidatorResponse,
   ValidatorResponseObject,
   XOR,
