@@ -10,12 +10,12 @@ Setting the default value of a given property can be done by:
 Example:
 
 ```ts
-import { Schema, type Context } from 'ivo';
+import { Schema, type MutableContext } from 'ivo';
 
 const userSchema = new Schema({
   favoriteColor: { default: 'indigo', validator: validateColor },
   userName: {
-    default: (ctx: Context<Input, Output>) => '',
+    default: (ctx: MutableContext) => '',
     validator: validateUserName,
   },
 });

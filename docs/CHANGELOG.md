@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+# v1.3.0 <small><sup>14-04-2024</sup></small>
+
+- Split Context into ImmutableContext & MutableContext and Summary into ImmutableSummary & MutableSummary
+- Add `__updateOptions__` method to MutableContext to help update CtxOptions from within an operation
+- Fix issue with post-validation config not rejecting invalid properties
+- Fix issue with ctx options not being reset on every operation
+
 # v1.2.3 <small><sup>31-03-2024</sup></small>
 
 - Fix issue with built-in validator casting non-nullable values to string

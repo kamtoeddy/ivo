@@ -14,7 +14,7 @@ Dependent properties could also be used in combination with other rules like [**
 Example:
 
 ```ts
-import { Schema, type Summary } from 'ivo';
+import { Schema, type MutableSummary } from 'ivo';
 
 type Input = {
   firstName: string;
@@ -37,7 +37,7 @@ const userSchema = new Schema<Input, Output>({
   lastName: { required: true, validator: validateName },
 });
 
-function getFullName({ context }: Summary<Input, Output>) {
+function getFullName({ context }: MutableSummary<Input, Output>) {
   const { firstName, lastName } = context;
 
   return `${firstName} ${lastName}`;

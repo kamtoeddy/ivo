@@ -13,7 +13,7 @@ This type of property is set at creation and never changes.
 Example:
 
 ```ts
-import { Schema, type Context } from 'ivo';
+import { Schema, type MutableContext } from 'ivo';
 
 type Input = {
   userName: string;
@@ -25,7 +25,7 @@ type Output = {
   role: string;
 };
 
-type Ctx = Context<Input, Output>;
+type Ctx = MutableContext<Input, Output>;
 
 const userSchema = new Schema<Input, Output>({
   dateJoined: { constant: true, value: () => new Date() },
