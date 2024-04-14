@@ -1,12 +1,7 @@
-import { beforeAll, describe, test, it, expect } from 'vitest';
+import { beforeAll, describe, test, it, expect } from 'bun:test';
 
 import { ERRORS } from '../../../dist';
-import {
-  expectFailure,
-  expectNoFailure,
-  expectPromiseFailure,
-  getValidSchema
-} from '../_utils';
+import { expectFailure, expectNoFailure, getValidSchema } from '../_utils';
 
 export const Test_SchemaErrors = ({ Schema, fx }: any) => {
   describe('Schema.options.errors', () => {
@@ -39,9 +34,9 @@ export const Test_SchemaErrors = ({ Schema, fx }: any) => {
           readonly: {
             readonly: 'lax',
             default: 'readonly-default',
-            validator
+            validator,
           },
-          required: { required: true, validator }
+          required: { required: true, validator },
         };
 
         silentModel = new Schema(definition).getModel();
@@ -55,13 +50,13 @@ export const Test_SchemaErrors = ({ Schema, fx }: any) => {
         async (model) => {
           const { data } = await model.create({
             readonly: 'lax',
-            required: true
+            required: true,
           });
 
           expect(data).toEqual({
             lax: 'lax-default',
             readonly: 'lax',
-            required: true
+            required: true,
           });
 
           {
@@ -69,14 +64,14 @@ export const Test_SchemaErrors = ({ Schema, fx }: any) => {
               {
                 lax: 'lax-default',
                 readonly: 'lax',
-                required: true
+                required: true,
               },
-              { required: 'required' }
+              { required: 'required' },
             );
 
             expect(data).toEqual({ required: 'required' });
           }
-        }
+        },
       );
 
       describe('silent', () => {
@@ -85,7 +80,7 @@ export const Test_SchemaErrors = ({ Schema, fx }: any) => {
           const { error } = await silentModel.create({
             lax: false,
             readonly: 'lax',
-            required: ''
+            required: '',
           });
 
           expect(error).toEqual(
@@ -94,14 +89,14 @@ export const Test_SchemaErrors = ({ Schema, fx }: any) => {
               payload: {
                 lax: {
                   reasons: expect.arrayContaining(['Invalid value']),
-                  metadata: null
+                  metadata: null,
                 },
                 required: {
                   reasons: expect.arrayContaining(['Invalid value']),
-                  metadata: null
-                }
-              }
-            })
+                  metadata: null,
+                },
+              },
+            }),
           );
         });
 
@@ -111,9 +106,9 @@ export const Test_SchemaErrors = ({ Schema, fx }: any) => {
             {
               lax: 'lax-default',
               readonly: 'lax',
-              required: true
+              required: true,
             },
-            { lax: false, required: '' }
+            { lax: false, required: '' },
           );
 
           expect(error).toEqual(
@@ -122,14 +117,14 @@ export const Test_SchemaErrors = ({ Schema, fx }: any) => {
               payload: {
                 lax: {
                   reasons: expect.arrayContaining(['Invalid value']),
-                  metadata: null
+                  metadata: null,
                 },
                 required: {
                   reasons: expect.arrayContaining(['Invalid value']),
-                  metadata: null
-                }
-              }
-            })
+                  metadata: null,
+                },
+              },
+            }),
           );
         });
 
@@ -138,16 +133,16 @@ export const Test_SchemaErrors = ({ Schema, fx }: any) => {
             {
               lax: 'lax-default',
               readonly: 'lax',
-              required: true
+              required: true,
             },
-            { readonly: 'New val' }
+            { readonly: 'New val' },
           );
 
           expect(error).toEqual(
             expect.objectContaining({
               message: ERRORS.NOTHING_TO_UPDATE,
-              payload: {}
-            })
+              payload: {},
+            }),
           );
         });
       });
@@ -159,10 +154,10 @@ export const Test_SchemaErrors = ({ Schema, fx }: any) => {
             modelToThrow.create({
               lax: false,
               readonly: 'lax',
-              required: ''
+              required: '',
             });
 
-          expectPromiseFailure(toFail, ERRORS.VALIDATION_ERROR);
+          expectFailure(toFail, ERRORS.VALIDATION_ERROR);
 
           try {
             await toFail();
@@ -173,14 +168,14 @@ export const Test_SchemaErrors = ({ Schema, fx }: any) => {
                 payload: {
                   lax: {
                     reasons: expect.arrayContaining(['Invalid value']),
-                    metadata: null
+                    metadata: null,
                   },
                   required: {
                     reasons: expect.arrayContaining(['Invalid value']),
-                    metadata: null
-                  }
-                }
-              })
+                    metadata: null,
+                  },
+                },
+              }),
             );
           }
         });
@@ -192,12 +187,12 @@ export const Test_SchemaErrors = ({ Schema, fx }: any) => {
               {
                 lax: 'lax-default',
                 readonly: 'lax',
-                required: true
+                required: true,
               },
-              { lax: false, required: '' }
+              { lax: false, required: '' },
             );
 
-          expectPromiseFailure(toFail, ERRORS.VALIDATION_ERROR);
+          expectFailure(toFail, ERRORS.VALIDATION_ERROR);
 
           try {
             await toFail();
@@ -208,14 +203,14 @@ export const Test_SchemaErrors = ({ Schema, fx }: any) => {
                 payload: expect.objectContaining({
                   lax: {
                     reasons: expect.arrayContaining(['Invalid value']),
-                    metadata: null
+                    metadata: null,
                   },
                   required: {
                     reasons: expect.arrayContaining(['Invalid value']),
-                    metadata: null
-                  }
-                })
-              })
+                    metadata: null,
+                  },
+                }),
+              }),
             );
           }
         });
@@ -226,12 +221,12 @@ export const Test_SchemaErrors = ({ Schema, fx }: any) => {
               {
                 lax: 'lax-default',
                 readonly: 'lax',
-                required: true
+                required: true,
               },
-              { readonly: 'New val' }
+              { readonly: 'New val' },
             );
 
-          expectPromiseFailure(toFail, ERRORS.NOTHING_TO_UPDATE);
+          expectFailure(toFail, ERRORS.NOTHING_TO_UPDATE);
 
           try {
             await toFail();
@@ -239,8 +234,8 @@ export const Test_SchemaErrors = ({ Schema, fx }: any) => {
             expect(err).toEqual(
               expect.objectContaining({
                 message: ERRORS.NOTHING_TO_UPDATE,
-                payload: {}
-              })
+                payload: {},
+              }),
             );
           }
         });
@@ -262,9 +257,9 @@ export const Test_SchemaErrors = ({ Schema, fx }: any) => {
             expect(err.payload).toEqual(
               expect.objectContaining({
                 errors: expect.arrayContaining([
-                  "should be 'silent' or 'throw'"
-                ])
-              })
+                  "should be 'silent' or 'throw'",
+                ]),
+              }),
             );
           }
         }

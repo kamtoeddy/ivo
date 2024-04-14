@@ -1,4 +1,4 @@
-import { beforeAll, describe, it, expect } from 'vitest';
+import { beforeAll, describe, it, expect } from 'bun:test';
 
 import { ERRORS } from '../../../dist';
 import { expectFailure, expectNoFailure } from '../_utils';
@@ -14,12 +14,12 @@ export const Test_ConstantProperties = ({ Schema, fx }: any) => {
             asyncConstant: { constant: true, value: asyncSetter },
             id: {
               constant: true,
-              value: (ctx: any) => (ctx?.id === 'id' ? 'id-2' : 'id')
+              value: (ctx: any) => (ctx?.id === 'id' ? 'id-2' : 'id'),
             },
             parentId: { constant: true, value: 'parent id' },
-            laxProp: { default: 0 }
+            laxProp: { default: 0 },
           },
-          { errors: 'throw' }
+          { errors: 'throw' },
         ).getModel();
 
         function asyncSetter() {
@@ -34,13 +34,13 @@ export const Test_ConstantProperties = ({ Schema, fx }: any) => {
           asyncConstant: 20,
           id: 'id',
           parentId: 'parent id',
-          laxProp: 2
+          laxProp: 2,
         });
       });
 
       it('should not set constants via listeners', async () => {
         const { data: update } = await User.update(user, {
-          laxProp: 'update id'
+          laxProp: 'update id',
         });
 
         expect(update).toEqual({ laxProp: 'update id' });
@@ -69,7 +69,7 @@ export const Test_ConstantProperties = ({ Schema, fx }: any) => {
 
         for (const onDelete of values) {
           const toPass = fx({
-            propertyName: { constant: true, value: '', onDelete }
+            propertyName: { constant: true, value: '', onDelete },
           });
 
           expectNoFailure(toPass);
@@ -83,7 +83,7 @@ export const Test_ConstantProperties = ({ Schema, fx }: any) => {
 
         for (const onSuccess of values) {
           const toPass = fx({
-            propertyName: { constant: true, value: '', onSuccess }
+            propertyName: { constant: true, value: '', onSuccess },
           });
 
           expectNoFailure(toPass);
@@ -99,7 +99,7 @@ export const Test_ConstantProperties = ({ Schema, fx }: any) => {
 
         for (const value of values) {
           const toFail = fx({
-            propertyName: { constant: value, value: '' }
+            propertyName: { constant: value, value: '' },
           });
 
           expectFailure(toFail);
@@ -110,9 +110,9 @@ export const Test_ConstantProperties = ({ Schema, fx }: any) => {
             expect(err.payload).toEqual(
               expect.objectContaining({
                 propertyName: expect.arrayContaining([
-                  "Constant properties must have constant as 'true'"
-                ])
-              })
+                  "Constant properties must have constant as 'true'",
+                ]),
+              }),
             );
           }
         }
@@ -129,9 +129,9 @@ export const Test_ConstantProperties = ({ Schema, fx }: any) => {
           expect(err.payload).toEqual(
             expect.objectContaining({
               propertyName: expect.arrayContaining([
-                'Constant properties must have a value or setter'
-              ])
-            })
+                'Constant properties must have a value or setter',
+              ]),
+            }),
           );
         }
       });
@@ -147,16 +147,16 @@ export const Test_ConstantProperties = ({ Schema, fx }: any) => {
           expect(err.payload).toEqual(
             expect.objectContaining({
               propertyName: expect.arrayContaining([
-                "'value' rule can only be used with constant properties"
-              ])
-            })
+                "'value' rule can only be used with constant properties",
+              ]),
+            }),
           );
         }
       });
 
       it('should reject constant & value(undefined)', () => {
         const toFail = fx({
-          propertyName: { constant: true, value: undefined }
+          propertyName: { constant: true, value: undefined },
         });
 
         expectFailure(toFail);
@@ -167,9 +167,9 @@ export const Test_ConstantProperties = ({ Schema, fx }: any) => {
           expect(err.payload).toEqual(
             expect.objectContaining({
               propertyName: expect.arrayContaining([
-                "Constant properties cannot have 'undefined' as value"
-              ])
-            })
+                "Constant properties cannot have 'undefined' as value",
+              ]),
+            }),
           );
         }
       });
@@ -185,12 +185,12 @@ export const Test_ConstantProperties = ({ Schema, fx }: any) => {
           'sanitizer',
           'shouldInit',
           'validator',
-          'virtual'
+          'virtual',
         ];
 
         for (const rule of rules) {
           const toFail = fx({
-            propertyName: { constant: true, value: '', [rule]: true }
+            propertyName: { constant: true, value: '', [rule]: true },
           });
 
           expectFailure(toFail);
@@ -201,9 +201,9 @@ export const Test_ConstantProperties = ({ Schema, fx }: any) => {
             expect(err.payload).toEqual(
               expect.objectContaining({
                 propertyName: expect.arrayContaining([
-                  "Constant properties can only have ('constant' & 'value') or 'onDelete' | 'onSuccess'"
-                ])
-              })
+                  "Constant properties can only have ('constant' & 'value') or 'onDelete' | 'onSuccess'",
+                ]),
+              }),
             );
           }
         }
@@ -216,8 +216,8 @@ export const Test_ConstantProperties = ({ Schema, fx }: any) => {
           constant: true,
           value() {
             throw new Error('lolol');
-          }
-        }
+          },
+        },
       }).getModel();
 
       it('should set value of constant to null if value could not be generated properly', async () => {

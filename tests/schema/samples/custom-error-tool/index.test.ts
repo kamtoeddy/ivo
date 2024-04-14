@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'bun:test';
 
 import { VALIDATION_ERRORS } from '../../../../dist';
 
@@ -6,7 +6,7 @@ import {
   UserModel,
   UserModel_ErrorThrow,
   EUserModel,
-  EUserModel_ErrorThrow
+  EUserModel_ErrorThrow,
 } from '.';
 
 describe('Custom ErrorTool', () => {
@@ -16,10 +16,7 @@ describe('Custom ErrorTool', () => {
         const firstName = 'name',
           lastName = '';
 
-        const { data, error } = await UserModel.create({
-          firstName,
-          lastName
-        });
+        const { data, error } = await UserModel.create({ firstName, lastName });
 
         expect(data).toBeNull();
         expect(error).toMatchObject({
@@ -29,14 +26,14 @@ describe('Custom ErrorTool', () => {
               field: 'firstName',
               value: firstName,
               messages: expect.arrayContaining(['Invalid first name']),
-              metadata: { hint: 'try harder 😜', valueProvided: firstName }
+              metadata: { hint: 'try harder 😜', valueProvided: firstName },
             }),
             expect.objectContaining({
               field: 'lastName',
               value: lastName,
-              messages: expect.arrayContaining(['validation failed'])
-            })
-          ])
+              messages: expect.arrayContaining(['validation failed']),
+            }),
+          ]),
         });
       });
 
@@ -45,11 +42,8 @@ describe('Custom ErrorTool', () => {
           lastName = '';
 
         const { data, error } = await UserModel.update(
-          { firstName: 'John', fullName: '', lastName: 'lopa' },
-          {
-            firstName,
-            lastName
-          }
+          { firstName: 'John', fullName: '', lastName: 'doe' },
+          { firstName, lastName },
         );
 
         expect(data).toBeNull();
@@ -60,14 +54,14 @@ describe('Custom ErrorTool', () => {
               field: 'firstName',
               value: firstName,
               messages: expect.arrayContaining(['Invalid first name']),
-              metadata: { hint: 'try harder 😜', valueProvided: firstName }
+              metadata: { hint: 'try harder 😜', valueProvided: firstName },
             }),
             expect.objectContaining({
               field: 'lastName',
               value: lastName,
-              messages: expect.arrayContaining(['validation failed'])
-            })
-          ])
+              messages: expect.arrayContaining(['validation failed']),
+            }),
+          ]),
         });
       });
 
@@ -77,13 +71,13 @@ describe('Custom ErrorTool', () => {
 
         const { data, error } = await UserModel.update(
           { firstName, fullName: `${firstName} ${lastName}`, lastName },
-          { firstName, lastName }
+          { firstName, lastName },
         );
 
         expect(data).toBeNull();
         expect(error).toMatchObject({
           message: VALIDATION_ERRORS.NOTHING_TO_UPDATE,
-          errors: []
+          errors: [],
         });
       });
     });
@@ -94,10 +88,7 @@ describe('Custom ErrorTool', () => {
           lastName = '';
 
         try {
-          await UserModel_ErrorThrow.create({
-            firstName,
-            lastName
-          });
+          await UserModel_ErrorThrow.create({ firstName, lastName });
         } catch (error) {
           expect(error.message).toBeDefined();
 
@@ -107,14 +98,14 @@ describe('Custom ErrorTool', () => {
                 field: 'firstName',
                 value: firstName,
                 messages: expect.arrayContaining(['Invalid first name']),
-                metadata: { hint: 'try harder 😜', valueProvided: firstName }
+                metadata: { hint: 'try harder 😜', valueProvided: firstName },
               }),
               expect.objectContaining({
                 field: 'lastName',
                 value: lastName,
-                messages: expect.arrayContaining(['validation failed'])
-              })
-            ])
+                messages: expect.arrayContaining(['validation failed']),
+              }),
+            ]),
           });
         }
       });
@@ -125,11 +116,8 @@ describe('Custom ErrorTool', () => {
 
         try {
           await UserModel_ErrorThrow.update(
-            { firstName: 'John', fullName: '', lastName: 'lopa' },
-            {
-              firstName,
-              lastName
-            }
+            { firstName: 'John', fullName: '', lastName: 'doe' },
+            { firstName, lastName },
           );
         } catch (error) {
           expect(error.message).toBeDefined();
@@ -140,21 +128,21 @@ describe('Custom ErrorTool', () => {
                 field: 'firstName',
                 value: firstName,
                 messages: expect.arrayContaining(['Invalid first name']),
-                metadata: { hint: 'try harder 😜', valueProvided: firstName }
+                metadata: { hint: 'try harder 😜', valueProvided: firstName },
               }),
               expect.objectContaining({
                 field: 'lastName',
                 value: lastName,
-                messages: expect.arrayContaining(['validation failed'])
-              })
-            ])
+                messages: expect.arrayContaining(['validation failed']),
+              }),
+            ]),
           });
         }
 
         try {
           await UserModel_ErrorThrow.update(
             { firstName, fullName: '', lastName },
-            { firstName, lastName }
+            { firstName, lastName },
           );
         } catch (error) {
           expect(error.message).toBeDefined();
@@ -172,7 +160,7 @@ describe('Custom ErrorTool', () => {
 
         const { data, error } = await EUserModel.create({
           firstName,
-          lastName
+          lastName,
         });
 
         expect(data).toBeNull();
@@ -183,14 +171,14 @@ describe('Custom ErrorTool', () => {
               field: 'firstName',
               value: firstName,
               messages: expect.arrayContaining(['Invalid first name']),
-              metadata: { hint: 'try harder 😜', valueProvided: firstName }
+              metadata: { hint: 'try harder 😜', valueProvided: firstName },
             }),
             expect.objectContaining({
               field: 'lastName',
               value: lastName,
-              messages: expect.arrayContaining(['validation failed'])
-            })
-          ])
+              messages: expect.arrayContaining(['validation failed']),
+            }),
+          ]),
         });
       });
 
@@ -199,11 +187,8 @@ describe('Custom ErrorTool', () => {
           lastName = '';
 
         const { data, error } = await EUserModel.update(
-          { firstName: 'John', full_name: '', lastName: 'lopa' },
-          {
-            firstName,
-            lastName
-          }
+          { firstName: 'John', full_name: '', lastName: 'doe' },
+          { firstName, lastName },
         );
 
         expect(data).toBeNull();
@@ -214,14 +199,14 @@ describe('Custom ErrorTool', () => {
               field: 'firstName',
               value: firstName,
               messages: expect.arrayContaining(['Invalid first name']),
-              metadata: { hint: 'try harder 😜', valueProvided: firstName }
+              metadata: { hint: 'try harder 😜', valueProvided: firstName },
             }),
             expect.objectContaining({
               field: 'lastName',
               value: lastName,
-              messages: expect.arrayContaining(['validation failed'])
-            })
-          ])
+              messages: expect.arrayContaining(['validation failed']),
+            }),
+          ]),
         });
       });
 
@@ -231,13 +216,13 @@ describe('Custom ErrorTool', () => {
 
         const { data, error } = await EUserModel.update(
           { firstName, full_name: `${firstName} ${lastName}`, lastName },
-          { firstName, lastName }
+          { firstName, lastName },
         );
 
         expect(data).toBeNull();
         expect(error).toMatchObject({
           message: VALIDATION_ERRORS.NOTHING_TO_UPDATE,
-          errors: []
+          errors: [],
         });
       });
     });
@@ -248,10 +233,7 @@ describe('Custom ErrorTool', () => {
           lastName = '';
 
         try {
-          await EUserModel_ErrorThrow.create({
-            firstName,
-            lastName
-          });
+          await EUserModel_ErrorThrow.create({ firstName, lastName });
         } catch (error) {
           expect(error.message).toBeDefined();
 
@@ -261,14 +243,14 @@ describe('Custom ErrorTool', () => {
                 field: 'firstName',
                 value: firstName,
                 messages: expect.arrayContaining(['Invalid first name']),
-                metadata: { hint: 'try harder 😜', valueProvided: firstName }
+                metadata: { hint: 'try harder 😜', valueProvided: firstName },
               }),
               expect.objectContaining({
                 field: 'lastName',
                 value: lastName,
-                messages: expect.arrayContaining(['validation failed'])
-              })
-            ])
+                messages: expect.arrayContaining(['validation failed']),
+              }),
+            ]),
           });
         }
       });
@@ -279,11 +261,8 @@ describe('Custom ErrorTool', () => {
 
         try {
           await EUserModel_ErrorThrow.update(
-            { firstName: 'John', full_name: '', lastName: 'lopa' },
-            {
-              firstName,
-              lastName
-            }
+            { firstName: 'John', full_name: '', lastName: 'doe' },
+            { firstName, lastName },
           );
         } catch (error) {
           expect(error.message).toBeDefined();
@@ -294,21 +273,21 @@ describe('Custom ErrorTool', () => {
                 field: 'firstName',
                 value: firstName,
                 messages: expect.arrayContaining(['Invalid first name']),
-                metadata: { hint: 'try harder 😜', valueProvided: firstName }
+                metadata: { hint: 'try harder 😜', valueProvided: firstName },
               }),
               expect.objectContaining({
                 field: 'lastName',
                 value: lastName,
-                messages: expect.arrayContaining(['validation failed'])
-              })
-            ])
+                messages: expect.arrayContaining(['validation failed']),
+              }),
+            ]),
           });
         }
 
         try {
           await UserModel_ErrorThrow.update(
             { firstName, fullName: '', lastName },
-            { firstName, lastName }
+            { firstName, lastName },
           );
         } catch (error) {
           expect(error.message).toBeDefined();

@@ -32,9 +32,9 @@ const userSchema = new Schema<Input, Output>({
   fullName: {
     default: '',
     dependsOn: ['firstName', 'lastName'],
-    resolver: getFullName
+    resolver: getFullName,
   },
-  lastName: { required: true, validator: validateName }
+  lastName: { required: true, validator: validateName },
 });
 
 function getFullName({ context }: Summary<Input, Output>) {

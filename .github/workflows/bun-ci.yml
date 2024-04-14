@@ -21,7 +21,7 @@ jobs:
           version: ${{ matrix.bun-version }}
 
       - name: 📦 Install dependencies
-        run: bun install
+        run: bun i
 
       - name: ⚒️ Build
         run: bun run build

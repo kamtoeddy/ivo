@@ -13,20 +13,22 @@ import {
   isFunctionLike,
 } from '../utils';
 import {
-  Context,
+  ImmutableContext,
   InternalValidatorResponse,
   LIFE_CYCLES,
   NS,
   RealType,
   KeyOf,
-  Summary,
+  ImmutableSummary,
   InvalidValidatorResponse,
   ValidatorResponseObject,
   Validator,
+  MutableSummary,
+  PartialContext,
 } from './types';
 import {
   VALIDATION_ERRORS,
-  DefaultErrorTool,
+  type DefaultErrorTool,
   IErrorTool,
   makeFieldError,
   isInputFieldError,
@@ -93,16 +95,14 @@ class Schema<
     ExtendedOutput extends RealType<ExtendedOutput> = ExtendedInput,
     Aliases = {},
     ExtendedCtxOptions extends ObjectType = CtxOptions,
+    // @ts-ignore
     ExtendedErrorTool extends IErrorTool<any> = DefaultExtendedErrorTool<
       ErrorTool,
       KeyOf<ExtendedInput & Aliases>
     >,
   >(
-    definitions: NS.Definitions<
-      ExtendedInput,
-      ExtendedOutput,
-      Aliases,
-      ExtendedCtxOptions
+    definitions: Partial<
+      NS.Definitions<ExtendedInput, ExtendedOutput, Aliases, ExtendedCtxOptions>
     >,
     options: NS.ExtensionOptions<
       Input,
@@ -237,11 +237,23 @@ class ModelTool<
       isUpdate,
       previousValues,
       values,
-    }) as Summary<Input, Output, CtxOptions>;
+    }) as ImmutableSummary<Input, Output, CtxOptions>;
   }
 
-  private _getValidationSummary = (isUpdate = false) =>
-    this._getSummary(this.values, isUpdate);
+  private _getMutableSummary(data: Partial<Output>, isUpdate = false) {
+    const summary = this._getSummary(data, isUpdate);
+
+    return this._getFrozenCopy({
+      ...summary,
+      context: {
+        ...this._getContext(summary.previousValues),
+        __updateOptions__: this._updateContextOptions,
+      },
+    }) as MutableSummary<Input, Output, CtxOptions>;
+  }
+
+  private _getValidationSummary = (isUpdate: boolean) =>
+    this._getMutableSummary(this.values, isUpdate);
 
   private _getPrimaryValidator = <K extends keyof (Output | Input)>(
     prop: string,
@@ -495,7 +507,7 @@ class ModelTool<
     data: Partial<Output>,
     isUpdate = false,
   ) {
-    const summary = this._getSummary(data, isUpdate),
+    const summary = this._getMutableSummary(data, isUpdate),
       context = summary.context;
 
     const error = new this._options.ErrorTool(
@@ -579,7 +591,7 @@ class ModelTool<
     data: Partial<Output>,
     isUpdate = false,
   ) {
-    const summary = this._getSummary(data, isUpdate),
+    const summary = this._getMutableSummary(data, isUpdate),
       context = summary.context;
 
     const errorTool = new this._options.ErrorTool(
@@ -659,7 +671,7 @@ class ModelTool<
   }
 
   private async _handleRequiredBy(data: Partial<Output>, isUpdate = false) {
-    const summary = this._getSummary(data, isUpdate),
+    const summary = this._getMutableSummary(data, isUpdate),
       context = summary.context;
 
     const errorTool = new this._options.ErrorTool(
@@ -810,14 +822,9 @@ class ModelTool<
 
     if (typeof shouldUpdate == 'boolean') return shouldUpdate;
 
-    const response = await shouldUpdate(this._getSummary(changes, true));
+    const response = await shouldUpdate(this._getMutableSummary(changes, true));
 
-    if (typeof response == 'boolean') return response;
-
-    if (response?.contextOptionsUpdate)
-      this._updateContextOptions(response.contextOptionsUpdate);
-
-    return !!response?.update;
+    return response;
   }
 
   private _isUpdatable(prop: string, value: any = undefined) {
@@ -888,14 +895,12 @@ class ModelTool<
 
   private async _resolveDependentChanges(
     data: Partial<Output>,
-    ctx: Partial<Context<Input, Output>>,
+    ctx: PartialContext<Input, Output>,
     isUpdate = false,
   ) {
     let _updates = { ...data };
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { __getOptions__, ...context } = ctx;
 
-    const successFulChanges = getKeysAsProps<Output>(context as any);
+    const successFulChanges = getKeysAsProps<Output>(ctx as any);
 
     let toResolve = [] as KeyOf<Output>[];
 
@@ -955,7 +960,7 @@ class ModelTool<
         !isCreation &&
         isEqual(
           value,
-          _ctx[prop as KeyOf<Context<Input, Output>>],
+          _ctx[prop as KeyOf<ImmutableContext<Input, Output>>],
           this._options.equalityDepth,
         )
       )
@@ -970,7 +975,7 @@ class ModelTool<
 
       const _data = await this._resolveDependentChanges(
         data,
-        updates as any,
+        updates,
         isUpdate,
       );
 
@@ -1014,7 +1019,7 @@ class ModelTool<
 
     this.values = _values as Output;
 
-    this._initializeContexts();
+    this._initializeImmutableContexts();
   }
 
   private async _setMissingDefaults() {
@@ -1132,7 +1137,7 @@ class ModelTool<
   private async _validate<K extends KeyOf<Input & Aliases>>(
     prop: K,
     value: any,
-    summary_: Summary<Input, Output>,
+    summary_: MutableSummary<Input, Output>,
   ) {
     if (!this._isInputOrAlias(prop))
       return makeResponse<(Input & Aliases)[K]>({
@@ -1196,7 +1201,7 @@ class ModelTool<
     input: Partial<Input & Aliases> = {},
     ctxOptions: Partial<CtxOptions> = {},
   ) {
-    this._updateContextOptions(ctxOptions);
+    this._initializeContextOptions(ctxOptions);
 
     if (!areValuesOk(input)) input = {};
 
@@ -1229,10 +1234,7 @@ class ModelTool<
 
     await this._handleSanitizationOfVirtuals(data);
 
-    data = await this._resolveDependentChanges(
-      data,
-      this._getPartialContext() as any,
-    );
+    data = await this._resolveDependentChanges(data, this._getPartialContext());
 
     const finalData = this._useConfigProps(data);
 
@@ -1246,8 +1248,11 @@ class ModelTool<
     };
   }
 
-  async delete(values: Output, contextOptions: Partial<CtxOptions> = {}) {
-    const ctxOptions = this._updateContextOptions(contextOptions);
+  async delete(
+    values: Output,
+    ImmutableContextOptions: Partial<CtxOptions> = {},
+  ) {
+    const ctxOptions = this._initializeContextOptions(ImmutableContextOptions);
 
     if (!areValuesOk(values))
       throw new this._options.ErrorTool(
@@ -1285,7 +1290,7 @@ class ModelTool<
     changes: Partial<Input & Aliases>,
     ctxOptions: Partial<CtxOptions> = {},
   ) {
-    const ctxOpts = this._updateContextOptions(ctxOptions);
+    const ctxOpts = this._initializeContextOptions(ctxOptions);
 
     const errorNothingToUpdate = new this._options.ErrorTool(
       VALIDATION_ERRORS.NOTHING_TO_UPDATE,
@@ -1333,7 +1338,7 @@ class ModelTool<
 
     updates = await this._resolveDependentChanges(
       updates,
-      this._getPartialContext() as any,
+      this._getPartialContext(),
       true,
     );
 
@@ -1377,17 +1382,19 @@ class Model<
 
   create = (
     values: Partial<Input & Aliases> = {},
-    contextOptions: Partial<CtxOptions> = {},
-  ) => this.modelTool.create(values, contextOptions);
+    ImmutableContextOptions: Partial<CtxOptions> = {},
+  ) => this.modelTool.create(values, ImmutableContextOptions);
 
-  delete = (values: Output, contextOptions: Partial<CtxOptions> = {}) =>
-    this.modelTool.delete(values, contextOptions);
+  delete = (
+    values: Output,
+    ImmutableContextOptions: Partial<CtxOptions> = {},
+  ) => this.modelTool.delete(values, ImmutableContextOptions);
 
   update = (
     values: Output,
     changes: Partial<Input & Aliases>,
-    contextOptions: Partial<CtxOptions> = {},
-  ) => this.modelTool.update(values, changes, contextOptions);
+    ImmutableContextOptions: Partial<CtxOptions> = {},
+  ) => this.modelTool.update(values, changes, ImmutableContextOptions);
 }
 
 function areValuesOk(values: any) {

@@ -8,8 +8,8 @@ export * from './validators';
 export { ERRORS, SCHEMA_ERRORS, VALIDATION_ERRORS } from './schema/utils';
 
 export {
-  ObjectType,
-  FieldKey,
+  type ObjectType,
+  type FieldKey,
   getKeysAsProps,
   isEqual,
   isFunctionLike,
@@ -18,19 +18,23 @@ export {
   isRecordLike,
   toArray,
 } from './utils';
-export {
-  Context,
+export type {
+  // ctx
   DeletionContext,
+  ImmutableContext,
+  MutableContext,
+  // summary
+  ImmutableSummary,
+  MutableSummary,
   KeyOf,
   Merge,
   ArrayOfMinSizeOne as NonEmptyArray,
   RealType,
-  Summary,
   ValidatorResponse,
   ValidatorResponseObject,
   XOR,
 } from './schema/types';
-export {
+export type {
   FieldError,
   IErrorTool,
   IValidationError,

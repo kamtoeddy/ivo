@@ -26,10 +26,8 @@ import {
 import { ObjectType } from '../utils';
 import {
   DefinitionRule,
-  Context,
   NS as ns,
   KeyOf,
-  Summary,
   ALLOWED_OPTIONS,
   DEFINITION_RULES,
   CONSTANT_RULES,
@@ -38,6 +36,8 @@ import {
   PartialContext,
   PostValidationConfig,
   PostValidationHandler,
+  Context,
+  MutableSummary,
 } from './types';
 
 export const defaultOptions = {
@@ -47,7 +47,7 @@ export const defaultOptions = {
   setMissingDefaultsOnUpdate: false,
   shouldUpdate: true,
   timestamps: false,
-} as ns.Options<any, any, any>;
+} as ns.Options<any, any, any, any, any>;
 
 type InvalidPostValidateConfigMessage =
   | 'default'
@@ -99,16 +99,11 @@ export abstract class SchemaCore<
   protected _options: ns.InternalOptions<Input, Output, CtxOptions>;
 
   // contexts & values
-  protected context: Context<Input, Output, CtxOptions> = {} as Context<
-    Input,
-    Output,
-    CtxOptions
-  >;
+  protected context = {} as Context<Input, Output, CtxOptions>;
   protected contextOptions: CtxOptions = {} as CtxOptions;
 
   protected defaults: Partial<Output> = {};
-  protected partialContext: PartialContext<Input, Output> =
-    {} as PartialContext<Input, Output>;
+  protected partialContext = {} as PartialContext<Input, Output>;
   protected values: Output = {} as Output;
 
   // maps
@@ -188,13 +183,19 @@ export abstract class SchemaCore<
 
   protected _getPartialContext = () => this._getFrozenCopy(this.partialContext);
 
-  protected _initializeContexts = () => {
+  protected _initializeImmutableContexts = () => {
     this.context = { ...this.defaults, ...this.values } as any;
     this.partialContext = {} as PartialContext<Input, Output>;
   };
 
   protected _updateContext = (updates: Partial<Input>) => {
     this.context = { ...this.context, ...updates };
+  };
+
+  protected _initializeContextOptions = (options: Partial<CtxOptions>) => {
+    this.contextOptions = {} as CtxOptions;
+
+    return this._updateContextOptions(options);
   };
 
   protected _updateContextOptions = (options: Partial<CtxOptions>) => {
@@ -585,7 +586,7 @@ export abstract class SchemaCore<
 
   protected _getRequiredState = async (
     prop: string,
-    summary: Summary<Input, Output>,
+    summary: MutableSummary<Input, Output>,
   ): Promise<[boolean, string | FieldError]> => {
     const { required } = this._getDefinition(prop);
 
@@ -1373,7 +1374,7 @@ export abstract class SchemaCore<
         ),
       };
 
-    const properties = getUnique(value.properties).filter(this._isInputProp);
+    const properties = getUnique(value.properties);
 
     if (properties.length < 2)
       return {
@@ -1383,6 +1384,19 @@ export abstract class SchemaCore<
           'properties-must-be-input-array',
         ),
       };
+
+    const reasons: string[] = [];
+
+    for (const prop of properties)
+      if (!this._isInputProp(prop) && !this._isVirtual(prop)) {
+        if (index != undefined)
+          reasons.push(
+            `Config at index ${index}: "${prop}" cannot be post-validated`,
+          );
+        else reasons.push(`"${prop}" cannot be post-validated`);
+      }
+
+    if (reasons.length) return { valid, reason: reasons };
 
     if (!isFunctionLike(value.handler))
       return {
@@ -1454,13 +1468,18 @@ export abstract class SchemaCore<
     }
 
     const configs: PostValidationConfig<Input, Output, any, {}>[] =
-        postValidateOption,
-      reasons: string[] = [];
+      postValidateOption;
+    let reasons: string[] = [];
 
     configs.forEach((config, i) => {
       const isValid = this._isPostValidateSingleConfigOk(config, i);
 
-      if (!isValid.valid) reasons.push(isValid.reason!);
+      if (!isValid.valid) {
+        const reason = isValid.reason!;
+
+        if (Array.isArray(reason)) reasons = reasons.concat(reason);
+        else reasons.push(reason);
+      }
     });
 
     if (reasons.length) return { valid: false, reason: reasons };

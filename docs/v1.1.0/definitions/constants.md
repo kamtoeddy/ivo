@@ -13,7 +13,7 @@ This type of property is set at creation and never changes.
 Example:
 
 ```ts
-import { Schema, type UnsafeContext } from 'ivo';
+import { Schema, type Context } from 'ivo';
 
 type Input = {
   userName: string;
@@ -25,16 +25,16 @@ type Output = {
   role: string;
 };
 
-type Ctx = UnsafeContext<Input, Output>;
+type Ctx = Context<Input, Output>;
 
 const userSchema = new Schema<Input, Output>({
   dateJoined: { constant: true, value: () => new Date() },
   id: {
     constant: true,
-    value: (ctx: Ctx) => `${ctx.userName}-${Date.now}` // ⚠️ ctx is possibly not safe because it runs before values get validated
+    value: (ctx: Ctx) => `${ctx.userName}-${Date.now}`, // ⚠️ ctx is possibly not safe because it runs before values get validated
   },
   role: { constant: true, value: 'user' },
-  userName: { required: true, validator: validateUserName }
+  userName: { required: true, validator: validateUserName },
 });
 ```
 

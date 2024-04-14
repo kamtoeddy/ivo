@@ -1,12 +1,7 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'bun:test';
 
 import { ERRORS } from '../../../dist';
-import {
-  expectFailure,
-  expectNoFailure,
-  expectPromiseFailure,
-  validator
-} from '../_utils';
+import { expectFailure, expectNoFailure, validator } from '../_utils';
 
 export const Test_RequiredProperties = ({ Schema, fx }: any) => {
   describe('required', () => {
@@ -21,7 +16,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
 
       it('should allow required: true + allow alone', () => {
         const toPass = fx({
-          propertyName: { required: true, allow: [1, 2, 435, 45] }
+          propertyName: { required: true, allow: [1, 2, 435, 45] },
         });
 
         expectNoFailure(toPass);
@@ -42,16 +37,16 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
           expect(err.payload).toEqual(
             expect.objectContaining({
               propertyName: expect.arrayContaining([
-                'Required properties must have a validator'
-              ])
-            })
+                'Required properties must have a validator',
+              ]),
+            }),
           );
         }
       });
 
       it('should reject required(true) + default', () => {
         const toFail = fx({
-          propertyName: { default: '', required: true, validator }
+          propertyName: { default: '', required: true, validator },
         });
 
         expectFailure(toFail);
@@ -62,9 +57,9 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
           expect(err.payload).toEqual(
             expect.objectContaining({
               propertyName: expect.arrayContaining([
-                'Strictly required properties cannot have a default value or setter'
-              ])
-            })
+                'Strictly required properties cannot have a default value or setter',
+              ]),
+            }),
           );
         }
       });
@@ -74,7 +69,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
 
         for (const readonly of values) {
           const toFail = fx({
-            propertyName: { readonly, required: true, validator }
+            propertyName: { readonly, required: true, validator },
           });
 
           expectFailure(toFail);
@@ -85,9 +80,9 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
             expect(err.payload).toMatchObject(
               expect.objectContaining({
                 propertyName: expect.arrayContaining([
-                  'Strictly required properties cannot be readonly'
-                ])
-              })
+                  'Strictly required properties cannot be readonly',
+                ]),
+              }),
             );
           }
         }
@@ -98,7 +93,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
 
         for (const shouldInit of values) {
           const toFail = fx({
-            propertyName: { required: true, shouldInit, validator }
+            propertyName: { required: true, shouldInit, validator },
           });
 
           expectFailure(toFail);
@@ -109,9 +104,9 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
             expect(err.payload).toMatchObject(
               expect.objectContaining({
                 propertyName: expect.arrayContaining([
-                  'Strictly Required properties cannot have a initialization blocked'
-                ])
-              })
+                  'Strictly Required properties cannot have a initialization blocked',
+                ]),
+              }),
             );
           }
         }
@@ -128,7 +123,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
         isPublished: false,
         price: null,
         priceReadonly: null,
-        priceRequiredWithoutMessage: null
+        priceRequiredWithoutMessage: null,
       };
 
       function validatePrice(price: any) {
@@ -152,7 +147,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
               recordCalls('price');
               return [isRequired, 'A price is required to publish a book!'];
             },
-            validator: validatePrice
+            validator: validatePrice,
           },
           priceReadonly: {
             default: null,
@@ -162,10 +157,10 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
               recordCalls('priceReadonly');
               return [
                 isRequired,
-                'A priceReadonly is required when price is 101!'
+                'A priceReadonly is required when price is 101!',
               ];
             },
-            validator: validatePrice
+            validator: validatePrice,
           },
           priceRequiredWithoutMessage: {
             default: null,
@@ -174,10 +169,10 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
               recordCalls('priceRequiredWithoutMessage');
               return price == 101 && priceReadonly == null;
             },
-            validator: validatePrice
-          }
+            validator: validatePrice,
+          },
         },
-        { errors: 'throw' }
+        { errors: 'throw' },
       ).getModel();
 
       beforeEach(() => {
@@ -196,7 +191,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
           expect(callsPerProp).toEqual({
             price: true,
             priceReadonly: true,
-            priceRequiredWithoutMessage: true
+            priceRequiredWithoutMessage: true,
           });
         });
 
@@ -213,19 +208,19 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
             isPublished: true,
             price: 2000,
             priceReadonly: null,
-            priceRequiredWithoutMessage: null
+            priceRequiredWithoutMessage: null,
           });
           expect(callsPerProp).toEqual({
             price: true,
             priceReadonly: true,
-            priceRequiredWithoutMessage: true
+            priceRequiredWithoutMessage: true,
           });
         });
 
         it('should reject if condition is not met at creation', async () => {
           const toFail = () => Book.create({ bookId: 1, isPublished: true });
 
-          expectPromiseFailure(toFail, ERRORS.VALIDATION_ERROR);
+          expectFailure(toFail, ERRORS.VALIDATION_ERROR);
 
           try {
             await toFail();
@@ -234,18 +229,18 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
               expect.objectContaining({
                 price: {
                   reasons: expect.arrayContaining([
-                    'A price is required to publish a book!'
+                    'A price is required to publish a book!',
                   ]),
-                  metadata: null
-                }
-              })
+                  metadata: null,
+                },
+              }),
             );
           }
 
           expect(callsPerProp).toEqual({
             price: true,
             priceReadonly: true,
-            priceRequiredWithoutMessage: true
+            priceRequiredWithoutMessage: true,
           });
         });
       });
@@ -259,9 +254,9 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
                 isPublished: false,
                 price: null,
                 priceReadonly: null,
-                priceRequiredWithoutMessage: null
+                priceRequiredWithoutMessage: null,
               },
-              { isPublished: true, price: 20 }
+              { isPublished: true, price: 20 },
             );
 
           expectNoFailure(toPass);
@@ -272,7 +267,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
           expect(callsPerProp).toEqual({
             price: true,
             priceReadonly: true,
-            priceRequiredWithoutMessage: true
+            priceRequiredWithoutMessage: true,
           });
         });
 
@@ -288,7 +283,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
           expect(callsPerProp).toEqual({
             price: true,
             priceReadonly: true,
-            priceRequiredWithoutMessage: true
+            priceRequiredWithoutMessage: true,
           });
         });
 
@@ -299,12 +294,12 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
                 bookId: 1,
                 isPublished: false,
                 price: null,
-                priceReadonly: null
+                priceReadonly: null,
               },
-              { isPublished: true }
+              { isPublished: true },
             );
 
-          expectPromiseFailure(toFail, ERRORS.VALIDATION_ERROR);
+          expectFailure(toFail, ERRORS.VALIDATION_ERROR);
 
           try {
             await toFail();
@@ -313,11 +308,11 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
               expect.objectContaining({
                 price: {
                   reasons: expect.arrayContaining([
-                    'A price is required to publish a book!'
+                    'A price is required to publish a book!',
                   ]),
-                  metadata: null
-                }
-              })
+                  metadata: null,
+                },
+              }),
             );
           }
 
@@ -327,7 +322,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
         it('should reject if condition is not met during updates of readonly', async () => {
           const toFail = () => Book.update(book, { price: 101 });
 
-          expectPromiseFailure(toFail, ERRORS.VALIDATION_ERROR);
+          expectFailure(toFail, ERRORS.VALIDATION_ERROR);
 
           try {
             await toFail();
@@ -336,24 +331,24 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
               expect.objectContaining({
                 priceReadonly: {
                   reasons: expect.arrayContaining([
-                    'A priceReadonly is required when price is 101!'
+                    'A priceReadonly is required when price is 101!',
                   ]),
-                  metadata: null
+                  metadata: null,
                 },
                 priceRequiredWithoutMessage: {
                   reasons: expect.arrayContaining([
-                    "'priceRequiredWithoutMessage' is required"
+                    "'priceRequiredWithoutMessage' is required",
                   ]),
-                  metadata: null
-                }
-              })
+                  metadata: null,
+                },
+              }),
             );
           }
 
           expect(callsPerProp).toEqual({
             price: true,
             priceReadonly: true,
-            priceRequiredWithoutMessage: true
+            priceRequiredWithoutMessage: true,
           });
         });
 
@@ -364,16 +359,16 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
               isPublished: false,
               price: null,
               priceReadonly: 3000,
-              priceRequiredWithoutMessage: null
+              priceRequiredWithoutMessage: null,
             },
-            { priceReadonly: 101, priceRequiredWithoutMessage: 2000 }
+            { priceReadonly: 101, priceRequiredWithoutMessage: 2000 },
           );
 
           expect(error).toBeNull();
           expect(data).toEqual({ priceRequiredWithoutMessage: 2000 });
           expect(callsPerProp).toEqual({
             price: true,
-            priceRequiredWithoutMessage: true
+            priceRequiredWithoutMessage: true,
           });
         });
       });
@@ -386,8 +381,8 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
           price: {
             default: null,
             required() {},
-            validator: validator
-          }
+            validator: validator,
+          },
         }).getModel();
 
         it('should create normally', async () => {
@@ -397,7 +392,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
             bookId: 1,
             isPublished: false,
             name: '',
-            price: null
+            price: null,
           });
         });
 
@@ -406,7 +401,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
             bookId: 1,
             isPublished: false,
             name: '',
-            price: null
+            price: null,
           };
           const { data } = await Book.update(book, { name: 'yooo' });
 
@@ -422,24 +417,24 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
               { reason: 'lol', metadata: { shouldWork: true } },
               {
                 reasons: expect.arrayContaining(['lol']),
-                metadata: { shouldWork: true }
-              }
+                metadata: { shouldWork: true },
+              },
             ],
             [
               { reason: '', metadata: null },
               {
                 reasons: expect.arrayContaining(["'price' is required"]),
-                metadata: null
-              }
+                metadata: null,
+              },
             ],
             [
               { metadata: null },
               {
                 reasons: expect.arrayContaining(["'price' is required"]),
-                metadata: null
-              }
+                metadata: null,
+              },
             ],
-            [{}, { reasons: expect.arrayContaining(["'price' is required"]) }]
+            [{}, { reasons: expect.arrayContaining(["'price' is required"]) }],
           ];
 
           for (const [provided, expected] of responses) {
@@ -450,8 +445,8 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
               price: {
                 default: null,
                 required: () => [true, provided],
-                validator: validator
-              }
+                validator: validator,
+              },
             }).getModel();
 
             it('should reject with proper required error message at creation', async () => {
@@ -461,7 +456,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
 
               expect(error).toMatchObject({
                 message: ERRORS.VALIDATION_ERROR,
-                payload: { price: expected }
+                payload: { price: expected },
               });
             });
 
@@ -470,17 +465,17 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
                 bookId: 1,
                 isPublished: false,
                 name: '',
-                price: null
+                price: null,
               };
               const { data, error } = await Book.update(book, {
-                name: 'yooo'
+                name: 'yooo',
               });
 
               expect(data).toBeNull();
 
               expect(error).toMatchObject({
                 message: ERRORS.VALIDATION_ERROR,
-                payload: { price: expected }
+                payload: { price: expected },
               });
             });
           }
@@ -495,7 +490,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
             1,
             0,
             -12,
-            () => {}
+            () => {},
           ];
 
           for (const message of invalidMessages) {
@@ -506,8 +501,8 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
               price: {
                 default: null,
                 required: () => [true, message],
-                validator: validator
-              }
+                validator: validator,
+              },
             }).getModel();
 
             it('should reject with proper required error message at creation', async () => {
@@ -520,9 +515,9 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
                 payload: {
                   price: {
                     reasons: expect.arrayContaining(["'price' is required"]),
-                    metadata: null
-                  }
-                }
+                    metadata: null,
+                  },
+                },
               });
             });
 
@@ -531,10 +526,10 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
                 bookId: 1,
                 isPublished: false,
                 name: '',
-                price: null
+                price: null,
               };
               const { data, error } = await Book.update(book, {
-                name: 'yooo'
+                name: 'yooo',
               });
 
               expect(data).toBeNull();
@@ -544,9 +539,9 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
                 payload: {
                   price: {
                     reasons: expect.arrayContaining(["'price' is required"]),
-                    metadata: null
-                  }
-                }
+                    metadata: null,
+                  },
+                },
               });
             });
           }
@@ -563,7 +558,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
           1,
           0,
           -12,
-          () => {}
+          () => {},
         ];
 
         for (const response of invalidResponses) {
@@ -574,8 +569,8 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
             price: {
               default: null,
               required: () => response,
-              validator: validator
-            }
+              validator: validator,
+            },
           }).getModel();
 
           it('should create normally', async () => {
@@ -585,7 +580,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
               bookId: 1,
               isPublished: false,
               name: '',
-              price: null
+              price: null,
             });
           });
 
@@ -594,7 +589,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
               bookId: 1,
               isPublished: false,
               name: '',
-              price: null
+              price: null,
             };
             const { data } = await Book.update(book, { name: 'yooo' });
 
@@ -612,15 +607,15 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
             price: {
               default: null,
               dependsOn: '_price',
-              resolver: ({ context: { _price } }: any) => _price
+              resolver: ({ context: { _price } }: any) => _price,
             },
             _price: {
               virtual: true,
               required({ context: { _price } }: any) {
                 return _price == undefined;
               },
-              validator: validator
-            }
+              validator: validator,
+            },
           }).getModel();
 
           it('should reject at creation', async () => {
@@ -632,15 +627,15 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
               payload: {
                 _price: {
                   reasons: expect.arrayContaining(["'_price' is required"]),
-                  metadata: null
-                }
-              }
+                  metadata: null,
+                },
+              },
             });
           });
 
           it('should reject during updates', async () => {
             const { data, error } = await Book.update(book, {
-              name: 'updated name'
+              name: 'updated name',
             });
 
             expect(data).toBeNull();
@@ -649,9 +644,9 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
               payload: {
                 _price: {
                   reasons: expect.arrayContaining(["'_price' is required"]),
-                  metadata: null
-                }
-              }
+                  metadata: null,
+                },
+              },
             });
           });
         });
@@ -662,15 +657,15 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
             price: {
               default: null,
               dependsOn: '_price',
-              resolver: ({ context: { _price } }: any) => _price
+              resolver: ({ context: { _price } }: any) => _price,
             },
             _price: {
               virtual: true,
               required({ context: { _price }, isUpdate }: any) {
                 return _price == undefined && !isUpdate;
               },
-              validator: validator
-            }
+              validator: validator,
+            },
           }).getModel();
 
           it('should reject at creation', async () => {
@@ -682,16 +677,16 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
               payload: {
                 _price: {
                   reasons: expect.arrayContaining(["'_price' is required"]),
-                  metadata: null
-                }
-              }
+                  metadata: null,
+                },
+              },
             });
           });
 
           it('should reject during updates', async () => {
             const name = 'updated book name';
             const { data, error } = await Book.update(book, {
-              name
+              name,
             });
 
             expect(error).toBeNull();
@@ -705,7 +700,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
             price: {
               default: null,
               dependsOn: '_price',
-              resolver: ({ context: { _price } }: any) => _price
+              resolver: ({ context: { _price } }: any) => _price,
             },
             _price: {
               virtual: true,
@@ -713,8 +708,8 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
               required({ context: { _price } }: any) {
                 return _price == undefined;
               },
-              validator: validator
-            }
+              validator: validator,
+            },
           }).getModel();
 
           it('should reject at creation', async () => {
@@ -726,16 +721,16 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
               payload: {
                 _price: {
                   reasons: expect.arrayContaining(["'_price' is required"]),
-                  metadata: null
-                }
-              }
+                  metadata: null,
+                },
+              },
             });
           });
 
           it('should reject during updates', async () => {
             const name = 'updated book name';
             const { data, error } = await Book.update(book, {
-              name
+              name,
             });
 
             expect(error).toBeNull();
@@ -752,15 +747,15 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
           price: {
             default: null,
             dependsOn: '_price',
-            resolver: ({ context: { _price } }: any) => _price
+            resolver: ({ context: { _price } }: any) => _price,
           },
           _price: {
             virtual: true,
             required({ context: { _price } }: any) {
               return Promise.resolve(_price == undefined);
             },
-            validator: validator
-          }
+            validator: validator,
+          },
         }).getModel();
 
         describe('creation', () => {
@@ -773,9 +768,9 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
               payload: {
                 _price: {
                   reasons: expect.arrayContaining(["'_price' is required"]),
-                  metadata: null
-                }
-              }
+                  metadata: null,
+                },
+              },
             });
           });
 
@@ -797,9 +792,9 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
               payload: {
                 _price: {
                   reasons: expect.arrayContaining(["'_price' is required"]),
-                  metadata: null
-                }
-              }
+                  metadata: null,
+                },
+              },
             });
           });
 
@@ -820,8 +815,8 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
             required() {
               throw new Error('lolol');
             },
-            validator
-          }
+            validator,
+          },
         }).getModel();
 
         it('should consider required:false if occurred at creation', async () => {
@@ -834,7 +829,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
         it('should consider required:false if occurred during updates', async () => {
           const { data, error } = await Model.update(
             { prop: null, prop1: '' },
-            { prop1: 'updated' }
+            { prop1: 'updated' },
           );
 
           expect(error).toBeNull();
@@ -852,8 +847,8 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
             propertyName: {
               default: value,
               required: () => true,
-              validator
-            }
+              validator,
+            },
           });
 
           expectNoFailure(toPass);
@@ -868,8 +863,8 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
             default: '',
             readonly: true,
             required: () => true,
-            validator
-          }
+            validator,
+          },
         });
 
         expectNoFailure(toPass);
@@ -884,8 +879,8 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
             readonly: true,
             required: () => true,
             shouldInit: () => true,
-            validator
-          }
+            validator,
+          },
         });
 
         expectNoFailure(toPass);
@@ -897,7 +892,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
     describe('invalid', () => {
       it('should reject requiredBy & no default', () => {
         const toFail = fx({
-          propertyName: { required: () => true, validator }
+          propertyName: { required: () => true, validator },
         });
 
         expectFailure(toFail);
@@ -908,9 +903,9 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
           expect(err.payload).toMatchObject(
             expect.objectContaining({
               propertyName: expect.arrayContaining([
-                'Callable required properties must have a default value or setter'
-              ])
-            })
+                'Callable required properties must have a default value or setter',
+              ]),
+            }),
           );
         }
       });
@@ -922,9 +917,9 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
             dependsOn: 'prop',
             resolver: () => 1,
             required: () => true,
-            validator
+            validator,
           },
-          prop: { default: '' }
+          prop: { default: '' },
         });
 
         expectFailure(toFail);
@@ -935,16 +930,16 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
           expect(err.payload).toMatchObject(
             expect.objectContaining({
               dependentProp: expect.arrayContaining([
-                'Required properties cannot be dependent'
-              ])
-            })
+                'Required properties cannot be dependent',
+              ]),
+            }),
           );
         }
       });
 
       it('should reject requiredBy + allow', () => {
         const toFail = fx({
-          prop: { required: () => true, allow: [1, 2, 435, 45], validator }
+          prop: { required: () => true, allow: [1, 2, 435, 45], validator },
         });
 
         expectFailure(toFail);
@@ -955,9 +950,9 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
           expect(err.payload).toMatchObject(
             expect.objectContaining({
               prop: expect.arrayContaining([
-                '"allow" rule is cannot be applied to conditionally required properties'
-              ])
-            })
+                '"allow" rule is cannot be applied to conditionally required properties',
+              ]),
+            }),
           );
         }
       });

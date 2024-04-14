@@ -1,4 +1,4 @@
-import { beforeEach, describe, it, expect } from 'vitest';
+import { beforeEach, describe, it, expect } from 'bun:test';
 
 import { DEFINITION_RULES, VIRTUAL_RULES } from '../../../src/schema/types';
 import { ERRORS } from '../../../dist';
@@ -14,14 +14,14 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
             dependentProp: {
               default: '',
               dependsOn: 'propertyName',
-              resolver: () => ''
+              resolver: () => '',
             },
             propertyName: {
               alias: 'alias',
               virtual: true,
               sanitizer: () => '',
-              validator
-            }
+              validator,
+            },
           });
 
           expectNoFailure(toPass);
@@ -37,14 +37,14 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
             [dependentProp]: {
               default: '',
               dependsOn: virtualProp,
-              resolver: () => ''
+              resolver: () => '',
             },
             [virtualProp]: {
               alias: dependentProp,
               virtual: true,
               sanitizer: () => '',
-              validator
-            }
+              validator,
+            },
           });
 
           expectNoFailure(toPass);
@@ -73,9 +73,9 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
             quantity: {
               default: 0.0,
               dependsOn: 'setQuantity',
-              resolver
+              resolver,
             },
-            setQuantity: { alias: 'qty', virtual: true, validator }
+            setQuantity: { alias: 'qty', virtual: true, validator },
           }).getModel();
 
           beforeEach(() => {
@@ -96,14 +96,14 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
                 quantity: {
                   default: 0.0,
                   dependsOn: 'setQuantity',
-                  resolver
+                  resolver,
                 },
                 setQuantity: {
                   alias: 'quantity',
                   virtual: true,
                   shouldInit: false,
-                  validator
-                }
+                  validator,
+                },
               }).getModel();
 
               const { data } = await Model.create({ quantity: 12 });
@@ -118,8 +118,8 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               expect(error.payload).toMatchObject({
                 qty: {
                   reasons: expect.arrayContaining(['Invalid quantity']),
-                  metadata: null
-                }
+                  metadata: null,
+                },
               });
               expect(contextRecord).toEqual({});
             });
@@ -127,14 +127,14 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
             it('should respect precedence of virtual property and alias if both are provided at creation', async () => {
               const operation1 = await Model.create({
                 qty: 12,
-                setQuantity: 50
+                setQuantity: 50,
               });
 
               expect(operation1.data).toMatchObject({ id: 1, quantity: 50 });
 
               const operation2 = await Model.create({
                 setQuantity: 20,
-                qty: 1
+                qty: 1,
               });
 
               expect(operation2.data).toMatchObject({ id: 1, quantity: 1 });
@@ -153,7 +153,7 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
             it('should respect alias if provided during updates', async () => {
               const { data } = await Model.update(
                 { id: 1, quantity: 12 },
-                { qty: 5 }
+                { qty: 5 },
               );
 
               expect(data).toMatchObject({ quantity: 5 });
@@ -163,14 +163,14 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
             it('should return alias errors with alias name in error payload during updates', async () => {
               const { error } = await Model.update(
                 { id: 1, quantity: 12 },
-                { qty: '2' }
+                { qty: '2' },
               );
 
               expect(error.payload).toMatchObject({
                 qty: {
                   reasons: expect.arrayContaining(['Invalid quantity']),
-                  metadata: null
-                }
+                  metadata: null,
+                },
               });
               expect(contextRecord).toEqual({});
             });
@@ -178,14 +178,14 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
             it('should respect precedence of virtual property and alias if both are provided during updates', async () => {
               const operation1 = await Model.update(
                 { id: 1, quantity: 75 },
-                { qty: 12, setQuantity: 50 }
+                { qty: 12, setQuantity: 50 },
               );
 
               expect(operation1.data).toMatchObject({ quantity: 50 });
 
               const operation2 = await Model.update(
                 { id: 1, quantity: 75 },
-                { setQuantity: 20, qty: 1 }
+                { setQuantity: 20, qty: 1 },
               );
 
               expect(operation2.data).toMatchObject({ quantity: 1 });
@@ -208,8 +208,8 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
                     ? [true, 'invalid quantity']
                     : false;
                 },
-                validator
-              }
+                validator,
+              },
             }).getModel();
 
             it("should respect 'required' rule of virtual property even when alias is provided at creation", async () => {
@@ -221,8 +221,8 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               expect(operation1.error.payload).toEqual({
                 qty: {
                   reasons: expect.arrayContaining(["'qty' is required"]),
-                  metadata: null
-                }
+                  metadata: null,
+                },
               });
 
               qty = -1000;
@@ -233,8 +233,8 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               expect(operation2.error.payload).toEqual({
                 qty: {
                   reasons: expect.arrayContaining(['invalid quantity']),
-                  metadata: null
-                }
+                  metadata: null,
+                },
               });
             });
 
@@ -248,8 +248,8 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               expect(operation1.error.payload).toEqual({
                 qty: {
                   reasons: expect.arrayContaining(["'qty' is required"]),
-                  metadata: null
-                }
+                  metadata: null,
+                },
               });
 
               qty = -1000;
@@ -260,8 +260,8 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               expect(operation2.error.payload).toEqual({
                 qty: {
                   reasons: expect.arrayContaining(['invalid quantity']),
-                  metadata: null
-                }
+                  metadata: null,
+                },
               });
             });
           });
@@ -283,8 +283,8 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
 
                   return setQuantity > quantity;
                 },
-                validator
-              }
+                validator,
+              },
             }).getModel();
 
             it("should respect 'shouldInit' rule of virtual property even when alias is provided at creation", async () => {
@@ -304,19 +304,19 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
             it("should respect 'shouldUpdate' rule of virtual property even when alias is provided during updates", async () => {
               const operation1 = await Model.update(
                 { id: 1, quantity: 75 },
-                { qty: 12 }
+                { qty: 12 },
               );
 
               expect(contextRecord).toEqual({ setQuantity: 12 });
               expect(operation1.error).toEqual({
                 message: ERRORS.NOTHING_TO_UPDATE,
-                payload: {}
+                payload: {},
               });
               expect(operation1.data).toBe(null);
 
               const operation2 = await Model.update(
                 { id: 1, quantity: 75 },
-                { qty: 100 }
+                { qty: 100 },
               );
 
               expect(contextRecord).toEqual({ setQuantity: 100 });
@@ -331,14 +331,14 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
             dependent: {
               default: 0.0,
               dependsOn: '_virtual',
-              resolver: () => 1
+              resolver: () => 1,
             },
             _virtual: {
               alias: 'virtual',
               virtual: true,
               required: () => true,
-              validator: (v: any) => v == 'valid'
-            }
+              validator: (v: any) => v == 'valid',
+            },
           }).getModel();
 
           describe('creation', () => {
@@ -348,8 +348,8 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               expect(error.payload).toMatchObject({
                 _virtual: {
                   reasons: expect.arrayContaining(['validation failed']),
-                  metadata: null
-                }
+                  metadata: null,
+                },
               });
               expect(error.payload.virtual).toBeUndefined();
             });
@@ -360,8 +360,8 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               expect(error.payload).toMatchObject({
                 virtual: {
                   reasons: expect.arrayContaining(['validation failed']),
-                  metadata: null
-                }
+                  metadata: null,
+                },
               });
               expect(error.payload._virtual).toBeUndefined();
             });
@@ -372,8 +372,8 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               expect(error.payload).toMatchObject({
                 virtual: {
                   reasons: expect.arrayContaining(["'virtual' is required"]),
-                  metadata: null
-                }
+                  metadata: null,
+                },
               });
               expect(error.payload._virtual).toBeUndefined();
 
@@ -382,8 +382,8 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               expect(error.payload).toMatchObject({
                 virtual: {
                   reasons: expect.arrayContaining(["'virtual' is required"]),
-                  metadata: null
-                }
+                  metadata: null,
+                },
               });
               expect(error.payload._virtual).toBeUndefined();
             });
@@ -391,14 +391,14 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
             it('should return respect precedence between alias and virtual property if both are provided at creation', async () => {
               let { error } = await Model.create({
                 _virtual: 'test',
-                virtual: 'test'
+                virtual: 'test',
               });
 
               expect(error.payload).toMatchObject({
                 virtual: {
                   reasons: expect.arrayContaining(['validation failed']),
-                  metadata: null
-                }
+                  metadata: null,
+                },
               });
               expect(error.payload._virtual).toBeUndefined();
 
@@ -409,8 +409,8 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               expect(error.payload).toMatchObject({
                 _virtual: {
                   reasons: expect.arrayContaining(['validation failed']),
-                  metadata: null
-                }
+                  metadata: null,
+                },
               });
               expect(error.payload.virtual).toBeUndefined();
             });
@@ -425,8 +425,8 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               expect(error.payload).toMatchObject({
                 _virtual: {
                   reasons: expect.arrayContaining(['validation failed']),
-                  metadata: null
-                }
+                  metadata: null,
+                },
               });
               expect(error.payload.virtual).toBeUndefined();
             });
@@ -437,22 +437,22 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               expect(error.payload).toMatchObject({
                 virtual: {
                   reasons: expect.arrayContaining(['validation failed']),
-                  metadata: null
-                }
+                  metadata: null,
+                },
               });
               expect(error.payload._virtual).toBeUndefined();
             });
 
             it('should return alias name as error key in case of required error during updates', async () => {
               let { error } = await Model.update(validData, {
-                virtual: 'valid'
+                virtual: 'valid',
               });
 
               expect(error.payload).toMatchObject({
                 virtual: {
                   reasons: expect.arrayContaining(["'virtual' is required"]),
-                  metadata: null
-                }
+                  metadata: null,
+                },
               });
               expect(error.payload._virtual).toBeUndefined();
 
@@ -462,8 +462,8 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               expect(error.payload).toMatchObject({
                 virtual: {
                   reasons: expect.arrayContaining(["'virtual' is required"]),
-                  metadata: null
-                }
+                  metadata: null,
+                },
               });
               expect(error.payload._virtual).toBeUndefined();
             });
@@ -471,29 +471,29 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
             it('should return respect precedence between alias and virtual property if both are provided during updates', async () => {
               let { error } = await Model.update(validData, {
                 _virtual: 'test',
-                virtual: 'test'
+                virtual: 'test',
               });
 
               expect(error.payload).toMatchObject({
                 virtual: {
                   reasons: expect.arrayContaining(['validation failed']),
-                  metadata: null
-                }
+                  metadata: null,
+                },
               });
               expect(error.payload._virtual).toBeUndefined();
 
               error = (
                 await Model.update(validData, {
                   virtual: 'test',
-                  _virtual: 'test'
+                  _virtual: 'test',
                 })
               ).error;
 
               expect(error.payload).toMatchObject({
                 _virtual: {
                   reasons: expect.arrayContaining(['validation failed']),
-                  metadata: null
-                }
+                  metadata: null,
+                },
               });
               expect(error.payload.virtual).toBeUndefined();
             });
@@ -505,14 +505,14 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
             dependent: {
               default: 0.0,
               dependsOn: '_virtual',
-              resolver: () => 1
+              resolver: () => 1,
             },
             _virtual: {
               alias: 'dependent',
               virtual: true,
               required: () => true,
-              validator: (v: any) => v == 'valid'
-            }
+              validator: (v: any) => v == 'valid',
+            },
           }).getModel();
 
           describe('creation', () => {
@@ -522,8 +522,8 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               expect(error.payload).toMatchObject({
                 _virtual: {
                   reasons: expect.arrayContaining(['validation failed']),
-                  metadata: null
-                }
+                  metadata: null,
+                },
               });
               expect(error.payload.dependent).toBeUndefined();
             });
@@ -534,8 +534,8 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               expect(error.payload).toMatchObject({
                 dependent: {
                   reasons: expect.arrayContaining(['validation failed']),
-                  metadata: null
-                }
+                  metadata: null,
+                },
               });
               expect(error.payload._virtual).toBeUndefined();
             });
@@ -546,8 +546,8 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               expect(error.payload).toMatchObject({
                 dependent: {
                   reasons: expect.arrayContaining(["'dependent' is required"]),
-                  metadata: null
-                }
+                  metadata: null,
+                },
               });
               expect(error.payload._virtual).toBeUndefined();
 
@@ -556,8 +556,8 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               expect(error.payload).toMatchObject({
                 dependent: {
                   reasons: expect.arrayContaining(["'dependent' is required"]),
-                  metadata: null
-                }
+                  metadata: null,
+                },
               });
               expect(error.payload._virtual).toBeUndefined();
             });
@@ -565,14 +565,14 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
             it('should return respect precedence between alias and virtual property if both are provided at creation', async () => {
               let { error } = await Model.create({
                 _virtual: 'test',
-                dependent: 'test'
+                dependent: 'test',
               });
 
               expect(error.payload).toMatchObject({
                 dependent: {
                   reasons: expect.arrayContaining(['validation failed']),
-                  metadata: null
-                }
+                  metadata: null,
+                },
               });
               expect(error.payload._virtual).toBeUndefined();
 
@@ -583,8 +583,8 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               expect(error.payload).toMatchObject({
                 _virtual: {
                   reasons: expect.arrayContaining(['validation failed']),
-                  metadata: null
-                }
+                  metadata: null,
+                },
               });
               expect(error.payload.dependent).toBeUndefined();
             });
@@ -599,36 +599,36 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               expect(error.payload).toMatchObject({
                 _virtual: {
                   reasons: expect.arrayContaining(['validation failed']),
-                  metadata: null
-                }
+                  metadata: null,
+                },
               });
               expect(error.payload.dependent).toBeUndefined();
             });
 
             it('should return alias name as error key if provided and validation fails during updates', async () => {
               const { error } = await Model.update(validData, {
-                dependent: '5'
+                dependent: '5',
               });
 
               expect(error.payload).toMatchObject({
                 dependent: {
                   reasons: expect.arrayContaining(['validation failed']),
-                  metadata: null
-                }
+                  metadata: null,
+                },
               });
               expect(error.payload._virtual).toBeUndefined();
             });
 
             it('should return alias name as error key in case of required error during updates', async () => {
               let { error } = await Model.update(validData, {
-                dependent: 'valid'
+                dependent: 'valid',
               });
 
               expect(error.payload).toMatchObject({
                 dependent: {
                   reasons: expect.arrayContaining(["'dependent' is required"]),
-                  metadata: null
-                }
+                  metadata: null,
+                },
               });
               expect(error.payload._virtual).toBeUndefined();
 
@@ -638,8 +638,8 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               expect(error.payload).toMatchObject({
                 dependent: {
                   reasons: expect.arrayContaining(["'dependent' is required"]),
-                  metadata: null
-                }
+                  metadata: null,
+                },
               });
               expect(error.payload._virtual).toBeUndefined();
             });
@@ -647,29 +647,29 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
             it('should return respect precedence between alias and virtual property if both are provided during updates', async () => {
               let { error } = await Model.update(validData, {
                 _virtual: 'test',
-                dependent: 'test'
+                dependent: 'test',
               });
 
               expect(error.payload).toMatchObject({
                 dependent: {
                   reasons: expect.arrayContaining(['validation failed']),
-                  metadata: null
-                }
+                  metadata: null,
+                },
               });
               expect(error.payload._virtual).toBeUndefined();
 
               error = (
                 await Model.update(validData, {
                   dependent: 'test',
-                  _virtual: 'test'
+                  _virtual: 'test',
                 })
               ).error;
 
               expect(error.payload).toMatchObject({
                 _virtual: {
                   reasons: expect.arrayContaining(['validation failed']),
-                  metadata: null
-                }
+                  metadata: null,
+                },
               });
               expect(error.payload.dependent).toBeUndefined();
             });
@@ -682,9 +682,9 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
           dependentProp: {
             default: '',
             dependsOn: 'propertyName',
-            resolver: () => ''
+            resolver: () => '',
           },
-          propertyName: { virtual: true, sanitizer: () => '', validator }
+          propertyName: { virtual: true, sanitizer: () => '', validator },
         });
 
         expectNoFailure(toPass);
@@ -697,13 +697,13 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
           dependentProp: {
             default: '',
             dependsOn: 'propertyName',
-            resolver: () => ''
+            resolver: () => '',
           },
           propertyName: {
             virtual: true,
             onFailure: validator,
-            validator
-          }
+            validator,
+          },
         });
 
         expectNoFailure(toPass);
@@ -716,13 +716,13 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
           dependentProp: {
             default: '',
             dependsOn: 'propertyName',
-            resolver: () => ''
+            resolver: () => '',
           },
           propertyName: {
             virtual: true,
             required: () => true,
-            validator
-          }
+            validator,
+          },
         });
 
         expectNoFailure(toPass);
@@ -738,9 +738,9 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
             dependentProp: {
               default: '',
               dependsOn: 'propertyName',
-              resolver: () => ''
+              resolver: () => '',
             },
-            propertyName: { virtual: true, shouldInit, validator }
+            propertyName: { virtual: true, shouldInit, validator },
           });
 
           expectNoFailure(toPass);
@@ -757,9 +757,9 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
             dependentProp: {
               default: '',
               dependsOn: 'propertyName',
-              resolver: () => ''
+              resolver: () => '',
             },
-            propertyName: { virtual: true, onSuccess, validator }
+            propertyName: { virtual: true, onSuccess, validator },
           });
 
           expectNoFailure(toPass);
@@ -781,58 +781,58 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               default: '',
               dependsOn: ['virtualInit', 'virtualWithSanitizer'],
               resolver({
-                context: { virtualInit, virtualWithSanitizer }
+                context: { virtualInit, virtualWithSanitizer },
               }: any) {
                 return virtualInit && virtualWithSanitizer ? 'both' : 'one';
               },
-              onSuccess: onSuccess('dependentSideInit')
+              onSuccess: onSuccess('dependentSideInit'),
             },
             dependentSideNoInit: {
               default: '',
               dependsOn: ['virtualNoInit', 'virtualWithSanitizerNoInit'],
               resolver: () => 'changed',
-              onSuccess: onSuccess('dependentSideNoInit')
+              onSuccess: onSuccess('dependentSideNoInit'),
             },
             name: { default: '' },
             virtualInit: {
               virtual: true,
               onSuccess: onSuccess('virtualInit'),
-              validator: validateBoolean
+              validator: validateBoolean,
             },
             virtualNoInit: {
               virtual: true,
               shouldInit: false,
               onSuccess: [
                 onSuccess('virtualNoInit'),
-                incrementOnSuccessStats('virtualNoInit')
+                incrementOnSuccessStats('virtualNoInit'),
               ],
-              validator: validateBoolean
+              validator: validateBoolean,
             },
             virtualWithSanitizer: {
               virtual: true,
               onSuccess: [
                 onSuccess('virtualWithSanitizer'),
                 incrementOnSuccessStats('virtualWithSanitizer'),
-                incrementOnSuccessStats('virtualWithSanitizer')
+                incrementOnSuccessStats('virtualWithSanitizer'),
               ],
               sanitizer: sanitizerOf('virtualWithSanitizer', 'sanitized'),
-              validator: validateBoolean
+              validator: validateBoolean,
             },
             virtualWithSanitizerNoInit: {
               virtual: true,
               shouldInit: false,
               onSuccess: [
                 onSuccess('virtualWithSanitizerNoInit'),
-                incrementOnSuccessStats('virtualWithSanitizerNoInit')
+                incrementOnSuccessStats('virtualWithSanitizerNoInit'),
               ],
               sanitizer: sanitizerOf(
                 'virtualWithSanitizerNoInit',
-                'sanitized no init'
+                'sanitized no init',
               ),
-              validator: validateBoolean
-            }
+              validator: validateBoolean,
+            },
           },
-          { errors: 'throw' }
+          { errors: 'throw' },
         ).getModel();
 
         function sanitizerOf(prop: string, value: any) {
@@ -875,7 +875,7 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
             expect(data).toEqual({
               dependentSideInit: '',
               dependentSideNoInit: '',
-              name: 'Peter'
+              name: 'Peter',
             });
 
             expect(sanitizedValues).toEqual({});
@@ -885,17 +885,17 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
             const { data } = await User.create({
               name: 'Peter',
               virtualWithSanitizer: true,
-              virtualWithSanitizerNoInit: true
+              virtualWithSanitizerNoInit: true,
             });
 
             expect(data).toEqual({
               dependentSideInit: 'one',
               dependentSideNoInit: '',
-              name: 'Peter'
+              name: 'Peter',
             });
 
             expect(sanitizedValues).toEqual({
-              virtualWithSanitizer: 'sanitized'
+              virtualWithSanitizer: 'sanitized',
             });
           });
 
@@ -907,7 +907,7 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
 
               virtualInit: true,
               virtualWithSanitizer: true,
-              virtualWithSanitizerNoInit: true
+              virtualWithSanitizerNoInit: true,
             });
 
             await handleSuccess();
@@ -915,25 +915,25 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
             expect(user).toEqual({
               dependentSideInit: 'both',
               dependentSideNoInit: '',
-              name: 'Peter'
+              name: 'Peter',
             });
 
             expect(onSuccessStats).toEqual({
               dependentSideInit: 1,
               dependentSideNoInit: 1,
               virtualInit: 1,
-              virtualWithSanitizer: 3
+              virtualWithSanitizer: 3,
             });
 
             expect(onSuccessValues).toEqual({
               dependentSideInit: 'both',
               dependentSideNoInit: '',
               virtualInit: true,
-              virtualWithSanitizer: 'sanitized'
+              virtualWithSanitizer: 'sanitized',
             });
 
             expect(sanitizedValues).toEqual({
-              virtualWithSanitizer: 'sanitized'
+              virtualWithSanitizer: 'sanitized',
             });
           });
         });
@@ -945,8 +945,8 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               {
                 name: 'John',
                 virtualWithSanitizer: true,
-                virtualWithSanitizerNoInit: true
-              }
+                virtualWithSanitizerNoInit: true,
+              },
             );
 
             await handleSuccess();
@@ -954,26 +954,26 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
             expect(data).toEqual({
               name: 'John',
               dependentSideInit: 'one',
-              dependentSideNoInit: 'changed'
+              dependentSideNoInit: 'changed',
             });
 
             expect(onSuccessStats).toEqual({
               dependentSideInit: 1,
               dependentSideNoInit: 1,
               virtualWithSanitizer: 3,
-              virtualWithSanitizerNoInit: 2
+              virtualWithSanitizerNoInit: 2,
             });
 
             expect(onSuccessValues).toEqual({
               dependentSideInit: 'one',
               dependentSideNoInit: 'changed',
               virtualWithSanitizer: 'sanitized',
-              virtualWithSanitizerNoInit: 'sanitized no init'
+              virtualWithSanitizerNoInit: 'sanitized no init',
             });
 
             expect(sanitizedValues).toEqual({
               virtualWithSanitizer: 'sanitized',
-              virtualWithSanitizerNoInit: 'sanitized no init'
+              virtualWithSanitizerNoInit: 'sanitized no init',
             });
           });
         });
@@ -983,15 +983,15 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
             dependent: {
               default: '',
               dependsOn: 'virtual',
-              resolver: ({ context }) => context.virtual
+              resolver: ({ context }) => context.virtual,
             },
             virtual: {
               virtual: true,
               sanitizer() {
                 throw new Error('lolol');
               },
-              validator: () => true
-            }
+              validator: () => true,
+            },
           }).getModel();
 
           const values = [null, '', 1, 0, -1, true, false, [], {}];
@@ -1009,7 +1009,7 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
             for (const virtual of values) {
               const { data, error } = await Model.update(
                 { dependent: 'lolol' },
-                { virtual }
+                { virtual },
               );
 
               expect(error).toBeNull();
@@ -1034,15 +1034,15 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               alias: 'lol',
               default: '',
               dependsOn: virtualProp,
-              resolver: () => ''
+              resolver: () => '',
             },
-            [virtualProp]: { virtual: true, validator }
+            [virtualProp]: { virtual: true, validator },
           });
 
           expectFailure(toFail);
 
           const expectedError = expect.arrayContaining([
-            'Only virtual properties can have aliases'
+            'Only virtual properties can have aliases',
           ]);
 
           try {
@@ -1054,8 +1054,8 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
                 readonly: expectedError,
                 lax1: expectedError,
                 lax2: expectedError,
-                dependentProp: expectedError
-              })
+                dependentProp: expectedError,
+              }),
             );
           }
         });
@@ -1068,9 +1068,9 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               dependentProp: {
                 default: '',
                 dependsOn: 'propertyName',
-                resolver: () => ''
+                resolver: () => '',
               },
-              propertyName: { alias, virtual: true, validator }
+              propertyName: { alias, virtual: true, validator },
             });
 
             expectFailure(toFail);
@@ -1081,9 +1081,9 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               expect(err.payload).toEqual(
                 expect.objectContaining({
                   propertyName: expect.arrayContaining([
-                    'An alias must be a string with at least 1 character'
-                  ])
-                })
+                    'An alias must be a string with at least 1 character',
+                  ]),
+                }),
               );
             }
           }
@@ -1096,9 +1096,9 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
             dependentProp: {
               default: '',
               dependsOn: virtualProp,
-              resolver: () => ''
+              resolver: () => '',
             },
-            [virtualProp]: { alias: virtualProp, virtual: true, validator }
+            [virtualProp]: { alias: virtualProp, virtual: true, validator },
           });
 
           expectFailure(toFail);
@@ -1109,9 +1109,9 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
             expect(err.payload).toEqual(
               expect.objectContaining({
                 [virtualProp]: expect.arrayContaining([
-                  'An alias cannot be the same as the virtual property'
-                ])
-              })
+                  'An alias cannot be the same as the virtual property',
+                ]),
+              }),
             );
           }
         });
@@ -1124,10 +1124,10 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
             dependentProp: {
               default: '',
               dependsOn: [virtualProp, 'virtualProp1'],
-              resolver: () => ''
+              resolver: () => '',
             },
             [virtualProp]: { alias, virtual: true, validator },
-            virtualProp1: { alias, virtual: true, validator }
+            virtualProp1: { alias, virtual: true, validator },
           });
 
           expectFailure(toFail);
@@ -1138,9 +1138,9 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
             expect(err.payload).toEqual(
               expect.objectContaining({
                 virtualProp1: expect.arrayContaining([
-                  `Sorry, alias provided '${alias}' already belongs to property '${virtualProp}'`
-                ])
-              })
+                  `Sorry, alias provided '${alias}' already belongs to property '${virtualProp}'`,
+                ]),
+              }),
             );
           }
         });
@@ -1153,10 +1153,10 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
             dependentProp: {
               default: '',
               dependsOn: [virtualProp, 'virtualProp1'],
-              resolver: () => ''
+              resolver: () => '',
             },
             [virtualProp]: { alias, virtual: true, validator },
-            virtualProp1: { virtual: true, validator }
+            virtualProp1: { virtual: true, validator },
           });
 
           expectFailure(toFail);
@@ -1167,9 +1167,9 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
             expect(err.payload).toEqual(
               expect.objectContaining({
                 [virtualProp]: expect.arrayContaining([
-                  `'${alias}' cannot be used as the alias of '${virtualProp}' because it is the name of an existing property on your schema. To use an alias that matches another property on your schema, this property must be dependent on the said virtual property`
-                ])
-              })
+                  `'${alias}' cannot be used as the alias of '${virtualProp}' because it is the name of an existing property on your schema. To use an alias that matches another property on your schema, this property must be dependent on the said virtual property`,
+                ]),
+              }),
             );
           }
         });
@@ -1182,10 +1182,10 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
             dependentProp: {
               default: '',
               dependsOn: virtualProp,
-              resolver: () => ''
+              resolver: () => '',
             },
             [virtualProp]: { alias: laxProp, virtual: true, validator },
-            [laxProp]: { default: true }
+            [laxProp]: { default: true },
           });
 
           expectFailure(toFail);
@@ -1196,9 +1196,9 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
             expect(err.payload).toEqual(
               expect.objectContaining({
                 [virtualProp]: expect.arrayContaining([
-                  `'${laxProp}' cannot be used as the alias of '${virtualProp}' because it is the name of an existing property on your schema. To use an alias that matches another property on your schema, this property must be dependent on the said virtual property`
-                ])
-              })
+                  `'${laxProp}' cannot be used as the alias of '${virtualProp}' because it is the name of an existing property on your schema. To use an alias that matches another property on your schema, this property must be dependent on the said virtual property`,
+                ]),
+              }),
             );
           }
         });
@@ -1211,19 +1211,19 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
             [dependentProp]: {
               default: '',
               dependsOn: virtualProp,
-              resolver: () => ''
+              resolver: () => '',
             },
             [virtualProp]: {
               alias: 'dependentProp1',
               virtual: true,
-              validator
+              validator,
             },
             dependentProp1: {
               default: '',
               dependsOn: 'virtualProp1',
-              resolver: () => ''
+              resolver: () => '',
             },
-            virtualProp1: { virtual: true, validator }
+            virtualProp1: { virtual: true, validator },
           });
 
           expectFailure(toFail);
@@ -1234,9 +1234,9 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
             expect(err.payload).toEqual(
               expect.objectContaining({
                 [virtualProp]: expect.arrayContaining([
-                  `'dependentProp1' cannot be used as the alias of '${virtualProp}' because it is the name of an existing property on your schema. To use an alias that matches another property on your schema, this property must be dependent on the said virtual property`
-                ])
-              })
+                  `'dependentProp1' cannot be used as the alias of '${virtualProp}' because it is the name of an existing property on your schema. To use an alias that matches another property on your schema, this property must be dependent on the said virtual property`,
+                ]),
+              }),
             );
           }
         });
@@ -1248,7 +1248,7 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
 
           for (const sanitizer of values) {
             const toFail = fx({
-              propertyName: { virtual: true, sanitizer, validator }
+              propertyName: { virtual: true, sanitizer, validator },
             });
 
             expectFailure(toFail);
@@ -1259,9 +1259,9 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               expect(err.payload).toEqual(
                 expect.objectContaining({
                   propertyName: expect.arrayContaining([
-                    "'sanitizer' must be a function"
-                  ])
-                })
+                    "'sanitizer' must be a function",
+                  ]),
+                }),
               );
             }
           }
@@ -1277,7 +1277,7 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
             null,
             [],
             {},
-            () => {}
+            () => {},
           ];
 
           for (const sanitizer of values) {
@@ -1291,9 +1291,9 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               expect(err.payload).toEqual(
                 expect.objectContaining({
                   propertyName: expect.arrayContaining([
-                    "'sanitizer' is only valid on virtuals"
-                  ])
-                })
+                    "'sanitizer' is only valid on virtuals",
+                  ]),
+                }),
               );
             }
           }
@@ -1311,9 +1311,9 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
           expect(err.payload).toEqual(
             expect.objectContaining({
               propertyName: [
-                'A virtual property must have at least one property that depends on it'
-              ]
-            })
+                'A virtual property must have at least one property that depends on it',
+              ],
+            }),
           );
         }
       });
@@ -1323,9 +1323,9 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
           dependentProp: {
             default: '',
             dependsOn: 'propertyName',
-            resolver: () => ''
+            resolver: () => '',
           },
-          propertyName: { virtual: true }
+          propertyName: { virtual: true },
         });
 
         expectFailure(toFail);
@@ -1335,8 +1335,8 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
         } catch (err: any) {
           expect(err.payload).toEqual(
             expect.objectContaining({
-              propertyName: expect.arrayContaining(['Invalid validator'])
-            })
+              propertyName: expect.arrayContaining(['Invalid validator']),
+            }),
           );
         }
       });
@@ -1346,14 +1346,14 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
           dependentProp: {
             default: '',
             dependsOn: 'propertyName',
-            resolver: () => ''
+            resolver: () => '',
           },
           propertyName: {
             virtual: true,
             shouldInit: false,
             required: () => true,
-            validator
-          }
+            validator,
+          },
         });
 
         expectFailure(toFail);
@@ -1364,9 +1364,9 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
           expect(err.payload).toEqual(
             expect.objectContaining({
               propertyName: expect.arrayContaining([
-                'Required virtuals cannot have initialization blocked'
-              ])
-            })
+                'Required virtuals cannot have initialization blocked',
+              ]),
+            }),
           );
         }
       });
@@ -1376,9 +1376,9 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
           dependentProp: {
             default: '',
             dependsOn: 'propertyName',
-            resolver: () => ''
+            resolver: () => '',
           },
-          propertyName: { virtual: true, required: true, validator }
+          propertyName: { virtual: true, required: true, validator },
         });
 
         expectFailure(toFail);
@@ -1389,16 +1389,16 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
           expect(err.payload).toEqual(
             expect.objectContaining({
               propertyName: expect.arrayContaining([
-                'Callable required properties must have required as a function'
-              ])
-            })
+                'Callable required properties must have required as a function',
+              ]),
+            }),
           );
         }
       });
 
       it('should reject any non virtual rule', () => {
         const values = DEFINITION_RULES.filter(
-          (rule) => !VIRTUAL_RULES.includes(rule)
+          (rule) => !VIRTUAL_RULES.includes(rule),
         );
 
         for (const rule of values) {
@@ -1406,9 +1406,9 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
             dependentProp: {
               default: '',
               dependsOn: 'propertyName',
-              resolver: () => ''
+              resolver: () => '',
             },
-            propertyName: { virtual: true, [rule]: true, validator }
+            propertyName: { virtual: true, [rule]: true, validator },
           });
 
           expectFailure(toFail);
@@ -1419,9 +1419,9 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
             expect(err.payload).toMatchObject({
               propertyName: expect.arrayContaining([
                 `Virtual properties can only have (${VIRTUAL_RULES.join(
-                  ', '
-                )}) as rules`
-              ])
+                  ', ',
+                )}) as rules`,
+              ]),
             });
           }
         }
