@@ -21,14 +21,17 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
 
+      - name: 📦 Install bun
+        run: npm i -g bun
+
       - name: 📦 Install dependencies
-        run: npm ci
+        run: bun i
 
       - name: ⚒️ Build
-        run: npm run build
+        run: bun run build
 
       - name: 🚨 Lint
-        run: npm run lint
+        run: bun run lint
 
       - name: 🧪 Test
-        run: npm run test
+        run: bun run test
