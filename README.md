@@ -21,7 +21,7 @@ import { Schema } from 'ivo';
 # Defining a schema
 
 ```ts
-import { Schema, type Summary } from 'ivo';
+import { Schema, type MutableSummary } from 'ivo';
 
 type UserInput = {
   email: string;
@@ -81,7 +81,7 @@ const userSchema = new Schema<UserInput, User>(
 
 function isEmailOrPhoneRequired({
   context: { email, phoneNumber },
-}: Summary<UserInput, User>) {
+}: MutableSummary<UserInput, User>) {
   return [!email && !phoneNumber, 'Provide "email" or "phone" number'] as const;
 }
 
