@@ -14,6 +14,7 @@ export {
   isEqual,
   isFunctionLike,
   isNullOrUndefined,
+  isOneOf,
   isPropertyOf,
   isRecordLike,
   toArray,

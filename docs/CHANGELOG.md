@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+# v1.3.1 <small><sup>26-04-2024</sup></small>
+
+- Update type inference of isArrayOk, isNumberOk and isStringOk utilities
+- Exported isOneOf utility
+
 # v1.3.0 <small><sup>14-04-2024</sup></small>
 
 - Split Context into ImmutableContext & MutableContext and Summary into ImmutableSummary & MutableSummary
