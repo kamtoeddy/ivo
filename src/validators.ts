@@ -9,6 +9,7 @@ import {
   ValidatorResponseObject,
   ValidationResponse,
   XOR,
+  ArrayOfMinSizeTwo,
 } from './schema/types';
 
 export {
@@ -33,8 +34,8 @@ type ArrayOptions<T> = {
   uniqueKey?: string;
 };
 
-async function isArrayOk<T>(
-  arr: T[],
+async function isArrayOk<const T>(
+  arr: any,
   {
     empty = false,
     sorted = false,
@@ -45,7 +46,7 @@ async function isArrayOk<T>(
     unique = true,
     uniqueKey = '',
   }: ArrayOptions<T> = {},
-) {
+): Promise<ValidationResponse<T[]>> {
   if (!Array.isArray(arr))
     return makeResponse({ reason: 'Expected an array', valid: false });
 
@@ -80,13 +81,14 @@ const _getArrayOrder = (sortOrder: any) => {
 };
 
 function isBooleanOk(value: any) {
-  if (typeof value !== 'boolean')
-    return makeResponse({ reason: 'Expected a boolean', valid: false });
-
-  return makeResponse<boolean>({ valid: true, validated: value });
+  return makeResponse<boolean>(
+    typeof value === 'boolean'
+      ? { valid: true, validated: value }
+      : { valid: false, reason: 'Expected a boolean' },
+  );
 }
 
-const failResponse = makeResponse({
+const invalidCardResponse = makeResponse({
   reason: 'Invalid card number',
   valid: false,
 });
@@ -94,13 +96,13 @@ const failResponse = makeResponse({
 const isCreditCardOk = (value: any) => {
   const _value = String(value).trim();
 
-  if (_value.length !== 16) return failResponse;
+  if (_value.length !== 16) return invalidCardResponse;
 
   const singleDigits = _getSingleDigits(_value);
 
-  if (singleDigits.length !== 16) return failResponse;
+  if (singleDigits.length !== 16) return invalidCardResponse;
 
-  if (!_isCheckSumOk(singleDigits)) return failResponse;
+  if (!_isCheckSumOk(singleDigits)) return invalidCardResponse;
 
   const validated = typeof value === 'number' ? value : _value;
 
@@ -206,17 +208,17 @@ function _makeNumberRage(range?: RangeType) {
 }
 
 type NumberOptions<T extends number = number> = XOR<
-  { allow: T[] | readonly T[] },
+  { allow: ArrayOfMinSizeTwo<T> },
   { range?: RangeType }
 >;
 
-function isNumberOk<T extends number = number>(
+function isNumberOk<const T extends number = number>(
   num: any,
-  { allow, range }: NumberOptions = {},
-): ValidationResponse<Exclude<T, undefined>> {
+  { allow, range }: NumberOptions<T> = {},
+): ValidationResponse<T> {
   if (allow)
-    return isOneOf(num, allow as any)
-      ? makeResponse({ valid: true, validated: num as Exclude<T, undefined> })
+    return isOneOf(num, allow)
+      ? makeResponse({ valid: true, validated: num })
       : makeResponse({
           reason: 'Unacceptable value',
           valid: false,
@@ -240,18 +242,18 @@ function isNumberOk<T extends number = number>(
     if (!_isInRange.valid) return makeResponse(_isInRange);
   }
 
-  return makeResponse<T>({ valid: true, validated: num });
+  return makeResponse({ valid: true, validated: num });
 }
 
 const MAX_LENGTH = 255,
   MIN_LENGTH = 1;
 
 type StringOptions<T extends string = string> = XOR<
-  { allow: T[] | readonly T[] },
+  { allow: ArrayOfMinSizeTwo<T> },
   { maxLength?: number; minLength?: number; regExp?: RegExp; trim?: boolean }
 >;
 
-function isStringOk<T extends string = string>(
+function isStringOk<const T extends string = string>(
   str: any,
   {
     allow,
@@ -301,3 +303,11 @@ function isStringOk<T extends string = string>(
 
   return makeResponse({ valid: true, validated: str });
 }
+
+const isValidStr = isStringOk('', { allow: ['lol', 'nope'] });
+
+if (isValidStr.valid) isValidStr.validated;
+
+const isValidNum = isNumberOk('', { allow: [4, 7] });
+
+if (isValidNum.valid) isValidNum.validated;
