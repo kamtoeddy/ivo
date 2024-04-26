@@ -1199,9 +1199,9 @@ class ModelTool<
 
   async create(
     input: Partial<Input & Aliases> = {},
-    ctxOptions: Partial<CtxOptions> = {},
+    contextOptions: Partial<CtxOptions> = {},
   ) {
-    this._initializeContextOptions(ctxOptions);
+    this._initializeContextOptions(contextOptions);
 
     if (!areValuesOk(input)) input = {};
 
@@ -1248,11 +1248,8 @@ class ModelTool<
     };
   }
 
-  async delete(
-    values: Output,
-    ImmutableContextOptions: Partial<CtxOptions> = {},
-  ) {
-    const ctxOptions = this._initializeContextOptions(ImmutableContextOptions);
+  async delete(values: Output, contextOptions: Partial<CtxOptions> = {}) {
+    const ctxOptions = this._initializeContextOptions(contextOptions);
 
     if (!areValuesOk(values))
       throw new this._options.ErrorTool(
@@ -1382,19 +1379,17 @@ class Model<
 
   create = (
     values: Partial<Input & Aliases> = {},
-    ImmutableContextOptions: Partial<CtxOptions> = {},
-  ) => this.modelTool.create(values, ImmutableContextOptions);
+    contextOptions: Partial<CtxOptions> = {},
+  ) => this.modelTool.create(values, contextOptions);
 
-  delete = (
-    values: Output,
-    ImmutableContextOptions: Partial<CtxOptions> = {},
-  ) => this.modelTool.delete(values, ImmutableContextOptions);
+  delete = (values: Output, contextOptions: Partial<CtxOptions> = {}) =>
+    this.modelTool.delete(values, contextOptions);
 
   update = (
     values: Output,
     changes: Partial<Input & Aliases>,
-    ImmutableContextOptions: Partial<CtxOptions> = {},
-  ) => this.modelTool.update(values, changes, ImmutableContextOptions);
+    contextOptions: Partial<CtxOptions> = {},
+  ) => this.modelTool.update(values, changes, contextOptions);
 }
 
 function areValuesOk(values: any) {
