@@ -474,25 +474,8 @@ namespace NS {
     CtxOptions extends ObjectType,
   > = Listenable<Input, Output, CtxOptions> & {
     readonly: true;
-    validator:
-      | Validator<K, Input, Output, Aliases, CtxOptions>
-      | [
-          Validator<K, Input, Output, Aliases, CtxOptions>,
-          SecondaryValidator<Output[K], Input, Output, Aliases, CtxOptions>,
-        ];
-  };
-
-  type Required<
-    K extends keyof (Output | Input),
-    Input,
-    Output,
-    Aliases,
-    CtxOptions extends ObjectType,
-  > = Listenable<Input, Output, CtxOptions> &
-    (
+  } & (
       | {
-          required: true;
-          shouldUpdate?: false | Setter<boolean, Input, Output, CtxOptions>;
           validator:
             | Validator<K, Input, Output, Aliases, CtxOptions>
             | [
@@ -507,8 +490,46 @@ namespace NS {
               ];
         }
       | (Enumerable<Input[K]> & {
-          required: true;
-          shouldUpdate?: false | Setter<boolean, Input, Output, CtxOptions>;
+          validator?:
+            | Validator<K, Input, Output, Aliases, CtxOptions>
+            | [
+                Validator<K, Input, Output, Aliases, CtxOptions>,
+                SecondaryValidator<
+                  Output[K],
+                  Input,
+                  Output,
+                  Aliases,
+                  CtxOptions
+                >,
+              ];
+        })
+    );
+
+  type Required<
+    K extends keyof (Output | Input),
+    Input,
+    Output,
+    Aliases,
+    CtxOptions extends ObjectType,
+  > = Listenable<Input, Output, CtxOptions> & {
+    required: true;
+    shouldUpdate?: false | Setter<boolean, Input, Output, CtxOptions>;
+  } & (
+      | {
+          validator:
+            | Validator<K, Input, Output, Aliases, CtxOptions>
+            | [
+                Validator<K, Input, Output, Aliases, CtxOptions>,
+                SecondaryValidator<
+                  Output[K],
+                  Input,
+                  Output,
+                  Aliases,
+                  CtxOptions
+                >,
+              ];
+        }
+      | (Enumerable<Input[K]> & {
           validator?:
             | Validator<K, Input, Output, Aliases, CtxOptions>
             | [

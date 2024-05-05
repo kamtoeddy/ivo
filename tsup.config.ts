@@ -6,5 +6,4 @@ export default defineConfig({
   outDir: './dist',
   clean: true,
   dts: true,
-  minify: true,
 });
