@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# v1.3.4 <small><sup>2024-05-06</sup></small>
+
+- Fix bug making post-validators to fail when fieldErrors are return in error object
+
 # v1.3.3 <small><sup>2024-05-06</sup></small>
 
 - Export internal utils & types to help manipulate field errors in validators

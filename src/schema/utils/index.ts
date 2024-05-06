@@ -24,15 +24,17 @@ function isFieldError(data: any): data is FieldError {
 
   if (
     !isPropertyOf('metadata', data) ||
-    !isFieldErrorMetadata(data?.metadata) ||
+    !isFieldErrorMetadataOk(data) ||
     !isPropertyOf('reasons', data)
   )
     return false;
 
-  return typeof data?.reasons != 'string' && !Array.isArray(data?.reasons);
+  return Array.isArray(data?.reasons);
 }
 
 function isInputFieldError(data: any): data is Partial<FullInputFieldError> {
+  if (isFieldError(data)) return true;
+
   if (!isRecordLike(data) || isEqual({}, data)) return false;
 
   if (isPropertyOf('reasons', data)) return false;
@@ -42,7 +44,7 @@ function isInputFieldError(data: any): data is Partial<FullInputFieldError> {
 
   if (!hasMetadata && !hasReason) return false;
 
-  if (hasMetadata && !isFieldErrorMetadata(data?.metadata)) return false;
+  if (hasMetadata && !isFieldErrorMetadataOk(data?.metadata)) return false;
 
   if (
     hasReason &&
@@ -54,7 +56,7 @@ function isInputFieldError(data: any): data is Partial<FullInputFieldError> {
   return true;
 }
 
-function isFieldErrorMetadata(data: any): data is FieldError['metadata'] {
+function isFieldErrorMetadataOk(data: any): data is FieldError['metadata'] {
   return data?.metadata == null || isRecordLike(data?.metadata);
 }
 
