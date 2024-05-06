@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# v1.3.3 <small><sup>2024-05-06</sup></small>
+
+- Export internal utils & types to help manipulate field errors in validators
+
 # v1.3.2 <small><sup>2024-05-05</sup></small>
 
 - Fix TS typing issue with enumerated readonly properties

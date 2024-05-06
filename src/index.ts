@@ -37,8 +37,14 @@ export type {
 } from './schema/types';
 export type {
   FieldError,
+  InputFieldError,
   IErrorTool,
   IValidationError,
   InputPayload,
   ValidationErrorMessage,
+} from './schema/utils';
+export {
+  isFieldError,
+  isInputFieldError,
+  makeFieldError,
 } from './schema/utils';
