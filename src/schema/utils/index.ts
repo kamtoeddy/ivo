@@ -3,13 +3,13 @@ import {
   FieldKey,
   toArray,
   isRecordLike,
-  isEqual
+  isEqual,
 } from '../../utils';
 import {
   FieldError,
   FullInputFieldError,
   InputFieldError,
-  InputPayload
+  InputPayload,
 } from './types';
 
 export * from './types';
@@ -17,7 +17,7 @@ export * from './error-tool';
 export * from './schema-error';
 export * from './timestamp-tool';
 
-export { isInputFieldError, makeFieldError };
+export { isFieldError, isInputFieldError, makeFieldError };
 
 function isFieldError(data: any): data is FieldError {
   if (!isRecordLike(data) || isEqual({}, data)) return false;
@@ -60,7 +60,7 @@ function isFieldErrorMetadata(data: any): data is FieldError['metadata'] {
 
 function makeFieldError(
   value: InputPayload[FieldKey] | InputFieldError,
-  fallbackMessage = 'validation failed'
+  fallbackMessage = 'validation failed',
 ): FieldError {
   if (isFieldError(value)) return value;
 
@@ -69,11 +69,11 @@ function makeFieldError(
   if (isInputFieldError(value))
     return {
       reasons: toArray(value?.reason || fallbackMessage),
-      metadata: value?.metadata ?? null
+      metadata: value?.metadata ?? null,
     };
 
   return {
     reasons: toArray((value as any)?.reasons ?? [fallbackMessage]),
-    metadata: (value as any)?.metadata ?? null
+    metadata: (value as any)?.metadata ?? null,
   };
 }
