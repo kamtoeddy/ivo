@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# v1.3.5 <small><sup>2024-05-07</sup></small>
+
+- Make post-validators to run after sanitization of virtuals and resolvement of dependent properties
+
 # v1.3.4 <small><sup>2024-05-06</sup></small>
 
 - Fix bug making post-validators to fail when fieldErrors are return in error object

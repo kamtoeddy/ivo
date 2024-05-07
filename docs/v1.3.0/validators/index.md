@@ -117,7 +117,7 @@ type Options = {
 As illustrated in the example above, the PostValidateConfig is an object that expects two properties:
 
 - `properties` an array of at least two unique input properties on your schema
-- `handler` a function (sync/async) that will determine the validity of the operation with respect to it's properties. This function is called immediately the initial validation is successful and at least one of the properties of it's config has been provided during updates but always gets called at creation
+- `handler` a function (sync/async) that will determine the validity of the operation with respect to it's properties. This function is invoked immediately after dependent properties are resolved and if at least one of the properties of it's config has been provided during updates but always gets called at creation
 
 > **If the postValidate option is an array, every set of properties has to be unique for each config**
 
