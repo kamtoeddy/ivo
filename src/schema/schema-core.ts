@@ -95,13 +95,6 @@ export function getInvalidPostValidateConfigMessageForRepeatedProperties(
   return `Config at index ${index} has the same properties as config at index ${existingIndex}`;
 }
 
-export function getInvalidPostValidateConfigMessageForSubsetProperties(
-  index: number,
-  parentIndex: number,
-) {
-  return `Properties of config at index ${index} is a subset of properties of config at index ${parentIndex}`;
-}
-
 export abstract class SchemaCore<
   Input,
   Output,
@@ -1532,17 +1525,6 @@ export abstract class SchemaCore<
       const isValid = this._registerPostValidator(config, i);
 
       if (!isValid.valid) reasons.push(isValid.reason!);
-    });
-
-    configs.forEach(({ properties: props }, i) => {
-      configs.forEach(({ properties }, i2) => {
-        if (i == i2) return;
-
-        if (props.every((p) => properties.includes(p)))
-          return reasons.push(
-            getInvalidPostValidateConfigMessageForSubsetProperties(i, i2),
-          );
-      });
     });
 
     return reasons.length ? { valid: false, reason: reasons } : { valid: true };

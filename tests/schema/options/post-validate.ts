@@ -4,7 +4,6 @@ import { ERRORS } from '../../../dist';
 import {
   getInvalidPostValidateConfigMessage,
   getInvalidPostValidateConfigMessageForRepeatedProperties,
-  getInvalidPostValidateConfigMessageForSubsetProperties,
 } from '../../../src/schema/schema-core';
 import {
   expectFailure,
@@ -367,9 +366,12 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
         ];
 
         describe('valid', () => {
-          it("should allow 'postValidate' as an array of non-subset valid configs", () => {
+          it("should allow 'postValidate' as an array of subset and non-subset valid configs", () => {
             const configs = [
               ['propertyName1', 'p1', 'p3'],
+              ['propertyName1', 'p1'],
+              ['propertyName1', 'p3'],
+              ['p1', 'p3'],
               ['propertyName1', 'p1', 'p2'],
               ['p1', 'p2', 'p3'],
               ['v1', 'v2'],
@@ -705,81 +707,6 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                 },
               ),
               { postValidate: configs.map((ci) => ci[0]) },
-            );
-
-            expectFailure(toFail);
-
-            try {
-              toFail();
-            } catch (err: any) {
-              expect(err).toMatchObject({
-                message: ERRORS.INVALID_SCHEMA,
-                payload: {
-                  postValidate: expect.arrayContaining(reasons),
-                },
-              });
-            }
-          });
-
-          it('should reject if any config is the subset of another', () => {
-            const configs = [
-              [
-                ['p1', 'p2'],
-                [3, 4, 6],
-              ],
-              [
-                ['p1', 'v1'],
-                [3, 5, 6],
-              ],
-              [
-                ['p1', 'v2'],
-                [4, 5, 6],
-              ],
-              [['p1', 'p2', 'v1'], [6]],
-              [['p1', 'p2', 'v2'], [6]],
-              [['p1', 'v1', 'v2'], [6]],
-              [['p1', 'p2', 'v1', 'v2'], []],
-              [
-                ['p2', 'v1'],
-                [3, 6, 9],
-              ],
-              [
-                ['p2', 'v2'],
-                [6, 9],
-              ],
-              [['p2', 'v1', 'v2'], [6]],
-            ] as [string[], number[]][];
-
-            const reasons = configs.reduce((prev, c, i) => {
-              return [
-                ...prev,
-                ...c[1].map((i2) =>
-                  getInvalidPostValidateConfigMessageForSubsetProperties(i, i2),
-                ),
-              ];
-            }, [] as string[]);
-
-            const toFail = fx(
-              getValidSchema(
-                {},
-                {
-                  dependent: {
-                    default: '',
-                    dependsOn: ['v1', 'v2'],
-                    resolver() {},
-                  },
-                  p1: { default: '' },
-                  p2: { default: '' },
-                  v1: { virtual: true, validator() {} },
-                  v2: { virtual: true, validator() {} },
-                },
-              ),
-              {
-                postValidate: configs.map((c) => ({
-                  properties: c[0],
-                  validator() {},
-                })),
-              },
             );
 
             expectFailure(toFail);
