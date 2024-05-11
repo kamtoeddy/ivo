@@ -15,7 +15,7 @@ export type {
   NS,
   PartialContext,
   PostValidationConfig,
-  PostValidationHandler,
+  PostValidator,
   RealType,
   ResponseErrorObject,
   TypeOf,
@@ -166,12 +166,7 @@ type VirtualResolver<
   summary: MutableSummary<Input, Output, CtxOptions>,
 ) => TypeOf<Input[K]> | Promise<TypeOf<Input[K]>>;
 
-type PostValidationHandler<
-  Input,
-  Output,
-  Aliases,
-  CtxOptions extends ObjectType,
-> = (
+type PostValidator<Input, Output, Aliases, CtxOptions extends ObjectType> = (
   summary: MutableSummary<Input, Output, CtxOptions>,
   propertiesProvided: KeyOf<Input>[],
 ) =>
@@ -186,7 +181,9 @@ type PostValidationConfig<
   CtxOptions extends ObjectType,
 > = {
   properties: ArrayOfMinSizeTwo<KeyOf<Input>>;
-  handler: PostValidationHandler<Input, Output, Aliases, CtxOptions>;
+  validator:
+    | PostValidator<Input, Output, Aliases, CtxOptions>
+    | ArrayOfMinSizeOne<PostValidator<Input, Output, Aliases, CtxOptions>>;
 };
 
 type KeyOf<T> = Extract<keyof T, string>;

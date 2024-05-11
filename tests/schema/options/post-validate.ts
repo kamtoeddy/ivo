@@ -19,22 +19,26 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
       describe('single config', () => {
         describe('valid', () => {
           it("should allow 'postValidate' as valid config", () => {
-            const toPass = fx(getValidSchema(), {
-              postValidate: {
-                properties: ['propertyName1', 'propertyName2'],
-                handler() {},
-              },
-            });
+            const valid = [() => {}, [() => {}, () => {}]];
 
-            expectNoFailure(toPass);
+            for (const validator of valid) {
+              const toPass = fx(getValidSchema(), {
+                postValidate: {
+                  properties: ['propertyName1', 'propertyName2'],
+                  validator,
+                },
+              });
 
-            toPass();
+              expectNoFailure(toPass);
+
+              toPass();
+            }
           });
 
           it("should allow 'postValidate' if some or all the properties to post validate are virtuals", () => {
             const values = [
-              { properties: ['virtual', 'propertyName2'], handler() {} },
-              [{ properties: ['virtual', 'virtual2'], handler() {} }],
+              { properties: ['virtual', 'propertyName2'], validator() {} },
+              [{ properties: ['virtual', 'virtual2'], validator() {} }],
             ];
 
             for (const postValidate of values) {
@@ -62,7 +66,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
         });
 
         describe('invalid', () => {
-          it("should reject 'postValidate' as invaild config", () => {
+          it("should reject 'postValidate' as invalid config", () => {
             const invalidPostValidateConfigMessage =
               getInvalidPostValidateConfigMessage();
 
@@ -78,7 +82,6 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
               'invalid',
               {},
               { properties: [] },
-              { handler: [] },
               () => {},
             ];
 
@@ -119,7 +122,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
               ['invalid', commonError],
               [{}, commonError],
               [{ properties: [] }, commonError],
-              [{ handler: [] }, commonError],
+              [{ validator: [] }, commonError],
               [() => {}, commonError],
               [[], commonError],
               [['lol'], commonError],
@@ -157,7 +160,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                     },
                   },
                 ),
-                { postValidate: { properties, handler() {} } },
+                { postValidate: { properties, validator() {} } },
               );
 
               expectFailure(toFail);
@@ -173,7 +176,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
             });
           });
 
-          it("should reject if 'handler' is not a function", () => {
+          it("should reject if 'validator' is not a function or array", () => {
             const values = [
               -1,
               0,
@@ -185,10 +188,9 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
               '',
               'invalid',
               {},
-              [],
             ];
 
-            for (const handler of values) {
+            for (const validator of values) {
               const toFail = fx(
                 getValidSchema(
                   {},
@@ -203,7 +205,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                 {
                   postValidate: {
                     properties: ['propertyName1', 'propertyName2'],
-                    handler,
+                    validator,
                   },
                 },
               );
@@ -217,7 +219,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                   message: ERRORS.INVALID_SCHEMA,
                   payload: {
                     postValidate: expect.arrayContaining([
-                      '"handler" must be a function',
+                      '"validator" must be a function or array of funtions',
                     ]),
                   },
                 });
@@ -229,7 +231,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
             const toFail = fx(getValidSchema(), {
               postValidate: {
                 properties: ['propertyName1', 'propertyName2'],
-                handler() {},
+                validator() {},
                 lol: true,
               },
             });
@@ -243,24 +245,115 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                 message: ERRORS.INVALID_SCHEMA,
                 payload: {
                   postValidate: expect.arrayContaining([
-                    'The "postValidate" option must be an object with keys "properties" and "handler" or an array of "PostValidateConfig"',
+                    'Config must be an object with keys "properties" and "validator" or an array of "PostValidateConfig"',
                   ]),
                 },
               });
             }
+          });
+
+          describe('validator array', () => {
+            it('should reject if array is empty', () => {
+              const toFail = fx(
+                getValidSchema(
+                  {},
+                  {
+                    dependent: {
+                      default: '',
+                      dependsOn: 'propertyName1',
+                      resolver() {},
+                    },
+                  },
+                ),
+                {
+                  postValidate: {
+                    properties: ['propertyName1', 'propertyName2'],
+                    validator: [],
+                  },
+                },
+              );
+
+              expectFailure(toFail);
+
+              try {
+                toFail();
+              } catch (err: any) {
+                expect(err).toMatchObject({
+                  message: ERRORS.INVALID_SCHEMA,
+                  payload: {
+                    postValidate: expect.arrayContaining([
+                      '"validator" cannot be an empty array',
+                    ]),
+                  },
+                });
+              }
+            });
+
+            it('should reject if any of the validators is not a function', () => {
+              const values = [
+                -1,
+                0,
+                1,
+                null,
+                undefined,
+                true,
+                false,
+                '',
+                'invalid',
+                {},
+                [],
+              ];
+
+              const toFail = fx(
+                getValidSchema(
+                  {},
+                  {
+                    dependent: {
+                      default: '',
+                      dependsOn: 'propertyName1',
+                      resolver() {},
+                    },
+                  },
+                ),
+                {
+                  postValidate: {
+                    properties: ['propertyName1', 'propertyName2'],
+                    validator: values,
+                  },
+                },
+              );
+
+              expectFailure(toFail);
+
+              try {
+                toFail();
+              } catch (err: any) {
+                expect(err).toMatchObject({
+                  message: ERRORS.INVALID_SCHEMA,
+                  payload: {
+                    postValidate: expect.arrayContaining(
+                      values.map(
+                        (_, i) =>
+                          `"validator" at index ${i} must be a function`,
+                      ),
+                    ),
+                  },
+                });
+              }
+            });
           });
         });
       });
 
       describe('multiple configs', () => {
         const validPostValidConfig = [
-          { properties: ['propertyName1', 'propertyName2'], handler() {} },
-          { properties: ['virtual', 'virtual2'], handler() {} },
-          { properties: ['propertyName1', 'virtual2'], handler() {} },
-          { properties: ['virtual', 'propertyName2'], handler() {} },
+          { properties: ['propertyName1', 'propertyName2'], validator() {} },
+          { properties: ['virtual', 'virtual2'], validator() {} },
+          { properties: ['propertyName1', 'virtual2'], validator() {} },
+          { properties: ['virtual', 'propertyName2'], validator() {} },
           {
             properties: ['propertyName1', 'propertyName2', 'virtual'],
-            handler() {},
+            validator() {},
           },
           {
             properties: [
@@ -269,7 +362,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
               'virtual',
               'virtual2',
             ],
-            handler() {},
+            validator() {},
           },
         ];
 
@@ -301,9 +394,9 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                 },
               ),
               {
-                postValidate: configs.map((properties) => ({
+                postValidate: configs.map((properties, i) => ({
                   properties,
-                  handler() {},
+                  validator: i % 2 == 0 ? validator : [validator, validator],
                 })),
               },
             );
@@ -315,7 +408,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
         });
 
         describe('invalid', () => {
-          it("should reject 'postValidate' as invaild config", () => {
+          it("should reject 'postValidate' as invalid config", () => {
             const configs = [
               -1,
               0,
@@ -328,7 +421,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
               'invalid',
               {},
               { properties: [] },
-              { handler: [] },
+              { validator: [] },
               () => {},
             ];
 
@@ -365,12 +458,12 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
               'invalid',
               {},
               { properties: [] },
-              { handler: [] },
+              { validator: [] },
               () => {},
               [],
               ['lol'],
               ['propertyName1', 'propertyName1'],
-            ].map((properties) => ({ properties, handler() {} }));
+            ].map((properties) => ({ properties, validator() {} }));
 
             const reasons = configs.map((_, i) =>
               getInvalidPostValidateConfigMessage(
@@ -433,7 +526,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
               // @ts-ignore
               (acc, [properties, err]) => {
                 return {
-                  configs: [...acc.configs, { properties, handler() {} }],
+                  configs: [...acc.configs, { properties, validator() {} }],
                   errors: [...acc.errors, ...err],
                 };
               },
@@ -466,7 +559,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
             }
           });
 
-          it("should reject if 'handler' are not functions", () => {
+          it("should reject if 'validator' are not functions or arrays", () => {
             const configs = [
               -1,
               0,
@@ -478,16 +571,15 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
               '',
               'invalid',
               {},
-              [],
-            ].map((handler) => ({
-              handler,
+            ].map((validator) => ({
+              validator,
               properties: ['propertyName1', 'propertyName2'],
             }));
 
             const reasons = configs.map((_, i) =>
               getInvalidPostValidateConfigMessage(
                 i,
-                'handler-must-be-function',
+                'validator-must-be-function',
               ),
             );
 
@@ -521,12 +613,12 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
             const configs = [
               {
                 properties: ['propertyName1', 'propertyName2'],
-                handler() {},
+                validator() {},
                 lol: true,
               },
               {
                 properties: ['propertyName1', 'propertyName2'],
-                handler() {},
+                validator() {},
                 hey: true,
               },
             ];
@@ -563,23 +655,26 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
               [
                 {
                   properties: ['propertyName2', 'propertyName1'],
-                  handler() {},
+                  validator() {},
                 },
                 0,
               ],
-              [{ properties: ['virtual2', 'virtual'], handler() {} }, 1],
-              [{ properties: ['virtual2', 'propertyName1'], handler() {} }, 2],
+              [{ properties: ['virtual2', 'virtual'], validator() {} }, 1],
+              [
+                { properties: ['virtual2', 'propertyName1'], validator() {} },
+                2,
+              ],
               [
                 {
                   properties: ['propertyName2', 'propertyName1', 'virtual'],
-                  handler() {},
+                  validator() {},
                 },
                 4,
               ],
               [
                 {
                   properties: ['propertyName1', 'virtual', 'propertyName2'],
-                  handler() {},
+                  validator() {},
                 },
                 4,
               ],
@@ -682,7 +777,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
               {
                 postValidate: configs.map((c) => ({
                   properties: c[0],
-                  handler() {},
+                  validator() {},
                 })),
               },
             );
@@ -699,6 +794,112 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                 },
               });
             }
+          });
+
+          describe('validator array', () => {
+            it('should reject if array is empty', () => {
+              const toFail = fx(
+                getValidSchema(
+                  {},
+                  {
+                    dependent: {
+                      default: '',
+                      dependsOn: 'propertyName1',
+                      resolver() {},
+                    },
+                    lax: {
+                      default: '',
+                    },
+                  },
+                ),
+                {
+                  postValidate: [
+                    {
+                      properties: ['propertyName1', 'propertyName2'],
+                      validator: [validator],
+                    },
+                    {
+                      properties: ['propertyName1', 'lax'],
+                      validator: [],
+                    },
+                  ],
+                },
+              );
+
+              expectFailure(toFail);
+
+              try {
+                toFail();
+              } catch (err: any) {
+                expect(err).toMatchObject({
+                  message: ERRORS.INVALID_SCHEMA,
+                  payload: {
+                    postValidate: expect.arrayContaining([
+                      'Config at index 1:  "validator" cannot be an empty array',
+                    ]),
+                  },
+                });
+              }
+            });
+
+            it('should reject if any of the validators is not a function', () => {
+              const values = [
+                -1,
+                0,
+                1,
+                null,
+                undefined,
+                true,
+                false,
+                '',
+                'invalid',
+                {},
+                [],
+              ];
+
+              const toFail = fx(
+                getValidSchema(
+                  {},
+                  {
+                    dependent: {
+                      default: '',
+                      dependsOn: 'propertyName1',
+                      resolver() {},
+                    },
+                  },
+                ),
+                {
+                  postValidate: [
+                    {
+                      properties: ['propertyName1', 'propertyName2'],
+                      validator,
+                    },
+                    {
+                      properties: ['propertyName1', 'propertyName2'],
+                      validator: values,
+                    },
+                  ],
+                },
+              );
+
+              expectFailure(toFail);
+
+              try {
+                toFail();
+              } catch (err: any) {
+                expect(err).toMatchObject({
+                  message: ERRORS.INVALID_SCHEMA,
+                  payload: {
+                    postValidate: expect.arrayContaining(
+                      values.map(
+                        (_, i) =>
+                          `Config at index 1:  "validator" at index ${i} must be a function`,
+                      ),
+                    ),
+                  },
+                });
+              }
+            });
           });
         });
       });
@@ -721,10 +922,10 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
               (providedPropertiesStats[prop] ?? 0) + 1;
         }
 
-        function makePostValidator(properties: string[]) {
+        function makePostValidationConfig(properties: string[]) {
           return {
             properties,
-            handler(summary: any, propsProvided: string[]) {
+            validator(summary: any, propsProvided: string[]) {
               for (const prop of properties)
                 handlePostValidate(prop, summary, propsProvided);
             },
@@ -752,7 +953,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
               virtual2: { virtual: true, validator },
             },
             {
-              postValidate: makePostValidator([
+              postValidate: makePostValidationConfig([
                 'lax',
                 'required',
                 'readonly',
@@ -821,6 +1022,102 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
             expect(error).toBeNull();
             expect(providedPropertiesStats).toEqual({ readonlyLax: 1 });
           });
+
+          describe('behaviour with post-validators that have validator arrays', () => {
+            const properties = [
+              'lax',
+              'required',
+              'readonly',
+              'readonlyLax',
+              'virtual',
+              'virtual2',
+            ];
+
+            const Model = new Schema(
+              {
+                dependent: {
+                  default: '',
+                  dependsOn: ['virtual', 'virtual2'],
+                  resolver: validator,
+                },
+                lax: { default: '' },
+                readonly: { readonly: true, validator },
+                readonlyLax: { default: '', readonly: 'lax', validator },
+                required: { required: true, validator },
+                virtual: { virtual: true, validator },
+                virtual2: { virtual: true, validator },
+              },
+              {
+                postValidate: {
+                  properties,
+                  validator: [makePostValidator(), makePostValidator()],
+                },
+              },
+            ).getModel();
+
+            function makePostValidator() {
+              return (summary: any, propsProvided: string[]) => {
+                for (const prop of properties)
+                  handlePostValidate(prop, summary, propsProvided);
+              };
+            }
+
+            it('should trigger all post-validators at creation', async () => {
+              const { error } = await Model.create();
+
+              expect(error).toBeNull();
+              expect(providedPropertiesStats).toEqual({
+                lax: 2,
+                required: 2,
+                readonly: 2,
+                readonlyLax: 2,
+              });
+            });
+
+            it('should not trigger post-validators of virtuals not provided at creation', async () => {
+              const { error } = await Model.create({ virtual2: true });
+
+              expect(error).toBeNull();
+              expect(providedPropertiesStats).toEqual({
+                lax: 2,
+                required: 2,
+                readonly: 2,
+                readonlyLax: 2,
+                virtual2: 2,
+              });
+            });
+
+            it('should only trigger post-validators of props that change during updates', async () => {
+              const { error } = await Model.update(
+                { lax: 2, required: 1, readonly: 1, readonlyLax: 1 },
+                {
+                  lax: true,
+                  required: 1,
+                  readonly: true,
+                  readonlyLax: true,
+                  virtual: true,
+                  virtual2: true,
+                },
+              );
+
+              expect(error).toBeNull();
+              expect(providedPropertiesStats).toEqual({
+                lax: 2,
+                virtual: 2,
+                virtual2: 2,
+              });
+            });
+
+            it('should only trigger post-validators of readonly props that have not changed during updates', async () => {
+              const { error } = await Model.update(
+                { lax: 2, required: 1, readonly: 1, readonlyLax: '' },
+                { readonly: true, readonlyLax: true },
+              );
+
+              expect(error).toBeNull();
+              expect(providedPropertiesStats).toEqual({ readonlyLax: 2 });
+            });
+          });
         });
 
         describe('behaviour with multiple post-validators', () => {
@@ -840,14 +1137,14 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
             },
             {
               postValidate: [
-                makePostValidator([
+                makePostValidationConfig([
                   'lax',
                   'required',
                   'readonly',
                   'readonlyLax',
                 ]),
-                makePostValidator(['lax', 'virtual']),
-                makePostValidator(['virtual', 'virtual2']),
+                makePostValidationConfig(['lax', 'virtual']),
+                makePostValidationConfig(['virtual', 'virtual2']),
               ],
             },
           ).getModel();
@@ -916,6 +1213,114 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
             expect(error).toBeNull();
             expect(providedPropertiesStats).toEqual({ readonlyLax: 1 });
           });
+
+          describe('behaviour with post-validators that have validator arrays', () => {
+            const properties1 = ['lax', 'required', 'readonly', 'readonlyLax'],
+              properties2 = ['virtual', 'virtual2'];
+
+            const Model = new Schema(
+              {
+                dependent: {
+                  default: '',
+                  dependsOn: ['virtual', 'virtual2'],
+                  resolver: validator,
+                },
+                lax: { default: '' },
+                readonly: { readonly: true, validator },
+                readonlyLax: { default: '', readonly: 'lax', validator },
+                required: { required: true, validator },
+                virtual: { virtual: true, validator },
+                virtual2: { virtual: true, validator },
+              },
+              {
+                postValidate: [
+                  {
+                    properties: properties1,
+                    validator: [
+                      makePostValidator(properties1),
+                      makePostValidator(properties1),
+                    ],
+                  },
+                  makePostValidationConfig(['lax', 'virtual']),
+                  {
+                    properties: properties2,
+                    validator: [
+                      makePostValidator(properties2),
+                      makePostValidator(properties2),
+                      makePostValidator(properties2),
+                    ],
+                  },
+                ],
+              },
+            ).getModel();
+
+            function makePostValidator(properties: string[]) {
+              return (summary: any, propsProvided: string[]) => {
+                for (const prop of properties)
+                  handlePostValidate(prop, summary, propsProvided);
+              };
+            }
+
+            it('should trigger all post-validators at creation', async () => {
+              const { error } = await Model.create();
+
+              expect(error).toBeNull();
+              expect(providedPropertiesStats).toEqual({
+                lax: 3,
+                required: 2,
+                readonly: 2,
+                readonlyLax: 2,
+              });
+            });
+
+            it('should not trigger post-validators of virtuals not provided at creation', async () => {
+              const { error } = await Model.create({ virtual2: true });
+
+              expect(error).toBeNull();
+              expect(providedPropertiesStats).toEqual({
+                lax: 3,
+                required: 2,
+                readonly: 2,
+                readonlyLax: 2,
+                virtual2: 3,
+              });
+            });
+
+            it('should only trigger post-validators of props provided during updates', async () => {
+              const { error } = await Model.update(
+                { lax: 2, required: 1, readonly: 1, readonlyLax: 1 },
+                {
+                  lax: true,
+                  required: true,
+                  readonly: true,
+                  readonlyLax: true,
+                  virtual: true,
+                  virtual2: true,
+                },
+              );
+
+              expect(error).toBeNull();
+              expect(providedPropertiesStats).toEqual({
+                lax: 3,
+                required: 2,
+                virtual: 4,
+                virtual2: 3,
+              });
+            });
+
+            it('should only trigger post-validators of readonly props that have not changed during updates', async () => {
+              const { error } = await Model.update(
+                { lax: 2, required: 1, readonly: 1, readonlyLax: '' },
+                {
+                  readonly: true,
+                  readonlyLax: true,
+                },
+              );
+
+              expect(error).toBeNull();
+              expect(providedPropertiesStats).toEqual({ readonlyLax: 2 });
+            });
+          });
         });
       });
 
@@ -932,7 +1337,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
               {
                 postValidate: {
                   properties: ['p1', 'p2'],
-                  handler: () => value,
+                  validator: () => value,
                 },
               },
             ).getModel();
@@ -971,7 +1376,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
               postValidate: [
                 {
                   properties: ['p1', 'v'],
-                  handler({ context: { v }, isUpdate }: any) {
+                  validator({ context: { v }, isUpdate }: any) {
                     if (v == 'allow') return;
 
                     if (v == 'throw') throw new Error('lol');
@@ -989,7 +1394,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                 },
                 {
                   properties: ['p1', 'p2'],
-                  handler: ({ context: { v } }: any) => {
+                  validator: ({ context: { v } }: any) => {
                     if (v == 'throw') throw new Error('lol');
 
                     return Promise.resolve(
@@ -1061,15 +1466,9 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
           expect(res5.data).toBeNull();
           expect(Object.keys(res5.error.payload).length).toBe(3);
           expect(res5.error.payload).toMatchObject({
-            p1: expect.objectContaining({
-              reasons: ['validation failed'],
-            }),
-            p2: expect.objectContaining({
-              reasons: ['validation failed'],
-            }),
-            v: expect.objectContaining({
-              reasons: ['validation failed'],
-            }),
+            p1: expect.objectContaining({ reasons: ['validation failed'] }),
+            p2: expect.objectContaining({ reasons: ['validation failed'] }),
+            v: expect.objectContaining({ reasons: ['validation failed'] }),
           });
 
           const res6 = await Model.update(
@@ -1108,6 +1507,197 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
             }),
           });
         });
+
+        describe('behaviour with validator array', () => {
+          it('should ignore non-object-like values', async () => {
+            const values = [-1, 0, 1, '', 'lol', undefined, null, () => {}, []];
+
+            for (const value of values) {
+              const Model = new Schema(
+                {
+                  p1: { default: '' },
+                  p2: { default: '' },
+                },
+                {
+                  postValidate: {
+                    properties: ['p1', 'p2'],
+                    validator: [() => value, () => value],
+                  },
+                },
+              ).getModel();
+
+              const { data, error } = await Model.create();
+
+              expect(error).toBeNull();
+              expect(data).toEqual({ p1: '', p2: '' });
+
+              const updates = { p1: 'updated', p2: 'updated' };
+
+              const { data: updated, error: error2 } = await Model.update(
+                data,
+                updates,
+              );
+
+              expect(error2).toBeNull();
+              expect(updated).toEqual(updates);
+            }
+          });
+
+          it('should process errors of first validator to return errors and stop validating', async () => {
+            const resolver = ({ context }: any) => context.v;
+
+            let validatorRunCount: Record<string, number> = {};
+
+            function incrementValidatorCount(key: string) {
+              validatorRunCount[key] = (validatorRunCount?.[key] ?? 0) + 1;
+            }
+
+            const Model = new Schema(
+              {
+                p1: { default: '' },
+                p2: { default: '' },
+                p3: { default: '' },
+                p4: { default: '' },
+                d1: { default: '', dependsOn: 'v', resolver },
+                d2: { default: '', dependsOn: 'v', resolver },
+                v: { alias: 'd1', virtual: true, validator },
+              },
+              {
+                postValidate: [
+                  {
+                    properties: ['p1', 'v'],
+                    validator: [
+                      function () {
+                        incrementValidatorCount('p1-v');
+                      },
+                      function ({ context: { v } }: any) {
+                        incrementValidatorCount('p1-v');
+                        if (v == 'throw') throw new Error('lol');
+                      },
+                      function ({ isUpdate }: any) {
+                        incrementValidatorCount('p1-v');
+
+                        return isUpdate
+                          ? { d1: 'lolz' }
+                          : {
+                              p1: 'p1',
+                              p2: ['p2'],
+                              p3: ['error1', 'error2'],
+                              p4: null,
+                              v: { reason: 'error', metadata: { lol: true } },
+                            };
+                      },
+                    ],
+                  },
+                  {
+                    properties: ['p1', 'p2'],
+                    validator: [
+                      ({ context: { v } }: any) => {
+                        incrementValidatorCount('p1-p2');
+                        if (v == 'throw') throw new Error('lol');
+                      },
+                      ({ context: { v } }: any) => {
+                        incrementValidatorCount('p1-p2');
+                        return Promise.resolve(
+                          v == 'allow' ? false : { p1: 'failed to validate' },
+                        );
+                      },
+                    ],
+                  },
+                ],
+              },
+            ).getModel();
+
+            const createRes = await Model.create();
+
+            expect(createRes.data).toBeNull();
+            expect(createRes.error.payload).toMatchObject({
+              p1: expect.objectContaining({
+                reasons: expect.arrayContaining(['p1', 'failed to validate']),
+              }),
+              p2: expect.objectContaining({
+                reasons: expect.arrayContaining(['p2']),
+              }),
+              p3: expect.objectContaining({
+                reasons: expect.arrayContaining(['error1', 'error2']),
+              }),
+              p4: expect.objectContaining({
+                reasons: expect.arrayContaining(['validation failed']),
+              }),
+              v: expect.objectContaining({
+                reasons: expect.arrayContaining(['error']),
+                metadata: { lol: true },
+              }),
+            });
+
+            expect(validatorRunCount).toMatchObject({
+              'p1-v': 3,
+              'p1-p2': 2,
+            });
+
+            validatorRunCount = {};
+
+            const createRes1 = await Model.create({ v: 'throw', p2: true });
+
+            expect(createRes1.data).toBeNull();
+            expect(createRes1.error.payload).toMatchObject({
+              p2: expect.objectContaining({
+                reasons: expect.arrayContaining(['validation failed']),
+              }),
+              v: expect.objectContaining({
+                reasons: expect.arrayContaining(['validation failed']),
+              }),
+            });
+
+            expect(validatorRunCount).toMatchObject({
+              'p1-v': 2,
+              'p1-p2': 1,
+            });
+
+            validatorRunCount = {};
+
+            const updateRes = await Model.update(
+              {},
+              { p2: 'updated', v: 'updated' },
+            );
+            expect(updateRes.data).toBeNull();
+            expect(updateRes.error.payload).toMatchObject({
+              p1: expect.objectContaining({
+                reasons: expect.arrayContaining(['failed to validate']),
+              }),
+              d1: expect.objectContaining({
+                reasons: expect.arrayContaining(['lolz']),
+              }),
+            });
+
+            expect(validatorRunCount).toMatchObject({
+              'p1-v': 3,
+              'p1-p2': 2,
+            });
+
+            validatorRunCount = {};
+
+            const updateRes1 = await Model.update(
+              {},
+              { p2: 'updated', v: 'throw' },
+            );
+
+            expect(updateRes1.data).toBeNull();
+            expect(updateRes1.error.payload).toMatchObject({
+              p2: expect.objectContaining({
+                reasons: expect.arrayContaining(['validation failed']),
+              }),
+              v: expect.objectContaining({
+                reasons: expect.arrayContaining(['validation failed']),
+              }),
+            });
+
+            expect(validatorRunCount).toMatchObject({
+              'p1-v': 2,
+              'p1-p2': 1,
+            });
+          });
+        });
       });
 
       describe('behaviour when updating ctxOptions from within post-validators', () => {
@@ -1122,7 +1712,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
           {
             postValidate: {
               properties: ['p1', 'p2'],
-              handler: ({ context: { __updateOptions__ } }) => {
+              validator: ({ context: { __updateOptions__ } }) => {
                 __updateOptions__({ updated: true });
 
                 return true;
@@ -1156,6 +1746,68 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
           await handleSuccess();
 
           expect(ctxValue).toEqual({ updated: true, initial: true });
+        });
+
+        describe('behaviour with validator array', () => {
+          let ctxValue: any = {};
+
+          beforeEach(() => {
+            ctxValue = {};
+          });
+
+          const Model = new Schema(
+            { p1: { default: '' }, p2: { default: '' } },
+            {
+              postValidate: {
+                properties: ['p1', 'p2'],
+                validator: [
+                  ({ context: { __updateOptions__ } }) => {
+                    __updateOptions__({ updated: true });
+
+                    return true;
+                  },
+                  ({ context: { __updateOptions__, __getOptions__ } }) => {
+                    const { updated } = __getOptions__();
+
+                    __updateOptions__({ v2: { updated } });
+
+                    return true;
+                  },
+                ],
+              },
+              onSuccess({ context: { __getOptions__ } }) {
+                ctxValue = __getOptions__();
+              },
+            },
+          ).getModel();
+
+          it('should respect ctx updates at creation', async () => {
+            expect(ctxValue).toEqual({});
+
+            const { handleSuccess } = await Model.create();
+
+            await handleSuccess();
+
+            expect(ctxValue).toEqual({ updated: true, v2: { updated: true } });
+          });
+
+          it('should respect ctx updates during updates', async () => {
+            expect(ctxValue).toEqual({});
+
+            const { handleSuccess } = await Model.update(
+              { p1: '', p2: '3' },
+              { p1: true },
+              { initial: true },
+            );
+
+            await handleSuccess();
+
+            expect(ctxValue).toEqual({
+              updated: true,
+              initial: true,
+              v2: { updated: true },
+            });
+          });
         });
       });
     });
