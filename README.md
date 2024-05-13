@@ -181,7 +181,7 @@ console.log(error);
   - [readonly properties](./docs/v1.4.0/definitions/readonly.md#readonly-properties)
   - [required properties](./docs/v1.4.0/definitions/required.md#required-properties)
   - [virtual properties](./docs/v1.4.0/definitions/virtuals.md#virtual-properties)
-  - [validators](./docs/v1.4.0/validators/index.md#validators)
+  - [validators](./docs/v1.4.0/validators.md#validators)
 - [Extending Schemas](./docs/v1.4.0/definitions/extend-schemas.md#extending-schemas)
 - [The Operation Context](./docs/v1.4.0/life-cycles.md#the-operation-contextt)
 - [The Operation Summary](./docs/v1.4.0/life-cycles.md#the-operation-summary)

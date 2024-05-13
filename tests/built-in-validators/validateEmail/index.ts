@@ -1,7 +1,11 @@
 import { describe, it, expect } from 'bun:test';
 
-export const isEmailOkTest = ({ isEmailOk }: { isEmailOk: Function }) => {
-  describe('isEmailOk', () => {
+export const validateEmailTest = ({
+  validateEmail,
+}: {
+  validateEmail: Function;
+}) => {
+  describe('validateEmail', () => {
     it('should tell whether input is a valid email or not', () => {
       const truthy = [
         'example@gmail.com',
@@ -10,7 +14,7 @@ export const isEmailOkTest = ({ isEmailOk }: { isEmailOk: Function }) => {
       ];
 
       for (const value of truthy) {
-        const res = isEmailOk(value);
+        const res = validateEmail(value);
 
         expect(res).toMatchObject({ valid: true, validated: value.trim() });
 
@@ -20,7 +24,7 @@ export const isEmailOkTest = ({ isEmailOk }: { isEmailOk: Function }) => {
       const falsy = [1, null, false, '', '@gmail.com', 'james71@..uk'];
 
       for (const value of falsy) {
-        const res = isEmailOk(value);
+        const res = validateEmail(value);
 
         expect(res).toMatchObject({ reason: ['Invalid email'], valid: false });
 
@@ -38,7 +42,7 @@ export const isEmailOkTest = ({ isEmailOk }: { isEmailOk: Function }) => {
       ];
 
       for (const value of truthy) {
-        const res = isEmailOk(value, regExp);
+        const res = validateEmail(value, regExp);
 
         expect(res).toMatchObject({ valid: true, validated: value.trim() });
 
@@ -48,7 +52,7 @@ export const isEmailOkTest = ({ isEmailOk }: { isEmailOk: Function }) => {
       const falsy = [1, null, false, '', '@gmail.com', 'james71@..uk'];
 
       for (const value of falsy) {
-        const res = isEmailOk(value);
+        const res = validateEmail(value);
 
         expect(res).toMatchObject({ reason: ['Invalid email'], valid: false });
 

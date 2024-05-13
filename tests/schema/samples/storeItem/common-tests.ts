@@ -258,10 +258,12 @@ export const CommonInheritanceTest = (
             _laxProp: {
               reasons: expect.arrayContaining([
                 'Invalid lax prop',
-                'Unacceptable value',
+                'Expected a string',
               ]),
             },
-            name: { reasons: expect.arrayContaining(['validation failed']) },
+            name: expect.objectContaining({
+              reasons: expect.arrayContaining(['too_short']),
+            }),
           });
         }
       };
@@ -279,10 +281,12 @@ export const CommonInheritanceTest = (
             _laxProp: {
               reasons: expect.arrayContaining([
                 'Invalid lax prop',
-                'Unacceptable value',
+                'Expected a string',
               ]),
             },
-            name: { reasons: expect.arrayContaining(['validation failed']) },
+            name: expect.objectContaining({
+              reasons: expect.arrayContaining(['too_short']),
+            }),
           });
         }
       };

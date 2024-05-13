@@ -678,7 +678,11 @@ type ValidationResponse<T> =
 
 type InvalidValidatorResponse<Input = {}, Aliases = {}> = {
   metadata?: FieldError['metadata'];
-  reason?: string | string[] | ResponseErrorObject<Input, Aliases>;
+  reason?:
+    | string
+    | string[]
+    | InputFieldError
+    | ResponseErrorObject<Input, Aliases>;
   valid: false;
   value?: any;
 };

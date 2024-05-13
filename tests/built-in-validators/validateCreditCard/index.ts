@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'bun:test';
 
-export const isCreditCardOkTest = ({
-  isCreditCardOk,
+export const validateCreditCardTest = ({
+  validateCreditCard,
 }: {
-  isCreditCardOk: Function;
+  validateCreditCard: Function;
 }) => {
-  describe('isCreditCardOk', () => {
+  describe('validateCreditCard', () => {
     const truthyValues = [
       [5420596721435293, 5420596721435293],
       ['5420596721435293', '5420596721435293'],
@@ -15,7 +15,7 @@ export const isCreditCardOkTest = ({
 
     it('should tell whether a character is a valid credit card number', () => {
       for (const [value, validated] of truthyValues) {
-        const res = isCreditCardOk(value);
+        const res = validateCreditCard(value);
 
         expect(res).toEqual({ valid: true, validated });
 
@@ -34,7 +34,7 @@ export const isCreditCardOkTest = ({
       ];
 
       falsyValues.forEach((value) => {
-        const res = isCreditCardOk(value);
+        const res = validateCreditCard(value);
 
         expect(res).toEqual({
           reason: ['Invalid card number'],
@@ -48,7 +48,7 @@ export const isCreditCardOkTest = ({
 
     it('should validated value should be of same type as input value', () => {
       truthyValues.forEach(([value]) => {
-        expect(typeof isCreditCardOk(value).validated).toBe(typeof value);
+        expect(typeof validateCreditCard(value).validated).toBe(typeof value);
       });
     });
   });

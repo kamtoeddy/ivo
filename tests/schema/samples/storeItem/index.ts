@@ -10,6 +10,8 @@ import {
   validateString,
 } from './validators';
 
+export { StoreItem, storeItemSchema };
+
 const storeItemSchema = new Schema<StoreItemInput, StoreItem>(
   {
     _dependentReadOnly: {
@@ -50,7 +52,7 @@ const storeItemSchema = new Schema<StoreItemInput, StoreItem>(
       default: 0,
       dependsOn: 'quantity',
       resolver({ context: { quantityChangeCounter } }) {
-        return quantityChangeCounter! + 1;
+        return quantityChangeCounter + 1;
       },
     },
   },
@@ -78,5 +80,3 @@ function onSuccess({
 }
 
 const StoreItem = storeItemSchema.getModel();
-
-export { StoreItem, storeItemSchema };

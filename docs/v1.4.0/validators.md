@@ -72,7 +72,7 @@ const Model = new Schema({
   email: {
     required: true,
     //          👇 primary & 👇 secondary validators
-    validator: [isEmailOk, isEmailUnique],
+    validator: [validateEmail, isEmailUnique],
   },
 });
 ```
@@ -260,9 +260,181 @@ Data validation can occur in multiple stages depending on your schema's configur
 
 Here are some built-in validators you could use study to build your own validators:
 
-- [isArrayOk](./isArrayOk.md)
-- [isBooleanOk](./isBooleanOk.md)
-- [isCreditCardOk](./isCreditCardOk.md)
-- [isEmailOk](./isEmailOk.md)
-- [isNumberOk](./isNumberOk.md)
-- [isStringOk](.isStringOk.md)
+### validateBoolean
+
+To validate boolean values
+
+```ts
+import { validateBoolean } from 'ivo';
+
+console.log(validateBoolean('true')); // { reasons: ["Expected a boolean"], valid: false }
+
+console.log(validateBoolean(false)); // { valid: true, validated: false }
+```
+
+### validateCreditCard
+
+A tiny utility method to test if a credit/debit **`Card Number`** is valid; not the credit card itself
+
+```ts
+import { validateCreditCard } from 'ivo';
+
+console.log(validateCreditCard(''));
+// { reasons: ["Invalid card number"], valid: false }
+
+console.log(validateCreditCard(5420596721435293));
+// { valid: true, validated: 5420596721435293}
+
+console.log(validateCreditCard('5420596721435293'));
+// { valid: true, validated: "5420596721435293"}
+```
+
+It returns:
+
+```ts
+type ValidationResponse =
+  | { reasons: string[]; valid: false }
+  | { valid: true; validated: number | string };
+```
+
+### validateEmail
+
+To validate emails
+
+```ts
+import { validateEmail } from 'ivo';
+
+console.log(validateEmail('dbj jkdbZvjkbv')); // { reasons: ["Invalid email"], valid: false }
+
+validateEmail(' john@doe.com'); // {  valid: true, validated: "john@doe.com" }
+```
+
+#### Parameters
+
+| Position | Property    | Type   | Description                                       |
+| -------- | ----------- | ------ | ------------------------------------------------- |
+| 1        | value       | any    | The value you wish to validate                    |
+| 2        | customRegEx | RegExp | The custom regular expression that should be used |
+
+### makeArrayValidator
+
+You could validate an array of values of your choice. An array of primitives or objects.
+
+```ts
+import { makeArrayValidator } from 'ivo';
+
+const options = {
+  min: { value: 1, error: 'Expected a non-empty array' },
+  sorted: true,
+  filter: (genre) => typeof genre === 'string' && genre?.trim(),
+  modifier: (genre) => genre?.trim().toLowerCase(),
+};
+
+const movieGenres = ['action', null, 'horror', 1, 'comedy', 'Horror', 'crime'];
+
+const validate = makeArrayValidator(options);
+
+console.log(validate(movieGenres)); // { valid: true, validated: ["action", "comedy", "crime", "horror"] }
+
+const invalids = ['   ', [], null, 144];
+
+console.log(validate(invalids)); // { reasons: ["Expected a non-empty array"], valid: false }
+```
+
+#### Options
+
+| Property  | Type            | Description                                                                             |
+| --------- | --------------- | --------------------------------------------------------------------------------------- |
+| filter    | function        | A sync or async function to filter the array. Default: **(data) => false**              |
+| modifier  | function        | A sync or async function to modify (format) individual values. Default: **undefined**   |
+| sorted    | boolean         | Whether array should be sorted. Default: **true**                                       |
+| sorter    | function        | Function to sort values. Default: **undefined**                                         |
+| sortOrder | 'asc' \| 'desc' | Order used to do comparison check when sorted: true and sorter: undefined               |
+| unique    | boolean         | Whether array should contain unique values. Default: **true**                           |
+| uniqueKey | string          | A key(property) on objects in array used as unique criteria. e.g: "id". Default: **""** |
+
+### makeNumberValidator
+
+To validate numbers
+
+```ts
+import { makeNumberValidator } from 'ivo';
+
+type AllowConfig<T> =
+  | ArrayOfMinSizeTwo<T>
+  | { values: ArrayOfMinSizeTwo<T>; error: string | string[] };
+
+type ExclusionConfig<T> =
+  | T
+  | ArrayOfMinSizeTwo<T>
+  | { values: ArrayOfMinSizeTwo<T>; error: string | string[] };
+
+type ValueError<T = number> = { value: T; error: string | string[] };
+
+type NumberValidatorOptions<T extends number | any = number> = {
+  exclude?: ExclusionConfig<T>;
+} & XOR<
+  { allow: AllowConfig<T> },
+  {
+    max?: number | ValueError;
+    min?: number | ValueError;
+    nullable?: boolean;
+  }
+>;
+
+const options = { min: 10, max: 10.5 };
+
+const validate = makeNumberValidator(options);
+
+console.log(validate(10)); // { reasons: ["too small"], valid: false, metadata:{ min: 10, max: 10.5, inclusiveBottom: false,  inclusiveTop: true } }
+
+console.log(validate(10.01)); // { valid: true, validated: 10.01, metadata }
+
+console.log(validate('10.05')); // { valid: true, validated: 10.05, metadata }
+
+console.log(makeNumberValidator({ allow: [0, -1, 35] }, 30)); // { reasons: ["Value not allowed"], valid: false, metadata :{ allowed: [0, -1, 35] } }
+```
+
+### makeStringValidator
+
+To validate strings
+
+```ts
+import { makeStringValidator } from 'ivo';
+
+type StringValidatorOptions<T extends string | any = string> = {
+  exclude?: ExclusionConfig<T>;
+} & XOR<
+  { allow: AllowConfig<T> },
+  {
+    max?: number | ValueError;
+    min?: number | ValueError;
+    nullable?: boolean;
+    regExp?: ValueError<RegExp>;
+    trim?: boolean;
+  }
+>;
+
+const pattern = /^[a-zA-Z_\-\S]+$/;
+
+console.log(
+  makeStringValidator(
+    {
+      regExp: {
+        value: pattern,
+        error: `string should match this pattern: ${pattern}`,
+      },
+    },
+    'dbj jkdbZvjkbv',
+  ),
+); // { reasons: ["Value not allowed"], valid: false }
+
+console.log(makeStringValidator({ max: 20, min: 3 }, 'Hello World!')); // { valid: true, validated: "Hello World!" }
+
+console.log(
+  makeStringValidator(
+    { allow: ['apple', 'banana', 'watermelon'] },
+    'pineapple',
+  ),
+); // { reasons: ["Value not allowed"], valid: false, metadata :{ allowed: ['apple', 'banana', 'watermelon'] } }
+```

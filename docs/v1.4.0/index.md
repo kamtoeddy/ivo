@@ -272,7 +272,7 @@ This could be a function or an array of functions with the `SuccessListener` sig
 
 ## postValidate
 
-To validate integrity of more than one field after initial validation. More on this [here](./validators/index.md#post-validation)
+To validate integrity of more than one field after initial validation. More on this [here](./validators.md#post-validation)
 
 ## setMissingDefaultsOnUpdate
 
@@ -288,12 +288,8 @@ If it's value or computed value if true, validations for updates will proceed el
 
 ```ts
 new Schema(
-  {
-    id: { constant: true, value: generateId },
-  },
-  {
-    shouldUpdate: () => (condition ? true : false),
-  },
+  { id: { constant: true, value: generateId } },
+  { shouldUpdate: () => (condition ? true : false) },
 );
 ```
 
