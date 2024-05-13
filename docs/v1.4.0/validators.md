@@ -367,7 +367,7 @@ type AllowConfig<T> =
 type ExclusionConfig<T> =
   | T
   | ArrayOfMinSizeTwo<T>
-  | { values: ArrayOfMinSizeTwo<T>; error: string | string[] };
+  | { values: T | ArrayOfMinSizeTwo<T>; error: string | string[] };
 
 type ValueError<T = number> = { value: T; error: string | string[] };
 
