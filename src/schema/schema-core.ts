@@ -35,7 +35,7 @@ import {
   LIFE_CYCLES,
   PartialContext,
   PostValidationConfig,
-  PostValidationHandler,
+  PostValidator,
   Context,
   MutableSummary,
 } from './types';
@@ -51,28 +51,41 @@ export const defaultOptions = {
 
 type InvalidPostValidateConfigMessage =
   | 'default'
-  | 'handler-must-be-function'
+  | 'validator-array-cannot-be-empty'
+  | 'validator-must-be-function'
   | 'properties-must-be-input-array';
 
 export function getInvalidPostValidateConfigMessage(
   index?: number,
   message: InvalidPostValidateConfigMessage = 'default',
+  secondIndex?: number,
 ) {
-  const hasIndex = typeof index == 'number';
+  const hasIndex = typeof index == 'number',
+    hasSecondIndex = typeof secondIndex == 'number';
 
   if (message == 'default')
-    return `The "postValidate" option${
+    return `Config${
       hasIndex ? ` at index ${index},` : ''
-    } must be an object with keys "properties" and "handler" or an array of "PostValidateConfig"`;
+    } must be an object with keys "properties" and "validator" or an array of "PostValidateConfig"`;
 
   if (message == 'properties-must-be-input-array')
     return `${
       hasIndex ? `Config at index ${index}:  ` : ''
     }"properties" must be an array of at least 2 input properties of your schema`;
 
+  if (message == 'validator-array-cannot-be-empty')
+    return `${
+      hasIndex ? `Config at index ${index}:  ` : ''
+    }"validator" cannot be an empty array`;
+
+  if (hasSecondIndex)
+    return `${
+      hasIndex ? `Config at index ${index}:  ` : ''
+    }"validator" at index ${secondIndex} must be a function`;
+
   return `${
     hasIndex ? `Config at index ${index}:  ` : ''
-  }"handler" must be a function`;
+  }"validator" must be a function or array of funtions`;
 }
 
 export function getInvalidPostValidateConfigMessageForRepeatedProperties(
@@ -80,13 +93,6 @@ export function getInvalidPostValidateConfigMessageForRepeatedProperties(
   existingIndex: number,
 ) {
   return `Config at index ${index} has the same properties as config at index ${existingIndex}`;
-}
-
-export function getInvalidPostValidateConfigMessageForSubsetProperties(
-  index: number,
-  parentIndex: number,
-) {
-  return `Properties of config at index ${index} is a subset of properties of config at index ${parentIndex}`;
 }
 
 export abstract class SchemaCore<
@@ -114,7 +120,8 @@ export abstract class SchemaCore<
   protected readonly virtualToAliasMap: ns.AliasToVirtualMap<Input> = {};
   protected readonly postValidatorToHandlerMap = new Map<
     number,
-    PostValidationHandler<Input, Output, any, {}>
+    | PostValidator<Input, Output, any, {}>
+    | PostValidator<Input, Output, any, {}>[]
   >();
   protected readonly postValidatorPropsToValidatorIndexMap = new Map<
     string,
@@ -1357,7 +1364,7 @@ export abstract class SchemaCore<
     if (
       !value ||
       !isPropertyOf('properties', value) ||
-      !isPropertyOf('handler', value) ||
+      !isPropertyOf('validator', value) ||
       Object.keys(value).length > 2
     )
       return {
@@ -1398,12 +1405,42 @@ export abstract class SchemaCore<
 
     if (reasons.length) return { valid, reason: reasons };
 
-    if (!isFunctionLike(value.handler))
+    if (Array.isArray(value.validator)) {
+      const validators = value.validator as any[];
+
+      if (!validators.length)
+        return {
+          valid,
+          reason: getInvalidPostValidateConfigMessage(
+            index,
+            'validator-array-cannot-be-empty',
+          ),
+        };
+
+      const reasons: string[] = [];
+
+      validators.forEach((validator, i) => {
+        if (!isFunctionLike(validator))
+          reasons.push(
+            getInvalidPostValidateConfigMessage(
+              index,
+              'validator-must-be-function',
+              i,
+            ),
+          );
+      });
+
+      if (reasons.length) return { valid, reason: reasons };
+
+      return { valid: true };
+    }
+
+    if (!isFunctionLike(value.validator))
       return {
         valid,
         reason: getInvalidPostValidateConfigMessage(
           index,
-          'handler-must-be-function',
+          'validator-must-be-function',
         ),
       };
 
@@ -1411,7 +1448,7 @@ export abstract class SchemaCore<
   }
 
   private _registerPostValidator(
-    { properties, handler }: PostValidationConfig<Input, Output, any, {}>,
+    { properties, validator }: PostValidationConfig<Input, Output, any, {}>,
     index: number,
   ) {
     const sortedProps = sort(properties),
@@ -1435,7 +1472,7 @@ export abstract class SchemaCore<
       this.propsToPostValidatorIndicesMap.set(prop, validatorIndicesSet);
     });
 
-    this.postValidatorToHandlerMap.set(index, handler);
+    this.postValidatorToHandlerMap.set(index, validator);
     this.postValidatorPropsToValidatorIndexMap.set(sortedPropsId, index);
 
     return { valid: true };
@@ -1488,17 +1525,6 @@ export abstract class SchemaCore<
       const isValid = this._registerPostValidator(config, i);
 
       if (!isValid.valid) reasons.push(isValid.reason!);
-    });
-
-    configs.forEach(({ properties: props }, i) => {
-      configs.forEach(({ properties }, i2) => {
-        if (i == i2) return;
-
-        if (props.every((p) => properties.includes(p)))
-          return reasons.push(
-            getInvalidPostValidateConfigMessageForSubsetProperties(i, i2),
-          );
-      });
     });
 
     return reasons.length ? { valid: false, reason: reasons } : { valid: true };

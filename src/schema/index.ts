@@ -25,6 +25,7 @@ import {
   Validator,
   MutableSummary,
   PartialContext,
+  PostValidator,
 } from './types';
 import {
   VALIDATION_ERRORS,
@@ -631,43 +632,77 @@ class ModelTool<
 
     const handlers = Array.from(handlerIds).map((id) => ({
       id,
-      handler: this.postValidatorToHandlerMap.get(id)!,
+      validator: this.postValidatorToHandlerMap.get(id)!,
     }));
 
     await Promise.allSettled(
-      handlers.map(async ({ id, handler }) => {
+      handlers.map(async ({ id, validator }) => {
         const propsProvided = Array.from(handlerIdToProps.get(id)!) as Extract<
           keyof Input,
           string
         >[];
 
-        try {
-          const res = await handler(summary, propsProvided);
+        if (!Array.isArray(validator))
+          return await this._handlePostValidator({
+            errorTool,
+            propsProvided,
+            summary,
+            validator,
+          });
 
-          if (!isRecordLike(res)) return;
+        for (const v of validator) {
+          const { success } = await this._handlePostValidator({
+            errorTool,
+            propsProvided,
+            summary: this._getMutableSummary(data, isUpdate),
+            validator: v,
+          });
 
-          for (const [prop, error] of Object.entries(
-            this._handleObjectValidationResponse(res),
-          ))
-            errorTool.add(prop, makeFieldError(error));
-        } catch (_) {
-          for (const prop of propsProvided) {
-            const alias = this._getAliasByVirtual(prop as any);
-
-            let errorField: string | undefined;
-
-            if (alias && isPropertyOf(alias, summary.inputValues))
-              errorField = alias;
-            else if (isPropertyOf(prop, summary.inputValues)) errorField = prop;
-
-            if (errorField)
-              errorTool.add(errorField, validationFailedFieldError);
-          }
+          if (!success) break;
         }
       }),
     );
 
     return errorTool;
+  }
+
+  private async _handlePostValidator({
+    errorTool,
+    propsProvided,
+    summary,
+    validator,
+  }: {
+    errorTool: ErrorTool;
+    propsProvided: Extract<keyof Input, string>[];
+    summary: MutableSummary<Input, Output, CtxOptions>;
+    validator: PostValidator<Input, Output, any, {}>;
+  }) {
+    try {
+      const res = await validator(summary, propsProvided);
+
+      if (!isRecordLike(res)) return { success: true };
+
+      for (const [prop, error] of Object.entries(
+        this._handleObjectValidationResponse(res),
+      ))
+        errorTool.add(prop, makeFieldError(error));
+    } catch (_) {
+      for (const prop of propsProvided) {
+        const alias = this._getAliasByVirtual(prop as any);
+
+        let errorField: string | undefined;
+
+        if (alias && isPropertyOf(alias, summary.inputValues))
+          errorField = alias;
+        else if (isPropertyOf(prop, summary.inputValues)) errorField = prop;
+
+        if (errorField) errorTool.add(errorField, validationFailedFieldError);
+      }
+
+      return { success: false };
+    }
+
+    return { success: true };
   }
 
   private async _handleRequiredBy(data: Partial<Output>, isUpdate = false) {

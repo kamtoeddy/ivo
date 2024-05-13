@@ -1,4 +1,4 @@
-import { StringOptions, MutableSummary } from '../../../../dist';
+import { StringValidatorOptions, MutableSummary } from '../../../../dist';
 import {
   IOtherMeasureUnit,
   IOtherQuantity,
@@ -8,23 +8,22 @@ import {
 
 type SummaryType = MutableSummary<StoreItemInput, StoreItem>;
 
-import { isArrayOk, isNumberOk, isStringOk } from '../../../../src';
+import {
+  makeArrayValidator,
+  makeNumberValidator,
+  makeStringValidator,
+} from '../../../../src';
 import { findBy } from '../../_utils';
 
-export const validateName = (val: any) => {
-  const isValid = isStringOk(val, { trim: true });
-
-  if (!isValid.valid) return { valid: false };
-
-  return { valid: true, validated: isValid.validated };
-};
+export const validateName = (val: any) =>
+  makeStringValidator({ trim: true })(val);
 
 export const validateString = (
   errorMessage = '',
-  options: StringOptions = {},
+  options: StringValidatorOptions = {},
 ) => {
   return (val: any) => {
-    const isValid = isStringOk(val, options);
+    const isValid = makeStringValidator(options)(val);
 
     if (!isValid.valid && errorMessage)
       isValid.reason = [errorMessage, ...isValid.reason];
@@ -34,10 +33,10 @@ export const validateString = (
 };
 
 export const validateOtherUnit = (value: any) => {
-  const isValidCoeff = isNumberOk(value?.coefficient, {
-    range: { bounds: [0], inclusiveBottom: false },
-  });
-  const isValidName = isStringOk(value?.name);
+  const isValidCoeff = makeNumberValidator({
+    min: 0.1,
+  })(value?.coefficient);
+  const isValidName = makeStringValidator()(value?.name);
 
   if (!isValidCoeff.valid || !isValidName.valid) return { valid: false };
 
@@ -51,28 +50,28 @@ export const validateOtherUnit = (value: any) => {
 };
 
 export const validateOtherUnits = (value: any) => {
-  return isArrayOk<IOtherMeasureUnit>(value, {
-    empty: true,
+  return makeArrayValidator<IOtherMeasureUnit>({
+    min: 1,
     sorted: true,
     filter: (v) => validateOtherUnit(v).valid,
     modifier: (v) => validateOtherUnit(v).validated,
     sorter: (a, b) => (a.name < b.name ? -1 : 1),
     uniqueKey: 'name',
-  });
+  })(value);
 };
 
 export const validatePrice = (value: any) =>
-  isNumberOk(value, { range: { bounds: [0] } });
+  makeNumberValidator({ min: 0 })(value);
 
 export const validateQuantity = (value: any) =>
-  isNumberOk(value, { range: { bounds: [0] } });
+  makeNumberValidator({ min: 0 })(value);
 
 export const validateOtherQuantity = (value: any, ctx: StoreItemInput) => {
   const mu = getMeasureUnit(ctx.otherMeasureUnits!, value?.name);
 
-  const isValidQty = isNumberOk(value?.quantity, {
-    range: { bounds: [0], inclusiveBottom: false },
-  });
+  const isValidQty = makeNumberValidator({
+    min: 0.1,
+  })(value?.quantity);
 
   if (!mu || !isValidQty.valid) return { valid: false };
 
@@ -86,12 +85,12 @@ export const validateQuantities = async (
   value: any,
   { context }: SummaryType,
 ) => {
-  return isArrayOk<IOtherQuantity>(value, {
-    empty: true,
+  return makeArrayValidator<IOtherQuantity>({
+    min: 1,
     unique: false,
     filter: (v) => validateOtherQuantity(v, context).valid,
     modifier: (v) => validateOtherQuantity(v, context).validated,
-  });
+  })(value);
 };
 
 const getMeasureUnit = (
