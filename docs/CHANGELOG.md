@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+# v1.4.0 <small><sup>2024-05-13</sup></small>
+
+- Post-validators:
+  - Add support for sequencial execution
+  - Rename `handler` to `handlers`
+  - Allow post-validation configs to be subsets of others if they don't have exactly the same properties
+- Built-in validators:
+  - Rename `isBooleanOk` to [`validateBoolean`](./v1.4.0/validators.md#validateboolean)
+  - Rename `isCreditCardOk` to [`validateCreditCard`](./v1.4.0/validators.md#validatecreditcard)
+  - Rename `isEmailOk` to [`validateEmail`](./v1.4.0/validators.md#validateemail)
+  - Replace `isArrayOk` with [`makeArrayValidator`](./v1.4.0/validators.md#makearrayvalidator)
+  - Replace `isNumberOk` with [`makeNumberValidator`](./v1.4.0/validators.md#makenumbervalidator)
+  - Replace `isStringOk` with [`makeStringValidator`](./v1.4.0/validators.md#makestringvalidator)
+
 # v1.3.5 <small><sup>2024-05-07</sup></small>
 
 - Make post-validators to run after sanitization of virtuals and resolvement of dependent properties
