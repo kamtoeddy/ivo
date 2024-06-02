@@ -218,7 +218,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                   message: ERRORS.INVALID_SCHEMA,
                   payload: {
                     postValidate: expect.arrayContaining([
-                      '"validator" must be a function or array of funtions',
+                      '"validator" must be a function or array of functions',
                     ]),
                   },
                 });

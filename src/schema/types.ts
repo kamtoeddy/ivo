@@ -211,6 +211,25 @@ namespace NS {
     summary: ImmutableSummary<Input, Output, CtxOptions> & {},
   ) => any | Promise<any>;
 
+  export type OnSuccessConfigObject<
+    Input,
+    Output,
+    CtxOptions extends ObjectType,
+  > = {
+    properties: ArrayOfMinSizeTwo<KeyOf<Input & Output>>;
+    handler:
+      | SuccessHandler<Input, Output, CtxOptions>
+      | ArrayOfMinSizeOne<SuccessHandler<Input, Output, CtxOptions>>;
+  };
+
+  export type OnSuccessConfig<Input, Output, CtxOptions extends ObjectType> =
+    | SuccessHandler<Input, Output, CtxOptions>
+    | OnSuccessConfigObject<Input, Output, CtxOptions>
+    | ArrayOfMinSizeOne<
+        | SuccessHandler<Input, Output, CtxOptions>
+        | OnSuccessConfigObject<Input, Output, CtxOptions>
+      >;
+
   export type Definitions<
     Input,
     Output,
@@ -630,9 +649,7 @@ namespace NS {
     onDelete?:
       | DeleteHandler<Output, CtxOptions>
       | ArrayOfMinSizeOne<DeleteHandler<Output, CtxOptions>>;
-    onSuccess?:
-      | SuccessHandler<Input, Output, CtxOptions>
-      | ArrayOfMinSizeOne<SuccessHandler<Input, Output, CtxOptions>>;
+    onSuccess?: OnSuccessConfig<Input, Output, CtxOptions>;
     postValidate?:
       | PostValidationConfig<Input, Output, Aliases, CtxOptions>
       | ArrayOfMinSizeOne<

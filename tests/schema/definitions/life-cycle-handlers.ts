@@ -54,7 +54,7 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
               expect(err.payload).toEqual(
                 expect.objectContaining({
                   propertyName: expect.arrayContaining([
-                    `The '${rule}' handler @[0] is not a function`,
+                    `The '${rule}' handler at index: 0 is not a function`,
                   ]),
                 }),
               );
