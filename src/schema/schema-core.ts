@@ -166,24 +166,22 @@ export abstract class SchemaCore<
   protected readonly propsToAllowedValuesMap = new Map<string, Set<any>>();
   protected readonly propsWithSecondaryValidators = new Set<string>();
   protected readonly virtualToAliasMap: ns.AliasToVirtualMap<Input> = {};
-  protected readonly postValidatorToHandlerMap = new Map<
-    number,
-    | PostValidator<Input, Output, any, {}>
-    | PostValidator<Input, Output, any, {}>[]
-  >();
-  protected readonly postValidatorPropsToValidatorIndexMap = new Map<
+  protected readonly postValidationConfigMap = new Map<
     string,
-    number
+    {
+      index: number;
+      validators: PostValidator<Input, Output, any, CtxOptions>[];
+    }
+  >();
+  protected readonly propToPostValidationConfigIDsMap = new Map<
+    string,
+    Set<string>
   >();
   protected readonly onSuccessConfigMap = new Map<
     string,
     { index: number; handlers: NS.SuccessHandler<Input, Output, CtxOptions>[] }
   >();
   protected readonly propToOnSuccessConfigIDMap = new Map<string, string>();
-  protected readonly propsToPostValidatorIndicesMap = new Map<
-    string,
-    Set<number>
-  >();
 
   // props
   protected readonly constants = new Set<KeyOf<Output>>();
@@ -1592,26 +1590,30 @@ export abstract class SchemaCore<
     const sortedProps = sort(properties),
       sortedPropsId = sortedProps.toString();
 
-    if (this.postValidatorPropsToValidatorIndexMap.has(sortedPropsId))
+    const config = this.postValidationConfigMap.get(sortedPropsId);
+
+    if (config)
       return {
         valid: false,
         reason: getInvalidPostValidateConfigMessageForRepeatedProperties(
           index,
-          this.postValidatorPropsToValidatorIndexMap.get(sortedPropsId)!,
+          config.index,
         ),
       };
 
     sortedProps.forEach((prop) => {
-      const validatorIndicesSet =
-        this.propsToPostValidatorIndicesMap.get(prop) ?? new Set();
+      const setOfIDs =
+        this.propToPostValidationConfigIDsMap.get(prop) ?? new Set();
 
-      validatorIndicesSet.add(index);
+      setOfIDs.add(sortedPropsId);
 
-      this.propsToPostValidatorIndicesMap.set(prop, validatorIndicesSet);
+      this.propToPostValidationConfigIDsMap.set(prop, setOfIDs);
     });
 
-    this.postValidatorToHandlerMap.set(index, validator);
-    this.postValidatorPropsToValidatorIndexMap.set(sortedPropsId, index);
+    this.postValidationConfigMap.set(sortedPropsId, {
+      index,
+      validators: toArray(validator),
+    });
 
     return { valid: true };
   }

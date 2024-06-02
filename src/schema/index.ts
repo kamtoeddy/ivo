@@ -600,13 +600,13 @@ class ModelTool<
       context.__getOptions__(),
     );
 
-    const handlerIds = new Set<number>(),
-      handlerIdToProps = new Map<number, Set<string>>();
+    const handlerIds = new Set<string>(),
+      handlerIdToProps = new Map<string, Set<string>>();
 
     for (const [
       prop,
-      handlerSetId,
-    ] of this.propsToPostValidatorIndicesMap.entries()) {
+      setOfIDs,
+    ] of this.propToPostValidationConfigIDsMap.entries()) {
       const isVirtual = this._isVirtual(prop);
 
       if (isVirtual) {
@@ -622,7 +622,7 @@ class ModelTool<
       if (isUpdate && !isVirtual && !isPropertyOf(prop, summary.changes))
         continue;
 
-      for (const id of handlerSetId.values()) {
+      for (const id of setOfIDs.values()) {
         handlerIds.add(id);
 
         const set = handlerIdToProps.get(id) ?? new Set();
@@ -632,7 +632,7 @@ class ModelTool<
 
     const handlers = Array.from(handlerIds).map((id) => ({
       id,
-      validator: this.postValidatorToHandlerMap.get(id)!,
+      validator: this.postValidationConfigMap.get(id)!.validators,
     }));
 
     await Promise.allSettled(
@@ -675,7 +675,7 @@ class ModelTool<
     errorTool: ErrorTool;
     propsProvided: Extract<keyof Input, string>[];
     summary: MutableSummary<Input, Output, CtxOptions>;
-    validator: PostValidator<Input, Output, any, {}>;
+    validator: PostValidator<Input, Output, any, CtxOptions>;
   }) {
     try {
       const res = await validator(summary, propsProvided);
