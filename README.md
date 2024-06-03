@@ -11,10 +11,10 @@ $ npm i ivo
 # Importing
 
 ```js
-// Using Nodejs "require"
+// CJS
 const { Schema } = require('ivo');
 
-// Using ES6 imports
+// ESM
 import { Schema } from 'ivo';
 ```
 

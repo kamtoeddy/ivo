@@ -85,7 +85,46 @@ export function getInvalidPostValidateConfigMessage(
 
   return `${
     hasIndex ? `Config at index ${index}:  ` : ''
-  }"validator" must be a function or array of funtions`;
+  }"validator" must be a function or array of functions`;
+}
+
+type InvalidOnSuccessConfigMessage =
+  | 'default'
+  | 'handler-must-be-function'
+  | 'config-handler-should-be-array-or-function'
+  | 'handler-array-cannot-be-empty'
+  | 'config-properties-must-be-array';
+export function getInvalidOnSuccessConfigMessage(
+  index?: number,
+  message: InvalidOnSuccessConfigMessage = 'default',
+  secondIndex?: number,
+) {
+  const hasIndex = typeof index == 'number',
+    hasSecondIndex = typeof secondIndex == 'number';
+
+  if (message == 'default')
+    return `${
+      hasIndex ? `Config at index ${index}, must be` : 'Expected'
+    } a function, an object with keys "properties" and "handler" or an array of functions or objects`;
+
+  if (message == 'config-properties-must-be-array')
+    return `${
+      hasIndex ? `Config at index ${index}:  ` : ''
+    }"properties" must be an array of at least 2 properties or virtuals of your schema`;
+
+  if (message == 'handler-array-cannot-be-empty')
+    return `${
+      hasIndex ? `Config at index ${index}:  ` : ''
+    }"handler" cannot be an empty array`;
+
+  if (hasSecondIndex)
+    return `${
+      hasIndex ? `Config at index ${index}:  ` : ''
+    }"handler" at index ${secondIndex} must be a function`;
+
+  return `${
+    hasIndex ? `Config at index ${index}:  ` : ''
+  }"handler" must be a function or array of functions`;
 }
 
 export function getInvalidPostValidateConfigMessageForRepeatedProperties(
@@ -93,6 +132,14 @@ export function getInvalidPostValidateConfigMessageForRepeatedProperties(
   existingIndex: number,
 ) {
   return `Config at index ${index} has the same properties as config at index ${existingIndex}`;
+}
+
+export function getInvalidOnSuccessConfigMessageForRepeatedProperties(
+  prop: string,
+  index: number,
+  existingIndex: number,
+) {
+  return `Config at index ${index}: ${prop} is already registered for success event in config at index ${existingIndex}`;
 }
 
 export abstract class SchemaCore<
@@ -118,19 +165,22 @@ export abstract class SchemaCore<
   protected readonly propsToAllowedValuesMap = new Map<string, Set<any>>();
   protected readonly propsWithSecondaryValidators = new Set<string>();
   protected readonly virtualToAliasMap: ns.AliasToVirtualMap<Input> = {};
-  protected readonly postValidatorToHandlerMap = new Map<
-    number,
-    | PostValidator<Input, Output, any, {}>
-    | PostValidator<Input, Output, any, {}>[]
-  >();
-  protected readonly postValidatorPropsToValidatorIndexMap = new Map<
+  protected readonly postValidationConfigMap = new Map<
     string,
-    number
+    {
+      index: number;
+      validators: PostValidator<Input, Output, any, CtxOptions>[];
+    }
   >();
-  protected readonly propsToPostValidatorIndicesMap = new Map<
+  protected readonly propToPostValidationConfigIDsMap = new Map<
     string,
-    Set<number>
+    Set<string>
   >();
+  protected readonly onSuccessConfigMap = new Map<
+    string,
+    { index: number; handlers: ns.SuccessHandler<Input, Output, CtxOptions>[] }
+  >();
+  protected readonly propToOnSuccessConfigIDMap = new Map<string, string>();
 
   // props
   protected readonly constants = new Set<KeyOf<Output>>();
@@ -277,28 +327,22 @@ export abstract class SchemaCore<
   private _areHandlersOk = (
     _handlers: any,
     lifeCycle: ns.LifeCycle,
-    global = false,
+    register: boolean,
   ) => {
-    const reasons: string[] = [];
-
-    const handlers = toArray(_handlers);
+    const reasons: string[] = [],
+      handlers = toArray(_handlers);
 
     handlers.forEach((handler, i) => {
       if (!isFunctionLike(handler))
         return reasons.push(
-          `The '${lifeCycle}' handler @[${i}] is not a function`,
+          `The '${lifeCycle}' handler at index: ${i} is not a function`,
         );
 
-      if (!global) return;
+      if (!register) return;
 
       if (lifeCycle == 'onDelete')
         return this.globalDeleteHandlers.push(
           handler as ns.DeleteHandler<Output, CtxOptions>,
-        );
-
-      if (lifeCycle == 'onSuccess')
-        return this.globalSuccessHandlers.push(
-          handler as ns.SuccessHandler<Input, Output>,
         );
     });
 
@@ -379,9 +423,9 @@ export abstract class SchemaCore<
     }
 
     if (isPropertyOf('onSuccess', options)) {
-      const isValid = this._areHandlersOk(options.onSuccess, 'onSuccess', true);
+      const isValid = this._isOnSuccessOptionOk(options.onSuccess);
 
-      if (!isValid.valid) error.add('onSuccess', isValid.reasons!).throw();
+      if (!isValid.valid) error.add('onSuccess', isValid.reason!).throw();
     }
 
     if (isPropertyOf('setMissingDefaultsOnUpdate', options)) {
@@ -979,7 +1023,7 @@ export abstract class SchemaCore<
     for (const rule of LIFE_CYCLES) {
       if (!isPropertyOf(rule, definition)) continue;
 
-      const isValid = this._areHandlersOk(definition[rule], rule);
+      const isValid = this._areHandlersOk(definition[rule], rule, false);
 
       if (!isValid.valid) reasons = reasons.concat(isValid.reasons!);
     }
@@ -1447,6 +1491,97 @@ export abstract class SchemaCore<
     return { valid: true };
   }
 
+  private __isOnSuccessSingleConfigOk(value: any, index?: number) {
+    if (isFunctionLike(value)) return { valid: true };
+
+    const valid = false;
+
+    if (
+      !value ||
+      !isPropertyOf('properties', value) ||
+      !isPropertyOf('handler', value) ||
+      Object.keys(value).length > 2
+    )
+      return {
+        valid,
+        reason: getInvalidOnSuccessConfigMessage(index),
+      };
+
+    if (!Array.isArray(value.properties))
+      return {
+        valid,
+        reason: getInvalidOnSuccessConfigMessage(
+          index,
+          'config-properties-must-be-array',
+        ),
+      };
+
+    const properties = getUnique(value.properties);
+
+    if (properties.length < 2)
+      return {
+        valid,
+        reason: getInvalidOnSuccessConfigMessage(
+          index,
+          'config-properties-must-be-array',
+        ),
+      };
+
+    const reasons: string[] = [];
+
+    for (const prop of properties)
+      if (!this._isProp(prop) && !this._isVirtual(prop)) {
+        reasons.push(
+          `${
+            index != undefined ? `Config at index ${index}: ` : ''
+          }"${prop}" is not a property or virtual on your schema`,
+        );
+      }
+
+    if (reasons.length) return { valid, reason: reasons };
+
+    if (Array.isArray(value.handler)) {
+      const handlers = value.handler as any[];
+
+      if (!handlers.length)
+        return {
+          valid,
+          reason: getInvalidOnSuccessConfigMessage(
+            index,
+            'handler-array-cannot-be-empty',
+          ),
+        };
+
+      const reasons: string[] = [];
+
+      handlers.forEach((handler, i) => {
+        if (!isFunctionLike(handler))
+          reasons.push(
+            getInvalidOnSuccessConfigMessage(
+              index,
+              'handler-must-be-function',
+              i,
+            ),
+          );
+      });
+
+      if (reasons.length) return { valid, reason: reasons };
+
+      return { valid: true };
+    }
+
+    if (!isFunctionLike(value.handler))
+      return {
+        valid,
+        reason: getInvalidOnSuccessConfigMessage(
+          index,
+          'config-handler-should-be-array-or-function',
+        ),
+      };
+
+    return { valid: true };
+  }
+
   private _registerPostValidator(
     { properties, validator }: PostValidationConfig<Input, Output, any, {}>,
     index: number,
@@ -1454,58 +1589,166 @@ export abstract class SchemaCore<
     const sortedProps = sort(properties),
       sortedPropsId = sortedProps.toString();
 
-    if (this.postValidatorPropsToValidatorIndexMap.has(sortedPropsId))
+    const config = this.postValidationConfigMap.get(sortedPropsId);
+
+    if (config)
       return {
         valid: false,
         reason: getInvalidPostValidateConfigMessageForRepeatedProperties(
           index,
-          this.postValidatorPropsToValidatorIndexMap.get(sortedPropsId)!,
+          config.index,
         ),
       };
 
     sortedProps.forEach((prop) => {
-      const validatorIndicesSet =
-        this.propsToPostValidatorIndicesMap.get(prop) ?? new Set();
+      const setOfIDs =
+        this.propToPostValidationConfigIDsMap.get(prop) ?? new Set();
 
-      validatorIndicesSet.add(index);
+      setOfIDs.add(sortedPropsId);
 
-      this.propsToPostValidatorIndicesMap.set(prop, validatorIndicesSet);
+      this.propToPostValidationConfigIDsMap.set(prop, setOfIDs);
     });
 
-    this.postValidatorToHandlerMap.set(index, validator);
-    this.postValidatorPropsToValidatorIndexMap.set(sortedPropsId, index);
+    this.postValidationConfigMap.set(sortedPropsId, {
+      index,
+      validators: toArray(validator),
+    });
 
     return { valid: true };
   }
 
-  private _isPostValidateOptionOk(
-    postValidateOption: ns.Options<Input, Output, any>['postValidate'],
+  private _registerSuccessConfig(
+    config: ns.OnSuccessConfig<Input, Output, CtxOptions>,
+    isFunction: boolean,
+    index: number,
   ) {
-    const valid = false;
+    if (isFunction) {
+      this.globalSuccessHandlers.push(
+        config as ns.SuccessHandler<Input, Output, any>,
+      );
 
-    const isObject = isRecordLike(postValidateOption);
+      return { valid: true };
+    }
 
-    if (
-      !postValidateOption ||
-      (!Array.isArray(postValidateOption) && !isObject)
-    )
+    const { properties, handler } = config as ns.OnSuccessConfigObject<
+      Input,
+      Output,
+      any
+    >;
+
+    const sortedProps = sort(properties),
+      sortedPropsId = sortedProps.toString();
+
+    for (const prop of sortedProps) {
+      if (!this.propToOnSuccessConfigIDMap.has(prop)) {
+        this.propToOnSuccessConfigIDMap.set(prop, sortedPropsId);
+
+        continue;
+      }
+
+      const existingConfig = this.onSuccessConfigMap.get(
+        this.propToOnSuccessConfigIDMap.get(prop)!,
+      )!;
+
+      return {
+        valid: false,
+        reason: getInvalidOnSuccessConfigMessageForRepeatedProperties(
+          prop,
+          index,
+          existingConfig.index,
+        ),
+      };
+    }
+
+    this.onSuccessConfigMap.set(sortedPropsId, {
+      index,
+      handlers: toArray(handler),
+    });
+
+    return { valid: true };
+  }
+
+  private _isOnSuccessOptionOk(
+    option: ns.Options<Input, Output, any>['onSuccess'],
+  ) {
+    const valid = false,
+      isFunction = isFunctionLike(option),
+      isObject = isRecordLike(option);
+
+    if (!option || (!Array.isArray(option) && !isFunction && !isObject))
+      return {
+        valid,
+        reason: getInvalidOnSuccessConfigMessage(),
+      };
+
+    if (isFunction) {
+      this._registerSuccessConfig(option as any, isFunction, 0);
+
+      return { valid: true };
+    }
+
+    if (isObject) {
+      const isValid = this.__isOnSuccessSingleConfigOk(option);
+
+      if (!isValid.valid) return isValid;
+
+      this._registerSuccessConfig(option as any, false, 0);
+
+      return { valid: true };
+    }
+
+    const configs: ns.OnSuccessConfig<Input, Output, CtxOptions>[] = option;
+    let reasons: string[] = [];
+
+    configs.forEach((config, i) => {
+      const isValid = this.__isOnSuccessSingleConfigOk(config, i);
+
+      if (!isValid.valid) {
+        const reason = isValid.reason!;
+
+        if (Array.isArray(reason)) reasons = reasons.concat(reason);
+        else reasons.push(reason);
+      }
+    });
+
+    if (reasons.length) return { valid: false, reason: reasons };
+
+    configs.forEach((config, i) => {
+      const isValid = this._registerSuccessConfig(
+        config,
+        isFunctionLike(config),
+        i,
+      );
+
+      if (!isValid.valid) reasons.push(isValid.reason!);
+    });
+
+    return reasons.length ? { valid: false, reason: reasons } : { valid: true };
+  }
+
+  private _isPostValidateOptionOk(
+    option: ns.Options<Input, Output, any>['postValidate'],
+  ) {
+    const valid = false,
+      isObject = isRecordLike(option);
+
+    if (!option || (!Array.isArray(option) && !isObject))
       return {
         valid,
         reason: getInvalidPostValidateConfigMessage(),
       };
 
     if (isObject) {
-      const isValid = this._isPostValidateSingleConfigOk(postValidateOption);
+      const isValid = this._isPostValidateSingleConfigOk(option);
 
       if (!isValid.valid) return isValid;
 
-      this._registerPostValidator(postValidateOption as any, 0);
+      this._registerPostValidator(option as any, 0);
 
       return { valid: true };
     }
 
-    const configs: PostValidationConfig<Input, Output, any, {}>[] =
-      postValidateOption;
+    const configs: PostValidationConfig<Input, Output, any, {}>[] = option;
     let reasons: string[] = [];
 
     configs.forEach((config, i) => {

@@ -116,7 +116,7 @@ export const Test_SchemaOnDelete = ({ Schema, fx }: any) => {
               message: ERRORS.INVALID_SCHEMA,
               payload: {
                 onDelete: expect.arrayContaining([
-                  "The 'onDelete' handler @[0] is not a function",
+                  "The 'onDelete' handler at index: 0 is not a function",
                 ]),
               },
             });
