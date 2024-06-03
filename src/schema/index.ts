@@ -11,6 +11,7 @@ import {
   getSetValuesAsProps,
   ObjectType,
   isFunctionLike,
+  isNullOrUndefined,
 } from '../utils';
 import {
   ImmutableContext,
@@ -521,22 +522,9 @@ class ModelTool<
     for (const prop of this.propsWithSecondaryValidators.values()) {
       if (!isUpdate && !this._isInitAllowed(prop)) continue;
 
-      const isVirtual = this._isVirtual(prop);
+      const alias = this._getAliasByVirtual(prop as any);
 
-      let alias: string | undefined;
-
-      if (isVirtual) {
-        alias = this._getAliasByVirtual(prop as any);
-
-        if (
-          !isPropertyOf(prop, this.partialContext) &&
-          (!alias || !isPropertyOf(alias, summary.inputValues))
-        )
-          continue;
-      }
-
-      if (isUpdate && !isVirtual && !isPropertyOf(prop, this.partialContext))
-        continue;
+      if (!this._isSuccessfulProp(prop, summary, alias)) continue;
 
       props.push([prop as KeyOf<Output>, alias]);
     }
@@ -588,6 +576,24 @@ class ModelTool<
     return error;
   }
 
+  private _isSuccessfulProp(
+    prop: string,
+    summary: MutableSummary<Input, Output, CtxOptions>,
+    alias_?: string,
+  ) {
+    if (this._isVirtual(prop)) {
+      if (isPropertyOf(prop, this.partialContext)) return true;
+
+      const alias = alias_ || this._getAliasByVirtual(prop as any);
+
+      return (
+        !isNullOrUndefined(alias) && isPropertyOf(alias, summary.inputValues)
+      );
+    }
+
+    return !summary.isUpdate || isPropertyOf(prop, summary.changes);
+  }
+
   private async _handlePostValidations(
     data: Partial<Output>,
     isUpdate = false,
@@ -607,20 +613,7 @@ class ModelTool<
       prop,
       setOfIDs,
     ] of this.propToPostValidationConfigIDsMap.entries()) {
-      const isVirtual = this._isVirtual(prop);
-
-      if (isVirtual) {
-        const alias = this._getAliasByVirtual(prop as any);
-
-        if (
-          !isPropertyOf(prop, summary.inputValues) &&
-          (!alias || !isPropertyOf(alias, summary.inputValues))
-        )
-          continue;
-      }
-
-      if (isUpdate && !isVirtual && !isPropertyOf(prop, summary.changes))
-        continue;
+      if (!this._isSuccessfulProp(prop, summary)) continue;
 
       for (const id of setOfIDs.values()) {
         handlerIds.add(id);
@@ -900,13 +893,12 @@ class ModelTool<
     this._isVirtualAlias(prop) || this._isInputProp(prop);
 
   private _makeHandleSuccess(data: Partial<Output>, isUpdate = false) {
-    const partialCtx = this._getPartialContext();
-
-    const successProps = getKeysAsProps(partialCtx);
+    const partialCtx = this._getPartialContext(),
+      successProps = getKeysAsProps(partialCtx),
+      summary = this._getSummary(data, isUpdate),
+      setOfSuccessHandlerIDs = new Set<string>();
 
     let successListeners = [] as NS.SuccessHandler<Input, Output, CtxOptions>[];
-
-    const summary = this._getSummary(data, isUpdate);
 
     for (const prop of successProps) {
       const handlers = this._getHandlers<NS.SuccessHandler<Input, Output>>(
@@ -914,10 +906,19 @@ class ModelTool<
         'onSuccess',
       );
 
+      const id = this.propToOnSuccessConfigIDMap.get(prop);
+
+      if (id) setOfSuccessHandlerIDs.add(id);
+
       successListeners = successListeners.concat(handlers);
     }
 
     successListeners = successListeners.concat(this.globalSuccessHandlers);
+
+    for (const id of setOfSuccessHandlerIDs.values())
+      successListeners = successListeners.concat(
+        this.onSuccessConfigMap.get(id)!.handlers,
+      );
 
     return async () => {
       const successOperations = successListeners.map(

@@ -38,7 +38,6 @@ import {
   PostValidator,
   Context,
   MutableSummary,
-  NS,
 } from './types';
 
 export const defaultOptions = {
@@ -179,7 +178,7 @@ export abstract class SchemaCore<
   >();
   protected readonly onSuccessConfigMap = new Map<
     string,
-    { index: number; handlers: NS.SuccessHandler<Input, Output, CtxOptions>[] }
+    { index: number; handlers: ns.SuccessHandler<Input, Output, CtxOptions>[] }
   >();
   protected readonly propToOnSuccessConfigIDMap = new Map<string, string>();
 
@@ -1619,19 +1618,19 @@ export abstract class SchemaCore<
   }
 
   private _registerSuccessConfig(
-    config: NS.OnSuccessConfig<Input, Output, CtxOptions>,
+    config: ns.OnSuccessConfig<Input, Output, CtxOptions>,
     isFunction: boolean,
     index: number,
   ) {
     if (isFunction) {
       this.globalSuccessHandlers.push(
-        config as NS.SuccessHandler<Input, Output, any>,
+        config as ns.SuccessHandler<Input, Output, any>,
       );
 
       return { valid: true };
     }
 
-    const { properties, handler } = config as NS.OnSuccessConfigObject<
+    const { properties, handler } = config as ns.OnSuccessConfigObject<
       Input,
       Output,
       any
@@ -1698,7 +1697,7 @@ export abstract class SchemaCore<
       return { valid: true };
     }
 
-    const configs: NS.OnSuccessConfig<Input, Output, CtxOptions>[] = option;
+    const configs: ns.OnSuccessConfig<Input, Output, CtxOptions>[] = option;
     let reasons: string[] = [];
 
     configs.forEach((config, i) => {
