@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# v1.4.2 <small><sup>2024-06-03</sup></small>
+
+- Fix crash that occurs when an onSuccess config object has a repeated property in its own properties array
+
 # v1.4.1 <small><sup>2024-06-03</sup></small>
 
 - Add support for onSuccess options as [config objects](./v1.4.0/life-cycles.md#config-objects)
