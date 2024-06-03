@@ -1,8 +1,8 @@
 {
   "name": "ivo",
   "author": "kamtoeddy",
-  "description": "A different approach to schema valitation",
-  "version": "1.4.0",
+  "description": "The schema valitator that birngs user stories to life",
+  "version": "1.4.1",
   "license": "MIT",
   "homepage": "https://github.com/kamtoeddy/ivo#readme",
   "repository": {

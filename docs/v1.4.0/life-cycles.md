@@ -180,7 +180,7 @@ A void function or array of void functions(async / sync) you want to execute eve
 
 ### onSuccess
 
-A void function or array of void functions(async / sync) you want to execute every time the **`create`** & **`update`** operations are successful. Handlers for this event should expect the operation's summary as only parameter. Default **[ ]**. They are expected to respect the `type HandlerWithSummary` as shown above
+A function, [config object](#config-objects) or array of config objects or functions(async / sync) you want to execute every time the **`create`** & **`update`** operations are successful. Handlers for this event should expect the operation's summary as only parameter. Default **[ ]**. Handlers are expected to respect the `type HandlerWithSummary` as shown above.
 
 These handlers have to be triggered manually by invoking the handleSuccess method of the operation's results object returned by the create & update methods of your models.
 
@@ -190,4 +190,67 @@ These handlers have to be triggered manually by invoking the handleSuccess metho
 const { data, error, handleSuccess } = await UserModel.create(userData);
 
 if (data) await handleSuccess();
+```
+
+#### Config objects
+
+These were introduced in version 1.4.1 to allow for more simplicity and flexibility when dealing with success handlers related to more than one property. A success config object should have the following shape:
+
+```ts
+type ConfigObject = {
+  properties: ArrayOfMinSizeTwo<keyof (Input & Output)>;
+  handler: HandlerWithSummary | HandlerWithSummary[];
+};
+```
+
+Example:
+
+```ts
+const Model = new Schema<Input, Output>(definitions, {
+  onSuccess: handler, // the handler will be executed during all success operations
+});
+
+// or
+const Model = new Schema<Input, Output>(definitions, {
+  onSuccess: [handler1, handler2], // the handlers will be executed during all success operations
+});
+
+// or
+const Model = new Schema<Input, Output>(definitions, {
+  onSuccess: {
+    properties: ['email', 'name'],
+    handler, // always executed at creation during updates with either email or name
+  },
+});
+
+// or
+const Model = new Schema<Input, Output>(definitions, {
+  onSuccess: {
+    properties: ['email', 'name'],
+    handler: [handler1, handler2], // always executed at creation during updates with either email or name
+  },
+});
+
+// or
+const Model = new Schema<Input, Output>(definitions, {
+  onSuccess: [
+    handler1, // executed during all success operations
+    { properties: ['id', 'email'], handler: handler2 },
+    { properties: ['firstName', 'lastName'], handler: [handler3, handler4] },
+  ],
+});
+```
+
+> N.B: with config objects, a property can only appear in one config object because the handler(s) are executed if any of the properties are provided.
+
+That is:
+
+```ts
+// ❌ this is not allowed
+const Model = new Schema<Input, Output>(definitions, {
+  onSuccess: [
+    { properties: ['id', 'email'], handler: [handler1, handler2] },
+    { properties: ['email', 'name'], handler: handler3 },
+  ],
+});
 ```
