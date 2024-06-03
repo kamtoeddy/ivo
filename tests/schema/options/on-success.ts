@@ -14,6 +14,358 @@ import {
 
 export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
   describe('Schema.options.onSuccess', () => {
+    describe('signature', () => {
+      describe('valid', () => {
+        it("should allow valid 'onSuccess' config", () => {
+          const values = [
+            () => {},
+            [() => {}],
+            [() => {}, () => {}],
+            {
+              properties: ['propertyName1', 'propertyName2'],
+              handler: () => {},
+            },
+            {
+              properties: ['propertyName1', 'propertyName2'],
+              handler: [() => {}, () => {}],
+            },
+            {
+              properties: [
+                'constant',
+                'laxProp',
+                'propertyName2',
+                'dependent',
+                'virtual',
+              ],
+              handler: [() => {}, () => {}],
+            },
+            {
+              properties: [
+                'constant',
+                'laxProp',
+                'propertyName2',
+                'dependent',
+                'virtual',
+              ],
+              handler: () => {},
+            },
+            [
+              () => {},
+              {
+                properties: ['propertyName1', 'constant'],
+                handler: [() => {}, () => {}],
+              },
+              {
+                properties: [
+                  'laxProp',
+                  'propertyName2',
+                  'dependent',
+                  'virtual',
+                ],
+                handler: () => {},
+              },
+            ],
+            [
+              () => {},
+              {
+                properties: ['propertyName1', 'propertyName1', 'constant'],
+                handler: [() => {}, () => {}],
+              },
+              {
+                properties: [
+                  'laxProp',
+                  'propertyName2',
+                  'dependent',
+                  'virtual',
+                ],
+                handler: () => {},
+              },
+            ],
+          ];
+
+          for (const onSuccess of values) {
+            const toPass = fx(
+              getValidSchema(
+                {},
+                {
+                  constant: { constant: true, value: '' },
+                  laxProp: { default: '' },
+                  dependent: {
+                    default: '',
+                    dependsOn: ['laxProp', 'virtual'],
+                    resolver: () => {},
+                  },
+                  readonly: { readonly: true, validator: () => {} },
+                  virtual: { virtual: true, validator: () => {} },
+                },
+              ),
+              {
+                onSuccess,
+              },
+            );
+
+            expectNoFailure(toPass);
+
+            toPass();
+          }
+        });
+      });
+
+      describe('invalid', () => {
+        it("should reject 'onSuccess' if it's not a function, object or array", () => {
+          const invalidValues = [
+            1,
+            0,
+            -14,
+            true,
+            false,
+            'invalid',
+            '',
+            null,
+            undefined,
+          ];
+
+          invalidValues.forEach((onSuccess) => {
+            const toFail = fx(getValidSchema(), { onSuccess });
+
+            expectFailure(toFail);
+
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err).toMatchObject({
+                message: ERRORS.INVALID_SCHEMA,
+                payload: {
+                  onSuccess: expect.arrayContaining([
+                    getInvalidOnSuccessConfigMessage(),
+                  ]),
+                },
+              });
+            }
+          });
+        });
+
+        it("should reject 'onSuccess' if invalid properties or handlers are passed in config object", () => {
+          const invalidProperties = [
+            1,
+            0,
+            -14,
+            true,
+            false,
+            'invalid',
+            '',
+            null,
+            undefined,
+            [],
+          ];
+
+          invalidProperties.forEach((properties) => {
+            const toFail = fx(getValidSchema(), {
+              onSuccess: { properties, handler: () => {} },
+            });
+
+            expectFailure(toFail);
+
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err).toMatchObject({
+                message: ERRORS.INVALID_SCHEMA,
+                payload: {
+                  onSuccess: expect.arrayContaining([
+                    '"properties" must be an array of at least 2 properties or virtuals of your schema',
+                  ]),
+                },
+              });
+            }
+          });
+
+          const invalidHandlers = [
+            1,
+            0,
+            -14,
+            true,
+            false,
+            'invalid',
+            '',
+            null,
+            undefined,
+          ];
+          invalidHandlers.forEach((handler) => {
+            const toFail = fx(getValidSchema(), {
+              onSuccess: {
+                properties: ['propertyName1', 'propertyName2'],
+                handler,
+              },
+            });
+
+            expectFailure(toFail);
+
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err).toMatchObject({
+                message: ERRORS.INVALID_SCHEMA,
+                payload: {
+                  onSuccess: expect.arrayContaining([
+                    '"handler" must be a function or array of functions',
+                  ]),
+                },
+              });
+            }
+          });
+
+          const invalidNestedHandlers = [
+            1,
+            0,
+            -14,
+            true,
+            false,
+            'invalid',
+            '',
+            null,
+            undefined,
+          ];
+          const schemaWithInvalidHandlers = fx(getValidSchema(), {
+            onSuccess: {
+              properties: ['propertyName1', 'propertyName2'],
+              handler: invalidNestedHandlers,
+            },
+          });
+
+          expectFailure(schemaWithInvalidHandlers);
+
+          try {
+            schemaWithInvalidHandlers();
+          } catch (err: any) {
+            expect(err).toMatchObject({
+              message: ERRORS.INVALID_SCHEMA,
+              payload: {
+                onSuccess: expect.arrayContaining(
+                  invalidNestedHandlers.map((_, i) =>
+                    getInvalidOnSuccessConfigMessage(
+                      undefined,
+                      'handler-must-be-function',
+                      i,
+                    ),
+                  ),
+                ),
+              },
+            });
+          }
+        });
+
+        it('should reject if any of the properties passed in config object are not valid properties or virtuals', () => {
+          const invalidProperties = [
+            1,
+            0,
+            -14,
+            true,
+            false,
+            'invalid',
+            '',
+            null,
+            undefined,
+            [],
+          ];
+
+          const schemaWithInvalidProperties = fx(getValidSchema(), {
+            onSuccess: { properties: invalidProperties, handler: () => {} },
+          });
+
+          expectFailure(schemaWithInvalidProperties);
+
+          try {
+            schemaWithInvalidProperties();
+          } catch (err: any) {
+            expect(err).toMatchObject({
+              message: ERRORS.INVALID_SCHEMA,
+              payload: {
+                onSuccess: expect.arrayContaining(
+                  invalidProperties.map(
+                    (prop) =>
+                      `"${prop}" is not a property or virtual on your schema`,
+                  ),
+                ),
+              },
+            });
+          }
+
+          const schemaWithNestedInvalidProperties = fx(getValidSchema(), {
+            onSuccess: [{ properties: invalidProperties, handler: () => {} }],
+          });
+
+          expectFailure(schemaWithNestedInvalidProperties);
+
+          try {
+            schemaWithNestedInvalidProperties();
+          } catch (err: any) {
+            expect(err).toMatchObject({
+              message: ERRORS.INVALID_SCHEMA,
+              payload: {
+                onSuccess: expect.arrayContaining(
+                  invalidProperties.map(
+                    (prop) =>
+                      `Config at index 0: "${prop}" is not a property or virtual on your schema`,
+                  ),
+                ),
+              },
+            });
+          }
+        });
+
+        it("should reject 'onSuccess' if a property or virtual is provided in more than 1 config", () => {
+          const toFail = fx(
+            getValidSchema(
+              {},
+              {
+                constant: { constant: true, value: '' },
+                laxProp: { default: '' },
+                dependent: {
+                  default: '',
+                  dependsOn: ['laxProp', 'virtual'],
+                  resolver: () => {},
+                },
+                readonly: { readonly: true, validator: () => {} },
+                virtual: { virtual: true, validator: () => {} },
+              },
+            ),
+            {
+              onSuccess: [
+                {
+                  properties: ['propertyName1', 'laxProp'],
+                  handler: () => {},
+                },
+                {
+                  properties: ['virtual', 'laxProp'],
+                  handler: () => {},
+                },
+              ],
+            },
+          );
+
+          expectFailure(toFail);
+
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err).toMatchObject({
+              message: ERRORS.INVALID_SCHEMA,
+              payload: {
+                onSuccess: expect.arrayContaining([
+                  getInvalidOnSuccessConfigMessageForRepeatedProperties(
+                    'laxProp',
+                    1,
+                    0,
+                  ),
+                ]),
+              },
+            });
+          }
+        });
+      });
+    });
+
     describe('behaviour', () => {
       let successValues: any = {};
 
@@ -352,342 +704,6 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
               });
             }
           });
-        });
-      });
-    });
-
-    describe('signature', () => {
-      describe('valid', () => {
-        it("should allow valid 'onSuccess' config", () => {
-          const values = [
-            () => {},
-            [() => {}],
-            [() => {}, () => {}],
-            {
-              properties: ['propertyName1', 'propertyName2'],
-              handler: () => {},
-            },
-            {
-              properties: ['propertyName1', 'propertyName2'],
-              handler: [() => {}, () => {}],
-            },
-            {
-              properties: [
-                'constant',
-                'laxProp',
-                'propertyName2',
-                'dependent',
-                'virtual',
-              ],
-              handler: [() => {}, () => {}],
-            },
-            {
-              properties: [
-                'constant',
-                'laxProp',
-                'propertyName2',
-                'dependent',
-                'virtual',
-              ],
-              handler: () => {},
-            },
-            [
-              () => {},
-              {
-                properties: ['propertyName1', 'constant'],
-                handler: [() => {}, () => {}],
-              },
-              {
-                properties: [
-                  'laxProp',
-                  'propertyName2',
-                  'dependent',
-                  'virtual',
-                ],
-                handler: () => {},
-              },
-            ],
-          ];
-
-          for (const onSuccess of values) {
-            const toPass = fx(
-              getValidSchema(
-                {},
-                {
-                  constant: { constant: true, value: '' },
-                  laxProp: { default: '' },
-                  dependent: {
-                    default: '',
-                    dependsOn: ['laxProp', 'virtual'],
-                    resolver: () => {},
-                  },
-                  readonly: { readonly: true, validator: () => {} },
-                  virtual: { virtual: true, validator: () => {} },
-                },
-              ),
-              {
-                onSuccess,
-              },
-            );
-
-            expectNoFailure(toPass);
-
-            toPass();
-          }
-        });
-      });
-
-      describe('invalid', () => {
-        it("should reject 'onSuccess' if it's not a function, object or array", () => {
-          const invalidValues = [
-            1,
-            0,
-            -14,
-            true,
-            false,
-            'invalid',
-            '',
-            null,
-            undefined,
-          ];
-
-          invalidValues.forEach((onSuccess) => {
-            const toFail = fx(getValidSchema(), { onSuccess });
-
-            expectFailure(toFail);
-
-            try {
-              toFail();
-            } catch (err: any) {
-              expect(err).toMatchObject({
-                message: ERRORS.INVALID_SCHEMA,
-                payload: {
-                  onSuccess: expect.arrayContaining([
-                    getInvalidOnSuccessConfigMessage(),
-                  ]),
-                },
-              });
-            }
-          });
-        });
-
-        it("should reject 'onSuccess' if invalid properties or handlers are passed in config object", () => {
-          const invalidProperties = [
-            1,
-            0,
-            -14,
-            true,
-            false,
-            'invalid',
-            '',
-            null,
-            undefined,
-            [],
-          ];
-
-          invalidProperties.forEach((properties) => {
-            const toFail = fx(getValidSchema(), {
-              onSuccess: { properties, handler: () => {} },
-            });
-
-            expectFailure(toFail);
-
-            try {
-              toFail();
-            } catch (err: any) {
-              expect(err).toMatchObject({
-                message: ERRORS.INVALID_SCHEMA,
-                payload: {
-                  onSuccess: expect.arrayContaining([
-                    '"properties" must be an array of at least 2 properties or virtuals of your schema',
-                  ]),
-                },
-              });
-            }
-          });
-
-          const invalidHandlers = [
-            1,
-            0,
-            -14,
-            true,
-            false,
-            'invalid',
-            '',
-            null,
-            undefined,
-          ];
-          invalidHandlers.forEach((handler) => {
-            const toFail = fx(getValidSchema(), {
-              onSuccess: {
-                properties: ['propertyName1', 'propertyName2'],
-                handler,
-              },
-            });
-
-            expectFailure(toFail);
-
-            try {
-              toFail();
-            } catch (err: any) {
-              expect(err).toMatchObject({
-                message: ERRORS.INVALID_SCHEMA,
-                payload: {
-                  onSuccess: expect.arrayContaining([
-                    '"handler" must be a function or array of functions',
-                  ]),
-                },
-              });
-            }
-          });
-
-          const invalidNestedHandlers = [
-            1,
-            0,
-            -14,
-            true,
-            false,
-            'invalid',
-            '',
-            null,
-            undefined,
-          ];
-          const schemaWithInvalidHandlers = fx(getValidSchema(), {
-            onSuccess: {
-              properties: ['propertyName1', 'propertyName2'],
-              handler: invalidNestedHandlers,
-            },
-          });
-
-          expectFailure(schemaWithInvalidHandlers);
-
-          try {
-            schemaWithInvalidHandlers();
-          } catch (err: any) {
-            expect(err).toMatchObject({
-              message: ERRORS.INVALID_SCHEMA,
-              payload: {
-                onSuccess: expect.arrayContaining(
-                  invalidNestedHandlers.map((_, i) =>
-                    getInvalidOnSuccessConfigMessage(
-                      undefined,
-                      'handler-must-be-function',
-                      i,
-                    ),
-                  ),
-                ),
-              },
-            });
-          }
-        });
-
-        it('should reject if any of the properties passed in config object are not valid properties or virtuals', () => {
-          const invalidProperties = [
-            1,
-            0,
-            -14,
-            true,
-            false,
-            'invalid',
-            '',
-            null,
-            undefined,
-            [],
-          ];
-
-          const schemaWithInvalidProperties = fx(getValidSchema(), {
-            onSuccess: { properties: invalidProperties, handler: () => {} },
-          });
-
-          expectFailure(schemaWithInvalidProperties);
-
-          try {
-            schemaWithInvalidProperties();
-          } catch (err: any) {
-            expect(err).toMatchObject({
-              message: ERRORS.INVALID_SCHEMA,
-              payload: {
-                onSuccess: expect.arrayContaining(
-                  invalidProperties.map(
-                    (prop) =>
-                      `"${prop}" is not a property or virtual on your schema`,
-                  ),
-                ),
-              },
-            });
-          }
-
-          const schemaWithNestedInvalidProperties = fx(getValidSchema(), {
-            onSuccess: [{ properties: invalidProperties, handler: () => {} }],
-          });
-
-          expectFailure(schemaWithNestedInvalidProperties);
-
-          try {
-            schemaWithNestedInvalidProperties();
-          } catch (err: any) {
-            expect(err).toMatchObject({
-              message: ERRORS.INVALID_SCHEMA,
-              payload: {
-                onSuccess: expect.arrayContaining(
-                  invalidProperties.map(
-                    (prop) =>
-                      `Config at index 0: "${prop}" is not a property or virtual on your schema`,
-                  ),
-                ),
-              },
-            });
-          }
-        });
-
-        it("should reject 'onSuccess' if a property or virtual is provided in more than 1 config", () => {
-          const toFail = fx(
-            getValidSchema(
-              {},
-              {
-                constant: { constant: true, value: '' },
-                laxProp: { default: '' },
-                dependent: {
-                  default: '',
-                  dependsOn: ['laxProp', 'virtual'],
-                  resolver: () => {},
-                },
-                readonly: { readonly: true, validator: () => {} },
-                virtual: { virtual: true, validator: () => {} },
-              },
-            ),
-            {
-              onSuccess: [
-                {
-                  properties: ['propertyName1', 'laxProp'],
-                  handler: () => {},
-                },
-                {
-                  properties: ['virtual', 'laxProp'],
-                  handler: () => {},
-                },
-              ],
-            },
-          );
-
-          expectFailure(toFail);
-
-          try {
-            toFail();
-          } catch (err: any) {
-            expect(err).toMatchObject({
-              message: ERRORS.INVALID_SCHEMA,
-              payload: {
-                onSuccess: expect.arrayContaining([
-                  getInvalidOnSuccessConfigMessageForRepeatedProperties(
-                    'laxProp',
-                    1,
-                    0,
-                  ),
-                ]),
-              },
-            });
-          }
         });
       });
     });

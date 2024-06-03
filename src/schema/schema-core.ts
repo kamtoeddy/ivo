@@ -1640,24 +1640,21 @@ export abstract class SchemaCore<
       sortedPropsId = sortedProps.toString();
 
     for (const prop of sortedProps) {
-      if (!this.propToOnSuccessConfigIDMap.has(prop)) {
-        this.propToOnSuccessConfigIDMap.set(prop, sortedPropsId);
-
-        continue;
-      }
-
       const existingConfig = this.onSuccessConfigMap.get(
         this.propToOnSuccessConfigIDMap.get(prop)!,
-      )!;
+      );
 
-      return {
-        valid: false,
-        reason: getInvalidOnSuccessConfigMessageForRepeatedProperties(
-          prop,
-          index,
-          existingConfig.index,
-        ),
-      };
+      if (existingConfig)
+        return {
+          valid: false,
+          reason: getInvalidOnSuccessConfigMessageForRepeatedProperties(
+            prop,
+            index,
+            existingConfig.index,
+          ),
+        };
+
+      this.propToOnSuccessConfigIDMap.set(prop, sortedPropsId);
     }
 
     this.onSuccessConfigMap.set(sortedPropsId, {
