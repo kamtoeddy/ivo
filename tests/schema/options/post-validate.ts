@@ -1498,6 +1498,10 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                         incrementValidatorCount('p1-v');
                       },
                       function ({ context: { v } }: any) {
+                        if (v == 'return error')
+                          return { d1: 'error returned' };
+                      },
+                      function ({ context: { v } }: any) {
                         incrementValidatorCount('p1-v');
                         if (v == 'throw') throw new Error('lol');
                       },
@@ -1567,7 +1571,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
             const createRes1 = await Model.create({ v: 'throw', p2: true });
 
             expect(createRes1.data).toBeNull();
-            expect(createRes1.error.payload).toMatchObject({
+            expect(createRes1.error.payload).toEqual({
               p2: expect.objectContaining({
                 reasons: expect.arrayContaining(['validation failed']),
               }),
@@ -1580,6 +1584,19 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
               'p1-v': 2,
               'p1-p2': 1,
             });
+
+            validatorRunCount = {};
+
+            const createRes11 = await Model.create({ v: 'return error' });
+
+            expect(createRes11.data).toBeNull();
+            expect(createRes11.error.payload).toMatchObject({
+              d1: expect.objectContaining({
+                reasons: expect.arrayContaining(['error returned']),
+              }),
+            });
+
+            expect(validatorRunCount).toEqual({ 'p1-v': 1, 'p1-p2': 2 });
 
             validatorRunCount = {};
 
@@ -1622,6 +1639,21 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
             expect(validatorRunCount).toMatchObject({
               'p1-v': 2,
               'p1-p2': 1,
+            });
+
+            validatorRunCount = {};
+
+            const updateRes2 = await Model.update({}, { v: 'return error' });
+
+            expect(updateRes2.data).toBeNull();
+            expect(updateRes2.error.payload).toMatchObject({
+              d1: expect.objectContaining({
+                reasons: expect.arrayContaining(['error returned']),
+              }),
+            });
+
+            expect(validatorRunCount).toMatchObject({
+              'p1-v': 1,
             });
           });
         });
