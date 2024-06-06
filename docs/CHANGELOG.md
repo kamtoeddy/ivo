@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# v1.4.3 <small><sup>2024-06-03</sup></small>
+
+- Fix bug causing post-validation array to continue runnning after first errors are returned
+
 # v1.4.2 <small><sup>2024-06-03</sup></small>
 
 - Fix crash that occurs when an onSuccess config object has a repeated property in its own properties array

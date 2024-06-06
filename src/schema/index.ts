@@ -692,10 +692,10 @@ class ModelTool<
         if (errorField) errorTool.add(errorField, validationFailedFieldError);
       }
 
-      return { success: false };
+      // return { success: false };
     }
 
-    return { success: true };
+    return { success: !errorTool.isLoaded };
   }
 
   private async _handleRequiredBy(data: Partial<Output>, isUpdate = false) {
