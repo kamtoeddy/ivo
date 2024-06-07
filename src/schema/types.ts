@@ -183,7 +183,10 @@ type PostValidationConfig<
   properties: ArrayOfMinSizeTwo<KeyOf<Input>>;
   validator:
     | PostValidator<Input, Output, Aliases, CtxOptions>
-    | ArrayOfMinSizeOne<PostValidator<Input, Output, Aliases, CtxOptions>>;
+    | ArrayOfMinSizeOne<
+        | PostValidator<Input, Output, Aliases, CtxOptions>
+        | ArrayOfMinSizeOne<PostValidator<Input, Output, Aliases, CtxOptions>>
+      >;
 };
 
 type KeyOf<T> = Extract<keyof T, string>;

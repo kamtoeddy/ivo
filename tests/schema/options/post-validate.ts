@@ -18,9 +18,14 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
       describe('single config', () => {
         describe('valid', () => {
           it("should allow 'postValidate' as valid config", () => {
-            const valid = [() => {}, [() => {}, () => {}]];
+            const validators = [
+              () => {},
+              [() => {}, () => {}],
+              [() => {}, [() => {}, () => {}]],
+              [() => {}, [() => {}, () => {}], () => {}],
+            ];
 
-            for (const validator of valid) {
+            for (const validator of validators) {
               const toPass = fx(getValidSchema(), {
                 postValidate: {
                   properties: ['propertyName1', 'propertyName2'],
@@ -300,7 +305,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                 '',
                 'invalid',
                 {},
-                [],
+                // [],
               ];
 
               const toFail = fx(
@@ -333,7 +338,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                     postValidate: expect.arrayContaining(
                       values.map(
                         (_, i) =>
-                          `"validator" at index ${i} must be a function`,
+                          `"validator" at index ${i} must be a function or array of functions`,
                       ),
                     ),
                   },
@@ -781,7 +786,6 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                 '',
                 'invalid',
                 {},
-                [],
               ];
 
               const toFail = fx(
@@ -820,7 +824,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                     postValidate: expect.arrayContaining(
                       values.map(
                         (_, i) =>
-                          `Config at index 1:  "validator" at index ${i} must be a function`,
+                          `Config at index 1:  "validator" at index ${i} must be a function or array of functions`,
                       ),
                     ),
                   },
@@ -1654,6 +1658,230 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
 
             expect(validatorRunCount).toMatchObject({
               'p1-v': 1,
+            });
+          });
+
+          it('should process parallel and sequential validators accordingly', async () => {
+            const resolver = ({ context }: any) => context.v;
+
+            let validatorRunCount: Record<string, number> = {};
+
+            function incrementValidatorCount(key: string) {
+              validatorRunCount[key] = (validatorRunCount?.[key] ?? 0) + 1;
+            }
+
+            const Model = new Schema(
+              {
+                p1: { default: '' },
+                p2: { default: '' },
+                p3: { default: '' },
+                p4: { default: '' },
+                d1: { default: '', dependsOn: 'v', resolver },
+                d2: { default: '', dependsOn: 'v', resolver },
+                v: { alias: 'd1', virtual: true, validator },
+              },
+              {
+                postValidate: [
+                  {
+                    properties: ['p1', 'v'],
+                    validator: [
+                      ({ context: { v } }: any) => {
+                        incrementValidatorCount('p1-v');
+
+                        if (v == 'return error')
+                          return { d1: 'error returned' };
+
+                        if (v == 'throw') throw new Error('lol');
+                      },
+                      [
+                        ({ context: { v } }: any) => {
+                          incrementValidatorCount('p1-v-parallel');
+
+                          if (v == 'throw-parallel') throw new Error('lol');
+                        },
+                        ({ context: { v } }: any) => {
+                          incrementValidatorCount('p1-v-parallel');
+
+                          if (v == 'return error-parallel')
+                            return { v: 'error returned' };
+                        },
+                      ],
+                      () => {
+                        incrementValidatorCount('p1-v');
+                      },
+                      [
+                        () => {
+                          incrementValidatorCount('p1-v-parallel-1');
+                        },
+                        () => {
+                          incrementValidatorCount('p1-v-parallel-1');
+                        },
+                      ],
+                    ],
+                  },
+                ],
+              },
+            ).getModel();
+
+            const createRes = await Model.create();
+
+            expect(createRes.error).toBeNull();
+            expect(validatorRunCount).toMatchObject({
+              'p1-v': 2,
+              'p1-v-parallel': 2,
+              'p1-v-parallel-1': 2,
+            });
+
+            validatorRunCount = {};
+
+            const createRes1 = await Model.create({ v: 'throw', p2: true });
+
+            expect(createRes1.data).toBeNull();
+            expect(createRes1.error.payload).toMatchObject({
+              v: expect.objectContaining({
+                reasons: expect.arrayContaining(['validation failed']),
+              }),
+            });
+
+            expect(validatorRunCount).toMatchObject({
+              'p1-v': 1,
+            });
+
+            validatorRunCount = {};
+
+            const createRes2 = await Model.create({ d1: 'return error' });
+
+            expect(createRes2.data).toBeNull();
+            expect(createRes2.error.payload).toMatchObject({
+              d1: expect.objectContaining({
+                reasons: expect.arrayContaining(['error returned']),
+              }),
+            });
+
+            expect(validatorRunCount).toMatchObject({
+              'p1-v': 1,
+            });
+
+            validatorRunCount = {};
+
+            const createRes3 = await Model.create({
+              v: 'throw-parallel',
+              p2: true,
+            });
+
+            expect(createRes3.data).toBeNull();
+            expect(createRes3.error.payload).toMatchObject({
+              v: expect.objectContaining({
+                reasons: expect.arrayContaining(['validation failed']),
+              }),
+            });
+
+            expect(validatorRunCount).toMatchObject({
+              'p1-v': 1,
+              'p1-v-parallel': 2,
+            });
+
+            validatorRunCount = {};
+
+            const createRes4 = await Model.create({
+              v: 'return error-parallel',
+              p2: true,
+            });
+
+            expect(createRes4.data).toBeNull();
+            expect(createRes4.error.payload).toMatchObject({
+              v: expect.objectContaining({
+                reasons: expect.arrayContaining(['error returned']),
+              }),
+            });
+
+            expect(validatorRunCount).toMatchObject({
+              'p1-v': 1,
+              'p1-v-parallel': 2,
+            });
+
+            validatorRunCount = {};
+
+            const updateRes = await Model.update({}, { v: 'valid' });
+            expect(updateRes.error).toBeNull();
+
+            expect(validatorRunCount).toMatchObject({
+              'p1-v': 2,
+              'p1-v-parallel': 2,
+              'p1-v-parallel-1': 2,
+            });
+
+            validatorRunCount = {};
+
+            const updateRes1 = await Model.update({}, { v: 'throw' });
+            expect(updateRes1.data).toBeNull();
+            expect(updateRes1.error.payload).toMatchObject({
+              v: expect.objectContaining({
+                reasons: expect.arrayContaining(['validation failed']),
+              }),
+            });
+
+            expect(validatorRunCount).toMatchObject({
+              'p1-v': 1,
+            });
+
+            validatorRunCount = {};
+
+            const updateRes2 = await Model.update({}, { d1: 'return error' });
+
+            expect(updateRes2.data).toBeNull();
+            expect(updateRes2.error.payload).toMatchObject({
+              d1: expect.objectContaining({
+                reasons: expect.arrayContaining(['error returned']),
+              }),
+            });
+
+            expect(validatorRunCount).toMatchObject({
+              'p1-v': 1,
+            });
+
+            validatorRunCount = {};
+
+            const updateRes3 = await Model.update(
+              {},
+              {
+                v: 'throw-parallel',
+                p2: true,
+              },
+            );
+
+            expect(updateRes3.data).toBeNull();
+            expect(updateRes3.error.payload).toMatchObject({
+              v: expect.objectContaining({
+                reasons: expect.arrayContaining(['validation failed']),
+              }),
+            });
+
+            expect(validatorRunCount).toMatchObject({
+              'p1-v': 1,
+              'p1-v-parallel': 2,
+            });
+
+            validatorRunCount = {};
+
+            const updateRes4 = await Model.update(
+              {},
+              {
+                v: 'return error-parallel',
+                p2: true,
+              },
+            );
+
+            expect(updateRes4.data).toBeNull();
+            expect(updateRes4.error.payload).toMatchObject({
+              v: expect.objectContaining({
+                reasons: expect.arrayContaining(['error returned']),
+              }),
+            });
+
+            expect(validatorRunCount).toMatchObject({
+              'p1-v': 1,
+              'p1-v-parallel': 2,
             });
           });
         });

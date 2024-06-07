@@ -2,7 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
-# v1.4.3 <small><sup>2024-06-03</sup></small>
+# v1.4.4 <small><sup>2024-06-07</sup></small>
+
+- Add support for parallel post-validators
+
+# v1.4.3 <small><sup>2024-06-06</sup></small>
 
 - Fix bug causing post-validation array to continue runnning after first errors are returned
 

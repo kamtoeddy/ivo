@@ -643,12 +643,32 @@ class ModelTool<
             validator,
           });
 
-        for (const v of validator) {
+        for (const v1 of validator) {
+          if (Array.isArray(v1)) {
+            const summary = this._getMutableSummary(data, isUpdate);
+
+            const results = await Promise.all(
+              v1.map(
+                async (v2) =>
+                  await this._handlePostValidator({
+                    errorTool,
+                    propsProvided,
+                    summary,
+                    validator: v2,
+                  }),
+              ),
+            );
+
+            if (results.some((r) => r.success == false)) break;
+
+            continue;
+          }
+
           const { success } = await this._handlePostValidator({
             errorTool,
             propsProvided,
             summary: this._getMutableSummary(data, isUpdate),
-            validator: v,
+            validator: v1,
           });
 
           if (!success) break;
