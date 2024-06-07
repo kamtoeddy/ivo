@@ -35,9 +35,9 @@ import {
   LIFE_CYCLES,
   PartialContext,
   PostValidationConfig,
-  PostValidator,
   Context,
   MutableSummary,
+  PostValidator,
 } from './types';
 
 export const defaultOptions = {
@@ -53,15 +53,18 @@ type InvalidPostValidateConfigMessage =
   | 'default'
   | 'validator-array-cannot-be-empty'
   | 'validator-must-be-function'
+  | 'validator-must-be-function-or-array'
   | 'properties-must-be-input-array';
 
 export function getInvalidPostValidateConfigMessage(
   index?: number,
   message: InvalidPostValidateConfigMessage = 'default',
   secondIndex?: number,
+  thirdIndex?: number,
 ) {
   const hasIndex = typeof index == 'number',
-    hasSecondIndex = typeof secondIndex == 'number';
+    hasSecondIndex = typeof secondIndex == 'number',
+    hasThirdIndex = typeof thirdIndex == 'number';
 
   if (message == 'default')
     return `Config${
@@ -78,14 +81,15 @@ export function getInvalidPostValidateConfigMessage(
       hasIndex ? `Config at index ${index}:  ` : ''
     }"validator" cannot be an empty array`;
 
-  if (hasSecondIndex)
-    return `${
-      hasIndex ? `Config at index ${index}:  ` : ''
-    }"validator" at index ${secondIndex} must be a function`;
+  if (message == 'validator-must-be-function')
+    if (hasThirdIndex)
+      return `${
+        hasIndex ? `Config at index ${index}:  ` : ''
+      }"validator" at index [${secondIndex}][${thirdIndex}] must be a function`;
 
-  return `${
-    hasIndex ? `Config at index ${index}:  ` : ''
-  }"validator" must be a function or array of functions`;
+  return `${hasIndex ? `Config at index ${index}:  ` : ''}"validator" ${
+    hasSecondIndex ? `at index ${secondIndex} ` : ''
+  }must be a function or array of functions`;
 }
 
 type InvalidOnSuccessConfigMessage =
@@ -149,7 +153,7 @@ export abstract class SchemaCore<
   ErrorTool extends IErrorTool<any>,
 > {
   protected _definitions = {} as ns.Definitions_<Input, Output>;
-  protected _options: ns.InternalOptions<Input, Output, CtxOptions>;
+  protected _options: ns.InternalOptions<Input, Output, CtxOptions, ErrorTool>;
 
   // contexts & values
   protected context = {} as Context<Input, Output, CtxOptions>;
@@ -169,7 +173,12 @@ export abstract class SchemaCore<
     string,
     {
       index: number;
-      validators: PostValidator<Input, Output, any, CtxOptions>[];
+      validators: PostValidationConfig<
+        Input,
+        Output,
+        any,
+        CtxOptions
+      >['validator'];
     }
   >();
   protected readonly propToPostValidationConfigIDsMap = new Map<
@@ -1450,7 +1459,10 @@ export abstract class SchemaCore<
     if (reasons.length) return { valid, reason: reasons };
 
     if (Array.isArray(value.validator)) {
-      const validators = value.validator as any[];
+      const validators = value.validator as Exclude<
+        PostValidationConfig<Input, Output, any, CtxOptions>['validator'],
+        PostValidator<Input, Output, any, CtxOptions>
+      >;
 
       if (!validators.length)
         return {
@@ -1464,11 +1476,32 @@ export abstract class SchemaCore<
       const reasons: string[] = [];
 
       validators.forEach((validator, i) => {
-        if (!isFunctionLike(validator))
+        if (Array.isArray(validator)) {
+          validator.forEach((v, i2) => {
+            if (!isFunctionLike(v))
+              reasons.push(
+                getInvalidPostValidateConfigMessage(
+                  index,
+                  'validator-must-be-function',
+                  i,
+                  i2,
+                ),
+              );
+          });
+
+          if (!validator.length)
+            return reasons.push(
+              getInvalidPostValidateConfigMessage(
+                index,
+                'validator-array-cannot-be-empty',
+                i,
+              ),
+            );
+        } else if (!isFunctionLike(validator))
           reasons.push(
             getInvalidPostValidateConfigMessage(
               index,
-              'validator-must-be-function',
+              'validator-must-be-function-or-array',
               i,
             ),
           );
@@ -1611,7 +1644,7 @@ export abstract class SchemaCore<
 
     this.postValidationConfigMap.set(sortedPropsId, {
       index,
-      validators: toArray(validator),
+      validators: validator,
     });
 
     return { valid: true };
