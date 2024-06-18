@@ -109,6 +109,46 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
             }
           });
 
+          it("should reject 'postValidate' has any repeated properties", () => {
+            const toFail = fx(
+              getValidSchema(
+                {},
+                {
+                  p1: { default: true, validator() {} },
+                  p2: { default: true, validator() {} },
+                },
+              ),
+              {
+                postValidate: {
+                  properties: [
+                    'propertyName1',
+                    'propertyName2',
+                    'propertyName1',
+                  ],
+                  validator: () => {},
+                },
+              },
+            );
+
+            expectFailure(toFail);
+
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err).toMatchObject({
+                message: ERRORS.INVALID_SCHEMA,
+                payload: {
+                  postValidate: expect.arrayContaining([
+                    getInvalidPostValidateConfigMessage(
+                      undefined,
+                      'properties-array-must-contain-unique-values',
+                    ),
+                  ]),
+                },
+              });
+            }
+          });
+
           describe("should reject if 'properties' is not an array or does not contain valid input keys of schema", () => {
             const commonError = [
               '"properties" must be an array of at least 2 input properties of your schema',
@@ -448,6 +488,45 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                 payload: {
                   postValidate: expect.arrayContaining(reasons),
                 },
+              });
+            }
+          });
+
+          it("should reject 'postValidate' has any repeated properties", () => {
+            const configs = [
+              {
+                properties: ['propertyName1', 'propertyName2', 'propertyName2'],
+                validator,
+              },
+              { properties: ['p1', 'p1', 'p2'], validator },
+            ];
+
+            const reasons = configs.map((_, i) =>
+              getInvalidPostValidateConfigMessage(
+                i,
+                'properties-array-must-contain-unique-values',
+              ),
+            );
+
+            const toFail = fx(
+              getValidSchema(
+                {},
+                {
+                  p1: { default: true, validator() {} },
+                  p2: { default: true, validator() {} },
+                },
+              ),
+              { postValidate: configs },
+            );
+
+            expectFailure(toFail);
+
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err).toMatchObject({
+                message: ERRORS.INVALID_SCHEMA,
+                payload: { postValidate: expect.arrayContaining(reasons) },
               });
             }
           });
