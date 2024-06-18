@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# v1.4.5 <small><sup>2024-06-18</sup></small>
+
+- Make sure duplicate properties are rejected in post-validators
+
 # v1.4.4 <small><sup>2024-06-07</sup></small>
 
 - Add support for parallel post-validators

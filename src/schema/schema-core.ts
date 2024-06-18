@@ -54,7 +54,8 @@ type InvalidPostValidateConfigMessage =
   | 'validator-array-cannot-be-empty'
   | 'validator-must-be-function'
   | 'validator-must-be-function-or-array'
-  | 'properties-must-be-input-array';
+  | 'properties-must-be-input-array'
+  | 'properties-array-must-contain-unique-values';
 
 export function getInvalidPostValidateConfigMessage(
   index?: number,
@@ -75,6 +76,11 @@ export function getInvalidPostValidateConfigMessage(
     return `${
       hasIndex ? `Config at index ${index}:  ` : ''
     }"properties" must be an array of at least 2 input properties of your schema`;
+
+  if (message == 'properties-array-must-contain-unique-values')
+    return `${
+      hasIndex ? `Config at index ${index}:  ` : ''
+    }"properties" array must contain unique values`;
 
   if (message == 'validator-array-cannot-be-empty')
     return `${
@@ -1442,6 +1448,15 @@ export abstract class SchemaCore<
         reason: getInvalidPostValidateConfigMessage(
           index,
           'properties-must-be-input-array',
+        ),
+      };
+
+    if (properties.length < value.properties.length)
+      return {
+        valid,
+        reason: getInvalidPostValidateConfigMessage(
+          index,
+          'properties-array-must-contain-unique-values',
         ),
       };
 
