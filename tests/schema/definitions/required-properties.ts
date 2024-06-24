@@ -136,44 +136,41 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
         callsPerProp[prop] = true;
       }
 
-      const Book = new Schema(
-        {
-          bookId: { required: true, validator },
-          isPublished: { default: false, validator },
-          price: {
-            default: null,
-            required({ context: { isPublished, price } }: any) {
-              const isRequired = isPublished && price == null;
-              recordCalls('price');
-              return [isRequired, 'A price is required to publish a book!'];
-            },
-            validator: validatePrice,
+      const Book = new Schema({
+        bookId: { required: true, validator },
+        isPublished: { default: false, validator },
+        price: {
+          default: null,
+          required({ context: { isPublished, price } }: any) {
+            const isRequired = isPublished && price == null;
+            recordCalls('price');
+            return [isRequired, 'A price is required to publish a book!'];
           },
-          priceReadonly: {
-            default: null,
-            readonly: true,
-            required({ context: { price, priceReadonly } }: any) {
-              const isRequired = price == 101 && priceReadonly == null;
-              recordCalls('priceReadonly');
-              return [
-                isRequired,
-                'A priceReadonly is required when price is 101!',
-              ];
-            },
-            validator: validatePrice,
-          },
-          priceRequiredWithoutMessage: {
-            default: null,
-            readonly: true,
-            required: ({ context: { price, priceReadonly } }: any) => {
-              recordCalls('priceRequiredWithoutMessage');
-              return price == 101 && priceReadonly == null;
-            },
-            validator: validatePrice,
-          },
+          validator: validatePrice,
         },
-        { errors: 'throw' },
-      ).getModel();
+        priceReadonly: {
+          default: null,
+          readonly: true,
+          required({ context: { price, priceReadonly } }: any) {
+            const isRequired = price == 101 && priceReadonly == null;
+            recordCalls('priceReadonly');
+            return [
+              isRequired,
+              'A priceReadonly is required when price is 101!',
+            ];
+          },
+          validator: validatePrice,
+        },
+        priceRequiredWithoutMessage: {
+          default: null,
+          readonly: true,
+          required: ({ context: { price, priceReadonly } }: any) => {
+            recordCalls('priceRequiredWithoutMessage');
+            return price == 101 && priceReadonly == null;
+          },
+          validator: validatePrice,
+        },
+      }).getModel();
 
       beforeEach(() => {
         callsPerProp = {};
@@ -218,24 +215,23 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
         });
 
         it('should reject if condition is not met at creation', async () => {
-          const toFail = () => Book.create({ bookId: 1, isPublished: true });
+          const { data, error } = await Book.create({
+            bookId: 1,
+            isPublished: true,
+          });
 
-          expectFailure(toFail, ERRORS.VALIDATION_ERROR);
-
-          try {
-            await toFail();
-          } catch (err: any) {
-            expect(err.payload).toEqual(
-              expect.objectContaining({
-                price: {
-                  reasons: expect.arrayContaining([
-                    'A price is required to publish a book!',
-                  ]),
-                  metadata: null,
-                },
-              }),
-            );
-          }
+          expect(data).toBeNull();
+          expect(error).toMatchObject({
+            message: ERRORS.VALIDATION_ERROR,
+            payload: {
+              price: {
+                reasons: expect.arrayContaining([
+                  'A price is required to publish a book!',
+                ]),
+                metadata: null,
+              },
+            },
+          });
 
           expect(callsPerProp).toEqual({
             price: true,
@@ -288,62 +284,53 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
         });
 
         it('should reject if condition is not met during updates', async () => {
-          const toFail = () =>
-            Book.update(
-              {
-                bookId: 1,
-                isPublished: false,
-                price: null,
-                priceReadonly: null,
+          const { data, error } = await Book.update(
+            {
+              bookId: 1,
+              isPublished: false,
+              price: null,
+              priceReadonly: null,
+            },
+            { isPublished: true },
+          );
+
+          expect(data).toBeNull();
+          expect(error).toMatchObject({
+            message: ERRORS.VALIDATION_ERROR,
+            payload: {
+              price: {
+                reasons: expect.arrayContaining([
+                  'A price is required to publish a book!',
+                ]),
+                metadata: null,
               },
-              { isPublished: true },
-            );
-
-          expectFailure(toFail, ERRORS.VALIDATION_ERROR);
-
-          try {
-            await toFail();
-          } catch (err: any) {
-            expect(err.payload).toEqual(
-              expect.objectContaining({
-                price: {
-                  reasons: expect.arrayContaining([
-                    'A price is required to publish a book!',
-                  ]),
-                  metadata: null,
-                },
-              }),
-            );
-          }
+            },
+          });
 
           expect(callsPerProp).toEqual({ price: true, priceReadonly: true });
         });
 
         it('should reject if condition is not met during updates of readonly', async () => {
-          const toFail = () => Book.update(book, { price: 101 });
+          const { data, error } = await Book.update(book, { price: 101 });
 
-          expectFailure(toFail, ERRORS.VALIDATION_ERROR);
-
-          try {
-            await toFail();
-          } catch (err: any) {
-            expect(err.payload).toEqual(
-              expect.objectContaining({
-                priceReadonly: {
-                  reasons: expect.arrayContaining([
-                    'A priceReadonly is required when price is 101!',
-                  ]),
-                  metadata: null,
-                },
-                priceRequiredWithoutMessage: {
-                  reasons: expect.arrayContaining([
-                    "'priceRequiredWithoutMessage' is required",
-                  ]),
-                  metadata: null,
-                },
-              }),
-            );
-          }
+          expect(data).toBeNull();
+          expect(error).toMatchObject({
+            message: ERRORS.VALIDATION_ERROR,
+            payload: {
+              priceReadonly: {
+                reasons: expect.arrayContaining([
+                  'A priceReadonly is required when price is 101!',
+                ]),
+                metadata: null,
+              },
+              priceRequiredWithoutMessage: {
+                reasons: expect.arrayContaining([
+                  "'priceRequiredWithoutMessage' is required",
+                ]),
+                metadata: null,
+              },
+            },
+          });
 
           expect(callsPerProp).toEqual({
             price: true,

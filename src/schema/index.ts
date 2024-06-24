@@ -312,8 +312,6 @@ class ModelTool<
   ) {
     if (data) await this._handleFailure(data, errorTool, virtuals);
 
-    if (this._options.errors === 'throw') throw errorTool.error;
-
     return {
       data: null,
       error: errorTool.data as ErrorTool['data'],

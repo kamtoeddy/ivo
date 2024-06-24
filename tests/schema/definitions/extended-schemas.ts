@@ -1,41 +1,8 @@
 import { describe, expect, it } from 'bun:test';
 
-import { VALIDATION_ERRORS } from '../../../dist';
-
-import { expectFailure } from '../_utils';
-
 export const Test_ExtendedSchemas = ({ Schema }: any) => {
   describe('Extended Schema', () => {
     describe('Options', () => {
-      describe('errors', () => {
-        it('should respect "errors" option from baseSchema if enabled', async () => {
-          const Model = new Schema(
-            { id: { constant: true, value: 1 } },
-            { errors: 'throw' },
-          )
-            .extend({ name: { default: '', validator: () => false } })
-            .getModel();
-
-          const toFail = () => Model.create({ name: 'lol' });
-
-          expectFailure(toFail, VALIDATION_ERRORS.VALIDATION_ERROR);
-        });
-
-        it('should respect overwritten "errors" option in child schema', async () => {
-          const Model = new Schema(
-            { id: { constant: true, value: 1 } },
-            { errors: 'silent' },
-          )
-            .extend({ name: { default: '', validator: () => false } })
-            .getModel();
-
-          const { data, error } = await Model.create({ name: 'lol' });
-
-          expect(data).toBeNull();
-          expect(error).not.toBeNull();
-        });
-      });
-
       describe('setMissingDefaultsOnUpdate', () => {
         it('should respect "setMissingDefaultsOnUpdate" option if enabled in base schema', async () => {
           const Model = new Schema(

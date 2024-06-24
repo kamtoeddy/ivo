@@ -11,7 +11,6 @@ const OrderItem = storeItemSchema
       price: { readonly: true, validator: validatePrice },
     },
     {
-      errors: 'throw',
       timestamps: true,
       remove: [
         '_readOnlyNoInit',

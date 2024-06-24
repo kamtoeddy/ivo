@@ -40,14 +40,13 @@ import {
   PostValidator,
 } from './types';
 
-export const defaultOptions = {
+export const defaultOptions: ns.Options<any, any, any, any, any> = {
   equalityDepth: 1,
   ErrorTool: DefaultErrorTool,
-  errors: 'silent',
   setMissingDefaultsOnUpdate: false,
   shouldUpdate: true,
   timestamps: false,
-} as ns.Options<any, any, any, any, any>;
+};
 
 type InvalidPostValidateConfigMessage =
   | 'default'
@@ -426,10 +425,6 @@ export abstract class SchemaCore<
           )
           .throw();
     }
-
-    if (isPropertyOf('errors', options))
-      if (!['silent', 'throw'].includes(options.errors!))
-        error.add('errors', "should be 'silent' or 'throw'").throw();
 
     if (isPropertyOf('onDelete', options)) {
       const isValid = this._areHandlersOk(options.onDelete, 'onDelete', true);

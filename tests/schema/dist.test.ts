@@ -10,7 +10,6 @@ import { Test_RequiredProperties } from './definitions/required-properties';
 import { Test_VirtualProperties } from './definitions/virtual-properties';
 import { Test_LifeCycleHandlers } from './definitions/life-cycle-handlers';
 import { Test_ShouldInitAndUpdateRules } from './definitions/should-init-and-update-rule';
-import { Test_SchemaErrors } from './options/errors';
 import { Test_SchemaOptionFormat } from './options/format';
 import { Test_SchemaTimestampOption } from './options/timestamps';
 import { Test_SchemaOnSuccess } from './options/on-success';
@@ -43,7 +42,6 @@ Test_VirtualProperties({ Schema, fx });
 Test_LifeCycleHandlers({ Schema, fx });
 Test_ShouldInitAndUpdateRules({ Schema, fx });
 
-Test_SchemaErrors({ Schema, fx });
 Test_SchemaEqualityDepth({ Schema, fx });
 Test_SchemaOnDelete({ Schema, fx });
 Test_SchemaOnSuccess({ Schema, fx });

@@ -775,65 +775,60 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
 
         let sanitizedValues: any = {};
 
-        const User = new Schema(
-          {
-            dependentSideInit: {
-              default: '',
-              dependsOn: ['virtualInit', 'virtualWithSanitizer'],
-              resolver({
-                context: { virtualInit, virtualWithSanitizer },
-              }: any) {
-                return virtualInit && virtualWithSanitizer ? 'both' : 'one';
-              },
-              onSuccess: onSuccess('dependentSideInit'),
+        const User = new Schema({
+          dependentSideInit: {
+            default: '',
+            dependsOn: ['virtualInit', 'virtualWithSanitizer'],
+            resolver({ context: { virtualInit, virtualWithSanitizer } }: any) {
+              return virtualInit && virtualWithSanitizer ? 'both' : 'one';
             },
-            dependentSideNoInit: {
-              default: '',
-              dependsOn: ['virtualNoInit', 'virtualWithSanitizerNoInit'],
-              resolver: () => 'changed',
-              onSuccess: onSuccess('dependentSideNoInit'),
-            },
-            name: { default: '' },
-            virtualInit: {
-              virtual: true,
-              onSuccess: onSuccess('virtualInit'),
-              validator: validateBoolean,
-            },
-            virtualNoInit: {
-              virtual: true,
-              shouldInit: false,
-              onSuccess: [
-                onSuccess('virtualNoInit'),
-                incrementOnSuccessStats('virtualNoInit'),
-              ],
-              validator: validateBoolean,
-            },
-            virtualWithSanitizer: {
-              virtual: true,
-              onSuccess: [
-                onSuccess('virtualWithSanitizer'),
-                incrementOnSuccessStats('virtualWithSanitizer'),
-                incrementOnSuccessStats('virtualWithSanitizer'),
-              ],
-              sanitizer: sanitizerOf('virtualWithSanitizer', 'sanitized'),
-              validator: validateBoolean,
-            },
-            virtualWithSanitizerNoInit: {
-              virtual: true,
-              shouldInit: false,
-              onSuccess: [
-                onSuccess('virtualWithSanitizerNoInit'),
-                incrementOnSuccessStats('virtualWithSanitizerNoInit'),
-              ],
-              sanitizer: sanitizerOf(
-                'virtualWithSanitizerNoInit',
-                'sanitized no init',
-              ),
-              validator: validateBoolean,
-            },
+            onSuccess: onSuccess('dependentSideInit'),
           },
-          { errors: 'throw' },
-        ).getModel();
+          dependentSideNoInit: {
+            default: '',
+            dependsOn: ['virtualNoInit', 'virtualWithSanitizerNoInit'],
+            resolver: () => 'changed',
+            onSuccess: onSuccess('dependentSideNoInit'),
+          },
+          name: { default: '' },
+          virtualInit: {
+            virtual: true,
+            onSuccess: onSuccess('virtualInit'),
+            validator: validateBoolean,
+          },
+          virtualNoInit: {
+            virtual: true,
+            shouldInit: false,
+            onSuccess: [
+              onSuccess('virtualNoInit'),
+              incrementOnSuccessStats('virtualNoInit'),
+            ],
+            validator: validateBoolean,
+          },
+          virtualWithSanitizer: {
+            virtual: true,
+            onSuccess: [
+              onSuccess('virtualWithSanitizer'),
+              incrementOnSuccessStats('virtualWithSanitizer'),
+              incrementOnSuccessStats('virtualWithSanitizer'),
+            ],
+            sanitizer: sanitizerOf('virtualWithSanitizer', 'sanitized'),
+            validator: validateBoolean,
+          },
+          virtualWithSanitizerNoInit: {
+            virtual: true,
+            shouldInit: false,
+            onSuccess: [
+              onSuccess('virtualWithSanitizerNoInit'),
+              incrementOnSuccessStats('virtualWithSanitizerNoInit'),
+            ],
+            sanitizer: sanitizerOf(
+              'virtualWithSanitizerNoInit',
+              'sanitized no init',
+            ),
+            validator: validateBoolean,
+          },
+        }).getModel();
 
         function sanitizerOf(prop: string, value: any) {
           return () => {

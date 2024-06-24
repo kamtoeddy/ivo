@@ -29,7 +29,7 @@ describe('Testing non-inherited properties for StoreItemChild', () => {
       name: 'Guiness ',
     } as any);
 
-    expect(update!.childID).toBe(undefined);
+    expect(update!.childID).toBe(undefined as any);
     expect(update).toMatchObject({ name: 'Guiness' });
     expect(update).toHaveProperty('updatedAt');
   });

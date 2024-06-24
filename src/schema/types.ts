@@ -622,7 +622,6 @@ namespace NS {
   > = {
     ErrorTool: ErrorToolClass<ErrorTool, CtxOptions>;
     equalityDepth: number;
-    errors: 'silent' | 'throw';
     onDelete?:
       | DeleteHandler<Output, CtxOptions>
       | ArrayOfMinSizeOne<DeleteHandler<Output, CtxOptions>>;
@@ -648,7 +647,6 @@ namespace NS {
   > = {
     ErrorTool?: ErrorToolClass<ErrorTool, CtxOptions>;
     equalityDepth?: number;
-    errors?: 'silent' | 'throw';
     onDelete?:
       | DeleteHandler<Output, CtxOptions>
       | ArrayOfMinSizeOne<DeleteHandler<Output, CtxOptions>>;
@@ -790,7 +788,6 @@ type DefinitionRule = (typeof DEFINITION_RULES)[number];
 const ALLOWED_OPTIONS: NS.OptionsKey<any, any, any, any>[] = [
   'ErrorTool',
   'equalityDepth',
-  'errors',
   'onDelete',
   'onSuccess',
   'postValidate',
