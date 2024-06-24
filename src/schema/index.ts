@@ -1284,13 +1284,12 @@ class ModelTool<
     const error2 = await this._handleSecondaryValidations(data);
     if (error2.isLoaded) return this._handleError(error2, data, virtuals);
 
-    await this._handleSanitizationOfVirtuals(data);
-
-    data = await this._resolveDependentChanges(data, this._getPartialContext());
-
     const postValidationError = await this._handlePostValidations(data);
     if (postValidationError.isLoaded)
       return this._handleError(postValidationError, data, virtuals);
+
+    await this._handleSanitizationOfVirtuals(data);
+    data = await this._resolveDependentChanges(data, this._getPartialContext());
 
     const finalData = this._useConfigProps(data);
 
@@ -1380,6 +1379,13 @@ class ModelTool<
     const error2 = await this._handleSecondaryValidations(updates, true);
     if (error2.isLoaded) return this._handleError(error2, updates, virtuals);
 
+    const postValidationError = await this._handlePostValidations(
+      updates,
+      true,
+    );
+    if (postValidationError.isLoaded)
+      return this._handleError(postValidationError, updates, virtuals);
+
     await this._handleSanitizationOfVirtuals(updates, true);
 
     updates = await this._resolveDependentChanges(
@@ -1387,13 +1393,6 @@ class ModelTool<
       this._getPartialContext(),
       true,
     );
-
-    const postValidationError = await this._handlePostValidations(
-      updates,
-      true,
-    );
-    if (postValidationError.isLoaded)
-      return this._handleError(postValidationError, updates, virtuals);
 
     if (!Object.keys(updates).length) {
       errorNothingToUpdate.setMessage(VALIDATION_ERRORS.NOTHING_TO_UPDATE);
