@@ -3,9 +3,7 @@ import {
   IErrorTool,
   IValidationError,
   FieldKey,
-  VALIDATION_ERRORS
 } from '../../../../dist';
-import { Ctx_Options } from './types';
 
 type vError<Keys> = {
   field: Keys;
@@ -16,31 +14,13 @@ type vError<Keys> = {
 
 type ErrorData<Keys> = { errors: vError<Keys>[] };
 
-const { VALIDATION_ERROR } = VALIDATION_ERRORS;
-
 export class VError<Keys> implements IErrorTool<ErrorData<Keys>> {
   private _errors = new Map<FieldKey, vError<Keys>>();
 
-  constructor(public message, private ctxOptions: Ctx_Options) {}
-
-  private getVMessage() {
-    const { lang } = this.ctxOptions;
-
-    const message =
-      this.message == VALIDATION_ERROR ? 'validation' : 'no-update';
-
-    return `${message}${lang ? ' -' + lang : ''}`;
-  }
+  constructor(public message) {}
 
   get data(): IValidationError<ErrorData<Keys>> {
     return { message: this.message, errors: Array.from(this._errors.values()) };
-  }
-
-  get error() {
-    return new ErrorSummary(
-      `VError - ${this.getVMessage()} 😢`,
-      this.data.errors
-    );
   }
 
   get fields() {
@@ -65,16 +45,10 @@ export class VError<Keys> implements IErrorTool<ErrorData<Keys>> {
   }
 
   setMessage(
-    message: 'INVALID_DATA' | 'NOTHING_TO_UPDATE' | 'VALIDATION_ERROR'
+    message: 'INVALID_DATA' | 'NOTHING_TO_UPDATE' | 'VALIDATION_ERROR',
   ) {
     this.message = message;
 
     return this;
-  }
-}
-
-class ErrorSummary extends Error {
-  constructor(public message: string, public errors: any) {
-    super(message);
   }
 }

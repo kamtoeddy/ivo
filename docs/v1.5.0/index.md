@@ -103,7 +103,6 @@ interface ErrorToolClass<ErrorTool, CtxOptions extends ObjectType> {
 type SchemaOptions = {
   equalityDepth?: number
   errorTool?: ErrorToolClass // more on this below 👇
-  errors?: 'silent' | 'throw'
   onDelete?: DeleteListener | DeleteListener[]
   onSuccess?: SuccessListener | SuccessListener[]
   postValidate?: PostValidationConfig | PostValidationConfig[]

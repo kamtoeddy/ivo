@@ -237,6 +237,17 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
           prop3: true,
         });
       });
+
+      it('should not trigger any handlers if values are invalid', async () => {
+        const invalidData = [1, -10, 0, false, true, '', 'true', null];
+
+        for (const val of invalidData) {
+          await Model.delete(val, contextOptions);
+
+          expect(cxtOptions).toEqual({});
+          expect(propChangeMap).toEqual({});
+        }
+      });
     });
 
     describe('onFailure', () => {

@@ -3,10 +3,10 @@ import {
   ErrorPayload,
   FieldError,
   ValidationErrorMessage,
-  IErrorTool
+  IErrorTool,
 } from './types';
 
-export { DefaultErrorTool, ValidationError };
+export { DefaultErrorTool };
 
 class DefaultErrorTool<PayloadKeys extends FieldKey = FieldKey>
   implements IErrorTool<{ payload: ErrorPayload<PayloadKeys> }>
@@ -17,10 +17,6 @@ class DefaultErrorTool<PayloadKeys extends FieldKey = FieldKey>
 
   get data() {
     return { message: this.message, payload: sortKeys(this._payload) };
-  }
-
-  get error() {
-    return new ValidationError(this.data);
   }
 
   get fields() {
@@ -52,7 +48,7 @@ class DefaultErrorTool<PayloadKeys extends FieldKey = FieldKey>
     if (metadata && !isEqual(currentValues?.metadata, metadata))
       currentValues.metadata = {
         ...(currentValues?.metadata ?? {}),
-        ...metadata
+        ...metadata,
       };
 
     this._payload[field] = currentValues;
@@ -64,20 +60,5 @@ class DefaultErrorTool<PayloadKeys extends FieldKey = FieldKey>
     this.message = message;
 
     return this;
-  }
-}
-
-class ValidationError<OutputKeys extends FieldKey> extends Error {
-  payload: ErrorPayload<OutputKeys> = {};
-
-  constructor({
-    message,
-    payload = {}
-  }: {
-    message: ValidationErrorMessage;
-    payload?: ErrorPayload<OutputKeys>;
-  }) {
-    super(message);
-    this.payload = payload;
   }
 }

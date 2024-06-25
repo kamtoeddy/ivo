@@ -1302,11 +1302,7 @@ class ModelTool<
   async delete(values: Output, contextOptions: Partial<CtxOptions> = {}) {
     const ctxOptions = this._initializeContextOptions(contextOptions);
 
-    if (!areValuesOk(values))
-      throw new this._options.ErrorTool(
-        VALIDATION_ERRORS.VALIDATION_ERROR,
-        ctxOptions,
-      ).error;
+    if (!areValuesOk(values)) return;
 
     this._setValues(values, { allowVirtuals: false, allowTimestamps: true });
 

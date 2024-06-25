@@ -1,11 +1,10 @@
 import { beforeAll, describe, it, expect } from 'bun:test';
 
 import { ERRORS } from '../../dist';
-import { expectFailure, expectNoFailure } from './_utils';
+import { expectNoFailure } from './_utils';
 
 export const valuesParsing_Tests = ({ Schema }: any) => {
   describe('Values Parsing', () => {
-    const errorMessage = { message: ERRORS.VALIDATION_ERROR, payload: {} };
     const validData = { age: 15, name: 'Frank' };
     const invalidData = [1, -10, 0, false, true, '', 'true', null];
 
@@ -64,20 +63,6 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
           expect(error).toBeNull();
 
           expect(data).toEqual({ age: 10, id: 1, name: '' });
-        }
-      });
-
-      it('should reject invalid data during deletion', async () => {
-        for (const val of invalidData) {
-          const operation = () => User.delete(val);
-
-          expectFailure(operation, ERRORS.VALIDATION_ERROR);
-
-          try {
-            await operation();
-          } catch (err: any) {
-            expect(err).toMatchObject(errorMessage);
-          }
         }
       });
 

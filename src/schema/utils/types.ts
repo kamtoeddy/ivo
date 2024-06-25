@@ -10,14 +10,14 @@ export type {
   InputFieldError,
   InputPayload,
   IValidationError,
-  ValidationErrorMessage
+  ValidationErrorMessage,
 };
 
 const SCHEMA_ERRORS = { INVALID_SCHEMA: 'INVALID_SCHEMA' } as const;
 
 const VALIDATION_ERRORS = {
   NOTHING_TO_UPDATE: 'NOTHING_TO_UPDATE',
-  VALIDATION_ERROR: 'VALIDATION_ERROR'
+  VALIDATION_ERROR: 'VALIDATION_ERROR',
 } as const;
 
 const ERRORS = { ...SCHEMA_ERRORS, ...VALIDATION_ERRORS } as const;
@@ -52,9 +52,6 @@ type IValidationError<ExtraData extends ObjectType = {}> = ({
 interface IErrorTool<ExtraData extends ObjectType = {}> {
   /** return what your validation error should look like from this method */
   get data(): IValidationError<ExtraData>;
-
-  /** return a custom error that will be thrown when validation fails & Schema.option.errors == 'throws' */
-  get error(): Error;
 
   /** array of fields that have failed validation */
   get fields(): string[];
