@@ -9,18 +9,15 @@ export const Test_ConstantProperties = ({ Schema, fx }: any) => {
       let User: any, user: any;
 
       beforeAll(async () => {
-        User = new Schema(
-          {
-            asyncConstant: { constant: true, value: asyncSetter },
-            id: {
-              constant: true,
-              value: (ctx: any) => (ctx?.id === 'id' ? 'id-2' : 'id'),
-            },
-            parentId: { constant: true, value: 'parent id' },
-            laxProp: { default: 0 },
+        User = new Schema({
+          asyncConstant: { constant: true, value: asyncSetter },
+          id: {
+            constant: true,
+            value: (ctx: any) => (ctx?.id === 'id' ? 'id-2' : 'id'),
           },
-          { errors: 'throw' },
-        ).getModel();
+          parentId: { constant: true, value: 'parent id' },
+          laxProp: { default: 0 },
+        }).getModel();
 
         function asyncSetter() {
           return Promise.resolve(20);
@@ -46,10 +43,11 @@ export const Test_ConstantProperties = ({ Schema, fx }: any) => {
         expect(update).toEqual({ laxProp: 'update id' });
       });
 
-      it('should ignore constants during updates', () => {
-        const toFail = User.update(user, { id: 25 });
+      it('should ignore constants during updates', async () => {
+        const { data, error } = await User.update(user, { id: 25 });
 
-        expect(toFail).rejects.toThrow(ERRORS.NOTHING_TO_UPDATE);
+        expect(data).toBeNull();
+        expect(error).toMatchObject({ message: ERRORS.NOTHING_TO_UPDATE });
       });
 
       it('should accept constant(true) & value(any | ()=>any)', () => {

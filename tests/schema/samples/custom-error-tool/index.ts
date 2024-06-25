@@ -2,7 +2,7 @@ import { KeyOf, Schema } from '../../../../dist';
 import { VError } from './error-tool';
 import { Ctx_Options, EInput, EOutput, Input, Output } from './types';
 
-export { UserModel, UserModel_ErrorThrow, EUserModel, EUserModel_ErrorThrow };
+export { UserModel, EUserModel };
 
 const userSchema = new Schema<
   Input,
@@ -41,9 +41,6 @@ const userSchema = new Schema<
 );
 
 const UserModel = userSchema.getModel();
-const UserModel_ErrorThrow = userSchema
-  .extend({}, { errors: 'throw' })
-  .getModel();
 
 const EUserSchema = userSchema.extend<EInput, EOutput>(
   {
@@ -58,8 +55,3 @@ const EUserSchema = userSchema.extend<EInput, EOutput>(
 );
 
 const EUserModel = EUserSchema.getModel();
-
-const EUserModel_ErrorThrow = EUserSchema.extend(
-  {},
-  { errors: 'throw' },
-).getModel();

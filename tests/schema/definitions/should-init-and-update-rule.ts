@@ -235,29 +235,26 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
         let Model: any;
 
         beforeAll(() => {
-          Model = new Schema(
-            {
-              dependent: {
-                default: '',
-                dependsOn: 'virtual',
-                resolver: () => 'changed',
-                onSuccess: onSuccess('dependent'),
-              },
-              laxProp: { default: '' },
-              virtual: {
-                virtual: true,
-                shouldInit: ({ laxProp }: any) => laxProp === 'allow virtual',
-                onSuccess: [
-                  onSuccess('virtual'),
-                  incrementOnSuccessStats('virtual'),
-                  incrementOnSuccessStats('virtual'),
-                ],
-                sanitizer: sanitizerOf('virtual', 'sanitized'),
-                validator: validateBoolean,
-              },
+          Model = new Schema({
+            dependent: {
+              default: '',
+              dependsOn: 'virtual',
+              resolver: () => 'changed',
+              onSuccess: onSuccess('dependent'),
             },
-            { errors: 'throw' },
-          ).getModel();
+            laxProp: { default: '' },
+            virtual: {
+              virtual: true,
+              shouldInit: ({ laxProp }: any) => laxProp === 'allow virtual',
+              onSuccess: [
+                onSuccess('virtual'),
+                incrementOnSuccessStats('virtual'),
+                incrementOnSuccessStats('virtual'),
+              ],
+              sanitizer: sanitizerOf('virtual', 'sanitized'),
+              validator: validateBoolean,
+            },
+          }).getModel();
 
           function sanitizerOf(prop: string, value: any) {
             return () => {

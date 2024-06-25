@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+# v1.5.0 <small><sup>2024-06-25</sup></small>
+
+- Make onFailure handlers to be triggered manually
+- Removed `error: "silent" | "throw"` option from SchemaOptions. All errors are now treated as values and ivo will only throw if there is a **SchemaError**
+- Make sure sanitization of virtuals and resolvement of dependent properties happen after post-validation
+
 # v1.4.5 <small><sup>2024-06-18</sup></small>
 
 - Make sure duplicate properties are rejected in post-validators

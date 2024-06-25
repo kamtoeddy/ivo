@@ -57,7 +57,6 @@ const storeItemSchema = new Schema<StoreItemInput, StoreItem>(
     },
   },
   {
-    errors: 'throw',
     onSuccess,
     timestamps: { createdAt: 'c_At', updatedAt: 'u_At' },
   },

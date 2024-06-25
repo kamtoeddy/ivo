@@ -46,23 +46,19 @@ export const CommonInheritanceTest = (
       });
 
       it('should reject missing readonly field', async () => {
-        const { id, ...testData1 } = testData;
+        const { id, ...testData1 } = testData,
+          { data, error } = await Model.create(testData1);
 
-        const createWithoutReadonly = async () => await Model.create(testData1);
-
-        await expect(createWithoutReadonly()).rejects.toThrow(
-          ERRORS.VALIDATION_ERROR,
-        );
+        expect(data).toBeNull();
+        expect(error).toMatchObject({ message: ERRORS.VALIDATION_ERROR });
       });
 
       it('should reject missing required field', async () => {
-        const { name, ...testData1 } = testData;
+        const { name, ...testData1 } = testData,
+          { data, error } = await Model.create(testData1);
 
-        const createWithoutReadonly = async () => await Model.create(testData1);
-
-        await expect(createWithoutReadonly()).rejects.toThrow(
-          ERRORS.VALIDATION_ERROR,
-        );
+        expect(data).toBeNull();
+        expect(error).toMatchObject({ message: ERRORS.VALIDATION_ERROR });
       });
 
       it('should reject dependent properties', () => {
@@ -98,16 +94,16 @@ export const CommonInheritanceTest = (
         });
       });
 
-      it('should ignore properties that have not changed', () => {
-        const toFail = () =>
-          Model.update(item, {
-            name: 'beer',
-            price: 5,
-            measureUnit: 'bottle',
-            quantity: 100,
-          });
+      it('should ignore properties that have not changed', async () => {
+        const { data, error } = await Model.update(item, {
+          name: 'beer',
+          price: 5,
+          measureUnit: 'bottle',
+          quantity: 100,
+        });
 
-        expect(toFail).toThrow(ERRORS.NOTHING_TO_UPDATE);
+        expect(data).toBeNull();
+        expect(error).toMatchObject({ message: ERRORS.NOTHING_TO_UPDATE });
       });
 
       it('should update on virtuals', async () => {
@@ -148,30 +144,24 @@ export const CommonInheritanceTest = (
           _readOnlyLax2: 'haha',
         });
 
-        expect(update).toMatchObject({
-          _readOnlyLax2: 'haha',
-        });
+        expect(update).toMatchObject({ _readOnlyLax2: 'haha' });
 
-        const updateReadOnlyProperty = async () =>
-          await Model.update(
-            { ...item, ...update },
-            {
-              _readOnlyLax2: 'lax1 set again',
-            },
-          );
-
-        await expect(updateReadOnlyProperty()).rejects.toThrow(
-          ERRORS.NOTHING_TO_UPDATE,
+        const { data, error } = await Model.update(
+          { ...item, ...update },
+          { _readOnlyLax2: 'lax1 set again' },
         );
+
+        expect(data).toBeNull();
+        expect(error).toMatchObject({ message: ERRORS.NOTHING_TO_UPDATE });
       });
 
       it('should not update dependent properties', async () => {
-        const updateReadOnlyProperty = async () =>
-          await Model.update(item, { quantityChangeCounter: 0 });
+        const { data, error } = await Model.update(item, {
+          quantityChangeCounter: 0,
+        });
 
-        await expect(updateReadOnlyProperty()).rejects.toThrow(
-          ERRORS.NOTHING_TO_UPDATE,
-        );
+        expect(data).toBeNull();
+        expect(error).toMatchObject({ message: ERRORS.NOTHING_TO_UPDATE });
       });
 
       it('should update dependent properties on virtuals', async () => {
@@ -179,9 +169,7 @@ export const CommonInheritanceTest = (
           _virtualForDependentReadOnly: 'haha',
         });
 
-        expect(update).toMatchObject({
-          _dependentReadOnly: 1,
-        });
+        expect(update).toMatchObject({ _dependentReadOnly: 1 });
       });
 
       it('should not update readonly dependent properties that have changed', async () => {
@@ -189,28 +177,25 @@ export const CommonInheritanceTest = (
           _virtualForDependentReadOnly: 'haha',
         });
 
-        const updateToFail = async () => {
-          await Model.update(
-            { ...item, ...update },
-            {
-              _virtualForDependentReadOnly: 'haha',
-            },
-          );
-        };
+        const { data, error } = await Model.update(
+          { ...item, ...update },
+          {
+            _virtualForDependentReadOnly: 'haha',
+          },
+        );
 
-        await expect(updateToFail()).rejects.toThrow(ERRORS.NOTHING_TO_UPDATE);
+        expect(data).toBeNull();
+        expect(error).toMatchObject({ message: ERRORS.NOTHING_TO_UPDATE });
       });
 
       it('should not update readonly properties that have changed', async () => {
-        const updateReadOnlyProperty = async () =>
-          await Model.update(item, {
-            id: '2',
-            _readOnlyLax1: 'lax1 set again',
-          });
+        const { data, error } = await Model.update(item, {
+          id: '2',
+          _readOnlyLax1: 'lax1 set again',
+        });
 
-        await expect(updateReadOnlyProperty()).rejects.toThrow(
-          ERRORS.NOTHING_TO_UPDATE,
-        );
+        expect(data).toBeNull();
+        expect(error).toMatchObject({ message: ERRORS.NOTHING_TO_UPDATE });
       });
     });
   });
@@ -248,50 +233,47 @@ export const CommonInheritanceTest = (
   });
 
   describe(`user defined validation errors for '${schemaName}'`, () => {
-    it('should respect user defined error messages at creation', () => {
-      const failToCreate = async () => {
-        try {
-          await Model.create({ ...commonTestData, name: '', _laxProp: [] });
-        } catch (err: any) {
-          expect(err.message).toBe(ERRORS.VALIDATION_ERROR);
-          expect(err.payload).toMatchObject({
-            _laxProp: {
-              reasons: expect.arrayContaining([
-                'Invalid lax prop',
-                'Expected a string',
-              ]),
-            },
-            name: expect.objectContaining({
-              reasons: expect.arrayContaining(['too_short']),
-            }),
-          });
-        }
-      };
+    it('should respect user defined error messages at creation', async () => {
+      const { data, error } = await Model.create({
+        ...commonTestData,
+        name: '',
+        _laxProp: [],
+      });
 
-      failToCreate();
+      expect(data).toBeNull();
+      expect(error.message).toBe(ERRORS.VALIDATION_ERROR);
+      expect(error.payload).toMatchObject({
+        _laxProp: {
+          reasons: expect.arrayContaining([
+            'Invalid lax prop',
+            'Expected a string',
+          ]),
+        },
+        name: expect.objectContaining({
+          reasons: expect.arrayContaining(['too_short']),
+        }),
+      });
     });
 
-    it('should respect user defined error messages during updates', () => {
-      const failToUpdate = async () => {
-        try {
-          await Model.update(commonTestData, { name: '', _laxProp: [] });
-        } catch (err: any) {
-          expect(err.message).toBe(ERRORS.VALIDATION_ERROR);
-          expect(err.payload).toMatchObject({
-            _laxProp: {
-              reasons: expect.arrayContaining([
-                'Invalid lax prop',
-                'Expected a string',
-              ]),
-            },
-            name: expect.objectContaining({
-              reasons: expect.arrayContaining(['too_short']),
-            }),
-          });
-        }
-      };
+    it('should respect user defined error messages during updates', async () => {
+      const { data, error } = await Model.update(commonTestData, {
+        name: '',
+        _laxProp: [],
+      });
 
-      failToUpdate();
+      expect(data).toBeNull();
+      expect(error.message).toBe(ERRORS.VALIDATION_ERROR);
+      expect(error.payload).toMatchObject({
+        _laxProp: {
+          reasons: expect.arrayContaining([
+            'Invalid lax prop',
+            'Expected a string',
+          ]),
+        },
+        name: expect.objectContaining({
+          reasons: expect.arrayContaining(['too_short']),
+        }),
+      });
     });
   });
 };

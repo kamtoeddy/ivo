@@ -124,9 +124,11 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
       });
 
       it('should reject handlers that try to mutate the onSuccess ctx', async () => {
-        const { handleSuccess } = await Model.create(validData);
+        const { handleFailure, handleSuccess } = await Model.create(validData);
 
-        await handleSuccess?.();
+        expect(handleFailure).toBeNull();
+
+        await handleSuccess();
 
         expect(propChangeMap.onSuccess.constant).toBe(true);
         expect(ctxHasUpdateMethod).toEqual({ onSuccess: false });
@@ -142,7 +144,13 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
       });
 
       it('should reject handlers that try to mutate the onFailure(create) ctx', async () => {
-        await Model.create({ prop1: '', prop2: '', prop3: '' });
+        const { handleFailure } = await Model.create({
+          prop1: '',
+          prop2: '',
+          prop3: '',
+        });
+
+        await handleFailure();
 
         for (const prop of props)
           for (const rule of rules) {
@@ -155,7 +163,13 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
       });
 
       it('should reject handlers that try to mutate the onFailure(update) ctx', async () => {
-        await Model.update(validData, { prop1: '', prop2: '', prop3: '' });
+        const { handleFailure } = await Model.update(validData, {
+          prop1: '',
+          prop2: '',
+          prop3: '',
+        });
+
+        await handleFailure();
 
         for (const prop of props)
           for (const rule of rules) {
@@ -294,11 +308,13 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
         });
 
         describe('creation', () => {
-          it('should call onFailure handlers at creation', async () => {
-            const { error } = await Model.create(
+          it('should properly trigger onFailure handlers at creation', async () => {
+            const { error, handleFailure } = await Model.create(
               { prop1: false },
               contextOptions,
             );
+
+            await handleFailure();
 
             expect(error).toBeDefined();
             expect(cxtOptions).toEqual({
@@ -308,14 +324,16 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
             expect(onFailureCount).toEqual({ prop1: 1, prop2: 2 });
           });
 
-          it('should call onFailure handlers at creation with virtuals', async () => {
-            const { error } = await Model.create(
+          it('should properly trigger onFailure handlers at creation with virtuals', async () => {
+            const { error, handleFailure } = await Model.create(
               {
                 prop1: false,
                 virtualProp: 'Yes',
               },
               contextOptions,
             );
+
+            await handleFailure();
 
             expect(error).toBeDefined();
             expect(error).toBeDefined();
@@ -333,19 +351,21 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
         });
 
         describe('updates', () => {
-          it('should call onFailure handlers during updates', async () => {
-            const { error } = await Model.update(
+          it('should properly trigger onFailure handlers during updates', async () => {
+            const { error, handleFailure } = await Model.update(
               {},
               { prop1: '' },
               contextOptions,
             );
+
+            await handleFailure();
 
             expect(error).toBeDefined();
             expect(cxtOptions).toEqual({ prop1: contextOptions });
             expect(onFailureCount).toEqual({ prop1: 1 });
           });
 
-          it('should call onFailure handlers during updates with virtuals', async () => {
+          it('should properly trigger onFailure handlers during updates with virtuals', async () => {
             const data = [
               [
                 { virtualProp: '' },
@@ -362,7 +382,13 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
             for (const [changes, results, ctxOpts] of data) {
               onFailureCount = {};
 
-              const { error } = await Model.update({}, changes, contextOptions);
+              const { error, handleFailure } = await Model.update(
+                {},
+                changes,
+                contextOptions,
+              );
+
+              await handleFailure();
 
               expect(error).toBeDefined();
               expect(cxtOptions).toEqual(ctxOpts);
@@ -370,12 +396,14 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
             }
           });
 
-          it('should call onFailure handlers during updates & nothing to update', async () => {
-            const { error } = await Model.update(
+          it('should properly trigger onFailure handlers during updates & nothing to update', async () => {
+            const { error, handleFailure } = await Model.update(
               { prop1: 2 },
               { prop1: 35 },
               contextOptions,
             );
+
+            await handleFailure();
 
             expect(error).toBeDefined();
             expect(cxtOptions).toEqual({ prop1: contextOptions });
