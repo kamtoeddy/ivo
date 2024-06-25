@@ -306,42 +306,16 @@ class ModelTool<
   }
 
   private async _handleError(
+    data: Partial<Output>,
     errorTool: ErrorTool,
-    data?: Partial<Output>,
-    virtuals: KeyOf<Output>[] = [],
+    virtuals: KeyOf<Output>[],
   ) {
-    if (data) await this._handleFailure(data, errorTool, virtuals);
-
     return {
       data: null,
       error: errorTool.data as ErrorTool['data'],
+      handleFailure: this._makeHandleFailure(data, errorTool, virtuals),
       handleSuccess: null,
     };
-  }
-
-  private async _handleFailure(
-    data: Partial<Output>,
-    errorTool: ErrorTool,
-    virtuals: KeyOf<Output>[] = [],
-  ) {
-    let props = [...getKeysAsProps(data), ...errorTool.fields, ...virtuals];
-
-    props = Array.from(new Set(props));
-
-    const ctx = this._getContext();
-
-    const cleanups = props.map(async (prop) => {
-      const handlers = this._getHandlers<NS.FailureHandler<Input, Output>>(
-        prop,
-        'onFailure',
-      );
-
-      const _cleanups = handlers.map(async (handler) => await handler(ctx));
-
-      await Promise.allSettled(_cleanups);
-    });
-
-    await Promise.allSettled(cleanups);
   }
 
   private async _handleInvalidValue(
@@ -910,6 +884,29 @@ class ModelTool<
   private _isInputOrAlias = (prop: string) =>
     this._isVirtualAlias(prop) || this._isInputProp(prop);
 
+  private _makeHandleFailure(
+    data: Partial<Output>,
+    errorTool: ErrorTool,
+    virtuals: KeyOf<Output>[] = [],
+  ) {
+    const ctx = this._getContext(),
+      props = Array.from(
+        new Set([...getKeysAsProps(data), ...errorTool.fields, ...virtuals]),
+      );
+
+    let cleanups: NS.FailureHandler<Input, Output, {}>[] = [];
+
+    for (const prop of props)
+      cleanups = cleanups.concat(
+        this._getHandlers<NS.FailureHandler<Input, Output, {}>>(
+          prop,
+          'onFailure',
+        ),
+      );
+
+    return () => Promise.allSettled(cleanups.map(async (h) => await h(ctx)));
+  }
+
   private _makeHandleSuccess(data: Partial<Output>, isUpdate = false) {
     const partialCtx = this._getPartialContext(),
       successProps = getKeysAsProps(partialCtx),
@@ -1271,20 +1268,20 @@ class ModelTool<
       virtuals,
     } = await this._handleCreationPrimaryValidations(data, _input);
 
-    if (error.isLoaded) return this._handleError(error, data, virtuals);
+    if (error.isLoaded) return this._handleError(data, error, virtuals);
 
     data = dt;
 
     const requiredError = await this._handleRequiredBy(data);
     if (requiredError.isLoaded)
-      return this._handleError(requiredError, data, virtuals);
+      return this._handleError(data, requiredError, virtuals);
 
     const error2 = await this._handleSecondaryValidations(data);
-    if (error2.isLoaded) return this._handleError(error2, data, virtuals);
+    if (error2.isLoaded) return this._handleError(data, error2, virtuals);
 
     const postValidationError = await this._handlePostValidations(data);
     if (postValidationError.isLoaded)
-      return this._handleError(postValidationError, data, virtuals);
+      return this._handleError(data, postValidationError, virtuals);
 
     await this._handleSanitizationOfVirtuals(data);
     data = await this._resolveDependentChanges(data, this._getPartialContext());
@@ -1297,6 +1294,7 @@ class ModelTool<
     return {
       data: finalData as Output,
       error: null,
+      handleFailure: null,
       handleSuccess: this._makeHandleSuccess(finalData),
     };
   }
@@ -1348,7 +1346,7 @@ class ModelTool<
     );
 
     if (!areValuesOk(values) || !areValuesOk(changes))
-      return this._handleError(errorNothingToUpdate, {}, []);
+      return this._handleError({}, errorNothingToUpdate, []);
 
     this._setValues(values, { allowVirtuals: false, allowTimestamps: true });
 
@@ -1358,7 +1356,7 @@ class ModelTool<
     const _changes = this._cleanInput(changes);
 
     if (!(await this._isGloballyUpdatable(_changes)))
-      return this._handleError(errorNothingToUpdate);
+      return this._handleError({}, errorNothingToUpdate, []);
 
     const {
       error,
@@ -1366,23 +1364,23 @@ class ModelTool<
       virtuals,
     } = await this._handleUpdatePrimaryValidations(_changes);
 
-    if (error.isLoaded) return this._handleError(error, dt, virtuals);
+    if (error.isLoaded) return this._handleError(dt, error, virtuals);
 
     let updates = dt;
 
     const requiredErrorTool = await this._handleRequiredBy(updates, true);
     if (requiredErrorTool.isLoaded)
-      return this._handleError(requiredErrorTool, updates, virtuals);
+      return this._handleError(updates, requiredErrorTool, virtuals);
 
     const error2 = await this._handleSecondaryValidations(updates, true);
-    if (error2.isLoaded) return this._handleError(error2, updates, virtuals);
+    if (error2.isLoaded) return this._handleError(updates, error2, virtuals);
 
     const postValidationError = await this._handlePostValidations(
       updates,
       true,
     );
     if (postValidationError.isLoaded)
-      return this._handleError(postValidationError, updates, virtuals);
+      return this._handleError(updates, postValidationError, virtuals);
 
     await this._handleSanitizationOfVirtuals(updates, true);
 
@@ -1395,9 +1393,7 @@ class ModelTool<
     if (!Object.keys(updates).length) {
       errorNothingToUpdate.setMessage(VALIDATION_ERRORS.NOTHING_TO_UPDATE);
 
-      await this._handleFailure(updates, errorNothingToUpdate, virtuals);
-
-      return this._handleError(errorNothingToUpdate);
+      return this._handleError(updates, errorNothingToUpdate, virtuals);
     }
 
     if (this._options?.setMissingDefaultsOnUpdate)
@@ -1414,6 +1410,7 @@ class ModelTool<
     return {
       data: finalData as Partial<Output>,
       error: null,
+      handleFailure: null,
       handleSuccess: this._makeHandleSuccess(finalData, true),
     };
   }
