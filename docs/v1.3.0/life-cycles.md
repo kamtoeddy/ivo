@@ -174,7 +174,7 @@ function onDelete(ctx: DeletionContext<Output, CtxOptions>) {
 
 ### onFailure
 
-A void function or array of void functions(async / sync) you want to execute every time the **`create`** & **`update`** operations are unsuccessful. Default **[ ]**. They are expected to respect the `type HandlerWithSummary` as shown above
+A void function or array of void functions(async / sync) you want to execute every time the **`create`** & **`update`** operations are unsuccessful. Default **[ ]**. They are expected to respect the `type Handler` as shown above
 
 > N.B: They are only allowed on properties that support and have validators
 

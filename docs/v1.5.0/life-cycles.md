@@ -174,9 +174,19 @@ function onDelete(ctx: DeletionContext<Output, CtxOptions>) {
 
 ### onFailure
 
-A void function or array of void functions(async / sync) you want to execute every time the **`create`** & **`update`** operations are unsuccessful. Default **[ ]**. They are expected to respect the `type Handler` as shown above
+A function or array of functions(async / sync) you want to execute every time the **`create`** & **`update`** operations are unsuccessful. Default **[ ]**. They are expected to respect the `type Handler` as shown above
 
-> N.B: They are only allowed on properties that support and have validators
+> N.B: They are only allowed on properties that support and have validators.
+
+These handlers have to be triggered manually by invoking the handleFailure method of the operation's results object returned by the create & update methods of your models.
+
+> If the operation is successful, `error` and `handleFailure` will be `null`
+
+```js
+const { error, handleFailure } = await UserModel.create(userData);
+
+if (error) await handleFailure();
+```
 
 ### onSuccess
 
