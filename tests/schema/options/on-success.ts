@@ -8,8 +8,8 @@ import {
   validator,
 } from '../_utils';
 import {
+  getInvalidConfigMessageForRepeatedProperties,
   getInvalidOnSuccessConfigMessage,
-  getInvalidOnSuccessConfigMessageForRepeatedProperties,
 } from '../../../src/schema/schema-core';
 
 export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
@@ -108,6 +108,45 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
 
             toPass();
           }
+        });
+
+        it("should allow 'onSuccess' if a property or virtual is provided in more than 1 config or subsets if the configs don't have the same properties", () => {
+          const toPass = fx(
+            getValidSchema(
+              {},
+              {
+                constant: { constant: true, value: '' },
+                laxProp: { default: '' },
+                dependent: {
+                  default: '',
+                  dependsOn: ['laxProp', 'virtual'],
+                  resolver: () => {},
+                },
+                readonly: { readonly: true, validator: () => {} },
+                virtual: { virtual: true, validator: () => {} },
+              },
+            ),
+            {
+              onSuccess: [
+                {
+                  properties: ['propertyName1', 'laxProp', 'dependent'],
+                  handler: () => {},
+                },
+                {
+                  properties: ['virtual', 'laxProp'],
+                  handler: () => {},
+                },
+                {
+                  properties: ['dependent', 'propertyName1'],
+                  handler: () => {},
+                },
+              ],
+            },
+          );
+
+          expectNoFailure(toPass);
+
+          toPass();
         });
       });
 
@@ -314,34 +353,82 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
           }
         });
 
-        it("should reject 'onSuccess' if a property or virtual is provided in more than 1 config", () => {
+        it('should reject if some configs have the same properties in any order', () => {
+          const validConfigs = [
+            { properties: ['propertyName1', 'propertyName2'], handler() {} },
+            { properties: ['virtual', 'virtual2'], handler() {} },
+            { properties: ['propertyName1', 'virtual2'], handler() {} },
+            { properties: ['virtual', 'propertyName2'], handler() {} },
+            {
+              properties: ['propertyName1', 'propertyName2', 'virtual'],
+              handler() {},
+            },
+            {
+              properties: [
+                'propertyName1',
+                'propertyName2',
+                'virtual',
+                'virtual2',
+              ],
+              handler() {},
+            },
+          ];
+
+          const configs = [
+            // valid
+            ...validConfigs.map((c, i) => [c, i]),
+
+            // invalid because they're repeated
+            ...validConfigs.map((c, i) => [c, i]),
+
+            // invalid because they're re-arranged
+            [
+              {
+                properties: ['propertyName2', 'propertyName1'],
+                handler() {},
+              },
+              0,
+            ],
+            [{ properties: ['virtual2', 'virtual'], handler() {} }, 1],
+            [{ properties: ['virtual2', 'propertyName1'], handler() {} }, 2],
+            [
+              {
+                properties: ['propertyName2', 'propertyName1', 'virtual'],
+                handler() {},
+              },
+              4,
+            ],
+            [
+              {
+                properties: ['propertyName1', 'virtual', 'propertyName2'],
+                handler() {},
+              },
+              4,
+            ],
+          ] as [any, number][];
+
+          const length = validConfigs.length;
+
+          const reasons = configs
+            .slice(length)
+            .map((ci, i) =>
+              getInvalidConfigMessageForRepeatedProperties(i + length, ci[1]),
+            );
+
           const toFail = fx(
             getValidSchema(
               {},
               {
-                constant: { constant: true, value: '' },
-                laxProp: { default: '' },
                 dependent: {
                   default: '',
-                  dependsOn: ['laxProp', 'virtual'],
-                  resolver: () => {},
+                  dependsOn: ['virtual', 'virtual2'],
+                  resolver() {},
                 },
-                readonly: { readonly: true, validator: () => {} },
-                virtual: { virtual: true, validator: () => {} },
+                virtual: { virtual: true, validator() {} },
+                virtual2: { virtual: true, validator() {} },
               },
             ),
-            {
-              onSuccess: [
-                {
-                  properties: ['propertyName1', 'laxProp'],
-                  handler: () => {},
-                },
-                {
-                  properties: ['virtual', 'laxProp'],
-                  handler: () => {},
-                },
-              ],
-            },
+            { onSuccess: configs.map((ci) => ci[0]) },
           );
 
           expectFailure(toFail);
@@ -352,13 +439,7 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
             expect(err).toMatchObject({
               message: ERRORS.INVALID_SCHEMA,
               payload: {
-                onSuccess: expect.arrayContaining([
-                  getInvalidOnSuccessConfigMessageForRepeatedProperties(
-                    'laxProp',
-                    1,
-                    0,
-                  ),
-                ]),
+                onSuccess: expect.arrayContaining(reasons),
               },
             });
           }

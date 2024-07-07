@@ -3,7 +3,7 @@ import { beforeEach, describe, it, expect, afterEach, test } from 'bun:test';
 import { ERRORS } from '../../../dist';
 import {
   getInvalidPostValidateConfigMessage,
-  getInvalidPostValidateConfigMessageForRepeatedProperties,
+  getInvalidConfigMessageForRepeatedProperties,
 } from '../../../src/schema/schema-core';
 import {
   expectFailure,
@@ -390,7 +390,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
       });
 
       describe('multiple configs', () => {
-        const validPostValidConfig = [
+        const validConfigs = [
           { properties: ['propertyName1', 'propertyName2'], validator() {} },
           { properties: ['virtual', 'virtual2'], validator() {} },
           { properties: ['propertyName1', 'virtual2'], validator() {} },
@@ -732,10 +732,10 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
           it('should reject if some configs have the same properties in any order', () => {
             const configs = [
               // valid
-              ...validPostValidConfig.map((c, i) => [c, i]),
+              ...validConfigs.map((c, i) => [c, i]),
 
               // invalid because they're repeated
-              ...validPostValidConfig.map((c, i) => [c, i]),
+              ...validConfigs.map((c, i) => [c, i]),
 
               // invalid because they're re-arranged
               [
@@ -766,15 +766,12 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
               ],
             ] as [any, number][];
 
-            const length = validPostValidConfig.length;
+            const length = validConfigs.length;
 
             const reasons = configs
               .slice(length)
               .map((ci, i) =>
-                getInvalidPostValidateConfigMessageForRepeatedProperties(
-                  i + length,
-                  ci[1],
-                ),
+                getInvalidConfigMessageForRepeatedProperties(i + length, ci[1]),
               );
 
             const toFail = fx(

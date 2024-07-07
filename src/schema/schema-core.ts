@@ -136,19 +136,11 @@ export function getInvalidOnSuccessConfigMessage(
   }"handler" must be a function or array of functions`;
 }
 
-export function getInvalidPostValidateConfigMessageForRepeatedProperties(
+export function getInvalidConfigMessageForRepeatedProperties(
   index: number,
   existingIndex: number,
 ) {
   return `Config at index ${index} has the same properties as config at index ${existingIndex}`;
-}
-
-export function getInvalidOnSuccessConfigMessageForRepeatedProperties(
-  prop: string,
-  index: number,
-  existingIndex: number,
-) {
-  return `Config at index ${index}: ${prop} is already registered for success event in config at index ${existingIndex}`;
 }
 
 export abstract class SchemaCore<
@@ -194,7 +186,10 @@ export abstract class SchemaCore<
     string,
     { index: number; handlers: ns.SuccessHandler<Input, Output, CtxOptions>[] }
   >();
-  protected readonly propToOnSuccessConfigIDMap = new Map<string, string>();
+  protected readonly propToOnSuccessConfigIDMap = new Map<
+    string,
+    Set<string>
+  >();
 
   // props
   protected readonly constants = new Set<KeyOf<Output>>();
@@ -1637,20 +1632,20 @@ export abstract class SchemaCore<
     if (config)
       return {
         valid: false,
-        reason: getInvalidPostValidateConfigMessageForRepeatedProperties(
+        reason: getInvalidConfigMessageForRepeatedProperties(
           index,
           config.index,
         ),
       };
 
-    sortedProps.forEach((prop) => {
+    for (const prop of sortedProps) {
       const setOfIDs =
         this.propToPostValidationConfigIDsMap.get(prop) ?? new Set();
 
       setOfIDs.add(sortedPropsId);
 
       this.propToPostValidationConfigIDsMap.set(prop, setOfIDs);
-    });
+    }
 
     this.postValidationConfigMap.set(sortedPropsId, {
       index,
@@ -1682,22 +1677,23 @@ export abstract class SchemaCore<
     const sortedProps = sort(properties),
       sortedPropsId = sortedProps.toString();
 
+    const existingConfig = this.onSuccessConfigMap.get(sortedPropsId);
+
+    if (existingConfig)
+      return {
+        valid: false,
+        reason: getInvalidConfigMessageForRepeatedProperties(
+          index,
+          existingConfig.index,
+        ),
+      };
+
     for (const prop of sortedProps) {
-      const existingConfig = this.onSuccessConfigMap.get(
-        this.propToOnSuccessConfigIDMap.get(prop)!,
-      );
+      const setOfIDs = this.propToOnSuccessConfigIDMap.get(prop) ?? new Set();
 
-      if (existingConfig)
-        return {
-          valid: false,
-          reason: getInvalidOnSuccessConfigMessageForRepeatedProperties(
-            prop,
-            index,
-            existingConfig.index,
-          ),
-        };
+      setOfIDs.add(sortedPropsId);
 
-      this.propToOnSuccessConfigIDMap.set(prop, sortedPropsId);
+      this.propToOnSuccessConfigIDMap.set(prop, setOfIDs);
     }
 
     this.onSuccessConfigMap.set(sortedPropsId, {
