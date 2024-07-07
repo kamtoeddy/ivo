@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# v1.5.1 <small><sup>2024-07-07</sup></small>
+
+- Allow `onSuccess` and `Post-validation` configs to be subsets of other configs provided they are not equal
+
 # v1.5.0 <small><sup>2024-06-25</sup></small>
 
 - Make onFailure handlers to be triggered manually

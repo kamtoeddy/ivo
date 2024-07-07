@@ -136,7 +136,7 @@ const schema = new Schema(definitions, {
   ],
 });
 
-// ❌ subsets are not allowed
+// ✅ as from v1.5.1 you can provide subsets of other configs
 const schema = new Schema(definitions, {
   postValidate: [
     { properties: ['email', 'username', 'date_of_birth'], validator },
