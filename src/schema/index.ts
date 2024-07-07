@@ -921,9 +921,10 @@ class ModelTool<
         'onSuccess',
       );
 
-      const id = this.propToOnSuccessConfigIDMap.get(prop);
+      const setOfHandlerIDs = this.propToOnSuccessConfigIDMap.get(prop);
 
-      if (id) setOfSuccessHandlerIDs.add(id);
+      if (setOfHandlerIDs)
+        setOfHandlerIDs.forEach((id) => setOfSuccessHandlerIDs.add(id));
 
       successListeners = successListeners.concat(handlers);
     }

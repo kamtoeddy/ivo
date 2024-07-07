@@ -249,18 +249,20 @@ const Model = new Schema<Input, Output>(definitions, {
     { properties: ['firstName', 'lastName'], handler: [handler3, handler4] },
   ],
 });
-```
 
-> N.B: with config objects, a property can only appear in one config object because the handler(s) are executed if any of the properties are provided.
+// ✅ as from v1.5.1 you can provide subsets of other configs
+const Model = new Schema<Input, Output>(definitions, {
+  onSuccess: [
+    { properties: ['id', 'email', 'firstName'], handler: handler2 },
+    { properties: ['email', 'firstName'], handler: [handler3, handler4] },
+  ],
+});
 
-That is:
-
-```ts
 // ❌ this is not allowed
 const Model = new Schema<Input, Output>(definitions, {
   onSuccess: [
     { properties: ['id', 'email'], handler: [handler1, handler2] },
-    { properties: ['email', 'name'], handler: handler3 },
+    { properties: ['email', 'id'], handler: handler3 },
   ],
 });
 ```
