@@ -904,7 +904,9 @@ class ModelTool<
         ),
       );
 
-    return () => Promise.allSettled(cleanups.map(async (h) => await h(ctx)));
+    return async () => {
+      await Promise.allSettled(cleanups.map(async (h) => await h(ctx)));
+    };
   }
 
   private _makeHandleSuccess(data: Partial<Output>, isUpdate = false) {
@@ -937,11 +939,9 @@ class ModelTool<
       );
 
     return async () => {
-      const successOperations = successListeners.map(
-        async (handler) => await handler(summary),
+      await Promise.allSettled(
+        successListeners.map(async (handler) => await handler(summary)),
       );
-
-      await Promise.allSettled(successOperations);
     };
   }
 
