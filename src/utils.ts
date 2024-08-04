@@ -5,7 +5,7 @@ import {
   KeyOf,
   TypeOf,
   ValidationResponse,
-  ArrayOfMinSizeTwo
+  ArrayOfMinSizeTwo,
 } from './schema/types';
 
 export {
@@ -23,7 +23,7 @@ export {
   isRecordLike,
   toArray,
   sort,
-  sortKeys
+  sortKeys,
 };
 
 export type { ObjectType, FieldKey };
@@ -37,7 +37,7 @@ type ObjectType<T = Record<FieldKey, any>> = T extends object
   : never;
 
 function makeResponse<T = undefined>(
-  input: ValidatorResponseObject<T>
+  input: ValidatorResponseObject<T>,
 ): ValidationResponse<TypeOf<T>> {
   if (input.valid) {
     const { valid, validated } = input;
@@ -45,17 +45,19 @@ function makeResponse<T = undefined>(
     return { valid, validated } as ValidationResponse<TypeOf<T>>;
   }
 
-  let { metadata = null, reason, valid, value } = input;
+  const { metadata = null, reason: inputReason, valid, value } = input;
 
-  if (reason) {
-    if (!isRecordLike(reason)) reason = toArray(reason);
-  } else reason = [];
+  const reason = inputReason
+    ? isRecordLike(inputReason)
+      ? inputReason
+      : toArray(inputReason)
+    : [];
 
   return {
     metadata,
     reason,
     valid,
-    value
+    value,
   } as ValidationResponse<TypeOf<T>>;
 }
 
@@ -110,14 +112,14 @@ function isOneOf<T>(value: any, values: ArrayOfMinSizeTwo<T>): value is T {
 }
 
 function isRecordLike<T extends ObjectType>(
-  value: any
+  value: any,
 ): value is ObjectType<T> {
   return value && typeof value === 'object' && !Array.isArray(value);
 }
 
 function isPropertyOf<T>(
   prop: string | number | symbol,
-  object: T
+  object: T,
 ): prop is keyof T {
   return Object.hasOwnProperty.call(object, prop);
 }

@@ -79,7 +79,7 @@ function makeArrayValidator<const T>({
         sorter = (a, b) => (a < b ? order : -order);
       }
 
-      _array = await Promise.all([..._array].sort(sorter));
+      _array = [..._array].sort(sorter);
     }
 
     return makeResponse({ valid: true, validated: _array });
@@ -220,13 +220,12 @@ function makeNumberValidator<const T extends number | any = number>({
   const exclusion = _getExclusionInfo(exclude);
 
   return (value: any): ValidationResponse<T> => {
-    if (exclusion.hasExclusion && exclusion.excluded.includes(value)) {
+    if (exclusion.hasExclusion && exclusion.excluded.includes(value))
       return makeResponse({
         valid: false,
         reason: exclusion.exclusionError,
         metadata: exclusion.metadata,
       });
-    }
 
     if (allow) {
       const { allowed, notAllowedError } = _getAllowedInfo(allow);
@@ -288,13 +287,12 @@ function makeStringValidator<const T extends string | any = string>({
   const exclusion = _getExclusionInfo(exclude);
 
   return (value: any): ValidationResponse<T> => {
-    if (exclusion.hasExclusion && exclusion.excluded.includes(value)) {
+    if (exclusion.hasExclusion && exclusion.excluded.includes(value))
       return makeResponse({
         valid: false,
         reason: exclusion.exclusionError,
         metadata: exclusion.metadata,
       });
-    }
 
     if (allow) {
       const { allowed, notAllowedError } = _getAllowedInfo(allow);
