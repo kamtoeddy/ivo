@@ -1,4 +1,4 @@
-import { ObjectType, FieldKey } from '../../utils';
+import { ObjectType, FieldKey } from "../../utils";
 
 export { ERRORS, SCHEMA_ERRORS, VALIDATION_ERRORS };
 
@@ -13,11 +13,11 @@ export type {
   ValidationErrorMessage,
 };
 
-const SCHEMA_ERRORS = { INVALID_SCHEMA: 'INVALID_SCHEMA' } as const;
+const SCHEMA_ERRORS = { INVALID_SCHEMA: "INVALID_SCHEMA" } as const;
 
 const VALIDATION_ERRORS = {
-  NOTHING_TO_UPDATE: 'NOTHING_TO_UPDATE',
-  VALIDATION_ERROR: 'VALIDATION_ERROR',
+  NOTHING_TO_UPDATE: "NOTHING_TO_UPDATE",
+  VALIDATION_ERROR: "VALIDATION_ERROR",
 } as const;
 
 const ERRORS = { ...SCHEMA_ERRORS, ...VALIDATION_ERRORS } as const;
@@ -26,18 +26,18 @@ type ValidationErrorMessage = keyof typeof VALIDATION_ERRORS;
 
 type FieldError = {
   reasons: string[];
-  metadata: Record<FieldKey, any> | null;
+  metadata: Record<FieldKey, unknown> | null;
 };
 
 type FullInputFieldError = {
-  reason: FieldError['reasons'][number] | FieldError['reasons'];
-  metadata: FieldError['metadata'];
+  reason: FieldError["reasons"][number] | FieldError["reasons"];
+  metadata: FieldError["metadata"];
 };
 
 type InputFieldError =
   | FullInputFieldError
-  | { reason: FullInputFieldError['reason'] }
-  | { metadata: FullInputFieldError['metadata'] };
+  | { reason: FullInputFieldError["reason"] }
+  | { metadata: FullInputFieldError["metadata"] };
 
 type ErrorPayload<Keys extends FieldKey = FieldKey> = {
   [K in Keys]?: FieldError;
@@ -45,11 +45,11 @@ type ErrorPayload<Keys extends FieldKey = FieldKey> = {
 
 type InputPayload = Record<FieldKey, string | string[] | FieldError>;
 
-type IValidationError<ExtraData extends ObjectType = {}> = ({
+type IValidationError<ExtraData extends ObjectType = never> = ({
   message: ValidationErrorMessage;
 } & ExtraData) & {};
 
-interface IErrorTool<ExtraData extends ObjectType = {}> {
+interface IErrorTool<ExtraData extends ObjectType = never> {
   /** return what your validation error should look like from this method */
   get data(): IValidationError<ExtraData>;
 
@@ -60,7 +60,7 @@ interface IErrorTool<ExtraData extends ObjectType = {}> {
   get isLoaded(): boolean;
 
   /** used to append a field to your final validation error */
-  add(field: FieldKey, error: FieldError, value?: any): this;
+  add(field: FieldKey, error: FieldError, value?: unknown): this;
 
   /** method to set the value of the validation error message */
   setMessage(message: ValidationErrorMessage): this;

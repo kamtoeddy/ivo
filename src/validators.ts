@@ -18,7 +18,7 @@ export type {
 
 type ArrayValidatorOptions<T> = {
   filter?: (data: T) => boolean | Promise<boolean>;
-  modifier?: (data: T) => any | Promise<any>;
+  modifier?: (data: T) => unknown | Promise<unknown>;
   max?: number | ValueError;
   min?: number | ValueError;
   sorted?: boolean;
@@ -54,7 +54,7 @@ function makeArrayValidator<const T>({
     defaulMinError: "Expected a non-empty array",
   });
 
-  return async (value: any): Promise<ValidationResponse<T[]>> => {
+  return async (value: unknown): Promise<ValidationResponse<T[]>> => {
     if (!Array.isArray(value))
       return makeResponse({ reason: "Expected an array", valid: false });
 
@@ -86,13 +86,13 @@ function makeArrayValidator<const T>({
   };
 }
 
-const _getArrayOrder = (sortOrder: any) => {
-  if (!["asc", "desc"].includes(sortOrder)) return -1;
+const _getArrayOrder = (sortOrder: unknown) => {
+  if (!["asc", "desc"].includes(sortOrder as never)) return -1;
 
   return sortOrder === "asc" ? -1 : 1;
 };
 
-function validateBoolean(value: any) {
+function validateBoolean(value: unknown) {
   return makeResponse<boolean>(
     typeof value === "boolean"
       ? { valid: true, validated: value }
@@ -105,7 +105,7 @@ const invalidCardResponse = makeResponse({
   valid: false,
 });
 
-const validateCreditCard = (value: any) => {
+const validateCreditCard = (value: unknown) => {
   const _value = String(value).trim();
 
   if (_value.length !== 16) return invalidCardResponse;
@@ -150,7 +150,7 @@ const EMAIL_REGEXP =
 
 const invalidResponse = makeResponse({ reason: "Invalid email", valid: false });
 
-const validateEmail = (value: any, regExp = EMAIL_REGEXP) => {
+const validateEmail = (value: unknown, regExp = EMAIL_REGEXP) => {
   if (typeof value !== "string") return invalidResponse;
 
   const validated = value?.trim();
@@ -171,7 +171,7 @@ type ExclusionConfig<T> =
 
 type ValueError<T = number> = { value: T; error: string | string[] };
 
-type NumberValidatorOptions<T extends number | any = number> = {
+type NumberValidatorOptions<T extends number | unknown = number> = {
   exclude?: ExclusionConfig<T>;
 } & XOR<
   { allow: AllowConfig<T> },
@@ -182,7 +182,7 @@ type NumberValidatorOptions<T extends number | any = number> = {
   }
 >;
 
-type StringValidatorOptions<T extends string | any = string> = {
+type StringValidatorOptions<T extends string | unknown = string> = {
   exclude?: ExclusionConfig<T>;
 } & XOR<
   { allow: AllowConfig<T> },
@@ -195,7 +195,7 @@ type StringValidatorOptions<T extends string | any = string> = {
   }
 >;
 
-function makeNumberValidator<const T extends number | any = number>({
+function makeNumberValidator<const T extends number | unknown = number>({
   exclude,
   allow,
   max,
@@ -219,8 +219,8 @@ function makeNumberValidator<const T extends number | any = number>({
 
   const exclusion = _getExclusionInfo(exclude);
 
-  return (value: any): ValidationResponse<T> => {
-    if (exclusion.hasExclusion && exclusion.excluded.includes(value))
+  return (value: unknown): ValidationResponse<T> => {
+    if (exclusion.hasExclusion && exclusion.excluded.includes(value as never))
       return makeResponse({
         valid: false,
         reason: exclusion.exclusionError,
@@ -240,27 +240,27 @@ function makeNumberValidator<const T extends number | any = number>({
     }
 
     if (nullable && isOneOf(value, [null, undefined]))
-      return makeResponse({ valid: true, validated: null as any as T });
+      return makeResponse({ valid: true, validated: null as never as T });
 
-    if (!["number", "bigint"].includes(typeof value) || isNaN(value))
+    if (!["number", "bigint"].includes(typeof value) || isNaN(value as never))
       return makeResponse({ reason: "Expected a number", valid: false });
 
-    value = Number(value);
+    const _value = Number(value);
 
-    if (hasMinValue && value < minValue!)
+    if (hasMinValue && _value < minValue!)
       return makeResponse({ valid: false, reason: minError, metadata });
 
-    if (hasMaxValue && value > maxValue!)
+    if (hasMaxValue && _value > maxValue!)
       return makeResponse({ valid: false, reason: maxError, metadata });
 
-    return makeResponse({ valid: true, validated: value });
+    return makeResponse({ valid: true, validated: _value as T });
   };
 }
 
 const MAX_STRING_LENGTH = 255,
   MIN_STRING_LENGTH = 1;
 
-function makeStringValidator<const T extends string | any = string>({
+function makeStringValidator<const T extends string | unknown = string>({
   exclude,
   allow,
   max = MAX_STRING_LENGTH,
@@ -286,8 +286,8 @@ function makeStringValidator<const T extends string | any = string>({
 
   const exclusion = _getExclusionInfo(exclude);
 
-  return (value: any): ValidationResponse<T> => {
-    if (exclusion.hasExclusion && exclusion.excluded.includes(value))
+  return (value: unknown): ValidationResponse<T> => {
+    if (exclusion.hasExclusion && exclusion.excluded.includes(value as never))
       return makeResponse({
         valid: false,
         reason: exclusion.exclusionError,
@@ -307,7 +307,7 @@ function makeStringValidator<const T extends string | any = string>({
     }
 
     if (nullable && isOneOf(value, ["", null, undefined]))
-      return makeResponse({ valid: true, validated: null as any as T });
+      return makeResponse({ valid: true, validated: null as never as T });
 
     if (typeof value !== "string")
       return makeResponse({ reason: "Expected a string", valid: false });
@@ -315,17 +315,17 @@ function makeStringValidator<const T extends string | any = string>({
     if (regExp && !regExp.value.test(value))
       return makeResponse({ valid: false, reason: regExp.error });
 
-    value = String(value);
+    let _value = String(value);
 
-    if (trim) value = value.trim();
+    if (trim) _value = _value.trim();
 
-    if (hasMinLength && value.length < minLength!)
+    if (hasMinLength && _value.length < minLength!)
       return makeResponse({ valid: false, reason: minError, metadata });
 
-    if (hasMaxLength && value.length > maxLength!)
+    if (hasMaxLength && _value.length > maxLength!)
       return makeResponse({ valid: false, reason: maxError, metadata });
 
-    return makeResponse({ valid: true, validated: value });
+    return makeResponse({ valid: true, validated: _value as T });
   };
 }
 
@@ -357,7 +357,7 @@ function _getExclusionInfo<T>(exclude?: ExclusionConfig<T>): {
   if (!Array.isArray(excluded)) excluded = [excluded];
 
   const exclusionError = isConfigObject
-    ? (exclude as { error: string | string[] })?.error ?? "Value not allowed"
+    ? ((exclude as { error: string | string[] })?.error ?? "Value not allowed")
     : "Value not allowed";
 
   const metadata = hasExclusion ? { excluded } : null;
@@ -391,14 +391,14 @@ function _getMaxMinInfo({
 
   const maxValue = isMaxConfigObject
     ? (max as ValueError).value
-    : (max as number) ?? null;
+    : ((max as number) ?? null);
   const maxError = isMaxConfigObject
     ? (max as ValueError).error
     : defaulMaxError;
 
   const minValue = isMinConfigObject
     ? (min as ValueError).value
-    : (min as number) ?? null;
+    : ((min as number) ?? null);
   const minError = isMinConfigObject
     ? (min as ValueError).error
     : defaulMinError;

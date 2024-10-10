@@ -6,7 +6,7 @@ import {
   TypeOf,
   ValidationResponse,
   ArrayOfMinSizeTwo,
-} from './schema/types';
+} from "./schema/types";
 
 export {
   makeResponse,
@@ -30,8 +30,8 @@ export type { ObjectType, FieldKey };
 
 type FieldKey = number | string;
 
-type ObjectType<T = Record<FieldKey, any>> = T extends object
-  ? T extends any[]
+type ObjectType<T = Record<FieldKey, unknown>> = T extends object
+  ? T extends unknown[]
     ? never
     : T & {}
   : never;
@@ -69,7 +69,7 @@ function getSetValuesAsProps<T>(set: Set<T>) {
   return Array.from(set.values()) as T[];
 }
 
-function hasAnyOf(object: any, props: FieldKey[]): boolean {
+function hasAnyOf(object: unknown, props: FieldKey[]): boolean {
   return toArray(props).some((prop) => isPropertyOf(prop, object));
 }
 
@@ -78,15 +78,15 @@ function hasAnyOf(object: any, props: FieldKey[]): boolean {
  * @param  depth how deep in nesting should equality checks be performed for objects
  */
 
-function isEqual<T>(a: any, b: T, depth = 1): a is T {
+function isEqual<T>(a: unknown, b: T, depth = 1): a is T {
   if (a instanceof Date && b instanceof Date)
     return a.getTime() === b.getTime();
 
-  if (!a || !b || (typeof a !== 'object' && typeof b !== 'object'))
+  if (!a || !b || (typeof a !== "object" && typeof b !== "object"))
     return a === b;
 
   let keysOfA = Object.keys(a),
-    keysOfB = Object.keys(b as any);
+    keysOfB = Object.keys(b as never);
 
   if (keysOfA.length != keysOfB.length) return false;
   (keysOfA = sort(keysOfA)), (keysOfB = sort(keysOfB));
@@ -94,27 +94,31 @@ function isEqual<T>(a: any, b: T, depth = 1): a is T {
   if (JSON.stringify(keysOfA) != JSON.stringify(keysOfB)) return false;
 
   if (depth > 0 && keysOfA.length)
-    return keysOfA.every((key) => isEqual(a[key], (b as any)[key], depth - 1));
+    return keysOfA.every((key) =>
+      isEqual(a[key as never], (b as never)[key], depth - 1),
+    );
 
-  return JSON.stringify(sortKeys(a)) == JSON.stringify(sortKeys(b as any));
+  return (
+    JSON.stringify(sortKeys(a as never)) == JSON.stringify(sortKeys(b as never))
+  );
 }
 
-function isFunctionLike<T extends Function>(value: any): value is T {
-  return typeof value === 'function';
+function isFunctionLike<T extends Function>(value: unknown): value is T {
+  return typeof value === "function";
 }
 
-function isNullOrUndefined(value: any): value is null | undefined {
+function isNullOrUndefined(value: unknown): value is null | undefined {
   return isOneOf(value, [null, undefined]);
 }
 
-function isOneOf<T>(value: any, values: ArrayOfMinSizeTwo<T>): value is T {
-  return values.includes(value);
+function isOneOf<T>(value: unknown, values: ArrayOfMinSizeTwo<T>): value is T {
+  return values.includes(value as never);
 }
 
 function isRecordLike<T extends ObjectType>(
-  value: any,
+  value: unknown,
 ): value is ObjectType<T> {
-  return value && typeof value === 'object' && !Array.isArray(value);
+  return !!value && typeof value === "object" && !Array.isArray(value);
 }
 
 function isPropertyOf<T>(
@@ -155,19 +159,21 @@ function getUniqueBy<T>(list: T[], key?: string) {
 
   const obj: ObjectType = {};
 
-  list.forEach((dt) => (obj[_getDeepValue(dt as ObjectType, key)] = dt));
+  list.forEach(
+    (dt) => (obj[_getDeepValue(dt as ObjectType, key) as never] = dt),
+  );
 
   return Object.values(obj) as T[];
 }
 
-function _getDeepValue(data: ObjectType, key: string): any {
-  return key.split('.').reduce((prev, next) => prev?.[next], data);
+function _getDeepValue(data: ObjectType, key: string): unknown {
+  return key.split(".").reduce((prev, next) => prev?.[next] as never, data);
 }
 
-function _serialize(dt: any, revert = false) {
+function _serialize(dt: unknown, revert = false) {
   try {
-    return revert ? JSON.parse(dt) : JSON.stringify(dt);
-  } catch (err) {
+    return revert ? JSON.parse(dt as never) : JSON.stringify(dt);
+  } catch {
     return dt;
   }
 }
