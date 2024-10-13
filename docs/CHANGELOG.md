@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# v1.5.2 <small><sup>2024-10-13</sup></small>
+
+- Refactor various sections of codebase
+
 # v1.5.1 <small><sup>2024-07-07</sup></small>
 
 - Allow `onSuccess` and `Post-validation` configs to be subsets of other configs provided they are not equal

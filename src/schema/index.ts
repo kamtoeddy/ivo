@@ -374,59 +374,59 @@ class ModelTool<
       ]),
     );
 
-    const validations = props.map(async (prop) => {
-      const isVirtualInit = virtuals.includes(prop);
+    await Promise.allSettled(
+      props.map(async (prop) => {
+        const isVirtualInit = virtuals.includes(prop);
 
-      if (this._isVirtual(prop) && !isVirtualInit) return;
+        if (this._isVirtual(prop) && !isVirtualInit) return;
 
-      const isDependent = this._isDependentProp(prop),
-        isVirtualAlias = virtuals.includes(prop);
+        const isDependent = this._isDependentProp(prop),
+          isVirtualAlias = virtuals.includes(prop);
 
-      if (isDependent) {
-        data[prop] = await this._getDefaultValue(prop);
+        if (isDependent) {
+          data[prop] = await this._getDefaultValue(prop);
 
-        const validCtxUpdate = { [prop]: data[prop] as never } as never;
+          const validCtxUpdate = { [prop]: data[prop] as never } as never;
 
-        this._updatePartialContext(validCtxUpdate);
-        this._updateContext(validCtxUpdate);
+          this._updatePartialContext(validCtxUpdate);
+          this._updateContext(validCtxUpdate);
 
-        if (!isVirtualAlias) return;
-      }
+          if (!isVirtualAlias) return;
+        }
 
-      if (isVirtualAlias)
-        return this._validateAndSet(
-          data,
-          error,
-          prop,
-          input[prop as unknown as KeyOf<Input>],
-        );
+        if (isVirtualAlias)
+          return this._validateAndSet(
+            data,
+            error,
+            prop,
+            input[prop as unknown as KeyOf<Input>],
+          );
 
-      const isProvided = isPropertyOf(prop, this.values),
-        isLax = this._isLaxProp(prop),
-        isLaxInit = isLax && isProvided,
-        isRequiredInit = this._isRequiredBy(prop) && isProvided;
+        const isProvided = isPropertyOf(prop, this.values),
+          isLax = this._isLaxProp(prop),
+          isLaxInit = isLax && isProvided,
+          isRequiredInit = this._isRequiredBy(prop) && isProvided;
 
-      if (
-        (isLax &&
-          this._isRuleInDefinition(prop, "shouldInit") &&
-          !this._getValueBy(prop, "shouldInit", {})) ||
-        (!isVirtualInit &&
-          !this._canInit(prop) &&
-          !isLaxInit &&
-          !isRequiredInit)
-      ) {
-        data[prop] = await this._getDefaultValue(prop);
+        if (
+          (isLax &&
+            this._isRuleInDefinition(prop, "shouldInit") &&
+            !this._getValueBy(prop, "shouldInit", {})) ||
+          (!isVirtualInit &&
+            !this._canInit(prop) &&
+            !isLaxInit &&
+            !isRequiredInit)
+        ) {
+          data[prop] = await this._getDefaultValue(prop);
 
-        const validCtxUpdate = { [prop]: data[prop] as never } as never;
-        this._updatePartialContext(validCtxUpdate);
+          const validCtxUpdate = { [prop]: data[prop] as never } as never;
+          this._updatePartialContext(validCtxUpdate);
 
-        return this._updateContext(validCtxUpdate);
-      }
+          return this._updateContext(validCtxUpdate);
+        }
 
-      return this._validateAndSet(data, error, prop, this.values[prop]);
-    });
-
-    await Promise.allSettled(validations);
+        return this._validateAndSet(data, error, prop, this.values[prop]);
+      }),
+    );
 
     return { data, error, virtuals };
   }
@@ -446,42 +446,43 @@ class ModelTool<
       new Set(getKeysAsProps<Output & Aliases>(changes as never)),
     ).filter((prop) => this._isUpdatable(prop, (changes as never)[prop]));
 
-    const validations = toUpdate.map(async (prop) => {
-      const value = (changes as never)[prop] as Output[KeyOf<Output>];
+    await Promise.allSettled(
+      toUpdate.map(async (prop) => {
+        const value = (changes as never)[prop] as Output[KeyOf<Output>];
 
-      const isValid = (await this._validate(
-        prop as never,
-        value,
-        this._getValidationSummary(true),
-      )) as InternalValidatorResponse<Output[KeyOf<Output>]>;
+        const isValid = (await this._validate(
+          prop as never,
+          value,
+          this._getValidationSummary(true),
+        )) as InternalValidatorResponse<Output[KeyOf<Output>]>;
 
-      if (!isValid.valid) return this._handleInvalidValue(error, prop, isValid);
+        if (!isValid.valid)
+          return this._handleInvalidValue(error, prop, isValid);
 
-      let { validated } = isValid;
+        let { validated } = isValid;
 
-      if (isEqual(validated, undefined)) validated = value;
+        if (isEqual(validated, undefined)) validated = value;
 
-      const isAlias = this._isVirtualAlias(prop);
+        const isAlias = this._isVirtualAlias(prop);
 
-      const propName = (isAlias
-        ? this._getVirtualByAlias(prop)!
-        : prop) as unknown as KeyOf<Output>;
+        const propName = (isAlias
+          ? this._getVirtualByAlias(prop)!
+          : prop) as unknown as KeyOf<Output>;
 
-      if (
-        isEqual(validated, this.values[propName], this._options.equalityDepth)
-      )
-        return;
+        if (
+          isEqual(validated, this.values[propName], this._options.equalityDepth)
+        )
+          return;
 
-      if (this._isVirtual(propName)) virtuals.push(propName);
-      else updates[propName as KeyOf<Output>] = validated;
+        if (this._isVirtual(propName)) virtuals.push(propName);
+        else updates[propName as KeyOf<Output>] = validated;
 
-      const validCtxUpdate = { [propName]: validated } as never;
+        const validCtxUpdate = { [propName]: validated } as never;
 
-      this._updateContext(validCtxUpdate);
-      this._updatePartialContext(validCtxUpdate);
-    });
-
-    await Promise.allSettled(validations);
+        this._updateContext(validCtxUpdate);
+        this._updatePartialContext(validCtxUpdate);
+      }),
+    );
 
     return { error, updates, virtuals };
   }
@@ -510,52 +511,52 @@ class ModelTool<
       props.push([prop as KeyOf<Output>, alias]);
     }
 
-    const validations = props.map(async ([prop, alias]) => {
-      const validator = this._getSecondaryValidator(prop);
+    await Promise.allSettled(
+      props.map(async ([prop, alias]) => {
+        const validator = this._getSecondaryValidator(prop);
 
-      if (!validator) return;
+        if (!validator) return;
 
-      const value = summary.context?.[prop] as Output[KeyOf<Output>];
+        const value = summary.context?.[prop] as Output[KeyOf<Output>];
 
-      let isValid: ValidatorResponseObject<unknown>;
+        let isValid: ValidatorResponseObject<unknown>;
 
-      try {
-        isValid = this._sanitizeValidationResponse<unknown>(
-          (await validator(
+        try {
+          isValid = this._sanitizeValidationResponse<unknown>(
+            (await validator(
+              value,
+              summary as never,
+            )) as ValidatorResponseObject<unknown>,
             value,
-            summary as never,
-          )) as ValidatorResponseObject<unknown>,
-          value,
-        );
-      } catch {
-        isValid = makeResponse<unknown>({
-          valid: false,
-          reason: "validation failed",
-        });
-      }
+          );
+        } catch {
+          isValid = makeResponse<unknown>({
+            valid: false,
+            reason: "validation failed",
+          });
+        }
 
-      if (!isValid.valid) {
-        const _prop =
-          alias && isPropertyOf(alias, summary.inputValues) ? alias : prop;
+        if (!isValid.valid) {
+          const _prop =
+            alias && isPropertyOf(alias, summary.inputValues) ? alias : prop;
 
-        return this._handleInvalidValue(error, _prop as never, isValid);
-      }
+          return this._handleInvalidValue(error, _prop as never, isValid);
+        }
 
-      let { validated } = isValid;
+        let { validated } = isValid;
 
-      if (isEqual(validated, undefined)) validated = value;
-      if (isEqual(validated, this.values[prop], this._options.equalityDepth))
-        return;
+        if (isEqual(validated, undefined)) validated = value;
+        if (isEqual(validated, this.values[prop], this._options.equalityDepth))
+          return;
 
-      if (!this._isVirtual(prop)) data[prop] = validated as never;
+        if (!this._isVirtual(prop)) data[prop] = validated as never;
 
-      const validCtxUpdate = { [prop]: validated } as never;
+        const validCtxUpdate = { [prop]: validated } as never;
 
-      this._updateContext(validCtxUpdate);
-      this._updatePartialContext(validCtxUpdate);
-    });
-
-    await Promise.allSettled(validations);
+        this._updateContext(validCtxUpdate);
+        this._updatePartialContext(validCtxUpdate);
+      }),
+    );
 
     return error;
   }
@@ -777,13 +778,13 @@ class ModelTool<
 
     const summary = this._getSummary(data, isUpdate);
 
-    const sanitizations = sanitizers.map(async ([prop, sanitizer]) => {
-      const resolvedValue = await sanitizer(summary);
+    await Promise.allSettled(
+      sanitizers.map(async ([prop, sanitizer]) => {
+        const resolvedValue = await sanitizer(summary);
 
-      this._updateContext({ [prop]: resolvedValue } as never);
-    });
-
-    await Promise.allSettled(sanitizations);
+        this._updateContext({ [prop]: resolvedValue } as never);
+      }),
+    );
   }
 
   private _handleObjectValidationResponse(data: Record<string, unknown>) {
@@ -994,53 +995,53 @@ class ModelTool<
       _ctx = this._getContext(),
       summary = this._getSummary(values, isUpdate);
 
-    const operations = toResolve.map(async (prop) => {
-      if (
-        this._isReadonly(prop) &&
-        !isCreation &&
-        !isEqual(
-          this.values[prop],
-          this.defaults[prop],
-          this._options.equalityDepth,
+    await Promise.allSettled(
+      toResolve.map(async (prop) => {
+        if (
+          this._isReadonly(prop) &&
+          !isCreation &&
+          !isEqual(
+            this.values[prop],
+            this.defaults[prop],
+            this._options.equalityDepth,
+          )
         )
-      )
-        return;
+          return;
 
-      const resolver = this._getDefinition(prop).resolver!;
-      let value;
+        const resolver = this._getDefinition(prop).resolver!;
+        let value;
 
-      try {
-        value = await resolver(summary);
-      } catch {
-        value = isCreation ? null : summary.previousValues?.[prop];
-      }
+        try {
+          value = await resolver(summary);
+        } catch {
+          value = isCreation ? null : summary.previousValues?.[prop];
+        }
 
-      if (
-        !isCreation &&
-        isEqual(
-          value,
-          _ctx[prop as KeyOf<ImmutableContext<Input, Output>>],
-          this._options.equalityDepth,
+        if (
+          !isCreation &&
+          isEqual(
+            value,
+            _ctx[prop as KeyOf<ImmutableContext<Input, Output>>],
+            this._options.equalityDepth,
+          )
         )
-      )
-        return;
+          return;
 
-      data[prop] = value;
-      const updates = { [prop]: value } as never;
+        data[prop] = value;
+        const updates = { [prop]: value } as never;
 
-      this._updateContext(updates);
-      this._updatePartialContext(updates);
+        this._updateContext(updates);
+        this._updatePartialContext(updates);
 
-      const _data = await this._resolveDependentChanges(
-        data,
-        updates,
-        isUpdate,
-      );
+        const _data = await this._resolveDependentChanges(
+          data,
+          updates,
+          isUpdate,
+        );
 
-      _updates = Object.assign(_updates, _data);
-    });
-
-    await Promise.allSettled(operations);
+        _updates = Object.assign(_updates, _data);
+      }),
+    );
 
     return _updates;
   }
@@ -1333,9 +1334,9 @@ class ModelTool<
       if (handlers_.length) handlers = handlers.concat(handlers_);
     });
 
-    const cleanups = handlers.map(async (handler) => await handler(data));
-
-    await Promise.allSettled(cleanups);
+    await Promise.allSettled(
+      handlers.map(async (handler) => await handler(data)),
+    );
   }
 
   async update(
