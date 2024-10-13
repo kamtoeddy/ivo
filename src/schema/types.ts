@@ -1,10 +1,10 @@
-import { ObjectType } from '../utils';
+import { ObjectType } from "../utils";
 import {
   FieldError,
   IErrorTool,
   InputFieldError,
   ValidationErrorMessage,
-} from './utils';
+} from "./utils";
 
 export type {
   ArrayOfMinSizeOne,
@@ -47,7 +47,7 @@ export {
 type Context<
   Input,
   Output = Input,
-  CtxOptions extends ObjectType = {},
+  CtxOptions extends ObjectType = never,
 > = Readonly<
   Merge<Input, Output> & { __getOptions__: () => Readonly<CtxOptions> }
 > & {};
@@ -55,13 +55,13 @@ type Context<
 type ImmutableContext<
   Input,
   Output = Input,
-  CtxOptions extends ObjectType = {},
+  CtxOptions extends ObjectType = never,
 > = Context<Input, Output, CtxOptions>;
 
 type MutableContext<
   Input,
   Output = Input,
-  CtxOptions extends ObjectType = {},
+  CtxOptions extends ObjectType = never,
 > = Readonly<
   Merge<Input, Output> & {
     __getOptions__: () => Readonly<CtxOptions>;
@@ -69,7 +69,7 @@ type MutableContext<
   }
 > & {};
 
-type DeletionContext<Output, CtxOptions extends ObjectType = {}> = Readonly<
+type DeletionContext<Output, CtxOptions extends ObjectType = never> = Readonly<
   Output & { __getOptions__: () => Readonly<CtxOptions> }
 > & {};
 
@@ -78,7 +78,7 @@ type PartialContext<Input, Output> = Readonly<Merge<Input, Output>>;
 type ImmutableSummary<
   Input,
   Output = Input,
-  CtxOptions extends ObjectType = {},
+  CtxOptions extends ObjectType = never,
 > = (
   | Readonly<{
       changes: null;
@@ -101,7 +101,7 @@ type ImmutableSummary<
 type MutableSummary<
   Input,
   Output = Input,
-  CtxOptions extends ObjectType = {},
+  CtxOptions extends ObjectType = never,
 > = (
   | Readonly<{
       changes: null;
@@ -144,7 +144,7 @@ type RequiredHandler<Input, Output, CtxOptions extends ObjectType> = (
   summary: MutableSummary<Input, Output, CtxOptions> & {},
 ) => RequiredHandlerRes | Promise<RequiredHandlerRes>;
 
-type AsyncShouldUpdate<Input, Output, CtxOptions extends ObjectType = {}> = (
+type AsyncShouldUpdate<Input, Output, CtxOptions extends ObjectType = never> = (
   summary: MutableSummary<Input, Output, CtxOptions> & {},
 ) => boolean | Promise<boolean>;
 
@@ -196,23 +196,23 @@ namespace NS {
 
   export type DeleteHandler<Output, CtxOptions extends ObjectType> = (
     data: DeletionContext<Output, CtxOptions>,
-  ) => any | Promise<any>;
+  ) => unknown | Promise<unknown>;
 
   export type FailureHandler<
     Input,
     Output,
-    CtxOptions extends ObjectType = {},
+    CtxOptions extends ObjectType = never,
   > = (
     context: ImmutableContext<Input, Output, CtxOptions> & {},
-  ) => any | Promise<any>;
+  ) => unknown | Promise<unknown>;
 
   export type SuccessHandler<
     Input,
     Output,
-    CtxOptions extends ObjectType = {},
+    CtxOptions extends ObjectType = never,
   > = (
     summary: ImmutableSummary<Input, Output, CtxOptions> & {},
-  ) => any | Promise<any>;
+  ) => unknown | Promise<unknown>;
 
   export type OnSuccessConfigObject<
     Input,
@@ -236,8 +236,8 @@ namespace NS {
   export type Definitions<
     Input,
     Output,
-    Aliases = {},
-    CtxOptions extends ObjectType = {},
+    Aliases = never,
+    CtxOptions extends ObjectType = never,
   > = PrettyType<
     {
       [K in keyof (Input | Output)]: PublicProperty<
@@ -270,7 +270,7 @@ namespace NS {
     Input,
     Output,
     Aliases,
-    CtxOptions extends ObjectType = {},
+    CtxOptions extends ObjectType = never,
   > = Enumerable<Output[K]> &
     (
       | LaxProperty<K, Input, Output, Aliases, CtxOptions>
@@ -285,7 +285,7 @@ namespace NS {
     K extends keyof Output,
     Input,
     Output,
-    CtxOptions extends ObjectType = {},
+    CtxOptions extends ObjectType = never,
   > = XOR<
     Constant<K, Input, Output, CtxOptions>,
     Dependent<K, Input, Output, CtxOptions>
@@ -294,28 +294,28 @@ namespace NS {
   export type Definitions_<Input, Output> = {
     [K in keyof Input]?: Listenable<Input, Output> & {
       allow?:
-        | Readonly<ArrayOfMinSizeTwo<any>>
+        | Readonly<ArrayOfMinSizeTwo<unknown>>
         | {
-            values: Readonly<ArrayOfMinSizeTwo<any>>;
+            values: Readonly<ArrayOfMinSizeTwo<unknown>>;
             error?:
               | NotAllowedError
               | ((
-                  value: any,
-                  allowedValues: ArrayOfMinSizeOne<any>,
+                  value: unknown,
+                  allowedValues: ArrayOfMinSizeOne<unknown>,
                 ) => NotAllowedError);
           };
       alias?: string;
-      constant?: any;
-      default?: any;
+      constant?: unknown;
+      default?: unknown;
       dependsOn?: KeyOf<Input> | KeyOf<Input>[];
-      readonly?: boolean | 'lax';
+      readonly?: boolean | "lax";
       resolver?: Function;
-      required?: boolean | RequiredHandler<Input, Output, {}>;
-      sanitizer?: VirtualResolver<K, Input, Output, any>;
-      shouldInit?: false | Setter<boolean, Input, Output, any>;
-      shouldUpdate?: false | Setter<boolean, Input, Output, any>;
+      required?: boolean | RequiredHandler<Input, Output, never>;
+      sanitizer?: VirtualResolver<K, Input, Output, never>;
+      shouldInit?: false | Setter<boolean, Input, Output, never>;
+      shouldUpdate?: false | Setter<boolean, Input, Output, never>;
       validator?: Function | [Function, Function];
-      value?: any;
+      value?: unknown;
       virtual?: boolean;
     };
   };
@@ -328,7 +328,7 @@ namespace NS {
     [K in KeyOf<T>]?: KeyOf<T>[];
   };
 
-  type Listenable<Input, Output, CtxOptions extends ObjectType = {}> = {
+  type Listenable<Input, Output, CtxOptions extends ObjectType = never> = {
     onDelete?:
       | DeleteHandler<Output, CtxOptions>
       | ArrayOfMinSizeOne<DeleteHandler<Output, CtxOptions>>;
@@ -366,7 +366,7 @@ namespace NS {
           error?:
             | NotAllowedError
             | ((
-                value: any,
+                value: unknown,
                 allowedValues: ArrayOfMinSizeOne<T>,
               ) => NotAllowedError);
         };
@@ -379,7 +379,7 @@ namespace NS {
     CtxOptions extends ObjectType,
   > = Exclude<
     KeyOf<MutableContext<Input, Output, CtxOptions>>,
-    K | '__getOptions__' | '__updateOptions__'
+    K | "__getOptions__" | "__updateOptions__"
   >;
 
   type Dependent<
@@ -454,7 +454,7 @@ namespace NS {
     default:
       | TypeOf<Output[K]>
       | AsyncSetter<Output[K], Input, Output, CtxOptions>;
-    readonly: 'lax';
+    readonly: "lax";
     shouldUpdate?: Setter<boolean, Input, Output, CtxOptions>;
     validator:
       | Validator<K, Input, Output, Aliases, CtxOptions>
@@ -618,7 +618,7 @@ namespace NS {
     Input,
     Output,
     CtxOptions extends ObjectType,
-    ErrorTool extends IErrorTool<any> = any,
+    ErrorTool extends IErrorTool<ObjectType> = never,
   > = {
     ErrorTool: ErrorToolClass<ErrorTool, CtxOptions>;
     equalityDepth: number;
@@ -629,8 +629,10 @@ namespace NS {
       | SuccessHandler<Input, Output, CtxOptions>
       | ArrayOfMinSizeOne<SuccessHandler<Input, Output, CtxOptions>>;
     postValidate?:
-      | PostValidationConfig<Input, Output, any, CtxOptions>
-      | ArrayOfMinSizeOne<PostValidationConfig<Input, Output, any, CtxOptions>>;
+      | PostValidationConfig<Input, Output, object, CtxOptions>
+      | ArrayOfMinSizeOne<
+          PostValidationConfig<Input, Output, object, CtxOptions>
+        >;
     setMissingDefaultsOnUpdate?: boolean;
     shouldUpdate?: boolean | AsyncShouldUpdate<Input, Output, CtxOptions>;
     timestamps?:
@@ -642,8 +644,8 @@ namespace NS {
     Input,
     Output,
     Aliases,
-    ErrorTool extends IErrorTool<any> = any,
-    CtxOptions extends ObjectType = {},
+    ErrorTool extends IErrorTool<ObjectType> = never,
+    CtxOptions extends ObjectType = never,
   > = {
     ErrorTool?: ErrorToolClass<ErrorTool, CtxOptions>;
     equalityDepth?: number;
@@ -667,7 +669,7 @@ namespace NS {
     Input,
     Output,
     Aliases,
-    ErrorTool extends IErrorTool<any>,
+    ErrorTool extends IErrorTool<never>,
   > = KeyOf<Options<Input, Output, Aliases, ErrorTool>>;
 
   export type PrivateOptions = { timestamps: Timestamp };
@@ -680,8 +682,8 @@ namespace NS {
     Input,
     Output,
     Aliases,
-    ErrorTool extends IErrorTool<any>,
-    CtxOptions extends ObjectType = {},
+    ErrorTool extends IErrorTool<ObjectType>,
+    CtxOptions extends ObjectType = never,
   > = Options<Input, Output, Aliases, ErrorTool, CtxOptions> & {
     remove?:
       | KeyOf<Merge<ParentInput, ParentOutput>>
@@ -692,32 +694,32 @@ namespace NS {
 
 type ValidationResponse<T> =
   | { valid: true; validated: T }
-  | { metadata: FieldError['metadata']; reason: string[]; valid: false };
+  | { metadata: FieldError["metadata"]; reason: string[]; valid: false };
 
-type InvalidValidatorResponse<Input = {}, Aliases = {}> = {
-  metadata?: FieldError['metadata'];
+type InvalidValidatorResponse<Input = object, Aliases = object> = {
+  metadata?: FieldError["metadata"];
   reason?:
     | string
     | string[]
     | InputFieldError
     | ResponseErrorObject<Input, Aliases>;
   valid: false;
-  value?: any;
+  value?: unknown;
 };
 
 type InternalValidatorResponse<T> =
   | { valid: true; validated: T }
   | InvalidValidatorResponse;
 
-type ValidatorResponseObject<T, Input = {}, Aliases = {}> =
+type ValidatorResponseObject<T, Input = object, Aliases = never> =
   | { valid: true; validated?: T }
   | InvalidValidatorResponse<Input, Aliases>;
 
-type ResponseErrorObject<Input = {}, Aliases = {}> = {
+type ResponseErrorObject<Input = object, Aliases = object> = {
   [K in KeyOf<Input & Aliases>]?: string | string[] | InputFieldError;
 };
 
-type ValidatorResponse<T, Input, Aliases = {}> =
+type ValidatorResponse<T, Input, Aliases = object> =
   | boolean
   | (ValidatorResponseObject<T, Input, Aliases> & {});
 
@@ -725,10 +727,10 @@ type Validator<
   K extends keyof (Output | Input),
   Input,
   Output,
-  Aliases = {},
-  CtxOptions extends ObjectType = {},
+  Aliases = never,
+  CtxOptions extends ObjectType = never,
 > = (
-  value: any,
+  value: unknown,
   summary: MutableSummary<Input, Output, CtxOptions> & {},
 ) =>
   | ValidatorResponse<TypeOf<Output[K]>, Input, Aliases>
@@ -738,8 +740,8 @@ type SecondaryValidator<
   T,
   Input,
   Output,
-  Aliases = {},
-  CtxOptions extends ObjectType = {},
+  Aliases = never,
+  CtxOptions extends ObjectType = never,
 > = (
   value: T,
   summary: MutableSummary<Input, Output, CtxOptions> & {},
@@ -751,10 +753,10 @@ type VirtualValidator<
   K extends keyof Input,
   Input,
   Output,
-  Aliases = {},
-  CtxOptions extends ObjectType = {},
+  Aliases = never,
+  CtxOptions extends ObjectType = never,
 > = (
-  value: any,
+  value: unknown,
   summary: MutableSummary<Input, Output, CtxOptions> & {},
 ) =>
   | ValidatorResponse<TypeOf<Input[K]>, Input, Aliases>
@@ -764,52 +766,52 @@ type ArrayOfMinSizeOne<T> = [T, ...T[]];
 type ArrayOfMinSizeTwo<T> = [T, T, ...T[]];
 
 const DEFINITION_RULES = [
-  'alias',
-  'allow',
-  'constant',
-  'default',
-  'dependsOn',
-  'onDelete',
-  'onFailure',
-  'onSuccess',
-  'readonly',
-  'resolver',
-  'required',
-  'sanitizer',
-  'shouldInit',
-  'shouldUpdate',
-  'validator',
-  'value',
-  'virtual',
+  "alias",
+  "allow",
+  "constant",
+  "default",
+  "dependsOn",
+  "onDelete",
+  "onFailure",
+  "onSuccess",
+  "readonly",
+  "resolver",
+  "required",
+  "sanitizer",
+  "shouldInit",
+  "shouldUpdate",
+  "validator",
+  "value",
+  "virtual",
 ] as const;
 
 type DefinitionRule = (typeof DEFINITION_RULES)[number];
 
-const ALLOWED_OPTIONS: NS.OptionsKey<any, any, any, any>[] = [
-  'ErrorTool',
-  'equalityDepth',
-  'onDelete',
-  'onSuccess',
-  'postValidate',
-  'setMissingDefaultsOnUpdate',
-  'shouldUpdate',
-  'timestamps',
+const ALLOWED_OPTIONS: NS.OptionsKey<unknown, unknown, unknown, never>[] = [
+  "ErrorTool",
+  "equalityDepth",
+  "onDelete",
+  "onSuccess",
+  "postValidate",
+  "setMissingDefaultsOnUpdate",
+  "shouldUpdate",
+  "timestamps",
 ];
-const CONSTANT_RULES = ['constant', 'onDelete', 'onSuccess', 'value'];
+const CONSTANT_RULES = ["constant", "onDelete", "onSuccess", "value"];
 const VIRTUAL_RULES = [
-  'alias',
-  'allow',
-  'sanitizer',
-  'onFailure',
-  'onSuccess',
-  'required',
-  'shouldInit',
-  'shouldUpdate',
-  'validator',
-  'virtual',
+  "alias",
+  "allow",
+  "sanitizer",
+  "onFailure",
+  "onSuccess",
+  "required",
+  "shouldInit",
+  "shouldUpdate",
+  "validator",
+  "virtual",
 ];
 
-const LIFE_CYCLES = ['onDelete', 'onFailure', 'onSuccess'] as const;
+const LIFE_CYCLES = ["onDelete", "onFailure", "onSuccess"] as const;
 
 interface ErrorToolClass<ErrorTool, CtxOptions extends ObjectType> {
   new (message: ValidationErrorMessage, ctxOptions: CtxOptions): ErrorTool;
@@ -817,7 +819,7 @@ interface ErrorToolClass<ErrorTool, CtxOptions extends ObjectType> {
 
 type TypeFromPromise<T> = T extends Promise<infer I> ? I : T;
 
-type RealType_<T> = T extends (...args: any) => infer I ? I : T;
+type RealType_<T> = T extends (...args: never) => infer I ? I : T;
 
 type PrettyType<T> = {
   [K in keyof T]: T[K];
@@ -834,8 +836,8 @@ type Merge<A, B> = {
         ? A[K] | B[K]
         : A[K]
       : K extends keyof B
-      ? B[K]
-      : never,
+        ? B[K]
+        : never,
     undefined
   >;
 };

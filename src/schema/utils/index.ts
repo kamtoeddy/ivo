@@ -4,43 +4,45 @@ import {
   toArray,
   isRecordLike,
   isEqual,
-} from '../../utils';
+} from "../../utils";
 import {
   FieldError,
   FullInputFieldError,
   InputFieldError,
   InputPayload,
-} from './types';
+} from "./types";
 
-export * from './types';
-export * from './error-tool';
-export * from './schema-error';
-export * from './timestamp-tool';
+export * from "./types";
+export * from "./error-tool";
+export * from "./schema-error";
+export * from "./timestamp-tool";
 
 export { isFieldError, isInputFieldError, makeFieldError };
 
-function isFieldError(data: any): data is FieldError {
+function isFieldError(data: unknown): data is FieldError {
   if (!isRecordLike(data) || isEqual({}, data)) return false;
 
   if (
-    !isPropertyOf('metadata', data) ||
+    !isPropertyOf("metadata", data) ||
     !isFieldErrorMetadataOk(data) ||
-    !isPropertyOf('reasons', data)
+    !isPropertyOf("reasons", data)
   )
     return false;
 
   return Array.isArray(data?.reasons);
 }
 
-function isInputFieldError(data: any): data is Partial<FullInputFieldError> {
+function isInputFieldError(
+  data: unknown,
+): data is Partial<FullInputFieldError> {
   if (isFieldError(data)) return true;
 
   if (!isRecordLike(data) || isEqual({}, data)) return false;
 
-  if (isPropertyOf('reasons', data)) return false;
+  if (isPropertyOf("reasons", data)) return false;
 
-  const hasMetadata = isPropertyOf('metadata', data),
-    hasReason = isPropertyOf('reason', data);
+  const hasMetadata = isPropertyOf("metadata", data),
+    hasReason = isPropertyOf("reason", data);
 
   if (!hasMetadata && !hasReason) return false;
 
@@ -48,7 +50,7 @@ function isInputFieldError(data: any): data is Partial<FullInputFieldError> {
 
   if (
     hasReason &&
-    typeof data?.reason != 'string' &&
+    typeof data?.reason != "string" &&
     !Array.isArray(data?.reason)
   )
     return false;
@@ -56,13 +58,15 @@ function isInputFieldError(data: any): data is Partial<FullInputFieldError> {
   return true;
 }
 
-function isFieldErrorMetadataOk(data: any): data is FieldError['metadata'] {
-  return data?.metadata == null || isRecordLike(data?.metadata);
+function isFieldErrorMetadataOk(data: unknown): data is FieldError["metadata"] {
+  const metadata = (data as FieldError)?.metadata;
+
+  return metadata == null || isRecordLike(metadata);
 }
 
 function makeFieldError(
   value: InputPayload[FieldKey] | InputFieldError,
-  fallbackMessage = 'validation failed',
+  fallbackMessage = "validation failed",
 ): FieldError {
   if (isFieldError(value)) return value;
 
@@ -75,7 +79,9 @@ function makeFieldError(
     };
 
   return {
-    reasons: toArray((value as any)?.reasons ?? [fallbackMessage]),
-    metadata: (value as any)?.metadata ?? null,
+    reasons: toArray(
+      (value as unknown as { reasons: string[] })?.reasons ?? [fallbackMessage],
+    ),
+    metadata: (value as Partial<FullInputFieldError>)?.metadata ?? null,
   };
 }

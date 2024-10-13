@@ -12,7 +12,7 @@ import {
   sortKeys,
   toArray,
   getUnique,
-} from '../utils';
+} from "../utils";
 import {
   DefaultErrorTool,
   FieldError,
@@ -22,8 +22,8 @@ import {
   TimeStampTool,
   isInputFieldError,
   makeFieldError,
-} from './utils';
-import { ObjectType } from '../utils';
+} from "./utils";
+import { ObjectType } from "../utils";
 import {
   DefinitionRule,
   NS as ns,
@@ -38,116 +38,29 @@ import {
   Context,
   MutableSummary,
   PostValidator,
-} from './types';
+} from "./types";
 
-export const defaultOptions: ns.Options<any, any, any, any, any> = {
+export {
+  SchemaCore,
+  defaultOptions,
+  getInvalidPostValidateConfigMessage,
+  getInvalidOnSuccessConfigMessage,
+  getInvalidConfigMessageForRepeatedProperties,
+};
+
+const defaultOptions: ns.Options<unknown, unknown, unknown, never, never> = {
   equalityDepth: 1,
-  ErrorTool: DefaultErrorTool,
+  ErrorTool: DefaultErrorTool as never,
   setMissingDefaultsOnUpdate: false,
   shouldUpdate: true,
   timestamps: false,
 };
 
-type InvalidPostValidateConfigMessage =
-  | 'default'
-  | 'validator-array-cannot-be-empty'
-  | 'validator-must-be-function'
-  | 'validator-must-be-function-or-array'
-  | 'properties-must-be-input-array'
-  | 'properties-array-must-contain-unique-values';
-
-export function getInvalidPostValidateConfigMessage(
-  index?: number,
-  message: InvalidPostValidateConfigMessage = 'default',
-  secondIndex?: number,
-  thirdIndex?: number,
-) {
-  const hasIndex = typeof index == 'number',
-    hasSecondIndex = typeof secondIndex == 'number',
-    hasThirdIndex = typeof thirdIndex == 'number';
-
-  if (message == 'default')
-    return `Config${
-      hasIndex ? ` at index ${index},` : ''
-    } must be an object with keys "properties" and "validator" or an array of "PostValidateConfig"`;
-
-  if (message == 'properties-must-be-input-array')
-    return `${
-      hasIndex ? `Config at index ${index}:  ` : ''
-    }"properties" must be an array of at least 2 input properties of your schema`;
-
-  if (message == 'properties-array-must-contain-unique-values')
-    return `${
-      hasIndex ? `Config at index ${index}:  ` : ''
-    }"properties" array must contain unique values`;
-
-  if (message == 'validator-array-cannot-be-empty')
-    return `${
-      hasIndex ? `Config at index ${index}:  ` : ''
-    }"validator" cannot be an empty array`;
-
-  if (message == 'validator-must-be-function')
-    if (hasThirdIndex)
-      return `${
-        hasIndex ? `Config at index ${index}:  ` : ''
-      }"validator" at index [${secondIndex}][${thirdIndex}] must be a function`;
-
-  return `${hasIndex ? `Config at index ${index}:  ` : ''}"validator" ${
-    hasSecondIndex ? `at index ${secondIndex} ` : ''
-  }must be a function or array of functions`;
-}
-
-type InvalidOnSuccessConfigMessage =
-  | 'default'
-  | 'handler-must-be-function'
-  | 'config-handler-should-be-array-or-function'
-  | 'handler-array-cannot-be-empty'
-  | 'config-properties-must-be-array';
-export function getInvalidOnSuccessConfigMessage(
-  index?: number,
-  message: InvalidOnSuccessConfigMessage = 'default',
-  secondIndex?: number,
-) {
-  const hasIndex = typeof index == 'number',
-    hasSecondIndex = typeof secondIndex == 'number';
-
-  if (message == 'default')
-    return `${
-      hasIndex ? `Config at index ${index}, must be` : 'Expected'
-    } a function, an object with keys "properties" and "handler" or an array of functions or objects`;
-
-  if (message == 'config-properties-must-be-array')
-    return `${
-      hasIndex ? `Config at index ${index}:  ` : ''
-    }"properties" must be an array of at least 2 properties or virtuals of your schema`;
-
-  if (message == 'handler-array-cannot-be-empty')
-    return `${
-      hasIndex ? `Config at index ${index}:  ` : ''
-    }"handler" cannot be an empty array`;
-
-  if (hasSecondIndex)
-    return `${
-      hasIndex ? `Config at index ${index}:  ` : ''
-    }"handler" at index ${secondIndex} must be a function`;
-
-  return `${
-    hasIndex ? `Config at index ${index}:  ` : ''
-  }"handler" must be a function or array of functions`;
-}
-
-export function getInvalidConfigMessageForRepeatedProperties(
-  index: number,
-  existingIndex: number,
-) {
-  return `Config at index ${index} has the same properties as config at index ${existingIndex}`;
-}
-
-export abstract class SchemaCore<
+abstract class SchemaCore<
   Input,
   Output,
   CtxOptions extends ObjectType,
-  ErrorTool extends IErrorTool<any>,
+  ErrorTool extends IErrorTool<ObjectType>,
 > {
   protected _definitions = {} as ns.Definitions_<Input, Output>;
   protected _options: ns.InternalOptions<Input, Output, CtxOptions, ErrorTool>;
@@ -163,7 +76,7 @@ export abstract class SchemaCore<
   // maps
   protected readonly aliasToVirtualMap: ns.AliasToVirtualMap<Input> = {};
   protected readonly dependencyMap: ns.DependencyMap<Input> = {};
-  protected readonly propsToAllowedValuesMap = new Map<string, Set<any>>();
+  protected readonly propsToAllowedValuesMap = new Map<string, Set<unknown>>();
   protected readonly propsWithSecondaryValidators = new Set<string>();
   protected readonly virtualToAliasMap: ns.AliasToVirtualMap<Input> = {};
   protected readonly postValidationConfigMap = new Map<
@@ -173,9 +86,9 @@ export abstract class SchemaCore<
       validators: PostValidationConfig<
         Input,
         Output,
-        any,
+        unknown,
         CtxOptions
-      >['validator'];
+      >["validator"];
     }
   >();
   protected readonly propToPostValidationConfigIDsMap = new Map<
@@ -217,27 +130,24 @@ export abstract class SchemaCore<
 
   constructor(
     definitions: ns.Definitions_<Input, Output>,
-    options: ns.Options<Input, Output, any> = defaultOptions as ns.Options<
-      Input,
-      Output,
-      {},
-      ErrorTool
-    >,
+    options: ns.Options<Input, Output, unknown> = defaultOptions as never,
   ) {
     this._checkPropDefinitions(definitions);
     this._checkOptions(options);
 
     this._definitions = sortKeys(definitions);
-    this._options = sortKeys({ ...defaultOptions, ...options }) as any;
+    this._options = sortKeys(
+      Object.assign({}, defaultOptions, options),
+    ) as never;
 
     if (!this._options.ErrorTool)
-      this._options.ErrorTool = DefaultErrorTool as any;
+      this._options.ErrorTool = DefaultErrorTool as never;
 
     this.timestampTool = new TimeStampTool(this._options.timestamps);
   }
 
   protected _getContext(previousValues: Partial<Output> | null = null) {
-    const values = { ...previousValues, ...this.context } as any;
+    const values = Object.assign({}, previousValues, this.context);
 
     return this._getFrozenCopy({
       ...sortKeys(values),
@@ -250,12 +160,12 @@ export abstract class SchemaCore<
   protected _getPartialContext = () => this._getFrozenCopy(this.partialContext);
 
   protected _initializeImmutableContexts = () => {
-    this.context = { ...this.defaults, ...this.values } as any;
+    this.context = Object.assign({}, this.defaults, this.values) as never;
     this.partialContext = {} as PartialContext<Input, Output>;
   };
 
   protected _updateContext = (updates: Partial<Input>) => {
-    this.context = { ...this.context, ...updates };
+    Object.assign(this.context, updates);
   };
 
   protected _initializeContextOptions = (options: Partial<CtxOptions>) => {
@@ -265,14 +175,13 @@ export abstract class SchemaCore<
   };
 
   protected _updateContextOptions = (options: Partial<CtxOptions>) => {
-    if (isRecordLike(options))
-      this.contextOptions = { ...this.contextOptions, ...options };
+    if (isRecordLike(options)) Object.assign(this.contextOptions, options);
 
     return this._getContextOptions();
   };
 
   protected _updatePartialContext = (updates: Partial<Input>) => {
-    this.partialContext = { ...this.partialContext, ...updates };
+    Object.assign(this.partialContext, updates);
   };
 
   protected _getAliasByVirtual = (prop: KeyOf<Input>): string | undefined =>
@@ -334,7 +243,7 @@ export abstract class SchemaCore<
   };
 
   private _areHandlersOk = (
-    _handlers: any,
+    _handlers: unknown,
     lifeCycle: ns.LifeCycle,
     register: boolean,
   ) => {
@@ -349,7 +258,7 @@ export abstract class SchemaCore<
 
       if (!register) return;
 
-      if (lifeCycle == 'onDelete')
+      if (lifeCycle == "onDelete")
         return this.globalDeleteHandlers.push(
           handler as ns.DeleteHandler<Output, CtxOptions>,
         );
@@ -364,14 +273,14 @@ export abstract class SchemaCore<
     const { shouldInit } = this._getDefinition(prop);
     if (isOneOf(shouldInit, [true, undefined])) return true;
 
-    return this._getValueBy(prop, 'shouldInit', extraCtx) === true;
+    return this._getValueBy(prop, "shouldInit", extraCtx) === true;
   };
 
   protected _isUpdateAllowed = (prop: string, extraCtx: ObjectType = {}) => {
     const { shouldUpdate } = this._getDefinition(prop);
     if (isOneOf(shouldUpdate, [true, undefined])) return true;
 
-    return this._getValueBy(prop, 'shouldUpdate', extraCtx) === true;
+    return this._getValueBy(prop, "shouldUpdate", extraCtx) === true;
   };
 
   protected _canInit = (prop: string) => {
@@ -387,86 +296,88 @@ export abstract class SchemaCore<
     );
   };
 
-  protected _checkOptions = (options: ns.Options<Input, Output, any>) => {
+  protected _checkOptions = (options: ns.Options<Input, Output, unknown>) => {
     const error = new SchemaErrorTool();
 
     if (!isRecordLike(options))
-      error.add('schema options', 'Must be an object').throw();
+      error.add("schema options", "Must be an object").throw();
 
     const optionsProvided = Object.keys(options) as ns.OptionsKey<
       Output,
       Input,
-      any,
-      any
+      unknown,
+      never
     >[];
 
     if (!optionsProvided.length) return;
 
     for (const option of optionsProvided)
       if (!ALLOWED_OPTIONS.includes(option))
-        error.add(option, 'Invalid option').throw();
+        error.add(option, "Invalid option").throw();
 
-    if (isPropertyOf('equalityDepth', options)) {
+    if (isPropertyOf("equalityDepth", options)) {
       const typeProvided = typeof options.equalityDepth;
 
       if (
-        !['number', 'undefined'].includes(typeProvided) ||
+        !["number", "undefined"].includes(typeProvided) ||
         options.equalityDepth! < 0
       )
         error
           .add(
-            'equalityDepth',
+            "equalityDepth",
             "'equalityDepth' must be a number between 0 and +Infinity",
           )
           .throw();
     }
 
-    if (isPropertyOf('onDelete', options)) {
-      const isValid = this._areHandlersOk(options.onDelete, 'onDelete', true);
+    if (isPropertyOf("onDelete", options)) {
+      const isValid = this._areHandlersOk(options.onDelete, "onDelete", true);
 
-      if (!isValid.valid) error.add('onDelete', isValid.reasons!).throw();
+      if (!isValid.valid) error.add("onDelete", isValid.reasons!).throw();
     }
 
-    if (isPropertyOf('onSuccess', options)) {
-      const isValid = this._isOnSuccessOptionOk(options.onSuccess);
+    if (isPropertyOf("onSuccess", options)) {
+      const isValid = this._isOnSuccessOptionOk(options.onSuccess as never);
 
-      if (!isValid.valid) error.add('onSuccess', isValid.reason!).throw();
+      if (!isValid.valid) error.add("onSuccess", isValid.reason!).throw();
     }
 
-    if (isPropertyOf('setMissingDefaultsOnUpdate', options)) {
+    if (isPropertyOf("setMissingDefaultsOnUpdate", options)) {
       const typeProvided = typeof options.setMissingDefaultsOnUpdate;
 
-      if (!['boolean', 'undefined'].includes(typeProvided))
+      if (!["boolean", "undefined"].includes(typeProvided))
         error
           .add(
-            'setMissingDefaultsOnUpdate',
+            "setMissingDefaultsOnUpdate",
             "'setMissingDefaultsOnUpdate' should be a 'boolean'",
           )
           .throw();
     }
 
-    if (isPropertyOf('shouldUpdate', options)) {
+    if (isPropertyOf("shouldUpdate", options)) {
       const typeProvided = typeof options.shouldUpdate;
 
-      if (!['boolean', 'function'].includes(typeProvided))
+      if (!["boolean", "function"].includes(typeProvided))
         error
           .add(
-            'shouldUpdate',
+            "shouldUpdate",
             "'shouldUpdate' should either be a 'boolean' or a 'function'",
           )
           .throw();
     }
 
-    if (isPropertyOf('postValidate', options)) {
-      const isValid = this._isPostValidateOptionOk(options.postValidate);
+    if (isPropertyOf("postValidate", options)) {
+      const isValid = this._isPostValidateOptionOk(
+        options.postValidate as never,
+      );
 
-      if (!isValid.valid) error.add('postValidate', isValid.reason!).throw();
+      if (!isValid.valid) error.add("postValidate", isValid.reason!).throw();
     }
 
-    if (isPropertyOf('timestamps', options)) {
+    if (isPropertyOf("timestamps", options)) {
       const isValid = this._isTimestampsOptionOk(options.timestamps);
 
-      if (!isValid.valid) error.add('timestamps', isValid.reason!).throw();
+      if (!isValid.valid) error.add("timestamps", isValid.reason!).throw();
     }
   };
 
@@ -480,7 +391,7 @@ export abstract class SchemaCore<
     const props = getKeysAsProps(definitions);
 
     if (!props.length)
-      error.add('schema properties', 'Insufficient Schema properties').throw();
+      error.add("schema properties", "Insufficient Schema properties").throw();
 
     for (const prop of props) {
       const isDefOk = this.__isPropDefinitionOk(prop, definitions[prop]);
@@ -495,7 +406,7 @@ export abstract class SchemaCore<
       if (!dependencies.length)
         error.add(
           prop,
-          'A virtual property must have at least one property that depends on it',
+          "A virtual property must have at least one property that depends on it",
         );
     }
 
@@ -508,23 +419,24 @@ export abstract class SchemaCore<
 
     // make sure every virtual has at least one dependency
     for (const prop of this.dependents) {
-      const definition = (definitions as any)?.[prop]!;
+      // @ts-ignore: lol
+      const definition = definitions?.[prop]!;
 
       const _dependsOn = toArray<KeyOf<Input>>(definition?.dependsOn ?? []);
 
-      if (_dependsOn.includes(prop as any))
-        error.add(prop, 'A property cannot depend on itself');
+      if (_dependsOn.includes(prop as never))
+        error.add(prop, "A property cannot depend on itself");
 
       const dependsOnConstantProp = _dependsOn.some(this._isConstant);
 
       if (dependsOnConstantProp)
-        error.add(prop, 'A property cannot depend on a constant property');
+        error.add(prop, "A property cannot depend on a constant property");
 
       // check against circular dependencies
       const circularRelationShips = this._getCircularDependenciesOf({
         definitions,
         property: prop,
-      } as any);
+      } as never);
 
       for (const _prop of circularRelationShips)
         error.add(prop, `Circular dependency identified with '${_prop}'`);
@@ -551,7 +463,7 @@ export abstract class SchemaCore<
     this.constants.has(prop as KeyOf<Output>);
 
   protected _isDefaultable = (prop: string) =>
-    isPropertyOf('default', this._getDefinition(prop));
+    isPropertyOf("default", this._getDefinition(prop));
 
   protected _isDependentProp = (prop: string) =>
     this.dependents.has(prop as KeyOf<Output>);
@@ -593,7 +505,7 @@ export abstract class SchemaCore<
   protected _isVirtual = (prop: string) =>
     this.virtuals.has(prop as KeyOf<Input>);
 
-  protected _isVirtualInit = (prop: string, value: any = undefined) => {
+  protected _isVirtualInit = (prop: string, value: unknown = undefined) => {
     const isAlias = this._isVirtualAlias(prop);
 
     if (!this._isVirtual(prop) && !isAlias) return false;
@@ -610,8 +522,8 @@ export abstract class SchemaCore<
     );
   };
 
-  protected _getConstantValue = async (prop: string) =>
-    this._getValueBy(prop, 'value');
+  protected _getConstantValue = (prop: string) =>
+    this._getValueBy(prop, "value");
 
   protected _getDefinition = (prop: string) =>
     this._definitions[prop as KeyOf<Input>]!;
@@ -625,7 +537,7 @@ export abstract class SchemaCore<
       value = isFunctionLike(_default)
         ? await _default(this._getContext())
         : this.defaults[prop as KeyOf<Output>];
-    } catch (_) {
+    } catch {
       value = null;
     }
 
@@ -638,7 +550,7 @@ export abstract class SchemaCore<
     Object.freeze(Object.assign({}, data)) as Readonly<T>;
 
   protected _getHandlers = <T>(prop: string, lifeCycle: ns.LifeCycle) =>
-    toArray((this._getDefinition(prop)?.[lifeCycle] ?? []) as any) as T[];
+    toArray((this._getDefinition(prop)?.[lifeCycle] ?? []) as never) as T[];
 
   protected _getRequiredState = async (
     prop: string,
@@ -646,25 +558,24 @@ export abstract class SchemaCore<
   ): Promise<[boolean, string | FieldError]> => {
     const { required } = this._getDefinition(prop);
 
-    if (!required) return [false, ''];
+    if (!required) return [false, ""];
 
     const fallbackMessage = `'${prop}' is required`;
 
     if (!isFunctionLike(required)) return [required, fallbackMessage];
 
     const results = await required(summary);
+    const isBoolean = typeof results == "boolean";
 
-    const isBoolean = typeof results == 'boolean';
+    if (!isBoolean && !Array.isArray(results)) return [false, ""];
 
-    if (!isBoolean && !Array.isArray(results)) return [false, ''];
-
-    if (isBoolean) return [results as boolean, results ? fallbackMessage : ''];
+    if (isBoolean) return [results as boolean, results ? fallbackMessage : ""];
 
     const [isRequired, message] = results as [
         boolean,
         string | InputFieldError,
       ],
-      isString = typeof message == 'string';
+      isString = typeof message == "string";
 
     if (!isRequired || (!isString && !isInputFieldError(message)))
       return [isRequired, fallbackMessage];
@@ -675,9 +586,9 @@ export abstract class SchemaCore<
 
     return [
       true,
-      isPropertyOf('metadata', message)
+      isPropertyOf("metadata", message)
         ? fieldError
-        : ({ reasons: fieldError.reasons } as any),
+        : ({ reasons: fieldError.reasons } as never),
     ];
   };
 
@@ -689,7 +600,7 @@ export abstract class SchemaCore<
     const value = this._getDefinition(prop)?.[rule];
 
     return isFunctionLike(value)
-      ? value({ ...this._getContext(), ...extraCtx })
+      ? value(Object.assign({}, this._getContext(), extraCtx))
       : value;
   };
 
@@ -704,7 +615,7 @@ export abstract class SchemaCore<
       if (validator.length != 2)
         return {
           valid,
-          reason: 'Validator array must contain exactly 2 functions',
+          reason: "Validator array must contain exactly 2 functions",
         };
 
       const isPrimaryOk = isFunctionLike(validator[0]),
@@ -717,15 +628,15 @@ export abstract class SchemaCore<
       }
 
       if (!isPrimaryOk && isSecondaryOk)
-        return { valid, reason: 'Validator at index 0 is invalid' };
+        return { valid, reason: "Validator at index 0 is invalid" };
 
       if (isPrimaryOk && !isSecondaryOk)
-        return { valid, reason: 'Validator at index 1 is invalid' };
+        return { valid, reason: "Validator at index 1 is invalid" };
 
-      return { valid, reason: 'Invalid validators' };
+      return { valid, reason: "Invalid validators" };
     }
 
-    return { valid: isFunctionLike(validator), reason: 'Invalid validator' };
+    return { valid: isFunctionLike(validator), reason: "Invalid validator" };
   };
 
   private __hasAllowedValues = (
@@ -741,26 +652,23 @@ export abstract class SchemaCore<
 
       if (!res.valid) return res;
 
-      if (isPropertyOf('error', allow)) {
+      if (isPropertyOf("error", allow)) {
         const invalidErrorTypeMessage =
           'The "error" field of the allow rule can only accept a string, array of strings, InputFieldError or an function that returns any of the above mentioned';
 
-        const error = (allow as any).error,
+        const error = allow.error,
           isArray = Array.isArray(error),
           isFunction = isFunctionLike(error),
-          isString = typeof error == 'string';
+          isString = typeof error == "string";
 
         if (
           (!isArray && !isFunction && !isString && !isInputFieldError(error)) ||
-          (isArray && error.some((v) => typeof v != 'string'))
+          (isArray && error.some((v) => typeof v != "string"))
         )
-          return {
-            valid,
-            reason: invalidErrorTypeMessage,
-          };
+          return { valid, reason: invalidErrorTypeMessage };
       }
 
-      if (Object.keys(allow).some((k) => !['error', 'values'].includes(k)))
+      if (Object.keys(allow).some((k) => !["error", "values"].includes(k)))
         return {
           valid,
           reason:
@@ -770,34 +678,27 @@ export abstract class SchemaCore<
       return { valid: true };
     }
 
-    const allowedValues = (isObject ? allow.values : allow) as unknown as any[];
+    const allowedValues = (isObject
+      ? allow.values
+      : allow) as unknown as never[];
 
     if (!Array.isArray(allowedValues))
-      return {
-        reason: 'Allowed values must be an array',
-        valid,
-      };
+      return { reason: "Allowed values must be an array", valid };
 
     if (getUnique(allowedValues).length != allowedValues.length)
       return {
-        reason: 'Allowed values must be an array of unique values',
+        reason: "Allowed values must be an array of unique values",
         valid,
       };
 
     if (allowedValues.length < 2)
-      return {
-        reason: 'Allowed values must have at least 2 values',
-        valid,
-      };
+      return { reason: "Allowed values must have at least 2 values", valid };
 
     if (
-      isPropertyOf('default', definition) &&
-      !isOneOf(definition?.default, allowedValues as any)
+      isPropertyOf("default", definition) &&
+      !isOneOf(definition?.default, allowedValues as never)
     )
-      return {
-        reason: 'The default value must be an allowed value',
-        valid,
-      };
+      return { reason: "The default value must be an allowed value", valid };
 
     return { valid: true };
   };
@@ -815,10 +716,10 @@ export abstract class SchemaCore<
         reason: "Constant properties must have constant as 'true'",
       };
 
-    if (!isPropertyOf('value', definition))
+    if (!isPropertyOf("value", definition))
       return {
         valid,
-        reason: 'Constant properties must have a value or setter',
+        reason: "Constant properties must have a value or setter",
       };
 
     if (isEqual(value, undefined))
@@ -858,53 +759,44 @@ export abstract class SchemaCore<
     if (isEqual(_default, undefined))
       return {
         valid,
-        reason: 'Dependent properties must have a default value',
+        reason: "Dependent properties must have a default value",
       };
 
     if (isEqual(dependsOn, undefined) || !dependsOn?.length)
       return {
         valid,
-        reason: 'Dependent properties must depend on at least one property',
+        reason: "Dependent properties must depend on at least one property",
       };
 
     if (toArray(dependsOn).includes(prop as KeyOf<Input>))
-      return { valid, reason: 'A property cannot depend on itself' };
+      return { valid, reason: "A property cannot depend on itself" };
 
     if (isEqual(resolver, undefined))
-      return {
-        valid,
-        reason: 'Dependent properties must have a resolver',
-      };
+      return { valid, reason: "Dependent properties must have a resolver" };
 
     if (!isFunctionLike(resolver))
       return {
         valid,
-        reason: 'The resolver of a dependent property must be a function',
+        reason: "The resolver of a dependent property must be a function",
       };
 
-    if (isPropertyOf('validator', definition))
-      return {
-        valid,
-        reason: 'Dependent properties cannot be validated',
-      };
+    if (isPropertyOf("validator", definition))
+      return { valid, reason: "Dependent properties cannot be validated" };
 
-    if (isPropertyOf('required', definition))
-      return {
-        valid,
-        reason: 'Dependent properties cannot be required',
-      };
+    if (isPropertyOf("required", definition))
+      return { valid, reason: "Dependent properties cannot be required" };
 
-    if (readonly === 'lax')
+    if (readonly === "lax")
       return { valid, reason: "Dependent properties cannot be readonly 'lax'" };
 
     if (!isEqual(shouldInit, undefined))
       return {
         valid,
-        reason: 'Dependent properties cannot have shouldInit rule',
+        reason: "Dependent properties cannot have shouldInit rule",
       };
 
-    if (isPropertyOf('virtual', definition))
-      return { valid, reason: 'Dependent properties cannot be virtual' };
+    if (isPropertyOf("virtual", definition))
+      return { valid, reason: "Dependent properties cannot be virtual" };
 
     return { valid: true };
   };
@@ -933,19 +825,19 @@ export abstract class SchemaCore<
       for (const rule of invalidRulesProvided)
         reasons.push(`'${rule}' is not a valid rule`);
 
-    if (isPropertyOf('allow', definition)) {
+    if (isPropertyOf("allow", definition)) {
       const { valid, reason } = this.__hasAllowedValues(definition);
 
       if (valid) {
         const allowedValues = Array.isArray(definition.allow)
-          ? (definition.allow as any)
+          ? (definition.allow as never)
           : definition.allow!.values;
 
-        this.propsToAllowedValuesMap.set(prop, new Set(allowedValues));
+        this.propsToAllowedValuesMap.set(prop, new Set(allowedValues as never));
       } else reasons.push(reason!);
     }
 
-    if (isPropertyOf('alias', definition)) {
+    if (isPropertyOf("alias", definition)) {
       const { valid, reason } = this.__isVirtualAliasOk(prop, definition);
 
       if (valid) {
@@ -956,32 +848,32 @@ export abstract class SchemaCore<
       } else reasons.push(reason!);
     }
 
-    if (isPropertyOf('constant', definition)) {
+    if (isPropertyOf("constant", definition)) {
       const { valid, reason } = this.__isConstantProp(definition);
 
-      valid ? this.constants.add(prop as any) : reasons.push(reason!);
-    } else if (isPropertyOf('value', definition))
+      valid ? this.constants.add(prop as never) : reasons.push(reason!);
+    } else if (isPropertyOf("value", definition))
       reasons.push("'value' rule can only be used with constant properties");
 
-    if (hasAnyOf(definition, ['dependsOn', 'resolver'])) {
+    if (hasAnyOf(definition, ["dependsOn", "resolver"])) {
       const { valid, reason } = this.__isDependentProp(prop, definition);
 
       if (valid) {
-        this.dependents.add(prop as any);
+        this.dependents.add(prop as never);
         this._setDependencies(prop, definition.dependsOn!);
       } else reasons.push(reason!);
     }
 
-    if (isPropertyOf('readonly', definition)) {
+    if (isPropertyOf("readonly", definition)) {
       const { valid, reason } = this.__isReadonly(definition);
 
       valid ? this.readonlyProps.add(prop) : reasons.push(reason!);
     }
 
-    if (isPropertyOf('required', definition)) {
+    if (isPropertyOf("required", definition)) {
       const { required } = definition;
 
-      if (typeof required == 'function') {
+      if (typeof required == "function") {
         const { valid, reason } = this.__isRequiredBy(definition);
 
         valid ? this.propsRequiredBy.add(prop) : reasons.push(reason!);
@@ -992,20 +884,20 @@ export abstract class SchemaCore<
       }
     }
 
-    if (isPropertyOf('virtual', definition)) {
+    if (isPropertyOf("virtual", definition)) {
       const { valid, reason } = this.__isVirtual(prop, definition);
 
       valid ? this.virtuals.add(prop) : reasons.push(reason!);
-    } else if (isPropertyOf('sanitizer', definition))
+    } else if (isPropertyOf("sanitizer", definition))
       reasons.push("'sanitizer' is only valid on virtuals");
 
-    if (isPropertyOf('shouldInit', definition)) {
+    if (isPropertyOf("shouldInit", definition)) {
       const { valid, reason } = this.__isShouldInitConfigOk(definition);
 
       if (!valid) reasons.push(reason!);
     }
 
-    if (isPropertyOf('shouldUpdate', definition)) {
+    if (isPropertyOf("shouldUpdate", definition)) {
       const { valid, reason } = this.__isShouldUpdateConfigOk(definition);
 
       if (!valid) reasons.push(reason!);
@@ -1013,12 +905,12 @@ export abstract class SchemaCore<
 
     const isValidatorOk = this._isValidatorOk(prop, definition);
 
-    if (isPropertyOf('validator', definition) && !isValidatorOk.valid)
+    if (isPropertyOf("validator", definition) && !isValidatorOk.valid)
       reasons.push(isValidatorOk.reason!);
 
     if (
-      isPropertyOf('onFailure', definition) &&
-      !isPropertyOf('validator', definition)
+      isPropertyOf("onFailure", definition) &&
+      !isPropertyOf("validator", definition)
     )
       reasons.push(
         "'onFailure' can only be used with properties that support and have validators",
@@ -1035,7 +927,7 @@ export abstract class SchemaCore<
 
     if (this.__isLax(definition)) this.laxProps.add(prop);
 
-    const hasDefaultRule = isPropertyOf('default', definition);
+    const hasDefaultRule = isPropertyOf("default", definition);
 
     if (
       !hasDefaultRule &&
@@ -1048,17 +940,18 @@ export abstract class SchemaCore<
       !reasons.length
     ) {
       reasons.push(
-        'A property should at least be readonly, required, or have a default value',
+        "A property should at least be readonly, required, or have a default value",
       );
     }
 
     const valid = reasons.length <= 0;
 
     if (valid && !this._isVirtual(prop)) {
-      this.props.add(prop as any);
+      this.props.add(prop as never);
 
-      if (hasDefaultRule && typeof definition.default !== 'function')
-        this.defaults[prop as unknown as KeyOf<Output>] = definition.default;
+      if (hasDefaultRule && typeof definition.default !== "function")
+        this.defaults[prop as unknown as KeyOf<Output>] =
+          definition.default as never;
     }
 
     return { reasons, valid };
@@ -1077,44 +970,44 @@ export abstract class SchemaCore<
 
     const valid = false;
 
-    if (!isOneOf(readonly, [true, 'lax'] as any))
+    if (!isOneOf(readonly, [true, "lax"] as never))
       return {
         reason: "Readonly properties are either true | 'lax'",
         valid,
       };
 
-    if (isPropertyOf('required', definition) && typeof required != 'function')
+    if (isPropertyOf("required", definition) && typeof required != "function")
       return {
         valid,
         reason:
-          'Strictly readonly properties are required. Either use a callable required + readonly(true) or remove the required rule',
+          "Strictly readonly properties are required. Either use a callable required + readonly(true) or remove the required rule",
       };
 
-    const hasDependentRule = isPropertyOf('dependsOn', definition);
+    const hasDependentRule = isPropertyOf("dependsOn", definition);
 
-    if (readonly === 'lax' && hasDependentRule)
-      return { valid, reason: 'Readonly(lax) properties cannot be dependent' };
+    if (readonly === "lax" && hasDependentRule)
+      return { valid, reason: "Readonly(lax) properties cannot be dependent" };
 
     if (
-      (readonly === 'lax' || hasDependentRule || shouldInit === false) &&
+      (readonly === "lax" || hasDependentRule || shouldInit === false) &&
       isEqual(_default, undefined)
     )
       return {
         valid,
         reason:
-          'readonly properties must have a default value or a default setter',
+          "readonly properties must have a default value or a default setter",
       };
 
-    if (readonly === 'lax' && !isEqual(shouldInit, undefined))
+    if (readonly === "lax" && !isEqual(shouldInit, undefined))
       return {
         valid,
-        reason: 'Lax properties cannot have initialization blocked',
+        reason: "Lax properties cannot have initialization blocked",
       };
 
-    if (readonly === 'lax' && isEqual(shouldUpdate, false))
+    if (readonly === "lax" && isEqual(shouldUpdate, false))
       return {
         valid,
-        reason: 'Readonly(lax) properties cannot have updates strictly blocked',
+        reason: "Readonly(lax) properties cannot have updates strictly blocked",
       };
 
     return { valid: true };
@@ -1125,17 +1018,14 @@ export abstract class SchemaCore<
   ) => {
     const valid = false;
 
-    if (isPropertyOf('dependsOn', definition))
-      return {
-        valid,
-        reason: 'Required properties cannot be dependent',
-      };
+    if (isPropertyOf("dependsOn", definition))
+      return { valid, reason: "Required properties cannot be dependent" };
 
     if (
-      !isPropertyOf('validator', definition) &&
-      !isPropertyOf('allow', definition)
+      !isPropertyOf("validator", definition) &&
+      !isPropertyOf("allow", definition)
     )
-      return { valid, reason: 'Required properties must have a validator' };
+      return { valid, reason: "Required properties must have a validator" };
 
     return { valid: true };
   };
@@ -1151,24 +1041,24 @@ export abstract class SchemaCore<
         reason: "Required properties must have required as 'true'",
       };
 
-    if (isPropertyOf('default', definition))
+    if (isPropertyOf("default", definition))
       return {
         valid,
         reason:
-          'Strictly required properties cannot have a default value or setter',
+          "Strictly required properties cannot have a default value or setter",
       };
 
-    if (isPropertyOf('readonly', definition))
+    if (isPropertyOf("readonly", definition))
       return {
         valid,
-        reason: 'Strictly required properties cannot be readonly',
+        reason: "Strictly required properties cannot be readonly",
       };
 
-    if (isPropertyOf('shouldInit', definition))
+    if (isPropertyOf("shouldInit", definition))
       return {
         valid,
         reason:
-          'Strictly Required properties cannot have a initialization blocked',
+          "Strictly Required properties cannot have a initialization blocked",
       };
 
     const isRequiredCommon = this.__isRequiredCommon(definition);
@@ -1185,26 +1075,26 @@ export abstract class SchemaCore<
 
     const requiredType = typeof definition?.required;
 
-    if (requiredType !== 'function')
+    if (requiredType !== "function")
       return {
         valid,
-        reason: 'Callable required properties must have required as a function',
+        reason: "Callable required properties must have required as a function",
       };
 
-    if (isPropertyOf('allow', definition))
+    if (isPropertyOf("allow", definition))
       return {
         valid,
         reason:
           '"allow" rule is cannot be applied to conditionally required properties',
       };
 
-    const hasVirtualRule = isPropertyOf('virtual', definition);
+    const hasVirtualRule = isPropertyOf("virtual", definition);
 
     if (isEqual(definition?.default, undefined) && !hasVirtualRule)
       return {
         valid,
         reason:
-          'Callable required properties must have a default value or setter',
+          "Callable required properties must have a default value or setter",
       };
 
     if (!hasVirtualRule) {
@@ -1230,11 +1120,11 @@ export abstract class SchemaCore<
           "The initialization of a property can only be blocked if the 'shouldinit' rule is set to 'false' or a function that returns a boolean",
       };
 
-    if (!hasAnyOf(definition, ['default', 'virtual']))
+    if (!hasAnyOf(definition, ["default", "virtual"]))
       return {
         valid,
         reason:
-          'A property with initialization blocked must have a default value',
+          "A property with initialization blocked must have a default value",
       };
 
     return { valid: true };
@@ -1272,10 +1162,10 @@ export abstract class SchemaCore<
   private __isVirtualRequiredBy = (
     definition: ns.Definitions_<Input, Output>[KeyOf<Input>],
   ) => {
-    if (isPropertyOf('shouldInit', definition))
+    if (isPropertyOf("shouldInit", definition))
       return {
         valid: false,
-        reason: 'Required virtuals cannot have initialization blocked',
+        reason: "Required virtuals cannot have initialization blocked",
       };
 
     const isRequiredBy = this.__isRequiredBy(definition);
@@ -1290,7 +1180,6 @@ export abstract class SchemaCore<
     definition: ns.Definitions_<Input, Output>[KeyOf<Input>],
   ) => {
     const valid = false;
-
     const { sanitizer, virtual } = definition!;
 
     if (virtual !== true)
@@ -1300,10 +1189,10 @@ export abstract class SchemaCore<
 
     if (!isValidatorOk.valid) return { valid, reason: isValidatorOk.reason };
 
-    if (isPropertyOf('sanitizer', definition) && !isFunctionLike(sanitizer))
+    if (isPropertyOf("sanitizer", definition) && !isFunctionLike(sanitizer))
       return { valid, reason: "'sanitizer' must be a function" };
 
-    if (isPropertyOf('required', definition)) {
+    if (isPropertyOf("required", definition)) {
       const isValid = this.__isVirtualRequiredBy(definition);
 
       if (!isValid.valid) return isValid;
@@ -1317,7 +1206,7 @@ export abstract class SchemaCore<
       return {
         valid,
         reason: `Virtual properties can only have (${VIRTUAL_RULES.join(
-          ', ',
+          ", ",
         )}) as rules`,
       };
 
@@ -1332,22 +1221,19 @@ export abstract class SchemaCore<
 
     const { alias } = definition!;
 
-    if (!isPropertyOf('virtual', definition))
-      return {
-        valid,
-        reason: 'Only virtual properties can have aliases',
-      };
+    if (!isPropertyOf("virtual", definition))
+      return { valid, reason: "Only virtual properties can have aliases" };
 
-    if (typeof alias !== 'string' || !alias.length)
+    if (typeof alias !== "string" || !alias.length)
       return {
         valid,
-        reason: 'An alias must be a string with at least 1 character',
+        reason: "An alias must be a string with at least 1 character",
       };
 
     if (alias == prop)
       return {
         valid,
-        reason: 'An alias cannot be the same as the virtual property',
+        reason: "An alias cannot be the same as the virtual property",
       };
 
     const isTakenBy = this._getVirtualByAlias(alias);
@@ -1366,7 +1252,7 @@ export abstract class SchemaCore<
     const invalidResponse = {
       valid: false,
       reason: `'${alias}' cannot be used as the alias of '${prop}' because it is the name of an existing property on your schema. To use an alias that matches another property on your schema, this property must be dependent on the said virtual property`,
-    } as any;
+    };
 
     const isDependentOnVirtual = (
       this._getDependencies(prop) as string[]
@@ -1375,7 +1261,7 @@ export abstract class SchemaCore<
     return (this._isProp(alias) && !isDependentOnVirtual) ||
       this._isVirtual(alias)
       ? invalidResponse
-      : { valid: true };
+      : ({ valid: true } as typeof invalidResponse);
   };
 
   private __isLax = (
@@ -1387,33 +1273,33 @@ export abstract class SchemaCore<
     if (isEqual(definition?.default, undefined)) return false;
 
     // Lax properties cannot be dependent
-    if (isPropertyOf('dependent', definition)) return false;
+    if (isPropertyOf("dependent", definition)) return false;
 
     // Lax properties cannot be required
-    if (isPropertyOf('required', definition)) return false;
+    if (isPropertyOf("required", definition)) return false;
 
     // Lax properties cannot be virtual
-    if (isPropertyOf('virtual', definition)) return false;
+    if (isPropertyOf("virtual", definition)) return false;
 
     // only readonly(lax) are lax props &
     // Lax properties cannot have initialization blocked
     if (
-      (isPropertyOf('readonly', definition) && readonly !== 'lax') ||
-      (isPropertyOf('shouldInit', definition) &&
-        typeof shouldInit != 'function')
+      (isPropertyOf("readonly", definition) && readonly !== "lax") ||
+      (isPropertyOf("shouldInit", definition) &&
+        typeof shouldInit != "function")
     )
       return false;
 
     return true;
   };
 
-  private _isPostValidateSingleConfigOk(value: any, index?: number) {
+  private _isPostValidateSingleConfigOk(value: unknown, index?: number) {
     const valid = false;
 
     if (
       !value ||
-      !isPropertyOf('properties', value) ||
-      !isPropertyOf('validator', value) ||
+      !isPropertyOf("properties", value) ||
+      !isPropertyOf("validator", value) ||
       Object.keys(value).length > 2
     )
       return {
@@ -1421,15 +1307,17 @@ export abstract class SchemaCore<
         reason: getInvalidPostValidateConfigMessage(index),
       };
 
+    // @ts-ignore: lol
     if (!Array.isArray(value.properties))
       return {
         valid,
         reason: getInvalidPostValidateConfigMessage(
           index,
-          'properties-must-be-input-array',
+          "properties-must-be-input-array",
         ),
       };
 
+    // @ts-ignore: lol
     const properties = getUnique(value.properties);
 
     if (properties.length < 2)
@@ -1437,16 +1325,17 @@ export abstract class SchemaCore<
         valid,
         reason: getInvalidPostValidateConfigMessage(
           index,
-          'properties-must-be-input-array',
+          "properties-must-be-input-array",
         ),
       };
 
+    // @ts-ignore: lol
     if (properties.length < value.properties.length)
       return {
         valid,
         reason: getInvalidPostValidateConfigMessage(
           index,
-          'properties-array-must-contain-unique-values',
+          "properties-array-must-contain-unique-values",
         ),
       };
 
@@ -1463,10 +1352,12 @@ export abstract class SchemaCore<
 
     if (reasons.length) return { valid, reason: reasons };
 
+    // @ts-ignore: lol
     if (Array.isArray(value.validator)) {
+      // @ts-ignore: lol
       const validators = value.validator as Exclude<
-        PostValidationConfig<Input, Output, any, CtxOptions>['validator'],
-        PostValidator<Input, Output, any, CtxOptions>
+        PostValidationConfig<Input, Output, unknown, CtxOptions>["validator"],
+        PostValidator<Input, Output, unknown, CtxOptions>
       >;
 
       if (!validators.length)
@@ -1474,7 +1365,7 @@ export abstract class SchemaCore<
           valid,
           reason: getInvalidPostValidateConfigMessage(
             index,
-            'validator-array-cannot-be-empty',
+            "validator-array-cannot-be-empty",
           ),
         };
 
@@ -1487,7 +1378,7 @@ export abstract class SchemaCore<
               reasons.push(
                 getInvalidPostValidateConfigMessage(
                   index,
-                  'validator-must-be-function',
+                  "validator-must-be-function",
                   i,
                   i2,
                 ),
@@ -1498,7 +1389,7 @@ export abstract class SchemaCore<
             return reasons.push(
               getInvalidPostValidateConfigMessage(
                 index,
-                'validator-array-cannot-be-empty',
+                "validator-array-cannot-be-empty",
                 i,
               ),
             );
@@ -1506,7 +1397,7 @@ export abstract class SchemaCore<
           reasons.push(
             getInvalidPostValidateConfigMessage(
               index,
-              'validator-must-be-function-or-array',
+              "validator-must-be-function-or-array",
               i,
             ),
           );
@@ -1517,43 +1408,43 @@ export abstract class SchemaCore<
       return { valid: true };
     }
 
+    // @ts-ignore: lol
     if (!isFunctionLike(value.validator))
       return {
         valid,
         reason: getInvalidPostValidateConfigMessage(
           index,
-          'validator-must-be-function',
+          "validator-must-be-function",
         ),
       };
 
     return { valid: true };
   }
 
-  private __isOnSuccessSingleConfigOk(value: any, index?: number) {
+  private __isOnSuccessSingleConfigOk(value: unknown, index?: number) {
     if (isFunctionLike(value)) return { valid: true };
 
     const valid = false;
 
     if (
       !value ||
-      !isPropertyOf('properties', value) ||
-      !isPropertyOf('handler', value) ||
+      !isPropertyOf("properties", value) ||
+      !isPropertyOf("handler", value) ||
       Object.keys(value).length > 2
     )
-      return {
-        valid,
-        reason: getInvalidOnSuccessConfigMessage(index),
-      };
+      return { valid, reason: getInvalidOnSuccessConfigMessage(index) };
 
+    // @ts-ignore: lol
     if (!Array.isArray(value.properties))
       return {
         valid,
         reason: getInvalidOnSuccessConfigMessage(
           index,
-          'config-properties-must-be-array',
+          "config-properties-must-be-array",
         ),
       };
 
+    // @ts-ignore: lol
     const properties = getUnique(value.properties);
 
     if (properties.length < 2)
@@ -1561,7 +1452,7 @@ export abstract class SchemaCore<
         valid,
         reason: getInvalidOnSuccessConfigMessage(
           index,
-          'config-properties-must-be-array',
+          "config-properties-must-be-array",
         ),
       };
 
@@ -1571,22 +1462,24 @@ export abstract class SchemaCore<
       if (!this._isProp(prop) && !this._isVirtual(prop)) {
         reasons.push(
           `${
-            index != undefined ? `Config at index ${index}: ` : ''
+            index != undefined ? `Config at index ${index}: ` : ""
           }"${prop}" is not a property or virtual on your schema`,
         );
       }
 
     if (reasons.length) return { valid, reason: reasons };
 
+    // @ts-ignore: lol
     if (Array.isArray(value.handler)) {
-      const handlers = value.handler as any[];
+      // @ts-ignore: lol
+      const handlers = value.handler as unknown[];
 
       if (!handlers.length)
         return {
           valid,
           reason: getInvalidOnSuccessConfigMessage(
             index,
-            'handler-array-cannot-be-empty',
+            "handler-array-cannot-be-empty",
           ),
         };
 
@@ -1597,7 +1490,7 @@ export abstract class SchemaCore<
           reasons.push(
             getInvalidOnSuccessConfigMessage(
               index,
-              'handler-must-be-function',
+              "handler-must-be-function",
               i,
             ),
           );
@@ -1608,12 +1501,13 @@ export abstract class SchemaCore<
       return { valid: true };
     }
 
+    // @ts-ignore: lol
     if (!isFunctionLike(value.handler))
       return {
         valid,
         reason: getInvalidOnSuccessConfigMessage(
           index,
-          'config-handler-should-be-array-or-function',
+          "config-handler-should-be-array-or-function",
         ),
       };
 
@@ -1621,7 +1515,10 @@ export abstract class SchemaCore<
   }
 
   private _registerPostValidator(
-    { properties, validator }: PostValidationConfig<Input, Output, any, {}>,
+    {
+      properties,
+      validator,
+    }: PostValidationConfig<Input, Output, unknown, CtxOptions>,
     index: number,
   ) {
     const sortedProps = sort(properties),
@@ -1662,7 +1559,7 @@ export abstract class SchemaCore<
   ) {
     if (isFunction) {
       this.globalSuccessHandlers.push(
-        config as ns.SuccessHandler<Input, Output, any>,
+        config as ns.SuccessHandler<Input, Output, CtxOptions>,
       );
 
       return { valid: true };
@@ -1671,7 +1568,7 @@ export abstract class SchemaCore<
     const { properties, handler } = config as ns.OnSuccessConfigObject<
       Input,
       Output,
-      any
+      CtxOptions
     >;
 
     const sortedProps = sort(properties),
@@ -1705,20 +1602,17 @@ export abstract class SchemaCore<
   }
 
   private _isOnSuccessOptionOk(
-    option: ns.Options<Input, Output, any>['onSuccess'],
+    option: ns.Options<Input, Output, unknown, never, CtxOptions>["onSuccess"],
   ) {
     const valid = false,
       isFunction = isFunctionLike(option),
       isObject = isRecordLike(option);
 
     if (!option || (!Array.isArray(option) && !isFunction && !isObject))
-      return {
-        valid,
-        reason: getInvalidOnSuccessConfigMessage(),
-      };
+      return { valid, reason: getInvalidOnSuccessConfigMessage() };
 
     if (isFunction) {
-      this._registerSuccessConfig(option as any, isFunction, 0);
+      this._registerSuccessConfig(option, isFunction, 0);
 
       return { valid: true };
     }
@@ -1728,7 +1622,7 @@ export abstract class SchemaCore<
 
       if (!isValid.valid) return isValid;
 
-      this._registerSuccessConfig(option as any, false, 0);
+      this._registerSuccessConfig(option, false, 0);
 
       return { valid: true };
     }
@@ -1763,28 +1657,32 @@ export abstract class SchemaCore<
   }
 
   private _isPostValidateOptionOk(
-    option: ns.Options<Input, Output, any>['postValidate'],
+    option: ns.Options<
+      Input,
+      Output,
+      unknown,
+      never,
+      CtxOptions
+    >["postValidate"],
   ) {
     const valid = false,
       isObject = isRecordLike(option);
 
     if (!option || (!Array.isArray(option) && !isObject))
-      return {
-        valid,
-        reason: getInvalidPostValidateConfigMessage(),
-      };
+      return { valid, reason: getInvalidPostValidateConfigMessage() };
 
     if (isObject) {
       const isValid = this._isPostValidateSingleConfigOk(option);
 
       if (!isValid.valid) return isValid;
 
-      this._registerPostValidator(option as any, 0);
+      this._registerPostValidator(option as never, 0);
 
       return { valid: true };
     }
 
-    const configs: PostValidationConfig<Input, Output, any, {}>[] = option;
+    const configs: PostValidationConfig<Input, Output, unknown, CtxOptions>[] =
+      option;
     let reasons: string[] = [];
 
     configs.forEach((config, i) => {
@@ -1810,26 +1708,23 @@ export abstract class SchemaCore<
   }
 
   private _isTimestampsOptionOk(
-    timestamps: ns.Options<Input, Output, any>['timestamps'],
+    timestamps: ns.Options<Input, Output, unknown>["timestamps"],
   ) {
     const valid = false;
 
     const typeProveded = typeof timestamps;
 
-    if (typeProveded === 'boolean') return { valid: true };
+    if (typeProveded === "boolean") return { valid: true };
 
     if (!isRecordLike(timestamps))
-      return {
-        valid,
-        reason: "should be 'boolean' or 'non null object'",
-      };
+      return { valid, reason: "should be 'boolean' or 'non null object'" };
 
     if (!Object.keys(timestamps!).length)
-      return { valid, reason: 'cannot be an empty object' };
+      return { valid, reason: "cannot be an empty object" };
 
     const { createdAt, updatedAt } = timestamps as {
-      createdAt: '';
-      updatedAt: '';
+      createdAt: "";
+      updatedAt: "";
     };
 
     const reservedKeys = [...this.props, ...this.virtuals] as string[];
@@ -1838,15 +1733,110 @@ export abstract class SchemaCore<
       if (key && reservedKeys?.includes(key))
         return { valid, reason: `'${key}' already belongs to your schema` };
 
-    if (typeof createdAt == 'string' && !createdAt.trim().length)
+    if (typeof createdAt == "string" && !createdAt.trim().length)
       return { valid, reason: "'createdAt' cannot be an empty string" };
 
-    if (typeof updatedAt == 'string' && !updatedAt.trim().length)
+    if (typeof updatedAt == "string" && !updatedAt.trim().length)
       return { valid, reason: "'updatedAt' cannot be an empty string" };
 
     if (createdAt === updatedAt)
-      return { valid, reason: 'createdAt & updatedAt cannot be same' };
+      return { valid, reason: "createdAt & updatedAt cannot be same" };
 
     return { valid: true };
   }
+}
+
+type InvalidPostValidateConfigMessage =
+  | "default"
+  | "validator-array-cannot-be-empty"
+  | "validator-must-be-function"
+  | "validator-must-be-function-or-array"
+  | "properties-must-be-input-array"
+  | "properties-array-must-contain-unique-values";
+
+function getInvalidPostValidateConfigMessage(
+  index?: number,
+  message: InvalidPostValidateConfigMessage = "default",
+  secondIndex?: number,
+  thirdIndex?: number,
+) {
+  const hasIndex = typeof index == "number",
+    hasSecondIndex = typeof secondIndex == "number",
+    hasThirdIndex = typeof thirdIndex == "number";
+
+  if (message == "default")
+    return `Config${
+      hasIndex ? ` at index ${index},` : ""
+    } must be an object with keys "properties" and "validator" or an array of "PostValidateConfig"`;
+
+  if (message == "properties-must-be-input-array")
+    return `${
+      hasIndex ? `Config at index ${index}:  ` : ""
+    }"properties" must be an array of at least 2 input properties of your schema`;
+
+  if (message == "properties-array-must-contain-unique-values")
+    return `${
+      hasIndex ? `Config at index ${index}:  ` : ""
+    }"properties" array must contain unique values`;
+
+  if (message == "validator-array-cannot-be-empty")
+    return `${
+      hasIndex ? `Config at index ${index}:  ` : ""
+    }"validator" cannot be an empty array`;
+
+  if (message == "validator-must-be-function")
+    if (hasThirdIndex)
+      return `${
+        hasIndex ? `Config at index ${index}:  ` : ""
+      }"validator" at index [${secondIndex}][${thirdIndex}] must be a function`;
+
+  return `${hasIndex ? `Config at index ${index}:  ` : ""}"validator" ${
+    hasSecondIndex ? `at index ${secondIndex} ` : ""
+  }must be a function or array of functions`;
+}
+
+type InvalidOnSuccessConfigMessage =
+  | "default"
+  | "handler-must-be-function"
+  | "config-handler-should-be-array-or-function"
+  | "handler-array-cannot-be-empty"
+  | "config-properties-must-be-array";
+function getInvalidOnSuccessConfigMessage(
+  index?: number,
+  message: InvalidOnSuccessConfigMessage = "default",
+  secondIndex?: number,
+) {
+  const hasIndex = typeof index == "number",
+    hasSecondIndex = typeof secondIndex == "number";
+
+  if (message == "default")
+    return `${
+      hasIndex ? `Config at index ${index}, must be` : "Expected"
+    } a function, an object with keys "properties" and "handler" or an array of functions or objects`;
+
+  if (message == "config-properties-must-be-array")
+    return `${
+      hasIndex ? `Config at index ${index}:  ` : ""
+    }"properties" must be an array of at least 2 properties or virtuals of your schema`;
+
+  if (message == "handler-array-cannot-be-empty")
+    return `${
+      hasIndex ? `Config at index ${index}:  ` : ""
+    }"handler" cannot be an empty array`;
+
+  if (hasSecondIndex)
+    return `${
+      hasIndex ? `Config at index ${index}:  ` : ""
+    }"handler" at index ${secondIndex} must be a function`;
+
+  return `${
+    hasIndex ? `Config at index ${index}:  ` : ""
+  }"handler" must be a function or array of functions`;
+}
+
+function getInvalidConfigMessageForRepeatedProperties(
+  index: number,
+  existingIndex: number,
+) {
+  return `Config at index ${index} has the same properties as config at index ${existingIndex}`;
 }

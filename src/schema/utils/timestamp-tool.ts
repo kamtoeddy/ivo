@@ -1,5 +1,5 @@
-import { isEqual } from '../../utils';
-import { NS, KeyOf } from '../types';
+import { isEqual } from "../../utils";
+import { NS, KeyOf } from "../types";
 
 export { TimeStampTool };
 
@@ -9,37 +9,39 @@ class TimeStampTool {
   private _keys: TimestampKey[];
   private timestamps: NS.Timestamp;
 
-  constructor(timestamps: NS.Options<any, any, any>['timestamps']) {
+  constructor(timestamps: NS.Options<unknown, unknown, unknown>["timestamps"]) {
     this.timestamps = this._makeTimestamps(timestamps);
 
     this._keys = Object.keys(this.timestamps).filter(
-      (key) => key.length > 0
+      (key) => key.length > 0,
     ) as TimestampKey[];
   }
 
-  private _makeTimestamps(timestamps: NS.Options<any, any, any>['timestamps']) {
-    if (isEqual(timestamps, undefined)) return { createdAt: '', updatedAt: '' };
+  private _makeTimestamps(
+    timestamps: NS.Options<unknown, unknown, unknown>["timestamps"],
+  ) {
+    if (isEqual(timestamps, undefined)) return { createdAt: "", updatedAt: "" };
 
-    let createdAt = 'createdAt',
-      updatedAt = 'updatedAt';
+    let createdAt = "createdAt",
+      updatedAt = "updatedAt";
 
     if (!timestamps || timestamps === true)
       return timestamps
         ? { createdAt, updatedAt }
-        : { createdAt: '', updatedAt: '' };
+        : { createdAt: "", updatedAt: "" };
 
     const custom_createdAt = timestamps?.createdAt;
     const custom_updatedAt = timestamps?.updatedAt;
 
-    if (custom_createdAt && typeof custom_createdAt == 'string')
+    if (custom_createdAt && typeof custom_createdAt == "string")
       createdAt = custom_createdAt.trim();
 
-    if (custom_createdAt === false) createdAt = '';
+    if (custom_createdAt === false) createdAt = "";
 
-    if (custom_updatedAt && typeof custom_updatedAt == 'string')
+    if (custom_updatedAt && typeof custom_updatedAt == "string")
       updatedAt = custom_updatedAt.trim();
 
-    if (custom_updatedAt === false) updatedAt = '';
+    if (custom_updatedAt === false) updatedAt = "";
 
     return { createdAt, updatedAt };
   }
@@ -47,7 +49,7 @@ class TimeStampTool {
   getKeys() {
     return {
       createdAt: this.timestamps.createdAt,
-      updatedAt: this.timestamps.updatedAt
+      updatedAt: this.timestamps.updatedAt,
     };
   }
 
