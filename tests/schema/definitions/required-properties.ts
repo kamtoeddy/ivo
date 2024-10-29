@@ -225,9 +225,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
             message: ERRORS.VALIDATION_ERROR,
             payload: {
               price: {
-                reasons: expect.arrayContaining([
-                  "A price is required to publish a book!",
-                ]),
+                reason: "A price is required to publish a book!",
                 metadata: null,
               },
             },
@@ -299,9 +297,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
             message: ERRORS.VALIDATION_ERROR,
             payload: {
               price: {
-                reasons: expect.arrayContaining([
-                  "A price is required to publish a book!",
-                ]),
+                reason: "A price is required to publish a book!",
                 metadata: null,
               },
             },
@@ -318,15 +314,11 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
             message: ERRORS.VALIDATION_ERROR,
             payload: {
               priceReadonly: {
-                reasons: expect.arrayContaining([
-                  "A priceReadonly is required when price is 101!",
-                ]),
+                reason: "A priceReadonly is required when price is 101!",
                 metadata: null,
               },
               priceRequiredWithoutMessage: {
-                reasons: expect.arrayContaining([
-                  "'priceRequiredWithoutMessage' is required",
-                ]),
+                reason: "'priceRequiredWithoutMessage' is required",
                 metadata: null,
               },
             },
@@ -399,29 +391,20 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
       describe("behaviour when a non-string value is returned as message from required function", () => {
         describe("should respect InputField", () => {
           const responses = [
-            [{ reason: "lol" }, { reasons: expect.arrayContaining(["lol"]) }],
+            [{ reason: "lol" }, { reason: "lol" }],
             [
               { reason: "lol", metadata: { shouldWork: true } },
-              {
-                reasons: expect.arrayContaining(["lol"]),
-                metadata: { shouldWork: true },
-              },
+              { reason: "lol", metadata: { shouldWork: true } },
             ],
             [
               { reason: "", metadata: null },
-              {
-                reasons: expect.arrayContaining(["'price' is required"]),
-                metadata: null,
-              },
+              { reason: "'price' is required", metadata: null },
             ],
             [
               { metadata: null },
-              {
-                reasons: expect.arrayContaining(["'price' is required"]),
-                metadata: null,
-              },
+              { reason: "'price' is required", metadata: null },
             ],
-            [{}, { reasons: expect.arrayContaining(["'price' is required"]) }],
+            [{}, { reason: "'price' is required" }],
           ];
 
           for (const [provided, expected] of responses) {
@@ -443,7 +426,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
 
               expect(error).toMatchObject({
                 message: ERRORS.VALIDATION_ERROR,
-                payload: { price: expected },
+                payload: { price: expect.objectContaining(expected) },
               });
             });
 
@@ -462,7 +445,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
 
               expect(error).toMatchObject({
                 message: ERRORS.VALIDATION_ERROR,
-                payload: { price: expected },
+                payload: { price: expect.objectContaining(expected) },
               });
             });
           }
@@ -501,7 +484,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
                 message: ERRORS.VALIDATION_ERROR,
                 payload: {
                   price: {
-                    reasons: expect.arrayContaining(["'price' is required"]),
+                    reason: "'price' is required",
                     metadata: null,
                   },
                 },
@@ -524,10 +507,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
               expect(error).toMatchObject({
                 message: ERRORS.VALIDATION_ERROR,
                 payload: {
-                  price: {
-                    reasons: expect.arrayContaining(["'price' is required"]),
-                    metadata: null,
-                  },
+                  price: { reason: "'price' is required", metadata: null },
                 },
               });
             });
@@ -613,7 +593,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
               message: ERRORS.VALIDATION_ERROR,
               payload: {
                 _price: {
-                  reasons: expect.arrayContaining(["'_price' is required"]),
+                  reason: "'_price' is required",
                   metadata: null,
                 },
               },
@@ -630,7 +610,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
               message: ERRORS.VALIDATION_ERROR,
               payload: {
                 _price: {
-                  reasons: expect.arrayContaining(["'_price' is required"]),
+                  reason: "'_price' is required",
                   metadata: null,
                 },
               },
@@ -663,7 +643,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
               message: ERRORS.VALIDATION_ERROR,
               payload: {
                 _price: {
-                  reasons: expect.arrayContaining(["'_price' is required"]),
+                  reason: "'_price' is required",
                   metadata: null,
                 },
               },
@@ -707,7 +687,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
               message: ERRORS.VALIDATION_ERROR,
               payload: {
                 _price: {
-                  reasons: expect.arrayContaining(["'_price' is required"]),
+                  reason: "'_price' is required",
                   metadata: null,
                 },
               },
@@ -753,10 +733,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
             expect(error).toMatchObject({
               message: ERRORS.VALIDATION_ERROR,
               payload: {
-                _price: {
-                  reasons: expect.arrayContaining(["'_price' is required"]),
-                  metadata: null,
-                },
+                _price: { reason: "'_price' is required", metadata: null },
               },
             });
           });
@@ -778,7 +755,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
               message: ERRORS.VALIDATION_ERROR,
               payload: {
                 _price: {
-                  reasons: expect.arrayContaining(["'_price' is required"]),
+                  reason: "'_price' is required",
                   metadata: null,
                 },
               },

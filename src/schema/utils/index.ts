@@ -1,16 +1,5 @@
-import {
-  isPropertyOf,
-  FieldKey,
-  toArray,
-  isRecordLike,
-  isEqual,
-} from "../../utils";
-import {
-  FieldError,
-  FullInputFieldError,
-  InputFieldError,
-  InputPayload,
-} from "./types";
+import { isPropertyOf, FieldKey, isRecordLike, isEqual } from "../../utils";
+import { FieldError, InputFieldError, InputPayload } from "./types";
 
 export * from "./types";
 export * from "./error-tool";
@@ -25,21 +14,17 @@ function isFieldError(data: unknown): data is FieldError {
   if (
     !isPropertyOf("metadata", data) ||
     !isFieldErrorMetadataOk(data) ||
-    !isPropertyOf("reasons", data)
+    !isPropertyOf("reason", data)
   )
     return false;
 
-  return Array.isArray(data?.reasons);
+  return typeof data?.reason == "string";
 }
 
-function isInputFieldError(
-  data: unknown,
-): data is Partial<FullInputFieldError> {
+function isInputFieldError(data: unknown): data is Partial<FieldError> {
   if (isFieldError(data)) return true;
 
   if (!isRecordLike(data) || isEqual({}, data)) return false;
-
-  if (isPropertyOf("reasons", data)) return false;
 
   const hasMetadata = isPropertyOf("metadata", data),
     hasReason = isPropertyOf("reason", data);
@@ -47,13 +32,7 @@ function isInputFieldError(
   if (!hasMetadata && !hasReason) return false;
 
   if (hasMetadata && !isFieldErrorMetadataOk(data?.metadata)) return false;
-
-  if (
-    hasReason &&
-    typeof data?.reason != "string" &&
-    !Array.isArray(data?.reason)
-  )
-    return false;
+  if (hasReason && typeof data?.reason != "string") return false;
 
   return true;
 }
@@ -68,20 +47,16 @@ function makeFieldError(
   value: InputPayload[FieldKey] | InputFieldError,
   fallbackMessage = "validation failed",
 ): FieldError {
-  if (isFieldError(value)) return value;
+  if (isFieldError(value)) {
+    if (!value.reason) value.reason = fallbackMessage;
 
-  if (!isRecordLike(value)) return { reasons: toArray(value), metadata: null };
+    return value;
+  }
 
-  if (isInputFieldError(value))
-    return {
-      reasons: toArray(value?.reason || fallbackMessage),
-      metadata: value?.metadata ?? null,
-    };
+  if (typeof value === "string") return { reason: value, metadata: null };
 
   return {
-    reasons: toArray(
-      (value as unknown as { reasons: string[] })?.reasons ?? [fallbackMessage],
-    ),
-    metadata: (value as Partial<FullInputFieldError>)?.metadata ?? null,
+    reason: (value as any).reason ?? fallbackMessage,
+    metadata: (value as any)?.metadata ?? null,
   };
 }

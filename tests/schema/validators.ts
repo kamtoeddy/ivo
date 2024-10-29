@@ -247,41 +247,6 @@ export const Test_Validators = ({ Schema, fx }: any) => {
 
     describe("behaviour", () => {
       describe("reason as object", () => {
-        it("should add corresponding properties and error messages passed with reason as an object", async () => {
-          const messages = [
-            ["Invalid Prop", ["Invalid Prop"]],
-            [["Invalid Prop"], ["Invalid Prop"]],
-          ];
-
-          for (const [input, reason] of messages) {
-            const Model = new Schema({
-              prop: { default: "", validator: () => false },
-              prop2: {
-                required: true,
-                validator() {
-                  return { valid: false, reason: { prop: input } };
-                },
-              },
-            }).getModel();
-
-            const { data, error } = await Model.create({ prop: "invalid" });
-
-            expect(data).toBeNull();
-            expect(error).toMatchObject({
-              message: ERRORS.VALIDATION_ERROR,
-              payload: {
-                prop: {
-                  reasons: expect.arrayContaining([
-                    "validation failed",
-                    ...reason,
-                  ]),
-                  metadata: null,
-                },
-              },
-            });
-          }
-        });
-
         it('should ignore keys of "reason object" that are not properties, aliases or are constants or dependents', async () => {
           const Model = new Schema({
             constant: { constant: true, value: 1 },
@@ -312,7 +277,7 @@ export const Test_Validators = ({ Schema, fx }: any) => {
             message: ERRORS.VALIDATION_ERROR,
             payload: {
               prop: {
-                reasons: expect.arrayContaining(["validation failed"]),
+                reason: "validation failed",
                 metadata: null,
               },
             },
@@ -351,7 +316,7 @@ export const Test_Validators = ({ Schema, fx }: any) => {
               message: ERRORS.VALIDATION_ERROR,
               payload: {
                 prop1: {
-                  reasons: expect.arrayContaining(["validation failed"]),
+                  reason: "validation failed",
                   metadata: null,
                 },
               },
@@ -422,19 +387,13 @@ export const Test_Validators = ({ Schema, fx }: any) => {
                 message: ERRORS.VALIDATION_ERROR,
                 payload: {
                   "name.first": {
-                    reasons: expect.arrayContaining(["Invalid first name"]),
+                    reason: "Invalid first name",
                     metadata: null,
                   },
-                  "name.last": {
-                    reasons: expect.arrayContaining(["Invalid last name"]),
-                    metadata: null,
-                  },
-                  virtual: {
-                    reasons: expect.arrayContaining(["Invalid value"]),
-                    metadata: null,
-                  },
+                  "name.last": { reason: "Invalid last name", metadata: null },
+                  virtual: { reason: "Invalid value", metadata: null },
                   aliasedDependent: {
-                    reasons: expect.arrayContaining(["Invalid value provided"]),
+                    reason: "Invalid value provided",
                     metadata: null,
                   },
                 },
@@ -451,15 +410,15 @@ export const Test_Validators = ({ Schema, fx }: any) => {
                 message: ERRORS.VALIDATION_ERROR,
                 payload: {
                   "name.first": {
-                    reasons: expect.arrayContaining(["Invalid first name"]),
+                    reason: "Invalid first name",
                     metadata: null,
                   },
                   "name.last": {
-                    reasons: expect.arrayContaining(["Invalid last name"]),
+                    reason: "Invalid last name",
                     metadata: null,
                   },
                   aliasedDependent: {
-                    reasons: expect.arrayContaining(["Invalid value provided"]),
+                    reason: "Invalid value provided",
                     metadata: null,
                   },
                 },
@@ -479,19 +438,19 @@ export const Test_Validators = ({ Schema, fx }: any) => {
                 message: ERRORS.VALIDATION_ERROR,
                 payload: {
                   "name.first": {
-                    reasons: expect.arrayContaining(["Invalid first name"]),
+                    reason: "Invalid first name",
                     metadata: null,
                   },
                   "name.last": {
-                    reasons: expect.arrayContaining(["Invalid last name"]),
+                    reason: "Invalid last name",
                     metadata: null,
                   },
                   virtual: {
-                    reasons: expect.arrayContaining(["Invalid value"]),
+                    reason: "Invalid value",
                     metadata: null,
                   },
                   aliasedDependent: {
-                    reasons: expect.arrayContaining(["Invalid value provided"]),
+                    reason: "Invalid value provided",
                     metadata: null,
                   },
                 },
@@ -509,15 +468,15 @@ export const Test_Validators = ({ Schema, fx }: any) => {
                 message: ERRORS.VALIDATION_ERROR,
                 payload: {
                   "name.first": {
-                    reasons: expect.arrayContaining(["Invalid first name"]),
+                    reason: "Invalid first name",
                     metadata: null,
                   },
                   "name.last": {
-                    reasons: expect.arrayContaining(["Invalid last name"]),
+                    reason: "Invalid last name",
                     metadata: null,
                   },
                   aliasedDependent: {
-                    reasons: expect.arrayContaining(["Invalid value provided"]),
+                    reason: "Invalid value provided",
                     metadata: null,
                   },
                 },
@@ -586,7 +545,7 @@ export const Test_Validators = ({ Schema, fx }: any) => {
                 payload: {
                   prop: expect.objectContaining({
                     metadata: { message: "too bad", ...propMetadata },
-                    reasons: expect.arrayContaining(["validation failed"]),
+                    reason: "validation failed",
                   }),
                   prop2: expect.objectContaining({ metadata }),
                 },
@@ -641,10 +600,10 @@ export const Test_Validators = ({ Schema, fx }: any) => {
             message: ERRORS.VALIDATION_ERROR,
             payload: expect.objectContaining({
               prop1: expect.objectContaining({
-                reasons: expect.arrayContaining(["validation failed"]),
+                reason: "validation failed",
               }),
               prop2: expect.objectContaining({
-                reasons: expect.arrayContaining(["validation failed"]),
+                reason: "validation failed",
               }),
             }),
           });
@@ -661,10 +620,10 @@ export const Test_Validators = ({ Schema, fx }: any) => {
             message: ERRORS.VALIDATION_ERROR,
             payload: expect.objectContaining({
               prop1: expect.objectContaining({
-                reasons: expect.arrayContaining(["validation failed"]),
+                reason: "validation failed",
               }),
               prop2: expect.objectContaining({
-                reasons: expect.arrayContaining(["validation failed"]),
+                reason: "validation failed",
               }),
             }),
           });
@@ -897,7 +856,7 @@ export const Test_Validators = ({ Schema, fx }: any) => {
                 message: ERRORS.VALIDATION_ERROR,
                 payload: {
                   p2: expect.objectContaining({
-                    reasons: expect.arrayContaining(["validation failed"]),
+                    reason: "validation failed",
                   }),
                 },
               });
@@ -911,9 +870,7 @@ export const Test_Validators = ({ Schema, fx }: any) => {
               expect(error2).toMatchObject({
                 message: ERRORS.VALIDATION_ERROR,
                 payload: {
-                  p2: expect.objectContaining({
-                    reasons: expect.arrayContaining(["validation failed"]),
-                  }),
+                  p2: expect.objectContaining({ reason: "validation failed" }),
                 },
               });
             }
@@ -934,14 +891,11 @@ export const Test_Validators = ({ Schema, fx }: any) => {
               },
               p2: {
                 default: "",
-                validator: [validator, () => ({ reason: ["p2"] })],
+                validator: [validator, () => ({ reason: "p2" })],
               },
               p3: {
                 default: "",
-                validator: [
-                  validator,
-                  () => ({ reason: ["error1", "error2"] }),
-                ],
+                validator: [validator, () => ({ reason: "error1" })],
               },
               p4: {
                 default: "",
@@ -958,7 +912,7 @@ export const Test_Validators = ({ Schema, fx }: any) => {
                     if (v == "throw") throw new Error("lol");
 
                     return isUpdate
-                      ? { reason: ["lolz"] }
+                      ? { reason: "lolz" }
                       : { reason: "error", metadata: { lol: true } };
                   },
                 ],
@@ -969,20 +923,12 @@ export const Test_Validators = ({ Schema, fx }: any) => {
 
             expect(res.data).toBeNull();
             expect(res.error.payload).toMatchObject({
-              p1: expect.objectContaining({
-                reasons: expect.arrayContaining(["p1"]),
-              }),
-              p2: expect.objectContaining({
-                reasons: expect.arrayContaining(["p2"]),
-              }),
-              p3: expect.objectContaining({
-                reasons: expect.arrayContaining(["error1", "error2"]),
-              }),
-              p4: expect.objectContaining({
-                reasons: expect.arrayContaining(["validation failed"]),
-              }),
+              p1: expect.objectContaining({ reason: "p1" }),
+              p2: expect.objectContaining({ reason: "p2" }),
+              p3: expect.objectContaining({ reason: "error1" }),
+              p4: expect.objectContaining({ reason: "validation failed" }),
               v: expect.objectContaining({
-                reasons: expect.arrayContaining(["error"]),
+                reason: "error",
                 metadata: { lol: true },
               }),
             });
@@ -993,21 +939,15 @@ export const Test_Validators = ({ Schema, fx }: any) => {
             );
             expect(res2.data).toBeNull();
             expect(res2.error.payload).toMatchObject({
-              p1: expect.objectContaining({
-                reasons: expect.arrayContaining(["failed to validate"]),
-              }),
-              p2: expect.objectContaining({
-                reasons: expect.arrayContaining(["p2"]),
-              }),
-              d1: expect.objectContaining({
-                reasons: expect.arrayContaining(["lolz"]),
-              }),
+              p1: expect.objectContaining({ reason: "failed to validate" }),
+              p2: expect.objectContaining({ reason: "p2" }),
+              d1: expect.objectContaining({ reason: "lolz" }),
             });
 
             const res3 = await Model.create({ v: "throw" });
             expect(res3.data).toBeNull();
             expect(res3.error.payload).toMatchObject({
-              v: expect.objectContaining({ reasons: ["validation failed"] }),
+              v: expect.objectContaining({ reason: "validation failed" }),
             });
           });
         });

@@ -1,10 +1,10 @@
-import { isEqual, isPropertyOf, FieldKey, sortKeys } from '../../utils';
+import { isEqual, FieldKey, sortKeys } from "../../utils";
 import {
   ErrorPayload,
   FieldError,
   ValidationErrorMessage,
   IErrorTool,
-} from './types';
+} from "./types";
 
 export { DefaultErrorTool };
 
@@ -27,10 +27,8 @@ class DefaultErrorTool<PayloadKeys extends FieldKey = FieldKey>
     return Object.keys(this._payload).length > 0;
   }
 
-  private _has = (field: PayloadKeys) => isPropertyOf(field, this._payload);
-
-  add(field: PayloadKeys, value: FieldError) {
-    if (!this._has(field)) {
+  set(field: PayloadKeys, value: FieldError) {
+    if (!(field in this._payload)) {
       this._payload[field] = value;
 
       return this;
@@ -38,12 +36,7 @@ class DefaultErrorTool<PayloadKeys extends FieldKey = FieldKey>
 
     const currentValues = this._payload[field]!;
 
-    const { reasons, metadata } = value;
-
-    reasons.forEach((reason) => {
-      if (!currentValues.reasons.includes(reason))
-        currentValues.reasons.push(reason);
-    });
+    const metadata = value.metadata;
 
     if (metadata && !isEqual(currentValues?.metadata, metadata))
       currentValues.metadata = {

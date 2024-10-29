@@ -162,14 +162,14 @@ const validateEmail = (value: unknown, regExp = EMAIL_REGEXP) => {
 
 type AllowConfig<T> =
   | ArrayOfMinSizeTwo<T>
-  | { values: ArrayOfMinSizeTwo<T>; error: string | string[] };
+  | { values: ArrayOfMinSizeTwo<T>; error: string };
 
 type ExclusionConfig<T> =
   | T
   | ArrayOfMinSizeTwo<T>
-  | { values: T | ArrayOfMinSizeTwo<T>; error: string | string[] };
+  | { values: T | ArrayOfMinSizeTwo<T>; error: string };
 
-type ValueError<T = number> = { value: T; error: string | string[] };
+type ValueError<T = number> = { value: T; error: string };
 
 type NumberValidatorOptions<T extends number | unknown = number> = {
   exclude?: ExclusionConfig<T>;
@@ -331,7 +331,7 @@ function makeStringValidator<const T extends string | unknown = string>({
 
 function _getAllowedInfo<T>(allow: AllowConfig<T>): {
   allowed: ArrayOfMinSizeTwo<T>;
-  notAllowedError?: string | string[];
+  notAllowedError?: string;
 } {
   const isArray = Array.isArray(allow);
 
@@ -343,7 +343,7 @@ function _getAllowedInfo<T>(allow: AllowConfig<T>): {
 
 function _getExclusionInfo<T>(exclude?: ExclusionConfig<T>): {
   excluded: T[];
-  exclusionError?: string | string[];
+  exclusionError?: string;
   hasExclusion: boolean;
   metadata: { excluded: T[] } | null;
 } {
@@ -357,7 +357,7 @@ function _getExclusionInfo<T>(exclude?: ExclusionConfig<T>): {
   if (!Array.isArray(excluded)) excluded = [excluded];
 
   const exclusionError = isConfigObject
-    ? ((exclude as { error: string | string[] })?.error ?? "Value not allowed")
+    ? ((exclude as { error: string })?.error ?? "Value not allowed")
     : "Value not allowed";
 
   const metadata = hasExclusion ? { excluded } : null;
@@ -373,13 +373,13 @@ function _getMaxMinInfo({
 }: {
   max?: number | ValueError;
   min?: number | ValueError;
-  defaulMaxError: string | string[];
-  defaulMinError: string | string[];
+  defaulMaxError: string;
+  defaulMinError: string;
 }): {
   maxValue: number | null;
   minValue: number | null;
-  maxError?: string | string[];
-  minError?: string | string[];
+  maxError?: string;
+  minError?: string;
   hasMaxValue: boolean;
   hasMinValue: boolean;
   metadata: { max?: number; min?: number } | null;

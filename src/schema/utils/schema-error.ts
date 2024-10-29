@@ -1,5 +1,5 @@
-import { isPropertyOf, FieldKey, toArray } from '../../utils';
-import { SCHEMA_ERRORS } from './types';
+import { FieldKey, toArray } from "../../utils";
+import { SCHEMA_ERRORS } from "./types";
 
 export { SchemaErrorTool, SchemaError };
 
@@ -18,12 +18,10 @@ class SchemaErrorTool {
     return Object.keys(this._payload).length > 0;
   }
 
-  private _has = (field: FieldKey) => isPropertyOf(field, this._payload);
-
   add(field: FieldKey, value?: string | string[]) {
     value = toArray(value ?? []);
 
-    if (this._has(field)) {
+    if (field in this._payload) {
       const currentValues = this._payload[field];
 
       value.forEach((v) => {
@@ -37,7 +35,7 @@ class SchemaErrorTool {
   }
 
   throw() {
-    console.error('\nSchema errors:');
+    console.error("\nSchema errors:");
 
     Object.entries(this._payload).forEach(([prop, messages]) => {
       if (messages.length == 1)

@@ -293,7 +293,7 @@ class ModelTool<
     // @ts-ignore: lol
     const error = allow?.error;
 
-    if (Array.isArray(error) || isInputFieldError(error)) return error;
+    if (isInputFieldError(error)) return error;
 
     if (isFunctionLike(error)) {
       let message;
@@ -305,8 +305,6 @@ class ModelTool<
       }
 
       if (typeof message == "string") return message || NotAllowedError;
-
-      if (Array.isArray(message)) return message;
 
       return isInputFieldError(message) ? message : NotAllowedError;
     }
@@ -335,21 +333,21 @@ class ModelTool<
     const { reason, metadata, value } = validationResponse;
 
     if (isRecordLike(reason)) {
-      if (metadata) errorTool.add(prop, { metadata, reasons: [] }, value);
+      if (metadata) errorTool.set(prop, { metadata, reason: "" }, value);
 
       return Object.entries(reason).forEach(([key, message]) => {
-        errorTool.add(key, makeFieldError(message as never));
+        errorTool.set(key, makeFieldError(message as never));
       });
     }
 
     const fieldError = makeFieldError(
       // @ts-ignore: lol
-      reason?.length ? reason : "validation failed",
+      reason || "validation failed",
     );
 
     if (metadata) fieldError.metadata = metadata;
 
-    errorTool.add(prop, fieldError, value);
+    errorTool.set(prop, fieldError, value);
   }
 
   private async _handleCreationPrimaryValidations(
@@ -683,7 +681,7 @@ class ModelTool<
       for (const [prop, error] of Object.entries(
         this._handleObjectValidationResponse(res),
       ))
-        errorTool.add(prop, makeFieldError(error));
+        errorTool.set(prop, makeFieldError(error));
     } catch {
       for (const prop of propsProvided) {
         const alias = this._getAliasByVirtual(prop as never);
@@ -694,7 +692,7 @@ class ModelTool<
           errorField = alias;
         else if (isPropertyOf(prop, summary.inputValues)) errorField = prop;
 
-        if (errorField) errorTool.add(errorField, validationFailedFieldError);
+        if (errorField) errorTool.set(errorField, validationFailedFieldError);
       }
     }
 
@@ -741,17 +739,20 @@ class ModelTool<
         const alias = this._getAliasByVirtual(prop);
 
         if (!alias) {
-          errorTool.add(prop, makeFieldError(message), value);
+          errorTool.set(prop, makeFieldError(message), value);
 
           return;
         }
 
-        const _message =
-          message == `'${prop}' is required`
-            ? `'${alias}' is required`
-            : message;
-
-        errorTool.add(alias as never, makeFieldError(_message), value);
+        errorTool.set(
+          alias as never,
+          makeFieldError(
+            message == `'${prop}' is required`
+              ? `'${alias}' is required`
+              : message,
+          ),
+          value,
+        );
       }),
     );
 
@@ -794,16 +795,10 @@ class ModelTool<
         this._isInputOrAlias(prop.split(".")?.[0]),
     );
 
-    const otherReasons = {} as Record<
-      string,
-      string | string[] | InputFieldError
-    >;
+    const otherReasons = {} as Record<string, string | InputFieldError>;
 
     for (const prop of validProperties) {
       const fieldError = data[prop];
-
-      const isArray = Array.isArray(fieldError),
-        isString = typeof fieldError == "string";
 
       if (isInputFieldError(fieldError)) {
         otherReasons[prop] = fieldError as InputFieldError;
@@ -811,17 +806,7 @@ class ModelTool<
         continue;
       }
 
-      if (isArray) {
-        const messages = (fieldError as never[]).filter(
-          (v) => typeof v == "string",
-        );
-
-        otherReasons[prop] = messages.length ? messages : "validation failed";
-
-        continue;
-      }
-
-      if (isString) {
+      if (typeof fieldError == "string") {
         const message = fieldError.trim();
 
         otherReasons[prop] = message.length ? message : "validation failed";
@@ -1219,7 +1204,7 @@ class ModelTool<
       return makeResponse<(Input & Aliases)[K]>({
         valid: false,
         value,
-        reason: fieldError.reasons,
+        reason: fieldError.reason,
         metadata: fieldError.metadata || { allowed: Array.from(allowedValues) },
       });
     }
@@ -1457,7 +1442,7 @@ function areValuesOk(values: unknown) {
 function getValidationFailedResponse(value: unknown) {
   return {
     metadata: null,
-    reason: ["validation failed"],
+    reason: "validation failed",
     valid: false,
     value,
   } as ValidatorResponseObject<unknown>;

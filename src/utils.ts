@@ -50,8 +50,8 @@ function makeResponse<T = undefined>(
   const reason = inputReason
     ? isRecordLike(inputReason)
       ? inputReason
-      : toArray(inputReason)
-    : [];
+      : inputReason
+    : "validation failed";
 
   return {
     metadata,

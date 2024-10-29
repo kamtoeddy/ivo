@@ -5,15 +5,15 @@ import {
   describe,
   it,
   expect,
-} from 'bun:test';
+} from "bun:test";
 
-import { ERRORS } from '../../../dist';
-import { expectFailure, expectNoFailure, validator } from '../_utils';
+import { ERRORS } from "../../../dist";
+import { expectFailure, expectNoFailure, validator } from "../_utils";
 
 export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
-  describe('Both', () => {
-    describe('valid', () => {
-      it('should accept shouldInit & shouldUpdate for lax props', () => {
+  describe("Both", () => {
+    describe("valid", () => {
+      it("should accept shouldInit & shouldUpdate for lax props", () => {
         // [shouldInit, shouldUpdate]
         const values = [
           [false, () => {}],
@@ -23,7 +23,7 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
 
         for (const [shouldInit, shouldUpdate] of values) {
           const toPass = fx({
-            propertyName: { default: '', shouldInit, shouldUpdate },
+            propertyName: { default: "", shouldInit, shouldUpdate },
           });
 
           expectNoFailure(toPass);
@@ -32,7 +32,7 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
         }
       });
 
-      it('should accept shouldInit(() => boolean) + shouldUpdate(false | () => boolean) + readonly(true)', () => {
+      it("should accept shouldInit(() => boolean) + shouldUpdate(false | () => boolean) + readonly(true)", () => {
         // [shouldInit, shouldUpdate]
         const readonlyTrue = [
           [false, () => {}],
@@ -43,7 +43,7 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
         for (const [shouldInit, shouldUpdate] of readonlyTrue) {
           const toPass = fx({
             dependentProp: {
-              default: '',
+              default: "",
               readonly: true,
               shouldInit,
               shouldUpdate,
@@ -58,8 +58,8 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
 
         const toPass = fx({
           dependentProp: {
-            default: '',
-            readonly: 'lax',
+            default: "",
+            readonly: "lax",
             shouldUpdate: () => {},
             validator,
           },
@@ -71,11 +71,11 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
       });
     });
 
-    describe('invalid', () => {
-      it('should reject shouldUpdate == false & shouldInit == false', () => {
+    describe("invalid", () => {
+      it("should reject shouldUpdate == false & shouldInit == false", () => {
         const toFail = fx({
           propertyName: {
-            default: '',
+            default: "",
             shouldInit: false,
             shouldUpdate: false,
           },
@@ -96,13 +96,13 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
         }
       });
 
-      describe('Readonly lax', () => {
+      describe("Readonly lax", () => {
         it("should reject readonly('lax') + shouldInit", () => {
           for (const shouldInit of [false, () => {}]) {
             const toFail = fx({
               propertyName: {
-                default: '',
-                readonly: 'lax',
+                default: "",
+                readonly: "lax",
                 shouldInit,
                 validator,
               },
@@ -116,7 +116,7 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
               expect(err.payload).toEqual(
                 expect.objectContaining({
                   propertyName: expect.arrayContaining([
-                    'Lax properties cannot have initialization blocked',
+                    "Lax properties cannot have initialization blocked",
                   ]),
                 }),
               );
@@ -127,8 +127,8 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
         it("should reject readonly('lax') + shouldUpdate(false)", () => {
           const toFail = fx({
             propertyName: {
-              default: '',
-              readonly: 'lax',
+              default: "",
+              readonly: "lax",
               shouldUpdate: false,
               validator,
             },
@@ -142,7 +142,7 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
             expect(err.payload).toEqual(
               expect.objectContaining({
                 propertyName: expect.arrayContaining([
-                  'Readonly(lax) properties cannot have updates strictly blocked',
+                  "Readonly(lax) properties cannot have updates strictly blocked",
                 ]),
               }),
             );
@@ -152,9 +152,9 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
     });
   });
 
-  describe('shouldInit', () => {
-    describe('valid', () => {
-      it('should accept shouldInit(false) + default', () => {
+  describe("shouldInit", () => {
+    describe("valid", () => {
+      it("should accept shouldInit(false) + default", () => {
         const fxn = fx({
           propertyName: { shouldInit: false, default: true },
         });
@@ -164,7 +164,7 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
         fxn();
       });
 
-      it('should accept shouldInit: () => boolean + default', () => {
+      it("should accept shouldInit: () => boolean + default", () => {
         const values = [() => true, () => false];
 
         for (const shouldInit of values) {
@@ -178,54 +178,54 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
         }
       });
 
-      describe('behaviour', () => {
+      describe("behaviour", () => {
         const Model = new Schema({
           isBlocked: {
             default: false,
-            shouldInit: (ctx: any) => ctx.env == 'test',
+            shouldInit: (ctx: any) => ctx.env == "test",
           },
-          env: { default: 'dev' },
+          env: { default: "dev" },
           laxProp: { default: 0 },
         }).getModel();
 
-        it('should respect default rules', async () => {
+        it("should respect default rules", async () => {
           const { data } = await Model.create({ isBlocked: true });
 
           expect(data).toMatchObject({
-            env: 'dev',
+            env: "dev",
             isBlocked: false,
             laxProp: 0,
           });
         });
 
-        it('should respect callable should init when condition passes at creation', async () => {
+        it("should respect callable should init when condition passes at creation", async () => {
           const { data } = await Model.create({
-            env: 'test',
-            isBlocked: 'yes',
+            env: "test",
+            isBlocked: "yes",
           });
 
           expect(data).toMatchObject({
-            env: 'test',
-            isBlocked: 'yes',
+            env: "test",
+            isBlocked: "yes",
             laxProp: 0,
           });
         });
 
-        describe('behaviour when shouldInit method returns nothing', () => {
+        describe("behaviour when shouldInit method returns nothing", () => {
           const Model = new Schema({
             isBlocked: { default: false, shouldInit: () => {} },
             laxProp: { default: 0 },
           }).getModel();
 
-          it('should assume initialization as falsy if shouldInit method returns nothing at creation', async () => {
-            const { data } = await Model.create({ isBlocked: 'yes' });
+          it("should assume initialization as falsy if shouldInit method returns nothing at creation", async () => {
+            const { data } = await Model.create({ isBlocked: "yes" });
 
             expect(data).toMatchObject({ isBlocked: false, laxProp: 0 });
           });
         });
       });
 
-      describe('behaviour of callable shouldInit', () => {
+      describe("behaviour of callable shouldInit", () => {
         let onSuccessValues: any = {};
 
         let onSuccessStats: any = {};
@@ -237,21 +237,21 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
         beforeAll(() => {
           Model = new Schema({
             dependent: {
-              default: '',
-              dependsOn: 'virtual',
-              resolver: () => 'changed',
-              onSuccess: onSuccess('dependent'),
+              default: "",
+              dependsOn: "virtual",
+              resolver: () => "changed",
+              onSuccess: onSuccess("dependent"),
             },
-            laxProp: { default: '' },
+            laxProp: { default: "" },
             virtual: {
               virtual: true,
-              shouldInit: ({ laxProp }: any) => laxProp === 'allow virtual',
+              shouldInit: ({ laxProp }: any) => laxProp === "allow virtual",
               onSuccess: [
-                onSuccess('virtual'),
-                incrementOnSuccessStats('virtual'),
-                incrementOnSuccessStats('virtual'),
+                onSuccess("virtual"),
+                incrementOnSuccessStats("virtual"),
+                incrementOnSuccessStats("virtual"),
               ],
-              sanitizer: sanitizerOf('virtual', 'sanitized'),
+              sanitizer: sanitizerOf("virtual", "sanitized"),
               validator: validateBoolean,
             },
           }).getModel();
@@ -293,48 +293,48 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
 
         it("should ignore virtuals at creation when their shouldInit handler returns 'false'", async () => {
           const { data, handleSuccess } = await Model.create({
-            laxProp: 'Peter',
+            laxProp: "Peter",
             virtual: true,
           });
 
           await handleSuccess();
 
-          expect(data).toEqual({ dependent: '', laxProp: 'Peter' });
+          expect(data).toEqual({ dependent: "", laxProp: "Peter" });
 
           expect(onSuccessStats).toEqual({ dependent: 1 });
 
-          expect(onSuccessValues).toEqual({ dependent: '' });
+          expect(onSuccessValues).toEqual({ dependent: "" });
 
           expect(sanitizedValues).toEqual({});
         });
 
         it("should respect virtuals at creation when their shouldInit handler returns 'true'", async () => {
           const { data, handleSuccess } = await Model.create({
-            laxProp: 'allow virtual',
+            laxProp: "allow virtual",
             virtual: true,
           });
 
           await handleSuccess();
 
           expect(data).toEqual({
-            dependent: 'changed',
-            laxProp: 'allow virtual',
+            dependent: "changed",
+            laxProp: "allow virtual",
           });
 
           expect(onSuccessStats).toEqual({ dependent: 1, virtual: 3 });
 
           expect(onSuccessValues).toEqual({
-            dependent: 'changed',
-            virtual: 'sanitized',
+            dependent: "changed",
+            virtual: "sanitized",
           });
 
-          expect(sanitizedValues).toEqual({ virtual: 'sanitized' });
+          expect(sanitizedValues).toEqual({ virtual: "sanitized" });
         });
       });
     });
 
-    describe('invalid', () => {
-      it('should reject shouldInit(false) & no default', () => {
+    describe("invalid", () => {
+      it("should reject shouldInit(false) & no default", () => {
         const fxn = fx({ propertyName: { shouldInit: false } });
 
         expectFailure(fxn);
@@ -345,15 +345,15 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
           expect(err.payload).toEqual(
             expect.objectContaining({
               propertyName: expect.arrayContaining([
-                'A property with initialization blocked must have a default value',
+                "A property with initialization blocked must have a default value",
               ]),
             }),
           );
         }
       });
 
-      it('should reject shouldInit !(boolean | () => boolean)', () => {
-        const values = [undefined, 1, {}, null, [], 'yes', 'false', 'true'];
+      it("should reject shouldInit !(boolean | () => boolean)", () => {
+        const values = [undefined, 1, {}, null, [], "yes", "false", "true"];
 
         for (const shouldInit of values) {
           const fxn = fx({ propertyName: { shouldInit, default: true } });
@@ -376,13 +376,13 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
     });
   });
 
-  describe('shouldUpdate', () => {
-    describe('valid', () => {
-      it('should accept shouldUpdate(() => boolean)', () => {
+  describe("shouldUpdate", () => {
+    describe("valid", () => {
+      it("should accept shouldUpdate(() => boolean)", () => {
         const validValues = [() => false, () => true];
 
         for (const shouldUpdate of validValues) {
-          const toPass = fx({ propertyName: { default: '', shouldUpdate } });
+          const toPass = fx({ propertyName: { default: "", shouldUpdate } });
 
           expectNoFailure(toPass);
 
@@ -390,15 +390,15 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
         }
       });
 
-      it('should accept shouldInit(() => boolean) & shouldUpdate(false) for virtuals', () => {
+      it("should accept shouldInit(() => boolean) & shouldUpdate(false) for virtuals", () => {
         const values = [() => true, () => false];
 
         for (const shouldInit of values) {
           const toPass = fx({
             dependentProp: {
-              default: '',
-              dependsOn: 'virtual',
-              resolver: () => '',
+              default: "",
+              dependsOn: "virtual",
+              resolver: () => "",
             },
             virtual: {
               virtual: true,
@@ -414,7 +414,7 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
         }
       });
 
-      describe('behaviour', () => {
+      describe("behaviour", () => {
         let onSuccessValues: any = {};
         let onSuccessStats: any = {};
 
@@ -430,34 +430,34 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
         const Model = new Schema({
           dependentProp: {
             default: false,
-            dependsOn: 'virtual',
+            dependsOn: "virtual",
             resolver: ({ context }: any) => context.virtual,
-            onSuccess: incrementOnSuccessCountOf('dependentProp'),
+            onSuccess: incrementOnSuccessCountOf("dependentProp"),
           },
           dependentProp_1: {
             default: false,
-            dependsOn: 'virtual_1',
+            dependsOn: "virtual_1",
             resolver: ({ context }: any) => context.virtual_1,
-            onSuccess: incrementOnSuccessCountOf('dependentProp_1'),
+            onSuccess: incrementOnSuccessCountOf("dependentProp_1"),
           },
           laxProp: {
-            default: '',
-            readonly: 'lax',
-            shouldUpdate: (ctx: any) => ctx.laxProp_1 == 'test',
-            onSuccess: incrementOnSuccessCountOf('laxProp'),
+            default: "",
+            readonly: "lax",
+            shouldUpdate: (ctx: any) => ctx.laxProp_1 == "test",
+            onSuccess: incrementOnSuccessCountOf("laxProp"),
           },
-          laxProp_1: { default: 'dev' },
+          laxProp_1: { default: "dev" },
           virtual: {
             virtual: true,
             shouldUpdate: false,
             validator: () => ({ valid: true }),
-            onSuccess: incrementOnSuccessCountOf('virtual'),
+            onSuccess: incrementOnSuccessCountOf("virtual"),
           },
           virtual_1: {
             virtual: true,
-            shouldUpdate: (ctx: any) => ctx.laxProp_1 == 'test',
+            shouldUpdate: (ctx: any) => ctx.laxProp_1 == "test",
             validator: () => ({ valid: true }),
-            onSuccess: incrementOnSuccessCountOf('virtual_1'),
+            onSuccess: incrementOnSuccessCountOf("virtual_1"),
           },
         }).getModel();
 
@@ -469,12 +469,12 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
         it("should not update properties when 'shouldUpdate' resolved to 'false'", async () => {
           const { data, error } = await Model.update(
             {
-              dependentProp: 'dev',
-              dependentProp_1: 'dev',
-              laxProp: '',
-              laxProp_1: '',
+              dependentProp: "dev",
+              dependentProp_1: "dev",
+              laxProp: "",
+              laxProp_1: "",
             },
-            { laxProp: 'yoyo', virtual: true, virtual_1: true },
+            { laxProp: "yoyo", virtual: true, virtual_1: true },
           );
 
           expect(data).toBeNull();
@@ -484,18 +484,18 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
         it("should update properties when 'shouldUpdate' resolved to 'true'", async () => {
           const { data, error, handleSuccess } = await Model.update(
             {
-              dependentProp: 'dev',
-              dependentProp_1: 'dev',
-              laxProp: '',
-              laxProp_1: 'test',
+              dependentProp: "dev",
+              dependentProp_1: "dev",
+              laxProp: "",
+              laxProp_1: "test",
             },
-            { laxProp: 'yoyo', virtual: true, virtual_1: true },
+            { laxProp: "yoyo", virtual: true, virtual_1: true },
           );
 
           await handleSuccess();
 
           expect(error).toBeNull();
-          expect(data).toEqual({ dependentProp_1: true, laxProp: 'yoyo' });
+          expect(data).toEqual({ dependentProp_1: true, laxProp: "yoyo" });
 
           expect(onSuccessStats).toEqual({
             dependentProp_1: 1,
@@ -505,7 +505,7 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
 
           expect(onSuccessValues).toEqual({
             dependentProp_1: true,
-            laxProp: 'yoyo',
+            laxProp: "yoyo",
             virtual_1: true,
           });
         });
@@ -513,25 +513,25 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
         it("should not update readonly properties that have changed even when 'shouldUpdate' resolved to 'true'", async () => {
           const { data, error } = await Model.update(
             {
-              dependentProp: 'dev',
-              dependentProp_1: 'dev',
-              laxProp: 'changed',
-              laxProp_1: 'test',
+              dependentProp: "dev",
+              dependentProp_1: "dev",
+              laxProp: "changed",
+              laxProp_1: "test",
             },
-            { laxProp: 'yoyo' },
+            { laxProp: "yoyo" },
           );
 
           expect(data).toBeNull();
           expect(error.message).toBe(ERRORS.NOTHING_TO_UPDATE);
         });
 
-        describe('behaviour when shouldUpdate method returns nothing', () => {
+        describe("behaviour when shouldUpdate method returns nothing", () => {
           const Model = new Schema({
             isBlocked: { default: false, shouldUpdate: () => {} },
             laxProp: { default: 0 },
           }).getModel();
 
-          it('should assume updatability of a property as falsy if shouldInit method returns nothing', async () => {
+          it("should assume updatability of a property as falsy if shouldInit method returns nothing", async () => {
             const { data, error } = await Model.update(
               { isBlocked: false, laxProp: 0 },
               { isBlocked: true },
@@ -547,15 +547,15 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
       });
     });
 
-    describe('invalid', () => {
-      it('should reject shouldUpdate !(false | () => boolean)', () => {
+    describe("invalid", () => {
+      it("should reject shouldUpdate !(false | () => boolean)", () => {
         const invalidValues = [
           true,
           1,
           0,
           -1,
-          'true',
-          'false',
+          "true",
+          "false",
           [],
           null,
           undefined,
@@ -563,7 +563,7 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
         ];
 
         for (const shouldUpdate of invalidValues) {
-          const toFail = fx({ propertyName: { default: '', shouldUpdate } });
+          const toFail = fx({ propertyName: { default: "", shouldUpdate } });
 
           expectFailure(toFail);
 
@@ -581,10 +581,10 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
         }
       });
 
-      it('should reject shouldUpdate & readonly(true) & no shouldInit', () => {
+      it("should reject shouldUpdate & readonly(true) & no shouldInit", () => {
         const toFail = fx({
           propertyName: {
-            default: '',
+            default: "",
             readonly: true,
             shouldUpdate: () => {},
           },

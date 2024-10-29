@@ -1,18 +1,18 @@
-import { describe, it, expect } from 'bun:test';
+import { describe, it, expect } from "bun:test";
 
-import { ERRORS } from '../../../dist';
+import { ERRORS } from "../../../dist";
 import {
   expectFailure,
   expectNoFailure,
   getValidSchema,
   validator,
-} from '../_utils';
+} from "../_utils";
 
 export const Test_SchemaShouldUpdateOption = ({ Schema, fx }: any) => {
-  describe('Schema.options.shouldUpdate', () => {
-    describe('behaviour', () => {
-      const book = { name: 'book name', price: 10 };
-      const update = { name: 'updated name' };
+  describe("Schema.options.shouldUpdate", () => {
+    describe("behaviour", () => {
+      const book = { name: "book name", price: 10 };
+      const update = { name: "updated name" };
 
       const error = {
         message: ERRORS.NOTHING_TO_UPDATE,
@@ -44,12 +44,12 @@ export const Test_SchemaShouldUpdateOption = ({ Schema, fx }: any) => {
         },
         { data: update, error: null, shouldUpdate: () => [] },
         { data: update, error: null, shouldUpdate: () => ({}) },
-        { data: update, error: null, shouldUpdate: () => '1' },
+        { data: update, error: null, shouldUpdate: () => "1" },
         { data: update, error: null, shouldUpdate: () => 1 },
         // falsy values
         { data: null, error, shouldUpdate: () => {} },
         { data: null, error, shouldUpdate: () => 0 },
-        { data: null, error, shouldUpdate: () => '' },
+        { data: null, error, shouldUpdate: () => "" },
         { data: null, error, shouldUpdate: () => null },
         { data: null, error, shouldUpdate: () => undefined },
       ];
@@ -72,7 +72,7 @@ export const Test_SchemaShouldUpdateOption = ({ Schema, fx }: any) => {
       });
     });
 
-    describe('valid', () => {
+    describe("valid", () => {
       it("should allow 'shouldUpdate' as boolean | () => boolean", () => {
         const values = [true, false, () => {}];
 
@@ -86,7 +86,7 @@ export const Test_SchemaShouldUpdateOption = ({ Schema, fx }: any) => {
       });
     });
 
-    describe('invalid', () => {
+    describe("invalid", () => {
       it("should reject 'shouldUpdate' other than boolean or function", () => {
         const invalidValues = [
           1,
@@ -94,8 +94,8 @@ export const Test_SchemaShouldUpdateOption = ({ Schema, fx }: any) => {
           -14,
           {},
           [],
-          'invalid',
-          '',
+          "invalid",
+          "",
           null,
           undefined,
         ];

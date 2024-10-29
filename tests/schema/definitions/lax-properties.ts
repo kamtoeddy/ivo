@@ -1,21 +1,21 @@
-import { describe, it, expect } from 'bun:test';
+import { describe, it, expect } from "bun:test";
 
-import { expectFailure, expectNoFailure } from '../_utils';
+import { expectFailure, expectNoFailure } from "../_utils";
 
 export const Test_LaxProperties = ({ fx }: any) => {
-  describe('lax props', () => {
-    describe('valid', () => {
-      it('should allow default alone', () => {
-        const toPass = fx({ propertyName: { default: '' } });
+  describe("lax props", () => {
+    describe("valid", () => {
+      it("should allow default alone", () => {
+        const toPass = fx({ propertyName: { default: "" } });
 
         expectNoFailure(toPass);
 
         toPass();
       });
 
-      it('should allow default + validator', () => {
+      it("should allow default + validator", () => {
         const toPass = fx({
-          propertyName: { default: '', validator: () => ({ valid: true }) },
+          propertyName: { default: "", validator: () => ({ valid: true }) },
         });
 
         expectNoFailure(toPass);
@@ -24,8 +24,8 @@ export const Test_LaxProperties = ({ fx }: any) => {
       });
     });
 
-    describe('invalid', () => {
-      it('should reject no default', () => {
+    describe("invalid", () => {
+      it("should reject no default", () => {
         const toFail = fx({
           propertyName: { validator: () => ({ valid: true }) },
         });
@@ -38,7 +38,7 @@ export const Test_LaxProperties = ({ fx }: any) => {
           expect(err.payload).toEqual(
             expect.objectContaining({
               propertyName: expect.arrayContaining([
-                'A property should at least be readonly, required, or have a default value',
+                "A property should at least be readonly, required, or have a default value",
               ]),
             }),
           );

@@ -127,7 +127,7 @@ type AsyncSetter<T, Input, Output, CtxOptions extends ObjectType> = (
   context: MutableContext<Input, Output, CtxOptions>,
 ) => TypeOf<T> | Promise<TypeOf<T>>;
 
-type NotAllowedError = string | string[] | InputFieldError;
+type NotAllowedError = string | InputFieldError;
 
 type Setter<T, Input, Output, CtxOptions extends ObjectType> = (
   context: MutableContext<Input, Output, CtxOptions>,
@@ -694,15 +694,11 @@ namespace NS {
 
 type ValidationResponse<T> =
   | { valid: true; validated: T }
-  | { metadata: FieldError["metadata"]; reason: string[]; valid: false };
+  | { metadata: FieldError["metadata"]; reason: string; valid: false };
 
 type InvalidValidatorResponse<Input = object, Aliases = object> = {
   metadata?: FieldError["metadata"];
-  reason?:
-    | string
-    | string[]
-    | InputFieldError
-    | ResponseErrorObject<Input, Aliases>;
+  reason?: string | InputFieldError | ResponseErrorObject<Input, Aliases>;
   valid: false;
   value?: unknown;
 };
@@ -716,7 +712,7 @@ type ValidatorResponseObject<T, Input = object, Aliases = never> =
   | InvalidValidatorResponse<Input, Aliases>;
 
 type ResponseErrorObject<Input = object, Aliases = object> = {
-  [K in KeyOf<Input & Aliases>]?: string | string[] | InputFieldError;
+  [K in KeyOf<Input & Aliases>]?: string | InputFieldError;
 };
 
 type ValidatorResponse<T, Input, Aliases = object> =
