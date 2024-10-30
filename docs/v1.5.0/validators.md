@@ -5,7 +5,7 @@ A validator is a function that assesses the validity of a property (meaning one 
 Properties that can have validators are allowed have upto 2 validators (1 Primary & 1 Secondary) `N.B: they have slightly different signatures`
 
 ```ts
-import type { MutableSummary } from 'ivo';
+import type { MutableSummary } from "ivo";
 
 type Input = {}; // the input type of your model
 type Output = {}; // the output type of your model
@@ -131,24 +131,24 @@ As illustrated in the example above, the PostValidateConfig is an object that ex
 // ❌ both configs have wxactly the same properties
 const schema = new Schema(definitions, {
   postValidate: [
-    { properties: ['email', 'username'], validator },
-    { properties: ['username', 'email'], validator },
+    { properties: ["email", "username"], validator },
+    { properties: ["username", "email"], validator },
   ],
 });
 
 // ✅ as from v1.5.1 you can provide subsets of other configs
 const schema = new Schema(definitions, {
   postValidate: [
-    { properties: ['email', 'username', 'date_of_birth'], validator },
-    { properties: ['email', 'username'], validator },
+    { properties: ["email", "username", "date_of_birth"], validator },
+    { properties: ["email", "username"], validator },
   ],
 });
 
 // ✅ this works
 const schema = new Schema(definitions, {
   postValidate: [
-    { properties: ['email', 'username'], validator },
-    { properties: ['role', 'username'], validator },
+    { properties: ["email", "username"], validator },
+    { properties: ["role", "username"], validator },
   ],
 });
 ```
@@ -157,8 +157,8 @@ Example:
 
 ```ts
 type EventInput = {
-  host: User['id'];
-  guests: User['id'][];
+  host: User["id"];
+  guests: User["id"][];
   startTime: Date;
   stopTime: Date;
 };
@@ -186,7 +186,7 @@ const Model = new Schema(
   },
   {
     postValidate: {
-      properties: ['host', 'guests', 'startTime', 'stopTime'],
+      properties: ["host", "guests", "startTime", "stopTime"],
       async validator({ context }: MutableSummary<EventInput, Event>) {
         // this is triggered when the individual
         // validations have all been successful
@@ -204,11 +204,11 @@ const Model = new Schema(
 
         const errors = {};
 
-        if (!isHostAvailable) errors['host'] = 'Host not available';
+        if (!isHostAvailable) errors["host"] = "Host not available";
 
         if (!areAllGuestsAvailable)
-          errors['guests'] = {
-            reason: 'Some guests are not available',
+          errors["guests"] = {
+            reason: "Some guests are not available",
             metadata: {
               unAvailableGuests: guests.filter(
                 (g) => !guestsAvailable.includes(g),
@@ -248,13 +248,14 @@ Data validation can occur in multiple stages depending on your schema's configur
    - This is where secondary validators get triggered
    - The operation's context here is also safe because of the Primary validation and can be updated by the validated values returned from validators
 
+1. Post validation
+
+   - Here, post-validation checks are evaluated with a safe operation context
+   - The operation's context cannot be updated at this stage
+
 1. Sanitization of virtual properties more on this [here](../definitions/virtuals.md#sanitizer)
 
 1. Resolvement of dependent properties more on this [here](../definitions/dependents.md#dependent-properties)
-
-1. Post validation
-   - Here, post-validation checks are evaluated with a safe operation context
-   - The operation's context cannot be updated at this stage
 
 ## Built-in validation helpers
 
@@ -265,9 +266,9 @@ Here are some built-in validators you could use study to build your own validato
 To validate boolean values
 
 ```ts
-import { validateBoolean } from 'ivo';
+import { validateBoolean } from "ivo";
 
-console.log(validateBoolean('true')); // { reasons: ["Expected a boolean"], valid: false }
+console.log(validateBoolean("true")); // { reasons: ["Expected a boolean"], valid: false }
 
 console.log(validateBoolean(false)); // { valid: true, validated: false }
 ```
@@ -277,15 +278,15 @@ console.log(validateBoolean(false)); // { valid: true, validated: false }
 A tiny utility method to test if a credit/debit **`Card Number`** is valid; not the credit card itself
 
 ```ts
-import { validateCreditCard } from 'ivo';
+import { validateCreditCard } from "ivo";
 
-console.log(validateCreditCard(''));
+console.log(validateCreditCard(""));
 // { reasons: ["Invalid card number"], valid: false }
 
 console.log(validateCreditCard(5420596721435293));
 // { valid: true, validated: 5420596721435293}
 
-console.log(validateCreditCard('5420596721435293'));
+console.log(validateCreditCard("5420596721435293"));
 // { valid: true, validated: "5420596721435293"}
 ```
 
@@ -302,11 +303,11 @@ type ValidationResponse =
 To validate emails
 
 ```ts
-import { validateEmail } from 'ivo';
+import { validateEmail } from "ivo";
 
-console.log(validateEmail('dbj jkdbZvjkbv')); // { reasons: ["Invalid email"], valid: false }
+console.log(validateEmail("dbj jkdbZvjkbv")); // { reasons: ["Invalid email"], valid: false }
 
-validateEmail(' john@doe.com'); // {  valid: true, validated: "john@doe.com" }
+validateEmail(" john@doe.com"); // {  valid: true, validated: "john@doe.com" }
 ```
 
 #### Parameters
@@ -321,22 +322,22 @@ validateEmail(' john@doe.com'); // {  valid: true, validated: "john@doe.com" }
 You could validate an array of values of your choice. An array of primitives or objects.
 
 ```ts
-import { makeArrayValidator } from 'ivo';
+import { makeArrayValidator } from "ivo";
 
 const options = {
-  min: { value: 1, error: 'Expected a non-empty array' },
+  min: { value: 1, error: "Expected a non-empty array" },
   sorted: true,
-  filter: (genre) => typeof genre === 'string' && genre?.trim(),
+  filter: (genre) => typeof genre === "string" && genre?.trim(),
   modifier: (genre) => genre?.trim().toLowerCase(),
 };
 
-const movieGenres = ['action', null, 'horror', 1, 'comedy', 'Horror', 'crime'];
+const movieGenres = ["action", null, "horror", 1, "comedy", "Horror", "crime"];
 
 const validate = makeArrayValidator(options);
 
 console.log(validate(movieGenres)); // { valid: true, validated: ["action", "comedy", "crime", "horror"] }
 
-const invalids = ['   ', [], null, 144];
+const invalids = ["   ", [], null, 144];
 
 console.log(validate(invalids)); // { reasons: ["Expected a non-empty array"], valid: false }
 ```
@@ -358,7 +359,7 @@ console.log(validate(invalids)); // { reasons: ["Expected a non-empty array"], v
 To validate numbers
 
 ```ts
-import { makeNumberValidator } from 'ivo';
+import { makeNumberValidator } from "ivo";
 
 type AllowConfig<T> =
   | ArrayOfMinSizeTwo<T>
@@ -390,7 +391,7 @@ console.log(validate(10)); // { reasons: ["too small"], valid: false, metadata:{
 
 console.log(validate(10.01)); // { valid: true, validated: 10.01, metadata }
 
-console.log(validate('10.05')); // { valid: true, validated: 10.05, metadata }
+console.log(validate("10.05")); // { valid: true, validated: 10.05, metadata }
 
 console.log(makeNumberValidator({ allow: [0, -1, 35] }, 30)); // { reasons: ["Value not allowed"], valid: false, metadata :{ allowed: [0, -1, 35] } }
 ```
@@ -400,7 +401,7 @@ console.log(makeNumberValidator({ allow: [0, -1, 35] }, 30)); // { reasons: ["Va
 To validate strings
 
 ```ts
-import { makeStringValidator } from 'ivo';
+import { makeStringValidator } from "ivo";
 
 type StringValidatorOptions<T extends string | any = string> = {
   exclude?: ExclusionConfig<T>;
@@ -425,16 +426,16 @@ console.log(
         error: `string should match this pattern: ${pattern}`,
       },
     },
-    'dbj jkdbZvjkbv',
+    "dbj jkdbZvjkbv",
   ),
 ); // { reasons: ["Value not allowed"], valid: false }
 
-console.log(makeStringValidator({ max: 20, min: 3 }, 'Hello World!')); // { valid: true, validated: "Hello World!" }
+console.log(makeStringValidator({ max: 20, min: 3 }, "Hello World!")); // { valid: true, validated: "Hello World!" }
 
 console.log(
   makeStringValidator(
-    { allow: ['apple', 'banana', 'watermelon'] },
-    'pineapple',
+    { allow: ["apple", "banana", "watermelon"] },
+    "pineapple",
   ),
 ); // { reasons: ["Value not allowed"], valid: false, metadata :{ allowed: ['apple', 'banana', 'watermelon'] } }
 ```

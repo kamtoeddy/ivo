@@ -23,11 +23,7 @@ type ValidationResults =
     }
   | {
       metadata?: Record<string, any>; // an object that will contain extra info on why validation failed
-      reason?:
-        | string
-        | {
-            [K in keyof (Input & Aliases)]: FieldError; // dot notation here works if first key is a property, virtual or alias e.g: { "address.street": "too short", "address.zipCode": "invalid code" }
-          };
+      reason?: string;
       valid: false;
     };
 
@@ -249,13 +245,14 @@ Data validation can occur in multiple stages depending on your schema's configur
    - This is where secondary validators get triggered
    - The operation's context here is also safe because of the Primary validation and can be updated by the validated values returned from validators
 
+1. Post validation
+
+   - Here, post-validation checks are evaluated with a safe operation context
+   - The operation's context cannot be updated at this stage
+
 1. Sanitization of virtual properties more on this [here](../definitions/virtuals.md#sanitizer)
 
 1. Resolvement of dependent properties more on this [here](../definitions/dependents.md#dependent-properties)
-
-1. Post validation
-   - Here, post-validation checks are evaluated with a safe operation context
-   - The operation's context cannot be updated at this stage
 
 ## Built-in validation helpers
 
