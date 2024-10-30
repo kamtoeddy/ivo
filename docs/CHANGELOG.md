@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# v1.6.0 <small><sup>2024-10-30</sup></small>
+
+- Update signature of validation errors
+
 # v1.5.2 <small><sup>2024-10-13</sup></small>
 
 - Refactor various sections of codebase

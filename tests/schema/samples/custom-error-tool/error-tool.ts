@@ -8,7 +8,7 @@ import {
 type vError<Keys> = {
   field: Keys;
   value: unknown;
-  messages: string[];
+  message: string;
   metadata: any;
 };
 
@@ -31,11 +31,11 @@ export class VError<Keys> implements IErrorTool<ErrorData<Keys>> {
     return this._errors.size > 0;
   }
 
-  add(field: FieldKey, { metadata, reasons }: FieldError, value): this {
+  set(field: FieldKey, { reason, metadata }: FieldError, value): this {
     let err = this._errors.get(field);
 
-    if (err) err.messages = [...err.messages, ...reasons];
-    else err = { field, value, messages: reasons } as vError<Keys>;
+    if (err) err.message = reason;
+    else err = { field, value, message: reason } as vError<Keys>;
 
     if (metadata) err.metadata = metadata;
 

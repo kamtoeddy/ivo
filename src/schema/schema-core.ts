@@ -588,7 +588,7 @@ abstract class SchemaCore<
       true,
       isPropertyOf("metadata", message)
         ? fieldError
-        : ({ reasons: fieldError.reasons } as never),
+        : ({ reason: fieldError.reason } as never),
     ];
   };
 
@@ -654,17 +654,13 @@ abstract class SchemaCore<
 
       if (isPropertyOf("error", allow)) {
         const invalidErrorTypeMessage =
-          'The "error" field of the allow rule can only accept a string, array of strings, InputFieldError or an function that returns any of the above mentioned';
+          'The "error" field of the allow rule can only accept a string, InputFieldError or an function that returns any of the above mentioned';
 
         const error = allow.error,
-          isArray = Array.isArray(error),
           isFunction = isFunctionLike(error),
           isString = typeof error == "string";
 
-        if (
-          (!isArray && !isFunction && !isString && !isInputFieldError(error)) ||
-          (isArray && error.some((v) => typeof v != "string"))
-        )
+        if (!isFunction && !isString && !isInputFieldError(error))
           return { valid, reason: invalidErrorTypeMessage };
       }
 

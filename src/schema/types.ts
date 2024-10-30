@@ -127,7 +127,7 @@ type AsyncSetter<T, Input, Output, CtxOptions extends ObjectType> = (
   context: MutableContext<Input, Output, CtxOptions>,
 ) => TypeOf<T> | Promise<TypeOf<T>>;
 
-type NotAllowedError = string | string[] | InputFieldError;
+type NotAllowedError = string | InputFieldError;
 
 type Setter<T, Input, Output, CtxOptions extends ObjectType> = (
   context: MutableContext<Input, Output, CtxOptions>,
@@ -244,7 +244,6 @@ namespace NS {
         K,
         Input,
         Output,
-        Aliases,
         CtxOptions
       >;
     } & {
@@ -269,16 +268,15 @@ namespace NS {
     K extends keyof (Output | Input),
     Input,
     Output,
-    Aliases,
     CtxOptions extends ObjectType = never,
   > = Enumerable<Output[K]> &
     (
-      | LaxProperty<K, Input, Output, Aliases, CtxOptions>
-      | ReadOnly<K, Input, Output, Aliases, CtxOptions>
-      | ReadonlyNoInit<K, Input, Output, Aliases, CtxOptions>
-      | Required<K, Input, Output, Aliases, CtxOptions>
-      | RequiredBy<K, Input, Output, Aliases, CtxOptions>
-      | RequiredReadonly<K, Input, Output, Aliases, CtxOptions>
+      | LaxProperty<K, Input, Output, CtxOptions>
+      | ReadOnly<K, Input, Output, CtxOptions>
+      | ReadonlyNoInit<K, Input, Output, CtxOptions>
+      | Required<K, Input, Output, CtxOptions>
+      | RequiredBy<K, Input, Output, CtxOptions>
+      | RequiredReadonly<K, Input, Output, CtxOptions>
     );
 
   type PrivateProperty<
@@ -324,9 +322,7 @@ namespace NS {
 
   export type VirtualToAliasMap<T> = Record<KeyOf<T>, string>;
 
-  export type DependencyMap<T> = {
-    [K in KeyOf<T>]?: KeyOf<T>[];
-  };
+  export type DependencyMap<T> = { [K in KeyOf<T>]?: KeyOf<T>[] };
 
   type Listenable<Input, Output, CtxOptions extends ObjectType = never> = {
     onDelete?:
@@ -429,7 +425,6 @@ namespace NS {
     K extends keyof (Output | Input),
     Input,
     Output,
-    Aliases,
     CtxOptions extends ObjectType,
   > = Listenable<Input, Output> &
     InitAndUpdateBlockable<Input, Output, CtxOptions> & {
@@ -437,10 +432,10 @@ namespace NS {
         | TypeOf<Output[K]>
         | AsyncSetter<Output[K], Input, Output, CtxOptions>;
       validator?:
-        | Validator<K, Input, Output, Aliases, CtxOptions>
+        | Validator<K, Input, Output, CtxOptions>
         | [
-            Validator<K, Input, Output, Aliases, CtxOptions>,
-            SecondaryValidator<Output[K], Input, Output, Aliases, CtxOptions>,
+            Validator<K, Input, Output, CtxOptions>,
+            SecondaryValidator<Output[K], Input, Output, CtxOptions>,
           ];
     };
 
@@ -448,7 +443,6 @@ namespace NS {
     K extends keyof (Output | Input),
     Input,
     Output,
-    Aliases,
     CtxOptions extends ObjectType,
   > = Listenable<Input, Output, CtxOptions> & {
     default:
@@ -457,10 +451,10 @@ namespace NS {
     readonly: "lax";
     shouldUpdate?: Setter<boolean, Input, Output, CtxOptions>;
     validator:
-      | Validator<K, Input, Output, Aliases, CtxOptions>
+      | Validator<K, Input, Output, CtxOptions>
       | [
-          Validator<K, Input, Output, Aliases, CtxOptions>,
-          SecondaryValidator<Output[K], Input, Output, Aliases, CtxOptions>,
+          Validator<K, Input, Output, CtxOptions>,
+          SecondaryValidator<Output[K], Input, Output, CtxOptions>,
         ];
   };
 
@@ -468,7 +462,6 @@ namespace NS {
     K extends keyof (Output | Input),
     Input,
     Output,
-    Aliases,
     CtxOptions extends ObjectType,
   > = Listenable<Input, Output, CtxOptions> & {
     default:
@@ -478,10 +471,10 @@ namespace NS {
     shouldInit: false | Setter<boolean, Input, Output, CtxOptions>;
     shouldUpdate?: Setter<boolean, Input, Output, CtxOptions>;
     validator?:
-      | Validator<K, Input, Output, Aliases, CtxOptions>
+      | Validator<K, Input, Output, CtxOptions>
       | [
-          Validator<K, Input, Output, Aliases, CtxOptions>,
-          SecondaryValidator<Output[K], Input, Output, Aliases, CtxOptions>,
+          Validator<K, Input, Output, CtxOptions>,
+          SecondaryValidator<Output[K], Input, Output, CtxOptions>,
         ];
   };
 
@@ -489,37 +482,24 @@ namespace NS {
     K extends keyof (Output | Input),
     Input,
     Output,
-    Aliases,
     CtxOptions extends ObjectType,
   > = Listenable<Input, Output, CtxOptions> & {
     readonly: true;
   } & (
       | {
           validator:
-            | Validator<K, Input, Output, Aliases, CtxOptions>
+            | Validator<K, Input, Output, CtxOptions>
             | [
-                Validator<K, Input, Output, Aliases, CtxOptions>,
-                SecondaryValidator<
-                  Output[K],
-                  Input,
-                  Output,
-                  Aliases,
-                  CtxOptions
-                >,
+                Validator<K, Input, Output, CtxOptions>,
+                SecondaryValidator<Output[K], Input, Output, CtxOptions>,
               ];
         }
       | (Enumerable<Input[K]> & {
           validator?:
-            | Validator<K, Input, Output, Aliases, CtxOptions>
+            | Validator<K, Input, Output, CtxOptions>
             | [
-                Validator<K, Input, Output, Aliases, CtxOptions>,
-                SecondaryValidator<
-                  Output[K],
-                  Input,
-                  Output,
-                  Aliases,
-                  CtxOptions
-                >,
+                Validator<K, Input, Output, CtxOptions>,
+                SecondaryValidator<Output[K], Input, Output, CtxOptions>,
               ];
         })
     );
@@ -528,7 +508,6 @@ namespace NS {
     K extends keyof (Output | Input),
     Input,
     Output,
-    Aliases,
     CtxOptions extends ObjectType,
   > = Listenable<Input, Output, CtxOptions> & {
     required: true;
@@ -536,30 +515,18 @@ namespace NS {
   } & (
       | {
           validator:
-            | Validator<K, Input, Output, Aliases, CtxOptions>
+            | Validator<K, Input, Output, CtxOptions>
             | [
-                Validator<K, Input, Output, Aliases, CtxOptions>,
-                SecondaryValidator<
-                  Output[K],
-                  Input,
-                  Output,
-                  Aliases,
-                  CtxOptions
-                >,
+                Validator<K, Input, Output, CtxOptions>,
+                SecondaryValidator<Output[K], Input, Output, CtxOptions>,
               ];
         }
       | (Enumerable<Input[K]> & {
           validator?:
-            | Validator<K, Input, Output, Aliases, CtxOptions>
+            | Validator<K, Input, Output, CtxOptions>
             | [
-                Validator<K, Input, Output, Aliases, CtxOptions>,
-                SecondaryValidator<
-                  Output[K],
-                  Input,
-                  Output,
-                  Aliases,
-                  CtxOptions
-                >,
+                Validator<K, Input, Output, CtxOptions>,
+                SecondaryValidator<Output[K], Input, Output, CtxOptions>,
               ];
         })
     );
@@ -568,7 +535,6 @@ namespace NS {
     K extends keyof (Output | Input),
     Input,
     Output,
-    Aliases,
     CtxOptions extends ObjectType,
   > = Listenable<Input, Output, CtxOptions> & {
     default:
@@ -579,10 +545,10 @@ namespace NS {
     shouldInit?: Setter<boolean, Input, Output, CtxOptions>;
     shouldUpdate?: Setter<boolean, Input, Output, CtxOptions>;
     validator:
-      | Validator<K, Input, Output, Aliases, CtxOptions>
+      | Validator<K, Input, Output, CtxOptions>
       | [
-          Validator<K, Input, Output, Aliases, CtxOptions>,
-          SecondaryValidator<Output[K], Input, Output, Aliases, CtxOptions>,
+          Validator<K, Input, Output, CtxOptions>,
+          SecondaryValidator<Output[K], Input, Output, CtxOptions>,
         ];
   };
 
@@ -607,10 +573,10 @@ namespace NS {
         | SuccessHandler<Input, Output, CtxOptions>
         | ArrayOfMinSizeOne<SuccessHandler<Input, Output, CtxOptions>>;
       validator:
-        | VirtualValidator<K, Input, Output, Aliases, CtxOptions>
+        | VirtualValidator<K, Input, Output, CtxOptions>
         | [
-            VirtualValidator<K, Input, Output, Aliases, CtxOptions>,
-            SecondaryValidator<Input[K], Input, Output, Aliases, CtxOptions>,
+            VirtualValidator<K, Input, Output, CtxOptions>,
+            SecondaryValidator<Input[K], Input, Output, CtxOptions>,
           ];
     };
 
@@ -694,15 +660,11 @@ namespace NS {
 
 type ValidationResponse<T> =
   | { valid: true; validated: T }
-  | { metadata: FieldError["metadata"]; reason: string[]; valid: false };
+  | { metadata: FieldError["metadata"]; reason: string; valid: false };
 
-type InvalidValidatorResponse<Input = object, Aliases = object> = {
+type InvalidValidatorResponse = {
   metadata?: FieldError["metadata"];
-  reason?:
-    | string
-    | string[]
-    | InputFieldError
-    | ResponseErrorObject<Input, Aliases>;
+  reason?: string;
   valid: false;
   value?: unknown;
 };
@@ -711,56 +673,49 @@ type InternalValidatorResponse<T> =
   | { valid: true; validated: T }
   | InvalidValidatorResponse;
 
-type ValidatorResponseObject<T, Input = object, Aliases = never> =
+type ValidatorResponseObject<T> =
   | { valid: true; validated?: T }
-  | InvalidValidatorResponse<Input, Aliases>;
+  | InvalidValidatorResponse;
 
 type ResponseErrorObject<Input = object, Aliases = object> = {
-  [K in KeyOf<Input & Aliases>]?: string | string[] | InputFieldError;
+  [K in KeyOf<Input & Aliases>]?: string | InputFieldError;
 };
 
-type ValidatorResponse<T, Input, Aliases = object> =
-  | boolean
-  | (ValidatorResponseObject<T, Input, Aliases> & {});
+type ValidatorResponse<T> = boolean | (ValidatorResponseObject<T> & {});
 
 type Validator<
   K extends keyof (Output | Input),
   Input,
   Output,
-  Aliases = never,
   CtxOptions extends ObjectType = never,
 > = (
   value: unknown,
   summary: MutableSummary<Input, Output, CtxOptions> & {},
 ) =>
-  | ValidatorResponse<TypeOf<Output[K]>, Input, Aliases>
-  | Promise<ValidatorResponse<TypeOf<Output[K]>, Input, Aliases>>;
+  | ValidatorResponse<TypeOf<Output[K]>>
+  | Promise<ValidatorResponse<TypeOf<Output[K]>>>;
 
 type SecondaryValidator<
   T,
   Input,
   Output,
-  Aliases = never,
   CtxOptions extends ObjectType = never,
 > = (
   value: T,
   summary: MutableSummary<Input, Output, CtxOptions> & {},
-) =>
-  | ValidatorResponse<T, Input, Aliases>
-  | Promise<ValidatorResponse<T, Input, Aliases>>;
+) => ValidatorResponse<T> | Promise<ValidatorResponse<T>>;
 
 type VirtualValidator<
   K extends keyof Input,
   Input,
   Output,
-  Aliases = never,
   CtxOptions extends ObjectType = never,
 > = (
   value: unknown,
   summary: MutableSummary<Input, Output, CtxOptions> & {},
 ) =>
-  | ValidatorResponse<TypeOf<Input[K]>, Input, Aliases>
-  | Promise<ValidatorResponse<TypeOf<Input[K]>, Input, Aliases>>;
+  | ValidatorResponse<TypeOf<Input[K]>>
+  | Promise<ValidatorResponse<TypeOf<Input[K]>>>;
 
 type ArrayOfMinSizeOne<T> = [T, ...T[]];
 type ArrayOfMinSizeTwo<T> = [T, T, ...T[]];

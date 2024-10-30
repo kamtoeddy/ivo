@@ -5,7 +5,6 @@ export { ERRORS, SCHEMA_ERRORS, VALIDATION_ERRORS };
 export type {
   ErrorPayload,
   FieldError,
-  FullInputFieldError,
   IErrorTool,
   InputFieldError,
   InputPayload,
@@ -25,25 +24,20 @@ const ERRORS = { ...SCHEMA_ERRORS, ...VALIDATION_ERRORS } as const;
 type ValidationErrorMessage = keyof typeof VALIDATION_ERRORS;
 
 type FieldError = {
-  reasons: string[];
+  reason: string;
   metadata: Record<FieldKey, unknown> | null;
 };
 
-type FullInputFieldError = {
-  reason: FieldError["reasons"][number] | FieldError["reasons"];
-  metadata: FieldError["metadata"];
-};
-
 type InputFieldError =
-  | FullInputFieldError
-  | { reason: FullInputFieldError["reason"] }
-  | { metadata: FullInputFieldError["metadata"] };
+  | FieldError
+  | { reason: FieldError["reason"] }
+  | { metadata: FieldError["metadata"] };
 
 type ErrorPayload<Keys extends FieldKey = FieldKey> = {
   [K in Keys]?: FieldError;
 };
 
-type InputPayload = Record<FieldKey, string | string[] | FieldError>;
+type InputPayload = Record<FieldKey, string | FieldError>;
 
 type IValidationError<ExtraData extends ObjectType = never> = ({
   message: ValidationErrorMessage;
@@ -59,8 +53,11 @@ interface IErrorTool<ExtraData extends ObjectType = never> {
   /** determines if validation has failed */
   get isLoaded(): boolean;
 
-  /** used to append a field to your final validation error */
-  add(field: FieldKey, error: FieldError, value?: unknown): this;
+  /**
+  - Appends a field to your final validation error
+  - if validation payload already has provided field, only the metadata (if available) will be updated
+  */
+  set(field: FieldKey, error: FieldError, value?: unknown): this;
 
   /** method to set the value of the validation error message */
   setMessage(message: ValidationErrorMessage): this;

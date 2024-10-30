@@ -1,10 +1,10 @@
-import { StringValidatorOptions, MutableSummary } from '../../../../dist';
+import { StringValidatorOptions, MutableSummary } from "../../../../dist";
 import {
   IOtherMeasureUnit,
   IOtherQuantity,
   StoreItemInput,
   StoreItem,
-} from './types';
+} from "./types";
 
 type SummaryType = MutableSummary<StoreItemInput, StoreItem>;
 
@@ -12,21 +12,20 @@ import {
   makeArrayValidator,
   makeNumberValidator,
   makeStringValidator,
-} from '../../../../src';
-import { findBy } from '../../_utils';
+} from "../../../../src";
+import { findBy } from "../../_utils";
 
 export const validateName = (val: any) =>
   makeStringValidator({ trim: true })(val);
 
 export const validateString = (
-  errorMessage = '',
+  errorMessage = "",
   options: StringValidatorOptions = {},
 ) => {
   return (val: any) => {
     const isValid = makeStringValidator(options)(val);
 
-    if (!isValid.valid && errorMessage)
-      isValid.reason = [errorMessage, ...isValid.reason];
+    if (!isValid.valid && errorMessage) isValid.reason = errorMessage;
 
     return isValid;
   };
@@ -56,7 +55,7 @@ export const validateOtherUnits = (value: any) => {
     filter: (v) => validateOtherUnit(v).valid,
     modifier: (v) => validateOtherUnit(v).validated,
     sorter: (a, b) => (a.name < b.name ? -1 : 1),
-    uniqueKey: 'name',
+    uniqueKey: "name",
   })(value);
 };
 

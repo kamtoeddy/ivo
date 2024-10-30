@@ -11,7 +11,7 @@ type Input = {}; // the input type of your model
 type Output = {}; // the output type of your model
 
 type FieldError = {
-  reasons: string[];
+  reason: string;
   metadata?: Record<string, any> | null;
 };
 
@@ -23,12 +23,7 @@ type ValidationResults =
     }
   | {
       metadata?: Record<string, any>; // an object that will contain extra info on why validation failed
-      reason?:
-        | string
-        | string[]
-        | {
-            [K in keyof (Input & Aliases)]: FieldError; // dot notation here works if first key is a property, virtual or alias e.g: { "address.street": "too short", "address.zipCode": "invalid code" }
-          };
+      reason?: string;
       valid: false;
     };
 
@@ -71,7 +66,7 @@ const Model = new Schema({
   dateOfBirth: { required: true, validator: isValidDateOfBirth },
   email: {
     required: true,
-    //          👇 primary & 👇 secondary validators
+    //          👇 primary  &  👇 secondary validators
     validator: [validateEmail, isEmailUnique],
   },
 });
@@ -104,8 +99,10 @@ type PostValidator = (
     | ValidationResponseObject
     | Promise<void | ValidationResponseObject>
 
+type InputProperty=  keyof Input
+
 type PostValidationConfig = {
-  properties: keyof Input[];
+  properties: [InputProperty, InputProperty, ...InputProperty[]]; // array of at least 2 input properties
   validator: PostValidator | (PostValidator | PostValidator[])[] ;
 };
 
@@ -268,7 +265,7 @@ To validate boolean values
 ```ts
 import { validateBoolean } from "ivo";
 
-console.log(validateBoolean("true")); // { reasons: ["Expected a boolean"], valid: false }
+console.log(validateBoolean("true")); // { reason: "Expected a boolean", valid: false }
 
 console.log(validateBoolean(false)); // { valid: true, validated: false }
 ```
@@ -281,7 +278,7 @@ A tiny utility method to test if a credit/debit **`Card Number`** is valid; not 
 import { validateCreditCard } from "ivo";
 
 console.log(validateCreditCard(""));
-// { reasons: ["Invalid card number"], valid: false }
+// { reason: "Invalid card number", valid: false }
 
 console.log(validateCreditCard(5420596721435293));
 // { valid: true, validated: 5420596721435293}
@@ -305,7 +302,7 @@ To validate emails
 ```ts
 import { validateEmail } from "ivo";
 
-console.log(validateEmail("dbj jkdbZvjkbv")); // { reasons: ["Invalid email"], valid: false }
+console.log(validateEmail("dbj jkdbZvjkbv")); // { reason: "Invalid email", valid: false }
 
 validateEmail(" john@doe.com"); // {  valid: true, validated: "john@doe.com" }
 ```
@@ -339,7 +336,7 @@ console.log(validate(movieGenres)); // { valid: true, validated: ["action", "com
 
 const invalids = ["   ", [], null, 144];
 
-console.log(validate(invalids)); // { reasons: ["Expected a non-empty array"], valid: false }
+console.log(validate(invalids)); // { reason: "Expected a non-empty array", valid: false }
 ```
 
 #### Options
@@ -387,13 +384,13 @@ const options = { min: 10, max: 10.5 };
 
 const validate = makeNumberValidator(options);
 
-console.log(validate(10)); // { reasons: ["too small"], valid: false, metadata:{ min: 10, max: 10.5, inclusiveBottom: false,  inclusiveTop: true } }
+console.log(validate(10)); // { reason: "too small", valid: false, metadata: { min: 10, max: 10.5, inclusiveBottom: false,  inclusiveTop: true } }
 
 console.log(validate(10.01)); // { valid: true, validated: 10.01, metadata }
 
 console.log(validate("10.05")); // { valid: true, validated: 10.05, metadata }
 
-console.log(makeNumberValidator({ allow: [0, -1, 35] }, 30)); // { reasons: ["Value not allowed"], valid: false, metadata :{ allowed: [0, -1, 35] } }
+console.log(makeNumberValidator({ allow: [0, -1, 35] }, 30)); // { reason: "Value not allowed", valid: false, metadata: { allowed: [0, -1, 35] } }
 ```
 
 ### makeStringValidator
@@ -428,7 +425,7 @@ console.log(
     },
     "dbj jkdbZvjkbv",
   ),
-); // { reasons: ["Value not allowed"], valid: false }
+); // { reason: "Value not allowed", valid: false }
 
 console.log(makeStringValidator({ max: 20, min: 3 }, "Hello World!")); // { valid: true, validated: "Hello World!" }
 
@@ -437,5 +434,5 @@ console.log(
     { allow: ["apple", "banana", "watermelon"] },
     "pineapple",
   ),
-); // { reasons: ["Value not allowed"], valid: false, metadata :{ allowed: ['apple', 'banana', 'watermelon'] } }
+); // { reason: "Value not allowed", valid: false, metadata: { allowed: ['apple', 'banana', 'watermelon'] } }
 ```

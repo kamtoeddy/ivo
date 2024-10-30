@@ -1392,8 +1392,8 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                       ? { d1: "lolz" }
                       : {
                           p1: "p1",
-                          p2: ["p2"],
-                          p3: ["error1", "error2"],
+                          p2: "p2",
+                          p3: "error1",
                           p4: null,
                           v: { reason: "error", metadata: { lol: true } },
                         };
@@ -1418,19 +1418,19 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
           expect(res.data).toBeNull();
           expect(res.error.payload).toMatchObject({
             p1: expect.objectContaining({
-              reasons: expect.arrayContaining(["p1", "failed to validate"]),
+              reason: "p1",
             }),
             p2: expect.objectContaining({
-              reasons: expect.arrayContaining(["p2"]),
+              reason: "p2",
             }),
             p3: expect.objectContaining({
-              reasons: expect.arrayContaining(["error1", "error2"]),
+              reason: "error1",
             }),
             p4: expect.objectContaining({
-              reasons: expect.arrayContaining(["validation failed"]),
+              reason: "validation failed",
             }),
             v: expect.objectContaining({
-              reasons: expect.arrayContaining(["error"]),
+              reason: "error",
               metadata: { lol: true },
             }),
           });
@@ -1438,12 +1438,8 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
           const res2 = await Model.update({}, { p2: "updated", v: "updated" });
           expect(res2.data).toBeNull();
           expect(res2.error.payload).toMatchObject({
-            p1: expect.objectContaining({
-              reasons: expect.arrayContaining(["failed to validate"]),
-            }),
-            d1: expect.objectContaining({
-              reasons: expect.arrayContaining(["lolz"]),
-            }),
+            p1: expect.objectContaining({ reason: "failed to validate" }),
+            d1: expect.objectContaining({ reason: "lolz" }),
           });
 
           const res3 = await Model.create({ v: "allow" });
@@ -1473,9 +1469,9 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
           expect(res5.data).toBeNull();
           expect(Object.keys(res5.error.payload).length).toBe(3);
           expect(res5.error.payload).toMatchObject({
-            p1: expect.objectContaining({ reasons: ["validation failed"] }),
-            p2: expect.objectContaining({ reasons: ["validation failed"] }),
-            v: expect.objectContaining({ reasons: ["validation failed"] }),
+            p1: expect.objectContaining({ reason: "validation failed" }),
+            p2: expect.objectContaining({ reason: "validation failed" }),
+            v: expect.objectContaining({ reason: "validation failed" }),
           });
 
           const res6 = await Model.update(
@@ -1486,13 +1482,13 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
           expect(Object.keys(res6.error.payload).length).toBe(3);
           expect(res6.error.payload).toEqual({
             p1: expect.objectContaining({
-              reasons: ["validation failed"],
+              reason: "validation failed",
             }),
             p2: expect.objectContaining({
-              reasons: ["validation failed"],
+              reason: "validation failed",
             }),
             v: expect.objectContaining({
-              reasons: ["validation failed"],
+              reason: "validation failed",
             }),
           });
 
@@ -1500,18 +1496,14 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
           expect(res7.data).toBeNull();
           expect(Object.keys(res7.error.payload).length).toBe(1);
           expect(res7.error.payload).toMatchObject({
-            d1: expect.objectContaining({
-              reasons: ["validation failed"],
-            }),
+            d1: expect.objectContaining({ reason: "validation failed" }),
           });
 
           const res8 = await Model.update({}, { d1: "throw" });
           expect(res8.data).toBeNull();
           expect(Object.keys(res8.error.payload).length).toBe(1);
           expect(res8.error.payload).toEqual({
-            d1: expect.objectContaining({
-              reasons: ["validation failed"],
-            }),
+            d1: expect.objectContaining({ reason: "validation failed" }),
           });
         });
 
@@ -1592,8 +1584,8 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                           ? { d1: "lolz" }
                           : {
                               p1: "p1",
-                              p2: ["p2"],
-                              p3: ["error1", "error2"],
+                              p2: "p2",
+                              p3: "error1",
                               p4: null,
                               v: { reason: "error", metadata: { lol: true } },
                             };
@@ -1623,20 +1615,12 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
 
             expect(createRes.data).toBeNull();
             expect(createRes.error.payload).toMatchObject({
-              p1: expect.objectContaining({
-                reasons: expect.arrayContaining(["p1", "failed to validate"]),
-              }),
-              p2: expect.objectContaining({
-                reasons: expect.arrayContaining(["p2"]),
-              }),
-              p3: expect.objectContaining({
-                reasons: expect.arrayContaining(["error1", "error2"]),
-              }),
-              p4: expect.objectContaining({
-                reasons: expect.arrayContaining(["validation failed"]),
-              }),
+              p1: expect.objectContaining({ reason: "failed to validate" }),
+              p2: expect.objectContaining({ reason: "p2" }),
+              p3: expect.objectContaining({ reason: "error1" }),
+              p4: expect.objectContaining({ reason: "validation failed" }),
               v: expect.objectContaining({
-                reasons: expect.arrayContaining(["error"]),
+                reason: "error",
                 metadata: { lol: true },
               }),
             });
@@ -1652,12 +1636,8 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
 
             expect(createRes1.data).toBeNull();
             expect(createRes1.error.payload).toEqual({
-              p2: expect.objectContaining({
-                reasons: expect.arrayContaining(["validation failed"]),
-              }),
-              v: expect.objectContaining({
-                reasons: expect.arrayContaining(["validation failed"]),
-              }),
+              p2: expect.objectContaining({ reason: "validation failed" }),
+              v: expect.objectContaining({ reason: "validation failed" }),
             });
 
             expect(validatorRunCount).toMatchObject({
@@ -1671,9 +1651,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
 
             expect(createRes11.data).toBeNull();
             expect(createRes11.error.payload).toMatchObject({
-              d1: expect.objectContaining({
-                reasons: expect.arrayContaining(["error returned"]),
-              }),
+              d1: expect.objectContaining({ reason: "error returned" }),
             });
 
             expect(validatorRunCount).toEqual({ "p1-v": 1, "p1-p2": 2 });
@@ -1686,12 +1664,8 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
             );
             expect(updateRes.data).toBeNull();
             expect(updateRes.error.payload).toMatchObject({
-              p1: expect.objectContaining({
-                reasons: expect.arrayContaining(["failed to validate"]),
-              }),
-              d1: expect.objectContaining({
-                reasons: expect.arrayContaining(["lolz"]),
-              }),
+              p1: expect.objectContaining({ reason: "failed to validate" }),
+              d1: expect.objectContaining({ reason: "lolz" }),
             });
 
             expect(validatorRunCount).toMatchObject({
@@ -1708,12 +1682,8 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
 
             expect(updateRes1.data).toBeNull();
             expect(updateRes1.error.payload).toMatchObject({
-              p2: expect.objectContaining({
-                reasons: expect.arrayContaining(["validation failed"]),
-              }),
-              v: expect.objectContaining({
-                reasons: expect.arrayContaining(["validation failed"]),
-              }),
+              p2: expect.objectContaining({ reason: "validation failed" }),
+              v: expect.objectContaining({ reason: "validation failed" }),
             });
 
             expect(validatorRunCount).toMatchObject({
@@ -1727,14 +1697,10 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
 
             expect(updateRes2.data).toBeNull();
             expect(updateRes2.error.payload).toMatchObject({
-              d1: expect.objectContaining({
-                reasons: expect.arrayContaining(["error returned"]),
-              }),
+              d1: expect.objectContaining({ reason: "error returned" }),
             });
 
-            expect(validatorRunCount).toMatchObject({
-              "p1-v": 1,
-            });
+            expect(validatorRunCount).toMatchObject({ "p1-v": 1 });
           });
 
           it("should process parallel and sequential validators accordingly", async () => {
@@ -1814,14 +1780,10 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
 
             expect(createRes1.data).toBeNull();
             expect(createRes1.error.payload).toMatchObject({
-              v: expect.objectContaining({
-                reasons: expect.arrayContaining(["validation failed"]),
-              }),
+              v: expect.objectContaining({ reason: "validation failed" }),
             });
 
-            expect(validatorRunCount).toMatchObject({
-              "p1-v": 1,
-            });
+            expect(validatorRunCount).toMatchObject({ "p1-v": 1 });
 
             validatorRunCount = {};
 
@@ -1829,14 +1791,10 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
 
             expect(createRes2.data).toBeNull();
             expect(createRes2.error.payload).toMatchObject({
-              d1: expect.objectContaining({
-                reasons: expect.arrayContaining(["error returned"]),
-              }),
+              d1: expect.objectContaining({ reason: "error returned" }),
             });
 
-            expect(validatorRunCount).toMatchObject({
-              "p1-v": 1,
-            });
+            expect(validatorRunCount).toMatchObject({ "p1-v": 1 });
 
             validatorRunCount = {};
 
@@ -1847,9 +1805,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
 
             expect(createRes3.data).toBeNull();
             expect(createRes3.error.payload).toMatchObject({
-              v: expect.objectContaining({
-                reasons: expect.arrayContaining(["validation failed"]),
-              }),
+              v: expect.objectContaining({ reason: "validation failed" }),
             });
 
             expect(validatorRunCount).toMatchObject({
@@ -1866,9 +1822,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
 
             expect(createRes4.data).toBeNull();
             expect(createRes4.error.payload).toMatchObject({
-              v: expect.objectContaining({
-                reasons: expect.arrayContaining(["error returned"]),
-              }),
+              v: expect.objectContaining({ reason: "error returned" }),
             });
 
             expect(validatorRunCount).toMatchObject({
@@ -1892,14 +1846,10 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
             const updateRes1 = await Model.update({}, { v: "throw" });
             expect(updateRes1.data).toBeNull();
             expect(updateRes1.error.payload).toMatchObject({
-              v: expect.objectContaining({
-                reasons: expect.arrayContaining(["validation failed"]),
-              }),
+              v: expect.objectContaining({ reason: "validation failed" }),
             });
 
-            expect(validatorRunCount).toMatchObject({
-              "p1-v": 1,
-            });
+            expect(validatorRunCount).toMatchObject({ "p1-v": 1 });
 
             validatorRunCount = {};
 
@@ -1907,30 +1857,21 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
 
             expect(updateRes2.data).toBeNull();
             expect(updateRes2.error.payload).toMatchObject({
-              d1: expect.objectContaining({
-                reasons: expect.arrayContaining(["error returned"]),
-              }),
+              d1: expect.objectContaining({ reason: "error returned" }),
             });
 
-            expect(validatorRunCount).toMatchObject({
-              "p1-v": 1,
-            });
+            expect(validatorRunCount).toMatchObject({ "p1-v": 1 });
 
             validatorRunCount = {};
 
             const updateRes3 = await Model.update(
               {},
-              {
-                v: "throw-parallel",
-                p2: true,
-              },
+              { v: "throw-parallel", p2: true },
             );
 
             expect(updateRes3.data).toBeNull();
             expect(updateRes3.error.payload).toMatchObject({
-              v: expect.objectContaining({
-                reasons: expect.arrayContaining(["validation failed"]),
-              }),
+              v: expect.objectContaining({ reason: "validation failed" }),
             });
 
             expect(validatorRunCount).toMatchObject({
@@ -1942,17 +1883,12 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
 
             const updateRes4 = await Model.update(
               {},
-              {
-                v: "return error-parallel",
-                p2: true,
-              },
+              { v: "return error-parallel", p2: true },
             );
 
             expect(updateRes4.data).toBeNull();
             expect(updateRes4.error.payload).toMatchObject({
-              v: expect.objectContaining({
-                reasons: expect.arrayContaining(["error returned"]),
-              }),
+              v: expect.objectContaining({ reason: "error returned" }),
             });
 
             expect(validatorRunCount).toMatchObject({

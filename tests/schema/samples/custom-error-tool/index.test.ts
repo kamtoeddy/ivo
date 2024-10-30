@@ -1,14 +1,14 @@
-import { describe, expect, it } from 'bun:test';
+import { describe, expect, it } from "bun:test";
 
-import { VALIDATION_ERRORS } from '../../../../dist';
+import { VALIDATION_ERRORS } from "../../../../dist";
 
-import { UserModel, EUserModel } from '.';
+import { UserModel, EUserModel } from ".";
 
-describe('Custom ErrorTool', () => {
-  describe('Base Model', () => {
-    it('should return custom errors with Model.create', async () => {
-      const firstName = 'name',
-        lastName = '';
+describe("Custom ErrorTool", () => {
+  describe("Base Model", () => {
+    it("should return custom errors with Model.create", async () => {
+      const firstName = "name",
+        lastName = "";
 
       const { data, error } = await UserModel.create({ firstName, lastName });
 
@@ -17,26 +17,26 @@ describe('Custom ErrorTool', () => {
         message: VALIDATION_ERRORS.VALIDATION_ERROR,
         errors: expect.arrayContaining([
           expect.objectContaining({
-            field: 'firstName',
+            field: "firstName",
             value: firstName,
-            messages: expect.arrayContaining(['Invalid first name']),
-            metadata: { hint: 'try harder 😜', valueProvided: firstName },
+            message: "Invalid first name",
+            metadata: { hint: "try harder 😜", valueProvided: firstName },
           }),
           expect.objectContaining({
-            field: 'lastName',
+            field: "lastName",
             value: lastName,
-            messages: expect.arrayContaining(['validation failed']),
+            message: "validation failed",
           }),
         ]),
       });
     });
 
-    it('should return custom errors with Model.update', async () => {
-      const firstName = 'name',
-        lastName = '';
+    it("should return custom errors with Model.update", async () => {
+      const firstName = "name",
+        lastName = "";
 
       const { data, error } = await UserModel.update(
-        { firstName: 'John', fullName: '', lastName: 'doe' },
+        { firstName: "John", fullName: "", lastName: "doe" },
         { firstName, lastName },
       );
 
@@ -45,23 +45,23 @@ describe('Custom ErrorTool', () => {
         message: VALIDATION_ERRORS.VALIDATION_ERROR,
         errors: expect.arrayContaining([
           expect.objectContaining({
-            field: 'firstName',
+            field: "firstName",
             value: firstName,
-            messages: expect.arrayContaining(['Invalid first name']),
-            metadata: { hint: 'try harder 😜', valueProvided: firstName },
+            message: "Invalid first name",
+            metadata: { hint: "try harder 😜", valueProvided: firstName },
           }),
           expect.objectContaining({
-            field: 'lastName',
+            field: "lastName",
             value: lastName,
-            messages: expect.arrayContaining(['validation failed']),
+            message: "validation failed",
           }),
         ]),
       });
     });
 
-    it('should return nothing to update with Model.update when nessecary', async () => {
-      const firstName = 'name',
-        lastName = 'lname';
+    it("should return nothing to update with Model.update when nessecary", async () => {
+      const firstName = "name",
+        lastName = "lname";
 
       const { data, error } = await UserModel.update(
         { firstName, fullName: `${firstName} ${lastName}`, lastName },
@@ -76,10 +76,10 @@ describe('Custom ErrorTool', () => {
     });
   });
 
-  describe('Extended Model', () => {
-    it('should return custom errors with Model.create', async () => {
-      const firstName = 'name',
-        lastName = '';
+  describe("Extended Model", () => {
+    it("should return custom errors with Model.create", async () => {
+      const firstName = "name",
+        lastName = "";
 
       const { data, error } = await EUserModel.create({
         firstName,
@@ -91,26 +91,26 @@ describe('Custom ErrorTool', () => {
         message: VALIDATION_ERRORS.VALIDATION_ERROR,
         errors: expect.arrayContaining([
           expect.objectContaining({
-            field: 'firstName',
+            field: "firstName",
             value: firstName,
-            messages: expect.arrayContaining(['Invalid first name']),
-            metadata: { hint: 'try harder 😜', valueProvided: firstName },
+            message: "Invalid first name",
+            metadata: { hint: "try harder 😜", valueProvided: firstName },
           }),
           expect.objectContaining({
-            field: 'lastName',
+            field: "lastName",
             value: lastName,
-            messages: expect.arrayContaining(['validation failed']),
+            message: "validation failed",
           }),
         ]),
       });
     });
 
-    it('should return custom errors with Model.update', async () => {
-      const firstName = 'name',
-        lastName = '';
+    it("should return custom errors with Model.update", async () => {
+      const firstName = "name",
+        lastName = "";
 
       const { data, error } = await EUserModel.update(
-        { firstName: 'John', full_name: '', lastName: 'doe' },
+        { firstName: "John", full_name: "", lastName: "doe" },
         { firstName, lastName },
       );
 
@@ -119,23 +119,23 @@ describe('Custom ErrorTool', () => {
         message: VALIDATION_ERRORS.VALIDATION_ERROR,
         errors: expect.arrayContaining([
           expect.objectContaining({
-            field: 'firstName',
+            field: "firstName",
             value: firstName,
-            messages: expect.arrayContaining(['Invalid first name']),
-            metadata: { hint: 'try harder 😜', valueProvided: firstName },
+            message: "Invalid first name",
+            metadata: { hint: "try harder 😜", valueProvided: firstName },
           }),
           expect.objectContaining({
-            field: 'lastName',
+            field: "lastName",
             value: lastName,
-            messages: expect.arrayContaining(['validation failed']),
+            message: "validation failed",
           }),
         ]),
       });
     });
 
-    it('should return nothing to update with Model.update when nessecary', async () => {
-      const firstName = 'name',
-        lastName = 'lname';
+    it("should return nothing to update with Model.update when nessecary", async () => {
+      const firstName = "name",
+        lastName = "lname";
 
       const { data, error } = await EUserModel.update(
         { firstName, full_name: `${firstName} ${lastName}`, lastName },

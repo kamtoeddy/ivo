@@ -1,19 +1,19 @@
-import { describe, it, expect } from 'bun:test';
+import { describe, it, expect } from "bun:test";
 
-import { ERRORS } from '../../../dist';
+import { ERRORS } from "../../../dist";
 import {
   expectFailure,
   expectNoFailure,
   getValidSchema,
   validator,
-} from '../_utils';
+} from "../_utils";
 
 export const Test_SchemaSetMissingDefaultsOnUpdateOption = ({
   Schema,
   fx,
 }: any) => {
-  describe('Schema.options.setMissingDefaultsOnUpdate', () => {
-    describe('behaviour', () => {
+  describe("Schema.options.setMissingDefaultsOnUpdate", () => {
+    describe("behaviour", () => {
       it('should not generate default values if "setMissingDefaultsOnUpdate" is false | undefined', async () => {
         for (const setMissingDefaultsOnUpdate of [false, undefined]) {
           let summary: any;
@@ -22,12 +22,12 @@ export const Test_SchemaSetMissingDefaultsOnUpdateOption = ({
             {
               id: { constant: true, value: 1 },
               dependent: {
-                default: '',
-                dependsOn: 'lax',
+                default: "",
+                dependsOn: "lax",
                 resolver: ({ context }: any) => context.lax,
               },
-              lax: { default: 'lax', validator },
-              prop: { default: '', validator },
+              lax: { default: "lax", validator },
+              prop: { default: "", validator },
             },
             {
               setMissingDefaultsOnUpdate,
@@ -35,8 +35,8 @@ export const Test_SchemaSetMissingDefaultsOnUpdateOption = ({
             },
           ).getModel();
 
-          const previousValues = { prop: '' },
-            updates = { prop: 'Prop updated' };
+          const previousValues = { prop: "" },
+            updates = { prop: "Prop updated" };
 
           const { data, handleSuccess } = await Model.update(
             previousValues,
@@ -48,7 +48,7 @@ export const Test_SchemaSetMissingDefaultsOnUpdateOption = ({
           expect(data).toEqual(updates);
           expect(summary).toMatchObject({
             changes: updates,
-            context: { dependent: '', lax: 'lax', ...updates },
+            context: { dependent: "", lax: "lax", ...updates },
             isUpdate: true,
             previousValues,
             values: updates,
@@ -56,24 +56,24 @@ export const Test_SchemaSetMissingDefaultsOnUpdateOption = ({
         }
       });
 
-      describe('setMissingDefaultsOnUpdate: true', () => {
+      describe("setMissingDefaultsOnUpdate: true", () => {
         let summary: any;
 
         const Model = new Schema(
           {
             id: { constant: true, value: 1 },
             dependent: {
-              default: '',
-              dependsOn: 'lax',
+              default: "",
+              dependsOn: "lax",
               resolver: ({ context }: any) => context.lax,
             },
             dependent_1: {
-              default: '',
-              dependsOn: 'dependent',
+              default: "",
+              dependsOn: "dependent",
               resolver: ({ context }: any) => context.dependent,
             },
-            lax: { default: 'lax', validator },
-            prop: { default: '', validator },
+            lax: { default: "lax", validator },
+            prop: { default: "", validator },
           },
           {
             setMissingDefaultsOnUpdate: true,
@@ -82,12 +82,12 @@ export const Test_SchemaSetMissingDefaultsOnUpdateOption = ({
         ).getModel();
 
         it('should generate default values if "setMissingDefaultsOnUpdate" is true', async () => {
-          const previousValues = { prop: '' };
-          const updates = { prop: 'Prop updated' };
+          const previousValues = { prop: "" };
+          const updates = { prop: "Prop updated" };
           const changes = {
-            dependent: '',
-            dependent_1: '',
-            lax: 'lax',
+            dependent: "",
+            dependent_1: "",
+            lax: "lax",
             ...updates,
           };
 
@@ -108,13 +108,13 @@ export const Test_SchemaSetMissingDefaultsOnUpdateOption = ({
           });
         });
 
-        it('generated values should not overwrite updates provided', async () => {
+        it("generated values should not overwrite updates provided", async () => {
           const previousValues = {};
-          const updates = { lax: 'lax updated' };
+          const updates = { lax: "lax updated" };
           const changes = {
             dependent: updates.lax,
             dependent_1: updates.lax,
-            prop: '',
+            prop: "",
             ...updates,
           };
 
@@ -137,7 +137,7 @@ export const Test_SchemaSetMissingDefaultsOnUpdateOption = ({
       });
     });
 
-    describe('valid', () => {
+    describe("valid", () => {
       it("should allow 'setMissingDefaultsOnUpdate' as boolean", () => {
         const values = [true, false];
 
@@ -151,9 +151,9 @@ export const Test_SchemaSetMissingDefaultsOnUpdateOption = ({
       });
     });
 
-    describe('invalid', () => {
+    describe("invalid", () => {
       it("should reject 'setMissingDefaultsOnUpdate' other than boolean or function", () => {
-        const invalidValues = [1, 0, -14, {}, [], 'invalid', '', null];
+        const invalidValues = [1, 0, -14, {}, [], "invalid", "", null];
 
         for (const setMissingDefaultsOnUpdate of invalidValues) {
           const toFail = fx(getValidSchema(), { setMissingDefaultsOnUpdate });
