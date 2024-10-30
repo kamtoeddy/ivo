@@ -3,7 +3,7 @@ name: NODE CI
 on:
   pull_request:
   push:
-    branches: ['main']
+    branches: ["main"]
 
 jobs:
   build-and-test:
@@ -11,7 +11,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [16.14, 17.x, 18.x, 19.x, 20.x]
+        node-version: [16.14, 17.x, 18.x, 19.x, 20.x, 21.x, 22.x, 23.x]
 
     steps:
       - uses: actions/checkout@v3
