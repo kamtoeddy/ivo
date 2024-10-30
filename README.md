@@ -134,7 +134,7 @@ const user = await usersDb.findByID(101);
 if (!user) return handleError({ message: "User not found" });
 
 const { data, error } = await UserModel.update(user, {
-  usernameLastUpdatedAt: new Date(), // dependent property -> will be ignored
+  usernameLastUpdatedAt: add(new Date(), { days: 31 }), // dependent property -> will be ignored
   id: 75, // constant property -> will be ignored
   age: 34, // not on schema -> will be ignored
   username: "johndoe",
@@ -146,18 +146,17 @@ console.log(data);
 // {
 //   updatedAt: new Date(),
 //   username: 'johndoe',
-//   usernameLastUpdatedAt: Date // value returned from resolver -> 30days from now
+//   usernameLastUpdatedAt: new Date() // value returned from resolver -> current date
 // }
 
 await usersDb.updateByID(user.id, data);
 ```
 
 ```ts
-// updating 'username' again will not work
+// any further attempt to update 'username' will be ignored until
+// the 'shouldUpdate' rule returns true
 
-const { error } = await UserModel.update(user, {
-  username: "john-doe", // will be ignored because shouldUpdate rule will return false
-});
+const { error } = await UserModel.update(user, { username: "john-doe" });
 
 console.log(error);
 // {
