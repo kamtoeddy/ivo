@@ -1127,10 +1127,8 @@ class ModelTool<
       value,
     } as never;
 
-    if (response?.reason) _response.reason = response.reason;
-
-    if (isRecordLike(response?.reason))
-      _response.reason = this._handleObjectValidationResponse(response.reason);
+    if (response?.reason && typeof response?.reason == "string")
+      _response.reason = response.reason;
 
     if (response?.metadata && isRecordLike(response.metadata))
       _response.metadata = sortKeys(response.metadata);

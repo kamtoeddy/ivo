@@ -315,174 +315,10 @@ export const Test_Validators = ({ Schema, fx }: any) => {
             expect(error).toEqual({
               message: ERRORS.VALIDATION_ERROR,
               payload: {
-                prop1: {
-                  reason: "validation failed",
-                  metadata: null,
-                },
+                prop: { reason: "validation failed", metadata: null },
               },
             });
           }
-        });
-
-        describe('should respect nested props derived from props/aliased passed to "reason object"', () => {
-          const Model = new Schema({
-            dependent: {
-              default: "",
-              dependsOn: "virtual",
-              resolver: () => "",
-            },
-            aliasedDependent: {
-              default: "",
-              dependsOn: "virtualWithAlias",
-              resolver: () => "",
-            },
-            name: {
-              required: true,
-              validator() {
-                return {
-                  valid: false,
-                  reason: {
-                    "name.first": "Invalid first name",
-                    "name.last": "Invalid last name",
-                    "lol.shouldReject": "lol",
-                    shouldReject: "lol",
-                  },
-                };
-              },
-            },
-            virtual: {
-              virtual: true,
-              validator() {
-                return {
-                  valid: false,
-                  reason: {
-                    virtual: "Invalid value",
-                  },
-                };
-              },
-            },
-            virtualWithAlias: {
-              virtual: true,
-              alias: "aliasedDependent",
-              validator() {
-                return {
-                  valid: false,
-                  reason: {
-                    aliasedDependent: "Invalid value provided",
-                  },
-                };
-              },
-            },
-          }).getModel();
-
-          describe("creation", () => {
-            it("should reject properly at creation", async () => {
-              const { data, error } = await Model.create({
-                virtual: "",
-                virtualWithAlias: "",
-              });
-
-              expect(data).toBeNull();
-              expect(error).toEqual({
-                message: ERRORS.VALIDATION_ERROR,
-                payload: {
-                  "name.first": {
-                    reason: "Invalid first name",
-                    metadata: null,
-                  },
-                  "name.last": { reason: "Invalid last name", metadata: null },
-                  virtual: { reason: "Invalid value", metadata: null },
-                  aliasedDependent: {
-                    reason: "Invalid value provided",
-                    metadata: null,
-                  },
-                },
-              });
-            });
-
-            it("should reject properly at creation when virtual alias is provided", async () => {
-              const { data, error } = await Model.create({
-                aliasedDependent: "",
-              });
-
-              expect(data).toBeNull();
-              expect(error).toEqual({
-                message: ERRORS.VALIDATION_ERROR,
-                payload: {
-                  "name.first": {
-                    reason: "Invalid first name",
-                    metadata: null,
-                  },
-                  "name.last": {
-                    reason: "Invalid last name",
-                    metadata: null,
-                  },
-                  aliasedDependent: {
-                    reason: "Invalid value provided",
-                    metadata: null,
-                  },
-                },
-              });
-            });
-          });
-
-          describe("updates", () => {
-            it("should reject properly during updates", async () => {
-              const { data, error } = await Model.update(
-                { aliasedDependent: "", dependent: "", name: undefined },
-                { virtualWithAlias: "", virtual: "", name: "lol" },
-              );
-
-              expect(data).toBeNull();
-              expect(error).toEqual({
-                message: ERRORS.VALIDATION_ERROR,
-                payload: {
-                  "name.first": {
-                    reason: "Invalid first name",
-                    metadata: null,
-                  },
-                  "name.last": {
-                    reason: "Invalid last name",
-                    metadata: null,
-                  },
-                  virtual: {
-                    reason: "Invalid value",
-                    metadata: null,
-                  },
-                  aliasedDependent: {
-                    reason: "Invalid value provided",
-                    metadata: null,
-                  },
-                },
-              });
-            });
-
-            it("should reject properly during updates when virtual alias is provided", async () => {
-              const { data, error } = await Model.update(
-                { aliasedDependent: "", dependent: "", name: undefined },
-                { aliasedDependent: "", name: "lol" },
-              );
-
-              expect(data).toBeNull();
-              expect(error).toEqual({
-                message: ERRORS.VALIDATION_ERROR,
-                payload: {
-                  "name.first": {
-                    reason: "Invalid first name",
-                    metadata: null,
-                  },
-                  "name.last": {
-                    reason: "Invalid last name",
-                    metadata: null,
-                  },
-                  aliasedDependent: {
-                    reason: "Invalid value provided",
-                    metadata: null,
-                  },
-                },
-              });
-            });
-          });
         });
       });
 
@@ -514,7 +350,6 @@ export const Test_Validators = ({ Schema, fx }: any) => {
 
           it("should respect valid metadata provided by custom validators", async () => {
             const info = [{ prop2: "Invalid Prop" }];
-            const propMetadata = { message1: "try again" };
 
             for (const metadata of info) {
               const Model = new Schema({
@@ -522,18 +357,13 @@ export const Test_Validators = ({ Schema, fx }: any) => {
                   default: "",
                   validator: () => ({
                     valid: false,
+                    reason: "lol",
                     metadata: { message: "too bad" },
                   }),
                 },
                 prop2: {
                   required: true,
-                  validator() {
-                    return {
-                      valid: false,
-                      metadata,
-                      reason: { prop: { metadata: propMetadata } },
-                    };
-                  },
+                  validator: () => ({ valid: false, metadata }),
                 },
               }).getModel();
 
@@ -544,10 +374,13 @@ export const Test_Validators = ({ Schema, fx }: any) => {
                 message: ERRORS.VALIDATION_ERROR,
                 payload: {
                   prop: expect.objectContaining({
-                    metadata: { message: "too bad", ...propMetadata },
+                    metadata: { message: "too bad" },
+                    reason: "lol",
+                  }),
+                  prop2: expect.objectContaining({
+                    metadata,
                     reason: "validation failed",
                   }),
-                  prop2: expect.objectContaining({ metadata }),
                 },
               });
             }
