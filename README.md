@@ -24,18 +24,18 @@ import { Schema } from "ivo";
 import { Schema, type MutableSummary } from "ivo";
 
 type UserInput = {
-  email: string;
+  email: string | null;
+  phoneNumber: string | null;
   username: string;
-  phoneNumber: string;
 };
 
 type User = {
   id: string;
   createdAt: Date;
   email: string | null;
-  username: string;
   phoneNumber: string | null;
   updatedAt: Date;
+  username: string;
   usernameLastUpdatedAt: Date | null;
 };
 
