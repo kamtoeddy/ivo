@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+# v1.6.1 <small><sup>2024-11-11</sup></small>
+
+- Add support for nullable UpdatedAt timestamps
+- Breaking change: UpdatedAt timestamps are now nullable by default
+
 # v1.6.0 <small><sup>2024-10-30</sup></small>
 
 - Update signature of validation errors

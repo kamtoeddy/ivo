@@ -5,12 +5,21 @@ export { TimeStampTool };
 
 type TimestampKey = KeyOf<NS.Timestamp>;
 
+const IS_UPDATED_AT_TIMESTAMP_NULLABLE_BY_DEFAULT = true;
+
 class TimeStampTool {
   private _keys: TimestampKey[];
   private timestamps: NS.Timestamp;
+  private nullable: boolean;
 
   constructor(timestamps: NS.Options<unknown, unknown, unknown>["timestamps"]) {
     this.timestamps = this._makeTimestamps(timestamps);
+    this.nullable =
+      typeof timestamps === "object" &&
+      typeof timestamps?.updatedAt === "object"
+        ? (timestamps.updatedAt.nullable ??
+          IS_UPDATED_AT_TIMESTAMP_NULLABLE_BY_DEFAULT)
+        : IS_UPDATED_AT_TIMESTAMP_NULLABLE_BY_DEFAULT;
 
     this._keys = Object.keys(this.timestamps).filter(
       (key) => key.length > 0,
@@ -31,7 +40,10 @@ class TimeStampTool {
         : { createdAt: "", updatedAt: "" };
 
     const custom_createdAt = timestamps?.createdAt;
-    const custom_updatedAt = timestamps?.updatedAt;
+    const custom_updatedAt =
+      typeof timestamps?.updatedAt === "object"
+        ? timestamps?.updatedAt?.key
+        : timestamps?.updatedAt;
 
     if (custom_createdAt && typeof custom_createdAt == "string")
       createdAt = custom_createdAt.trim();
@@ -54,6 +66,10 @@ class TimeStampTool {
   }
 
   isTimestampKey = (key: string) => this._keys.includes(key as TimestampKey);
+
+  get isNullable() {
+    return this.nullable;
+  }
 
   get withTimestamps() {
     return !!(this.timestamps.createdAt || this.timestamps.updatedAt);

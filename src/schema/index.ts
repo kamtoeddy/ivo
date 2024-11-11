@@ -1153,11 +1153,19 @@ class ModelTool<
     const { createdAt, updatedAt } = this.timestampTool.getKeys();
     let results = Object.assign({}, obj);
 
+    const now = new Date();
+
     if (updatedAt)
-      results = Object.assign(results, { [updatedAt]: new Date() });
+      results = Object.assign(results, {
+        [updatedAt]: isUpdate
+          ? now
+          : this.timestampTool.isNullable
+            ? null
+            : now,
+      });
 
     if (!isUpdate && createdAt)
-      results = Object.assign(results, { [createdAt]: new Date() });
+      results = Object.assign(results, { [createdAt]: now });
 
     return sortKeys(results);
   }

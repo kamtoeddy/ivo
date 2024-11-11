@@ -1718,22 +1718,49 @@ abstract class SchemaCore<
     if (!Object.keys(timestamps!).length)
       return { valid, reason: "cannot be an empty object" };
 
-    const { createdAt, updatedAt } = timestamps as {
-      createdAt: "";
-      updatedAt: "";
-    };
-
-    const reservedKeys = [...this.props, ...this.virtuals] as string[];
-
-    for (const key of [createdAt, updatedAt])
-      if (key && reservedKeys?.includes(key))
-        return { valid, reason: `'${key}' already belongs to your schema` };
+    const createdAt = timestamps?.createdAt as string;
+    let updatedAt = timestamps?.updatedAt as string;
 
     if (typeof createdAt == "string" && !createdAt.trim().length)
       return { valid, reason: "'createdAt' cannot be an empty string" };
 
     if (typeof updatedAt == "string" && !updatedAt.trim().length)
       return { valid, reason: "'updatedAt' cannot be an empty string" };
+
+    if (typeof timestamps.updatedAt === "object") {
+      const updatedAtConfig = timestamps.updatedAt;
+      const keys = Object.keys(updatedAtConfig).filter((prop) =>
+        isOneOf(prop, ["key", "nullable"]),
+      );
+
+      if (!keys.length)
+        return {
+          valid,
+          reason: "'updatedAt' can only accept properties 'key' and 'nullable'",
+        };
+
+      if (keys.includes("key")) {
+        updatedAt = updatedAtConfig.key!;
+
+        if (typeof updatedAt != "string" || !updatedAt.trim().length)
+          return { valid, reason: "'updatedAt.key' must be a valid string" };
+      }
+
+      if (
+        keys.includes("nullable") &&
+        typeof updatedAtConfig.nullable != "boolean"
+      )
+        return {
+          valid,
+          reason: "'updatedAt.nullable' must be a boolean",
+        };
+    }
+
+    const reservedKeys = [...this.props, ...this.virtuals] as string[];
+
+    for (const key of [createdAt, updatedAt])
+      if (key && reservedKeys?.includes(key))
+        return { valid, reason: `'${key}' already belongs to your schema` };
 
     if (createdAt === updatedAt)
       return { valid, reason: "createdAt & updatedAt cannot be same" };

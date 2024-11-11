@@ -17,6 +17,24 @@ export const Test_SchemaTimestampOption = ({ Schema, fx }: any) => {
         }
       });
 
+      it("should allow updated as object", () => {
+        const values = [
+          { key: "updatedAt" },
+          { nullable: true },
+          { nullable: false },
+          { key: "updatedAt", nullable: false },
+          { key: "updatedAt", nullable: true },
+        ];
+
+        for (const updatedAt of values) {
+          const toPass = fx(getValidSchema(), { timestamps: { updatedAt } });
+
+          expectNoFailure(toPass);
+
+          toPass();
+        }
+      });
+
       describe("behaviour", () => {
         const inputValue = {
           propertyName1: "value1",
@@ -56,7 +74,7 @@ export const Test_SchemaTimestampOption = ({ Schema, fx }: any) => {
             expect(entity).toHaveProperty("updatedAt");
 
             expect(onSuccessValues.createdAt).toBeDefined();
-            expect(onSuccessValues.updatedAt).toBeDefined();
+            expect(onSuccessValues.updatedAt).toBeNull();
           });
 
           it("should populate updatedAt during updates", async () => {
@@ -70,7 +88,7 @@ export const Test_SchemaTimestampOption = ({ Schema, fx }: any) => {
             expect(updates).toHaveProperty("updatedAt");
 
             expect(onSuccessValues.createdAt).toBeDefined();
-            expect(onSuccessValues.updatedAt).toBeDefined();
+            expect(onSuccessValues.updatedAt).toBeNull();
           });
         });
 
@@ -102,7 +120,7 @@ export const Test_SchemaTimestampOption = ({ Schema, fx }: any) => {
             expect(entity).toHaveProperty("updatedAt");
 
             expect(onSuccessValues.c_At).toBeDefined();
-            expect(onSuccessValues.updatedAt).toBeDefined();
+            expect(onSuccessValues.updatedAt).toBeNull();
           });
 
           it("should populate updatedAt during updates", async () => {
@@ -117,7 +135,7 @@ export const Test_SchemaTimestampOption = ({ Schema, fx }: any) => {
             expect(updates).toHaveProperty("updatedAt");
 
             expect(onSuccessValues.c_At).toBeDefined();
-            expect(onSuccessValues.updatedAt).toBeDefined();
+            expect(onSuccessValues.updatedAt).toBeNull();
           });
         });
 
@@ -376,7 +394,8 @@ export const Test_SchemaTimestampOption = ({ Schema, fx }: any) => {
               onSuccessValues.updatedAt = updatedAt;
             };
 
-            Model = new Schema(getValidSchema({ onSuccess }), {
+            Model = new Schema(getValidSchema(), {
+              onSuccess,
               timestamps: { createdAt: false },
             }).getModel();
 
@@ -395,7 +414,7 @@ export const Test_SchemaTimestampOption = ({ Schema, fx }: any) => {
             expect(Object.keys(entity).length).toBe(3);
 
             expect(onSuccessValues.createdAt).toBeUndefined();
-            expect(onSuccessValues.updatedAt).toBeDefined();
+            expect(onSuccessValues.updatedAt).toBeNull();
           });
 
           it("should populate only updatedAt during updates", async () => {
@@ -413,7 +432,261 @@ export const Test_SchemaTimestampOption = ({ Schema, fx }: any) => {
             expect(Object.keys(updates).length).toBe(2);
 
             expect(onSuccessValues.createdAt).toBeUndefined();
-            expect(onSuccessValues.updatedAt).toBeDefined();
+            expect(onSuccessValues.updatedAt).not.toBeNull();
+          });
+        });
+
+        describe("timestamps(updatedAt:object)", () => {
+          describe("updatedAt(nullable:true)", () => {
+            let Model: any, entity: any;
+
+            beforeEach(async () => {
+              const onSuccess = ({
+                context: { createdAt, updatedAt },
+              }: any) => {
+                onSuccessValues.createdAt = createdAt;
+                onSuccessValues.updatedAt = updatedAt;
+              };
+
+              Model = new Schema(getValidSchema(), {
+                onSuccess,
+                timestamps: { updatedAt: { nullable: true } },
+              }).getModel();
+
+              const res = await Model.create(inputValue);
+
+              entity = res.data;
+
+              await res.handleSuccess();
+            });
+
+            it("should populate createdAt & updatedAt at creation", () => {
+              expect(entity).toMatchObject(inputValue);
+
+              expect(entity).toHaveProperty("createdAt");
+              expect(entity).toHaveProperty("updatedAt");
+
+              expect(onSuccessValues.createdAt).toBeDefined();
+              expect(onSuccessValues.updatedAt).toBeNull();
+            });
+
+            it("should populate updatedAt during updates", async () => {
+              const { data: updates } = await Model.update(entity, {
+                propertyName2: 20,
+              });
+
+              expect(updates).toMatchObject({ propertyName2: 20 });
+
+              expect(updates).not.toHaveProperty("createdAt");
+              expect(updates).toHaveProperty("updatedAt");
+
+              expect(onSuccessValues.createdAt).toBeDefined();
+              expect(onSuccessValues.updatedAt).toBeNull();
+            });
+          });
+
+          describe("updatedAt(nullable:false)", () => {
+            let Model: any, entity: any;
+
+            beforeEach(async () => {
+              const onSuccess = ({
+                context: { createdAt, updatedAt },
+              }: any) => {
+                onSuccessValues.createdAt = createdAt;
+                onSuccessValues.updatedAt = updatedAt;
+              };
+
+              Model = new Schema(getValidSchema(), {
+                onSuccess,
+                timestamps: { updatedAt: { nullable: false } },
+              }).getModel();
+
+              const res = await Model.create(inputValue);
+
+              entity = res.data;
+
+              await res.handleSuccess();
+            });
+
+            it("should populate createdAt & updatedAt at creation", () => {
+              expect(entity).toMatchObject(inputValue);
+
+              expect(entity).toHaveProperty("createdAt");
+              expect(entity).toHaveProperty("updatedAt");
+
+              expect(onSuccessValues.createdAt).toBeDefined();
+              expect(onSuccessValues.updatedAt).not.toBeNull();
+            });
+
+            it("should populate updatedAt during updates", async () => {
+              const { data: updates } = await Model.update(entity, {
+                propertyName2: 20,
+              });
+
+              expect(updates).toMatchObject({ propertyName2: 20 });
+
+              expect(updates).not.toHaveProperty("createdAt");
+              expect(updates).toHaveProperty("updatedAt");
+
+              expect(onSuccessValues.createdAt).toBeDefined();
+              expect(onSuccessValues.updatedAt).not.toBeNull();
+            });
+          });
+
+          describe("updatedAt(key:uAt, nullable:true)", () => {
+            let Model: any, entity: any;
+            const updatedAtKey = "uAt";
+
+            beforeEach(async () => {
+              const onSuccess = ({ context }: any) => {
+                onSuccessValues.createdAt = context.createdAt;
+                onSuccessValues[updatedAtKey] = context[updatedAtKey];
+              };
+
+              Model = new Schema(getValidSchema(), {
+                onSuccess,
+                timestamps: {
+                  updatedAt: { key: updatedAtKey, nullable: true },
+                },
+              }).getModel();
+
+              const res = await Model.create(inputValue);
+
+              entity = res.data;
+
+              await res.handleSuccess();
+            });
+
+            it("should populate createdAt & updatedAt at creation", () => {
+              expect(entity).toMatchObject(inputValue);
+
+              expect(entity).toHaveProperty("createdAt");
+              expect(entity).toHaveProperty(updatedAtKey);
+
+              expect(onSuccessValues.createdAt).toBeDefined();
+              expect(onSuccessValues[updatedAtKey]).toBeNull();
+            });
+
+            it("should populate updatedAt during updates", async () => {
+              const { data: updates, handleSuccess } = await Model.update(
+                entity,
+                { propertyName2: 20 },
+              );
+
+              await handleSuccess();
+
+              expect(updates).toMatchObject({ propertyName2: 20 });
+
+              expect(updates).not.toHaveProperty("createdAt");
+              expect(updates).toHaveProperty(updatedAtKey);
+
+              expect(onSuccessValues.createdAt).toBeDefined();
+              expect(onSuccessValues[updatedAtKey]).not.toBeNull();
+            });
+          });
+
+          describe("updatedAt(key:uAt, nullable:undefined)", () => {
+            let Model: any, entity: any;
+            const updatedAtKey = "uAt";
+
+            beforeEach(async () => {
+              const onSuccess = ({ context }: any) => {
+                onSuccessValues.createdAt = context.createdAt;
+                onSuccessValues[updatedAtKey] = context[updatedAtKey];
+              };
+
+              Model = new Schema(getValidSchema(), {
+                onSuccess,
+                timestamps: {
+                  updatedAt: { key: updatedAtKey },
+                },
+              }).getModel();
+
+              const res = await Model.create(inputValue);
+
+              entity = res.data;
+
+              await res.handleSuccess();
+            });
+
+            it("should populate createdAt & updatedAt at creation", () => {
+              expect(entity).toMatchObject(inputValue);
+
+              expect(entity).toHaveProperty("createdAt");
+              expect(entity).toHaveProperty(updatedAtKey);
+
+              expect(onSuccessValues.createdAt).toBeDefined();
+              expect(onSuccessValues[updatedAtKey]).toBeNull();
+            });
+
+            it("should populate updatedAt during updates", async () => {
+              const { data: updates, handleSuccess } = await Model.update(
+                entity,
+                { propertyName2: 20 },
+              );
+
+              await handleSuccess();
+
+              expect(updates).toMatchObject({ propertyName2: 20 });
+
+              expect(updates).not.toHaveProperty("createdAt");
+              expect(updates).toHaveProperty(updatedAtKey);
+
+              expect(onSuccessValues.createdAt).toBeDefined();
+              expect(onSuccessValues[updatedAtKey]).not.toBeNull();
+            });
+          });
+
+          describe("updatedAt(key:uAt, nullable:false)", () => {
+            let Model: any, entity: any;
+            const updatedAtKey = "uAt";
+
+            beforeEach(async () => {
+              const onSuccess = ({ context }: any) => {
+                onSuccessValues.createdAt = context.createdAt;
+                onSuccessValues[updatedAtKey] = context[updatedAtKey];
+              };
+
+              Model = new Schema(getValidSchema(), {
+                onSuccess,
+                timestamps: {
+                  updatedAt: { key: updatedAtKey, nullable: false },
+                },
+              }).getModel();
+
+              const res = await Model.create(inputValue);
+
+              entity = res.data;
+
+              await res.handleSuccess();
+            });
+
+            it("should populate createdAt & updatedAt at creation", () => {
+              expect(entity).toMatchObject(inputValue);
+
+              expect(entity).toHaveProperty("createdAt");
+              expect(entity).toHaveProperty(updatedAtKey);
+
+              expect(onSuccessValues.createdAt).toBeDefined();
+              expect(onSuccessValues[updatedAtKey]).not.toBeNull();
+            });
+
+            it("should populate updatedAt during updates", async () => {
+              const { data: updates, handleSuccess } = await Model.update(
+                entity,
+                { propertyName2: 20 },
+              );
+
+              await handleSuccess();
+
+              expect(updates).toMatchObject({ propertyName2: 20 });
+
+              expect(updates).not.toHaveProperty("createdAt");
+              expect(updates).toHaveProperty(updatedAtKey);
+
+              expect(onSuccessValues.createdAt).toBeDefined();
+              expect(onSuccessValues[updatedAtKey]).not.toBeNull();
+            });
           });
         });
       });
@@ -556,6 +829,74 @@ export const Test_SchemaTimestampOption = ({ Schema, fx }: any) => {
               ]),
             }),
           );
+        }
+      });
+
+      it("should reject invalid 'updatedAt' objects", () => {
+        const createdAt = "createdAt";
+
+        const values = [
+          [{ key: createdAt }, "createdAt & updatedAt cannot be same"],
+          ...[{}, { lol: true }].map((v) => [
+            v,
+            "'updatedAt' can only accept properties 'key' and 'nullable'",
+          ]),
+          ...["", " "].map((key) => [
+            { key },
+            "'updatedAt.key' must be a valid string",
+          ]),
+          ...[
+            -1,
+            0,
+            1,
+            null,
+            "",
+            " ",
+            "lol",
+            "true",
+            "false",
+            undefined,
+            {},
+            [],
+            () => {},
+          ].map((nullable) => [
+            { nullable },
+            "'updatedAt.nullable' must be a boolean",
+          ]),
+          ...["constant", "dependent", "lax", "propertyName1", "virtual"].map(
+            (key) => [{ key }, `'${key}' already belongs to your schema`],
+          ),
+        ] as const;
+
+        for (const [updatedAt, error] of values) {
+          const toFail = fx(
+            getValidSchema(
+              {},
+              {
+                constant: { constant: true, value: () => true },
+                lax: { default: "" },
+                dependent: {
+                  default: "",
+                  dependsOn: "virtual",
+                  resolver: () => true,
+                },
+                virtual: { virtual: true, validator: () => true },
+              },
+            ),
+            { timestamps: { createdAt, updatedAt } },
+          );
+
+          expectFailure(toFail);
+
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toEqual(
+              expect.objectContaining({
+                timestamps: expect.arrayContaining([error]),
+              }),
+            );
+          }
         }
       });
     });

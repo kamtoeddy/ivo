@@ -628,7 +628,10 @@ namespace NS {
     shouldUpdate?: boolean | AsyncShouldUpdate<Input, Output, CtxOptions>;
     timestamps?:
       | boolean
-      | { createdAt?: boolean | string; updatedAt?: boolean | string };
+      | {
+          createdAt?: boolean | string;
+          updatedAt?: boolean | string | { key?: string; nullable?: boolean };
+        };
   };
 
   export type OptionsKey<
