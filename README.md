@@ -34,7 +34,7 @@ type User = {
   createdAt: Date;
   email: string | null;
   phoneNumber: string | null;
-  updatedAt: Date;
+  updatedAt: Date | null;
   username: string;
   usernameLastUpdatedAt: Date | null;
 };
@@ -106,6 +106,7 @@ const { data, error } = await UserModel.create({
   id: 5, // will be ignored because it is a constant property
   name: "John Doe", // will be ignored because it is not on schema
   username: "john_doe",
+  updatedAt: new Date(), // will be ignored because it is a timestamp
   usernameLastUpdatedAt: new Date(), // will be ignored because it is a dependent property
 });
 
@@ -117,7 +118,7 @@ console.log(data);
 //   email: 'john.doe@mail.com',
 //   id: 101,
 //   phoneNumber: null,
-//   updatedAt: new Date(),
+//   updatedAt: null,
 //   username: 'john_doe',
 //   usernameLastUpdatedAt: null
 // }

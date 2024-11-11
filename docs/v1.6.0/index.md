@@ -299,6 +299,14 @@ let transactionSchema = new Schema(definitions, {
 });
 ```
 
+As of v1.6.1, `updated_at` is `null` at creation
+
+```js
+let transactionSchema = new Schema(definitions, {
+  timestamps: { updatedAt: { key: "updated_at", nullable: true } },
+});
+```
+
 ## useParentOptions (default: true)
 
 When extending schemas, extended schemas automatically inherit all options(except life cycle methods) of base schema. Setting `useParentOptions: false` in extended schema option will prevent this behaviour. Default is `true`
