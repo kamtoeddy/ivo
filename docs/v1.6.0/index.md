@@ -302,8 +302,14 @@ let transactionSchema = new Schema(definitions, {
 As of v1.6.1, `updated_at` is `null` at creation
 
 ```js
+// make updatedAt non-nullable
 let transactionSchema = new Schema(definitions, {
-  timestamps: { updatedAt: { key: "updated_at", nullable: true } },
+  timestamps: { updatedAt: { key: "updated_at", nullable: false } },
+});
+
+// or non-nullable whilte keeping the default key
+let transactionSchema = new Schema(definitions, {
+  timestamps: { updatedAt: { nullable: false } },
 });
 ```
 
