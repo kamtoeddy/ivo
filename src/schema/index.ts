@@ -777,7 +777,7 @@ class ModelTool<
       if (isSanitizable) sanitizers.push([prop as KeyOf<Input>, sanitizer]);
     }
 
-    const summary = this._getSummary(data, isUpdate);
+    const summary = this._getMutableSummary(data, isUpdate);
 
     await Promise.allSettled(
       sanitizers.map(async ([prop, sanitizer]) => {
@@ -978,7 +978,7 @@ class ModelTool<
 
     const values = isUpdate ? data : Object.assign({}, this.values, data),
       _ctx = this._getContext(),
-      summary = this._getSummary(values, isUpdate);
+      summary = this._getMutableSummary(values, isUpdate);
 
     await Promise.allSettled(
       toResolve.map(async (prop) => {
