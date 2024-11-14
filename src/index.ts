@@ -1,11 +1,11 @@
-import { Schema } from './schema';
+import { Schema } from "./schema";
 
 export default Schema;
 
-export { Schema } from './schema';
-export * from './validators';
+export { Schema } from "./schema";
+export * from "./validators";
 
-export { ERRORS, SCHEMA_ERRORS, VALIDATION_ERRORS } from './schema/utils';
+export { ERRORS, SCHEMA_ERRORS, VALIDATION_ERRORS } from "./schema/utils";
 
 export {
   type ObjectType,
@@ -18,7 +18,7 @@ export {
   isPropertyOf,
   isRecordLike,
   toArray,
-} from './utils';
+} from "./utils";
 export type {
   // ctx
   DeletionContext,
@@ -35,7 +35,7 @@ export type {
   ValidatorResponse,
   ValidatorResponseObject,
   XOR,
-} from './schema/types';
+} from "./schema/types";
 export type {
   FieldError,
   InputFieldError,
@@ -43,9 +43,9 @@ export type {
   IValidationError,
   InputPayload,
   ValidationErrorMessage,
-} from './schema/utils';
+} from "./schema/utils";
 export {
   isFieldError,
   isInputFieldError,
   makeFieldError,
-} from './schema/utils';
+} from "./schema/utils";
