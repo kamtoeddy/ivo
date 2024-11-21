@@ -290,6 +290,7 @@ function makeStringValidator<const T extends string | unknown = string>({
     if (exclusion.hasExclusion && exclusion.excluded.includes(value as never))
       return makeResponse({
         valid: false,
+        value,
         reason: exclusion.exclusionError,
         metadata: exclusion.metadata,
       });
@@ -301,6 +302,7 @@ function makeStringValidator<const T extends string | unknown = string>({
         ? makeResponse({ valid: true, validated: value })
         : makeResponse({
             valid: false,
+            value,
             reason: notAllowedError,
             metadata: { allowed },
           });
@@ -310,20 +312,20 @@ function makeStringValidator<const T extends string | unknown = string>({
       return makeResponse({ valid: true, validated: null as never as T });
 
     if (typeof value !== "string")
-      return makeResponse({ reason: "Expected a string", valid: false });
+      return makeResponse({ reason: "Expected a string", valid: false, value });
 
     if (regExp && !regExp.value.test(value))
-      return makeResponse({ valid: false, reason: regExp.error });
+      return makeResponse({ valid: false, value, reason: regExp.error });
 
     let _value = String(value);
 
     if (trim) _value = _value.trim();
 
     if (hasMinLength && _value.length < minLength!)
-      return makeResponse({ valid: false, reason: minError, metadata });
+      return makeResponse({ valid: false, value, reason: minError, metadata });
 
     if (hasMaxLength && _value.length > maxLength!)
-      return makeResponse({ valid: false, reason: maxError, metadata });
+      return makeResponse({ valid: false, value, reason: maxError, metadata });
 
     return makeResponse({ valid: true, validated: _value as T });
   };
