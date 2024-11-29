@@ -1,4 +1,4 @@
-import { ObjectType, FieldKey } from "../../utils";
+import type { FieldKey, ObjectType } from '../../utils';
 
 export { ERRORS, SCHEMA_ERRORS, VALIDATION_ERRORS };
 
@@ -12,11 +12,11 @@ export type {
   ValidationErrorMessage,
 };
 
-const SCHEMA_ERRORS = { INVALID_SCHEMA: "INVALID_SCHEMA" } as const;
+const SCHEMA_ERRORS = { INVALID_SCHEMA: 'INVALID_SCHEMA' } as const;
 
 const VALIDATION_ERRORS = {
-  NOTHING_TO_UPDATE: "NOTHING_TO_UPDATE",
-  VALIDATION_ERROR: "VALIDATION_ERROR",
+  NOTHING_TO_UPDATE: 'NOTHING_TO_UPDATE',
+  VALIDATION_ERROR: 'VALIDATION_ERROR',
 } as const;
 
 const ERRORS = { ...SCHEMA_ERRORS, ...VALIDATION_ERRORS } as const;
@@ -30,8 +30,8 @@ type FieldError = {
 
 type InputFieldError =
   | FieldError
-  | { reason: FieldError["reason"] }
-  | { metadata: FieldError["metadata"] };
+  | { reason: FieldError['reason'] }
+  | { metadata: FieldError['metadata'] };
 
 type ErrorPayload<Keys extends FieldKey = FieldKey> = {
   [K in Keys]?: FieldError;

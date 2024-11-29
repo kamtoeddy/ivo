@@ -1,14 +1,14 @@
-import { describe, it, expect } from "bun:test";
+import { describe, expect, it } from 'bun:test';
 
-import { expectFailure, expectNoFailure, validator } from "../_utils";
+import { expectFailure, expectNoFailure, validator } from '../_utils';
 
 export const Test_AllowedValues = ({ fx, Schema }: any) => {
-  describe("allowed values", () => {
-    describe("valid", () => {
-      it("should not reject if allowed values provided are >= 2", () => {
+  describe('allowed values', () => {
+    describe('valid', () => {
+      it('should not reject if allowed values provided are >= 2', () => {
         const values = [
-          ["lol", 2],
-          ["lol", 2, 3],
+          ['lol', 2],
+          ['lol', 2, 3],
         ];
 
         for (const allow of values) {
@@ -20,9 +20,9 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
         }
       });
 
-      it("should not reject if default value provided is an allowed value", () => {
+      it('should not reject if default value provided is an allowed value', () => {
         const toPass = fx({
-          prop: { default: null, allow: [null, "lolz", -1] },
+          prop: { default: null, allow: [null, 'lolz', -1] },
         });
 
         expectNoFailure(toPass);
@@ -30,14 +30,14 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
         toPass();
       });
 
-      it("should allow virtuals to have allowed values", () => {
+      it('should allow virtuals to have allowed values', () => {
         const toPass = fx({
           dependent: {
             default: true,
-            dependsOn: "virtual",
+            dependsOn: 'virtual',
             resolver: validator,
           },
-          virtual: { virtual: true, allow: [null, "lolz", -1], validator },
+          virtual: { virtual: true, allow: [null, 'lolz', -1], validator },
         });
 
         expectNoFailure(toPass);
@@ -45,12 +45,12 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
         toPass();
       });
 
-      describe("allow as an object", () => {
+      describe('allow as an object', () => {
         it('should not reject if "values" is the only key provided', () => {
           const toPass = fx({
             dependent: {
               default: null,
-              allow: { values: [null, "lolz", -1] },
+              allow: { values: [null, 'lolz', -1] },
             },
           });
 
@@ -63,7 +63,7 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
           const toPass = fx({
             dependent: {
               default: null,
-              allow: { error: "value not allowed", values: [null, "lolz", -1] },
+              allow: { error: 'value not allowed', values: [null, 'lolz', -1] },
             },
           });
 
@@ -72,11 +72,11 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
           toPass();
         });
 
-        it("should not reject if validator is provided", () => {
+        it('should not reject if validator is provided', () => {
           const toPass = fx({
             dependent: {
               default: null,
-              allow: { error: "value not allowed", values: [null, "lolz", -1] },
+              allow: { error: 'value not allowed', values: [null, 'lolz', -1] },
               validator,
             },
           });
@@ -86,20 +86,20 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
           toPass();
         });
 
-        it("should not reject with errors valid formats", () => {
+        it('should not reject with errors valid formats', () => {
           const errors = [
-            "value not allowed",
-            { reason: "invalid value" },
-            { reason: "invalid value", metadata: {} },
+            'value not allowed',
+            { reason: 'invalid value' },
+            { reason: 'invalid value', metadata: {} },
             { metadata: {} },
-            () => "",
+            () => '',
           ];
 
           for (const error of errors) {
             const toPass = fx({
               dependent: {
                 default: null,
-                allow: { error, values: [null, "lolz", -1] },
+                allow: { error, values: [null, 'lolz', -1] },
                 validator,
               },
             });
@@ -112,8 +112,8 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
       });
     });
 
-    describe("invalid", () => {
-      it("should reject if non-array value is provided", () => {
+    describe('invalid', () => {
+      it('should reject if non-array value is provided', () => {
         const values = [
           null,
           undefined,
@@ -136,19 +136,19 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
             toFail();
           } catch (err: any) {
             expect(err.payload).toMatchObject({
-              prop: ["Allowed values must be an array"],
+              prop: ['Allowed values must be an array'],
             });
           }
         }
       });
 
-      it("should reject if allowed values provided are not unique", () => {
+      it('should reject if allowed values provided are not unique', () => {
         const values = [
           [1, 2, 2, 4, 5],
-          ["lol", 59, "lol", null],
+          ['lol', 59, 'lol', null],
           [true, false, true],
           [{}, {}],
-          [{ id: "lol" }, { id: "lol" }],
+          [{ id: 'lol' }, { id: 'lol' }],
         ];
 
         for (const allow of values) {
@@ -160,14 +160,14 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
             toFail();
           } catch (err: any) {
             expect(err.payload).toMatchObject({
-              prop: ["Allowed values must be an array of unique values"],
+              prop: ['Allowed values must be an array of unique values'],
             });
           }
         }
       });
 
-      it("should reject if allowed values provided are less than 2", () => {
-        const values = [[], ["lol"]];
+      it('should reject if allowed values provided are less than 2', () => {
+        const values = [[], ['lol']];
 
         for (const allow of values) {
           const toFail = fx({ prop: { allow } });
@@ -178,16 +178,16 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
             toFail();
           } catch (err: any) {
             expect(err.payload).toMatchObject({
-              prop: ["Allowed values must have at least 2 values"],
+              prop: ['Allowed values must have at least 2 values'],
             });
           }
         }
       });
 
-      it("should reject if default value provided is not an allowed value", () => {
+      it('should reject if default value provided is not an allowed value', () => {
         const values = [
-          ["lol", [null, "lolz", -1]],
-          [null, [1, 4, "lol", undefined]],
+          ['lol', [null, 'lolz', -1]],
+          [null, [1, 4, 'lol', undefined]],
         ];
 
         for (const [_default, allow] of values) {
@@ -199,14 +199,14 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
             toFail();
           } catch (err: any) {
             expect(err.payload).toMatchObject({
-              prop: ["The default value must be an allowed value"],
+              prop: ['The default value must be an allowed value'],
             });
           }
         }
       });
 
-      describe("allow as an object", () => {
-        it("should reject if values array is not provided", () => {
+      describe('allow as an object', () => {
+        it('should reject if values array is not provided', () => {
           const toFail = fx({ prop: { allow: {} } });
 
           expectFailure(toFail);
@@ -215,12 +215,12 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
             toFail();
           } catch (err: any) {
             expect(err.payload).toMatchObject({
-              prop: ["Allowed values must be an array"],
+              prop: ['Allowed values must be an array'],
             });
           }
         });
 
-        it("should reject if non-array value is provided", () => {
+        it('should reject if non-array value is provided', () => {
           const invalidValues = [
             null,
             undefined,
@@ -243,19 +243,19 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
               toFail();
             } catch (err: any) {
               expect(err.payload).toMatchObject({
-                prop: ["Allowed values must be an array"],
+                prop: ['Allowed values must be an array'],
               });
             }
           }
         });
 
-        it("should reject if allowed values provided are not unique", () => {
+        it('should reject if allowed values provided are not unique', () => {
           const invalidValues = [
             [1, 2, 2, 4, 5],
-            ["lol", 59, "lol", null],
+            ['lol', 59, 'lol', null],
             [true, false, true],
             [{}, {}],
-            [{ id: "lol" }, { id: "lol" }],
+            [{ id: 'lol' }, { id: 'lol' }],
           ];
 
           for (const values of invalidValues) {
@@ -267,14 +267,14 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
               toFail();
             } catch (err: any) {
               expect(err.payload).toMatchObject({
-                prop: ["Allowed values must be an array of unique values"],
+                prop: ['Allowed values must be an array of unique values'],
               });
             }
           }
         });
 
-        it("should reject if allowed values provided are less than 2", () => {
-          const invalidValues = [[], ["lol"]];
+        it('should reject if allowed values provided are less than 2', () => {
+          const invalidValues = [[], ['lol']];
 
           for (const values of invalidValues) {
             const toFail = fx({ prop: { allow: { values } } });
@@ -285,16 +285,16 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
               toFail();
             } catch (err: any) {
               expect(err.payload).toMatchObject({
-                prop: ["Allowed values must have at least 2 values"],
+                prop: ['Allowed values must have at least 2 values'],
               });
             }
           }
         });
 
-        it("should reject if default value provided is not an allowed value", () => {
+        it('should reject if default value provided is not an allowed value', () => {
           const data = [
-            ["lol", [null, "lolz", -1]],
-            [null, [1, 4, "lol", undefined]],
+            ['lol', [null, 'lolz', -1]],
+            [null, [1, 4, 'lol', undefined]],
           ];
 
           for (const [_default, values] of data) {
@@ -308,31 +308,31 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
               toFail();
             } catch (err: any) {
               expect(err.payload).toMatchObject({
-                prop: ["The default value must be an allowed value"],
+                prop: ['The default value must be an allowed value'],
               });
             }
           }
         });
 
-        it("should reject if error is provided and is of invalid type", () => {
+        it('should reject if error is provided and is of invalid type', () => {
           const errors = [
             null,
             true,
             false,
             {},
-            { key: "value" },
+            { key: 'value' },
             -1,
             0,
             1,
             [],
-            [[], null, true, false, {}, { key: "value" }, -1, 0, 1],
+            [[], null, true, false, {}, { key: 'value' }, -1, 0, 1],
           ];
 
           for (const error of errors) {
             const toFail = fx({
               prop: {
                 default: null,
-                allow: { error, values: [null, "lolz", -1] },
+                allow: { error, values: [null, 'lolz', -1] },
               },
             });
 
@@ -350,11 +350,11 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
           }
         });
 
-        it("should reject if an invalid config key is passed", () => {
+        it('should reject if an invalid config key is passed', () => {
           const toFail = fx({
             prop: {
               default: null,
-              allow: { key: "value", values: [null, "lolz", -1] },
+              allow: { key: 'value', values: [null, 'lolz', -1] },
             },
           });
 
@@ -373,39 +373,39 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
       });
     });
 
-    describe("behaviour", () => {
-      const metadata = { allowed: [null, "allowed"] };
+    describe('behaviour', () => {
+      const metadata = { allowed: [null, 'allowed'] };
 
-      describe("behaviour with lax props & no validators", () => {
+      describe('behaviour with lax props & no validators', () => {
         const Model = new Schema({
           prop: { default: null, allow: metadata.allowed },
         }).getModel();
 
-        describe("creation", () => {
-          it("should allow if value provided is allowed", async () => {
-            const { data, error } = await Model.create({ prop: "allowed" });
+        describe('creation', () => {
+          it('should allow if value provided is allowed', async () => {
+            const { data, error } = await Model.create({ prop: 'allowed' });
 
             expect(error).toBeNull();
-            expect(data).toMatchObject({ prop: "allowed" });
+            expect(data).toMatchObject({ prop: 'allowed' });
           });
 
-          it("should reject if value provided is not allowed", async () => {
+          it('should reject if value provided is not allowed', async () => {
             const { data, error } = await Model.create({ prop: true });
 
             expect(data).toBeNull();
             expect(error.payload).toMatchObject({
               prop: expect.objectContaining({
-                reason: "value not allowed",
+                reason: 'value not allowed',
                 metadata,
               }),
             });
           });
         });
 
-        describe("updates", () => {
-          it("should allow if value provided is allowed", async () => {
+        describe('updates', () => {
+          it('should allow if value provided is allowed', async () => {
             const { data, error } = await Model.update(
-              { prop: "allowed" },
+              { prop: 'allowed' },
               { prop: null },
             );
 
@@ -413,7 +413,7 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
             expect(data).toMatchObject({ prop: null });
           });
 
-          it("should reject if value provided is not allowed", async () => {
+          it('should reject if value provided is not allowed', async () => {
             const { data, error } = await Model.update(
               { prop: null },
               { prop: true },
@@ -422,7 +422,7 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
             expect(data).toBeNull();
             expect(error.payload).toMatchObject({
               prop: expect.objectContaining({
-                reason: "value not allowed",
+                reason: 'value not allowed',
                 metadata,
               }),
             });
@@ -430,108 +430,108 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
         });
       });
 
-      describe("behaviour with lax props & validators", () => {
+      describe('behaviour with lax props & validators', () => {
         const Model = new Schema({
           prop: {
             default: null,
             allow: metadata.allowed,
             validator(v: any) {
-              if (v) return { valid: true, validated: "validated" };
+              if (v) return { valid: true, validated: 'validated' };
 
               return false;
             },
           },
         }).getModel();
 
-        describe("creation", () => {
-          it("should respect validators even if value provided is allowed", async () => {
+        describe('creation', () => {
+          it('should respect validators even if value provided is allowed', async () => {
             const { data, error } = await Model.create({ prop: null });
 
             expect(data).toBeNull();
             expect(error.payload).toMatchObject({
               prop: expect.objectContaining({
-                reason: "validation failed",
+                reason: 'validation failed',
               }),
             });
           });
 
-          it("should ignore validated value from validator if value is not allowed", async () => {
-            const { data, error } = await Model.create({ prop: "allowed" });
+          it('should ignore validated value from validator if value is not allowed', async () => {
+            const { data, error } = await Model.create({ prop: 'allowed' });
 
             expect(error).toBeNull();
-            expect(data).toMatchObject({ prop: "allowed" });
+            expect(data).toMatchObject({ prop: 'allowed' });
           });
         });
 
-        describe("updates", () => {
-          it("should respect validators even if value provided is allowed", async () => {
+        describe('updates', () => {
+          it('should respect validators even if value provided is allowed', async () => {
             const { data, error } = await Model.update(
-              { prop: "allowed" },
+              { prop: 'allowed' },
               { prop: null },
             );
 
             expect(data).toBeNull();
             expect(error.payload).toMatchObject({
               prop: expect.objectContaining({
-                reason: "validation failed",
+                reason: 'validation failed',
               }),
             });
           });
 
-          it("should ignore validated value from validator if value is not allowed", async () => {
+          it('should ignore validated value from validator if value is not allowed', async () => {
             const { data, error } = await Model.update(
               { prop: null },
-              { prop: "allowed" },
+              { prop: 'allowed' },
             );
 
             expect(error).toBeNull();
-            expect(data).toMatchObject({ prop: "allowed" });
+            expect(data).toMatchObject({ prop: 'allowed' });
           });
         });
       });
 
-      describe("behaviour with required props & no validators", () => {
+      describe('behaviour with required props & no validators', () => {
         const Model = new Schema({
           prop: { required: true, allow: metadata.allowed },
         }).getModel();
 
-        describe("creation", () => {
-          it("should accept allowed values if provided", async () => {
+        describe('creation', () => {
+          it('should accept allowed values if provided', async () => {
             const { data, error } = await Model.create({ prop: null });
 
             expect(error).toBeNull();
             expect(data).toEqual({ prop: null });
           });
 
-          it("should reject non-allowed values if provided", async () => {
-            const { data, error } = await Model.create({ prop: "lolz" });
+          it('should reject non-allowed values if provided', async () => {
+            const { data, error } = await Model.create({ prop: 'lolz' });
 
             expect(data).toBeNull();
             expect(error.payload).toMatchObject({
               prop: expect.objectContaining({
-                reason: "value not allowed",
+                reason: 'value not allowed',
                 metadata,
               }),
             });
           });
 
-          it("should reject if no value is provided", async () => {
+          it('should reject if no value is provided', async () => {
             const { data, error } = await Model.create();
 
             expect(data).toBeNull();
             expect(error.payload).toMatchObject({
               prop: expect.objectContaining({
-                reason: "value not allowed",
+                reason: 'value not allowed',
                 metadata,
               }),
             });
           });
         });
 
-        describe("updates", () => {
-          it("should accept allowed values if provided", async () => {
+        describe('updates', () => {
+          it('should accept allowed values if provided', async () => {
             const { data, error } = await Model.update(
-              { prop: "allowed" },
+              { prop: 'allowed' },
               { prop: null },
             );
 
@@ -539,16 +539,16 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
             expect(data).toEqual({ prop: null });
           });
 
-          it("should reject non-allowed values if provided", async () => {
+          it('should reject non-allowed values if provided', async () => {
             const { data, error } = await Model.update(
-              { prop: "allowed" },
-              { prop: "whatever" },
+              { prop: 'allowed' },
+              { prop: 'whatever' },
             );
 
             expect(data).toBeNull();
             expect(error.payload).toMatchObject({
               prop: expect.objectContaining({
-                reason: "value not allowed",
+                reason: 'value not allowed',
                 metadata,
               }),
             });
@@ -556,230 +556,230 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
         });
       });
 
-      describe("behaviour with required props & validators", () => {
+      describe('behaviour with required props & validators', () => {
         const Model = new Schema({
           prop: {
             required: true,
             allow: metadata.allowed,
             validator(v: any) {
-              if (v) return { valid: true, validated: "validated" };
+              if (v) return { valid: true, validated: 'validated' };
 
               return false;
             },
           },
         }).getModel();
 
-        describe("creation", () => {
-          it("should respect validators even if value provided is allowed", async () => {
+        describe('creation', () => {
+          it('should respect validators even if value provided is allowed', async () => {
             const { data, error } = await Model.create({ prop: null });
 
             expect(data).toBeNull();
             expect(error.payload).toMatchObject({
               prop: expect.objectContaining({
-                reason: "validation failed",
+                reason: 'validation failed',
               }),
             });
           });
 
-          it("should ignore validated value from validator if value is not allowed", async () => {
-            const { data, error } = await Model.create({ prop: "allowed" });
+          it('should ignore validated value from validator if value is not allowed', async () => {
+            const { data, error } = await Model.create({ prop: 'allowed' });
 
             expect(error).toBeNull();
-            expect(data).toMatchObject({ prop: "allowed" });
+            expect(data).toMatchObject({ prop: 'allowed' });
           });
         });
 
-        describe("updates", () => {
-          it("should respect validators even if value provided is allowed", async () => {
+        describe('updates', () => {
+          it('should respect validators even if value provided is allowed', async () => {
             const { data, error } = await Model.update(
-              { prop: "allowed" },
+              { prop: 'allowed' },
               { prop: null },
             );
 
             expect(data).toBeNull();
             expect(error.payload).toMatchObject({
               prop: expect.objectContaining({
-                reason: "validation failed",
+                reason: 'validation failed',
               }),
             });
           });
 
-          it("should ignore validated value from validator if value is not allowed", async () => {
+          it('should ignore validated value from validator if value is not allowed', async () => {
             const { data, error } = await Model.update(
               { prop: null },
-              { prop: "allowed" },
+              { prop: 'allowed' },
             );
 
             expect(error).toBeNull();
-            expect(data).toMatchObject({ prop: "allowed" });
+            expect(data).toMatchObject({ prop: 'allowed' });
           });
         });
       });
 
-      describe("behaviour with virtuals", () => {
+      describe('behaviour with virtuals', () => {
         const Model = new Schema({
           dependent: {
             default: null,
-            dependsOn: "virtual",
+            dependsOn: 'virtual',
             resolver: ({ context: { virtual } }) => virtual,
           },
           virtual: {
             virtual: true,
             allow: metadata.allowed,
             validator(v: any) {
-              if (v) return { valid: true, validated: "validated" };
+              if (v) return { valid: true, validated: 'validated' };
 
               return false;
             },
           },
         }).getModel();
 
-        describe("creation", () => {
-          it("should respect validators even if value provided is allowed", async () => {
+        describe('creation', () => {
+          it('should respect validators even if value provided is allowed', async () => {
             const { data, error } = await Model.create({ virtual: null });
 
             expect(data).toBeNull();
             expect(error.payload).toMatchObject({
               virtual: expect.objectContaining({
-                reason: "validation failed",
+                reason: 'validation failed',
               }),
             });
           });
 
-          it("should ignore validated value from validator if value is not allowed", async () => {
-            const { data, error } = await Model.create({ virtual: "allowed" });
+          it('should ignore validated value from validator if value is not allowed', async () => {
+            const { data, error } = await Model.create({ virtual: 'allowed' });
 
             expect(error).toBeNull();
-            expect(data).toMatchObject({ dependent: "allowed" });
+            expect(data).toMatchObject({ dependent: 'allowed' });
           });
         });
 
-        describe("updates", () => {
-          it("should respect validators even if value provided is allowed", async () => {
+        describe('updates', () => {
+          it('should respect validators even if value provided is allowed', async () => {
             const { data, error } = await Model.update(
-              { dependent: "allowed" },
+              { dependent: 'allowed' },
               { virtual: null },
             );
 
             expect(data).toBeNull();
             expect(error.payload).toMatchObject({
               virtual: expect.objectContaining({
-                reason: "validation failed",
+                reason: 'validation failed',
               }),
             });
           });
 
-          it("should ignore validated value from validator if value is not allowed", async () => {
+          it('should ignore validated value from validator if value is not allowed', async () => {
             const { data, error } = await Model.update(
               { dependent: null },
-              { virtual: "allowed" },
+              { virtual: 'allowed' },
             );
 
             expect(error).toBeNull();
-            expect(data).toMatchObject({ dependent: "allowed" });
+            expect(data).toMatchObject({ dependent: 'allowed' });
           });
         });
       });
 
-      describe("behaviour with virtuals & alias", () => {
+      describe('behaviour with virtuals & alias', () => {
         const Model = new Schema({
           dependent: {
             default: null,
-            dependsOn: "virtual",
+            dependsOn: 'virtual',
             resolver: ({ context: { virtual } }) => virtual,
           },
           virtual: {
-            alias: "dependent",
+            alias: 'dependent',
             virtual: true,
             allow: metadata.allowed,
             validator(v: any) {
-              if (v) return { valid: true, validated: "validated" };
+              if (v) return { valid: true, validated: 'validated' };
 
               return false;
             },
           },
         }).getModel();
 
-        describe("creation", () => {
-          it("should respect validators even if value provided is allowed", async () => {
+        describe('creation', () => {
+          it('should respect validators even if value provided is allowed', async () => {
             const { data, error } = await Model.create({ dependent: null });
 
             expect(data).toBeNull();
             expect(error.payload).toMatchObject({
               dependent: expect.objectContaining({
-                reason: "validation failed",
+                reason: 'validation failed',
               }),
             });
           });
 
-          it("should ignore validated value from validator if value is not allowed", async () => {
+          it('should ignore validated value from validator if value is not allowed', async () => {
             const { data, error } = await Model.create({
-              dependent: "allowed",
+              dependent: 'allowed',
             });
 
             expect(error).toBeNull();
-            expect(data).toMatchObject({ dependent: "allowed" });
+            expect(data).toMatchObject({ dependent: 'allowed' });
           });
         });
 
-        describe("updates", () => {
-          it("should respect validators even if value provided is allowed", async () => {
+        describe('updates', () => {
+          it('should respect validators even if value provided is allowed', async () => {
             const { data, error } = await Model.update(
-              { dependent: "allowed" },
+              { dependent: 'allowed' },
               { dependent: null },
             );
 
             expect(data).toBeNull();
             expect(error.payload).toMatchObject({
               dependent: expect.objectContaining({
-                reason: "validation failed",
+                reason: 'validation failed',
               }),
             });
           });
 
-          it("should ignore validated value from validator if value is not allowed", async () => {
+          it('should ignore validated value from validator if value is not allowed', async () => {
             const { data, error } = await Model.update(
               { dependent: null },
-              { dependent: "allowed" },
+              { dependent: 'allowed' },
             );
 
             expect(error).toBeNull();
-            expect(data).toMatchObject({ dependent: "allowed" });
+            expect(data).toMatchObject({ dependent: 'allowed' });
           });
         });
       });
 
-      describe("allow as an object", () => {
-        describe("behaviour with lax props & no validators", () => {
+      describe('allow as an object', () => {
+        describe('behaviour with lax props & no validators', () => {
           const Model = new Schema({
             prop: { default: null, allow: { values: metadata.allowed } },
           }).getModel();
 
-          describe("creation", () => {
-            it("should allow if value provided is allowed", async () => {
-              const { data, error } = await Model.create({ prop: "allowed" });
+          describe('creation', () => {
+            it('should allow if value provided is allowed', async () => {
+              const { data, error } = await Model.create({ prop: 'allowed' });
 
               expect(error).toBeNull();
-              expect(data).toMatchObject({ prop: "allowed" });
+              expect(data).toMatchObject({ prop: 'allowed' });
             });
 
-            it("should reject if value provided is not allowed", async () => {
+            it('should reject if value provided is not allowed', async () => {
               const { data, error } = await Model.create({ prop: true });
 
               expect(data).toBeNull();
               expect(error.payload).toMatchObject({
                 prop: expect.objectContaining({
-                  reason: "value not allowed",
+                  reason: 'value not allowed',
                   metadata,
                 }),
               });
             });
           });
 
-          describe("updates", () => {
-            it("should allow if value provided is allowed", async () => {
+          describe('updates', () => {
+            it('should allow if value provided is allowed', async () => {
               const { data, error } = await Model.update(
-                { prop: "allowed" },
+                { prop: 'allowed' },
                 { prop: null },
               );
 
@@ -787,7 +787,7 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
               expect(data).toMatchObject({ prop: null });
             });
 
-            it("should reject if value provided is not allowed", async () => {
+            it('should reject if value provided is not allowed', async () => {
               const { data, error } = await Model.update(
                 { prop: null },
                 { prop: true },
@@ -796,7 +796,7 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
               expect(data).toBeNull();
               expect(error.payload).toMatchObject({
                 prop: expect.objectContaining({
-                  reason: "value not allowed",
+                  reason: 'value not allowed',
                   metadata,
                 }),
               });
@@ -804,239 +804,239 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
           });
         });
 
-        describe("behaviour with lax props & validators", () => {
+        describe('behaviour with lax props & validators', () => {
           const Model = new Schema({
             prop: {
               default: null,
               allow: { values: metadata.allowed },
               validator(v: any) {
-                if (v) return { valid: true, validated: "validated" };
+                if (v) return { valid: true, validated: 'validated' };
 
                 return false;
               },
             },
           }).getModel();
 
-          describe("creation", () => {
-            it("should respect validators even if value provided is allowed", async () => {
+          describe('creation', () => {
+            it('should respect validators even if value provided is allowed', async () => {
               const { data, error } = await Model.create({ prop: null });
 
               expect(data).toBeNull();
               expect(error.payload).toMatchObject({
                 prop: expect.objectContaining({
-                  reason: "validation failed",
+                  reason: 'validation failed',
                 }),
               });
             });
 
-            it("should ignore validated value from validator if value is not allowed", async () => {
-              const { data, error } = await Model.create({ prop: "allowed" });
+            it('should ignore validated value from validator if value is not allowed', async () => {
+              const { data, error } = await Model.create({ prop: 'allowed' });
 
               expect(error).toBeNull();
-              expect(data).toMatchObject({ prop: "allowed" });
+              expect(data).toMatchObject({ prop: 'allowed' });
             });
           });
 
-          describe("updates", () => {
-            it("should respect validators even if value provided is allowed", async () => {
+          describe('updates', () => {
+            it('should respect validators even if value provided is allowed', async () => {
               const { data, error } = await Model.update(
-                { prop: "allowed" },
+                { prop: 'allowed' },
                 { prop: null },
               );
 
               expect(data).toBeNull();
               expect(error.payload).toMatchObject({
                 prop: expect.objectContaining({
-                  reason: "validation failed",
+                  reason: 'validation failed',
                 }),
               });
             });
 
-            it("should ignore validated value from validator if value is not allowed", async () => {
+            it('should ignore validated value from validator if value is not allowed', async () => {
               const { data, error } = await Model.update(
                 { prop: null },
-                { prop: "allowed" },
+                { prop: 'allowed' },
               );
 
               expect(error).toBeNull();
-              expect(data).toMatchObject({ prop: "allowed" });
+              expect(data).toMatchObject({ prop: 'allowed' });
             });
           });
         });
 
-        describe("behaviour with virtuals", () => {
+        describe('behaviour with virtuals', () => {
           const Model = new Schema({
             dependent: {
               default: null,
-              dependsOn: "virtual",
+              dependsOn: 'virtual',
               resolver: ({ context: { virtual } }) => virtual,
             },
             virtual: {
               virtual: true,
               allow: { values: metadata.allowed },
               validator(v: any) {
-                if (v) return { valid: true, validated: "validated" };
+                if (v) return { valid: true, validated: 'validated' };
 
                 return false;
               },
             },
           }).getModel();
 
-          describe("creation", () => {
-            it("should respect validators even if value provided is allowed", async () => {
+          describe('creation', () => {
+            it('should respect validators even if value provided is allowed', async () => {
               const { data, error } = await Model.create({ virtual: null });
 
               expect(data).toBeNull();
               expect(error.payload).toMatchObject({
                 virtual: expect.objectContaining({
-                  reason: "validation failed",
+                  reason: 'validation failed',
                 }),
               });
             });
 
-            it("should ignore validated value from validator if value is not allowed", async () => {
+            it('should ignore validated value from validator if value is not allowed', async () => {
               const { data, error } = await Model.create({
-                virtual: "allowed",
+                virtual: 'allowed',
               });
 
               expect(error).toBeNull();
-              expect(data).toMatchObject({ dependent: "allowed" });
+              expect(data).toMatchObject({ dependent: 'allowed' });
             });
           });
 
-          describe("updates", () => {
-            it("should respect validators even if value provided is allowed", async () => {
+          describe('updates', () => {
+            it('should respect validators even if value provided is allowed', async () => {
               const { data, error } = await Model.update(
-                { dependent: "allowed" },
+                { dependent: 'allowed' },
                 { virtual: null },
               );
 
               expect(data).toBeNull();
               expect(error.payload).toMatchObject({
                 virtual: expect.objectContaining({
-                  reason: "validation failed",
+                  reason: 'validation failed',
                 }),
               });
             });
 
-            it("should ignore validated value from validator if value is not allowed", async () => {
+            it('should ignore validated value from validator if value is not allowed', async () => {
               const { data, error } = await Model.update(
                 { dependent: null },
-                { virtual: "allowed" },
+                { virtual: 'allowed' },
               );
 
               expect(error).toBeNull();
-              expect(data).toMatchObject({ dependent: "allowed" });
+              expect(data).toMatchObject({ dependent: 'allowed' });
             });
           });
         });
 
-        describe("behaviour with virtuals & alias", () => {
+        describe('behaviour with virtuals & alias', () => {
           const Model = new Schema({
             dependent: {
               default: null,
-              dependsOn: "virtual",
+              dependsOn: 'virtual',
               resolver: ({ context: { virtual } }) => virtual,
             },
             virtual: {
-              alias: "dependent",
+              alias: 'dependent',
               virtual: true,
               allow: { values: metadata.allowed },
               validator(v: any) {
-                if (v) return { valid: true, validated: "validated" };
+                if (v) return { valid: true, validated: 'validated' };
 
                 return false;
               },
             },
           }).getModel();
 
-          describe("creation", () => {
-            it("should respect validators even if value provided is allowed", async () => {
+          describe('creation', () => {
+            it('should respect validators even if value provided is allowed', async () => {
               const { data, error } = await Model.create({ dependent: null });
 
               expect(data).toBeNull();
               expect(error.payload).toMatchObject({
                 dependent: expect.objectContaining({
-                  reason: "validation failed",
+                  reason: 'validation failed',
                 }),
               });
             });
 
-            it("should ignore validated value from validator if value is not allowed", async () => {
+            it('should ignore validated value from validator if value is not allowed', async () => {
               const { data, error } = await Model.create({
-                dependent: "allowed",
+                dependent: 'allowed',
               });
 
               expect(error).toBeNull();
-              expect(data).toMatchObject({ dependent: "allowed" });
+              expect(data).toMatchObject({ dependent: 'allowed' });
             });
           });
 
-          describe("updates", () => {
-            it("should respect validators even if value provided is allowed", async () => {
+          describe('updates', () => {
+            it('should respect validators even if value provided is allowed', async () => {
               const { data, error } = await Model.update(
-                { dependent: "allowed" },
+                { dependent: 'allowed' },
                 { dependent: null },
               );
 
               expect(data).toBeNull();
               expect(error.payload).toMatchObject({
                 dependent: expect.objectContaining({
-                  reason: "validation failed",
+                  reason: 'validation failed',
                 }),
               });
             });
 
-            it("should ignore validated value from validator if value is not allowed", async () => {
+            it('should ignore validated value from validator if value is not allowed', async () => {
               const { data, error } = await Model.update(
                 { dependent: null },
-                { dependent: "allowed" },
+                { dependent: 'allowed' },
               );
 
               expect(error).toBeNull();
-              expect(data).toMatchObject({ dependent: "allowed" });
+              expect(data).toMatchObject({ dependent: 'allowed' });
             });
           });
         });
 
-        describe("error", () => {
-          describe("error as a string", () => {
-            describe("if string is empty", () => {
+        describe('error', () => {
+          describe('error as a string', () => {
+            describe('if string is empty', () => {
               const Model = new Schema({
                 prop: {
                   default: metadata.allowed[0],
-                  allow: { error: "", values: metadata.allowed },
+                  allow: { error: '', values: metadata.allowed },
                 },
               }).getModel();
 
-              it("should return default error message at creation", async () => {
-                const { data, error } = await Model.create({ prop: "Invalid" });
+              it('should return default error message at creation', async () => {
+                const { data, error } = await Model.create({ prop: 'Invalid' });
 
                 expect(data).toBeNull();
                 expect(error.payload).toMatchObject({
                   prop: expect.objectContaining({
-                    reason: "value not allowed",
+                    reason: 'value not allowed',
                   }),
                 });
               });
 
-              it("should return default error message during updates", async () => {
+              it('should return default error message during updates', async () => {
                 const { data, error } = await Model.update(
                   { prop: metadata.allowed[0] },
-                  { prop: "Invalid" },
+                  { prop: 'Invalid' },
                 );
 
                 expect(data).toBeNull();
                 expect(error.payload).toMatchObject({
                   prop: expect.objectContaining({
-                    reason: "value not allowed",
+                    reason: 'value not allowed',
                   }),
                 });
               });
             });
 
-            describe("if string is not empty", () => {
-              const errorMessage = "Value not allowed. lol";
+            describe('if string is not empty', () => {
+              const errorMessage = 'Value not allowed. lol';
 
               const Model = new Schema({
                 prop: {
@@ -1045,8 +1045,8 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
                 },
               }).getModel();
 
-              it("should return default error message at creation", async () => {
-                const { data, error } = await Model.create({ prop: "Invalid" });
+              it('should return default error message at creation', async () => {
+                const { data, error } = await Model.create({ prop: 'Invalid' });
 
                 expect(data).toBeNull();
                 expect(error.payload).toMatchObject({
@@ -1054,10 +1054,10 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
                 });
               });
 
-              it("should return default error message during updates", async () => {
+              it('should return default error message during updates', async () => {
                 const { data, error } = await Model.update(
                   { prop: metadata.allowed[0] },
-                  { prop: "Invalid" },
+                  { prop: 'Invalid' },
                 );
 
                 expect(data).toBeNull();
@@ -1068,12 +1068,12 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
             });
           });
 
-          describe("error as InputFieldError", () => {
+          describe('error as InputFieldError', () => {
             const errorMessages = [
-              [{ reason: "Invalid lol" }],
+              [{ reason: 'Invalid lol' }],
               [
                 {
-                  reason: "failed again",
+                  reason: 'failed again',
                   metadata: { allowed: metadata.allowed },
                 },
               ],
@@ -1087,8 +1087,8 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
                 },
               }).getModel();
 
-              it("should return default error message at creation", async () => {
-                const { data, error } = await Model.create({ prop: "Invalid" });
+              it('should return default error message at creation', async () => {
+                const { data, error } = await Model.create({ prop: 'Invalid' });
 
                 expect(data).toBeNull();
                 expect(error.payload).toMatchObject({
@@ -1096,10 +1096,10 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
                 });
               });
 
-              it("should return default error message during updates", async () => {
+              it('should return default error message during updates', async () => {
                 const { data, error } = await Model.update(
                   { prop: metadata.allowed[0] },
-                  { prop: "Invalid" },
+                  { prop: 'Invalid' },
                 );
 
                 expect(data).toBeNull();
@@ -1110,10 +1110,10 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
             }
           });
 
-          describe("error as function", () => {
-            const reason = "value not allowed";
+          describe('error as function', () => {
+            const reason = 'value not allowed';
             const errorMessages = [
-              [() => "", { reason }],
+              [() => '', { reason }],
               [() => ({}), { reason }],
               [() => null, { reason }],
               [() => undefined, { reason }],
@@ -1122,20 +1122,20 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
               [() => 1, { reason }],
               [() => true, { reason }],
               [() => false, { reason }],
-              [() => "Invalid lol", { reason: "Invalid lol" }],
-              [() => ["invalid as array", "Invalid lol"], { reason }],
+              [() => 'Invalid lol', { reason: 'Invalid lol' }],
+              [() => ['invalid as array', 'Invalid lol'], { reason }],
               [
                 () => ({ metadata: { valid: false } }),
                 { metadata: { valid: false } },
               ],
-              [() => ({ reason: "Invalid lol" }), { reason: "Invalid lol" }],
+              [() => ({ reason: 'Invalid lol' }), { reason: 'Invalid lol' }],
               [
                 () => ({
-                  reason: "failed again",
+                  reason: 'failed again',
                   metadata: { allowed: metadata.allowed },
                 }),
                 {
-                  reason: "failed again",
+                  reason: 'failed again',
                   metadata: { allowed: metadata.allowed },
                 },
               ],
@@ -1149,8 +1149,8 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
                 },
               }).getModel();
 
-              it("should return default error message at creation", async () => {
-                const { data, error } = await Model.create({ prop: "Invalid" });
+              it('should return default error message at creation', async () => {
+                const { data, error } = await Model.create({ prop: 'Invalid' });
 
                 expect(data).toBeNull();
                 expect(error.payload).toMatchObject({
@@ -1158,10 +1158,10 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
                 });
               });
 
-              it("should return default error message during updates", async () => {
+              it('should return default error message during updates', async () => {
                 const { data, error } = await Model.update(
                   { prop: metadata.allowed[0] },
-                  { prop: "Invalid" },
+                  { prop: 'Invalid' },
                 );
 
                 expect(data).toBeNull();
@@ -1171,40 +1171,40 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
               });
             }
 
-            describe("behaviour with errors thrown in the error setter", () => {
+            describe('behaviour with errors thrown in the error setter', () => {
               const Model = new Schema({
                 prop: {
-                  default: "lol",
+                  default: 'lol',
                   allow: {
-                    values: ["lol", "lolol"],
+                    values: ['lol', 'lolol'],
                     error() {
-                      throw new Error("lolol");
+                      throw new Error('lolol');
                     },
                   },
                 },
               }).getModel();
 
-              it("should return proper errors at creation", async () => {
-                const { data, error } = await Model.create({ prop: "" });
+              it('should return proper errors at creation', async () => {
+                const { data, error } = await Model.create({ prop: '' });
 
                 expect(data).toBeNull();
                 expect(error.payload).toMatchObject({
                   prop: expect.objectContaining({
-                    reason: "value not allowed",
+                    reason: 'value not allowed',
                   }),
                 });
               });
 
-              it("should return proper errors during updates", async () => {
+              it('should return proper errors during updates', async () => {
                 const { data, error } = await Model.update(
-                  { prop: "lol" },
-                  { prop: "" },
+                  { prop: 'lol' },
+                  { prop: '' },
                 );
 
                 expect(data).toBeNull();
                 expect(error.payload).toMatchObject({
                   prop: expect.objectContaining({
-                    reason: "value not allowed",
+                    reason: 'value not allowed',
                   }),
                 });
               });

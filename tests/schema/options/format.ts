@@ -1,10 +1,10 @@
-import { describe, it, expect } from "bun:test";
+import { describe, expect, it } from 'bun:test';
 
-import { expectFailure, expectNoFailure, getValidSchema } from "../_utils";
+import { expectFailure, expectNoFailure, getValidSchema } from '../_utils';
 
 export const Test_SchemaOptionFormat = ({ fx }: any) => {
-  describe("Schema.options", () => {
-    it("should allow empty objects", () => {
+  describe('Schema.options', () => {
+    it('should allow empty objects', () => {
       const toPass = fx(getValidSchema(), {});
 
       expectNoFailure(toPass);
@@ -12,8 +12,8 @@ export const Test_SchemaOptionFormat = ({ fx }: any) => {
       toPass();
     });
 
-    it("should reject non-object values", () => {
-      const values = [null, false, true, 1, "abc", []];
+    it('should reject non-object values', () => {
+      const values = [null, false, true, 1, 'abc', []];
 
       for (const options of values) {
         const toFail = fx(getValidSchema(), options);
@@ -25,14 +25,14 @@ export const Test_SchemaOptionFormat = ({ fx }: any) => {
         } catch (err: any) {
           expect(err.payload).toEqual(
             expect.objectContaining({
-              "schema options": expect.arrayContaining(["Must be an object"]),
+              'schema options': expect.arrayContaining(['Must be an object']),
             }),
           );
         }
       }
     });
 
-    it("should reject invalid option name", () => {
+    it('should reject invalid option name', () => {
       const toFail = fx(getValidSchema(), { propertyName: true });
 
       expectFailure(toFail);
@@ -42,7 +42,7 @@ export const Test_SchemaOptionFormat = ({ fx }: any) => {
       } catch (err: any) {
         expect(err.payload).toEqual(
           expect.objectContaining({
-            propertyName: expect.arrayContaining(["Invalid option"]),
+            propertyName: expect.arrayContaining(['Invalid option']),
           }),
         );
       }

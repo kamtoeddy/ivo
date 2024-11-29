@@ -1,4 +1,8 @@
-import { ImmutableSummary, MutableSummary, Schema } from '../../../../dist';
+import {
+  type ImmutableSummary,
+  type MutableSummary,
+  Schema,
+} from '../../../../dist';
 import type { StoreItem, StoreItemInput } from './types';
 import {
   sanitizeQuantities,
@@ -10,7 +14,7 @@ import {
   validateString,
 } from './validators';
 
-export { StoreItem, storeItemSchema };
+export { StoreItemModel, storeItemSchema };
 
 const storeItemSchema = new Schema<StoreItemInput, StoreItem>(
   {
@@ -78,4 +82,4 @@ function onSuccess({
   return quantities ? newQty + (quantities as number) : newQty;
 }
 
-const StoreItem = storeItemSchema.getModel();
+const StoreItemModel = storeItemSchema.getModel();

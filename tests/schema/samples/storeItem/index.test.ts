@@ -1,4 +1,4 @@
-import { StoreItem } from '.'
-import { CommonInheritanceTest } from './common-tests'
+import { StoreItemModel } from '.';
+import { CommonInheritanceTest } from './common-tests';
 
-CommonInheritanceTest('StoreItem', StoreItem)
+CommonInheritanceTest(StoreItemModel, 'StoreItem');

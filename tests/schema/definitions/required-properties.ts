@@ -1,12 +1,12 @@
-import { describe, it, expect, beforeEach } from "bun:test";
+import { beforeEach, describe, expect, it } from 'bun:test';
 
-import { ERRORS } from "../../../dist";
-import { expectFailure, expectNoFailure, validator } from "../_utils";
+import { ERRORS } from '../../../dist';
+import { expectFailure, expectNoFailure, validator } from '../_utils';
 
 export const Test_RequiredProperties = ({ Schema, fx }: any) => {
-  describe("required", () => {
-    describe("valid", () => {
-      it("should allow required + validator", () => {
+  describe('required', () => {
+    describe('valid', () => {
+      it('should allow required + validator', () => {
         const toPass = fx({ propertyName: { required: true, validator } });
 
         expectNoFailure(toPass);
@@ -14,7 +14,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
         toPass();
       });
 
-      it("should allow required: true + allow alone", () => {
+      it('should allow required: true + allow alone', () => {
         const toPass = fx({
           propertyName: { required: true, allow: [1, 2, 435, 45] },
         });
@@ -25,8 +25,8 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
       });
     });
 
-    describe("invalid", () => {
-      it("should reject required & no validator", () => {
+    describe('invalid', () => {
+      it('should reject required & no validator', () => {
         const toFail = fx({ propertyName: { required: true } });
 
         expectFailure(toFail);
@@ -37,16 +37,16 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
           expect(err.payload).toEqual(
             expect.objectContaining({
               propertyName: expect.arrayContaining([
-                "Required properties must have a validator",
+                'Required properties must have a validator',
               ]),
             }),
           );
         }
       });
 
-      it("should reject required(true) + default", () => {
+      it('should reject required(true) + default', () => {
         const toFail = fx({
-          propertyName: { default: "", required: true, validator },
+          propertyName: { default: '', required: true, validator },
         });
 
         expectFailure(toFail);
@@ -57,14 +57,14 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
           expect(err.payload).toEqual(
             expect.objectContaining({
               propertyName: expect.arrayContaining([
-                "Strictly required properties cannot have a default value or setter",
+                'Strictly required properties cannot have a default value or setter',
               ]),
             }),
           );
         }
       });
 
-      it("should reject required(true) + readonly(true)", () => {
+      it('should reject required(true) + readonly(true)', () => {
         const values = [false, true];
 
         for (const readonly of values) {
@@ -80,7 +80,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
             expect(err.payload).toMatchObject(
               expect.objectContaining({
                 propertyName: expect.arrayContaining([
-                  "Strictly required properties cannot be readonly",
+                  'Strictly required properties cannot be readonly',
                 ]),
               }),
             );
@@ -88,7 +88,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
         }
       });
 
-      it("should reject required(true) + shouldInit", () => {
+      it('should reject required(true) + shouldInit', () => {
         const values = [false, true, [], {}];
 
         for (const shouldInit of values) {
@@ -104,7 +104,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
             expect(err.payload).toMatchObject(
               expect.objectContaining({
                 propertyName: expect.arrayContaining([
-                  "Strictly Required properties cannot have a initialization blocked",
+                  'Strictly Required properties cannot have a initialization blocked',
                 ]),
               }),
             );
@@ -114,8 +114,8 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
     });
   });
 
-  describe("requiredBy", () => {
-    describe("behaviour", () => {
+  describe('requiredBy', () => {
+    describe('behaviour', () => {
       let callsPerProp = {} as never;
 
       const book = {
@@ -143,8 +143,8 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
           default: null,
           required({ context: { isPublished, price } }: any) {
             const isRequired = isPublished && price == null;
-            recordCalls("price");
-            return [isRequired, "A price is required to publish a book!"];
+            recordCalls('price');
+            return [isRequired, 'A price is required to publish a book!'];
           },
           validator: validatePrice,
         },
@@ -152,11 +152,11 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
           default: null,
           readonly: true,
           required({ context: { price, priceReadonly } }: any) {
-            const isRequired = price == 101 && priceReadonly == null;
-            recordCalls("priceReadonly");
+            const isRequired = price === 101 && priceReadonly == null;
+            recordCalls('priceReadonly');
             return [
               isRequired,
-              "A priceReadonly is required when price is 101!",
+              'A priceReadonly is required when price is 101!',
             ];
           },
           validator: validatePrice,
@@ -165,8 +165,8 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
           default: null,
           readonly: true,
           required: ({ context: { price, priceReadonly } }: any) => {
-            recordCalls("priceRequiredWithoutMessage");
-            return price == 101 && priceReadonly == null;
+            recordCalls('priceRequiredWithoutMessage');
+            return price === 101 && priceReadonly == null;
           },
           validator: validatePrice,
         },
@@ -176,8 +176,8 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
         callsPerProp = {};
       });
 
-      describe("creation", () => {
-        it("should create normally", async () => {
+      describe('creation', () => {
+        it('should create normally', async () => {
           const toPass = () => Book.create({ bookId: 1 });
 
           expectNoFailure(toPass);
@@ -192,7 +192,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
           });
         });
 
-        it("should pass if condition is met at creation", async () => {
+        it('should pass if condition is met at creation', async () => {
           const toPass = () =>
             Book.create({ bookId: 1, isPublished: true, price: 2000 });
 
@@ -214,7 +214,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
           });
         });
 
-        it("should reject if condition is not met at creation", async () => {
+        it('should reject if condition is not met at creation', async () => {
           const { data, error } = await Book.create({
             bookId: 1,
             isPublished: true,
@@ -225,7 +225,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
             message: ERRORS.VALIDATION_ERROR,
             payload: {
               price: {
-                reason: "A price is required to publish a book!",
+                reason: 'A price is required to publish a book!',
                 metadata: null,
               },
             },
@@ -239,8 +239,8 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
         });
       });
 
-      describe("updates", () => {
-        it("should pass if condition is met during updates", async () => {
+      describe('updates', () => {
+        it('should pass if condition is met during updates', async () => {
           const toPass = () =>
             Book.update(
               {
@@ -265,7 +265,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
           });
         });
 
-        it("should pass if condition is met during updates of readonly", async () => {
+        it('should pass if condition is met during updates of readonly', async () => {
           const toPass = () =>
             Book.update(book, { price: 101, priceReadonly: 201 });
 
@@ -281,7 +281,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
           });
         });
 
-        it("should reject if condition is not met during updates", async () => {
+        it('should reject if condition is not met during updates', async () => {
           const { data, error } = await Book.update(
             {
               bookId: 1,
@@ -297,7 +297,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
             message: ERRORS.VALIDATION_ERROR,
             payload: {
               price: {
-                reason: "A price is required to publish a book!",
+                reason: 'A price is required to publish a book!',
                 metadata: null,
               },
             },
@@ -306,7 +306,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
           expect(callsPerProp).toEqual({ price: true, priceReadonly: true });
         });
 
-        it("should reject if condition is not met during updates of readonly", async () => {
+        it('should reject if condition is not met during updates of readonly', async () => {
           const { data, error } = await Book.update(book, { price: 101 });
 
           expect(data).toBeNull();
@@ -314,7 +314,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
             message: ERRORS.VALIDATION_ERROR,
             payload: {
               priceReadonly: {
-                reason: "A priceReadonly is required when price is 101!",
+                reason: 'A priceReadonly is required when price is 101!',
                 metadata: null,
               },
               priceRequiredWithoutMessage: {
@@ -331,7 +331,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
           });
         });
 
-        it("should not update callable readonly prop that has changed", async () => {
+        it('should not update callable readonly prop that has changed', async () => {
           const { data, error } = await Book.update(
             {
               bookId: 1,
@@ -352,11 +352,11 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
         });
       });
 
-      describe("behaviour when nothing is returned from required function", () => {
+      describe('behaviour when nothing is returned from required function', () => {
         const Book = new Schema({
           bookId: { required: true, validator },
           isPublished: { default: false, validator },
-          name: { default: "", validator },
+          name: { default: '', validator },
           price: {
             default: null,
             required() {},
@@ -364,40 +364,40 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
           },
         }).getModel();
 
-        it("should create normally", async () => {
+        it('should create normally', async () => {
           const { data } = await Book.create({ bookId: 1 });
 
           expect(data).toEqual({
             bookId: 1,
             isPublished: false,
-            name: "",
+            name: '',
             price: null,
           });
         });
 
-        it("should update normally", async () => {
+        it('should update normally', async () => {
           const book = {
             bookId: 1,
             isPublished: false,
-            name: "",
+            name: '',
             price: null,
           };
-          const { data } = await Book.update(book, { name: "yooo" });
+          const { data } = await Book.update(book, { name: 'yooo' });
 
-          expect(data).toEqual({ name: "yooo" });
+          expect(data).toEqual({ name: 'yooo' });
         });
       });
 
-      describe("behaviour when a non-string value is returned as message from required function", () => {
-        describe("should respect InputField", () => {
+      describe('behaviour when a non-string value is returned as message from required function', () => {
+        describe('should respect InputField', () => {
           const responses = [
-            [{ reason: "lol" }, { reason: "lol" }],
+            [{ reason: 'lol' }, { reason: 'lol' }],
             [
-              { reason: "lol", metadata: { shouldWork: true } },
-              { reason: "lol", metadata: { shouldWork: true } },
+              { reason: 'lol', metadata: { shouldWork: true } },
+              { reason: 'lol', metadata: { shouldWork: true } },
             ],
             [
-              { reason: "", metadata: null },
+              { reason: '', metadata: null },
               { reason: "'price' is required", metadata: null },
             ],
             [
@@ -411,7 +411,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
             const Book = new Schema({
               bookId: { required: true, validator },
               isPublished: { default: false, validator },
-              name: { default: "", validator },
+              name: { default: '', validator },
               price: {
                 default: null,
                 required: () => [true, provided],
@@ -419,7 +419,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
               },
             }).getModel();
 
-            it("should reject with proper required error message at creation", async () => {
+            it('should reject with proper required error message at creation', async () => {
               const { data, error } = await Book.create({ bookId: 1 });
 
               expect(data).toBeNull();
@@ -430,15 +430,15 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
               });
             });
 
-            it("should reject with proper required error message during updates", async () => {
+            it('should reject with proper required error message during updates', async () => {
               const book = {
                 bookId: 1,
                 isPublished: false,
-                name: "",
+                name: '',
                 price: null,
               };
               const { data, error } = await Book.update(book, {
-                name: "yooo",
+                name: 'yooo',
               });
 
               expect(data).toBeNull();
@@ -451,7 +451,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
           }
         });
 
-        describe("should ignore unsupported types", () => {
+        describe('should ignore unsupported types', () => {
           const invalidMessages = [
             null,
             undefined,
@@ -467,7 +467,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
             const Book = new Schema({
               bookId: { required: true, validator },
               isPublished: { default: false, validator },
-              name: { default: "", validator },
+              name: { default: '', validator },
               price: {
                 default: null,
                 required: () => [true, message],
@@ -475,7 +475,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
               },
             }).getModel();
 
-            it("should reject with proper required error message at creation", async () => {
+            it('should reject with proper required error message at creation', async () => {
               const { data, error } = await Book.create({ bookId: 1 });
 
               expect(data).toBeNull();
@@ -491,15 +491,15 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
               });
             });
 
-            it("should reject with proper required error message during updates", async () => {
+            it('should reject with proper required error message during updates', async () => {
               const book = {
                 bookId: 1,
                 isPublished: false,
-                name: "",
+                name: '',
                 price: null,
               };
               const { data, error } = await Book.update(book, {
-                name: "yooo",
+                name: 'yooo',
               });
 
               expect(data).toBeNull();
@@ -515,13 +515,13 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
         });
       });
 
-      describe("behaviour when a value returned by required function is not boolean nor array", () => {
+      describe('behaviour when a value returned by required function is not boolean nor array', () => {
         const invalidResponses = [
           null,
           undefined,
           {},
-          "",
-          "not array",
+          '',
+          'not array',
           1,
           0,
           -12,
@@ -532,7 +532,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
           const Book = new Schema({
             bookId: { required: true, validator },
             isPublished: { default: false, validator },
-            name: { default: "", validator },
+            name: { default: '', validator },
             price: {
               default: null,
               required: () => response,
@@ -540,52 +540,52 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
             },
           }).getModel();
 
-          it("should create normally", async () => {
+          it('should create normally', async () => {
             const { data } = await Book.create({ bookId: 1 });
 
             expect(data).toEqual({
               bookId: 1,
               isPublished: false,
-              name: "",
+              name: '',
               price: null,
             });
           });
 
-          it("should update normally", async () => {
+          it('should update normally', async () => {
             const book = {
               bookId: 1,
               isPublished: false,
-              name: "",
+              name: '',
               price: null,
             };
-            const { data } = await Book.update(book, { name: "yooo" });
+            const { data } = await Book.update(book, { name: 'yooo' });
 
-            expect(data).toEqual({ name: "yooo" });
+            expect(data).toEqual({ name: 'yooo' });
           });
         }
       });
 
-      describe("behaviour with virtual properties", () => {
-        const book = { name: "book name", price: 10 };
+      describe('behaviour with virtual properties', () => {
+        const book = { name: 'book name', price: 10 };
 
-        describe("when value of virtual is not provided", () => {
+        describe('when value of virtual is not provided', () => {
           const Book = new Schema({
-            name: { default: "" },
+            name: { default: '' },
             price: {
               default: null,
-              dependsOn: "_price",
+              dependsOn: '_price',
               resolver: ({ context: { _price } }: any) => _price,
             },
             _price: {
               virtual: true,
               required({ context: { _price } }: any) {
-                return _price == undefined;
+                return _price === undefined;
               },
               validator: validator,
             },
           }).getModel();
 
-          it("should reject at creation", async () => {
+          it('should reject at creation', async () => {
             const { data, error } = await Book.create({});
 
             expect(data).toBeNull();
@@ -600,9 +600,9 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
             });
           });
 
-          it("should reject during updates", async () => {
+          it('should reject during updates', async () => {
             const { data, error } = await Book.update(book, {
-              name: "updated name",
+              name: 'updated name',
             });
 
             expect(data).toBeNull();
@@ -618,24 +618,24 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
           });
         });
 
-        describe("when value of virtual is not provided and required at creation only", () => {
+        describe('when value of virtual is not provided and required at creation only', () => {
           const Book = new Schema({
-            name: { default: "" },
+            name: { default: '' },
             price: {
               default: null,
-              dependsOn: "_price",
+              dependsOn: '_price',
               resolver: ({ context: { _price } }: any) => _price,
             },
             _price: {
               virtual: true,
               required({ context: { _price }, isUpdate }: any) {
-                return _price == undefined && !isUpdate;
+                return _price === undefined && !isUpdate;
               },
               validator: validator,
             },
           }).getModel();
 
-          it("should reject at creation", async () => {
+          it('should reject at creation', async () => {
             const { data, error } = await Book.create({});
 
             expect(data).toBeNull();
@@ -650,8 +650,8 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
             });
           });
 
-          it("should reject during updates", async () => {
-            const name = "updated book name";
+          it('should reject during updates', async () => {
+            const name = 'updated book name';
             const { data, error } = await Book.update(book, {
               name,
             });
@@ -661,25 +661,25 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
           });
         });
 
-        describe("when value of virtual is not provided and required at creation and update is blocked", () => {
+        describe('when value of virtual is not provided and required at creation and update is blocked', () => {
           const Book = new Schema({
-            name: { default: "" },
+            name: { default: '' },
             price: {
               default: null,
-              dependsOn: "_price",
+              dependsOn: '_price',
               resolver: ({ context: { _price } }: any) => _price,
             },
             _price: {
               virtual: true,
               shouldUpdate: false,
               required({ context: { _price } }: any) {
-                return _price == undefined;
+                return _price === undefined;
               },
               validator: validator,
             },
           }).getModel();
 
-          it("should reject at creation", async () => {
+          it('should reject at creation', async () => {
             const { data, error } = await Book.create({});
 
             expect(data).toBeNull();
@@ -694,8 +694,8 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
             });
           });
 
-          it("should reject during updates", async () => {
-            const name = "updated book name";
+          it('should reject during updates', async () => {
+            const name = 'updated book name';
             const { data, error } = await Book.update(book, {
               name,
             });
@@ -706,27 +706,27 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
         });
       });
 
-      describe("behaviour with asychronous required setters", () => {
-        const book = { name: "book name", price: 10 };
+      describe('behaviour with asychronous required setters', () => {
+        const book = { name: 'book name', price: 10 };
 
         const Book = new Schema({
-          name: { default: "" },
+          name: { default: '' },
           price: {
             default: null,
-            dependsOn: "_price",
+            dependsOn: '_price',
             resolver: ({ context: { _price } }: any) => _price,
           },
           _price: {
             virtual: true,
             required({ context: { _price } }: any) {
-              return Promise.resolve(_price == undefined);
+              return Promise.resolve(_price === undefined);
             },
             validator: validator,
           },
         }).getModel();
 
-        describe("creation", () => {
-          it("should reject when condition is not met", async () => {
+        describe('creation', () => {
+          it('should reject when condition is not met', async () => {
             const { data, error } = await Book.create({});
 
             expect(data).toBeNull();
@@ -738,16 +738,16 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
             });
           });
 
-          it("should allow when condition is met", async () => {
+          it('should allow when condition is met', async () => {
             const { data, error } = await Book.create({ _price: 20 });
 
             expect(error).toBeNull();
-            expect(data).toMatchObject({ name: "", price: 20 });
+            expect(data).toMatchObject({ name: '', price: 20 });
           });
         });
 
-        describe("updates", () => {
-          it("should reject when condition is not met", async () => {
+        describe('updates', () => {
+          it('should reject when condition is not met', async () => {
             const { data, error } = await Book.update(book, {});
 
             expect(data).toBeNull();
@@ -762,7 +762,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
             });
           });
 
-          it("should allow when condition is met", async () => {
+          it('should allow when condition is met', async () => {
             const { data, error } = await Book.update(book, { _price: 20 });
 
             expect(error).toBeNull();
@@ -771,40 +771,40 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
         });
       });
 
-      describe("behaviour with errors thrown in required setter", () => {
+      describe('behaviour with errors thrown in required setter', () => {
         const Model = new Schema({
-          prop1: { default: "" },
+          prop1: { default: '' },
           prop: {
             default: null,
             required() {
-              throw new Error("lolol");
+              throw new Error('lolol');
             },
             validator,
           },
         }).getModel();
 
-        it("should consider required:false if occurred at creation", async () => {
+        it('should consider required:false if occurred at creation', async () => {
           const { data, error } = await Model.create();
 
           expect(error).toBeNull();
-          expect(data).toEqual({ prop: null, prop1: "" });
+          expect(data).toEqual({ prop: null, prop1: '' });
         });
 
-        it("should consider required:false if occurred during updates", async () => {
+        it('should consider required:false if occurred during updates', async () => {
           const { data, error } = await Model.update(
-            { prop: null, prop1: "" },
-            { prop1: "updated" },
+            { prop: null, prop1: '' },
+            { prop1: 'updated' },
           );
 
           expect(error).toBeNull();
-          expect(data).toEqual({ prop1: "updated" });
+          expect(data).toEqual({ prop1: 'updated' });
         });
       });
     });
 
-    describe("valid", () => {
-      it("should accept requiredBy + default(any | function)", () => {
-        const values = ["", () => ""];
+    describe('valid', () => {
+      it('should accept requiredBy + default(any | function)', () => {
+        const values = ['', () => ''];
 
         for (const value of values) {
           const toPass = fx({
@@ -821,10 +821,10 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
         }
       });
 
-      it("should accept requiredBy + readonly", () => {
+      it('should accept requiredBy + readonly', () => {
         const toPass = fx({
           propertyName: {
-            default: "",
+            default: '',
             readonly: true,
             required: () => true,
             validator,
@@ -836,10 +836,10 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
         toPass();
       });
 
-      it("should accept requiredBy + shouldInit", () => {
+      it('should accept requiredBy + shouldInit', () => {
         const toPass = fx({
           propertyName: {
-            default: "",
+            default: '',
             readonly: true,
             required: () => true,
             shouldInit: () => true,
@@ -853,8 +853,8 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
       });
     });
 
-    describe("invalid", () => {
-      it("should reject requiredBy & no default", () => {
+    describe('invalid', () => {
+      it('should reject requiredBy & no default', () => {
         const toFail = fx({
           propertyName: { required: () => true, validator },
         });
@@ -867,23 +867,23 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
           expect(err.payload).toMatchObject(
             expect.objectContaining({
               propertyName: expect.arrayContaining([
-                "Callable required properties must have a default value or setter",
+                'Callable required properties must have a default value or setter',
               ]),
             }),
           );
         }
       });
 
-      it("should reject requiredBy + default & dependent(true)", () => {
+      it('should reject requiredBy + default & dependent(true)', () => {
         const toFail = fx({
           dependentProp: {
-            default: "value",
-            dependsOn: "prop",
+            default: 'value',
+            dependsOn: 'prop',
             resolver: () => 1,
             required: () => true,
             validator,
           },
-          prop: { default: "" },
+          prop: { default: '' },
         });
 
         expectFailure(toFail);
@@ -894,14 +894,14 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
           expect(err.payload).toMatchObject(
             expect.objectContaining({
               dependentProp: expect.arrayContaining([
-                "Required properties cannot be dependent",
+                'Required properties cannot be dependent',
               ]),
             }),
           );
         }
       });
 
-      it("should reject requiredBy + allow", () => {
+      it('should reject requiredBy + allow', () => {
         const toFail = fx({
           prop: { required: () => true, allow: [1, 2, 435, 45], validator },
         });

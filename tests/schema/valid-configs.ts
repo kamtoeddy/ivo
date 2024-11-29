@@ -7,7 +7,7 @@ type PublicOnly = {
 
 const publicOnly = new Schema<PublicOnly>({
   dob: { default: '' },
-  name: { required: true, validator: () => true }
+  name: { required: true, validator: () => true },
 }).getModel();
 
 publicOnly.create({ dob: '', name: '' }).then(({ data }) => {
@@ -19,7 +19,7 @@ type PrivateOnly = {
   constants: string;
 };
 const outputOnly = new Schema<{}, PrivateOnly>({
-  constants: { constant: true, value: '' }
+  constants: { constant: true, value: '' },
 }).getModel();
 
 outputOnly.create({}).then(({ data }) => {
@@ -41,9 +41,9 @@ const privatesAndPublic = new Schema<PrivateAndPublicInput, PrivateAndPublic>({
   dependents: {
     default: '',
     dependsOn: 'public',
-    resolver: () => ''
+    resolver: () => '',
   },
-  public: { required: true, validator: () => true }
+  public: { required: true, validator: () => true },
 }).getModel();
 
 privatesAndPublic.create({ public: '' }).then(({ data }) => {
@@ -67,9 +67,9 @@ const virtualsAndPrivate = new Schema<
   dependents: {
     default: '',
     dependsOn: 'virtual',
-    resolver: () => ''
+    resolver: () => '',
   },
-  virtual: { virtual: true, validator: () => true }
+  virtual: { virtual: true, validator: () => true },
 }).getModel();
 
 virtualsAndPrivate.create({ virtual: '' }).then(({ data }) => {
@@ -91,9 +91,9 @@ const virtualsPublicAndPrivate = new Schema<
   dependents: {
     default: '',
     dependsOn: 'virtual',
-    resolver: () => ''
+    resolver: () => '',
   },
-  virtual: { virtual: true, validator: () => true }
+  virtual: { virtual: true, validator: () => true },
 }).getModel();
 
 virtualsPublicAndPrivate.create({ virtual: '' }).then(({ data }) => {

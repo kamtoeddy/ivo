@@ -1,11 +1,11 @@
-import { describe, it, expect } from "bun:test";
+import { describe, expect, it } from 'bun:test';
 
-import { ERRORS } from "../../../dist";
-import { expectFailure } from "../_utils";
+import { ERRORS } from '../../../dist';
+import { expectFailure } from '../_utils';
 
 export const Test_BasicDefinitions = ({ fx, Schema }: any) => {
-  describe("Schema definitions", () => {
-    it("should reject if property definitions is not an object", () => {
+  describe('Schema definitions', () => {
+    it('should reject if property definitions is not an object', () => {
       const values = [
         null,
         undefined,
@@ -21,7 +21,7 @@ export const Test_BasicDefinitions = ({ fx, Schema }: any) => {
       for (const value of values) expectFailure(fx(value));
     });
 
-    it("should reject if property definitions has no property", () => {
+    it('should reject if property definitions has no property', () => {
       const toFail = fx({});
 
       expectFailure(toFail);
@@ -30,7 +30,7 @@ export const Test_BasicDefinitions = ({ fx, Schema }: any) => {
         toFail();
       } catch (err: any) {
         expect(err.payload).toMatchObject({
-          "schema properties": ["Insufficient Schema properties"],
+          'schema properties': ['Insufficient Schema properties'],
         });
       }
     });
@@ -47,7 +47,7 @@ export const Test_BasicDefinitions = ({ fx, Schema }: any) => {
             message: ERRORS.INVALID_SCHEMA,
             payload: {
               emptyProp: [
-                "A property should at least be readonly, required, or have a default value",
+                'A property should at least be readonly, required, or have a default value',
               ],
             },
           }),
@@ -56,7 +56,7 @@ export const Test_BasicDefinitions = ({ fx, Schema }: any) => {
     });
 
     it("should reject if a property's definition is not an object", () => {
-      const invalidDefinitions = [true, false, [], 1, -1, "", "invalid"];
+      const invalidDefinitions = [true, false, [], 1, -1, '', 'invalid'];
 
       for (const definition of invalidDefinitions) {
         const toFail = fx({ invalidProp0000: definition });
@@ -80,7 +80,7 @@ export const Test_BasicDefinitions = ({ fx, Schema }: any) => {
     });
 
     it("should reject if a property's definition has an invalid rule", () => {
-      const toFail = fx({ emptyProp: { default: "", yoo: true } });
+      const toFail = fx({ emptyProp: { default: '', yoo: true } });
       expectFailure(toFail);
 
       try {
@@ -97,59 +97,59 @@ export const Test_BasicDefinitions = ({ fx, Schema }: any) => {
       }
     });
 
-    it("should allow access to reservedKeys of valid schemas", () => {
+    it('should allow access to reservedKeys of valid schemas', () => {
       const schema = new Schema(
         {
           id: { constant: true, value: 1 },
-          dependent: { default: "", dependsOn: "virtual", resolver: () => "" },
+          dependent: { default: '', dependsOn: 'virtual', resolver: () => '' },
           lax: { default: true },
           virtual: { virtual: true, validator: () => true },
         },
-        { timestamps: { createdAt: "c_At" } },
+        { timestamps: { createdAt: 'c_At' } },
       );
 
       expect(schema.reservedKeys).toEqual(
         expect.arrayContaining([
-          "c_At",
-          "dependent",
-          "id",
-          "lax",
-          "updatedAt",
-          "virtual",
+          'c_At',
+          'dependent',
+          'id',
+          'lax',
+          'updatedAt',
+          'virtual',
         ]),
       );
     });
   });
 
-  describe("behaviour of schema when errors thrown in setter of default values", () => {
+  describe('behaviour of schema when errors thrown in setter of default values', () => {
     const Model = new Schema(
       {
         prop: {
           default() {
-            throw new Error("lolol");
+            throw new Error('lolol');
           },
         },
-        prop1: { default: "" },
+        prop1: { default: '' },
       },
       { setMissingDefaultsOnUpdate: true },
     ).getModel();
 
-    it("should set value as default on error generating default value at creation", async () => {
+    it('should set value as default on error generating default value at creation', async () => {
       const { data, error } = await Model.create();
 
       expect(error).toBeNull();
-      expect(data).toMatchObject({ prop: null, prop1: "" });
+      expect(data).toMatchObject({ prop: null, prop1: '' });
     });
 
     it("should set value as default on error generating default value during updates'", async () => {
       const { data, error } = await Model.update(
-        { prop1: "" },
-        { prop1: "updated" },
+        { prop1: '' },
+        { prop1: 'updated' },
         { debug: true },
       );
 
       expect(error).toBeNull();
-      expect(data).toMatchObject({ prop: null, prop1: "updated" });
+      expect(data).toMatchObject({ prop: null, prop1: 'updated' });
     });
   });
 };

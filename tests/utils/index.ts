@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'bun:test';
+import { describe, expect, it } from 'bun:test';
 
 type CommonUtilsProps = { [key: string]: Function };
 
@@ -120,7 +120,7 @@ export const commonUtilTests = ({
           ),
         ).toEqual(false);
 
-        for (const depth of [2, 3, Infinity]) {
+        for (const depth of [2, 3, Number.POSITIVE_INFINITY]) {
           expect(
             isEqual({ a: '', b: { c: '' } }, { b: { c: '' }, a: '' }, depth),
           ).toEqual(true);

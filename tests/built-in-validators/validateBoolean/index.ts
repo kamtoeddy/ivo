@@ -1,17 +1,17 @@
-import { describe, it, expect } from "bun:test";
+import { describe, expect, it } from 'bun:test';
 
 export const validateBooleanTest = ({
   validateBoolean,
 }: {
   validateBoolean: Function;
 }) => {
-  describe("validateBoolean", () => {
-    it("should tell whether or not input values are booleans", () => {
+  describe('validateBoolean', () => {
+    it('should tell whether or not input values are booleans', () => {
       // truthy values
 
       const truthyValues = [false, true];
 
-      for (let value of truthyValues) {
+      for (const value of truthyValues) {
         const res = validateBoolean(value);
 
         expect(res).toMatchObject({ valid: true, validated: value });
@@ -21,13 +21,23 @@ export const validateBooleanTest = ({
 
       // falsy values
 
-      const falsyValues = ["true", "false", 1, 0, null, undefined, [], {}, NaN];
+      const falsyValues = [
+        'true',
+        'false',
+        1,
+        0,
+        null,
+        undefined,
+        [],
+        {},
+        Number.NaN,
+      ];
 
-      for (let value of falsyValues) {
+      for (const value of falsyValues) {
         const res = validateBoolean(value);
 
         expect(res).toMatchObject({
-          reason: "Expected a boolean",
+          reason: 'Expected a boolean',
           valid: false,
         });
 
