@@ -1,6 +1,6 @@
-import { KeyOf, Schema } from '../../../../dist';
+import { type KeyOf, Schema } from '../../../../dist';
 import { VError } from './error-tool';
-import { Ctx_Options, EInput, EOutput, Input, Output } from './types';
+import type { Ctx_Options, EInput, EOutput, Input, Output } from './types';
 
 export { UserModel, EUserModel };
 

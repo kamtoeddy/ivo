@@ -1,66 +1,66 @@
-import { beforeEach, describe, it, expect } from "bun:test";
+import { beforeEach, describe, expect, it } from 'bun:test';
 
-import { ERRORS } from "../../../dist";
+import { ERRORS } from '../../../dist';
+import {
+  getInvalidConfigMessageForRepeatedProperties,
+  getInvalidOnSuccessConfigMessage,
+} from '../../../src/schema/schema-core';
 import {
   expectFailure,
   expectNoFailure,
   getValidSchema,
   validator,
-} from "../_utils";
-import {
-  getInvalidConfigMessageForRepeatedProperties,
-  getInvalidOnSuccessConfigMessage,
-} from "../../../src/schema/schema-core";
+} from '../_utils';
 
 export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
-  describe("Schema.options.onSuccess", () => {
-    describe("signature", () => {
-      describe("valid", () => {
+  describe('Schema.options.onSuccess', () => {
+    describe('signature', () => {
+      describe('valid', () => {
         it("should allow valid 'onSuccess' config", () => {
           const values = [
             () => {},
             [() => {}],
             [() => {}, () => {}],
             {
-              properties: ["propertyName1", "propertyName2"],
+              properties: ['propertyName1', 'propertyName2'],
               handler: () => {},
             },
             {
-              properties: ["propertyName1", "propertyName2"],
+              properties: ['propertyName1', 'propertyName2'],
               handler: [() => {}, () => {}],
             },
             {
               properties: [
-                "constant",
-                "laxProp",
-                "propertyName2",
-                "dependent",
-                "virtual",
+                'constant',
+                'laxProp',
+                'propertyName2',
+                'dependent',
+                'virtual',
               ],
               handler: [() => {}, () => {}],
             },
             {
               properties: [
-                "constant",
-                "laxProp",
-                "propertyName2",
-                "dependent",
-                "virtual",
+                'constant',
+                'laxProp',
+                'propertyName2',
+                'dependent',
+                'virtual',
               ],
               handler: () => {},
             },
             [
               () => {},
               {
-                properties: ["propertyName1", "constant"],
+                properties: ['propertyName1', 'constant'],
                 handler: [() => {}, () => {}],
               },
               {
                 properties: [
-                  "laxProp",
-                  "propertyName2",
-                  "dependent",
-                  "virtual",
+                  'laxProp',
+                  'propertyName2',
+                  'dependent',
+                  'virtual',
                 ],
                 handler: () => {},
               },
@@ -68,15 +68,15 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
             [
               () => {},
               {
-                properties: ["propertyName1", "propertyName1", "constant"],
+                properties: ['propertyName1', 'propertyName1', 'constant'],
                 handler: [() => {}, () => {}],
               },
               {
                 properties: [
-                  "laxProp",
-                  "propertyName2",
-                  "dependent",
-                  "virtual",
+                  'laxProp',
+                  'propertyName2',
+                  'dependent',
+                  'virtual',
                 ],
                 handler: () => {},
               },
@@ -88,11 +88,11 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
               getValidSchema(
                 {},
                 {
-                  constant: { constant: true, value: "" },
-                  laxProp: { default: "" },
+                  constant: { constant: true, value: '' },
+                  laxProp: { default: '' },
                   dependent: {
-                    default: "",
-                    dependsOn: ["laxProp", "virtual"],
+                    default: '',
+                    dependsOn: ['laxProp', 'virtual'],
                     resolver: () => {},
                   },
                   readonly: { readonly: true, validator: () => {} },
@@ -115,11 +115,11 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
             getValidSchema(
               {},
               {
-                constant: { constant: true, value: "" },
-                laxProp: { default: "" },
+                constant: { constant: true, value: '' },
+                laxProp: { default: '' },
                 dependent: {
-                  default: "",
-                  dependsOn: ["laxProp", "virtual"],
+                  default: '',
+                  dependsOn: ['laxProp', 'virtual'],
                   resolver: () => {},
                 },
                 readonly: { readonly: true, validator: () => {} },
@@ -129,15 +129,15 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
             {
               onSuccess: [
                 {
-                  properties: ["propertyName1", "laxProp", "dependent"],
+                  properties: ['propertyName1', 'laxProp', 'dependent'],
                   handler: () => {},
                 },
                 {
-                  properties: ["virtual", "laxProp"],
+                  properties: ['virtual', 'laxProp'],
                   handler: () => {},
                 },
                 {
-                  properties: ["dependent", "propertyName1"],
+                  properties: ['dependent', 'propertyName1'],
                   handler: () => {},
                 },
               ],
@@ -150,7 +150,7 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
         });
       });
 
-      describe("invalid", () => {
+      describe('invalid', () => {
         it("should reject 'onSuccess' if it's not a function, object or array", () => {
           const invalidValues = [
             1,
@@ -158,8 +158,8 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
             -14,
             true,
             false,
-            "invalid",
-            "",
+            'invalid',
+            '',
             null,
             undefined,
           ];
@@ -191,8 +191,8 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
             -14,
             true,
             false,
-            "invalid",
-            "",
+            'invalid',
+            '',
             null,
             undefined,
             [],
@@ -225,15 +225,15 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
             -14,
             true,
             false,
-            "invalid",
-            "",
+            'invalid',
+            '',
             null,
             undefined,
           ];
           invalidHandlers.forEach((handler) => {
             const toFail = fx(getValidSchema(), {
               onSuccess: {
-                properties: ["propertyName1", "propertyName2"],
+                properties: ['propertyName1', 'propertyName2'],
                 handler,
               },
             });
@@ -260,14 +260,14 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
             -14,
             true,
             false,
-            "invalid",
-            "",
+            'invalid',
+            '',
             null,
             undefined,
           ];
           const schemaWithInvalidHandlers = fx(getValidSchema(), {
             onSuccess: {
-              properties: ["propertyName1", "propertyName2"],
+              properties: ['propertyName1', 'propertyName2'],
               handler: invalidNestedHandlers,
             },
           });
@@ -284,7 +284,7 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
                   invalidNestedHandlers.map((_, i) =>
                     getInvalidOnSuccessConfigMessage(
                       undefined,
-                      "handler-must-be-function",
+                      'handler-must-be-function',
                       i,
                     ),
                   ),
@@ -294,15 +294,15 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
           }
         });
 
-        it("should reject if any of the properties passed in config object are not valid properties or virtuals", () => {
+        it('should reject if any of the properties passed in config object are not valid properties or virtuals', () => {
           const invalidProperties = [
             1,
             0,
             -14,
             true,
             false,
-            "invalid",
-            "",
+            'invalid',
+            '',
             null,
             undefined,
             [],
@@ -353,22 +353,22 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
           }
         });
 
-        it("should reject if some configs have the same properties in any order", () => {
+        it('should reject if some configs have the same properties in any order', () => {
           const validConfigs = [
-            { properties: ["propertyName1", "propertyName2"], handler() {} },
-            { properties: ["virtual", "virtual2"], handler() {} },
-            { properties: ["propertyName1", "virtual2"], handler() {} },
-            { properties: ["virtual", "propertyName2"], handler() {} },
+            { properties: ['propertyName1', 'propertyName2'], handler() {} },
+            { properties: ['virtual', 'virtual2'], handler() {} },
+            { properties: ['propertyName1', 'virtual2'], handler() {} },
+            { properties: ['virtual', 'propertyName2'], handler() {} },
             {
-              properties: ["propertyName1", "propertyName2", "virtual"],
+              properties: ['propertyName1', 'propertyName2', 'virtual'],
               handler() {},
             },
             {
               properties: [
-                "propertyName1",
-                "propertyName2",
-                "virtual",
-                "virtual2",
+                'propertyName1',
+                'propertyName2',
+                'virtual',
+                'virtual2',
               ],
               handler() {},
             },
@@ -384,23 +384,23 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
             // invalid because they're re-arranged
             [
               {
-                properties: ["propertyName2", "propertyName1"],
+                properties: ['propertyName2', 'propertyName1'],
                 handler() {},
               },
               0,
             ],
-            [{ properties: ["virtual2", "virtual"], handler() {} }, 1],
-            [{ properties: ["virtual2", "propertyName1"], handler() {} }, 2],
+            [{ properties: ['virtual2', 'virtual'], handler() {} }, 1],
+            [{ properties: ['virtual2', 'propertyName1'], handler() {} }, 2],
             [
               {
-                properties: ["propertyName2", "propertyName1", "virtual"],
+                properties: ['propertyName2', 'propertyName1', 'virtual'],
                 handler() {},
               },
               4,
             ],
             [
               {
-                properties: ["propertyName1", "virtual", "propertyName2"],
+                properties: ['propertyName1', 'virtual', 'propertyName2'],
                 handler() {},
               },
               4,
@@ -420,8 +420,8 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
               {},
               {
                 dependent: {
-                  default: "",
-                  dependsOn: ["virtual", "virtual2"],
+                  default: '',
+                  dependsOn: ['virtual', 'virtual2'],
                   resolver() {},
                 },
                 virtual: { virtual: true, validator() {} },
@@ -447,46 +447,48 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
       });
     });
 
-    describe("behaviour", () => {
+    describe('behaviour', () => {
       let successValues: any = {};
 
-      function onSuccess_(prop = "") {
-        return (summary: any) => (successValues[prop] = summary);
+      function onSuccess_(prop = '') {
+        return (summary: any) => {
+          successValues[prop] = summary;
+        };
       }
 
       beforeEach(() => {
         successValues = {};
       });
 
-      describe("behaviour with other success listeners", () => {
+      describe('behaviour with other success listeners', () => {
         const Book = new Schema(
           {
-            id: { constant: true, value: 1, onSuccess: onSuccess_("id") },
-            name: { required: true, validator, onSuccess: onSuccess_("name") },
+            id: { constant: true, value: 1, onSuccess: onSuccess_('id') },
+            name: { required: true, validator, onSuccess: onSuccess_('name') },
             price: {
               default: null,
-              dependsOn: "_setPrice",
+              dependsOn: '_setPrice',
               resolver: ({ context }: any) => context._setPrice,
-              onSuccess: onSuccess_("price"),
+              onSuccess: onSuccess_('price'),
             },
             _setPrice: {
               virtual: true,
               validator,
-              onSuccess: onSuccess_("_setPrice"),
+              onSuccess: onSuccess_('_setPrice'),
             },
           },
-          { onSuccess: onSuccess_("global") },
+          { onSuccess: onSuccess_('global') },
         ).getModel();
 
         it("should trigger all 'success' listeners at creation", async () => {
           const { data, handleSuccess } = await Book.create({
-            name: "Book name",
+            name: 'Book name',
             _setPrice: 100,
           });
 
           await handleSuccess();
 
-          const values = { id: 1, name: "Book name", price: 100 };
+          const values = { id: 1, name: 'Book name', price: 100 };
           const summary = {
             changes: null,
             context: { ...values, _setPrice: 100 },
@@ -506,7 +508,7 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
         });
 
         it("should trigger all 'success' listeners during updates ", async () => {
-          const book = { id: 1, name: "Book name", price: 100 };
+          const book = { id: 1, name: 'Book name', price: 100 };
 
           const { data, handleSuccess } = await Book.update(book, {
             _setPrice: 200,
@@ -533,30 +535,30 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
         });
       });
 
-      describe("behaviour without other success listeners", () => {
+      describe('behaviour without other success listeners', () => {
         const Book = new Schema(
           {
             id: { constant: true, value: 1 },
             name: { required: true, validator },
             price: {
               default: null,
-              dependsOn: "_setPrice",
+              dependsOn: '_setPrice',
               resolver: ({ context }: any) => context._setPrice,
             },
             _setPrice: { virtual: true, validator },
           },
-          { onSuccess: [onSuccess_("global"), onSuccess_("global-1")] },
+          { onSuccess: [onSuccess_('global'), onSuccess_('global-1')] },
         ).getModel();
 
         it("should trigger all 'success' listeners at creation", async () => {
           const { data, handleSuccess } = await Book.create({
-            name: "Book name",
+            name: 'Book name',
             _setPrice: 100,
           });
 
           await handleSuccess();
 
-          const values = { id: 1, name: "Book name", price: 100 };
+          const values = { id: 1, name: 'Book name', price: 100 };
           const summary = {
             changes: null,
             context: { ...values, _setPrice: 100 },
@@ -568,12 +570,12 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
           expect(data).toEqual(values);
           expect(successValues).toMatchObject({
             global: summary,
-            "global-1": summary,
+            'global-1': summary,
           });
         });
 
         it("should trigger all 'success' listeners during updates ", async () => {
-          const book = { id: 1, name: "Book name", price: 100 };
+          const book = { id: 1, name: 'Book name', price: 100 };
 
           const { data, handleSuccess } = await Book.update(book, {
             _setPrice: 200,
@@ -594,12 +596,12 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
           expect(data).toEqual({ price: 200 });
           expect(successValues).toMatchObject({
             global: summary,
-            "global-1": summary,
+            'global-1': summary,
           });
         });
       });
 
-      describe("behaviour onSuccess config object", () => {
+      describe('behaviour onSuccess config object', () => {
         let successValuesFromOptions: any = {};
 
         beforeEach(() => {
@@ -615,7 +617,7 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
           };
         }
 
-        describe("constant properties", () => {
+        describe('constant properties', () => {
           const Model = new Schema(
             {
               const1: { constant: true, value: 1 },
@@ -624,8 +626,8 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
             },
             {
               onSuccess: {
-                properties: ["const1", "const2"],
-                handler: onOptionSuccess(["const1", "const2"]),
+                properties: ['const1', 'const2'],
+                handler: onOptionSuccess(['const1', 'const2']),
               },
             },
           ).getModel();
@@ -658,7 +660,7 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
           });
         });
 
-        describe("non-constant properties", () => {
+        describe('non-constant properties', () => {
           const Model = new Schema(
             {
               const: { constant: true, value: 1 },
@@ -668,34 +670,34 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
               required2: { required: true, validator },
               dependent: {
                 default: null,
-                dependsOn: ["lax2", "virtual1", "virtual2"],
+                dependsOn: ['lax2', 'virtual1', 'virtual2'],
                 resolver: validator,
-                onSuccess: onSuccess_("dependent"),
+                onSuccess: onSuccess_('dependent'),
               },
               virtual1: { virtual: true, validator },
               virtual2: { virtual: true, validator },
             },
             {
               onSuccess: [
-                onOptionSuccess(["dependent"]),
+                onOptionSuccess(['dependent']),
                 {
-                  properties: ["lax", "lax2"],
+                  properties: ['lax', 'lax2'],
                   handler: [
-                    onOptionSuccess(["lax", "lax2"]),
-                    onOptionSuccess(["lax2"]),
+                    onOptionSuccess(['lax', 'lax2']),
+                    onOptionSuccess(['lax2']),
                   ],
                 },
                 {
-                  properties: ["virtual1", "virtual2"],
-                  handler: onOptionSuccess(["virtual1", "virtual2"]),
+                  properties: ['virtual1', 'virtual2'],
+                  handler: onOptionSuccess(['virtual1', 'virtual2']),
                 },
                 {
-                  properties: ["required", "const"],
-                  handler: onOptionSuccess(["required", "const"]),
+                  properties: ['required', 'const'],
+                  handler: onOptionSuccess(['required', 'const']),
                 },
                 {
-                  properties: ["required2", "dependent"],
-                  handler: onOptionSuccess(["required2", "dependent"]),
+                  properties: ['required2', 'dependent'],
+                  handler: onOptionSuccess(['required2', 'dependent']),
                 },
               ],
             },

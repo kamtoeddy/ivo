@@ -1,9 +1,9 @@
-import {
+import type {
   FieldError,
+  FieldKey,
   IErrorTool,
   IValidationError,
-  FieldKey,
-} from "../../../../dist";
+} from '../../../../dist';
 
 type vError<Keys> = {
   field: Keys;
@@ -45,7 +45,7 @@ export class VError<Keys> implements IErrorTool<ErrorData<Keys>> {
   }
 
   setMessage(
-    message: "INVALID_DATA" | "NOTHING_TO_UPDATE" | "VALIDATION_ERROR",
+    message: 'INVALID_DATA' | 'NOTHING_TO_UPDATE' | 'VALIDATION_ERROR',
   ) {
     this.message = message;
 

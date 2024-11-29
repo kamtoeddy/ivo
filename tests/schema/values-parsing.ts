@@ -1,4 +1,4 @@
-import { beforeAll, describe, it, expect } from 'bun:test';
+import { beforeAll, describe, expect, it } from 'bun:test';
 
 import { ERRORS } from '../../dist';
 import { expectNoFailure } from './_utils';

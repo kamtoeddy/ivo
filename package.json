@@ -3,6 +3,17 @@
   "author": "kamtoeddy",
   "description": "The schema valitator that brings user stories to life",
   "version": "1.6.3",
+  "scripts": {
+    "build": "tsup",
+    "build:watch": "tsup --watch",
+    "clean-up": "rm -rf coverage dist",
+    "lint": "tsc --noEmit && bun run lint:biome",
+    "lint:biome": "clear; bunx @biomejs/biome check --write .",
+    "test": "bun run build && bun test",
+    "test:cov": "bun run build && bun test --coverage",
+    "test:watch": "bun run build && bun test --watch",
+    "prepare": "bun run clean-up && bun run build"
+  },
   "license": "MIT",
   "homepage": "https://github.com/kamtoeddy/ivo#readme",
   "repository": {
@@ -35,23 +46,10 @@
     "schema",
     "validation"
   ],
-  "scripts": {
-    "build": "tsup",
-    "build:watch": "tsup --watch",
-    "clean-up": "rm -rf coverage dist",
-    "lint": "tsc --noEmit && eslint \"src/**/*.ts*\"",
-    "test": "bun run build && bun test",
-    "test:cov": "bun run build && bun test --coverage",
-    "test:watch": "bun run build && bun test --watch",
-    "prepare": "bun run clean-up && bun run build"
-  },
   "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
     "@types/bun": "latest",
-    "@typescript-eslint/eslint-plugin": "^5.62.0",
-    "@typescript-eslint/parser": "^5.62.0",
-    "eslint": "^8.57.0",
-    "eslint-plugin-import": "^2.29.1",
-    "tsup": "^8.1.0",
-    "typescript": "^5.5.3"
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2"
   }
 }

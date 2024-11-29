@@ -1,10 +1,10 @@
-import { ObjectType } from "../utils";
-import {
+import type { ObjectType } from '../utils';
+import type {
   FieldError,
   IErrorTool,
   InputFieldError,
   ValidationErrorMessage,
-} from "./utils";
+} from './utils';
 
 export type {
   ArrayOfMinSizeOne,
@@ -170,9 +170,9 @@ type PostValidator<Input, Output, Aliases, CtxOptions extends ObjectType> = (
   summary: MutableSummary<Input, Output, CtxOptions>,
   propertiesProvided: KeyOf<Input>[],
 ) =>
-  | void
+  | undefined
   | ResponseErrorObject<Input, Aliases>
-  | Promise<void | ResponseErrorObject<Input, Aliases>>;
+  | Promise<undefined | ResponseErrorObject<Input, Aliases>>;
 
 type PostValidationConfig<
   Input,
@@ -306,7 +306,7 @@ namespace NS {
       constant?: unknown;
       default?: unknown;
       dependsOn?: KeyOf<Input> | KeyOf<Input>[];
-      readonly?: boolean | "lax";
+      readonly?: boolean | 'lax';
       resolver?: Function;
       required?: boolean | RequiredHandler<Input, Output, never>;
       sanitizer?: VirtualResolver<K, Input, Output, never>;
@@ -375,7 +375,7 @@ namespace NS {
     CtxOptions extends ObjectType,
   > = Exclude<
     KeyOf<MutableContext<Input, Output, CtxOptions>>,
-    K | "__getOptions__" | "__updateOptions__"
+    K | '__getOptions__' | '__updateOptions__'
   >;
 
   type Dependent<
@@ -448,7 +448,7 @@ namespace NS {
     default:
       | TypeOf<Output[K]>
       | AsyncSetter<Output[K], Input, Output, CtxOptions>;
-    readonly: "lax";
+    readonly: 'lax';
     shouldUpdate?: Setter<boolean, Input, Output, CtxOptions>;
     validator:
       | Validator<K, Input, Output, CtxOptions>
@@ -663,10 +663,10 @@ namespace NS {
 
 type ValidationResponse<T> =
   | { valid: true; validated: T }
-  | { metadata: FieldError["metadata"]; reason: string; valid: false };
+  | { metadata: FieldError['metadata']; reason: string; valid: false };
 
 type InvalidValidatorResponse = {
-  metadata?: FieldError["metadata"];
+  metadata?: FieldError['metadata'];
   reason?: string;
   valid: false;
   value?: unknown;
@@ -724,52 +724,52 @@ type ArrayOfMinSizeOne<T> = [T, ...T[]];
 type ArrayOfMinSizeTwo<T> = [T, T, ...T[]];
 
 const DEFINITION_RULES = [
-  "alias",
-  "allow",
-  "constant",
-  "default",
-  "dependsOn",
-  "onDelete",
-  "onFailure",
-  "onSuccess",
-  "readonly",
-  "resolver",
-  "required",
-  "sanitizer",
-  "shouldInit",
-  "shouldUpdate",
-  "validator",
-  "value",
-  "virtual",
+  'alias',
+  'allow',
+  'constant',
+  'default',
+  'dependsOn',
+  'onDelete',
+  'onFailure',
+  'onSuccess',
+  'readonly',
+  'resolver',
+  'required',
+  'sanitizer',
+  'shouldInit',
+  'shouldUpdate',
+  'validator',
+  'value',
+  'virtual',
 ] as const;
 
 type DefinitionRule = (typeof DEFINITION_RULES)[number];
 
 const ALLOWED_OPTIONS: NS.OptionsKey<unknown, unknown, unknown, never>[] = [
-  "ErrorTool",
-  "equalityDepth",
-  "onDelete",
-  "onSuccess",
-  "postValidate",
-  "setMissingDefaultsOnUpdate",
-  "shouldUpdate",
-  "timestamps",
+  'ErrorTool',
+  'equalityDepth',
+  'onDelete',
+  'onSuccess',
+  'postValidate',
+  'setMissingDefaultsOnUpdate',
+  'shouldUpdate',
+  'timestamps',
 ];
-const CONSTANT_RULES = ["constant", "onDelete", "onSuccess", "value"];
+const CONSTANT_RULES = ['constant', 'onDelete', 'onSuccess', 'value'];
 const VIRTUAL_RULES = [
-  "alias",
-  "allow",
-  "sanitizer",
-  "onFailure",
-  "onSuccess",
-  "required",
-  "shouldInit",
-  "shouldUpdate",
-  "validator",
-  "virtual",
+  'alias',
+  'allow',
+  'sanitizer',
+  'onFailure',
+  'onSuccess',
+  'required',
+  'shouldInit',
+  'shouldUpdate',
+  'validator',
+  'virtual',
 ];
 
-const LIFE_CYCLES = ["onDelete", "onFailure", "onSuccess"] as const;
+const LIFE_CYCLES = ['onDelete', 'onFailure', 'onSuccess'] as const;
 
 interface ErrorToolClass<ErrorTool, CtxOptions extends ObjectType> {
   new (message: ValidationErrorMessage, ctxOptions: CtxOptions): ErrorTool;

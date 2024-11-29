@@ -1,5 +1,5 @@
-import { isEqual } from "../../utils";
-import { NS, KeyOf } from "../types";
+import { isEqual } from '../../utils';
+import type { KeyOf, NS } from '../types';
 
 export { TimeStampTool };
 
@@ -12,11 +12,11 @@ class TimeStampTool {
   private timestamps: NS.Timestamp;
   private nullable: boolean;
 
-  constructor(timestamps: NS.Options<unknown, unknown, unknown>["timestamps"]) {
+  constructor(timestamps: NS.Options<unknown, unknown, unknown>['timestamps']) {
     this.timestamps = this._makeTimestamps(timestamps);
     this.nullable =
-      typeof timestamps === "object" &&
-      typeof timestamps?.updatedAt === "object"
+      typeof timestamps === 'object' &&
+      typeof timestamps?.updatedAt === 'object'
         ? (timestamps.updatedAt.nullable ??
           IS_UPDATED_AT_TIMESTAMP_NULLABLE_BY_DEFAULT)
         : IS_UPDATED_AT_TIMESTAMP_NULLABLE_BY_DEFAULT;
@@ -27,33 +27,33 @@ class TimeStampTool {
   }
 
   private _makeTimestamps(
-    timestamps: NS.Options<unknown, unknown, unknown>["timestamps"],
+    timestamps: NS.Options<unknown, unknown, unknown>['timestamps'],
   ) {
-    if (isEqual(timestamps, undefined)) return { createdAt: "", updatedAt: "" };
+    if (isEqual(timestamps, undefined)) return { createdAt: '', updatedAt: '' };
 
-    let createdAt = "createdAt",
-      updatedAt = "updatedAt";
+    let createdAt = 'createdAt',
+      updatedAt = 'updatedAt';
 
     if (!timestamps || timestamps === true)
       return timestamps
         ? { createdAt, updatedAt }
-        : { createdAt: "", updatedAt: "" };
+        : { createdAt: '', updatedAt: '' };
 
     const custom_createdAt = timestamps?.createdAt;
     const custom_updatedAt =
-      typeof timestamps?.updatedAt === "object"
+      typeof timestamps?.updatedAt === 'object'
         ? timestamps?.updatedAt?.key
         : timestamps?.updatedAt;
 
-    if (custom_createdAt && typeof custom_createdAt == "string")
+    if (custom_createdAt && typeof custom_createdAt === 'string')
       createdAt = custom_createdAt.trim();
 
-    if (custom_createdAt === false) createdAt = "";
+    if (custom_createdAt === false) createdAt = '';
 
-    if (custom_updatedAt && typeof custom_updatedAt == "string")
+    if (custom_updatedAt && typeof custom_updatedAt === 'string')
       updatedAt = custom_updatedAt.trim();
 
-    if (custom_updatedAt === false) updatedAt = "";
+    if (custom_updatedAt === false) updatedAt = '';
 
     return { createdAt, updatedAt };
   }

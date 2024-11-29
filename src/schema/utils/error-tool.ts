@@ -1,10 +1,10 @@
-import { isEqual, FieldKey, sortKeys } from "../../utils";
-import {
+import { type FieldKey, isEqual, sortKeys } from '../../utils';
+import type {
   ErrorPayload,
   FieldError,
-  ValidationErrorMessage,
   IErrorTool,
-} from "./types";
+  ValidationErrorMessage,
+} from './types';
 
 export { DefaultErrorTool };
 

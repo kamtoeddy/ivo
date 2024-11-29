@@ -1,16 +1,16 @@
-import { describe, it, expect } from "bun:test";
+import { describe, expect, it } from 'bun:test';
 
 export const makeNumberValidatorTest = ({
   makeNumberValidator,
 }: {
   makeNumberValidator: Function;
 }) => {
-  describe("makeNumberValidator", () => {
-    it("should tell whether input is a number or not", () => {
+  describe('makeNumberValidator', () => {
+    it('should tell whether input is a number or not', () => {
       // truthy values
       const truthyValues = [-45, 0, 0.23, 1, 100];
 
-      for (let value of truthyValues) {
+      for (const value of truthyValues) {
         const res = makeNumberValidator()(value);
 
         expect(res).toMatchObject({ valid: true, validated: value });
@@ -19,13 +19,22 @@ export const makeNumberValidatorTest = ({
       }
 
       // falsy values
-      const falsyValues = [false, true, "hey", NaN, null, undefined, [], {}];
+      const falsyValues = [
+        false,
+        true,
+        'hey',
+        Number.NaN,
+        null,
+        undefined,
+        [],
+        {},
+      ];
 
-      for (let value of falsyValues) {
+      for (const value of falsyValues) {
         const res = makeNumberValidator()(value);
 
         expect(res).toMatchObject({
-          reason: "Expected a number",
+          reason: 'Expected a number',
           valid: false,
         });
 
@@ -33,7 +42,7 @@ export const makeNumberValidatorTest = ({
       }
     });
 
-    it("should reject values < min or values > max", () => {
+    it('should reject values < min or values > max', () => {
       // truthy values
       const valid = [0, 1, 9, 10];
 
@@ -49,9 +58,9 @@ export const makeNumberValidatorTest = ({
 
       // falsy values
       const invalid = [
-        [-0.000001, "too_small"],
-        [-1, "too_small"],
-        [10.00001, "too_big"],
+        [-0.000001, 'too_small'],
+        [-1, 'too_small'],
+        [10.00001, 'too_big'],
       ];
 
       invalid.forEach(([num, error]) => {
@@ -67,34 +76,34 @@ export const makeNumberValidatorTest = ({
       });
     });
 
-    it("should reject excluded values", () => {
+    it('should reject excluded values', () => {
       const valueToBeExcluded = { exclude: 0 };
       const valuesToBeExcluded = { exclude: [0, 1, 2] };
       const valueToBeExcludedWithError = {
-        exclude: { values: 0, error: "0 (zero) is not allowed here" },
+        exclude: { values: 0, error: '0 (zero) is not allowed here' },
       };
       const valuesToBeExcludedWithError = {
-        exclude: { values: [0, 1, 2], error: "0, 1 & 2 are not allowed" },
+        exclude: { values: [0, 1, 2], error: '0, 1 & 2 are not allowed' },
       };
 
       const data = [
-        [0, valueToBeExcluded, "Value not allowed", { excluded: [0] }],
+        [0, valueToBeExcluded, 'Value not allowed', { excluded: [0] }],
         [
           0,
           valuesToBeExcluded,
-          "Value not allowed",
+          'Value not allowed',
           { excluded: valuesToBeExcluded.exclude },
         ],
         [
           1,
           valuesToBeExcluded,
-          "Value not allowed",
+          'Value not allowed',
           { excluded: valuesToBeExcluded.exclude },
         ],
         [
           2,
           valuesToBeExcluded,
-          "Value not allowed",
+          'Value not allowed',
           { excluded: valuesToBeExcluded.exclude },
         ],
         [
@@ -144,7 +153,7 @@ export const makeNumberValidatorTest = ({
       });
     });
 
-    it("should accept only enumerated values if any", () => {
+    it('should accept only enumerated values if any', () => {
       const allow = [1, 55, 3, 17, 0, -15];
 
       for (const value of allow) {
@@ -162,7 +171,7 @@ export const makeNumberValidatorTest = ({
 
         expect(res).toMatchObject({
           metadata: { allowed: allow },
-          reason: "Value not allowed",
+          reason: 'Value not allowed',
           valid: false,
         });
 
@@ -170,7 +179,7 @@ export const makeNumberValidatorTest = ({
       }
     });
 
-    it("should respect nullable if provided", () => {
+    it('should respect nullable if provided', () => {
       const data = [
         [1, 1],
         [50, 50],

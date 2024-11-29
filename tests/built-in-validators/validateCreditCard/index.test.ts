@@ -1,4 +1,4 @@
-import { validateCreditCard } from '../../../src';
 import { validateCreditCardTest } from '.';
+import { validateCreditCard } from '../../../src';
 
 validateCreditCardTest({ validateCreditCard });

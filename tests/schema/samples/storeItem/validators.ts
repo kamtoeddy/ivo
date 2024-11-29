@@ -1,10 +1,10 @@
-import { StringValidatorOptions, MutableSummary } from "../../../../dist";
-import {
+import type { MutableSummary, StringValidatorOptions } from '../../../../dist';
+import type {
   IOtherMeasureUnit,
   IOtherQuantity,
-  StoreItemInput,
   StoreItem,
-} from "./types";
+  StoreItemInput,
+} from './types';
 
 type SummaryType = MutableSummary<StoreItemInput, StoreItem>;
 
@@ -12,14 +12,14 @@ import {
   makeArrayValidator,
   makeNumberValidator,
   makeStringValidator,
-} from "../../../../src";
-import { findBy } from "../../_utils";
+} from '../../../../src';
+import { findBy } from '../../_utils';
 
 export const validateName = (val: any) =>
   makeStringValidator({ trim: true })(val);
 
 export const validateString = (
-  errorMessage = "",
+  errorMessage = '',
   options: StringValidatorOptions = {},
 ) => {
   return (val: any) => {
@@ -55,7 +55,7 @@ export const validateOtherUnits = (value: any) => {
     filter: (v) => validateOtherUnit(v).valid,
     modifier: (v) => validateOtherUnit(v).validated,
     sorter: (a, b) => (a.name < b.name ? -1 : 1),
-    uniqueKey: "name",
+    uniqueKey: 'name',
   })(value);
 };
 
@@ -107,6 +107,7 @@ export const sanitizeQuantities = ({
 
     if (!mu) return prev;
 
+    // biome-ignore lint/suspicious/noAssignInExpressions: lol
     return (prev += quantity * mu.coefficient);
   }, 0);
 };

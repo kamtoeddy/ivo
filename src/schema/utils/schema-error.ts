@@ -1,5 +1,5 @@
-import { FieldKey, toArray } from "../../utils";
-import { SCHEMA_ERRORS } from "./types";
+import { type FieldKey, toArray } from '../../utils';
+import { SCHEMA_ERRORS } from './types';
 
 export { SchemaErrorTool, SchemaError };
 
@@ -11,8 +11,6 @@ class SchemaError extends Error {
 
 class SchemaErrorTool {
   private _payload: ErrorPayload = {};
-
-  constructor() {}
 
   get isPayloadLoaded() {
     return Object.keys(this._payload).length > 0;
@@ -35,10 +33,10 @@ class SchemaErrorTool {
   }
 
   throw() {
-    console.error("\nSchema errors:");
+    console.error('\nSchema errors:');
 
     Object.entries(this._payload).forEach(([prop, messages]) => {
-      if (messages.length == 1)
+      if (messages.length === 1)
         return console.error(`  [${prop}]: ${messages[0]}`);
 
       console.error(`  [${prop}]:`);

@@ -1,5 +1,5 @@
 import { expect } from 'bun:test';
-import { ERRORS, isEqual, ObjectType } from '../../dist';
+import { ERRORS, type ObjectType, isEqual } from '../../dist';
 
 export {
   expectFailure,
@@ -19,7 +19,7 @@ function expectNoFailure(fx: Function) {
   expect(fx).not.toThrow();
 }
 
-function findBy<T>(list: T[] = [], determinant: any): T | undefined {
+function findBy<T>(list: T[], determinant: any): T | undefined {
   return list.find((dt) => {
     const sub = getSubObject(dt as ObjectType, determinant);
 
@@ -35,7 +35,9 @@ function getSubObject(obj: ObjectType, sampleSub: ObjectType) {
   const _obj: ObjectType = {},
     keys = Object.keys(sampleSub);
 
-  keys.forEach((key) => (_obj[key] = getDeepValue(obj, key)));
+  keys.forEach((key) => {
+    _obj[key] = getDeepValue(obj, key);
+  });
 
   return _obj;
 }

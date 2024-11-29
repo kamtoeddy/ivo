@@ -1,9 +1,9 @@
 import {
   getUnique,
   getUniqueBy,
-  isOneOf,
   isEqual,
-  isNullOrUndefined
+  isNullOrUndefined,
+  isOneOf,
 } from '../../src/utils';
 
 import { commonUtilTests } from '.';
@@ -13,5 +13,5 @@ commonUtilTests({
   getUnique,
   getUniqueBy,
   isEqual,
-  isNullOrUndefined
+  isNullOrUndefined,
 });

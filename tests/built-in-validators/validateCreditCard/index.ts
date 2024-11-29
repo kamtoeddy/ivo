@@ -1,19 +1,19 @@
-import { describe, it, expect } from "bun:test";
+import { describe, expect, it } from 'bun:test';
 
 export const validateCreditCardTest = ({
   validateCreditCard,
 }: {
   validateCreditCard: Function;
 }) => {
-  describe("validateCreditCard", () => {
+  describe('validateCreditCard', () => {
     const truthyValues = [
       [5420596721435293, 5420596721435293],
-      ["5420596721435293", "5420596721435293"],
-      ["5420596721435293 ", "5420596721435293"],
-      ["5420596721435293 ", "5420596721435293"],
+      ['5420596721435293', '5420596721435293'],
+      ['5420596721435293 ', '5420596721435293'],
+      ['5420596721435293 ', '5420596721435293'],
     ];
 
-    it("should tell whether a character is a valid credit card number", () => {
+    it('should tell whether a character is a valid credit card number', () => {
       for (const [value, validated] of truthyValues) {
         const res = validateCreditCard(value);
 
@@ -27,17 +27,17 @@ export const validateCreditCardTest = ({
         -1000,
         0,
         1,
-        "",
-        "123-2342-25-6750",
+        '',
+        '123-2342-25-6750',
         4187622910505690,
-        "4187622910505690",
+        '4187622910505690',
       ];
 
       falsyValues.forEach((value) => {
         const res = validateCreditCard(value);
 
         expect(res).toEqual({
-          reason: "Invalid card number",
+          reason: 'Invalid card number',
           valid: false,
           metadata: null,
         });
@@ -46,7 +46,7 @@ export const validateCreditCardTest = ({
       });
     });
 
-    it("should validated value should be of same type as input value", () => {
+    it('should validated value should be of same type as input value', () => {
       truthyValues.forEach(([value]) => {
         expect(typeof validateCreditCard(value).validated).toBe(typeof value);
       });

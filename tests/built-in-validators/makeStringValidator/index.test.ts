@@ -1,4 +1,4 @@
-import { makeStringValidator } from '../../../src';
 import { makeStringValidatorTest } from '.';
+import { makeStringValidator } from '../../../src';
 
 makeStringValidatorTest({ makeStringValidator });
