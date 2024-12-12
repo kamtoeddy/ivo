@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-# v1.6.5 <small><sup>2024-12-12</sup></small>
+# v1.6.5 - v1.6.7 <small><sup>2024-12-12</sup></small>
 
 - Fix typing issues
 
