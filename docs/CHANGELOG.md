@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# v1.6.5 <small><sup>2024-12-12</sup></small>
+
+- Fix typing issues
+
 # v1.6.4 <small><sup>2024-12-12</sup></small>
 
 - Fix issue with `validateEmail` returning provided value as `undefined` when validation fails
