@@ -53,8 +53,8 @@ const validationFailedFieldError = makeFieldError('validation failed');
 class Schema<
   Input extends RealType<Input>,
   Output extends RealType<Output> = Input,
-  Aliases = never,
-  CtxOptions extends ObjectType = never,
+  Aliases = {},
+  CtxOptions extends ObjectType = {},
   ErrorTool extends IErrorTool<ObjectType> = DefaultErrorTool<
     KeyOf<Input & Aliases>
   >,
@@ -173,8 +173,8 @@ class Schema<
 class ModelTool<
   Input extends RealType<Input>,
   Output extends RealType<Output>,
-  Aliases = never,
-  CtxOptions extends ObjectType = never,
+  Aliases = {},
+  CtxOptions extends ObjectType = {},
   ErrorTool extends IErrorTool<ObjectType> = DefaultErrorTool<
     KeyOf<Input & Aliases>
   >,
