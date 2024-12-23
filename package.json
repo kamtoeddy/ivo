@@ -2,7 +2,7 @@
   "name": "ivo",
   "author": "kamtoeddy",
   "description": "The schema valitator that brings user stories to life",
-  "version": "1.6.8",
+  "version": "1.6.9",
   "scripts": {
     "build": "tsup",
     "build:watch": "tsup --watch",
@@ -11,8 +11,7 @@
     "lint:biome": "clear; bunx @biomejs/biome check --write .",
     "test": "bun run build && bun test",
     "test:cov": "bun run build && bun test --coverage",
-    "test:watch": "bun run build && bun test --watch",
-    "prepare": "bun run clean-up && bun run build"
+    "test:watch": "bun run build && bun test --watch"
   },
   "license": "MIT",
   "homepage": "https://github.com/kamtoeddy/ivo#readme",
