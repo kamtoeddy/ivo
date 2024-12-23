@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# v1.6.8 <small><sup>2024-12-23</sup></small>
+
+- Add option to manage string normalization in `makeStringValidator`
+
 # v1.6.5 - v1.6.7 <small><sup>2024-12-12</sup></small>
 
 - Fix typing issues
