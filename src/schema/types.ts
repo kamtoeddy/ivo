@@ -47,7 +47,7 @@ export {
 type Context<
   Input,
   Output = Input,
-  CtxOptions extends ObjectType = never,
+  CtxOptions extends ObjectType = {},
 > = Readonly<
   Merge<Input, Output> & { __getOptions__: () => Readonly<CtxOptions> }
 > & {};
@@ -55,13 +55,13 @@ type Context<
 type ImmutableContext<
   Input,
   Output = Input,
-  CtxOptions extends ObjectType = never,
+  CtxOptions extends ObjectType = {},
 > = Context<Input, Output, CtxOptions>;
 
 type MutableContext<
   Input,
   Output = Input,
-  CtxOptions extends ObjectType = never,
+  CtxOptions extends ObjectType = {},
 > = Readonly<
   Merge<Input, Output> & {
     __getOptions__: () => Readonly<CtxOptions>;
@@ -69,7 +69,7 @@ type MutableContext<
   }
 > & {};
 
-type DeletionContext<Output, CtxOptions extends ObjectType = never> = Readonly<
+type DeletionContext<Output, CtxOptions extends ObjectType = {}> = Readonly<
   Output & { __getOptions__: () => Readonly<CtxOptions> }
 > & {};
 
@@ -78,7 +78,7 @@ type PartialContext<Input, Output> = Readonly<Merge<Input, Output>>;
 type ImmutableSummary<
   Input,
   Output = Input,
-  CtxOptions extends ObjectType = never,
+  CtxOptions extends ObjectType = {},
 > = (
   | Readonly<{
       changes: null;
@@ -101,7 +101,7 @@ type ImmutableSummary<
 type MutableSummary<
   Input,
   Output = Input,
-  CtxOptions extends ObjectType = never,
+  CtxOptions extends ObjectType = {},
 > = (
   | Readonly<{
       changes: null;
@@ -144,7 +144,7 @@ type RequiredHandler<Input, Output, CtxOptions extends ObjectType> = (
   summary: MutableSummary<Input, Output, CtxOptions> & {},
 ) => RequiredHandlerRes | Promise<RequiredHandlerRes>;
 
-type AsyncShouldUpdate<Input, Output, CtxOptions extends ObjectType = never> = (
+type AsyncShouldUpdate<Input, Output, CtxOptions extends ObjectType = {}> = (
   summary: MutableSummary<Input, Output, CtxOptions> & {},
 ) => boolean | Promise<boolean>;
 
@@ -201,7 +201,7 @@ namespace NS {
   export type FailureHandler<
     Input,
     Output,
-    CtxOptions extends ObjectType = never,
+    CtxOptions extends ObjectType = {},
   > = (
     context: ImmutableContext<Input, Output, CtxOptions> & {},
   ) => unknown | Promise<unknown>;
@@ -209,7 +209,7 @@ namespace NS {
   export type SuccessHandler<
     Input,
     Output,
-    CtxOptions extends ObjectType = never,
+    CtxOptions extends ObjectType = {},
   > = (
     summary: ImmutableSummary<Input, Output, CtxOptions> & {},
   ) => unknown | Promise<unknown>;
@@ -236,8 +236,8 @@ namespace NS {
   export type Definitions<
     Input,
     Output,
-    Aliases = never,
-    CtxOptions extends ObjectType = never,
+    Aliases = {},
+    CtxOptions extends ObjectType = {},
   > = PrettyType<
     {
       [K in keyof (Input | Output)]: PublicProperty<
@@ -268,7 +268,7 @@ namespace NS {
     K extends keyof (Output | Input),
     Input,
     Output,
-    CtxOptions extends ObjectType = never,
+    CtxOptions extends ObjectType = {},
   > = Enumerable<Output[K]> &
     (
       | LaxProperty<K, Input, Output, CtxOptions>
@@ -283,7 +283,7 @@ namespace NS {
     K extends keyof Output,
     Input,
     Output,
-    CtxOptions extends ObjectType = never,
+    CtxOptions extends ObjectType = {},
   > = XOR<
     Constant<K, Input, Output, CtxOptions>,
     Dependent<K, Input, Output, CtxOptions>
@@ -308,10 +308,10 @@ namespace NS {
       dependsOn?: KeyOf<Input> | KeyOf<Input>[];
       readonly?: boolean | 'lax';
       resolver?: Function;
-      required?: boolean | RequiredHandler<Input, Output, never>;
-      sanitizer?: VirtualResolver<K, Input, Output, never>;
-      shouldInit?: false | Setter<boolean, Input, Output, never>;
-      shouldUpdate?: false | Setter<boolean, Input, Output, never>;
+      required?: boolean | RequiredHandler<Input, Output, {}>;
+      sanitizer?: VirtualResolver<K, Input, Output, {}>;
+      shouldInit?: false | Setter<boolean, Input, Output, {}>;
+      shouldUpdate?: false | Setter<boolean, Input, Output, {}>;
       validator?: Function | [Function, Function];
       value?: unknown;
       virtual?: boolean;
@@ -324,7 +324,7 @@ namespace NS {
 
   export type DependencyMap<T> = { [K in KeyOf<T>]?: KeyOf<T>[] };
 
-  type Listenable<Input, Output, CtxOptions extends ObjectType = never> = {
+  type Listenable<Input, Output, CtxOptions extends ObjectType = {}> = {
     onDelete?:
       | DeleteHandler<Output, CtxOptions>
       | ArrayOfMinSizeOne<DeleteHandler<Output, CtxOptions>>;
@@ -611,7 +611,7 @@ namespace NS {
     Output,
     Aliases,
     ErrorTool extends IErrorTool<ObjectType> = never,
-    CtxOptions extends ObjectType = never,
+    CtxOptions extends ObjectType = {},
   > = {
     ErrorTool?: ErrorToolClass<ErrorTool, CtxOptions>;
     equalityDepth?: number;
@@ -652,7 +652,7 @@ namespace NS {
     Output,
     Aliases,
     ErrorTool extends IErrorTool<ObjectType>,
-    CtxOptions extends ObjectType = never,
+    CtxOptions extends ObjectType = {},
   > = Options<Input, Output, Aliases, ErrorTool, CtxOptions> & {
     remove?:
       | KeyOf<Merge<ParentInput, ParentOutput>>
@@ -690,7 +690,7 @@ type Validator<
   K extends keyof (Output | Input),
   Input,
   Output,
-  CtxOptions extends ObjectType = never,
+  CtxOptions extends ObjectType = {},
 > = (
   value: unknown,
   summary: MutableSummary<Input, Output, CtxOptions> & {},
@@ -702,7 +702,7 @@ type SecondaryValidator<
   T,
   Input,
   Output,
-  CtxOptions extends ObjectType = never,
+  CtxOptions extends ObjectType = {},
 > = (
   value: T,
   summary: MutableSummary<Input, Output, CtxOptions> & {},
@@ -712,7 +712,7 @@ type VirtualValidator<
   K extends keyof Input,
   Input,
   Output,
-  CtxOptions extends ObjectType = never,
+  CtxOptions extends ObjectType = {},
 > = (
   value: unknown,
   summary: MutableSummary<Input, Output, CtxOptions> & {},
