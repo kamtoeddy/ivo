@@ -198,6 +198,8 @@ type StringValidatorOptions<T extends string | unknown = string> = {
   {
     max?: number | ValueError;
     min?: number | ValueError;
+    normalForm?: 'NFC' | 'NFD' | 'NFKC' | 'NFKD';
+    normalize?: boolean;
     nullable?: boolean;
     regExp?: ValueError<RegExp>;
     trim?: boolean;
@@ -274,10 +276,17 @@ function makeStringValidator<const T extends string | unknown = string>({
   allow,
   max = MAX_STRING_LENGTH,
   min = MIN_STRING_LENGTH,
+  normalForm,
+  normalize,
   nullable,
   regExp,
   trim,
 }: StringValidatorOptions<T> = {}) {
+  normalize ??= true;
+
+  if (normalForm && !['NFC', 'NFD', 'NFKC', 'NFKD'].includes(normalForm))
+    throw new Error('Invalid string normalization form');
+
   const {
     maxValue: maxLength,
     minValue: minLength,
@@ -327,6 +336,8 @@ function makeStringValidator<const T extends string | unknown = string>({
       return makeResponse({ valid: false, value, reason: regExp.error });
 
     let _value = String(value);
+
+    if (normalize) _value = _value.normalize(normalForm);
 
     if (trim) _value = _value.trim();
 

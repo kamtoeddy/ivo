@@ -407,6 +407,8 @@ type StringValidatorOptions<T extends string | any = string> = {
   {
     max?: number | ValueError;
     min?: number | ValueError;
+    normalForm?: "NFC" | "NFD" | "NFKC" | "NFKD";
+    normalize?: boolean;
     nullable?: boolean;
     regExp?: ValueError<RegExp>;
     trim?: boolean;
