@@ -625,7 +625,7 @@ class ModelTool<
             errorTool,
             propsProvided,
             summary,
-            validator,
+            validator: validator as any,
           });
 
         for (const v1 of validator) {
@@ -639,7 +639,7 @@ class ModelTool<
                     errorTool,
                     propsProvided,
                     summary,
-                    validator: v2,
+                    validator: v2 as any,
                   }),
               ),
             );
@@ -653,7 +653,7 @@ class ModelTool<
             errorTool,
             propsProvided,
             summary: this._getMutableSummary(data, isUpdate),
-            validator: v1,
+            validator: v1 as any,
           });
 
           if (!success) break;
@@ -673,7 +673,7 @@ class ModelTool<
     errorTool: ErrorTool;
     propsProvided: Extract<keyof Input, string>[];
     summary: MutableSummary<Input, Output, CtxOptions>;
-    validator: PostValidator<Input, Output, object, CtxOptions>;
+    validator: PostValidator<Input, Output, Aliases, CtxOptions>;
   }) {
     try {
       const res = await validator(summary, propsProvided);

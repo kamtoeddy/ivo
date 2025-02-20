@@ -720,8 +720,8 @@ type VirtualValidator<
   | ValidatorResponse<TypeOf<Input[K]>>
   | Promise<ValidatorResponse<TypeOf<Input[K]>>>;
 
-type ArrayOfMinSizeOne<T> = [T, ...T[]];
-type ArrayOfMinSizeTwo<T> = [T, T, ...T[]];
+type ArrayOfMinSizeOne<T> = [T, ...T[]] | readonly [T, ...T[]];
+type ArrayOfMinSizeTwo<T> = [T, T, ...T[]] | readonly [T, T, ...T[]];
 
 const DEFINITION_RULES = [
   'alias',

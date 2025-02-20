@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# v1.6.11 <small><sup>2025-02-20/sup></small>
+
+- Add support for read-only arrays with ArrayOfMinSize utility types
+
 # v1.6.8 - v1.6.10 <small><sup>2024-12-23</sup></small>
 
 - Add option to manage string normalization in `makeStringValidator`

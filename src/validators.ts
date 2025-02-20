@@ -358,8 +358,8 @@ function _getAllowedInfo<T>(allow: AllowConfig<T>): {
   const isArray = Array.isArray(allow);
 
   return {
-    allowed: isArray ? allow : allow.values,
-    notAllowedError: isArray ? 'Value not allowed' : allow.error,
+    allowed: isArray ? allow : (allow.values as any),
+    notAllowedError: isArray ? 'Value not allowed' : (allow as any).error,
   };
 }
 

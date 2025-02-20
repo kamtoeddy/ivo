@@ -1517,7 +1517,7 @@ abstract class SchemaCore<
     }: PostValidationConfig<Input, Output, unknown, CtxOptions>,
     index: number,
   ) {
-    const sortedProps = sort(properties),
+    const sortedProps = sort(properties as any),
       sortedPropsId = sortedProps.toString();
 
     const config = this.postValidationConfigMap.get(sortedPropsId);
@@ -1533,11 +1533,11 @@ abstract class SchemaCore<
 
     for (const prop of sortedProps) {
       const setOfIDs =
-        this.propToPostValidationConfigIDsMap.get(prop) ?? new Set();
+        this.propToPostValidationConfigIDsMap.get(prop as any) ?? new Set();
 
       setOfIDs.add(sortedPropsId);
 
-      this.propToPostValidationConfigIDsMap.set(prop, setOfIDs);
+      this.propToPostValidationConfigIDsMap.set(prop as any, setOfIDs);
     }
 
     this.postValidationConfigMap.set(sortedPropsId, {
@@ -1567,7 +1567,7 @@ abstract class SchemaCore<
       CtxOptions
     >;
 
-    const sortedProps = sort(properties),
+    const sortedProps = sort(properties as any),
       sortedPropsId = sortedProps.toString();
 
     const existingConfig = this.onSuccessConfigMap.get(sortedPropsId);
@@ -1582,16 +1582,17 @@ abstract class SchemaCore<
       };
 
     for (const prop of sortedProps) {
-      const setOfIDs = this.propToOnSuccessConfigIDMap.get(prop) ?? new Set();
+      const setOfIDs =
+        this.propToOnSuccessConfigIDMap.get(prop as any) ?? new Set();
 
       setOfIDs.add(sortedPropsId);
 
-      this.propToOnSuccessConfigIDMap.set(prop, setOfIDs);
+      this.propToOnSuccessConfigIDMap.set(prop as any, setOfIDs);
     }
 
     this.onSuccessConfigMap.set(sortedPropsId, {
       index,
-      handlers: toArray(handler),
+      handlers: toArray(handler) as any,
     });
 
     return { valid: true };
