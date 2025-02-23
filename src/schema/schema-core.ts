@@ -147,10 +147,10 @@ abstract class SchemaCore<
   }
 
   protected _getContext(previousValues: Partial<Output> | null = null) {
-    const values = Object.assign({}, previousValues, this.context);
-
     return this._getFrozenCopy({
-      ...sortKeys(values),
+      ...sortKeys(
+        structuredClone(Object.assign({}, previousValues, this.context)),
+      ),
       __getOptions__: () => this._getContextOptions(),
     }) as Context<Input, Output, CtxOptions>;
   }

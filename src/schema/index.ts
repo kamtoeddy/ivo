@@ -233,19 +233,21 @@ class ModelTool<
   }
 
   private _getSummary(data: Partial<Output>, isUpdate = false) {
-    const changes = isUpdate ? data : null,
-      previousValues = isUpdate ? this._getFrozenCopy(this.values) : null,
+    const changes = isUpdate ? structuredClone(data) : null,
+      previousValues = isUpdate ? structuredClone(this.values) : null,
       context = this._getContext(isUpdate ? previousValues : null),
       values = this._getFrozenCopy(
-        isUpdate
-          ? Object.assign({}, previousValues, this.values, data)
-          : Object.assign({}, this.defaults, data),
+        structuredClone(
+          isUpdate
+            ? Object.assign({}, previousValues, this.values, data)
+            : Object.assign({}, this.defaults, data),
+        ),
       );
 
     return this._getFrozenCopy({
       changes,
       context,
-      inputValues: this.inputValues,
+      inputValues: structuredClone(this.inputValues),
       isUpdate,
       previousValues,
       values,

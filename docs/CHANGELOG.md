@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# v1.6.12 <small><sup>2025-02-23/sup></small>
+
+- Use `structuredClone` to copy data at various validation stages
+
 # v1.6.11 <small><sup>2025-02-20/sup></small>
 
 - Add support for read-only arrays with ArrayOfMinSize utility types
