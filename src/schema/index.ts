@@ -1,5 +1,4 @@
 import {
-  type FieldKey,
   type ObjectType,
   getKeysAsProps,
   getSetValuesAsProps,
@@ -39,13 +38,6 @@ import {
 } from './utils';
 
 export { Model, ModelTool, Schema };
-
-type DefaultExtendedErrorTool<
-  ParentErrorTool,
-  Keys extends FieldKey,
-> = ParentErrorTool extends DefaultErrorTool<never>
-  ? DefaultErrorTool<Keys>
-  : ParentErrorTool;
 
 const NotAllowedError = 'value not allowed';
 const validationFailedFieldError = makeFieldError('validation failed');
@@ -102,9 +94,7 @@ class Schema<
     ExtendedOutput extends RealType<ExtendedOutput> = ExtendedInput,
     Aliases = object,
     ExtendedCtxOptions extends ObjectType = CtxOptions,
-    // @ts-ignore: lol
-    ExtendedErrorTool extends IErrorTool<ObjectType> = DefaultExtendedErrorTool<
-      ErrorTool,
+    ExtendedErrorTool extends IErrorTool<ObjectType> = DefaultErrorTool<
       KeyOf<ExtendedInput & Aliases>
     >,
   >(
