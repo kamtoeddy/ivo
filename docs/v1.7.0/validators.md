@@ -247,7 +247,18 @@ Data validation can occur in multiple stages depending on your schema's configur
 1. Post validation
 
    - Here, post-validation checks are evaluated with a safe operation context
-   - The operation's context cannot be updated at this stage
+   - To update the operation's context, the validator can return the validated value like below
+
+   ```ts
+   function postValidator({}: MutableSummary) {
+     return {
+       propertyName: { validated: newValue },
+       // other properties here
+     };
+   }
+   ```
+
+   > N.B: Any attempt to update the value of a property (using the method above) not registered in a specific post-validation config will be ignored
 
 1. Sanitization of virtual properties more on this [here](../definitions/virtuals.md#sanitizer)
 
