@@ -129,6 +129,10 @@ type AsyncSetter<T, Input, Output, CtxOptions extends ObjectType> = (
 
 type NotAllowedError = string | InputFieldError;
 
+type SetterWithSummary<T, Input, Output, CtxOptions extends ObjectType> = (
+  summary: MutableSummary<Input, Output, CtxOptions> & {},
+) => TypeOf<T>;
+
 type Setter<T, Input, Output, CtxOptions extends ObjectType> = (
   context: MutableContext<Input, Output, CtxOptions>,
 ) => TypeOf<T>;
@@ -306,6 +310,7 @@ namespace NS {
       constant?: unknown;
       default?: unknown;
       dependsOn?: KeyOf<Input> | KeyOf<Input>[];
+      ignore?: SetterWithSummary<boolean, Input, Output, {}>;
       readonly?: boolean | 'lax';
       resolver?: Function;
       required?: boolean | RequiredHandler<Input, Output, {}>;
@@ -405,19 +410,22 @@ namespace NS {
     Output,
     CtxOptions extends ObjectType,
   > = XOR<
-    {
-      shouldInit?: Setter<boolean, Input, Output, CtxOptions>;
-      shouldUpdate?: Setter<boolean, Input, Output, CtxOptions>;
-    },
+    { ignore?: SetterWithSummary<boolean, Input, Output, CtxOptions> },
     XOR<
       {
-        shouldInit?: false | Setter<boolean, Input, Output, CtxOptions>;
+        shouldInit?: Setter<boolean, Input, Output, CtxOptions>;
         shouldUpdate?: Setter<boolean, Input, Output, CtxOptions>;
       },
-      {
-        shouldInit?: Setter<boolean, Input, Output, CtxOptions>;
-        shouldUpdate?: false | Setter<boolean, Input, Output, CtxOptions>;
-      }
+      XOR<
+        {
+          shouldInit?: false | Setter<boolean, Input, Output, CtxOptions>;
+          shouldUpdate?: Setter<boolean, Input, Output, CtxOptions>;
+        },
+        {
+          shouldInit?: Setter<boolean, Input, Output, CtxOptions>;
+          shouldUpdate?: false | Setter<boolean, Input, Output, CtxOptions>;
+        }
+      >
     >
   >;
 
@@ -449,14 +457,19 @@ namespace NS {
       | TypeOf<Output[K]>
       | AsyncSetter<Output[K], Input, Output, CtxOptions>;
     readonly: 'lax';
-    shouldUpdate?: Setter<boolean, Input, Output, CtxOptions>;
     validator:
       | Validator<K, Input, Output, CtxOptions>
       | [
           Validator<K, Input, Output, CtxOptions>,
           SecondaryValidator<Output[K], Input, Output, CtxOptions>,
         ];
-  };
+  } & XOR<
+      { ignore?: SetterWithSummary<boolean, Input, Output, CtxOptions> },
+      {
+        shouldInit?: Setter<boolean, Input, Output, CtxOptions>;
+        shouldUpdate?: Setter<boolean, Input, Output, CtxOptions>;
+      }
+    >;
 
   type ReadonlyNoInit<
     K extends keyof (Output | Input),
@@ -468,15 +481,19 @@ namespace NS {
       | TypeOf<Output[K]>
       | AsyncSetter<Output[K], Input, Output, CtxOptions>;
     readonly: true;
-    shouldInit: false | Setter<boolean, Input, Output, CtxOptions>;
-    shouldUpdate?: Setter<boolean, Input, Output, CtxOptions>;
     validator?:
       | Validator<K, Input, Output, CtxOptions>
       | [
           Validator<K, Input, Output, CtxOptions>,
           SecondaryValidator<Output[K], Input, Output, CtxOptions>,
         ];
-  };
+  } & XOR<
+      { ignore?: SetterWithSummary<boolean, Input, Output, CtxOptions> },
+      {
+        shouldInit?: false | Setter<boolean, Input, Output, CtxOptions>;
+        shouldUpdate?: Setter<boolean, Input, Output, CtxOptions>;
+      }
+    >;
 
   type RequiredReadonly<
     K extends keyof (Output | Input),
@@ -542,15 +559,19 @@ namespace NS {
       | AsyncSetter<Output[K], Input, Output, CtxOptions>;
     required: RequiredHandler<Input, Output, CtxOptions>;
     readonly?: true;
-    shouldInit?: Setter<boolean, Input, Output, CtxOptions>;
-    shouldUpdate?: Setter<boolean, Input, Output, CtxOptions>;
     validator:
       | Validator<K, Input, Output, CtxOptions>
       | [
           Validator<K, Input, Output, CtxOptions>,
           SecondaryValidator<Output[K], Input, Output, CtxOptions>,
         ];
-  };
+  } & XOR<
+      { ignore?: SetterWithSummary<boolean, Input, Output, CtxOptions> },
+      {
+        shouldInit?: Setter<boolean, Input, Output, CtxOptions>;
+        shouldUpdate?: Setter<boolean, Input, Output, CtxOptions>;
+      }
+    >;
 
   type Virtual<
     K extends keyof Input,
@@ -729,6 +750,7 @@ const DEFINITION_RULES = [
   'constant',
   'default',
   'dependsOn',
+  'ignore',
   'onDelete',
   'onFailure',
   'onSuccess',
@@ -759,6 +781,7 @@ const CONSTANT_RULES = ['constant', 'onDelete', 'onSuccess', 'value'];
 const VIRTUAL_RULES = [
   'alias',
   'allow',
+  'ignore',
   'sanitizer',
   'onFailure',
   'onSuccess',

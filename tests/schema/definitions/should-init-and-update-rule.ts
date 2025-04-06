@@ -11,143 +11,177 @@ import { ERRORS } from '../../../dist';
 import { expectFailure, expectNoFailure, validator } from '../_utils';
 
 export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
-  describe('Both', () => {
+  describe('ignore', () => {
     describe('valid', () => {
-      it('should accept shouldInit & shouldUpdate for lax props', () => {
-        // [shouldInit, shouldUpdate]
-        const values = [
-          [false, () => {}],
-          [() => {}, false],
-          [() => {}, () => {}],
-        ];
-
-        for (const [shouldInit, shouldUpdate] of values) {
-          const toPass = fx({
-            propertyName: { default: '', shouldInit, shouldUpdate },
-          });
-
-          expectNoFailure(toPass);
-
-          toPass();
-        }
-      });
-
-      it('should accept shouldInit(() => boolean) + shouldUpdate(false | () => boolean) + readonly(true)', () => {
-        // [shouldInit, shouldUpdate]
-        const readonlyTrue = [
-          [false, () => {}],
-          [() => {}, false],
-          [() => {}, () => {}],
-        ];
-
-        for (const [shouldInit, shouldUpdate] of readonlyTrue) {
-          const toPass = fx({
-            dependentProp: {
-              default: '',
-              readonly: true,
-              shouldInit,
-              shouldUpdate,
-              validator,
-            },
-          });
-
-          expectNoFailure(toPass);
-
-          toPass();
-        }
-
-        const toPass = fx({
-          dependentProp: {
-            default: '',
-            readonly: 'lax',
-            shouldUpdate: () => {},
-            validator,
-          },
+      it('should accept ignore + default', () => {
+        const fxn = fx({
+          propertyName: { ignore: () => false, default: true },
         });
 
-        expectNoFailure(toPass);
+        expectNoFailure(fxn);
 
-        toPass();
+        fxn();
+      });
+
+      it('should accept ignore + virtual', () => {
+        const fxn = fx({
+          dependent: {
+            default: true,
+            dependsOn: 'propertyName',
+            resolver: validator,
+          },
+          propertyName: { ignore: () => false, virtual: true, validator },
+        });
+
+        expectNoFailure(fxn);
+
+        fxn();
+      });
+
+      describe('behaviour', () => {
+        const Model = new Schema({
+          isBlocked: {
+            default: false,
+            ignore: ({ inputValues: { env } }) => env === 'dev',
+          },
+          env: { default: 'dev' },
+          laxProp: { default: 0 },
+        }).getModel();
+
+        it('should ignore accordingly', async () => {
+          const { data } = await Model.create({ env: 'dev', isBlocked: true });
+
+          expect(data).toMatchObject({
+            env: 'dev',
+            isBlocked: false,
+            laxProp: 0,
+          });
+
+          {
+            const { data } = await Model.create({
+              env: 'Lol',
+              isBlocked: true,
+            });
+
+            expect(data).toMatchObject({
+              env: 'Lol',
+              isBlocked: true,
+              laxProp: 0,
+            });
+          }
+
+          {
+            const { data } = await Model.update(
+              {
+                env: 'Lol',
+                isBlocked: true,
+                laxProp: 0,
+              },
+              { env: 'dev', isBlocked: 'updated' },
+            );
+            expect(data).toEqual({ env: 'dev' });
+          }
+
+          {
+            const { data } = await Model.update(
+              {
+                env: 'dev',
+                isBlocked: true,
+                laxProp: 0,
+              },
+              { env: 'Lol', isBlocked: 'updated' },
+            );
+
+            expect(data).toEqual({ env: 'Lol', isBlocked: 'updated' });
+          }
+        });
       });
     });
 
     describe('invalid', () => {
-      it('should reject shouldUpdate == false & shouldInit == false', () => {
-        const toFail = fx({
-          propertyName: {
-            default: '',
-            shouldInit: false,
-            shouldUpdate: false,
-          },
-        });
+      it('should reject ignore & no default', () => {
+        const fxn = fx({ propertyName: { ignore: () => false } });
 
-        expectFailure(toFail);
+        expectFailure(fxn);
 
         try {
-          toFail();
+          fxn();
         } catch (err: any) {
           expect(err.payload).toEqual(
             expect.objectContaining({
               propertyName: expect.arrayContaining([
-                "Both 'shouldInit' & 'shouldUpdate' cannot be 'false'",
+                'For a property to be ignored, it must have a default value or be virtual',
               ]),
             }),
           );
         }
       });
 
-      describe('Readonly lax', () => {
-        it("should reject readonly('lax') + shouldInit", () => {
-          for (const shouldInit of [false, () => {}]) {
-            const toFail = fx({
-              propertyName: {
-                default: '',
-                readonly: 'lax',
-                shouldInit,
-                validator,
-              },
-            });
+      it('should reject ingnore !(() => boolean)', () => {
+        const values = [
+          undefined,
+          1,
+          {},
+          null,
+          [],
+          true,
+          false,
+          'yes',
+          'false',
+          'true',
+        ];
 
-            expectFailure(toFail);
+        for (const ignore of values) {
+          const fxn = fx({ propertyName: { ignore, default: true } });
 
-            try {
-              toFail();
-            } catch (err: any) {
-              expect(err.payload).toEqual(
-                expect.objectContaining({
-                  propertyName: expect.arrayContaining([
-                    'Lax properties cannot have initialization blocked',
-                  ]),
-                }),
-              );
-            }
-          }
-        });
-
-        it("should reject readonly('lax') + shouldUpdate(false)", () => {
-          const toFail = fx({
-            propertyName: {
-              default: '',
-              readonly: 'lax',
-              shouldUpdate: false,
-              validator,
-            },
-          });
-
-          expectFailure(toFail);
+          expectFailure(fxn);
 
           try {
-            toFail();
+            fxn();
           } catch (err: any) {
             expect(err.payload).toEqual(
               expect.objectContaining({
                 propertyName: expect.arrayContaining([
-                  'Readonly(lax) properties cannot have updates strictly blocked',
+                  '"ignore" must be a function that returns a boolean',
                 ]),
               }),
             );
           }
-        });
+        }
+      });
+
+      it('should reject ignore + (shouldInit | shouldUpdate)', () => {
+        const values = [
+          { shouldInit: true },
+          { shouldInit: false },
+          { shouldUpdate: false },
+          { shouldUpdate: true },
+          { shouldInit: false, shouldUpdate: () => true },
+          { shouldInit: true, shouldUpdate: () => true },
+          { shouldInit: () => true, shouldUpdate: true },
+          { shouldInit: () => true, shouldUpdate: false },
+          { shouldInit: () => true, shouldUpdate: () => true },
+        ];
+
+        for (const config of values) {
+          const fxn = fx({
+            propertyName: { ignore: () => true, default: true, ...config },
+          });
+
+          expectFailure(fxn);
+
+          try {
+            fxn();
+          } catch (err: any) {
+            expect(err.payload).toEqual(
+              expect.objectContaining({
+                propertyName: expect.arrayContaining([
+                  '"ignore" cannot be used with "shouldInit" or "shouldUpdate"',
+                ]),
+              }),
+            );
+          }
+        }
       });
     });
   });
@@ -603,6 +637,147 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
             }),
           );
         }
+      });
+    });
+  });
+
+  describe('shouldInit & shouldUpdate', () => {
+    describe('valid', () => {
+      it('should accept shouldInit & shouldUpdate for lax props', () => {
+        // [shouldInit, shouldUpdate]
+        const values = [
+          [false, () => {}],
+          [() => {}, false],
+          [() => {}, () => {}],
+        ];
+
+        for (const [shouldInit, shouldUpdate] of values) {
+          const toPass = fx({
+            propertyName: { default: '', shouldInit, shouldUpdate },
+          });
+
+          expectNoFailure(toPass);
+
+          toPass();
+        }
+      });
+
+      it('should accept shouldInit(() => boolean) + shouldUpdate(false | () => boolean) + readonly(true)', () => {
+        // [shouldInit, shouldUpdate]
+        const readonlyTrue = [
+          [false, () => {}],
+          [() => {}, false],
+          [() => {}, () => {}],
+        ];
+
+        for (const [shouldInit, shouldUpdate] of readonlyTrue) {
+          const toPass = fx({
+            dependentProp: {
+              default: '',
+              readonly: true,
+              shouldInit,
+              shouldUpdate,
+              validator,
+            },
+          });
+
+          expectNoFailure(toPass);
+
+          toPass();
+        }
+
+        const toPass = fx({
+          dependentProp: {
+            default: '',
+            readonly: 'lax',
+            shouldUpdate: () => {},
+            validator,
+          },
+        });
+
+        expectNoFailure(toPass);
+
+        toPass();
+      });
+    });
+
+    describe('invalid', () => {
+      it('should reject shouldUpdate == false & shouldInit == false', () => {
+        const toFail = fx({
+          propertyName: {
+            default: '',
+            shouldInit: false,
+            shouldUpdate: false,
+          },
+        });
+
+        expectFailure(toFail);
+
+        try {
+          toFail();
+        } catch (err: any) {
+          expect(err.payload).toEqual(
+            expect.objectContaining({
+              propertyName: expect.arrayContaining([
+                "Both 'shouldInit' & 'shouldUpdate' cannot be 'false'",
+              ]),
+            }),
+          );
+        }
+      });
+
+      describe('Readonly lax', () => {
+        it("should reject readonly('lax') + shouldInit", () => {
+          for (const shouldInit of [false, () => {}]) {
+            const toFail = fx({
+              propertyName: {
+                default: '',
+                readonly: 'lax',
+                shouldInit,
+                validator,
+              },
+            });
+
+            expectFailure(toFail);
+
+            try {
+              toFail();
+            } catch (err: any) {
+              expect(err.payload).toEqual(
+                expect.objectContaining({
+                  propertyName: expect.arrayContaining([
+                    'Lax properties cannot have initialization blocked',
+                  ]),
+                }),
+              );
+            }
+          }
+        });
+
+        it("should reject readonly('lax') + shouldUpdate(false)", () => {
+          const toFail = fx({
+            propertyName: {
+              default: '',
+              readonly: 'lax',
+              shouldUpdate: false,
+              validator,
+            },
+          });
+
+          expectFailure(toFail);
+
+          try {
+            toFail();
+          } catch (err: any) {
+            expect(err.payload).toEqual(
+              expect.objectContaining({
+                propertyName: expect.arrayContaining([
+                  'Readonly(lax) properties cannot have updates strictly blocked',
+                ]),
+              }),
+            );
+          }
+        });
       });
     });
   });

@@ -20,12 +20,14 @@ import {
   type Context,
   DEFINITION_RULES,
   type DefinitionRule,
+  type ImmutableSummary,
   type KeyOf,
   LIFE_CYCLES,
   type MutableSummary,
   type PartialContext,
   type PostValidationConfig,
   type PostValidator,
+  type RealType,
   VIRTUAL_RULES,
   type NS as ns,
 } from './types';
@@ -155,6 +157,52 @@ abstract class SchemaCore<
     }) as Context<Input, Output, CtxOptions>;
   }
 
+  protected _getSummary({
+    data,
+    inputValues,
+    isUpdate,
+  }: {
+    data: Partial<Output>;
+    inputValues: Partial<RealType<Input>>;
+    isUpdate: boolean;
+  }) {
+    const changes = isUpdate ? structuredClone(data) : null,
+      previousValues = isUpdate ? structuredClone(this.values) : null,
+      context = this._getContext(isUpdate ? previousValues : null),
+      values = this._getFrozenCopy(
+        structuredClone(
+          isUpdate
+            ? Object.assign({}, previousValues, this.values, data)
+            : Object.assign({}, this.defaults, data),
+        ),
+      );
+
+    return this._getFrozenCopy({
+      changes,
+      context,
+      inputValues: structuredClone(inputValues),
+      isUpdate,
+      previousValues,
+      values,
+    }) as ImmutableSummary<Input, Output, CtxOptions>;
+  }
+
+  protected _getMutableSummary(props: {
+    data: Partial<Output>;
+    inputValues: Partial<RealType<Input>>;
+    isUpdate: boolean;
+  }) {
+    const summary = this._getSummary(props);
+
+    return this._getFrozenCopy(
+      Object.assign({}, summary, {
+        context: Object.assign({}, this._getContext(summary.previousValues), {
+          __updateOptions__: this._updateContextOptions,
+        }),
+      }),
+    ) as MutableSummary<Input, Output, CtxOptions>;
+  }
+
   protected _getContextOptions = () => this._getFrozenCopy(this.contextOptions);
 
   protected _getPartialContext = () => this._getFrozenCopy(this.partialContext);
@@ -267,33 +315,6 @@ abstract class SchemaCore<
     if (reasons.length) return { valid: false, reasons };
 
     return { valid: true };
-  };
-
-  protected _isInitAllowed = (prop: string, extraCtx: ObjectType = {}) => {
-    const { shouldInit } = this._getDefinition(prop);
-    if (isOneOf(shouldInit, [true, undefined])) return true;
-
-    return this._getValueBy(prop, 'shouldInit', extraCtx) === true;
-  };
-
-  protected _isUpdateAllowed = (prop: string, extraCtx: ObjectType = {}) => {
-    const { shouldUpdate } = this._getDefinition(prop);
-    if (isOneOf(shouldUpdate, [true, undefined])) return true;
-
-    return this._getValueBy(prop, 'shouldUpdate', extraCtx) === true;
-  };
-
-  protected _canInit = (prop: string) => {
-    if (this._isDependentProp(prop)) return false;
-    if (this._isRequired(prop)) return true;
-
-    const { readonly } = this._getDefinition(prop);
-
-    return (
-      readonly === true &&
-      this._isInitAllowed(prop) &&
-      !this._isRequiredBy(prop)
-    );
   };
 
   protected _checkOptions = (options: ns.Options<Input, Output, unknown>) => {
@@ -504,23 +525,6 @@ abstract class SchemaCore<
 
   protected _isVirtual = (prop: string) =>
     this.virtuals.has(prop as KeyOf<Input>);
-
-  protected _isVirtualInit = (prop: string, value: unknown = undefined) => {
-    const isAlias = this._isVirtualAlias(prop);
-
-    if (!this._isVirtual(prop) && !isAlias) return false;
-
-    const definitionName = isAlias ? this._getVirtualByAlias(prop)! : prop;
-
-    const { shouldInit } = this._getDefinition(definitionName);
-
-    const extraCtx = isAlias ? { [definitionName]: value } : {};
-
-    return (
-      isEqual(shouldInit, undefined) ||
-      this._isInitAllowed(definitionName, extraCtx)
-    );
-  };
 
   protected _getConstantValue = (prop: string) =>
     this._getValueBy(prop, 'value');
@@ -860,6 +864,12 @@ abstract class SchemaCore<
       } else reasons.push(reason!);
     }
 
+    if (isPropertyOf('ignore', definition)) {
+      const { valid, reason } = this.__isIgnoreConfigOk(definition);
+
+      if (!valid) reasons.push(reason!);
+    }
+
     if (isPropertyOf('readonly', definition)) {
       const { valid, reason } = this.__isReadonly(definition);
 
@@ -1102,6 +1112,35 @@ abstract class SchemaCore<
     return { valid: true };
   };
 
+  private __isIgnoreConfigOk = (
+    definition: ns.Definitions_<Input, Output>[KeyOf<Input>],
+  ) => {
+    const { ignore } = definition!;
+
+    const valid = false;
+
+    if (!isFunctionLike(ignore))
+      return {
+        valid,
+        reason: '"ignore" must be a function that returns a boolean',
+      };
+
+    if (hasAnyOf(definition, ['shouldInit', 'shouldUpdate']))
+      return {
+        valid,
+        reason: '"ignore" cannot be used with "shouldInit" or "shouldUpdate"',
+      };
+
+    if (!hasAnyOf(definition, ['default', 'virtual']))
+      return {
+        valid,
+        reason:
+          'For a property to be ignored, it must have a default value or be virtual',
+      };
+
+    return { valid: true };
+  };
+
   private __isShouldInitConfigOk = (
     definition: ns.Definitions_<Input, Output>[KeyOf<Input>],
   ) => {
@@ -1280,6 +1319,7 @@ abstract class SchemaCore<
     // only readonly(lax) are lax props &
     // Lax properties cannot have initialization blocked
     if (
+      isPropertyOf('ignore', definition) ||
       (isPropertyOf('readonly', definition) && readonly !== 'lax') ||
       (isPropertyOf('shouldInit', definition) &&
         typeof shouldInit !== 'function')

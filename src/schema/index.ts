@@ -5,6 +5,7 @@ import {
   isEqual,
   isFunctionLike,
   isNullOrUndefined,
+  isOneOf,
   isPropertyOf,
   isRecordLike,
   makeResponse,
@@ -15,7 +16,6 @@ import {
 import { SchemaCore, defaultOptions } from './schema-core';
 import {
   type ImmutableContext,
-  type ImmutableSummary,
   type InternalValidatorResponse,
   type InvalidValidatorResponse,
   type KeyOf,
@@ -222,42 +222,75 @@ class ModelTool<
     return data;
   }
 
-  private _getSummary(data: Partial<Output>, isUpdate = false) {
-    const changes = isUpdate ? structuredClone(data) : null,
-      previousValues = isUpdate ? structuredClone(this.values) : null,
-      context = this._getContext(isUpdate ? previousValues : null),
-      values = this._getFrozenCopy(
-        structuredClone(
-          isUpdate
-            ? Object.assign({}, previousValues, this.values, data)
-            : Object.assign({}, this.defaults, data),
-        ),
-      );
+  private _isIngnorable = (prop: string) => {
+    return !!this._getDefinition(prop).ignore;
+  };
 
-    return this._getFrozenCopy({
-      changes,
-      context,
-      inputValues: structuredClone(this.inputValues),
-      isUpdate,
-      previousValues,
-      values,
-    }) as ImmutableSummary<Input, Output, CtxOptions>;
-  }
+  private _shouldIgnore = (prop: string) => {
+    const { ignore } = this._getDefinition(prop);
 
-  private _getMutableSummary(data: Partial<Output>, isUpdate = false) {
-    const summary = this._getSummary(data, isUpdate);
-
-    return this._getFrozenCopy(
-      Object.assign({}, summary, {
-        context: Object.assign({}, this._getContext(summary.previousValues), {
-          __updateOptions__: this._updateContextOptions,
+    if (ignore)
+      return ignore(
+        this._getMutableSummary({
+          data: {},
+          inputValues: this.inputValues,
+          isUpdate: false,
         }),
-      }),
-    ) as MutableSummary<Input, Output, CtxOptions>;
-  }
+      );
+  };
+
+  private _isInitAllowed = (prop: string, extraCtx: ObjectType = {}) => {
+    if (isOneOf(this._getDefinition(prop).shouldInit, [true, undefined]))
+      return true;
+
+    return this._getValueBy(prop, 'shouldInit', extraCtx) === true;
+  };
+
+  private _canInit = (prop: string) => {
+    if (this._isDependentProp(prop)) return false;
+    if (this._isRequired(prop)) return true;
+
+    if (this._isIngnorable(prop)) return !this._shouldIgnore(prop);
+
+    const { readonly } = this._getDefinition(prop);
+
+    return (
+      readonly === true &&
+      this._isInitAllowed(prop) &&
+      !this._isRequiredBy(prop)
+    );
+  };
+
+  private _isUpdateAllowed = (prop: string, extraCtx: ObjectType = {}) => {
+    if (isOneOf(this._getDefinition(prop).shouldUpdate, [true, undefined]))
+      return true;
+
+    return this._getValueBy(prop, 'shouldUpdate', extraCtx) === true;
+  };
+
+  private _isVirtualInit = (prop: string, value: unknown = undefined) => {
+    const isAlias = this._isVirtualAlias(prop);
+
+    if (!this._isVirtual(prop) && !isAlias) return false;
+
+    const definitionName = isAlias ? this._getVirtualByAlias(prop)! : prop;
+
+    const { shouldInit } = this._getDefinition(definitionName);
+
+    const extraCtx = isAlias ? { [definitionName]: value } : {};
+
+    return (
+      isEqual(shouldInit, undefined) ||
+      this._isInitAllowed(definitionName, extraCtx)
+    );
+  };
 
   private _getValidationSummary = (isUpdate: boolean) =>
-    this._getMutableSummary(this.values, isUpdate);
+    this._getMutableSummary({
+      data: this.values,
+      isUpdate,
+      inputValues: this.inputValues,
+    });
 
   private _getPrimaryValidator = <K extends keyof (Output | Input)>(
     prop: string,
@@ -386,13 +419,19 @@ class ModelTool<
           if (!isVirtualAlias) return;
         }
 
-        if (isVirtualAlias)
+        if (isVirtualAlias) {
+          const propName = (this._getVirtualByAlias(prop) || prop)!;
+
+          if (this._isIngnorable(propName) && this._shouldIgnore(propName))
+            return;
+
           return this._validateAndSet(
             data,
             error,
             prop,
             input[prop as unknown as KeyOf<Input>],
           );
+        }
 
         const isProvided = isPropertyOf(prop, this.values),
           isLax = this._isLaxProp(prop),
@@ -483,7 +522,11 @@ class ModelTool<
     data: Partial<Output>,
     isUpdate = false,
   ) {
-    const summary = this._getMutableSummary(data, isUpdate),
+    const summary = this._getMutableSummary({
+        data,
+        isUpdate,
+        inputValues: this.inputValues,
+      }),
       context = summary.context;
 
     const error = new this._options.ErrorTool(
@@ -575,7 +618,11 @@ class ModelTool<
     data: Partial<Output>,
     isUpdate = false,
   ) {
-    const summary = this._getMutableSummary(data, isUpdate),
+    const summary = this._getMutableSummary({
+        data,
+        isUpdate,
+        inputValues: this.inputValues,
+      }),
       context = summary.context;
 
     const errorTool = new this._options.ErrorTool(
@@ -622,7 +669,11 @@ class ModelTool<
 
         for (const v1 of validator) {
           if (Array.isArray(v1)) {
-            const summary = this._getMutableSummary(data, isUpdate);
+            const summary = this._getMutableSummary({
+              data: this.values,
+              isUpdate,
+              inputValues: this.inputValues,
+            });
 
             const results = await Promise.all(
               v1.map(
@@ -644,7 +695,11 @@ class ModelTool<
           const { success } = await this._handlePostValidator({
             errorTool,
             propsProvided,
-            summary: this._getMutableSummary(data, isUpdate),
+            summary: this._getMutableSummary({
+              data: this.values,
+              isUpdate,
+              inputValues: this.inputValues,
+            }),
             validator: v1 as any,
           });
 
@@ -694,7 +749,11 @@ class ModelTool<
   }
 
   private async _handleRequiredBy(data: Partial<Output>, isUpdate = false) {
-    const summary = this._getMutableSummary(data, isUpdate),
+    const summary = this._getMutableSummary({
+        data: this.values,
+        isUpdate,
+        inputValues: this.inputValues,
+      }),
       context = summary.context;
 
     const errorTool = new this._options.ErrorTool(
@@ -771,7 +830,11 @@ class ModelTool<
       if (isSanitizable) sanitizers.push([prop as KeyOf<Input>, sanitizer]);
     }
 
-    const summary = this._getMutableSummary(data, isUpdate);
+    const summary = this._getMutableSummary({
+      data,
+      isUpdate,
+      inputValues: this.inputValues,
+    });
 
     await Promise.allSettled(
       sanitizers.map(async ([prop, sanitizer]) => {
@@ -833,7 +896,11 @@ class ModelTool<
     if (typeof shouldUpdate === 'boolean') return shouldUpdate;
 
     return shouldUpdate(
-      this._getMutableSummary(changes as never, true) as never,
+      this._getMutableSummary({
+        data: changes as never,
+        isUpdate: true,
+        inputValues: this.inputValues,
+      }) as never,
     );
   }
 
@@ -846,6 +913,9 @@ class ModelTool<
       isAlias ? this._getVirtualByAlias(prop)! : prop
     ) as KeyOf<Output>;
 
+    if (this._isIngnorable(propName) && this._shouldIgnore(propName))
+      return false;
+
     const hasShouldUpdateRule = this._isRuleInDefinition(
       propName,
       'shouldUpdate',
@@ -857,11 +927,9 @@ class ModelTool<
 
     if (this._isVirtual(prop)) return hasShouldUpdateRule ? isUpdatable : true;
 
-    const isReadonly = this._isReadonly(propName);
-
     if (hasShouldUpdateRule && !isUpdatable) return false;
 
-    if (isReadonly)
+    if (this._isReadonly(propName))
       return isEqual(
         this.defaults[propName],
         this.values[propName],
@@ -904,7 +972,11 @@ class ModelTool<
   private _makeHandleSuccess(data: Partial<Output>, isUpdate = false) {
     const partialCtx = this._getPartialContext(),
       successProps = getKeysAsProps(partialCtx),
-      summary = this._getSummary(data, isUpdate),
+      summary = this._getSummary({
+        data,
+        isUpdate,
+        inputValues: this.inputValues,
+      }),
       setOfSuccessHandlerIDs = new Set<string>();
 
     let successListeners = [] as NS.SuccessHandler<Input, Output, CtxOptions>[];
@@ -972,7 +1044,11 @@ class ModelTool<
 
     const values = isUpdate ? data : Object.assign({}, this.values, data),
       _ctx = this._getContext(),
-      summary = this._getMutableSummary(values, isUpdate);
+      summary = this._getMutableSummary({
+        data: values,
+        isUpdate,
+        inputValues: this.inputValues,
+      });
 
     await Promise.allSettled(
       toResolve.map(async (prop) => {
@@ -1197,11 +1273,13 @@ class ModelTool<
       });
 
     const isAlias = this._isVirtualAlias(prop),
-      _prop = (isAlias ? this._getVirtualByAlias(prop) : prop)!,
-      allowedValues = this.propsToAllowedValuesMap.get(_prop);
+      propName = (isAlias ? this._getVirtualByAlias(prop) : prop)!,
+      allowedValues = this.propsToAllowedValuesMap.get(propName);
 
     if (allowedValues && !allowedValues.has(value)) {
-      const fieldError = makeFieldError(this._getNotAllowedError(_prop, value));
+      const fieldError = makeFieldError(
+        this._getNotAllowedError(propName, value),
+      );
 
       return makeResponse<(Input & Aliases)[K]>({
         valid: false,
@@ -1211,7 +1289,7 @@ class ModelTool<
       });
     }
 
-    const validator = this._getPrimaryValidator(_prop as never);
+    const validator = this._getPrimaryValidator(propName as never);
 
     if (validator) {
       let res: ValidatorResponseObject<(Input & Aliases)[K]>;

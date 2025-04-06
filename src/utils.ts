@@ -114,7 +114,10 @@ function isNullOrUndefined(value: unknown): value is null | undefined {
   return isOneOf(value, [null, undefined]);
 }
 
-function isOneOf<T>(value: unknown, values: ArrayOfMinSizeTwo<T>): value is T {
+function isOneOf<T>(
+  value: unknown,
+  values: ArrayOfMinSizeTwo<T> | Readonly<ArrayOfMinSizeTwo<T>>,
+): value is T {
   return values.includes(value as never);
 }
 
