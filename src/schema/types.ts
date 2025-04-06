@@ -170,26 +170,46 @@ type VirtualResolver<
   summary: MutableSummary<Input, Output, CtxOptions>,
 ) => TypeOf<Input[K]> | Promise<TypeOf<Input[K]>>;
 
-type PostValidator<Input, Output, Aliases, CtxOptions extends ObjectType> = (
+type PostValidator<
+  InputKeys extends KeyOf<Input>,
+  Input,
+  Output,
+  Aliases,
+  CtxOptions extends ObjectType,
+> = (
   summary: MutableSummary<Input, Output, CtxOptions>,
-  propertiesProvided: KeyOf<Input>[],
+  propertiesProvided: InputKeys[],
 ) =>
   | undefined
   | ResponseErrorObject<Input, Aliases>
-  | Promise<undefined | ResponseErrorObject<Input, Aliases>>;
+  | PostValidatorSanitizedResponse<InputKeys, Input, Output>
+  | Promise<
+      | undefined
+      | ResponseErrorObject<Input, Aliases>
+      | PostValidatorSanitizedResponse<InputKeys, Input, Output>
+    >;
+
+type PostValidatorSanitizedResponse<K extends KeyOf<Input>, Input, Output> = {
+  [Key in K]?: {
+    validated: TypeOf<Key extends KeyOf<Output> ? Output[Key] : Input[Key]>;
+  };
+};
 
 type PostValidationConfig<
+  K extends KeyOf<Input>,
   Input,
   Output,
   Aliases,
   CtxOptions extends ObjectType,
 > = {
-  properties: ArrayOfMinSizeTwo<KeyOf<Input>>;
+  properties: ArrayOfMinSizeTwo<K>;
   validator:
-    | PostValidator<Input, Output, Aliases, CtxOptions>
+    | PostValidator<K, Input, Output, Aliases, CtxOptions>
     | ArrayOfMinSizeOne<
-        | PostValidator<Input, Output, Aliases, CtxOptions>
-        | ArrayOfMinSizeOne<PostValidator<Input, Output, Aliases, CtxOptions>>
+        | PostValidator<K, Input, Output, Aliases, CtxOptions>
+        | ArrayOfMinSizeOne<
+            PostValidator<K, Input, Output, Aliases, CtxOptions>
+          >
       >;
 };
 
@@ -616,9 +636,9 @@ namespace NS {
       | SuccessHandler<Input, Output, CtxOptions>
       | ArrayOfMinSizeOne<SuccessHandler<Input, Output, CtxOptions>>;
     postValidate?:
-      | PostValidationConfig<Input, Output, object, CtxOptions>
+      | PostValidationConfig<KeyOf<Input>, Input, Output, object, CtxOptions>
       | ArrayOfMinSizeOne<
-          PostValidationConfig<Input, Output, object, CtxOptions>
+          PostValidationConfig<KeyOf<Input>, Input, Output, object, CtxOptions>
         >;
     setMissingDefaultsOnUpdate?: boolean;
     shouldUpdate?: boolean | AsyncShouldUpdate<Input, Output, CtxOptions>;
@@ -641,9 +661,9 @@ namespace NS {
       | ArrayOfMinSizeOne<DeleteHandler<Output, CtxOptions>>;
     onSuccess?: OnSuccessConfig<Input, Output, CtxOptions>;
     postValidate?:
-      | PostValidationConfig<Input, Output, Aliases, CtxOptions>
+      | PostValidationConfig<KeyOf<Input>, Input, Output, Aliases, CtxOptions>
       | ArrayOfMinSizeOne<
-          PostValidationConfig<Input, Output, Aliases, CtxOptions>
+          PostValidationConfig<KeyOf<Input>, Input, Output, Aliases, CtxOptions>
         >;
     setMissingDefaultsOnUpdate?: boolean;
     shouldUpdate?: boolean | AsyncShouldUpdate<Input, Output, CtxOptions>;

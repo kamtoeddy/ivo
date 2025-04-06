@@ -631,15 +631,23 @@ class ModelTool<
     );
 
     const handlerIds = new Set<string>(),
-      handlerIdToProps = new Map<string, Set<string>>();
+      handlerIdToProps = new Map<string, Set<string>>(),
+      configIDsToAllPostValidatableProps = new Map<string, Set<string>>();
 
     for (const [
       prop,
-      setOfIDs,
+      setOfConfigIDs,
     ] of this.propToPostValidationConfigIDsMap.entries()) {
-      if (!this._isSuccessfulProp(prop, summary)) continue;
+      const isSuccessfulProp = this._isSuccessfulProp(prop, summary);
 
-      for (const id of setOfIDs.values()) {
+      for (const id of setOfConfigIDs.values()) {
+        {
+          const set = configIDsToAllPostValidatableProps.get(id) ?? new Set();
+          configIDsToAllPostValidatableProps.set(id, set.add(prop));
+        }
+
+        if (!isSuccessfulProp) continue;
+
         handlerIds.add(id);
 
         const set = handlerIdToProps.get(id) ?? new Set();
@@ -650,22 +658,46 @@ class ModelTool<
     const handlers = Array.from(handlerIds).map((id) => ({
       id,
       validator: this.postValidationConfigMap.get(id)!.validators,
+      postValidatableProps: Array.from(
+        configIDsToAllPostValidatableProps.get(id)!,
+      ) as KeyOf<Input>[],
     }));
 
+    const handleRevalidatedData = (revalidatedData: Partial<Output> | null) => {
+      if (!revalidatedData) return;
+
+      for (const prop of getKeysAsProps(revalidatedData)) {
+        const validated = revalidatedData[prop];
+
+        if (!this._isVirtual(prop)) data[prop] = validated;
+
+        const validCtxUpdate = { [prop]: validated } as never;
+
+        this._updateContext(validCtxUpdate);
+        this._updatePartialContext(validCtxUpdate);
+      }
+    };
+
     await Promise.allSettled(
-      handlers.map(async ({ id, validator }) => {
+      handlers.map(async ({ id, validator, postValidatableProps }) => {
         const propsProvided = Array.from(handlerIdToProps.get(id)!) as Extract<
           keyof Input,
           string
         >[];
 
-        if (!Array.isArray(validator))
-          return await this._handlePostValidator({
+        if (!Array.isArray(validator)) {
+          const { revalidatedData, success } = await this._handlePostValidator({
             errorTool,
             propsProvided,
             summary,
             validator: validator as any,
+            postValidatableProps,
           });
+
+          if (!success || !revalidatedData) return;
+
+          return handleRevalidatedData(revalidatedData);
+        }
 
         for (const v1 of validator) {
           if (Array.isArray(v1)) {
@@ -676,15 +708,19 @@ class ModelTool<
             });
 
             const results = await Promise.all(
-              v1.map(
-                async (v2) =>
-                  await this._handlePostValidator({
-                    errorTool,
-                    propsProvided,
-                    summary,
-                    validator: v2 as any,
-                  }),
-              ),
+              v1.map(async (v2) => {
+                const res = await this._handlePostValidator({
+                  errorTool,
+                  propsProvided,
+                  summary,
+                  validator: v2 as any,
+                  postValidatableProps,
+                });
+
+                handleRevalidatedData(res.revalidatedData);
+
+                return res;
+              }),
             );
 
             if (results.some((r) => r.success === false)) break;
@@ -692,7 +728,7 @@ class ModelTool<
             continue;
           }
 
-          const { success } = await this._handlePostValidator({
+          const { revalidatedData, success } = await this._handlePostValidator({
             errorTool,
             propsProvided,
             summary: this._getMutableSummary({
@@ -701,9 +737,12 @@ class ModelTool<
               inputValues: this.inputValues,
             }),
             validator: v1 as any,
+            postValidatableProps,
           });
 
           if (!success) break;
+
+          if (revalidatedData) handleRevalidatedData(revalidatedData);
         }
       }),
     );
@@ -714,22 +753,41 @@ class ModelTool<
   private async _handlePostValidator({
     errorTool,
     propsProvided,
+    postValidatableProps,
     summary,
     validator,
   }: {
     errorTool: ErrorTool;
     propsProvided: Extract<keyof Input, string>[];
+    postValidatableProps: Extract<keyof Input, string>[];
     summary: MutableSummary<Input, Output, CtxOptions>;
-    validator: PostValidator<Input, Output, Aliases, CtxOptions>;
+    validator: PostValidator<KeyOf<Input>, Input, Output, Aliases, CtxOptions>;
   }) {
+    const revalidatedData: Partial<Output> = {};
+
     try {
       const res = await validator(summary, propsProvided);
 
-      if (!isRecordLike(res)) return { success: true };
+      if (!isRecordLike(res)) return { revalidatedData: null, success: true };
 
-      for (const [prop, error] of Object.entries(
-        this._handleObjectValidationResponse(res),
-      ))
+      const { errors, validatedData } =
+        this._handleObjectValidationResponse(res);
+
+      for (const [prop, validated] of Object.entries(validatedData) as [
+        KeyOf<Input>,
+        any,
+      ][]) {
+        const propName = (this._getAliasByVirtual(prop as never) ??
+          prop) as keyof Output;
+
+        if (
+          postValidatableProps.includes(prop) ||
+          postValidatableProps.includes(propName as any)
+        )
+          revalidatedData[propName] = validated;
+      }
+
+      for (const [prop, error] of Object.entries(errors))
         errorTool.set(prop, makeFieldError(error));
     } catch {
       for (const prop of propsProvided) {
@@ -745,7 +803,15 @@ class ModelTool<
       }
     }
 
-    return { success: !errorTool.isLoaded };
+    const success = !errorTool.isLoaded;
+
+    return {
+      revalidatedData:
+        !success || !Object.keys(revalidatedData).length
+          ? null
+          : revalidatedData,
+      success,
+    };
   }
 
   private async _handleRequiredBy(data: Partial<Output>, isUpdate = false) {
@@ -852,29 +918,36 @@ class ModelTool<
         this._isInputOrAlias(prop.split('.')?.[0]),
     );
 
-    const otherReasons = {} as Record<string, string | InputFieldError>;
+    const errors = {} as Record<string, string | InputFieldError>;
+    const validatedData = {} as Record<string, unknown>;
 
     for (const prop of validProperties) {
-      const fieldError = data[prop];
+      const res = data[prop];
 
-      if (isInputFieldError(fieldError)) {
-        otherReasons[prop] = fieldError as InputFieldError;
-
-        continue;
-      }
-
-      if (typeof fieldError === 'string') {
-        const message = fieldError.trim();
-
-        otherReasons[prop] = message.length ? message : 'validation failed';
+      if ((data[prop] as any)?.validated) {
+        validatedData[prop] = (data[prop] as any).validated;
 
         continue;
       }
 
-      otherReasons[prop] = 'validation failed';
+      if (isInputFieldError(res)) {
+        errors[prop] = res as InputFieldError;
+
+        continue;
+      }
+
+      if (typeof res === 'string') {
+        const message = res.trim();
+
+        errors[prop] = message.length ? message : 'validation failed';
+
+        continue;
+      }
+
+      errors[prop] = 'validation failed';
     }
 
-    return otherReasons;
+    return { errors, validatedData };
   }
 
   private _isSanitizable(

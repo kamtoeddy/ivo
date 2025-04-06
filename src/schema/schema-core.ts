@@ -86,6 +86,7 @@ abstract class SchemaCore<
     {
       index: number;
       validators: PostValidationConfig<
+        KeyOf<Input>,
         Input,
         Output,
         unknown,
@@ -1392,8 +1393,14 @@ abstract class SchemaCore<
     if (Array.isArray(value.validator)) {
       // @ts-ignore: lol
       const validators = value.validator as Exclude<
-        PostValidationConfig<Input, Output, unknown, CtxOptions>['validator'],
-        PostValidator<Input, Output, unknown, CtxOptions>
+        PostValidationConfig<
+          KeyOf<Input>,
+          Input,
+          Output,
+          unknown,
+          CtxOptions
+        >['validator'],
+        PostValidator<KeyOf<Input>, Input, Output, unknown, CtxOptions>
       >;
 
       if (!validators.length)
@@ -1554,7 +1561,7 @@ abstract class SchemaCore<
     {
       properties,
       validator,
-    }: PostValidationConfig<Input, Output, unknown, CtxOptions>,
+    }: PostValidationConfig<KeyOf<Input>, Input, Output, unknown, CtxOptions>,
     index: number,
   ) {
     const sortedProps = sort(properties as any),
@@ -1718,8 +1725,13 @@ abstract class SchemaCore<
       return { valid: true };
     }
 
-    const configs: PostValidationConfig<Input, Output, unknown, CtxOptions>[] =
-      option;
+    const configs: PostValidationConfig<
+      KeyOf<Input>,
+      Input,
+      Output,
+      unknown,
+      CtxOptions
+    >[] = option;
     let reasons: string[] = [];
 
     configs.forEach((config, i) => {
