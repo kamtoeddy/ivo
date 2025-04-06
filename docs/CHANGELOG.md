@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+# v1.7.0 <small><sup>2025-04-06/sup></small>
+
+- Add `ignore` rule to help with `shouldInit` and `shouldUpdate`
+- Add possibility to sanitize data from within post-validators
+
 # v1.6.12 <small><sup>2025-02-23/sup></small>
 
 - Use `structuredClone` to copy data at various validation stages

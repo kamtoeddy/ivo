@@ -1507,6 +1507,167 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
           });
         });
 
+        it('should properly update revalidated values returned from post-validators', async () => {
+          const Model = new Schema(
+            {
+              p1: { default: '' },
+              p2: { default: '' },
+            },
+            {
+              postValidate: {
+                properties: ['p1', 'p2'],
+                validator: ({ isUpdate }) =>
+                  isUpdate
+                    ? {
+                        p1: { validated: 're updated' },
+                        p2: { validated: 'also re updated' },
+                      }
+                    : {
+                        p1: { validated: true },
+                        p2: { validated: 'also revalidated' },
+                      },
+              },
+            },
+          ).getModel();
+
+          const { data, error } = await Model.create();
+
+          expect(error).toBeNull();
+          expect(data).toEqual({ p1: true, p2: 'also revalidated' });
+
+          const updates = { p1: 'updated', p2: 'updated' };
+
+          const { data: updated, error: error2 } = await Model.update(
+            data,
+            updates,
+          );
+
+          expect(error2).toBeNull();
+          expect(updated).toEqual({
+            p1: 're updated',
+            p2: 'also re updated',
+          });
+        });
+
+        it('should properly update revalidated values returned from post-validators with virtuals', async () => {
+          const Model = new Schema(
+            {
+              p1: { default: '' },
+              p2: { default: '' },
+              dependent: {
+                default: '',
+                dependsOn: ['v', 'v1'],
+                resolver: ({ context: { v, v1 } }) => `${v} ${v1}`,
+              },
+              v: { virtual: true, validator: () => true },
+              v1: { virtual: true, validator: () => true },
+            },
+            {
+              postValidate: {
+                properties: ['v', 'v1'],
+                validator: ({ isUpdate }) =>
+                  isUpdate
+                    ? {
+                        v: { validated: 're updated' },
+                        v1: { validated: 'also re updated' },
+                      }
+                    : {
+                        v: { validated: true },
+                        v1: { validated: 'also revalidated' },
+                      },
+              },
+            },
+          ).getModel();
+
+          const { data, error } = await Model.create({ v1: false });
+
+          expect(error).toBeNull();
+          expect(data).toMatchObject({ dependent: 'true also revalidated' });
+
+          const updates = { v: true };
+
+          const { data: updated, error: error2 } = await Model.update(
+            data,
+            updates,
+          );
+
+          expect(error2).toBeNull();
+          expect(updated).toEqual({
+            dependent: 're updated also re updated',
+          });
+        });
+
+        it('should not revalidate props not related to validator', async () => {
+          const Model = new Schema(
+            {
+              p1: { default: '' },
+              p2: { default: '' },
+              dependent: {
+                default: '',
+                dependsOn: ['v', 'v1'],
+                resolver: ({ context: { v, v1 } }) => `${v} ${v1}`,
+              },
+              v: { virtual: true, validator: () => true },
+              v1: { virtual: true, validator: () => true },
+            },
+            {
+              postValidate: [
+                {
+                  properties: ['v', 'v1'],
+                  validator: ({ isUpdate }) =>
+                    isUpdate
+                      ? {
+                          v: { validated: 're updated' },
+                          v1: { validated: 'also re updated' },
+                        }
+                      : {
+                          v: { validated: true },
+                          v1: { validated: 'also revalidated' },
+                        },
+                },
+                {
+                  properties: ['p1', 'p2', 'v'],
+                  validator: ({ isUpdate }) =>
+                    isUpdate
+                      ? {
+                          p2: { validated: 're updated' },
+                          v: { validated: 'successfully re updated' },
+                          v1: { validated: 'also re updated' },
+                        }
+                      : {
+                          p1: { validated: true },
+                          p2: { validated: 'also revalidated' },
+                          v1: { validated: 'also revalidated' },
+                        },
+                },
+              ],
+            },
+          ).getModel();
+
+          const { data, error } = await Model.create();
+
+          expect(error).toBeNull();
+          expect(data).toEqual({
+            dependent: '',
+            p1: true,
+            p2: 'also revalidated',
+          });
+
+          const updates = { p1: false };
+
+          const { data: updated, error: error2 } = await Model.update(
+            data,
+            updates,
+          );
+
+          expect(error2).toBeNull();
+          expect(updated).toEqual({
+            p1: false,
+            p2: 're updated',
+            dependent: 'successfully re updated undefined',
+          });
+        });
+
         describe('behaviour with validator array', () => {
           it('should ignore non-object-like values', async () => {
             const values = [-1, 0, 1, '', 'lol', undefined, null, () => {}, []];
