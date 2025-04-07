@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 # v1.7.1 <small><sup>2025-04-07/sup></small>
 
-- Fix issue causing validators of `ignored` properties not provided to be invoked
+- Fix issue causing validators of `ignored` properties to be invoked even when return value of ignore function is truthy and input values are not provided
 
 # v1.7.0 <small><sup>2025-04-06/sup></small>
 
