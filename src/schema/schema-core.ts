@@ -1320,7 +1320,6 @@ abstract class SchemaCore<
     // only readonly(lax) are lax props &
     // Lax properties cannot have initialization blocked
     if (
-      isPropertyOf('ignore', definition) ||
       (isPropertyOf('readonly', definition) && readonly !== 'lax') ||
       (isPropertyOf('shouldInit', definition) &&
         typeof shouldInit !== 'function')

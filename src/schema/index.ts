@@ -252,13 +252,13 @@ class ModelTool<
 
     if (this._isIngnorable(prop)) return !this._shouldIgnore(prop);
 
+    const isInitAllowed = this._isInitAllowed(prop);
+
+    if (this._isLaxProp(prop)) return isInitAllowed;
+
     const { readonly } = this._getDefinition(prop);
 
-    return (
-      readonly === true &&
-      this._isInitAllowed(prop) &&
-      !this._isRequiredBy(prop)
-    );
+    return readonly === true && isInitAllowed && !this._isRequiredBy(prop);
   };
 
   private _isUpdateAllowed = (prop: string, extraCtx: ObjectType = {}) => {
@@ -436,16 +436,12 @@ class ModelTool<
         const isProvided = isPropertyOf(prop, this.values),
           isLax = this._isLaxProp(prop),
           isLaxInit = isLax && isProvided,
-          isRequiredInit = this._isRequiredBy(prop) && isProvided;
+          isRequiredInit = this._isRequiredBy(prop) && isProvided,
+          canInit = this._canInit(prop);
 
         if (
-          (isLax &&
-            this._isRuleInDefinition(prop, 'shouldInit') &&
-            !this._getValueBy(prop, 'shouldInit', {})) ||
-          (!isVirtualInit &&
-            !this._canInit(prop) &&
-            !isLaxInit &&
-            !isRequiredInit)
+          (isLax && (!canInit || (canInit && !isProvided))) ||
+          (!isVirtualInit && !canInit && !isLaxInit && !isRequiredInit)
         ) {
           data[prop] = await this._getDefaultValue(prop);
 

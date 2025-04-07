@@ -164,6 +164,74 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
             expect(data).toEqual({ env: 'Lol', isBlocked: 'updated' });
           }
         });
+
+        it('should properly handle ignored properties even when not provided', async () => {
+          const validator = () => true;
+
+          const mockedValidator = mock(validator);
+
+          const Model = new Schema({
+            isBlocked: {
+              default: false,
+              ignore: ({ inputValues: { env } }) => env === 'dev',
+              validator: mockedValidator,
+            },
+            env: { default: 'dev' },
+            laxProp: { default: 0 },
+          }).getModel();
+
+          const { data } = await Model.create({ env: 'dev' });
+
+          expect(mockedValidator).toBeCalledTimes(0);
+
+          expect(data).toMatchObject({
+            env: 'dev',
+            isBlocked: false,
+            laxProp: 0,
+          });
+
+          {
+            const { data } = await Model.create({
+              env: 'Lol',
+              isBlocked: true,
+            });
+
+            expect(mockedValidator).toBeCalledTimes(1);
+
+            expect(data).toMatchObject({
+              env: 'Lol',
+              isBlocked: true,
+              laxProp: 0,
+            });
+          }
+
+          {
+            const { data } = await Model.update(
+              {
+                env: 'Lol',
+                isBlocked: true,
+                laxProp: 0,
+              },
+              { env: 'dev', isBlocked: 'updated' },
+            );
+            expect(mockedValidator).toBeCalledTimes(1);
+            expect(data).toEqual({ env: 'dev' });
+          }
+
+          {
+            const { data } = await Model.update(
+              {
+                env: 'dev',
+                isBlocked: true,
+                laxProp: 0,
+              },
+              { env: 'Lol', isBlocked: 'updated' },
+            );
+
+            expect(mockedValidator).toBeCalledTimes(2);
+            expect(data).toEqual({ env: 'Lol', isBlocked: 'updated' });
+          }
+        });
       });
     });
 
