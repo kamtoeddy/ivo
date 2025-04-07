@@ -5,6 +5,7 @@ import {
   describe,
   expect,
   it,
+  mock,
 } from 'bun:test';
 
 import { ERRORS } from '../../../dist';
@@ -39,16 +40,16 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
       });
 
       describe('behaviour', () => {
-        const Model = new Schema({
-          isBlocked: {
-            default: false,
-            ignore: ({ inputValues: { env } }) => env === 'dev',
-          },
-          env: { default: 'dev' },
-          laxProp: { default: 0 },
-        }).getModel();
-
         it('should ignore accordingly', async () => {
+          const Model = new Schema({
+            isBlocked: {
+              default: false,
+              ignore: ({ inputValues: { env } }) => env === 'dev',
+            },
+            env: { default: 'dev' },
+            laxProp: { default: 0 },
+          }).getModel();
+
           const { data } = await Model.create({ env: 'dev', isBlocked: true });
 
           expect(data).toMatchObject({
@@ -92,6 +93,74 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
               { env: 'Lol', isBlocked: 'updated' },
             );
 
+            expect(data).toEqual({ env: 'Lol', isBlocked: 'updated' });
+          }
+        });
+
+        it('should not trigger validators of ignored properties', async () => {
+          const validator = () => true;
+
+          const mockedValidator = mock(validator);
+
+          const Model = new Schema({
+            isBlocked: {
+              default: false,
+              ignore: ({ inputValues: { env } }) => env === 'dev',
+              validator: mockedValidator,
+            },
+            env: { default: 'dev' },
+            laxProp: { default: 0 },
+          }).getModel();
+
+          const { data } = await Model.create({ env: 'dev', isBlocked: true });
+
+          expect(mockedValidator).toBeCalledTimes(0);
+
+          expect(data).toMatchObject({
+            env: 'dev',
+            isBlocked: false,
+            laxProp: 0,
+          });
+
+          {
+            const { data } = await Model.create({
+              env: 'Lol',
+              isBlocked: true,
+            });
+
+            expect(mockedValidator).toBeCalledTimes(1);
+
+            expect(data).toMatchObject({
+              env: 'Lol',
+              isBlocked: true,
+              laxProp: 0,
+            });
+          }
+
+          {
+            const { data } = await Model.update(
+              {
+                env: 'Lol',
+                isBlocked: true,
+                laxProp: 0,
+              },
+              { env: 'dev', isBlocked: 'updated' },
+            );
+            expect(mockedValidator).toBeCalledTimes(1);
+            expect(data).toEqual({ env: 'dev' });
+          }
+
+          {
+            const { data } = await Model.update(
+              {
+                env: 'dev',
+                isBlocked: true,
+                laxProp: 0,
+              },
+              { env: 'Lol', isBlocked: 'updated' },
+            );
+
+            expect(mockedValidator).toBeCalledTimes(2);
             expect(data).toEqual({ env: 'Lol', isBlocked: 'updated' });
           }
         });
