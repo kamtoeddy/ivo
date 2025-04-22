@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# v1.7.2 <small><sup>2025-05-22/sup></small>
+
+- Fix issue causing operation summary of `ignored` to always have creation values, even during updates
+
 # v1.7.1 <small><sup>2025-04-07/sup></small>
 
 - Fix issue causing validators of `ignored` properties to be invoked even when return value of ignore function is truthy and input values are not provided
