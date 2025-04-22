@@ -226,7 +226,13 @@ class ModelTool<
     return !!this._getDefinition(prop).ignore;
   };
 
-  private _shouldIgnore = (prop: string) => {
+  private _shouldIgnore = ({
+    prop,
+    isUpdate = false,
+  }: {
+    prop: string;
+    isUpdate?: boolean;
+  }) => {
     const { ignore } = this._getDefinition(prop);
 
     if (ignore)
@@ -234,7 +240,7 @@ class ModelTool<
         this._getMutableSummary({
           data: {},
           inputValues: this.inputValues,
-          isUpdate: false,
+          isUpdate,
         }),
       );
   };
@@ -250,7 +256,7 @@ class ModelTool<
     if (this._isDependentProp(prop)) return false;
     if (this._isRequired(prop)) return true;
 
-    if (this._isIngnorable(prop)) return !this._shouldIgnore(prop);
+    if (this._isIngnorable(prop)) return !this._shouldIgnore({ prop });
 
     const isInitAllowed = this._isInitAllowed(prop);
 
@@ -422,7 +428,10 @@ class ModelTool<
         if (isVirtualAlias) {
           const propName = (this._getVirtualByAlias(prop) || prop)!;
 
-          if (this._isIngnorable(propName) && this._shouldIgnore(propName))
+          if (
+            this._isIngnorable(propName) &&
+            this._shouldIgnore({ prop: propName })
+          )
             return;
 
           return this._validateAndSet(
@@ -982,7 +991,10 @@ class ModelTool<
       isAlias ? this._getVirtualByAlias(prop)! : prop
     ) as KeyOf<Output>;
 
-    if (this._isIngnorable(propName) && this._shouldIgnore(propName))
+    if (
+      this._isIngnorable(propName) &&
+      this._shouldIgnore({ prop: propName, isUpdate: true })
+    )
       return false;
 
     const hasShouldUpdateRule = this._isRuleInDefinition(
