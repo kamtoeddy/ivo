@@ -917,10 +917,8 @@ class ModelTool<
   }
 
   private _handleObjectValidationResponse(data: Record<string, unknown>) {
-    const validProperties = getKeysAsProps(data).filter(
-      (prop) =>
-        this._isInputOrAlias(prop) ||
-        this._isInputOrAlias(prop.split('.')?.[0]),
+    const validProperties = getKeysAsProps(data).filter((prop) =>
+      this._isInputOrAlias(prop),
     );
 
     const errors = {} as Record<string, string | InputFieldError>;
@@ -929,8 +927,8 @@ class ModelTool<
     for (const prop of validProperties) {
       const res = data[prop];
 
-      if ((data[prop] as any)?.validated) {
-        validatedData[prop] = (data[prop] as any).validated;
+      if (typeof res === 'object' && 'validated' in (res as any)) {
+        validatedData[prop] = (res as any).validated;
 
         continue;
       }
