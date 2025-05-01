@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# v1.7.4 <small><sup>2025-05-01/sup></small>
+
+- Add logic to detect and reject redundant dependencies
+
 # v1.7.3 <small><sup>2025-04-25/sup></small>
 
 - Fix issue causing falsy values returned from post-validators not to be considered as re-validated values
