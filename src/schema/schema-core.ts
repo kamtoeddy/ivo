@@ -280,6 +280,55 @@ abstract class SchemaCore<
     return sort(Array.from(new Set(circularDependencies)));
   };
 
+  private _getRedundantDependenciesOf = ({
+    definitions,
+    property,
+  }: {
+    definitions: ns.Definitions_<Input, Output>;
+    property: KeyOf<Input>;
+  }) => {
+    const redundantParentProps: [string, string][] = [];
+
+    if (!this._isDependentProp(property)) return [];
+
+    const parentProps = toArray<KeyOf<Input>>(
+      definitions?.[property]?.dependsOn ?? [],
+    );
+
+    for (const parentProp of parentProps) {
+      for (const prop of parentProps) {
+        if (prop === parentProp) continue;
+
+        if (this._isRedundantDependencyOf({ definitions, parentProp, prop }))
+          redundantParentProps.push([parentProp, prop]);
+      }
+    }
+
+    return redundantParentProps;
+  };
+
+  private _isRedundantDependencyOf = ({
+    definitions,
+    prop,
+    parentProp,
+  }: {
+    definitions: ns.Definitions_<Input, Output>;
+    prop: KeyOf<Input>;
+    parentProp: KeyOf<Input>;
+  }): boolean => {
+    if (!this._isDependentProp(prop)) return false;
+
+    const parentProps = toArray<KeyOf<Input>>(
+      definitions?.[prop]?.dependsOn ?? [],
+    );
+
+    if (parentProps.includes(parentProp)) return true;
+
+    return parentProps.some((prop) =>
+      this._isRedundantDependencyOf({ definitions, parentProp, prop }),
+    );
+  };
+
   private _setDependencies = (
     prop: KeyOf<Input>,
     dependsOn: KeyOf<Input> | KeyOf<Input>[],
@@ -473,6 +522,18 @@ abstract class SchemaCore<
 
       for (const _prop of circularRelationShips)
         error.add(prop, `Circular dependency identified with '${_prop}'`);
+
+      // check against circular dependencies
+      const redundantRelationShips = this._getRedundantDependenciesOf({
+        definitions,
+        property: prop,
+      } as never);
+
+      for (const [parentProp, _prop] of redundantRelationShips)
+        error.add(
+          prop,
+          `Dependency on '${parentProp}' is redundant because of dependency on '${_prop}'`,
+        );
     }
 
     if (error.isPayloadLoaded) error.throw();

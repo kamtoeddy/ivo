@@ -345,7 +345,7 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
           },
           dependent2: {
             default: '',
-            dependsOn: ['dependent', 'prop'],
+            dependsOn: 'dependent',
             resolver() {
               throw new Error('lolol');
             },
@@ -582,7 +582,7 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
         }
       });
 
-      it.skip('should identify redundant dependencies and reject', () => {
+      it('should identify redundant dependencies and reject', () => {
         const toFail = fx({
           A: { default: '', dependsOn: 'prop', resolver },
           B: { default: '', dependsOn: ['A', 'prop'], resolver },
