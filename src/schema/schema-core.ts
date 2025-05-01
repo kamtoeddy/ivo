@@ -454,15 +454,6 @@ abstract class SchemaCore<
       if (dependsOnConstantProp)
         error.add(prop, 'A property cannot depend on a constant property');
 
-      // check against circular dependencies
-      const circularRelationShips = this._getCircularDependenciesOf({
-        definitions,
-        property: prop,
-      } as never);
-
-      for (const _prop of circularRelationShips)
-        error.add(prop, `Circular dependency identified with '${_prop}'`);
-
       // check against dependencies on invalid properties
       const invalidProps = _dependsOn.filter(
         (p) => !(this._isProp(p) || this._isVirtual(p)),
@@ -473,6 +464,15 @@ abstract class SchemaCore<
           prop,
           `Cannot establish dependency with '${_prop}' as it is neither a property nor a virtual of your model`,
         );
+
+      // check against circular dependencies
+      const circularRelationShips = this._getCircularDependenciesOf({
+        definitions,
+        property: prop,
+      } as never);
+
+      for (const _prop of circularRelationShips)
+        error.add(prop, `Circular dependency identified with '${_prop}'`);
     }
 
     if (error.isPayloadLoaded) error.throw();

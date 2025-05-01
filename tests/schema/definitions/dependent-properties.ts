@@ -582,6 +582,33 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
         }
       });
 
+      it.skip('should identify redundant dependencies and reject', () => {
+        const toFail = fx({
+          A: { default: '', dependsOn: 'prop', resolver },
+          B: { default: '', dependsOn: ['A', 'prop'], resolver },
+          C: { default: '', dependsOn: 'A', resolver },
+          D: { default: '', dependsOn: ['prop', 'C'], resolver },
+          prop: { default: '' },
+        });
+
+        expectFailure(toFail);
+
+        try {
+          toFail();
+        } catch (err: any) {
+          expect(err.payload).toMatchObject(
+            expect.objectContaining({
+              B: expect.arrayContaining([
+                "Dependency on 'prop' is redundant because of dependency on 'A'",
+              ]),
+              D: expect.arrayContaining([
+                "Dependency on 'prop' is redundant because of dependency on 'C'",
+              ]),
+            }),
+          );
+        }
+      });
+
       it('should reject dependent + missing dependsOn', () => {
         const toFail = fx({ propertyName: { default: '', resolver } });
 
