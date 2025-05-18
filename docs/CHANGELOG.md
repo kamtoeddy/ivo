@@ -2,6 +2,9 @@
 
 All notable changes to this project will be documented in this file.
 
+# v1.7.5 <small><sup>2025-05-17/sup></small>
+
+- Multiple bug fixes
 # v1.7.4 <small><sup>2025-05-01/sup></small>
 
 - Add logic to detect and reject redundant dependencies
