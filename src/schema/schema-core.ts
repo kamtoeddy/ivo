@@ -213,6 +213,27 @@ abstract class SchemaCore<
     this.partialContext = {} as PartialContext<Input, Output>;
   };
 
+  protected _resetPartialContext = (updates: Partial<Output> = {}) => {
+    for (const prop of getKeysAsProps(this.partialContext)) {
+      if (this._isVirtual(prop)) continue;
+
+      if (
+        !isEqual(
+          this.partialContext[prop],
+          (updates as any)[prop],
+          this._options.equalityDepth,
+        )
+      )
+        delete this.partialContext[prop];
+    }
+
+    this.partialContext = Object.assign(
+      {},
+      this.partialContext,
+      updates,
+    ) as never;
+  };
+
   protected _updateContext = (updates: Partial<Input>) => {
     Object.assign(this.context, updates);
   };
