@@ -2,35 +2,40 @@
 
 All notable changes to this project will be documented in this file.
 
-# v1.7.5 <small><sup>2025-05-17/sup></small>
+# v1.7.6 <small><sup>2025-06-08</sup></small>
+
+- Update docs
+
+# v1.7.5 <small><sup>2025-05-17</sup></small>
 
 - Multiple bug fixes
-# v1.7.4 <small><sup>2025-05-01/sup></small>
+
+# v1.7.4 <small><sup>2025-05-01</sup></small>
 
 - Add logic to detect and reject redundant dependencies
 
-# v1.7.3 <small><sup>2025-04-25/sup></small>
+# v1.7.3 <small><sup>2025-04-25</sup></small>
 
 - Fix issue causing falsy values returned from post-validators not to be considered as re-validated values
 
-# v1.7.2 <small><sup>2025-04-22/sup></small>
+# v1.7.2 <small><sup>2025-04-22</sup></small>
 
 - Fix issue causing operation summary of `ignored` to always have creation values, even during updates
 
-# v1.7.1 <small><sup>2025-04-07/sup></small>
+# v1.7.1 <small><sup>2025-04-07</sup></small>
 
 - Fix issue causing validators of `ignored` properties to be invoked even when return value of ignore function is truthy and input values are not provided
 
-# v1.7.0 <small><sup>2025-04-06/sup></small>
+# v1.7.0 <small><sup>2025-04-06</sup></small>
 
 - Add `ignore` rule to help with `shouldInit` and `shouldUpdate`
 - Add possibility to sanitize data from within post-validators
 
-# v1.6.12 <small><sup>2025-02-23/sup></small>
+# v1.6.12 <small><sup>2025-02-23</sup></small>
 
 - Use `structuredClone` to copy data at various validation stages
 
-# v1.6.11 <small><sup>2025-02-20/sup></small>
+# v1.6.11 <small><sup>2025-02-20</sup></small>
 
 - Add support for read-only arrays with ArrayOfMinSize utility types
 
