@@ -59,7 +59,7 @@ const userSchema = new Schema<UserInput, User>(
         if (!usernameLastUpdatedAt) return true;
 
         const timeDifferenceInMillisecs =
-          new Date().getTime() - usernameUpdatableFrom.getTime();
+          new Date().getTime() - usernameLastUpdatedAt.getTime();
         const thirtyDaysInMillisecs = 2_592_000_000;
 
         return timeDifferenceInMillisecs >= thirtyDaysInMillisecs;
