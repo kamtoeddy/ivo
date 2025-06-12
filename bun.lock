@@ -4,7 +4,7 @@
     "": {
       "devDependencies": {
         "@biomejs/biome": "^1.9.4",
-        "@types/bun": "^1.2.13",
+        "@types/bun": "^1.2.15",
         "tsup": "^8.5.0",
         "typescript": "^5.8.3",
       },
