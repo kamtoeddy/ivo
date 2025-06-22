@@ -46,8 +46,8 @@
     "validation"
   ],
   "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
-    "@types/bun": "^1.2.15",
+    "@biomejs/biome": "^2.0.3",
+    "@types/bun": "^1.2.16",
     "tsup": "^8.5.0",
     "typescript": "^5.8.3"
   }
