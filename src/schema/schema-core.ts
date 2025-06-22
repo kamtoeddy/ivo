@@ -622,7 +622,7 @@ abstract class SchemaCore<
 
     try {
       value = isFunctionLike(_default)
-        ? await _default(this._getContext())
+        ? await Promise.try(() => _default(this._getContext()))
         : this.defaults[prop as KeyOf<Output>];
     } catch {
       value = null;

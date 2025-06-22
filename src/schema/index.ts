@@ -206,7 +206,7 @@ class ModelTool<
     await Promise.allSettled(
       getSetValuesAsProps(this.constants).map(async (prop) => {
         try {
-          data[prop] = await this._getConstantValue(prop);
+          data[prop] = await Promise.try(this._getConstantValue, prop);
         } catch {
           data[prop] = null as never;
         }
@@ -235,14 +235,15 @@ class ModelTool<
   }) => {
     const { ignore } = this._getDefinition(prop);
 
-    if (ignore)
-      return ignore(
-        this._getMutableSummary({
-          data: {},
-          inputValues: this.inputValues,
-          isUpdate,
-        }),
-      );
+    return ignore
+      ? ignore(
+          this._getMutableSummary({
+            data: {},
+            inputValues: this.inputValues,
+            isUpdate,
+          }),
+        )
+      : undefined;
   };
 
   private _isInitAllowed = (prop: string, extraCtx: ObjectType = {}) => {
@@ -452,7 +453,7 @@ class ModelTool<
           (isLax && (!canInit || (canInit && !isProvided))) ||
           (!isVirtualInit && !canInit && !isLaxInit && !isRequiredInit)
         ) {
-          data[prop] = await this._getDefaultValue(prop);
+          data[prop] = await Promise.try(this._getDefaultValue, prop);
 
           const validCtxUpdate = { [prop]: data[prop] as never } as never;
           this._updatePartialContext(validCtxUpdate);
@@ -486,10 +487,12 @@ class ModelTool<
       toUpdate.map(async (prop) => {
         const value = (changes as never)[prop] as Output[KeyOf<Output>];
 
-        const isValid = (await this._validate(
-          prop as never,
-          value,
-          this._getValidationSummary(true),
+        const isValid = (await Promise.try(() =>
+          this._validate(
+            prop as never,
+            value,
+            this._getValidationSummary(true),
+          ),
         )) as InternalValidatorResponse<Output[KeyOf<Output>]>;
 
         if (!isValid.valid)
@@ -563,7 +566,8 @@ class ModelTool<
 
         try {
           isValid = this._sanitizeValidationResponse<unknown>(
-            (await validator(
+            (await Promise.try(
+              validator,
               value,
               summary as never,
             )) as ValidatorResponseObject<unknown>,
@@ -693,13 +697,15 @@ class ModelTool<
         >[];
 
         if (!Array.isArray(validator)) {
-          const { revalidatedData, success } = await this._handlePostValidator({
-            errorTool,
-            propsProvided,
-            summary,
-            validator: validator as any,
-            postValidatableProps,
-          });
+          const { revalidatedData, success } = await Promise.try(() =>
+            this._handlePostValidator({
+              errorTool,
+              propsProvided,
+              summary,
+              validator: validator as any,
+              postValidatableProps,
+            }),
+          );
 
           if (!success || !revalidatedData) return;
 
@@ -716,13 +722,15 @@ class ModelTool<
 
             const results = await Promise.all(
               v1.map(async (v2) => {
-                const res = await this._handlePostValidator({
-                  errorTool,
-                  propsProvided,
-                  summary,
-                  validator: v2 as any,
-                  postValidatableProps,
-                });
+                const res = await Promise.try(() =>
+                  this._handlePostValidator({
+                    errorTool,
+                    propsProvided,
+                    summary,
+                    validator: v2 as any,
+                    postValidatableProps,
+                  }),
+                );
 
                 handleRevalidatedData(res.revalidatedData);
 
@@ -773,7 +781,7 @@ class ModelTool<
     const revalidatedData: Partial<Output> = {};
 
     try {
-      const res = await validator(summary, propsProvided);
+      const res = await Promise.try(validator, summary, propsProvided);
 
       if (!isRecordLike(res)) return { revalidatedData: null, success: true };
 
@@ -847,7 +855,8 @@ class ModelTool<
           if (!isUpdatable) return;
         }
 
-        const [isRequired, message] = await this._getRequiredState(
+        const [isRequired, message] = await Promise.try(
+          this._getRequiredState,
           prop,
           summary as never,
         );
@@ -911,7 +920,8 @@ class ModelTool<
 
     await Promise.allSettled(
       sanitizers.map(async ([prop, sanitizer]) => {
-        const resolvedValue = await sanitizer(summary);
+        // @ts-ignore
+        const resolvedValue = await Promise.try(sanitizer, summary);
 
         this._updateContext({ [prop]: resolvedValue } as never);
       }),
@@ -1045,7 +1055,7 @@ class ModelTool<
 
     return async () => {
       await Promise.allSettled(
-        cleanups.map(async (h) => await h(ctx as never)),
+        cleanups.map(async (h) => await Promise.try(h, ctx as never)),
       );
     };
   }
@@ -1085,7 +1095,7 @@ class ModelTool<
 
     return async () => {
       await Promise.allSettled(
-        successListeners.map(async (handler) => await handler(summary)),
+        successListeners.map(async (h) => await Promise.try(h, summary)),
       );
     };
   }
@@ -1148,7 +1158,7 @@ class ModelTool<
         let value: any;
 
         try {
-          value = await resolver(summary);
+          value = await Promise.try(resolver as any, summary);
         } catch {
           value = isCreation ? null : summary.previousValues?.[prop];
         }
@@ -1226,7 +1236,7 @@ class ModelTool<
 
     await Promise.allSettled(
       this._regeneratedProps.map(async (prop) => {
-        const value = await this._getDefaultValue(prop);
+        const value = await Promise.try(this._getDefaultValue, prop);
 
         this._updateContext({ [prop]: value } as never);
         this._updatePartialContext({ [prop]: value } as never);
@@ -1329,10 +1339,8 @@ class ModelTool<
     prop: KeyOf<Output>,
     value: unknown,
   ) {
-    const isValid = (await this._validate(
-      prop as never,
-      value,
-      this._getValidationSummary(false),
+    const isValid = (await Promise.try(() =>
+      this._validate(prop as never, value, this._getValidationSummary(false)),
     )) as InternalValidatorResponse<Output[KeyOf<Output>]>;
 
     if (isValid.valid)
@@ -1377,7 +1385,8 @@ class ModelTool<
 
       try {
         res = this._sanitizeValidationResponse<(Input & Aliases)[K]>(
-          (await validator(
+          (await Promise.try(
+            validator,
             value,
             summary_ as never,
           )) as ValidatorResponseObject<(Input & Aliases)[K]>,
@@ -1417,31 +1426,39 @@ class ModelTool<
 
     this._setValues(_input);
 
-    let data = await this._generateConstants();
+    let data = await Promise.try(() => this._generateConstants());
 
     const {
       data: dt,
       error,
       virtuals,
-    } = await this._handleCreationPrimaryValidations(data, _input);
+    } = await Promise.try(() =>
+      this._handleCreationPrimaryValidations(data, _input),
+    );
 
     if (error.isLoaded) return this._handleError(data, error, virtuals);
 
     data = dt;
 
-    const requiredError = await this._handleRequiredBy(data);
+    const requiredError = await Promise.try(() => this._handleRequiredBy(data));
     if (requiredError.isLoaded)
       return this._handleError(data, requiredError, virtuals);
 
-    const error2 = await this._handleSecondaryValidations(data);
+    const error2 = await Promise.try(() =>
+      this._handleSecondaryValidations(data),
+    );
     if (error2.isLoaded) return this._handleError(data, error2, virtuals);
 
-    const postValidationError = await this._handlePostValidations(data);
+    const postValidationError = await Promise.try(() =>
+      this._handlePostValidations(data),
+    );
     if (postValidationError.isLoaded)
       return this._handleError(data, postValidationError, virtuals);
 
     await this._handleSanitizationOfVirtuals(data);
-    data = await this._resolveDependentChanges(data, this._getPartialContext());
+    data = await Promise.try(() =>
+      this._resolveDependentChanges(data, this._getPartialContext()),
+    );
 
     const finalData = this._useConfigProps(data);
 
@@ -1481,7 +1498,7 @@ class ModelTool<
     });
 
     await Promise.allSettled(
-      handlers.map(async (handler) => await handler(data)),
+      handlers.map(async (h) => await Promise.try(h, data)),
     );
   }
 
