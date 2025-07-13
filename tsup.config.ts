@@ -7,6 +7,7 @@ export default defineConfig([
     outDir: './dist',
     clean: true,
     dts: true,
+    minify: true,
   },
   {
     entry: ['./src/index.ts'],
@@ -14,5 +15,6 @@ export default defineConfig([
     outDir: './dist',
     clean: true,
     dts: false,
+    minify: true,
   },
 ]);

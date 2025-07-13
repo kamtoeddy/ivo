@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# v1.7.7 <small><sup>2025-07-12</sup></small>
+
+- Perf improvements
+
 # v1.7.6 <small><sup>2025-06-08</sup></small>
 
 - Update docs
