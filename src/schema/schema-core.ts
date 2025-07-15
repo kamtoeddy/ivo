@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-asserted-optional-chain */
 
+import type { ObjectType } from '../utils';
 import {
   getKeysAsProps,
   getUnique,
@@ -13,7 +14,6 @@ import {
   sortKeys,
   toArray,
 } from '../utils';
-import type { ObjectType } from '../utils';
 import {
   ALLOWED_OPTIONS,
   CONSTANT_RULES,
@@ -24,22 +24,23 @@ import {
   type KeyOf,
   LIFE_CYCLES,
   type MutableSummary,
+  type NS as ns,
   type PartialContext,
   type PostValidationConfig,
   type PostValidator,
   type RealType,
   VIRTUAL_RULES,
-  type NS as ns,
 } from './types';
 import {
+  cloneValue,
   DefaultErrorTool,
   type FieldError,
   type IErrorTool,
   type InputFieldError,
-  SchemaErrorTool,
-  TimeStampTool,
   isInputFieldError,
   makeFieldError,
+  SchemaErrorTool,
+  TimeStampTool,
 } from './utils';
 
 export {
@@ -151,9 +152,7 @@ abstract class SchemaCore<
 
   protected _getContext(previousValues: Partial<Output> | null = null) {
     return this._getFrozenCopy({
-      ...sortKeys(
-        structuredClone(Object.assign({}, previousValues, this.context)),
-      ),
+      ...sortKeys(cloneValue(Object.assign({}, previousValues, this.context))),
       __getOptions__: () => this._getContextOptions(),
     }) as Context<Input, Output, CtxOptions>;
   }
@@ -167,11 +166,11 @@ abstract class SchemaCore<
     inputValues: Partial<RealType<Input>>;
     isUpdate: boolean;
   }) {
-    const changes = isUpdate ? structuredClone(data) : null,
-      previousValues = isUpdate ? structuredClone(this.values) : null,
+    const changes = isUpdate ? cloneValue(data) : null,
+      previousValues = isUpdate ? cloneValue(this.values) : null,
       context = this._getContext(isUpdate ? previousValues : null),
       values = this._getFrozenCopy(
-        structuredClone(
+        cloneValue(
           isUpdate
             ? Object.assign({}, previousValues, this.values, data)
             : Object.assign({}, this.defaults, data),
@@ -181,7 +180,7 @@ abstract class SchemaCore<
     return this._getFrozenCopy({
       changes,
       context,
-      inputValues: structuredClone(inputValues),
+      inputValues: cloneValue(inputValues),
       isUpdate,
       previousValues,
       values,
