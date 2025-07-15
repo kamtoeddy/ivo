@@ -1,5 +1,4 @@
 import {
-  type ObjectType,
   getKeysAsProps,
   getSetValuesAsProps,
   isEqual,
@@ -9,11 +8,12 @@ import {
   isPropertyOf,
   isRecordLike,
   makeResponse,
+  type ObjectType,
   sort,
   sortKeys,
   toArray,
 } from '../utils';
-import { SchemaCore, defaultOptions } from './schema-core';
+import { defaultOptions, SchemaCore } from './schema-core';
 import {
   type ImmutableContext,
   type InternalValidatorResponse,
@@ -32,9 +32,9 @@ import {
   type DefaultErrorTool,
   type IErrorTool,
   type InputFieldError,
-  VALIDATION_ERRORS,
   isInputFieldError,
   makeFieldError,
+  VALIDATION_ERRORS,
 } from './utils';
 
 export { Model, ModelTool, Schema };

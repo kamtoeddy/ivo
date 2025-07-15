@@ -434,9 +434,7 @@ function _getMaxMinInfo({
   };
 
   if (!hasMaxValue && !hasMinValue) metadata = null;
-  // biome-ignore lint/performance/noDelete: lol
   else if (!hasMaxValue) delete metadata.max;
-  // biome-ignore lint/performance/noDelete: lol
   else if (!hasMinValue) delete metadata.min;
 
   return {

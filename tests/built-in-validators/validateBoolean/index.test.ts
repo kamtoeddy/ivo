@@ -1,4 +1,4 @@
-import { validateBooleanTest } from '.';
 import { validateBoolean } from '../../../src';
+import { validateBooleanTest } from '.';
 
 validateBooleanTest({ validateBoolean });

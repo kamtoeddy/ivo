@@ -235,7 +235,7 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
             dependentProp_2: 12,
           });
 
-          const { dependentProp_3, ...stats } = successCountOfDependentProps;
+          const { dependentProp_3: _, ...stats } = successCountOfDependentProps;
 
           expect(resolversCalledStats).toEqual({
             dependentProp: 1,
