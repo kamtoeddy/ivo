@@ -510,7 +510,7 @@ abstract class SchemaCore<
 
     // make sure every virtual has at least one dependency
     for (const prop of this.dependents) {
-      // @ts-ignore: lol
+      // @ts-expect-error: lol
       const definition = definitions?.[prop]!;
 
       const _dependsOn = toArray<KeyOf<Input>>(definition?.dependsOn ?? []);
@@ -1424,7 +1424,7 @@ abstract class SchemaCore<
         reason: getInvalidPostValidateConfigMessage(index),
       };
 
-    // @ts-ignore: lol
+    // @ts-expect-error: lol
     if (!Array.isArray(value.properties))
       return {
         valid,
@@ -1434,7 +1434,7 @@ abstract class SchemaCore<
         ),
       };
 
-    // @ts-ignore: lol
+    // @ts-expect-error: lol
     const properties = getUnique(value.properties);
 
     if (properties.length < 2)
@@ -1446,7 +1446,7 @@ abstract class SchemaCore<
         ),
       };
 
-    // @ts-ignore: lol
+    // @ts-expect-error: lol
     if (properties.length < value.properties.length)
       return {
         valid,
@@ -1469,9 +1469,9 @@ abstract class SchemaCore<
 
     if (reasons.length) return { valid, reason: reasons };
 
-    // @ts-ignore: lol
+    // @ts-expect-error: lol
     if (Array.isArray(value.validator)) {
-      // @ts-ignore: lol
+      // @ts-expect-error: lol
       const validators = value.validator as Exclude<
         PostValidationConfig<
           KeyOf<Input>,
@@ -1531,7 +1531,7 @@ abstract class SchemaCore<
       return { valid: true };
     }
 
-    // @ts-ignore: lol
+    // @ts-expect-error: lol
     if (!isFunctionLike(value.validator))
       return {
         valid,
@@ -1557,7 +1557,7 @@ abstract class SchemaCore<
     )
       return { valid, reason: getInvalidOnSuccessConfigMessage(index) };
 
-    // @ts-ignore: lol
+    // @ts-expect-error: lol
     if (!Array.isArray(value.properties))
       return {
         valid,
@@ -1567,7 +1567,7 @@ abstract class SchemaCore<
         ),
       };
 
-    // @ts-ignore: lol
+    // @ts-expect-error: lol
     const properties = getUnique(value.properties);
 
     if (properties.length < 2)
@@ -1592,9 +1592,9 @@ abstract class SchemaCore<
 
     if (reasons.length) return { valid, reason: reasons };
 
-    // @ts-ignore: lol
+    // @ts-expect-error: lol
     if (Array.isArray(value.handler)) {
-      // @ts-ignore: lol
+      // @ts-expect-error: lol
       const handlers = value.handler as unknown[];
 
       if (!handlers.length)
@@ -1624,7 +1624,7 @@ abstract class SchemaCore<
       return { valid: true };
     }
 
-    // @ts-ignore: lol
+    // @ts-expect-error: lol
     if (!isFunctionLike(value.handler))
       return {
         valid,

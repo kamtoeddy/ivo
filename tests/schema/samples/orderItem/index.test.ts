@@ -48,6 +48,6 @@ describe('Testing schema of Orderitem (inherited schema)', () => {
     ];
     const props = Object.keys(orderItem);
 
-    removedProps.forEach((prop) => expect(props.includes(prop)).toBe(false));
+    for (const prop of props) expect(removedProps.includes(prop)).toBe(false);
   });
 });

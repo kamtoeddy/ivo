@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.1.1/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.2.3/schema.json",
   "files": {
     "includes": ["**/*.ts", "**/*.js", "!dist/*"]
   },
@@ -40,7 +40,8 @@
         "noArrayIndexKey": "off",
         "noDoubleEquals": { "fix": "safe", "level": "warn", "options": {} },
         "noAsyncPromiseExecutor": "off",
-        "noGlobalIsNan": "off"
+        "noGlobalIsNan": "off",
+        "useIterableCallbackReturn": "off"
       },
       "style": {
         "useTemplate": "off",

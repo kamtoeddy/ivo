@@ -35,13 +35,15 @@ class SchemaErrorTool {
   throw() {
     console.error('\nSchema errors:');
 
-    Object.entries(this._payload).forEach(([prop, messages]) => {
-      if (messages.length === 1)
-        return console.error(`  [${prop}]: ${messages[0]}`);
+    for (const [prop, messages] of Object.entries(this._payload)) {
+      if (messages.length === 1) {
+        console.error(`  [${prop}]: ${messages[0]}`);
+        continue;
+      }
 
       console.error(`  [${prop}]:`);
-      messages.forEach((m, i) => console.error(`    ${i + 1}) ${m}`));
-    });
+      messages.map((m, i) => console.error(`    ${i + 1}) ${m}`));
+    }
 
     throw new SchemaError(this._payload);
   }
