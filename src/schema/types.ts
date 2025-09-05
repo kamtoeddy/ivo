@@ -314,7 +314,7 @@ namespace NS {
   >;
 
   export type Definitions_<Input, Output> = {
-    [K in keyof Input]?: Listenable<Input, Output> & {
+    [K in keyof Input]?: Listenable<Input, Output, {}> & {
       allow?:
         | Readonly<ArrayOfMinSizeTwo<unknown>>
         | {
@@ -349,7 +349,7 @@ namespace NS {
 
   export type DependencyMap<T> = { [K in KeyOf<T>]?: KeyOf<T>[] };
 
-  type Listenable<Input, Output, CtxOptions extends ObjectType = {}> = {
+  type Listenable<Input, Output, CtxOptions extends ObjectType> = {
     onDelete?:
       | DeleteHandler<Output, CtxOptions>
       | ArrayOfMinSizeOne<DeleteHandler<Output, CtxOptions>>;
@@ -454,7 +454,7 @@ namespace NS {
     Input,
     Output,
     CtxOptions extends ObjectType,
-  > = Listenable<Input, Output> &
+  > = Listenable<Input, Output, CtxOptions> &
     InitAndUpdateBlockable<Input, Output, CtxOptions> & {
       default:
         | TypeOf<Output[K]>
