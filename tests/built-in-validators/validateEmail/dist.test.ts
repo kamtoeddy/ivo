@@ -1,4 +1,4 @@
-import { validateEmailTest } from '.';
 import { validateEmail } from '../../../dist';
+import { validateEmailTest } from '.';
 
 validateEmailTest({ validateEmail });

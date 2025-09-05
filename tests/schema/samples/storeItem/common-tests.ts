@@ -48,7 +48,7 @@ export const CommonInheritanceTest = (
       });
 
       it('should reject missing readonly field', async () => {
-        const { id, ...testData1 } = testData,
+        const { id: _, ...testData1 } = testData,
           { data, error } = await Model.create(testData1);
 
         expect(data).toBeNull();
@@ -56,7 +56,7 @@ export const CommonInheritanceTest = (
       });
 
       it('should reject missing required field', async () => {
-        const { name, ...testData1 } = testData,
+        const { name: _, ...testData1 } = testData,
           { data, error } = await Model.create(testData1);
 
         expect(data).toBeNull();

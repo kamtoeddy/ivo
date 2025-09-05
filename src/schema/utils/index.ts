@@ -6,10 +6,10 @@ import {
 } from '../../utils';
 import type { FieldError, InputFieldError, InputPayload } from './types';
 
-export * from './types';
 export * from './error-tool';
 export * from './schema-error';
 export * from './timestamp-tool';
+export * from './types';
 
 export { isFieldError, isInputFieldError, makeFieldError };
 

@@ -1,5 +1,5 @@
 import { expect } from 'bun:test';
-import { ERRORS, type ObjectType, isEqual } from '../../dist';
+import { ERRORS, isEqual, type ObjectType } from '../../dist';
 
 export {
   expectFailure,

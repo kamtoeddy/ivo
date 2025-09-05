@@ -131,7 +131,7 @@ function isPropertyOf<T>(
   prop: string | number | symbol,
   object: T,
 ): prop is keyof T {
-  return Object.hasOwnProperty.call(object, prop);
+  return Object.hasOwn(object as any, prop);
 }
 
 function toArray<T>(value: T | T[]): T[] {

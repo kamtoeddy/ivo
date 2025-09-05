@@ -132,7 +132,7 @@ function _isEven(num: number) {
 function _getSingleDigits(value: number | string) {
   return String(value)
     .split('')
-    .filter((v) => !isNaN(Number.parseInt(v)))
+    .filter((v) => !isNaN(Number.parseInt(v, 10)))
     .map(Number);
 }
 
@@ -434,9 +434,7 @@ function _getMaxMinInfo({
   };
 
   if (!hasMaxValue && !hasMinValue) metadata = null;
-  // biome-ignore lint/performance/noDelete: lol
   else if (!hasMaxValue) delete metadata.max;
-  // biome-ignore lint/performance/noDelete: lol
   else if (!hasMinValue) delete metadata.min;
 
   return {

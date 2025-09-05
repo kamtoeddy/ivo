@@ -607,9 +607,9 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
               ],
             ] as const;
 
-            // @ts-ignore
+            // @ts-expect-error
             const { configs, errors } = values.reduce(
-              // @ts-ignore
+              // @ts-expect-error
               (acc, [properties, err]) => {
                 return {
                   configs: [...acc.configs, { properties, validator() {} }],

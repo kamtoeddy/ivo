@@ -1,5 +1,4 @@
 import {
-  type ObjectType,
   getKeysAsProps,
   getSetValuesAsProps,
   isEqual,
@@ -9,11 +8,12 @@ import {
   isPropertyOf,
   isRecordLike,
   makeResponse,
+  type ObjectType,
   sort,
   sortKeys,
   toArray,
 } from '../utils';
-import { SchemaCore, defaultOptions } from './schema-core';
+import { defaultOptions, SchemaCore } from './schema-core';
 import {
   type ImmutableContext,
   type InternalValidatorResponse,
@@ -32,9 +32,9 @@ import {
   type DefaultErrorTool,
   type IErrorTool,
   type InputFieldError,
-  VALIDATION_ERRORS,
   isInputFieldError,
   makeFieldError,
+  VALIDATION_ERRORS,
 } from './utils';
 
 export { Model, ModelTool, Schema };
@@ -324,7 +324,7 @@ class ModelTool<
 
     if (Array.isArray(allow)) return NotAllowedError;
 
-    // @ts-ignore: lol
+    // @ts-expect-error: lol
     const error = allow?.error;
 
     if (isInputFieldError(error)) return error;
@@ -374,10 +374,7 @@ class ModelTool<
       });
     }
 
-    const fieldError = makeFieldError(
-      // @ts-ignore: lol
-      reason || 'validation failed',
-    );
+    const fieldError = makeFieldError(reason || 'validation failed');
 
     if (metadata) fieldError.metadata = metadata;
 
@@ -920,7 +917,7 @@ class ModelTool<
 
     await Promise.allSettled(
       sanitizers.map(async ([prop, sanitizer]) => {
-        // @ts-ignore
+        // @ts-expect-error
         const resolvedValue = await Promise.try(sanitizer, summary);
 
         this._updateContext({ [prop]: resolvedValue } as never);
@@ -1488,14 +1485,14 @@ class ModelTool<
       Object.assign({}, this.values, { __getOptions__: () => ctxOptions }),
     );
 
-    getSetValuesAsProps(this.props).map((prop) => {
+    for (const prop of getSetValuesAsProps(this.props)) {
       const handlers_ = this._getHandlers<NS.DeleteHandler<Output, CtxOptions>>(
         prop,
         'onDelete',
       );
 
       if (handlers_.length) handlers = handlers.concat(handlers_);
-    });
+    }
 
     await Promise.allSettled(
       handlers.map(async (h) => await Promise.try(h, data)),

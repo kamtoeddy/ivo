@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-asserted-optional-chain */
 
+import type { ObjectType } from '../utils';
 import {
   getKeysAsProps,
   getUnique,
@@ -13,7 +14,6 @@ import {
   sortKeys,
   toArray,
 } from '../utils';
-import type { ObjectType } from '../utils';
 import {
   ALLOWED_OPTIONS,
   CONSTANT_RULES,
@@ -24,22 +24,22 @@ import {
   type KeyOf,
   LIFE_CYCLES,
   type MutableSummary,
+  type NS as ns,
   type PartialContext,
   type PostValidationConfig,
   type PostValidator,
   type RealType,
   VIRTUAL_RULES,
-  type NS as ns,
 } from './types';
 import {
   DefaultErrorTool,
   type FieldError,
   type IErrorTool,
   type InputFieldError,
-  SchemaErrorTool,
-  TimeStampTool,
   isInputFieldError,
   makeFieldError,
+  SchemaErrorTool,
+  TimeStampTool,
 } from './utils';
 
 export {
@@ -511,7 +511,7 @@ abstract class SchemaCore<
 
     // make sure every virtual has at least one dependency
     for (const prop of this.dependents) {
-      // @ts-ignore: lol
+      // @ts-expect-error: lol
       const definition = definitions?.[prop]!;
 
       const _dependsOn = toArray<KeyOf<Input>>(definition?.dependsOn ?? []);
@@ -1425,7 +1425,7 @@ abstract class SchemaCore<
         reason: getInvalidPostValidateConfigMessage(index),
       };
 
-    // @ts-ignore: lol
+    // @ts-expect-error: lol
     if (!Array.isArray(value.properties))
       return {
         valid,
@@ -1435,7 +1435,7 @@ abstract class SchemaCore<
         ),
       };
 
-    // @ts-ignore: lol
+    // @ts-expect-error: lol
     const properties = getUnique(value.properties);
 
     if (properties.length < 2)
@@ -1447,7 +1447,7 @@ abstract class SchemaCore<
         ),
       };
 
-    // @ts-ignore: lol
+    // @ts-expect-error: lol
     if (properties.length < value.properties.length)
       return {
         valid,
@@ -1470,9 +1470,9 @@ abstract class SchemaCore<
 
     if (reasons.length) return { valid, reason: reasons };
 
-    // @ts-ignore: lol
+    // @ts-expect-error: lol
     if (Array.isArray(value.validator)) {
-      // @ts-ignore: lol
+      // @ts-expect-error: lol
       const validators = value.validator as Exclude<
         PostValidationConfig<
           KeyOf<Input>,
@@ -1532,7 +1532,7 @@ abstract class SchemaCore<
       return { valid: true };
     }
 
-    // @ts-ignore: lol
+    // @ts-expect-error: lol
     if (!isFunctionLike(value.validator))
       return {
         valid,
@@ -1558,7 +1558,7 @@ abstract class SchemaCore<
     )
       return { valid, reason: getInvalidOnSuccessConfigMessage(index) };
 
-    // @ts-ignore: lol
+    // @ts-expect-error: lol
     if (!Array.isArray(value.properties))
       return {
         valid,
@@ -1568,7 +1568,7 @@ abstract class SchemaCore<
         ),
       };
 
-    // @ts-ignore: lol
+    // @ts-expect-error: lol
     const properties = getUnique(value.properties);
 
     if (properties.length < 2)
@@ -1593,9 +1593,9 @@ abstract class SchemaCore<
 
     if (reasons.length) return { valid, reason: reasons };
 
-    // @ts-ignore: lol
+    // @ts-expect-error: lol
     if (Array.isArray(value.handler)) {
-      // @ts-ignore: lol
+      // @ts-expect-error: lol
       const handlers = value.handler as unknown[];
 
       if (!handlers.length)
@@ -1625,7 +1625,7 @@ abstract class SchemaCore<
       return { valid: true };
     }
 
-    // @ts-ignore: lol
+    // @ts-expect-error: lol
     if (!isFunctionLike(value.handler))
       return {
         valid,

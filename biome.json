@@ -1,14 +1,12 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.8.2/schema.json",
-  "organizeImports": { "enabled": true },
+  "$schema": "https://biomejs.dev/schemas/2.2.3/schema.json",
   "files": {
-    "ignore": ["dist/*"],
-    "include": ["**/*.ts", "**/*.js"]
+    "includes": ["**/*.ts", "**/*.js", "!dist/*"]
   },
   "formatter": {
     "enabled": true,
     "formatWithErrors": false,
-    "ignore": [],
+    "includes": ["**"],
     "attributePosition": "auto",
     "indentStyle": "space",
     "indentWidth": 2,
@@ -40,9 +38,10 @@
       "suspicious": {
         "noExplicitAny": "off",
         "noArrayIndexKey": "off",
-        "noDoubleEquals": { "fix": "safe", "level": "warn" },
+        "noDoubleEquals": { "fix": "safe", "level": "warn", "options": {} },
         "noAsyncPromiseExecutor": "off",
-        "noGlobalIsNan": "off"
+        "noGlobalIsNan": "off",
+        "useIterableCallbackReturn": "off"
       },
       "style": {
         "useTemplate": "off",
