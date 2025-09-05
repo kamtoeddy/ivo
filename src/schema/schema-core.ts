@@ -32,6 +32,7 @@ import {
   VIRTUAL_RULES,
 } from './types';
 import {
+  cloneValue,
   DefaultErrorTool,
   type FieldError,
   type IErrorTool,
@@ -151,9 +152,7 @@ abstract class SchemaCore<
 
   protected _getContext(previousValues: Partial<Output> | null = null) {
     return this._getFrozenCopy({
-      ...sortKeys(
-        structuredClone(Object.assign({}, previousValues, this.context)),
-      ),
+      ...sortKeys(cloneValue(Object.assign({}, previousValues, this.context))),
       __getOptions__: () => this._getContextOptions(),
     }) as Context<Input, Output, CtxOptions>;
   }
@@ -167,11 +166,11 @@ abstract class SchemaCore<
     inputValues: Partial<RealType<Input>>;
     isUpdate: boolean;
   }) {
-    const changes = isUpdate ? structuredClone(data) : null,
-      previousValues = isUpdate ? structuredClone(this.values) : null,
+    const changes = isUpdate ? cloneValue(data) : null,
+      previousValues = isUpdate ? cloneValue(this.values) : null,
       context = this._getContext(isUpdate ? previousValues : null),
       values = this._getFrozenCopy(
-        structuredClone(
+        cloneValue(
           isUpdate
             ? Object.assign({}, previousValues, this.values, data)
             : Object.assign({}, this.defaults, data),
@@ -181,7 +180,7 @@ abstract class SchemaCore<
     return this._getFrozenCopy({
       changes,
       context,
-      inputValues: structuredClone(inputValues),
+      inputValues: cloneValue(inputValues),
       isUpdate,
       previousValues,
       values,

@@ -3,7 +3,7 @@ name: BUN CI
 on:
   pull_request:
   push:
-    branches: ['main']
+    branches: ["main"]
 
 jobs:
   build-and-test:

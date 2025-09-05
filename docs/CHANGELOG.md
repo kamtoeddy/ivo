@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# v1.7.8 <small><sup>2025-07-15</sup></small>
+
+- Fix issue whereby structuredClone fails to copy values in some runtimes
+
 # v1.7.7 <small><sup>2025-07-12</sup></small>
 
 - Perf improvements

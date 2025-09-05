@@ -11,7 +11,15 @@ export * from './schema-error';
 export * from './timestamp-tool';
 export * from './types';
 
-export { isFieldError, isInputFieldError, makeFieldError };
+export { cloneValue, isFieldError, isInputFieldError, makeFieldError };
+
+function cloneValue<T>(value: T): T {
+  try {
+    return structuredClone(value);
+  } catch {
+    return JSON.parse(JSON.stringify(value));
+  }
+}
 
 function isFieldError(data: unknown): data is FieldError {
   if (!isRecordLike(data) || isEqual({}, data)) return false;
