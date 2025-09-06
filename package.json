@@ -2,7 +2,7 @@
   "name": "ivo",
   "author": "kamtoeddy",
   "description": "The schema valitator that brings user stories to life",
-  "version": "1.7.8",
+  "version": "1.7.9",
   "scripts": {
     "build": "tsup",
     "build:watch": "tsup --watch",

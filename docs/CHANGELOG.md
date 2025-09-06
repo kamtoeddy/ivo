@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+# v1.7.9 <small><sup>2025-08-06</sup></small>
+
+- Fix issue causing type inference with some validators not working properly
+- Improve execution of sync or async handlers with Promise.try where applicable
+
 # v1.7.8 <small><sup>2025-07-15</sup></small>
 
 - Fix issue whereby structuredClone fails to copy values in some runtimes

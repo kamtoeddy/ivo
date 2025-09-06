@@ -43,11 +43,11 @@ const NotAllowedError = 'value not allowed';
 const validationFailedFieldError = makeFieldError('validation failed');
 
 class Schema<
-  Input extends RealType<Input>,
-  Output extends RealType<Output> = Input,
-  Aliases = {},
-  CtxOptions extends ObjectType = {},
-  ErrorTool extends IErrorTool<ObjectType> = DefaultErrorTool<
+  const Input extends RealType<Input>,
+  const Output extends RealType<Output> = Input,
+  const Aliases = {},
+  const CtxOptions extends ObjectType = {},
+  const ErrorTool extends IErrorTool<ObjectType> = DefaultErrorTool<
     KeyOf<Input & Aliases>
   >,
 > extends SchemaCore<Input, Output, CtxOptions, ErrorTool> {
@@ -68,7 +68,12 @@ class Schema<
   }
 
   get definitions() {
-    return this._definitions as never as NS.Definitions<Input, Output, Aliases>;
+    return this._definitions as never as NS.Definitions<
+      Input,
+      Output,
+      Aliases,
+      CtxOptions
+    >;
   }
 
   get options() {
@@ -90,11 +95,11 @@ class Schema<
   }
 
   extend<
-    ExtendedInput extends RealType<ExtendedInput>,
-    ExtendedOutput extends RealType<ExtendedOutput> = ExtendedInput,
-    Aliases = object,
-    ExtendedCtxOptions extends ObjectType = CtxOptions,
-    ExtendedErrorTool extends IErrorTool<ObjectType> = DefaultErrorTool<
+    const ExtendedInput extends RealType<ExtendedInput>,
+    const ExtendedOutput extends RealType<ExtendedOutput> = ExtendedInput,
+    const Aliases = object,
+    const ExtendedCtxOptions extends ObjectType = CtxOptions,
+    const ExtendedErrorTool extends IErrorTool<ObjectType> = DefaultErrorTool<
       KeyOf<ExtendedInput & Aliases>
     >,
   >(
