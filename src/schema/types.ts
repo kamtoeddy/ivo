@@ -260,8 +260,8 @@ namespace NS {
   export type Definitions<
     Input,
     Output,
-    Aliases = {},
-    CtxOptions extends ObjectType = {},
+    Aliases,
+    CtxOptions extends ObjectType,
   > = PrettyType<
     {
       [K in keyof (Input | Output)]: PublicProperty<

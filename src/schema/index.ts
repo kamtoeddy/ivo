@@ -12,8 +12,8 @@ import {
   sort,
   sortKeys,
   toArray,
-} from "../utils";
-import { defaultOptions, SchemaCore } from "./schema-core";
+} from '../utils';
+import { defaultOptions, SchemaCore } from './schema-core';
 import {
   type ImmutableContext,
   type InternalValidatorResponse,
@@ -27,7 +27,7 @@ import {
   type RealType,
   type Validator,
   type ValidatorResponseObject,
-} from "./types";
+} from './types';
 import {
   type DefaultErrorTool,
   type IErrorTool,
@@ -35,12 +35,12 @@ import {
   isInputFieldError,
   makeFieldError,
   VALIDATION_ERRORS,
-} from "./utils";
+} from './utils';
 
 export { Model, ModelTool, Schema };
 
-const NotAllowedError = "value not allowed";
-const validationFailedFieldError = makeFieldError("validation failed");
+const NotAllowedError = 'value not allowed';
+const validationFailedFieldError = makeFieldError('validation failed');
 
 class Schema<
   const Input extends RealType<Input>,
@@ -68,7 +68,12 @@ class Schema<
   }
 
   get definitions() {
-    return this._definitions as never as NS.Definitions<Input, Output, Aliases>;
+    return this._definitions as never as NS.Definitions<
+      Input,
+      Output,
+      Aliases,
+      CtxOptions
+    >;
   }
 
   get options() {
@@ -135,7 +140,7 @@ class Schema<
     if (useParentOptions)
       getKeysAsProps(this.options)
         .filter(
-          (prop) => ![...LIFE_CYCLES, "shouldUpdate"].includes(prop as never),
+          (prop) => ![...LIFE_CYCLES, 'shouldUpdate'].includes(prop as never),
         )
         .forEach((prop) => {
           options_[prop] = this.options[prop] as never;
@@ -250,7 +255,7 @@ class ModelTool<
     if (isOneOf(this._getDefinition(prop).shouldInit, [true, undefined]))
       return true;
 
-    return this._getValueBy(prop, "shouldInit", extraCtx) === true;
+    return this._getValueBy(prop, 'shouldInit', extraCtx) === true;
   };
 
   private _canInit = (prop: string) => {
@@ -272,7 +277,7 @@ class ModelTool<
     if (isOneOf(this._getDefinition(prop).shouldUpdate, [true, undefined]))
       return true;
 
-    return this._getValueBy(prop, "shouldUpdate", extraCtx) === true;
+    return this._getValueBy(prop, 'shouldUpdate', extraCtx) === true;
   };
 
   private _isVirtualInit = (prop: string, value: unknown = undefined) => {
@@ -338,7 +343,7 @@ class ModelTool<
         return NotAllowedError;
       }
 
-      if (typeof message === "string") return message || NotAllowedError;
+      if (typeof message === 'string') return message || NotAllowedError;
 
       return isInputFieldError(message) ? message : NotAllowedError;
     }
@@ -353,7 +358,7 @@ class ModelTool<
   ) {
     return {
       data: null,
-      error: errorTool.data as ErrorTool["data"],
+      error: errorTool.data as ErrorTool['data'],
       handleFailure: this._makeHandleFailure(data, errorTool, virtuals),
       handleSuccess: null,
     };
@@ -367,14 +372,14 @@ class ModelTool<
     const { reason, metadata, value } = validationResponse;
 
     if (isRecordLike(reason)) {
-      if (metadata) errorTool.set(prop, { metadata, reason: "" }, value);
+      if (metadata) errorTool.set(prop, { metadata, reason: '' }, value);
 
       return Object.entries(reason).forEach(([key, message]) => {
         errorTool.set(key, makeFieldError(message as never));
       });
     }
 
-    const fieldError = makeFieldError(reason || "validation failed");
+    const fieldError = makeFieldError(reason || 'validation failed');
 
     if (metadata) fieldError.metadata = metadata;
 
@@ -573,7 +578,7 @@ class ModelTool<
         } catch {
           isValid = makeResponse<unknown>({
             valid: false,
-            reason: "validation failed",
+            reason: 'validation failed',
           });
         }
 
@@ -936,7 +941,7 @@ class ModelTool<
     for (const prop of validProperties) {
       const res = data[prop];
 
-      if (typeof res === "object" && "validated" in (res as any)) {
+      if (typeof res === 'object' && 'validated' in (res as any)) {
         validatedData[prop] = (res as any).validated;
 
         continue;
@@ -948,15 +953,15 @@ class ModelTool<
         continue;
       }
 
-      if (typeof res === "string") {
+      if (typeof res === 'string') {
         const message = res.trim();
 
-        errors[prop] = message.length ? message : "validation failed";
+        errors[prop] = message.length ? message : 'validation failed';
 
         continue;
       }
 
-      errors[prop] = "validation failed";
+      errors[prop] = 'validation failed';
     }
 
     return { errors, validatedData };
@@ -978,7 +983,7 @@ class ModelTool<
   private _isGloballyUpdatable(changes: unknown) {
     const { shouldUpdate = defaultOptions.shouldUpdate! } = this._options;
 
-    if (typeof shouldUpdate === "boolean") return shouldUpdate;
+    if (typeof shouldUpdate === 'boolean') return shouldUpdate;
 
     return shouldUpdate(
       this._getMutableSummary({
@@ -1006,7 +1011,7 @@ class ModelTool<
 
     const hasShouldUpdateRule = this._isRuleInDefinition(
       propName,
-      "shouldUpdate",
+      'shouldUpdate',
     );
 
     const extraCtx = isAlias ? { [propName]: value } : {};
@@ -1046,7 +1051,7 @@ class ModelTool<
       cleanups = cleanups.concat(
         this._getHandlers<NS.FailureHandler<Input, Output, never>>(
           prop,
-          "onFailure",
+          'onFailure',
         ),
       );
 
@@ -1072,7 +1077,7 @@ class ModelTool<
     for (const prop of successProps) {
       const handlers = this._getHandlers<NS.SuccessHandler<Input, Output>>(
         prop,
-        "onSuccess",
+        'onSuccess',
       );
 
       const setOfHandlerIDs = this.propToOnSuccessConfigIDMap.get(prop);
@@ -1264,14 +1269,14 @@ class ModelTool<
   ): ValidatorResponseObject<T> {
     const responseType = typeof response;
 
-    if (responseType === "boolean")
+    if (responseType === 'boolean')
       return (
         response
           ? { valid: true, validated: value }
           : getValidationFailedResponse(value)
       ) as never;
 
-    if (!response && responseType !== "object")
+    if (!response && responseType !== 'object')
       return getValidationFailedResponse(value) as never;
 
     if (response?.valid) {
@@ -1287,7 +1292,7 @@ class ModelTool<
       value,
     } as never;
 
-    if (response?.reason && typeof response?.reason === "string")
+    if (response?.reason && typeof response?.reason === 'string')
       _response.reason = response.reason;
 
     if (response?.metadata && isRecordLike(response.metadata))
@@ -1355,7 +1360,7 @@ class ModelTool<
       return makeResponse<(Input & Aliases)[K]>({
         valid: false,
         value,
-        reason: "Invalid property",
+        reason: 'Invalid property',
       });
 
     const isAlias = this._isVirtualAlias(prop),
@@ -1392,7 +1397,7 @@ class ModelTool<
       } catch {
         return makeResponse<(Input & Aliases)[K]>({
           valid: false,
-          reason: "validation failed",
+          reason: 'validation failed',
         });
       }
 
@@ -1488,7 +1493,7 @@ class ModelTool<
     for (const prop of getSetValuesAsProps(this.props)) {
       const handlers_ = this._getHandlers<NS.DeleteHandler<Output, CtxOptions>>(
         prop,
-        "onDelete",
+        'onDelete',
       );
 
       if (handlers_.length) handlers = handlers.concat(handlers_);
@@ -1617,13 +1622,13 @@ class Model<
 }
 
 function areValuesOk(values: unknown) {
-  return values && typeof values === "object";
+  return values && typeof values === 'object';
 }
 
 function getValidationFailedResponse(value: unknown) {
   return {
     metadata: null,
-    reason: "validation failed",
+    reason: 'validation failed',
     valid: false,
     value,
   } as ValidatorResponseObject<unknown>;
