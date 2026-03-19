@@ -21,6 +21,7 @@ export type {
   XOR,
 } from './schema/types';
 export type {
+  ErrorPayload,
   FieldError,
   IErrorTool,
   InputFieldError,

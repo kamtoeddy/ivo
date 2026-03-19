@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+# v1.7.10 <small><sup>2026-03-19</sup></small>
+
+- Feat export `ErrorPayload` utility type
+- Chore update deps
+
 # v1.7.9 <small><sup>2025-08-06</sup></small>
 
 - Fix issue causing type inference with some validators not working properly
