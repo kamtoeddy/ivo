@@ -1,7 +1,5 @@
 import type { FieldKey, ObjectType } from '../../utils';
 
-export { ERRORS, SCHEMA_ERRORS, VALIDATION_ERRORS };
-
 export type {
   ErrorPayload,
   FieldError,
@@ -11,6 +9,7 @@ export type {
   IValidationError,
   ValidationErrorMessage,
 };
+export { ERRORS, SCHEMA_ERRORS, VALIDATION_ERRORS };
 
 const SCHEMA_ERRORS = { INVALID_SCHEMA: 'INVALID_SCHEMA' } as const;
 

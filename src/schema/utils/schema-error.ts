@@ -1,7 +1,7 @@
 import { type FieldKey, toArray } from '../../utils';
 import { SCHEMA_ERRORS } from './types';
 
-export { SchemaErrorTool, SchemaError };
+export { SchemaError, SchemaErrorTool };
 
 class SchemaError extends Error {
   constructor(public payload: ErrorPayload) {

@@ -2,7 +2,7 @@ import { type KeyOf, Schema } from '../../../../dist';
 import { VError } from './error-tool';
 import type { Ctx_Options, EInput, EOutput, Input, Output } from './types';
 
-export { UserModel, EUserModel };
+export { EUserModel, UserModel };
 
 const userSchema = new Schema<
   Input,

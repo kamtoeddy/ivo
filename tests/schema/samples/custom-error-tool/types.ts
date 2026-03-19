@@ -1,4 +1,4 @@
-export type { Ctx_Options, Input, Output, EInput, EOutput };
+export type { Ctx_Options, EInput, EOutput, Input, Output };
 
 type Ctx_Options = { lang: string };
 

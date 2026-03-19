@@ -9,9 +9,19 @@ import type {
 export type {
   ArrayOfMinSizeOne,
   ArrayOfMinSizeTwo,
+  // ctx
+  Context,
   DefinitionRule,
+  DeletionContext,
+  ImmutableContext,
+  // summary
+  ImmutableSummary,
+  InternalValidatorResponse,
+  InvalidValidatorResponse,
   KeyOf,
   Merge,
+  MutableContext,
+  MutableSummary,
   NS,
   PartialContext,
   PostValidationConfig,
@@ -19,20 +29,10 @@ export type {
   RealType,
   ResponseErrorObject,
   TypeOf,
-  Validator,
   ValidationResponse,
-  // ctx
-  Context,
-  DeletionContext,
-  ImmutableContext,
-  MutableContext,
-  // summary
-  ImmutableSummary,
-  MutableSummary,
+  Validator,
   ValidatorResponse,
   ValidatorResponseObject,
-  InternalValidatorResponse,
-  InvalidValidatorResponse,
   XOR,
 };
 

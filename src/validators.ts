@@ -5,6 +5,11 @@ import type {
 } from './schema/types';
 import { getUniqueBy, isNullOrUndefined, isOneOf, makeResponse } from './utils';
 
+export type {
+  ArrayValidatorOptions,
+  NumberValidatorOptions,
+  StringValidatorOptions,
+};
 export {
   makeArrayValidator,
   makeNumberValidator,
@@ -12,12 +17,6 @@ export {
   validateBoolean,
   validateCreditCard,
   validateEmail,
-};
-
-export type {
-  ArrayValidatorOptions,
-  NumberValidatorOptions,
-  StringValidatorOptions,
 };
 
 type ArrayValidatorOptions<T> = {

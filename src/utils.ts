@@ -8,8 +8,8 @@ import type {
   ValidatorResponseObject,
 } from './schema/types';
 
+export type { FieldKey, ObjectType };
 export {
-  makeResponse,
   getKeysAsProps,
   getSetValuesAsProps,
   getUnique,
@@ -21,12 +21,11 @@ export {
   isOneOf,
   isPropertyOf,
   isRecordLike,
-  toArray,
+  makeResponse,
   sort,
   sortKeys,
+  toArray,
 };
-
-export type { ObjectType, FieldKey };
 
 type FieldKey = number | string;
 

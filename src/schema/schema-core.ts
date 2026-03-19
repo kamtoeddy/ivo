@@ -44,11 +44,11 @@ import {
 } from './utils';
 
 export {
-  SchemaCore,
   defaultOptions,
-  getInvalidPostValidateConfigMessage,
-  getInvalidOnSuccessConfigMessage,
   getInvalidConfigMessageForRepeatedProperties,
+  getInvalidOnSuccessConfigMessage,
+  getInvalidPostValidateConfigMessage,
+  SchemaCore,
 };
 
 const defaultOptions: ns.Options<unknown, unknown, unknown, never, never> = {
