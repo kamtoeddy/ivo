@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 # v1.7.11 <small><sup>2026-03-12</sup></small>
 
 - Feat add `IvoResultInfo` utility type
-- 
+
 # v1.7.10 <small><sup>2026-03-19</sup></small>
 
 - Feat export `ErrorPayload` utility type
