@@ -2,7 +2,7 @@ import { Schema } from './schema';
 
 export default Schema;
 
-export { Schema } from './schema';
+export { type IvoResultInfo, Schema } from './schema';
 export type {
   ArrayOfMinSizeOne,
   ArrayOfMinSizeTwo,

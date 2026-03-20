@@ -27,6 +27,7 @@ import {
   type RealType,
   type Validator,
   type ValidatorResponseObject,
+  type XOR,
 } from './types';
 import {
   type DefaultErrorTool,
@@ -38,6 +39,14 @@ import {
 } from './utils';
 
 export { Model, ModelTool, Schema };
+
+export type IvoResultInfo<
+  T extends Model<any, any, any>,
+  Operation extends 'create' | 'update' = 'create',
+> = XOR<
+  { data: NonNullable<Awaited<ReturnType<T[Operation]>>['data']>; error: null },
+  { data: null; error: NonNullable<Awaited<ReturnType<T[Operation]>>['error']> }
+>;
 
 const NotAllowedError = 'value not allowed';
 const validationFailedFieldError = makeFieldError('validation failed');
