@@ -2,7 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
-# v1.7.11 <small><sup>2026-03-12</sup></small>
+# v1.7.12 <small><sup>2026-03-20</sup></small>
+
+- Fix issue with overly complicated `IvoResultInfo` utility type appeared
+
+# v1.7.11 <small><sup>2026-03-20</sup></small>
 
 - Feat add `IvoResultInfo` utility type
 
