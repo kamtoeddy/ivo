@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# v1.7.13 <small><sup>2026-03-22</sup></small>
+
+- Feat update type definitions of ArrayValidatorOptions<T>
+
 # v1.7.12 <small><sup>2026-03-20</sup></small>
 
 - Fix issue with overly complicated `IvoResultInfo` utility type appeared
