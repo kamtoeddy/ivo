@@ -49,12 +49,27 @@ export const validateOtherUnit = (value: any) => {
 };
 
 export const validateOtherUnits = (value: any) => {
-  return makeArrayValidator<IOtherMeasureUnit>({
+  return makeArrayValidator<
+    any,
+    | {
+        valid: boolean;
+        validated?: undefined;
+      }
+    | {
+        valid: boolean;
+        validated: {
+          coefficient: number;
+          name: string;
+        };
+      },
+    IOtherMeasureUnit
+  >({
     min: 1,
-    sorted: true,
-    filter: (v) => validateOtherUnit(v).valid,
-    modifier: (v) => validateOtherUnit(v).validated,
-    sorter: (a, b) => (a.name < b.name ? -1 : 1),
+    filter: (v) => !!v,
+    modifier: (v) => validateOtherUnit(v),
+    postModFilter: (v) => v.valid,
+    map: (v) => v.validated!,
+    sort: (a, b) => (a.name < b.name ? -1 : 1),
     uniqueKey: 'name',
   })(value);
 };
@@ -84,11 +99,35 @@ export const validateQuantities = async (
   value: any,
   { context }: SummaryType,
 ) => {
-  return makeArrayValidator<IOtherQuantity>({
+  //   IOtherMeasureUnit
+  // >({
+  //   min: 1,
+  //   filter: (v) => !!v,
+  //   modifier: (v) => validateOtherUnit(v),
+  //   postModFilter: (v) => v.valid,
+  //   map: (v) => v.validated!,
+  //   sort: (a, b) => (a.name < b.name ? -1 : 1),
+  return makeArrayValidator<
+    any,
+    | {
+        valid: boolean;
+        validated?: undefined;
+      }
+    | {
+        valid: boolean;
+        validated: {
+          name: string;
+          quantity: number;
+        };
+      },
+    IOtherQuantity
+  >({
     min: 1,
     unique: false,
-    filter: (v) => validateOtherQuantity(v, context).valid,
-    modifier: (v) => validateOtherQuantity(v, context).validated,
+    filter: (v) => !!v,
+    modifier: (v) => validateOtherQuantity(v, context),
+    postModFilter: (v) => v.valid,
+    map: (v) => v.validated!,
   })(value);
 };
 
