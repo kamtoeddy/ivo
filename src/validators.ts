@@ -3,6 +3,7 @@ import type {
   ValidationResponse,
   XOR,
 } from './schema/types';
+import { cloneValue } from './schema/utils';
 import { getUniqueBy, isNullOrUndefined, isOneOf, makeResponse } from './utils';
 
 export type {
@@ -19,29 +20,52 @@ export {
   validateEmail,
 };
 
-type ArrayValidatorOptions<T> = {
-  filter?: (data: unknown) => data is T | boolean | Promise<boolean>;
-  modifier?: (data: T) => unknown | Promise<unknown>;
+type ArrayValidatorOptions<PreFilteredType, ModType, FinalType> = {
   max?: number | ValueError;
   min?: number | ValueError;
-  sorted?: boolean;
-  sorter?: (a: T, b: T) => number;
-  sortOrder?: 'asc' | 'desc';
   unique?: boolean;
   uniqueKey?: string;
-};
+} & ArrayFilterOptions<PreFilteredType, ModType, FinalType> &
+  ArraySortOptions<FinalType>;
 
-function makeArrayValidator<const T>({
-  sorted = false,
+type ArrayFilterOptions<PreFilteredType, ModType, FinalType> =
+  | {
+      filter: ArrayFilterFn<FinalType>;
+      modifier?: never;
+      postModFilter?: never;
+      map?: never;
+    }
+  | {
+      filter: ArrayFilterFn<PreFilteredType>;
+      modifier: (item: PreFilteredType) => ModType | Promise<ModType>;
+      postModFilter?: (item: ModType) => boolean | Promise<boolean>;
+      map?: (item: ModType) => FinalType | Promise<FinalType>;
+    };
+
+type ArrayFilterFn<T> =
+  | ((item: unknown) => item is T)
+  | ((item: unknown) => boolean | Promise<boolean>);
+
+type ArraySortOptions<T> =
+  | { sort?: (a: T, b: T) => number; sortOrder?: never }
+  | { sort?: boolean; sortOrder?: 'asc' | 'desc' };
+
+function makeArrayValidator<
+  const PreFilteredType,
+  const ModType = PreFilteredType,
+  const FinalType = ModType,
+>({
   filter,
+  map,
   modifier,
-  sorter,
-  sortOrder = 'asc',
-  unique = true,
-  uniqueKey = '',
+  postModFilter,
   max,
   min,
-}: ArrayValidatorOptions<T> = {}) {
+  sort,
+  sortOrder,
+  unique,
+  uniqueKey,
+}: ArrayValidatorOptions<PreFilteredType, ModType, FinalType>) {
   const {
     maxValue,
     minValue,
@@ -57,15 +81,17 @@ function makeArrayValidator<const T>({
     defaulMinError: 'Expected a non-empty array',
   });
 
-  return async (value: unknown): Promise<ValidationResponse<T[]>> => {
+  return async (value: unknown): Promise<ValidationResponse<FinalType[]>> => {
     if (!Array.isArray(value))
       return makeResponse({ reason: 'Expected an array', valid: false });
 
-    let _array = [...value];
+    let _array = cloneValue(value);
 
     if (filter) _array = await Promise.all(value.filter(filter));
 
     if (modifier) _array = await Promise.all(_array.map(modifier));
+
+    if (postModFilter) _array = await Promise.all(_array.filter(postModFilter));
 
     if (unique && _array.length)
       _array = uniqueKey ? getUniqueBy(_array, uniqueKey) : getUniqueBy(_array);
@@ -76,13 +102,16 @@ function makeArrayValidator<const T>({
     if (hasMaxValue && _array.length > maxValue!)
       return makeResponse({ valid: false, reason: maxError, metadata });
 
-    if (sorted || sorter) {
-      if (!sorter) {
-        const order = _getArrayOrder(sortOrder);
-        sorter = (a, b) => (a < b ? order : -order);
-      }
+    if (map) _array = await Promise.all(_array.map(map));
 
-      _array = [..._array].sort(sorter);
+    if (sort) {
+      const order = _getArrayOrder(sortOrder);
+
+      const sorter =
+        // @ts-expect-error lol
+        typeof sort === 'boolean' ? (a, b) => (a < b ? order : -order) : sort;
+
+      _array = cloneValue(_array).sort(sorter);
     }
 
     return makeResponse({ valid: true, validated: _array });
