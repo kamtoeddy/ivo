@@ -2,9 +2,9 @@
 
 All notable changes to this project will be documented in this file.
 
-# v1.7.13 <small><sup>2026-03-22</sup></small>
+# v1.7.13 & v1.7.14 <small><sup>2026-03-22</sup></small>
 
-- Feat update type definitions of ArrayValidatorOptions<T>
+- Fix update type definitions of ArrayValidatorOptions<T>
 
 # v1.7.12 <small><sup>2026-03-20</sup></small>
 
