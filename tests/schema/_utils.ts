@@ -28,6 +28,7 @@ function findBy<T>(list: T[], determinant: any): T | undefined {
 }
 
 function getDeepValue(data: ObjectType, key: string): any {
+  // @ts-expect-error lol
   return key.split('.').reduce((prev, next) => prev?.[next], data);
 }
 

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test';
+import { expectFailure } from '../../schema/_utils';
 
 const people = [
   { name: 'James', bio: { displayName: 'james' }, age: 31 },
@@ -13,11 +14,18 @@ export const makeArrayValidatorTest = ({
   makeArrayValidator: Function;
 }) => {
   describe('makeArrayValidator', () => {
+    it('should throw an error if a filter function is not provided', async () => {
+      expectFailure(
+        () => makeArrayValidator({})([1, {}, '', false, '[]']),
+        'Array validator must have a filter function',
+      );
+    });
+
     it('should reject non-array values', async () => {
       const values = [1, {}, '', false, '[]'];
 
       for (const value of values) {
-        const result = await makeArrayValidator()(value);
+        const result = await makeArrayValidator({ filter: () => false })(value);
 
         expect(result.validated).toBeUndefined();
         expect(result).toMatchObject({
@@ -28,7 +36,7 @@ export const makeArrayValidatorTest = ({
     });
 
     it('not should reject an empty array', async () => {
-      const res = await makeArrayValidator()([]);
+      const res = await makeArrayValidator({ filter: () => false })([]);
 
       expect(res).toMatchObject({ valid: true, validated: [] });
     });
@@ -37,14 +45,20 @@ export const makeArrayValidatorTest = ({
       const values = [[1], [1, 2], [1, 2, 3]];
 
       for (const data of values) {
-        const res = await makeArrayValidator({ min: 1, max: 3 })(data);
+        const res = await makeArrayValidator({
+          filter: () => true,
+          min: 1,
+          max: 3,
+        })(data);
 
         expect(res).toMatchObject({ valid: true, validated: data });
       }
     });
 
     it('should if items are more than max length', async () => {
-      const res = await makeArrayValidator({ max: 1 })([1, 2]);
+      const res = await makeArrayValidator({ filter: () => true, max: 1 })([
+        1, 2,
+      ]);
 
       expect(res).toMatchObject({
         valid: false,
@@ -54,9 +68,10 @@ export const makeArrayValidatorTest = ({
     });
 
     it('should respect custom max errors', async () => {
-      const res = await makeArrayValidator({ max: { value: 1, error: 'lol' } })(
-        [1, 2],
-      );
+      const res = await makeArrayValidator({
+        filter: () => true,
+        max: { value: 1, error: 'lol' },
+      })([1, 2]);
 
       expect(res).toMatchObject({
         valid: false,
@@ -66,7 +81,7 @@ export const makeArrayValidatorTest = ({
     });
 
     it('should if items are less than min length', async () => {
-      const res = await makeArrayValidator({ min: 1 })([]);
+      const res = await makeArrayValidator({ filter: () => true, min: 1 })([]);
 
       expect(res).toMatchObject({
         valid: false,
@@ -77,6 +92,7 @@ export const makeArrayValidatorTest = ({
 
     it('should respect custom min errors', async () => {
       const res = await makeArrayValidator({
+        filter: () => true,
         min: { value: 1, error: 'min not reached' },
       })([]);
 
@@ -89,7 +105,9 @@ export const makeArrayValidatorTest = ({
 
     it('should sort resulting array if option is specified', async () => {
       const values = [1, 7, 0, 18, -20];
-      const res = await makeArrayValidator({ sorted: true })(values);
+      const res = await makeArrayValidator({ filter: () => true, sort: true })(
+        values,
+      );
 
       expect(res.reason).toBeUndefined();
       expect(res).toMatchObject({
@@ -98,7 +116,8 @@ export const makeArrayValidatorTest = ({
       });
 
       const res1 = await makeArrayValidator({
-        sorted: true,
+        filter: () => true,
+        sort: true,
         sortOrder: 'desc',
       })(values);
 
@@ -113,7 +132,8 @@ export const makeArrayValidatorTest = ({
       const values = [1, 0, 18, 7, -20];
       const sorted = [-20, 0, 1, 7, 18];
       const res = await makeArrayValidator({
-        sorted: true,
+        filter: () => true,
+        sort: true,
         sortedOrder: 'yoo',
       })(values);
 
@@ -146,9 +166,13 @@ export const makeArrayValidatorTest = ({
     it('should respect modifier', async () => {
       const modifier = Number;
 
-      const res = await makeArrayValidator({
-        modifier,
-      })([1, 7, '18', -20, null]);
+      const res = await makeArrayValidator({ filter: () => true, modifier })([
+        1,
+        7,
+        '18',
+        -20,
+        null,
+      ]);
 
       expect(res.reason).toBeUndefined();
       expect(res).toMatchObject({ valid: true, validated: [1, 7, 18, -20, 0] });
@@ -156,6 +180,7 @@ export const makeArrayValidatorTest = ({
 
     it('should respect unique option', async () => {
       const res = await makeArrayValidator({
+        filter: () => true,
         unique: true,
       })([1, 7, '18', '18', -20, null, 1]);
 
@@ -168,6 +193,7 @@ export const makeArrayValidatorTest = ({
 
     it('should respect unique option with unique key', async () => {
       const res = await makeArrayValidator({
+        filter: () => true,
         unique: true,
         uniqueKey: 'name',
       })(people);
@@ -179,6 +205,7 @@ export const makeArrayValidatorTest = ({
 
     it('should respect unique option with unique key (nested)', async () => {
       const res = await makeArrayValidator({
+        filter: () => true,
         unique: true,
         uniqueKey: 'bio.displayName',
       })(people);
@@ -192,7 +219,7 @@ export const makeArrayValidatorTest = ({
       const res = await makeArrayValidator({
         filter: (v: any) => !isNaN(v),
         modifier: Number,
-        sorter: (a: number, b: number) => (a < b ? -1 : 1),
+        sort: (a: number, b: number) => (a < b ? -1 : 1),
       })([1, 7, '18', -20, null]);
 
       expect(res.reason).toBeUndefined();

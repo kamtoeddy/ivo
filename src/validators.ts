@@ -81,13 +81,13 @@ function makeArrayValidator<
     defaulMinError: 'Expected a non-empty array',
   });
 
+  if (!filter) throw new Error('Array validator must have a filter function');
+
   return async (value: unknown): Promise<ValidationResponse<FinalType[]>> => {
     if (!Array.isArray(value))
       return makeResponse({ reason: 'Expected an array', valid: false });
 
-    let _array = cloneValue(value);
-
-    if (filter) _array = await Promise.all(value.filter(filter));
+    let _array = await Promise.all(value.filter(filter));
 
     if (modifier) _array = await Promise.all(_array.map(modifier));
 

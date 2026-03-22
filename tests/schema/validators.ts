@@ -65,6 +65,7 @@ export const Test_Validators = ({ Schema, fx }: any) => {
             try {
               toFail();
             } catch (err) {
+              // @ts-expect-error lol
               expect(err.payload).toMatchObject({
                 prop: expect.arrayContaining(['Invalid validator']),
                 prop2: expect.arrayContaining(['Invalid validator']),
@@ -119,6 +120,7 @@ export const Test_Validators = ({ Schema, fx }: any) => {
               try {
                 toFail();
               } catch (err) {
+                // @ts-expect-error lol
                 expect(err.payload).toMatchObject({
                   prop: expect.arrayContaining([message]),
                   prop2: expect.arrayContaining([message]),
@@ -152,6 +154,7 @@ export const Test_Validators = ({ Schema, fx }: any) => {
               try {
                 toFail();
               } catch (err) {
+                // @ts-expect-error lol
                 expect(err.payload).toMatchObject({
                   prop: expect.arrayContaining([
                     'Validator at index 0 is invalid',
@@ -191,6 +194,7 @@ export const Test_Validators = ({ Schema, fx }: any) => {
               try {
                 toFail();
               } catch (err) {
+                // @ts-expect-error lol
                 expect(err.payload).toMatchObject({
                   prop: expect.arrayContaining([
                     'Validator at index 1 is invalid',
@@ -233,6 +237,7 @@ export const Test_Validators = ({ Schema, fx }: any) => {
               try {
                 toFail();
               } catch (err) {
+                // @ts-expect-error lol
                 expect(err.payload).toMatchObject({
                   prop: expect.arrayContaining(['Invalid validators']),
                   prop2: expect.arrayContaining(['Invalid validators']),
@@ -465,8 +470,8 @@ export const Test_Validators = ({ Schema, fx }: any) => {
 
       describe('behaviour with secondary validators (validation array)', () => {
         describe('should properly trigger secondary validators', () => {
-          let valuesProvided = {} as never;
-          let summaryStats = {} as never;
+          let valuesProvided = {} as any;
+          let summaryStats = {} as any;
 
           function makeSecondaryValidator(prop: string) {
             return (value: any, summary: any) => {
@@ -712,6 +717,7 @@ export const Test_Validators = ({ Schema, fx }: any) => {
                 default: '',
                 validator: [
                   validator,
+                  // @ts-expect-error lol
                   (_, { isUpdate }) => ({
                     reason: isUpdate ? 'failed to validate' : 'p1',
                   }),
