@@ -20,7 +20,7 @@ export {
 };
 
 type ArrayValidatorOptions<T> = {
-  filter?: (data: T) => boolean | Promise<boolean>;
+  filter?: (data: unknown) => data is T | boolean | Promise<boolean>;
   modifier?: (data: T) => unknown | Promise<unknown>;
   max?: number | ValueError;
   min?: number | ValueError;
