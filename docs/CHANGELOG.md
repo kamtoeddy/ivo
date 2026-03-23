@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# v1.8.0 <small><sup>2026-03-23</sup></small>
+
+- Feat update signature and validation rules of `makeArrayValidator`
+
 # v1.7.13 & v1.7.14 <small><sup>2026-03-22</sup></small>
 
 - Fix update type definitions of ArrayValidatorOptions<T>

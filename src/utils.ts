@@ -27,7 +27,7 @@ export {
   toArray,
 };
 
-type FieldKey = number | string;
+type FieldKey = string;
 
 type ObjectType<T = Record<FieldKey, unknown>> = T extends object
   ? T extends unknown[]

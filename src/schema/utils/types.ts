@@ -32,9 +32,9 @@ type InputFieldError =
   | { reason: FieldError['reason'] }
   | { metadata: FieldError['metadata'] };
 
-type ErrorPayload<Keys extends FieldKey = FieldKey> = {
-  [K in Keys]?: FieldError;
-};
+type ErrorPayload<Keys extends FieldKey = FieldKey> = Partial<
+  Record<Keys, FieldError>
+>;
 
 type InputPayload = Record<FieldKey, string | FieldError>;
 
