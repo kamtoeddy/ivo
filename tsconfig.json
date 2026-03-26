@@ -3,7 +3,7 @@
     "lib": ["ESNext", "DOM"],
     "target": "ESNext",
     "module": "ESNext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
@@ -11,8 +11,8 @@
     "noEmit": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "types": ["@types/bun"]
+    "types": ["@types/bun"],
   },
   "include": ["."],
-  "exclude": ["node_modules", "dist", "**/tests/*"]
+  "exclude": ["node_modules", "dist", "**/tests/*"],
 }
