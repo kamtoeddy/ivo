@@ -4,8 +4,8 @@
   "description": "The schema valitator that brings user stories to life",
   "version": "1.8.0",
   "scripts": {
-    "build": "tsup",
-    "build:watch": "tsup --watch",
+    "build": "tsdown",
+    "build:watch": "tsdown --watch",
     "cleanup": "rm -rf coverage dist",
     "lint": "tsc --noEmit && bun run lint:biome",
     "lint:biome": "clear; bunx @biomejs/biome check --write .",
@@ -48,7 +48,7 @@
   "devDependencies": {
     "@biomejs/biome": "^2.4.10",
     "@types/bun": "^1.3.11",
-    "tsup": "^8.5.1",
+    "tsdown": "^0.21.8",
     "typescript": "^6.0.2"
   }
 }
