@@ -360,11 +360,15 @@ abstract class SchemaCore<
       else this.dependencyMap[_prop] = [prop];
   };
 
-  private _areHandlersOk = (
-    _handlers: unknown,
-    lifeCycle: ns.LifeCycle,
-    register: boolean,
-  ) => {
+  private _areHandlersOk = ({
+    handlers: _handlers,
+    lifeCycle,
+    register,
+  }: {
+    handlers: unknown;
+    lifeCycle: ns.LifeCycle;
+    register: boolean;
+  }) => {
     const reasons: string[] = [],
       handlers = toArray(_handlers);
 
@@ -422,7 +426,11 @@ abstract class SchemaCore<
     }
 
     if (isPropertyOf('onDelete', options)) {
-      const isValid = this._areHandlersOk(options.onDelete, 'onDelete', true);
+      const isValid = this._areHandlersOk({
+        handlers: options.onDelete,
+        lifeCycle: 'onDelete',
+        register: true,
+      });
 
       if (!isValid.valid) error.add('onDelete', isValid.reasons!).throw();
     }
@@ -1008,7 +1016,11 @@ abstract class SchemaCore<
     for (const rule of LIFE_CYCLES) {
       if (!isPropertyOf(rule, definition)) continue;
 
-      const isValid = this._areHandlersOk(definition[rule], rule, false);
+      const isValid = this._areHandlersOk({
+        handlers: definition[rule],
+        lifeCycle: rule,
+        register: false,
+      });
 
       if (!isValid.valid) reasons = reasons.concat(isValid.reasons!);
     }

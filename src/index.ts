@@ -1,7 +1,3 @@
-import { Schema } from './schema';
-
-export default Schema;
-
 export { type IvoResultInfo, Schema } from './schema';
 export type {
   ArrayOfMinSizeOne,
