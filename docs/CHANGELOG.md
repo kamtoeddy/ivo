@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+# v1.8.6 <small><sup>2026-05-01</sup></small>
+
+- Perf: make use of a model factory for create, update and delete model methods.
+- Chore: drop support for cjs.
+
 # v1.8.0 <small><sup>2026-03-23</sup></small>
 
 - Feat update signature and validation rules of `makeArrayValidator`

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'bun:test';
 
-import { Schema } from '../../../dist/index.mjs';
+import { Schema } from '../../../dist';
 import { EUserModel, UserModel } from './custom-error-tool';
 
 const contextOptions = { lang: 'en' };
