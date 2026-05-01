@@ -1,6 +1,8 @@
 use serde_json::Value;
 use std::collections::HashMap;
 
+use crate::ValidatorResponse;
+
 pub type Context = HashMap<String, Value>;
 
 pub enum DefaultValue {
@@ -13,8 +15,7 @@ pub enum ConstantValue {
     Func(Box<dyn Fn(&Context) -> Value + Send + Sync>),
 }
 
-pub type ValidatorFn =
-    Box<dyn Fn(&Value, &Context) -> crate::validators::ValidationResponse<Value> + Send + Sync>;
+pub type ValidatorFn = Box<dyn Fn(&Value, &Context) -> ValidatorResponse<Value> + Send + Sync>;
 
 pub struct PropertyDefinition {
     pub virtual_prop: bool,

@@ -1,5 +1,6 @@
 use crate::schema::definition::{DefaultValue, PropertyDefinition};
-use crate::schema::utils::{SchemaError, SchemaErrorTool, TimeStampTool};
+use crate::schema::utils::{SchemaError, TimeStampTool};
+use crate::ValidatorResponse;
 use serde_json::Value;
 use std::collections::{HashMap, HashSet};
 
@@ -42,18 +43,16 @@ pub struct SchemaCore {
 }
 
 impl SchemaCore {
-    pub fn new(
-        definitions: HashMap<String, PropertyDefinition>,
-        options: Option<Value>,
-    ) -> Result<Self, SchemaError> {
-        let mut err_tool = SchemaErrorTool::new();
+    pub fn new(definitions: HashMap<String, PropertyDefinition>, options: Option<Value>) -> Self {
+        let mut err_tool = SchemaError::new();
 
         if definitions.is_empty() {
             err_tool.add(
                 "schema properties",
                 "Insufficient Schema properties".to_string(),
             );
-            return Err(err_tool.throw().err().unwrap());
+
+            err_tool.throw();
         }
 
         let timestamp_tool = TimeStampTool::new(options.as_ref());
@@ -86,19 +85,18 @@ impl SchemaCore {
             timestamp_tool,
         };
 
-        core.check_prop_definitions()?;
-        core.check_options()?;
+        core.check_prop_definitions();
+        core.check_options();
 
-        Ok(core)
+        core
     }
 
-    fn check_options(&self) -> Result<(), SchemaError> {
-        // stub for future detailed option validation
-        Ok(())
+    fn check_options(&self) {
+        todo!()
     }
 
-    fn check_prop_definitions(&mut self) -> Result<(), SchemaError> {
-        let mut err_tool = SchemaErrorTool::new();
+    fn check_prop_definitions(&mut self) {
+        let mut err_tool = SchemaError::new();
 
         // First pass: register prop kinds and simple attributes
         for (prop, def) in &self.definitions {
@@ -267,7 +265,7 @@ impl SchemaCore {
             }
         }
 
-        err_tool.throw()
+        err_tool.throw();
     }
 
     pub fn get_definition(&self, prop: &str) -> Option<&PropertyDefinition> {
@@ -327,10 +325,7 @@ impl SchemaCore {
     /// It will repeatedly evaluate defaults whose dependencies are satisfied (present in `context`).
     /// If unresolved defaults remain and schema option `error_on_unresolved_defaults` is true,
     /// returns Err(SchemaError) listing the unresolved props.
-    pub fn resolve_defaults(
-        &self,
-        context: &mut HashMap<String, Value>,
-    ) -> Result<(), SchemaError> {
+    pub fn resolve_defaults(&self, context: &mut HashMap<String, Value>) {
         let mut pending: HashSet<String> = self
             .definitions
             .iter()
@@ -399,21 +394,14 @@ impl SchemaCore {
                         );
                     }
                 }
-
-                return Err(SchemaError { payload });
             }
         }
-
-        Ok(())
     }
 
     /// Resolve constants iteratively; constants may depend on other values in context.
     /// If unresolved constants remain and schema option `error_on_unresolved_constants` is true,
     /// returns Err(SchemaError) listing unresolved constants; otherwise returns Ok(())
-    pub fn resolve_constants(
-        &self,
-        context: &mut HashMap<String, Value>,
-    ) -> Result<(), SchemaError> {
+    pub fn resolve_constants(&self, context: &mut HashMap<String, Value>) {
         let mut pending: HashSet<String> = self
             .constants
             .iter()
@@ -472,19 +460,11 @@ impl SchemaCore {
                         );
                     }
                 }
-
-                return Err(SchemaError { payload });
             }
         }
-
-        Ok(())
     }
 
-    pub fn run_validators(
-        &self,
-        prop: &str,
-        value: &Value,
-    ) -> Option<crate::validators::ValidationResponse<Value>> {
+    pub fn run_validators(&self, prop: &str, value: &Value) -> Option<ValidatorResponse<Value>> {
         let def = self.definitions.get(prop)?;
         let validators = def.validator.as_ref()?;
 
@@ -496,33 +476,35 @@ impl SchemaCore {
         let primary = &validators[0];
 
         match primary(value, &ctx) {
-            crate::validators::ValidationResponse::Valid(v) => {
+            Ok(v) => {
                 if validators.len() == 2 {
                     let secondary = &validators[1];
                     Some(secondary(&v, &ctx))
                 } else {
-                    Some(crate::validators::ValidationResponse::Valid(v))
+                    Some(Ok(v))
                 }
             }
-            crate::validators::ValidationResponse::Invalid(e) => {
-                Some(crate::validators::ValidationResponse::Invalid(e))
-            }
+            Err(e) => Some(Err(e)),
         }
     }
 
     pub fn get_reserved_keys(&self) -> Vec<String> {
         let mut keys: Vec<String> = self.props.iter().cloned().collect();
+
         keys.extend(self.virtuals.iter().cloned());
+
         if let Some(k) = &self.timestamp_tool.get_keys().created_at {
             if !k.is_empty() {
                 keys.push(k.clone());
             }
         }
+
         if let Some(k) = &self.timestamp_tool.get_keys().updated_at {
             if !k.is_empty() {
                 keys.push(k.clone());
             }
         }
+
         keys.sort();
         keys
     }

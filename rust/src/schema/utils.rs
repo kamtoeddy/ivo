@@ -1,9 +1,6 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
-use std::fmt;
-
-// Types
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum ValidationErrorMessage {
@@ -15,6 +12,7 @@ pub enum ValidationErrorMessage {
 pub struct FieldError {
     pub reason: String,
     pub metadata: Option<Value>,
+    pub value: Option<Value>,
 }
 
 pub type ErrorPayload = HashMap<String, Vec<String>>; // for SchemaErrorTool usage
@@ -30,7 +28,7 @@ pub trait ErrorTool {
     fn data(&self) -> IValidationError;
     fn fields(&self) -> Vec<String>;
     fn is_loaded(&self) -> bool;
-    fn set(&mut self, field: String, error: FieldError, _value: Option<Value>) -> &mut Self;
+    fn set(&mut self, field: String, error: FieldError) -> &mut Self;
     fn set_message(&mut self, message: ValidationErrorMessage) -> &mut Self;
 }
 
@@ -65,7 +63,7 @@ impl ErrorTool for DefaultErrorTool {
         !self.payload.is_empty()
     }
 
-    fn set(&mut self, field: String, value: FieldError, _orig: Option<Value>) -> &mut Self {
+    fn set(&mut self, field: String, value: FieldError) -> &mut Self {
         if !self.payload.contains_key(&field) {
             self.payload.insert(field, value);
             return self;
@@ -100,25 +98,11 @@ impl ErrorTool for DefaultErrorTool {
     }
 }
 
-// SchemaErrorTool - used for schema validation during construction
-#[derive(Debug)]
 pub struct SchemaError {
-    pub payload: HashMap<String, Vec<String>>,
-}
-
-impl fmt::Display for SchemaError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Invalid schema: {:?}", self.payload)
-    }
-}
-
-impl std::error::Error for SchemaError {}
-
-pub struct SchemaErrorTool {
     payload: HashMap<String, Vec<String>>,
 }
 
-impl SchemaErrorTool {
+impl SchemaError {
     pub fn new() -> Self {
         Self {
             payload: HashMap::new(),
@@ -142,14 +126,26 @@ impl SchemaErrorTool {
         self
     }
 
-    pub fn throw(&self) -> Result<(), SchemaError> {
-        if self.is_payload_loaded() {
-            Err(SchemaError {
-                payload: self.payload.clone(),
-            })
-        } else {
-            Ok(())
+    pub fn throw(&self) {
+        println!("\nSchema errors:");
+
+        for (prop, errors) in &self.payload {
+            println!();
+
+            if errors.len() == 1 {
+                println!("  [{prop}]: {}", errors[0]);
+
+                continue;
+            }
+
+            println!("  [{prop}]:");
+
+            for (i, m) in errors.iter().enumerate() {
+                println!("    { }) {m}", i + 1);
+            }
         }
+
+        println!("\nYour schema has some errors");
     }
 }
 
