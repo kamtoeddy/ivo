@@ -26,10 +26,14 @@ struct WithoutParentsBuilder<I, O, T> {
 }
 
 impl<I, O, T> WithoutParentsBuilder<I, O, T> {
-    pub fn depends_on(self, parents: Vec<String>) -> WithoutResolverBuilder<I, O, T> {
+    pub fn depends_on(self, parents: Vec<&str>) -> WithoutResolverBuilder<I, O, T> {
         WithoutResolverBuilder {
             default: self.default,
-            parents,
+            parents: parents
+                .clone()
+                .iter()
+                .map(|s| s.to_string())
+                .collect::<Vec<String>>(),
         }
     }
 }

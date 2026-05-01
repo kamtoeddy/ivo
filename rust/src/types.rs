@@ -53,7 +53,7 @@ pub struct MutableSummary<I, O> {
 
 pub type FieldValidatorFn<I, O, T = Value> =
     Box<dyn Fn(&Value, &Context<I, O>) -> ValidatorResponse<T> + Send + Sync>;
-pub type ResolverFn<I, O, T = Value> = Box<dyn Fn(Value, &MutableSummary<I, O>) -> T + Send + Sync>;
+pub type ResolverFn<I, O, T = Value> = Box<dyn Fn(&MutableSummary<I, O>) -> T + Send + Sync>;
 
 // #[async_trait]
 pub trait Validator<I, O>: Send + Sync {

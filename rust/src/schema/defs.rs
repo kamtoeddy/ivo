@@ -22,9 +22,9 @@ impl<I, O> IvoProperty<I, O> {
 //         .on_success(handler)
 //         .build();
 
-//     let d = DependentField::default(2)
-//         .depends_on(parents)
-//         .resolver(resolver)
+//     let d = DependentField::default(String::from("Hello"))
+//         .depends_on(vec!["first_name", "last_name"])
+//         .resolver(Box::new(|s| String::from("full name")))
 //         .on_delete(handler)
 //         .on_success(handler)
 //         .build();
