@@ -1,5 +1,7 @@
 pub mod core;
 pub mod definition;
+pub mod defs;
+pub mod properties;
 pub mod utils;
 
 pub use definition::PropertyDefinition;
