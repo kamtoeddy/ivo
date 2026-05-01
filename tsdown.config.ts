@@ -1,20 +1,14 @@
 import { defineConfig } from 'tsdown';
 
-export default defineConfig([
-  {
-    entry: ['./src/index.ts'],
-    format: ['esm', 'cjs'],
-    outDir: './dist',
-    clean: true,
-    dts: false,
-    minify: true,
+export default defineConfig({
+  entry: ['./src/index.ts'],
+  format: {
+    esm: {
+      outExtensions: () => ({ dts: '.d.ts', js: '.js' }),
+    },
   },
-  {
-    entry: ['./src/index.ts'],
-    format: 'esm',
-    outDir: './dist',
-    clean: true,
-    dts: true,
-    minify: true,
-  },
-]);
+  outDir: './dist',
+  clean: true,
+  dts: true,
+  minify: true,
+});

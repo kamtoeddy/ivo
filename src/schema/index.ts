@@ -173,7 +173,7 @@ class Schema<
 
   getModel() {
     return new Model(
-      new ModelTool<Input, Output, Aliases, CtxOptions, ErrorTool>(this),
+      () => new ModelTool<Input, Output, Aliases, CtxOptions, ErrorTool>(this),
     );
   }
 }
@@ -1616,22 +1616,28 @@ class Model<
   >,
 > {
   constructor(
-    private modelTool: ModelTool<Input, Output, Aliases, CtxOptions, ErrorTool>,
+    private modelFactory: () => ModelTool<
+      Input,
+      Output,
+      Aliases,
+      CtxOptions,
+      ErrorTool
+    >,
   ) {}
 
   create = (
     values: Partial<Input & Aliases> = {},
     contextOptions: Partial<CtxOptions> = {},
-  ) => this.modelTool.create(values, contextOptions);
+  ) => this.modelFactory().create(values, contextOptions);
 
   delete = (values: Output, contextOptions: Partial<CtxOptions> = {}) =>
-    this.modelTool.delete(values, contextOptions);
+    this.modelFactory().delete(values, contextOptions);
 
   update = (
     values: Output,
     changes: Partial<Input & Aliases>,
     contextOptions: Partial<CtxOptions> = {},
-  ) => this.modelTool.update(values, changes, contextOptions);
+  ) => this.modelFactory().update(values, changes, contextOptions);
 }
 
 function areValuesOk(values: unknown) {

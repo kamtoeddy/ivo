@@ -1,4 +1,5 @@
 export { type IvoResultInfo, Schema } from './schema';
+
 export type {
   ArrayOfMinSizeOne,
   ArrayOfMinSizeTwo,

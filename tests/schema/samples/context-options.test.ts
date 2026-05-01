@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'bun:test';
 
-import Schema from '../../../dist';
+import { Schema } from '../../../dist';
 import { EUserModel, UserModel } from './custom-error-tool';
 
 const contextOptions = { lang: 'en' };
@@ -80,6 +80,7 @@ describe('Context options', () => {
     const contextOptions = { lang: 'en' };
     const validator = () => true;
     function handleRequired(prop: string) {
+      // @ts-expect-error lol
       return ({ context: { __getOptions__ } }) => {
         ctxOptions[prop] = __getOptions__();
 
