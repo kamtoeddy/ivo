@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+# v1.9.0-beta.1 <small><sup>2026-05-03</sup></small>
+
+- Breaking change: update how ctx options are accessed and updated.
+- Perf: update some aspects of how model tool manage internal state.
+- Chore: re-introduce support for cjs.
+
 # v1.8.6 <small><sup>2026-05-01</sup></small>
 
 - Perf: make use of a model factory for create, update and delete model methods.

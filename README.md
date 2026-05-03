@@ -21,7 +21,7 @@ import { Schema } from "ivo";
 # Defining a schema
 
 ```ts
-import { Schema, type MutableSummary } from "ivo";
+import { Schema, type IvoSummary } from "ivo";
 
 type UserInput = {
   email: string | null;
@@ -75,8 +75,8 @@ const userSchema = new Schema<UserInput, User>(
 );
 
 function isEmailOrPhoneRequired({
-  context: { email, phoneNumber },
-}: MutableSummary<UserInput, User>) {
+  ctx: { email, phoneNumber },
+}: IvoSummary<UserInput, User>) {
   return [!email && !phoneNumber, 'Provide "email" or "phone" number'] as const;
 }
 
@@ -168,27 +168,27 @@ console.log(error);
 
 ## Docs
 
-- [Defining a schema](./docs/v1.7.0/index.md#defining-a-schema)
+- [Defining a schema](./docs/v1.9.0/index.md#defining-a-schema)
 
-  - [allowed values](./docs/v1.7.0/definitions/allowed-values.md#allowed-values)
-  - [constant properties](./docs/v1.7.0/definitions/constants.md#constant-properties)
-  - [default values](./docs/v1.7.0/definitions/defaults.md#default-values)
-  - [dependent properties](./docs/v1.7.0/definitions/dependents.md#dependent-properties)
-  - [readonly properties](./docs/v1.7.0/definitions/readonly.md#readonly-properties)
-  - [required properties](./docs/v1.7.0/definitions/required.md#required-properties)
-  - [virtual properties](./docs/v1.7.0/definitions/virtuals.md#virtual-properties)
-  - [validators](./docs/v1.8.0/validators.md#validators)
-  - [Extending Schemas](./docs/v1.7.0/definitions/extend-schemas.md#extending-schemas)
-  - [The Operation Context](./docs/v1.7.0/life-cycles.md#the-operation-contextt)
-  - [The Operation Summary](./docs/v1.7.0/life-cycles.md#the-operation-summary)
-  - [Life Cycles & Handlers](./docs/v1.7.0/life-cycles.md#life-cycle-listeners)
+  - [allowed values](./docs/v1.9.0/definitions/allowed-values.md#allowed-values)
+  - [constant properties](./docs/v1.9.0/definitions/constants.md#constant-properties)
+  - [default values](./docs/v1.9.0/definitions/defaults.md#default-values)
+  - [dependent properties](./docs/v1.9.0/definitions/dependents.md#dependent-properties)
+  - [readonly properties](./docs/v1.9.0/definitions/readonly.md#readonly-properties)
+  - [required properties](./docs/v1.9.0/definitions/required.md#required-properties)
+  - [virtual properties](./docs/v1.9.0/definitions/virtuals.md#virtual-properties)
+  - [validators](./docs/v1.9.0/validators.md#validators)
+  - [Extending Schemas](./docs/v1.9.0/definitions/extend-schemas.md#extending-schemas)
+  - [The Operation ctx](./docs/v1.9.0/life-cycles.md#the-operation-ctxt)
+  - [The Operation Summary](./docs/v1.9.0/life-cycles.md#the-operation-summary)
+  - [Life Cycles & Handlers](./docs/v1.9.0/life-cycles.md#life-cycle-listeners)
 
-  - [onDelete](./docs/v1.7.0/life-cycles.md#ondelete)
-  - [onFailure](./docs/v1.7.0/life-cycles.md#onfailure)
-  - [onSuccess](./docs/v1.7.0/life-cycles.md#onsuccess)
+  - [onDelete](./docs/v1.9.0/life-cycles.md#ondelete)
+  - [onFailure](./docs/v1.9.0/life-cycles.md#onfailure)
+  - [onSuccess](./docs/v1.9.0/life-cycles.md#onsuccess)
 
-  - [Options](./docs/v1.7.0/index.md#options)
-  - [Custom validation errors](./docs/v1.7.0/index.md#errortool)
-  - [Extra features](./docs/v1.7.0/life-cycles.md#context-options)
+  - [Options](./docs/v1.9.0/index.md#options)
+  - [Custom validation errors](./docs/v1.9.0/index.md#errortool)
+  - [Extra features](./docs/v1.9.0/life-cycles.md#ctx-options)
 
 - [Changelog](./docs/CHANGELOG.md#changelog)
