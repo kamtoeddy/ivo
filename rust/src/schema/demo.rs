@@ -17,28 +17,41 @@ impl<I, O> IvoProperty<I, O> {
 }
 
 // fn main() {
-//     let c = ConstantField::value(Some(String::from("hello")))
-//         .on_delete(handler)
-//         .on_success(handler)
+//     let c = ConstantField::value("&str")
+//         .on_success(Box::new(|_| {}))
+//         .on_delete(Box::new(|_| {}))
 //         .build();
 
-//     let resolver = |_| String::from("full name");
+//     let c = ConstantField::value(String::from("String"))
+//         .on_success(Box::new(|_| {}))
+//         .on_delete(Box::new(|_| {}))
+//         .build();
+
+//     let c = ConstantField::value(Some(String::from("Option<String>")))
+//         .on_success(Box::new(|_| {}))
+//         .on_delete_fns(vec![Box::new(|_| {})])
+//         .build();
+
+//     let c = ConstantField::computed(Box::new(|s| "computed &str"))
+//         .on_delete(Box::new(|_| {}))
+//         .on_success_fns(vec![Box::new(|_| {}), Box::new(|_| {})])
+//         .build();
+
+//     let resolver = || String::from("full name");
 
 //     let d = DependentField::default(String::from("Hello"))
 //         .depends_on(&["first_name", "last_name"])
-//         .resolver(Box::new(|s| resolver(s)))
-//         .on_delete(handler)
-//         .on_success(handler)
+//         .resolver(Box::new(|_| resolver()))
+//         .on_delete(Box::new(|_| {}))
+//         .on_success(Box::new(|_| {}))
 //         .build();
 
-//     let required = |_| (true, "lol");
-
-//     let v = VirtualField::validator(Box::new(|v, c| Ok(true)))
+//     let v = VirtualField::validator(Box::new(|v, _| Ok(true)))
 //         .re_validator(Box::new(|v, c| Ok(true)))
 //         .alias("lol")
-//         .required(Box::new(|c| required(c)))
+//         .required(Box::new(|_| (true, "lol")))
 //         .sanitizer(Box::new(|s| false))
-//         .on_failure(Box::new(|s| {}))
-//         .on_success(Box::new(|s| {}))
+//         .on_failure(Box::new(|_| {}))
+//         .on_success(Box::new(|_| {}))
 //         .build();
 // }

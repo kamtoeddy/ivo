@@ -1,63 +1,119 @@
 use crate::{
     schema::properties::base::IvoProperty,
-    types::{Computable, Context, DeleteHandler, SuccessHandler},
+    types::{Computable, DeleteHandler, ResolverWithContextFn, SuccessHandler},
 };
 
-pub struct ConstantField;
+// Marker Types
+pub struct Yes;
+pub struct No;
 
-impl ConstantField {
-    pub fn value<I, O, T>(value: T) -> Buildable<I, O, T> {
-        Buildable {
-            value: Computable::Static(value),
-            on_delete_fns: None,
-            on_success_fns: None,
-        }
-    }
-
-    pub fn computed<I, O, T>(
-        compute_fn: Box<dyn Fn(&Context<I, O>) -> T + Send + Sync>,
-    ) -> Buildable<I, O, T> {
-        Buildable {
-            value: Computable::Func(compute_fn),
-            on_delete_fns: None,
-            on_success_fns: None,
-        }
-    }
-}
-
-struct Buildable<I, O, T> {
+struct SchemaBuilder<I, O, T, HasDefault, HasDelete, HasSuccess> {
+    _default: std::marker::PhantomData<HasDefault>,
+    _del_handlers: std::marker::PhantomData<HasDelete>,
+    _success_handlers: std::marker::PhantomData<HasSuccess>,
+    // actual data...
     value: Computable<I, O, T>,
     on_delete_fns: Option<Vec<DeleteHandler<O>>>,
     on_success_fns: Option<Vec<SuccessHandler<I, O>>>,
 }
 
-impl<I, O, T> Buildable<I, O, T> {
-    pub fn on_delete(mut self, handler: DeleteHandler<O>) -> Self {
-        let mut handlers = self.on_delete_fns.unwrap_or(vec![]);
-
-        handlers.push(handler);
-
-        self.on_delete_fns = Some(handlers);
-
-        self
-    }
-
-    pub fn on_success(mut self, handler: SuccessHandler<I, O>) -> Self {
-        let mut handlers = self.on_success_fns.unwrap_or(vec![]);
-
-        handlers.push(handler);
-
-        self.on_success_fns = Some(handlers);
-
-        self
-    }
-
+impl<HasDelete, HasSuccess, I, O, T> SchemaBuilder<I, O, T, Yes, HasDelete, HasSuccess> {
     pub fn build(self) -> IvoProperty<I, O, T> {
         IvoProperty {
             value: Some(self.value),
             on_delete_fns: self.on_delete_fns,
             on_success_fns: self.on_success_fns,
             ..Default::default()
+        }
+    }
+}
+
+pub struct ConstantField;
+
+impl ConstantField {
+    pub fn value<I, O, T>(value: T) -> SchemaBuilder<I, O, T, Yes, No, No> {
+        SchemaBuilder {
+            value: Computable::Static(value),
+            on_delete_fns: None,
+            on_success_fns: None,
+            _default: std::marker::PhantomData,
+            _del_handlers: std::marker::PhantomData,
+            _success_handlers: std::marker::PhantomData,
+        }
+    }
+
+    pub fn computed<I, O, T>(
+        resolver: ResolverWithContextFn<I, O, T>,
+    ) -> SchemaBuilder<I, O, T, Yes, No, No> {
+        SchemaBuilder {
+            value: Computable::Func(resolver),
+            on_delete_fns: None,
+            on_success_fns: None,
+            _default: std::marker::PhantomData,
+            _del_handlers: std::marker::PhantomData,
+            _success_handlers: std::marker::PhantomData,
+        }
+    }
+}
+
+// ON_DELETE is only available if HasDelete is 'No'
+impl<HasSuccess, I, O, T> SchemaBuilder<I, O, T, Yes, No, HasSuccess> {
+    pub fn on_delete(
+        self,
+        handler: DeleteHandler<O>,
+    ) -> SchemaBuilder<I, O, T, Yes, Yes, HasSuccess> {
+        SchemaBuilder {
+            value: self.value,
+            on_delete_fns: Some(vec![handler]),
+            on_success_fns: self.on_success_fns,
+            _default: std::marker::PhantomData,
+            _del_handlers: std::marker::PhantomData,
+            _success_handlers: std::marker::PhantomData,
+        }
+    }
+
+    pub fn on_delete_fns(
+        self,
+        handlers: Vec<DeleteHandler<O>>,
+    ) -> SchemaBuilder<I, O, T, Yes, Yes, HasSuccess> {
+        SchemaBuilder {
+            value: self.value,
+            on_delete_fns: Some(handlers),
+            on_success_fns: self.on_success_fns,
+            _default: std::marker::PhantomData,
+            _del_handlers: std::marker::PhantomData,
+            _success_handlers: std::marker::PhantomData,
+        }
+    }
+}
+
+// ON_SUCCESS is only available if HasSuccess is 'No'
+impl<HasDelete, I, O, T> SchemaBuilder<I, O, T, Yes, HasDelete, No> {
+    pub fn on_success(
+        self,
+        handler: SuccessHandler<I, O>,
+    ) -> SchemaBuilder<I, O, T, Yes, HasDelete, Yes> {
+        SchemaBuilder {
+            value: self.value,
+            on_delete_fns: self.on_delete_fns,
+            on_success_fns: Some(vec![handler]),
+            _default: std::marker::PhantomData,
+            _del_handlers: std::marker::PhantomData,
+            _success_handlers: std::marker::PhantomData,
+        }
+    }
+
+    pub fn on_success_fns(
+        self,
+        handlers: Vec<SuccessHandler<I, O>>,
+    ) -> SchemaBuilder<I, O, T, Yes, HasDelete, Yes> {
+        SchemaBuilder {
+            value: self.value,
+            on_delete_fns: self.on_delete_fns,
+            on_success_fns: Some(handlers),
+            _default: std::marker::PhantomData,
+            _del_handlers: std::marker::PhantomData,
+            _success_handlers: std::marker::PhantomData,
         }
     }
 }
