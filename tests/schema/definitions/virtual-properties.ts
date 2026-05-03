@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'bun:test';
 
-import { ERRORS, type ImmutableSummary } from '../../../src';
+import { ERRORS, type ReadonlyIvoSummary } from '../../../src';
 import { DEFINITION_RULES, VIRTUAL_RULES } from '../../../src/schema/types';
 
 import { expectFailure, expectNoFailure, validator } from '../_utils';
@@ -830,7 +830,7 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
         }
 
         function onSuccess(prop: string) {
-          return ({ ctx }: ImmutableSummary<any>) => {
+          return ({ ctx }: ReadonlyIvoSummary<any>) => {
             onSuccessValues[prop] = ctx[prop];
             incrementOnSuccessStats(prop)();
           };

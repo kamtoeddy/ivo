@@ -2,8 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, test } from 'bun:test';
 
 import {
   ERRORS,
-  type ImmutableSummary,
-  type MutableSummary,
+  type IvoSummary,
+  type ReadonlyIvoSummary,
 } from '../../../dist';
 import {
   getInvalidConfigMessageForRepeatedProperties,
@@ -1371,7 +1371,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
         });
 
         it('should respect errors returned in post-validators(sync & async)', async () => {
-          const resolver = ({ ctx }: MutableSummary<any>) => ctx.v;
+          const resolver = ({ ctx }: IvoSummary<any>) => ctx.v;
 
           const Model = new Schema(
             {
@@ -1387,7 +1387,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
               postValidate: [
                 {
                   properties: ['p1', 'v'],
-                  validator({ ctx: { v }, isUpdate }: MutableSummary<any>) {
+                  validator({ ctx: { v }, isUpdate }: IvoSummary<any>) {
                     if (v === 'allow') return;
 
                     if (v === 'throw') throw new Error('lol');
@@ -1404,7 +1404,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                 },
                 {
                   properties: ['p1', 'p2'],
-                  validator: ({ ctx: { v } }: MutableSummary<any>) => {
+                  validator: ({ ctx: { v } }: IvoSummary<any>) => {
                     if (v === 'throw') throw new Error('lol');
 
                     return Promise.resolve(
@@ -1707,7 +1707,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
           });
 
           it('should process errors of first validator to return errors and stop validating', async () => {
-            const resolver = ({ ctx }: MutableSummary<any>) => ctx.v;
+            const resolver = ({ ctx }: IvoSummary<any>) => ctx.v;
 
             let validatorRunCount: Record<string, number> = {};
 
@@ -1868,7 +1868,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
           });
 
           it('should process parallel and sequential validators accordingly', async () => {
-            const resolver = ({ ctx }: MutableSummary<{ v: any }>) => ctx.v;
+            const resolver = ({ ctx }: IvoSummary<{ v: any }>) => ctx.v;
 
             let validatorRunCount: Record<string, number> = {};
 
@@ -2124,7 +2124,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
               postValidate: {
                 properties: ['p1', 'p2'],
                 validator: [
-                  ({ updateOptions }: MutableSummary<any>) => {
+                  ({ updateOptions }: IvoSummary<any>) => {
                     updateOptions({ updated: true });
 
                     return true;
@@ -2132,14 +2132,14 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                   ({
                     updateOptions,
                     options: { updated },
-                  }: MutableSummary<any>) => {
+                  }: IvoSummary<any>) => {
                     updateOptions({ v2: { updated } });
 
                     return true;
                   },
                 ],
               },
-              onSuccess({ options }: ImmutableSummary<any>) {
+              onSuccess({ options }: ReadonlyIvoSummary<any>) {
                 ctxValue = options;
               },
             },

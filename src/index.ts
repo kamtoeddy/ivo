@@ -7,11 +7,11 @@ export type {
   // ctx
   DeletionContext,
   FailureHandlerData,
-  // summary
-  ImmutableSummary,
+  IvoSummary,
   KeyOf,
   Merge,
-  MutableSummary,
+  // summary
+  ReadonlyIvoSummary,
   RealType,
   SetterFnData,
   ValidatorResponse,

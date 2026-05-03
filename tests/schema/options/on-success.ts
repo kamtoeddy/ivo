@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'bun:test';
 
-import { ERRORS, type ImmutableSummary } from '../../../dist';
+import { ERRORS, type ReadonlyIvoSummary } from '../../../dist';
 import {
   getInvalidConfigMessageForRepeatedProperties,
   getInvalidOnSuccessConfigMessage,
@@ -451,7 +451,7 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
       let successValues: any = {};
 
       function onSuccess_(prop = '') {
-        return (summary: ImmutableSummary<any>) => {
+        return (summary: ReadonlyIvoSummary<any>) => {
           successValues[prop] = summary;
         };
       }

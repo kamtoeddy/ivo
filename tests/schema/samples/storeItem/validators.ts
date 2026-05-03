@@ -1,4 +1,4 @@
-import type { MutableSummary, StringValidatorOptions } from '../../../../dist';
+import type { IvoSummary, StringValidatorOptions } from '../../../../dist';
 import type {
   IOtherMeasureUnit,
   IOtherQuantity,
@@ -6,7 +6,7 @@ import type {
   StoreItemInput,
 } from './types';
 
-type SummaryType = MutableSummary<StoreItemInput, StoreItem>;
+type SummaryType = IvoSummary<StoreItemInput, StoreItem>;
 
 import {
   makeArrayValidator,

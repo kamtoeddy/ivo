@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, test } from 'bun:test';
 import type {
   DeletionContext,
   FailureHandlerData,
-  ImmutableSummary,
+  ReadonlyIvoSummary,
 } from '../../../src';
 import { expectFailure, expectNoFailure, validator } from '../_utils';
 
@@ -444,7 +444,7 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
 
       const onSuccess =
         (prop = '') =>
-        (summary: ImmutableSummary<any, any>) => {
+        (summary: ReadonlyIvoSummary<any, any>) => {
           cxtOptions[prop] = summary.options;
           onSuccessValues[prop] = summary;
           onSuccessValues.__ctx = summary.ctx;

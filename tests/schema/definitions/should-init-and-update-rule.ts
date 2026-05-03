@@ -8,7 +8,7 @@ import {
   mock,
 } from 'bun:test';
 
-import { ERRORS, type ImmutableSummary } from '../../../src';
+import { ERRORS, type ReadonlyIvoSummary } from '../../../src';
 import { expectFailure, expectNoFailure, validator } from '../_utils';
 
 export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
@@ -443,7 +443,7 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
           }
 
           function onSuccess(prop: string) {
-            return ({ ctx }: ImmutableSummary<any>) => {
+            return ({ ctx }: ReadonlyIvoSummary<any>) => {
               onSuccessValues[prop] = ctx[prop];
               incrementOnSuccessStats(prop)();
             };
@@ -590,7 +590,7 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
         let onSuccessStats: any = {};
 
         function incrementOnSuccessCountOf(prop: string) {
-          return ({ ctx }: ImmutableSummary<any>) => {
+          return ({ ctx }: ReadonlyIvoSummary<any>) => {
             const previousCount = onSuccessStats[prop] ?? 0;
 
             onSuccessStats[prop] = previousCount + 1;

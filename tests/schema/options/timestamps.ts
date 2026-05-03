@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'bun:test';
-import type { ImmutableSummary } from '../../../dist';
+import type { ReadonlyIvoSummary } from '../../../dist';
 import { expectFailure, expectNoFailure, getValidSchema } from '../_utils';
 
 export const Test_SchemaTimestampOption = ({ Schema, fx }: any) => {
@@ -534,7 +534,7 @@ export const Test_SchemaTimestampOption = ({ Schema, fx }: any) => {
             const updatedAtKey = 'uAt';
 
             beforeEach(async () => {
-              const onSuccess = ({ ctx }: ImmutableSummary<any>) => {
+              const onSuccess = ({ ctx }: ReadonlyIvoSummary<any>) => {
                 onSuccessValues.createdAt = ctx.createdAt;
                 onSuccessValues[updatedAtKey] = ctx[updatedAtKey];
               };
@@ -586,7 +586,7 @@ export const Test_SchemaTimestampOption = ({ Schema, fx }: any) => {
             const updatedAtKey = 'uAt';
 
             beforeEach(async () => {
-              const onSuccess = ({ ctx }: ImmutableSummary<any>) => {
+              const onSuccess = ({ ctx }: ReadonlyIvoSummary<any>) => {
                 onSuccessValues.createdAt = ctx.createdAt;
                 onSuccessValues[updatedAtKey] = ctx[updatedAtKey];
               };
@@ -638,7 +638,7 @@ export const Test_SchemaTimestampOption = ({ Schema, fx }: any) => {
             const updatedAtKey = 'uAt';
 
             beforeEach(async () => {
-              const onSuccess = ({ ctx }: ImmutableSummary<any>) => {
+              const onSuccess = ({ ctx }: ReadonlyIvoSummary<any>) => {
                 onSuccessValues.createdAt = ctx.createdAt;
                 onSuccessValues[updatedAtKey] = ctx[updatedAtKey];
               };

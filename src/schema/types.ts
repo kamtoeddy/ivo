@@ -13,15 +13,15 @@ export type {
   DefinitionRule,
   DeletionContext,
   FailureHandlerData,
-  ImmutableSummary,
   InternalValidatorResponse,
   InvalidValidatorResponse,
+  IvoSummary,
   KeyOf,
   Merge,
-  MutableSummary,
   NS,
   PostValidationConfig,
   PostValidator,
+  ReadonlyIvoSummary,
   RealType,
   ResponseErrorObject,
   SetterFnData,
@@ -61,7 +61,7 @@ type SetterFnData<
   CtxOptions extends ObjectType = {},
 > = Readonly<WithCtxOptions<{ ctx: Context<Input, Output> }, CtxOptions>> & {};
 
-type ImmutableSummary<
+type ReadonlyIvoSummary<
   Input,
   Output = Input,
   CtxOptions extends ObjectType = {},
@@ -94,11 +94,7 @@ type ImmutableSummary<
     >
 ) & {};
 
-type MutableSummary<
-  Input,
-  Output = Input,
-  CtxOptions extends ObjectType = {},
-> = (
+type IvoSummary<Input, Output = Input, CtxOptions extends ObjectType = {}> = (
   | Readonly<
       WithCtxOptions<
         {
@@ -145,7 +141,7 @@ type AsyncSetter<T, Input, Output, CtxOptions extends ObjectType> = (
 type NotAllowedError = string | InputFieldError;
 
 type SetterWithSummary<T, Input, Output, CtxOptions extends ObjectType> = (
-  summary: MutableSummary<Input, Output, CtxOptions> & {},
+  summary: IvoSummary<Input, Output, CtxOptions> & {},
 ) => TypeOf<T>;
 
 type Setter<T, Input, Output, CtxOptions extends ObjectType> = (
@@ -160,11 +156,11 @@ type RequiredHandlerRes =
   | readonly [boolean, InputFieldError];
 
 type RequiredHandler<Input, Output, CtxOptions extends ObjectType> = (
-  summary: MutableSummary<Input, Output, CtxOptions> & {},
+  summary: IvoSummary<Input, Output, CtxOptions> & {},
 ) => RequiredHandlerRes | Promise<RequiredHandlerRes>;
 
 type AsyncShouldUpdate<Input, Output, CtxOptions extends ObjectType = {}> = (
-  summary: MutableSummary<Input, Output, CtxOptions> & {},
+  summary: IvoSummary<Input, Output, CtxOptions> & {},
 ) => boolean | Promise<boolean>;
 
 type Resolver<
@@ -173,7 +169,7 @@ type Resolver<
   Output,
   CtxOptions extends ObjectType,
 > = (
-  summary: MutableSummary<Input, Output, CtxOptions> & {},
+  summary: IvoSummary<Input, Output, CtxOptions> & {},
 ) => TypeOf<Output[K]> | Promise<TypeOf<Output[K]>>;
 
 type VirtualResolver<
@@ -182,7 +178,7 @@ type VirtualResolver<
   Output,
   CtxOptions extends ObjectType,
 > = (
-  summary: MutableSummary<Input, Output, CtxOptions>,
+  summary: IvoSummary<Input, Output, CtxOptions>,
 ) => TypeOf<Input[K]> | Promise<TypeOf<Input[K]>>;
 
 type PostValidator<
@@ -192,7 +188,7 @@ type PostValidator<
   Aliases,
   CtxOptions extends ObjectType,
 > = (
-  summary: MutableSummary<Input, Output, CtxOptions>,
+  summary: IvoSummary<Input, Output, CtxOptions>,
   propertiesProvided: InputKeys[],
 ) =>
   | undefined
@@ -250,7 +246,7 @@ namespace NS {
     Output,
     CtxOptions extends ObjectType = {},
   > = (
-    summary: ImmutableSummary<Input, Output, CtxOptions> & {},
+    summary: ReadonlyIvoSummary<Input, Output, CtxOptions> & {},
   ) => unknown | Promise<unknown>;
 
   export type OnSuccessConfigObject<
@@ -744,7 +740,7 @@ type Validator<
   CtxOptions extends ObjectType = {},
 > = (
   value: unknown,
-  summary: MutableSummary<Input, Output, CtxOptions> & {},
+  summary: IvoSummary<Input, Output, CtxOptions> & {},
 ) =>
   | ValidatorResponse<TypeOf<Output[K]>>
   | Promise<ValidatorResponse<TypeOf<Output[K]>>>;
@@ -756,7 +752,7 @@ type SecondaryValidator<
   CtxOptions extends ObjectType = {},
 > = (
   value: T,
-  summary: MutableSummary<Input, Output, CtxOptions> & {},
+  summary: IvoSummary<Input, Output, CtxOptions> & {},
 ) => ValidatorResponse<T> | Promise<ValidatorResponse<T>>;
 
 type VirtualValidator<
@@ -766,7 +762,7 @@ type VirtualValidator<
   CtxOptions extends ObjectType = {},
 > = (
   value: unknown,
-  summary: MutableSummary<Input, Output, CtxOptions> & {},
+  summary: IvoSummary<Input, Output, CtxOptions> & {},
 ) =>
   | ValidatorResponse<TypeOf<Input[K]>>
   | Promise<ValidatorResponse<TypeOf<Input[K]>>>;

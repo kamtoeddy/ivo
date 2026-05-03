@@ -17,14 +17,14 @@ import { defaultOptions, SchemaCore } from './schema-core';
 import {
   type Context,
   type DefinitionRule,
-  type ImmutableSummary,
   type InternalValidatorResponse,
   type InvalidValidatorResponse,
+  type IvoSummary,
   type KeyOf,
   LIFE_CYCLES,
-  type MutableSummary,
   type NS,
   type PostValidator,
+  type ReadonlyIvoSummary,
   type RealType,
   type Validator,
   type ValidatorResponseObject,
@@ -238,7 +238,7 @@ class ModelTool<
       previousValues,
       values,
       options: this._getCtxOptions(),
-    }) as ImmutableSummary<Input, Output, CtxOptions>;
+    }) as ReadonlyIvoSummary<Input, Output, CtxOptions>;
   }
 
   protected _getMutableSummary(props: {
@@ -250,7 +250,7 @@ class ModelTool<
       Object.assign({}, this._getSummary(props), {
         updateOptions: this._updateCtxOptions,
       }),
-    ) as MutableSummary<Input, Output, CtxOptions>;
+    ) as IvoSummary<Input, Output, CtxOptions>;
   }
 
   protected _getPartialContext = () => this._getFrozenCopy(this.partialContext);
@@ -291,7 +291,7 @@ class ModelTool<
 
   protected _getRequiredState = async (
     prop: string,
-    summary: MutableSummary<Input, Output>,
+    summary: IvoSummary<Input, Output>,
   ): Promise<[boolean, string | FieldError]> => {
     const { required } = this._getDefinition(prop);
 
@@ -771,7 +771,7 @@ class ModelTool<
 
   private _isSuccessfulProp(
     prop: string,
-    summary: MutableSummary<Input, Output, CtxOptions>,
+    summary: IvoSummary<Input, Output, CtxOptions>,
     alias_?: string,
   ) {
     if (this._isVirtual(prop)) {
@@ -936,7 +936,7 @@ class ModelTool<
     errorTool: ErrorTool;
     propsProvided: Extract<keyof Input, string>[];
     postValidatableProps: Extract<keyof Input, string>[];
-    summary: MutableSummary<Input, Output, CtxOptions>;
+    summary: IvoSummary<Input, Output, CtxOptions>;
     validator: PostValidator<KeyOf<Input>, Input, Output, Aliases, CtxOptions>;
   }) {
     const revalidatedData: Partial<Output> = {};
@@ -1522,7 +1522,7 @@ class ModelTool<
   private async _validate<K extends KeyOf<Input & Aliases>>(
     prop: K,
     value: unknown,
-    summary_: MutableSummary<Input, Output, CtxOptions>,
+    summary: IvoSummary<Input, Output, CtxOptions>,
   ) {
     if (!this._isInputOrAlias(prop))
       return makeResponse<(Input & Aliases)[K]>({
@@ -1558,7 +1558,7 @@ class ModelTool<
           (await Promise.try(
             validator,
             value,
-            summary_ as never,
+            summary as never,
           )) as ValidatorResponseObject<(Input & Aliases)[K]>,
           value,
         );
