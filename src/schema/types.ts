@@ -9,25 +9,20 @@ import type {
 export type {
   ArrayOfMinSizeOne,
   ArrayOfMinSizeTwo,
-  // ctx
   Context,
   DefinitionRule,
-  DeletionContext,
-  ImmutableContext,
-  // summary
-  ImmutableSummary,
   InternalValidatorResponse,
   InvalidValidatorResponse,
+  IvoSummary,
   KeyOf,
   Merge,
-  MutableContext,
-  MutableSummary,
   NS,
-  PartialContext,
   PostValidationConfig,
   PostValidator,
+  ReadonlyIvoSummary,
   RealType,
   ResponseErrorObject,
+  SetterFnData,
   TypeOf,
   ValidationResponse,
   Validator,
@@ -44,97 +39,99 @@ export {
   VIRTUAL_RULES,
 };
 
-type Context<
+type Context<Input, Output = Input> = Readonly<Merge<Input, Output> & {}>;
+
+type SetterFnData<
   Input,
   Output = Input,
   CtxOptions extends ObjectType = {},
-> = Readonly<
-  Merge<Input, Output> & { __getOptions__: () => Readonly<CtxOptions> }
-> & {};
+> = Readonly<WithCtxOptions<{ ctx: Context<Input, Output> }, CtxOptions>>;
 
-type ImmutableContext<
-  Input,
-  Output = Input,
-  CtxOptions extends ObjectType = {},
-> = Context<Input, Output, CtxOptions>;
-
-type MutableContext<
-  Input,
-  Output = Input,
-  CtxOptions extends ObjectType = {},
-> = Readonly<
-  Merge<Input, Output> & {
-    __getOptions__: () => Readonly<CtxOptions>;
-    __updateOptions__: (updates: Partial<CtxOptions>) => void;
-  }
-> & {};
-
-type DeletionContext<Output, CtxOptions extends ObjectType = {}> = Readonly<
-  Output & { __getOptions__: () => Readonly<CtxOptions> }
-> & {};
-
-type PartialContext<Input, Output> = Readonly<Merge<Input, Output>>;
-
-type ImmutableSummary<
+type ReadonlyIvoSummary<
   Input,
   Output = Input,
   CtxOptions extends ObjectType = {},
 > = (
-  | Readonly<{
-      changes: null;
-      context: ImmutableContext<Input, Output, CtxOptions>;
-      inputValues: Partial<RealType<Input>>;
-      isUpdate: false;
-      previousValues: null;
-      values: Readonly<Output>;
-    }>
-  | Readonly<{
-      changes: Partial<RealType<Output>>;
-      context: ImmutableContext<Input, Output, CtxOptions>;
-      inputValues: Partial<RealType<Input>>;
-      isUpdate: true;
-      previousValues: Readonly<Output>;
-      values: Readonly<Output>;
-    }>
+  | Readonly<
+      WithReadonlyCtxOptions<
+        {
+          changes: null;
+          ctx: Context<Input, Output>;
+          inputValues: Partial<RealType<Input>>;
+          isUpdate: false;
+          previousValues: null;
+          values: Readonly<Output>;
+        },
+        CtxOptions
+      >
+    >
+  | Readonly<
+      WithReadonlyCtxOptions<
+        {
+          changes: Partial<RealType<Output>>;
+          ctx: Context<Input, Output>;
+          inputValues: Partial<RealType<Input>>;
+          isUpdate: true;
+          previousValues: Readonly<Output>;
+          values: Readonly<Output>;
+        },
+        CtxOptions
+      >
+    >
 ) & {};
 
-type MutableSummary<
-  Input,
-  Output = Input,
-  CtxOptions extends ObjectType = {},
-> = (
-  | Readonly<{
-      changes: null;
-      context: MutableContext<Input, Output, CtxOptions>;
-      inputValues: Partial<RealType<Input>>;
-      isUpdate: false;
-      previousValues: null;
-      values: Readonly<Output>;
-    }>
-  | Readonly<{
-      changes: Partial<RealType<Output>>;
-      context: MutableContext<Input, Output, CtxOptions>;
-      inputValues: Partial<RealType<Input>>;
-      isUpdate: true;
-      previousValues: Readonly<Output>;
-      values: Readonly<Output>;
-    }>
+type IvoSummary<Input, Output = Input, CtxOptions extends ObjectType = {}> = (
+  | Readonly<
+      WithCtxOptions<
+        {
+          changes: null;
+          ctx: Context<Input, Output>;
+          inputValues: Partial<RealType<Input>>;
+          isUpdate: false;
+          previousValues: null;
+          values: Readonly<Output>;
+        },
+        CtxOptions
+      >
+    >
+  | Readonly<
+      WithCtxOptions<
+        {
+          changes: Partial<RealType<Output>>;
+          ctx: Context<Input, Output>;
+          inputValues: Partial<RealType<Input>>;
+          isUpdate: true;
+          previousValues: Readonly<Output>;
+          values: Readonly<Output>;
+        },
+        CtxOptions
+      >
+    >
 ) & {};
+
+type WithReadonlyCtxOptions<T, CtxOptions extends ObjectType> = T & {
+  options: Readonly<CtxOptions>;
+};
+
+type WithCtxOptions<T, CtxOptions extends ObjectType> = WithReadonlyCtxOptions<
+  T,
+  CtxOptions
+> & { updateOptions: (updates: Partial<CtxOptions>) => void } & {};
 
 type TypeOf<T> = Exclude<T, undefined>;
 
 type AsyncSetter<T, Input, Output, CtxOptions extends ObjectType> = (
-  context: MutableContext<Input, Output, CtxOptions>,
+  data: SetterFnData<Input, Output, CtxOptions>,
 ) => TypeOf<T> | Promise<TypeOf<T>>;
 
 type NotAllowedError = string | InputFieldError;
 
 type SetterWithSummary<T, Input, Output, CtxOptions extends ObjectType> = (
-  summary: MutableSummary<Input, Output, CtxOptions> & {},
+  summary: IvoSummary<Input, Output, CtxOptions> & {},
 ) => TypeOf<T>;
 
 type Setter<T, Input, Output, CtxOptions extends ObjectType> = (
-  context: MutableContext<Input, Output, CtxOptions>,
+  data: SetterFnData<Input, Output, CtxOptions>,
 ) => TypeOf<T>;
 
 type RequiredHandlerRes =
@@ -145,11 +142,11 @@ type RequiredHandlerRes =
   | readonly [boolean, InputFieldError];
 
 type RequiredHandler<Input, Output, CtxOptions extends ObjectType> = (
-  summary: MutableSummary<Input, Output, CtxOptions> & {},
+  summary: IvoSummary<Input, Output, CtxOptions> & {},
 ) => RequiredHandlerRes | Promise<RequiredHandlerRes>;
 
 type AsyncShouldUpdate<Input, Output, CtxOptions extends ObjectType = {}> = (
-  summary: MutableSummary<Input, Output, CtxOptions> & {},
+  summary: IvoSummary<Input, Output, CtxOptions> & {},
 ) => boolean | Promise<boolean>;
 
 type Resolver<
@@ -158,7 +155,7 @@ type Resolver<
   Output,
   CtxOptions extends ObjectType,
 > = (
-  summary: MutableSummary<Input, Output, CtxOptions> & {},
+  summary: IvoSummary<Input, Output, CtxOptions> & {},
 ) => TypeOf<Output[K]> | Promise<TypeOf<Output[K]>>;
 
 type VirtualResolver<
@@ -167,7 +164,7 @@ type VirtualResolver<
   Output,
   CtxOptions extends ObjectType,
 > = (
-  summary: MutableSummary<Input, Output, CtxOptions>,
+  summary: IvoSummary<Input, Output, CtxOptions>,
 ) => TypeOf<Input[K]> | Promise<TypeOf<Input[K]>>;
 
 type PostValidator<
@@ -177,7 +174,7 @@ type PostValidator<
   Aliases,
   CtxOptions extends ObjectType,
 > = (
-  summary: MutableSummary<Input, Output, CtxOptions>,
+  summary: IvoSummary<Input, Output, CtxOptions>,
   propertiesProvided: InputKeys[],
 ) =>
   | undefined
@@ -219,7 +216,8 @@ namespace NS {
   export type LifeCycle = (typeof LIFE_CYCLES)[number];
 
   export type DeleteHandler<Output, CtxOptions extends ObjectType> = (
-    data: DeletionContext<Output, CtxOptions>,
+    data: Readonly<Output>,
+    options: Readonly<CtxOptions>,
   ) => unknown | Promise<unknown>;
 
   export type FailureHandler<
@@ -227,7 +225,8 @@ namespace NS {
     Output,
     CtxOptions extends ObjectType = {},
   > = (
-    context: ImmutableContext<Input, Output, CtxOptions> & {},
+    ctx: Context<Input, Output>,
+    options: Readonly<CtxOptions>,
   ) => unknown | Promise<unknown>;
 
   export type SuccessHandler<
@@ -235,7 +234,7 @@ namespace NS {
     Output,
     CtxOptions extends ObjectType = {},
   > = (
-    summary: ImmutableSummary<Input, Output, CtxOptions> & {},
+    summary: ReadonlyIvoSummary<Input, Output, CtxOptions>,
   ) => unknown | Promise<unknown>;
 
   export type OnSuccessConfigObject<
@@ -393,14 +392,9 @@ namespace NS {
         };
   };
 
-  type Dependables<
-    K extends keyof Output,
-    Input,
-    Output,
-    CtxOptions extends ObjectType,
-  > = Exclude<
-    KeyOf<MutableContext<Input, Output, CtxOptions>>,
-    K | '__getOptions__' | '__updateOptions__'
+  type Dependables<K extends keyof Output, Input, Output> = Exclude<
+    KeyOf<Context<Input, Output>>,
+    K
   >;
 
   type Dependent<
@@ -413,8 +407,8 @@ namespace NS {
       | TypeOf<Output[K]>
       | AsyncSetter<Output[K], Input, Output, CtxOptions>;
     dependsOn:
-      | Dependables<K, Input, Output, CtxOptions>
-      | ArrayOfMinSizeOne<Dependables<K, Input, Output, CtxOptions>>;
+      | Dependables<K, Input, Output>
+      | ArrayOfMinSizeOne<Dependables<K, Input, Output>>;
     onDelete?:
       | DeleteHandler<Output, CtxOptions>
       | ArrayOfMinSizeOne<DeleteHandler<Output, CtxOptions>>;
@@ -734,7 +728,7 @@ type Validator<
   CtxOptions extends ObjectType = {},
 > = (
   value: unknown,
-  summary: MutableSummary<Input, Output, CtxOptions> & {},
+  summary: IvoSummary<Input, Output, CtxOptions> & {},
 ) =>
   | ValidatorResponse<TypeOf<Output[K]>>
   | Promise<ValidatorResponse<TypeOf<Output[K]>>>;
@@ -746,7 +740,7 @@ type SecondaryValidator<
   CtxOptions extends ObjectType = {},
 > = (
   value: T,
-  summary: MutableSummary<Input, Output, CtxOptions> & {},
+  summary: IvoSummary<Input, Output, CtxOptions> & {},
 ) => ValidatorResponse<T> | Promise<ValidatorResponse<T>>;
 
 type VirtualValidator<
@@ -756,7 +750,7 @@ type VirtualValidator<
   CtxOptions extends ObjectType = {},
 > = (
   value: unknown,
-  summary: MutableSummary<Input, Output, CtxOptions> & {},
+  summary: IvoSummary<Input, Output, CtxOptions> & {},
 ) =>
   | ValidatorResponse<TypeOf<Input[K]>>
   | Promise<ValidatorResponse<TypeOf<Input[K]>>>;

@@ -24,7 +24,7 @@ export const Test_SchemaSetMissingDefaultsOnUpdateOption = ({
               dependent: {
                 default: '',
                 dependsOn: 'lax',
-                resolver: ({ context }: any) => context.lax,
+                resolver: ({ ctx }: any) => ctx.lax,
               },
               lax: { default: 'lax', validator },
               prop: { default: '', validator },
@@ -50,7 +50,7 @@ export const Test_SchemaSetMissingDefaultsOnUpdateOption = ({
           expect(data).toEqual(updates);
           expect(summary).toMatchObject({
             changes: updates,
-            context: { dependent: '', lax: 'lax', ...updates },
+            ctx: { dependent: '', lax: 'lax', ...updates },
             isUpdate: true,
             previousValues,
             values: updates,
@@ -67,12 +67,12 @@ export const Test_SchemaSetMissingDefaultsOnUpdateOption = ({
             dependent: {
               default: '',
               dependsOn: 'lax',
-              resolver: ({ context }: any) => context.lax,
+              resolver: ({ ctx }: any) => ctx.lax,
             },
             dependent_1: {
               default: '',
               dependsOn: 'dependent',
-              resolver: ({ context }: any) => context.dependent,
+              resolver: ({ ctx }: any) => ctx.dependent,
             },
             lax: { default: 'lax', validator },
             prop: { default: '', validator },
@@ -105,7 +105,7 @@ export const Test_SchemaSetMissingDefaultsOnUpdateOption = ({
           expect(data).toEqual(changes);
           expect(summary).toMatchObject({
             changes,
-            context: changes,
+            ctx: changes,
             isUpdate: true,
             previousValues,
             values: changes,
@@ -132,7 +132,7 @@ export const Test_SchemaSetMissingDefaultsOnUpdateOption = ({
           expect(data).toEqual(changes);
           expect(summary).toMatchObject({
             changes,
-            context: changes,
+            ctx: changes,
             isUpdate: true,
             previousValues,
             values: changes,

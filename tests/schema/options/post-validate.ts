@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, test } from 'bun:test';
 
-import { ERRORS } from '../../../dist';
+import {
+  ERRORS,
+  type IvoSummary,
+  type ReadonlyIvoSummary,
+} from '../../../dist';
 import {
   getInvalidConfigMessageForRepeatedProperties,
   getInvalidPostValidateConfigMessage,
@@ -1367,7 +1371,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
         });
 
         it('should respect errors returned in post-validators(sync & async)', async () => {
-          const resolver = ({ context }: any) => context.v;
+          const resolver = ({ ctx }: IvoSummary<any>) => ctx.v;
 
           const Model = new Schema(
             {
@@ -1383,7 +1387,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
               postValidate: [
                 {
                   properties: ['p1', 'v'],
-                  validator({ context: { v }, isUpdate }: any) {
+                  validator({ ctx: { v }, isUpdate }: IvoSummary<any>) {
                     if (v === 'allow') return;
 
                     if (v === 'throw') throw new Error('lol');
@@ -1400,7 +1404,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                 },
                 {
                   properties: ['p1', 'p2'],
-                  validator: ({ context: { v } }: any) => {
+                  validator: ({ ctx: { v } }: IvoSummary<any>) => {
                     if (v === 'throw') throw new Error('lol');
 
                     return Promise.resolve(
@@ -1556,7 +1560,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
               dependent: {
                 default: '',
                 dependsOn: ['v', 'v1'],
-                resolver: ({ context: { v, v1 } }) => `${v} ${v1}`,
+                resolver: ({ ctx: { v, v1 } }) => `${v} ${v1}`,
               },
               v: { virtual: true, validator: () => true },
               v1: { virtual: true, validator: () => true },
@@ -1604,7 +1608,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
               dependent: {
                 default: '',
                 dependsOn: ['v', 'v1'],
-                resolver: ({ context: { v, v1 } }) => `${v} ${v1}`,
+                resolver: ({ ctx: { v, v1 } }) => `${v} ${v1}`,
               },
               v: { virtual: true, validator: () => true },
               v1: { virtual: true, validator: () => true },
@@ -1703,7 +1707,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
           });
 
           it('should process errors of first validator to return errors and stop validating', async () => {
-            const resolver = ({ context }: any) => context.v;
+            const resolver = ({ ctx }: IvoSummary<any>) => ctx.v;
 
             let validatorRunCount: Record<string, number> = {};
 
@@ -1729,11 +1733,11 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                       () => {
                         incrementValidatorCount('p1-v');
                       },
-                      ({ context: { v } }: any) => {
+                      ({ ctx: { v } }: any) => {
                         if (v === 'return error')
                           return { d1: 'error returned' };
                       },
-                      ({ context: { v } }: any) => {
+                      ({ ctx: { v } }: any) => {
                         incrementValidatorCount('p1-v');
                         if (v === 'throw') throw new Error('lol');
                       },
@@ -1755,11 +1759,11 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                   {
                     properties: ['p1', 'p2'],
                     validator: [
-                      ({ context: { v } }: any) => {
+                      ({ ctx: { v } }: any) => {
                         incrementValidatorCount('p1-p2');
                         if (v === 'throw') throw new Error('lol');
                       },
-                      ({ context: { v } }: any) => {
+                      ({ ctx: { v } }: any) => {
                         incrementValidatorCount('p1-p2');
                         return Promise.resolve(
                           v === 'allow' ? false : { p1: 'failed to validate' },
@@ -1864,7 +1868,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
           });
 
           it('should process parallel and sequential validators accordingly', async () => {
-            const resolver = ({ context }: any) => context.v;
+            const resolver = ({ ctx }: IvoSummary<{ v: any }>) => ctx.v;
 
             let validatorRunCount: Record<string, number> = {};
 
@@ -1887,7 +1891,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                   {
                     properties: ['p1', 'v'],
                     validator: [
-                      ({ context: { v } }: any) => {
+                      ({ ctx: { v } }: any) => {
                         incrementValidatorCount('p1-v');
 
                         if (v === 'return error')
@@ -1896,12 +1900,12 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                         if (v === 'throw') throw new Error('lol');
                       },
                       [
-                        ({ context: { v } }: any) => {
+                        ({ ctx: { v } }: any) => {
                           incrementValidatorCount('p1-v-parallel');
 
                           if (v === 'throw-parallel') throw new Error('lol');
                         },
-                        ({ context: { v } }: any) => {
+                        ({ ctx: { v } }: any) => {
                           incrementValidatorCount('p1-v-parallel');
 
                           if (v === 'return error-parallel')
@@ -2071,14 +2075,14 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
           {
             postValidate: {
               properties: ['p1', 'p2'],
-              validator: ({ context: { __updateOptions__ } }) => {
-                __updateOptions__({ updated: true });
+              validator: ({ updateOptions }) => {
+                updateOptions({ updated: true });
 
                 return true;
               },
             },
-            onSuccess({ context: { __getOptions__ } }) {
-              ctxValue = __getOptions__();
+            onSuccess({ options }) {
+              ctxValue = options;
             },
           },
         ).getModel();
@@ -2120,22 +2124,23 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
               postValidate: {
                 properties: ['p1', 'p2'],
                 validator: [
-                  ({ context: { __updateOptions__ } }) => {
-                    __updateOptions__({ updated: true });
+                  ({ updateOptions }: IvoSummary<any>) => {
+                    updateOptions({ updated: true });
 
                     return true;
                   },
-                  ({ context: { __updateOptions__, __getOptions__ } }) => {
-                    const { updated } = __getOptions__();
-
-                    __updateOptions__({ v2: { updated } });
+                  ({
+                    updateOptions,
+                    options: { updated },
+                  }: IvoSummary<any>) => {
+                    updateOptions({ v2: { updated } });
 
                     return true;
                   },
                 ],
               },
-              onSuccess({ context: { __getOptions__ } }) {
-                ctxValue = __getOptions__();
+              onSuccess({ options }: ReadonlyIvoSummary<any>) {
+                ctxValue = options;
               },
             },
           ).getModel();

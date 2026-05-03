@@ -3,16 +3,13 @@ export { type IvoResultInfo, Schema } from './schema';
 export type {
   ArrayOfMinSizeOne,
   ArrayOfMinSizeTwo,
-  // ctx
-  DeletionContext,
-  ImmutableContext,
-  // summary
-  ImmutableSummary,
+  Context,
+  IvoSummary,
   KeyOf,
   Merge,
-  MutableContext,
-  MutableSummary,
+  ReadonlyIvoSummary,
   RealType,
+  SetterFnData,
   ValidatorResponse,
   ValidatorResponseObject,
   XOR,

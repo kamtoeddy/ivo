@@ -15,8 +15,8 @@ export const Test_SchemaOnDelete = ({ Schema, fx }: any) => {
       let deletedValues: any = {};
 
       function onDelete_(prop = '') {
-        return (values: any) => {
-          deletedValues[prop] = values;
+        return (data: any) => {
+          deletedValues[prop] = data;
         };
       }
 

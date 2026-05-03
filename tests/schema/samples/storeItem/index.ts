@@ -1,6 +1,6 @@
 import {
-  type ImmutableSummary,
-  type MutableSummary,
+  type IvoSummary,
+  type ReadonlyIvoSummary,
   Schema,
 } from '../../../../dist';
 import type { StoreItem, StoreItemInput } from './types';
@@ -55,7 +55,7 @@ const storeItemSchema = new Schema<StoreItemInput, StoreItem>(
     quantityChangeCounter: {
       default: 0,
       dependsOn: 'quantity',
-      resolver({ context: { quantityChangeCounter } }) {
+      resolver({ ctx: { quantityChangeCounter } }) {
         return quantityChangeCounter + 1;
       },
     },
@@ -67,16 +67,16 @@ const storeItemSchema = new Schema<StoreItemInput, StoreItem>(
 );
 
 function resolveQuantity({
-  context: { quantity, _quantity, quantities },
-}: MutableSummary<StoreItemInput, StoreItem>) {
+  ctx: { quantity, _quantity, quantities },
+}: IvoSummary<StoreItemInput, StoreItem>) {
   const newQty = _quantity ?? quantity;
 
   return quantities ? newQty + (quantities as number) : newQty;
 }
 
 function onSuccess({
-  context: { quantity, _quantity, quantities },
-}: ImmutableSummary<StoreItemInput, StoreItem>) {
+  ctx: { quantity, _quantity, quantities },
+}: ReadonlyIvoSummary<StoreItemInput, StoreItem>) {
   const newQty = _quantity ?? quantity;
 
   return quantities ? newQty + (quantities as number) : newQty;

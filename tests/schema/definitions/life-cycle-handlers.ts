@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, test } from 'bun:test';
-
+import type { ReadonlyIvoSummary } from '../../../src';
 import { expectFailure, expectNoFailure, validator } from '../_utils';
 
 export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
@@ -189,8 +189,8 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
         propChangeMap: any = {};
 
       const onDelete = (prop = '') => {
-        return ({ __getOptions__ }) => {
-          cxtOptions[prop] = __getOptions__();
+        return (_: any, options: any) => {
+          cxtOptions[prop] = options;
           propChangeMap[prop] = true;
         };
       };
@@ -276,8 +276,8 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
           onFailureCount: any = {};
 
         function incrementOnFailureCountOf(prop: string) {
-          return ({ __getOptions__ }) => {
-            cxtOptions[prop] = __getOptions__();
+          return (_: any, options: any) => {
+            cxtOptions[prop] = options;
             onFailureCount[prop] = (onFailureCount[prop] ?? 0) + 1;
           };
         }
@@ -440,10 +440,10 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
 
       const onSuccess =
         (prop = '') =>
-        (summary: any) => {
-          cxtOptions[prop] = summary.context.__getOptions__();
+        (summary: ReadonlyIvoSummary<any, any>) => {
+          cxtOptions[prop] = summary.options;
           onSuccessValues[prop] = summary;
-          onSuccessValues.__ctx = summary.context;
+          onSuccessValues.__ctx = summary.ctx;
           propChangeMap[prop] = true;
         };
 
@@ -512,11 +512,11 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
         });
 
         const changes = null,
-          context = onSuccessValues.__ctx,
+          ctx = onSuccessValues.__ctx,
           isUpdate = false,
           previousValues = null,
           values = data,
-          summary = { changes, context, isUpdate, previousValues, values };
+          summary = { changes, ctx, isUpdate, previousValues, values };
 
         expect(onSuccessValues).toMatchObject({
           dependent: summary,
@@ -548,7 +548,7 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
         expect(onSuccessValues).toMatchObject({
           lax: expect.objectContaining({
             changes: data,
-            context: onSuccessValues.__ctx,
+            ctx: onSuccessValues.__ctx,
             isUpdate: true,
             previousValues: initialData,
             values: { ...initialData, lax: true },
@@ -575,11 +575,11 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
         expect(propChangeMap).toEqual({ dependent: true, readonlyLax: true });
 
         const changes = data,
-          context = onSuccessValues.__ctx,
+          ctx = onSuccessValues.__ctx,
           isUpdate = true,
           previousValues = initialData,
           values = { ...initialData, ...data },
-          summary = { changes, context, isUpdate, previousValues, values };
+          summary = { changes, ctx, isUpdate, previousValues, values };
 
         expect(onSuccessValues).toMatchObject({
           dependent: summary,

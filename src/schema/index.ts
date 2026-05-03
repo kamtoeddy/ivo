@@ -15,21 +15,24 @@ import {
 } from '../utils';
 import { defaultOptions, SchemaCore } from './schema-core';
 import {
-  type ImmutableContext,
+  type Context,
+  type DefinitionRule,
   type InternalValidatorResponse,
   type InvalidValidatorResponse,
+  type IvoSummary,
   type KeyOf,
   LIFE_CYCLES,
-  type MutableSummary,
   type NS,
-  type PartialContext,
   type PostValidator,
+  type ReadonlyIvoSummary,
   type RealType,
   type Validator,
   type ValidatorResponseObject,
 } from './types';
 import {
+  cloneValue,
   type DefaultErrorTool,
+  type FieldError,
   type IErrorTool,
   type InputFieldError,
   isInputFieldError,
@@ -190,9 +193,156 @@ class ModelTool<
   private _regeneratedProps: KeyOf<Output>[] = [];
   private inputValues: Partial<RealType<Input>> = {};
 
+  // contexts & values
+  private context = {} as Context<Input, Output>;
+  private contextOptions: CtxOptions = {} as CtxOptions;
+
+  private partialContext = {} as Context<Input, Output>;
+  private values: Output = {} as Output;
+
   constructor(schema: Schema<Input, Output, Aliases, CtxOptions, ErrorTool>) {
     super(schema.definitions as never, schema.options as never);
   }
+
+  protected _getContext(previousValues: Partial<Output> | null = null) {
+    return this._getFrozenCopy<Context<Input, Output>>(
+      sortKeys(cloneValue(Object.assign({}, previousValues, this.context))),
+    );
+  }
+
+  protected _getSummary({
+    data,
+    inputValues,
+    isUpdate,
+  }: {
+    data: Partial<Output>;
+    inputValues: Partial<RealType<Input>>;
+    isUpdate: boolean;
+  }) {
+    const changes = isUpdate ? cloneValue(data) : null,
+      previousValues = isUpdate ? cloneValue(this.values) : null,
+      ctx = this._getContext(isUpdate ? previousValues : null),
+      values = this._getFrozenCopy(
+        cloneValue(
+          isUpdate
+            ? Object.assign({}, previousValues, this.values, data)
+            : Object.assign({}, this.defaults, data),
+        ),
+      );
+
+    return this._getFrozenCopy({
+      changes,
+      ctx,
+      inputValues: cloneValue(inputValues),
+      isUpdate,
+      previousValues,
+      values,
+      options: this._getCtxOptions(),
+    }) as ReadonlyIvoSummary<Input, Output, CtxOptions>;
+  }
+
+  protected _getMutableSummary(props: {
+    data: Partial<Output>;
+    inputValues: Partial<RealType<Input>>;
+    isUpdate: boolean;
+  }) {
+    return this._getFrozenCopy(
+      Object.assign({}, this._getSummary(props), {
+        updateOptions: this._updateCtxOptions,
+      }),
+    ) as IvoSummary<Input, Output, CtxOptions>;
+  }
+
+  protected _getPartialContext = () => this._getFrozenCopy(this.partialContext);
+
+  protected _updateContext = (updates: Partial<Input>) => {
+    Object.assign(this.context, updates);
+  };
+
+  protected _updatePartialContext = (updates: Partial<Input>) => {
+    Object.assign(this.partialContext, updates);
+  };
+
+  protected _getCtxOptions = () => this._getFrozenCopy(this.contextOptions);
+
+  protected _updateCtxOptions = (options: Partial<CtxOptions>) => {
+    if (isRecordLike(options)) Object.assign(this.contextOptions, options);
+
+    return this._getCtxOptions();
+  };
+
+  protected _getDefaultValue = async (prop: string) => {
+    const _default = this._getDefinition(prop)?.default;
+
+    let value: any;
+
+    try {
+      value = isFunctionLike(_default)
+        ? await Promise.try(() => _default(this._getContext()))
+        : this.defaults[prop as KeyOf<Output>];
+    } catch {
+      value = null;
+    }
+
+    return isEqual(value, undefined)
+      ? this.values[prop as KeyOf<Output>]
+      : value;
+  };
+
+  protected _getRequiredState = async (
+    prop: string,
+    summary: IvoSummary<Input, Output>,
+  ): Promise<[boolean, string | FieldError]> => {
+    const { required } = this._getDefinition(prop);
+
+    if (!required) return [false, ''];
+
+    const fallbackMessage = `'${prop}' is required`;
+
+    if (!isFunctionLike(required)) return [required, fallbackMessage];
+
+    const results = await required(summary);
+    const isBoolean = typeof results === 'boolean';
+
+    if (!isBoolean && !Array.isArray(results)) return [false, ''];
+
+    if (isBoolean) return [results as boolean, results ? fallbackMessage : ''];
+
+    const [isRequired, message] = results as [
+        boolean,
+        string | InputFieldError,
+      ],
+      isString = typeof message === 'string';
+
+    if (!isRequired || (!isString && !isInputFieldError(message)))
+      return [isRequired, fallbackMessage];
+
+    if (isString) return [true, message || fallbackMessage];
+
+    const fieldError = makeFieldError(message, fallbackMessage);
+
+    return [
+      true,
+      isPropertyOf('metadata', message)
+        ? fieldError
+        : ({ reason: fieldError.reason } as never),
+    ];
+  };
+
+  protected _getConstantValue = (prop: string) =>
+    this._getValueBy(prop, 'value');
+
+  protected _getValueBy = (
+    prop: string,
+    rule: DefinitionRule,
+    extraCtx: ObjectType = {},
+  ) => {
+    const value = this._getDefinition(prop)?.[rule];
+
+    return isFunctionLike(value)
+      ? value(Object.assign({}, this._getContext(), extraCtx))
+      : value;
+  };
 
   private _cleanInput(input: Partial<Input | Aliases>) {
     const props = getKeysAsProps(input).filter(this._isInputOrAlias);
@@ -546,15 +696,14 @@ class ModelTool<
     isUpdate = false,
   ) {
     const summary = this._getMutableSummary({
-        data,
-        isUpdate,
-        inputValues: this.inputValues,
-      }),
-      context = summary.context;
+      data,
+      isUpdate,
+      inputValues: this.inputValues,
+    });
 
     const error = new this._options.ErrorTool(
       VALIDATION_ERRORS.VALIDATION_ERROR,
-      context.__getOptions__(),
+      summary.options,
     );
 
     const props: [KeyOf<Output>, string | undefined][] = [];
@@ -575,7 +724,7 @@ class ModelTool<
 
         if (!validator) return;
 
-        const value = summary.context?.[prop] as Output[KeyOf<Output>];
+        const value = summary.ctx?.[prop] as Output[KeyOf<Output>];
 
         let isValid: ValidatorResponseObject<unknown>;
 
@@ -605,9 +754,7 @@ class ModelTool<
         let { validated } = isValid;
 
         if (isEqual(validated, undefined)) validated = value;
-        if (
-          isEqual(validated, summary.context[prop], this._options.equalityDepth)
-        )
+        if (isEqual(validated, summary.ctx[prop], this._options.equalityDepth))
           return;
 
         if (!this._isVirtual(prop)) data[prop] = validated as never;
@@ -624,7 +771,7 @@ class ModelTool<
 
   private _isSuccessfulProp(
     prop: string,
-    summary: MutableSummary<Input, Output, CtxOptions>,
+    summary: IvoSummary<Input, Output, CtxOptions>,
     alias_?: string,
   ) {
     if (this._isVirtual(prop)) {
@@ -645,15 +792,14 @@ class ModelTool<
     isUpdate = false,
   ) {
     const summary = this._getMutableSummary({
-        data,
-        isUpdate,
-        inputValues: this.inputValues,
-      }),
-      context = summary.context;
+      data,
+      isUpdate,
+      inputValues: this.inputValues,
+    });
 
     const errorTool = new this._options.ErrorTool(
       VALIDATION_ERRORS.VALIDATION_ERROR,
-      context.__getOptions__(),
+      summary.options,
     );
 
     const handlerIds = new Set<string>(),
@@ -790,7 +936,7 @@ class ModelTool<
     errorTool: ErrorTool;
     propsProvided: Extract<keyof Input, string>[];
     postValidatableProps: Extract<keyof Input, string>[];
-    summary: MutableSummary<Input, Output, CtxOptions>;
+    summary: IvoSummary<Input, Output, CtxOptions>;
     validator: PostValidator<KeyOf<Input>, Input, Output, Aliases, CtxOptions>;
   }) {
     const revalidatedData: Partial<Output> = {};
@@ -846,15 +992,14 @@ class ModelTool<
 
   private async _handleRequiredBy(data: Partial<Output>, isUpdate = false) {
     const summary = this._getMutableSummary({
-        data: this.values,
-        isUpdate,
-        inputValues: this.inputValues,
-      }),
-      context = summary.context;
+      data: this.values,
+      isUpdate,
+      inputValues: this.inputValues,
+    });
 
     const errorTool = new this._options.ErrorTool(
       VALIDATION_ERRORS.VALIDATION_ERROR,
-      context.__getOptions__(),
+      summary.options,
     );
 
     await Promise.allSettled(
@@ -1054,15 +1199,16 @@ class ModelTool<
     virtuals: KeyOf<Output>[] = [],
   ) {
     const ctx = this._getContext(),
+      options = this._getCtxOptions(),
       props = Array.from(
         new Set([...getKeysAsProps(data), ...errorTool.fields, ...virtuals]),
       );
 
-    let cleanups: NS.FailureHandler<Input, Output, never>[] = [];
+    let cleanups: NS.FailureHandler<Input, Output, CtxOptions>[] = [];
 
     for (const prop of props)
       cleanups = cleanups.concat(
-        this._getHandlers<NS.FailureHandler<Input, Output, never>>(
+        this._getHandlers<NS.FailureHandler<Input, Output, CtxOptions>>(
           prop,
           'onFailure',
         ),
@@ -1070,7 +1216,14 @@ class ModelTool<
 
     return async () => {
       await Promise.allSettled(
-        cleanups.map(async (h) => await Promise.try(h, ctx as never)),
+        cleanups.map(
+          async (h) =>
+            await Promise.try(
+              h,
+              this._getFrozenCopy(ctx),
+              this._getFrozenCopy(options),
+            ),
+        ),
       );
     };
   }
@@ -1117,7 +1270,7 @@ class ModelTool<
 
   private async _resolveDependentChanges(
     data: Partial<Output>,
-    ctx: PartialContext<Input, Output>,
+    ctx: Context<Input, Output>,
     isUpdate = false,
   ) {
     const isCreation = !isUpdate;
@@ -1182,7 +1335,7 @@ class ModelTool<
           !isCreation &&
           isEqual(
             value,
-            _ctx[prop as KeyOf<ImmutableContext<Input, Output>>],
+            _ctx[prop as KeyOf<Context<Input, Output>>],
             this._options.equalityDepth,
           )
         )
@@ -1240,8 +1393,7 @@ class ModelTool<
     });
 
     this.values = _values as Output;
-
-    this._initializeImmutableContexts();
+    this.context = Object.assign({}, this.defaults, this.values) as never;
   }
 
   private async _setMissingDefaults() {
@@ -1367,7 +1519,7 @@ class ModelTool<
   private async _validate<K extends KeyOf<Input & Aliases>>(
     prop: K,
     value: unknown,
-    summary_: MutableSummary<Input, Output, CtxOptions>,
+    summary: IvoSummary<Input, Output, CtxOptions>,
   ) {
     if (!this._isInputOrAlias(prop))
       return makeResponse<(Input & Aliases)[K]>({
@@ -1403,7 +1555,7 @@ class ModelTool<
           (await Promise.try(
             validator,
             value,
-            summary_ as never,
+            summary as never,
           )) as ValidatorResponseObject<(Input & Aliases)[K]>,
           value,
         );
@@ -1433,7 +1585,7 @@ class ModelTool<
     input: Partial<Input & Aliases> = {},
     contextOptions: Partial<CtxOptions> = {},
   ) {
-    this._initializeContextOptions(contextOptions);
+    this._updateCtxOptions(contextOptions);
 
     if (!areValuesOk(input)) input = {};
 
@@ -1489,7 +1641,7 @@ class ModelTool<
   }
 
   async delete(values: Output, contextOptions: Partial<CtxOptions> = {}) {
-    const ctxOptions = this._initializeContextOptions(contextOptions);
+    const options = this._updateCtxOptions(contextOptions); // TODO: remove
 
     if (!areValuesOk(values)) return;
 
@@ -1499,9 +1651,7 @@ class ModelTool<
       ...this.globalDeleteHandlers,
     ];
 
-    const data = this._getFrozenCopy(
-      Object.assign({}, this.values, { __getOptions__: () => ctxOptions }),
-    );
+    const data = this._getFrozenCopy(this.values);
 
     for (const prop of getSetValuesAsProps(this.props)) {
       const handlers_ = this._getHandlers<NS.DeleteHandler<Output, CtxOptions>>(
@@ -1513,7 +1663,14 @@ class ModelTool<
     }
 
     await Promise.allSettled(
-      handlers.map(async (h) => await Promise.try(h, data)),
+      handlers.map(
+        async (h) =>
+          await Promise.try(
+            h,
+            this._getFrozenCopy(data),
+            this._getFrozenCopy(options),
+          ),
+      ),
     );
   }
 
@@ -1522,7 +1679,7 @@ class ModelTool<
     changes: Partial<Input & Aliases>,
     ctxOptions: Partial<CtxOptions> = {},
   ) {
-    const ctxOpts = this._initializeContextOptions(ctxOptions);
+    const ctxOpts = this._updateCtxOptions(ctxOptions);
 
     const errorNothingToUpdate = new this._options.ErrorTool(
       VALIDATION_ERRORS.NOTHING_TO_UPDATE,
@@ -1595,7 +1752,6 @@ class ModelTool<
     const finalData = this._useConfigProps(updates, true);
 
     this._updateContext(finalData as never);
-    this._resetPartialContext(finalData);
 
     return {
       data: finalData as Partial<Output>,

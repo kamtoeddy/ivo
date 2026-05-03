@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'bun:test';
 
-import { ERRORS } from '../../../dist';
+import { ERRORS, type ReadonlyIvoSummary } from '../../../dist';
 import {
   getInvalidConfigMessageForRepeatedProperties,
   getInvalidOnSuccessConfigMessage,
@@ -451,7 +451,7 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
       let successValues: any = {};
 
       function onSuccess_(prop = '') {
-        return (summary: any) => {
+        return (summary: ReadonlyIvoSummary<any>) => {
           successValues[prop] = summary;
         };
       }
@@ -468,7 +468,7 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
             price: {
               default: null,
               dependsOn: '_setPrice',
-              resolver: ({ context }: any) => context._setPrice,
+              resolver: ({ ctx }: any) => ctx._setPrice,
               onSuccess: onSuccess_('price'),
             },
             _setPrice: {
@@ -491,7 +491,7 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
           const values = { id: 1, name: 'Book name', price: 100 };
           const summary = {
             changes: null,
-            context: { ...values, _setPrice: 100 },
+            ctx: { ...values, _setPrice: 100 },
             isUpdate: false,
             previousValues: null,
             values: values,
@@ -520,7 +520,7 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
 
           const summary = {
             changes: data,
-            context: { ...values, _setPrice: 200 },
+            ctx: { ...values, _setPrice: 200 },
             isUpdate: true,
             previousValues: book,
             values: values,
@@ -543,7 +543,7 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
             price: {
               default: null,
               dependsOn: '_setPrice',
-              resolver: ({ context }: any) => context._setPrice,
+              resolver: ({ ctx }: any) => ctx._setPrice,
             },
             _setPrice: { virtual: true, validator },
           },
@@ -561,7 +561,7 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
           const values = { id: 1, name: 'Book name', price: 100 };
           const summary = {
             changes: null,
-            context: { ...values, _setPrice: 100 },
+            ctx: { ...values, _setPrice: 100 },
             isUpdate: false,
             previousValues: null,
             values: values,
@@ -587,7 +587,7 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
 
           const summary = {
             changes: data,
-            context: { ...values, _setPrice: 200 },
+            ctx: { ...values, _setPrice: 200 },
             isUpdate: true,
             previousValues: book,
             values: values,
