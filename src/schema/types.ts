@@ -218,7 +218,7 @@ namespace NS {
   export type DeleteHandler<Output, CtxOptions extends ObjectType> = (
     data: Readonly<Output>,
     options: Readonly<CtxOptions>,
-  ) => void | Promise<void>;
+  ) => unknown | Promise<unknown>;
 
   export type FailureHandler<
     Input,
@@ -227,7 +227,7 @@ namespace NS {
   > = (
     ctx: Context<Input, Output>,
     options: Readonly<CtxOptions>,
-  ) => void | Promise<void>;
+  ) => unknown | Promise<unknown>;
 
   export type SuccessHandler<
     Input,
@@ -235,7 +235,7 @@ namespace NS {
     CtxOptions extends ObjectType = {},
   > = (
     summary: ReadonlyIvoSummary<Input, Output, CtxOptions>,
-  ) => void | Promise<void>;
+  ) => unknown | Promise<unknown>;
 
   export type OnSuccessConfigObject<
     Input,
