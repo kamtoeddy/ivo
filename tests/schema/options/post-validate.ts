@@ -2129,9 +2129,10 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
 
                     return true;
                   },
-                  ({ updateOptions, getOptions }: MutableSummary<any>) => {
-                    const { updated } = getOptions();
-
+                  ({
+                    updateOptions,
+                    options: { updated },
+                  }: MutableSummary<any>) => {
                     updateOptions({ v2: { updated } });
 
                     return true;

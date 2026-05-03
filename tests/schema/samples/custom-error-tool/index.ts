@@ -14,8 +14,8 @@ const userSchema = new Schema<
   {
     firstName: {
       default: '',
-      validator: (v, { getOptions }) => {
-        const { lang } = getOptions();
+      validator: (v, { options }) => {
+        const { lang } = options;
 
         if (lang) return true;
 
@@ -34,7 +34,7 @@ const userSchema = new Schema<
     },
     lastName: {
       default: '',
-      validator: (_, { getOptions }) => !!getOptions().lang,
+      validator: (_, { options }) => !!options.lang,
     },
   },
   { ErrorTool: VError },

@@ -17,27 +17,19 @@ import {
 import {
   ALLOWED_OPTIONS,
   CONSTANT_RULES,
-  type Context,
   DEFINITION_RULES,
   type DefinitionRule,
-  type ImmutableSummary,
   type KeyOf,
   LIFE_CYCLES,
-  type MutableSummary,
   type NS as ns,
   type PostValidationConfig,
   type PostValidator,
-  type RealType,
   VIRTUAL_RULES,
 } from './types';
 import {
-  cloneValue,
   DefaultErrorTool,
-  type FieldError,
   type IErrorTool,
-  type InputFieldError,
   isInputFieldError,
-  makeFieldError,
   SchemaErrorTool,
   TimeStampTool,
 } from './utils';
@@ -67,13 +59,7 @@ abstract class SchemaCore<
   protected _definitions = {} as ns.Definitions_<Input, Output>;
   protected _options: ns.InternalOptions<Input, Output, CtxOptions, ErrorTool>;
 
-  // contexts & values
-  protected context = {} as Context<Input, Output>;
-  protected contextOptions: CtxOptions = {} as CtxOptions;
-
   protected defaults: Partial<Output> = {};
-  protected partialContext = {} as Context<Input, Output>;
-  protected values: Output = {} as Output;
 
   // maps
   protected readonly aliasToVirtualMap: ns.AliasToVirtualMap<Input> = {};
@@ -148,108 +134,6 @@ abstract class SchemaCore<
 
     this.timestampTool = new TimeStampTool(this._options.timestamps);
   }
-
-  protected _getContext(previousValues: Partial<Output> | null = null) {
-    return this._getFrozenCopy<Context<Input, Output>>(
-      sortKeys(cloneValue(Object.assign({}, previousValues, this.context))),
-    );
-  }
-
-  protected _getSummary({
-    data,
-    inputValues,
-    isUpdate,
-  }: {
-    data: Partial<Output>;
-    inputValues: Partial<RealType<Input>>;
-    isUpdate: boolean;
-  }) {
-    const changes = isUpdate ? cloneValue(data) : null,
-      previousValues = isUpdate ? cloneValue(this.values) : null,
-      ctx = this._getContext(isUpdate ? previousValues : null),
-      values = this._getFrozenCopy(
-        cloneValue(
-          isUpdate
-            ? Object.assign({}, previousValues, this.values, data)
-            : Object.assign({}, this.defaults, data),
-        ),
-      );
-
-    return this._getFrozenCopy({
-      changes,
-      ctx,
-      inputValues: cloneValue(inputValues),
-      isUpdate,
-      previousValues,
-      values,
-      options: this._getContextOptions(),
-    }) as ImmutableSummary<Input, Output, CtxOptions>;
-  }
-
-  protected _getMutableSummary(props: {
-    data: Partial<Output>;
-    inputValues: Partial<RealType<Input>>;
-    isUpdate: boolean;
-  }) {
-    const { options: _, ...s } = this._getSummary(props);
-
-    return this._getFrozenCopy(
-      Object.assign(s, {
-        getOptions: this._getContextOptions,
-        updateOptions: this._updateContextOptions,
-      }),
-    ) as MutableSummary<Input, Output, CtxOptions>;
-  }
-
-  protected _getContextOptions = () => this._getFrozenCopy(this.contextOptions);
-
-  protected _getPartialContext = () => this._getFrozenCopy(this.partialContext);
-
-  protected _initializeImmutableContexts = () => {
-    this.context = Object.assign({}, this.defaults, this.values) as never;
-    this.partialContext = {} as Context<Input, Output>;
-  };
-
-  protected _resetPartialContext = (updates: Partial<Output> = {}) => {
-    for (const prop of getKeysAsProps(this.partialContext)) {
-      if (this._isVirtual(prop)) continue;
-
-      if (
-        !isEqual(
-          this.partialContext[prop],
-          (updates as any)[prop],
-          this._options.equalityDepth,
-        )
-      )
-        delete this.partialContext[prop];
-    }
-
-    this.partialContext = Object.assign(
-      {},
-      this.partialContext,
-      updates,
-    ) as never;
-  };
-
-  protected _updateContext = (updates: Partial<Input>) => {
-    Object.assign(this.context, updates);
-  };
-
-  protected _initializeContextOptions = (options: Partial<CtxOptions>) => {
-    this.contextOptions = {} as CtxOptions;
-
-    return this._updateContextOptions(options);
-  };
-
-  protected _updateContextOptions = (options: Partial<CtxOptions>) => {
-    if (isRecordLike(options)) Object.assign(this.contextOptions, options);
-
-    return this._getContextOptions();
-  };
-
-  protected _updatePartialContext = (updates: Partial<Input>) => {
-    Object.assign(this.partialContext, updates);
-  };
 
   protected _getAliasByVirtual = (prop: KeyOf<Input>): string | undefined =>
     this.virtualToAliasMap[prop];
@@ -614,87 +498,14 @@ abstract class SchemaCore<
   protected _isVirtual = (prop: string) =>
     this.virtuals.has(prop as KeyOf<Input>);
 
-  protected _getConstantValue = (prop: string) =>
-    this._getValueBy(prop, 'value');
-
   protected _getDefinition = (prop: string) =>
     this._definitions[prop as KeyOf<Input>]!;
-
-  protected _getDefaultValue = async (prop: string) => {
-    const _default = this._getDefinition(prop)?.default;
-
-    let value: any;
-
-    try {
-      value = isFunctionLike(_default)
-        ? await Promise.try(() => _default(this._getContext()))
-        : this.defaults[prop as KeyOf<Output>];
-    } catch {
-      value = null;
-    }
-
-    return isEqual(value, undefined)
-      ? this.values[prop as KeyOf<Output>]
-      : value;
-  };
 
   protected _getFrozenCopy = <T>(data: T): Readonly<T> =>
     Object.freeze(Object.assign({}, data)) as Readonly<T>;
 
   protected _getHandlers = <T>(prop: string, lifeCycle: ns.LifeCycle) =>
     toArray((this._getDefinition(prop)?.[lifeCycle] ?? []) as never) as T[];
-
-  protected _getRequiredState = async (
-    prop: string,
-    summary: MutableSummary<Input, Output>,
-  ): Promise<[boolean, string | FieldError]> => {
-    const { required } = this._getDefinition(prop);
-
-    if (!required) return [false, ''];
-
-    const fallbackMessage = `'${prop}' is required`;
-
-    if (!isFunctionLike(required)) return [required, fallbackMessage];
-
-    const results = await required(summary);
-    const isBoolean = typeof results === 'boolean';
-
-    if (!isBoolean && !Array.isArray(results)) return [false, ''];
-
-    if (isBoolean) return [results as boolean, results ? fallbackMessage : ''];
-
-    const [isRequired, message] = results as [
-        boolean,
-        string | InputFieldError,
-      ],
-      isString = typeof message === 'string';
-
-    if (!isRequired || (!isString && !isInputFieldError(message)))
-      return [isRequired, fallbackMessage];
-
-    if (isString) return [true, message || fallbackMessage];
-
-    const fieldError = makeFieldError(message, fallbackMessage);
-
-    return [
-      true,
-      isPropertyOf('metadata', message)
-        ? fieldError
-        : ({ reason: fieldError.reason } as never),
-    ];
-  };
-
-  protected _getValueBy = (
-    prop: string,
-    rule: DefinitionRule,
-    extraCtx: ObjectType = {},
-  ) => {
-    const value = this._getDefinition(prop)?.[rule];
-
-    return isFunctionLike(value)
-      ? value(Object.assign({}, this._getContext(), extraCtx))
-      : value;
-  };
 
   private _isValidatorOk = (
     prop: string,

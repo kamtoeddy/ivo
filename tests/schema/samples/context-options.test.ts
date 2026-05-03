@@ -80,8 +80,8 @@ describe('Context options', () => {
     const contextOptions = { lang: 'en' };
     const validator = () => true;
     function handleRequired(prop: string) {
-      return ({ getOptions }: MutableSetterData<any>) => {
-        ctxOptions[prop] = getOptions();
+      return ({ options }: MutableSetterData<any>) => {
+        ctxOptions[prop] = options;
 
         return false;
       };
@@ -136,8 +136,8 @@ describe('Context options', () => {
     >({
       name: {
         default: '',
-        validator(_, { getOptions }) {
-          getOptions().ctxHandler();
+        validator(_, { options }) {
+          options.ctxHandler();
           return true;
         },
         onDelete({ options }) {

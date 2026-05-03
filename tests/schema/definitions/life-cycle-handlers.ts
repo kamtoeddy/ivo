@@ -3,7 +3,7 @@ import type {
   DeletionContext,
   FailureHandlerData,
   ImmutableSummary,
-} from '../../../dist';
+} from '../../../src';
 import { expectFailure, expectNoFailure, validator } from '../_utils';
 
 export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {

@@ -13,7 +13,7 @@ export type {
   Merge,
   MutableSummary,
   RealType,
-  SetterData,
+  SetterFnData,
   ValidatorResponse,
   ValidatorResponseObject,
   XOR,

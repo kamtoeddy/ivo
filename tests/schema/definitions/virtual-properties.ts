@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'bun:test';
 
-import { ERRORS, type ImmutableSummary } from '../../../dist';
+import { ERRORS, type ImmutableSummary } from '../../../src';
 import { DEFINITION_RULES, VIRTUAL_RULES } from '../../../src/schema/types';
 
 import { expectFailure, expectNoFailure, validator } from '../_utils';

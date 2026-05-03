@@ -8,7 +8,7 @@ import {
   mock,
 } from 'bun:test';
 
-import { ERRORS, type ImmutableSummary } from '../../../dist';
+import { ERRORS, type ImmutableSummary } from '../../../src';
 import { expectFailure, expectNoFailure, validator } from '../_utils';
 
 export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {

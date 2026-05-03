@@ -24,7 +24,7 @@ export type {
   PostValidator,
   RealType,
   ResponseErrorObject,
-  SetterData,
+  SetterFnData,
   TypeOf,
   ValidationResponse,
   Validator,
@@ -43,21 +43,19 @@ export {
 
 type Context<Input, Output = Input> = Readonly<Merge<Input, Output>> & {};
 
-type DeletionContext<Output, CtxOptions extends ObjectType = {}> = Readonly<{
-  data: Readonly<Output>;
-  options: Readonly<CtxOptions>;
-}> & {};
+type DeletionContext<Output, CtxOptions extends ObjectType = {}> = Readonly<
+  WithReadonlyCtxOptions<{ data: Readonly<Output> }, CtxOptions>
+> & {};
 
 type FailureHandlerData<
   Input,
   Output = Input,
   CtxOptions extends ObjectType = {},
-> = Readonly<{
-  ctx: Context<Input, Output>;
-  options: Readonly<CtxOptions>;
-}> & {};
+> = Readonly<
+  WithReadonlyCtxOptions<{ ctx: Context<Input, Output> }, CtxOptions>
+> & {};
 
-type SetterData<
+type SetterFnData<
   Input,
   Output = Input,
   CtxOptions extends ObjectType = {},
@@ -133,15 +131,15 @@ type WithReadonlyCtxOptions<T, CtxOptions extends ObjectType> = T & {
   options: Readonly<CtxOptions>;
 };
 
-type WithCtxOptions<T, CtxOptions extends ObjectType> = T & {
-  getOptions: () => Readonly<CtxOptions>;
-  updateOptions: (updates: Partial<CtxOptions>) => void;
-};
+type WithCtxOptions<T, CtxOptions extends ObjectType> = WithReadonlyCtxOptions<
+  T,
+  CtxOptions
+> & { updateOptions: (updates: Partial<CtxOptions>) => void };
 
 type TypeOf<T> = Exclude<T, undefined>;
 
 type AsyncSetter<T, Input, Output, CtxOptions extends ObjectType> = (
-  data: SetterData<Input, Output, CtxOptions>,
+  data: SetterFnData<Input, Output, CtxOptions>,
 ) => TypeOf<T> | Promise<TypeOf<T>>;
 
 type NotAllowedError = string | InputFieldError;
@@ -151,7 +149,7 @@ type SetterWithSummary<T, Input, Output, CtxOptions extends ObjectType> = (
 ) => TypeOf<T>;
 
 type Setter<T, Input, Output, CtxOptions extends ObjectType> = (
-  data: SetterData<Input, Output, CtxOptions>,
+  data: SetterFnData<Input, Output, CtxOptions>,
 ) => TypeOf<T>;
 
 type RequiredHandlerRes =

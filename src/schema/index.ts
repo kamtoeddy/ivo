@@ -16,6 +16,8 @@ import {
 import { defaultOptions, SchemaCore } from './schema-core';
 import {
   type Context,
+  type DefinitionRule,
+  type ImmutableSummary,
   type InternalValidatorResponse,
   type InvalidValidatorResponse,
   type KeyOf,
@@ -28,7 +30,9 @@ import {
   type ValidatorResponseObject,
 } from './types';
 import {
+  cloneValue,
   type DefaultErrorTool,
+  type FieldError,
   type IErrorTool,
   type InputFieldError,
   isInputFieldError,
@@ -189,9 +193,156 @@ class ModelTool<
   private _regeneratedProps: KeyOf<Output>[] = [];
   private inputValues: Partial<RealType<Input>> = {};
 
+  // contexts & values
+  private context = {} as Context<Input, Output>;
+  private contextOptions: CtxOptions = {} as CtxOptions;
+
+  private partialContext = {} as Context<Input, Output>;
+  private values: Output = {} as Output;
+
   constructor(schema: Schema<Input, Output, Aliases, CtxOptions, ErrorTool>) {
     super(schema.definitions as never, schema.options as never);
   }
+
+  protected _getContext(previousValues: Partial<Output> | null = null) {
+    return this._getFrozenCopy<Context<Input, Output>>(
+      sortKeys(cloneValue(Object.assign({}, previousValues, this.context))),
+    );
+  }
+
+  protected _getSummary({
+    data,
+    inputValues,
+    isUpdate,
+  }: {
+    data: Partial<Output>;
+    inputValues: Partial<RealType<Input>>;
+    isUpdate: boolean;
+  }) {
+    const changes = isUpdate ? cloneValue(data) : null,
+      previousValues = isUpdate ? cloneValue(this.values) : null,
+      ctx = this._getContext(isUpdate ? previousValues : null),
+      values = this._getFrozenCopy(
+        cloneValue(
+          isUpdate
+            ? Object.assign({}, previousValues, this.values, data)
+            : Object.assign({}, this.defaults, data),
+        ),
+      );
+
+    return this._getFrozenCopy({
+      changes,
+      ctx,
+      inputValues: cloneValue(inputValues),
+      isUpdate,
+      previousValues,
+      values,
+      options: this._getCtxOptions(),
+    }) as ImmutableSummary<Input, Output, CtxOptions>;
+  }
+
+  protected _getMutableSummary(props: {
+    data: Partial<Output>;
+    inputValues: Partial<RealType<Input>>;
+    isUpdate: boolean;
+  }) {
+    return this._getFrozenCopy(
+      Object.assign({}, this._getSummary(props), {
+        updateOptions: this._updateCtxOptions,
+      }),
+    ) as MutableSummary<Input, Output, CtxOptions>;
+  }
+
+  protected _getPartialContext = () => this._getFrozenCopy(this.partialContext);
+
+  protected _updateContext = (updates: Partial<Input>) => {
+    Object.assign(this.context, updates);
+  };
+
+  protected _updatePartialContext = (updates: Partial<Input>) => {
+    Object.assign(this.partialContext, updates);
+  };
+
+  protected _getCtxOptions = () => this._getFrozenCopy(this.contextOptions);
+
+  protected _updateCtxOptions = (options: Partial<CtxOptions>) => {
+    if (isRecordLike(options)) Object.assign(this.contextOptions, options);
+
+    return this._getCtxOptions();
+  };
+
+  protected _getDefaultValue = async (prop: string) => {
+    const _default = this._getDefinition(prop)?.default;
+
+    let value: any;
+
+    try {
+      value = isFunctionLike(_default)
+        ? await Promise.try(() => _default(this._getContext()))
+        : this.defaults[prop as KeyOf<Output>];
+    } catch {
+      value = null;
+    }
+
+    return isEqual(value, undefined)
+      ? this.values[prop as KeyOf<Output>]
+      : value;
+  };
+
+  protected _getRequiredState = async (
+    prop: string,
+    summary: MutableSummary<Input, Output>,
+  ): Promise<[boolean, string | FieldError]> => {
+    const { required } = this._getDefinition(prop);
+
+    if (!required) return [false, ''];
+
+    const fallbackMessage = `'${prop}' is required`;
+
+    if (!isFunctionLike(required)) return [required, fallbackMessage];
+
+    const results = await required(summary);
+    const isBoolean = typeof results === 'boolean';
+
+    if (!isBoolean && !Array.isArray(results)) return [false, ''];
+
+    if (isBoolean) return [results as boolean, results ? fallbackMessage : ''];
+
+    const [isRequired, message] = results as [
+        boolean,
+        string | InputFieldError,
+      ],
+      isString = typeof message === 'string';
+
+    if (!isRequired || (!isString && !isInputFieldError(message)))
+      return [isRequired, fallbackMessage];
+
+    if (isString) return [true, message || fallbackMessage];
+
+    const fieldError = makeFieldError(message, fallbackMessage);
+
+    return [
+      true,
+      isPropertyOf('metadata', message)
+        ? fieldError
+        : ({ reason: fieldError.reason } as never),
+    ];
+  };
+
+  protected _getConstantValue = (prop: string) =>
+    this._getValueBy(prop, 'value');
+
+  protected _getValueBy = (
+    prop: string,
+    rule: DefinitionRule,
+    extraCtx: ObjectType = {},
+  ) => {
+    const value = this._getDefinition(prop)?.[rule];
+
+    return isFunctionLike(value)
+      ? value(Object.assign({}, this._getContext(), extraCtx))
+      : value;
+  };
 
   private _cleanInput(input: Partial<Input | Aliases>) {
     const props = getKeysAsProps(input).filter(this._isInputOrAlias);
@@ -552,7 +703,7 @@ class ModelTool<
 
     const error = new this._options.ErrorTool(
       VALIDATION_ERRORS.VALIDATION_ERROR,
-      summary.getOptions(),
+      summary.options,
     );
 
     const props: [KeyOf<Output>, string | undefined][] = [];
@@ -648,7 +799,7 @@ class ModelTool<
 
     const errorTool = new this._options.ErrorTool(
       VALIDATION_ERRORS.VALIDATION_ERROR,
-      summary.getOptions(),
+      summary.options,
     );
 
     const handlerIds = new Set<string>(),
@@ -848,7 +999,7 @@ class ModelTool<
 
     const errorTool = new this._options.ErrorTool(
       VALIDATION_ERRORS.VALIDATION_ERROR,
-      summary.getOptions(),
+      summary.options,
     );
 
     await Promise.allSettled(
@@ -1048,7 +1199,7 @@ class ModelTool<
     virtuals: KeyOf<Output>[] = [],
   ) {
     const ctx = this._getContext(),
-      options = this._getContextOptions(),
+      options = this._getCtxOptions(),
       props = Array.from(
         new Set([...getKeysAsProps(data), ...errorTool.fields, ...virtuals]),
       );
@@ -1245,8 +1396,7 @@ class ModelTool<
     });
 
     this.values = _values as Output;
-
-    this._initializeImmutableContexts();
+    this.context = Object.assign({}, this.defaults, this.values) as never;
   }
 
   private async _setMissingDefaults() {
@@ -1438,7 +1588,7 @@ class ModelTool<
     input: Partial<Input & Aliases> = {},
     contextOptions: Partial<CtxOptions> = {},
   ) {
-    this._initializeContextOptions(contextOptions);
+    this._updateCtxOptions(contextOptions);
 
     if (!areValuesOk(input)) input = {};
 
@@ -1494,7 +1644,7 @@ class ModelTool<
   }
 
   async delete(values: Output, contextOptions: Partial<CtxOptions> = {}) {
-    const options = this._initializeContextOptions(contextOptions); // TODO: remove
+    const options = this._updateCtxOptions(contextOptions); // TODO: remove
 
     if (!areValuesOk(values)) return;
 
@@ -1535,7 +1685,7 @@ class ModelTool<
     changes: Partial<Input & Aliases>,
     ctxOptions: Partial<CtxOptions> = {},
   ) {
-    const ctxOpts = this._initializeContextOptions(ctxOptions);
+    const ctxOpts = this._updateCtxOptions(ctxOptions);
 
     const errorNothingToUpdate = new this._options.ErrorTool(
       VALIDATION_ERRORS.NOTHING_TO_UPDATE,
@@ -1608,7 +1758,6 @@ class ModelTool<
     const finalData = this._useConfigProps(updates, true);
 
     this._updateContext(finalData as never);
-    this._resetPartialContext(finalData);
 
     return {
       data: finalData as Partial<Output>,
