@@ -46,9 +46,35 @@ impl<I, O> IvoProperty<I, O> {
 //         .on_success(Box::new(|_| {}))
 //         .build();
 
+//     let d = DependentField::default_fn(Box::new(|_| true))
+//         .depends_on(&["first_name", "last_name"])
+//         .resolver(Box::new(|_| false))
+//         .readonly()
+//         .on_delete_fns(vec![Box::new(|_| {}), Box::new(|_| {})])
+//         .on_success(Box::new(|_| {}))
+//         .build();
+
+//     let v = VirtualField::alias("lol")
+//         .validator(Box::new(|v, _| Ok(true)))
+//         .re_validator(Box::new(|v, c| Ok(true)))
+//         .required(Box::new(|_| (true, "lol")))
+//         .sanitizer(Box::new(|s| false))
+//         .on_failure(Box::new(|_| {}))
+//         .on_success(Box::new(|_| {}))
+//         .build();
+
 //     let v = VirtualField::validator(Box::new(|v, _| Ok(true)))
 //         .re_validator(Box::new(|v, c| Ok(true)))
 //         .alias("lol")
+//         .required(Box::new(|_| (true, "lol")))
+//         .sanitizer(Box::new(|s| false))
+//         .on_failure(Box::new(|_| {}))
+//         .on_success(Box::new(|_| {}))
+//         .build();
+
+//     let v = VirtualField::validator(Box::new(|v, _| Ok(true)))
+//         .alias("lol")
+//         .re_validator(Box::new(|v, c| Ok(true)))
 //         .required(Box::new(|_| (true, "lol")))
 //         .sanitizer(Box::new(|s| false))
 //         .on_failure(Box::new(|_| {}))

@@ -1,95 +1,243 @@
 use crate::{
     schema::properties::base::IvoProperty,
-    types::{Computable, Context, DeleteHandler, ResolverWithMutSummaryFn, SuccessHandler},
+    types::{
+        Computable, ComputableRequired, DeleteHandler, RequiredResolverFn, ResolverWithContextFn,
+        ResolverWithMutSummaryFn, SuccessHandler,
+    },
 };
 
 pub struct DependentField;
 
-impl DependentField {
-    pub fn default<I, O, T>(value: T) -> WithoutParentsBuilder<I, O, T> {
-        WithoutParentsBuilder {
-            default: Computable::Static(value),
-        }
-    }
+// Marker Types
+pub struct Yes;
+pub struct No;
 
-    pub fn default_fn<I, O, T>(
-        default_fn: Box<dyn Fn(&Context<I, O>) -> T + Send + Sync>,
-    ) -> WithoutParentsBuilder<I, O, T> {
-        WithoutParentsBuilder {
-            default: Computable::Func(default_fn),
-        }
-    }
-}
-
-struct WithoutParentsBuilder<I, O, T> {
-    default: Computable<I, O, T>,
-}
-
-impl<I, O, T> WithoutParentsBuilder<I, O, T> {
-    pub fn depends_on(self, parents: &[&str]) -> WithoutResolverBuilder<I, O, T> {
-        WithoutResolverBuilder {
-            default: self.default,
-            parents: parents
-                .iter()
-                .map(|s| s.to_string())
-                .collect::<Vec<String>>(),
-        }
-    }
-}
-
-struct WithoutResolverBuilder<I, O, T> {
-    default: Computable<I, O, T>,
-    parents: Vec<String>,
-}
-
-impl<I, O, T> WithoutResolverBuilder<I, O, T> {
-    pub fn resolver(self, resolver: ResolverWithMutSummaryFn<I, O, T>) -> Buildable<I, O, T> {
-        Buildable {
-            default: self.default,
-            parents: self.parents,
-            resolver,
-            on_delete_fns: None,
-            on_success_fns: None,
-        }
-    }
-}
-
-struct Buildable<I, O, T> {
-    default: Computable<I, O, T>,
-    parents: Vec<String>,
-    resolver: ResolverWithMutSummaryFn<I, O, T>,
+struct SchemaBuilder<
+    I,
+    O,
+    T,
+    HasDefault,
+    HasParents,
+    HasResolver,
+    HasReadonly,
+    HasRequired,
+    HasDelete,
+    HasSuccess,
+> {
+    _default: std::marker::PhantomData<HasDefault>,
+    _parents: std::marker::PhantomData<HasParents>,
+    _resolver: std::marker::PhantomData<HasResolver>,
+    _readonly: std::marker::PhantomData<HasReadonly>,
+    _required: std::marker::PhantomData<HasRequired>,
+    _del_handlers: std::marker::PhantomData<HasDelete>,
+    _success_handlers: std::marker::PhantomData<HasSuccess>,
+    // actual data...
+    default: Option<Computable<I, O, T>>,
+    depends_on: Option<Vec<String>>,
+    resolver: Option<ResolverWithMutSummaryFn<I, O, T>>,
+    readonly: bool,
+    required: Option<ComputableRequired<I, O>>,
     on_delete_fns: Option<Vec<DeleteHandler<O>>>,
     on_success_fns: Option<Vec<SuccessHandler<I, O>>>,
 }
 
-impl<I, O, T> Buildable<I, O, T> {
-    pub fn on_delete(mut self, handler: DeleteHandler<O>) -> Self {
-        let mut handlers = self.on_delete_fns.unwrap_or(vec![]);
-
-        handlers.push(handler);
-
-        self.on_delete_fns = Some(handlers);
-
-        self
+impl<
+        HasDefault,
+        HasParents,
+        HasResolver,
+        HasReadonly,
+        HasRequired,
+        HasDelete,
+        HasSuccess,
+        I,
+        O,
+        T,
+    > Default
+    for SchemaBuilder<
+        I,
+        O,
+        T,
+        HasDefault,
+        HasParents,
+        HasResolver,
+        HasReadonly,
+        HasRequired,
+        HasDelete,
+        HasSuccess,
+    >
+{
+    fn default() -> Self {
+        Self {
+            default: None,
+            depends_on: None,
+            resolver: None,
+            readonly: false,
+            required: None,
+            on_delete_fns: None,
+            on_success_fns: None,
+            _default: std::marker::PhantomData,
+            _parents: std::marker::PhantomData,
+            _readonly: std::marker::PhantomData,
+            _resolver: std::marker::PhantomData,
+            _required: std::marker::PhantomData,
+            _del_handlers: std::marker::PhantomData,
+            _success_handlers: std::marker::PhantomData,
+        }
     }
+}
 
-    pub fn on_success(mut self, handler: SuccessHandler<I, O>) -> Self {
-        let mut handlers = self.on_success_fns.unwrap_or(vec![]);
-
-        handlers.push(handler);
-
-        self.on_success_fns = Some(handlers);
-
-        self
-    }
-
+impl<HasReadonly, HasRequired, HasDelete, HasSuccess, I, O, T>
+    SchemaBuilder<I, O, T, Yes, Yes, Yes, HasReadonly, HasRequired, HasDelete, HasSuccess>
+{
     pub fn build(self) -> IvoProperty<I, O, T> {
         IvoProperty {
-            default: Some(self.default),
-            depends_on: Some(self.parents),
-            resolver: Some(self.resolver),
+            default: self.default,
+            depends_on: self.depends_on,
+            resolver: self.resolver,
+            readonly: self.readonly,
+            required: self.required,
             on_delete_fns: self.on_delete_fns,
             on_success_fns: self.on_success_fns,
+            ..Default::default()
+        }
+    }
+}
+
+impl DependentField {
+    pub fn default<I, O, T>(value: T) -> SchemaBuilder<I, O, T, Yes, No, No, No, No, No, No> {
+        SchemaBuilder {
+            default: Some(Computable::Static(value)),
+            ..Default::default()
+        }
+    }
+
+    pub fn default_fn<I, O, T>(
+        default_fn: ResolverWithContextFn<I, O, T>,
+    ) -> SchemaBuilder<I, O, T, Yes, No, No, No, No, No, No> {
+        SchemaBuilder {
+            default: Some(Computable::Func(default_fn)),
+            ..Default::default()
+        }
+    }
+}
+
+impl<I, O, T> SchemaBuilder<I, O, T, Yes, No, No, No, No, No, No> {
+    pub fn depends_on(
+        self,
+        parents: &[&str],
+    ) -> SchemaBuilder<I, O, T, Yes, Yes, No, No, No, No, No> {
+        SchemaBuilder {
+            default: self.default,
+            depends_on: Some(
+                parents
+                    .iter()
+                    .map(|s| s.to_string())
+                    .collect::<Vec<String>>(),
+            ),
+            ..Default::default()
+        }
+    }
+}
+
+impl<I, O, T> SchemaBuilder<I, O, T, Yes, Yes, No, No, No, No, No> {
+    pub fn resolver(
+        self,
+        resolver: ResolverWithMutSummaryFn<I, O, T>,
+    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, No, No, No> {
+        SchemaBuilder {
+            default: self.default,
+            depends_on: self.depends_on,
+            resolver: Some(resolver),
+            ..Default::default()
+        }
+    }
+}
+
+impl<HasRequired, HasDelete, HasSuccess, I, O, T>
+    SchemaBuilder<I, O, T, Yes, Yes, Yes, No, HasRequired, HasDelete, HasSuccess>
+{
+    pub fn readonly(
+        self,
+    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, Yes, HasRequired, HasDelete, HasSuccess> {
+        SchemaBuilder {
+            default: self.default,
+            depends_on: self.depends_on,
+            resolver: self.resolver,
+            readonly: true,
+            ..Default::default()
+        }
+    }
+}
+
+// ON_DELETE is only available if HasDelete is 'No'
+impl<HasReadonly, HasRequired, HasSuccess, I, O, T>
+    SchemaBuilder<I, O, T, Yes, Yes, Yes, HasReadonly, HasRequired, No, HasSuccess>
+{
+    pub fn on_delete(
+        self,
+        handler: DeleteHandler<O>,
+    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, HasReadonly, HasRequired, Yes, HasSuccess> {
+        SchemaBuilder {
+            default: self.default,
+            depends_on: self.depends_on,
+            resolver: self.resolver,
+            readonly: self.readonly,
+            required: self.required,
+            on_delete_fns: Some(vec![handler]),
+            on_success_fns: self.on_success_fns,
+            ..Default::default()
+        }
+    }
+
+    pub fn on_delete_fns(
+        self,
+        handlers: Vec<DeleteHandler<O>>,
+    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, HasReadonly, HasRequired, Yes, HasSuccess> {
+        SchemaBuilder {
+            default: self.default,
+            depends_on: self.depends_on,
+            resolver: self.resolver,
+            readonly: self.readonly,
+            required: self.required,
+            on_delete_fns: Some(handlers),
+            on_success_fns: self.on_success_fns,
+            ..Default::default()
+        }
+    }
+}
+
+// ON_SUCCESS is only available if HasSuccess is 'No'
+impl<HasReadonly, HasRequired, HasDelete, I, O, T>
+    SchemaBuilder<I, O, T, Yes, Yes, Yes, HasReadonly, HasRequired, HasDelete, No>
+{
+    pub fn on_success(
+        self,
+        handler: SuccessHandler<I, O>,
+    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, HasReadonly, HasRequired, HasDelete, Yes> {
+        SchemaBuilder {
+            default: self.default,
+            depends_on: self.depends_on,
+            resolver: self.resolver,
+            readonly: self.readonly,
+            required: self.required,
+            on_delete_fns: self.on_delete_fns,
+            on_success_fns: Some(vec![handler]),
+            ..Default::default()
+        }
+    }
+
+    pub fn on_success_fns(
+        self,
+        handlers: Vec<SuccessHandler<I, O>>,
+    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, HasReadonly, HasRequired, HasDelete, Yes> {
+        SchemaBuilder {
+            default: self.default,
+            depends_on: self.depends_on,
+            resolver: self.resolver,
+            readonly: self.readonly,
+            required: self.required,
+            on_delete_fns: self.on_delete_fns,
+            on_success_fns: Some(handlers),
             ..Default::default()
         }
     }

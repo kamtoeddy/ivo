@@ -1,20 +1,16 @@
 use crate::{
     schema::properties::base::IvoProperty,
     types::{
-        ComputableRequired, FailureHandler, FieldValidatorFn, RequiredResolverFn, SuccessHandler,
-        VirtualSanitiser,
+        Computable, ComputableRequired, FailureHandler, FieldValidatorFn, RequiredResolverFn,
+        SuccessHandler, VirtualSanitiser,
     },
 };
 
 pub struct VirtualField;
 
-impl VirtualField {
-    pub fn validator<I, O, T>(
-        validator: FieldValidatorFn<I, O, T>,
-    ) -> WithValidatorBuilder<I, O, T> {
-        WithValidatorBuilder { validator }
-    }
-}
+// Marker Types
+pub struct Yes;
+pub struct No;
 
 struct WithValidatorBuilder<I, O, T> {
     validator: FieldValidatorFn<I, O, T>,
@@ -113,6 +109,413 @@ impl<I, O, T> WithReValidatorBuilder<I, O, T> {
             sanitizer: self.sanitizer_fn,
             on_failure_fns: self.on_failure_fns,
             on_success_fns: self.on_success_fns,
+            ..Default::default()
+        }
+    }
+}
+
+struct SchemaBuilder<
+    I,
+    O,
+    T,
+    HasValidator,
+    HasAlias,
+    HasRevalidator,
+    HasSanitizer,
+    HasRequired,
+    HasIgnore,
+    HasShouldInit,
+    HasShouldUpdate,
+    HasFailure,
+    HasSuccess,
+> {
+    _alias: std::marker::PhantomData<HasAlias>,
+    _validator: std::marker::PhantomData<HasValidator>,
+    _re_validator: std::marker::PhantomData<HasRevalidator>,
+    _required_fn: std::marker::PhantomData<HasRequired>,
+    _sanitizer_fn: std::marker::PhantomData<HasSanitizer>,
+    _should_ignore: std::marker::PhantomData<HasIgnore>,
+    _should_init: std::marker::PhantomData<HasShouldInit>,
+    _should_update: std::marker::PhantomData<HasShouldUpdate>,
+    _on_failure_fns: std::marker::PhantomData<HasFailure>,
+    _on_success_fns: std::marker::PhantomData<HasSuccess>,
+    // actual data...
+    alias: Option<String>,
+    validator: Option<FieldValidatorFn<I, O, T>>,
+    re_validator: Option<FieldValidatorFn<I, O, T>>,
+    required: Option<ComputableRequired<I, O>>,
+    sanitizer: Option<VirtualSanitiser<I, O, T>>,
+    should_ignore: Option<Computable<I, O, bool>>,
+    should_init: Option<Computable<I, O, bool>>,
+    should_update: Option<Computable<I, O, bool>>,
+    on_failure_fns: Option<Vec<FailureHandler<I, O>>>,
+    on_success_fns: Option<Vec<SuccessHandler<I, O>>>,
+}
+
+impl<
+        HasValidator,
+        HasAlias,
+        HasRevalidator,
+        HasSanitizer,
+        HasRequired,
+        HasIgnore,
+        HasShouldInit,
+        HasShouldUpdate,
+        HasFailure,
+        HasSuccess,
+        I,
+        O,
+        T,
+    > Default
+    for SchemaBuilder<
+        I,
+        O,
+        T,
+        HasValidator,
+        HasAlias,
+        HasRevalidator,
+        HasSanitizer,
+        HasRequired,
+        HasIgnore,
+        HasShouldInit,
+        HasShouldUpdate,
+        HasFailure,
+        HasSuccess,
+    >
+{
+    fn default() -> Self {
+        Self {
+            alias: None,
+            validator: None,
+            re_validator: None,
+            required: None,
+            sanitizer: None,
+            should_ignore: None,
+            should_init: None,
+            should_update: None,
+            on_failure_fns: None,
+            on_success_fns: None,
+            _alias: std::marker::PhantomData,
+            _validator: std::marker::PhantomData,
+            _re_validator: std::marker::PhantomData,
+            _required_fn: std::marker::PhantomData,
+            _sanitizer_fn: std::marker::PhantomData,
+            _should_ignore: std::marker::PhantomData,
+            _should_init: std::marker::PhantomData,
+            _should_update: std::marker::PhantomData,
+            _on_failure_fns: std::marker::PhantomData,
+            _on_success_fns: std::marker::PhantomData,
+        }
+    }
+}
+
+impl<
+        HasAlias,
+        HasRevalidator,
+        HasSanitizer,
+        HasRequired,
+        HasIgnore,
+        HasShouldInit,
+        HasShouldUpdate,
+        HasFailure,
+        HasSuccess,
+        I,
+        O,
+        T,
+    >
+    SchemaBuilder<
+        I,
+        O,
+        T,
+        Yes,
+        HasAlias,
+        HasRevalidator,
+        HasSanitizer,
+        HasRequired,
+        HasIgnore,
+        HasShouldInit,
+        HasShouldUpdate,
+        HasFailure,
+        HasSuccess,
+    >
+{
+    pub fn build(self) -> IvoProperty<I, O, T> {
+        IvoProperty {
+            is_virtual: true,
+            alias: self.alias,
+            validator: self.validator,
+            re_validator: self.re_validator,
+            required: self.required,
+            sanitizer: self.sanitizer,
+            should_ignore: self.should_ignore,
+            should_init: self.should_init,
+            should_update: self.should_update,
+            on_failure_fns: self.on_failure_fns,
+            on_success_fns: self.on_success_fns,
+            ..Default::default()
+        }
+    }
+}
+
+impl VirtualField {
+    pub fn alias<I, O, T>(
+        name: &str,
+    ) -> SchemaBuilder<I, O, T, No, Yes, No, No, No, No, No, No, No, No> {
+        SchemaBuilder {
+            alias: Some(name.to_string()),
+            ..Default::default()
+        }
+    }
+
+    pub fn validator<I, O, T>(
+        validator: FieldValidatorFn<I, O, T>,
+    ) -> SchemaBuilder<I, O, T, Yes, No, No, No, No, No, No, No, No, No> {
+        SchemaBuilder {
+            validator: Some(validator),
+            ..Default::default()
+        }
+    }
+}
+
+impl<HasRevalidator, I, O, T>
+    SchemaBuilder<I, O, T, Yes, No, HasRevalidator, No, No, No, No, No, No, No>
+{
+    pub fn alias(
+        self,
+        name: &str,
+    ) -> SchemaBuilder<I, O, T, Yes, Yes, No, No, No, No, No, No, No, No> {
+        SchemaBuilder {
+            alias: Some(name.to_string()),
+            validator: self.validator,
+            re_validator: self.re_validator,
+            sanitizer: self.sanitizer,
+            required: self.required,
+            should_ignore: self.should_ignore,
+            should_init: self.should_init,
+            should_update: self.should_update,
+            on_failure_fns: self.on_failure_fns,
+            on_success_fns: self.on_success_fns,
+            ..Default::default()
+        }
+    }
+}
+
+impl<HasAlias, I, O, T> SchemaBuilder<I, O, T, No, HasAlias, No, No, No, No, No, No, No, No> {
+    pub fn validator(
+        self,
+        validator: FieldValidatorFn<I, O, T>,
+    ) -> SchemaBuilder<I, O, T, Yes, HasAlias, No, No, No, No, No, No, No, No> {
+        SchemaBuilder {
+            alias: self.alias,
+            validator: Some(validator),
+            ..Default::default()
+        }
+    }
+}
+
+impl<HasAlias, I, O, T> SchemaBuilder<I, O, T, Yes, HasAlias, No, No, No, No, No, No, No, No> {
+    pub fn re_validator(
+        self,
+        re_validator: FieldValidatorFn<I, O, T>,
+    ) -> SchemaBuilder<I, O, T, Yes, HasAlias, Yes, No, No, No, No, No, No, No> {
+        SchemaBuilder {
+            alias: self.alias,
+            validator: self.validator,
+            re_validator: Some(re_validator),
+            ..Default::default()
+        }
+    }
+}
+
+// ON_FAILURE is only available if HasFailure is 'No'
+impl<
+        HasAlias,
+        HasRevalidator,
+        HasSanitizer,
+        HasRequired,
+        HasIgnore,
+        HasShouldInit,
+        HasShouldUpdate,
+        HasFailure,
+        HasSuccess,
+        I,
+        O,
+        T,
+    >
+    SchemaBuilder<
+        I,
+        O,
+        T,
+        Yes,
+        HasAlias,
+        HasRevalidator,
+        HasSanitizer,
+        HasRequired,
+        HasIgnore,
+        HasShouldInit,
+        HasShouldUpdate,
+        HasFailure,
+        HasSuccess,
+    >
+{
+    pub fn on_failure(
+        self,
+        handler: FailureHandler<I, O>,
+    ) -> SchemaBuilder<
+        I,
+        O,
+        T,
+        Yes,
+        HasAlias,
+        HasRevalidator,
+        HasSanitizer,
+        HasRequired,
+        HasIgnore,
+        HasShouldInit,
+        HasShouldUpdate,
+        Yes,
+        HasSuccess,
+    > {
+        SchemaBuilder {
+            alias: self.alias,
+            validator: self.validator,
+            re_validator: self.re_validator,
+            sanitizer: self.sanitizer,
+            required: self.required,
+            should_ignore: self.should_ignore,
+            should_init: self.should_init,
+            should_update: self.should_update,
+            on_failure_fns: Some(vec![handler]),
+            on_success_fns: self.on_success_fns,
+            ..Default::default()
+        }
+    }
+
+    pub fn on_failure_fns(
+        self,
+        handlers: Vec<FailureHandler<I, O>>,
+    ) -> SchemaBuilder<
+        I,
+        O,
+        T,
+        Yes,
+        HasAlias,
+        HasRevalidator,
+        HasSanitizer,
+        HasRequired,
+        HasIgnore,
+        HasShouldInit,
+        HasShouldUpdate,
+        Yes,
+        HasSuccess,
+    > {
+        SchemaBuilder {
+            alias: self.alias,
+            validator: self.validator,
+            re_validator: self.re_validator,
+            sanitizer: self.sanitizer,
+            required: self.required,
+            should_ignore: self.should_ignore,
+            should_init: self.should_init,
+            on_failure_fns: Some(handlers),
+            on_success_fns: self.on_success_fns,
+            ..Default::default()
+        }
+    }
+}
+
+// ON_SUCCESS is only available if HasSuccess is 'No'
+impl<
+        HasAlias,
+        HasRevalidator,
+        HasSanitizer,
+        HasRequired,
+        HasIgnore,
+        HasShouldInit,
+        HasShouldUpdate,
+        HasFailure,
+        I,
+        O,
+        T,
+    >
+    SchemaBuilder<
+        I,
+        O,
+        T,
+        Yes,
+        HasAlias,
+        HasRevalidator,
+        HasSanitizer,
+        HasRequired,
+        HasIgnore,
+        HasShouldInit,
+        HasShouldUpdate,
+        HasFailure,
+        No,
+    >
+{
+    pub fn on_success(
+        self,
+        handler: SuccessHandler<I, O>,
+    ) -> SchemaBuilder<
+        I,
+        O,
+        T,
+        Yes,
+        HasAlias,
+        HasRevalidator,
+        HasSanitizer,
+        HasRequired,
+        HasIgnore,
+        HasShouldInit,
+        HasShouldUpdate,
+        HasFailure,
+        Yes,
+    > {
+        SchemaBuilder {
+            alias: self.alias,
+            validator: self.validator,
+            re_validator: self.re_validator,
+            sanitizer: self.sanitizer,
+            required: self.required,
+            should_ignore: self.should_ignore,
+            should_init: self.should_init,
+            should_update: self.should_update,
+            on_failure_fns: self.on_failure_fns,
+            on_success_fns: Some(vec![handler]),
+            ..Default::default()
+        }
+    }
+
+    pub fn on_success_fns(
+        self,
+        handlers: Vec<SuccessHandler<I, O>>,
+    ) -> SchemaBuilder<
+        I,
+        O,
+        T,
+        Yes,
+        HasAlias,
+        HasRevalidator,
+        HasSanitizer,
+        HasRequired,
+        HasIgnore,
+        HasShouldInit,
+        HasShouldUpdate,
+        HasFailure,
+        Yes,
+    > {
+        SchemaBuilder {
+            alias: self.alias,
+            validator: self.validator,
+            re_validator: self.re_validator,
+            sanitizer: self.sanitizer,
+            required: self.required,
+            should_ignore: self.should_ignore,
+            should_init: self.should_init,
+            should_update: self.should_update,
+            on_failure_fns: self.on_failure_fns,
+            on_success_fns: Some(handlers),
             ..Default::default()
         }
     }

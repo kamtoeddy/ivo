@@ -19,6 +19,10 @@ pub struct IvoProperty<I, O, T = Value> {
     pub allow_values: Option<Vec<T>>,
     pub allow_error: Option<String>,
     pub resolver: Option<ResolverWithMutSummaryFn<I, O, T>>,
+    //
+    pub should_ignore: Option<Computable<I, O, bool>>,
+    pub should_init: Option<Computable<I, O, bool>>,
+    pub should_update: Option<Computable<I, O, bool>>,
     // life cycle handlers
     pub on_delete_fns: Option<Vec<DeleteHandler<O>>>,
     pub on_failure_fns: Option<Vec<FailureHandler<I, O>>>,
@@ -28,9 +32,9 @@ pub struct IvoProperty<I, O, T = Value> {
 impl<I, O, T> Default for IvoProperty<I, O, T> {
     fn default() -> Self {
         Self {
-            is_virtual: false,
             alias: None,
             is_constant: false,
+            is_virtual: false,
             value: None,
             default: None,
             required: None,
@@ -42,6 +46,9 @@ impl<I, O, T> Default for IvoProperty<I, O, T> {
             allow_values: None,
             allow_error: None,
             resolver: None,
+            should_ignore: None,
+            should_init: None,
+            should_update: None,
             on_delete_fns: None,
             on_success_fns: None,
             on_failure_fns: None,
