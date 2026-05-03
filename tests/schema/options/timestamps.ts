@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'bun:test';
-
+import type { ImmutableSummary } from '../../../dist';
 import { expectFailure, expectNoFailure, getValidSchema } from '../_utils';
 
 export const Test_SchemaTimestampOption = ({ Schema, fx }: any) => {
@@ -51,7 +51,7 @@ export const Test_SchemaTimestampOption = ({ Schema, fx }: any) => {
           let Model: any, entity: any;
 
           beforeEach(async () => {
-            const onSuccess = ({ context: { createdAt, updatedAt } }: any) => {
+            const onSuccess = ({ ctx: { createdAt, updatedAt } }: any) => {
               onSuccessValues.createdAt = createdAt;
               onSuccessValues.updatedAt = updatedAt;
             };
@@ -96,7 +96,7 @@ export const Test_SchemaTimestampOption = ({ Schema, fx }: any) => {
           let Model: any, entity: any;
 
           beforeEach(async () => {
-            const onSuccess = ({ context: { c_At, updatedAt } }: any) => {
+            const onSuccess = ({ ctx: { c_At, updatedAt } }: any) => {
               onSuccessValues.c_At = c_At;
               onSuccessValues.updatedAt = updatedAt;
             };
@@ -143,7 +143,7 @@ export const Test_SchemaTimestampOption = ({ Schema, fx }: any) => {
           let Model: any, entity: any;
 
           beforeEach(async () => {
-            const onSuccess = ({ context: { createdAt, u_At } }: any) => {
+            const onSuccess = ({ ctx: { createdAt, u_At } }: any) => {
               onSuccessValues.createdAt = createdAt;
               onSuccessValues.u_At = u_At;
             };
@@ -190,7 +190,7 @@ export const Test_SchemaTimestampOption = ({ Schema, fx }: any) => {
           let Model: any, entity: any;
 
           beforeEach(async () => {
-            const onSuccess = ({ context: { c_At, u_At } }: any) => {
+            const onSuccess = ({ ctx: { c_At, u_At } }: any) => {
               onSuccessValues.c_At = c_At;
               onSuccessValues.u_At = u_At;
             };
@@ -239,7 +239,7 @@ export const Test_SchemaTimestampOption = ({ Schema, fx }: any) => {
           let Model: any, entity: any;
 
           beforeEach(async () => {
-            const onSuccess = ({ context: { c_At, updatedAt } }: any) => {
+            const onSuccess = ({ ctx: { c_At, updatedAt } }: any) => {
               onSuccessValues.c_At = c_At;
               onSuccessValues.updatedAt = updatedAt;
             };
@@ -290,7 +290,7 @@ export const Test_SchemaTimestampOption = ({ Schema, fx }: any) => {
           let Model: any, entity: any;
 
           beforeEach(async () => {
-            const onSuccess = ({ context: { createdAt, updatedAt } }: any) => {
+            const onSuccess = ({ ctx: { createdAt, updatedAt } }: any) => {
               onSuccessValues.createdAt = createdAt;
               onSuccessValues.updatedAt = updatedAt;
             };
@@ -339,7 +339,7 @@ export const Test_SchemaTimestampOption = ({ Schema, fx }: any) => {
           let Model: any, entity: any;
 
           beforeEach(async () => {
-            const onSuccess = ({ context: { createdAt, u_At } }: any) => {
+            const onSuccess = ({ ctx: { createdAt, u_At } }: any) => {
               onSuccessValues.createdAt = createdAt;
               onSuccessValues.u_At = u_At;
             };
@@ -389,7 +389,7 @@ export const Test_SchemaTimestampOption = ({ Schema, fx }: any) => {
           let Model: any, entity: any;
 
           beforeEach(async () => {
-            const onSuccess = ({ context: { createdAt, updatedAt } }: any) => {
+            const onSuccess = ({ ctx: { createdAt, updatedAt } }: any) => {
               onSuccessValues.createdAt = createdAt;
               onSuccessValues.updatedAt = updatedAt;
             };
@@ -441,9 +441,7 @@ export const Test_SchemaTimestampOption = ({ Schema, fx }: any) => {
             let Model: any, entity: any;
 
             beforeEach(async () => {
-              const onSuccess = ({
-                context: { createdAt, updatedAt },
-              }: any) => {
+              const onSuccess = ({ ctx: { createdAt, updatedAt } }: any) => {
                 onSuccessValues.createdAt = createdAt;
                 onSuccessValues.updatedAt = updatedAt;
               };
@@ -489,9 +487,7 @@ export const Test_SchemaTimestampOption = ({ Schema, fx }: any) => {
             let Model: any, entity: any;
 
             beforeEach(async () => {
-              const onSuccess = ({
-                context: { createdAt, updatedAt },
-              }: any) => {
+              const onSuccess = ({ ctx: { createdAt, updatedAt } }: any) => {
                 onSuccessValues.createdAt = createdAt;
                 onSuccessValues.updatedAt = updatedAt;
               };
@@ -538,9 +534,9 @@ export const Test_SchemaTimestampOption = ({ Schema, fx }: any) => {
             const updatedAtKey = 'uAt';
 
             beforeEach(async () => {
-              const onSuccess = ({ context }: any) => {
-                onSuccessValues.createdAt = context.createdAt;
-                onSuccessValues[updatedAtKey] = context[updatedAtKey];
+              const onSuccess = ({ ctx }: ImmutableSummary<any>) => {
+                onSuccessValues.createdAt = ctx.createdAt;
+                onSuccessValues[updatedAtKey] = ctx[updatedAtKey];
               };
 
               Model = new Schema(getValidSchema(), {
@@ -590,9 +586,9 @@ export const Test_SchemaTimestampOption = ({ Schema, fx }: any) => {
             const updatedAtKey = 'uAt';
 
             beforeEach(async () => {
-              const onSuccess = ({ context }: any) => {
-                onSuccessValues.createdAt = context.createdAt;
-                onSuccessValues[updatedAtKey] = context[updatedAtKey];
+              const onSuccess = ({ ctx }: ImmutableSummary<any>) => {
+                onSuccessValues.createdAt = ctx.createdAt;
+                onSuccessValues[updatedAtKey] = ctx[updatedAtKey];
               };
 
               Model = new Schema(getValidSchema(), {
@@ -642,9 +638,9 @@ export const Test_SchemaTimestampOption = ({ Schema, fx }: any) => {
             const updatedAtKey = 'uAt';
 
             beforeEach(async () => {
-              const onSuccess = ({ context }: any) => {
-                onSuccessValues.createdAt = context.createdAt;
-                onSuccessValues[updatedAtKey] = context[updatedAtKey];
+              const onSuccess = ({ ctx }: ImmutableSummary<any>) => {
+                onSuccessValues.createdAt = ctx.createdAt;
+                onSuccessValues[updatedAtKey] = ctx[updatedAtKey];
               };
 
               Model = new Schema(getValidSchema(), {

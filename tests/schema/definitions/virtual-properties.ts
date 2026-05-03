@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'bun:test';
 
-import { ERRORS } from '../../../dist';
+import { ERRORS, type ImmutableSummary } from '../../../dist';
 import { DEFINITION_RULES, VIRTUAL_RULES } from '../../../src/schema/types';
 
 import { expectFailure, expectNoFailure, validator } from '../_utils';
@@ -55,7 +55,7 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
         describe('behaviour', () => {
           let contextRecord = {} as Record<string, number | undefined>;
 
-          function resolver({ context: { setQuantity, qty } }: any) {
+          function resolver({ ctx: { setQuantity, qty } }: any) {
             if (qty !== undefined) contextRecord.qty = qty;
 
             return setQuantity;
@@ -196,7 +196,7 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               setQuantity: {
                 alias: 'qty',
                 virtual: true,
-                required({ context: { setQuantity } }: any) {
+                required({ ctx: { setQuantity } }: any) {
                   contextRecord.setQuantity = setQuantity;
 
                   if (setQuantity === -100) return true;
@@ -764,7 +764,7 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
           dependentSideInit: {
             default: '',
             dependsOn: ['virtualInit', 'virtualWithSanitizer'],
-            resolver({ context: { virtualInit, virtualWithSanitizer } }: any) {
+            resolver({ ctx: { virtualInit, virtualWithSanitizer } }: any) {
               return virtualInit && virtualWithSanitizer ? 'both' : 'one';
             },
             onSuccess: onSuccess('dependentSideInit'),
@@ -830,8 +830,8 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
         }
 
         function onSuccess(prop: string) {
-          return ({ context }: any) => {
-            onSuccessValues[prop] = context[prop];
+          return ({ ctx }: ImmutableSummary<any>) => {
+            onSuccessValues[prop] = ctx[prop];
             incrementOnSuccessStats(prop)();
           };
         }
@@ -963,7 +963,7 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
             dependent: {
               default: '',
               dependsOn: 'virtual',
-              resolver: ({ context }) => context.virtual,
+              resolver: ({ ctx }) => ctx.virtual,
             },
             virtual: {
               virtual: true,

@@ -15,14 +15,13 @@ import {
 } from '../utils';
 import { defaultOptions, SchemaCore } from './schema-core';
 import {
-  type ImmutableContext,
+  type Context,
   type InternalValidatorResponse,
   type InvalidValidatorResponse,
   type KeyOf,
   LIFE_CYCLES,
   type MutableSummary,
   type NS,
-  type PartialContext,
   type PostValidator,
   type RealType,
   type Validator,
@@ -546,15 +545,14 @@ class ModelTool<
     isUpdate = false,
   ) {
     const summary = this._getMutableSummary({
-        data,
-        isUpdate,
-        inputValues: this.inputValues,
-      }),
-      context = summary.context;
+      data,
+      isUpdate,
+      inputValues: this.inputValues,
+    });
 
     const error = new this._options.ErrorTool(
       VALIDATION_ERRORS.VALIDATION_ERROR,
-      context.__getOptions__(),
+      summary.getOptions(),
     );
 
     const props: [KeyOf<Output>, string | undefined][] = [];
@@ -575,7 +573,7 @@ class ModelTool<
 
         if (!validator) return;
 
-        const value = summary.context?.[prop] as Output[KeyOf<Output>];
+        const value = summary.ctx?.[prop] as Output[KeyOf<Output>];
 
         let isValid: ValidatorResponseObject<unknown>;
 
@@ -605,9 +603,7 @@ class ModelTool<
         let { validated } = isValid;
 
         if (isEqual(validated, undefined)) validated = value;
-        if (
-          isEqual(validated, summary.context[prop], this._options.equalityDepth)
-        )
+        if (isEqual(validated, summary.ctx[prop], this._options.equalityDepth))
           return;
 
         if (!this._isVirtual(prop)) data[prop] = validated as never;
@@ -645,15 +641,14 @@ class ModelTool<
     isUpdate = false,
   ) {
     const summary = this._getMutableSummary({
-        data,
-        isUpdate,
-        inputValues: this.inputValues,
-      }),
-      context = summary.context;
+      data,
+      isUpdate,
+      inputValues: this.inputValues,
+    });
 
     const errorTool = new this._options.ErrorTool(
       VALIDATION_ERRORS.VALIDATION_ERROR,
-      context.__getOptions__(),
+      summary.getOptions(),
     );
 
     const handlerIds = new Set<string>(),
@@ -846,15 +841,14 @@ class ModelTool<
 
   private async _handleRequiredBy(data: Partial<Output>, isUpdate = false) {
     const summary = this._getMutableSummary({
-        data: this.values,
-        isUpdate,
-        inputValues: this.inputValues,
-      }),
-      context = summary.context;
+      data: this.values,
+      isUpdate,
+      inputValues: this.inputValues,
+    });
 
     const errorTool = new this._options.ErrorTool(
       VALIDATION_ERRORS.VALIDATION_ERROR,
-      context.__getOptions__(),
+      summary.getOptions(),
     );
 
     await Promise.allSettled(
@@ -1054,15 +1048,16 @@ class ModelTool<
     virtuals: KeyOf<Output>[] = [],
   ) {
     const ctx = this._getContext(),
+      options = this._getContextOptions(),
       props = Array.from(
         new Set([...getKeysAsProps(data), ...errorTool.fields, ...virtuals]),
       );
 
-    let cleanups: NS.FailureHandler<Input, Output, never>[] = [];
+    let cleanups: NS.FailureHandler<Input, Output, CtxOptions>[] = [];
 
     for (const prop of props)
       cleanups = cleanups.concat(
-        this._getHandlers<NS.FailureHandler<Input, Output, never>>(
+        this._getHandlers<NS.FailureHandler<Input, Output, CtxOptions>>(
           prop,
           'onFailure',
         ),
@@ -1070,7 +1065,17 @@ class ModelTool<
 
     return async () => {
       await Promise.allSettled(
-        cleanups.map(async (h) => await Promise.try(h, ctx as never)),
+        cleanups.map(
+          async (h) =>
+            await Promise.try(h, {
+              get ctx() {
+                return ctx;
+              },
+              get options() {
+                return options;
+              },
+            }),
+        ),
       );
     };
   }
@@ -1117,7 +1122,7 @@ class ModelTool<
 
   private async _resolveDependentChanges(
     data: Partial<Output>,
-    ctx: PartialContext<Input, Output>,
+    ctx: Context<Input, Output>,
     isUpdate = false,
   ) {
     const isCreation = !isUpdate;
@@ -1182,7 +1187,7 @@ class ModelTool<
           !isCreation &&
           isEqual(
             value,
-            _ctx[prop as KeyOf<ImmutableContext<Input, Output>>],
+            _ctx[prop as KeyOf<Context<Input, Output>>],
             this._options.equalityDepth,
           )
         )
@@ -1489,7 +1494,7 @@ class ModelTool<
   }
 
   async delete(values: Output, contextOptions: Partial<CtxOptions> = {}) {
-    const ctxOptions = this._initializeContextOptions(contextOptions);
+    const options = this._initializeContextOptions(contextOptions); // TODO: remove
 
     if (!areValuesOk(values)) return;
 
@@ -1499,9 +1504,7 @@ class ModelTool<
       ...this.globalDeleteHandlers,
     ];
 
-    const data = this._getFrozenCopy(
-      Object.assign({}, this.values, { __getOptions__: () => ctxOptions }),
-    );
+    const data = this._getFrozenCopy(this.values);
 
     for (const prop of getSetValuesAsProps(this.props)) {
       const handlers_ = this._getHandlers<NS.DeleteHandler<Output, CtxOptions>>(
@@ -1513,7 +1516,17 @@ class ModelTool<
     }
 
     await Promise.allSettled(
-      handlers.map(async (h) => await Promise.try(h, data)),
+      handlers.map(
+        async (h) =>
+          await Promise.try(h, {
+            get data() {
+              return data;
+            },
+            get options() {
+              return options;
+            },
+          }),
+      ),
     );
   }
 

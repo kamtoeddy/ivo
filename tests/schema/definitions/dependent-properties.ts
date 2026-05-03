@@ -96,22 +96,20 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
         resolversCalledStats[prop] = previousCount + 1;
       }
 
-      function resolverOfDependentProp({
-        context: { laxProp, laxProp_1 },
-      }: any) {
+      function resolverOfDependentProp({ ctx: { laxProp, laxProp_1 } }: any) {
         incrementResolveCountOf('dependentProp');
 
         return laxProp.length + laxProp_1.length;
       }
 
-      function resolverOfDependentProp_1({ context: { dependentProp } }: any) {
+      function resolverOfDependentProp_1({ ctx: { dependentProp } }: any) {
         incrementResolveCountOf('dependentProp_1');
 
         return dependentProp + 1;
       }
 
       function asyncResolver(prop: string) {
-        return ({ context: { dependentProp } }: any) => {
+        return ({ ctx: { dependentProp } }: any) => {
           incrementResolveCountOf(prop);
 
           return Promise.resolve(dependentProp + 2);

@@ -9,25 +9,22 @@ import type {
 export type {
   ArrayOfMinSizeOne,
   ArrayOfMinSizeTwo,
-  // ctx
   Context,
   DefinitionRule,
   DeletionContext,
-  ImmutableContext,
-  // summary
+  FailureHandlerData,
   ImmutableSummary,
   InternalValidatorResponse,
   InvalidValidatorResponse,
   KeyOf,
   Merge,
-  MutableContext,
   MutableSummary,
   NS,
-  PartialContext,
   PostValidationConfig,
   PostValidator,
   RealType,
   ResponseErrorObject,
+  SetterData,
   TypeOf,
   ValidationResponse,
   Validator,
@@ -44,58 +41,59 @@ export {
   VIRTUAL_RULES,
 };
 
-type Context<
+type Context<Input, Output = Input> = Readonly<Merge<Input, Output>> & {};
+
+type DeletionContext<Output, CtxOptions extends ObjectType = {}> = Readonly<{
+  data: Readonly<Output>;
+  options: Readonly<CtxOptions>;
+}> & {};
+
+type FailureHandlerData<
   Input,
   Output = Input,
   CtxOptions extends ObjectType = {},
-> = Readonly<
-  Merge<Input, Output> & { __getOptions__: () => Readonly<CtxOptions> }
-> & {};
+> = Readonly<{
+  ctx: Context<Input, Output>;
+  options: Readonly<CtxOptions>;
+}> & {};
 
-type ImmutableContext<
+type SetterData<
   Input,
   Output = Input,
   CtxOptions extends ObjectType = {},
-> = Context<Input, Output, CtxOptions>;
-
-type MutableContext<
-  Input,
-  Output = Input,
-  CtxOptions extends ObjectType = {},
-> = Readonly<
-  Merge<Input, Output> & {
-    __getOptions__: () => Readonly<CtxOptions>;
-    __updateOptions__: (updates: Partial<CtxOptions>) => void;
-  }
-> & {};
-
-type DeletionContext<Output, CtxOptions extends ObjectType = {}> = Readonly<
-  Output & { __getOptions__: () => Readonly<CtxOptions> }
-> & {};
-
-type PartialContext<Input, Output> = Readonly<Merge<Input, Output>>;
+> = Readonly<WithCtxOptions<{ ctx: Context<Input, Output> }, CtxOptions>> & {};
 
 type ImmutableSummary<
   Input,
   Output = Input,
   CtxOptions extends ObjectType = {},
 > = (
-  | Readonly<{
-      changes: null;
-      context: ImmutableContext<Input, Output, CtxOptions>;
-      inputValues: Partial<RealType<Input>>;
-      isUpdate: false;
-      previousValues: null;
-      values: Readonly<Output>;
-    }>
-  | Readonly<{
-      changes: Partial<RealType<Output>>;
-      context: ImmutableContext<Input, Output, CtxOptions>;
-      inputValues: Partial<RealType<Input>>;
-      isUpdate: true;
-      previousValues: Readonly<Output>;
-      values: Readonly<Output>;
-    }>
+  | Readonly<
+      WithReadonlyCtxOptions<
+        {
+          changes: null;
+          ctx: Context<Input, Output>;
+          inputValues: Partial<RealType<Input>>;
+          isUpdate: false;
+          previousValues: null;
+          values: Readonly<Output>;
+        },
+        CtxOptions
+      >
+    >
+  | Readonly<
+      WithReadonlyCtxOptions<
+        {
+          changes: Partial<RealType<Output>>;
+          ctx: Context<Input, Output>;
+          inputValues: Partial<RealType<Input>>;
+          isUpdate: true;
+          previousValues: Readonly<Output>;
+          values: Readonly<Output>;
+        },
+        CtxOptions
+      >
+    >
 ) & {};
 
 type MutableSummary<
@@ -103,28 +101,47 @@ type MutableSummary<
   Output = Input,
   CtxOptions extends ObjectType = {},
 > = (
-  | Readonly<{
-      changes: null;
-      context: MutableContext<Input, Output, CtxOptions>;
-      inputValues: Partial<RealType<Input>>;
-      isUpdate: false;
-      previousValues: null;
-      values: Readonly<Output>;
-    }>
-  | Readonly<{
-      changes: Partial<RealType<Output>>;
-      context: MutableContext<Input, Output, CtxOptions>;
-      inputValues: Partial<RealType<Input>>;
-      isUpdate: true;
-      previousValues: Readonly<Output>;
-      values: Readonly<Output>;
-    }>
+  | Readonly<
+      WithCtxOptions<
+        {
+          changes: null;
+          ctx: Context<Input, Output>;
+          inputValues: Partial<RealType<Input>>;
+          isUpdate: false;
+          previousValues: null;
+          values: Readonly<Output>;
+        },
+        CtxOptions
+      >
+    >
+  | Readonly<
+      WithCtxOptions<
+        {
+          changes: Partial<RealType<Output>>;
+          ctx: Context<Input, Output>;
+          inputValues: Partial<RealType<Input>>;
+          isUpdate: true;
+          previousValues: Readonly<Output>;
+          values: Readonly<Output>;
+        },
+        CtxOptions
+      >
+    >
 ) & {};
+
+type WithReadonlyCtxOptions<T, CtxOptions extends ObjectType> = T & {
+  options: Readonly<CtxOptions>;
+};
+
+type WithCtxOptions<T, CtxOptions extends ObjectType> = T & {
+  getOptions: () => Readonly<CtxOptions>;
+  updateOptions: (updates: Partial<CtxOptions>) => void;
+};
 
 type TypeOf<T> = Exclude<T, undefined>;
 
 type AsyncSetter<T, Input, Output, CtxOptions extends ObjectType> = (
-  context: MutableContext<Input, Output, CtxOptions>,
+  data: SetterData<Input, Output, CtxOptions>,
 ) => TypeOf<T> | Promise<TypeOf<T>>;
 
 type NotAllowedError = string | InputFieldError;
@@ -134,7 +151,7 @@ type SetterWithSummary<T, Input, Output, CtxOptions extends ObjectType> = (
 ) => TypeOf<T>;
 
 type Setter<T, Input, Output, CtxOptions extends ObjectType> = (
-  context: MutableContext<Input, Output, CtxOptions>,
+  data: SetterData<Input, Output, CtxOptions>,
 ) => TypeOf<T>;
 
 type RequiredHandlerRes =
@@ -227,7 +244,7 @@ namespace NS {
     Output,
     CtxOptions extends ObjectType = {},
   > = (
-    context: ImmutableContext<Input, Output, CtxOptions> & {},
+    ctx: FailureHandlerData<Input, Output, CtxOptions>,
   ) => unknown | Promise<unknown>;
 
   export type SuccessHandler<
@@ -393,14 +410,9 @@ namespace NS {
         };
   };
 
-  type Dependables<
-    K extends keyof Output,
-    Input,
-    Output,
-    CtxOptions extends ObjectType,
-  > = Exclude<
-    KeyOf<MutableContext<Input, Output, CtxOptions>>,
-    K | '__getOptions__' | '__updateOptions__'
+  type Dependables<K extends keyof Output, Input, Output> = Exclude<
+    KeyOf<Context<Input, Output>>,
+    K
   >;
 
   type Dependent<
@@ -413,8 +425,8 @@ namespace NS {
       | TypeOf<Output[K]>
       | AsyncSetter<Output[K], Input, Output, CtxOptions>;
     dependsOn:
-      | Dependables<K, Input, Output, CtxOptions>
-      | ArrayOfMinSizeOne<Dependables<K, Input, Output, CtxOptions>>;
+      | Dependables<K, Input, Output>
+      | ArrayOfMinSizeOne<Dependables<K, Input, Output>>;
     onDelete?:
       | DeleteHandler<Output, CtxOptions>
       | ArrayOfMinSizeOne<DeleteHandler<Output, CtxOptions>>;

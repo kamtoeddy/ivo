@@ -95,10 +95,7 @@ export const validateOtherQuantity = (value: any, ctx: StoreItemInput) => {
   };
 };
 
-export const validateQuantities = async (
-  value: any,
-  { context }: SummaryType,
-) => {
+export const validateQuantities = async (value: any, { ctx }: SummaryType) => {
   //   IOtherMeasureUnit
   // >({
   //   min: 1,
@@ -125,7 +122,7 @@ export const validateQuantities = async (
     min: 1,
     unique: false,
     filter: (v) => !!v,
-    modifier: (v) => validateOtherQuantity(v, context),
+    modifier: (v) => validateOtherQuantity(v, ctx),
     postModFilter: (v) => v.valid,
     map: (v) => v.validated!,
   })(value);
@@ -139,7 +136,7 @@ const getMeasureUnit = (
 };
 
 export const sanitizeQuantities = ({
-  context: { quantities, otherMeasureUnits },
+  ctx: { quantities, otherMeasureUnits },
 }: SummaryType) => {
   return (quantities as IOtherQuantity[]).reduce((prev, { name, quantity }) => {
     const mu = getMeasureUnit(otherMeasureUnits!, name);

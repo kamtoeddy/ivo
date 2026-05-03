@@ -14,8 +14,8 @@ const userSchema = new Schema<
   {
     firstName: {
       default: '',
-      validator: (v, { context: { __getOptions__ } }) => {
-        const { lang } = __getOptions__();
+      validator: (v, { getOptions }) => {
+        const { lang } = getOptions();
 
         if (lang) return true;
 
@@ -29,12 +29,12 @@ const userSchema = new Schema<
     fullName: {
       default: '',
       dependsOn: ['firstName', 'lastName'],
-      resolver: ({ context: { firstName, lastName } }) =>
+      resolver: ({ ctx: { firstName, lastName } }) =>
         `${firstName}-${lastName}`,
     },
     lastName: {
       default: '',
-      validator: (_, { context }) => !!context.__getOptions__().lang,
+      validator: (_, { getOptions }) => !!getOptions().lang,
     },
   },
   { ErrorTool: VError },
@@ -47,7 +47,7 @@ const EUserSchema = userSchema.extend<EInput, EOutput>(
     full_name: {
       default: '',
       dependsOn: ['firstName', 'lastName'],
-      resolver: ({ context: { firstName, lastName } }) =>
+      resolver: ({ ctx: { firstName, lastName } }) =>
         `${firstName} ${lastName}`,
     },
   },

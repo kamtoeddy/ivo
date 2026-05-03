@@ -141,7 +141,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
         isPublished: { default: false, validator },
         price: {
           default: null,
-          required({ context: { isPublished, price } }: any) {
+          required({ ctx: { isPublished, price } }: any) {
             const isRequired = isPublished && price == null;
             recordCalls('price');
             return [isRequired, 'A price is required to publish a book!'];
@@ -151,7 +151,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
         priceReadonly: {
           default: null,
           readonly: true,
-          required({ context: { price, priceReadonly } }: any) {
+          required({ ctx: { price, priceReadonly } }: any) {
             const isRequired = price === 101 && priceReadonly == null;
             recordCalls('priceReadonly');
             return [
@@ -164,7 +164,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
         priceRequiredWithoutMessage: {
           default: null,
           readonly: true,
-          required: ({ context: { price, priceReadonly } }: any) => {
+          required: ({ ctx: { price, priceReadonly } }: any) => {
             recordCalls('priceRequiredWithoutMessage');
             return price === 101 && priceReadonly == null;
           },
@@ -574,11 +574,11 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
             price: {
               default: null,
               dependsOn: '_price',
-              resolver: ({ context: { _price } }: any) => _price,
+              resolver: ({ ctx: { _price } }: any) => _price,
             },
             _price: {
               virtual: true,
-              required({ context: { _price } }: any) {
+              required({ ctx: { _price } }: any) {
                 return _price === undefined;
               },
               validator: validator,
@@ -624,11 +624,11 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
             price: {
               default: null,
               dependsOn: '_price',
-              resolver: ({ context: { _price } }: any) => _price,
+              resolver: ({ ctx: { _price } }: any) => _price,
             },
             _price: {
               virtual: true,
-              required({ context: { _price }, isUpdate }: any) {
+              required({ ctx: { _price }, isUpdate }: any) {
                 return _price === undefined && !isUpdate;
               },
               validator: validator,
@@ -667,12 +667,12 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
             price: {
               default: null,
               dependsOn: '_price',
-              resolver: ({ context: { _price } }: any) => _price,
+              resolver: ({ ctx: { _price } }: any) => _price,
             },
             _price: {
               virtual: true,
               shouldUpdate: false,
-              required({ context: { _price } }: any) {
+              required({ ctx: { _price } }: any) {
                 return _price === undefined;
               },
               validator: validator,
@@ -714,11 +714,11 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
           price: {
             default: null,
             dependsOn: '_price',
-            resolver: ({ context: { _price } }: any) => _price,
+            resolver: ({ ctx: { _price } }: any) => _price,
           },
           _price: {
             virtual: true,
-            required({ context: { _price } }: any) {
+            required({ ctx: { _price } }: any) {
               return Promise.resolve(_price === undefined);
             },
             validator: validator,

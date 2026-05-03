@@ -25,7 +25,6 @@ import {
   LIFE_CYCLES,
   type MutableSummary,
   type NS as ns,
-  type PartialContext,
   type PostValidationConfig,
   type PostValidator,
   type RealType,
@@ -69,11 +68,11 @@ abstract class SchemaCore<
   protected _options: ns.InternalOptions<Input, Output, CtxOptions, ErrorTool>;
 
   // contexts & values
-  protected context = {} as Context<Input, Output, CtxOptions>;
+  protected context = {} as Context<Input, Output>;
   protected contextOptions: CtxOptions = {} as CtxOptions;
 
   protected defaults: Partial<Output> = {};
-  protected partialContext = {} as PartialContext<Input, Output>;
+  protected partialContext = {} as Context<Input, Output>;
   protected values: Output = {} as Output;
 
   // maps
@@ -151,10 +150,9 @@ abstract class SchemaCore<
   }
 
   protected _getContext(previousValues: Partial<Output> | null = null) {
-    return this._getFrozenCopy({
-      ...sortKeys(cloneValue(Object.assign({}, previousValues, this.context))),
-      __getOptions__: () => this._getContextOptions(),
-    }) as Context<Input, Output, CtxOptions>;
+    return this._getFrozenCopy<Context<Input, Output>>(
+      sortKeys(cloneValue(Object.assign({}, previousValues, this.context))),
+    );
   }
 
   protected _getSummary({
@@ -168,7 +166,7 @@ abstract class SchemaCore<
   }) {
     const changes = isUpdate ? cloneValue(data) : null,
       previousValues = isUpdate ? cloneValue(this.values) : null,
-      context = this._getContext(isUpdate ? previousValues : null),
+      ctx = this._getContext(isUpdate ? previousValues : null),
       values = this._getFrozenCopy(
         cloneValue(
           isUpdate
@@ -179,11 +177,12 @@ abstract class SchemaCore<
 
     return this._getFrozenCopy({
       changes,
-      context,
+      ctx,
       inputValues: cloneValue(inputValues),
       isUpdate,
       previousValues,
       values,
+      options: this._getContextOptions(),
     }) as ImmutableSummary<Input, Output, CtxOptions>;
   }
 
@@ -192,13 +191,12 @@ abstract class SchemaCore<
     inputValues: Partial<RealType<Input>>;
     isUpdate: boolean;
   }) {
-    const summary = this._getSummary(props);
+    const { options: _, ...s } = this._getSummary(props);
 
     return this._getFrozenCopy(
-      Object.assign({}, summary, {
-        context: Object.assign({}, this._getContext(summary.previousValues), {
-          __updateOptions__: this._updateContextOptions,
-        }),
+      Object.assign(s, {
+        getOptions: this._getContextOptions,
+        updateOptions: this._updateContextOptions,
       }),
     ) as MutableSummary<Input, Output, CtxOptions>;
   }
@@ -209,7 +207,7 @@ abstract class SchemaCore<
 
   protected _initializeImmutableContexts = () => {
     this.context = Object.assign({}, this.defaults, this.values) as never;
-    this.partialContext = {} as PartialContext<Input, Output>;
+    this.partialContext = {} as Context<Input, Output>;
   };
 
   protected _resetPartialContext = (updates: Partial<Output> = {}) => {

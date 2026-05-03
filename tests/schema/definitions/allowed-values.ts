@@ -621,7 +621,7 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
           dependent: {
             default: null,
             dependsOn: 'virtual',
-            resolver: ({ context: { virtual } }) => virtual,
+            resolver: ({ ctx: { virtual } }) => virtual,
           },
           virtual: {
             virtual: true,
@@ -686,7 +686,7 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
           dependent: {
             default: null,
             dependsOn: 'virtual',
-            resolver: ({ context: { virtual } }) => virtual,
+            resolver: ({ ctx: { virtual } }) => virtual,
           },
           virtual: {
             alias: 'dependent',
@@ -869,7 +869,7 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
             dependent: {
               default: null,
               dependsOn: 'virtual',
-              resolver: ({ context: { virtual } }) => virtual,
+              resolver: ({ ctx: { virtual } }) => virtual,
             },
             virtual: {
               virtual: true,
@@ -936,7 +936,7 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
             dependent: {
               default: null,
               dependsOn: 'virtual',
-              resolver: ({ context: { virtual } }) => virtual,
+              resolver: ({ ctx: { virtual } }) => virtual,
             },
             virtual: {
               alias: 'dependent',

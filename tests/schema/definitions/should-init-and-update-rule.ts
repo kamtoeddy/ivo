@@ -8,7 +8,7 @@ import {
   mock,
 } from 'bun:test';
 
-import { ERRORS } from '../../../dist';
+import { ERRORS, type ImmutableSummary } from '../../../dist';
 import { expectFailure, expectNoFailure, validator } from '../_utils';
 
 export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
@@ -443,8 +443,8 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
           }
 
           function onSuccess(prop: string) {
-            return ({ context }: any) => {
-              onSuccessValues[prop] = context[prop];
+            return ({ ctx }: ImmutableSummary<any>) => {
+              onSuccessValues[prop] = ctx[prop];
               incrementOnSuccessStats(prop)();
             };
           }
@@ -590,11 +590,11 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
         let onSuccessStats: any = {};
 
         function incrementOnSuccessCountOf(prop: string) {
-          return ({ context }: any) => {
+          return ({ ctx }: ImmutableSummary<any>) => {
             const previousCount = onSuccessStats[prop] ?? 0;
 
             onSuccessStats[prop] = previousCount + 1;
-            onSuccessValues[prop] = context[prop];
+            onSuccessValues[prop] = ctx[prop];
           };
         }
 
@@ -602,13 +602,13 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
           dependentProp: {
             default: false,
             dependsOn: 'virtual',
-            resolver: ({ context }: any) => context.virtual,
+            resolver: ({ ctx }: any) => ctx.virtual,
             onSuccess: incrementOnSuccessCountOf('dependentProp'),
           },
           dependentProp_1: {
             default: false,
             dependsOn: 'virtual_1',
-            resolver: ({ context }: any) => context.virtual_1,
+            resolver: ({ ctx }: any) => ctx.virtual_1,
             onSuccess: incrementOnSuccessCountOf('dependentProp_1'),
           },
           laxProp: {

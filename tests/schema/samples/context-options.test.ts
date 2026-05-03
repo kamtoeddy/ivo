@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'bun:test';
 
-import { Schema } from '../../../dist';
+import { type MutableSetterData, Schema } from '../../../dist';
 import { EUserModel, UserModel } from './custom-error-tool';
 
 const contextOptions = { lang: 'en' };
@@ -80,9 +80,8 @@ describe('Context options', () => {
     const contextOptions = { lang: 'en' };
     const validator = () => true;
     function handleRequired(prop: string) {
-      // @ts-expect-error lol
-      return ({ context: { __getOptions__ } }) => {
-        ctxOptions[prop] = __getOptions__();
+      return ({ getOptions }: MutableSetterData<any>) => {
+        ctxOptions[prop] = getOptions();
 
         return false;
       };
@@ -137,15 +136,15 @@ describe('Context options', () => {
     >({
       name: {
         default: '',
-        validator(_, { context: { __getOptions__ } }) {
-          __getOptions__().ctxHandler();
+        validator(_, { getOptions }) {
+          getOptions().ctxHandler();
           return true;
         },
-        onDelete({ __getOptions__ }) {
-          __getOptions__().ctxHandler();
+        onDelete({ options }) {
+          options.ctxHandler();
         },
-        onSuccess({ context: { __getOptions__ } }) {
-          __getOptions__().ctxHandler();
+        onSuccess({ options }) {
+          options.ctxHandler();
         },
       },
     }).getModel();
