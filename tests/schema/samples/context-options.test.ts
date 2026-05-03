@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'bun:test';
 
-import { type MutableSetterData, Schema } from '../../../dist';
+import { Schema, type SetterFnData } from '../../../src';
 import { EUserModel, UserModel } from './custom-error-tool';
 
 const contextOptions = { lang: 'en' };
@@ -80,7 +80,7 @@ describe('Context options', () => {
     const contextOptions = { lang: 'en' };
     const validator = () => true;
     function handleRequired(prop: string) {
-      return ({ options }: MutableSetterData<any>) => {
+      return ({ options }: SetterFnData<any>) => {
         ctxOptions[prop] = options;
 
         return false;
@@ -140,7 +140,7 @@ describe('Context options', () => {
           options.ctxHandler();
           return true;
         },
-        onDelete({ options }) {
+        onDelete(_, options) {
           options.ctxHandler();
         },
         onSuccess({ options }) {

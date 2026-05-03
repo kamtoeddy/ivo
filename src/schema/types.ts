@@ -11,8 +11,6 @@ export type {
   ArrayOfMinSizeTwo,
   Context,
   DefinitionRule,
-  DeletionContext,
-  FailureHandlerData,
   InternalValidatorResponse,
   InvalidValidatorResponse,
   IvoSummary,
@@ -41,25 +39,13 @@ export {
   VIRTUAL_RULES,
 };
 
-type Context<Input, Output = Input> = Readonly<Merge<Input, Output>> & {};
-
-type DeletionContext<Output, CtxOptions extends ObjectType = {}> = Readonly<
-  WithReadonlyCtxOptions<{ data: Readonly<Output> }, CtxOptions>
-> & {};
-
-type FailureHandlerData<
-  Input,
-  Output = Input,
-  CtxOptions extends ObjectType = {},
-> = Readonly<
-  WithReadonlyCtxOptions<{ ctx: Context<Input, Output> }, CtxOptions>
-> & {};
+type Context<Input, Output = Input> = Readonly<Merge<Input, Output> & {}>;
 
 type SetterFnData<
   Input,
   Output = Input,
   CtxOptions extends ObjectType = {},
-> = Readonly<WithCtxOptions<{ ctx: Context<Input, Output> }, CtxOptions>> & {};
+> = Readonly<WithCtxOptions<{ ctx: Context<Input, Output> }, CtxOptions>>;
 
 type ReadonlyIvoSummary<
   Input,
@@ -130,7 +116,7 @@ type WithReadonlyCtxOptions<T, CtxOptions extends ObjectType> = T & {
 type WithCtxOptions<T, CtxOptions extends ObjectType> = WithReadonlyCtxOptions<
   T,
   CtxOptions
-> & { updateOptions: (updates: Partial<CtxOptions>) => void };
+> & { updateOptions: (updates: Partial<CtxOptions>) => void } & {};
 
 type TypeOf<T> = Exclude<T, undefined>;
 
@@ -230,24 +216,26 @@ namespace NS {
   export type LifeCycle = (typeof LIFE_CYCLES)[number];
 
   export type DeleteHandler<Output, CtxOptions extends ObjectType> = (
-    data: DeletionContext<Output, CtxOptions>,
-  ) => unknown | Promise<unknown>;
+    data: Readonly<Output>,
+    options: Readonly<CtxOptions>,
+  ) => void | Promise<void>;
 
   export type FailureHandler<
     Input,
     Output,
     CtxOptions extends ObjectType = {},
   > = (
-    ctx: FailureHandlerData<Input, Output, CtxOptions>,
-  ) => unknown | Promise<unknown>;
+    ctx: Context<Input, Output>,
+    options: Readonly<CtxOptions>,
+  ) => void | Promise<void>;
 
   export type SuccessHandler<
     Input,
     Output,
     CtxOptions extends ObjectType = {},
   > = (
-    summary: ReadonlyIvoSummary<Input, Output, CtxOptions> & {},
-  ) => unknown | Promise<unknown>;
+    summary: ReadonlyIvoSummary<Input, Output, CtxOptions>,
+  ) => void | Promise<void>;
 
   export type OnSuccessConfigObject<
     Input,

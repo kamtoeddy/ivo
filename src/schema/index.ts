@@ -1218,14 +1218,11 @@ class ModelTool<
       await Promise.allSettled(
         cleanups.map(
           async (h) =>
-            await Promise.try(h, {
-              get ctx() {
-                return ctx;
-              },
-              get options() {
-                return options;
-              },
-            }),
+            await Promise.try(
+              h,
+              this._getFrozenCopy(ctx),
+              this._getFrozenCopy(options),
+            ),
         ),
       );
     };
@@ -1668,14 +1665,11 @@ class ModelTool<
     await Promise.allSettled(
       handlers.map(
         async (h) =>
-          await Promise.try(h, {
-            get data() {
-              return data;
-            },
-            get options() {
-              return options;
-            },
-          }),
+          await Promise.try(
+            h,
+            this._getFrozenCopy(data),
+            this._getFrozenCopy(options),
+          ),
       ),
     );
   }

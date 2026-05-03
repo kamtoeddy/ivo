@@ -4,13 +4,9 @@ export type {
   ArrayOfMinSizeOne,
   ArrayOfMinSizeTwo,
   Context,
-  // ctx
-  DeletionContext,
-  FailureHandlerData,
   IvoSummary,
   KeyOf,
   Merge,
-  // summary
   ReadonlyIvoSummary,
   RealType,
   SetterFnData,

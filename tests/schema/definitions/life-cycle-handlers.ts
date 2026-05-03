@@ -1,9 +1,5 @@
 import { beforeEach, describe, expect, it, test } from 'bun:test';
-import type {
-  DeletionContext,
-  FailureHandlerData,
-  ReadonlyIvoSummary,
-} from '../../../src';
+import type { ReadonlyIvoSummary } from '../../../src';
 import { expectFailure, expectNoFailure, validator } from '../_utils';
 
 export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
@@ -193,7 +189,7 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
         propChangeMap: any = {};
 
       const onDelete = (prop = '') => {
-        return ({ options }: DeletionContext<any>) => {
+        return (_: any, options: any) => {
           cxtOptions[prop] = options;
           propChangeMap[prop] = true;
         };
@@ -280,7 +276,7 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
           onFailureCount: any = {};
 
         function incrementOnFailureCountOf(prop: string) {
-          return ({ options }: FailureHandlerData<any>) => {
+          return (_: any, options: any) => {
             cxtOptions[prop] = options;
             onFailureCount[prop] = (onFailureCount[prop] ?? 0) + 1;
           };

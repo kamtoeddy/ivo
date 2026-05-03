@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'bun:test';
 
-import { type DeletionContext, ERRORS } from '../../../dist';
+import { ERRORS } from '../../../dist';
 import {
   expectFailure,
   expectNoFailure,
@@ -15,7 +15,7 @@ export const Test_SchemaOnDelete = ({ Schema, fx }: any) => {
       let deletedValues: any = {};
 
       function onDelete_(prop = '') {
-        return ({ data }: DeletionContext<any>) => {
+        return (data: any) => {
           deletedValues[prop] = data;
         };
       }
