@@ -2,11 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
-# v1.9.0-beta.2 <small><sup>2026-05-03</sup></small>
+# v1.9.0-beta.1 <small><sup>2026-05-03</sup></small>
 
 - Fix: issue type issues with delete, failure and success handlers
 
-# v1.9.0-beta.1 <small><sup>2026-05-03</sup></small>
+# v1.9.0-beta.0 <small><sup>2026-05-03</sup></small>
 
 - Breaking change: update how ctx options are accessed and updated.
 - Perf: update some aspects of how model tool manage internal state.
