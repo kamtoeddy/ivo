@@ -16,20 +16,14 @@ impl std::ops::Deref for True {
 
 pub type CtxOptions = HashMap<String, Value>;
 
-pub enum ComputedValue<I, O> {
-    Static(Value),
-    Func(Box<dyn Fn(&MutableSummary<I, O>) -> Value + Send + Sync>),
-}
-
-pub enum RequiredField<I, O> {
-    True,
-    BoolFunc(Box<dyn Fn(&MutableSummary<I, O>) -> bool + Send + Sync>),
-    BoolErrorFunc(Box<dyn Fn(&MutableSummary<I, O>) -> Value + Send + Sync>),
-}
-
-pub enum ComputableValueWithContext<I, O, T = Value> {
+pub enum Computable<I, O, T = Value> {
     Static(T),
-    Func(Box<dyn Fn(&Context<I, O>) -> T + Send + Sync>),
+    Func(ResolverWithContextFn<I, O, T>),
+}
+
+pub enum ComputableRequired<I, O> {
+    Static(True),
+    Func(RequiredResolverFn<I, O>),
 }
 
 pub struct Context<I, O> {
@@ -38,8 +32,32 @@ pub struct Context<I, O> {
     pub options: Arc<Mutex<CtxOptions>>,
 }
 
+pub struct DeletionContext<O> {
+    pub values: Arc<O>,
+    pub options: Arc<Mutex<CtxOptions>>,
+}
+
+pub enum IvoSummary<I, O> {
+    Create {
+        context: Context<I, O>,
+        input: Arc<I>,
+        values: Arc<O>,
+    },
+    Update {
+        changes: HashMap<String, Value>,
+        context: Context<I, O>,
+        input: Arc<I>,
+        previous_values: Arc<O>,
+        values: Arc<O>,
+    },
+}
+
+// impl<I, O> IvoSummary<I, O> {
+//     pub fn get_options(&self) -> &mut CtxOptions;
+// }
+
 pub struct ImmutableSummary<I, O> {
-    pub changes: Option<HashMap<String, Value>>,
+    pub changes: Option<Context<I, O>>,
     pub context: Context<I, O>,
     pub input_values: HashMap<String, Value>,
     pub is_update: bool,
@@ -53,7 +71,19 @@ pub struct MutableSummary<I, O> {
 
 pub type FieldValidatorFn<I, O, T = Value> =
     Box<dyn Fn(&Value, &Context<I, O>) -> ValidatorResponse<T> + Send + Sync>;
-pub type ResolverFn<I, O, T = Value> = Box<dyn Fn(&MutableSummary<I, O>) -> T + Send + Sync>;
+
+pub type RequiredResolverFn<I, O> = Box<dyn Fn(&Context<I, O>) -> (bool, &str) + Send + Sync>;
+
+pub type ResolverWithContextFn<I, O, T = Value> = Box<dyn Fn(&Context<I, O>) -> T + Send + Sync>;
+
+pub type ResolverWithMutSummaryFn<I, O, T = Value> =
+    Box<dyn Fn(&MutableSummary<I, O>) -> T + Send + Sync>;
+
+pub type VirtualSanitiser<I, O, T = Value> = ResolverWithMutSummaryFn<I, O, T>;
+
+pub type DeleteHandler<O> = Box<dyn Fn(&DeletionContext<O>) -> ()>;
+pub type FailureHandler<I, O> = Box<dyn Fn(&ImmutableSummary<I, O>) -> ()>;
+pub type SuccessHandler<I, O> = Box<dyn Fn(&ImmutableSummary<I, O>) -> ()>;
 
 // #[async_trait]
 pub trait Validator<I, O>: Send + Sync {

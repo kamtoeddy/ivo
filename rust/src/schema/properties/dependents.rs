@@ -1,6 +1,6 @@
 use crate::{
     schema::properties::base::IvoProperty,
-    types::{ComputableValueWithContext, Context, ResolverFn},
+    types::{Computable, Context, DeleteHandler, ResolverWithMutSummaryFn, SuccessHandler},
 };
 
 pub struct DependentField;
@@ -8,7 +8,7 @@ pub struct DependentField;
 impl DependentField {
     pub fn default<I, O, T>(value: T) -> WithoutParentsBuilder<I, O, T> {
         WithoutParentsBuilder {
-            default: ComputableValueWithContext::Static(value),
+            default: Computable::Static(value),
         }
     }
 
@@ -16,21 +16,20 @@ impl DependentField {
         default_fn: Box<dyn Fn(&Context<I, O>) -> T + Send + Sync>,
     ) -> WithoutParentsBuilder<I, O, T> {
         WithoutParentsBuilder {
-            default: ComputableValueWithContext::Func(default_fn),
+            default: Computable::Func(default_fn),
         }
     }
 }
 
 struct WithoutParentsBuilder<I, O, T> {
-    default: ComputableValueWithContext<I, O, T>,
+    default: Computable<I, O, T>,
 }
 
 impl<I, O, T> WithoutParentsBuilder<I, O, T> {
-    pub fn depends_on(self, parents: Vec<&str>) -> WithoutResolverBuilder<I, O, T> {
+    pub fn depends_on(self, parents: &[&str]) -> WithoutResolverBuilder<I, O, T> {
         WithoutResolverBuilder {
             default: self.default,
             parents: parents
-                .clone()
                 .iter()
                 .map(|s| s.to_string())
                 .collect::<Vec<String>>(),
@@ -39,12 +38,12 @@ impl<I, O, T> WithoutParentsBuilder<I, O, T> {
 }
 
 struct WithoutResolverBuilder<I, O, T> {
-    default: ComputableValueWithContext<I, O, T>,
+    default: Computable<I, O, T>,
     parents: Vec<String>,
 }
 
 impl<I, O, T> WithoutResolverBuilder<I, O, T> {
-    pub fn resolver(self, resolver: ResolverFn<I, O, T>) -> Buildable<I, O, T> {
+    pub fn resolver(self, resolver: ResolverWithMutSummaryFn<I, O, T>) -> Buildable<I, O, T> {
         Buildable {
             default: self.default,
             parents: self.parents,
@@ -56,15 +55,15 @@ impl<I, O, T> WithoutResolverBuilder<I, O, T> {
 }
 
 struct Buildable<I, O, T> {
-    default: ComputableValueWithContext<I, O, T>,
+    default: Computable<I, O, T>,
     parents: Vec<String>,
-    resolver: ResolverFn<I, O, T>,
-    on_delete_fns: Option<Vec<Box<dyn Fn(&Context<I, O>)>>>,
-    on_success_fns: Option<Vec<Box<dyn Fn(&Context<I, O>)>>>,
+    resolver: ResolverWithMutSummaryFn<I, O, T>,
+    on_delete_fns: Option<Vec<DeleteHandler<O>>>,
+    on_success_fns: Option<Vec<SuccessHandler<I, O>>>,
 }
 
 impl<I, O, T> Buildable<I, O, T> {
-    pub fn on_delete(mut self, handler: Box<dyn Fn(&Context<I, O>)>) -> Self {
+    pub fn on_delete(mut self, handler: DeleteHandler<O>) -> Self {
         let mut handlers = self.on_delete_fns.unwrap_or(vec![]);
 
         handlers.push(handler);
@@ -74,7 +73,7 @@ impl<I, O, T> Buildable<I, O, T> {
         self
     }
 
-    pub fn on_success(mut self, handler: Box<dyn Fn(&Context<I, O>)>) -> Self {
+    pub fn on_success(mut self, handler: SuccessHandler<I, O>) -> Self {
         let mut handlers = self.on_success_fns.unwrap_or(vec![]);
 
         handlers.push(handler);
