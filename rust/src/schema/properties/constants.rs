@@ -12,15 +12,30 @@ struct SchemaBuilder<I, O, T, HasDefault, HasDelete, HasSuccess> {
     _del_handlers: std::marker::PhantomData<HasDelete>,
     _success_handlers: std::marker::PhantomData<HasSuccess>,
     // actual data...
-    value: Computable<I, O, T>,
+    value: Option<Computable<I, O, T>>,
     on_delete_fns: Option<Vec<DeleteHandler<O>>>,
     on_success_fns: Option<Vec<SuccessHandler<I, O>>>,
+}
+
+impl<HasDefault, HasDelete, HasSuccess, I, O, T> Default
+    for SchemaBuilder<I, O, T, HasDefault, HasDelete, HasSuccess>
+{
+    fn default() -> Self {
+        Self {
+            value: None,
+            on_delete_fns: None,
+            on_success_fns: None,
+            _default: std::marker::PhantomData,
+            _del_handlers: std::marker::PhantomData,
+            _success_handlers: std::marker::PhantomData,
+        }
+    }
 }
 
 impl<HasDelete, HasSuccess, I, O, T> SchemaBuilder<I, O, T, Yes, HasDelete, HasSuccess> {
     pub fn build(self) -> IvoProperty<I, O, T> {
         IvoProperty {
-            value: Some(self.value),
+            value: self.value,
             on_delete_fns: self.on_delete_fns,
             on_success_fns: self.on_success_fns,
             ..Default::default()
@@ -33,12 +48,10 @@ pub struct ConstantField;
 impl ConstantField {
     pub fn value<I, O, T>(value: T) -> SchemaBuilder<I, O, T, Yes, No, No> {
         SchemaBuilder {
-            value: Computable::Static(value),
+            value: Some(Computable::Static(value)),
             on_delete_fns: None,
             on_success_fns: None,
-            _default: std::marker::PhantomData,
-            _del_handlers: std::marker::PhantomData,
-            _success_handlers: std::marker::PhantomData,
+            ..Default::default()
         }
     }
 
@@ -46,12 +59,10 @@ impl ConstantField {
         resolver: ResolverWithContextFn<I, O, T>,
     ) -> SchemaBuilder<I, O, T, Yes, No, No> {
         SchemaBuilder {
-            value: Computable::Func(resolver),
+            value: Some(Computable::Func(resolver)),
             on_delete_fns: None,
             on_success_fns: None,
-            _default: std::marker::PhantomData,
-            _del_handlers: std::marker::PhantomData,
-            _success_handlers: std::marker::PhantomData,
+            ..Default::default()
         }
     }
 }
@@ -66,9 +77,7 @@ impl<HasSuccess, I, O, T> SchemaBuilder<I, O, T, Yes, No, HasSuccess> {
             value: self.value,
             on_delete_fns: Some(vec![handler]),
             on_success_fns: self.on_success_fns,
-            _default: std::marker::PhantomData,
-            _del_handlers: std::marker::PhantomData,
-            _success_handlers: std::marker::PhantomData,
+            ..Default::default()
         }
     }
 
@@ -80,9 +89,7 @@ impl<HasSuccess, I, O, T> SchemaBuilder<I, O, T, Yes, No, HasSuccess> {
             value: self.value,
             on_delete_fns: Some(handlers),
             on_success_fns: self.on_success_fns,
-            _default: std::marker::PhantomData,
-            _del_handlers: std::marker::PhantomData,
-            _success_handlers: std::marker::PhantomData,
+            ..Default::default()
         }
     }
 }
@@ -97,9 +104,7 @@ impl<HasDelete, I, O, T> SchemaBuilder<I, O, T, Yes, HasDelete, No> {
             value: self.value,
             on_delete_fns: self.on_delete_fns,
             on_success_fns: Some(vec![handler]),
-            _default: std::marker::PhantomData,
-            _del_handlers: std::marker::PhantomData,
-            _success_handlers: std::marker::PhantomData,
+            ..Default::default()
         }
     }
 
@@ -111,9 +116,7 @@ impl<HasDelete, I, O, T> SchemaBuilder<I, O, T, Yes, HasDelete, No> {
             value: self.value,
             on_delete_fns: self.on_delete_fns,
             on_success_fns: Some(handlers),
-            _default: std::marker::PhantomData,
-            _del_handlers: std::marker::PhantomData,
-            _success_handlers: std::marker::PhantomData,
+            ..Default::default()
         }
     }
 }
