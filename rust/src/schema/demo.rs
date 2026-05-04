@@ -1,6 +1,6 @@
 use crate::schema::properties::{
-    base::IvoProperty, constants::ConstantField, dependents::DependentField, enums::EnumField,
-    lax::LaxField, virtuals::VirtualField,
+    base::IvoProperty, constants::ConstantField, dependents::DependentField,
+    enumerated::EnumeratedField, lax::LaxField, virtuals::VirtualField,
 };
 
 impl<I, O> IvoProperty<I, O> {
@@ -12,8 +12,8 @@ impl<I, O> IvoProperty<I, O> {
         DependentField
     }
 
-    pub fn enum_field() -> EnumField {
-        EnumField
+    pub fn enumerated() -> EnumeratedField {
+        EnumeratedField
     }
 
     pub fn lax() -> LaxField {

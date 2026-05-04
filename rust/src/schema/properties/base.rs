@@ -7,8 +7,8 @@ use serde_json::Value;
 
 pub struct IvoProperty<I, O, T = Value> {
     pub alias: Option<String>,
-    pub allow_error: Option<String>,
-    pub allow_values: Option<Vec<T>>,
+    pub enumerated_error: Option<String>,
+    pub enumerated_values: Option<Vec<T>>,
     pub default: Option<ComputableWithContext<I, O, T>>,
     pub depends_on: Option<Vec<String>>,
     pub is_constant: bool,
@@ -44,8 +44,8 @@ impl<I, O, T> Default for IvoProperty<I, O, T> {
             validator: None,
             re_validator: None,
             sanitizer: None,
-            allow_values: None,
-            allow_error: None,
+            enumerated_values: None,
+            enumerated_error: None,
             resolver: None,
             should_ignore: None,
             should_init: None,

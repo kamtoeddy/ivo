@@ -1,6 +1,6 @@
 pub mod base;
 pub mod constants;
 pub mod dependents;
-pub mod enums;
+pub mod enumerated;
 pub mod lax;
 pub mod virtuals;

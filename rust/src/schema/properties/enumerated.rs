@@ -7,7 +7,7 @@ use crate::{
     },
 };
 
-pub struct EnumField;
+pub struct EnumeratedField;
 
 // Marker Types
 pub struct Yes;
@@ -156,7 +156,7 @@ impl<
     }
 }
 
-impl EnumField {
+impl EnumeratedField {
     pub fn default<I, O, T>(
         value: T,
     ) -> SchemaBuilder<I, O, T, Yes, No, No, No, No, No, No, No, No, No> {
