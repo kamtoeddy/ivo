@@ -1,7 +1,7 @@
 use crate::{
     schema::properties::base::IvoProperty,
     types::{
-        Computable, ComputableRequired, DeleteHandler, FailureHandler, FieldValidatorFn,
+        ComputableWithContext, ComputableRequired, DeleteHandler, FailureHandler, FieldValidatorFn,
         RequiredResolverFn, ResolverWithContextFn, SuccessHandler, VirtualSanitiser,
     },
 };
@@ -11,7 +11,7 @@ pub struct LaxField;
 impl LaxField {
     pub fn default<I, O, T>(value: T) -> WithDefaultBuilder<I, O, T> {
         WithDefaultBuilder {
-            default: Computable::Static(value),
+            default: ComputableWithContext::Static(value),
             on_delete_fns: None,
             on_success_fns: None,
         }
@@ -21,7 +21,7 @@ impl LaxField {
         resolver: ResolverWithContextFn<I, O, T>,
     ) -> WithDefaultBuilder<I, O, T> {
         WithDefaultBuilder {
-            default: Computable::Func(resolver),
+            default: ComputableWithContext::Func(resolver),
             on_delete_fns: None,
             on_success_fns: None,
         }
@@ -29,7 +29,7 @@ impl LaxField {
 }
 
 struct WithDefaultBuilder<I, O, T> {
-    default: Computable<I, O, T>,
+    default: ComputableWithContext<I, O, T>,
     on_delete_fns: Option<Vec<DeleteHandler<O>>>,
     on_success_fns: Option<Vec<SuccessHandler<I, O>>>,
 }
@@ -67,7 +67,7 @@ impl<I, O, T> WithDefaultBuilder<I, O, T> {
 }
 
 struct WithValidatorBuilder<I, O, T> {
-    default: Computable<I, O, T>,
+    default: ComputableWithContext<I, O, T>,
     validator: FieldValidatorFn<I, O, T>,
     on_delete_fns: Option<Vec<DeleteHandler<O>>>,
     on_failure_fns: Option<Vec<FailureHandler<I, O>>>,
@@ -109,7 +109,7 @@ impl<I, O, T> WithValidatorBuilder<I, O, T> {
 }
 
 struct WithReValidatorBuilder<I, O, T> {
-    default: Computable<I, O, T>,
+    default: ComputableWithContext<I, O, T>,
     validator: FieldValidatorFn<I, O, T>,
     re_validator: Option<FieldValidatorFn<I, O, T>>,
     required_fn: Option<RequiredResolverFn<I, O>>,
@@ -176,7 +176,7 @@ impl<I, O, T> WithReValidatorBuilder<I, O, T> {
 }
 
 trait WithDefault<I, O, T> {
-    fn get_default(&self) -> Computable<I, O, T>;
+    fn get_default(&self) -> ComputableWithContext<I, O, T>;
 }
 
 trait Validatable<I, O, T, F: WithDefault<I, O, T>> {

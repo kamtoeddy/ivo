@@ -1,6 +1,6 @@
 use crate::{
     schema::properties::base::IvoProperty,
-    types::{Computable, DeleteHandler, ResolverWithContextFn, SuccessHandler},
+    types::{ComputableWithContext, DeleteHandler, ResolverWithContextFn, SuccessHandler},
 };
 
 // Marker Types
@@ -12,7 +12,7 @@ struct SchemaBuilder<I, O, T, HasDefault, HasDelete, HasSuccess> {
     _del_handlers: std::marker::PhantomData<HasDelete>,
     _success_handlers: std::marker::PhantomData<HasSuccess>,
     // actual data...
-    value: Option<Computable<I, O, T>>,
+    value: Option<ComputableWithContext<I, O, T>>,
     on_delete_fns: Option<Vec<DeleteHandler<O>>>,
     on_success_fns: Option<Vec<SuccessHandler<I, O>>>,
 }
@@ -48,7 +48,7 @@ pub struct ConstantField;
 impl ConstantField {
     pub fn value<I, O, T>(value: T) -> SchemaBuilder<I, O, T, Yes, No, No> {
         SchemaBuilder {
-            value: Some(Computable::Static(value)),
+            value: Some(ComputableWithContext::Static(value)),
             on_delete_fns: None,
             on_success_fns: None,
             ..Default::default()
@@ -59,7 +59,7 @@ impl ConstantField {
         resolver: ResolverWithContextFn<I, O, T>,
     ) -> SchemaBuilder<I, O, T, Yes, No, No> {
         SchemaBuilder {
-            value: Some(Computable::Func(resolver)),
+            value: Some(ComputableWithContext::Func(resolver)),
             on_delete_fns: None,
             on_success_fns: None,
             ..Default::default()

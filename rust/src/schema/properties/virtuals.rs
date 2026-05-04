@@ -1,8 +1,8 @@
 use crate::{
     schema::properties::base::IvoProperty,
     types::{
-        Computable, ComputableRequired, FailureHandler, FieldValidatorFn, RequiredResolverFn,
-        SuccessHandler, VirtualSanitiser,
+        BooleanResolverWithMutSummary, ComputableInit, ComputableRequired, FailureHandler,
+        FieldValidatorFn, RequiredResolverFn, SuccessHandler, VirtualSanitiser,
     },
 };
 
@@ -11,108 +11,7 @@ pub struct VirtualField;
 // Marker Types
 pub struct Yes;
 pub struct No;
-
-struct WithValidatorBuilder<I, O, T> {
-    validator: FieldValidatorFn<I, O, T>,
-}
-
-impl<I, O, T> WithValidatorBuilder<I, O, T> {
-    pub fn required(
-        self,
-        required_fn: RequiredResolverFn<I, O>,
-    ) -> WithReValidatorBuilder<I, O, T> {
-        WithReValidatorBuilder {
-            validator: self.validator,
-            required_fn: Some(required_fn),
-            re_validator: None,
-            sanitizer_fn: None,
-            alias_name: None,
-            on_failure_fns: None,
-            on_success_fns: None,
-        }
-    }
-
-    pub fn re_validator(
-        self,
-        re_validator: FieldValidatorFn<I, O, T>,
-    ) -> WithReValidatorBuilder<I, O, T> {
-        WithReValidatorBuilder {
-            validator: self.validator,
-            re_validator: Some(re_validator),
-            required_fn: None,
-            sanitizer_fn: None,
-            alias_name: None,
-            on_failure_fns: None,
-            on_success_fns: None,
-        }
-    }
-}
-
-struct WithReValidatorBuilder<I, O, T> {
-    validator: FieldValidatorFn<I, O, T>,
-    re_validator: Option<FieldValidatorFn<I, O, T>>,
-    required_fn: Option<RequiredResolverFn<I, O>>,
-    sanitizer_fn: Option<VirtualSanitiser<I, O, T>>,
-    alias_name: Option<String>,
-    on_failure_fns: Option<Vec<FailureHandler<I, O>>>,
-    on_success_fns: Option<Vec<SuccessHandler<I, O>>>,
-}
-
-impl<I, O, T> WithReValidatorBuilder<I, O, T> {
-    pub fn alias(mut self, name: &str) -> Self {
-        self.alias_name = Some(name.to_string());
-
-        self
-    }
-
-    pub fn required(mut self, fx: RequiredResolverFn<I, O>) -> Self {
-        self.required_fn = Some(fx);
-
-        self
-    }
-
-    pub fn sanitizer(mut self, fx: VirtualSanitiser<I, O, T>) -> Self {
-        self.sanitizer_fn = Some(fx);
-
-        self
-    }
-
-    pub fn on_success(mut self, handler: SuccessHandler<I, O>) -> Self {
-        let mut handlers = self.on_success_fns.unwrap_or(vec![]);
-
-        handlers.push(handler);
-
-        self.on_success_fns = Some(handlers);
-
-        self
-    }
-
-    pub fn on_failure(mut self, handler: FailureHandler<I, O>) -> Self {
-        let mut handlers = self.on_failure_fns.unwrap_or(vec![]);
-
-        handlers.push(handler);
-
-        self.on_failure_fns = Some(handlers);
-
-        self
-    }
-
-    pub fn build(self) -> IvoProperty<I, O, T> {
-        IvoProperty {
-            is_virtual: true,
-            validator: Some(self.validator),
-            re_validator: self.re_validator,
-            required: match self.required_fn {
-                Some(fx) => Some(ComputableRequired::Func(fx)),
-                _ => None,
-            },
-            sanitizer: self.sanitizer_fn,
-            on_failure_fns: self.on_failure_fns,
-            on_success_fns: self.on_success_fns,
-            ..Default::default()
-        }
-    }
-}
+pub struct YesComputed;
 
 struct SchemaBuilder<
     I,
@@ -145,9 +44,9 @@ struct SchemaBuilder<
     re_validator: Option<FieldValidatorFn<I, O, T>>,
     required: Option<ComputableRequired<I, O>>,
     sanitizer: Option<VirtualSanitiser<I, O, T>>,
-    should_ignore: Option<Computable<I, O, bool>>,
-    should_init: Option<Computable<I, O, bool>>,
-    should_update: Option<Computable<I, O, bool>>,
+    should_ignore_fn: Option<BooleanResolverWithMutSummary<I, O>>,
+    should_init: Option<ComputableInit<I, O>>,
+    should_update: Option<ComputableInit<I, O>>,
     on_failure_fns: Option<Vec<FailureHandler<I, O>>>,
     on_success_fns: Option<Vec<SuccessHandler<I, O>>>,
 }
@@ -190,7 +89,7 @@ impl<
             re_validator: None,
             required: None,
             sanitizer: None,
-            should_ignore: None,
+            should_ignore_fn: None,
             should_init: None,
             should_update: None,
             on_failure_fns: None,
@@ -247,7 +146,7 @@ impl<
             re_validator: self.re_validator,
             required: self.required,
             sanitizer: self.sanitizer,
-            should_ignore: self.should_ignore,
+            should_ignore: self.should_ignore_fn,
             should_init: self.should_init,
             should_update: self.should_update,
             on_failure_fns: self.on_failure_fns,
@@ -267,7 +166,7 @@ impl VirtualField {
         }
     }
 
-    pub fn validator<I, O, T>(
+    pub fn validate<I, O, T>(
         validator: FieldValidatorFn<I, O, T>,
     ) -> SchemaBuilder<I, O, T, Yes, No, No, No, No, No, No, No, No, No> {
         SchemaBuilder {
@@ -290,7 +189,7 @@ impl<HasRevalidator, I, O, T>
             re_validator: self.re_validator,
             sanitizer: self.sanitizer,
             required: self.required,
-            should_ignore: self.should_ignore,
+            should_ignore_fn: self.should_ignore_fn,
             should_init: self.should_init,
             should_update: self.should_update,
             on_failure_fns: self.on_failure_fns,
@@ -301,7 +200,7 @@ impl<HasRevalidator, I, O, T>
 }
 
 impl<HasAlias, I, O, T> SchemaBuilder<I, O, T, No, HasAlias, No, No, No, No, No, No, No, No> {
-    pub fn validator(
+    pub fn validate(
         self,
         validator: FieldValidatorFn<I, O, T>,
     ) -> SchemaBuilder<I, O, T, Yes, HasAlias, No, No, No, No, No, No, No, No> {
@@ -314,7 +213,7 @@ impl<HasAlias, I, O, T> SchemaBuilder<I, O, T, No, HasAlias, No, No, No, No, No,
 }
 
 impl<HasAlias, I, O, T> SchemaBuilder<I, O, T, Yes, HasAlias, No, No, No, No, No, No, No, No> {
-    pub fn re_validator(
+    pub fn re_validate(
         self,
         re_validator: FieldValidatorFn<I, O, T>,
     ) -> SchemaBuilder<I, O, T, Yes, HasAlias, Yes, No, No, No, No, No, No, No> {
@@ -322,6 +221,393 @@ impl<HasAlias, I, O, T> SchemaBuilder<I, O, T, Yes, HasAlias, No, No, No, No, No
             alias: self.alias,
             validator: self.validator,
             re_validator: Some(re_validator),
+            ..Default::default()
+        }
+    }
+}
+
+impl<HasAlias, HasRevalidator, I, O, T>
+    SchemaBuilder<I, O, T, Yes, HasAlias, HasRevalidator, No, No, No, No, No, No, No>
+{
+    pub fn required_if(
+        self,
+        required_fn: RequiredResolverFn<I, O>,
+    ) -> SchemaBuilder<I, O, T, Yes, HasAlias, HasRevalidator, No, Yes, No, No, No, No, No> {
+        SchemaBuilder {
+            alias: self.alias,
+            validator: self.validator,
+            re_validator: self.re_validator,
+            required: Some(ComputableRequired::Func(required_fn)),
+            ..Default::default()
+        }
+    }
+}
+
+impl<HasAlias, HasRevalidator, HasRequired, I, O, T>
+    SchemaBuilder<I, O, T, Yes, HasAlias, HasRevalidator, No, HasRequired, No, No, No, No, No>
+{
+    pub fn sanitize(
+        self,
+        sanitizer: VirtualSanitiser<I, O, T>,
+    ) -> SchemaBuilder<I, O, T, Yes, HasAlias, HasRevalidator, Yes, HasRequired, No, No, No, No, No>
+    {
+        SchemaBuilder {
+            alias: self.alias,
+            validator: self.validator,
+            re_validator: self.re_validator,
+            required: self.required,
+            sanitizer: Some(sanitizer),
+            ..Default::default()
+        }
+    }
+}
+
+impl<HasAlias, HasRevalidator, HasSanitizer, HasRequired, I, O, T>
+    SchemaBuilder<
+        I,
+        O,
+        T,
+        Yes,
+        HasAlias,
+        HasRevalidator,
+        HasSanitizer,
+        HasRequired,
+        No,
+        No,
+        No,
+        No,
+        No,
+    >
+{
+    pub fn ignore_if(
+        self,
+        fx: BooleanResolverWithMutSummary<I, O>,
+    ) -> SchemaBuilder<
+        I,
+        O,
+        T,
+        Yes,
+        HasAlias,
+        HasRevalidator,
+        HasSanitizer,
+        HasRequired,
+        Yes,
+        No,
+        No,
+        No,
+        No,
+    > {
+        SchemaBuilder {
+            alias: self.alias,
+            validator: self.validator,
+            re_validator: self.re_validator,
+            required: self.required,
+            sanitizer: self.sanitizer,
+            should_ignore_fn: Some(fx),
+            ..Default::default()
+        }
+    }
+}
+
+impl<HasAlias, HasRevalidator, HasSanitizer, HasRequired, I, O, T>
+    SchemaBuilder<
+        I,
+        O,
+        T,
+        Yes,
+        HasAlias,
+        HasRevalidator,
+        HasSanitizer,
+        HasRequired,
+        No,
+        No,
+        No,
+        No,
+        No,
+    >
+{
+    pub fn ignore_init(
+        self,
+    ) -> SchemaBuilder<
+        I,
+        O,
+        T,
+        Yes,
+        HasAlias,
+        HasRevalidator,
+        HasSanitizer,
+        HasRequired,
+        No,
+        Yes,
+        No,
+        No,
+        No,
+    > {
+        SchemaBuilder {
+            alias: self.alias,
+            validator: self.validator,
+            re_validator: self.re_validator,
+            required: self.required,
+            sanitizer: self.sanitizer,
+            should_init: Some(ComputableInit::False),
+            ..Default::default()
+        }
+    }
+
+    pub fn allow_init_if(
+        self,
+        fx: BooleanResolverWithMutSummary<I, O>,
+    ) -> SchemaBuilder<
+        I,
+        O,
+        T,
+        Yes,
+        HasAlias,
+        HasRevalidator,
+        HasSanitizer,
+        HasRequired,
+        No,
+        YesComputed,
+        No,
+        No,
+        No,
+    > {
+        SchemaBuilder {
+            alias: self.alias,
+            validator: self.validator,
+            re_validator: self.re_validator,
+            required: self.required,
+            sanitizer: self.sanitizer,
+            should_init: Some(ComputableInit::Func(fx)),
+            ..Default::default()
+        }
+    }
+
+    pub fn ignore_update(
+        self,
+    ) -> SchemaBuilder<
+        I,
+        O,
+        T,
+        Yes,
+        HasAlias,
+        HasRevalidator,
+        HasSanitizer,
+        HasRequired,
+        No,
+        No,
+        Yes,
+        No,
+        No,
+    > {
+        SchemaBuilder {
+            alias: self.alias,
+            validator: self.validator,
+            re_validator: self.re_validator,
+            required: self.required,
+            sanitizer: self.sanitizer,
+            should_update: Some(ComputableInit::False),
+            ..Default::default()
+        }
+    }
+
+    pub fn allow_update_if(
+        self,
+        fx: BooleanResolverWithMutSummary<I, O>,
+    ) -> SchemaBuilder<
+        I,
+        O,
+        T,
+        Yes,
+        HasAlias,
+        HasRevalidator,
+        HasSanitizer,
+        HasRequired,
+        No,
+        No,
+        YesComputed,
+        No,
+        No,
+    > {
+        SchemaBuilder {
+            alias: self.alias,
+            validator: self.validator,
+            re_validator: self.re_validator,
+            required: self.required,
+            sanitizer: self.sanitizer,
+            should_init: Some(ComputableInit::Func(fx)),
+            ..Default::default()
+        }
+    }
+}
+
+impl<HasAlias, HasRevalidator, HasSanitizer, HasRequired, I, O, T>
+    SchemaBuilder<
+        I,
+        O,
+        T,
+        Yes,
+        HasAlias,
+        HasRevalidator,
+        HasSanitizer,
+        HasRequired,
+        No,
+        No,
+        Yes,
+        No,
+        No,
+    >
+{
+    pub fn allow_init_if(
+        self,
+        fx: BooleanResolverWithMutSummary<I, O>,
+    ) -> SchemaBuilder<
+        I,
+        O,
+        T,
+        Yes,
+        HasAlias,
+        HasRevalidator,
+        HasSanitizer,
+        HasRequired,
+        No,
+        YesComputed,
+        Yes,
+        No,
+        No,
+    > {
+        SchemaBuilder {
+            alias: self.alias,
+            validator: self.validator,
+            re_validator: self.re_validator,
+            required: self.required,
+            sanitizer: self.sanitizer,
+            should_init: Some(ComputableInit::Func(fx)),
+            ..Default::default()
+        }
+    }
+}
+
+impl<HasAlias, HasRevalidator, HasSanitizer, HasRequired, I, O, T>
+    SchemaBuilder<
+        I,
+        O,
+        T,
+        Yes,
+        HasAlias,
+        HasRevalidator,
+        HasSanitizer,
+        HasRequired,
+        No,
+        Yes,
+        YesComputed,
+        No,
+        No,
+    >
+{
+    pub fn allow_update_if(
+        self,
+        fx: BooleanResolverWithMutSummary<I, O>,
+    ) -> SchemaBuilder<
+        I,
+        O,
+        T,
+        Yes,
+        HasAlias,
+        HasRevalidator,
+        HasSanitizer,
+        HasRequired,
+        No,
+        Yes,
+        YesComputed,
+        No,
+        No,
+    > {
+        SchemaBuilder {
+            alias: self.alias,
+            validator: self.validator,
+            re_validator: self.re_validator,
+            required: self.required,
+            sanitizer: self.sanitizer,
+            should_init: self.should_init,
+            should_update: Some(ComputableInit::Func(fx)),
+            ..Default::default()
+        }
+    }
+}
+
+impl<HasAlias, HasRevalidator, HasSanitizer, HasRequired, I, O, T>
+    SchemaBuilder<
+        I,
+        O,
+        T,
+        Yes,
+        HasAlias,
+        HasRevalidator,
+        HasSanitizer,
+        HasRequired,
+        No,
+        No,
+        YesComputed,
+        No,
+        No,
+    >
+{
+    pub fn ignore_init(
+        self,
+    ) -> SchemaBuilder<
+        I,
+        O,
+        T,
+        Yes,
+        HasAlias,
+        HasRevalidator,
+        HasSanitizer,
+        HasRequired,
+        No,
+        Yes,
+        YesComputed,
+        No,
+        No,
+    > {
+        SchemaBuilder {
+            alias: self.alias,
+            validator: self.validator,
+            re_validator: self.re_validator,
+            required: self.required,
+            sanitizer: self.sanitizer,
+            should_update: self.should_update,
+            should_init: Some(ComputableInit::False),
+            ..Default::default()
+        }
+    }
+
+    pub fn allow_init_if(
+        self,
+        fx: BooleanResolverWithMutSummary<I, O>,
+    ) -> SchemaBuilder<
+        I,
+        O,
+        T,
+        Yes,
+        HasAlias,
+        HasRevalidator,
+        HasSanitizer,
+        HasRequired,
+        No,
+        YesComputed,
+        YesComputed,
+        No,
+        No,
+    > {
+        SchemaBuilder {
+            alias: self.alias,
+            validator: self.validator,
+            re_validator: self.re_validator,
+            required: self.required,
+            sanitizer: self.sanitizer,
+            should_update: self.should_update,
+            should_init: Some(ComputableInit::Func(fx)),
             ..Default::default()
         }
     }
@@ -382,7 +668,7 @@ impl<
             re_validator: self.re_validator,
             sanitizer: self.sanitizer,
             required: self.required,
-            should_ignore: self.should_ignore,
+            should_ignore_fn: self.should_ignore_fn,
             should_init: self.should_init,
             should_update: self.should_update,
             on_failure_fns: Some(vec![handler]),
@@ -415,7 +701,7 @@ impl<
             re_validator: self.re_validator,
             sanitizer: self.sanitizer,
             required: self.required,
-            should_ignore: self.should_ignore,
+            should_ignore_fn: self.should_ignore_fn,
             should_init: self.should_init,
             on_failure_fns: Some(handlers),
             on_success_fns: self.on_success_fns,
@@ -478,7 +764,7 @@ impl<
             re_validator: self.re_validator,
             sanitizer: self.sanitizer,
             required: self.required,
-            should_ignore: self.should_ignore,
+            should_ignore_fn: self.should_ignore_fn,
             should_init: self.should_init,
             should_update: self.should_update,
             on_failure_fns: self.on_failure_fns,
@@ -511,7 +797,7 @@ impl<
             re_validator: self.re_validator,
             sanitizer: self.sanitizer,
             required: self.required,
-            should_ignore: self.should_ignore,
+            should_ignore_fn: self.should_ignore_fn,
             should_init: self.should_init,
             should_update: self.should_update,
             on_failure_fns: self.on_failure_fns,

@@ -14,11 +14,27 @@ impl std::ops::Deref for True {
     }
 }
 
+#[derive(Debug)]
+pub struct False;
+
+// Optional: implement Deref to make it behave like bool
+impl std::ops::Deref for False {
+    type Target = bool;
+    fn deref(&self) -> &Self::Target {
+        &false
+    }
+}
+
 pub type CtxOptions = HashMap<String, Value>;
 
-pub enum Computable<I, O, T = Value> {
+pub enum ComputableWithContext<I, O, T = Value> {
     Static(T),
     Func(ResolverWithContextFn<I, O, T>),
+}
+
+pub enum ComputableInit<I, O> {
+    False,
+    Func(ResolverWithMutSummaryFn<I, O, bool>),
 }
 
 pub enum ComputableRequired<I, O> {
@@ -78,6 +94,9 @@ pub type ResolverWithContextFn<I, O, T = Value> = Box<dyn Fn(&Context<I, O>) -> 
 
 pub type ResolverWithMutSummaryFn<I, O, T = Value> =
     Box<dyn Fn(&MutableSummary<I, O>) -> T + Send + Sync>;
+
+pub type BooleanResolverWithMutSummary<I, O> =
+    Box<dyn Fn(&MutableSummary<I, O>) -> bool + Send + Sync>;
 
 pub type VirtualSanitiser<I, O, T = Value> = ResolverWithMutSummaryFn<I, O, T>;
 
