@@ -1,5 +1,6 @@
 use crate::schema::properties::{
-    base::IvoProperty, constants::ConstantField, dependents::DependentField, virtuals::VirtualField,
+    base::IvoProperty, constants::ConstantField, dependents::DependentField, lax::LaxField,
+    virtuals::VirtualField,
 };
 
 impl<I, O> IvoProperty<I, O> {
@@ -11,12 +12,23 @@ impl<I, O> IvoProperty<I, O> {
         DependentField
     }
 
+    pub fn lax() -> LaxField {
+        LaxField
+    }
+
     pub fn virtual_prop() -> VirtualField {
         VirtualField
     }
 }
 
 // fn main() {
+//     let l = LaxField::default("&str")
+//         .validate(Box::new(|v, _| Ok("true")))
+//         .on_delete(Box::new(|_| {}))
+//         .on_failure(Box::new(|_| {}))
+//         .on_success(Box::new(|_| {}))
+//         .build();
+
 //     let c = ConstantField::value("&str")
 //         .on_success(Box::new(|_| {}))
 //         .on_delete(Box::new(|_| {}))
