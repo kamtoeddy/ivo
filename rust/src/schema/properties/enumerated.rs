@@ -1,9 +1,9 @@
 use crate::{
     schema::properties::base::IvoProperty,
     types::{
-        BooleanResolverWithMutSummary, ComputableInit, ComputableRequired, ComputableWithContext,
-        DeleteHandler, FailureHandler, FieldValidatorFn, RequiredResolverFn, ResolverWithContextFn,
-        SuccessHandler,
+        BooleanResolverWithMutSummary, ComputableEnumeratedError, ComputableInit,
+        ComputableWithContext, DeleteHandler, EnumeratedErrorResolver, FailureHandler,
+        ResolverWithContextFn, SuccessHandler,
     },
 };
 
@@ -18,10 +18,9 @@ struct SchemaBuilder<
     I,
     O,
     T,
+    HasValues,
+    HasValueError,
     HasDefault,
-    HasValidator,
-    HasRevalidator,
-    HasRequired,
     HasIgnore,
     HasShouldInit,
     HasShouldUpdate,
@@ -29,10 +28,9 @@ struct SchemaBuilder<
     HasFailure,
     HasSuccess,
 > {
+    _enum_values: std::marker::PhantomData<HasValues>,
+    _enum_error: std::marker::PhantomData<HasValueError>,
     _default: std::marker::PhantomData<HasDefault>,
-    _validator: std::marker::PhantomData<HasValidator>,
-    _re_validator: std::marker::PhantomData<HasRevalidator>,
-    _required_fn: std::marker::PhantomData<HasRequired>,
     _should_ignore: std::marker::PhantomData<HasIgnore>,
     _should_init: std::marker::PhantomData<HasShouldInit>,
     _should_update: std::marker::PhantomData<HasShouldUpdate>,
@@ -40,10 +38,9 @@ struct SchemaBuilder<
     _on_failure_fns: std::marker::PhantomData<HasFailure>,
     _on_success_fns: std::marker::PhantomData<HasSuccess>,
     // actual data...
+    enum_values: Option<Vec<T>>,
+    enum_error: Option<ComputableEnumeratedError<T>>,
     default: Option<ComputableWithContext<I, O, T>>,
-    validator: Option<FieldValidatorFn<I, O, T>>,
-    re_validator: Option<FieldValidatorFn<I, O, T>>,
-    required: Option<ComputableRequired<I, O>>,
     should_ignore_fn: Option<BooleanResolverWithMutSummary<I, O>>,
     should_init: Option<ComputableInit<I, O>>,
     should_update: Option<ComputableInit<I, O>>,
@@ -53,10 +50,9 @@ struct SchemaBuilder<
 }
 
 impl<
+        HasValues,
+        HasValueError,
         HasDefault,
-        HasValidator,
-        HasRevalidator,
-        HasRequired,
         HasIgnore,
         HasShouldInit,
         HasShouldUpdate,
@@ -71,10 +67,9 @@ impl<
         I,
         O,
         T,
+        HasValues,
+        HasValueError,
         HasDefault,
-        HasValidator,
-        HasRevalidator,
-        HasRequired,
         HasIgnore,
         HasShouldInit,
         HasShouldUpdate,
@@ -86,9 +81,8 @@ impl<
     fn default() -> Self {
         Self {
             default: None,
-            validator: None,
-            re_validator: None,
-            required: None,
+            enum_values: None,
+            enum_error: None,
             should_ignore_fn: None,
             should_init: None,
             should_update: None,
@@ -96,9 +90,8 @@ impl<
             on_failure_fns: None,
             on_success_fns: None,
             _default: std::marker::PhantomData,
-            _validator: std::marker::PhantomData,
-            _re_validator: std::marker::PhantomData,
-            _required_fn: std::marker::PhantomData,
+            _enum_values: std::marker::PhantomData,
+            _enum_error: std::marker::PhantomData,
             _should_ignore: std::marker::PhantomData,
             _should_init: std::marker::PhantomData,
             _should_update: std::marker::PhantomData,
@@ -111,8 +104,6 @@ impl<
 
 impl<
         HasDefault,
-        HasRevalidator,
-        HasRequired,
         HasIgnore,
         HasShouldInit,
         HasShouldUpdate,
@@ -128,9 +119,8 @@ impl<
         O,
         T,
         Yes,
-        HasRevalidator,
+        Yes,
         HasDefault,
-        HasRequired,
         HasIgnore,
         HasShouldInit,
         HasShouldUpdate,
@@ -141,10 +131,9 @@ impl<
 {
     pub fn build(self) -> IvoProperty<I, O, T> {
         IvoProperty {
+            enum_values: self.enum_values,
+            enum_error: self.enum_error,
             default: self.default,
-            validator: self.validator,
-            re_validator: self.re_validator,
-            required: self.required,
             should_ignore: self.should_ignore_fn,
             should_init: self.should_init,
             should_update: self.should_update,
@@ -157,126 +146,87 @@ impl<
 }
 
 impl EnumeratedField {
-    pub fn default<I, O, T>(
-        value: T,
-    ) -> SchemaBuilder<I, O, T, Yes, No, No, No, No, No, No, No, No, No> {
+    pub fn values<I, O, T>(
+        values: Vec<T>,
+    ) -> SchemaBuilder<I, O, T, Yes, No, No, No, No, No, No, No, No> {
         SchemaBuilder {
+            enum_values: Some(values),
+            ..Default::default()
+        }
+    }
+}
+
+impl<I, O, T> SchemaBuilder<I, O, T, Yes, No, No, No, No, No, No, No, No> {
+    pub fn error(
+        self,
+        error: &str,
+    ) -> SchemaBuilder<I, O, T, Yes, Yes, No, No, No, No, No, No, No> {
+        SchemaBuilder {
+            enum_values: self.enum_values,
+            enum_error: Some(ComputableEnumeratedError::Static(error.into())),
+            ..Default::default()
+        }
+    }
+
+    pub fn error_fn(
+        self,
+        error_fn: EnumeratedErrorResolver<T>,
+    ) -> SchemaBuilder<I, O, T, Yes, Yes, No, No, No, No, No, No, No> {
+        SchemaBuilder {
+            enum_values: self.enum_values,
+            enum_error: Some(ComputableEnumeratedError::Func(error_fn)),
+            ..Default::default()
+        }
+    }
+}
+
+impl<I, O, T> SchemaBuilder<I, O, T, Yes, Yes, No, No, No, No, No, No, No> {
+    pub fn default(
+        self,
+        value: T,
+    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, No, No, No, No, No> {
+        SchemaBuilder {
+            enum_values: self.enum_values,
+            enum_error: self.enum_error,
             default: Some(ComputableWithContext::Static(value)),
             ..Default::default()
         }
     }
 
-    pub fn default_fn<I, O, T>(
+    pub fn default_fn(
+        self,
         default_fn: ResolverWithContextFn<I, O, T>,
-    ) -> SchemaBuilder<I, O, T, Yes, No, No, No, No, No, No, No, No, No> {
+    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, No, No, No, No, No> {
         SchemaBuilder {
+            enum_values: self.enum_values,
+            enum_error: self.enum_error,
             default: Some(ComputableWithContext::Func(default_fn)),
             ..Default::default()
         }
     }
 }
 
-impl<I, O, T> SchemaBuilder<I, O, T, Yes, No, No, No, No, No, No, No, No, No> {
-    pub fn validate(
-        self,
-        validator: FieldValidatorFn<I, O, T>,
-    ) -> SchemaBuilder<I, O, T, Yes, Yes, No, No, No, No, No, No, No, No> {
-        SchemaBuilder {
-            default: self.default,
-            validator: Some(validator),
-            ..Default::default()
-        }
-    }
-}
-
-impl<I, O, T> SchemaBuilder<I, O, T, Yes, Yes, No, No, No, No, No, No, No, No> {
-    pub fn re_validate(
-        self,
-        re_validator: FieldValidatorFn<I, O, T>,
-    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, No, No, No, No, No, No> {
-        SchemaBuilder {
-            default: self.default,
-            validator: self.validator,
-            re_validator: Some(re_validator),
-            ..Default::default()
-        }
-    }
-}
-
-impl<HasRevalidator, I, O, T>
-    SchemaBuilder<I, O, T, Yes, Yes, HasRevalidator, No, No, No, No, No, No, No>
-{
-    pub fn required_if(
-        self,
-        required_fn: RequiredResolverFn<I, O>,
-    ) -> SchemaBuilder<I, O, T, Yes, Yes, HasRevalidator, Yes, No, No, No, No, No, No> {
-        SchemaBuilder {
-            default: self.default,
-            validator: self.validator,
-            re_validator: self.re_validator,
-            required: Some(ComputableRequired::Func(required_fn)),
-            ..Default::default()
-        }
-    }
-}
-
-impl<HasValidator, HasRevalidator, HasRequired, I, O, T>
-    SchemaBuilder<I, O, T, Yes, HasValidator, HasRevalidator, HasRequired, No, No, No, No, No, No>
-{
+impl<I, O, T> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, No, No, No, No, No> {
     pub fn ignore_if(
         self,
         fx: BooleanResolverWithMutSummary<I, O>,
-    ) -> SchemaBuilder<
-        I,
-        O,
-        T,
-        Yes,
-        HasValidator,
-        HasRevalidator,
-        HasRequired,
-        Yes,
-        No,
-        No,
-        No,
-        No,
-        No,
-    > {
+    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, Yes, No, No, No, No, No> {
         SchemaBuilder {
             default: self.default,
-            validator: self.validator,
-            re_validator: self.re_validator,
-            required: self.required,
+            enum_values: self.enum_values,
+            enum_error: self.enum_error,
             should_ignore_fn: Some(fx),
             ..Default::default()
         }
     }
 }
 
-impl<HasValidator, HasRevalidator, HasRequired, I, O, T>
-    SchemaBuilder<I, O, T, Yes, HasValidator, HasRevalidator, HasRequired, No, No, No, No, No, No>
-{
-    pub fn ignore_init(
-        self,
-    ) -> SchemaBuilder<
-        I,
-        O,
-        T,
-        Yes,
-        HasValidator,
-        HasRevalidator,
-        HasRequired,
-        No,
-        Yes,
-        No,
-        No,
-        No,
-        No,
-    > {
+impl<I, O, T> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, No, No, No, No, No> {
+    pub fn ignore_init(self) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, Yes, No, No, No, No> {
         SchemaBuilder {
             default: self.default,
-            validator: self.validator,
-            re_validator: self.re_validator,
-            required: self.required,
+            enum_values: self.enum_values,
+            enum_error: self.enum_error,
             should_init: Some(ComputableInit::False),
             ..Default::default()
         }
@@ -285,53 +235,25 @@ impl<HasValidator, HasRevalidator, HasRequired, I, O, T>
     pub fn allow_init_if(
         self,
         fx: BooleanResolverWithMutSummary<I, O>,
-    ) -> SchemaBuilder<
-        I,
-        O,
-        T,
-        Yes,
-        HasValidator,
-        HasRevalidator,
-        HasRequired,
-        No,
-        YesComputed,
-        No,
-        No,
-        No,
-        No,
-    > {
+    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, YesComputed, No, No, No, No> {
         SchemaBuilder {
             default: self.default,
-            validator: self.validator,
-            re_validator: self.re_validator,
-            required: self.required,
+            enum_values: self.enum_values,
+            enum_error: self.enum_error,
             should_init: Some(ComputableInit::Func(fx)),
             ..Default::default()
         }
     }
+}
 
+impl<HasDefault, I, O, T> SchemaBuilder<I, O, T, Yes, Yes, HasDefault, No, No, No, No, No, No> {
     pub fn ignore_update(
         self,
-    ) -> SchemaBuilder<
-        I,
-        O,
-        T,
-        Yes,
-        HasValidator,
-        HasRevalidator,
-        HasRequired,
-        No,
-        No,
-        Yes,
-        No,
-        No,
-        No,
-    > {
+    ) -> SchemaBuilder<I, O, T, Yes, Yes, HasDefault, No, No, Yes, No, No, No> {
         SchemaBuilder {
             default: self.default,
-            validator: self.validator,
-            re_validator: self.re_validator,
-            required: self.required,
+            enum_values: self.enum_values,
+            enum_error: self.enum_error,
             should_update: Some(ComputableInit::False),
             ..Default::default()
         }
@@ -340,104 +262,43 @@ impl<HasValidator, HasRevalidator, HasRequired, I, O, T>
     pub fn allow_update_if(
         self,
         fx: BooleanResolverWithMutSummary<I, O>,
-    ) -> SchemaBuilder<
-        I,
-        O,
-        T,
-        Yes,
-        HasValidator,
-        HasRevalidator,
-        HasRequired,
-        No,
-        No,
-        YesComputed,
-        No,
-        No,
-        No,
-    > {
+    ) -> SchemaBuilder<I, O, T, Yes, Yes, HasDefault, No, No, YesComputed, No, No, No> {
         SchemaBuilder {
             default: self.default,
-            validator: self.validator,
-            re_validator: self.re_validator,
-            required: self.required,
-            should_init: Some(ComputableInit::Func(fx)),
+            enum_values: self.enum_values,
+            enum_error: self.enum_error,
+            should_update: Some(ComputableInit::Func(fx)),
             ..Default::default()
         }
     }
 }
 
-impl<HasValidator, HasRevalidator, HasRequired, I, O, T>
-    SchemaBuilder<I, O, T, Yes, HasValidator, HasRevalidator, HasRequired, No, No, Yes, No, No, No>
-{
+impl<I, O, T> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, No, Yes, No, No, No> {
     pub fn allow_init_if(
         self,
         fx: BooleanResolverWithMutSummary<I, O>,
-    ) -> SchemaBuilder<
-        I,
-        O,
-        T,
-        Yes,
-        HasValidator,
-        HasRevalidator,
-        HasRequired,
-        No,
-        YesComputed,
-        Yes,
-        No,
-        No,
-        No,
-    > {
+    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, YesComputed, Yes, No, No, No> {
         SchemaBuilder {
             default: self.default,
-            validator: self.validator,
-            re_validator: self.re_validator,
-            required: self.required,
+            enum_values: self.enum_values,
+            enum_error: self.enum_error,
             should_init: Some(ComputableInit::Func(fx)),
             ..Default::default()
         }
     }
 }
 
-impl<HasValidator, HasRevalidator, HasRequired, I, O, T>
-    SchemaBuilder<
-        I,
-        O,
-        T,
-        Yes,
-        HasValidator,
-        HasRevalidator,
-        HasRequired,
-        No,
-        Yes,
-        YesComputed,
-        No,
-        No,
-        No,
-    >
+impl<HasDefault, I, O, T>
+    SchemaBuilder<I, O, T, Yes, Yes, HasDefault, No, Yes, YesComputed, No, No, No>
 {
     pub fn allow_update_if(
         self,
         fx: BooleanResolverWithMutSummary<I, O>,
-    ) -> SchemaBuilder<
-        I,
-        O,
-        T,
-        Yes,
-        HasValidator,
-        HasRevalidator,
-        HasRequired,
-        No,
-        Yes,
-        YesComputed,
-        No,
-        No,
-        No,
-    > {
+    ) -> SchemaBuilder<I, O, T, Yes, Yes, HasDefault, No, Yes, YesComputed, No, No, No> {
         SchemaBuilder {
             default: self.default,
-            validator: self.validator,
-            re_validator: self.re_validator,
-            required: self.required,
+            enum_values: self.enum_values,
+            enum_error: self.enum_error,
             should_init: self.should_init,
             should_update: Some(ComputableInit::Func(fx)),
             ..Default::default()
@@ -445,46 +306,14 @@ impl<HasValidator, HasRevalidator, HasRequired, I, O, T>
     }
 }
 
-impl<HasValidator, HasRevalidator, HasRequired, I, O, T>
-    SchemaBuilder<
-        I,
-        O,
-        T,
-        Yes,
-        HasValidator,
-        HasRevalidator,
-        HasRequired,
-        No,
-        No,
-        YesComputed,
-        No,
-        No,
-        No,
-    >
-{
+impl<I, O, T> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, No, YesComputed, No, No, No> {
     pub fn ignore_init(
         self,
-    ) -> SchemaBuilder<
-        I,
-        O,
-        T,
-        Yes,
-        HasValidator,
-        HasRevalidator,
-        HasRequired,
-        No,
-        Yes,
-        YesComputed,
-        No,
-        No,
-        No,
-    > {
+    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, Yes, YesComputed, No, No, No> {
         SchemaBuilder {
             default: self.default,
-            validator: self.validator,
-            re_validator: self.re_validator,
-            required: self.required,
-
+            enum_values: self.enum_values,
+            enum_error: self.enum_error,
             should_update: self.should_update,
             should_init: Some(ComputableInit::False),
             ..Default::default()
@@ -494,26 +323,11 @@ impl<HasValidator, HasRevalidator, HasRequired, I, O, T>
     pub fn allow_init_if(
         self,
         fx: BooleanResolverWithMutSummary<I, O>,
-    ) -> SchemaBuilder<
-        I,
-        O,
-        T,
-        Yes,
-        HasValidator,
-        HasRevalidator,
-        HasRequired,
-        No,
-        YesComputed,
-        YesComputed,
-        No,
-        No,
-        No,
-    > {
+    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, YesComputed, YesComputed, No, No, No> {
         SchemaBuilder {
             default: self.default,
-            validator: self.validator,
-            re_validator: self.re_validator,
-            required: self.required,
+            enum_values: self.enum_values,
+            enum_error: self.enum_error,
             should_update: self.should_update,
             should_init: Some(ComputableInit::Func(fx)),
             ..Default::default()
@@ -522,27 +336,14 @@ impl<HasValidator, HasRevalidator, HasRequired, I, O, T>
 }
 
 // ON_DELETE is only available if HasDelete is 'No'
-impl<
-        HasValidator,
-        HasRevalidator,
-        HasRequired,
-        HasIgnore,
-        HasShouldInit,
-        HasShouldUpdate,
-        HasFailure,
-        HasSuccess,
-        I,
-        O,
-        T,
-    >
+impl<HasDefault, HasIgnore, HasShouldInit, HasShouldUpdate, HasFailure, HasSuccess, I, O, T>
     SchemaBuilder<
         I,
         O,
         T,
         Yes,
-        HasValidator,
-        HasRevalidator,
-        HasRequired,
+        Yes,
+        HasDefault,
         HasIgnore,
         HasShouldInit,
         HasShouldUpdate,
@@ -559,9 +360,8 @@ impl<
         O,
         T,
         Yes,
-        HasValidator,
-        HasRevalidator,
-        HasRequired,
+        Yes,
+        HasDefault,
         HasIgnore,
         HasShouldInit,
         HasShouldUpdate,
@@ -571,9 +371,8 @@ impl<
     > {
         SchemaBuilder {
             default: self.default,
-            validator: self.validator,
-            re_validator: self.re_validator,
-            required: self.required,
+            enum_values: self.enum_values,
+            enum_error: self.enum_error,
             should_ignore_fn: self.should_ignore_fn,
             should_init: self.should_init,
             should_update: self.should_update,
@@ -592,9 +391,8 @@ impl<
         O,
         T,
         Yes,
-        HasValidator,
-        HasRevalidator,
-        HasRequired,
+        Yes,
+        HasDefault,
         HasIgnore,
         HasShouldInit,
         HasShouldUpdate,
@@ -604,9 +402,8 @@ impl<
     > {
         SchemaBuilder {
             default: self.default,
-            validator: self.validator,
-            re_validator: self.re_validator,
-            required: self.required,
+            enum_values: self.enum_values,
+            enum_error: self.enum_error,
             should_ignore_fn: self.should_ignore_fn,
             should_init: self.should_init,
             should_update: self.should_update,
@@ -619,26 +416,14 @@ impl<
 }
 
 // ON_FAILURE is only available if HasFailure is 'No'
-impl<
-        HasRevalidator,
-        HasRequired,
-        HasIgnore,
-        HasShouldInit,
-        HasShouldUpdate,
-        HasDelete,
-        HasSuccess,
-        I,
-        O,
-        T,
-    >
+impl<HasDefault, HasIgnore, HasShouldInit, HasShouldUpdate, HasDelete, HasSuccess, I, O, T>
     SchemaBuilder<
         I,
         O,
         T,
         Yes,
         Yes,
-        HasRevalidator,
-        HasRequired,
+        HasDefault,
         HasIgnore,
         HasShouldInit,
         HasShouldUpdate,
@@ -656,8 +441,7 @@ impl<
         T,
         Yes,
         Yes,
-        HasRevalidator,
-        HasRequired,
+        HasDefault,
         HasIgnore,
         HasShouldInit,
         HasShouldUpdate,
@@ -667,9 +451,8 @@ impl<
     > {
         SchemaBuilder {
             default: self.default,
-            validator: self.validator,
-            re_validator: self.re_validator,
-            required: self.required,
+            enum_values: self.enum_values,
+            enum_error: self.enum_error,
             should_ignore_fn: self.should_ignore_fn,
             should_init: self.should_init,
             should_update: self.should_update,
@@ -689,8 +472,7 @@ impl<
         T,
         Yes,
         Yes,
-        HasRevalidator,
-        HasRequired,
+        HasDefault,
         HasIgnore,
         HasShouldInit,
         HasShouldUpdate,
@@ -700,9 +482,8 @@ impl<
     > {
         SchemaBuilder {
             default: self.default,
-            validator: self.validator,
-            re_validator: self.re_validator,
-            required: self.required,
+            enum_values: self.enum_values,
+            enum_error: self.enum_error,
             should_ignore_fn: self.should_ignore_fn,
             should_init: self.should_init,
             on_delete_fns: self.on_delete_fns,
@@ -714,27 +495,14 @@ impl<
 }
 
 // ON_SUCCESS is only available if HasSuccess is 'No'
-impl<
-        HasValidator,
-        HasRevalidator,
-        HasRequired,
-        HasIgnore,
-        HasShouldInit,
-        HasShouldUpdate,
-        HasDelete,
-        HasFailure,
-        I,
-        O,
-        T,
-    >
+impl<HasDefault, HasIgnore, HasShouldInit, HasShouldUpdate, HasDelete, HasFailure, I, O, T>
     SchemaBuilder<
         I,
         O,
         T,
         Yes,
-        HasValidator,
-        HasRevalidator,
-        HasRequired,
+        Yes,
+        HasDefault,
         HasIgnore,
         HasShouldInit,
         HasShouldUpdate,
@@ -751,9 +519,8 @@ impl<
         O,
         T,
         Yes,
-        HasValidator,
-        HasRevalidator,
-        HasRequired,
+        Yes,
+        HasDefault,
         HasIgnore,
         HasShouldInit,
         HasShouldUpdate,
@@ -763,9 +530,8 @@ impl<
     > {
         SchemaBuilder {
             default: self.default,
-            validator: self.validator,
-            re_validator: self.re_validator,
-            required: self.required,
+            enum_values: self.enum_values,
+            enum_error: self.enum_error,
             should_ignore_fn: self.should_ignore_fn,
             should_init: self.should_init,
             should_update: self.should_update,
@@ -784,9 +550,8 @@ impl<
         O,
         T,
         Yes,
-        HasValidator,
-        HasRevalidator,
-        HasRequired,
+        Yes,
+        HasDefault,
         HasIgnore,
         HasShouldInit,
         HasShouldUpdate,
@@ -796,9 +561,8 @@ impl<
     > {
         SchemaBuilder {
             default: self.default,
-            validator: self.validator,
-            re_validator: self.re_validator,
-            required: self.required,
+            enum_values: self.enum_values,
+            enum_error: self.enum_error,
             should_ignore_fn: self.should_ignore_fn,
             should_init: self.should_init,
             should_update: self.should_update,

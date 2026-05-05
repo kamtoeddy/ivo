@@ -26,6 +26,16 @@ impl<I, O> IvoProperty<I, O> {
 }
 
 // fn main() {
+//     let e = EnumeratedField::values(vec!["hello", "hi", "greeting"])
+//         .error_fn(Box::new(|_| ""))
+//         // .error("invalid option provided")
+//         // .default_fn(Box::new(|_| "true"))
+//         .ignore_update()
+//         .on_delete(Box::new(|_| {}))
+//         .on_failure(Box::new(|_| {}))
+//         .on_success(Box::new(|_| {}))
+//         .build();
+
 //     let l = LaxField::default("&str")
 //         .validate(Box::new(|v, _| Ok("true")))
 //         .on_delete(Box::new(|_| {}))

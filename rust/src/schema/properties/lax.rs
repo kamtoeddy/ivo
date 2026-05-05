@@ -360,7 +360,7 @@ impl<HasValidator, HasRevalidator, HasRequired, I, O, T>
             validator: self.validator,
             re_validator: self.re_validator,
             required: self.required,
-            should_init: Some(ComputableInit::Func(fx)),
+            should_update: Some(ComputableInit::Func(fx)),
             ..Default::default()
         }
     }

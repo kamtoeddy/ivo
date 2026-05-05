@@ -27,6 +27,13 @@ impl std::ops::Deref for False {
 
 pub type CtxOptions = HashMap<String, Value>;
 
+pub type EnumeratedErrorResolver<T> = Box<dyn Fn((Value, &Vec<T>)) -> &str + Send + Sync>;
+
+pub enum ComputableEnumeratedError<T> {
+    Static(String),
+    Func(EnumeratedErrorResolver<T>),
+}
+
 pub enum ComputableWithContext<I, O, T = Value> {
     Static(T),
     Func(ResolverWithContextFn<I, O, T>),
@@ -100,9 +107,9 @@ pub type BooleanResolverWithMutSummary<I, O> =
 
 pub type VirtualSanitiser<I, O, T = Value> = ResolverWithMutSummaryFn<I, O, T>;
 
-pub type DeleteHandler<O> = Box<dyn Fn(&DeletionContext<O>) -> ()>;
-pub type FailureHandler<I, O> = Box<dyn Fn(&ImmutableSummary<I, O>) -> ()>;
-pub type SuccessHandler<I, O> = Box<dyn Fn(&ImmutableSummary<I, O>) -> ()>;
+pub type DeleteHandler<O> = Box<dyn Fn(&DeletionContext<O>)>;
+pub type FailureHandler<I, O> = Box<dyn Fn(&ImmutableSummary<I, O>)>;
+pub type SuccessHandler<I, O> = Box<dyn Fn(&ImmutableSummary<I, O>)>;
 
 // #[async_trait]
 pub trait Validator<I, O>: Send + Sync {
