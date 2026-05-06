@@ -1,29 +1,7 @@
-use chrono::{DateTime, Utc};
-use ivo::model::{CreateOutcome, HasPartial, Model, UpdateOutcome};
-use partial_derive::MakePartial;
-use serde::{Deserialize, Serialize};
-
-type DateWithTz = DateTime<Utc>;
-
-#[derive(Debug, Deserialize, Serialize, MakePartial)]
-pub struct User {
-    // created_at: DateWithTz,
-    // id: String,
-    email: String,
-    username: String,
-    // username_updated_at: Option<DateWithTz>,
-    // updated_at: Option<DateWithTz>,
-}
-
-#[derive(Deserialize, Serialize, MakePartial)]
-pub struct UserInput {
-    pub email: String,
-    pub username: String,
-}
-
-lazy_static::lazy_static! {
-    static ref UserModel: Model<UserInput, User> = Model::<UserInput, User>::new();
-}
+use ivo::{
+    demo::{PartialUserInput, User, UserInput, UserModel},
+    model::{CreateOutcome, UpdateOutcome},
+};
 
 fn main() {
     match UserModel.create(&UserInput {
