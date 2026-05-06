@@ -1,24 +1,15 @@
-use ivo::{
-    demo::{PartialUserInput, User, UserInput, UserModel},
-    model::{CreateOutcome, UpdateOutcome},
-};
+use ivo::demo::{PartialUserInput, User, UserInput, UserModel};
 
 fn main() {
     match UserModel.create(&UserInput {
         email: "dslfjlk".to_string(),
         username: "sdkjffk".to_string(),
     }) {
-        CreateOutcome::Fail {
-            error,
-            handle_failure,
-        } => {
-            dbg!(error);
+        Err((payload, handle_failure)) => {
+            println!("Error payload: {:?}", payload);
             handle_failure()
         }
-        CreateOutcome::Success {
-            data,
-            handle_success,
-        } => {
+        Ok((data, handle_success)) => {
             println!("{:?}", data);
             handle_success()
         }
@@ -38,17 +29,17 @@ fn main() {
             username: Some("sdkjffk".to_string()),
         },
     ) {
-        UpdateOutcome::Fail {
-            error,
-            handle_failure,
-        } => {
-            dbg!(error);
+        Err((error, handle_failure)) => {
+            match error {
+                ivo::error::UpdateError::NothingToUpdate => println!("Nothing to update"),
+                ivo::error::UpdateError::ValidationError(payload) => {
+                    println!("Error payload: {:?}", payload)
+                }
+            };
+
             handle_failure()
         }
-        UpdateOutcome::Success {
-            data,
-            handle_success,
-        } => {
+        Ok((data, handle_success)) => {
             println!("{:?}", data);
             handle_success()
         }
