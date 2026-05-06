@@ -15,6 +15,7 @@ regex = "1"
 lazy_static = "1.4"
 anyhow = "1.0"
 chrono = { version = "0.4", features = ["serde"] }
+partial_derive = { path = "../partial_derive" }
 
 [dev-dependencies]
 serde = { version = "1.0", features = ["derive"] }

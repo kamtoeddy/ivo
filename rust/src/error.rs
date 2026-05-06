@@ -3,10 +3,11 @@ use std::collections::HashMap;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum IvoError {
-    InvalidSchema(String),
     NothingToUpdate,
-    ValidationError(HashMap<String, Vec<FieldError>>),
+    ValidationError(IvoValidationError),
 }
+
+pub type IvoValidationError = HashMap<String, Vec<FieldError>>;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct FieldError {
@@ -17,6 +18,7 @@ pub struct FieldError {
 impl IvoError {
     pub fn validation_error(field: &str, reason: &str) -> Self {
         let mut errors = HashMap::new();
+
         errors.insert(
             field.to_string(),
             vec![FieldError {
@@ -24,6 +26,7 @@ impl IvoError {
                 metadata: None,
             }],
         );
+
         IvoError::ValidationError(errors)
     }
 }

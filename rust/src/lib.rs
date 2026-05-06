@@ -1,6 +1,7 @@
+pub mod error;
+pub mod model;
 pub mod schema;
 pub mod types;
-pub mod utils;
 pub mod validators;
 
 pub use schema::utils::{

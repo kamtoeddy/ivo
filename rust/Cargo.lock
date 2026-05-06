@@ -141,6 +141,7 @@ dependencies = [
  "anyhow",
  "chrono",
  "lazy_static",
+ "partial_derive",
  "regex",
  "serde",
  "serde_json",
@@ -196,6 +197,15 @@ name = "once_cell"
 version = "1.21.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9f7c3e4beb33f85d45ae3e3a1792185706c8e16d043238c593331cc7cd313b50"
+
+[[package]]
+name = "partial_derive"
+version = "0.0.1"
+dependencies = [
+ "quote",
+ "serde",
+ "syn",
+]
 
 [[package]]
 name = "pin-project-lite"
