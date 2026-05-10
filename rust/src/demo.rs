@@ -2,7 +2,7 @@
 use partial_derive::MakePartial;
 use serde::{Deserialize, Serialize};
 
-use crate::model::{HasPartial, Model};
+use crate::model::Model;
 
 // type DateWithTz = DateTime<Utc>;
 

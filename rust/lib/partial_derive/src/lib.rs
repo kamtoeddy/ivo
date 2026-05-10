@@ -1,4 +1,5 @@
 use proc_macro::TokenStream;
+use proc_macro_crate::{crate_name, FoundCrate};
 use quote::{format_ident, quote};
 use syn::{parse_macro_input, Data, DeriveInput, Fields};
 
@@ -29,6 +30,16 @@ pub fn make_partial_derive(input: TokenStream) -> TokenStream {
         }
     });
 
+    let found_crate = crate_name("ivo").expect("ivo is not present in Cargo.toml");
+
+    let crate_root = match found_crate {
+        FoundCrate::Itself => quote!(crate), // If macro is used inside the same crate
+        FoundCrate::Name(name) => {
+            let ident = format_ident!("{}", name);
+            quote!(::#ident) // If used by an external user
+        }
+    };
+
     // Generate the new struct
     let expanded = quote! {
         #[derive(Debug, Default, Clone, Deserialize, Serialize)]
@@ -36,7 +47,15 @@ pub fn make_partial_derive(input: TokenStream) -> TokenStream {
             #(#partial_fields,)*
         }
 
-        impl HasPartial for #name {
+        // // 1. The Magic Trait
+        // pub trait HasPartial {
+        //     type Partial: Serialize + serde::de::DeserializeOwned;
+        // }
+
+        // // 2. The TypeScript-style Utility Alias
+        // pub type Partial<T> = <T as HasPartial>::Partial;
+
+        impl #crate_root::traits::HasPartial for #name {
             type Partial = #partial_name;
         }
     };

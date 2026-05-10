@@ -2,15 +2,10 @@ use serde::{de::DeserializeOwned, Serialize};
 use serde_json::{json, Value};
 use std::collections::HashMap;
 
-use crate::error::{ErrorPayload, UpdateError};
-
-// 1. The Magic Trait
-pub trait HasPartial {
-    type Partial: Serialize + DeserializeOwned;
-}
-
-// 2. The TypeScript-style Utility Alias
-pub type Partial<T> = <T as HasPartial>::Partial;
+use crate::{
+    error::{ErrorPayload, UpdateError},
+    traits::{HasPartial, Partial},
+};
 
 pub struct Model<Input: Serialize, Output: DeserializeOwned> {
     input: HashMap<String, Input>,
