@@ -6,8 +6,8 @@ use crate::{
 };
 
 // Marker Types
-pub struct Yes;
-pub struct No;
+struct Yes;
+struct No;
 
 struct SchemaBuilder<I, O, T, HasDefault, HasDelete, HasSuccess> {
     _default: PhantomData<HasDefault>,

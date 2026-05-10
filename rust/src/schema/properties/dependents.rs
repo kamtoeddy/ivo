@@ -3,16 +3,16 @@ use std::marker::PhantomData;
 use crate::{
     schema::properties::base::IvoProperty,
     types::{
-        ComputableWithContext, DeleteHandler, ResolverWithContextFn, ResolverWithMutSummaryFn,
-        SuccessHandler,
+        ComputableInit, ComputableWithContext, DeleteHandler, False, ResolverWithContextFn,
+        ResolverWithMutSummaryFn, SuccessHandler,
     },
 };
 
 pub struct DependentField;
 
 // Marker Types
-pub struct Yes;
-pub struct No;
+struct Yes;
+struct No;
 
 struct SchemaBuilder<
     I,
@@ -21,26 +21,26 @@ struct SchemaBuilder<
     HasDefault,
     HasParents,
     HasResolver,
-    HasReadonly,
+    HasShouldUpdate,
     HasDelete,
     HasSuccess,
 > {
     _default: PhantomData<HasDefault>,
     _parents: PhantomData<HasParents>,
     _resolver: PhantomData<HasResolver>,
-    _readonly: PhantomData<HasReadonly>,
     _del_handlers: PhantomData<HasDelete>,
+    _should_update: PhantomData<HasShouldUpdate>,
     _success_handlers: PhantomData<HasSuccess>,
     // actual data...
     default: Option<ComputableWithContext<I, O, T>>,
     depends_on: Option<Vec<String>>,
     resolver: Option<ResolverWithMutSummaryFn<I, O, T>>,
-    readonly: bool,
+    should_update: Option<False>,
     on_delete_fns: Option<Vec<DeleteHandler<O>>>,
     on_success_fns: Option<Vec<SuccessHandler<I, O>>>,
 }
 
-impl<HasDefault, HasParents, HasResolver, HasReadonly, HasDelete, HasSuccess, I, O, T> Default
+impl<HasDefault, HasParents, HasResolver, HasShouldUpdate, HasDelete, HasSuccess, I, O, T> Default
     for SchemaBuilder<
         I,
         O,
@@ -48,7 +48,7 @@ impl<HasDefault, HasParents, HasResolver, HasReadonly, HasDelete, HasSuccess, I,
         HasDefault,
         HasParents,
         HasResolver,
-        HasReadonly,
+        HasShouldUpdate,
         HasDelete,
         HasSuccess,
     >
@@ -58,12 +58,12 @@ impl<HasDefault, HasParents, HasResolver, HasReadonly, HasDelete, HasSuccess, I,
             default: None,
             depends_on: None,
             resolver: None,
-            readonly: false,
+            should_update: None,
             on_delete_fns: None,
             on_success_fns: None,
             _default: PhantomData,
             _parents: PhantomData,
-            _readonly: PhantomData,
+            _should_update: PhantomData,
             _resolver: PhantomData,
             _del_handlers: PhantomData,
             _success_handlers: PhantomData,
@@ -71,15 +71,19 @@ impl<HasDefault, HasParents, HasResolver, HasReadonly, HasDelete, HasSuccess, I,
     }
 }
 
-impl<HasReadonly, HasDelete, HasSuccess, I, O, T>
-    SchemaBuilder<I, O, T, Yes, Yes, Yes, HasReadonly, HasDelete, HasSuccess>
+impl<HasShouldUpdate, HasDelete, HasSuccess, I, O, T>
+    SchemaBuilder<I, O, T, Yes, Yes, Yes, HasShouldUpdate, HasDelete, HasSuccess>
 {
     pub fn build(self) -> IvoProperty<I, O, T> {
         IvoProperty {
             default: self.default,
             depends_on: self.depends_on,
             resolver: self.resolver,
-            readonly: self.readonly,
+            should_update: if self.should_update.is_some() {
+                Some(ComputableInit::False)
+            } else {
+                None
+            },
             on_delete_fns: self.on_delete_fns,
             on_success_fns: self.on_success_fns,
             ..Default::default()
@@ -142,25 +146,25 @@ impl<HasDelete, HasSuccess, I, O, T>
             default: self.default,
             depends_on: self.depends_on,
             resolver: self.resolver,
-            readonly: true,
+            should_update: Some(False),
             ..Default::default()
         }
     }
 }
 
 // ON_DELETE is only available if HasDelete is 'No'
-impl<HasReadonly, HasSuccess, I, O, T>
-    SchemaBuilder<I, O, T, Yes, Yes, Yes, HasReadonly, No, HasSuccess>
+impl<HasShouldUpdate, HasSuccess, I, O, T>
+    SchemaBuilder<I, O, T, Yes, Yes, Yes, HasShouldUpdate, No, HasSuccess>
 {
     pub fn on_delete(
         self,
         handler: DeleteHandler<O>,
-    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, HasReadonly, Yes, HasSuccess> {
+    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, HasShouldUpdate, Yes, HasSuccess> {
         SchemaBuilder {
             default: self.default,
             depends_on: self.depends_on,
             resolver: self.resolver,
-            readonly: self.readonly,
+            should_update: self.should_update,
             on_delete_fns: Some(vec![handler]),
             on_success_fns: self.on_success_fns,
             ..Default::default()
@@ -170,12 +174,12 @@ impl<HasReadonly, HasSuccess, I, O, T>
     pub fn on_delete_fns(
         self,
         handlers: Vec<DeleteHandler<O>>,
-    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, HasReadonly, Yes, HasSuccess> {
+    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, HasShouldUpdate, Yes, HasSuccess> {
         SchemaBuilder {
             default: self.default,
             depends_on: self.depends_on,
             resolver: self.resolver,
-            readonly: self.readonly,
+            should_update: self.should_update,
             on_delete_fns: Some(handlers),
             on_success_fns: self.on_success_fns,
             ..Default::default()
@@ -184,18 +188,18 @@ impl<HasReadonly, HasSuccess, I, O, T>
 }
 
 // ON_SUCCESS is only available if HasSuccess is 'No'
-impl<HasReadonly, HasDelete, I, O, T>
-    SchemaBuilder<I, O, T, Yes, Yes, Yes, HasReadonly, HasDelete, No>
+impl<HasShouldUpdate, HasDelete, I, O, T>
+    SchemaBuilder<I, O, T, Yes, Yes, Yes, HasShouldUpdate, HasDelete, No>
 {
     pub fn on_success(
         self,
         handler: SuccessHandler<I, O>,
-    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, HasReadonly, HasDelete, Yes> {
+    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, HasShouldUpdate, HasDelete, Yes> {
         SchemaBuilder {
             default: self.default,
             depends_on: self.depends_on,
             resolver: self.resolver,
-            readonly: self.readonly,
+            should_update: self.should_update,
             on_delete_fns: self.on_delete_fns,
             on_success_fns: Some(vec![handler]),
             ..Default::default()
@@ -205,12 +209,12 @@ impl<HasReadonly, HasDelete, I, O, T>
     pub fn on_success_fns(
         self,
         handlers: Vec<SuccessHandler<I, O>>,
-    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, HasReadonly, HasDelete, Yes> {
+    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, HasShouldUpdate, HasDelete, Yes> {
         SchemaBuilder {
             default: self.default,
             depends_on: self.depends_on,
             resolver: self.resolver,
-            readonly: self.readonly,
+            should_update: self.should_update,
             on_delete_fns: self.on_delete_fns,
             on_success_fns: Some(handlers),
             ..Default::default()

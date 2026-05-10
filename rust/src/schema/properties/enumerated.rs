@@ -12,9 +12,9 @@ use crate::{
 pub struct EnumeratedField;
 
 // Marker Types
-pub struct Yes;
-pub struct No;
-pub struct YesComputed;
+struct Yes;
+struct No;
+struct YesComputed;
 
 struct SchemaBuilder<
     I,
@@ -249,9 +249,7 @@ impl<I, O, T> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, No, No, No, No, No> {
 }
 
 impl<HasDefault, I, O, T> SchemaBuilder<I, O, T, Yes, Yes, HasDefault, No, No, No, No, No, No> {
-    pub fn ignore_update(
-        self,
-    ) -> SchemaBuilder<I, O, T, Yes, Yes, HasDefault, No, No, Yes, No, No, No> {
+    pub fn readonly(self) -> SchemaBuilder<I, O, T, Yes, Yes, HasDefault, No, No, Yes, No, No, No> {
         SchemaBuilder {
             default: self.default,
             enum_values: self.enum_values,

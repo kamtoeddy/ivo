@@ -1,6 +1,6 @@
 use crate::schema::properties::{
     base::IvoProperty, constants::ConstantField, dependents::DependentField,
-    enumerated::EnumeratedField, lax::LaxField, virtuals::VirtualField,
+    enumerated::EnumeratedField, lax::LaxField, required::RequiredField, virtuals::VirtualField,
 };
 
 impl<I, O> IvoProperty<I, O> {
@@ -20,17 +20,29 @@ impl<I, O> IvoProperty<I, O> {
         LaxField
     }
 
+    pub fn required() -> RequiredField {
+        RequiredField
+    }
+
     pub fn virtual_field() -> VirtualField {
         VirtualField
     }
 }
 
 // fn main() {
+//     let r = RequiredField::validate(Box::new(|v, _| Err(("lol", None))))
+//         .re_validate(Box::new(|v, c| Ok(true)))
+//         .readonly()
+//         .on_failure(Box::new(|_| {}))
+//         .on_success(Box::new(|_| {}))
+//         .on_delete(Box::new(|_| {}))
+//         .build();
+
 //     let e = EnumeratedField::values(vec!["hello", "hi", "greeting"])
 //         .error_fn(Box::new(|_| ""))
 //         // .error("invalid option provided")
 //         // .default_fn(Box::new(|_| "true"))
-//         .ignore_update()
+//         .readonly()
 //         .on_delete(Box::new(|_| {}))
 //         .on_failure(Box::new(|_| {}))
 //         .on_success(Box::new(|_| {}))
@@ -38,6 +50,7 @@ impl<I, O> IvoProperty<I, O> {
 
 //     let l = LaxField::default("&str")
 //         .validate(Box::new(|v, _| Ok("true")))
+//         .readonly()
 //         .on_delete(Box::new(|_| {}))
 //         .on_failure(Box::new(|_| {}))
 //         .on_success(Box::new(|_| {}))

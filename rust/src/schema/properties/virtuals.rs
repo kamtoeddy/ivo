@@ -11,9 +11,9 @@ use crate::{
 pub struct VirtualField;
 
 // Marker Types
-pub struct Yes;
-pub struct No;
-pub struct YesComputed;
+struct Yes;
+struct No;
+struct YesComputed;
 
 struct SchemaBuilder<
     I,

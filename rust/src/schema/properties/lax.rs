@@ -12,9 +12,9 @@ use crate::{
 pub struct LaxField;
 
 // Marker Types
-pub struct Yes;
-pub struct No;
-pub struct YesComputed;
+struct Yes;
+struct No;
+struct YesComputed;
 
 struct SchemaBuilder<
     I,
@@ -312,7 +312,7 @@ impl<HasValidator, HasRevalidator, HasRequired, I, O, T>
         }
     }
 
-    pub fn ignore_update(
+    pub fn readonly(
         self,
     ) -> SchemaBuilder<
         I,
