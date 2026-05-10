@@ -1,3 +1,5 @@
+use std::marker::PhantomData;
+
 use crate::{
     schema::properties::base::IvoProperty,
     types::{
@@ -28,16 +30,16 @@ struct SchemaBuilder<
     HasFailure,
     HasSuccess,
 > {
-    _alias: std::marker::PhantomData<HasAlias>,
-    _validator: std::marker::PhantomData<HasValidator>,
-    _re_validator: std::marker::PhantomData<HasRevalidator>,
-    _required_fn: std::marker::PhantomData<HasRequired>,
-    _sanitizer_fn: std::marker::PhantomData<HasSanitizer>,
-    _should_ignore: std::marker::PhantomData<HasIgnore>,
-    _should_init: std::marker::PhantomData<HasShouldInit>,
-    _should_update: std::marker::PhantomData<HasShouldUpdate>,
-    _on_failure_fns: std::marker::PhantomData<HasFailure>,
-    _on_success_fns: std::marker::PhantomData<HasSuccess>,
+    _alias: PhantomData<HasAlias>,
+    _validator: PhantomData<HasValidator>,
+    _re_validator: PhantomData<HasRevalidator>,
+    _required_fn: PhantomData<HasRequired>,
+    _sanitizer_fn: PhantomData<HasSanitizer>,
+    _should_ignore: PhantomData<HasIgnore>,
+    _should_init: PhantomData<HasShouldInit>,
+    _should_update: PhantomData<HasShouldUpdate>,
+    _on_failure_fns: PhantomData<HasFailure>,
+    _on_success_fns: PhantomData<HasSuccess>,
     // actual data...
     alias: Option<String>,
     validator: Option<FieldValidatorFn<I, O, T>>,
@@ -94,16 +96,16 @@ impl<
             should_update: None,
             on_failure_fns: None,
             on_success_fns: None,
-            _alias: std::marker::PhantomData,
-            _validator: std::marker::PhantomData,
-            _re_validator: std::marker::PhantomData,
-            _required_fn: std::marker::PhantomData,
-            _sanitizer_fn: std::marker::PhantomData,
-            _should_ignore: std::marker::PhantomData,
-            _should_init: std::marker::PhantomData,
-            _should_update: std::marker::PhantomData,
-            _on_failure_fns: std::marker::PhantomData,
-            _on_success_fns: std::marker::PhantomData,
+            _alias: PhantomData,
+            _validator: PhantomData,
+            _re_validator: PhantomData,
+            _required_fn: PhantomData,
+            _sanitizer_fn: PhantomData,
+            _should_ignore: PhantomData,
+            _should_init: PhantomData,
+            _should_update: PhantomData,
+            _on_failure_fns: PhantomData,
+            _on_success_fns: PhantomData,
         }
     }
 }

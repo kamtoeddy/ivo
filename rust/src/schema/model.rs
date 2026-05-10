@@ -44,12 +44,12 @@ impl ModelTool {
                         Ok(v) => {
                             context.insert(prop.clone(), v);
                         }
-                        Err(err) => {
+                        Err((err, metadata)) => {
                             error_tool.set(
                                 prop.clone(),
                                 FieldError {
-                                    reason: err.reason,
-                                    metadata: err.metadata,
+                                    reason: err.to_string(),
+                                    metadata,
                                     value: Some(value.clone()),
                                 },
                             );

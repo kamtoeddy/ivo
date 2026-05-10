@@ -143,12 +143,6 @@ impl<I, O> Context<I, O> {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct ValidatorError {
-    pub reason: String,
-    pub metadata: Option<Value>,
-}
-
-pub type ValidatorResponse<T> = Result<T, ValidatorError>;
+pub type ValidatorResponse<T> = Result<T, (&'static str, Option<Value>)>;
 
 pub type ValidatorFn<T> = Box<dyn Fn(&Value) -> ValidatorResponse<T> + Send + Sync>;

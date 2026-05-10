@@ -11,4 +11,4 @@ pub use partial_derive::MakePartial;
 pub use schema::utils::{
     DefaultErrorTool, FieldError, IValidationError, SchemaError, TimeStampTool,
 };
-pub use types::{ValidatorError, ValidatorResponse};
+pub use types::ValidatorResponse;

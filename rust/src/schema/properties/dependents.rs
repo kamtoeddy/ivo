@@ -1,3 +1,5 @@
+use std::marker::PhantomData;
+
 use crate::{
     schema::properties::base::IvoProperty,
     types::{
@@ -23,12 +25,12 @@ struct SchemaBuilder<
     HasDelete,
     HasSuccess,
 > {
-    _default: std::marker::PhantomData<HasDefault>,
-    _parents: std::marker::PhantomData<HasParents>,
-    _resolver: std::marker::PhantomData<HasResolver>,
-    _readonly: std::marker::PhantomData<HasReadonly>,
-    _del_handlers: std::marker::PhantomData<HasDelete>,
-    _success_handlers: std::marker::PhantomData<HasSuccess>,
+    _default: PhantomData<HasDefault>,
+    _parents: PhantomData<HasParents>,
+    _resolver: PhantomData<HasResolver>,
+    _readonly: PhantomData<HasReadonly>,
+    _del_handlers: PhantomData<HasDelete>,
+    _success_handlers: PhantomData<HasSuccess>,
     // actual data...
     default: Option<ComputableWithContext<I, O, T>>,
     depends_on: Option<Vec<String>>,
@@ -59,12 +61,12 @@ impl<HasDefault, HasParents, HasResolver, HasReadonly, HasDelete, HasSuccess, I,
             readonly: false,
             on_delete_fns: None,
             on_success_fns: None,
-            _default: std::marker::PhantomData,
-            _parents: std::marker::PhantomData,
-            _readonly: std::marker::PhantomData,
-            _resolver: std::marker::PhantomData,
-            _del_handlers: std::marker::PhantomData,
-            _success_handlers: std::marker::PhantomData,
+            _default: PhantomData,
+            _parents: PhantomData,
+            _readonly: PhantomData,
+            _resolver: PhantomData,
+            _del_handlers: PhantomData,
+            _success_handlers: PhantomData,
         }
     }
 }

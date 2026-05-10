@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use regex::Regex;
 use serde_json::{json, Value};
 
-use crate::types::{ValidatorError, ValidatorFn, ValidatorResponse};
+use crate::types::{ValidatorFn, ValidatorResponse};
 
 pub enum StringValidatorOptions {
     MinMax {
@@ -34,12 +34,7 @@ pub fn make_string_validator(options: StringValidatorOptions) -> ValidatorFn<Str
                 }
                 _ => s.to_owned(),
             },
-            _ => {
-                return Err(ValidatorError {
-                    reason: "Expected a string".into(),
-                    metadata: None,
-                })
-            }
+            _ => return Err(("Expected a string", None)),
         };
 
         match &options {
@@ -48,19 +43,13 @@ pub fn make_string_validator(options: StringValidatorOptions) -> ValidatorFn<Str
 
                 if let Some(max_length) = max {
                     if str_length > *max_length {
-                        return Err(ValidatorError {
-                            reason: "too_long".into(),
-                            metadata: Some(json!({"max": max_length})),
-                        });
+                        return Err(("too_long", Some(json!({"max": max_length}))));
                     }
                 }
 
                 if let Some(min_length) = min {
                     if str_length < *min_length {
-                        return Err(ValidatorError {
-                            reason: "too_short".into(),
-                            metadata: Some(json!({"min": min_length})),
-                        });
+                        return Err(("too_short", Some(json!({"min": min_length}))));
                     }
                 }
 
@@ -68,10 +57,7 @@ pub fn make_string_validator(options: StringValidatorOptions) -> ValidatorFn<Str
             }
             StringValidatorOptions::Values(values) => {
                 if !values.contains(&s) {
-                    return Err(ValidatorError {
-                        reason: "Invalid option selected".into(),
-                        metadata: Some(json!({"options": values})),
-                    });
+                    return Err(("Invalid option selected", Some(json!({"options": values}))));
                 }
 
                 Ok(s)
@@ -111,19 +97,13 @@ pub fn validate_credit_card(value: &Value) -> ValidatorResponse<String> {
     };
 
     if s.len() != 16 {
-        return Err(ValidatorError {
-            reason: "Invalid card number".into(),
-            metadata: None,
-        });
+        return Err(("Invalid card number", None));
     }
 
     let digits: Vec<u32> = s.chars().filter_map(|c| c.to_digit(10)).collect();
 
     if digits.len() != 16 {
-        return Err(ValidatorError {
-            reason: "Invalid card number".into(),
-            metadata: None,
-        });
+        return Err(("Invalid card number", None));
     }
 
     let check = digits[15];
@@ -136,10 +116,7 @@ pub fn validate_credit_card(value: &Value) -> ValidatorResponse<String> {
     let sum: u32 = to_check.iter().sum();
 
     if (10 - (sum % 10)) != check {
-        return Err(ValidatorError {
-            reason: "Invalid card number".into(),
-            metadata: None,
-        });
+        return Err(("Invalid card number", None));
     }
 
     Ok(s)
@@ -162,10 +139,7 @@ pub fn validate_email(value: &Value) -> ValidatorResponse<String> {
                 return Ok(s.clone());
             }
 
-            return Err(ValidatorError {
-                reason: "Invalid email".into(),
-                metadata: None,
-            });
+            return Err(("Invalid email", None));
         }
         _ => string_validation,
     }
@@ -188,12 +162,12 @@ mod tests {
             let v: Vec<i8> = vec![];
 
             match validator(&json!(v)) {
-                Err(e) => assert_eq!(e.reason, "Expected a string"),
+                Err((e, _)) => assert_eq!(e, "Expected a string"),
                 _ => panic!("expected invalid"),
             }
 
             match validator(&json!(true)) {
-                Err(e) => assert_eq!(e.reason, "Expected a string"),
+                Err((e, _)) => assert_eq!(e, "Expected a string"),
                 _ => panic!("expected invalid"),
             }
         }
@@ -211,7 +185,7 @@ mod tests {
             }
 
             match validator(&json!("x")) {
-                Err(e) => assert_eq!(e.reason, "too_short"),
+                Err((e, _)) => assert_eq!(e, "too_short"),
                 _ => panic!("expected invalid"),
             }
         }
@@ -233,9 +207,9 @@ mod tests {
             }
 
             match validator(&json!("invalid role")) {
-                Err(e) => {
-                    assert_eq!(e.reason, "Invalid option selected");
-                    assert_eq!(e.metadata, Some(json!({ "options": allowed_roles})))
+                Err((reason, metadata)) => {
+                    assert_eq!(reason, "Invalid option selected");
+                    assert_eq!(metadata, Some(json!({ "options": allowed_roles})))
                 }
                 _ => panic!("expected invalid"),
             }
@@ -247,12 +221,12 @@ mod tests {
         let v: Vec<i8> = vec![];
 
         match validate_email(&json!(v)) {
-            Err(e) => assert_eq!(e.reason, "Expected a string"),
+            Err((e, _)) => assert_eq!(e, "Expected a string"),
             _ => panic!("expected invalid"),
         }
 
         match validate_email(&json!(true)) {
-            Err(e) => assert_eq!(e.reason, "Expected a string"),
+            Err((e, _)) => assert_eq!(e, "Expected a string"),
             _ => panic!("expected invalid"),
         }
 
