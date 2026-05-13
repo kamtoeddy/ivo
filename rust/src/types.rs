@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
+use futures::future::BoxFuture;
 use serde_json::Value;
 
 #[derive(Debug)]
@@ -36,7 +37,8 @@ pub enum ComputableEnumeratedError<T> {
 
 pub enum ComputableWithContext<I, O, T = Value> {
     Static(T),
-    Func(ResolverWithContextFn<I, O, T>),
+    AsyncFunc(AsyncResolverWithContextFn<I, O, T>),
+    SyncFunc(ResolverWithContextFn<I, O, T>),
 }
 
 pub enum ComputableInit<I, O> {
@@ -92,12 +94,35 @@ pub struct MutableSummary<I, O> {
     pub summary: ImmutableSummary<I, O>,
 }
 
+pub enum FieldValidator<I, O, T> {
+    Async(AsyncFieldValidatorFn<I, O, T>),
+    Sync(FieldValidatorFn<I, O, T>),
+}
+
+pub type AsyncFieldValidatorFn<I, O, T = Value> = Box<
+    dyn Fn(&Value, &Context<I, O>) -> BoxFuture<'static, ValidatorResponse<T>>
+        + Send
+        + Sync
+        + 'static,
+>;
+
 pub type FieldValidatorFn<I, O, T = Value> =
     Box<dyn Fn(&Value, &Context<I, O>) -> ValidatorResponse<T> + Send + Sync>;
 
 pub type RequiredResolverFn<I, O> = Box<dyn Fn(&Context<I, O>) -> (bool, &str) + Send + Sync>;
 
+pub type AsyncResolverWithContextFn<I, O, T = Value> =
+    Box<dyn Fn(&Context<I, O>) -> BoxFuture<'static, T> + Send + Sync + 'static>;
+
 pub type ResolverWithContextFn<I, O, T = Value> = Box<dyn Fn(&Context<I, O>) -> T + Send + Sync>;
+
+pub enum ResolverWithMutSummary<I, O, T> {
+    Async(AsyncResolverWithMutSummaryFn<I, O, T>),
+    Sync(ResolverWithMutSummaryFn<I, O, T>),
+}
+
+pub type AsyncResolverWithMutSummaryFn<I, O, T = Value> =
+    Box<dyn Fn(&MutableSummary<I, O>) -> BoxFuture<'static, T> + Send + Sync + 'static>;
 
 pub type ResolverWithMutSummaryFn<I, O, T = Value> =
     Box<dyn Fn(&MutableSummary<I, O>) -> T + Send + Sync>;
@@ -110,25 +135,6 @@ pub type VirtualSanitiser<I, O, T = Value> = ResolverWithMutSummaryFn<I, O, T>;
 pub type DeleteHandler<O> = Box<dyn Fn(&DeletionContext<O>)>;
 pub type FailureHandler<I, O> = Box<dyn Fn(&ImmutableSummary<I, O>)>;
 pub type SuccessHandler<I, O> = Box<dyn Fn(&ImmutableSummary<I, O>)>;
-
-// #[async_trait]
-pub trait Validator<I, O>: Send + Sync {
-    // async fn validate(
-    //     &self,
-    //     value: &serde_json::Value,
-    //     summary: &MutableSummary<I, O>,
-    // ) -> Result<serde_json::Value, String>;
-}
-
-// #[async_trait]
-pub trait PostValidator<I, O>: Send + Sync {
-    // Returns a map of field names to updated values on success,
-    // or a map of field names to error messages on failure.
-    // async fn validate(
-    //     &self,
-    //     summary: &MutableSummary<I, O>,
-    // ) -> Result<HashMap<String, Value>, HashMap<String, String>>;
-}
 
 impl<I, O> Context<I, O> {
     pub fn get_options(&self) -> CtxOptions {
@@ -145,4 +151,4 @@ impl<I, O> Context<I, O> {
 
 pub type ValidatorResponse<T> = Result<T, (&'static str, Option<Value>)>;
 
-pub type ValidatorFn<T> = Box<dyn Fn(&Value) -> ValidatorResponse<T> + Send + Sync>;
+pub type ValidatorFn<T> = Box<dyn Fn(&Value) -> ValidatorResponse<T> + Send + Sync + 'static>;

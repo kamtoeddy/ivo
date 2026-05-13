@@ -1,11 +1,13 @@
-use std::marker::PhantomData;
+use std::{future::Future, marker::PhantomData};
+
+use serde_json::Value;
 
 use crate::{
     schema::properties::base::IvoProperty,
     types::{
         BooleanResolverWithMutSummary, ComputableEnumeratedError, ComputableInit,
-        ComputableWithContext, DeleteHandler, EnumeratedErrorResolver, FailureHandler,
-        ResolverWithContextFn, SuccessHandler,
+        ComputableWithContext, Context, DeleteHandler, FailureHandler, MutableSummary,
+        SuccessHandler,
     },
 };
 
@@ -170,13 +172,16 @@ impl<I, O, T> SchemaBuilder<I, O, T, Yes, No, No, No, No, No, No, No, No> {
         }
     }
 
-    pub fn error_fn(
+    pub fn error_fn<F>(
         self,
-        error_fn: EnumeratedErrorResolver<T>,
-    ) -> SchemaBuilder<I, O, T, Yes, Yes, No, No, No, No, No, No, No> {
+        error_fn: F,
+    ) -> SchemaBuilder<I, O, T, Yes, Yes, No, No, No, No, No, No, No>
+    where
+        F: Fn((Value, &Vec<T>)) -> &str + Send + Sync + 'static,
+    {
         SchemaBuilder {
             enum_values: self.enum_values,
-            enum_error: Some(ComputableEnumeratedError::Func(error_fn)),
+            enum_error: Some(ComputableEnumeratedError::Func(Box::new(error_fn))),
             ..Default::default()
         }
     }
@@ -195,29 +200,53 @@ impl<I, O, T> SchemaBuilder<I, O, T, Yes, Yes, No, No, No, No, No, No, No> {
         }
     }
 
-    pub fn default_fn(
+    pub fn default_fn<F>(
         self,
-        default_fn: ResolverWithContextFn<I, O, T>,
-    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, No, No, No, No, No> {
+        default_fn: F,
+    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, No, No, No, No, No>
+    where
+        F: Fn(&Context<I, O>) -> T + Send + Sync + 'static,
+    {
         SchemaBuilder {
             enum_values: self.enum_values,
             enum_error: self.enum_error,
-            default: Some(ComputableWithContext::Func(default_fn)),
+            default: Some(ComputableWithContext::SyncFunc(Box::new(default_fn))),
+            ..Default::default()
+        }
+    }
+
+    pub fn default_async_fn<F, Fut>(
+        self,
+        default_fn: F,
+    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, No, No, No, No, No>
+    where
+        F: Fn(&Context<I, O>) -> Fut + Send + Sync + 'static,
+        Fut: Future<Output = T> + Send + 'static,
+    {
+        SchemaBuilder {
+            enum_values: self.enum_values,
+            enum_error: self.enum_error,
+            default: Some(ComputableWithContext::AsyncFunc(Box::new(move |c| {
+                Box::pin(default_fn(c))
+            }))),
             ..Default::default()
         }
     }
 }
 
 impl<I, O, T> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, No, No, No, No, No> {
-    pub fn ignore_if(
+    pub fn ignore_if<F>(
         self,
-        fx: BooleanResolverWithMutSummary<I, O>,
-    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, Yes, No, No, No, No, No> {
+        fx: F,
+    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, Yes, No, No, No, No, No>
+    where
+        F: Fn(&MutableSummary<I, O>) -> bool + Send + Sync + 'static,
+    {
         SchemaBuilder {
             default: self.default,
             enum_values: self.enum_values,
             enum_error: self.enum_error,
-            should_ignore_fn: Some(fx),
+            should_ignore_fn: Some(Box::new(fx)),
             ..Default::default()
         }
     }
@@ -234,15 +263,18 @@ impl<I, O, T> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, No, No, No, No, No> {
         }
     }
 
-    pub fn allow_init_if(
+    pub fn allow_init_if<F>(
         self,
-        fx: BooleanResolverWithMutSummary<I, O>,
-    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, YesComputed, No, No, No, No> {
+        fx: F,
+    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, YesComputed, No, No, No, No>
+    where
+        F: Fn(&MutableSummary<I, O>) -> bool + Send + Sync + 'static,
+    {
         SchemaBuilder {
             default: self.default,
             enum_values: self.enum_values,
             enum_error: self.enum_error,
-            should_init: Some(ComputableInit::Func(fx)),
+            should_init: Some(ComputableInit::Func(Box::new(fx))),
             ..Default::default()
         }
     }
@@ -259,30 +291,36 @@ impl<HasDefault, I, O, T> SchemaBuilder<I, O, T, Yes, Yes, HasDefault, No, No, N
         }
     }
 
-    pub fn allow_update_if(
+    pub fn allow_update_if<F>(
         self,
-        fx: BooleanResolverWithMutSummary<I, O>,
-    ) -> SchemaBuilder<I, O, T, Yes, Yes, HasDefault, No, No, YesComputed, No, No, No> {
+        fx: F,
+    ) -> SchemaBuilder<I, O, T, Yes, Yes, HasDefault, No, No, YesComputed, No, No, No>
+    where
+        F: Fn(&MutableSummary<I, O>) -> bool + Send + Sync + 'static,
+    {
         SchemaBuilder {
             default: self.default,
             enum_values: self.enum_values,
             enum_error: self.enum_error,
-            should_update: Some(ComputableInit::Func(fx)),
+            should_update: Some(ComputableInit::Func(Box::new(fx))),
             ..Default::default()
         }
     }
 }
 
 impl<I, O, T> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, No, Yes, No, No, No> {
-    pub fn allow_init_if(
+    pub fn allow_init_if<F>(
         self,
-        fx: BooleanResolverWithMutSummary<I, O>,
-    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, YesComputed, Yes, No, No, No> {
+        fx: F,
+    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, YesComputed, Yes, No, No, No>
+    where
+        F: Fn(&MutableSummary<I, O>) -> bool + Send + Sync + 'static,
+    {
         SchemaBuilder {
             default: self.default,
             enum_values: self.enum_values,
             enum_error: self.enum_error,
-            should_init: Some(ComputableInit::Func(fx)),
+            should_init: Some(ComputableInit::Func(Box::new(fx))),
             ..Default::default()
         }
     }
@@ -291,16 +329,19 @@ impl<I, O, T> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, No, Yes, No, No, No> {
 impl<HasDefault, I, O, T>
     SchemaBuilder<I, O, T, Yes, Yes, HasDefault, No, Yes, YesComputed, No, No, No>
 {
-    pub fn allow_update_if(
+    pub fn allow_update_if<F>(
         self,
-        fx: BooleanResolverWithMutSummary<I, O>,
-    ) -> SchemaBuilder<I, O, T, Yes, Yes, HasDefault, No, Yes, YesComputed, No, No, No> {
+        fx: F,
+    ) -> SchemaBuilder<I, O, T, Yes, Yes, HasDefault, No, Yes, YesComputed, No, No, No>
+    where
+        F: Fn(&MutableSummary<I, O>) -> bool + Send + Sync + 'static,
+    {
         SchemaBuilder {
             default: self.default,
             enum_values: self.enum_values,
             enum_error: self.enum_error,
             should_init: self.should_init,
-            should_update: Some(ComputableInit::Func(fx)),
+            should_update: Some(ComputableInit::Func(Box::new(fx))),
             ..Default::default()
         }
     }
@@ -320,16 +361,19 @@ impl<I, O, T> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, No, YesComputed, No, No,
         }
     }
 
-    pub fn allow_init_if(
+    pub fn allow_init_if<F>(
         self,
-        fx: BooleanResolverWithMutSummary<I, O>,
-    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, YesComputed, YesComputed, No, No, No> {
+        fx: F,
+    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, YesComputed, YesComputed, No, No, No>
+    where
+        F: Fn(&MutableSummary<I, O>) -> bool + Send + Sync + 'static,
+    {
         SchemaBuilder {
             default: self.default,
             enum_values: self.enum_values,
             enum_error: self.enum_error,
             should_update: self.should_update,
-            should_init: Some(ComputableInit::Func(fx)),
+            should_init: Some(ComputableInit::Func(Box::new(fx))),
             ..Default::default()
         }
     }

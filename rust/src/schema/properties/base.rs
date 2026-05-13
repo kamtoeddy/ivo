@@ -1,7 +1,7 @@
 use crate::types::{
     BooleanResolverWithMutSummary, ComputableEnumeratedError, ComputableInit, ComputableRequired,
-    ComputableWithContext, DeleteHandler, FailureHandler, FieldValidatorFn,
-    ResolverWithMutSummaryFn, SuccessHandler, VirtualSanitiser,
+    ComputableWithContext, DeleteHandler, FailureHandler, FieldValidator, ResolverWithMutSummary,
+    SuccessHandler, VirtualSanitiser,
 };
 use serde_json::Value;
 
@@ -15,11 +15,11 @@ pub struct IvoProperty<I, O, T = Value> {
     pub is_readonly: bool,
     pub is_virtual: bool,
     pub value: Option<ComputableWithContext<I, O, T>>,
-    pub re_validator: Option<FieldValidatorFn<I, O, T>>,
     pub required: Option<ComputableRequired<I, O>>,
-    pub resolver: Option<ResolverWithMutSummaryFn<I, O, T>>,
+    pub resolver: Option<ResolverWithMutSummary<I, O, T>>,
     pub sanitizer: Option<VirtualSanitiser<I, O, T>>,
-    pub validator: Option<FieldValidatorFn<I, O, T>>,
+    pub validator: Option<FieldValidator<I, O, T>>,
+    pub re_validator: Option<FieldValidator<I, O, T>>,
     //
     pub should_ignore: Option<BooleanResolverWithMutSummary<I, O>>,
     pub should_init: Option<ComputableInit<I, O>>,

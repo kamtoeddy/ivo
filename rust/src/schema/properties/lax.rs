@@ -1,12 +1,15 @@
-use std::marker::PhantomData;
+use std::{future::Future, marker::PhantomData};
+
+use serde_json::Value;
 
 use crate::{
     schema::properties::base::IvoProperty,
     types::{
         BooleanResolverWithMutSummary, ComputableInit, ComputableRequired, ComputableWithContext,
-        DeleteHandler, FailureHandler, FieldValidatorFn, RequiredResolverFn, ResolverWithContextFn,
-        SuccessHandler,
+        Context, DeleteHandler, FailureHandler, FieldValidator, MutableSummary,
+        ResolverWithContextFn, SuccessHandler,
     },
+    ValidatorResponse,
 };
 
 pub struct LaxField;
@@ -43,8 +46,8 @@ struct SchemaBuilder<
     _on_success_fns: PhantomData<HasSuccess>,
     // actual data...
     default: Option<ComputableWithContext<I, O, T>>,
-    validator: Option<FieldValidatorFn<I, O, T>>,
-    re_validator: Option<FieldValidatorFn<I, O, T>>,
+    validator: Option<FieldValidator<I, O, T>>,
+    re_validator: Option<FieldValidator<I, O, T>>,
     required: Option<ComputableRequired<I, O>>,
     should_ignore_fn: Option<BooleanResolverWithMutSummary<I, O>>,
     should_init: Option<ComputableInit<I, O>>,
@@ -172,34 +175,75 @@ impl LaxField {
         default_fn: ResolverWithContextFn<I, O, T>,
     ) -> SchemaBuilder<I, O, T, Yes, No, No, No, No, No, No, No, No, No> {
         SchemaBuilder {
-            default: Some(ComputableWithContext::Func(default_fn)),
+            default: Some(ComputableWithContext::SyncFunc(default_fn)),
             ..Default::default()
         }
     }
 }
 
 impl<I, O, T> SchemaBuilder<I, O, T, Yes, No, No, No, No, No, No, No, No, No> {
-    pub fn validate(
+    pub fn validate<F>(
         self,
-        validator: FieldValidatorFn<I, O, T>,
-    ) -> SchemaBuilder<I, O, T, Yes, Yes, No, No, No, No, No, No, No, No> {
+        validator: F,
+    ) -> SchemaBuilder<I, O, T, Yes, Yes, No, No, No, No, No, No, No, No>
+    where
+        F: Fn(&Value, &Context<I, O>) -> ValidatorResponse<T> + Send + Sync + 'static,
+    {
         SchemaBuilder {
             default: self.default,
-            validator: Some(validator),
+            validator: Some(FieldValidator::Sync(Box::new(validator))),
+            ..Default::default()
+        }
+    }
+
+    pub fn validate_async<F, Fut>(
+        self,
+        validator: F,
+    ) -> SchemaBuilder<I, O, T, Yes, Yes, No, No, No, No, No, No, No, No>
+    where
+        F: Fn(&Value, &Context<I, O>) -> Fut + Send + Sync + 'static,
+        Fut: Future<Output = ValidatorResponse<T>> + Send + 'static,
+    {
+        SchemaBuilder {
+            default: self.default,
+            validator: Some(FieldValidator::Async(Box::new(move |v, ctx| {
+                Box::pin(validator(v, ctx))
+            }))),
             ..Default::default()
         }
     }
 }
 
 impl<I, O, T> SchemaBuilder<I, O, T, Yes, Yes, No, No, No, No, No, No, No, No> {
-    pub fn re_validate(
+    pub fn re_validate<F>(
         self,
-        re_validator: FieldValidatorFn<I, O, T>,
-    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, No, No, No, No, No, No> {
+        re_validator: F,
+    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, No, No, No, No, No, No>
+    where
+        F: Fn(&Value, &Context<I, O>) -> ValidatorResponse<T> + Send + Sync + 'static,
+    {
         SchemaBuilder {
             default: self.default,
             validator: self.validator,
-            re_validator: Some(re_validator),
+            re_validator: Some(FieldValidator::Sync(Box::new(re_validator))),
+            ..Default::default()
+        }
+    }
+
+    pub fn re_validate_async<F, Fut>(
+        self,
+        re_validator: F,
+    ) -> SchemaBuilder<I, O, T, Yes, Yes, No, No, No, No, No, No, No, No>
+    where
+        F: Fn(&Value, &Context<I, O>) -> Fut + Send + Sync + 'static,
+        Fut: Future<Output = ValidatorResponse<T>> + Send + 'static,
+    {
+        SchemaBuilder {
+            default: self.default,
+            validator: self.validator,
+            re_validator: Some(FieldValidator::Async(Box::new(move |v, ctx| {
+                Box::pin(re_validator(v, ctx))
+            }))),
             ..Default::default()
         }
     }
@@ -208,15 +252,18 @@ impl<I, O, T> SchemaBuilder<I, O, T, Yes, Yes, No, No, No, No, No, No, No, No> {
 impl<HasRevalidator, I, O, T>
     SchemaBuilder<I, O, T, Yes, Yes, HasRevalidator, No, No, No, No, No, No, No>
 {
-    pub fn required_if(
+    pub fn required_if<F>(
         self,
-        required_fn: RequiredResolverFn<I, O>,
-    ) -> SchemaBuilder<I, O, T, Yes, Yes, HasRevalidator, Yes, No, No, No, No, No, No> {
+        required_fn: F,
+    ) -> SchemaBuilder<I, O, T, Yes, Yes, HasRevalidator, Yes, No, No, No, No, No, No>
+    where
+        F: Fn(&Context<I, O>) -> (bool, &str) + Send + Sync + 'static,
+    {
         SchemaBuilder {
             default: self.default,
             validator: self.validator,
             re_validator: self.re_validator,
-            required: Some(ComputableRequired::Func(required_fn)),
+            required: Some(ComputableRequired::Func(Box::new(required_fn))),
             ..Default::default()
         }
     }
@@ -225,9 +272,9 @@ impl<HasRevalidator, I, O, T>
 impl<HasValidator, HasRevalidator, HasRequired, I, O, T>
     SchemaBuilder<I, O, T, Yes, HasValidator, HasRevalidator, HasRequired, No, No, No, No, No, No>
 {
-    pub fn ignore_if(
+    pub fn ignore_if<F>(
         self,
-        fx: BooleanResolverWithMutSummary<I, O>,
+        fx: F,
     ) -> SchemaBuilder<
         I,
         O,
@@ -242,13 +289,16 @@ impl<HasValidator, HasRevalidator, HasRequired, I, O, T>
         No,
         No,
         No,
-    > {
+    >
+    where
+        F: Fn(&MutableSummary<I, O>) -> bool + Send + Sync + 'static,
+    {
         SchemaBuilder {
             default: self.default,
             validator: self.validator,
             re_validator: self.re_validator,
             required: self.required,
-            should_ignore_fn: Some(fx),
+            should_ignore_fn: Some(Box::new(fx)),
             ..Default::default()
         }
     }
@@ -284,9 +334,9 @@ impl<HasValidator, HasRevalidator, HasRequired, I, O, T>
         }
     }
 
-    pub fn allow_init_if(
+    pub fn allow_init_if<F>(
         self,
-        fx: BooleanResolverWithMutSummary<I, O>,
+        fx: F,
     ) -> SchemaBuilder<
         I,
         O,
@@ -301,13 +351,16 @@ impl<HasValidator, HasRevalidator, HasRequired, I, O, T>
         No,
         No,
         No,
-    > {
+    >
+    where
+        F: Fn(&MutableSummary<I, O>) -> bool + Send + Sync + 'static,
+    {
         SchemaBuilder {
             default: self.default,
             validator: self.validator,
             re_validator: self.re_validator,
             required: self.required,
-            should_init: Some(ComputableInit::Func(fx)),
+            should_init: Some(ComputableInit::Func(Box::new(fx))),
             ..Default::default()
         }
     }
@@ -339,9 +392,9 @@ impl<HasValidator, HasRevalidator, HasRequired, I, O, T>
         }
     }
 
-    pub fn allow_update_if(
+    pub fn allow_update_if<F>(
         self,
-        fx: BooleanResolverWithMutSummary<I, O>,
+        fx: F,
     ) -> SchemaBuilder<
         I,
         O,
@@ -356,13 +409,16 @@ impl<HasValidator, HasRevalidator, HasRequired, I, O, T>
         No,
         No,
         No,
-    > {
+    >
+    where
+        F: Fn(&MutableSummary<I, O>) -> bool + Send + Sync + 'static,
+    {
         SchemaBuilder {
             default: self.default,
             validator: self.validator,
             re_validator: self.re_validator,
             required: self.required,
-            should_update: Some(ComputableInit::Func(fx)),
+            should_update: Some(ComputableInit::Func(Box::new(fx))),
             ..Default::default()
         }
     }
@@ -371,9 +427,9 @@ impl<HasValidator, HasRevalidator, HasRequired, I, O, T>
 impl<HasValidator, HasRevalidator, HasRequired, I, O, T>
     SchemaBuilder<I, O, T, Yes, HasValidator, HasRevalidator, HasRequired, No, No, Yes, No, No, No>
 {
-    pub fn allow_init_if(
+    pub fn allow_init_if<F>(
         self,
-        fx: BooleanResolverWithMutSummary<I, O>,
+        fx: F,
     ) -> SchemaBuilder<
         I,
         O,
@@ -388,13 +444,16 @@ impl<HasValidator, HasRevalidator, HasRequired, I, O, T>
         No,
         No,
         No,
-    > {
+    >
+    where
+        F: Fn(&MutableSummary<I, O>) -> bool + Send + Sync + 'static,
+    {
         SchemaBuilder {
             default: self.default,
             validator: self.validator,
             re_validator: self.re_validator,
             required: self.required,
-            should_init: Some(ComputableInit::Func(fx)),
+            should_init: Some(ComputableInit::Func(Box::new(fx))),
             ..Default::default()
         }
     }
@@ -417,9 +476,9 @@ impl<HasValidator, HasRevalidator, HasRequired, I, O, T>
         No,
     >
 {
-    pub fn allow_update_if(
+    pub fn allow_update_if<F>(
         self,
-        fx: BooleanResolverWithMutSummary<I, O>,
+        fx: F,
     ) -> SchemaBuilder<
         I,
         O,
@@ -434,14 +493,17 @@ impl<HasValidator, HasRevalidator, HasRequired, I, O, T>
         No,
         No,
         No,
-    > {
+    >
+    where
+        F: Fn(&MutableSummary<I, O>) -> bool + Send + Sync + 'static,
+    {
         SchemaBuilder {
             default: self.default,
             validator: self.validator,
             re_validator: self.re_validator,
             required: self.required,
             should_init: self.should_init,
-            should_update: Some(ComputableInit::Func(fx)),
+            should_update: Some(ComputableInit::Func(Box::new(fx))),
             ..Default::default()
         }
     }
@@ -493,9 +555,9 @@ impl<HasValidator, HasRevalidator, HasRequired, I, O, T>
         }
     }
 
-    pub fn allow_init_if(
+    pub fn allow_init_if<F>(
         self,
-        fx: BooleanResolverWithMutSummary<I, O>,
+        fx: F,
     ) -> SchemaBuilder<
         I,
         O,
@@ -510,14 +572,17 @@ impl<HasValidator, HasRevalidator, HasRequired, I, O, T>
         No,
         No,
         No,
-    > {
+    >
+    where
+        F: Fn(&MutableSummary<I, O>) -> bool + Send + Sync + 'static,
+    {
         SchemaBuilder {
             default: self.default,
             validator: self.validator,
             re_validator: self.re_validator,
             required: self.required,
             should_update: self.should_update,
-            should_init: Some(ComputableInit::Func(fx)),
+            should_init: Some(ComputableInit::Func(Box::new(fx))),
             ..Default::default()
         }
     }

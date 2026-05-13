@@ -30,8 +30,8 @@ impl<I, O> IvoProperty<I, O> {
 }
 
 // fn main() {
-//     let r = RequiredField::validate(Box::new(|v, _| Err(("lol", None))))
-//         .re_validate(Box::new(|v, c| Ok(true)))
+//     let r = RequiredField::validate(|v, _| Err(("lol", None)))
+//         .re_validate(|v, c| Ok(true))
 //         .readonly()
 //         .on_failure(Box::new(|_| {}))
 //         .on_success(Box::new(|_| {}))
@@ -39,7 +39,7 @@ impl<I, O> IvoProperty<I, O> {
 //         .build();
 
 //     let e = EnumeratedField::values(vec!["hello", "hi", "greeting"])
-//         .error_fn(Box::new(|_| ""))
+//         .error_fn(|_| "")
 //         // .error("invalid option provided")
 //         // .default_fn(Box::new(|_| "true"))
 //         .readonly()
@@ -49,7 +49,7 @@ impl<I, O> IvoProperty<I, O> {
 //         .build();
 
 //     let l = LaxField::default("&str")
-//         .validate(Box::new(|v, _| Ok("true")))
+//         .validate(|v, _| Ok("true"))
 //         .readonly()
 //         .on_delete(Box::new(|_| {}))
 //         .on_failure(Box::new(|_| {}))
@@ -71,7 +71,12 @@ impl<I, O> IvoProperty<I, O> {
 //         .on_delete_fns(vec![Box::new(|_| {})])
 //         .build();
 
-//     let c = ConstantField::computed(Box::new(|s| "computed &str"))
+//     let c = ConstantField::computed_async(|s| async { "computed &str" })
+//         .on_delete(Box::new(|_| {}))
+//         .on_success_fns(vec![Box::new(|_| {}), Box::new(|_| {})])
+//         .build();
+
+//     let c = ConstantField::computed(|s| "computed &str")
 //         .on_delete(Box::new(|_| {}))
 //         .on_success_fns(vec![Box::new(|_| {}), Box::new(|_| {})])
 //         .build();
@@ -80,45 +85,60 @@ impl<I, O> IvoProperty<I, O> {
 
 //     let d = DependentField::default(String::from("Hello"))
 //         .depends_on(&["first_name", "last_name"])
-//         .resolve(Box::new(|_| resolver()))
+//         .resolve(|_| resolver())
 //         .on_delete(Box::new(|_| {}))
 //         .on_success(Box::new(|_| {}))
 //         .build();
 
 //     let d = DependentField::default_fn(Box::new(|_| true))
 //         .depends_on(&["first_name", "last_name"])
-//         .resolve(Box::new(|_| false))
+//         .resolve(|_| false)
 //         .readonly()
 //         .on_delete_fns(vec![Box::new(|_| {}), Box::new(|_| {})])
 //         .on_success(Box::new(|_| {}))
 //         .build();
 
 //     let v = VirtualField::alias("lol")
-//         .validate(Box::new(|v, _| Ok(true)))
-//         .re_validate(Box::new(|v, c| Ok(true)))
-//         .required_if(Box::new(|_| (true, "lol")))
-//         .sanitize(Box::new(|s| false))
+//         .validate(|v, _| Ok(true))
+//         .re_validate_async(|v, c| async { Ok(true) })
+//         .required_if(|_| (true, "lol"))
+//         .sanitize(|s| false)
 //         .on_failure(Box::new(|_| {}))
 //         .on_success(Box::new(|_| {}))
 //         .build();
 
-//     let v = VirtualField::validate(Box::new(|v, _| Ok(true)))
-//         .re_validate(Box::new(|v, c| Ok(true)))
+//     let v = VirtualField::validate_async(|v, _| async {
+//         if true {
+//             Ok(true)
+//         } else {
+//             Err(("lol", None))
+//         }
+//     })
+//     .re_validate(|v, c| Ok(true))
+//     .alias("lol")
+//     .required_if(|_| (true, "lol"))
+//     .sanitize(|s| false)
+//     .on_failure(Box::new(|_| {}))
+//     .on_success(Box::new(|_| {}))
+//     .build();
+
+//     let v = VirtualField::validate(|v, _| Ok(true))
+//         .re_validate(|v, c| Ok(true))
 //         .alias("lol")
-//         .required_if(Box::new(|_| (true, "lol")))
-//         .sanitize(Box::new(|s| false))
+//         .required_if(|_| (true, "lol"))
+//         .sanitize(|s| false)
 //         .on_failure(Box::new(|_| {}))
 //         .on_success(Box::new(|_| {}))
 //         .build();
 
-//     let v = VirtualField::validate(Box::new(|v, _| Ok(true)))
+//     let v = VirtualField::validate(|v, _| Ok(true))
 //         .alias("lol")
-//         .re_validate(Box::new(|v, c| Ok(true)))
-//         .required_if(Box::new(|_| (true, "lol")))
-//         .sanitize(Box::new(|_| false))
-//         // .ignore_if(Box::new(|_| false))
-//         .allow_update_if(Box::new(|_| false))
-//         .allow_init_if(Box::new(|_| false))
+//         .re_validate(|v, c| Ok(true))
+//         .required_if(|_| (true, "lol"))
+//         .sanitize(|_| false)
+//         // .ignore_if(|_| false)
+//         .allow_update_if(|_| false)
+//         .allow_init_if(|_| false)
 //         // .ignore_init()
 //         // .ignore_update()
 //         .on_failure(Box::new(|_| {}))

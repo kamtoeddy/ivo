@@ -113,6 +113,7 @@ pub fn validate_credit_card(value: &Value) -> ValidatorResponse<String> {
         .enumerate()
         .map(|(i, &d)| if i % 2 == 0 { d * 2 } else { d })
         .collect();
+
     let sum: u32 = to_check.iter().sum();
 
     if (10 - (sum % 10)) != check {
@@ -136,7 +137,7 @@ pub fn validate_email(value: &Value) -> ValidatorResponse<String> {
     match string_validation {
         Ok(s) => {
             if EMAIL_RE.is_match(&s) {
-                return Ok(s.clone());
+                return Ok(s);
             }
 
             return Err(("Invalid email", None));

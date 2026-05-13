@@ -1,8 +1,8 @@
-use std::marker::PhantomData;
+use std::{future::Future, marker::PhantomData};
 
 use crate::{
     schema::properties::base::IvoProperty,
-    types::{ComputableWithContext, DeleteHandler, ResolverWithContextFn, SuccessHandler},
+    types::{ComputableWithContext, Context, DeleteHandler, SuccessHandler},
 };
 
 // Marker Types
@@ -57,11 +57,27 @@ impl ConstantField {
         }
     }
 
-    pub fn computed<I, O, T>(
-        resolver: ResolverWithContextFn<I, O, T>,
-    ) -> SchemaBuilder<I, O, T, Yes, No, No> {
+    pub fn computed<I, O, T, F>(resolver: F) -> SchemaBuilder<I, O, T, Yes, No, No>
+    where
+        F: Fn(&Context<I, O>) -> T + Send + Sync + 'static,
+    {
         SchemaBuilder {
-            value: Some(ComputableWithContext::Func(resolver)),
+            value: Some(ComputableWithContext::SyncFunc(Box::new(resolver))),
+            on_delete_fns: None,
+            on_success_fns: None,
+            ..Default::default()
+        }
+    }
+
+    pub fn computed_async<I, O, T, F, Fut>(resolver: F) -> SchemaBuilder<I, O, T, Yes, No, No>
+    where
+        F: Fn(&Context<I, O>) -> Fut + Send + Sync + 'static,
+        Fut: Future<Output = T> + Send + 'static,
+    {
+        SchemaBuilder {
+            value: Some(ComputableWithContext::AsyncFunc(Box::new(move |c| {
+                Box::pin(resolver(c))
+            }))),
             on_delete_fns: None,
             on_success_fns: None,
             ..Default::default()

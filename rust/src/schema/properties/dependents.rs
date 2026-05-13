@@ -1,10 +1,10 @@
-use std::marker::PhantomData;
+use std::{future::Future, marker::PhantomData};
 
 use crate::{
     schema::properties::base::IvoProperty,
     types::{
-        ComputableInit, ComputableWithContext, DeleteHandler, False, ResolverWithContextFn,
-        ResolverWithMutSummaryFn, SuccessHandler,
+        ComputableInit, ComputableWithContext, Context, DeleteHandler, False, MutableSummary,
+        ResolverWithMutSummary, SuccessHandler,
     },
 };
 
@@ -26,7 +26,7 @@ struct SchemaBuilder<
     HasSuccess,
 > {
     _default: PhantomData<HasDefault>,
-    _parents: PhantomData<HasParents>,
+    _depends_on: PhantomData<HasParents>,
     _resolver: PhantomData<HasResolver>,
     _del_handlers: PhantomData<HasDelete>,
     _should_update: PhantomData<HasShouldUpdate>,
@@ -34,7 +34,7 @@ struct SchemaBuilder<
     // actual data...
     default: Option<ComputableWithContext<I, O, T>>,
     depends_on: Option<Vec<String>>,
-    resolver: Option<ResolverWithMutSummaryFn<I, O, T>>,
+    resolver: Option<ResolverWithMutSummary<I, O, T>>,
     should_update: Option<False>,
     on_delete_fns: Option<Vec<DeleteHandler<O>>>,
     on_success_fns: Option<Vec<SuccessHandler<I, O>>>,
@@ -62,7 +62,7 @@ impl<HasDefault, HasParents, HasResolver, HasShouldUpdate, HasDelete, HasSuccess
             on_delete_fns: None,
             on_success_fns: None,
             _default: PhantomData,
-            _parents: PhantomData,
+            _depends_on: PhantomData,
             _should_update: PhantomData,
             _resolver: PhantomData,
             _del_handlers: PhantomData,
@@ -99,11 +99,12 @@ impl DependentField {
         }
     }
 
-    pub fn default_fn<I, O, T>(
-        default_fn: ResolverWithContextFn<I, O, T>,
-    ) -> SchemaBuilder<I, O, T, Yes, No, No, No, No, No> {
+    pub fn default_fn<I, O, T, F>(default_fn: F) -> SchemaBuilder<I, O, T, Yes, No, No, No, No, No>
+    where
+        F: Fn(&Context<I, O>) -> T + Send + Sync + 'static,
+    {
         SchemaBuilder {
-            default: Some(ComputableWithContext::Func(default_fn)),
+            default: Some(ComputableWithContext::SyncFunc(Box::new(default_fn))),
             ..Default::default()
         }
     }
@@ -125,14 +126,32 @@ impl<I, O, T> SchemaBuilder<I, O, T, Yes, No, No, No, No, No> {
 }
 
 impl<I, O, T> SchemaBuilder<I, O, T, Yes, Yes, No, No, No, No> {
-    pub fn resolve(
-        self,
-        resolver: ResolverWithMutSummaryFn<I, O, T>,
-    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, No, No> {
+    pub fn resolve<R>(self, resolver: R) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, No, No>
+    where
+        R: Fn(&MutableSummary<I, O>) -> T + Send + Sync + 'static,
+    {
         SchemaBuilder {
             default: self.default,
             depends_on: self.depends_on,
-            resolver: Some(resolver),
+            resolver: Some(ResolverWithMutSummary::Sync(Box::new(resolver))),
+            ..Default::default()
+        }
+    }
+
+    pub fn resolve_async<R, Fut>(
+        self,
+        resolver: R,
+    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, No, No>
+    where
+        R: Fn(&MutableSummary<I, O>) -> Fut + Send + Sync + 'static,
+        Fut: Future<Output = T> + Send + 'static,
+    {
+        SchemaBuilder {
+            default: self.default,
+            depends_on: self.depends_on,
+            resolver: Some(ResolverWithMutSummary::Async(Box::new(move |s| {
+                Box::pin(resolver(s))
+            }))),
             ..Default::default()
         }
     }
