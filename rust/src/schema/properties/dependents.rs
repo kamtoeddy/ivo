@@ -2,9 +2,10 @@ use std::{future::Future, marker::PhantomData};
 
 use crate::{
     schema::properties::base::IvoProperty,
+    traits::HasPartial,
     types::{
-        ComputableInit, ComputableWithContext, Context, DeleteHandler, False, MutableSummary,
-        ResolverWithMutSummary, SuccessHandler,
+        ComputableInit, ComputableWithMiniSummary, DeleteHandler, False, IvoMiniSummary,
+        IvoSummary, ResolverWithMutSummary, SuccessHandler,
     },
 };
 
@@ -15,9 +16,10 @@ struct Yes;
 struct No;
 
 struct SchemaBuilder<
-    I,
-    O,
     T,
+    I: HasPartial,
+    O: HasPartial,
+    CtxOptions,
     HasDefault,
     HasParents,
     HasResolver,
@@ -32,19 +34,31 @@ struct SchemaBuilder<
     _should_update: PhantomData<HasShouldUpdate>,
     _success_handlers: PhantomData<HasSuccess>,
     // actual data...
-    default: Option<ComputableWithContext<I, O, T>>,
+    default: Option<ComputableWithMiniSummary<T, CtxOptions>>,
     depends_on: Option<Vec<String>>,
-    resolver: Option<ResolverWithMutSummary<I, O, T>>,
+    resolver: Option<ResolverWithMutSummary<T, I, O, CtxOptions>>,
     should_update: Option<False>,
-    on_delete_fns: Option<Vec<DeleteHandler<O>>>,
-    on_success_fns: Option<Vec<SuccessHandler<I, O>>>,
+    on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
+    on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
 }
 
-impl<HasDefault, HasParents, HasResolver, HasShouldUpdate, HasDelete, HasSuccess, I, O, T> Default
+impl<
+        HasDefault,
+        HasParents,
+        HasResolver,
+        HasShouldUpdate,
+        HasDelete,
+        HasSuccess,
+        T,
+        I: HasPartial,
+        O: HasPartial,
+        CtxOptions,
+    > Default
     for SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         HasDefault,
         HasParents,
         HasResolver,
@@ -71,10 +85,10 @@ impl<HasDefault, HasParents, HasResolver, HasShouldUpdate, HasDelete, HasSuccess
     }
 }
 
-impl<HasShouldUpdate, HasDelete, HasSuccess, I, O, T>
-    SchemaBuilder<I, O, T, Yes, Yes, Yes, HasShouldUpdate, HasDelete, HasSuccess>
+impl<HasShouldUpdate, HasDelete, HasSuccess, T, I: HasPartial, O: HasPartial, CtxOptions>
+    SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, HasShouldUpdate, HasDelete, HasSuccess>
 {
-    pub fn build(self) -> IvoProperty<I, O, T> {
+    pub fn build(self) -> IvoProperty<T, I, O, CtxOptions> {
         IvoProperty {
             default: self.default,
             depends_on: self.depends_on,
@@ -92,26 +106,35 @@ impl<HasShouldUpdate, HasDelete, HasSuccess, I, O, T>
 }
 
 impl DependentField {
-    pub fn default<I, O, T>(value: T) -> SchemaBuilder<I, O, T, Yes, No, No, No, No, No> {
+    pub fn default<T, I: HasPartial, O: HasPartial, CtxOptions>(
+        value: T,
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, No, No, No, No, No> {
         SchemaBuilder {
-            default: Some(ComputableWithContext::Static(value)),
+            default: Some(ComputableWithMiniSummary::Static(value)),
             ..Default::default()
         }
     }
 
-    pub fn default_fn<I, O, T, F>(default_fn: F) -> SchemaBuilder<I, O, T, Yes, No, No, No, No, No>
+    pub fn default_fn<T, I: HasPartial, O: HasPartial, CtxOptions, F>(
+        default_fn: F,
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, No, No, No, No, No>
     where
-        F: Fn(&Context<I, O>) -> T + Send + Sync + 'static,
+        F: Fn(&mut IvoMiniSummary<CtxOptions>) -> T + Send + Sync + 'static,
     {
         SchemaBuilder {
-            default: Some(ComputableWithContext::SyncFunc(Box::new(default_fn))),
+            default: Some(ComputableWithMiniSummary::SyncFunc(Box::new(default_fn))),
             ..Default::default()
         }
     }
 }
 
-impl<I, O, T> SchemaBuilder<I, O, T, Yes, No, No, No, No, No> {
-    pub fn depends_on(self, fields: &[&str]) -> SchemaBuilder<I, O, T, Yes, Yes, No, No, No, No> {
+impl<T, I: HasPartial, O: HasPartial, CtxOptions>
+    SchemaBuilder<T, I, O, CtxOptions, Yes, No, No, No, No, No>
+{
+    pub fn depends_on(
+        self,
+        fields: &[&str],
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, No, No, No, No> {
         SchemaBuilder {
             default: self.default,
             depends_on: Some(
@@ -125,10 +148,15 @@ impl<I, O, T> SchemaBuilder<I, O, T, Yes, No, No, No, No, No> {
     }
 }
 
-impl<I, O, T> SchemaBuilder<I, O, T, Yes, Yes, No, No, No, No> {
-    pub fn resolve<R>(self, resolver: R) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, No, No>
+impl<T, I: HasPartial, O: HasPartial, CtxOptions>
+    SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, No, No, No, No>
+{
+    pub fn resolve<R>(
+        self,
+        resolver: R,
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, No, No>
     where
-        R: Fn(&MutableSummary<I, O>) -> T + Send + Sync + 'static,
+        R: Fn(&mut IvoSummary<I, O, CtxOptions>) -> T + Send + Sync + 'static,
     {
         SchemaBuilder {
             default: self.default,
@@ -141,9 +169,9 @@ impl<I, O, T> SchemaBuilder<I, O, T, Yes, Yes, No, No, No, No> {
     pub fn resolve_async<R, Fut>(
         self,
         resolver: R,
-    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, No, No>
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, No, No>
     where
-        R: Fn(&MutableSummary<I, O>) -> Fut + Send + Sync + 'static,
+        R: Fn(&mut IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = T> + Send + 'static,
     {
         SchemaBuilder {
@@ -157,10 +185,12 @@ impl<I, O, T> SchemaBuilder<I, O, T, Yes, Yes, No, No, No, No> {
     }
 }
 
-impl<HasDelete, HasSuccess, I, O, T>
-    SchemaBuilder<I, O, T, Yes, Yes, Yes, No, HasDelete, HasSuccess>
+impl<HasDelete, HasSuccess, T, I: HasPartial, O: HasPartial, CtxOptions>
+    SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, HasDelete, HasSuccess>
 {
-    pub fn readonly(self) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, Yes, HasDelete, HasSuccess> {
+    pub fn readonly(
+        self,
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, Yes, HasDelete, HasSuccess> {
         SchemaBuilder {
             default: self.default,
             depends_on: self.depends_on,
@@ -172,13 +202,13 @@ impl<HasDelete, HasSuccess, I, O, T>
 }
 
 // ON_DELETE is only available if HasDelete is 'No'
-impl<HasShouldUpdate, HasSuccess, I, O, T>
-    SchemaBuilder<I, O, T, Yes, Yes, Yes, HasShouldUpdate, No, HasSuccess>
+impl<HasShouldUpdate, HasSuccess, T, I: HasPartial, O: HasPartial, CtxOptions>
+    SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, HasShouldUpdate, No, HasSuccess>
 {
     pub fn on_delete(
         self,
-        handler: DeleteHandler<O>,
-    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, HasShouldUpdate, Yes, HasSuccess> {
+        handler: DeleteHandler<O, CtxOptions>,
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, HasShouldUpdate, Yes, HasSuccess> {
         SchemaBuilder {
             default: self.default,
             depends_on: self.depends_on,
@@ -192,8 +222,8 @@ impl<HasShouldUpdate, HasSuccess, I, O, T>
 
     pub fn on_delete_fns(
         self,
-        handlers: Vec<DeleteHandler<O>>,
-    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, HasShouldUpdate, Yes, HasSuccess> {
+        handlers: Vec<DeleteHandler<O, CtxOptions>>,
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, HasShouldUpdate, Yes, HasSuccess> {
         SchemaBuilder {
             default: self.default,
             depends_on: self.depends_on,
@@ -207,13 +237,13 @@ impl<HasShouldUpdate, HasSuccess, I, O, T>
 }
 
 // ON_SUCCESS is only available if HasSuccess is 'No'
-impl<HasShouldUpdate, HasDelete, I, O, T>
-    SchemaBuilder<I, O, T, Yes, Yes, Yes, HasShouldUpdate, HasDelete, No>
+impl<HasShouldUpdate, HasDelete, T, I: HasPartial, O: HasPartial, CtxOptions>
+    SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, HasShouldUpdate, HasDelete, No>
 {
     pub fn on_success(
         self,
-        handler: SuccessHandler<I, O>,
-    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, HasShouldUpdate, HasDelete, Yes> {
+        handler: SuccessHandler<I, O, CtxOptions>,
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, HasShouldUpdate, HasDelete, Yes> {
         SchemaBuilder {
             default: self.default,
             depends_on: self.depends_on,
@@ -227,8 +257,8 @@ impl<HasShouldUpdate, HasDelete, I, O, T>
 
     pub fn on_success_fns(
         self,
-        handlers: Vec<SuccessHandler<I, O>>,
-    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, HasShouldUpdate, HasDelete, Yes> {
+        handlers: Vec<SuccessHandler<I, O, CtxOptions>>,
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, HasShouldUpdate, HasDelete, Yes> {
         SchemaBuilder {
             default: self.default,
             depends_on: self.depends_on,

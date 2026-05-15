@@ -2,25 +2,27 @@ use std::{future::Future, marker::PhantomData};
 
 use crate::{
     schema::properties::base::IvoProperty,
-    types::{ComputableWithContext, Context, DeleteHandler, SuccessHandler},
+    traits::HasPartial,
+    types::{ComputableWithMiniSummary, DeleteHandler, IvoMiniSummary, SuccessHandler},
 };
 
 // Marker Types
 struct Yes;
 struct No;
 
-struct SchemaBuilder<I, O, T, HasDefault, HasDelete, HasSuccess> {
+struct SchemaBuilder<T, I: HasPartial, O: HasPartial, CtxOptions, HasDefault, HasDelete, HasSuccess>
+{
     _default: PhantomData<HasDefault>,
     _del_handlers: PhantomData<HasDelete>,
     _success_handlers: PhantomData<HasSuccess>,
     // actual data...
-    value: Option<ComputableWithContext<I, O, T>>,
-    on_delete_fns: Option<Vec<DeleteHandler<O>>>,
-    on_success_fns: Option<Vec<SuccessHandler<I, O>>>,
+    value: Option<ComputableWithMiniSummary<T, CtxOptions>>,
+    on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
+    on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
 }
 
-impl<HasDefault, HasDelete, HasSuccess, I, O, T> Default
-    for SchemaBuilder<I, O, T, HasDefault, HasDelete, HasSuccess>
+impl<HasDefault, HasDelete, HasSuccess, I: HasPartial, O: HasPartial, T, CtxOptions> Default
+    for SchemaBuilder<T, I, O, CtxOptions, HasDefault, HasDelete, HasSuccess>
 {
     fn default() -> Self {
         Self {
@@ -34,8 +36,10 @@ impl<HasDefault, HasDelete, HasSuccess, I, O, T> Default
     }
 }
 
-impl<HasDelete, HasSuccess, I, O, T> SchemaBuilder<I, O, T, Yes, HasDelete, HasSuccess> {
-    pub fn build(self) -> IvoProperty<I, O, T> {
+impl<HasDelete, HasSuccess, I: HasPartial, O: HasPartial, T, CtxOptions>
+    SchemaBuilder<T, I, O, CtxOptions, Yes, HasDelete, HasSuccess>
+{
+    pub fn build(self) -> IvoProperty<T, I, O, CtxOptions> {
         IvoProperty {
             value: self.value,
             on_delete_fns: self.on_delete_fns,
@@ -48,34 +52,40 @@ impl<HasDelete, HasSuccess, I, O, T> SchemaBuilder<I, O, T, Yes, HasDelete, HasS
 pub struct ConstantField;
 
 impl ConstantField {
-    pub fn value<I, O, T>(value: T) -> SchemaBuilder<I, O, T, Yes, No, No> {
+    pub fn value<I: HasPartial, O: HasPartial, T, CtxOptions>(
+        value: T,
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, No, No> {
         SchemaBuilder {
-            value: Some(ComputableWithContext::Static(value)),
+            value: Some(ComputableWithMiniSummary::Static(value)),
             on_delete_fns: None,
             on_success_fns: None,
             ..Default::default()
         }
     }
 
-    pub fn computed<I, O, T, F>(resolver: F) -> SchemaBuilder<I, O, T, Yes, No, No>
+    pub fn computed<T, I: HasPartial, O: HasPartial, CtxOptions, F>(
+        resolver: F,
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, No, No>
     where
-        F: Fn(&Context<I, O>) -> T + Send + Sync + 'static,
+        F: Fn(&mut IvoMiniSummary<CtxOptions>) -> T + Send + Sync + 'static,
     {
         SchemaBuilder {
-            value: Some(ComputableWithContext::SyncFunc(Box::new(resolver))),
+            value: Some(ComputableWithMiniSummary::SyncFunc(Box::new(resolver))),
             on_delete_fns: None,
             on_success_fns: None,
             ..Default::default()
         }
     }
 
-    pub fn computed_async<I, O, T, F, Fut>(resolver: F) -> SchemaBuilder<I, O, T, Yes, No, No>
+    pub fn computed_async<T, I: HasPartial, O: HasPartial, CtxOptions, F, Fut>(
+        resolver: F,
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, No, No>
     where
-        F: Fn(&Context<I, O>) -> Fut + Send + Sync + 'static,
+        F: Fn(&mut IvoMiniSummary<CtxOptions>) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = T> + Send + 'static,
     {
         SchemaBuilder {
-            value: Some(ComputableWithContext::AsyncFunc(Box::new(move |c| {
+            value: Some(ComputableWithMiniSummary::AsyncFunc(Box::new(move |c| {
                 Box::pin(resolver(c))
             }))),
             on_delete_fns: None,
@@ -86,11 +96,13 @@ impl ConstantField {
 }
 
 // ON_DELETE is only available if HasDelete is 'No'
-impl<HasSuccess, I, O, T> SchemaBuilder<I, O, T, Yes, No, HasSuccess> {
+impl<HasSuccess, I: HasPartial, O: HasPartial, T, CtxOptions>
+    SchemaBuilder<T, I, O, CtxOptions, Yes, No, HasSuccess>
+{
     pub fn on_delete(
         self,
-        handler: DeleteHandler<O>,
-    ) -> SchemaBuilder<I, O, T, Yes, Yes, HasSuccess> {
+        handler: DeleteHandler<O, CtxOptions>,
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, HasSuccess> {
         SchemaBuilder {
             value: self.value,
             on_delete_fns: Some(vec![handler]),
@@ -101,8 +113,8 @@ impl<HasSuccess, I, O, T> SchemaBuilder<I, O, T, Yes, No, HasSuccess> {
 
     pub fn on_delete_fns(
         self,
-        handlers: Vec<DeleteHandler<O>>,
-    ) -> SchemaBuilder<I, O, T, Yes, Yes, HasSuccess> {
+        handlers: Vec<DeleteHandler<O, CtxOptions>>,
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, HasSuccess> {
         SchemaBuilder {
             value: self.value,
             on_delete_fns: Some(handlers),
@@ -113,11 +125,13 @@ impl<HasSuccess, I, O, T> SchemaBuilder<I, O, T, Yes, No, HasSuccess> {
 }
 
 // ON_SUCCESS is only available if HasSuccess is 'No'
-impl<HasDelete, I, O, T> SchemaBuilder<I, O, T, Yes, HasDelete, No> {
+impl<HasDelete, I: HasPartial, O: HasPartial, T, CtxOptions>
+    SchemaBuilder<T, I, O, CtxOptions, Yes, HasDelete, No>
+{
     pub fn on_success(
         self,
-        handler: SuccessHandler<I, O>,
-    ) -> SchemaBuilder<I, O, T, Yes, HasDelete, Yes> {
+        handler: SuccessHandler<I, O, CtxOptions>,
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, HasDelete, Yes> {
         SchemaBuilder {
             value: self.value,
             on_delete_fns: self.on_delete_fns,
@@ -128,8 +142,8 @@ impl<HasDelete, I, O, T> SchemaBuilder<I, O, T, Yes, HasDelete, No> {
 
     pub fn on_success_fns(
         self,
-        handlers: Vec<SuccessHandler<I, O>>,
-    ) -> SchemaBuilder<I, O, T, Yes, HasDelete, Yes> {
+        handlers: Vec<SuccessHandler<I, O, CtxOptions>>,
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, HasDelete, Yes> {
         SchemaBuilder {
             value: self.value,
             on_delete_fns: self.on_delete_fns,

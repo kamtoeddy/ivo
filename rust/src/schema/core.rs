@@ -1,12 +1,15 @@
-use crate::schema::definition::{DefaultValue, PropertyDefinition};
-use crate::schema::utils::{SchemaError, TimeStampTool};
-use crate::ValidatorResponse;
+use crate::schema::utils::TimeStampTool;
+use crate::schema::{error::SchemaError, properties::base::IvoProperty};
+use crate::traits::HasPartial;
+use crate::types::ComputableWithMiniSummary;
 use serde_json::Value;
 use std::collections::{HashMap, HashSet};
 
-pub struct SchemaCore {
-    definitions: HashMap<String, PropertyDefinition>,
-    options: Option<Value>,
+type PropertyDefinitions<I, O, CtxOptions> = HashMap<String, IvoProperty<Value, I, O, CtxOptions>>;
+
+pub struct SchemaCore<I: HasPartial, O: HasPartial, CtxOptions> {
+    _definitions: PropertyDefinitions<I, O, CtxOptions>,
+    _options: Option<Value>,
 
     // contexts & values
     pub context: HashMap<String, Value>,
@@ -42,24 +45,24 @@ pub struct SchemaCore {
     pub timestamp_tool: TimeStampTool,
 }
 
-impl SchemaCore {
-    pub fn new(definitions: HashMap<String, PropertyDefinition>, options: Option<Value>) -> Self {
+impl<I: HasPartial, O: HasPartial, CtxOptions> SchemaCore<I, O, CtxOptions> {
+    pub fn new(definitions: PropertyDefinitions<I, O, CtxOptions>, options: Option<Value>) -> Self {
         let mut err_tool = SchemaError::new();
 
         if definitions.is_empty() {
-            err_tool.add(
-                "schema properties",
-                "Insufficient Schema properties".to_string(),
-            );
-
-            err_tool.throw();
+            err_tool
+                .add(
+                    "schema properties",
+                    "Insufficient Schema properties".to_string(),
+                )
+                .throw();
         }
 
         let timestamp_tool = TimeStampTool::new(options.as_ref());
 
         let mut core = Self {
-            definitions,
-            options,
+            _definitions: definitions,
+            _options: options,
             context: HashMap::new(),
             context_options: HashMap::new(),
             defaults: HashMap::new(),
@@ -99,9 +102,9 @@ impl SchemaCore {
         let mut err_tool = SchemaError::new();
 
         // First pass: register prop kinds and simple attributes
-        for (prop, def) in &self.definitions {
+        for (prop, def) in &self._definitions {
             // virtuals
-            if def.virtual_prop {
+            if def.is_virtual {
                 self.virtuals.insert(prop.clone());
 
                 if let Some(alias) = &def.alias {
@@ -131,18 +134,8 @@ impl SchemaCore {
             }
 
             // constants
-            if def.constant {
+            if def.is_constant {
                 self.constants.insert(prop.clone());
-                if def.value.is_none() {
-                    err_tool.add(
-                        prop,
-                        "Constant properties must have a value or setter".to_string(),
-                    );
-                } else if def.default.is_none() {
-                    if let Some(crate::schema::definition::ConstantValue::Static(v)) = &def.value {
-                        self.defaults.insert(prop.clone(), v.clone());
-                    }
-                }
 
                 continue;
             }
@@ -151,16 +144,16 @@ impl SchemaCore {
             self.props.insert(prop.clone());
 
             if let Some(defv) = &def.default {
-                if let DefaultValue::Static(v) = defv {
+                if let ComputableWithMiniSummary::Static(v) = defv {
                     self.defaults.insert(prop.clone(), v.clone());
                 }
             }
 
-            if def.required == Some(true) {
+            if def.required.is_some() {
                 self.required_props.insert(prop.clone());
             }
 
-            if def.readonly == Some(true) {
+            if def.is_readonly {
                 self.readonly_props.insert(prop.clone());
             }
 
@@ -172,6 +165,7 @@ impl SchemaCore {
                     );
                 } else {
                     self.dependents.insert(prop.clone());
+
                     for p in depends {
                         self.dependency_map
                             .entry(p.clone())
@@ -183,9 +177,9 @@ impl SchemaCore {
         }
 
         // Second pass: checks that require knowledge of all props
-        for (prop, def) in &self.definitions {
-            if let Some(allowed) = &def.allow_values {
-                if allowed.len() < 2 {
+        for (prop, def) in &self._definitions {
+            if let Some(enum_values) = &def.enum_values {
+                if enum_values.len() < 2 {
                     err_tool.add(
                         prop,
                         "Allowed values must have at least 2 values".to_string(),
@@ -193,20 +187,22 @@ impl SchemaCore {
                 } else {
                     let mut uniq = HashSet::new();
                     let mut ok = true;
-                    for v in allowed {
+
+                    for v in enum_values {
                         let s = serde_json::to_string(v).unwrap_or_default();
                         if !uniq.insert(s) {
                             ok = false;
                             break;
                         }
                     }
+
                     if !ok {
                         err_tool.add(
                             prop,
                             "Allowed values must be an array of unique values".to_string(),
                         );
                     } else {
-                        let set: HashSet<String> = allowed
+                        let set: HashSet<String> = enum_values
                             .iter()
                             .map(|v| serde_json::to_string(v).unwrap_or_default())
                             .collect();
@@ -229,33 +225,24 @@ impl SchemaCore {
                     }
                 }
             }
-
-            if let Some(validators) = &def.validator {
-                if validators.is_empty() || validators.len() > 2 {
-                    err_tool.add(
-                        prop,
-                        "Validator array must contain exactly 1 or 2 functions".to_string(),
-                    );
-                } else if validators.len() == 2 {
-                    self.props_with_secondary_validators.insert(prop.clone());
-                }
-            }
         }
 
         // Dependency analyses
         for dep in &self.dependents {
             let circular = self.get_circular_dependencies_of(dep);
+
             for c in circular {
                 err_tool.add(dep, format!("Circular dependency identified with '{c}'"));
             }
 
-            if let Some(def) = self.definitions.get(dep) {
+            if let Some(def) = self._definitions.get(dep) {
                 if let Some(parents) = &def.depends_on {
                     for parent in parents {
                         for other in parents {
                             if parent == other {
                                 continue;
                             }
+
                             if self.is_redundant_dependency_of(dep, parent, other) {
                                 err_tool.add(dep, format!("Dependency on '{parent}' is redundant because of dependency on '{other}'" ));
                             }
@@ -265,41 +252,17 @@ impl SchemaCore {
             }
         }
 
-        err_tool.throw();
-    }
-
-    pub fn get_definition(&self, prop: &str) -> Option<&PropertyDefinition> {
-        self.definitions.get(prop)
-    }
-
-    pub fn get_default_value(&self, prop: &str, ctx: &HashMap<String, Value>) -> Option<Value> {
-        let def = self.definitions.get(prop)?;
-        match &def.default {
-            Some(DefaultValue::Static(v)) => Some(v.clone()),
-            Some(DefaultValue::Func(f)) => Some(f(ctx)),
-            None => None,
+        if err_tool.is_payload_loaded() {
+            err_tool.throw();
         }
     }
 
-    pub fn get_constant_value(&self, prop: &str, ctx: &HashMap<String, Value>) -> Option<Value> {
-        let def = self.definitions.get(prop)?;
-        match &def.value {
-            Some(crate::schema::definition::ConstantValue::Static(v)) => Some(v.clone()),
-            Some(crate::schema::definition::ConstantValue::Func(f)) => Some(f(ctx)),
-            None => None,
-        }
+    pub fn get_definition(&self, prop: &str) -> Option<&IvoProperty<Value, I, O, CtxOptions>> {
+        self._definitions.get(prop)
     }
 
-    fn get_option_bool(&self, key: &str) -> bool {
-        if let Some(opts) = &self.options {
-            if let Some(obj) = opts.as_object() {
-                if let Some(v) = obj.get(key) {
-                    return v.as_bool().unwrap_or(false);
-                }
-            }
-        }
-
-        false
+    pub fn get_definitions(&self) -> &PropertyDefinitions<I, O, CtxOptions> {
+        &self._definitions
     }
 
     /// Resolve defaults iteratively based on dependencies.
@@ -319,173 +282,6 @@ impl SchemaCore {
     /// Return whether a name is a defined constant
     pub fn is_constant(&self, prop: &str) -> bool {
         self.constants.contains(prop)
-    }
-
-    /// Resolve defaults iteratively based on dependencies.
-    /// It will repeatedly evaluate defaults whose dependencies are satisfied (present in `context`).
-    /// If unresolved defaults remain and schema option `error_on_unresolved_defaults` is true,
-    /// returns Err(SchemaError) listing the unresolved props.
-    pub fn resolve_defaults(&self, context: &mut HashMap<String, Value>) {
-        let mut pending: HashSet<String> = self
-            .definitions
-            .iter()
-            .filter_map(|(k, def)| {
-                if def.default.is_some() {
-                    Some(k.clone())
-                } else {
-                    None
-                }
-            })
-            .filter(|k| !context.contains_key(k))
-            .collect();
-
-        let mut progress = true;
-
-        while progress && !pending.is_empty() {
-            progress = false;
-            let mut resolved: Vec<String> = Vec::new();
-
-            for prop in pending.iter() {
-                if let Some(def) = self.definitions.get(prop) {
-                    let deps = def
-                        .depends_on
-                        .as_ref()
-                        .map(|v| v.as_slice())
-                        .unwrap_or(&[] as &[String]);
-
-                    // ready if all deps are present in context or are not properties
-                    let ready = deps
-                        .iter()
-                        .all(|d| context.contains_key(d) || !self.definitions.contains_key(d));
-
-                    if ready {
-                        if let Some(val) = self.get_default_value(prop, context) {
-                            context.insert(prop.clone(), val);
-                            resolved.push(prop.clone());
-                            progress = true;
-                        }
-                    }
-                } else {
-                    // unknown definition -> mark resolved to avoid infinite loops
-                    resolved.push(prop.clone());
-                }
-            }
-
-            for r in resolved {
-                pending.remove(&r);
-            }
-        }
-
-        if !pending.is_empty() {
-            if self.get_option_bool("error_on_unresolved_defaults") {
-                // find cycles among pending
-                let cycles = self.find_cycles_in_pending(&pending);
-
-                let mut payload = std::collections::HashMap::new();
-
-                for p in pending.iter() {
-                    if let Some(paths) = cycles.get(p) {
-                        // report all cycle paths involving this property
-                        payload.insert(p.clone(), paths.clone());
-                    } else {
-                        payload.insert(
-                            p.clone(),
-                            vec!["Unresolved default due to missing dependencies".to_string()],
-                        );
-                    }
-                }
-            }
-        }
-    }
-
-    /// Resolve constants iteratively; constants may depend on other values in context.
-    /// If unresolved constants remain and schema option `error_on_unresolved_constants` is true,
-    /// returns Err(SchemaError) listing unresolved constants; otherwise returns Ok(())
-    pub fn resolve_constants(&self, context: &mut HashMap<String, Value>) {
-        let mut pending: HashSet<String> = self
-            .constants
-            .iter()
-            .filter(|k| !context.contains_key(*k))
-            .cloned()
-            .collect();
-
-        let mut progress = true;
-
-        while progress && !pending.is_empty() {
-            progress = false;
-            let mut resolved = Vec::new();
-
-            for prop in pending.iter() {
-                if let Some(def) = self.definitions.get(prop) {
-                    let deps = def
-                        .depends_on
-                        .as_ref()
-                        .map(|v| v.as_slice())
-                        .unwrap_or(&[] as &[String]);
-                    let ready = deps
-                        .iter()
-                        .all(|d| context.contains_key(d) || !self.definitions.contains_key(d));
-
-                    if ready {
-                        if let Some(val) = self.get_constant_value(prop, context) {
-                            context.insert(prop.clone(), val);
-                            resolved.push(prop.clone());
-                            progress = true;
-                        }
-                    }
-                } else {
-                    resolved.push(prop.clone());
-                }
-            }
-
-            for r in resolved {
-                pending.remove(&r);
-            }
-        }
-
-        if !pending.is_empty() {
-            if self.get_option_bool("error_on_unresolved_constants") {
-                // detect cycles among pending constants
-                let cycles = self.find_cycles_in_pending(&pending);
-
-                let mut payload = std::collections::HashMap::new();
-
-                for p in pending.iter() {
-                    if let Some(paths) = cycles.get(p) {
-                        payload.insert(p.clone(), paths.clone());
-                    } else {
-                        payload.insert(
-                            p.clone(),
-                            vec!["Unresolved constant due to missing dependencies".to_string()],
-                        );
-                    }
-                }
-            }
-        }
-    }
-
-    pub fn run_validators(&self, prop: &str, value: &Value) -> Option<ValidatorResponse<Value>> {
-        let def = self.definitions.get(prop)?;
-        let validators = def.validator.as_ref()?;
-
-        if validators.is_empty() {
-            return None;
-        }
-
-        let ctx = HashMap::new();
-        let primary = &validators[0];
-
-        match primary(value, &ctx) {
-            Ok(v) => {
-                if validators.len() == 2 {
-                    let secondary = &validators[1];
-                    Some(secondary(&v, &ctx))
-                } else {
-                    Some(Ok(v))
-                }
-            }
-            Err(e) => Some(Err(e)),
-        }
     }
 
     pub fn get_reserved_keys(&self) -> Vec<String> {
@@ -509,86 +305,84 @@ impl SchemaCore {
         keys
     }
 
-    fn get_circular_dependencies_of(&self, property: &str) -> Vec<String> {
-        let mut circular = Vec::new();
+    fn get_circular_dependencies_of(&self, _property: &str) -> Vec<String> {
+        let circular = Vec::new();
 
-        if !self.dependents.contains(property) {
-            return circular;
-        }
+        // if !self.dependents.contains(property) {
+        //     return circular;
+        // }
 
-        fn dfs(
-            core: &SchemaCore,
-            start: &str,
-            node: &str,
-            visited: &mut Vec<String>,
-            out: &mut Vec<String>,
-        ) {
-            if !core.dependents.contains(node) || visited.contains(&node.to_string()) {
-                return;
-            }
-            if start != node {
-                visited.push(node.to_string());
-            }
+        // let dfs =
+        //     move |start: &str, node: &str, visited: &mut Vec<String>, out: &mut Vec<String>| {
+        //         if !&self.dependents.contains(node) || visited.contains(&node.to_string()) {
+        //             return;
+        //         }
 
-            if let Some(def) = core.definitions.get(node) {
-                if let Some(deps) = &def.depends_on {
-                    for s in deps {
-                        if s == start {
-                            out.push(node.to_string());
-                        } else if core.dependents.contains(s) {
-                            dfs(core, start, s, visited, out);
-                        }
-                    }
-                }
-            }
-        }
+        //         if start != node {
+        //             visited.push(node.to_string());
+        //         }
 
-        dfs(self, property, property, &mut Vec::new(), &mut circular);
+        //         if let Some(def) = &self._definitions.get(node) {
+        //             if let Some(deps) = &def.depends_on {
+        //                 for s in deps {
+        //                     if s == start {
+        //                         out.push(node.to_string());
+        //                     } else if &self.dependents.contains(s) {
+        //                         dfs(start, s, visited, out);
+        //                     }
+        //                 }
+        //             }
+        //         }
+        //     };
 
-        circular.sort();
-        circular.dedup();
+        // dfs(property, property, &mut Vec::new(), &mut circular);
+
+        // circular.sort();
+        // circular.dedup();
         circular
     }
 
     fn is_redundant_dependency_of(
         &self,
         property: &str,
-        parent_prop: &str,
-        other_parent: &str,
+        _parent_prop: &str,
+        _other_parent: &str,
     ) -> bool {
         if !self.dependents.contains(property) {
             return false;
         }
 
-        fn is_in_transitive(
-            core: &SchemaCore,
-            start: &str,
-            target: &str,
-            visited: &mut HashSet<String>,
-        ) -> bool {
-            if visited.contains(start) {
-                return false;
-            }
-            visited.insert(start.to_string());
+        return false;
 
-            if let Some(def) = core.definitions.get(start) {
-                if let Some(deps) = &def.depends_on {
-                    for s in deps {
-                        if s == target {
-                            return true;
-                        }
-                        if is_in_transitive(core, s, target, visited) {
-                            return true;
-                        }
-                    }
-                }
-            }
+        // fn is_in_transitive(
+        //     core: &SchemaCore,
+        //     start: &str,
+        //     target: &str,
+        //     visited: &mut HashSet<String>,
+        // ) -> bool {
+        //     if visited.contains(start) {
+        //         return false;
+        //     }
+        //     visited.insert(start.to_string());
 
-            false
-        }
+        //     if let Some(def) = core._definitions.get(start) {
+        //         if let Some(deps) = &def.depends_on {
+        //             for s in deps {
+        //                 if s == target {
+        //                     return true;
+        //                 }
+        //                 if is_in_transitive(core, s, target, visited) {
+        //                     return true;
+        //                 }
+        //             }
+        //         }
+        //     }
 
-        let mut visited = HashSet::new();
-        is_in_transitive(self, other_parent, parent_prop, &mut visited)
+        //     false
+        // }
+
+        // let mut visited = HashSet::new();
+        // is_in_transitive(self, other_parent, parent_prop, &mut visited)
     }
 
     /// Find cycles among a set of pending nodes. Returns a map from node -> list of cycle path strings
@@ -628,7 +422,7 @@ impl SchemaCore {
         visited.insert(node.to_string());
         stack.push(node.to_string());
 
-        if let Some(def) = self.definitions.get(node) {
+        if let Some(def) = self._definitions.get(node) {
             if let Some(deps) = &def.depends_on {
                 for dep in deps.iter() {
                     if !pending.contains(dep) {

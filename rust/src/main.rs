@@ -1,4 +1,7 @@
-use ivo::demo::{PartialUserInput, User, UserInput, UserModel};
+use ivo::{
+    demo::{PartialUserInput, User, UserInput, UserModel},
+    schema::error::UpdateError,
+};
 
 fn main() {
     match UserModel.create(&UserInput {
@@ -31,8 +34,8 @@ fn main() {
     ) {
         Err((error, handle_failure)) => {
             match error {
-                ivo::error::UpdateError::NothingToUpdate => println!("Nothing to update"),
-                ivo::error::UpdateError::ValidationError(payload) => {
+                UpdateError::NothingToUpdate => println!("Nothing to update"),
+                UpdateError::ValidationError(payload) => {
                     println!("Error payload: {:?}", payload)
                 }
             };

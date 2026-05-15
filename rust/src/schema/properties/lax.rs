@@ -4,10 +4,11 @@ use serde_json::Value;
 
 use crate::{
     schema::properties::base::IvoProperty,
+    traits::HasPartial,
     types::{
-        BooleanResolverWithMutSummary, ComputableInit, ComputableRequired, ComputableWithContext,
-        Context, DeleteHandler, FailureHandler, FieldValidator, MutableSummary,
-        ResolverWithContextFn, SuccessHandler,
+        BooleanResolverWithMutSummary, ComputableInit, ComputableRequired,
+        ComputableWithMiniSummary, DeleteHandler, FailureHandler, FieldValidator, IvoSummary,
+        ResolverWithMiniSummaryFn, SuccessHandler,
     },
     ValidatorResponse,
 };
@@ -20,9 +21,10 @@ struct No;
 struct YesComputed;
 
 struct SchemaBuilder<
-    I,
-    O,
     T,
+    I: HasPartial,
+    O: HasPartial,
+    CtxOptions,
     HasDefault,
     HasValidator,
     HasRevalidator,
@@ -45,16 +47,16 @@ struct SchemaBuilder<
     _on_failure_fns: PhantomData<HasFailure>,
     _on_success_fns: PhantomData<HasSuccess>,
     // actual data...
-    default: Option<ComputableWithContext<I, O, T>>,
-    validator: Option<FieldValidator<I, O, T>>,
-    re_validator: Option<FieldValidator<I, O, T>>,
-    required: Option<ComputableRequired<I, O>>,
-    should_ignore_fn: Option<BooleanResolverWithMutSummary<I, O>>,
-    should_init: Option<ComputableInit<I, O>>,
-    should_update: Option<ComputableInit<I, O>>,
-    on_delete_fns: Option<Vec<DeleteHandler<O>>>,
-    on_failure_fns: Option<Vec<FailureHandler<I, O>>>,
-    on_success_fns: Option<Vec<SuccessHandler<I, O>>>,
+    default: Option<ComputableWithMiniSummary<T, CtxOptions>>,
+    validator: Option<FieldValidator<T, I, O, CtxOptions>>,
+    re_validator: Option<FieldValidator<T, I, O, CtxOptions>>,
+    required: Option<ComputableRequired<I, O, CtxOptions>>,
+    should_ignore_fn: Option<BooleanResolverWithMutSummary<I, O, CtxOptions>>,
+    should_init: Option<ComputableInit<I, O, CtxOptions>>,
+    should_update: Option<ComputableInit<I, O, CtxOptions>>,
+    on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
+    on_failure_fns: Option<Vec<FailureHandler<I, O, CtxOptions>>>,
+    on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
 }
 
 impl<
@@ -68,14 +70,16 @@ impl<
         HasDelete,
         HasFailure,
         HasSuccess,
-        I,
-        O,
         T,
+        I: HasPartial,
+        O: HasPartial,
+        CtxOptions,
     > Default
     for SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         HasDefault,
         HasValidator,
         HasRevalidator,
@@ -124,14 +128,16 @@ impl<
         HasDelete,
         HasFailure,
         HasSuccess,
-        I,
-        O,
         T,
+        I: HasPartial,
+        O: HasPartial,
+        CtxOptions,
     >
     SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         HasRevalidator,
         HasDefault,
@@ -144,7 +150,7 @@ impl<
         HasSuccess,
     >
 {
-    pub fn build(self) -> IvoProperty<I, O, T> {
+    pub fn build(self) -> IvoProperty<T, I, O, CtxOptions> {
         IvoProperty {
             default: self.default,
             validator: self.validator,
@@ -162,32 +168,37 @@ impl<
 }
 
 impl LaxField {
-    pub fn default<I, O, T>(
+    pub fn default<T, I: HasPartial, O: HasPartial, CtxOptions>(
         value: T,
-    ) -> SchemaBuilder<I, O, T, Yes, No, No, No, No, No, No, No, No, No> {
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, No, No, No, No, No, No, No, No, No> {
         SchemaBuilder {
-            default: Some(ComputableWithContext::Static(value)),
+            default: Some(ComputableWithMiniSummary::Static(value)),
             ..Default::default()
         }
     }
 
-    pub fn default_fn<I, O, T>(
-        default_fn: ResolverWithContextFn<I, O, T>,
-    ) -> SchemaBuilder<I, O, T, Yes, No, No, No, No, No, No, No, No, No> {
+    pub fn default_fn<T, I: HasPartial, O: HasPartial, CtxOptions>(
+        default_fn: ResolverWithMiniSummaryFn<T, CtxOptions>,
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, No, No, No, No, No, No, No, No, No> {
         SchemaBuilder {
-            default: Some(ComputableWithContext::SyncFunc(default_fn)),
+            default: Some(ComputableWithMiniSummary::SyncFunc(default_fn)),
             ..Default::default()
         }
     }
 }
 
-impl<I, O, T> SchemaBuilder<I, O, T, Yes, No, No, No, No, No, No, No, No, No> {
+impl<T, I: HasPartial, O: HasPartial, CtxOptions>
+    SchemaBuilder<T, I, O, CtxOptions, Yes, No, No, No, No, No, No, No, No, No>
+{
     pub fn validate<F>(
         self,
         validator: F,
-    ) -> SchemaBuilder<I, O, T, Yes, Yes, No, No, No, No, No, No, No, No>
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, No, No, No, No, No, No, No, No>
     where
-        F: Fn(&Value, &Context<I, O>) -> ValidatorResponse<T> + Send + Sync + 'static,
+        F: Fn(&Value, &mut IvoSummary<I, O, CtxOptions>) -> ValidatorResponse<T>
+            + Send
+            + Sync
+            + 'static,
     {
         SchemaBuilder {
             default: self.default,
@@ -199,28 +210,33 @@ impl<I, O, T> SchemaBuilder<I, O, T, Yes, No, No, No, No, No, No, No, No, No> {
     pub fn validate_async<F, Fut>(
         self,
         validator: F,
-    ) -> SchemaBuilder<I, O, T, Yes, Yes, No, No, No, No, No, No, No, No>
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, No, No, No, No, No, No, No, No>
     where
-        F: Fn(&Value, &Context<I, O>) -> Fut + Send + Sync + 'static,
+        F: Fn(&Value, &mut IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = ValidatorResponse<T>> + Send + 'static,
     {
         SchemaBuilder {
             default: self.default,
-            validator: Some(FieldValidator::Async(Box::new(move |v, ctx| {
-                Box::pin(validator(v, ctx))
+            validator: Some(FieldValidator::Async(Box::new(move |v, s| {
+                Box::pin(validator(v, s))
             }))),
             ..Default::default()
         }
     }
 }
 
-impl<I, O, T> SchemaBuilder<I, O, T, Yes, Yes, No, No, No, No, No, No, No, No> {
+impl<T, I: HasPartial, O: HasPartial, CtxOptions>
+    SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, No, No, No, No, No, No, No, No>
+{
     pub fn re_validate<F>(
         self,
         re_validator: F,
-    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, No, No, No, No, No, No>
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, No, No, No, No, No, No>
     where
-        F: Fn(&Value, &Context<I, O>) -> ValidatorResponse<T> + Send + Sync + 'static,
+        F: Fn(&Value, &mut IvoSummary<I, O, CtxOptions>) -> ValidatorResponse<T>
+            + Send
+            + Sync
+            + 'static,
     {
         SchemaBuilder {
             default: self.default,
@@ -233,31 +249,31 @@ impl<I, O, T> SchemaBuilder<I, O, T, Yes, Yes, No, No, No, No, No, No, No, No> {
     pub fn re_validate_async<F, Fut>(
         self,
         re_validator: F,
-    ) -> SchemaBuilder<I, O, T, Yes, Yes, No, No, No, No, No, No, No, No>
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, No, No, No, No, No, No, No, No>
     where
-        F: Fn(&Value, &Context<I, O>) -> Fut + Send + Sync + 'static,
+        F: Fn(&Value, &mut IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = ValidatorResponse<T>> + Send + 'static,
     {
         SchemaBuilder {
             default: self.default,
             validator: self.validator,
-            re_validator: Some(FieldValidator::Async(Box::new(move |v, ctx| {
-                Box::pin(re_validator(v, ctx))
+            re_validator: Some(FieldValidator::Async(Box::new(move |v, s| {
+                Box::pin(re_validator(v, s))
             }))),
             ..Default::default()
         }
     }
 }
 
-impl<HasRevalidator, I, O, T>
-    SchemaBuilder<I, O, T, Yes, Yes, HasRevalidator, No, No, No, No, No, No, No>
+impl<HasRevalidator, T, I: HasPartial, O: HasPartial, CtxOptions>
+    SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, HasRevalidator, No, No, No, No, No, No, No>
 {
     pub fn required_if<F>(
         self,
         required_fn: F,
-    ) -> SchemaBuilder<I, O, T, Yes, Yes, HasRevalidator, Yes, No, No, No, No, No, No>
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, HasRevalidator, Yes, No, No, No, No, No, No>
     where
-        F: Fn(&Context<I, O>) -> (bool, &str) + Send + Sync + 'static,
+        F: Fn(&mut IvoSummary<I, O, CtxOptions>) -> (bool, &str) + Send + Sync + 'static,
     {
         SchemaBuilder {
             default: self.default,
@@ -269,16 +285,32 @@ impl<HasRevalidator, I, O, T>
     }
 }
 
-impl<HasValidator, HasRevalidator, HasRequired, I, O, T>
-    SchemaBuilder<I, O, T, Yes, HasValidator, HasRevalidator, HasRequired, No, No, No, No, No, No>
+impl<HasValidator, HasRevalidator, HasRequired, T, I: HasPartial, O: HasPartial, CtxOptions>
+    SchemaBuilder<
+        T,
+        I,
+        O,
+        CtxOptions,
+        Yes,
+        HasValidator,
+        HasRevalidator,
+        HasRequired,
+        No,
+        No,
+        No,
+        No,
+        No,
+        No,
+    >
 {
     pub fn ignore_if<F>(
         self,
         fx: F,
     ) -> SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         HasValidator,
         HasRevalidator,
@@ -291,7 +323,7 @@ impl<HasValidator, HasRevalidator, HasRequired, I, O, T>
         No,
     >
     where
-        F: Fn(&MutableSummary<I, O>) -> bool + Send + Sync + 'static,
+        F: Fn(&mut IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
     {
         SchemaBuilder {
             default: self.default,
@@ -304,15 +336,31 @@ impl<HasValidator, HasRevalidator, HasRequired, I, O, T>
     }
 }
 
-impl<HasValidator, HasRevalidator, HasRequired, I, O, T>
-    SchemaBuilder<I, O, T, Yes, HasValidator, HasRevalidator, HasRequired, No, No, No, No, No, No>
+impl<HasValidator, HasRevalidator, HasRequired, T, I: HasPartial, O: HasPartial, CtxOptions>
+    SchemaBuilder<
+        T,
+        I,
+        O,
+        CtxOptions,
+        Yes,
+        HasValidator,
+        HasRevalidator,
+        HasRequired,
+        No,
+        No,
+        No,
+        No,
+        No,
+        No,
+    >
 {
     pub fn ignore_init(
         self,
     ) -> SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         HasValidator,
         HasRevalidator,
@@ -338,9 +386,10 @@ impl<HasValidator, HasRevalidator, HasRequired, I, O, T>
         self,
         fx: F,
     ) -> SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         HasValidator,
         HasRevalidator,
@@ -353,7 +402,7 @@ impl<HasValidator, HasRevalidator, HasRequired, I, O, T>
         No,
     >
     where
-        F: Fn(&MutableSummary<I, O>) -> bool + Send + Sync + 'static,
+        F: Fn(&mut IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
     {
         SchemaBuilder {
             default: self.default,
@@ -368,9 +417,10 @@ impl<HasValidator, HasRevalidator, HasRequired, I, O, T>
     pub fn readonly(
         self,
     ) -> SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         HasValidator,
         HasRevalidator,
@@ -396,9 +446,10 @@ impl<HasValidator, HasRevalidator, HasRequired, I, O, T>
         self,
         fx: F,
     ) -> SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         HasValidator,
         HasRevalidator,
@@ -411,7 +462,7 @@ impl<HasValidator, HasRevalidator, HasRequired, I, O, T>
         No,
     >
     where
-        F: Fn(&MutableSummary<I, O>) -> bool + Send + Sync + 'static,
+        F: Fn(&mut IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
     {
         SchemaBuilder {
             default: self.default,
@@ -424,16 +475,32 @@ impl<HasValidator, HasRevalidator, HasRequired, I, O, T>
     }
 }
 
-impl<HasValidator, HasRevalidator, HasRequired, I, O, T>
-    SchemaBuilder<I, O, T, Yes, HasValidator, HasRevalidator, HasRequired, No, No, Yes, No, No, No>
+impl<HasValidator, HasRevalidator, HasRequired, T, I: HasPartial, O: HasPartial, CtxOptions>
+    SchemaBuilder<
+        T,
+        I,
+        O,
+        CtxOptions,
+        Yes,
+        HasValidator,
+        HasRevalidator,
+        HasRequired,
+        No,
+        No,
+        Yes,
+        No,
+        No,
+        No,
+    >
 {
     pub fn allow_init_if<F>(
         self,
         fx: F,
     ) -> SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         HasValidator,
         HasRevalidator,
@@ -446,7 +513,7 @@ impl<HasValidator, HasRevalidator, HasRequired, I, O, T>
         No,
     >
     where
-        F: Fn(&MutableSummary<I, O>) -> bool + Send + Sync + 'static,
+        F: Fn(&mut IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
     {
         SchemaBuilder {
             default: self.default,
@@ -459,11 +526,12 @@ impl<HasValidator, HasRevalidator, HasRequired, I, O, T>
     }
 }
 
-impl<HasValidator, HasRevalidator, HasRequired, I, O, T>
+impl<HasValidator, HasRevalidator, HasRequired, T, I: HasPartial, O: HasPartial, CtxOptions>
     SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         HasValidator,
         HasRevalidator,
@@ -480,9 +548,10 @@ impl<HasValidator, HasRevalidator, HasRequired, I, O, T>
         self,
         fx: F,
     ) -> SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         HasValidator,
         HasRevalidator,
@@ -495,7 +564,7 @@ impl<HasValidator, HasRevalidator, HasRequired, I, O, T>
         No,
     >
     where
-        F: Fn(&MutableSummary<I, O>) -> bool + Send + Sync + 'static,
+        F: Fn(&mut IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
     {
         SchemaBuilder {
             default: self.default,
@@ -509,11 +578,12 @@ impl<HasValidator, HasRevalidator, HasRequired, I, O, T>
     }
 }
 
-impl<HasValidator, HasRevalidator, HasRequired, I, O, T>
+impl<HasValidator, HasRevalidator, HasRequired, T, I: HasPartial, O: HasPartial, CtxOptions>
     SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         HasValidator,
         HasRevalidator,
@@ -529,9 +599,10 @@ impl<HasValidator, HasRevalidator, HasRequired, I, O, T>
     pub fn ignore_init(
         self,
     ) -> SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         HasValidator,
         HasRevalidator,
@@ -559,9 +630,10 @@ impl<HasValidator, HasRevalidator, HasRequired, I, O, T>
         self,
         fx: F,
     ) -> SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         HasValidator,
         HasRevalidator,
@@ -574,7 +646,7 @@ impl<HasValidator, HasRevalidator, HasRequired, I, O, T>
         No,
     >
     where
-        F: Fn(&MutableSummary<I, O>) -> bool + Send + Sync + 'static,
+        F: Fn(&mut IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
     {
         SchemaBuilder {
             default: self.default,
@@ -598,14 +670,16 @@ impl<
         HasShouldUpdate,
         HasFailure,
         HasSuccess,
-        I,
-        O,
         T,
+        I: HasPartial,
+        O: HasPartial,
+        CtxOptions,
     >
     SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         HasValidator,
         HasRevalidator,
@@ -620,11 +694,12 @@ impl<
 {
     pub fn on_delete(
         self,
-        handler: DeleteHandler<O>,
+        handler: DeleteHandler<O, CtxOptions>,
     ) -> SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         HasValidator,
         HasRevalidator,
@@ -653,11 +728,12 @@ impl<
 
     pub fn on_delete_fns(
         self,
-        handlers: Vec<DeleteHandler<O>>,
+        handlers: Vec<DeleteHandler<O, CtxOptions>>,
     ) -> SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         HasValidator,
         HasRevalidator,
@@ -694,14 +770,16 @@ impl<
         HasShouldUpdate,
         HasDelete,
         HasSuccess,
-        I,
-        O,
         T,
+        I: HasPartial,
+        O: HasPartial,
+        CtxOptions,
     >
     SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         Yes,
         HasRevalidator,
@@ -716,11 +794,12 @@ impl<
 {
     pub fn on_failure(
         self,
-        handler: FailureHandler<I, O>,
+        handler: FailureHandler<I, O, CtxOptions>,
     ) -> SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         Yes,
         HasRevalidator,
@@ -749,11 +828,12 @@ impl<
 
     pub fn on_failure_fns(
         self,
-        handlers: Vec<FailureHandler<I, O>>,
+        handlers: Vec<FailureHandler<I, O, CtxOptions>>,
     ) -> SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         Yes,
         HasRevalidator,
@@ -790,14 +870,16 @@ impl<
         HasShouldUpdate,
         HasDelete,
         HasFailure,
-        I,
-        O,
         T,
+        I: HasPartial,
+        O: HasPartial,
+        CtxOptions,
     >
     SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         HasValidator,
         HasRevalidator,
@@ -812,11 +894,12 @@ impl<
 {
     pub fn on_success(
         self,
-        handler: SuccessHandler<I, O>,
+        handler: SuccessHandler<I, O, CtxOptions>,
     ) -> SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         HasValidator,
         HasRevalidator,
@@ -845,11 +928,12 @@ impl<
 
     pub fn on_success_fns(
         self,
-        handlers: Vec<SuccessHandler<I, O>>,
+        handlers: Vec<SuccessHandler<I, O, CtxOptions>>,
     ) -> SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         HasValidator,
         HasRevalidator,

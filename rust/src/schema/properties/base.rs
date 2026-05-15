@@ -1,36 +1,38 @@
-use crate::types::{
-    BooleanResolverWithMutSummary, ComputableEnumeratedError, ComputableInit, ComputableRequired,
-    ComputableWithContext, DeleteHandler, FailureHandler, FieldValidator, ResolverWithMutSummary,
-    SuccessHandler, VirtualSanitiser,
+use crate::{
+    traits::HasPartial,
+    types::{
+        BooleanResolverWithMutSummary, ComputableEnumeratedError, ComputableInit,
+        ComputableRequired, ComputableWithMiniSummary, DeleteHandler, FailureHandler,
+        FieldValidator, ResolverWithMutSummary, SuccessHandler, VirtualSanitiser,
+    },
 };
-use serde_json::Value;
 
-pub struct IvoProperty<I, O, T = Value> {
+pub struct IvoProperty<T, I: HasPartial, O: HasPartial, CtxOptions> {
     pub alias: Option<String>,
     pub enum_error: Option<ComputableEnumeratedError<T>>,
     pub enum_values: Option<Vec<T>>,
-    pub default: Option<ComputableWithContext<I, O, T>>,
+    pub default: Option<ComputableWithMiniSummary<T, CtxOptions>>,
     pub depends_on: Option<Vec<String>>,
     pub is_constant: bool,
     pub is_readonly: bool,
     pub is_virtual: bool,
-    pub value: Option<ComputableWithContext<I, O, T>>,
-    pub required: Option<ComputableRequired<I, O>>,
-    pub resolver: Option<ResolverWithMutSummary<I, O, T>>,
-    pub sanitizer: Option<VirtualSanitiser<I, O, T>>,
-    pub validator: Option<FieldValidator<I, O, T>>,
-    pub re_validator: Option<FieldValidator<I, O, T>>,
+    pub value: Option<ComputableWithMiniSummary<T, CtxOptions>>,
+    pub required: Option<ComputableRequired<I, O, CtxOptions>>,
+    pub resolver: Option<ResolverWithMutSummary<T, I, O, CtxOptions>>,
+    pub sanitizer: Option<VirtualSanitiser<T, I, O, CtxOptions>>,
+    pub validator: Option<FieldValidator<T, I, O, CtxOptions>>,
+    pub re_validator: Option<FieldValidator<T, I, O, CtxOptions>>,
     //
-    pub should_ignore: Option<BooleanResolverWithMutSummary<I, O>>,
-    pub should_init: Option<ComputableInit<I, O>>,
-    pub should_update: Option<ComputableInit<I, O>>,
+    pub should_ignore: Option<BooleanResolverWithMutSummary<I, O, CtxOptions>>,
+    pub should_init: Option<ComputableInit<I, O, CtxOptions>>,
+    pub should_update: Option<ComputableInit<I, O, CtxOptions>>,
     // life cycle handlers
-    pub on_delete_fns: Option<Vec<DeleteHandler<O>>>,
-    pub on_failure_fns: Option<Vec<FailureHandler<I, O>>>,
-    pub on_success_fns: Option<Vec<SuccessHandler<I, O>>>,
+    pub on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
+    pub on_failure_fns: Option<Vec<FailureHandler<I, O, CtxOptions>>>,
+    pub on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
 }
 
-impl<I, O, T> Default for IvoProperty<I, O, T> {
+impl<T, I: HasPartial, O: HasPartial, CtxOptions> Default for IvoProperty<T, I, O, CtxOptions> {
     fn default() -> Self {
         Self {
             alias: None,

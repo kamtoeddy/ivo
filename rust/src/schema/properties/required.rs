@@ -4,9 +4,10 @@ use serde_json::Value;
 
 use crate::{
     schema::properties::base::IvoProperty,
+    traits::HasPartial,
     types::{
-        ComputableInit, ComputableRequired, Context, DeleteHandler, FailureHandler, FieldValidator,
-        MutableSummary, SuccessHandler, True,
+        ComputableInit, ComputableRequired, DeleteHandler, FailureHandler, FieldValidator,
+        IvoSummary, SuccessHandler, True,
     },
     ValidatorResponse,
 };
@@ -18,9 +19,10 @@ struct Yes;
 struct No;
 
 struct SchemaBuilder<
-    I,
-    O,
     T,
+    I: HasPartial,
+    O: HasPartial,
+    CtxOptions,
     HasValidator,
     HasRevalidator,
     HasShouldUpdate,
@@ -35,20 +37,31 @@ struct SchemaBuilder<
     _on_failure_fns: PhantomData<HasFailure>,
     _on_success_fns: PhantomData<HasSuccess>,
     // actual data...
-    validator: Option<FieldValidator<I, O, T>>,
-    re_validator: Option<FieldValidator<I, O, T>>,
-    should_update: Option<ComputableInit<I, O>>,
-    on_delete_fns: Option<Vec<DeleteHandler<O>>>,
-    on_failure_fns: Option<Vec<FailureHandler<I, O>>>,
-    on_success_fns: Option<Vec<SuccessHandler<I, O>>>,
+    validator: Option<FieldValidator<T, I, O, CtxOptions>>,
+    re_validator: Option<FieldValidator<T, I, O, CtxOptions>>,
+    should_update: Option<ComputableInit<I, O, CtxOptions>>,
+    on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
+    on_failure_fns: Option<Vec<FailureHandler<I, O, CtxOptions>>>,
+    on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
 }
 
-impl<HasValidator, HasRevalidator, HasShouldUpdate, HasDelete, HasFailure, HasSuccess, I, O, T>
-    Default
+impl<
+        HasValidator,
+        HasRevalidator,
+        HasShouldUpdate,
+        HasDelete,
+        HasFailure,
+        HasSuccess,
+        T,
+        I: HasPartial,
+        O: HasPartial,
+        CtxOptions,
+    > Default
     for SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         HasValidator,
         HasRevalidator,
         HasShouldUpdate,
@@ -75,10 +88,31 @@ impl<HasValidator, HasRevalidator, HasShouldUpdate, HasDelete, HasFailure, HasSu
     }
 }
 
-impl<HasRevalidator, HasShouldUpdate, HasDelete, HasFailure, HasSuccess, I, O, T>
-    SchemaBuilder<I, O, T, Yes, HasRevalidator, HasShouldUpdate, HasDelete, HasFailure, HasSuccess>
+impl<
+        HasRevalidator,
+        HasShouldUpdate,
+        HasDelete,
+        HasFailure,
+        HasSuccess,
+        T,
+        I: HasPartial,
+        O: HasPartial,
+        CtxOptions,
+    >
+    SchemaBuilder<
+        T,
+        I,
+        O,
+        CtxOptions,
+        Yes,
+        HasRevalidator,
+        HasShouldUpdate,
+        HasDelete,
+        HasFailure,
+        HasSuccess,
+    >
 {
-    pub fn build(self) -> IvoProperty<I, O, T> {
+    pub fn build(self) -> IvoProperty<T, I, O, CtxOptions> {
         IvoProperty {
             validator: self.validator,
             re_validator: self.re_validator,
@@ -93,9 +127,14 @@ impl<HasRevalidator, HasShouldUpdate, HasDelete, HasFailure, HasSuccess, I, O, T
 }
 
 impl RequiredField {
-    pub fn validate<I, O, T, F>(validator: F) -> SchemaBuilder<I, O, T, Yes, No, No, No, No, No>
+    pub fn validate<T, I: HasPartial, O: HasPartial, CtxOptions, F>(
+        validator: F,
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, No, No, No, No, No>
     where
-        F: Fn(&Value, &Context<I, O>) -> ValidatorResponse<T> + Send + Sync + 'static,
+        F: Fn(&Value, &mut IvoSummary<I, O, CtxOptions>) -> ValidatorResponse<T>
+            + Send
+            + Sync
+            + 'static,
     {
         SchemaBuilder {
             validator: Some(FieldValidator::Sync(Box::new(validator))),
@@ -103,11 +142,11 @@ impl RequiredField {
         }
     }
 
-    pub fn validate_async<I, O, T, F, Fut>(
+    pub fn validate_async<T, I: HasPartial, O: HasPartial, CtxOptions, F, Fut>(
         validator: F,
-    ) -> SchemaBuilder<I, O, T, Yes, No, No, No, No, No>
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, No, No, No, No, No>
     where
-        F: Fn(&Value, &Context<I, O>) -> Fut + Send + Sync + 'static,
+        F: Fn(&Value, &mut IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = ValidatorResponse<T>> + Send + 'static,
     {
         SchemaBuilder {
@@ -119,10 +158,18 @@ impl RequiredField {
     }
 }
 
-impl<I, O, T> SchemaBuilder<I, O, T, Yes, No, No, No, No, No> {
-    pub fn re_validate<F>(self, re_validator: F) -> SchemaBuilder<I, O, T, Yes, Yes, No, No, No, No>
+impl<T, I: HasPartial, O: HasPartial, CtxOptions>
+    SchemaBuilder<T, I, O, CtxOptions, Yes, No, No, No, No, No>
+{
+    pub fn re_validate<F>(
+        self,
+        re_validator: F,
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, No, No, No, No>
     where
-        F: Fn(&Value, &Context<I, O>) -> ValidatorResponse<T> + Send + Sync + 'static,
+        F: Fn(&Value, &mut IvoSummary<I, O, CtxOptions>) -> ValidatorResponse<T>
+            + Send
+            + Sync
+            + 'static,
     {
         SchemaBuilder {
             validator: self.validator,
@@ -134,9 +181,9 @@ impl<I, O, T> SchemaBuilder<I, O, T, Yes, No, No, No, No, No> {
     pub fn validate_async<F, Fut>(
         self,
         re_validator: F,
-    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, No, No>
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, No, No>
     where
-        F: Fn(&Value, &Context<I, O>) -> Fut + Send + Sync + 'static,
+        F: Fn(&Value, &mut IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = ValidatorResponse<T>> + Send + 'static,
     {
         SchemaBuilder {
@@ -149,8 +196,12 @@ impl<I, O, T> SchemaBuilder<I, O, T, Yes, No, No, No, No, No> {
     }
 }
 
-impl<HasRevalidator, I, O, T> SchemaBuilder<I, O, T, Yes, HasRevalidator, No, No, No, No> {
-    pub fn readonly(self) -> SchemaBuilder<I, O, T, Yes, HasRevalidator, Yes, No, No, No> {
+impl<HasRevalidator, T, I: HasPartial, O: HasPartial, CtxOptions>
+    SchemaBuilder<T, I, O, CtxOptions, Yes, HasRevalidator, No, No, No, No>
+{
+    pub fn readonly(
+        self,
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, HasRevalidator, Yes, No, No, No> {
         SchemaBuilder {
             validator: self.validator,
             re_validator: self.re_validator,
@@ -162,9 +213,9 @@ impl<HasRevalidator, I, O, T> SchemaBuilder<I, O, T, Yes, HasRevalidator, No, No
     pub fn allow_update_if<F>(
         self,
         fx: F,
-    ) -> SchemaBuilder<I, O, T, Yes, HasRevalidator, No, Yes, No, No>
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, HasRevalidator, No, Yes, No, No>
     where
-        F: Fn(&MutableSummary<I, O>) -> bool + Send + Sync + 'static,
+        F: Fn(&mut IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
     {
         SchemaBuilder {
             validator: self.validator,
@@ -176,14 +227,44 @@ impl<HasRevalidator, I, O, T> SchemaBuilder<I, O, T, Yes, HasRevalidator, No, No
 }
 
 // ON_DELETE is only available if HasDelete is 'No'
-impl<HasRevalidator, HasShouldUpdate, HasFailure, HasSuccess, I, O, T>
-    SchemaBuilder<I, O, T, Yes, HasRevalidator, HasShouldUpdate, No, HasFailure, HasSuccess>
+impl<
+        HasRevalidator,
+        HasShouldUpdate,
+        HasFailure,
+        HasSuccess,
+        T,
+        I: HasPartial,
+        O: HasPartial,
+        CtxOptions,
+    >
+    SchemaBuilder<
+        T,
+        I,
+        O,
+        CtxOptions,
+        Yes,
+        HasRevalidator,
+        HasShouldUpdate,
+        No,
+        HasFailure,
+        HasSuccess,
+    >
 {
     pub fn on_delete(
         self,
-        handler: DeleteHandler<O>,
-    ) -> SchemaBuilder<I, O, T, Yes, HasRevalidator, HasShouldUpdate, Yes, HasFailure, HasSuccess>
-    {
+        handler: DeleteHandler<O, CtxOptions>,
+    ) -> SchemaBuilder<
+        T,
+        I,
+        O,
+        CtxOptions,
+        Yes,
+        HasRevalidator,
+        HasShouldUpdate,
+        Yes,
+        HasFailure,
+        HasSuccess,
+    > {
         SchemaBuilder {
             validator: self.validator,
             re_validator: self.re_validator,
@@ -197,9 +278,19 @@ impl<HasRevalidator, HasShouldUpdate, HasFailure, HasSuccess, I, O, T>
 
     pub fn on_delete_fns(
         self,
-        handlers: Vec<DeleteHandler<O>>,
-    ) -> SchemaBuilder<I, O, T, Yes, HasRevalidator, HasShouldUpdate, Yes, HasFailure, HasSuccess>
-    {
+        handlers: Vec<DeleteHandler<O, CtxOptions>>,
+    ) -> SchemaBuilder<
+        T,
+        I,
+        O,
+        CtxOptions,
+        Yes,
+        HasRevalidator,
+        HasShouldUpdate,
+        Yes,
+        HasFailure,
+        HasSuccess,
+    > {
         SchemaBuilder {
             validator: self.validator,
             re_validator: self.re_validator,
@@ -213,14 +304,44 @@ impl<HasRevalidator, HasShouldUpdate, HasFailure, HasSuccess, I, O, T>
 }
 
 // ON_FAILURE is only available if HasFailure is 'No'
-impl<HasRevalidator, HasShouldUpdate, HasDelete, HasSuccess, I, O, T>
-    SchemaBuilder<I, O, T, Yes, HasRevalidator, HasShouldUpdate, HasDelete, No, HasSuccess>
+impl<
+        HasRevalidator,
+        HasShouldUpdate,
+        HasDelete,
+        HasSuccess,
+        T,
+        I: HasPartial,
+        O: HasPartial,
+        CtxOptions,
+    >
+    SchemaBuilder<
+        T,
+        I,
+        O,
+        CtxOptions,
+        Yes,
+        HasRevalidator,
+        HasShouldUpdate,
+        HasDelete,
+        No,
+        HasSuccess,
+    >
 {
     pub fn on_failure(
         self,
-        handler: FailureHandler<I, O>,
-    ) -> SchemaBuilder<I, O, T, Yes, HasRevalidator, HasShouldUpdate, HasDelete, Yes, HasSuccess>
-    {
+        handler: FailureHandler<I, O, CtxOptions>,
+    ) -> SchemaBuilder<
+        T,
+        I,
+        O,
+        CtxOptions,
+        Yes,
+        HasRevalidator,
+        HasShouldUpdate,
+        HasDelete,
+        Yes,
+        HasSuccess,
+    > {
         SchemaBuilder {
             validator: self.validator,
             re_validator: self.re_validator,
@@ -234,9 +355,19 @@ impl<HasRevalidator, HasShouldUpdate, HasDelete, HasSuccess, I, O, T>
 
     pub fn on_failure_fns(
         self,
-        handlers: Vec<FailureHandler<I, O>>,
-    ) -> SchemaBuilder<I, O, T, Yes, HasRevalidator, HasShouldUpdate, HasDelete, Yes, HasSuccess>
-    {
+        handlers: Vec<FailureHandler<I, O, CtxOptions>>,
+    ) -> SchemaBuilder<
+        T,
+        I,
+        O,
+        CtxOptions,
+        Yes,
+        HasRevalidator,
+        HasShouldUpdate,
+        HasDelete,
+        Yes,
+        HasSuccess,
+    > {
         SchemaBuilder {
             validator: self.validator,
             re_validator: self.re_validator,
@@ -249,14 +380,44 @@ impl<HasRevalidator, HasShouldUpdate, HasDelete, HasSuccess, I, O, T>
 }
 
 // ON_SUCCESS is only available if HasSuccess is 'No'
-impl<HasRevalidator, HasShouldUpdate, HasDelete, HasFailure, I, O, T>
-    SchemaBuilder<I, O, T, Yes, HasRevalidator, HasShouldUpdate, HasDelete, HasFailure, No>
+impl<
+        HasRevalidator,
+        HasShouldUpdate,
+        HasDelete,
+        HasFailure,
+        T,
+        I: HasPartial,
+        O: HasPartial,
+        CtxOptions,
+    >
+    SchemaBuilder<
+        T,
+        I,
+        O,
+        CtxOptions,
+        Yes,
+        HasRevalidator,
+        HasShouldUpdate,
+        HasDelete,
+        HasFailure,
+        No,
+    >
 {
     pub fn on_success(
         self,
-        handler: SuccessHandler<I, O>,
-    ) -> SchemaBuilder<I, O, T, Yes, HasRevalidator, HasShouldUpdate, HasDelete, HasFailure, Yes>
-    {
+        handler: SuccessHandler<I, O, CtxOptions>,
+    ) -> SchemaBuilder<
+        T,
+        I,
+        O,
+        CtxOptions,
+        Yes,
+        HasRevalidator,
+        HasShouldUpdate,
+        HasDelete,
+        HasFailure,
+        Yes,
+    > {
         SchemaBuilder {
             validator: self.validator,
             re_validator: self.re_validator,
@@ -270,9 +431,19 @@ impl<HasRevalidator, HasShouldUpdate, HasDelete, HasFailure, I, O, T>
 
     pub fn on_success_fns(
         self,
-        handlers: Vec<SuccessHandler<I, O>>,
-    ) -> SchemaBuilder<I, O, T, Yes, HasRevalidator, HasShouldUpdate, HasDelete, HasFailure, Yes>
-    {
+        handlers: Vec<SuccessHandler<I, O, CtxOptions>>,
+    ) -> SchemaBuilder<
+        T,
+        I,
+        O,
+        CtxOptions,
+        Yes,
+        HasRevalidator,
+        HasShouldUpdate,
+        HasDelete,
+        HasFailure,
+        Yes,
+    > {
         SchemaBuilder {
             validator: self.validator,
             re_validator: self.re_validator,

@@ -4,9 +4,10 @@ use serde_json::Value;
 
 use crate::{
     schema::properties::base::IvoProperty,
+    traits::HasPartial,
     types::{
-        BooleanResolverWithMutSummary, ComputableInit, ComputableRequired, Context, FailureHandler,
-        FieldValidator, MutableSummary, SuccessHandler, VirtualSanitiser,
+        BooleanResolverWithMutSummary, ComputableInit, ComputableRequired, FailureHandler,
+        FieldValidator, IvoSummary, SuccessHandler, VirtualSanitiser,
     },
     ValidatorResponse,
 };
@@ -19,9 +20,10 @@ struct No;
 struct YesComputed;
 
 struct SchemaBuilder<
-    I,
-    O,
     T,
+    I: HasPartial,
+    O: HasPartial,
+    CtxOptions,
     HasValidator,
     HasAlias,
     HasRevalidator,
@@ -45,15 +47,15 @@ struct SchemaBuilder<
     _on_success_fns: PhantomData<HasSuccess>,
     // actual data...
     alias: Option<String>,
-    validator: Option<FieldValidator<I, O, T>>,
-    re_validator: Option<FieldValidator<I, O, T>>,
-    required: Option<ComputableRequired<I, O>>,
-    sanitizer: Option<VirtualSanitiser<I, O, T>>,
-    should_ignore_fn: Option<BooleanResolverWithMutSummary<I, O>>,
-    should_init: Option<ComputableInit<I, O>>,
-    should_update: Option<ComputableInit<I, O>>,
-    on_failure_fns: Option<Vec<FailureHandler<I, O>>>,
-    on_success_fns: Option<Vec<SuccessHandler<I, O>>>,
+    validator: Option<FieldValidator<T, I, O, CtxOptions>>,
+    re_validator: Option<FieldValidator<T, I, O, CtxOptions>>,
+    required: Option<ComputableRequired<I, O, CtxOptions>>,
+    sanitizer: Option<VirtualSanitiser<T, I, O, CtxOptions>>,
+    should_ignore_fn: Option<BooleanResolverWithMutSummary<I, O, CtxOptions>>,
+    should_init: Option<ComputableInit<I, O, CtxOptions>>,
+    should_update: Option<ComputableInit<I, O, CtxOptions>>,
+    on_failure_fns: Option<Vec<FailureHandler<I, O, CtxOptions>>>,
+    on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
 }
 
 impl<
@@ -67,14 +69,16 @@ impl<
         HasShouldUpdate,
         HasFailure,
         HasSuccess,
-        I,
-        O,
         T,
+        I: HasPartial,
+        O: HasPartial,
+        CtxOptions,
     > Default
     for SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         HasValidator,
         HasAlias,
         HasRevalidator,
@@ -123,14 +127,16 @@ impl<
         HasShouldUpdate,
         HasFailure,
         HasSuccess,
-        I,
-        O,
         T,
+        I: HasPartial,
+        O: HasPartial,
+        CtxOptions,
     >
     SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -143,7 +149,7 @@ impl<
         HasSuccess,
     >
 {
-    pub fn build(self) -> IvoProperty<I, O, T> {
+    pub fn build(self) -> IvoProperty<T, I, O, CtxOptions> {
         IvoProperty {
             is_virtual: true,
             alias: self.alias,
@@ -162,20 +168,23 @@ impl<
 }
 
 impl VirtualField {
-    pub fn alias<I, O, T>(
+    pub fn alias<T, I: HasPartial, O: HasPartial, CtxOptions>(
         name: &str,
-    ) -> SchemaBuilder<I, O, T, No, Yes, No, No, No, No, No, No, No, No> {
+    ) -> SchemaBuilder<T, I, O, CtxOptions, No, Yes, No, No, No, No, No, No, No, No> {
         SchemaBuilder {
             alias: Some(name.to_string()),
             ..Default::default()
         }
     }
 
-    pub fn validate<I, O, T, F>(
+    pub fn validate<T, I: HasPartial, O: HasPartial, CtxOptions, F>(
         validator: F,
-    ) -> SchemaBuilder<I, O, T, Yes, No, No, No, No, No, No, No, No, No>
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, No, No, No, No, No, No, No, No, No>
     where
-        F: Fn(&Value, &Context<I, O>) -> ValidatorResponse<T> + Send + Sync + 'static,
+        F: Fn(&Value, &mut IvoSummary<I, O, CtxOptions>) -> ValidatorResponse<T>
+            + Send
+            + Sync
+            + 'static,
     {
         SchemaBuilder {
             validator: Some(FieldValidator::Sync(Box::new(validator))),
@@ -183,11 +192,11 @@ impl VirtualField {
         }
     }
 
-    pub fn validate_async<I, O, T, F, Fut>(
+    pub fn validate_async<T, I: HasPartial, O: HasPartial, CtxOptions, F, Fut>(
         validator: F,
-    ) -> SchemaBuilder<I, O, T, Yes, No, No, No, No, No, No, No, No, No>
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, No, No, No, No, No, No, No, No, No>
     where
-        F: Fn(&Value, &Context<I, O>) -> Fut + Send + Sync + 'static,
+        F: Fn(&Value, &mut IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = ValidatorResponse<T>> + Send + 'static,
     {
         SchemaBuilder {
@@ -199,13 +208,13 @@ impl VirtualField {
     }
 }
 
-impl<HasRevalidator, I, O, T>
-    SchemaBuilder<I, O, T, Yes, No, HasRevalidator, No, No, No, No, No, No, No>
+impl<HasRevalidator, T, I: HasPartial, O: HasPartial, CtxOptions>
+    SchemaBuilder<T, I, O, CtxOptions, Yes, No, HasRevalidator, No, No, No, No, No, No, No>
 {
     pub fn alias(
         self,
         name: &str,
-    ) -> SchemaBuilder<I, O, T, Yes, Yes, No, No, No, No, No, No, No, No> {
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, No, No, No, No, No, No, No, No> {
         SchemaBuilder {
             alias: Some(name.to_string()),
             validator: self.validator,
@@ -222,13 +231,18 @@ impl<HasRevalidator, I, O, T>
     }
 }
 
-impl<HasAlias, I, O, T> SchemaBuilder<I, O, T, No, HasAlias, No, No, No, No, No, No, No, No> {
+impl<HasAlias, T, I: HasPartial, O: HasPartial, CtxOptions>
+    SchemaBuilder<T, I, O, CtxOptions, No, HasAlias, No, No, No, No, No, No, No, No>
+{
     pub fn validate<F>(
         self,
         validator: F,
-    ) -> SchemaBuilder<I, O, T, Yes, HasAlias, No, No, No, No, No, No, No, No>
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, HasAlias, No, No, No, No, No, No, No, No>
     where
-        F: Fn(&Value, &Context<I, O>) -> ValidatorResponse<T> + Send + Sync + 'static,
+        F: Fn(&Value, &mut IvoSummary<I, O, CtxOptions>) -> ValidatorResponse<T>
+            + Send
+            + Sync
+            + 'static,
     {
         SchemaBuilder {
             alias: self.alias,
@@ -240,9 +254,9 @@ impl<HasAlias, I, O, T> SchemaBuilder<I, O, T, No, HasAlias, No, No, No, No, No,
     pub fn validate_async<F, Fut>(
         self,
         validator: F,
-    ) -> SchemaBuilder<I, O, T, Yes, HasAlias, No, No, No, No, No, No, No, No>
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, HasAlias, No, No, No, No, No, No, No, No>
     where
-        F: Fn(&Value, &Context<I, O>) -> Fut + Send + Sync + 'static,
+        F: Fn(&Value, &mut IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = ValidatorResponse<T>> + Send + 'static,
     {
         SchemaBuilder {
@@ -255,13 +269,18 @@ impl<HasAlias, I, O, T> SchemaBuilder<I, O, T, No, HasAlias, No, No, No, No, No,
     }
 }
 
-impl<HasAlias, I, O, T> SchemaBuilder<I, O, T, Yes, HasAlias, No, No, No, No, No, No, No, No> {
+impl<HasAlias, T, I: HasPartial, O: HasPartial, CtxOptions>
+    SchemaBuilder<T, I, O, CtxOptions, Yes, HasAlias, No, No, No, No, No, No, No, No>
+{
     pub fn re_validate<F>(
         self,
         re_validator: F,
-    ) -> SchemaBuilder<I, O, T, Yes, HasAlias, Yes, No, No, No, No, No, No, No>
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, HasAlias, Yes, No, No, No, No, No, No, No>
     where
-        F: Fn(&Value, &Context<I, O>) -> ValidatorResponse<T> + Send + Sync + 'static,
+        F: Fn(&Value, &mut IvoSummary<I, O, CtxOptions>) -> ValidatorResponse<T>
+            + Send
+            + Sync
+            + 'static,
     {
         SchemaBuilder {
             alias: self.alias,
@@ -274,9 +293,9 @@ impl<HasAlias, I, O, T> SchemaBuilder<I, O, T, Yes, HasAlias, No, No, No, No, No
     pub fn re_validate_async<F, Fut>(
         self,
         re_validator: F,
-    ) -> SchemaBuilder<I, O, T, Yes, HasAlias, Yes, No, No, No, No, No, No, No>
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, HasAlias, Yes, No, No, No, No, No, No, No>
     where
-        F: Fn(&Value, &Context<I, O>) -> Fut + Send + Sync + 'static,
+        F: Fn(&Value, &mut IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = ValidatorResponse<T>> + Send + 'static,
     {
         SchemaBuilder {
@@ -290,15 +309,30 @@ impl<HasAlias, I, O, T> SchemaBuilder<I, O, T, Yes, HasAlias, No, No, No, No, No
     }
 }
 
-impl<HasAlias, HasRevalidator, I, O, T>
-    SchemaBuilder<I, O, T, Yes, HasAlias, HasRevalidator, No, No, No, No, No, No, No>
+impl<HasAlias, HasRevalidator, T, I: HasPartial, O: HasPartial, CtxOptions>
+    SchemaBuilder<T, I, O, CtxOptions, Yes, HasAlias, HasRevalidator, No, No, No, No, No, No, No>
 {
     pub fn required_if<F>(
         self,
         required_fn: F,
-    ) -> SchemaBuilder<I, O, T, Yes, HasAlias, HasRevalidator, No, Yes, No, No, No, No, No>
+    ) -> SchemaBuilder<
+        T,
+        I,
+        O,
+        CtxOptions,
+        Yes,
+        HasAlias,
+        HasRevalidator,
+        No,
+        Yes,
+        No,
+        No,
+        No,
+        No,
+        No,
+    >
     where
-        F: Fn(&Context<I, O>) -> (bool, &str) + Send + Sync + 'static,
+        F: Fn(&mut IvoSummary<I, O, CtxOptions>) -> (bool, &str) + Send + Sync + 'static,
     {
         SchemaBuilder {
             alias: self.alias,
@@ -310,15 +344,45 @@ impl<HasAlias, HasRevalidator, I, O, T>
     }
 }
 
-impl<HasAlias, HasRevalidator, HasRequired, I, O, T>
-    SchemaBuilder<I, O, T, Yes, HasAlias, HasRevalidator, No, HasRequired, No, No, No, No, No>
+impl<HasAlias, HasRevalidator, HasRequired, T, I: HasPartial, O: HasPartial, CtxOptions>
+    SchemaBuilder<
+        T,
+        I,
+        O,
+        CtxOptions,
+        Yes,
+        HasAlias,
+        HasRevalidator,
+        No,
+        HasRequired,
+        No,
+        No,
+        No,
+        No,
+        No,
+    >
 {
     pub fn sanitize<F>(
         self,
         sanitizer: F,
-    ) -> SchemaBuilder<I, O, T, Yes, HasAlias, HasRevalidator, Yes, HasRequired, No, No, No, No, No>
+    ) -> SchemaBuilder<
+        T,
+        I,
+        O,
+        CtxOptions,
+        Yes,
+        HasAlias,
+        HasRevalidator,
+        Yes,
+        HasRequired,
+        No,
+        No,
+        No,
+        No,
+        No,
+    >
     where
-        F: Fn(&MutableSummary<I, O>) -> T + Send + Sync + 'static,
+        F: Fn(&mut IvoSummary<I, O, CtxOptions>) -> T + Send + Sync + 'static,
     {
         SchemaBuilder {
             alias: self.alias,
@@ -331,11 +395,21 @@ impl<HasAlias, HasRevalidator, HasRequired, I, O, T>
     }
 }
 
-impl<HasAlias, HasRevalidator, HasSanitizer, HasRequired, I, O, T>
+impl<
+        HasAlias,
+        HasRevalidator,
+        HasSanitizer,
+        HasRequired,
+        T,
+        I: HasPartial,
+        O: HasPartial,
+        CtxOptions,
+    >
     SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -352,9 +426,10 @@ impl<HasAlias, HasRevalidator, HasSanitizer, HasRequired, I, O, T>
         self,
         fx: F,
     ) -> SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -367,7 +442,7 @@ impl<HasAlias, HasRevalidator, HasSanitizer, HasRequired, I, O, T>
         No,
     >
     where
-        F: Fn(&MutableSummary<I, O>) -> bool + Send + Sync + 'static,
+        F: Fn(&mut IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
     {
         SchemaBuilder {
             alias: self.alias,
@@ -381,11 +456,21 @@ impl<HasAlias, HasRevalidator, HasSanitizer, HasRequired, I, O, T>
     }
 }
 
-impl<HasAlias, HasRevalidator, HasSanitizer, HasRequired, I, O, T>
+impl<
+        HasAlias,
+        HasRevalidator,
+        HasSanitizer,
+        HasRequired,
+        T,
+        I: HasPartial,
+        O: HasPartial,
+        CtxOptions,
+    >
     SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -401,9 +486,10 @@ impl<HasAlias, HasRevalidator, HasSanitizer, HasRequired, I, O, T>
     pub fn ignore_init(
         self,
     ) -> SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -430,9 +516,10 @@ impl<HasAlias, HasRevalidator, HasSanitizer, HasRequired, I, O, T>
         self,
         fx: F,
     ) -> SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -445,7 +532,7 @@ impl<HasAlias, HasRevalidator, HasSanitizer, HasRequired, I, O, T>
         No,
     >
     where
-        F: Fn(&MutableSummary<I, O>) -> bool + Send + Sync + 'static,
+        F: Fn(&mut IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
     {
         SchemaBuilder {
             alias: self.alias,
@@ -461,9 +548,10 @@ impl<HasAlias, HasRevalidator, HasSanitizer, HasRequired, I, O, T>
     pub fn ignore_update(
         self,
     ) -> SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -490,9 +578,10 @@ impl<HasAlias, HasRevalidator, HasSanitizer, HasRequired, I, O, T>
         self,
         fx: F,
     ) -> SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -505,7 +594,7 @@ impl<HasAlias, HasRevalidator, HasSanitizer, HasRequired, I, O, T>
         No,
     >
     where
-        F: Fn(&MutableSummary<I, O>) -> bool + Send + Sync + 'static,
+        F: Fn(&mut IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
     {
         SchemaBuilder {
             alias: self.alias,
@@ -519,11 +608,21 @@ impl<HasAlias, HasRevalidator, HasSanitizer, HasRequired, I, O, T>
     }
 }
 
-impl<HasAlias, HasRevalidator, HasSanitizer, HasRequired, I, O, T>
+impl<
+        HasAlias,
+        HasRevalidator,
+        HasSanitizer,
+        HasRequired,
+        T,
+        I: HasPartial,
+        O: HasPartial,
+        CtxOptions,
+    >
     SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -540,9 +639,10 @@ impl<HasAlias, HasRevalidator, HasSanitizer, HasRequired, I, O, T>
         self,
         fx: F,
     ) -> SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -555,7 +655,7 @@ impl<HasAlias, HasRevalidator, HasSanitizer, HasRequired, I, O, T>
         No,
     >
     where
-        F: Fn(&MutableSummary<I, O>) -> bool + Send + Sync + 'static,
+        F: Fn(&mut IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
     {
         SchemaBuilder {
             alias: self.alias,
@@ -569,11 +669,21 @@ impl<HasAlias, HasRevalidator, HasSanitizer, HasRequired, I, O, T>
     }
 }
 
-impl<HasAlias, HasRevalidator, HasSanitizer, HasRequired, I, O, T>
+impl<
+        HasAlias,
+        HasRevalidator,
+        HasSanitizer,
+        HasRequired,
+        T,
+        I: HasPartial,
+        O: HasPartial,
+        CtxOptions,
+    >
     SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -590,9 +700,10 @@ impl<HasAlias, HasRevalidator, HasSanitizer, HasRequired, I, O, T>
         self,
         fx: F,
     ) -> SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -605,7 +716,7 @@ impl<HasAlias, HasRevalidator, HasSanitizer, HasRequired, I, O, T>
         No,
     >
     where
-        F: Fn(&MutableSummary<I, O>) -> bool + Send + Sync + 'static,
+        F: Fn(&mut IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
     {
         SchemaBuilder {
             alias: self.alias,
@@ -620,11 +731,21 @@ impl<HasAlias, HasRevalidator, HasSanitizer, HasRequired, I, O, T>
     }
 }
 
-impl<HasAlias, HasRevalidator, HasSanitizer, HasRequired, I, O, T>
+impl<
+        HasAlias,
+        HasRevalidator,
+        HasSanitizer,
+        HasRequired,
+        T,
+        I: HasPartial,
+        O: HasPartial,
+        CtxOptions,
+    >
     SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -640,9 +761,10 @@ impl<HasAlias, HasRevalidator, HasSanitizer, HasRequired, I, O, T>
     pub fn ignore_init(
         self,
     ) -> SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -670,9 +792,10 @@ impl<HasAlias, HasRevalidator, HasSanitizer, HasRequired, I, O, T>
         self,
         fx: F,
     ) -> SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -685,7 +808,7 @@ impl<HasAlias, HasRevalidator, HasSanitizer, HasRequired, I, O, T>
         No,
     >
     where
-        F: Fn(&MutableSummary<I, O>) -> bool + Send + Sync + 'static,
+        F: Fn(&mut IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
     {
         SchemaBuilder {
             alias: self.alias,
@@ -711,14 +834,16 @@ impl<
         HasShouldUpdate,
         HasFailure,
         HasSuccess,
-        I,
-        O,
         T,
+        I: HasPartial,
+        O: HasPartial,
+        CtxOptions,
     >
     SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -733,11 +858,12 @@ impl<
 {
     pub fn on_failure(
         self,
-        handler: FailureHandler<I, O>,
+        handler: FailureHandler<I, O, CtxOptions>,
     ) -> SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -766,11 +892,12 @@ impl<
 
     pub fn on_failure_fns(
         self,
-        handlers: Vec<FailureHandler<I, O>>,
+        handlers: Vec<FailureHandler<I, O, CtxOptions>>,
     ) -> SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -807,14 +934,16 @@ impl<
         HasShouldInit,
         HasShouldUpdate,
         HasFailure,
-        I,
-        O,
         T,
+        I: HasPartial,
+        O: HasPartial,
+        CtxOptions,
     >
     SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -829,11 +958,12 @@ impl<
 {
     pub fn on_success(
         self,
-        handler: SuccessHandler<I, O>,
+        handler: SuccessHandler<I, O, CtxOptions>,
     ) -> SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -862,11 +992,12 @@ impl<
 
     pub fn on_success_fns(
         self,
-        handlers: Vec<SuccessHandler<I, O>>,
+        handlers: Vec<SuccessHandler<I, O, CtxOptions>>,
     ) -> SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         HasAlias,
         HasRevalidator,

@@ -1,9 +1,13 @@
-use crate::schema::properties::{
-    base::IvoProperty, constants::ConstantField, dependents::DependentField,
-    enumerated::EnumeratedField, lax::LaxField, required::RequiredField, virtuals::VirtualField,
+use crate::{
+    schema::properties::{
+        base::IvoProperty, constants::ConstantField, dependents::DependentField,
+        enumerated::EnumeratedField, lax::LaxField, required::RequiredField,
+        virtuals::VirtualField,
+    },
+    traits::HasPartial,
 };
 
-impl<I, O> IvoProperty<I, O> {
+impl<T, I: HasPartial, O: HasPartial, CtxOptions> IvoProperty<T, I, O, CtxOptions> {
     pub fn constant() -> ConstantField {
         ConstantField
     }

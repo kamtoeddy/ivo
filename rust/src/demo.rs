@@ -1,8 +1,10 @@
+use std::collections::HashMap;
+
 // use chrono::{DateTime, Utc};
 use partial_derive::MakePartial;
 use serde::{Deserialize, Serialize};
 
-use crate::model::Model;
+use crate::schema::{Model, SchemaCore};
 
 // type DateWithTz = DateTime<Utc>;
 
@@ -23,5 +25,7 @@ pub struct UserInput {
 }
 
 lazy_static::lazy_static! {
-    pub static ref UserModel: Model<UserInput, User> = Model::<UserInput, User>::new();
+    pub static ref UserModel: Model<UserInput, User> = Model::<UserInput, User>::new(
+        SchemaCore::new(HashMap::new(), None)
+    );
 }

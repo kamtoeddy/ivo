@@ -1,8 +1,9 @@
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
 
 use futures::future::BoxFuture;
 use serde_json::Value;
+
+use crate::traits::{HasPartial, Partial};
 
 #[derive(Debug)]
 pub struct True;
@@ -26,7 +27,7 @@ impl std::ops::Deref for False {
     }
 }
 
-pub type CtxOptions = HashMap<String, Value>;
+// pub type CtxOptions = HashMap<String, Value>;
 
 pub type EnumeratedErrorResolver<T> = Box<dyn Fn((Value, &Vec<T>)) -> &str + Send + Sync>;
 
@@ -35,119 +36,161 @@ pub enum ComputableEnumeratedError<T> {
     Func(EnumeratedErrorResolver<T>),
 }
 
-pub enum ComputableWithContext<I, O, T = Value> {
+pub enum ComputableWithMiniSummary<T, CtxOptions> {
     Static(T),
-    AsyncFunc(AsyncResolverWithContextFn<I, O, T>),
-    SyncFunc(ResolverWithContextFn<I, O, T>),
+    AsyncFunc(AsyncResolverWithMiniSummaryFn<T, CtxOptions>),
+    SyncFunc(ResolverWithMiniSummaryFn<T, CtxOptions>),
 }
 
-pub enum ComputableInit<I, O> {
+pub enum ComputableInit<I: HasPartial, O: HasPartial, CtxOptions> {
     False,
-    Func(ResolverWithMutSummaryFn<I, O, bool>),
+    Func(ResolverWithMutSummaryFn<bool, I, O, CtxOptions>),
 }
 
-pub enum ComputableRequired<I, O> {
+pub enum ComputableRequired<I: HasPartial, O: HasPartial, CtxOptions> {
     Static(True),
-    Func(RequiredResolverFn<I, O>),
+    Func(RequiredResolverFn<I, O, CtxOptions>),
 }
 
-pub struct Context<I, O> {
-    pub input: Arc<I>,
-    pub values: Arc<O>,
-    pub options: Arc<Mutex<CtxOptions>>,
+pub type Context = HashMap<String, Value>;
+
+pub struct IvoMiniSummary<CtxOptions> {
+    context: Context,
+    options: CtxOptions,
 }
 
-pub struct DeletionContext<O> {
-    pub values: Arc<O>,
-    pub options: Arc<Mutex<CtxOptions>>,
+impl<CtxOptions> IvoMiniSummary<CtxOptions> {
+    pub fn new(context: Context, options: CtxOptions) -> Self {
+        Self { context, options }
+    }
+
+    pub fn ctx(&self) -> &Context {
+        &self.context
+    }
+
+    pub fn options(&self) -> &CtxOptions {
+        &self.options
+    }
+
+    pub fn update_options(&mut self) {
+        todo!()
+    }
 }
 
-pub enum IvoSummary<I, O> {
-    Create {
-        context: Context<I, O>,
-        input: Arc<I>,
-        values: Arc<O>,
-    },
-    Update {
-        changes: HashMap<String, Value>,
-        context: Context<I, O>,
-        input: Arc<I>,
-        previous_values: Arc<O>,
-        values: Arc<O>,
-    },
+pub struct IvoSummary<I: HasPartial, O: HasPartial, CtxOptions> {
+    changes: Option<HashMap<String, Value>>,
+    context: Context,
+    input: Partial<I>,
+    input_values: HashMap<String, Value>,
+    is_update: bool,
+    previous_values: Option<O>,
+    values: O,
+    options: CtxOptions,
 }
 
-// impl<I, O> IvoSummary<I, O> {
-//     pub fn get_options(&self) -> &mut CtxOptions;
-// }
+impl<I: HasPartial, O: HasPartial, CtxOptions> IvoSummary<I, O, CtxOptions> {
+    pub fn new(
+        changes: Option<HashMap<String, Value>>,
+        context: Context,
+        input: Partial<I>,
+        input_values: HashMap<String, Value>,
+        is_update: bool,
+        previous_values: Option<O>,
+        values: O,
+        options: CtxOptions,
+    ) -> Self {
+        Self {
+            changes,
+            context,
+            input,
+            input_values,
+            is_update,
+            previous_values,
+            values,
+            options,
+        }
+    }
 
-pub struct ImmutableSummary<I, O> {
-    pub changes: Option<Context<I, O>>,
-    pub context: Context<I, O>,
-    pub input_values: HashMap<String, Value>,
-    pub is_update: bool,
-    pub previous_values: Option<Arc<O>>,
-    pub values: Arc<O>,
+    pub fn changes(&self) -> &Option<HashMap<String, Value>> {
+        &self.changes
+    }
+
+    pub fn ctx(&self) -> &Context {
+        &self.context
+    }
+
+    pub fn input(&self) -> &Partial<I> {
+        &self.input
+    }
+
+    pub fn input_values(&self) -> &HashMap<String, Value> {
+        &self.input_values
+    }
+
+    pub fn is_update(&self) -> bool {
+        self.is_update
+    }
+
+    pub fn previous_values(&self) -> &Option<O> {
+        &self.previous_values
+    }
+
+    pub fn values(&self) -> &O {
+        &self.values
+    }
+
+    pub fn options(&self) -> &CtxOptions {
+        &self.options
+    }
+
+    pub fn update_options(&mut self) {
+        todo!()
+    }
 }
 
-pub struct MutableSummary<I, O> {
-    pub summary: ImmutableSummary<I, O>,
+pub enum FieldValidator<T, I: HasPartial, O: HasPartial, CtxOptions> {
+    Async(AsyncFieldValidatorFn<T, I, O, CtxOptions>),
+    Sync(FieldValidatorFn<T, I, O, CtxOptions>),
 }
 
-pub enum FieldValidator<I, O, T> {
-    Async(AsyncFieldValidatorFn<I, O, T>),
-    Sync(FieldValidatorFn<I, O, T>),
-}
-
-pub type AsyncFieldValidatorFn<I, O, T = Value> = Box<
-    dyn Fn(&Value, &Context<I, O>) -> BoxFuture<'static, ValidatorResponse<T>>
+pub type AsyncFieldValidatorFn<T, I, O, CtxOptions> = Box<
+    dyn Fn(&Value, &mut IvoSummary<I, O, CtxOptions>) -> BoxFuture<'static, ValidatorResponse<T>>
         + Send
         + Sync
         + 'static,
 >;
 
-pub type FieldValidatorFn<I, O, T = Value> =
-    Box<dyn Fn(&Value, &Context<I, O>) -> ValidatorResponse<T> + Send + Sync>;
+pub type FieldValidatorFn<T, I, O, CtxOptions> =
+    Box<dyn Fn(&Value, &mut IvoSummary<I, O, CtxOptions>) -> ValidatorResponse<T> + Send + Sync>;
 
-pub type RequiredResolverFn<I, O> = Box<dyn Fn(&Context<I, O>) -> (bool, &str) + Send + Sync>;
+pub type RequiredResolverFn<I, O, CtxOptions> =
+    Box<dyn Fn(&mut IvoSummary<I, O, CtxOptions>) -> (bool, &str) + Send + Sync>;
 
-pub type AsyncResolverWithContextFn<I, O, T = Value> =
-    Box<dyn Fn(&Context<I, O>) -> BoxFuture<'static, T> + Send + Sync + 'static>;
+pub type AsyncResolverWithMiniSummaryFn<T, CtxOptions> =
+    Box<dyn Fn(&mut IvoMiniSummary<CtxOptions>) -> BoxFuture<'static, T> + Send + Sync + 'static>;
 
-pub type ResolverWithContextFn<I, O, T = Value> = Box<dyn Fn(&Context<I, O>) -> T + Send + Sync>;
+pub type ResolverWithMiniSummaryFn<T, CtxOptions> =
+    Box<dyn Fn(&mut IvoMiniSummary<CtxOptions>) -> T + Send + Sync>;
 
-pub enum ResolverWithMutSummary<I, O, T> {
-    Async(AsyncResolverWithMutSummaryFn<I, O, T>),
-    Sync(ResolverWithMutSummaryFn<I, O, T>),
+pub enum ResolverWithMutSummary<T, I: HasPartial, O: HasPartial, CtxOptions> {
+    Async(AsyncResolverWithMutSummaryFn<T, I, O, CtxOptions>),
+    Sync(ResolverWithMutSummaryFn<T, I, O, CtxOptions>),
 }
 
-pub type AsyncResolverWithMutSummaryFn<I, O, T = Value> =
-    Box<dyn Fn(&MutableSummary<I, O>) -> BoxFuture<'static, T> + Send + Sync + 'static>;
+pub type AsyncResolverWithMutSummaryFn<T, I, O, CtxOptions> =
+    Box<dyn Fn(&mut IvoSummary<I, O, CtxOptions>) -> BoxFuture<'static, T> + Send + Sync + 'static>;
 
-pub type ResolverWithMutSummaryFn<I, O, T = Value> =
-    Box<dyn Fn(&MutableSummary<I, O>) -> T + Send + Sync>;
+pub type ResolverWithMutSummaryFn<T, I, O, CtxOptions> =
+    Box<dyn Fn(&mut IvoSummary<I, O, CtxOptions>) -> T + Send + Sync>;
 
-pub type BooleanResolverWithMutSummary<I, O> =
-    Box<dyn Fn(&MutableSummary<I, O>) -> bool + Send + Sync>;
+pub type BooleanResolverWithMutSummary<I, O, CtxOptions> =
+    Box<dyn Fn(&mut IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync>;
 
-pub type VirtualSanitiser<I, O, T = Value> = ResolverWithMutSummaryFn<I, O, T>;
+pub type VirtualSanitiser<T, I, O, CtxOptions> = ResolverWithMutSummaryFn<T, I, O, CtxOptions>;
 
-pub type DeleteHandler<O> = Box<dyn Fn(&DeletionContext<O>)>;
-pub type FailureHandler<I, O> = Box<dyn Fn(&ImmutableSummary<I, O>)>;
-pub type SuccessHandler<I, O> = Box<dyn Fn(&ImmutableSummary<I, O>)>;
-
-impl<I, O> Context<I, O> {
-    pub fn get_options(&self) -> CtxOptions {
-        self.options.lock().unwrap().clone()
-    }
-
-    pub fn update_options(&self, updates: CtxOptions) {
-        let mut opts = self.options.lock().unwrap();
-        for (k, v) in updates {
-            opts.insert(k, v);
-        }
-    }
-}
+pub type DeleteHandler<O, CtxOptions> = Box<dyn Fn(&O, &CtxOptions)>;
+pub type FailureHandler<I, O, CtxOptions> = Box<dyn Fn(&IvoSummary<I, O, CtxOptions>)>;
+pub type SuccessHandler<I, O, CtxOptions> = Box<dyn Fn(&IvoSummary<I, O, CtxOptions>)>;
 
 pub type ValidatorResponse<T> = Result<T, (&'static str, Option<Value>)>;
 

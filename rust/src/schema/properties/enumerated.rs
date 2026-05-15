@@ -4,9 +4,10 @@ use serde_json::Value;
 
 use crate::{
     schema::properties::base::IvoProperty,
+    traits::HasPartial,
     types::{
         BooleanResolverWithMutSummary, ComputableEnumeratedError, ComputableInit,
-        ComputableWithContext, Context, DeleteHandler, FailureHandler, MutableSummary,
+        ComputableWithMiniSummary, DeleteHandler, FailureHandler, IvoMiniSummary, IvoSummary,
         SuccessHandler,
     },
 };
@@ -19,9 +20,10 @@ struct No;
 struct YesComputed;
 
 struct SchemaBuilder<
-    I,
-    O,
     T,
+    I: HasPartial,
+    O: HasPartial,
+    CtxOptions,
     HasValues,
     HasValueError,
     HasDefault,
@@ -44,13 +46,13 @@ struct SchemaBuilder<
     // actual data...
     enum_values: Option<Vec<T>>,
     enum_error: Option<ComputableEnumeratedError<T>>,
-    default: Option<ComputableWithContext<I, O, T>>,
-    should_ignore_fn: Option<BooleanResolverWithMutSummary<I, O>>,
-    should_init: Option<ComputableInit<I, O>>,
-    should_update: Option<ComputableInit<I, O>>,
-    on_delete_fns: Option<Vec<DeleteHandler<O>>>,
-    on_failure_fns: Option<Vec<FailureHandler<I, O>>>,
-    on_success_fns: Option<Vec<SuccessHandler<I, O>>>,
+    default: Option<ComputableWithMiniSummary<T, CtxOptions>>,
+    should_ignore_fn: Option<BooleanResolverWithMutSummary<I, O, CtxOptions>>,
+    should_init: Option<ComputableInit<I, O, CtxOptions>>,
+    should_update: Option<ComputableInit<I, O, CtxOptions>>,
+    on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
+    on_failure_fns: Option<Vec<FailureHandler<I, O, CtxOptions>>>,
+    on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
 }
 
 impl<
@@ -63,14 +65,16 @@ impl<
         HasDelete,
         HasFailure,
         HasSuccess,
-        I,
-        O,
         T,
+        I: HasPartial,
+        O: HasPartial,
+        CtxOptions,
     > Default
     for SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         HasValues,
         HasValueError,
         HasDefault,
@@ -114,14 +118,16 @@ impl<
         HasDelete,
         HasFailure,
         HasSuccess,
-        I,
-        O,
         T,
+        I: HasPartial,
+        O: HasPartial,
+        CtxOptions,
     >
     SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         Yes,
         HasDefault,
@@ -133,7 +139,7 @@ impl<
         HasSuccess,
     >
 {
-    pub fn build(self) -> IvoProperty<I, O, T> {
+    pub fn build(self) -> IvoProperty<T, I, O, CtxOptions> {
         IvoProperty {
             enum_values: self.enum_values,
             enum_error: self.enum_error,
@@ -150,9 +156,9 @@ impl<
 }
 
 impl EnumeratedField {
-    pub fn values<I, O, T>(
+    pub fn values<T, I: HasPartial, O: HasPartial, CtxOptions>(
         values: Vec<T>,
-    ) -> SchemaBuilder<I, O, T, Yes, No, No, No, No, No, No, No, No> {
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, No, No, No, No, No, No, No, No> {
         SchemaBuilder {
             enum_values: Some(values),
             ..Default::default()
@@ -160,11 +166,13 @@ impl EnumeratedField {
     }
 }
 
-impl<I, O, T> SchemaBuilder<I, O, T, Yes, No, No, No, No, No, No, No, No> {
+impl<T, I: HasPartial, O: HasPartial, CtxOptions>
+    SchemaBuilder<T, I, O, CtxOptions, Yes, No, No, No, No, No, No, No, No>
+{
     pub fn error(
         self,
         error: &str,
-    ) -> SchemaBuilder<I, O, T, Yes, Yes, No, No, No, No, No, No, No> {
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, No, No, No, No, No, No, No> {
         SchemaBuilder {
             enum_values: self.enum_values,
             enum_error: Some(ComputableEnumeratedError::Static(error.into())),
@@ -175,7 +183,7 @@ impl<I, O, T> SchemaBuilder<I, O, T, Yes, No, No, No, No, No, No, No, No> {
     pub fn error_fn<F>(
         self,
         error_fn: F,
-    ) -> SchemaBuilder<I, O, T, Yes, Yes, No, No, No, No, No, No, No>
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, No, No, No, No, No, No, No>
     where
         F: Fn((Value, &Vec<T>)) -> &str + Send + Sync + 'static,
     {
@@ -187,15 +195,17 @@ impl<I, O, T> SchemaBuilder<I, O, T, Yes, No, No, No, No, No, No, No, No> {
     }
 }
 
-impl<I, O, T> SchemaBuilder<I, O, T, Yes, Yes, No, No, No, No, No, No, No> {
+impl<T, I: HasPartial, O: HasPartial, CtxOptions>
+    SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, No, No, No, No, No, No, No>
+{
     pub fn default(
         self,
         value: T,
-    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, No, No, No, No, No> {
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, No, No, No, No, No> {
         SchemaBuilder {
             enum_values: self.enum_values,
             enum_error: self.enum_error,
-            default: Some(ComputableWithContext::Static(value)),
+            default: Some(ComputableWithMiniSummary::Static(value)),
             ..Default::default()
         }
     }
@@ -203,14 +213,14 @@ impl<I, O, T> SchemaBuilder<I, O, T, Yes, Yes, No, No, No, No, No, No, No> {
     pub fn default_fn<F>(
         self,
         default_fn: F,
-    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, No, No, No, No, No>
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, No, No, No, No, No>
     where
-        F: Fn(&Context<I, O>) -> T + Send + Sync + 'static,
+        F: Fn(&mut IvoMiniSummary<CtxOptions>) -> T + Send + Sync + 'static,
     {
         SchemaBuilder {
             enum_values: self.enum_values,
             enum_error: self.enum_error,
-            default: Some(ComputableWithContext::SyncFunc(Box::new(default_fn))),
+            default: Some(ComputableWithMiniSummary::SyncFunc(Box::new(default_fn))),
             ..Default::default()
         }
     }
@@ -218,15 +228,15 @@ impl<I, O, T> SchemaBuilder<I, O, T, Yes, Yes, No, No, No, No, No, No, No> {
     pub fn default_async_fn<F, Fut>(
         self,
         default_fn: F,
-    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, No, No, No, No, No>
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, No, No, No, No, No>
     where
-        F: Fn(&Context<I, O>) -> Fut + Send + Sync + 'static,
+        F: Fn(&mut IvoMiniSummary<CtxOptions>) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = T> + Send + 'static,
     {
         SchemaBuilder {
             enum_values: self.enum_values,
             enum_error: self.enum_error,
-            default: Some(ComputableWithContext::AsyncFunc(Box::new(move |c| {
+            default: Some(ComputableWithMiniSummary::AsyncFunc(Box::new(move |c| {
                 Box::pin(default_fn(c))
             }))),
             ..Default::default()
@@ -234,13 +244,15 @@ impl<I, O, T> SchemaBuilder<I, O, T, Yes, Yes, No, No, No, No, No, No, No> {
     }
 }
 
-impl<I, O, T> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, No, No, No, No, No> {
+impl<T, I: HasPartial, O: HasPartial, CtxOptions>
+    SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, No, No, No, No, No>
+{
     pub fn ignore_if<F>(
         self,
         fx: F,
-    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, Yes, No, No, No, No, No>
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, Yes, No, No, No, No, No>
     where
-        F: Fn(&MutableSummary<I, O>) -> bool + Send + Sync + 'static,
+        F: Fn(&mut IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
     {
         SchemaBuilder {
             default: self.default,
@@ -252,8 +264,12 @@ impl<I, O, T> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, No, No, No, No, No> {
     }
 }
 
-impl<I, O, T> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, No, No, No, No, No> {
-    pub fn ignore_init(self) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, Yes, No, No, No, No> {
+impl<T, I: HasPartial, O: HasPartial, CtxOptions>
+    SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, No, No, No, No, No>
+{
+    pub fn ignore_init(
+        self,
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, Yes, No, No, No, No> {
         SchemaBuilder {
             default: self.default,
             enum_values: self.enum_values,
@@ -266,9 +282,9 @@ impl<I, O, T> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, No, No, No, No, No> {
     pub fn allow_init_if<F>(
         self,
         fx: F,
-    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, YesComputed, No, No, No, No>
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, YesComputed, No, No, No, No>
     where
-        F: Fn(&MutableSummary<I, O>) -> bool + Send + Sync + 'static,
+        F: Fn(&mut IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
     {
         SchemaBuilder {
             default: self.default,
@@ -280,8 +296,12 @@ impl<I, O, T> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, No, No, No, No, No> {
     }
 }
 
-impl<HasDefault, I, O, T> SchemaBuilder<I, O, T, Yes, Yes, HasDefault, No, No, No, No, No, No> {
-    pub fn readonly(self) -> SchemaBuilder<I, O, T, Yes, Yes, HasDefault, No, No, Yes, No, No, No> {
+impl<HasDefault, T, I: HasPartial, O: HasPartial, CtxOptions>
+    SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, HasDefault, No, No, No, No, No, No>
+{
+    pub fn readonly(
+        self,
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, HasDefault, No, No, Yes, No, No, No> {
         SchemaBuilder {
             default: self.default,
             enum_values: self.enum_values,
@@ -294,9 +314,9 @@ impl<HasDefault, I, O, T> SchemaBuilder<I, O, T, Yes, Yes, HasDefault, No, No, N
     pub fn allow_update_if<F>(
         self,
         fx: F,
-    ) -> SchemaBuilder<I, O, T, Yes, Yes, HasDefault, No, No, YesComputed, No, No, No>
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, HasDefault, No, No, YesComputed, No, No, No>
     where
-        F: Fn(&MutableSummary<I, O>) -> bool + Send + Sync + 'static,
+        F: Fn(&mut IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
     {
         SchemaBuilder {
             default: self.default,
@@ -308,13 +328,15 @@ impl<HasDefault, I, O, T> SchemaBuilder<I, O, T, Yes, Yes, HasDefault, No, No, N
     }
 }
 
-impl<I, O, T> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, No, Yes, No, No, No> {
+impl<T, I: HasPartial, O: HasPartial, CtxOptions>
+    SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, No, Yes, No, No, No>
+{
     pub fn allow_init_if<F>(
         self,
         fx: F,
-    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, YesComputed, Yes, No, No, No>
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, YesComputed, Yes, No, No, No>
     where
-        F: Fn(&MutableSummary<I, O>) -> bool + Send + Sync + 'static,
+        F: Fn(&mut IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
     {
         SchemaBuilder {
             default: self.default,
@@ -326,15 +348,15 @@ impl<I, O, T> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, No, Yes, No, No, No> {
     }
 }
 
-impl<HasDefault, I, O, T>
-    SchemaBuilder<I, O, T, Yes, Yes, HasDefault, No, Yes, YesComputed, No, No, No>
+impl<HasDefault, T, I: HasPartial, O: HasPartial, CtxOptions>
+    SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, HasDefault, No, Yes, YesComputed, No, No, No>
 {
     pub fn allow_update_if<F>(
         self,
         fx: F,
-    ) -> SchemaBuilder<I, O, T, Yes, Yes, HasDefault, No, Yes, YesComputed, No, No, No>
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, HasDefault, No, Yes, YesComputed, No, No, No>
     where
-        F: Fn(&MutableSummary<I, O>) -> bool + Send + Sync + 'static,
+        F: Fn(&mut IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
     {
         SchemaBuilder {
             default: self.default,
@@ -347,10 +369,12 @@ impl<HasDefault, I, O, T>
     }
 }
 
-impl<I, O, T> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, No, YesComputed, No, No, No> {
+impl<T, I: HasPartial, O: HasPartial, CtxOptions>
+    SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, No, YesComputed, No, No, No>
+{
     pub fn ignore_init(
         self,
-    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, Yes, YesComputed, No, No, No> {
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, Yes, YesComputed, No, No, No> {
         SchemaBuilder {
             default: self.default,
             enum_values: self.enum_values,
@@ -364,9 +388,9 @@ impl<I, O, T> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, No, YesComputed, No, No,
     pub fn allow_init_if<F>(
         self,
         fx: F,
-    ) -> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, YesComputed, YesComputed, No, No, No>
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, YesComputed, YesComputed, No, No, No>
     where
-        F: Fn(&MutableSummary<I, O>) -> bool + Send + Sync + 'static,
+        F: Fn(&mut IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
     {
         SchemaBuilder {
             default: self.default,
@@ -380,11 +404,23 @@ impl<I, O, T> SchemaBuilder<I, O, T, Yes, Yes, Yes, No, No, YesComputed, No, No,
 }
 
 // ON_DELETE is only available if HasDelete is 'No'
-impl<HasDefault, HasIgnore, HasShouldInit, HasShouldUpdate, HasFailure, HasSuccess, I, O, T>
+impl<
+        HasDefault,
+        HasIgnore,
+        HasShouldInit,
+        HasShouldUpdate,
+        HasFailure,
+        HasSuccess,
+        T,
+        I: HasPartial,
+        O: HasPartial,
+        CtxOptions,
+    >
     SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         Yes,
         HasDefault,
@@ -398,11 +434,12 @@ impl<HasDefault, HasIgnore, HasShouldInit, HasShouldUpdate, HasFailure, HasSucce
 {
     pub fn on_delete(
         self,
-        handler: DeleteHandler<O>,
+        handler: DeleteHandler<O, CtxOptions>,
     ) -> SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         Yes,
         HasDefault,
@@ -429,11 +466,12 @@ impl<HasDefault, HasIgnore, HasShouldInit, HasShouldUpdate, HasFailure, HasSucce
 
     pub fn on_delete_fns(
         self,
-        handlers: Vec<DeleteHandler<O>>,
+        handlers: Vec<DeleteHandler<O, CtxOptions>>,
     ) -> SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         Yes,
         HasDefault,
@@ -460,11 +498,23 @@ impl<HasDefault, HasIgnore, HasShouldInit, HasShouldUpdate, HasFailure, HasSucce
 }
 
 // ON_FAILURE is only available if HasFailure is 'No'
-impl<HasDefault, HasIgnore, HasShouldInit, HasShouldUpdate, HasDelete, HasSuccess, I, O, T>
+impl<
+        HasDefault,
+        HasIgnore,
+        HasShouldInit,
+        HasShouldUpdate,
+        HasDelete,
+        HasSuccess,
+        T,
+        I: HasPartial,
+        O: HasPartial,
+        CtxOptions,
+    >
     SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         Yes,
         HasDefault,
@@ -478,11 +528,12 @@ impl<HasDefault, HasIgnore, HasShouldInit, HasShouldUpdate, HasDelete, HasSucces
 {
     pub fn on_failure(
         self,
-        handler: FailureHandler<I, O>,
+        handler: FailureHandler<I, O, CtxOptions>,
     ) -> SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         Yes,
         HasDefault,
@@ -509,11 +560,12 @@ impl<HasDefault, HasIgnore, HasShouldInit, HasShouldUpdate, HasDelete, HasSucces
 
     pub fn on_failure_fns(
         self,
-        handlers: Vec<FailureHandler<I, O>>,
+        handlers: Vec<FailureHandler<I, O, CtxOptions>>,
     ) -> SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         Yes,
         HasDefault,
@@ -539,11 +591,23 @@ impl<HasDefault, HasIgnore, HasShouldInit, HasShouldUpdate, HasDelete, HasSucces
 }
 
 // ON_SUCCESS is only available if HasSuccess is 'No'
-impl<HasDefault, HasIgnore, HasShouldInit, HasShouldUpdate, HasDelete, HasFailure, I, O, T>
+impl<
+        HasDefault,
+        HasIgnore,
+        HasShouldInit,
+        HasShouldUpdate,
+        HasDelete,
+        HasFailure,
+        T,
+        I: HasPartial,
+        O: HasPartial,
+        CtxOptions,
+    >
     SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         Yes,
         HasDefault,
@@ -557,11 +621,12 @@ impl<HasDefault, HasIgnore, HasShouldInit, HasShouldUpdate, HasDelete, HasFailur
 {
     pub fn on_success(
         self,
-        handler: SuccessHandler<I, O>,
+        handler: SuccessHandler<I, O, CtxOptions>,
     ) -> SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         Yes,
         HasDefault,
@@ -588,11 +653,12 @@ impl<HasDefault, HasIgnore, HasShouldInit, HasShouldUpdate, HasDelete, HasFailur
 
     pub fn on_success_fns(
         self,
-        handlers: Vec<SuccessHandler<I, O>>,
+        handlers: Vec<SuccessHandler<I, O, CtxOptions>>,
     ) -> SchemaBuilder<
+        T,
         I,
         O,
-        T,
+        CtxOptions,
         Yes,
         Yes,
         HasDefault,
