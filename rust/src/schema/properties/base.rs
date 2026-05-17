@@ -7,6 +7,11 @@ use crate::{
     },
 };
 
+// pub trait IvoPropertyTrait<I: HasPartial, O: HasPartial, CtxOptions> {
+//     type Type;
+//     fn get_config(self) -> IvoProperty<Self::Type, I, O, CtxOptions>;
+// }
+
 pub struct IvoProperty<T, I: HasPartial, O: HasPartial, CtxOptions> {
     pub alias: Option<String>,
     pub enum_error: Option<ComputableEnumeratedError<T>>,

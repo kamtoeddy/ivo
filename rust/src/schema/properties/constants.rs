@@ -7,11 +7,18 @@ use crate::{
 };
 
 // Marker Types
-struct Yes;
-struct No;
+pub struct Yes;
+pub struct No;
 
-struct SchemaBuilder<T, I: HasPartial, O: HasPartial, CtxOptions, HasDefault, HasDelete, HasSuccess>
-{
+pub struct SchemaBuilder<
+    T,
+    I: HasPartial,
+    O: HasPartial,
+    CtxOptions,
+    HasDefault,
+    HasDelete,
+    HasSuccess,
+> {
     _default: PhantomData<HasDefault>,
     _del_handlers: PhantomData<HasDelete>,
     _success_handlers: PhantomData<HasSuccess>,
@@ -48,6 +55,22 @@ impl<HasDelete, HasSuccess, I: HasPartial, O: HasPartial, T, CtxOptions>
         }
     }
 }
+
+// impl<HasDelete, HasSuccess, I: HasPartial, O: HasPartial, T, CtxOptions>
+//     IvoPropertyTrait<I, O, CtxOptions>
+//     for SchemaBuilder<T, I, O, CtxOptions, Yes, HasDelete, HasSuccess>
+// {
+//     type Type = T;
+
+//     fn get_config(self) -> IvoProperty<Self::Type, I, O, CtxOptions> {
+//         IvoProperty {
+//             value: self.value,
+//             on_delete_fns: self.on_delete_fns,
+//             on_success_fns: self.on_success_fns,
+//             ..Default::default()
+//         }
+//     }
+// }
 
 pub struct ConstantField;
 

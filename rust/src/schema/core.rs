@@ -95,7 +95,8 @@ impl<I: HasPartial, O: HasPartial, CtxOptions> SchemaCore<I, O, CtxOptions> {
     }
 
     fn check_options(&self) {
-        todo!()
+        ()
+        // todo!()
     }
 
     fn check_prop_definitions(&mut self) {
@@ -386,13 +387,13 @@ impl<I: HasPartial, O: HasPartial, CtxOptions> SchemaCore<I, O, CtxOptions> {
     }
 
     /// Find cycles among a set of pending nodes. Returns a map from node -> list of cycle path strings
-    fn find_cycles_in_pending(&self, pending: &HashSet<String>) -> HashMap<String, Vec<String>> {
+    fn _find_cycles_in_pending(&self, pending: &HashSet<String>) -> HashMap<String, Vec<String>> {
         let mut cycles_map: HashMap<String, Vec<String>> = HashMap::new();
 
         for start in pending.iter() {
             let mut stack: Vec<String> = Vec::new();
             let mut visited: HashSet<String> = HashSet::new();
-            self.dfs_find_cycles(
+            self._dfs_find_cycles(
                 start,
                 start,
                 &mut stack,
@@ -405,7 +406,7 @@ impl<I: HasPartial, O: HasPartial, CtxOptions> SchemaCore<I, O, CtxOptions> {
         cycles_map
     }
 
-    fn dfs_find_cycles(
+    fn _dfs_find_cycles(
         &self,
         start: &str,
         node: &str,
@@ -447,7 +448,7 @@ impl<I: HasPartial, O: HasPartial, CtxOptions> SchemaCore<I, O, CtxOptions> {
                     }
 
                     if !stack.contains(dep) {
-                        self.dfs_find_cycles(start, dep, stack, visited, pending, cycles_map);
+                        self._dfs_find_cycles(start, dep, stack, visited, pending, cycles_map);
                     } else {
                         // encountered a back-edge not to start: record cycle portion
                         let pos = stack.iter().position(|s| s == dep).unwrap_or(0);

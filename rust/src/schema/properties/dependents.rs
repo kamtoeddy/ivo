@@ -12,10 +12,10 @@ use crate::{
 pub struct DependentField;
 
 // Marker Types
-struct Yes;
-struct No;
+pub struct Yes;
+pub struct No;
 
-struct SchemaBuilder<
+pub struct SchemaBuilder<
     T,
     I: HasPartial,
     O: HasPartial,

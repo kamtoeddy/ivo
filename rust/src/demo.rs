@@ -3,8 +3,12 @@ use std::collections::HashMap;
 // use chrono::{DateTime, Utc};
 use partial_derive::MakePartial;
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 
-use crate::schema::{Model, SchemaCore};
+use crate::schema::{
+    properties::{constants::ConstantField, required::RequiredField},
+    Model, SchemaCore,
+};
 
 // type DateWithTz = DateTime<Utc>;
 
@@ -24,10 +28,27 @@ pub struct UserInput {
     pub username: String,
 }
 
+// type CtxOptions = HashMap<String, Value>;
+type CtxOptions = Option<String>;
+
 pub struct DEMO;
 
 impl DEMO {
-    pub fn get_model() -> Model<UserInput, User> {
-        Model::<UserInput, User>::new(SchemaCore::new(HashMap::new(), None))
+    pub fn get_model() -> Model<UserInput, User, CtxOptions> {
+        let mut props = HashMap::new();
+
+        props.insert(String::from("id"), ConstantField::value(json!(1)).build());
+
+        props.insert(
+            String::from("email"),
+            RequiredField::validate(|_, __| Ok(json!("Hello"))).build(),
+        );
+
+        props.insert(
+            String::from("username"),
+            RequiredField::validate(|_, __| Ok(json!("john_doe"))).build(),
+        );
+
+        Model::new(SchemaCore::new(props, None))
     }
 }

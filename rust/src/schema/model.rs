@@ -4,10 +4,13 @@ use crate::types::Context;
 use std::collections::{HashMap, HashSet};
 use std::marker::PhantomData;
 
+use futures::future::BoxFuture;
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json::{json, Value};
 
 use crate::traits::{HasPartial, Partial};
+
+pub type AsyncTriggerFn = Box<dyn Fn() -> BoxFuture<'static, ()> + Send + Sync>;
 
 pub struct Model<
     Input: Serialize + HasPartial,
@@ -33,7 +36,10 @@ impl<
         }
     }
 
-    pub fn create(&self, input: &Input) -> Result<(Output, fn()), (ErrorTool::ErrorPayload, fn())> {
+    pub async fn create(
+        &self,
+        input: &Partial<Input>,
+    ) -> Result<(Output, AsyncTriggerFn), (ErrorTool::ErrorPayload, AsyncTriggerFn)> {
         let value = json!(input);
 
         match value {
@@ -74,38 +80,44 @@ impl<
                 );
 
                 if error_tool.is_loaded() {
-                    return Err((error_tool.payload(), || {}));
+                    return Err((
+                        error_tool.payload(),
+                        Box::new(move || Box::pin(async move {})),
+                    ));
                 }
 
                 self.add_timestamps(&mut context);
 
                 Ok((
                     serde_json::from_value(json!(context)).expect("json parse error"),
-                    || {},
+                    Box::new(move || Box::pin(async move {})),
                 ))
             }
             _ => unreachable!(),
         }
     }
 
-    pub fn update(
+    pub async fn update(
         &self,
         _data: &Output,
         updates: &Partial<Input>,
-    ) -> Result<(Partial<Output>, fn()), (UpdateError<ErrorTool>, fn())> {
+    ) -> Result<(Partial<Output>, AsyncTriggerFn), (UpdateError<ErrorTool>, AsyncTriggerFn)> {
         let value = json!(updates);
 
         match value {
             Value::Object(_) => Ok((
                 serde_json::from_value(value).expect("json parse error"),
-                || {},
+                Box::new(move || Box::pin(async move {})),
             )),
-            _ => Err((UpdateError::NothingToUpdate, || {})),
+            _ => Err((
+                UpdateError::NothingToUpdate,
+                Box::new(move || Box::pin(async move {})),
+            )),
         }
     }
 
     pub fn delete(&self, _data: &Output) {
-        todo!()
+        // todo!()
     }
 
     fn add_timestamps(&self, context: &mut Context) {
@@ -143,7 +155,7 @@ impl<
             .filter(|k| !context.contains_key(k))
             .collect();
 
-        todo!()
+        // todo!()
     }
 
     /// Resolve constants iteratively; constants may depend on other values in context.
@@ -158,6 +170,6 @@ impl<
             .cloned()
             .collect();
 
-        todo!()
+        // todo!()
     }
 }

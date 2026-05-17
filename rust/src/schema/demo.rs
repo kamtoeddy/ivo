@@ -39,7 +39,7 @@ impl<T, I: HasPartial, O: HasPartial, CtxOptions> IvoProperty<T, I, O, CtxOption
 //         .readonly()
 //         .on_failure(Box::new(|_| {}))
 //         .on_success(Box::new(|_| {}))
-//         .on_delete(Box::new(|_| {}))
+//         .on_delete(Box::new(|_, __| {}))
 //         .build();
 
 //     let e = EnumeratedField::values(vec!["hello", "hi", "greeting"])
@@ -47,7 +47,7 @@ impl<T, I: HasPartial, O: HasPartial, CtxOptions> IvoProperty<T, I, O, CtxOption
 //         // .error("invalid option provided")
 //         // .default_fn(Box::new(|_| "true"))
 //         .readonly()
-//         .on_delete(Box::new(|_| {}))
+//         .on_delete(Box::new(|_, __| {}))
 //         .on_failure(Box::new(|_| {}))
 //         .on_success(Box::new(|_| {}))
 //         .build();
@@ -55,33 +55,33 @@ impl<T, I: HasPartial, O: HasPartial, CtxOptions> IvoProperty<T, I, O, CtxOption
 //     let l = LaxField::default("&str")
 //         .validate(|v, _| Ok("true"))
 //         .readonly()
-//         .on_delete(Box::new(|_| {}))
+//         .on_delete(Box::new(|_, __| {}))
 //         .on_failure(Box::new(|_| {}))
 //         .on_success(Box::new(|_| {}))
 //         .build();
 
 //     let c = ConstantField::value("&str")
 //         .on_success(Box::new(|_| {}))
-//         .on_delete(Box::new(|_| {}))
+//         .on_delete(Box::new(|_, __| {}))
 //         .build();
 
 //     let c = ConstantField::value(String::from("String"))
 //         .on_success(Box::new(|_| {}))
-//         .on_delete(Box::new(|_| {}))
+//         .on_delete(Box::new(|_, __| {}))
 //         .build();
 
 //     let c = ConstantField::value(Some(String::from("Option<String>")))
 //         .on_success(Box::new(|_| {}))
-//         .on_delete_fns(vec![Box::new(|_| {})])
+//         .on_delete_fns(vec![Box::new(|_, __| {})])
 //         .build();
 
 //     let c = ConstantField::computed_async(|s| async { "computed &str" })
-//         .on_delete(Box::new(|_| {}))
+//         .on_delete(Box::new(|_, __| {}))
 //         .on_success_fns(vec![Box::new(|_| {}), Box::new(|_| {})])
 //         .build();
 
 //     let c = ConstantField::computed(|s| "computed &str")
-//         .on_delete(Box::new(|_| {}))
+//         .on_delete(Box::new(|_, __| {}))
 //         .on_success_fns(vec![Box::new(|_| {}), Box::new(|_| {})])
 //         .build();
 
@@ -90,7 +90,7 @@ impl<T, I: HasPartial, O: HasPartial, CtxOptions> IvoProperty<T, I, O, CtxOption
 //     let d = DependentField::default(String::from("Hello"))
 //         .depends_on(&["first_name", "last_name"])
 //         .resolve(|_| resolver())
-//         .on_delete(Box::new(|_| {}))
+//         .on_delete(Box::new(|_, __| {}))
 //         .on_success(Box::new(|_| {}))
 //         .build();
 
@@ -98,7 +98,7 @@ impl<T, I: HasPartial, O: HasPartial, CtxOptions> IvoProperty<T, I, O, CtxOption
 //         .depends_on(&["first_name", "last_name"])
 //         .resolve(|_| false)
 //         .readonly()
-//         .on_delete_fns(vec![Box::new(|_| {}), Box::new(|_| {})])
+//         .on_delete_fns(vec![Box::new(|_, __| {}), Box::new(|_, __| {})])
 //         .on_success(Box::new(|_| {}))
 //         .build();
 

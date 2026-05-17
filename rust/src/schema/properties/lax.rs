@@ -16,11 +16,11 @@ use crate::{
 pub struct LaxField;
 
 // Marker Types
-struct Yes;
-struct No;
-struct YesComputed;
+pub struct Yes;
+pub struct No;
+pub struct YesComputed;
 
-struct SchemaBuilder<
+pub struct SchemaBuilder<
     T,
     I: HasPartial,
     O: HasPartial,
