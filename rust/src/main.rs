@@ -5,7 +5,8 @@ use ivo::{
 
 #[tokio::main]
 async fn main() {
-    let user_model = DEMO::get_model();
+    let user_schema = DEMO::get_schema();
+    let user_model = user_schema.get_model();
 
     let r = user_model
         .create(&PartialUserInput {

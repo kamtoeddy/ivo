@@ -7,7 +7,7 @@ use serde_json::json;
 
 use crate::schema::{
     properties::{constants::ConstantField, required::RequiredField},
-    Model, SchemaCore,
+    SchemaCore,
 };
 
 // type DateWithTz = DateTime<Utc>;
@@ -34,7 +34,7 @@ type CtxOptions = Option<String>;
 pub struct DEMO;
 
 impl DEMO {
-    pub fn get_model() -> Model<UserInput, User, CtxOptions> {
+    pub fn get_schema() -> SchemaCore<UserInput, User, CtxOptions> {
         let mut props = HashMap::new();
 
         props.insert(String::from("id"), ConstantField::value(json!(1)).build());
@@ -49,6 +49,6 @@ impl DEMO {
             RequiredField::validate(|_, __| Ok(json!("john_doe"))).build(),
         );
 
-        Model::new(SchemaCore::new(props, None))
+        SchemaCore::new(props, None)
     }
 }

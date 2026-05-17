@@ -1,13 +1,23 @@
+use crate::schema::error::{DefaultErrorTool, IvoErrorTool};
 use crate::schema::utils::TimeStampTool;
 use crate::schema::{error::SchemaError, properties::base::IvoProperty};
 use crate::traits::HasPartial;
 use crate::types::ComputableWithMiniSummary;
+use serde::de::DeserializeOwned;
+use serde::Serialize;
 use serde_json::Value;
 use std::collections::{HashMap, HashSet};
+use std::marker::PhantomData;
 
 type PropertyDefinitions<I, O, CtxOptions> = HashMap<String, IvoProperty<Value, I, O, CtxOptions>>;
 
-pub struct SchemaCore<I: HasPartial, O: HasPartial, CtxOptions> {
+pub struct SchemaCore<
+    I: Serialize + HasPartial,
+    O: DeserializeOwned + HasPartial,
+    CtxOptions,
+    ErrorTool: IvoErrorTool = DefaultErrorTool,
+> {
+    _error_tool: PhantomData<ErrorTool>,
     _definitions: PropertyDefinitions<I, O, CtxOptions>,
     _options: Option<Value>,
 
@@ -45,7 +55,13 @@ pub struct SchemaCore<I: HasPartial, O: HasPartial, CtxOptions> {
     pub timestamp_tool: TimeStampTool,
 }
 
-impl<I: HasPartial, O: HasPartial, CtxOptions> SchemaCore<I, O, CtxOptions> {
+impl<
+        I: Serialize + HasPartial,
+        O: DeserializeOwned + HasPartial,
+        CtxOptions,
+        ErrorTool: IvoErrorTool,
+    > SchemaCore<I, O, CtxOptions, ErrorTool>
+{
     pub fn new(definitions: PropertyDefinitions<I, O, CtxOptions>, options: Option<Value>) -> Self {
         let mut err_tool = SchemaError::new();
 
@@ -61,6 +77,7 @@ impl<I: HasPartial, O: HasPartial, CtxOptions> SchemaCore<I, O, CtxOptions> {
         let timestamp_tool = TimeStampTool::new(options.as_ref());
 
         let mut core = Self {
+            _error_tool: PhantomData,
             _definitions: definitions,
             _options: options,
             context: HashMap::new(),
