@@ -200,8 +200,8 @@ impl VirtualField {
         Fut: Future<Output = ValidatorResponse<T>> + Send + 'static,
     {
         SchemaBuilder {
-            validator: Some(FieldValidator::Async(Box::new(move |v, ctx| {
-                Box::pin(validator(v, ctx))
+            validator: Some(FieldValidator::Async(Box::new(move |v, s| {
+                Box::pin(validator(v, s))
             }))),
             ..Default::default()
         }
@@ -261,8 +261,8 @@ impl<HasAlias, T, I: HasPartial, O: HasPartial, CtxOptions>
     {
         SchemaBuilder {
             alias: self.alias,
-            validator: Some(FieldValidator::Async(Box::new(move |v, ctx| {
-                Box::pin(validator(v, ctx))
+            validator: Some(FieldValidator::Async(Box::new(move |v, s| {
+                Box::pin(validator(v, s))
             }))),
             ..Default::default()
         }
@@ -301,8 +301,8 @@ impl<HasAlias, T, I: HasPartial, O: HasPartial, CtxOptions>
         SchemaBuilder {
             alias: self.alias,
             validator: self.validator,
-            re_validator: Some(FieldValidator::Async(Box::new(move |v, ctx| {
-                Box::pin(re_validator(v, ctx))
+            re_validator: Some(FieldValidator::Async(Box::new(move |v, s| {
+                Box::pin(re_validator(v, s))
             }))),
             ..Default::default()
         }

@@ -1,9 +1,11 @@
 use ivo::{
-    demo::{PartialUserInput, User, UserInput, UserModel},
+    demo::{PartialUserInput, User, UserInput, DEMO},
     schema::error::UpdateError,
 };
 
 fn main() {
+    let UserModel = DEMO::get_model();
+
     match UserModel.create(&UserInput {
         email: "dslfjlk".to_string(),
         username: "sdkjffk".to_string(),

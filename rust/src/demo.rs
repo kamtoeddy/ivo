@@ -24,8 +24,10 @@ pub struct UserInput {
     pub username: String,
 }
 
-lazy_static::lazy_static! {
-    pub static ref UserModel: Model<UserInput, User> = Model::<UserInput, User>::new(
-        SchemaCore::new(HashMap::new(), None)
-    );
+pub struct DEMO;
+
+impl DEMO {
+    pub fn get_model() -> Model<UserInput, User> {
+        Model::<UserInput, User>::new(SchemaCore::new(HashMap::new(), None))
+    }
 }

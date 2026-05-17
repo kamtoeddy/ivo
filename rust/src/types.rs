@@ -29,7 +29,7 @@ impl std::ops::Deref for False {
 
 // pub type CtxOptions = HashMap<String, Value>;
 
-pub type EnumeratedErrorResolver<T> = Box<dyn Fn((Value, &Vec<T>)) -> &str + Send + Sync>;
+pub type EnumeratedErrorResolver<T> = Box<dyn Fn((Value, &Vec<T>)) -> &str + Send + Sync + 'static>;
 
 pub enum ComputableEnumeratedError<T> {
     Static(String),
@@ -160,17 +160,21 @@ pub type AsyncFieldValidatorFn<T, I, O, CtxOptions> = Box<
         + 'static,
 >;
 
-pub type FieldValidatorFn<T, I, O, CtxOptions> =
-    Box<dyn Fn(&Value, &mut IvoSummary<I, O, CtxOptions>) -> ValidatorResponse<T> + Send + Sync>;
+pub type FieldValidatorFn<T, I, O, CtxOptions> = Box<
+    dyn Fn(&Value, &mut IvoSummary<I, O, CtxOptions>) -> ValidatorResponse<T>
+        + Send
+        + Sync
+        + 'static,
+>;
 
 pub type RequiredResolverFn<I, O, CtxOptions> =
-    Box<dyn Fn(&mut IvoSummary<I, O, CtxOptions>) -> (bool, &str) + Send + Sync>;
+    Box<dyn Fn(&mut IvoSummary<I, O, CtxOptions>) -> (bool, &str) + Send + Sync + 'static>;
 
 pub type AsyncResolverWithMiniSummaryFn<T, CtxOptions> =
     Box<dyn Fn(&mut IvoMiniSummary<CtxOptions>) -> BoxFuture<'static, T> + Send + Sync + 'static>;
 
 pub type ResolverWithMiniSummaryFn<T, CtxOptions> =
-    Box<dyn Fn(&mut IvoMiniSummary<CtxOptions>) -> T + Send + Sync>;
+    Box<dyn Fn(&mut IvoMiniSummary<CtxOptions>) -> T + Send + Sync + 'static>;
 
 pub enum ResolverWithMutSummary<T, I: HasPartial, O: HasPartial, CtxOptions> {
     Async(AsyncResolverWithMutSummaryFn<T, I, O, CtxOptions>),
@@ -181,10 +185,10 @@ pub type AsyncResolverWithMutSummaryFn<T, I, O, CtxOptions> =
     Box<dyn Fn(&mut IvoSummary<I, O, CtxOptions>) -> BoxFuture<'static, T> + Send + Sync + 'static>;
 
 pub type ResolverWithMutSummaryFn<T, I, O, CtxOptions> =
-    Box<dyn Fn(&mut IvoSummary<I, O, CtxOptions>) -> T + Send + Sync>;
+    Box<dyn Fn(&mut IvoSummary<I, O, CtxOptions>) -> T + Send + Sync + 'static>;
 
 pub type BooleanResolverWithMutSummary<I, O, CtxOptions> =
-    Box<dyn Fn(&mut IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync>;
+    Box<dyn Fn(&mut IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static>;
 
 pub type VirtualSanitiser<T, I, O, CtxOptions> = ResolverWithMutSummaryFn<T, I, O, CtxOptions>;
 
