@@ -5,9 +5,12 @@ use partial_derive::MakePartial;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-use crate::schema::{
-    properties::{constants::ConstantField, required::RequiredField},
-    SchemaCore,
+use crate::{
+    schema::{
+        properties::{constants::ConstantField, required::RequiredField},
+        SchemaCore,
+    },
+    traits::IvoSchemaStruct,
 };
 
 // type DateWithTz = DateTime<Utc>;
@@ -22,11 +25,15 @@ pub struct User {
     // pub updated_at: Option<DateWithTz>,
 }
 
+impl IvoSchemaStruct for User {}
+
 #[derive(Deserialize, Serialize, MakePartial)]
 pub struct UserInput {
     pub email: String,
     pub username: String,
 }
+
+impl IvoSchemaStruct for UserInput {}
 
 // type CtxOptions = HashMap<String, Value>;
 type CtxOptions = Option<String>;

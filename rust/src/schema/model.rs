@@ -4,30 +4,24 @@ use crate::types::Context;
 use std::collections::{HashMap, HashSet};
 
 use futures::future::BoxFuture;
-use serde::{de::DeserializeOwned, Serialize};
 use serde_json::{json, Value};
 
-use crate::traits::{HasPartial, Partial};
+use crate::traits::{IvoSchemaStruct, Partial};
 
 pub type AsyncTriggerFn = Box<dyn Fn() -> BoxFuture<'static, ()> + Send + Sync>;
 
-impl<
-        'schema,
-        I: Serialize + HasPartial,
-        O: DeserializeOwned + HasPartial,
-        CtxOptions,
-        ErrorTool: IvoErrorTool,
-    > SchemaCore<I, O, CtxOptions, ErrorTool>
+impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool>
+    SchemaCore<I, O, CtxOptions, ErrorTool>
 {
-    pub fn get_model(&'schema self) -> Model<'schema, I, O, CtxOptions, ErrorTool> {
+    pub fn get_model(&self) -> Model<'_, I, O, CtxOptions, ErrorTool> {
         Model { schema: self }
     }
 }
 
 pub struct Model<
     'schema,
-    Input: Serialize + HasPartial,
-    Output: DeserializeOwned + HasPartial,
+    Input: IvoSchemaStruct,
+    Output: IvoSchemaStruct,
     CtxOptions = HashMap<String, Value>,
     ErrorTool: IvoErrorTool = DefaultErrorTool,
 > {
@@ -36,8 +30,8 @@ pub struct Model<
 
 impl<
         'schema,
-        Input: Serialize + HasPartial,
-        Output: DeserializeOwned + HasPartial,
+        Input: IvoSchemaStruct,
+        Output: IvoSchemaStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     > Model<'schema, Input, Output, CtxOptions, ErrorTool>

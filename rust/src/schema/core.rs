@@ -1,10 +1,8 @@
 use crate::schema::error::{DefaultErrorTool, IvoErrorTool};
 use crate::schema::utils::TimeStampTool;
 use crate::schema::{error::SchemaError, properties::base::IvoProperty};
-use crate::traits::HasPartial;
+use crate::traits::IvoSchemaStruct;
 use crate::types::ComputableWithMiniSummary;
-use serde::de::DeserializeOwned;
-use serde::Serialize;
 use serde_json::Value;
 use std::collections::{HashMap, HashSet};
 use std::marker::PhantomData;
@@ -12,8 +10,8 @@ use std::marker::PhantomData;
 type PropertyDefinitions<I, O, CtxOptions> = HashMap<String, IvoProperty<Value, I, O, CtxOptions>>;
 
 pub struct SchemaCore<
-    I: Serialize + HasPartial,
-    O: DeserializeOwned + HasPartial,
+    I: IvoSchemaStruct,
+    O: IvoSchemaStruct,
     CtxOptions,
     ErrorTool: IvoErrorTool = DefaultErrorTool,
 > {
@@ -55,12 +53,8 @@ pub struct SchemaCore<
     pub timestamp_tool: TimeStampTool,
 }
 
-impl<
-        I: Serialize + HasPartial,
-        O: DeserializeOwned + HasPartial,
-        CtxOptions,
-        ErrorTool: IvoErrorTool,
-    > SchemaCore<I, O, CtxOptions, ErrorTool>
+impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool>
+    SchemaCore<I, O, CtxOptions, ErrorTool>
 {
     pub fn new(definitions: PropertyDefinitions<I, O, CtxOptions>, options: Option<Value>) -> Self {
         let mut err_tool = SchemaError::new();
