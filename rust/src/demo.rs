@@ -36,25 +36,23 @@ pub struct UserInput {
 impl IvoSchemaStruct for UserInput {}
 
 // type CtxOptions = HashMap<String, Value>;
-type CtxOptions = Option<String>;
+// type CtxOptions = Option<String>;
 
 pub struct DEMO;
 
 impl DEMO {
-    pub fn get_schema() -> SchemaCore<UserInput, User, CtxOptions> {
-        let mut props = HashMap::new();
-
-        props.insert(String::from("id"), ConstantField::value(json!(1)).build());
-
-        props.insert(
-            String::from("email"),
-            RequiredField::validate(|_, __| Ok(json!("Hello"))).build(),
-        );
-
-        props.insert(
-            String::from("username"),
-            RequiredField::validate(|_, __| Ok(json!("john_doe"))).build(),
-        );
+    pub fn get_schema() -> SchemaCore<UserInput, User> {
+        let props = HashMap::from([
+            (String::from("id"), ConstantField::value(json!(1)).build()),
+            (
+                String::from("email"),
+                RequiredField::validate(|_, __| Ok(json!("Hello"))).build(),
+            ),
+            (
+                String::from("username"),
+                RequiredField::validate(|_, __| Ok(json!("john_doe"))).build(),
+            ),
+        ]);
 
         SchemaCore::new(props, None)
     }

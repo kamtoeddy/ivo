@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use ivo::{
     demo::{PartialUserInput, User, DEMO},
     schema::error::UpdateError,
@@ -7,6 +9,10 @@ use ivo::{
 async fn main() {
     let user_schema = DEMO::get_schema();
     let user_model = user_schema.get_model();
+
+    println!("UserSchema props: {:?}\n", user_schema.props);
+
+    let timer = Instant::now();
 
     let r = user_model
         .create(&PartialUserInput {
@@ -21,10 +27,14 @@ async fn main() {
             handle_success
         }
         Err((payload, handle_failure)) => {
-            println!("Error payload: {:?}", payload);
+            println!("Failed to create: {:?}", payload);
             handle_failure
         }
     };
+
+    println!("Create duration {:?}\n", timer.elapsed());
+
+    let timer = Instant::now();
 
     let r = user_model
         .update(
@@ -52,11 +62,13 @@ async fn main() {
             match error {
                 UpdateError::NothingToUpdate => println!("Nothing to update"),
                 UpdateError::ValidationError(payload) => {
-                    println!("Error payload: {:?}", payload)
+                    println!("Failed to update: {:?}", payload)
                 }
             };
 
             handle_failure
         }
     };
+
+    println!("Update duration {:?}", timer.elapsed());
 }

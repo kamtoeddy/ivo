@@ -12,7 +12,7 @@ type PropertyDefinitions<I, O, CtxOptions> = HashMap<String, IvoProperty<Value, 
 pub struct SchemaCore<
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
-    CtxOptions,
+    CtxOptions = Option<u8>,
     ErrorTool: IvoErrorTool = DefaultErrorTool,
 > {
     _error_tool: PhantomData<ErrorTool>,
