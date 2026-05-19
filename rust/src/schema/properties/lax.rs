@@ -4,7 +4,7 @@ use serde_json::Value;
 
 use crate::{
     schema::properties::base::IvoProperty,
-    traits::HasPartial,
+    traits::IvoSchemaStruct,
     types::{
         BooleanResolverWithMutSummary, ComputableInit, ComputableRequired,
         ComputableWithMiniSummary, DeleteHandler, FailureHandler, FieldValidator, IvoSummary,
@@ -22,8 +22,8 @@ pub struct YesComputed;
 
 pub struct SchemaBuilder<
     T,
-    I: HasPartial,
-    O: HasPartial,
+    I: IvoSchemaStruct,
+    O: IvoSchemaStruct,
     CtxOptions,
     HasDefault,
     HasValidator,
@@ -71,8 +71,8 @@ impl<
         HasFailure,
         HasSuccess,
         T,
-        I: HasPartial,
-        O: HasPartial,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
         CtxOptions,
     > Default
     for SchemaBuilder<
@@ -129,8 +129,8 @@ impl<
         HasFailure,
         HasSuccess,
         T,
-        I: HasPartial,
-        O: HasPartial,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
         CtxOptions,
     >
     SchemaBuilder<
@@ -168,7 +168,7 @@ impl<
 }
 
 impl LaxField {
-    pub fn default<T, I: HasPartial, O: HasPartial, CtxOptions>(
+    pub fn default<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>(
         value: T,
     ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, No, No, No, No, No, No, No, No, No> {
         SchemaBuilder {
@@ -177,7 +177,7 @@ impl LaxField {
         }
     }
 
-    pub fn default_fn<T, I: HasPartial, O: HasPartial, CtxOptions>(
+    pub fn default_fn<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>(
         default_fn: ResolverWithMiniSummaryFn<T, CtxOptions>,
     ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, No, No, No, No, No, No, No, No, No> {
         SchemaBuilder {
@@ -187,7 +187,7 @@ impl LaxField {
     }
 }
 
-impl<T, I: HasPartial, O: HasPartial, CtxOptions>
+impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>
     SchemaBuilder<T, I, O, CtxOptions, Yes, No, No, No, No, No, No, No, No, No>
 {
     pub fn validate<F>(
@@ -225,7 +225,7 @@ impl<T, I: HasPartial, O: HasPartial, CtxOptions>
     }
 }
 
-impl<T, I: HasPartial, O: HasPartial, CtxOptions>
+impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>
     SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, No, No, No, No, No, No, No, No>
 {
     pub fn re_validate<F>(
@@ -265,7 +265,7 @@ impl<T, I: HasPartial, O: HasPartial, CtxOptions>
     }
 }
 
-impl<HasRevalidator, T, I: HasPartial, O: HasPartial, CtxOptions>
+impl<HasRevalidator, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>
     SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, HasRevalidator, No, No, No, No, No, No, No>
 {
     pub fn required_if<F>(
@@ -285,7 +285,15 @@ impl<HasRevalidator, T, I: HasPartial, O: HasPartial, CtxOptions>
     }
 }
 
-impl<HasValidator, HasRevalidator, HasRequired, T, I: HasPartial, O: HasPartial, CtxOptions>
+impl<
+        HasValidator,
+        HasRevalidator,
+        HasRequired,
+        T,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions,
+    >
     SchemaBuilder<
         T,
         I,
@@ -336,7 +344,15 @@ impl<HasValidator, HasRevalidator, HasRequired, T, I: HasPartial, O: HasPartial,
     }
 }
 
-impl<HasValidator, HasRevalidator, HasRequired, T, I: HasPartial, O: HasPartial, CtxOptions>
+impl<
+        HasValidator,
+        HasRevalidator,
+        HasRequired,
+        T,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions,
+    >
     SchemaBuilder<
         T,
         I,
@@ -475,7 +491,15 @@ impl<HasValidator, HasRevalidator, HasRequired, T, I: HasPartial, O: HasPartial,
     }
 }
 
-impl<HasValidator, HasRevalidator, HasRequired, T, I: HasPartial, O: HasPartial, CtxOptions>
+impl<
+        HasValidator,
+        HasRevalidator,
+        HasRequired,
+        T,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions,
+    >
     SchemaBuilder<
         T,
         I,
@@ -526,7 +550,15 @@ impl<HasValidator, HasRevalidator, HasRequired, T, I: HasPartial, O: HasPartial,
     }
 }
 
-impl<HasValidator, HasRevalidator, HasRequired, T, I: HasPartial, O: HasPartial, CtxOptions>
+impl<
+        HasValidator,
+        HasRevalidator,
+        HasRequired,
+        T,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions,
+    >
     SchemaBuilder<
         T,
         I,
@@ -578,7 +610,15 @@ impl<HasValidator, HasRevalidator, HasRequired, T, I: HasPartial, O: HasPartial,
     }
 }
 
-impl<HasValidator, HasRevalidator, HasRequired, T, I: HasPartial, O: HasPartial, CtxOptions>
+impl<
+        HasValidator,
+        HasRevalidator,
+        HasRequired,
+        T,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions,
+    >
     SchemaBuilder<
         T,
         I,
@@ -671,8 +711,8 @@ impl<
         HasFailure,
         HasSuccess,
         T,
-        I: HasPartial,
-        O: HasPartial,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
         CtxOptions,
     >
     SchemaBuilder<
@@ -771,8 +811,8 @@ impl<
         HasDelete,
         HasSuccess,
         T,
-        I: HasPartial,
-        O: HasPartial,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
         CtxOptions,
     >
     SchemaBuilder<
@@ -871,8 +911,8 @@ impl<
         HasDelete,
         HasFailure,
         T,
-        I: HasPartial,
-        O: HasPartial,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
         CtxOptions,
     >
     SchemaBuilder<

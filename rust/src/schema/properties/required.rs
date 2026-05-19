@@ -4,7 +4,7 @@ use serde_json::Value;
 
 use crate::{
     schema::properties::base::IvoProperty,
-    traits::HasPartial,
+    traits::IvoSchemaStruct,
     types::{
         ComputableInit, ComputableRequired, DeleteHandler, FailureHandler, FieldValidator,
         IvoSummary, SuccessHandler, True,
@@ -20,8 +20,8 @@ pub struct No;
 
 pub struct SchemaBuilder<
     T,
-    I: HasPartial,
-    O: HasPartial,
+    I: IvoSchemaStruct,
+    O: IvoSchemaStruct,
     CtxOptions,
     HasValidator,
     HasRevalidator,
@@ -53,8 +53,8 @@ impl<
         HasFailure,
         HasSuccess,
         T,
-        I: HasPartial,
-        O: HasPartial,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
         CtxOptions,
     > Default
     for SchemaBuilder<
@@ -95,8 +95,8 @@ impl<
         HasFailure,
         HasSuccess,
         T,
-        I: HasPartial,
-        O: HasPartial,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
         CtxOptions,
     >
     SchemaBuilder<
@@ -127,7 +127,7 @@ impl<
 }
 
 impl RequiredField {
-    pub fn validate<T, I: HasPartial, O: HasPartial, CtxOptions, F>(
+    pub fn validate<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, F>(
         validator: F,
     ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, No, No, No, No, No>
     where
@@ -142,7 +142,7 @@ impl RequiredField {
         }
     }
 
-    pub fn validate_async<T, I: HasPartial, O: HasPartial, CtxOptions, F, Fut>(
+    pub fn validate_async<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, F, Fut>(
         validator: F,
     ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, No, No, No, No, No>
     where
@@ -158,7 +158,7 @@ impl RequiredField {
     }
 }
 
-impl<T, I: HasPartial, O: HasPartial, CtxOptions>
+impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>
     SchemaBuilder<T, I, O, CtxOptions, Yes, No, No, No, No, No>
 {
     pub fn re_validate<F>(
@@ -196,7 +196,7 @@ impl<T, I: HasPartial, O: HasPartial, CtxOptions>
     }
 }
 
-impl<HasRevalidator, T, I: HasPartial, O: HasPartial, CtxOptions>
+impl<HasRevalidator, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>
     SchemaBuilder<T, I, O, CtxOptions, Yes, HasRevalidator, No, No, No, No>
 {
     pub fn readonly(
@@ -233,8 +233,8 @@ impl<
         HasFailure,
         HasSuccess,
         T,
-        I: HasPartial,
-        O: HasPartial,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
         CtxOptions,
     >
     SchemaBuilder<
@@ -310,8 +310,8 @@ impl<
         HasDelete,
         HasSuccess,
         T,
-        I: HasPartial,
-        O: HasPartial,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
         CtxOptions,
     >
     SchemaBuilder<
@@ -386,8 +386,8 @@ impl<
         HasDelete,
         HasFailure,
         T,
-        I: HasPartial,
-        O: HasPartial,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
         CtxOptions,
     >
     SchemaBuilder<

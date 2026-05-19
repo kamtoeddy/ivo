@@ -4,10 +4,10 @@ use crate::{
         enumerated::EnumeratedField, lax::LaxField, required::RequiredField,
         virtuals::VirtualField,
     },
-    traits::HasPartial,
+    traits::IvoSchemaStruct,
 };
 
-impl<T, I: HasPartial, O: HasPartial, CtxOptions> IvoProperty<T, I, O, CtxOptions> {
+impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> IvoProperty<T, I, O, CtxOptions> {
     pub fn constant() -> ConstantField {
         ConstantField
     }

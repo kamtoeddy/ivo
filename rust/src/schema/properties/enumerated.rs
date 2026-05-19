@@ -4,7 +4,7 @@ use serde_json::Value;
 
 use crate::{
     schema::properties::base::IvoProperty,
-    traits::HasPartial,
+    traits::IvoSchemaStruct,
     types::{
         BooleanResolverWithMutSummary, ComputableEnumeratedError, ComputableInit,
         ComputableWithMiniSummary, DeleteHandler, FailureHandler, IvoMiniSummary, IvoSummary,
@@ -21,8 +21,8 @@ pub struct YesComputed;
 
 pub struct SchemaBuilder<
     T,
-    I: HasPartial,
-    O: HasPartial,
+    I: IvoSchemaStruct,
+    O: IvoSchemaStruct,
     CtxOptions,
     HasValues,
     HasValueError,
@@ -66,8 +66,8 @@ impl<
         HasFailure,
         HasSuccess,
         T,
-        I: HasPartial,
-        O: HasPartial,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
         CtxOptions,
     > Default
     for SchemaBuilder<
@@ -119,8 +119,8 @@ impl<
         HasFailure,
         HasSuccess,
         T,
-        I: HasPartial,
-        O: HasPartial,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
         CtxOptions,
     >
     SchemaBuilder<
@@ -156,7 +156,7 @@ impl<
 }
 
 impl EnumeratedField {
-    pub fn values<T, I: HasPartial, O: HasPartial, CtxOptions>(
+    pub fn values<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>(
         values: Vec<T>,
     ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, No, No, No, No, No, No, No, No> {
         SchemaBuilder {
@@ -166,7 +166,7 @@ impl EnumeratedField {
     }
 }
 
-impl<T, I: HasPartial, O: HasPartial, CtxOptions>
+impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>
     SchemaBuilder<T, I, O, CtxOptions, Yes, No, No, No, No, No, No, No, No>
 {
     pub fn error(
@@ -195,7 +195,7 @@ impl<T, I: HasPartial, O: HasPartial, CtxOptions>
     }
 }
 
-impl<T, I: HasPartial, O: HasPartial, CtxOptions>
+impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>
     SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, No, No, No, No, No, No, No>
 {
     pub fn default(
@@ -244,7 +244,7 @@ impl<T, I: HasPartial, O: HasPartial, CtxOptions>
     }
 }
 
-impl<T, I: HasPartial, O: HasPartial, CtxOptions>
+impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>
     SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, No, No, No, No, No>
 {
     pub fn ignore_if<F>(
@@ -264,7 +264,7 @@ impl<T, I: HasPartial, O: HasPartial, CtxOptions>
     }
 }
 
-impl<T, I: HasPartial, O: HasPartial, CtxOptions>
+impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>
     SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, No, No, No, No, No>
 {
     pub fn ignore_init(
@@ -296,7 +296,7 @@ impl<T, I: HasPartial, O: HasPartial, CtxOptions>
     }
 }
 
-impl<HasDefault, T, I: HasPartial, O: HasPartial, CtxOptions>
+impl<HasDefault, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>
     SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, HasDefault, No, No, No, No, No, No>
 {
     pub fn readonly(
@@ -328,7 +328,7 @@ impl<HasDefault, T, I: HasPartial, O: HasPartial, CtxOptions>
     }
 }
 
-impl<T, I: HasPartial, O: HasPartial, CtxOptions>
+impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>
     SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, No, Yes, No, No, No>
 {
     pub fn allow_init_if<F>(
@@ -348,7 +348,7 @@ impl<T, I: HasPartial, O: HasPartial, CtxOptions>
     }
 }
 
-impl<HasDefault, T, I: HasPartial, O: HasPartial, CtxOptions>
+impl<HasDefault, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>
     SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, HasDefault, No, Yes, YesComputed, No, No, No>
 {
     pub fn allow_update_if<F>(
@@ -369,7 +369,7 @@ impl<HasDefault, T, I: HasPartial, O: HasPartial, CtxOptions>
     }
 }
 
-impl<T, I: HasPartial, O: HasPartial, CtxOptions>
+impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>
     SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, No, YesComputed, No, No, No>
 {
     pub fn ignore_init(
@@ -412,8 +412,8 @@ impl<
         HasFailure,
         HasSuccess,
         T,
-        I: HasPartial,
-        O: HasPartial,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
         CtxOptions,
     >
     SchemaBuilder<
@@ -506,8 +506,8 @@ impl<
         HasDelete,
         HasSuccess,
         T,
-        I: HasPartial,
-        O: HasPartial,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
         CtxOptions,
     >
     SchemaBuilder<
@@ -599,8 +599,8 @@ impl<
         HasDelete,
         HasFailure,
         T,
-        I: HasPartial,
-        O: HasPartial,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
         CtxOptions,
     >
     SchemaBuilder<

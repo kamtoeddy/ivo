@@ -2,7 +2,7 @@ use std::{future::Future, marker::PhantomData};
 
 use crate::{
     schema::properties::base::IvoProperty,
-    traits::HasPartial,
+    traits::IvoSchemaStruct,
     types::{
         ComputableInit, ComputableWithMiniSummary, DeleteHandler, False, IvoMiniSummary,
         IvoSummary, ResolverWithMutSummary, SuccessHandler,
@@ -17,8 +17,8 @@ pub struct No;
 
 pub struct SchemaBuilder<
     T,
-    I: HasPartial,
-    O: HasPartial,
+    I: IvoSchemaStruct,
+    O: IvoSchemaStruct,
     CtxOptions,
     HasDefault,
     HasParents,
@@ -50,8 +50,8 @@ impl<
         HasDelete,
         HasSuccess,
         T,
-        I: HasPartial,
-        O: HasPartial,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
         CtxOptions,
     > Default
     for SchemaBuilder<
@@ -85,8 +85,15 @@ impl<
     }
 }
 
-impl<HasShouldUpdate, HasDelete, HasSuccess, T, I: HasPartial, O: HasPartial, CtxOptions>
-    SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, HasShouldUpdate, HasDelete, HasSuccess>
+impl<
+        HasShouldUpdate,
+        HasDelete,
+        HasSuccess,
+        T,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions,
+    > SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, HasShouldUpdate, HasDelete, HasSuccess>
 {
     pub fn build(self) -> IvoProperty<T, I, O, CtxOptions> {
         IvoProperty {
@@ -106,7 +113,7 @@ impl<HasShouldUpdate, HasDelete, HasSuccess, T, I: HasPartial, O: HasPartial, Ct
 }
 
 impl DependentField {
-    pub fn default<T, I: HasPartial, O: HasPartial, CtxOptions>(
+    pub fn default<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>(
         value: T,
     ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, No, No, No, No, No> {
         SchemaBuilder {
@@ -115,7 +122,7 @@ impl DependentField {
         }
     }
 
-    pub fn default_fn<T, I: HasPartial, O: HasPartial, CtxOptions, F>(
+    pub fn default_fn<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, F>(
         default_fn: F,
     ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, No, No, No, No, No>
     where
@@ -128,7 +135,7 @@ impl DependentField {
     }
 }
 
-impl<T, I: HasPartial, O: HasPartial, CtxOptions>
+impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>
     SchemaBuilder<T, I, O, CtxOptions, Yes, No, No, No, No, No>
 {
     pub fn depends_on(
@@ -148,7 +155,7 @@ impl<T, I: HasPartial, O: HasPartial, CtxOptions>
     }
 }
 
-impl<T, I: HasPartial, O: HasPartial, CtxOptions>
+impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>
     SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, No, No, No, No>
 {
     pub fn resolve<R>(
@@ -185,7 +192,7 @@ impl<T, I: HasPartial, O: HasPartial, CtxOptions>
     }
 }
 
-impl<HasDelete, HasSuccess, T, I: HasPartial, O: HasPartial, CtxOptions>
+impl<HasDelete, HasSuccess, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>
     SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, HasDelete, HasSuccess>
 {
     pub fn readonly(
@@ -202,7 +209,7 @@ impl<HasDelete, HasSuccess, T, I: HasPartial, O: HasPartial, CtxOptions>
 }
 
 // ON_DELETE is only available if HasDelete is 'No'
-impl<HasShouldUpdate, HasSuccess, T, I: HasPartial, O: HasPartial, CtxOptions>
+impl<HasShouldUpdate, HasSuccess, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>
     SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, HasShouldUpdate, No, HasSuccess>
 {
     pub fn on_delete(
@@ -237,7 +244,7 @@ impl<HasShouldUpdate, HasSuccess, T, I: HasPartial, O: HasPartial, CtxOptions>
 }
 
 // ON_SUCCESS is only available if HasSuccess is 'No'
-impl<HasShouldUpdate, HasDelete, T, I: HasPartial, O: HasPartial, CtxOptions>
+impl<HasShouldUpdate, HasDelete, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>
     SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, HasShouldUpdate, HasDelete, No>
 {
     pub fn on_success(

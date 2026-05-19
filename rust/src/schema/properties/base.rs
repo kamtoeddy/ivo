@@ -1,5 +1,5 @@
 use crate::{
-    traits::HasPartial,
+    traits::IvoSchemaStruct,
     types::{
         BooleanResolverWithMutSummary, ComputableEnumeratedError, ComputableInit,
         ComputableRequired, ComputableWithMiniSummary, DeleteHandler, FailureHandler,
@@ -7,12 +7,12 @@ use crate::{
     },
 };
 
-// pub trait IvoPropertyTrait<I: HasPartial, O: HasPartial, CtxOptions> {
+// pub trait IvoPropertyTrait<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> {
 //     type Type;
 //     fn get_config(self) -> IvoProperty<Self::Type, I, O, CtxOptions>;
 // }
 
-pub struct IvoProperty<T, I: HasPartial, O: HasPartial, CtxOptions> {
+pub struct IvoProperty<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> {
     pub alias: Option<String>,
     pub enum_error: Option<ComputableEnumeratedError<T>>,
     pub enum_values: Option<Vec<T>>,
@@ -37,7 +37,9 @@ pub struct IvoProperty<T, I: HasPartial, O: HasPartial, CtxOptions> {
     pub on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
 }
 
-impl<T, I: HasPartial, O: HasPartial, CtxOptions> Default for IvoProperty<T, I, O, CtxOptions> {
+impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> Default
+    for IvoProperty<T, I, O, CtxOptions>
+{
     fn default() -> Self {
         Self {
             alias: None,

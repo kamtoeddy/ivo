@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use futures::future::BoxFuture;
 use serde_json::Value;
 
-use crate::traits::{HasPartial, Partial};
+use crate::traits::{IvoSchemaStruct, Partial};
 
 #[derive(Debug)]
 pub struct True;
@@ -42,12 +42,12 @@ pub enum ComputableWithMiniSummary<T, CtxOptions> {
     SyncFunc(ResolverWithMiniSummaryFn<T, CtxOptions>),
 }
 
-pub enum ComputableInit<I: HasPartial, O: HasPartial, CtxOptions> {
+pub enum ComputableInit<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> {
     False,
     Func(ResolverWithMutSummaryFn<bool, I, O, CtxOptions>),
 }
 
-pub enum ComputableRequired<I: HasPartial, O: HasPartial, CtxOptions> {
+pub enum ComputableRequired<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> {
     Static(True),
     Func(RequiredResolverFn<I, O, CtxOptions>),
 }
@@ -77,7 +77,7 @@ impl<CtxOptions> IvoMiniSummary<CtxOptions> {
     }
 }
 
-pub struct IvoSummary<I: HasPartial, O: HasPartial, CtxOptions> {
+pub struct IvoSummary<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> {
     changes: Option<HashMap<String, Value>>,
     context: Context,
     input: Partial<I>,
@@ -88,7 +88,7 @@ pub struct IvoSummary<I: HasPartial, O: HasPartial, CtxOptions> {
     options: CtxOptions,
 }
 
-impl<I: HasPartial, O: HasPartial, CtxOptions> IvoSummary<I, O, CtxOptions> {
+impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> IvoSummary<I, O, CtxOptions> {
     pub fn new(
         changes: Option<HashMap<String, Value>>,
         context: Context,
@@ -148,7 +148,7 @@ impl<I: HasPartial, O: HasPartial, CtxOptions> IvoSummary<I, O, CtxOptions> {
     }
 }
 
-pub enum FieldValidator<T, I: HasPartial, O: HasPartial, CtxOptions> {
+pub enum FieldValidator<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> {
     Async(AsyncFieldValidatorFn<T, I, O, CtxOptions>),
     Sync(FieldValidatorFn<T, I, O, CtxOptions>),
 }
@@ -176,7 +176,7 @@ pub type AsyncResolverWithMiniSummaryFn<T, CtxOptions> =
 pub type ResolverWithMiniSummaryFn<T, CtxOptions> =
     Box<dyn Fn(&mut IvoMiniSummary<CtxOptions>) -> T + Send + Sync + 'static>;
 
-pub enum ResolverWithMutSummary<T, I: HasPartial, O: HasPartial, CtxOptions> {
+pub enum ResolverWithMutSummary<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> {
     Async(AsyncResolverWithMutSummaryFn<T, I, O, CtxOptions>),
     Sync(ResolverWithMutSummaryFn<T, I, O, CtxOptions>),
 }
