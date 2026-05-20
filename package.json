@@ -9,7 +9,6 @@
     "clean": "rm -rf coverage dist",
     "cleanup": "bun run typecheck && bun run lint",
     "lint": "clear; bunx @biomejs/biome check --write .",
-    "lint:migrate": "clear; bunx @biomejs/biome migrate --write",
     "test": "bun run build && bun test",
     "test:cov": "bun run build && bun test --coverage",
     "test:watch": "bun run build && bun test --watch",
