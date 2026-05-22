@@ -1,7 +1,7 @@
 use std::time::Instant;
 
 use ivo::{
-    demo::{PartialUserInput, User, DEMO},
+    demo::{PartialUserInput, User, UserRole, DEMO},
     schema::error::UpdateError,
 };
 
@@ -18,6 +18,7 @@ async fn main() {
         .create(&PartialUserInput {
             email: Some("1@1.com".to_string()),
             username: Some("john".to_string()),
+            role: None,
         })
         .await;
 
@@ -43,12 +44,14 @@ async fn main() {
                 email: "1@1.com".into(),
                 // id: "id".into(),
                 username: "john_doe".into(),
+                role: UserRole::User,
                 // username_updated_at: None,
                 // updated_at: None,
             },
             &PartialUserInput {
                 email: Some("1@1.com".to_string()),
                 username: Some("john".to_string()),
+                role: Some(UserRole::Admin),
             },
         )
         .await;

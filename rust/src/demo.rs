@@ -15,12 +15,20 @@ use crate::{
 
 // type DateWithTz = DateTime<Utc>;
 
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub enum UserRole {
+    Admin,
+    User,
+    Moderator,
+}
+
 #[derive(Debug, Deserialize, Serialize, MakePartial)]
 pub struct User {
     // pub created_at: DateWithTz,
     // pub id: String,
     pub email: String,
     pub username: String,
+    pub role: UserRole,
     // pub username_updated_at: Option<DateWithTz>,
     // pub updated_at: Option<DateWithTz>,
 }
@@ -31,6 +39,7 @@ impl IvoSchemaStruct for User {}
 pub struct UserInput {
     pub email: String,
     pub username: String,
+    pub role: UserRole,
 }
 
 impl IvoSchemaStruct for UserInput {}

@@ -42,18 +42,11 @@ pub fn make_partial_derive(input: TokenStream) -> TokenStream {
 
     // Generate the new struct
     let expanded = quote! {
+        // TODO: 👇 dynamically add derived traits of parent here
         #[derive(Debug, Default, Clone, Deserialize, Serialize)]
         #vis struct #partial_name {
             #(#partial_fields,)*
         }
-
-        // // 1. The Magic Trait
-        // pub trait HasPartial {
-        //     type Partial: Serialize + serde::de::DeserializeOwned;
-        // }
-
-        // // 2. The TypeScript-style Utility Alias
-        // pub type Partial<T> = <T as HasPartial>::Partial;
 
         impl #crate_root::traits::HasPartial for #name {
             type Partial = #partial_name;
