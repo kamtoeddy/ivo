@@ -4,7 +4,7 @@ mod traits;
 pub mod types;
 pub mod validators;
 
-pub use partial_derive::MakePartial;
+pub use ivo_struct::IvoStruct;
 
 pub use schema::utils::TimeStampTool;
 pub use types::ValidatorResponse;

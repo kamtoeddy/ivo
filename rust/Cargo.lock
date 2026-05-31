@@ -249,12 +249,22 @@ dependencies = [
  "anyhow",
  "chrono",
  "futures",
+ "ivo_struct",
  "lazy_static",
- "partial_derive",
  "regex",
  "serde",
  "serde_json",
  "tokio",
+]
+
+[[package]]
+name = "ivo_struct"
+version = "0.0.1"
+dependencies = [
+ "proc-macro-crate",
+ "quote",
+ "serde",
+ "syn",
 ]
 
 [[package]]
@@ -349,16 +359,6 @@ dependencies = [
  "redox_syscall",
  "smallvec",
  "windows-link",
-]
-
-[[package]]
-name = "partial_derive"
-version = "0.0.1"
-dependencies = [
- "proc-macro-crate",
- "quote",
- "serde",
- "syn",
 ]
 
 [[package]]

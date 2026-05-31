@@ -1,17 +1,14 @@
 use std::collections::HashMap;
 
 // use chrono::{DateTime, Utc};
-use partial_derive::MakePartial;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-use crate::{
-    schema::{
-        properties::{constants::ConstantField, required::RequiredField},
-        SchemaCore,
-    },
-    traits::IvoSchemaStruct,
+use crate::schema::{
+    properties::{constants::ConstantField, required::RequiredField},
+    SchemaCore,
 };
+use crate::IvoStruct;
 
 // type DateWithTz = DateTime<Utc>;
 
@@ -22,7 +19,7 @@ pub enum UserRole {
     Moderator,
 }
 
-#[derive(Debug, Deserialize, Serialize, MakePartial)]
+#[derive(Debug, Deserialize, Serialize, IvoStruct)]
 pub struct User {
     // pub created_at: DateWithTz,
     // pub id: String,
@@ -33,16 +30,12 @@ pub struct User {
     // pub updated_at: Option<DateWithTz>,
 }
 
-impl IvoSchemaStruct for User {}
-
-#[derive(Deserialize, Serialize, MakePartial)]
+#[derive(Deserialize, Serialize, IvoStruct)]
 pub struct UserInput {
     pub email: String,
     pub username: String,
     pub role: UserRole,
 }
-
-impl IvoSchemaStruct for UserInput {}
 
 // type CtxOptions = HashMap<String, Value>;
 // type CtxOptions = Option<String>;

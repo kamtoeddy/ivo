@@ -3,8 +3,9 @@ use proc_macro_crate::{crate_name, FoundCrate};
 use quote::{format_ident, quote};
 use syn::{parse_macro_input, Data, DeriveInput, Fields};
 
-#[proc_macro_derive(MakePartial)]
-pub fn make_partial_derive(input: TokenStream) -> TokenStream {
+#[proc_macro_derive(IvoStruct)]
+pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
+    // pub fn make_partial_derive(input: TokenStream) -> TokenStream {
     // Parse the input tokens into a syntax tree
     let input = parse_macro_input!(input as DeriveInput);
     let name = input.ident;
@@ -15,9 +16,9 @@ pub fn make_partial_derive(input: TokenStream) -> TokenStream {
     let fields = match input.data {
         Data::Struct(ref data) => match data.fields {
             Fields::Named(ref fields) => &fields.named,
-            _ => panic!("MakePartial only supports structs with named fields"),
+            _ => panic!("IvoStruct only supports structs with named fields"),
         },
-        _ => panic!("MakePartial only supports structs"),
+        _ => panic!("IvoStruct only supports structs"),
     };
 
     // Transform fields into Option<T>
@@ -47,6 +48,8 @@ pub fn make_partial_derive(input: TokenStream) -> TokenStream {
         #vis struct #partial_name {
             #(#partial_fields,)*
         }
+
+        impl #crate_root::traits::IvoSchemaStruct for #name { }
 
         impl #crate_root::traits::HasPartial for #name {
             type Partial = #partial_name;
