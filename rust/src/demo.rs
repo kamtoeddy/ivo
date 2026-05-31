@@ -1,11 +1,9 @@
-use std::collections::HashMap;
-
 // use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use crate::schema::{
-    properties::{constants::ConstantField, required::RequiredField},
+    properties::{constants::ConstantField, dependents::DependentField, required::RequiredField},
     SchemaCore,
 };
 use crate::IvoStruct;
@@ -44,18 +42,26 @@ pub struct DEMO;
 
 impl DEMO {
     pub fn get_schema() -> SchemaCore<UserInput, User> {
-        let props = HashMap::from([
-            (String::from("id"), ConstantField::value(json!(1)).build()),
-            (
-                String::from("email"),
-                RequiredField::validate(|_, __| Ok(json!("Hello"))).build(),
-            ),
-            (
-                String::from("username"),
-                RequiredField::validate(|_, __| Ok(json!("john_doe"))).build(),
-            ),
-        ]);
-
-        SchemaCore::new(props, None)
+        SchemaCore::new(
+            vec![
+                ("id", ConstantField::value(json!(1)).build()),
+                (
+                    "email",
+                    RequiredField::validate(|_, __| Ok(json!("Hello"))).build(),
+                ),
+                (
+                    "username",
+                    RequiredField::validate(|_, __| Ok(json!("john_doe"))).build(),
+                ),
+                (
+                    "username_last_updated_at",
+                    DependentField::default(json!(Some("default value")))
+                        .depends_on(&["username"])
+                        .resolve(|_| json!(Some("resolved value")))
+                        .build(),
+                ),
+            ],
+            None,
+        )
     }
 }

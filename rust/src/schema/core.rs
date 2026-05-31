@@ -7,7 +7,10 @@ use serde_json::Value;
 use std::collections::{HashMap, HashSet};
 use std::marker::PhantomData;
 
-type PropertyDefinitions<I, O, CtxOptions> = HashMap<String, IvoProperty<Value, I, O, CtxOptions>>;
+type PropertyDefinitions<I, O, CtxOptions> =
+    Vec<(&'static str, IvoProperty<Value, I, O, CtxOptions>)>;
+type InternalPropertyDefinitions<I, O, CtxOptions> =
+    HashMap<String, IvoProperty<Value, I, O, CtxOptions>>;
 
 pub struct SchemaCore<
     I: IvoSchemaStruct,
@@ -16,7 +19,7 @@ pub struct SchemaCore<
     ErrorTool: IvoErrorTool = DefaultErrorTool,
 > {
     _error_tool: PhantomData<ErrorTool>,
-    _definitions: PropertyDefinitions<I, O, CtxOptions>,
+    _definitions: InternalPropertyDefinitions<I, O, CtxOptions>,
     _options: Option<Value>,
 
     // contexts & values
@@ -72,7 +75,10 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool
 
         let mut core = Self {
             _error_tool: PhantomData,
-            _definitions: definitions,
+            _definitions: definitions
+                .into_iter()
+                .map(|(p, def)| (p.to_string(), def))
+                .collect(),
             _options: options,
             context: HashMap::new(),
             context_options: HashMap::new(),
@@ -273,7 +279,7 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool
         self._definitions.get(prop)
     }
 
-    pub fn get_definitions(&self) -> &PropertyDefinitions<I, O, CtxOptions> {
+    pub fn get_definitions(&self) -> &InternalPropertyDefinitions<I, O, CtxOptions> {
         &self._definitions
     }
 
