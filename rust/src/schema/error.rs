@@ -33,7 +33,7 @@ pub trait IvoErrorTool {
     type ErrorPayload: Serialize + DeserializeOwned;
 
     fn new() -> Self;
-    fn add(&mut self, field: String, error: FieldError) -> &mut Self;
+    fn add(&mut self, field: &str, error: FieldError) -> &mut Self;
     fn is_loaded(&self) -> bool;
     fn payload(&self) -> Self::ErrorPayload;
 }
@@ -60,9 +60,12 @@ impl IvoErrorTool for DefaultErrorTool {
         }
     }
 
-    fn add(&mut self, field: String, value: FieldError) -> &mut Self {
-        if !self.payload.contains_key(&field) {
-            self.payload.entry(field).or_default().push(value);
+    fn add(&mut self, field: &str, value: FieldError) -> &mut Self {
+        if !self.payload.contains_key(field) {
+            self.payload
+                .entry(field.to_string())
+                .or_default()
+                .push(value);
         }
 
         self
