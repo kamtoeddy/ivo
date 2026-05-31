@@ -312,7 +312,7 @@ impl<HasAlias, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>
 impl<HasAlias, HasRevalidator, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>
     SchemaBuilder<T, I, O, CtxOptions, Yes, HasAlias, HasRevalidator, No, No, No, No, No, No, No>
 {
-    pub fn required_if<F>(
+    pub fn required_if<F, Fut>(
         self,
         required_fn: F,
     ) -> SchemaBuilder<
@@ -332,13 +332,16 @@ impl<HasAlias, HasRevalidator, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOpt
         No,
     >
     where
-        F: Fn(&mut IvoSummary<I, O, CtxOptions>) -> (bool, &str) + Send + Sync + 'static,
+        F: Fn(&mut IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
+        Fut: Future<Output = (bool, &'static str)> + Send + 'static,
     {
         SchemaBuilder {
             alias: self.alias,
             validator: self.validator,
             re_validator: self.re_validator,
-            required: Some(ComputableRequired::Func(Box::new(required_fn))),
+            required: Some(ComputableRequired::Func(Box::new(move |s| {
+                Box::pin(required_fn(s))
+            }))),
             ..Default::default()
         }
     }

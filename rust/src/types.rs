@@ -167,8 +167,12 @@ pub type FieldValidatorFn<T, I, O, CtxOptions> = Box<
         + 'static,
 >;
 
-pub type RequiredResolverFn<I, O, CtxOptions> =
-    Box<dyn Fn(&mut IvoSummary<I, O, CtxOptions>) -> (bool, &str) + Send + Sync + 'static>;
+pub type RequiredResolverFn<I, O, CtxOptions> = Box<
+    dyn Fn(&mut IvoSummary<I, O, CtxOptions>) -> BoxFuture<'static, (bool, &'static str)>
+        + Send
+        + Sync
+        + 'static,
+>;
 
 pub type AsyncResolverWithMiniSummaryFn<T, CtxOptions> =
     Box<dyn Fn(&mut IvoMiniSummary<CtxOptions>) -> BoxFuture<'static, T> + Send + Sync + 'static>;
