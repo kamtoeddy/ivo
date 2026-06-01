@@ -3,8 +3,6 @@ use std::collections::HashMap;
 use futures::future::BoxFuture;
 use serde_json::Value;
 
-use crate::traits::{IvoSchemaStruct, Partial};
-
 #[derive(Debug)]
 pub struct True;
 
@@ -27,39 +25,67 @@ impl std::ops::Deref for False {
     }
 }
 
-// pub type CtxOptions = HashMap<String, Value>;
+// The internal uniform validator type. Every validator looks like this under the hood.
+pub type UniformValidator<CtxOptions> =
+    Box<dyn Fn(Value, &IvoSummary<CtxOptions>) -> ValidatorResponse<Value> + Send + Sync + 'static>;
+
+pub type UniformAsyncValidator<CtxOptions> = Box<
+    dyn Fn(Value, &IvoSummary<CtxOptions>) -> BoxFuture<'static, ValidatorResponse<Value>>
+        + Send
+        + Sync
+        + 'static,
+>;
+
+// Uniform resolver function layout
+pub type UniformEnumErrorResolver =
+    Box<dyn Fn((Value, &Vec<Value>)) -> &'static str + Send + Sync + 'static>;
+
+pub type UniformResolver<CtxOptions> = Box<dyn Fn(&IvoSummary<CtxOptions>) -> Value + Send + Sync>;
+
+pub type UniformResolverWithMutSummary<CtxOptions> =
+    Box<dyn Fn(&IvoSummary<CtxOptions>) -> Value + Send + Sync + 'static>;
+
+pub type UniformAsyncResolverWithMutSummary<CtxOptions> =
+    Box<dyn Fn(&IvoSummary<CtxOptions>) -> BoxFuture<'static, Value> + Send + Sync + 'static>;
+
+pub type UniformResolverWithMiniSummary<CtxOptions> =
+    Box<dyn Fn(&IvoMiniSummary<CtxOptions>) -> Value + Send + Sync + 'static>;
+
+pub type UniformAsyncResolverWithMiniSummary<CtxOptions> =
+    Box<dyn Fn(&IvoMiniSummary<CtxOptions>) -> BoxFuture<'static, Value> + Send + Sync + 'static>;
 
 pub type EnumeratedErrorResolver<T> = Box<dyn Fn((Value, &Vec<T>)) -> &str + Send + Sync + 'static>;
 
-pub enum ComputableEnumeratedError<T> {
+pub enum ComputableEnumeratedError {
     Static(String),
-    Func(EnumeratedErrorResolver<T>),
+    Func(UniformEnumErrorResolver),
 }
 
-pub enum ComputableWithMiniSummary<T, CtxOptions> {
+pub enum ComputableWithMiniSummary<T, CtxOptions: Clone> {
     Static(T),
-    AsyncFunc(AsyncResolverWithMiniSummaryFn<T, CtxOptions>),
-    SyncFunc(ResolverWithMiniSummaryFn<T, CtxOptions>),
+    AsyncFunc(UniformAsyncResolverWithMiniSummary<CtxOptions>),
+    SyncFunc(UniformResolverWithMiniSummary<CtxOptions>),
 }
 
-pub enum ComputableInit<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> {
+pub enum ComputableInit<CtxOptions: Clone> {
     False,
-    Func(ResolverWithMutSummaryFn<bool, I, O, CtxOptions>),
+    Func(ResolverWithMutSummaryFn<bool, CtxOptions>),
 }
 
-pub enum ComputableRequired<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> {
+pub enum ComputableRequired<CtxOptions: Clone> {
     Static(True),
-    Func(RequiredResolverFn<I, O, CtxOptions>),
+    Func(RequiredResolverFn<CtxOptions>),
 }
 
 pub type Context = HashMap<String, Value>;
 
-pub struct IvoMiniSummary<CtxOptions> {
+#[derive(Clone)]
+pub struct IvoMiniSummary<CtxOptions: Clone> {
     context: Context,
     options: CtxOptions,
 }
 
-impl<CtxOptions> IvoMiniSummary<CtxOptions> {
+impl<CtxOptions: Clone> IvoMiniSummary<CtxOptions> {
     pub fn new(context: Context, options: CtxOptions) -> Self {
         Self { context, options }
     }
@@ -77,36 +103,39 @@ impl<CtxOptions> IvoMiniSummary<CtxOptions> {
     }
 }
 
-pub struct IvoSummary<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> {
+#[derive(Clone)]
+pub struct IvoSummary<CtxOptions: Clone> {
+    // pub struct IvoSummary<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
+    // _input: PhantomData<I>,
     changes: Option<HashMap<String, Value>>,
     context: Context,
-    input: Partial<I>,
+    // input: Partial<I>,
     input_values: HashMap<String, Value>,
     is_update: bool,
-    previous_values: Option<O>,
-    values: O,
+    // previous_values: Option<O>,
+    // values: O,
     options: CtxOptions,
 }
 
-impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> IvoSummary<I, O, CtxOptions> {
+impl<CtxOptions: Clone> IvoSummary<CtxOptions> {
     pub fn new(
         changes: Option<HashMap<String, Value>>,
         context: Context,
-        input: Partial<I>,
+        // input: Partial<I>,
         input_values: HashMap<String, Value>,
         is_update: bool,
-        previous_values: Option<O>,
-        values: O,
+        // previous_values: Option<O>,
+        // values: O,
         options: CtxOptions,
     ) -> Self {
         Self {
             changes,
             context,
-            input,
+            // _input: PhantomData,
             input_values,
             is_update,
-            previous_values,
-            values,
+            // previous_values,
+            // values,
             options,
         }
     }
@@ -119,9 +148,9 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> IvoSummary<I, O, CtxOpt
         &self.context
     }
 
-    pub fn input(&self) -> &Partial<I> {
-        &self.input
-    }
+    // pub fn input(&self) -> &Partial<I> {
+    //     &self.input
+    // }
 
     pub fn input_values(&self) -> &HashMap<String, Value> {
         &self.input_values
@@ -131,13 +160,13 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> IvoSummary<I, O, CtxOpt
         self.is_update
     }
 
-    pub fn previous_values(&self) -> &Option<O> {
-        &self.previous_values
-    }
+    // pub fn previous_values(&self) -> &Option<O> {
+    //     &self.previous_values
+    // }
 
-    pub fn values(&self) -> &O {
-        &self.values
-    }
+    // pub fn values(&self) -> &O {
+    //     &self.values
+    // }
 
     pub fn options(&self) -> &CtxOptions {
         &self.options
@@ -148,63 +177,59 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> IvoSummary<I, O, CtxOpt
     }
 }
 
-pub enum FieldValidator<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> {
-    Async(AsyncFieldValidatorFn<T, I, O, CtxOptions>),
-    Sync(FieldValidatorFn<T, I, O, CtxOptions>),
+pub enum FieldValidator<T, CtxOptions: Clone> {
+    Async(AsyncFieldValidatorFn<T, CtxOptions>),
+    Sync(FieldValidatorFn<T, CtxOptions>),
 }
 
-pub type AsyncFieldValidatorFn<T, I, O, CtxOptions> = Box<
-    dyn Fn(&Value, &mut IvoSummary<I, O, CtxOptions>) -> BoxFuture<'static, ValidatorResponse<T>>
+pub type AsyncFieldValidatorFn<T, CtxOptions> = Box<
+    dyn Fn(Value, IvoSummary<CtxOptions>) -> BoxFuture<'static, ValidatorResponse<T>>
         + Send
         + Sync
         + 'static,
 >;
 
-pub type FieldValidatorFn<T, I, O, CtxOptions> = Box<
-    dyn Fn(&Value, &mut IvoSummary<I, O, CtxOptions>) -> ValidatorResponse<T>
-        + Send
-        + Sync
-        + 'static,
->;
+pub type FieldValidatorFn<T, CtxOptions> =
+    Box<dyn Fn(Value, IvoSummary<CtxOptions>) -> ValidatorResponse<T> + Send + Sync + 'static>;
 
-pub type RequiredResolverFn<I, O, CtxOptions> = Box<
-    dyn Fn(&mut IvoSummary<I, O, CtxOptions>) -> BoxFuture<'static, (bool, &'static str)>
+pub type RequiredResolverFn<CtxOptions> = Box<
+    dyn Fn(&IvoSummary<CtxOptions>) -> BoxFuture<'static, (bool, &'static str)>
         + Send
         + Sync
         + 'static,
 >;
 
 pub type AsyncResolverWithMiniSummaryFn<T, CtxOptions> =
-    Box<dyn Fn(&mut IvoMiniSummary<CtxOptions>) -> BoxFuture<'static, T> + Send + Sync + 'static>;
+    Box<dyn Fn(&IvoMiniSummary<CtxOptions>) -> BoxFuture<'static, T> + Send + Sync + 'static>;
 
 pub type ResolverWithMiniSummaryFn<T, CtxOptions> =
-    Box<dyn Fn(&mut IvoMiniSummary<CtxOptions>) -> T + Send + Sync + 'static>;
+    Box<dyn Fn(&IvoMiniSummary<CtxOptions>) -> T + Send + Sync + 'static>;
 
-pub enum ResolverWithMutSummary<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> {
-    Async(AsyncResolverWithMutSummaryFn<T, I, O, CtxOptions>),
-    Sync(ResolverWithMutSummaryFn<T, I, O, CtxOptions>),
+pub enum ResolverWithMutSummary<T, CtxOptions: Clone> {
+    Async(AsyncResolverWithMutSummaryFn<T, CtxOptions>),
+    Sync(ResolverWithMutSummaryFn<T, CtxOptions>),
 }
 
-pub type AsyncResolverWithMutSummaryFn<T, I, O, CtxOptions> =
-    Box<dyn Fn(&mut IvoSummary<I, O, CtxOptions>) -> BoxFuture<'static, T> + Send + Sync + 'static>;
+pub type AsyncResolverWithMutSummaryFn<T, CtxOptions> =
+    Box<dyn Fn(&IvoSummary<CtxOptions>) -> BoxFuture<'static, T> + Send + Sync + 'static>;
 
-pub type ResolverWithMutSummaryFn<T, I, O, CtxOptions> =
-    Box<dyn Fn(&mut IvoSummary<I, O, CtxOptions>) -> T + Send + Sync + 'static>;
+pub type ResolverWithMutSummaryFn<T, CtxOptions> =
+    Box<dyn Fn(&IvoSummary<CtxOptions>) -> T + Send + Sync + 'static>;
 
-pub type BooleanResolverWithMutSummary<I, O, CtxOptions> =
-    Box<dyn Fn(&mut IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static>;
+pub type BooleanResolverWithMutSummary<CtxOptions> =
+    Box<dyn Fn(&IvoSummary<CtxOptions>) -> bool + Send + Sync + 'static>;
 
-pub type VirtualSanitiser<T, I, O, CtxOptions> = ResolverWithMutSummaryFn<T, I, O, CtxOptions>;
+pub type VirtualSanitiser<T, CtxOptions> = ResolverWithMutSummaryFn<T, CtxOptions>;
 
 pub type DeleteHandler<O, CtxOptions> =
     Box<dyn Fn(&O, &CtxOptions) -> BoxFuture<'static, ()> + Send + Sync + 'static>;
 
-pub type FailureHandler<I, O, CtxOptions> =
-    Box<dyn Fn(&IvoSummary<I, O, CtxOptions>) -> BoxFuture<'static, ()> + Send + Sync + 'static>;
+pub type FailureHandler<CtxOptions> =
+    Box<dyn Fn(&IvoSummary<CtxOptions>) -> BoxFuture<'static, ()> + Send + Sync + 'static>;
 
-pub type SuccessHandler<I, O, CtxOptions> =
-    Box<dyn Fn(&IvoSummary<I, O, CtxOptions>) -> BoxFuture<'static, ()> + Send + Sync + 'static>;
+pub type SuccessHandler<CtxOptions> =
+    Box<dyn Fn(&IvoSummary<CtxOptions>) -> BoxFuture<'static, ()> + Send + Sync + 'static>;
 
 pub type ValidatorResponse<T> = Result<T, (&'static str, Option<Value>)>;
 
-pub type ValidatorFn<T> = Box<dyn Fn(&Value) -> ValidatorResponse<T> + Send + Sync + 'static>;
+pub type ValidatorFn<T> = Box<dyn Fn(Value) -> ValidatorResponse<T> + Send + Sync + 'static>;

@@ -3,7 +3,7 @@ use std::{future::Future, marker::PhantomData};
 use serde_json::Value;
 
 use crate::{
-    schema::properties::base::IvoProperty,
+    schema::properties::base::{InternalIvoProperty, IvoProperty, IvoPropertyBuilder},
     traits::IvoSchemaStruct,
     types::{
         BooleanResolverWithMutSummary, ComputableInit, ComputableRequired,
@@ -24,7 +24,7 @@ pub struct SchemaBuilder<
     T,
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
-    CtxOptions,
+    CtxOptions: Clone,
     HasDefault,
     HasValidator,
     HasRevalidator,
@@ -36,6 +36,7 @@ pub struct SchemaBuilder<
     HasFailure,
     HasSuccess,
 > {
+    _i: PhantomData<I>,
     _default: PhantomData<HasDefault>,
     _validator: PhantomData<HasValidator>,
     _re_validator: PhantomData<HasRevalidator>,
@@ -47,16 +48,16 @@ pub struct SchemaBuilder<
     _on_failure_fns: PhantomData<HasFailure>,
     _on_success_fns: PhantomData<HasSuccess>,
     // actual data...
-    default: Option<ComputableWithMiniSummary<T, CtxOptions>>,
-    validator: Option<FieldValidator<T, I, O, CtxOptions>>,
-    re_validator: Option<FieldValidator<T, I, O, CtxOptions>>,
-    required: Option<ComputableRequired<I, O, CtxOptions>>,
-    should_ignore_fn: Option<BooleanResolverWithMutSummary<I, O, CtxOptions>>,
-    should_init: Option<ComputableInit<I, O, CtxOptions>>,
-    should_update: Option<ComputableInit<I, O, CtxOptions>>,
+    default: Option<ComputableWithMiniSummary<Value, CtxOptions>>,
+    validator: Option<FieldValidator<T, CtxOptions>>,
+    re_validator: Option<FieldValidator<T, CtxOptions>>,
+    required: Option<ComputableRequired<CtxOptions>>,
+    should_ignore_fn: Option<BooleanResolverWithMutSummary<CtxOptions>>,
+    should_init: Option<ComputableInit<CtxOptions>>,
+    should_update: Option<ComputableInit<CtxOptions>>,
     on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
-    on_failure_fns: Option<Vec<FailureHandler<I, O, CtxOptions>>>,
-    on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
+    on_failure_fns: Option<Vec<FailureHandler<CtxOptions>>>,
+    on_success_fns: Option<Vec<SuccessHandler<CtxOptions>>>,
 }
 
 impl<
@@ -73,7 +74,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions,
+        CtxOptions: Clone,
     > Default
     for SchemaBuilder<
         T,
@@ -104,6 +105,7 @@ impl<
             on_delete_fns: None,
             on_failure_fns: None,
             on_success_fns: None,
+            _i: PhantomData,
             _default: PhantomData,
             _validator: PhantomData,
             _re_validator: PhantomData,
@@ -131,9 +133,9 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions,
-    >
-    SchemaBuilder<
+        CtxOptions: Clone,
+    > IvoPropertyBuilder<I, O, CtxOptions>
+    for SchemaBuilder<
         T,
         I,
         O,
@@ -150,7 +152,7 @@ impl<
         HasSuccess,
     >
 {
-    pub fn build(self) -> IvoProperty<T, I, O, CtxOptions> {
+    fn build(self) -> InternalIvoProperty<I, O, CtxOptions> {
         IvoProperty {
             default: self.default,
             validator: self.validator,
@@ -168,7 +170,7 @@ impl<
 }
 
 impl LaxField {
-    pub fn default<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>(
+    pub fn default<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>(
         value: T,
     ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, No, No, No, No, No, No, No, No, No> {
         SchemaBuilder {
@@ -177,7 +179,7 @@ impl LaxField {
         }
     }
 
-    pub fn default_fn<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>(
+    pub fn default_fn<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>(
         default_fn: ResolverWithMiniSummaryFn<T, CtxOptions>,
     ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, No, No, No, No, No, No, No, No, No> {
         SchemaBuilder {
@@ -187,7 +189,7 @@ impl LaxField {
     }
 }
 
-impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>
+impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
     SchemaBuilder<T, I, O, CtxOptions, Yes, No, No, No, No, No, No, No, No, No>
 {
     pub fn validate<F>(
@@ -195,10 +197,7 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>
         validator: F,
     ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, No, No, No, No, No, No, No, No>
     where
-        F: Fn(&Value, &mut IvoSummary<I, O, CtxOptions>) -> ValidatorResponse<T>
-            + Send
-            + Sync
-            + 'static,
+        F: Fn(Value, IvoSummary<CtxOptions>) -> ValidatorResponse<T> + Send + Sync + 'static,
     {
         SchemaBuilder {
             default: self.default,
@@ -212,7 +211,7 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>
         validator: F,
     ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, No, No, No, No, No, No, No, No>
     where
-        F: Fn(&Value, &mut IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
+        F: Fn(Value, IvoSummary<CtxOptions>) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = ValidatorResponse<T>> + Send + 'static,
     {
         SchemaBuilder {
@@ -225,7 +224,7 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>
     }
 }
 
-impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>
+impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
     SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, No, No, No, No, No, No, No, No>
 {
     pub fn re_validate<F>(
@@ -233,10 +232,7 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>
         re_validator: F,
     ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, No, No, No, No, No, No>
     where
-        F: Fn(&Value, &mut IvoSummary<I, O, CtxOptions>) -> ValidatorResponse<T>
-            + Send
-            + Sync
-            + 'static,
+        F: Fn(Value, IvoSummary<CtxOptions>) -> ValidatorResponse<T> + Send + Sync + 'static,
     {
         SchemaBuilder {
             default: self.default,
@@ -251,7 +247,7 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>
         re_validator: F,
     ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, No, No, No, No, No, No, No, No>
     where
-        F: Fn(&Value, &mut IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
+        F: Fn(Value, IvoSummary<CtxOptions>) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = ValidatorResponse<T>> + Send + 'static,
     {
         SchemaBuilder {
@@ -265,7 +261,7 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>
     }
 }
 
-impl<HasRevalidator, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>
+impl<HasRevalidator, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
     SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, HasRevalidator, No, No, No, No, No, No, No>
 {
     pub fn required_if<F, Fut>(
@@ -273,7 +269,7 @@ impl<HasRevalidator, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>
         required_fn: F,
     ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, HasRevalidator, Yes, No, No, No, No, No, No>
     where
-        F: Fn(&mut IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
+        F: Fn(IvoSummary<CtxOptions>) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = (bool, &'static str)> + Send + 'static,
     {
         SchemaBuilder {
@@ -295,7 +291,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions,
+        CtxOptions: Clone,
     >
     SchemaBuilder<
         T,
@@ -334,7 +330,7 @@ impl<
         No,
     >
     where
-        F: Fn(&mut IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
+        F: Fn(IvoSummary<CtxOptions>) -> bool + Send + Sync + 'static,
     {
         SchemaBuilder {
             default: self.default,
@@ -354,7 +350,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions,
+        CtxOptions: Clone,
     >
     SchemaBuilder<
         T,
@@ -421,7 +417,7 @@ impl<
         No,
     >
     where
-        F: Fn(&mut IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
+        F: Fn(IvoSummary<CtxOptions>) -> bool + Send + Sync + 'static,
     {
         SchemaBuilder {
             default: self.default,
@@ -481,7 +477,7 @@ impl<
         No,
     >
     where
-        F: Fn(&mut IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
+        F: Fn(IvoSummary<CtxOptions>) -> bool + Send + Sync + 'static,
     {
         SchemaBuilder {
             default: self.default,
@@ -501,7 +497,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions,
+        CtxOptions: Clone,
     >
     SchemaBuilder<
         T,
@@ -540,7 +536,7 @@ impl<
         No,
     >
     where
-        F: Fn(&mut IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
+        F: Fn(IvoSummary<CtxOptions>) -> bool + Send + Sync + 'static,
     {
         SchemaBuilder {
             default: self.default,
@@ -560,7 +556,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions,
+        CtxOptions: Clone,
     >
     SchemaBuilder<
         T,
@@ -599,7 +595,7 @@ impl<
         No,
     >
     where
-        F: Fn(&mut IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
+        F: Fn(IvoSummary<CtxOptions>) -> bool + Send + Sync + 'static,
     {
         SchemaBuilder {
             default: self.default,
@@ -620,7 +616,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions,
+        CtxOptions: Clone,
     >
     SchemaBuilder<
         T,
@@ -689,7 +685,7 @@ impl<
         No,
     >
     where
-        F: Fn(&mut IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
+        F: Fn(IvoSummary<CtxOptions>) -> bool + Send + Sync + 'static,
     {
         SchemaBuilder {
             default: self.default,
@@ -716,7 +712,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions,
+        CtxOptions: Clone,
     >
     SchemaBuilder<
         T,
@@ -798,7 +794,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions,
+        CtxOptions: Clone,
     >
     SchemaBuilder<
         T,
@@ -837,10 +833,10 @@ impl<
         HasSuccess,
     >
     where
-        F: Fn(&IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
+        F: Fn(&IvoSummary<CtxOptions>) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = ()> + Send + Sync + 'static,
     {
-        let h: FailureHandler<I, O, CtxOptions> = Box::new(move |s| Box::pin(handler(s)));
+        let h: FailureHandler<CtxOptions> = Box::new(move |s| Box::pin(handler(s)));
 
         SchemaBuilder {
             default: self.default,
@@ -881,7 +877,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions,
+        CtxOptions: Clone,
     >
     SchemaBuilder<
         T,
@@ -920,10 +916,10 @@ impl<
         Yes,
     >
     where
-        F: Fn(&IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
+        F: Fn(&IvoSummary<CtxOptions>) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = ()> + Send + Sync + 'static,
     {
-        let h: SuccessHandler<I, O, CtxOptions> = Box::new(move |s| Box::pin(handler(s)));
+        let h: SuccessHandler<CtxOptions> = Box::new(move |s| Box::pin(handler(s)));
 
         SchemaBuilder {
             default: self.default,

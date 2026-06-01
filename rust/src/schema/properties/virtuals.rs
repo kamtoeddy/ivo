@@ -181,10 +181,7 @@ impl VirtualField {
         validator: F,
     ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, No, No, No, No, No, No, No, No, No>
     where
-        F: Fn(&Value, &mut IvoSummary<I, O, CtxOptions>) -> ValidatorResponse<T>
-            + Send
-            + Sync
-            + 'static,
+        F: Fn(Value, IvoSummary<CtxOptions>) -> ValidatorResponse<T> + Send + Sync + 'static,
     {
         SchemaBuilder {
             validator: Some(FieldValidator::Sync(Box::new(validator))),
@@ -196,7 +193,7 @@ impl VirtualField {
         validator: F,
     ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, No, No, No, No, No, No, No, No, No>
     where
-        F: Fn(&Value, &mut IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
+        F: Fn(Value, IvoSummary<CtxOptions>) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = ValidatorResponse<T>> + Send + 'static,
     {
         SchemaBuilder {
@@ -239,10 +236,7 @@ impl<HasAlias, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>
         validator: F,
     ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, HasAlias, No, No, No, No, No, No, No, No>
     where
-        F: Fn(&Value, &mut IvoSummary<I, O, CtxOptions>) -> ValidatorResponse<T>
-            + Send
-            + Sync
-            + 'static,
+        F: Fn(Value, IvoSummary<CtxOptions>) -> ValidatorResponse<T> + Send + Sync + 'static,
     {
         SchemaBuilder {
             alias: self.alias,
@@ -256,7 +250,7 @@ impl<HasAlias, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>
         validator: F,
     ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, HasAlias, No, No, No, No, No, No, No, No>
     where
-        F: Fn(&Value, &mut IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
+        F: Fn(Value, IvoSummary<CtxOptions>) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = ValidatorResponse<T>> + Send + 'static,
     {
         SchemaBuilder {
@@ -277,10 +271,7 @@ impl<HasAlias, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>
         re_validator: F,
     ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, HasAlias, Yes, No, No, No, No, No, No, No>
     where
-        F: Fn(&Value, &mut IvoSummary<I, O, CtxOptions>) -> ValidatorResponse<T>
-            + Send
-            + Sync
-            + 'static,
+        F: Fn(Value, IvoSummary<CtxOptions>) -> ValidatorResponse<T> + Send + Sync + 'static,
     {
         SchemaBuilder {
             alias: self.alias,
@@ -295,7 +286,7 @@ impl<HasAlias, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>
         re_validator: F,
     ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, HasAlias, Yes, No, No, No, No, No, No, No>
     where
-        F: Fn(&Value, &mut IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
+        F: Fn(Value, IvoSummary<CtxOptions>) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = ValidatorResponse<T>> + Send + 'static,
     {
         SchemaBuilder {
@@ -332,7 +323,7 @@ impl<HasAlias, HasRevalidator, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOpt
         No,
     >
     where
-        F: Fn(&mut IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
+        F: Fn(IvoSummary<CtxOptions>) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = (bool, &'static str)> + Send + 'static,
     {
         SchemaBuilder {
@@ -393,7 +384,7 @@ impl<
         No,
     >
     where
-        F: Fn(&mut IvoSummary<I, O, CtxOptions>) -> T + Send + Sync + 'static,
+        F: Fn(IvoSummary<CtxOptions>) -> T + Send + Sync + 'static,
     {
         SchemaBuilder {
             alias: self.alias,
@@ -453,7 +444,7 @@ impl<
         No,
     >
     where
-        F: Fn(&mut IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
+        F: Fn(IvoSummary<CtxOptions>) -> bool + Send + Sync + 'static,
     {
         SchemaBuilder {
             alias: self.alias,
@@ -543,7 +534,7 @@ impl<
         No,
     >
     where
-        F: Fn(&mut IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
+        F: Fn(IvoSummary<CtxOptions>) -> bool + Send + Sync + 'static,
     {
         SchemaBuilder {
             alias: self.alias,
@@ -605,7 +596,7 @@ impl<
         No,
     >
     where
-        F: Fn(&mut IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
+        F: Fn(IvoSummary<CtxOptions>) -> bool + Send + Sync + 'static,
     {
         SchemaBuilder {
             alias: self.alias,
@@ -666,7 +657,7 @@ impl<
         No,
     >
     where
-        F: Fn(&mut IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
+        F: Fn(IvoSummary<CtxOptions>) -> bool + Send + Sync + 'static,
     {
         SchemaBuilder {
             alias: self.alias,
@@ -727,7 +718,7 @@ impl<
         No,
     >
     where
-        F: Fn(&mut IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
+        F: Fn(IvoSummary<CtxOptions>) -> bool + Send + Sync + 'static,
     {
         SchemaBuilder {
             alias: self.alias,
@@ -819,7 +810,7 @@ impl<
         No,
     >
     where
-        F: Fn(&mut IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
+        F: Fn(IvoSummary<CtxOptions>) -> bool + Send + Sync + 'static,
     {
         SchemaBuilder {
             alias: self.alias,
@@ -887,7 +878,7 @@ impl<
         HasSuccess,
     >
     where
-        F: Fn(&IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
+        F: Fn(&IvoSummary<CtxOptions>) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = ()> + Send + Sync + 'static,
     {
         let h: FailureHandler<I, O, CtxOptions> = Box::new(move |s| Box::pin(handler(s)));
@@ -970,7 +961,7 @@ impl<
         Yes,
     >
     where
-        F: Fn(&IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
+        F: Fn(&IvoSummary<CtxOptions>) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = ()> + Send + Sync + 'static,
     {
         let h: SuccessHandler<I, O, CtxOptions> = Box::new(move |s| Box::pin(handler(s)));

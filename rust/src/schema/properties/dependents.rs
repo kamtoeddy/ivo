@@ -1,11 +1,17 @@
 use std::{future::Future, marker::PhantomData};
 
+use serde::Serialize;
+use serde_json::{json, Value};
+
 use crate::{
-    schema::properties::base::IvoProperty,
-    traits::IvoSchemaStruct,
+    schema::properties::base::{InternalIvoProperty, IvoProperty, IvoPropertyBuilder},
+    traits::{
+        IntoAsyncResolverWithMutSummary, IntoResolverWithMiniSummary, IntoResolverWithMutSummary,
+        IvoSchemaStruct,
+    },
     types::{
-        ComputableInit, ComputableWithMiniSummary, DeleteHandler, False, IvoMiniSummary,
-        IvoSummary, ResolverWithMutSummary, SuccessHandler,
+        ComputableInit, ComputableWithMiniSummary, DeleteHandler, False, IvoSummary,
+        ResolverWithMutSummary, SuccessHandler,
     },
 };
 
@@ -19,7 +25,7 @@ pub struct SchemaBuilder<
     T,
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
-    CtxOptions,
+    CtxOptions: Clone,
     HasDefault,
     HasParents,
     HasResolver,
@@ -27,6 +33,8 @@ pub struct SchemaBuilder<
     HasDelete,
     HasSuccess,
 > {
+    _d: PhantomData<T>,
+    _i: PhantomData<I>,
     _default: PhantomData<HasDefault>,
     _depends_on: PhantomData<HasParents>,
     _resolver: PhantomData<HasResolver>,
@@ -34,12 +42,12 @@ pub struct SchemaBuilder<
     _should_update: PhantomData<HasShouldUpdate>,
     _success_handlers: PhantomData<HasSuccess>,
     // actual data...
-    default: Option<ComputableWithMiniSummary<T, CtxOptions>>,
+    default: Option<ComputableWithMiniSummary<Value, CtxOptions>>,
     depends_on: Option<Vec<String>>,
-    resolver: Option<ResolverWithMutSummary<T, I, O, CtxOptions>>,
+    resolver: Option<ResolverWithMutSummary<Value, CtxOptions>>,
     should_update: Option<False>,
     on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
-    on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
+    on_success_fns: Option<Vec<SuccessHandler<CtxOptions>>>,
 }
 
 impl<
@@ -52,7 +60,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions,
+        CtxOptions: Clone,
     > Default
     for SchemaBuilder<
         T,
@@ -75,6 +83,8 @@ impl<
             should_update: None,
             on_delete_fns: None,
             on_success_fns: None,
+            _d: PhantomData,
+            _i: PhantomData,
             _default: PhantomData,
             _depends_on: PhantomData,
             _should_update: PhantomData,
@@ -92,10 +102,11 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions,
-    > SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, HasShouldUpdate, HasDelete, HasSuccess>
+        CtxOptions: Clone,
+    > IvoPropertyBuilder<I, O, CtxOptions>
+    for SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, HasShouldUpdate, HasDelete, HasSuccess>
 {
-    pub fn build(self) -> IvoProperty<T, I, O, CtxOptions> {
+    fn build(self) -> InternalIvoProperty<I, O, CtxOptions> {
         IvoProperty {
             default: self.default,
             depends_on: self.depends_on,
@@ -113,29 +124,31 @@ impl<
 }
 
 impl DependentField {
-    pub fn default<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>(
+    pub fn default<T: Serialize, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>(
         value: T,
     ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, No, No, No, No, No> {
         SchemaBuilder {
-            default: Some(ComputableWithMiniSummary::Static(value)),
+            default: Some(ComputableWithMiniSummary::Static(json!(value))),
             ..Default::default()
         }
     }
 
-    pub fn default_fn<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, F>(
+    pub fn default_fn<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, F>(
         default_fn: F,
     ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, No, No, No, No, No>
     where
-        F: Fn(&mut IvoMiniSummary<CtxOptions>) -> T + Send + Sync + 'static,
+        F: IntoResolverWithMiniSummary<T, I, O, CtxOptions>,
     {
         SchemaBuilder {
-            default: Some(ComputableWithMiniSummary::SyncFunc(Box::new(default_fn))),
+            default: Some(ComputableWithMiniSummary::SyncFunc(
+                default_fn.into_uniform(),
+            )),
             ..Default::default()
         }
     }
 }
 
-impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>
+impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
     SchemaBuilder<T, I, O, CtxOptions, Yes, No, No, No, No, No>
 {
     pub fn depends_on(
@@ -155,7 +168,7 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>
     }
 }
 
-impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>
+impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
     SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, No, No, No, No>
 {
     pub fn resolve<R>(
@@ -163,12 +176,12 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>
         resolver: R,
     ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, No, No>
     where
-        R: Fn(&mut IvoSummary<I, O, CtxOptions>) -> T + Send + Sync + 'static,
+        R: IntoResolverWithMutSummary<T, I, O, CtxOptions>,
     {
         SchemaBuilder {
             default: self.default,
             depends_on: self.depends_on,
-            resolver: Some(ResolverWithMutSummary::Sync(Box::new(resolver))),
+            resolver: Some(ResolverWithMutSummary::Sync(resolver.into_uniform())),
             ..Default::default()
         }
     }
@@ -178,21 +191,18 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>
         resolver: R,
     ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, No, No>
     where
-        R: Fn(&mut IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
-        Fut: Future<Output = T> + Send + 'static,
+        R: IntoAsyncResolverWithMutSummary<T, CtxOptions>,
     {
         SchemaBuilder {
             default: self.default,
             depends_on: self.depends_on,
-            resolver: Some(ResolverWithMutSummary::Async(Box::new(move |s| {
-                Box::pin(resolver(s))
-            }))),
+            resolver: Some(ResolverWithMutSummary::Async(resolver.into_uniform())),
             ..Default::default()
         }
     }
 }
 
-impl<HasDelete, HasSuccess, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>
+impl<HasDelete, HasSuccess, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
     SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, HasDelete, HasSuccess>
 {
     pub fn readonly(
@@ -216,7 +226,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions,
+        CtxOptions: Clone,
     > SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, HasShouldUpdate, HasDelete, HasSuccess>
 {
     pub fn on_delete<F, Fut>(
@@ -258,7 +268,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions,
+        CtxOptions: Clone,
     > SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, HasShouldUpdate, HasDelete, HasSuccess>
 {
     pub fn on_success<F, Fut>(
@@ -266,10 +276,10 @@ impl<
         handler: F,
     ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, HasShouldUpdate, HasDelete, Yes>
     where
-        F: Fn(&IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
+        F: Fn(&IvoSummary<CtxOptions>) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = ()> + Send + Sync + 'static,
     {
-        let h: SuccessHandler<I, O, CtxOptions> = Box::new(move |s| Box::pin(handler(s)));
+        let h: SuccessHandler<CtxOptions> = Box::new(move |s| Box::pin(handler(s)));
 
         SchemaBuilder {
             default: self.default,

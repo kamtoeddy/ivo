@@ -120,20 +120,20 @@ impl<
         // todo!()
     }
 
-    fn add_timestamps(&self, context: &mut Context) {
-        if self.schema.timestamp_tool.with_timestamps() {
-            let now = chrono::Utc::now().to_rfc3339();
+    fn add_timestamps(&self, _context: &mut Context) {
+        // if self.schema.timestamp_tool.with_timestamps() {
+        //     let now = chrono::Utc::now().to_rfc3339();
 
-            let keys = &self.schema.timestamp_tool.get_keys();
+        //     let keys = &self.schema.timestamp_tool.get_keys();
 
-            if let Some(created_at_key) = keys.created_at.clone() {
-                context.insert(created_at_key, Value::String(now.clone()));
-            }
+        //     if let Some(created_at_key) = keys.created_at.clone() {
+        //         context.insert(created_at_key, Value::String(now.clone()));
+        //     }
 
-            if let Some(updated_at_key) = keys.updated_at.clone() {
-                context.insert(updated_at_key, Value::String(now));
-            }
-        }
+        //     if let Some(updated_at_key) = keys.updated_at.clone() {
+        //         context.insert(updated_at_key, Value::String(now));
+        //     }
+        // }
     }
 
     /// Resolve defaults iteratively based on dependencies.

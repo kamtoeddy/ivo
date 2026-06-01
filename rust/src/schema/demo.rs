@@ -42,16 +42,6 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> IvoProperty<T, I, O,
 //         .on_delete(|_, __| async {})
 //         .build();
 
-//     let e = EnumeratedField::values(vec!["hello", "hi", "greeting"])
-//         .error_fn(|_| "")
-//         // .error("invalid option provided")
-//         // .default_fn(Box::new(|_| "true"))
-//         .readonly()
-//         .on_delete(|_, __| async {})
-//         .on_failure(|_| async {})
-//         .on_success(|_| async {})
-//         .build();
-
 //     let l = LaxField::default("&str")
 //         .validate(|v, _| Ok("true"))
 //         .readonly()
@@ -63,45 +53,6 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> IvoProperty<T, I, O,
 //     let c = ConstantField::value("&str")
 //         .on_success(|_| async {})
 //         .on_delete(|_, __| async {})
-//         .build();
-
-//     let c = ConstantField::value(String::from("String"))
-//         .on_success(|_| async {})
-//         .on_delete(|_, __| async {})
-//         .build();
-
-//     let c = ConstantField::value(Some(String::from("Option<String>")))
-//         .on_success(|_| async {})
-//         .on_delete(|_, __| async {})
-//         .build();
-
-//     let c = ConstantField::computed_async(|s| async { "computed &str" })
-//         .on_delete(|_, __| async {})
-//         .on_success(|_| async { println!("on success 1") })
-//         .on_success(|_| async { println!("on success 2") })
-//         .build();
-
-//     let c = ConstantField::computed(|s| "computed &str")
-//         .on_delete(|_, __| async {})
-//         .on_success(|_| async { println!("on success 1") })
-//         .on_success(|_| async { println!("on success 2") })
-//         .build();
-
-//     let resolver = || String::from("full name");
-
-//     let d = DependentField::default(String::from("Hello"))
-//         .depends_on(&["first_name", "last_name"])
-//         .resolve(|_| resolver())
-//         .on_delete(|_, __| async {})
-//         .on_success(|_| async {})
-//         .build();
-
-//     let d = DependentField::default_fn(Box::new(|_| true))
-//         .depends_on(&["first_name", "last_name"])
-//         .resolve(|_| false)
-//         .readonly()
-//         .on_delete(|_, __| async {})
-//         .on_success(|_| async {})
 //         .build();
 
 //     let v = VirtualField::alias("lol")

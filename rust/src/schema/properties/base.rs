@@ -1,3 +1,7 @@
+use std::marker::PhantomData;
+
+use serde_json::Value;
+
 use crate::{
     traits::IvoSchemaStruct,
     types::{
@@ -11,10 +15,16 @@ use crate::{
 //     type Type;
 //     fn get_config(self) -> IvoProperty<Self::Type, I, O, CtxOptions>;
 // }
+pub trait IvoPropertyBuilder<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
+    fn build(self) -> InternalIvoProperty<I, O, CtxOptions>;
+}
 
-pub struct IvoProperty<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> {
+pub type InternalIvoProperty<I, O, CtxOptions> = IvoProperty<Value, I, O, CtxOptions>;
+
+pub struct IvoProperty<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
+    _d: PhantomData<I>,
     pub alias: Option<String>,
-    pub enum_error: Option<ComputableEnumeratedError<T>>,
+    pub enum_error: Option<ComputableEnumeratedError>,
     pub enum_values: Option<Vec<T>>,
     pub default: Option<ComputableWithMiniSummary<T, CtxOptions>>,
     pub depends_on: Option<Vec<String>>,
@@ -22,22 +32,22 @@ pub struct IvoProperty<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> {
     pub is_readonly: bool,
     pub is_virtual: bool,
     pub value: Option<ComputableWithMiniSummary<T, CtxOptions>>,
-    pub required: Option<ComputableRequired<I, O, CtxOptions>>,
-    pub resolver: Option<ResolverWithMutSummary<T, I, O, CtxOptions>>,
-    pub sanitizer: Option<VirtualSanitiser<T, I, O, CtxOptions>>,
-    pub validator: Option<FieldValidator<T, I, O, CtxOptions>>,
-    pub re_validator: Option<FieldValidator<T, I, O, CtxOptions>>,
+    pub required: Option<ComputableRequired<CtxOptions>>,
+    pub resolver: Option<ResolverWithMutSummary<T, CtxOptions>>,
+    pub sanitizer: Option<VirtualSanitiser<T, CtxOptions>>,
+    pub validator: Option<FieldValidator<T, CtxOptions>>,
+    pub re_validator: Option<FieldValidator<T, CtxOptions>>,
     //
-    pub should_ignore: Option<BooleanResolverWithMutSummary<I, O, CtxOptions>>,
-    pub should_init: Option<ComputableInit<I, O, CtxOptions>>,
-    pub should_update: Option<ComputableInit<I, O, CtxOptions>>,
+    pub should_ignore: Option<BooleanResolverWithMutSummary<CtxOptions>>,
+    pub should_init: Option<ComputableInit<CtxOptions>>,
+    pub should_update: Option<ComputableInit<CtxOptions>>,
     // life cycle handlers
     pub on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
-    pub on_failure_fns: Option<Vec<FailureHandler<I, O, CtxOptions>>>,
-    pub on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
+    pub on_failure_fns: Option<Vec<FailureHandler<CtxOptions>>>,
+    pub on_success_fns: Option<Vec<SuccessHandler<CtxOptions>>>,
 }
 
-impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> Default
+impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> Default
     for IvoProperty<T, I, O, CtxOptions>
 {
     fn default() -> Self {
@@ -62,6 +72,7 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> Default
             on_delete_fns: None,
             on_success_fns: None,
             on_failure_fns: None,
+            _d: PhantomData,
         }
     }
 }
