@@ -37,7 +37,7 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> IvoProperty<T, I, O,
 //     let r = RequiredField::validate(|v, _| Err(("lol", None)))
 //         .re_validate(|v, c| Ok(true))
 //         .readonly()
-//         .on_failure(Box::new(|_| {}))
+//         .on_failure(|_| async {})
 //         .on_success(|_| async {})
 //         .on_delete(|_, __| async {})
 //         .build();
@@ -48,7 +48,7 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> IvoProperty<T, I, O,
 //         // .default_fn(Box::new(|_| "true"))
 //         .readonly()
 //         .on_delete(|_, __| async {})
-//         .on_failure(Box::new(|_| {}))
+//         .on_failure(|_| async {})
 //         .on_success(|_| async {})
 //         .build();
 
@@ -56,7 +56,7 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> IvoProperty<T, I, O,
 //         .validate(|v, _| Ok("true"))
 //         .readonly()
 //         .on_delete(|_, __| async {})
-//         .on_failure(Box::new(|_| {}))
+//         .on_failure(|_| async {})
 //         .on_success(|_| async {})
 //         .build();
 
@@ -109,7 +109,7 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> IvoProperty<T, I, O,
 //         .re_validate_async(|v, c| async { Ok(true) })
 //         .required_if(|_| async { (true, "lol") })
 //         .sanitize(|s| false)
-//         .on_failure(Box::new(|_| {}))
+//         .on_failure(|_| async {})
 //         .on_success(|_| async {})
 //         .build();
 
@@ -124,7 +124,7 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> IvoProperty<T, I, O,
 //     .alias("lol")
 //     .required_if(|_| async { (true, "lol") })
 //     .sanitize(|s| false)
-//     .on_failure(Box::new(|_| {}))
+//     .on_failure(|_| async {})
 //     .on_success(|_| async {})
 //     .build();
 
@@ -147,7 +147,8 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> IvoProperty<T, I, O,
 //         .allow_init_if(|_| false)
 //         // .ignore_init()
 //         // .ignore_update()
-//         .on_failure(Box::new(|_| {}))
+//         .on_failure(|_| async {})
+//         .on_failure(|_| async {})
 //         .on_success(|_| async { println!("on success 1") })
 //         .on_success(|_| async { println!("on success 2") })
 //         .build();

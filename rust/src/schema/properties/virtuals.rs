@@ -867,9 +867,9 @@ impl<
         HasSuccess,
     >
 {
-    pub fn on_failure(
+    pub fn on_failure<F, Fut>(
         self,
-        handler: FailureHandler<I, O, CtxOptions>,
+        handler: F,
     ) -> SchemaBuilder<
         T,
         I,
@@ -885,7 +885,13 @@ impl<
         HasShouldUpdate,
         Yes,
         HasSuccess,
-    > {
+    >
+    where
+        F: Fn(&IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
+        Fut: Future<Output = ()> + Send + Sync + 'static,
+    {
+        let h: FailureHandler<I, O, CtxOptions> = Box::new(move |s| Box::pin(handler(s)));
+
         SchemaBuilder {
             alias: self.alias,
             validator: self.validator,
@@ -895,40 +901,16 @@ impl<
             should_ignore_fn: self.should_ignore_fn,
             should_init: self.should_init,
             should_update: self.should_update,
-            on_failure_fns: Some(vec![handler]),
-            on_success_fns: self.on_success_fns,
-            ..Default::default()
-        }
-    }
+            on_failure_fns: Some(match self.on_failure_fns {
+                Some(hs) => {
+                    let mut v = Vec::from(hs);
 
-    pub fn on_failure_fns(
-        self,
-        handlers: Vec<FailureHandler<I, O, CtxOptions>>,
-    ) -> SchemaBuilder<
-        T,
-        I,
-        O,
-        CtxOptions,
-        Yes,
-        HasAlias,
-        HasRevalidator,
-        HasSanitizer,
-        HasRequired,
-        HasIgnore,
-        HasShouldInit,
-        HasShouldUpdate,
-        Yes,
-        HasSuccess,
-    > {
-        SchemaBuilder {
-            alias: self.alias,
-            validator: self.validator,
-            re_validator: self.re_validator,
-            sanitizer: self.sanitizer,
-            required: self.required,
-            should_ignore_fn: self.should_ignore_fn,
-            should_init: self.should_init,
-            on_failure_fns: Some(handlers),
+                    v.push(h);
+
+                    v
+                }
+                _ => vec![h],
+            }),
             on_success_fns: self.on_success_fns,
             ..Default::default()
         }
