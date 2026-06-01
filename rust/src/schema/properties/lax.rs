@@ -735,9 +735,9 @@ impl<
         HasSuccess,
     >
 {
-    pub fn on_delete(
+    pub fn on_delete<F, Fut>(
         self,
-        handler: DeleteHandler<O, CtxOptions>,
+        handler: F,
     ) -> SchemaBuilder<
         T,
         I,
@@ -753,41 +753,13 @@ impl<
         Yes,
         HasFailure,
         HasSuccess,
-    > {
-        SchemaBuilder {
-            default: self.default,
-            validator: self.validator,
-            re_validator: self.re_validator,
-            required: self.required,
-            should_ignore_fn: self.should_ignore_fn,
-            should_init: self.should_init,
-            should_update: self.should_update,
-            on_delete_fns: Some(vec![handler]),
-            on_failure_fns: self.on_failure_fns,
-            on_success_fns: self.on_success_fns,
-            ..Default::default()
-        }
-    }
+    >
+    where
+        F: Fn(&O, &CtxOptions) -> Fut + Send + Sync + 'static,
+        Fut: Future<Output = ()> + Send + Sync + 'static,
+    {
+        let h: DeleteHandler<O, CtxOptions> = Box::new(move |d, o| Box::pin(handler(d, o)));
 
-    pub fn on_delete_fns(
-        self,
-        handlers: Vec<DeleteHandler<O, CtxOptions>>,
-    ) -> SchemaBuilder<
-        T,
-        I,
-        O,
-        CtxOptions,
-        Yes,
-        HasValidator,
-        HasRevalidator,
-        HasRequired,
-        HasIgnore,
-        HasShouldInit,
-        HasShouldUpdate,
-        Yes,
-        HasFailure,
-        HasSuccess,
-    > {
         SchemaBuilder {
             default: self.default,
             validator: self.validator,
@@ -796,7 +768,16 @@ impl<
             should_ignore_fn: self.should_ignore_fn,
             should_init: self.should_init,
             should_update: self.should_update,
-            on_delete_fns: Some(handlers),
+            on_delete_fns: Some(match self.on_delete_fns {
+                Some(hs) => {
+                    let mut v = Vec::from(hs);
+
+                    v.push(h);
+
+                    v
+                }
+                _ => vec![h],
+            }),
             on_failure_fns: self.on_failure_fns,
             on_success_fns: self.on_success_fns,
             ..Default::default()

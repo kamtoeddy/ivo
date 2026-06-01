@@ -119,28 +119,31 @@ impl ConstantField {
 }
 
 // ON_DELETE is only available if HasDelete is 'No'
-impl<HasSuccess, I: IvoSchemaStruct, O: IvoSchemaStruct, T, CtxOptions>
-    SchemaBuilder<T, I, O, CtxOptions, Yes, No, HasSuccess>
+impl<HasDelete, HasSuccess, I: IvoSchemaStruct, O: IvoSchemaStruct, T, CtxOptions>
+    SchemaBuilder<T, I, O, CtxOptions, Yes, HasDelete, HasSuccess>
 {
-    pub fn on_delete(
+    pub fn on_delete<F, Fut>(
         self,
-        handler: DeleteHandler<O, CtxOptions>,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, HasSuccess> {
-        SchemaBuilder {
-            value: self.value,
-            on_delete_fns: Some(vec![handler]),
-            on_success_fns: self.on_success_fns,
-            ..Default::default()
-        }
-    }
+        handler: F,
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, HasSuccess>
+    where
+        F: Fn(&O, &CtxOptions) -> Fut + Send + Sync + 'static,
+        Fut: Future<Output = ()> + Send + Sync + 'static,
+    {
+        let h: DeleteHandler<O, CtxOptions> = Box::new(move |d, o| Box::pin(handler(d, o)));
 
-    pub fn on_delete_fns(
-        self,
-        handlers: Vec<DeleteHandler<O, CtxOptions>>,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, HasSuccess> {
         SchemaBuilder {
             value: self.value,
-            on_delete_fns: Some(handlers),
+            on_delete_fns: Some(match self.on_delete_fns {
+                Some(hs) => {
+                    let mut v = Vec::from(hs);
+
+                    v.push(h);
+
+                    v
+                }
+                _ => vec![h],
+            }),
             on_success_fns: self.on_success_fns,
             ..Default::default()
         }
