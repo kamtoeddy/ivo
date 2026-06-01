@@ -51,8 +51,6 @@ pub type UniformVirtualSanitiser<CtxOptions> =
 pub type UniformEnumErrorResolver =
     Box<dyn Fn((Value, &Vec<Value>)) -> &'static str + Send + Sync + 'static>;
 
-pub type UniformResolver<CtxOptions> = Box<dyn Fn(IvoSummary<CtxOptions>) -> Value + Send + Sync>;
-
 pub type UniformResolverWithMutSummary<CtxOptions> =
     Box<dyn Fn(IvoSummary<CtxOptions>) -> Value + Send + Sync + 'static>;
 
@@ -64,8 +62,6 @@ pub type UniformResolverWithMiniSummary<CtxOptions> =
 
 pub type UniformAsyncResolverWithMiniSummary<CtxOptions> =
     Box<dyn Fn(IvoMiniSummary<CtxOptions>) -> BoxFuture<'static, Value> + Send + Sync + 'static>;
-
-pub type EnumeratedErrorResolver<T> = Box<dyn Fn((Value, &Vec<T>)) -> &str + Send + Sync + 'static>;
 
 pub enum ComputableEnumeratedError {
     Static(String),
@@ -198,28 +194,12 @@ pub enum FieldReValidator<CtxOptions: Clone> {
     Sync(UniformReValidator<CtxOptions>),
 }
 
-pub type AsyncFieldValidatorFn<T, CtxOptions> = Box<
-    dyn Fn(Value, IvoSummary<CtxOptions>) -> BoxFuture<'static, ValidatorResponse<T>>
-        + Send
-        + Sync
-        + 'static,
->;
-
-pub type FieldValidatorFn<T, CtxOptions> =
-    Box<dyn Fn(Value, IvoSummary<CtxOptions>) -> ValidatorResponse<T> + Send + Sync + 'static>;
-
 pub type RequiredResolverFn<CtxOptions> = Box<
     dyn Fn(IvoSummary<CtxOptions>) -> BoxFuture<'static, (bool, &'static str)>
         + Send
         + Sync
         + 'static,
 >;
-
-pub type AsyncResolverWithMiniSummaryFn<T, CtxOptions> =
-    Box<dyn Fn(IvoMiniSummary<CtxOptions>) -> BoxFuture<'static, T> + Send + Sync + 'static>;
-
-pub type ResolverWithMiniSummaryFn<T, CtxOptions> =
-    Box<dyn Fn(IvoMiniSummary<CtxOptions>) -> T + Send + Sync + 'static>;
 
 pub enum ResolverWithMutSummary<T, CtxOptions: Clone> {
     Async(AsyncResolverWithMutSummaryFn<T, CtxOptions>),
