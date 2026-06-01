@@ -7,14 +7,10 @@ use crate::{
     types::{
         BooleanResolverWithMutSummary, ComputableEnumeratedError, ComputableInit,
         ComputableRequired, ComputableWithMiniSummary, DeleteHandler, FailureHandler,
-        FieldValidator, ResolverWithMutSummary, SuccessHandler, VirtualSanitiser,
+        FieldReValidator, FieldValidator, ResolverWithMutSummary, SuccessHandler, VirtualSanitiser,
     },
 };
 
-// pub trait IvoPropertyTrait<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> {
-//     type Type;
-//     fn get_config(self) -> IvoProperty<Self::Type, I, O, CtxOptions>;
-// }
 pub trait IvoPropertyBuilder<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
     fn build(self) -> InternalIvoProperty<I, O, CtxOptions>;
 }
@@ -22,7 +18,8 @@ pub trait IvoPropertyBuilder<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions:
 pub type InternalIvoProperty<I, O, CtxOptions> = IvoProperty<Value, I, O, CtxOptions>;
 
 pub struct IvoProperty<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
-    _d: PhantomData<I>,
+    // _d: PhantomData<T>,
+    pub _i: PhantomData<I>,
     pub alias: Option<String>,
     pub enum_error: Option<ComputableEnumeratedError>,
     pub enum_values: Option<Vec<T>>,
@@ -35,8 +32,8 @@ pub struct IvoProperty<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Cl
     pub required: Option<ComputableRequired<CtxOptions>>,
     pub resolver: Option<ResolverWithMutSummary<T, CtxOptions>>,
     pub sanitizer: Option<VirtualSanitiser<T, CtxOptions>>,
-    pub validator: Option<FieldValidator<T, CtxOptions>>,
-    pub re_validator: Option<FieldValidator<T, CtxOptions>>,
+    pub validator: Option<FieldValidator<CtxOptions>>,
+    pub re_validator: Option<FieldReValidator<CtxOptions>>,
     //
     pub should_ignore: Option<BooleanResolverWithMutSummary<CtxOptions>>,
     pub should_init: Option<ComputableInit<CtxOptions>>,
@@ -72,7 +69,7 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> Default
             on_delete_fns: None,
             on_success_fns: None,
             on_failure_fns: None,
-            _d: PhantomData,
+            _i: PhantomData,
         }
     }
 }

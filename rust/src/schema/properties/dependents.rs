@@ -153,7 +153,7 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
 {
     pub fn depends_on(
         self,
-        fields: &[&str],
+        fields: Vec<&str>,
     ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, No, No, No, No> {
         SchemaBuilder {
             default: self.default,
@@ -186,7 +186,7 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
         }
     }
 
-    pub fn resolve_async<R, Fut>(
+    pub fn resolve_async<R>(
         self,
         resolver: R,
     ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, No, No>
@@ -276,7 +276,7 @@ impl<
         handler: F,
     ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, HasShouldUpdate, HasDelete, Yes>
     where
-        F: Fn(&IvoSummary<CtxOptions>) -> Fut + Send + Sync + 'static,
+        F: Fn(IvoSummary<CtxOptions>) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = ()> + Send + Sync + 'static,
     {
         let h: SuccessHandler<CtxOptions> = Box::new(move |s| Box::pin(handler(s)));

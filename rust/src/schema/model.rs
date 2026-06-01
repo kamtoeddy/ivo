@@ -10,7 +10,7 @@ use crate::traits::{IvoSchemaStruct, Partial};
 
 pub type AsyncTriggerFn = Box<dyn Fn() -> BoxFuture<'static, ()> + Send + Sync>;
 
-impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool>
+impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: IvoErrorTool>
     SchemaCore<I, O, CtxOptions, ErrorTool>
 {
     pub fn get_model(&self) -> Model<'_, I, O, CtxOptions, ErrorTool> {
@@ -22,7 +22,7 @@ pub struct Model<
     'schema,
     Input: IvoSchemaStruct,
     Output: IvoSchemaStruct,
-    CtxOptions = HashMap<String, Value>,
+    CtxOptions: Clone = HashMap<String, Value>,
     ErrorTool: IvoErrorTool = DefaultErrorTool,
 > {
     schema: &'schema SchemaCore<Input, Output, CtxOptions, ErrorTool>,
@@ -32,7 +32,7 @@ impl<
         'schema,
         Input: IvoSchemaStruct,
         Output: IvoSchemaStruct,
-        CtxOptions,
+        CtxOptions: Clone,
         ErrorTool: IvoErrorTool,
     > Model<'schema, Input, Output, CtxOptions, ErrorTool>
 {
@@ -140,22 +140,22 @@ impl<
     /// It will repeatedly evaluate defaults whose dependencies are satisfied (present in `context`).
     /// If unresolved defaults remain and schema option `error_on_unresolved_defaults` is true,
     /// returns Err(SchemaError) listing the unresolved props.
-    pub fn resolve_defaults(&self, context: &mut HashMap<String, Value>) {
-        let mut _pending: HashSet<String> = self
-            .schema
-            .get_definitions()
-            .iter()
-            .filter_map(|(k, def)| {
-                if def.default.is_some() {
-                    Some(k.clone())
-                } else {
-                    None
-                }
-            })
-            .filter(|k| !context.contains_key(k))
-            .collect();
+    pub fn resolve_defaults(&self, _context: &mut HashMap<String, Value>) {
+        // let mut _pending: HashSet<String> = self
+        //     .schema
+        //     .get_definitions()
+        //     .iter()
+        //     .filter_map(|(k, def)| {
+        //         if def.default.is_some() {
+        //             Some(k.clone())
+        //         } else {
+        //             None
+        //         }
+        //     })
+        //     .filter(|k| !context.contains_key(k))
+        //     .collect();
 
-        // todo!()
+        todo!()
     }
 
     /// Resolve constants iteratively; constants may depend on other values in context.

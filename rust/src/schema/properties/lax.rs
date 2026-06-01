@@ -1,16 +1,19 @@
 use std::{future::Future, marker::PhantomData};
 
-use serde_json::Value;
+use serde::{de::DeserializeOwned, Serialize};
+use serde_json::{json, Value};
 
 use crate::{
     schema::properties::base::{InternalIvoProperty, IvoProperty, IvoPropertyBuilder},
-    traits::IvoSchemaStruct,
+    traits::{
+        IntoAsyncFieldReValidator, IntoAsyncFieldValidator, IntoFieldReValidator,
+        IntoFieldValidator, IntoResolverWithMiniSummary, IvoSchemaStruct,
+    },
     types::{
         BooleanResolverWithMutSummary, ComputableInit, ComputableRequired,
-        ComputableWithMiniSummary, DeleteHandler, FailureHandler, FieldValidator, IvoSummary,
-        ResolverWithMiniSummaryFn, SuccessHandler,
+        ComputableWithMiniSummary, DeleteHandler, FailureHandler, FieldReValidator, FieldValidator,
+        IvoSummary, SuccessHandler,
     },
-    ValidatorResponse,
 };
 
 pub struct LaxField;
@@ -21,7 +24,7 @@ pub struct No;
 pub struct YesComputed;
 
 pub struct SchemaBuilder<
-    T,
+    T: DeserializeOwned + Serialize,
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
     CtxOptions: Clone,
@@ -36,6 +39,7 @@ pub struct SchemaBuilder<
     HasFailure,
     HasSuccess,
 > {
+    _d: PhantomData<T>,
     _i: PhantomData<I>,
     _default: PhantomData<HasDefault>,
     _validator: PhantomData<HasValidator>,
@@ -49,8 +53,8 @@ pub struct SchemaBuilder<
     _on_success_fns: PhantomData<HasSuccess>,
     // actual data...
     default: Option<ComputableWithMiniSummary<Value, CtxOptions>>,
-    validator: Option<FieldValidator<T, CtxOptions>>,
-    re_validator: Option<FieldValidator<T, CtxOptions>>,
+    validator: Option<FieldValidator<CtxOptions>>,
+    re_validator: Option<FieldReValidator<CtxOptions>>,
     required: Option<ComputableRequired<CtxOptions>>,
     should_ignore_fn: Option<BooleanResolverWithMutSummary<CtxOptions>>,
     should_init: Option<ComputableInit<CtxOptions>>,
@@ -71,7 +75,7 @@ impl<
         HasDelete,
         HasFailure,
         HasSuccess,
-        T,
+        T: DeserializeOwned + Serialize,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
@@ -105,6 +109,7 @@ impl<
             on_delete_fns: None,
             on_failure_fns: None,
             on_success_fns: None,
+            _d: PhantomData,
             _i: PhantomData,
             _default: PhantomData,
             _validator: PhantomData,
@@ -130,7 +135,7 @@ impl<
         HasDelete,
         HasFailure,
         HasSuccess,
-        T,
+        T: DeserializeOwned + Serialize,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
@@ -170,99 +175,122 @@ impl<
 }
 
 impl LaxField {
-    pub fn default<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>(
+    pub fn default<
+        T: DeserializeOwned + Serialize,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions: Clone,
+    >(
         value: T,
     ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, No, No, No, No, No, No, No, No, No> {
         SchemaBuilder {
-            default: Some(ComputableWithMiniSummary::Static(value)),
+            default: Some(ComputableWithMiniSummary::Static(json!(value))),
             ..Default::default()
         }
     }
 
-    pub fn default_fn<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>(
-        default_fn: ResolverWithMiniSummaryFn<T, CtxOptions>,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, No, No, No, No, No, No, No, No, No> {
+    pub fn default_fn<
+        T: DeserializeOwned + Serialize,
+        F,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions: Clone,
+    >(
+        default_fn: F,
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, No, No, No, No, No, No, No, No, No>
+    where
+        F: IntoResolverWithMiniSummary<T, I, O, CtxOptions>,
+    {
         SchemaBuilder {
-            default: Some(ComputableWithMiniSummary::SyncFunc(default_fn)),
+            default: Some(ComputableWithMiniSummary::SyncFunc(
+                default_fn.into_uniform(),
+            )),
             ..Default::default()
         }
     }
 }
 
-impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
-    SchemaBuilder<T, I, O, CtxOptions, Yes, No, No, No, No, No, No, No, No, No>
+impl<
+        T: DeserializeOwned + Serialize,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions: Clone,
+    > SchemaBuilder<T, I, O, CtxOptions, Yes, No, No, No, No, No, No, No, No, No>
 {
     pub fn validate<F>(
         self,
         validator: F,
     ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, No, No, No, No, No, No, No, No>
     where
-        F: Fn(Value, IvoSummary<CtxOptions>) -> ValidatorResponse<T> + Send + Sync + 'static,
+        F: IntoFieldValidator<T, CtxOptions>,
     {
         SchemaBuilder {
             default: self.default,
-            validator: Some(FieldValidator::Sync(Box::new(validator))),
+            validator: Some(FieldValidator::Sync(validator.into_uniform())),
             ..Default::default()
         }
     }
 
-    pub fn validate_async<F, Fut>(
+    pub fn validate_async<F>(
         self,
         validator: F,
     ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, No, No, No, No, No, No, No, No>
     where
-        F: Fn(Value, IvoSummary<CtxOptions>) -> Fut + Send + Sync + 'static,
-        Fut: Future<Output = ValidatorResponse<T>> + Send + 'static,
+        F: IntoAsyncFieldValidator<T, CtxOptions>,
     {
         SchemaBuilder {
             default: self.default,
-            validator: Some(FieldValidator::Async(Box::new(move |v, s| {
-                Box::pin(validator(v, s))
-            }))),
+            validator: Some(FieldValidator::Async(validator.into_uniform())),
             ..Default::default()
         }
     }
 }
 
-impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
-    SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, No, No, No, No, No, No, No, No>
+impl<
+        T: DeserializeOwned + Serialize,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions: Clone,
+    > SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, No, No, No, No, No, No, No, No>
 {
     pub fn re_validate<F>(
         self,
         re_validator: F,
     ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, No, No, No, No, No, No>
     where
-        F: Fn(Value, IvoSummary<CtxOptions>) -> ValidatorResponse<T> + Send + Sync + 'static,
+        F: IntoFieldReValidator<T, CtxOptions>,
     {
         SchemaBuilder {
             default: self.default,
             validator: self.validator,
-            re_validator: Some(FieldValidator::Sync(Box::new(re_validator))),
+            re_validator: Some(FieldReValidator::Sync(re_validator.into_uniform())),
             ..Default::default()
         }
     }
 
-    pub fn re_validate_async<F, Fut>(
+    pub fn re_validate_async<F>(
         self,
         re_validator: F,
     ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, No, No, No, No, No, No, No, No>
     where
-        F: Fn(Value, IvoSummary<CtxOptions>) -> Fut + Send + Sync + 'static,
-        Fut: Future<Output = ValidatorResponse<T>> + Send + 'static,
+        F: IntoAsyncFieldReValidator<T, CtxOptions>,
     {
         SchemaBuilder {
             default: self.default,
             validator: self.validator,
-            re_validator: Some(FieldValidator::Async(Box::new(move |v, s| {
-                Box::pin(re_validator(v, s))
-            }))),
+            re_validator: Some(FieldReValidator::Async(re_validator.into_uniform())),
             ..Default::default()
         }
     }
 }
 
-impl<HasRevalidator, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
-    SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, HasRevalidator, No, No, No, No, No, No, No>
+impl<
+        HasRevalidator,
+        T: DeserializeOwned + Serialize,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions: Clone,
+    > SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, HasRevalidator, No, No, No, No, No, No, No>
 {
     pub fn required_if<F, Fut>(
         self,
@@ -288,7 +316,7 @@ impl<
         HasValidator,
         HasRevalidator,
         HasRequired,
-        T,
+        T: DeserializeOwned + Serialize,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
@@ -347,7 +375,7 @@ impl<
         HasValidator,
         HasRevalidator,
         HasRequired,
-        T,
+        T: DeserializeOwned + Serialize,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
@@ -494,7 +522,7 @@ impl<
         HasValidator,
         HasRevalidator,
         HasRequired,
-        T,
+        T: DeserializeOwned + Serialize,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
@@ -553,7 +581,7 @@ impl<
         HasValidator,
         HasRevalidator,
         HasRequired,
-        T,
+        T: DeserializeOwned + Serialize,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
@@ -613,7 +641,7 @@ impl<
         HasValidator,
         HasRevalidator,
         HasRequired,
-        T,
+        T: DeserializeOwned + Serialize,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
@@ -709,7 +737,7 @@ impl<
         HasShouldUpdate,
         HasFailure,
         HasSuccess,
-        T,
+        T: DeserializeOwned + Serialize,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
@@ -791,7 +819,7 @@ impl<
         HasDelete,
         HasFailure,
         HasSuccess,
-        T,
+        T: DeserializeOwned + Serialize,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
@@ -833,7 +861,7 @@ impl<
         HasSuccess,
     >
     where
-        F: Fn(&IvoSummary<CtxOptions>) -> Fut + Send + Sync + 'static,
+        F: Fn(IvoSummary<CtxOptions>) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = ()> + Send + Sync + 'static,
     {
         let h: FailureHandler<CtxOptions> = Box::new(move |s| Box::pin(handler(s)));
@@ -874,7 +902,7 @@ impl<
         HasDelete,
         HasFailure,
         HasSuccess,
-        T,
+        T: DeserializeOwned + Serialize,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
@@ -916,7 +944,7 @@ impl<
         Yes,
     >
     where
-        F: Fn(&IvoSummary<CtxOptions>) -> Fut + Send + Sync + 'static,
+        F: Fn(IvoSummary<CtxOptions>) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = ()> + Send + Sync + 'static,
     {
         let h: SuccessHandler<CtxOptions> = Box::new(move |s| Box::pin(handler(s)));

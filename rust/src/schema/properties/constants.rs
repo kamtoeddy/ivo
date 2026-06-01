@@ -4,7 +4,7 @@ use serde::Serialize;
 use serde_json::{json, Value};
 
 use crate::{
-    schema::properties::base::{InternalIvoProperty, IvoPropertyBuilder},
+    schema::properties::base::{InternalIvoProperty, IvoProperty, IvoPropertyBuilder},
     traits::{IntoAsyncResolverWithMiniSummary, IntoResolverWithMiniSummary, IvoSchemaStruct},
     types::{ComputableWithMiniSummary, DeleteHandler, IvoSummary, SuccessHandler},
 };
@@ -68,7 +68,7 @@ impl<
     for SchemaBuilder<T, I, O, CtxOptions, Yes, HasDelete, HasSuccess>
 {
     fn build(self) -> InternalIvoProperty<I, O, CtxOptions> {
-        InternalIvoProperty {
+        IvoProperty {
             value: Some(match self.value {
                 Some(v) => match v {
                     ComputableWithMiniSummary::Static(val) => {
@@ -171,7 +171,7 @@ impl<HasDelete, HasSuccess, I: IvoSchemaStruct, O: IvoSchemaStruct, T, CtxOption
         handler: F,
     ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, HasDelete, Yes>
     where
-        F: Fn(&IvoSummary<CtxOptions>) -> Fut + Send + Sync + 'static,
+        F: Fn(IvoSummary<CtxOptions>) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = ()> + Send + Sync + 'static,
     {
         let h: SuccessHandler<CtxOptions> = Box::new(move |s| Box::pin(handler(s)));

@@ -1,6 +1,6 @@
 use crate::schema::error::{DefaultErrorTool, IvoErrorTool};
 use crate::schema::properties::base::IvoPropertyBuilder;
-use crate::schema::utils::TimeStampTool;
+// use crate::schema::utils::TimeStampTool;
 use crate::schema::{error::SchemaError, properties::base::IvoProperty};
 use crate::traits::IvoSchemaStruct;
 use crate::types::ComputableWithMiniSummary;
@@ -8,15 +8,13 @@ use serde_json::Value;
 use std::collections::{HashMap, HashSet};
 use std::marker::PhantomData;
 
-type PropertyDefinitions<I, O, CtxOptions> =
-    Vec<(&'static str, IvoProperty<Value, I, O, CtxOptions>)>;
 type InternalPropertyDefinitions<I, O, CtxOptions> =
     HashMap<String, IvoProperty<Value, I, O, CtxOptions>>;
 
 pub struct SchemaCore<
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
-    CtxOptions = Option<u8>,
+    CtxOptions: Clone = Option<u8>,
     ErrorTool: IvoErrorTool = DefaultErrorTool,
 > {
     _error_tool: PhantomData<ErrorTool>,
@@ -56,7 +54,7 @@ pub struct SchemaCore<
     // pub timestamp_tool: TimeStampTool,
 }
 
-impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool>
+impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: IvoErrorTool>
     SchemaCore<I, O, CtxOptions, ErrorTool>
 {
     pub fn new() -> Self {
@@ -89,7 +87,7 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool
         }
     }
 
-    pub fn field<T, D: IvoPropertyBuilder<I, O, CtxOptions>>(mut self, name: &str, def: D) -> Self {
+    pub fn field<D: IvoPropertyBuilder<I, O, CtxOptions>>(mut self, name: &str, def: D) -> Self {
         self._definitions.insert(name.to_owned(), def.build());
 
         self
@@ -147,12 +145,12 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool
     //     core
     // }
 
-    fn check_options(&self) {
+    fn _check_options(&self) {
         ()
         // todo!()
     }
 
-    fn check_prop_definitions(&mut self) {
+    fn _check_prop_definitions(&mut self) {
         let mut err_tool = SchemaError::new();
 
         // First pass: register prop kinds and simple attributes
@@ -283,7 +281,7 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool
 
         // Dependency analyses
         for dep in &self.dependents {
-            let circular = self.get_circular_dependencies_of(dep);
+            let circular = self._get_circular_dependencies_of(dep);
 
             for c in circular {
                 err_tool.add(dep, format!("Circular dependency identified with '{c}'"));
@@ -297,7 +295,7 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool
                                 continue;
                             }
 
-                            if self.is_redundant_dependency_of(dep, parent, other) {
+                            if self._is_redundant_dependency_of(dep, parent, other) {
                                 err_tool.add(dep, format!("Dependency on '{parent}' is redundant because of dependency on '{other}'" ));
                             }
                         }
@@ -359,7 +357,7 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool
         keys
     }
 
-    fn get_circular_dependencies_of(&self, _property: &str) -> Vec<String> {
+    fn _get_circular_dependencies_of(&self, _property: &str) -> Vec<String> {
         let circular = Vec::new();
 
         // if !self.dependents.contains(property) {
@@ -396,7 +394,7 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool
         circular
     }
 
-    fn is_redundant_dependency_of(
+    fn _is_redundant_dependency_of(
         &self,
         property: &str,
         _parent_prop: &str,

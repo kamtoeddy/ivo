@@ -1,5 +1,4 @@
 pub mod core;
-pub mod demo;
 pub mod error;
 pub mod properties;
 pub mod utils;

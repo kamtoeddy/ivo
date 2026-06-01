@@ -25,34 +25,45 @@ impl std::ops::Deref for False {
     }
 }
 
-// The internal uniform validator type. Every validator looks like this under the hood.
 pub type UniformValidator<CtxOptions> =
-    Box<dyn Fn(Value, &IvoSummary<CtxOptions>) -> ValidatorResponse<Value> + Send + Sync + 'static>;
+    Box<dyn Fn(Value, IvoSummary<CtxOptions>) -> ValidatorResponse<Value> + Send + Sync + 'static>;
 
 pub type UniformAsyncValidator<CtxOptions> = Box<
-    dyn Fn(Value, &IvoSummary<CtxOptions>) -> BoxFuture<'static, ValidatorResponse<Value>>
+    dyn Fn(Value, IvoSummary<CtxOptions>) -> BoxFuture<'static, ValidatorResponse<Value>>
         + Send
         + Sync
         + 'static,
 >;
 
-// Uniform resolver function layout
+pub type UniformReValidator<CtxOptions> =
+    Box<dyn Fn(Value, IvoSummary<CtxOptions>) -> ValidatorResponse<Value> + Send + Sync + 'static>;
+
+pub type UniformAsyncReValidator<CtxOptions> = Box<
+    dyn Fn(Value, IvoSummary<CtxOptions>) -> BoxFuture<'static, ValidatorResponse<Value>>
+        + Send
+        + Sync
+        + 'static,
+>;
+
+pub type UniformVirtualSanitiser<CtxOptions> =
+    Box<dyn Fn(IvoSummary<CtxOptions>) -> BoxFuture<'static, Value> + Send + Sync + 'static>;
+
 pub type UniformEnumErrorResolver =
     Box<dyn Fn((Value, &Vec<Value>)) -> &'static str + Send + Sync + 'static>;
 
-pub type UniformResolver<CtxOptions> = Box<dyn Fn(&IvoSummary<CtxOptions>) -> Value + Send + Sync>;
+pub type UniformResolver<CtxOptions> = Box<dyn Fn(IvoSummary<CtxOptions>) -> Value + Send + Sync>;
 
 pub type UniformResolverWithMutSummary<CtxOptions> =
-    Box<dyn Fn(&IvoSummary<CtxOptions>) -> Value + Send + Sync + 'static>;
+    Box<dyn Fn(IvoSummary<CtxOptions>) -> Value + Send + Sync + 'static>;
 
 pub type UniformAsyncResolverWithMutSummary<CtxOptions> =
-    Box<dyn Fn(&IvoSummary<CtxOptions>) -> BoxFuture<'static, Value> + Send + Sync + 'static>;
+    Box<dyn Fn(IvoSummary<CtxOptions>) -> BoxFuture<'static, Value> + Send + Sync + 'static>;
 
 pub type UniformResolverWithMiniSummary<CtxOptions> =
-    Box<dyn Fn(&IvoMiniSummary<CtxOptions>) -> Value + Send + Sync + 'static>;
+    Box<dyn Fn(IvoMiniSummary<CtxOptions>) -> Value + Send + Sync + 'static>;
 
 pub type UniformAsyncResolverWithMiniSummary<CtxOptions> =
-    Box<dyn Fn(&IvoMiniSummary<CtxOptions>) -> BoxFuture<'static, Value> + Send + Sync + 'static>;
+    Box<dyn Fn(IvoMiniSummary<CtxOptions>) -> BoxFuture<'static, Value> + Send + Sync + 'static>;
 
 pub type EnumeratedErrorResolver<T> = Box<dyn Fn((Value, &Vec<T>)) -> &str + Send + Sync + 'static>;
 
@@ -177,9 +188,14 @@ impl<CtxOptions: Clone> IvoSummary<CtxOptions> {
     }
 }
 
-pub enum FieldValidator<T, CtxOptions: Clone> {
-    Async(AsyncFieldValidatorFn<T, CtxOptions>),
-    Sync(FieldValidatorFn<T, CtxOptions>),
+pub enum FieldValidator<CtxOptions: Clone> {
+    Async(UniformAsyncValidator<CtxOptions>),
+    Sync(UniformValidator<CtxOptions>),
+}
+
+pub enum FieldReValidator<CtxOptions: Clone> {
+    Async(UniformAsyncReValidator<CtxOptions>),
+    Sync(UniformReValidator<CtxOptions>),
 }
 
 pub type AsyncFieldValidatorFn<T, CtxOptions> = Box<
@@ -193,17 +209,17 @@ pub type FieldValidatorFn<T, CtxOptions> =
     Box<dyn Fn(Value, IvoSummary<CtxOptions>) -> ValidatorResponse<T> + Send + Sync + 'static>;
 
 pub type RequiredResolverFn<CtxOptions> = Box<
-    dyn Fn(&IvoSummary<CtxOptions>) -> BoxFuture<'static, (bool, &'static str)>
+    dyn Fn(IvoSummary<CtxOptions>) -> BoxFuture<'static, (bool, &'static str)>
         + Send
         + Sync
         + 'static,
 >;
 
 pub type AsyncResolverWithMiniSummaryFn<T, CtxOptions> =
-    Box<dyn Fn(&IvoMiniSummary<CtxOptions>) -> BoxFuture<'static, T> + Send + Sync + 'static>;
+    Box<dyn Fn(IvoMiniSummary<CtxOptions>) -> BoxFuture<'static, T> + Send + Sync + 'static>;
 
 pub type ResolverWithMiniSummaryFn<T, CtxOptions> =
-    Box<dyn Fn(&IvoMiniSummary<CtxOptions>) -> T + Send + Sync + 'static>;
+    Box<dyn Fn(IvoMiniSummary<CtxOptions>) -> T + Send + Sync + 'static>;
 
 pub enum ResolverWithMutSummary<T, CtxOptions: Clone> {
     Async(AsyncResolverWithMutSummaryFn<T, CtxOptions>),
@@ -211,24 +227,24 @@ pub enum ResolverWithMutSummary<T, CtxOptions: Clone> {
 }
 
 pub type AsyncResolverWithMutSummaryFn<T, CtxOptions> =
-    Box<dyn Fn(&IvoSummary<CtxOptions>) -> BoxFuture<'static, T> + Send + Sync + 'static>;
+    Box<dyn Fn(IvoSummary<CtxOptions>) -> BoxFuture<'static, T> + Send + Sync + 'static>;
 
 pub type ResolverWithMutSummaryFn<T, CtxOptions> =
-    Box<dyn Fn(&IvoSummary<CtxOptions>) -> T + Send + Sync + 'static>;
+    Box<dyn Fn(IvoSummary<CtxOptions>) -> T + Send + Sync + 'static>;
 
 pub type BooleanResolverWithMutSummary<CtxOptions> =
-    Box<dyn Fn(&IvoSummary<CtxOptions>) -> bool + Send + Sync + 'static>;
+    Box<dyn Fn(IvoSummary<CtxOptions>) -> bool + Send + Sync + 'static>;
 
-pub type VirtualSanitiser<T, CtxOptions> = ResolverWithMutSummaryFn<T, CtxOptions>;
+pub type VirtualSanitiser<T, CtxOptions> = AsyncResolverWithMutSummaryFn<T, CtxOptions>;
 
 pub type DeleteHandler<O, CtxOptions> =
     Box<dyn Fn(&O, &CtxOptions) -> BoxFuture<'static, ()> + Send + Sync + 'static>;
 
 pub type FailureHandler<CtxOptions> =
-    Box<dyn Fn(&IvoSummary<CtxOptions>) -> BoxFuture<'static, ()> + Send + Sync + 'static>;
+    Box<dyn Fn(IvoSummary<CtxOptions>) -> BoxFuture<'static, ()> + Send + Sync + 'static>;
 
 pub type SuccessHandler<CtxOptions> =
-    Box<dyn Fn(&IvoSummary<CtxOptions>) -> BoxFuture<'static, ()> + Send + Sync + 'static>;
+    Box<dyn Fn(IvoSummary<CtxOptions>) -> BoxFuture<'static, ()> + Send + Sync + 'static>;
 
 pub type ValidatorResponse<T> = Result<T, (&'static str, Option<Value>)>;
 
