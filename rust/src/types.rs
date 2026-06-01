@@ -198,7 +198,8 @@ pub type VirtualSanitiser<T, I, O, CtxOptions> = ResolverWithMutSummaryFn<T, I, 
 
 pub type DeleteHandler<O, CtxOptions> = Box<dyn Fn(&O, &CtxOptions)>;
 pub type FailureHandler<I, O, CtxOptions> = Box<dyn Fn(&IvoSummary<I, O, CtxOptions>)>;
-pub type SuccessHandler<I, O, CtxOptions> = Box<dyn Fn(&IvoSummary<I, O, CtxOptions>)>;
+pub type SuccessHandler<I, O, CtxOptions> =
+    Box<dyn Fn(&IvoSummary<I, O, CtxOptions>) -> BoxFuture<'static, ()> + Send + Sync + 'static>;
 
 pub type ValidatorResponse<T> = Result<T, (&'static str, Option<Value>)>;
 

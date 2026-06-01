@@ -38,7 +38,7 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> IvoProperty<T, I, O,
 //         .re_validate(|v, c| Ok(true))
 //         .readonly()
 //         .on_failure(Box::new(|_| {}))
-//         .on_success(Box::new(|_| {}))
+//         .on_success(|_| async {})
 //         .on_delete(Box::new(|_, __| {}))
 //         .build();
 
@@ -49,7 +49,7 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> IvoProperty<T, I, O,
 //         .readonly()
 //         .on_delete(Box::new(|_, __| {}))
 //         .on_failure(Box::new(|_| {}))
-//         .on_success(Box::new(|_| {}))
+//         .on_success(|_| async {})
 //         .build();
 
 //     let l = LaxField::default("&str")
@@ -57,32 +57,34 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> IvoProperty<T, I, O,
 //         .readonly()
 //         .on_delete(Box::new(|_, __| {}))
 //         .on_failure(Box::new(|_| {}))
-//         .on_success(Box::new(|_| {}))
+//         .on_success(|_| async {})
 //         .build();
 
 //     let c = ConstantField::value("&str")
-//         .on_success(Box::new(|_| {}))
+//         .on_success(|_| async {})
 //         .on_delete(Box::new(|_, __| {}))
 //         .build();
 
 //     let c = ConstantField::value(String::from("String"))
-//         .on_success(Box::new(|_| {}))
+//         .on_success(|_| async {})
 //         .on_delete(Box::new(|_, __| {}))
 //         .build();
 
 //     let c = ConstantField::value(Some(String::from("Option<String>")))
-//         .on_success(Box::new(|_| {}))
+//         .on_success(|_| async {})
 //         .on_delete_fns(vec![Box::new(|_, __| {})])
 //         .build();
 
 //     let c = ConstantField::computed_async(|s| async { "computed &str" })
 //         .on_delete(Box::new(|_, __| {}))
-//         .on_success_fns(vec![Box::new(|_| {}), Box::new(|_| {})])
+//         .on_success(|_| async { println!("on success 1") })
+//         .on_success(|_| async { println!("on success 2") })
 //         .build();
 
 //     let c = ConstantField::computed(|s| "computed &str")
 //         .on_delete(Box::new(|_, __| {}))
-//         .on_success_fns(vec![Box::new(|_| {}), Box::new(|_| {})])
+//         .on_success(|_| async { println!("on success 1") })
+//         .on_success(|_| async { println!("on success 2") })
 //         .build();
 
 //     let resolver = || String::from("full name");
@@ -91,7 +93,7 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> IvoProperty<T, I, O,
 //         .depends_on(&["first_name", "last_name"])
 //         .resolve(|_| resolver())
 //         .on_delete(Box::new(|_, __| {}))
-//         .on_success(Box::new(|_| {}))
+//         .on_success(|_| async {})
 //         .build();
 
 //     let d = DependentField::default_fn(Box::new(|_| true))
@@ -99,16 +101,16 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> IvoProperty<T, I, O,
 //         .resolve(|_| false)
 //         .readonly()
 //         .on_delete_fns(vec![Box::new(|_, __| {}), Box::new(|_, __| {})])
-//         .on_success(Box::new(|_| {}))
+//         .on_success(|_| async {})
 //         .build();
 
 //     let v = VirtualField::alias("lol")
 //         .validate(|v, _| Ok(true))
 //         .re_validate_async(|v, c| async { Ok(true) })
-//         .required_if(|_| (true, "lol"))
+//         .required_if(|_| async { (true, "lol") })
 //         .sanitize(|s| false)
 //         .on_failure(Box::new(|_| {}))
-//         .on_success(Box::new(|_| {}))
+//         .on_success(|_| async {})
 //         .build();
 
 //     let v = VirtualField::validate_async(|v, _| async {
@@ -120,25 +122,25 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> IvoProperty<T, I, O,
 //     })
 //     .re_validate(|v, c| Ok(true))
 //     .alias("lol")
-//     .required_if(|_| (true, "lol"))
+//     .required_if(|_| async { (true, "lol") })
 //     .sanitize(|s| false)
 //     .on_failure(Box::new(|_| {}))
-//     .on_success(Box::new(|_| {}))
+//     .on_success(|_| async {})
 //     .build();
 
 //     let v = VirtualField::validate(|v, _| Ok(true))
 //         .re_validate(|v, c| Ok(true))
 //         .alias("lol")
-//         .required_if(|_| (true, "lol"))
+//         .required_if(|_| async { (true, "lol") })
 //         .sanitize(|s| false)
 //         .on_failure(Box::new(|_| {}))
-//         .on_success(Box::new(|_| {}))
+//         .on_success(|_| async {})
 //         .build();
 
 //     let v = VirtualField::validate(|v, _| Ok(true))
 //         .alias("lol")
 //         .re_validate(|v, c| Ok(true))
-//         .required_if(|_| (true, "lol"))
+//         .required_if(|_| async { (true, "lol") })
 //         .sanitize(|_| false)
 //         // .ignore_if(|_| false)
 //         .allow_update_if(|_| false)
@@ -146,6 +148,7 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> IvoProperty<T, I, O,
 //         // .ignore_init()
 //         // .ignore_update()
 //         .on_failure(Box::new(|_| {}))
-//         .on_success(Box::new(|_| {}))
+//         .on_success(|_| async { println!("on success 1") })
+//         .on_success(|_| async { println!("on success 2") })
 //         .build();
 // }

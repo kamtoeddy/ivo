@@ -3,7 +3,7 @@ use std::{future::Future, marker::PhantomData};
 use crate::{
     schema::properties::base::IvoProperty,
     traits::IvoSchemaStruct,
-    types::{ComputableWithMiniSummary, DeleteHandler, IvoMiniSummary, SuccessHandler},
+    types::{ComputableWithMiniSummary, DeleteHandler, IvoMiniSummary, IvoSummary, SuccessHandler},
 };
 
 // Marker Types
@@ -148,29 +148,32 @@ impl<HasSuccess, I: IvoSchemaStruct, O: IvoSchemaStruct, T, CtxOptions>
 }
 
 // ON_SUCCESS is only available if HasSuccess is 'No'
-impl<HasDelete, I: IvoSchemaStruct, O: IvoSchemaStruct, T, CtxOptions>
-    SchemaBuilder<T, I, O, CtxOptions, Yes, HasDelete, No>
+impl<HasDelete, HasSuccess, I: IvoSchemaStruct, O: IvoSchemaStruct, T, CtxOptions>
+    SchemaBuilder<T, I, O, CtxOptions, Yes, HasDelete, HasSuccess>
 {
-    pub fn on_success(
+    pub fn on_success<F, Fut>(
         self,
-        handler: SuccessHandler<I, O, CtxOptions>,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, HasDelete, Yes> {
-        SchemaBuilder {
-            value: self.value,
-            on_delete_fns: self.on_delete_fns,
-            on_success_fns: Some(vec![handler]),
-            ..Default::default()
-        }
-    }
+        handler: F,
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, HasDelete, Yes>
+    where
+        F: Fn(&IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
+        Fut: Future<Output = ()> + Send + Sync + 'static,
+    {
+        let h: SuccessHandler<I, O, CtxOptions> = Box::new(move |s| Box::pin(handler(s)));
 
-    pub fn on_success_fns(
-        self,
-        handlers: Vec<SuccessHandler<I, O, CtxOptions>>,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, HasDelete, Yes> {
         SchemaBuilder {
             value: self.value,
             on_delete_fns: self.on_delete_fns,
-            on_success_fns: Some(handlers),
+            on_success_fns: Some(match self.on_success_fns {
+                Some(hs) => {
+                    let mut v = Vec::from(hs);
+
+                    v.push(h);
+
+                    v
+                }
+                _ => vec![h],
+            }),
             ..Default::default()
         }
     }

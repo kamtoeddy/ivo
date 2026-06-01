@@ -244,35 +244,42 @@ impl<HasShouldUpdate, HasSuccess, T, I: IvoSchemaStruct, O: IvoSchemaStruct, Ctx
 }
 
 // ON_SUCCESS is only available if HasSuccess is 'No'
-impl<HasShouldUpdate, HasDelete, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>
-    SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, HasShouldUpdate, HasDelete, No>
+impl<
+        HasShouldUpdate,
+        HasDelete,
+        HasSuccess,
+        T,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions,
+    > SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, HasShouldUpdate, HasDelete, HasSuccess>
 {
-    pub fn on_success(
+    pub fn on_success<F, Fut>(
         self,
-        handler: SuccessHandler<I, O, CtxOptions>,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, HasShouldUpdate, HasDelete, Yes> {
-        SchemaBuilder {
-            default: self.default,
-            depends_on: self.depends_on,
-            resolver: self.resolver,
-            should_update: self.should_update,
-            on_delete_fns: self.on_delete_fns,
-            on_success_fns: Some(vec![handler]),
-            ..Default::default()
-        }
-    }
+        handler: F,
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, HasShouldUpdate, HasDelete, Yes>
+    where
+        F: Fn(&IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
+        Fut: Future<Output = ()> + Send + Sync + 'static,
+    {
+        let h: SuccessHandler<I, O, CtxOptions> = Box::new(move |s| Box::pin(handler(s)));
 
-    pub fn on_success_fns(
-        self,
-        handlers: Vec<SuccessHandler<I, O, CtxOptions>>,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, HasShouldUpdate, HasDelete, Yes> {
         SchemaBuilder {
             default: self.default,
             depends_on: self.depends_on,
             resolver: self.resolver,
             should_update: self.should_update,
             on_delete_fns: self.on_delete_fns,
-            on_success_fns: Some(handlers),
+            on_success_fns: Some(match self.on_success_fns {
+                Some(hs) => {
+                    let mut v = Vec::from(hs);
+
+                    v.push(h);
+
+                    v
+                }
+                _ => vec![h],
+            }),
             ..Default::default()
         }
     }
