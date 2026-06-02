@@ -2,17 +2,9 @@
 use serde::{Deserialize, Serialize};
 
 use crate::demo::slugify::{slugify, SlugifiedString};
+use crate::schema::properties::IvoField;
 use crate::IvoStruct;
-use crate::{
-    schema::{
-        properties::{
-            constants::ConstantField, dependents::DependentField, enumerated::EnumeratedField,
-            lax::LaxField, required::RequiredField, virtuals::VirtualField,
-        },
-        SchemaCore,
-    },
-    types::IvoSummary,
-};
+use crate::{schema::SchemaCore, types::IvoSummary};
 
 // type DateWithTz = DateTime<Utc>;
 
@@ -69,27 +61,27 @@ impl DEMO {
 
         SchemaCore::new()
             .with_fields(|f| {
-                f.set("id", ConstantField::value(1234))
+                f.set("id", IvoField::CONSTANT.value(1234))
                     .set(
                         "email",
-                        RequiredField::validate(|_, _| Ok(String::from("Hello"))),
+                        IvoField::REQUIRED.validate(|_, _| Ok(String::from("Hello"))),
                     )
                     .set(
                         "username",
-                        RequiredField::validate(|v: String, _| {
-                            const MIN_LEN: usize = 4;
+                        IvoField::REQUIRED
+                            .validate(|v: String, _| {
+                                const MIN_LEN: usize = 4;
 
-                            if v.len() <= MIN_LEN {
-                                return Err((
-                                    format!("Username must be atleast {MIN_LEN} long"),
-                                    None,
-                                ));
-                            }
+                                if v.len() <= MIN_LEN {
+                                    return Err((
+                                        format!("Username must be atleast {MIN_LEN} long"),
+                                        None,
+                                    ));
+                                }
 
-                            return Ok(String::from(v));
-                        })
-                        .re_validate_async(
-                            |uname: String, s: MutUserSummary| async move {
+                                return Ok(String::from(v));
+                            })
+                            .re_validate_async(|uname: String, s: MutUserSummary| async move {
                                 let mut ctx_options = s.options;
 
                                 if ctx_options.find_by_username(&uname).await.is_some() {
@@ -102,45 +94,50 @@ impl DEMO {
                                 ctx_options.update_data(slugify(&uname));
 
                                 Ok(uname)
-                            },
-                        ),
+                            }),
                     )
                     .set(
                         "username_last_updated_at",
-                        DependentField::default(Some("default value"))
+                        IvoField::DEPENDENT
+                            .default(Some(String::from("default value")))
                             .depends_on(vec!["username"])
-                            .resolve(|_| Some("resolved value")),
+                            .resolve(|_| Some(String::from("resolved value"))),
                     )
                     // general demo to make sure all fields work as expected
                     .set(
                         "c",
-                        ConstantField::value(String::from("String"))
+                        IvoField::CONSTANT
+                            .value(String::from("String"))
                             .on_success(|_| async {})
                             .on_delete(|_, _| async {}),
                     )
                     .set(
                         "c1",
-                        ConstantField::value(Some(String::from("Option<String>")))
+                        IvoField::CONSTANT
+                            .value(Some(String::from("Option<String>")))
                             .on_success(|_| async {})
                             .on_delete(|_, _| async {}),
                     )
                     .set(
                         "c2",
-                        ConstantField::computed(|_| true)
+                        IvoField::CONSTANT
+                            .computed(|_| true)
                             .on_delete(|_, _| async {})
                             .on_success(|_| async { println!("on success 1") })
                             .on_success(|_| async { println!("on success 2") }),
                     )
                     .set(
                         "c3",
-                        ConstantField::computed_async(|_| async { false })
+                        IvoField::CONSTANT
+                            .computed_async(|_| async { false })
                             .on_delete(|_, _| async {})
                             .on_success(|_| async { println!("on success 1") })
                             .on_success(|_| async { println!("on success 2") }),
                     )
                     .set(
                         "enum",
-                        EnumeratedField::values(vec![true, false])
+                        IvoField::ENUM
+                            .values(vec![true, false])
                             .error_fn(|_| "".into())
                             // .error("invalid option provided")
                             .default_fn(|_| true)
@@ -151,7 +148,8 @@ impl DEMO {
                     )
                     .set(
                         "d",
-                        DependentField::default(String::from("Hello"))
+                        IvoField::DEPENDENT
+                            .default(String::from("Hello"))
                             .depends_on(vec!["first_name", "last_name"])
                             .resolve(move |_| resolver())
                             .on_delete(|_, _| async {})
@@ -159,7 +157,8 @@ impl DEMO {
                     )
                     .set(
                         "d1",
-                        DependentField::default_fn(|_| true)
+                        IvoField::DEPENDENT
+                            .default_fn(|_| true)
                             .depends_on(vec!["first_name", "last_name"])
                             .resolve_async(move |_| async move {
                                 resolver();
@@ -171,7 +170,8 @@ impl DEMO {
                     )
                     .set(
                         "l",
-                        LaxField::default(false)
+                        IvoField::LAX
+                            .default(false)
                             .validate(|_, _| Ok(true))
                             .readonly()
                             .on_delete(|_, _| async {})
@@ -180,7 +180,8 @@ impl DEMO {
                     )
                     .set(
                         "l1",
-                        LaxField::default_fn(|_| None)
+                        IvoField::LAX
+                            .default_fn(|_| None)
                             .validate_async(|_, _| async { Ok(Some(1)) })
                             .re_validate(|_, _| Ok(Some(2)))
                             .readonly()
@@ -190,7 +191,8 @@ impl DEMO {
                     )
                     .set(
                         "l2",
-                        LaxField::default(None)
+                        IvoField::LAX
+                            .default(None)
                             .validate_async(|_, _| async { Ok(Some(true)) })
                             .re_validate_async(|v, _| async move { Ok(v) })
                             .readonly()
@@ -200,7 +202,8 @@ impl DEMO {
                     )
                     .set(
                         "r",
-                        RequiredField::validate(|_, _| Err(("lol".into(), None)))
+                        IvoField::REQUIRED
+                            .validate(|_, _| Err(("lol".into(), None)))
                             .re_validate(|_, _| Ok(true))
                             .readonly()
                             .on_failure(|_| async {})
@@ -209,7 +212,8 @@ impl DEMO {
                     )
                     .set(
                         "v",
-                        VirtualField::alias("lol")
+                        IvoField::VIRTUAL
+                            .alias("lol")
                             .validate(|_, _| Ok(true))
                             .re_validate_async(|_, _| async { Ok(true) })
                             .required_if(|_| async { (true, "lol".into()) })
@@ -219,25 +223,27 @@ impl DEMO {
                     )
                     .set(
                         "v1",
-                        VirtualField::validate_async(|v, _| async move {
-                            if v == true || v == false {
-                                Ok(v)
-                            } else {
-                                Err(("Invalid boolean".into(), None))
-                            }
-                        })
-                        .re_validate(|_, _| Ok(true))
-                        .alias("lol")
-                        .required_if(|_| async {
-                            (true, "this field is required in this scenario".into())
-                        })
-                        .sanitize(|_| async { false })
-                        .on_failure(|_| async {})
-                        .on_success(|_| async {}),
+                        IvoField::VIRTUAL
+                            .validate_async(|v, _| async move {
+                                if v == true || v == false {
+                                    Ok(v)
+                                } else {
+                                    Err(("Invalid boolean".into(), None))
+                                }
+                            })
+                            .re_validate(|_, _| Ok(true))
+                            .alias("lol")
+                            .required_if(|_| async {
+                                (true, "this field is required in this scenario".into())
+                            })
+                            .sanitize(|_| async { false })
+                            .on_failure(|_| async {})
+                            .on_success(|_| async {}),
                     )
                     .set(
                         "v2",
-                        VirtualField::validate(|_, _| Ok(true))
+                        IvoField::VIRTUAL
+                            .validate(|_, _| Ok(true))
                             .re_validate(|_, _| Ok(true))
                             .alias("lol")
                             .required_if(|_| async { (true, "lol".into()) })
@@ -247,7 +253,8 @@ impl DEMO {
                     )
                     .set(
                         "v3",
-                        VirtualField::validate(|_, _| Ok(true))
+                        IvoField::VIRTUAL
+                            .validate(|_, _| Ok(true))
                             .alias("v3")
                             .re_validate(|_, _| Ok(true))
                             .required_if(|_| async { (true, "lol".into()) })

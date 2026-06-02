@@ -15,13 +15,11 @@ use crate::{
     },
 };
 
-pub struct DependentField;
-
 // Marker Types
 pub struct Yes;
 pub struct No;
 
-pub struct SchemaBuilder<
+pub struct DependentFieldBuilder<
     T,
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
@@ -60,8 +58,8 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-    > Default
-    for SchemaBuilder<
+    >
+    DependentFieldBuilder<
         T,
         I,
         O,
@@ -74,7 +72,7 @@ impl<
         HasSuccess,
     >
 {
-    fn default() -> Self {
+    pub const fn new() -> Self {
         Self {
             default: None,
             depends_on: None,
@@ -94,6 +92,36 @@ impl<
 }
 
 impl<
+        HasDefault,
+        HasParents,
+        HasResolver,
+        HasShouldUpdate,
+        HasDelete,
+        HasSuccess,
+        T,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions: Clone,
+    > Default
+    for DependentFieldBuilder<
+        T,
+        I,
+        O,
+        CtxOptions,
+        HasDefault,
+        HasParents,
+        HasResolver,
+        HasShouldUpdate,
+        HasDelete,
+        HasSuccess,
+    >
+{
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<
         HasShouldUpdate,
         HasDelete,
         HasSuccess,
@@ -102,7 +130,18 @@ impl<
         O: IvoSchemaStruct,
         CtxOptions: Clone,
     > BuildableIvoProperty<I, O, CtxOptions>
-    for SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, HasShouldUpdate, HasDelete, HasSuccess>
+    for DependentFieldBuilder<
+        T,
+        I,
+        O,
+        CtxOptions,
+        Yes,
+        Yes,
+        Yes,
+        HasShouldUpdate,
+        HasDelete,
+        HasSuccess,
+    >
 {
     fn build(self) -> InternalIvoProperty<I, O, CtxOptions> {
         IvoProperty {
@@ -121,23 +160,21 @@ impl<
     }
 }
 
-impl DependentField {
-    pub fn default<T: Serialize, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>(
-        value: T,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes> {
-        SchemaBuilder {
+impl<T: Serialize, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
+    DependentFieldBuilder<T, I, O, CtxOptions>
+{
+    pub fn default(self, value: T) -> DependentFieldBuilder<T, I, O, CtxOptions, Yes> {
+        DependentFieldBuilder {
             default: Some(ComputableWithMiniSummary::Static(json!(value))),
             ..Default::default()
         }
     }
 
-    pub fn default_fn<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, F>(
-        default_fn: F,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes>
+    pub fn default_fn<F>(self, default_fn: F) -> DependentFieldBuilder<T, I, O, CtxOptions, Yes>
     where
         F: IntoResolverWithMiniSummary<T, I, O, CtxOptions>,
     {
-        SchemaBuilder {
+        DependentFieldBuilder {
             default: Some(ComputableWithMiniSummary::SyncFunc(
                 default_fn.into_uniform(),
             )),
@@ -147,10 +184,13 @@ impl DependentField {
 }
 
 impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
-    SchemaBuilder<T, I, O, CtxOptions, Yes>
+    DependentFieldBuilder<T, I, O, CtxOptions, Yes>
 {
-    pub fn depends_on(self, fields: Vec<&str>) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes> {
-        SchemaBuilder {
+    pub fn depends_on(
+        self,
+        fields: Vec<&str>,
+    ) -> DependentFieldBuilder<T, I, O, CtxOptions, Yes, Yes> {
+        DependentFieldBuilder {
             default: self.default,
             depends_on: Some(
                 fields
@@ -164,13 +204,16 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
 }
 
 impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
-    SchemaBuilder<T, I, O, CtxOptions, Yes, Yes>
+    DependentFieldBuilder<T, I, O, CtxOptions, Yes, Yes>
 {
-    pub fn resolve<R>(self, resolver: R) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes>
+    pub fn resolve<R>(
+        self,
+        resolver: R,
+    ) -> DependentFieldBuilder<T, I, O, CtxOptions, Yes, Yes, Yes>
     where
         R: IntoResolverWithMutSummary<T, I, O, CtxOptions>,
     {
-        SchemaBuilder {
+        DependentFieldBuilder {
             default: self.default,
             depends_on: self.depends_on,
             resolver: Some(ResolverWithMutSummary::Sync(resolver.into_uniform())),
@@ -178,11 +221,14 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
         }
     }
 
-    pub fn resolve_async<R>(self, resolver: R) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes>
+    pub fn resolve_async<R>(
+        self,
+        resolver: R,
+    ) -> DependentFieldBuilder<T, I, O, CtxOptions, Yes, Yes, Yes>
     where
         R: IntoAsyncResolverWithMutSummary<T, I, O, CtxOptions>,
     {
-        SchemaBuilder {
+        DependentFieldBuilder {
             default: self.default,
             depends_on: self.depends_on,
             resolver: Some(ResolverWithMutSummary::Async(resolver.into_uniform())),
@@ -192,12 +238,12 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
 }
 
 impl<HasDelete, HasSuccess, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
-    SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, HasDelete, HasSuccess>
+    DependentFieldBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, HasDelete, HasSuccess>
 {
     pub fn readonly(
         self,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, Yes, HasDelete, HasSuccess> {
-        SchemaBuilder {
+    ) -> DependentFieldBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, Yes, HasDelete, HasSuccess> {
+        DependentFieldBuilder {
             default: self.default,
             depends_on: self.depends_on,
             resolver: self.resolver,
@@ -216,19 +262,31 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-    > SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, HasShouldUpdate, HasDelete, HasSuccess>
+    >
+    DependentFieldBuilder<
+        T,
+        I,
+        O,
+        CtxOptions,
+        Yes,
+        Yes,
+        Yes,
+        HasShouldUpdate,
+        HasDelete,
+        HasSuccess,
+    >
 {
     pub fn on_delete<F, Fut>(
         self,
         handler: F,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, HasShouldUpdate, Yes, HasSuccess>
+    ) -> DependentFieldBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, HasShouldUpdate, Yes, HasSuccess>
     where
         F: Fn(&O, &CtxOptions) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = ()> + Send + Sync + 'static,
     {
         let h: DeleteHandler<O, CtxOptions> = Box::new(move |d, o| Box::pin(handler(d, o)));
 
-        SchemaBuilder {
+        DependentFieldBuilder {
             default: self.default,
             depends_on: self.depends_on,
             resolver: self.resolver,
@@ -258,19 +316,31 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-    > SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, HasShouldUpdate, HasDelete, HasSuccess>
+    >
+    DependentFieldBuilder<
+        T,
+        I,
+        O,
+        CtxOptions,
+        Yes,
+        Yes,
+        Yes,
+        HasShouldUpdate,
+        HasDelete,
+        HasSuccess,
+    >
 {
     pub fn on_success<F, Fut>(
         self,
         handler: F,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, HasShouldUpdate, HasDelete, Yes>
+    ) -> DependentFieldBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, HasShouldUpdate, HasDelete, Yes>
     where
         F: Fn(IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = ()> + Send + Sync + 'static,
     {
         let h: SuccessHandler<I, O, CtxOptions> = Box::new(move |s| Box::pin(handler(s)));
 
-        SchemaBuilder {
+        DependentFieldBuilder {
             default: self.default,
             depends_on: self.depends_on,
             resolver: self.resolver,

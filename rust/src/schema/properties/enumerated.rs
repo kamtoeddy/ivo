@@ -15,14 +15,12 @@ use crate::{
     },
 };
 
-pub struct EnumeratedField;
-
 // Marker Types
 pub struct Yes;
 pub struct No;
 pub struct YesComputed;
 
-pub struct SchemaBuilder<
+pub struct EnumFieldBuilder<
     T,
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
@@ -73,8 +71,8 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-    > Default
-    for SchemaBuilder<
+    >
+    EnumFieldBuilder<
         T,
         I,
         O,
@@ -90,7 +88,7 @@ impl<
         HasSuccess,
     >
 {
-    fn default() -> Self {
+    pub const fn new() -> Self {
         Self {
             default: None,
             enum_values: None,
@@ -116,6 +114,42 @@ impl<
 }
 
 impl<
+        HasValues,
+        HasValueError,
+        HasDefault,
+        HasIgnore,
+        HasShouldInit,
+        HasShouldUpdate,
+        HasDelete,
+        HasFailure,
+        HasSuccess,
+        T,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions: Clone,
+    > Default
+    for EnumFieldBuilder<
+        T,
+        I,
+        O,
+        CtxOptions,
+        HasValues,
+        HasValueError,
+        HasDefault,
+        HasIgnore,
+        HasShouldInit,
+        HasShouldUpdate,
+        HasDelete,
+        HasFailure,
+        HasSuccess,
+    >
+{
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<
         HasDefault,
         HasIgnore,
         HasShouldInit,
@@ -128,7 +162,7 @@ impl<
         O: IvoSchemaStruct,
         CtxOptions: Clone,
     > BuildableIvoProperty<I, O, CtxOptions>
-    for SchemaBuilder<
+    for EnumFieldBuilder<
         T,
         I,
         O,
@@ -160,11 +194,11 @@ impl<
     }
 }
 
-impl EnumeratedField {
-    pub fn values<T: Serialize, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>(
-        values: Vec<T>,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes> {
-        SchemaBuilder {
+impl<T: Serialize, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
+    EnumFieldBuilder<T, I, O, CtxOptions>
+{
+    pub fn values(self, values: Vec<T>) -> EnumFieldBuilder<T, I, O, CtxOptions, Yes> {
+        EnumFieldBuilder {
             enum_values: Some(values.into_iter().map(|v| json!(v)).collect()),
             ..Default::default()
         }
@@ -172,21 +206,21 @@ impl EnumeratedField {
 }
 
 impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
-    SchemaBuilder<T, I, O, CtxOptions, Yes>
+    EnumFieldBuilder<T, I, O, CtxOptions, Yes>
 {
-    pub fn error(self, error: &str) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes> {
-        SchemaBuilder {
+    pub fn error(self, error: &str) -> EnumFieldBuilder<T, I, O, CtxOptions, Yes, Yes> {
+        EnumFieldBuilder {
             enum_values: self.enum_values,
             enum_error: Some(ComputableEnumeratedError::Static(error.into())),
             ..Default::default()
         }
     }
 
-    pub fn error_fn<F>(self, error_fn: F) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes>
+    pub fn error_fn<F>(self, error_fn: F) -> EnumFieldBuilder<T, I, O, CtxOptions, Yes, Yes>
     where
         F: IntoEnumErrorResolver<T>,
     {
-        SchemaBuilder {
+        EnumFieldBuilder {
             enum_values: self.enum_values,
             enum_error: Some(ComputableEnumeratedError::Func(error_fn.into_uniform())),
             ..Default::default()
@@ -195,10 +229,10 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
 }
 
 impl<T: Serialize, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
-    SchemaBuilder<T, I, O, CtxOptions, Yes, Yes>
+    EnumFieldBuilder<T, I, O, CtxOptions, Yes, Yes>
 {
-    pub fn default(self, value: T) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes> {
-        SchemaBuilder {
+    pub fn default(self, value: T) -> EnumFieldBuilder<T, I, O, CtxOptions, Yes, Yes, Yes> {
+        EnumFieldBuilder {
             enum_values: self.enum_values,
             enum_error: self.enum_error,
             default: Some(ComputableWithMiniSummary::Static(json!(value))),
@@ -206,11 +240,14 @@ impl<T: Serialize, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
         }
     }
 
-    pub fn default_fn<F>(self, default_fn: F) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes>
+    pub fn default_fn<F>(
+        self,
+        default_fn: F,
+    ) -> EnumFieldBuilder<T, I, O, CtxOptions, Yes, Yes, Yes>
     where
         F: IntoResolverWithMiniSummary<T, I, O, CtxOptions>,
     {
-        SchemaBuilder {
+        EnumFieldBuilder {
             enum_values: self.enum_values,
             enum_error: self.enum_error,
             default: Some(ComputableWithMiniSummary::SyncFunc(
@@ -223,11 +260,11 @@ impl<T: Serialize, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
     pub fn default_async_fn<F>(
         self,
         default_fn: F,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes>
+    ) -> EnumFieldBuilder<T, I, O, CtxOptions, Yes, Yes, Yes>
     where
         F: IntoAsyncResolverWithMiniSummary<I, I, O, CtxOptions>,
     {
-        SchemaBuilder {
+        EnumFieldBuilder {
             enum_values: self.enum_values,
             enum_error: self.enum_error,
             default: Some(ComputableWithMiniSummary::AsyncFunc(
@@ -239,13 +276,13 @@ impl<T: Serialize, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
 }
 
 impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
-    SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes>
+    EnumFieldBuilder<T, I, O, CtxOptions, Yes, Yes, Yes>
 {
-    pub fn ignore_if<F>(self, fx: F) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, Yes>
+    pub fn ignore_if<F>(self, fx: F) -> EnumFieldBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, Yes>
     where
         F: Fn(IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
     {
-        SchemaBuilder {
+        EnumFieldBuilder {
             default: self.default,
             enum_values: self.enum_values,
             enum_error: self.enum_error,
@@ -256,10 +293,10 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
 }
 
 impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
-    SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes>
+    EnumFieldBuilder<T, I, O, CtxOptions, Yes, Yes, Yes>
 {
-    pub fn ignore_init(self) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, Yes> {
-        SchemaBuilder {
+    pub fn ignore_init(self) -> EnumFieldBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, Yes> {
+        EnumFieldBuilder {
             default: self.default,
             enum_values: self.enum_values,
             enum_error: self.enum_error,
@@ -271,11 +308,11 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
     pub fn allow_init_if<F>(
         self,
         fx: F,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, YesComputed>
+    ) -> EnumFieldBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, YesComputed>
     where
         F: Fn(IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
     {
-        SchemaBuilder {
+        EnumFieldBuilder {
             default: self.default,
             enum_values: self.enum_values,
             enum_error: self.enum_error,
@@ -286,10 +323,10 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
 }
 
 impl<HasDefault, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
-    SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, HasDefault>
+    EnumFieldBuilder<T, I, O, CtxOptions, Yes, Yes, HasDefault>
 {
-    pub fn readonly(self) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, HasDefault> {
-        SchemaBuilder {
+    pub fn readonly(self) -> EnumFieldBuilder<T, I, O, CtxOptions, Yes, Yes, HasDefault> {
+        EnumFieldBuilder {
             default: self.default,
             enum_values: self.enum_values,
             enum_error: self.enum_error,
@@ -301,11 +338,11 @@ impl<HasDefault, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
     pub fn allow_update_if<F>(
         self,
         fx: F,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, HasDefault, No, No, YesComputed>
+    ) -> EnumFieldBuilder<T, I, O, CtxOptions, Yes, Yes, HasDefault, No, No, YesComputed>
     where
         F: Fn(IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
     {
-        SchemaBuilder {
+        EnumFieldBuilder {
             default: self.default,
             enum_values: self.enum_values,
             enum_error: self.enum_error,
@@ -316,16 +353,16 @@ impl<HasDefault, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
 }
 
 impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
-    SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, No, Yes>
+    EnumFieldBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, No, Yes>
 {
     pub fn allow_init_if<F>(
         self,
         fx: F,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, YesComputed, Yes>
+    ) -> EnumFieldBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, YesComputed, Yes>
     where
         F: Fn(IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
     {
-        SchemaBuilder {
+        EnumFieldBuilder {
             default: self.default,
             enum_values: self.enum_values,
             enum_error: self.enum_error,
@@ -336,16 +373,16 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
 }
 
 impl<HasDefault, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
-    SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, HasDefault, No, Yes, YesComputed>
+    EnumFieldBuilder<T, I, O, CtxOptions, Yes, Yes, HasDefault, No, Yes, YesComputed>
 {
     pub fn allow_update_if<F>(
         self,
         fx: F,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, HasDefault, No, Yes, YesComputed>
+    ) -> EnumFieldBuilder<T, I, O, CtxOptions, Yes, Yes, HasDefault, No, Yes, YesComputed>
     where
         F: Fn(IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
     {
-        SchemaBuilder {
+        EnumFieldBuilder {
             default: self.default,
             enum_values: self.enum_values,
             enum_error: self.enum_error,
@@ -357,12 +394,12 @@ impl<HasDefault, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
 }
 
 impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
-    SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, No, YesComputed>
+    EnumFieldBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, No, YesComputed>
 {
     pub fn ignore_init(
         self,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, Yes, YesComputed> {
-        SchemaBuilder {
+    ) -> EnumFieldBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, Yes, YesComputed> {
+        EnumFieldBuilder {
             default: self.default,
             enum_values: self.enum_values,
             enum_error: self.enum_error,
@@ -375,11 +412,11 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
     pub fn allow_init_if<F>(
         self,
         fx: F,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, YesComputed, YesComputed>
+    ) -> EnumFieldBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, YesComputed, YesComputed>
     where
         F: Fn(IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
     {
-        SchemaBuilder {
+        EnumFieldBuilder {
             default: self.default,
             enum_values: self.enum_values,
             enum_error: self.enum_error,
@@ -403,7 +440,7 @@ impl<
         O: IvoSchemaStruct,
         CtxOptions: Clone,
     >
-    SchemaBuilder<
+    EnumFieldBuilder<
         T,
         I,
         O,
@@ -422,7 +459,7 @@ impl<
     pub fn on_delete<F, Fut>(
         self,
         handler: F,
-    ) -> SchemaBuilder<
+    ) -> EnumFieldBuilder<
         T,
         I,
         O,
@@ -443,7 +480,7 @@ impl<
     {
         let h: DeleteHandler<O, CtxOptions> = Box::new(move |d, o| Box::pin(handler(d, o)));
 
-        SchemaBuilder {
+        EnumFieldBuilder {
             default: self.default,
             enum_values: self.enum_values,
             enum_error: self.enum_error,
@@ -481,7 +518,7 @@ impl<
         O: IvoSchemaStruct,
         CtxOptions: Clone,
     >
-    SchemaBuilder<
+    EnumFieldBuilder<
         T,
         I,
         O,
@@ -500,7 +537,7 @@ impl<
     pub fn on_failure<F, Fut>(
         self,
         handler: F,
-    ) -> SchemaBuilder<
+    ) -> EnumFieldBuilder<
         T,
         I,
         O,
@@ -521,7 +558,7 @@ impl<
     {
         let h: FailureHandler<I, O, CtxOptions> = Box::new(move |s| Box::pin(handler(s)));
 
-        SchemaBuilder {
+        EnumFieldBuilder {
             default: self.default,
             enum_values: self.enum_values,
             enum_error: self.enum_error,
@@ -559,7 +596,7 @@ impl<
         O: IvoSchemaStruct,
         CtxOptions: Clone,
     >
-    SchemaBuilder<
+    EnumFieldBuilder<
         T,
         I,
         O,
@@ -578,7 +615,7 @@ impl<
     pub fn on_success<F, Fut>(
         self,
         handler: F,
-    ) -> SchemaBuilder<
+    ) -> EnumFieldBuilder<
         T,
         I,
         O,
@@ -599,7 +636,7 @@ impl<
     {
         let h: SuccessHandler<I, O, CtxOptions> = Box::new(move |s| Box::pin(handler(s)));
 
-        SchemaBuilder {
+        EnumFieldBuilder {
             default: self.default,
             enum_values: self.enum_values,
             enum_error: self.enum_error,

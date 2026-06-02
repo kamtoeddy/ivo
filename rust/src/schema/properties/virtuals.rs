@@ -15,14 +15,12 @@ use crate::{
     },
 };
 
-pub struct VirtualField;
-
 // Marker Types
 pub struct Yes;
 pub struct No;
 pub struct YesComputed;
 
-pub struct SchemaBuilder<
+pub struct VirtualFieldBuilder<
     T,
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
@@ -77,8 +75,8 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-    > Default
-    for SchemaBuilder<
+    >
+    VirtualFieldBuilder<
         T,
         I,
         O,
@@ -95,7 +93,7 @@ impl<
         HasSuccess,
     >
 {
-    fn default() -> Self {
+    pub const fn new() -> Self {
         Self {
             alias: None,
             validator: None,
@@ -123,6 +121,44 @@ impl<
 }
 
 impl<
+        HasValidator,
+        HasAlias,
+        HasRevalidator,
+        HasSanitizer,
+        HasRequired,
+        HasIgnore,
+        HasShouldInit,
+        HasShouldUpdate,
+        HasFailure,
+        HasSuccess,
+        T,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions: Clone,
+    > Default
+    for VirtualFieldBuilder<
+        T,
+        I,
+        O,
+        CtxOptions,
+        HasValidator,
+        HasAlias,
+        HasRevalidator,
+        HasSanitizer,
+        HasRequired,
+        HasIgnore,
+        HasShouldInit,
+        HasShouldUpdate,
+        HasFailure,
+        HasSuccess,
+    >
+{
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<
         HasAlias,
         HasRevalidator,
         HasSanitizer,
@@ -137,7 +173,7 @@ impl<
         O: IvoSchemaStruct,
         CtxOptions: Clone,
     > BuildableIvoProperty<I, O, CtxOptions>
-    for SchemaBuilder<
+    for VirtualFieldBuilder<
         T,
         I,
         O,
@@ -172,46 +208,17 @@ impl<
     }
 }
 
-impl VirtualField {
-    pub fn alias<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>(
-        name: &str,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, No, Yes> {
-        SchemaBuilder {
-            alias: Some(name.to_string()),
-            ..Default::default()
-        }
-    }
-
-    pub fn validate<F, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>(
-        validator: F,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes>
-    where
-        F: IntoFieldValidator<T, I, O, CtxOptions>,
-    {
-        SchemaBuilder {
-            validator: Some(FieldValidator::Sync(validator.into_uniform())),
-            ..Default::default()
-        }
-    }
-
-    pub fn validate_async<F, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>(
-        validator: F,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes>
-    where
-        F: IntoAsyncFieldValidator<T, I, O, CtxOptions>,
-    {
-        SchemaBuilder {
-            validator: Some(FieldValidator::Async(validator.into_uniform())),
-            ..Default::default()
-        }
-    }
-}
-
-impl<HasRevalidator, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
-    SchemaBuilder<T, I, O, CtxOptions, Yes, No, HasRevalidator>
+impl<
+        HasValidator,
+        HasRevalidator,
+        T,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions: Clone,
+    > VirtualFieldBuilder<T, I, O, CtxOptions, HasValidator, No, HasRevalidator>
 {
-    pub fn alias(self, name: &str) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes> {
-        SchemaBuilder {
+    pub fn alias(self, name: &str) -> VirtualFieldBuilder<T, I, O, CtxOptions, HasValidator, Yes> {
+        VirtualFieldBuilder {
             alias: Some(name.to_string()),
             validator: self.validator,
             re_validator: self.re_validator,
@@ -228,13 +235,16 @@ impl<HasRevalidator, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clon
 }
 
 impl<HasAlias, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
-    SchemaBuilder<T, I, O, CtxOptions, No, HasAlias>
+    VirtualFieldBuilder<T, I, O, CtxOptions, No, HasAlias>
 {
-    pub fn validate<F>(self, validator: F) -> SchemaBuilder<T, I, O, CtxOptions, Yes, HasAlias>
+    pub fn validate<F>(
+        self,
+        validator: F,
+    ) -> VirtualFieldBuilder<T, I, O, CtxOptions, Yes, HasAlias>
     where
         F: IntoFieldValidator<T, I, O, CtxOptions>,
     {
-        SchemaBuilder {
+        VirtualFieldBuilder {
             alias: self.alias,
             validator: Some(FieldValidator::Sync(validator.into_uniform())),
             ..Default::default()
@@ -244,11 +254,11 @@ impl<HasAlias, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
     pub fn validate_async<F>(
         self,
         validator: F,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, HasAlias>
+    ) -> VirtualFieldBuilder<T, I, O, CtxOptions, Yes, HasAlias>
     where
         F: IntoAsyncFieldValidator<T, I, O, CtxOptions>,
     {
-        SchemaBuilder {
+        VirtualFieldBuilder {
             alias: self.alias,
             validator: Some(FieldValidator::Async(validator.into_uniform())),
             ..Default::default()
@@ -262,16 +272,16 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-    > SchemaBuilder<T, I, O, CtxOptions, Yes, HasAlias>
+    > VirtualFieldBuilder<T, I, O, CtxOptions, Yes, HasAlias>
 {
     pub fn re_validate<F>(
         self,
         re_validator: F,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, HasAlias, Yes>
+    ) -> VirtualFieldBuilder<T, I, O, CtxOptions, Yes, HasAlias, Yes>
     where
         F: IntoFieldReValidator<T, I, O, CtxOptions>,
     {
-        SchemaBuilder {
+        VirtualFieldBuilder {
             alias: self.alias,
             validator: self.validator,
             re_validator: Some(FieldReValidator::Sync(re_validator.into_uniform())),
@@ -282,11 +292,11 @@ impl<
     pub fn re_validate_async<F>(
         self,
         re_validator: F,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, HasAlias, Yes>
+    ) -> VirtualFieldBuilder<T, I, O, CtxOptions, Yes, HasAlias, Yes>
     where
         F: IntoAsyncFieldReValidator<T, I, O, CtxOptions>,
     {
-        SchemaBuilder {
+        VirtualFieldBuilder {
             alias: self.alias,
             validator: self.validator,
             re_validator: Some(FieldReValidator::Async(re_validator.into_uniform())),
@@ -296,17 +306,17 @@ impl<
 }
 
 impl<HasAlias, HasRevalidator, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
-    SchemaBuilder<T, I, O, CtxOptions, Yes, HasAlias, HasRevalidator>
+    VirtualFieldBuilder<T, I, O, CtxOptions, Yes, HasAlias, HasRevalidator>
 {
     pub fn required_if<F, Fut>(
         self,
         required_fn: F,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, HasAlias, HasRevalidator, No, Yes>
+    ) -> VirtualFieldBuilder<T, I, O, CtxOptions, Yes, HasAlias, HasRevalidator, No, Yes>
     where
         F: Fn(IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = (bool, String)> + Send + 'static,
     {
-        SchemaBuilder {
+        VirtualFieldBuilder {
             alias: self.alias,
             validator: self.validator,
             re_validator: self.re_validator,
@@ -326,16 +336,16 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-    > SchemaBuilder<T, I, O, CtxOptions, Yes, HasAlias, HasRevalidator, No, HasRequired>
+    > VirtualFieldBuilder<T, I, O, CtxOptions, Yes, HasAlias, HasRevalidator, No, HasRequired>
 {
     pub fn sanitize<F>(
         self,
         sanitizer: F,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, HasAlias, HasRevalidator, Yes, HasRequired>
+    ) -> VirtualFieldBuilder<T, I, O, CtxOptions, Yes, HasAlias, HasRevalidator, Yes, HasRequired>
     where
         F: IntoVirtualSanitizer<T, I, O, CtxOptions>,
     {
-        SchemaBuilder {
+        VirtualFieldBuilder {
             alias: self.alias,
             validator: self.validator,
             re_validator: self.re_validator,
@@ -355,12 +365,23 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-    > SchemaBuilder<T, I, O, CtxOptions, Yes, HasAlias, HasRevalidator, HasSanitizer, HasRequired>
+    >
+    VirtualFieldBuilder<
+        T,
+        I,
+        O,
+        CtxOptions,
+        Yes,
+        HasAlias,
+        HasRevalidator,
+        HasSanitizer,
+        HasRequired,
+    >
 {
     pub fn ignore_if<F>(
         self,
         fx: F,
-    ) -> SchemaBuilder<
+    ) -> VirtualFieldBuilder<
         T,
         I,
         O,
@@ -375,7 +396,7 @@ impl<
     where
         F: Fn(IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
     {
-        SchemaBuilder {
+        VirtualFieldBuilder {
             alias: self.alias,
             validator: self.validator,
             re_validator: self.re_validator,
@@ -396,11 +417,22 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-    > SchemaBuilder<T, I, O, CtxOptions, Yes, HasAlias, HasRevalidator, HasSanitizer, HasRequired>
+    >
+    VirtualFieldBuilder<
+        T,
+        I,
+        O,
+        CtxOptions,
+        Yes,
+        HasAlias,
+        HasRevalidator,
+        HasSanitizer,
+        HasRequired,
+    >
 {
     pub fn ignore_init(
         self,
-    ) -> SchemaBuilder<
+    ) -> VirtualFieldBuilder<
         T,
         I,
         O,
@@ -413,7 +445,7 @@ impl<
         No,
         Yes,
     > {
-        SchemaBuilder {
+        VirtualFieldBuilder {
             alias: self.alias,
             validator: self.validator,
             re_validator: self.re_validator,
@@ -427,7 +459,7 @@ impl<
     pub fn allow_init_if<F>(
         self,
         fx: F,
-    ) -> SchemaBuilder<
+    ) -> VirtualFieldBuilder<
         T,
         I,
         O,
@@ -443,7 +475,7 @@ impl<
     where
         F: Fn(IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
     {
-        SchemaBuilder {
+        VirtualFieldBuilder {
             alias: self.alias,
             validator: self.validator,
             re_validator: self.re_validator,
@@ -456,7 +488,7 @@ impl<
 
     pub fn ignore_update(
         self,
-    ) -> SchemaBuilder<
+    ) -> VirtualFieldBuilder<
         T,
         I,
         O,
@@ -470,7 +502,7 @@ impl<
         No,
         Yes,
     > {
-        SchemaBuilder {
+        VirtualFieldBuilder {
             alias: self.alias,
             validator: self.validator,
             re_validator: self.re_validator,
@@ -484,7 +516,7 @@ impl<
     pub fn allow_update_if<F>(
         self,
         fx: F,
-    ) -> SchemaBuilder<
+    ) -> VirtualFieldBuilder<
         T,
         I,
         O,
@@ -501,7 +533,7 @@ impl<
     where
         F: Fn(IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
     {
-        SchemaBuilder {
+        VirtualFieldBuilder {
             alias: self.alias,
             validator: self.validator,
             re_validator: self.re_validator,
@@ -523,7 +555,7 @@ impl<
         O: IvoSchemaStruct,
         CtxOptions: Clone,
     >
-    SchemaBuilder<
+    VirtualFieldBuilder<
         T,
         I,
         O,
@@ -541,7 +573,7 @@ impl<
     pub fn allow_init_if<F>(
         self,
         fx: F,
-    ) -> SchemaBuilder<
+    ) -> VirtualFieldBuilder<
         T,
         I,
         O,
@@ -558,7 +590,7 @@ impl<
     where
         F: Fn(IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
     {
-        SchemaBuilder {
+        VirtualFieldBuilder {
             alias: self.alias,
             validator: self.validator,
             re_validator: self.re_validator,
@@ -580,7 +612,7 @@ impl<
         O: IvoSchemaStruct,
         CtxOptions: Clone,
     >
-    SchemaBuilder<
+    VirtualFieldBuilder<
         T,
         I,
         O,
@@ -598,7 +630,7 @@ impl<
     pub fn allow_update_if<F>(
         self,
         fx: F,
-    ) -> SchemaBuilder<
+    ) -> VirtualFieldBuilder<
         T,
         I,
         O,
@@ -615,7 +647,7 @@ impl<
     where
         F: Fn(IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
     {
-        SchemaBuilder {
+        VirtualFieldBuilder {
             alias: self.alias,
             validator: self.validator,
             re_validator: self.re_validator,
@@ -638,7 +670,7 @@ impl<
         O: IvoSchemaStruct,
         CtxOptions: Clone,
     >
-    SchemaBuilder<
+    VirtualFieldBuilder<
         T,
         I,
         O,
@@ -655,7 +687,7 @@ impl<
 {
     pub fn ignore_init(
         self,
-    ) -> SchemaBuilder<
+    ) -> VirtualFieldBuilder<
         T,
         I,
         O,
@@ -669,7 +701,7 @@ impl<
         Yes,
         YesComputed,
     > {
-        SchemaBuilder {
+        VirtualFieldBuilder {
             alias: self.alias,
             validator: self.validator,
             re_validator: self.re_validator,
@@ -684,7 +716,7 @@ impl<
     pub fn allow_init_if<F>(
         self,
         fx: F,
-    ) -> SchemaBuilder<
+    ) -> VirtualFieldBuilder<
         T,
         I,
         O,
@@ -701,7 +733,7 @@ impl<
     where
         F: Fn(IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
     {
-        SchemaBuilder {
+        VirtualFieldBuilder {
             alias: self.alias,
             validator: self.validator,
             re_validator: self.re_validator,
@@ -730,7 +762,7 @@ impl<
         O: IvoSchemaStruct,
         CtxOptions: Clone,
     >
-    SchemaBuilder<
+    VirtualFieldBuilder<
         T,
         I,
         O,
@@ -750,7 +782,7 @@ impl<
     pub fn on_failure<F, Fut>(
         self,
         handler: F,
-    ) -> SchemaBuilder<
+    ) -> VirtualFieldBuilder<
         T,
         I,
         O,
@@ -772,7 +804,7 @@ impl<
     {
         let h: FailureHandler<I, O, CtxOptions> = Box::new(move |s| Box::pin(handler(s)));
 
-        SchemaBuilder {
+        VirtualFieldBuilder {
             alias: self.alias,
             validator: self.validator,
             re_validator: self.re_validator,
@@ -813,7 +845,7 @@ impl<
         O: IvoSchemaStruct,
         CtxOptions: Clone,
     >
-    SchemaBuilder<
+    VirtualFieldBuilder<
         T,
         I,
         O,
@@ -833,7 +865,7 @@ impl<
     pub fn on_success<F, Fut>(
         self,
         handler: F,
-    ) -> SchemaBuilder<
+    ) -> VirtualFieldBuilder<
         T,
         I,
         O,
@@ -855,7 +887,7 @@ impl<
     {
         let h: SuccessHandler<I, O, CtxOptions> = Box::new(move |s| Box::pin(handler(s)));
 
-        SchemaBuilder {
+        VirtualFieldBuilder {
             alias: self.alias,
             validator: self.validator,
             re_validator: self.re_validator,

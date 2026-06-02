@@ -14,13 +14,11 @@ use crate::{
     },
 };
 
-pub struct RequiredField;
-
 // Marker Types
 pub struct Yes;
 pub struct No;
 
-pub struct SchemaBuilder<
+pub struct RequiredFieldBuilder<
     T,
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
@@ -59,8 +57,8 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-    > Default
-    for SchemaBuilder<
+    >
+    RequiredFieldBuilder<
         T,
         I,
         O,
@@ -73,7 +71,7 @@ impl<
         HasSuccess,
     >
 {
-    fn default() -> Self {
+    pub const fn new() -> Self {
         Self {
             validator: None,
             re_validator: None,
@@ -93,6 +91,36 @@ impl<
 }
 
 impl<
+        HasValidator,
+        HasRevalidator,
+        HasShouldUpdate,
+        HasDelete,
+        HasFailure,
+        HasSuccess,
+        T,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions: Clone,
+    > Default
+    for RequiredFieldBuilder<
+        T,
+        I,
+        O,
+        CtxOptions,
+        HasValidator,
+        HasRevalidator,
+        HasShouldUpdate,
+        HasDelete,
+        HasFailure,
+        HasSuccess,
+    >
+{
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<
         HasRevalidator,
         HasShouldUpdate,
         HasDelete,
@@ -103,7 +131,7 @@ impl<
         O: IvoSchemaStruct,
         CtxOptions: Clone,
     > BuildableIvoProperty<I, O, CtxOptions>
-    for SchemaBuilder<
+    for RequiredFieldBuilder<
         T,
         I,
         O,
@@ -130,32 +158,24 @@ impl<
     }
 }
 
-impl RequiredField {
-    pub fn validate<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, F>(
-        validator: F,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes>
+impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
+    RequiredFieldBuilder<T, I, O, CtxOptions>
+{
+    pub fn validate<F>(self, validator: F) -> RequiredFieldBuilder<T, I, O, CtxOptions, Yes>
     where
         F: IntoFieldValidator<T, I, O, CtxOptions>,
     {
-        SchemaBuilder {
+        RequiredFieldBuilder {
             validator: Some(FieldValidator::Sync(validator.into_uniform())),
             ..Default::default()
         }
     }
 
-    pub fn validate_async<
-        F,
-        T: Serialize,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
-        CtxOptions: Clone,
-    >(
-        validator: F,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes>
+    pub fn validate_async<F>(self, validator: F) -> RequiredFieldBuilder<T, I, O, CtxOptions, Yes>
     where
         F: IntoAsyncFieldValidator<T, I, O, CtxOptions>,
     {
-        SchemaBuilder {
+        RequiredFieldBuilder {
             validator: Some(FieldValidator::Async(validator.into_uniform())),
             ..Default::default()
         }
@@ -167,13 +187,16 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-    > SchemaBuilder<T, I, O, CtxOptions, Yes>
+    > RequiredFieldBuilder<T, I, O, CtxOptions, Yes>
 {
-    pub fn re_validate<F>(self, re_validator: F) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes>
+    pub fn re_validate<F>(
+        self,
+        re_validator: F,
+    ) -> RequiredFieldBuilder<T, I, O, CtxOptions, Yes, Yes>
     where
         F: IntoFieldReValidator<T, I, O, CtxOptions>,
     {
-        SchemaBuilder {
+        RequiredFieldBuilder {
             validator: self.validator,
             re_validator: Some(FieldReValidator::Sync(re_validator.into_uniform())),
             ..Default::default()
@@ -183,11 +206,11 @@ impl<
     pub fn re_validate_async<F>(
         self,
         re_validator: F,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes>
+    ) -> RequiredFieldBuilder<T, I, O, CtxOptions, Yes, Yes, Yes>
     where
         F: IntoAsyncFieldReValidator<T, I, O, CtxOptions>,
     {
-        SchemaBuilder {
+        RequiredFieldBuilder {
             validator: self.validator,
             re_validator: Some(FieldReValidator::Async(re_validator.into_uniform())),
             ..Default::default()
@@ -196,10 +219,10 @@ impl<
 }
 
 impl<HasRevalidator, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
-    SchemaBuilder<T, I, O, CtxOptions, Yes, HasRevalidator>
+    RequiredFieldBuilder<T, I, O, CtxOptions, Yes, HasRevalidator>
 {
-    pub fn readonly(self) -> SchemaBuilder<T, I, O, CtxOptions, Yes, HasRevalidator, Yes> {
-        SchemaBuilder {
+    pub fn readonly(self) -> RequiredFieldBuilder<T, I, O, CtxOptions, Yes, HasRevalidator, Yes> {
+        RequiredFieldBuilder {
             validator: self.validator,
             re_validator: self.re_validator,
             should_update: Some(ComputableInit::False),
@@ -210,11 +233,11 @@ impl<HasRevalidator, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clon
     pub fn allow_update_if<F>(
         self,
         fx: F,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, HasRevalidator, No, Yes>
+    ) -> RequiredFieldBuilder<T, I, O, CtxOptions, Yes, HasRevalidator, No, Yes>
     where
         F: Fn(IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
     {
-        SchemaBuilder {
+        RequiredFieldBuilder {
             validator: self.validator,
             re_validator: self.re_validator,
             should_update: Some(ComputableInit::Func(Box::new(fx))),
@@ -234,7 +257,7 @@ impl<
         O: IvoSchemaStruct,
         CtxOptions: Clone,
     >
-    SchemaBuilder<
+    RequiredFieldBuilder<
         T,
         I,
         O,
@@ -250,7 +273,7 @@ impl<
     pub fn on_delete<F, Fut>(
         self,
         handler: F,
-    ) -> SchemaBuilder<
+    ) -> RequiredFieldBuilder<
         T,
         I,
         O,
@@ -268,7 +291,7 @@ impl<
     {
         let h: DeleteHandler<O, CtxOptions> = Box::new(move |d, o| Box::pin(handler(d, o)));
 
-        SchemaBuilder {
+        RequiredFieldBuilder {
             validator: self.validator,
             re_validator: self.re_validator,
             should_update: self.should_update,
@@ -291,7 +314,7 @@ impl<
     pub fn on_delete_fns(
         self,
         handlers: Vec<DeleteHandler<O, CtxOptions>>,
-    ) -> SchemaBuilder<
+    ) -> RequiredFieldBuilder<
         T,
         I,
         O,
@@ -303,7 +326,7 @@ impl<
         HasFailure,
         HasSuccess,
     > {
-        SchemaBuilder {
+        RequiredFieldBuilder {
             validator: self.validator,
             re_validator: self.re_validator,
             should_update: self.should_update,
@@ -327,7 +350,7 @@ impl<
         O: IvoSchemaStruct,
         CtxOptions: Clone,
     >
-    SchemaBuilder<
+    RequiredFieldBuilder<
         T,
         I,
         O,
@@ -343,7 +366,7 @@ impl<
     pub fn on_failure<F, Fut>(
         self,
         handler: F,
-    ) -> SchemaBuilder<
+    ) -> RequiredFieldBuilder<
         T,
         I,
         O,
@@ -361,7 +384,7 @@ impl<
     {
         let h: FailureHandler<I, O, CtxOptions> = Box::new(move |s| Box::pin(handler(s)));
 
-        SchemaBuilder {
+        RequiredFieldBuilder {
             validator: self.validator,
             re_validator: self.re_validator,
             should_update: self.should_update,
@@ -394,7 +417,7 @@ impl<
         O: IvoSchemaStruct,
         CtxOptions: Clone,
     >
-    SchemaBuilder<
+    RequiredFieldBuilder<
         T,
         I,
         O,
@@ -410,7 +433,7 @@ impl<
     pub fn on_success<F, Fut>(
         self,
         handler: F,
-    ) -> SchemaBuilder<
+    ) -> RequiredFieldBuilder<
         T,
         I,
         O,
@@ -428,7 +451,7 @@ impl<
     {
         let h: SuccessHandler<I, O, CtxOptions> = Box::new(move |s| Box::pin(handler(s)));
 
-        SchemaBuilder {
+        RequiredFieldBuilder {
             validator: self.validator,
             re_validator: self.re_validator,
             should_update: self.should_update,

@@ -16,14 +16,12 @@ use crate::{
     },
 };
 
-pub struct LaxField;
-
 // Marker Types
 pub struct Yes;
 pub struct No;
 pub struct YesComputed;
 
-pub struct SchemaBuilder<
+pub struct LaxFieldBuilder<
     T: DeserializeOwned + Serialize,
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
@@ -78,8 +76,8 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-    > Default
-    for SchemaBuilder<
+    >
+    LaxFieldBuilder<
         T,
         I,
         O,
@@ -96,7 +94,7 @@ impl<
         HasSuccess,
     >
 {
-    fn default() -> Self {
+    pub const fn new() -> Self {
         Self {
             default: None,
             validator: None,
@@ -125,6 +123,44 @@ impl<
 
 impl<
         HasDefault,
+        HasValidator,
+        HasRevalidator,
+        HasRequired,
+        HasIgnore,
+        HasShouldInit,
+        HasShouldUpdate,
+        HasDelete,
+        HasFailure,
+        HasSuccess,
+        T: DeserializeOwned + Serialize,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions: Clone,
+    > Default
+    for LaxFieldBuilder<
+        T,
+        I,
+        O,
+        CtxOptions,
+        HasDefault,
+        HasValidator,
+        HasRevalidator,
+        HasRequired,
+        HasIgnore,
+        HasShouldInit,
+        HasShouldUpdate,
+        HasDelete,
+        HasFailure,
+        HasSuccess,
+    >
+{
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<
+        HasDefault,
         HasRevalidator,
         HasRequired,
         HasIgnore,
@@ -138,7 +174,7 @@ impl<
         O: IvoSchemaStruct,
         CtxOptions: Clone,
     > BuildableIvoProperty<I, O, CtxOptions>
-    for SchemaBuilder<
+    for LaxFieldBuilder<
         T,
         I,
         O,
@@ -172,34 +208,25 @@ impl<
     }
 }
 
-impl LaxField {
-    pub fn default<
+impl<
         T: DeserializeOwned + Serialize,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-    >(
-        value: T,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes> {
-        SchemaBuilder {
+    > LaxFieldBuilder<T, I, O, CtxOptions>
+{
+    pub fn default(self, value: T) -> LaxFieldBuilder<T, I, O, CtxOptions, Yes> {
+        LaxFieldBuilder {
             default: Some(ComputableWithMiniSummary::Static(json!(value))),
             ..Default::default()
         }
     }
 
-    pub fn default_fn<
-        T: DeserializeOwned + Serialize,
-        F,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
-        CtxOptions: Clone,
-    >(
-        default_fn: F,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes>
+    pub fn default_fn<F>(self, default_fn: F) -> LaxFieldBuilder<T, I, O, CtxOptions, Yes>
     where
         F: IntoResolverWithMiniSummary<T, I, O, CtxOptions>,
     {
-        SchemaBuilder {
+        LaxFieldBuilder {
             default: Some(ComputableWithMiniSummary::SyncFunc(
                 default_fn.into_uniform(),
             )),
@@ -213,24 +240,24 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-    > SchemaBuilder<T, I, O, CtxOptions, Yes>
+    > LaxFieldBuilder<T, I, O, CtxOptions, Yes>
 {
-    pub fn validate<F>(self, validator: F) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes>
+    pub fn validate<F>(self, validator: F) -> LaxFieldBuilder<T, I, O, CtxOptions, Yes, Yes>
     where
         F: IntoFieldValidator<T, I, O, CtxOptions>,
     {
-        SchemaBuilder {
+        LaxFieldBuilder {
             default: self.default,
             validator: Some(FieldValidator::Sync(validator.into_uniform())),
             ..Default::default()
         }
     }
 
-    pub fn validate_async<F>(self, validator: F) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes>
+    pub fn validate_async<F>(self, validator: F) -> LaxFieldBuilder<T, I, O, CtxOptions, Yes, Yes>
     where
         F: IntoAsyncFieldValidator<T, I, O, CtxOptions>,
     {
-        SchemaBuilder {
+        LaxFieldBuilder {
             default: self.default,
             validator: Some(FieldValidator::Async(validator.into_uniform())),
             ..Default::default()
@@ -243,16 +270,16 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-    > SchemaBuilder<T, I, O, CtxOptions, Yes, Yes>
+    > LaxFieldBuilder<T, I, O, CtxOptions, Yes, Yes>
 {
     pub fn re_validate<F>(
         self,
         re_validator: F,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes>
+    ) -> LaxFieldBuilder<T, I, O, CtxOptions, Yes, Yes, Yes>
     where
         F: IntoFieldReValidator<T, I, O, CtxOptions>,
     {
-        SchemaBuilder {
+        LaxFieldBuilder {
             default: self.default,
             validator: self.validator,
             re_validator: Some(FieldReValidator::Sync(re_validator.into_uniform())),
@@ -263,11 +290,11 @@ impl<
     pub fn re_validate_async<F>(
         self,
         re_validator: F,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes>
+    ) -> LaxFieldBuilder<T, I, O, CtxOptions, Yes, Yes>
     where
         F: IntoAsyncFieldReValidator<T, I, O, CtxOptions>,
     {
-        SchemaBuilder {
+        LaxFieldBuilder {
             default: self.default,
             validator: self.validator,
             re_validator: Some(FieldReValidator::Async(re_validator.into_uniform())),
@@ -282,17 +309,17 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-    > SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, HasRevalidator>
+    > LaxFieldBuilder<T, I, O, CtxOptions, Yes, Yes, HasRevalidator>
 {
     pub fn required_if<F, Fut>(
         self,
         required_fn: F,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, HasRevalidator, Yes>
+    ) -> LaxFieldBuilder<T, I, O, CtxOptions, Yes, Yes, HasRevalidator, Yes>
     where
         F: Fn(IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = (bool, String)> + Send + 'static,
     {
-        SchemaBuilder {
+        LaxFieldBuilder {
             default: self.default,
             validator: self.validator,
             re_validator: self.re_validator,
@@ -312,16 +339,16 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-    > SchemaBuilder<T, I, O, CtxOptions, Yes, HasValidator, HasRevalidator, HasRequired>
+    > LaxFieldBuilder<T, I, O, CtxOptions, Yes, HasValidator, HasRevalidator, HasRequired>
 {
     pub fn ignore_if<F>(
         self,
         fx: F,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, HasValidator, HasRevalidator, HasRequired, Yes>
+    ) -> LaxFieldBuilder<T, I, O, CtxOptions, Yes, HasValidator, HasRevalidator, HasRequired, Yes>
     where
         F: Fn(IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
     {
-        SchemaBuilder {
+        LaxFieldBuilder {
             default: self.default,
             validator: self.validator,
             re_validator: self.re_validator,
@@ -340,13 +367,13 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-    > SchemaBuilder<T, I, O, CtxOptions, Yes, HasValidator, HasRevalidator, HasRequired>
+    > LaxFieldBuilder<T, I, O, CtxOptions, Yes, HasValidator, HasRevalidator, HasRequired>
 {
     pub fn ignore_init(
         self,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, HasValidator, HasRevalidator, HasRequired, No, Yes>
+    ) -> LaxFieldBuilder<T, I, O, CtxOptions, Yes, HasValidator, HasRevalidator, HasRequired, No, Yes>
     {
-        SchemaBuilder {
+        LaxFieldBuilder {
             default: self.default,
             validator: self.validator,
             re_validator: self.re_validator,
@@ -359,7 +386,7 @@ impl<
     pub fn allow_init_if<F>(
         self,
         fx: F,
-    ) -> SchemaBuilder<
+    ) -> LaxFieldBuilder<
         T,
         I,
         O,
@@ -374,7 +401,7 @@ impl<
     where
         F: Fn(IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
     {
-        SchemaBuilder {
+        LaxFieldBuilder {
             default: self.default,
             validator: self.validator,
             re_validator: self.re_validator,
@@ -386,7 +413,7 @@ impl<
 
     pub fn readonly(
         self,
-    ) -> SchemaBuilder<
+    ) -> LaxFieldBuilder<
         T,
         I,
         O,
@@ -399,7 +426,7 @@ impl<
         No,
         Yes,
     > {
-        SchemaBuilder {
+        LaxFieldBuilder {
             default: self.default,
             validator: self.validator,
             re_validator: self.re_validator,
@@ -412,7 +439,7 @@ impl<
     pub fn allow_update_if<F>(
         self,
         fx: F,
-    ) -> SchemaBuilder<
+    ) -> LaxFieldBuilder<
         T,
         I,
         O,
@@ -428,7 +455,7 @@ impl<
     where
         F: Fn(IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
     {
-        SchemaBuilder {
+        LaxFieldBuilder {
             default: self.default,
             validator: self.validator,
             re_validator: self.re_validator,
@@ -448,12 +475,24 @@ impl<
         O: IvoSchemaStruct,
         CtxOptions: Clone,
     >
-    SchemaBuilder<T, I, O, CtxOptions, Yes, HasValidator, HasRevalidator, HasRequired, No, No, Yes>
+    LaxFieldBuilder<
+        T,
+        I,
+        O,
+        CtxOptions,
+        Yes,
+        HasValidator,
+        HasRevalidator,
+        HasRequired,
+        No,
+        No,
+        Yes,
+    >
 {
     pub fn allow_init_if<F>(
         self,
         fx: F,
-    ) -> SchemaBuilder<
+    ) -> LaxFieldBuilder<
         T,
         I,
         O,
@@ -469,7 +508,7 @@ impl<
     where
         F: Fn(IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
     {
-        SchemaBuilder {
+        LaxFieldBuilder {
             default: self.default,
             validator: self.validator,
             re_validator: self.re_validator,
@@ -489,7 +528,7 @@ impl<
         O: IvoSchemaStruct,
         CtxOptions: Clone,
     >
-    SchemaBuilder<
+    LaxFieldBuilder<
         T,
         I,
         O,
@@ -506,7 +545,7 @@ impl<
     pub fn allow_update_if<F>(
         self,
         fx: F,
-    ) -> SchemaBuilder<
+    ) -> LaxFieldBuilder<
         T,
         I,
         O,
@@ -522,7 +561,7 @@ impl<
     where
         F: Fn(IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
     {
-        SchemaBuilder {
+        LaxFieldBuilder {
             default: self.default,
             validator: self.validator,
             re_validator: self.re_validator,
@@ -543,7 +582,7 @@ impl<
         O: IvoSchemaStruct,
         CtxOptions: Clone,
     >
-    SchemaBuilder<
+    LaxFieldBuilder<
         T,
         I,
         O,
@@ -559,7 +598,7 @@ impl<
 {
     pub fn ignore_init(
         self,
-    ) -> SchemaBuilder<
+    ) -> LaxFieldBuilder<
         T,
         I,
         O,
@@ -572,7 +611,7 @@ impl<
         Yes,
         YesComputed,
     > {
-        SchemaBuilder {
+        LaxFieldBuilder {
             default: self.default,
             validator: self.validator,
             re_validator: self.re_validator,
@@ -587,7 +626,7 @@ impl<
     pub fn allow_init_if<F>(
         self,
         fx: F,
-    ) -> SchemaBuilder<
+    ) -> LaxFieldBuilder<
         T,
         I,
         O,
@@ -603,7 +642,7 @@ impl<
     where
         F: Fn(IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
     {
-        SchemaBuilder {
+        LaxFieldBuilder {
             default: self.default,
             validator: self.validator,
             re_validator: self.re_validator,
@@ -630,7 +669,7 @@ impl<
         O: IvoSchemaStruct,
         CtxOptions: Clone,
     >
-    SchemaBuilder<
+    LaxFieldBuilder<
         T,
         I,
         O,
@@ -650,7 +689,7 @@ impl<
     pub fn on_delete<F, Fut>(
         self,
         handler: F,
-    ) -> SchemaBuilder<
+    ) -> LaxFieldBuilder<
         T,
         I,
         O,
@@ -672,7 +711,7 @@ impl<
     {
         let h: DeleteHandler<O, CtxOptions> = Box::new(move |d, o| Box::pin(handler(d, o)));
 
-        SchemaBuilder {
+        LaxFieldBuilder {
             default: self.default,
             validator: self.validator,
             re_validator: self.re_validator,
@@ -712,7 +751,7 @@ impl<
         O: IvoSchemaStruct,
         CtxOptions: Clone,
     >
-    SchemaBuilder<
+    LaxFieldBuilder<
         T,
         I,
         O,
@@ -732,7 +771,7 @@ impl<
     pub fn on_failure<F, Fut>(
         self,
         handler: F,
-    ) -> SchemaBuilder<
+    ) -> LaxFieldBuilder<
         T,
         I,
         O,
@@ -754,7 +793,7 @@ impl<
     {
         let h: FailureHandler<I, O, CtxOptions> = Box::new(move |s| Box::pin(handler(s)));
 
-        SchemaBuilder {
+        LaxFieldBuilder {
             default: self.default,
             validator: self.validator,
             re_validator: self.re_validator,
@@ -795,7 +834,7 @@ impl<
         O: IvoSchemaStruct,
         CtxOptions: Clone,
     >
-    SchemaBuilder<
+    LaxFieldBuilder<
         T,
         I,
         O,
@@ -815,7 +854,7 @@ impl<
     pub fn on_success<F, Fut>(
         self,
         handler: F,
-    ) -> SchemaBuilder<
+    ) -> LaxFieldBuilder<
         T,
         I,
         O,
@@ -837,7 +876,7 @@ impl<
     {
         let h: SuccessHandler<I, O, CtxOptions> = Box::new(move |s| Box::pin(handler(s)));
 
-        SchemaBuilder {
+        LaxFieldBuilder {
             default: self.default,
             validator: self.validator,
             re_validator: self.re_validator,

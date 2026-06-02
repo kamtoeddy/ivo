@@ -1,43 +1,47 @@
 use std::marker::PhantomData;
 
-use crate::{schema::properties::constants::ConstantFieldBuilder, traits::IvoSchemaStruct};
+use serde::{de::DeserializeOwned, Serialize};
+
+use crate::{
+    schema::properties::{
+        constants::ConstantFieldBuilder, dependents::DependentFieldBuilder,
+        enumerated::EnumFieldBuilder, lax::LaxFieldBuilder, required::RequiredFieldBuilder,
+        virtuals::VirtualFieldBuilder,
+    },
+    traits::IvoSchemaStruct,
+};
 
 pub mod base;
-pub mod constants;
-pub mod dependents;
-pub mod enumerated;
-pub mod lax;
-pub mod required;
-pub mod virtuals;
+mod constants;
+mod dependents;
+mod enumerated;
+mod lax;
+mod required;
+mod virtuals;
 
-pub struct IvoField<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
+pub struct IvoField<
+    T: DeserializeOwned + Serialize,
+    I: IvoSchemaStruct,
+    O: IvoSchemaStruct,
+    CtxOptions: Clone,
+> {
+    _t: PhantomData<T>,
     _i: PhantomData<I>,
     _o: PhantomData<O>,
     _c: PhantomData<CtxOptions>,
 }
 
-impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> IvoField<I, O, CtxOptions> {
-    pub fn constant<T>() -> ConstantFieldBuilder<T, I, O, CtxOptions> {
-        Default::default()
-    }
-
-    // pub fn dependent() -> DependentField {
-    //     Default::default()
-    // }
-
-    // pub fn enumerated() -> EnumeratedField {
-    //     Default::default()
-    // }
-
-    // pub fn lax() -> LaxField {
-    //     Default::default()
-    // }
-
-    // pub fn required() -> RequiredField {
-    //     Default::default()
-    // }
-
-    // pub fn virtualized() -> VirtualField {
-    //     Default::default()
-    // }
+impl<
+        T: DeserializeOwned + Serialize,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions: Clone,
+    > IvoField<T, I, O, CtxOptions>
+{
+    pub const CONSTANT: ConstantFieldBuilder<T, I, O, CtxOptions> = ConstantFieldBuilder::new();
+    pub const DEPENDENT: DependentFieldBuilder<T, I, O, CtxOptions> = DependentFieldBuilder::new();
+    pub const ENUM: EnumFieldBuilder<T, I, O, CtxOptions> = EnumFieldBuilder::new();
+    pub const LAX: LaxFieldBuilder<T, I, O, CtxOptions> = LaxFieldBuilder::new();
+    pub const REQUIRED: RequiredFieldBuilder<T, I, O, CtxOptions> = RequiredFieldBuilder::new();
+    pub const VIRTUAL: VirtualFieldBuilder<T, I, O, CtxOptions> = VirtualFieldBuilder::new();
 }

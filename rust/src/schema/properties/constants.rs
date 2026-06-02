@@ -40,9 +40,9 @@ impl<
         O: IvoSchemaStruct,
         T,
         CtxOptions: Clone,
-    > Default for ConstantFieldBuilder<T, I, O, CtxOptions, HasDefault, HasDelete, HasSuccess>
+    > ConstantFieldBuilder<T, I, O, CtxOptions, HasDefault, HasDelete, HasSuccess>
 {
-    fn default() -> Self {
+    pub const fn new() -> Self {
         Self {
             value: None,
             on_delete_fns: None,
@@ -52,6 +52,21 @@ impl<
             _del_handlers: PhantomData,
             _success_handlers: PhantomData,
         }
+    }
+}
+
+impl<
+        HasDefault,
+        HasDelete,
+        HasSuccess,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        T,
+        CtxOptions: Clone,
+    > Default for ConstantFieldBuilder<T, I, O, CtxOptions, HasDefault, HasDelete, HasSuccess>
+{
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -83,12 +98,10 @@ impl<
     }
 }
 
-pub struct ConstantField;
-
-impl ConstantField {
-    pub fn value<I: IvoSchemaStruct, O: IvoSchemaStruct, T: Serialize, CtxOptions: Clone + Send>(
-        value: T,
-    ) -> ConstantFieldBuilder<T, I, O, CtxOptions, Yes> {
+impl<I: IvoSchemaStruct, O: IvoSchemaStruct, T: Serialize, CtxOptions: Clone + Send>
+    ConstantFieldBuilder<T, I, O, CtxOptions>
+{
+    pub fn value(self, value: T) -> ConstantFieldBuilder<T, I, O, CtxOptions, Yes> {
         ConstantFieldBuilder {
             value: Some(ComputableWithMiniSummary::Static(json!((value)))),
             on_delete_fns: None,
@@ -97,9 +110,7 @@ impl ConstantField {
         }
     }
 
-    pub fn computed<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, F>(
-        resolver: F,
-    ) -> ConstantFieldBuilder<T, I, O, CtxOptions, Yes>
+    pub fn computed<F>(self, resolver: F) -> ConstantFieldBuilder<T, I, O, CtxOptions, Yes>
     where
         F: IntoResolverWithMiniSummary<T, I, O, CtxOptions>,
     {
@@ -111,9 +122,7 @@ impl ConstantField {
         }
     }
 
-    pub fn computed_async<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, F>(
-        resolver: F,
-    ) -> ConstantFieldBuilder<T, I, O, CtxOptions, Yes>
+    pub fn computed_async<F>(self, resolver: F) -> ConstantFieldBuilder<T, I, O, CtxOptions, Yes>
     where
         F: IntoAsyncResolverWithMiniSummary<T, I, O, CtxOptions>,
     {
