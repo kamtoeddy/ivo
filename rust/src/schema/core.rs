@@ -93,58 +93,6 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: IvoEr
         self
     }
 
-    // pub fn new(definitions: PropertyDefinitions<I, O, CtxOptions>, options: Option<Value>) -> Self {
-    //     let mut err_tool = SchemaError::new();
-
-    //     if definitions.is_empty() {
-    //         err_tool
-    //             .add(
-    //                 "schema properties",
-    //                 "Insufficient Schema properties".to_string(),
-    //             )
-    //             .throw();
-    //     }
-
-    //     let timestamp_tool = TimeStampTool::new(options.as_ref());
-
-    //     let mut core = Self {
-    //         _error_tool: PhantomData,
-    //         _definitions: definitions
-    //             .into_iter()
-    //             .map(|(p, def)| (p.to_string(), def))
-    //             .collect(),
-    //         _options: options,
-    //         context: HashMap::new(),
-    //         context_options: HashMap::new(),
-    //         defaults: HashMap::new(),
-    //         partial_context: HashMap::new(),
-    //         values: HashMap::new(),
-    //         alias_to_virtual_map: HashMap::new(),
-    //         dependency_map: HashMap::new(),
-    //         props_to_allowed_values_map: HashMap::new(),
-    //         props_with_secondary_validators: HashSet::new(),
-    //         virtual_to_alias_map: HashMap::new(),
-    //         post_validation_config_map: HashMap::new(),
-    //         prop_to_post_validation_config_ids_map: HashMap::new(),
-    //         on_success_config_map: HashMap::new(),
-    //         prop_to_on_success_config_id_map: HashMap::new(),
-    //         constants: HashSet::new(),
-    //         dependents: HashSet::new(),
-    //         lax_props: HashSet::new(),
-    //         props: HashSet::new(),
-    //         props_required_by: HashSet::new(),
-    //         readonly_props: HashSet::new(),
-    //         required_props: HashSet::new(),
-    //         virtuals: HashSet::new(),
-    //         timestamp_tool,
-    //     };
-
-    //     core.check_prop_definitions();
-    //     core.check_options();
-
-    //     core
-    // }
-
     fn _check_options(&self) {
         ()
         // todo!()

@@ -18,7 +18,6 @@ pub trait IvoPropertyBuilder<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions:
 pub type InternalIvoProperty<I, O, CtxOptions> = IvoProperty<Value, I, O, CtxOptions>;
 
 pub struct IvoProperty<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
-    // _d: PhantomData<T>,
     pub _i: PhantomData<I>,
     pub alias: Option<String>,
     pub enum_error: Option<ComputableEnumeratedError>,
@@ -29,19 +28,19 @@ pub struct IvoProperty<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Cl
     pub is_readonly: bool,
     pub is_virtual: bool,
     pub value: Option<ComputableWithMiniSummary<T, CtxOptions>>,
-    pub required: Option<ComputableRequired<CtxOptions>>,
-    pub resolver: Option<ResolverWithMutSummary<T, CtxOptions>>,
-    pub sanitizer: Option<VirtualSanitiser<T, CtxOptions>>,
-    pub validator: Option<FieldValidator<CtxOptions>>,
-    pub re_validator: Option<FieldReValidator<CtxOptions>>,
+    pub required: Option<ComputableRequired<I, O, CtxOptions>>,
+    pub resolver: Option<ResolverWithMutSummary<T, I, O, CtxOptions>>,
+    pub sanitizer: Option<VirtualSanitiser<T, I, O, CtxOptions>>,
+    pub validator: Option<FieldValidator<I, O, CtxOptions>>,
+    pub re_validator: Option<FieldReValidator<I, O, CtxOptions>>,
     //
-    pub should_ignore: Option<BooleanResolverWithMutSummary<CtxOptions>>,
-    pub should_init: Option<ComputableInit<CtxOptions>>,
-    pub should_update: Option<ComputableInit<CtxOptions>>,
+    pub should_ignore: Option<BooleanResolverWithMutSummary<I, O, CtxOptions>>,
+    pub should_init: Option<ComputableInit<I, O, CtxOptions>>,
+    pub should_update: Option<ComputableInit<I, O, CtxOptions>>,
     // life cycle handlers
     pub on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
-    pub on_failure_fns: Option<Vec<FailureHandler<CtxOptions>>>,
-    pub on_success_fns: Option<Vec<SuccessHandler<CtxOptions>>>,
+    pub on_failure_fns: Option<Vec<FailureHandler<I, O, CtxOptions>>>,
+    pub on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
 }
 
 impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> Default

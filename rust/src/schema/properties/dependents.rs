@@ -33,8 +33,7 @@ pub struct SchemaBuilder<
     HasDelete,
     HasSuccess,
 > {
-    _d: PhantomData<T>,
-    _i: PhantomData<I>,
+    _t: PhantomData<T>,
     _default: PhantomData<HasDefault>,
     _depends_on: PhantomData<HasParents>,
     _resolver: PhantomData<HasResolver>,
@@ -44,10 +43,10 @@ pub struct SchemaBuilder<
     // actual data...
     default: Option<ComputableWithMiniSummary<Value, CtxOptions>>,
     depends_on: Option<Vec<String>>,
-    resolver: Option<ResolverWithMutSummary<Value, CtxOptions>>,
+    resolver: Option<ResolverWithMutSummary<Value, I, O, CtxOptions>>,
     should_update: Option<False>,
     on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
-    on_success_fns: Option<Vec<SuccessHandler<CtxOptions>>>,
+    on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
 }
 
 impl<
@@ -83,8 +82,7 @@ impl<
             should_update: None,
             on_delete_fns: None,
             on_success_fns: None,
-            _d: PhantomData,
-            _i: PhantomData,
+            _t: PhantomData,
             _default: PhantomData,
             _depends_on: PhantomData,
             _should_update: PhantomData,
@@ -191,7 +189,7 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
         resolver: R,
     ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, No, No>
     where
-        R: IntoAsyncResolverWithMutSummary<T, CtxOptions>,
+        R: IntoAsyncResolverWithMutSummary<T, I, O, CtxOptions>,
     {
         SchemaBuilder {
             default: self.default,
@@ -276,10 +274,10 @@ impl<
         handler: F,
     ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, HasShouldUpdate, HasDelete, Yes>
     where
-        F: Fn(IvoSummary<CtxOptions>) -> Fut + Send + Sync + 'static,
+        F: Fn(IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = ()> + Send + Sync + 'static,
     {
-        let h: SuccessHandler<CtxOptions> = Box::new(move |s| Box::pin(handler(s)));
+        let h: SuccessHandler<I, O, CtxOptions> = Box::new(move |s| Box::pin(handler(s)));
 
         SchemaBuilder {
             default: self.default,

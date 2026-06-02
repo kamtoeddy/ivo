@@ -32,8 +32,7 @@ pub struct SchemaBuilder<
     HasFailure,
     HasSuccess,
 > {
-    _d: PhantomData<T>,
-    _i: PhantomData<I>,
+    _t: PhantomData<T>,
     _validator: PhantomData<HasValidator>,
     _re_validator: PhantomData<HasRevalidator>,
     _should_update: PhantomData<HasShouldUpdate>,
@@ -41,12 +40,12 @@ pub struct SchemaBuilder<
     _on_failure_fns: PhantomData<HasFailure>,
     _on_success_fns: PhantomData<HasSuccess>,
     // actual data...
-    validator: Option<FieldValidator<CtxOptions>>,
-    re_validator: Option<FieldReValidator<CtxOptions>>,
-    should_update: Option<ComputableInit<CtxOptions>>,
+    validator: Option<FieldValidator<I, O, CtxOptions>>,
+    re_validator: Option<FieldReValidator<I, O, CtxOptions>>,
+    should_update: Option<ComputableInit<I, O, CtxOptions>>,
     on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
-    on_failure_fns: Option<Vec<FailureHandler<CtxOptions>>>,
-    on_success_fns: Option<Vec<SuccessHandler<CtxOptions>>>,
+    on_failure_fns: Option<Vec<FailureHandler<I, O, CtxOptions>>>,
+    on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
 }
 
 impl<
@@ -82,8 +81,7 @@ impl<
             on_delete_fns: None,
             on_failure_fns: None,
             on_success_fns: None,
-            _d: PhantomData,
-            _i: PhantomData,
+            _t: PhantomData,
             _validator: PhantomData,
             _re_validator: PhantomData,
             _should_update: PhantomData,
@@ -137,7 +135,7 @@ impl RequiredField {
         validator: F,
     ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, No, No, No, No, No>
     where
-        F: IntoFieldValidator<T, CtxOptions>,
+        F: IntoFieldValidator<T, I, O, CtxOptions>,
     {
         SchemaBuilder {
             validator: Some(FieldValidator::Sync(validator.into_uniform())),
@@ -155,7 +153,7 @@ impl RequiredField {
         validator: F,
     ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, No, No, No, No, No>
     where
-        F: IntoAsyncFieldValidator<T, CtxOptions>,
+        F: IntoAsyncFieldValidator<T, I, O, CtxOptions>,
     {
         SchemaBuilder {
             validator: Some(FieldValidator::Async(validator.into_uniform())),
@@ -176,7 +174,7 @@ impl<
         re_validator: F,
     ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, No, No, No, No>
     where
-        F: IntoFieldReValidator<T, CtxOptions>,
+        F: IntoFieldReValidator<T, I, O, CtxOptions>,
     {
         SchemaBuilder {
             validator: self.validator,
@@ -190,7 +188,7 @@ impl<
         re_validator: F,
     ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, No, No>
     where
-        F: IntoAsyncFieldReValidator<T, CtxOptions>,
+        F: IntoAsyncFieldReValidator<T, I, O, CtxOptions>,
     {
         SchemaBuilder {
             validator: self.validator,
@@ -219,7 +217,7 @@ impl<HasRevalidator, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clon
         fx: F,
     ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, HasRevalidator, No, Yes, No, No>
     where
-        F: Fn(IvoSummary<CtxOptions>) -> bool + Send + Sync + 'static,
+        F: Fn(IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
     {
         SchemaBuilder {
             validator: self.validator,
@@ -363,10 +361,10 @@ impl<
         HasSuccess,
     >
     where
-        F: Fn(IvoSummary<CtxOptions>) -> Fut + Send + Sync + 'static,
+        F: Fn(IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = ()> + Send + Sync + 'static,
     {
-        let h: FailureHandler<CtxOptions> = Box::new(move |s| Box::pin(handler(s)));
+        let h: FailureHandler<I, O, CtxOptions> = Box::new(move |s| Box::pin(handler(s)));
 
         SchemaBuilder {
             validator: self.validator,
@@ -430,10 +428,10 @@ impl<
         Yes,
     >
     where
-        F: Fn(IvoSummary<CtxOptions>) -> Fut + Send + Sync + 'static,
+        F: Fn(IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = ()> + Send + Sync + 'static,
     {
-        let h: SuccessHandler<CtxOptions> = Box::new(move |s| Box::pin(handler(s)));
+        let h: SuccessHandler<I, O, CtxOptions> = Box::new(move |s| Box::pin(handler(s)));
 
         SchemaBuilder {
             validator: self.validator,

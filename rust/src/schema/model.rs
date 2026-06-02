@@ -117,7 +117,7 @@ impl<
     }
 
     pub fn delete(&self, _data: &Output) {
-        // todo!()
+        todo!()
     }
 
     fn add_timestamps(&self, _context: &mut Context) {
@@ -140,22 +140,20 @@ impl<
     /// It will repeatedly evaluate defaults whose dependencies are satisfied (present in `context`).
     /// If unresolved defaults remain and schema option `error_on_unresolved_defaults` is true,
     /// returns Err(SchemaError) listing the unresolved props.
-    pub fn resolve_defaults(&self, _context: &mut HashMap<String, Value>) {
-        // let mut _pending: HashSet<String> = self
-        //     .schema
-        //     .get_definitions()
-        //     .iter()
-        //     .filter_map(|(k, def)| {
-        //         if def.default.is_some() {
-        //             Some(k.clone())
-        //         } else {
-        //             None
-        //         }
-        //     })
-        //     .filter(|k| !context.contains_key(k))
-        //     .collect();
-
-        todo!()
+    pub fn resolve_defaults(&self, context: &mut HashMap<String, Value>) {
+        let mut _pending: HashSet<String> = self
+            .schema
+            .get_definitions()
+            .iter()
+            .filter_map(|(k, def)| {
+                if def.default.is_some() {
+                    Some(k.clone())
+                } else {
+                    None
+                }
+            })
+            .filter(|k| !context.contains_key(k))
+            .collect();
     }
 
     /// Resolve constants iteratively; constants may depend on other values in context.

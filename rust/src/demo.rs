@@ -47,53 +47,53 @@ impl DEMO {
         let resolver = || String::from("full name");
 
         SchemaCore::new()
-            .field("id", ConstantField::value(1234))
-            .field(
-                "email",
-                RequiredField::validate(|_, __| Ok(String::from("Hello"))),
-            )
-            .field("username", RequiredField::validate(|_, __| Ok(true)))
-            .field(
-                "username_last_updated_at",
-                DependentField::default(Some("default value"))
-                    .depends_on(vec!["username"])
-                    .resolve(|_| Some("resolved value")),
-            )
+            // .field("id", ConstantField::value(1234))
+            // .field(
+            //     "email",
+            //     RequiredField::validate(|_, _| Ok(String::from("Hello"))),
+            // )
+            // .field("username", RequiredField::validate(|_, _| Ok(true)))
+            // .field(
+            //     "username_last_updated_at",
+            //     DependentField::default(Some("default value"))
+            //         .depends_on(vec!["username"])
+            //         .resolve(|_| Some("resolved value")),
+            // )
             // general demo to make sure all fields work as expected
             .field(
                 "c",
                 ConstantField::value(String::from("String"))
                     .on_success(|_| async {})
-                    .on_delete(|_, __| async {}),
+                    .on_delete(|_, _| async {}),
             )
             .field(
                 "c1",
                 ConstantField::value(Some(String::from("Option<String>")))
                     .on_success(|_| async {})
-                    .on_delete(|_, __| async {}),
+                    .on_delete(|_, _| async {}),
             )
             .field(
                 "c2",
                 ConstantField::computed(|_| true)
-                    .on_delete(|_, __| async {})
+                    .on_delete(|_, _| async {})
                     .on_success(|_| async { println!("on success 1") })
                     .on_success(|_| async { println!("on success 2") }),
             )
             .field(
                 "c3",
                 ConstantField::computed_async(|_| async { false })
-                    .on_delete(|_, __| async {})
+                    .on_delete(|_, _| async {})
                     .on_success(|_| async { println!("on success 1") })
                     .on_success(|_| async { println!("on success 2") }),
             )
             .field(
                 "enum",
                 EnumeratedField::values(vec![true, false])
-                    // .error_fn(|_| "")
-                    .error("invalid option provided")
+                    .error_fn(|_| "")
+                    // .error("invalid option provided")
                     .default_fn(|_| true)
                     .readonly()
-                    .on_delete(|_, __| async {})
+                    .on_delete(|_, _| async {})
                     .on_failure(|_| async {})
                     .on_success(|_| async {}),
             )
@@ -102,7 +102,7 @@ impl DEMO {
                 DependentField::default(String::from("Hello"))
                     .depends_on(vec!["first_name", "last_name"])
                     .resolve(move |_| resolver())
-                    .on_delete(|_, __| async {})
+                    .on_delete(|_, _| async {})
                     .on_success(|_| async {}),
             )
             .field(
@@ -114,7 +114,7 @@ impl DEMO {
                         false
                     })
                     .readonly()
-                    .on_delete(|_, __| async {})
+                    .on_delete(|_, _| async {})
                     .on_success(|_| async {}),
             )
             .field(
@@ -122,7 +122,7 @@ impl DEMO {
                 LaxField::default(false)
                     .validate(|_, _| Ok(true))
                     .readonly()
-                    .on_delete(|_, __| async {})
+                    .on_delete(|_, _| async {})
                     .on_failure(|_| async {})
                     .on_success(|_| async {}),
             )
@@ -132,7 +132,7 @@ impl DEMO {
                     .validate_async(|_, _| async { Ok(Some(1)) })
                     .re_validate(|_, _| Ok(Some(2)))
                     .readonly()
-                    .on_delete(|_, __| async {})
+                    .on_delete(|_, _| async {})
                     .on_failure(|_| async {})
                     .on_success(|_| async {}),
             )
@@ -140,26 +140,26 @@ impl DEMO {
                 "l2",
                 LaxField::default(None)
                     .validate_async(|_, _| async { Ok(Some(true)) })
-                    .re_validate_async(|v: Option<bool>, _| async move { Ok(v) })
+                    .re_validate_async(|v, _| async move { Ok(v) })
                     .readonly()
-                    .on_delete(|_, __| async {})
+                    .on_delete(|_, _| async {})
                     .on_failure(|_| async {})
                     .on_success(|_| async {}),
             )
             .field(
                 "r",
                 RequiredField::validate(|_, _| Err(("lol", None)))
-                    .re_validate(|_, __| Ok(true))
+                    .re_validate(|_, _| Ok(true))
                     .readonly()
                     .on_failure(|_| async {})
                     .on_success(|_| async {})
-                    .on_delete(|_, __| async {}),
+                    .on_delete(|_, _| async {}),
             )
             .field(
                 "v",
                 VirtualField::alias("lol")
-                    .validate(|_, __| Ok(true))
-                    .re_validate_async(|_, __| async { Ok(true) })
+                    .validate(|_, _| Ok(true))
+                    .re_validate_async(|_, _| async { Ok(true) })
                     .required_if(|_| async { (true, "lol") })
                     .sanitize(|_| async { false })
                     .on_failure(|_| async {})
@@ -167,7 +167,7 @@ impl DEMO {
             )
             .field(
                 "v1",
-                VirtualField::validate_async(|_, __| async {
+                VirtualField::validate_async(|_, _| async {
                     if true {
                         Ok(true)
                     } else {
@@ -188,7 +188,7 @@ impl DEMO {
                     .alias("lol")
                     .required_if(|_| async { (true, "lol") })
                     .sanitize(|_| async { false })
-                    .on_failure(Box::new(|_| async {}))
+                    .on_failure(|_| async {})
                     .on_success(|_| async {}),
             )
             .field(

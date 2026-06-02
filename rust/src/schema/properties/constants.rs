@@ -22,15 +22,14 @@ pub struct SchemaBuilder<
     HasDelete,
     HasSuccess,
 > {
-    _d: PhantomData<T>,
-    _i: PhantomData<I>,
+    _t: PhantomData<T>,
     _default: PhantomData<HasDefault>,
     _del_handlers: PhantomData<HasDelete>,
     _success_handlers: PhantomData<HasSuccess>,
     // actual data...
     value: Option<ComputableWithMiniSummary<Value, CtxOptions>>,
     on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
-    on_success_fns: Option<Vec<SuccessHandler<CtxOptions>>>,
+    on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
 }
 
 impl<
@@ -48,8 +47,7 @@ impl<
             value: None,
             on_delete_fns: None,
             on_success_fns: None,
-            _d: PhantomData,
-            _i: PhantomData,
+            _t: PhantomData,
             _default: PhantomData,
             _del_handlers: PhantomData,
             _success_handlers: PhantomData,
@@ -171,10 +169,10 @@ impl<HasDelete, HasSuccess, I: IvoSchemaStruct, O: IvoSchemaStruct, T, CtxOption
         handler: F,
     ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, HasDelete, Yes>
     where
-        F: Fn(IvoSummary<CtxOptions>) -> Fut + Send + Sync + 'static,
+        F: Fn(IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = ()> + Send + Sync + 'static,
     {
-        let h: SuccessHandler<CtxOptions> = Box::new(move |s| Box::pin(handler(s)));
+        let h: SuccessHandler<I, O, CtxOptions> = Box::new(move |s| Box::pin(handler(s)));
 
         SchemaBuilder {
             value: self.value,
