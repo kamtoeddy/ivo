@@ -47,18 +47,18 @@ impl DEMO {
         let resolver = || String::from("full name");
 
         SchemaCore::new()
-            // .field("id", ConstantField::value(1234))
-            // .field(
-            //     "email",
-            //     RequiredField::validate(|_, _| Ok(String::from("Hello"))),
-            // )
-            // .field("username", RequiredField::validate(|_, _| Ok(true)))
-            // .field(
-            //     "username_last_updated_at",
-            //     DependentField::default(Some("default value"))
-            //         .depends_on(vec!["username"])
-            //         .resolve(|_| Some("resolved value")),
-            // )
+            .field("id", ConstantField::value(1234))
+            .field(
+                "email",
+                RequiredField::validate(|_, _| Ok(String::from("Hello"))),
+            )
+            .field("username", RequiredField::validate(|_, _| Ok(true)))
+            .field(
+                "username_last_updated_at",
+                DependentField::default(Some("default value"))
+                    .depends_on(vec!["username"])
+                    .resolve(|_| Some("resolved value")),
+            )
             // general demo to make sure all fields work as expected
             .field(
                 "c",
