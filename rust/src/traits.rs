@@ -32,15 +32,17 @@ impl<F, T, I, O, CtxOptions: Clone> IntoFieldValidator<T, I, O, CtxOptions> for 
 where
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
-    T: Serialize + Send + 'static,
-    F: Fn(Value, IvoSummary<I, O, CtxOptions>) -> ValidatorResponse<T>
-        + Clone
-        + Send
-        + Sync
-        + 'static,
+    T: DeserializeOwned + Serialize + Send + 'static,
+    F: Fn(T, IvoSummary<I, O, CtxOptions>) -> ValidatorResponse<T> + Clone + Send + Sync + 'static,
 {
     fn into_uniform(self) -> UniformValidator<I, O, CtxOptions> {
-        Box::new(move |value, summary| self(value, summary).map(|v| json!(v)))
+        Box::new(move |value, summary| {
+            self(
+                serde_json::from_value(value).expect("Failed to parse value"),
+                summary,
+            )
+            .map(|v| json!(v))
+        })
     }
 }
 
@@ -53,15 +55,22 @@ impl<F, Fut, T, I, O, CtxOptions: Clone + Send + Sync + 'static>
 where
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
-    T: Serialize + Send + 'static,
-    F: Fn(Value, IvoSummary<I, O, CtxOptions>) -> Fut + Clone + Send + Sync + 'static,
+    T: DeserializeOwned + Serialize + Send + 'static,
+    F: Fn(T, IvoSummary<I, O, CtxOptions>) -> Fut + Clone + Send + Sync + 'static,
     Fut: Future<Output = ValidatorResponse<T>> + Send + Sync + 'static,
 {
     fn into_uniform(self) -> UniformAsyncValidator<I, O, CtxOptions> {
         Box::new(move |value, summary| {
             let validator = self.clone();
 
-            Box::pin(async move { validator(value, summary).await.map(|v| json!(v)) })
+            Box::pin(async move {
+                validator(
+                    serde_json::from_value(value).expect("Failed to parse value"),
+                    summary,
+                )
+                .await
+                .map(|v| json!(v))
+            })
         })
     }
 }
@@ -164,7 +173,7 @@ pub trait IntoEnumErrorResolver<T> {
 impl<F, T> IntoEnumErrorResolver<T> for F
 where
     T: DeserializeOwned + Send + 'static,
-    F: Fn((Value, Vec<T>)) -> &'static str + Send + Sync + 'static,
+    F: Fn((Value, Vec<T>)) -> String + Send + Sync + 'static,
 {
     fn into_uniform(self) -> UniformEnumErrorResolver {
         Box::new(move |d| {

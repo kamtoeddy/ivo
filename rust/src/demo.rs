@@ -1,14 +1,21 @@
 // use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-use crate::schema::{
-    properties::{
-        constants::ConstantField, dependents::DependentField, enumerated::EnumeratedField,
-        lax::LaxField, required::RequiredField, virtuals::VirtualField,
-    },
-    SchemaCore,
-};
 use crate::IvoStruct;
+use crate::{
+    schema::{
+        properties::{
+            constants::ConstantField, dependents::DependentField, enumerated::EnumeratedField,
+            lax::LaxField, required::RequiredField, virtuals::VirtualField,
+        },
+        SchemaCore,
+    },
+    types::IvoSummary,
+};
+
+fn slugify(w: &str) -> String {
+    format!("slugified: {}", w)
+}
 
 // type DateWithTz = DateTime<Utc>;
 
@@ -22,9 +29,10 @@ pub enum UserRole {
 #[derive(Debug, Clone, Deserialize, Serialize, IvoStruct)]
 pub struct User {
     // pub created_at: DateWithTz,
-    // pub id: String,
+    pub id: String,
     pub email: String,
     pub username: String,
+    pub slug_id: String,
     pub role: UserRole,
     // pub username_updated_at: Option<DateWithTz>,
     // pub updated_at: Option<DateWithTz>,
@@ -35,16 +43,31 @@ pub struct UserInput {
     pub email: String,
     pub username: String,
     pub role: UserRole,
-    pub is_admin: Option<bool>,
 }
+
+type MutUserSummary = IvoSummary<UserInput, User, UserCtxOptions>;
 
 // type CtxOptions = HashMap<String, Value>;
 // type CtxOptions = Option<String>;
+#[derive(Clone)]
+pub struct UserCtxOptions {
+    pub slug_id: String,
+}
+
+impl UserCtxOptions {
+    async fn find_by_username(&self, _username: &str) -> Option<User> {
+        None
+    }
+
+    fn update_data(&mut self, d: String) {
+        self.slug_id = d
+    }
+}
 
 pub struct DEMO;
 
 impl DEMO {
-    pub fn get_schema() -> SchemaCore<UserInput, User> {
+    pub fn get_schema() -> SchemaCore<UserInput, User, UserCtxOptions> {
         let resolver = || String::from("full name");
 
         SchemaCore::new()
@@ -54,7 +77,37 @@ impl DEMO {
                         "email",
                         RequiredField::validate(|_, _| Ok(String::from("Hello"))),
                     )
-                    .set("username", RequiredField::validate(|_, _| Ok(true)))
+                    .set(
+                        "username",
+                        RequiredField::validate(|v: String, _| {
+                            const MIN_LEN: usize = 4;
+
+                            if v.len() <= MIN_LEN {
+                                return Err((
+                                    format!("Username must be atleast {MIN_LEN} long"),
+                                    None,
+                                ));
+                            }
+
+                            return Ok(String::from(v));
+                        })
+                        .re_validate_async(
+                            |uname: String, s: MutUserSummary| async move {
+                                let mut ctx_options = s.options;
+
+                                if ctx_options.find_by_username(&uname).await.is_some() {
+                                    return Err((
+                                        format!("Username \"{uname}\" already taken"),
+                                        None,
+                                    ));
+                                }
+
+                                ctx_options.update_data(slugify(&uname));
+
+                                Ok(uname)
+                            },
+                        ),
+                    )
                     .set(
                         "username_last_updated_at",
                         DependentField::default(Some("default value"))
@@ -91,7 +144,7 @@ impl DEMO {
                     .set(
                         "enum",
                         EnumeratedField::values(vec![true, false])
-                            .error_fn(|_| "")
+                            .error_fn(|_| "".into())
                             // .error("invalid option provided")
                             .default_fn(|_| true)
                             .readonly()
@@ -150,7 +203,7 @@ impl DEMO {
                     )
                     .set(
                         "r",
-                        RequiredField::validate(|_, _| Err(("lol", None)))
+                        RequiredField::validate(|_, _| Err(("lol".into(), None)))
                             .re_validate(|_, _| Ok(true))
                             .readonly()
                             .on_failure(|_| async {})
@@ -162,23 +215,25 @@ impl DEMO {
                         VirtualField::alias("lol")
                             .validate(|_, _| Ok(true))
                             .re_validate_async(|_, _| async { Ok(true) })
-                            .required_if(|_| async { (true, "lol") })
+                            .required_if(|_| async { (true, "lol".into()) })
                             .sanitize(|_| async { false })
                             .on_failure(|_| async {})
                             .on_success(|_| async {}),
                     )
                     .set(
                         "v1",
-                        VirtualField::validate_async(|_, _| async {
-                            if true {
-                                Ok(true)
+                        VirtualField::validate_async(|v, _| async move {
+                            if v == true || v == false {
+                                Ok(v)
                             } else {
-                                Err(("lol", None))
+                                Err(("Invalid boolean".into(), None))
                             }
                         })
                         .re_validate(|_, _| Ok(true))
                         .alias("lol")
-                        .required_if(|_| async { (true, "lol") })
+                        .required_if(|_| async {
+                            (true, "this field is required in this scenario".into())
+                        })
                         .sanitize(|_| async { false })
                         .on_failure(|_| async {})
                         .on_success(|_| async {}),
@@ -188,7 +243,7 @@ impl DEMO {
                         VirtualField::validate(|_, _| Ok(true))
                             .re_validate(|_, _| Ok(true))
                             .alias("lol")
-                            .required_if(|_| async { (true, "lol") })
+                            .required_if(|_| async { (true, "lol".into()) })
                             .sanitize(|_| async { false })
                             .on_failure(|_| async {})
                             .on_success(|_| async {}),
@@ -196,9 +251,9 @@ impl DEMO {
                     .set(
                         "v3",
                         VirtualField::validate(|_, _| Ok(true))
-                            .alias("lol")
+                            .alias("v3")
                             .re_validate(|_, _| Ok(true))
-                            .required_if(|_| async { (true, "lol") })
+                            .required_if(|_| async { (true, "lol".into()) })
                             .sanitize(|_| async { false })
                             // .ignore_if(|_| false)
                             .allow_update_if(|_| false)

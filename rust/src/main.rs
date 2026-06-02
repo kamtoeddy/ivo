@@ -19,7 +19,6 @@ async fn main() {
             email: Some("1@1.com".to_string()),
             username: Some("john".to_string()),
             role: None,
-            is_admin: None,
         })
         .await;
 
@@ -43,8 +42,9 @@ async fn main() {
             &User {
                 // created_at: DateWithTz::default(),
                 email: "1@1.com".into(),
-                // id: "id".into(),
+                id: "id".into(),
                 username: "john_doe".into(),
+                slug_id: "".into(),
                 role: UserRole::User,
                 // username_updated_at: None,
                 // updated_at: None,
@@ -53,7 +53,6 @@ async fn main() {
                 email: Some("1@1.com".to_string()),
                 username: Some("john".to_string()),
                 role: Some(UserRole::Admin),
-                is_admin: Some(None),
             },
         )
         .await;

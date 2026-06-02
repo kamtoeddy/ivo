@@ -3,7 +3,7 @@ use std::{future::Future, marker::PhantomData};
 use serde::{de::DeserializeOwned, Serialize};
 
 use crate::{
-    schema::properties::base::{InternalIvoProperty, IvoProperty, BuildableIvoProperty},
+    schema::properties::base::{BuildableIvoProperty, InternalIvoProperty, IvoProperty},
     traits::{
         IntoAsyncFieldReValidator, IntoAsyncFieldValidator, IntoFieldReValidator,
         IntoFieldValidator, IvoSchemaStruct,
@@ -183,7 +183,7 @@ impl<
         }
     }
 
-    pub fn validate_async<F, Fut>(
+    pub fn re_validate_async<F>(
         self,
         re_validator: F,
     ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, No, No>

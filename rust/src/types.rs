@@ -53,7 +53,7 @@ pub type UniformVirtualSanitiser<I, O, CtxOptions> =
     Box<dyn Fn(IvoSummary<I, O, CtxOptions>) -> BoxFuture<'static, Value> + Send + Sync + 'static>;
 
 pub type UniformEnumErrorResolver =
-    Box<dyn Fn((Value, Vec<Value>)) -> &'static str + Send + Sync + 'static>;
+    Box<dyn Fn((Value, Vec<Value>)) -> String + Send + Sync + 'static>;
 
 pub type UniformResolverWithMutSummary<I, O, CtxOptions> =
     Box<dyn Fn(IvoSummary<I, O, CtxOptions>) -> Value + Send + Sync + 'static>;
@@ -92,8 +92,8 @@ pub type Context = HashMap<String, Value>;
 
 #[derive(Clone)]
 pub struct IvoMiniSummary<CtxOptions: Clone> {
-    context: Context,
-    options: CtxOptions,
+    pub context: Context,
+    pub options: CtxOptions,
 }
 
 impl<CtxOptions: Clone> IvoMiniSummary<CtxOptions> {
@@ -118,14 +118,14 @@ impl<CtxOptions: Clone> IvoMiniSummary<CtxOptions> {
 // pub struct IvoSummary<CtxOptions: Clone> {
 pub struct IvoSummary<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
     // _input: PhantomData<I>,
-    changes: Option<HashMap<String, Value>>,
-    context: Context,
-    input: I::Partial,
-    input_values: HashMap<String, Value>,
-    is_update: bool,
-    previous_values: Option<O>,
-    values: O,
-    options: CtxOptions,
+    pub changes: Option<HashMap<String, Value>>,
+    pub context: Context,
+    pub input: I::Partial,
+    pub input_values: HashMap<String, Value>,
+    pub is_update: bool,
+    pub previous_values: Option<O>,
+    pub values: O,
+    pub options: CtxOptions,
 }
 
 impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> IvoSummary<I, O, CtxOptions> {
@@ -151,37 +151,9 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> IvoSummary<I, O,
         }
     }
 
-    pub fn changes(&self) -> &Option<HashMap<String, Value>> {
-        &self.changes
-    }
-
-    pub fn ctx(&self) -> &Context {
-        &self.context
-    }
-
-    pub fn input(&self) -> &I::Partial {
-        &self.input
-    }
-
-    pub fn input_values(&self) -> &HashMap<String, Value> {
-        &self.input_values
-    }
-
-    pub fn is_update(&self) -> bool {
-        self.is_update
-    }
-
-    pub fn previous_values(&self) -> &Option<O> {
-        &self.previous_values
-    }
-
-    pub fn values(&self) -> &O {
-        &self.values
-    }
-
-    pub fn options(&self) -> &CtxOptions {
-        &self.options
-    }
+    // pub fn is_update(&self) -> bool {
+    //     self.is_update
+    // }
 
     pub fn update_options(&mut self) {
         todo!()
@@ -199,7 +171,7 @@ pub enum FieldReValidator<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Cl
 }
 
 pub type RequiredResolverFn<I, O, CtxOptions> = Box<
-    dyn Fn(IvoSummary<I, O, CtxOptions>) -> BoxFuture<'static, (bool, &'static str)>
+    dyn Fn(IvoSummary<I, O, CtxOptions>) -> BoxFuture<'static, (bool, String)>
         + Send
         + Sync
         + 'static,
@@ -230,6 +202,6 @@ pub type FailureHandler<I, O, CtxOptions> =
 pub type SuccessHandler<I, O, CtxOptions> =
     Box<dyn Fn(IvoSummary<I, O, CtxOptions>) -> BoxFuture<'static, ()> + Send + Sync + 'static>;
 
-pub type ValidatorResponse<T> = Result<T, (&'static str, Option<Value>)>;
+pub type ValidatorResponse<T> = Result<T, (String, Option<Value>)>;
 
 pub type ValidatorFn<T> = Box<dyn Fn(Value) -> ValidatorResponse<T> + Send + Sync + 'static>;

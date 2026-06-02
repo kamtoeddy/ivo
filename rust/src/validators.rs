@@ -34,7 +34,7 @@ pub fn make_string_validator(options: StringValidatorOptions) -> ValidatorFn<Str
                 }
                 _ => s.to_owned(),
             },
-            _ => return Err(("Expected a string", None)),
+            _ => return Err(("Expected a string".into(), None)),
         };
 
         match &options {
@@ -43,13 +43,13 @@ pub fn make_string_validator(options: StringValidatorOptions) -> ValidatorFn<Str
 
                 if let Some(max_length) = max {
                     if str_length > *max_length {
-                        return Err(("too_long", Some(json!({"max": max_length}))));
+                        return Err(("too_long".into(), Some(json!({"max": max_length}))));
                     }
                 }
 
                 if let Some(min_length) = min {
                     if str_length < *min_length {
-                        return Err(("too_short", Some(json!({"min": min_length}))));
+                        return Err(("too_short".into(), Some(json!({"min": min_length}))));
                     }
                 }
 
@@ -57,7 +57,10 @@ pub fn make_string_validator(options: StringValidatorOptions) -> ValidatorFn<Str
             }
             StringValidatorOptions::Values(values) => {
                 if !values.contains(&s) {
-                    return Err(("Invalid option selected", Some(json!({"options": values}))));
+                    return Err((
+                        "Invalid option selected".into(),
+                        Some(json!({"options": values})),
+                    ));
                 }
 
                 Ok(s)
@@ -97,13 +100,13 @@ pub fn validate_credit_card(value: Value) -> ValidatorResponse<String> {
     };
 
     if s.len() != 16 {
-        return Err(("Invalid card number", None));
+        return Err(("Invalid card number".into(), None));
     }
 
     let digits: Vec<u32> = s.chars().filter_map(|c| c.to_digit(10)).collect();
 
     if digits.len() != 16 {
-        return Err(("Invalid card number", None));
+        return Err(("Invalid card number".into(), None));
     }
 
     let check = digits[15];
@@ -117,7 +120,7 @@ pub fn validate_credit_card(value: Value) -> ValidatorResponse<String> {
     let sum: u32 = to_check.iter().sum();
 
     if (10 - (sum % 10)) != check {
-        return Err(("Invalid card number", None));
+        return Err(("Invalid card number".into(), None));
     }
 
     Ok(s)
@@ -140,7 +143,7 @@ pub fn validate_email(value: Value) -> ValidatorResponse<String> {
                 return Ok(s);
             }
 
-            return Err(("Invalid email", None));
+            return Err(("Invalid email".into(), None));
         }
         _ => string_validation,
     }

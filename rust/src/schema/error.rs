@@ -128,5 +128,6 @@ impl SchemaError {
         }
 
         println!("\nYour schema has some errors");
+        // panic!("\nYour schema has some errors");
     }
 }
