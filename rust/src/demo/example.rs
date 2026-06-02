@@ -45,7 +45,7 @@ pub struct UserCtxOptions {
 }
 
 impl UserCtxOptions {
-    async fn find_by_username(&self, _username: &str) -> Option<User> {
+    async fn find_user_by_slug_id(&self, _slug: &SlugifiedString) -> Option<User> {
         None
     }
 
@@ -85,14 +85,16 @@ impl Demo {
                             .re_validate_async(|uname: String, s: MutUserSummary| async move {
                                 let mut ctx_options = s.get_options_mut();
 
-                                if ctx_options.find_by_username(&uname).await.is_some() {
+                                let slug = slugify(&uname);
+
+                                if ctx_options.find_user_by_slug_id(&slug).await.is_some() {
                                     return Err((
-                                        format!("Username \"{uname}\" already taken"),
+                                        format!("A user with a slug id: \"{slug}\" already exists"),
                                         None,
                                     ));
                                 }
 
-                                ctx_options.update_data(slugify(&uname));
+                                ctx_options.update_data(slug);
 
                                 Ok(uname)
                             }),
