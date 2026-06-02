@@ -1,6 +1,7 @@
 // use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
+use crate::demo::slugify::{slugify, SlugifiedString};
 use crate::IvoStruct;
 use crate::{
     schema::{
@@ -12,10 +13,6 @@ use crate::{
     },
     types::IvoSummary,
 };
-
-fn slugify(w: &str) -> String {
-    format!("slugified: {}", w)
-}
 
 // type DateWithTz = DateTime<Utc>;
 
@@ -32,7 +29,7 @@ pub struct User {
     pub id: String,
     pub email: String,
     pub username: String,
-    pub slug_id: String,
+    pub slug_id: SlugifiedString,
     pub role: UserRole,
     // pub username_updated_at: Option<DateWithTz>,
     // pub updated_at: Option<DateWithTz>,
@@ -51,7 +48,7 @@ type MutUserSummary = IvoSummary<UserInput, User, UserCtxOptions>;
 // type CtxOptions = Option<String>;
 #[derive(Clone)]
 pub struct UserCtxOptions {
-    pub slug_id: String,
+    pub slug_id: SlugifiedString,
 }
 
 impl UserCtxOptions {
@@ -59,8 +56,8 @@ impl UserCtxOptions {
         None
     }
 
-    fn update_data(&mut self, d: String) {
-        self.slug_id = d
+    fn update_data(&mut self, slug: SlugifiedString) {
+        self.slug_id = slug
     }
 }
 

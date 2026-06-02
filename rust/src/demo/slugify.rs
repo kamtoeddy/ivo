@@ -1,0 +1,70 @@
+use regex::Regex;
+use serde::{Deserialize, Serialize};
+use unicode_normalization::UnicodeNormalization;
+
+// 1. Define the Type-Safe Newtype (equivalent to Nominal in TS)
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
+pub struct SlugifiedString(pub String);
+
+// Optional: Implement Display so it prints like a regular string
+impl std::fmt::Display for SlugifiedString {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+// 2. Compile Regexes lazily so they aren't re-compiled on every function call
+lazy_static::lazy_static! {
+    static ref RE_ACCENTS: Regex = Regex::new(r"[\u{0300}-\u{036f}]").unwrap();
+    static ref RE_SPACES: Regex = Regex::new(r"\s+").unwrap();
+    static ref RE_SPECIAL_CHARS: Regex = Regex::new(r"[^a-zA-Z0-9_!~\s]").unwrap();
+    static ref RE_MINUSES: Regex = Regex::new(r"-+").unwrap();
+}
+
+pub fn slugify(s: &str) -> SlugifiedString {
+    // .toLowerCase() & .normalize('NFD')
+    let normalized: String = s.to_lowercase().nfd().collect();
+
+    // .replace(/[\u0300-\u036f]/g, '')
+    let no_accents = RE_ACCENTS.replace_all(&normalized, "");
+
+    // .replace(regexToCaptureAllSpaces, ' ')
+    let space_cleaned = RE_SPACES.replace_all(&no_accents, " ");
+
+    // .replace(regexToCaptureAllSpecialCharsExceptSpaces, ' ')
+    let special_cleaned = RE_SPECIAL_CHARS.replace_all(&space_cleaned, " ");
+
+    // .trim()
+    let trimmed = special_cleaned.trim();
+
+    // .replace(regexToCaptureAllSpaces, '-')
+    let hiphenated = RE_SPACES.replace_all(trimmed, "-");
+
+    // .replace(regexToCaptureAllMinuses, '-')
+    let final_slug = RE_MINUSES.replace_all(&hiphenated, "-");
+
+    // Return wrapped in our type-safe struct
+    SlugifiedString(final_slug.into_owned())
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_slugify() {
+        let data = vec![
+            ("John doe", SlugifiedString("john-doe".into())),
+            (
+                " Crème  Brûlée & Cafe!!! ",
+                SlugifiedString("creme-brulee-cafe!!!".into()),
+            ),
+        ];
+
+        for (input, slug) in data.iter() {
+            assert_eq!(slugify(input), *slug);
+        }
+
+        assert!(data.len() == 2)
+    }
+}
