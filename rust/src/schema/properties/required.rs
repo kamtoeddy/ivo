@@ -25,12 +25,12 @@ pub struct SchemaBuilder<
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
     CtxOptions: Clone,
-    HasValidator,
-    HasRevalidator,
-    HasShouldUpdate,
-    HasDelete,
-    HasFailure,
-    HasSuccess,
+    HasValidator = No,
+    HasRevalidator = No,
+    HasShouldUpdate = No,
+    HasDelete = No,
+    HasFailure = No,
+    HasSuccess = No,
 > {
     _t: PhantomData<T>,
     _validator: PhantomData<HasValidator>,
@@ -133,7 +133,7 @@ impl<
 impl RequiredField {
     pub fn validate<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, F>(
         validator: F,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, No, No, No, No, No>
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes>
     where
         F: IntoFieldValidator<T, I, O, CtxOptions>,
     {
@@ -151,7 +151,7 @@ impl RequiredField {
         CtxOptions: Clone,
     >(
         validator: F,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, No, No, No, No, No>
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes>
     where
         F: IntoAsyncFieldValidator<T, I, O, CtxOptions>,
     {
@@ -167,12 +167,9 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-    > SchemaBuilder<T, I, O, CtxOptions, Yes, No, No, No, No, No>
+    > SchemaBuilder<T, I, O, CtxOptions, Yes>
 {
-    pub fn re_validate<F>(
-        self,
-        re_validator: F,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, No, No, No, No>
+    pub fn re_validate<F>(self, re_validator: F) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes>
     where
         F: IntoFieldReValidator<T, I, O, CtxOptions>,
     {
@@ -186,7 +183,7 @@ impl<
     pub fn re_validate_async<F>(
         self,
         re_validator: F,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, No, No>
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes>
     where
         F: IntoAsyncFieldReValidator<T, I, O, CtxOptions>,
     {
@@ -199,11 +196,9 @@ impl<
 }
 
 impl<HasRevalidator, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
-    SchemaBuilder<T, I, O, CtxOptions, Yes, HasRevalidator, No, No, No, No>
+    SchemaBuilder<T, I, O, CtxOptions, Yes, HasRevalidator>
 {
-    pub fn readonly(
-        self,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, HasRevalidator, Yes, No, No, No> {
+    pub fn readonly(self) -> SchemaBuilder<T, I, O, CtxOptions, Yes, HasRevalidator, Yes> {
         SchemaBuilder {
             validator: self.validator,
             re_validator: self.re_validator,
@@ -215,7 +210,7 @@ impl<HasRevalidator, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clon
     pub fn allow_update_if<F>(
         self,
         fx: F,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, HasRevalidator, No, Yes, No, No>
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, HasRevalidator, No, Yes>
     where
         F: Fn(IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
     {

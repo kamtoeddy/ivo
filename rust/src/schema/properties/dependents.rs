@@ -4,7 +4,7 @@ use serde::Serialize;
 use serde_json::{json, Value};
 
 use crate::{
-    schema::properties::base::{InternalIvoProperty, IvoProperty, BuildableIvoProperty},
+    schema::properties::base::{BuildableIvoProperty, InternalIvoProperty, IvoProperty},
     traits::{
         IntoAsyncResolverWithMutSummary, IntoResolverWithMiniSummary, IntoResolverWithMutSummary,
         IvoSchemaStruct,
@@ -26,12 +26,12 @@ pub struct SchemaBuilder<
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
     CtxOptions: Clone,
-    HasDefault,
-    HasParents,
-    HasResolver,
-    HasShouldUpdate,
-    HasDelete,
-    HasSuccess,
+    HasDefault = No,
+    HasParents = No,
+    HasResolver = No,
+    HasShouldUpdate = No,
+    HasDelete = No,
+    HasSuccess = No,
 > {
     _t: PhantomData<T>,
     _default: PhantomData<HasDefault>,
@@ -124,7 +124,7 @@ impl<
 impl DependentField {
     pub fn default<T: Serialize, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>(
         value: T,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, No, No, No, No, No> {
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes> {
         SchemaBuilder {
             default: Some(ComputableWithMiniSummary::Static(json!(value))),
             ..Default::default()
@@ -133,7 +133,7 @@ impl DependentField {
 
     pub fn default_fn<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, F>(
         default_fn: F,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, No, No, No, No, No>
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes>
     where
         F: IntoResolverWithMiniSummary<T, I, O, CtxOptions>,
     {
@@ -147,12 +147,9 @@ impl DependentField {
 }
 
 impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
-    SchemaBuilder<T, I, O, CtxOptions, Yes, No, No, No, No, No>
+    SchemaBuilder<T, I, O, CtxOptions, Yes>
 {
-    pub fn depends_on(
-        self,
-        fields: Vec<&str>,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, No, No, No, No> {
+    pub fn depends_on(self, fields: Vec<&str>) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes> {
         SchemaBuilder {
             default: self.default,
             depends_on: Some(
@@ -167,12 +164,9 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
 }
 
 impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
-    SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, No, No, No, No>
+    SchemaBuilder<T, I, O, CtxOptions, Yes, Yes>
 {
-    pub fn resolve<R>(
-        self,
-        resolver: R,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, No, No>
+    pub fn resolve<R>(self, resolver: R) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes>
     where
         R: IntoResolverWithMutSummary<T, I, O, CtxOptions>,
     {
@@ -184,10 +178,7 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
         }
     }
 
-    pub fn resolve_async<R>(
-        self,
-        resolver: R,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, No, No>
+    pub fn resolve_async<R>(self, resolver: R) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes>
     where
         R: IntoAsyncResolverWithMutSummary<T, I, O, CtxOptions>,
     {

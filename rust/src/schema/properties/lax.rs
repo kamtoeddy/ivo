@@ -28,16 +28,16 @@ pub struct SchemaBuilder<
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
     CtxOptions: Clone,
-    HasDefault,
-    HasValidator,
-    HasRevalidator,
-    HasRequired,
-    HasIgnore,
-    HasShouldInit,
-    HasShouldUpdate,
-    HasDelete,
-    HasFailure,
-    HasSuccess,
+    HasDefault = No,
+    HasValidator = No,
+    HasRevalidator = No,
+    HasRequired = No,
+    HasIgnore = No,
+    HasShouldInit = No,
+    HasShouldUpdate = No,
+    HasDelete = No,
+    HasFailure = No,
+    HasSuccess = No,
 > {
     _t: PhantomData<T>,
     _default: PhantomData<HasDefault>,
@@ -180,7 +180,7 @@ impl LaxField {
         CtxOptions: Clone,
     >(
         value: T,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, No, No, No, No, No, No, No, No, No> {
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes> {
         SchemaBuilder {
             default: Some(ComputableWithMiniSummary::Static(json!(value))),
             ..Default::default()
@@ -195,7 +195,7 @@ impl LaxField {
         CtxOptions: Clone,
     >(
         default_fn: F,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, No, No, No, No, No, No, No, No, No>
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes>
     where
         F: IntoResolverWithMiniSummary<T, I, O, CtxOptions>,
     {
@@ -213,12 +213,9 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-    > SchemaBuilder<T, I, O, CtxOptions, Yes, No, No, No, No, No, No, No, No, No>
+    > SchemaBuilder<T, I, O, CtxOptions, Yes>
 {
-    pub fn validate<F>(
-        self,
-        validator: F,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, No, No, No, No, No, No, No, No>
+    pub fn validate<F>(self, validator: F) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes>
     where
         F: IntoFieldValidator<T, I, O, CtxOptions>,
     {
@@ -229,10 +226,7 @@ impl<
         }
     }
 
-    pub fn validate_async<F>(
-        self,
-        validator: F,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, No, No, No, No, No, No, No, No>
+    pub fn validate_async<F>(self, validator: F) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes>
     where
         F: IntoAsyncFieldValidator<T, I, O, CtxOptions>,
     {
@@ -249,12 +243,12 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-    > SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, No, No, No, No, No, No, No, No>
+    > SchemaBuilder<T, I, O, CtxOptions, Yes, Yes>
 {
     pub fn re_validate<F>(
         self,
         re_validator: F,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, No, No, No, No, No, No>
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, Yes>
     where
         F: IntoFieldReValidator<T, I, O, CtxOptions>,
     {
@@ -269,7 +263,7 @@ impl<
     pub fn re_validate_async<F>(
         self,
         re_validator: F,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, No, No, No, No, No, No, No, No>
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes>
     where
         F: IntoAsyncFieldReValidator<T, I, O, CtxOptions>,
     {
@@ -288,12 +282,12 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-    > SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, HasRevalidator, No, No, No, No, No, No, No>
+    > SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, HasRevalidator>
 {
     pub fn required_if<F, Fut>(
         self,
         required_fn: F,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, HasRevalidator, Yes, No, No, No, No, No, No>
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, HasRevalidator, Yes>
     where
         F: Fn(IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = (bool, String)> + Send + 'static,
@@ -318,43 +312,12 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-    >
-    SchemaBuilder<
-        T,
-        I,
-        O,
-        CtxOptions,
-        Yes,
-        HasValidator,
-        HasRevalidator,
-        HasRequired,
-        No,
-        No,
-        No,
-        No,
-        No,
-        No,
-    >
+    > SchemaBuilder<T, I, O, CtxOptions, Yes, HasValidator, HasRevalidator, HasRequired>
 {
     pub fn ignore_if<F>(
         self,
         fx: F,
-    ) -> SchemaBuilder<
-        T,
-        I,
-        O,
-        CtxOptions,
-        Yes,
-        HasValidator,
-        HasRevalidator,
-        HasRequired,
-        Yes,
-        No,
-        No,
-        No,
-        No,
-        No,
-    >
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, HasValidator, HasRevalidator, HasRequired, Yes>
     where
         F: Fn(IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
     {
@@ -377,42 +340,12 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-    >
-    SchemaBuilder<
-        T,
-        I,
-        O,
-        CtxOptions,
-        Yes,
-        HasValidator,
-        HasRevalidator,
-        HasRequired,
-        No,
-        No,
-        No,
-        No,
-        No,
-        No,
-    >
+    > SchemaBuilder<T, I, O, CtxOptions, Yes, HasValidator, HasRevalidator, HasRequired>
 {
     pub fn ignore_init(
         self,
-    ) -> SchemaBuilder<
-        T,
-        I,
-        O,
-        CtxOptions,
-        Yes,
-        HasValidator,
-        HasRevalidator,
-        HasRequired,
-        No,
-        Yes,
-        No,
-        No,
-        No,
-        No,
-    > {
+    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, HasValidator, HasRevalidator, HasRequired, No, Yes>
+    {
         SchemaBuilder {
             default: self.default,
             validator: self.validator,
@@ -437,10 +370,6 @@ impl<
         HasRequired,
         No,
         YesComputed,
-        No,
-        No,
-        No,
-        No,
     >
     where
         F: Fn(IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
@@ -469,9 +398,6 @@ impl<
         No,
         No,
         Yes,
-        No,
-        No,
-        No,
     > {
         SchemaBuilder {
             default: self.default,
@@ -498,9 +424,6 @@ impl<
         No,
         No,
         YesComputed,
-        No,
-        No,
-        No,
     >
     where
         F: Fn(IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
@@ -525,22 +448,7 @@ impl<
         O: IvoSchemaStruct,
         CtxOptions: Clone,
     >
-    SchemaBuilder<
-        T,
-        I,
-        O,
-        CtxOptions,
-        Yes,
-        HasValidator,
-        HasRevalidator,
-        HasRequired,
-        No,
-        No,
-        Yes,
-        No,
-        No,
-        No,
-    >
+    SchemaBuilder<T, I, O, CtxOptions, Yes, HasValidator, HasRevalidator, HasRequired, No, No, Yes>
 {
     pub fn allow_init_if<F>(
         self,
@@ -557,9 +465,6 @@ impl<
         No,
         YesComputed,
         Yes,
-        No,
-        No,
-        No,
     >
     where
         F: Fn(IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
@@ -596,9 +501,6 @@ impl<
         No,
         Yes,
         YesComputed,
-        No,
-        No,
-        No,
     >
 {
     pub fn allow_update_if<F>(
@@ -616,9 +518,6 @@ impl<
         No,
         Yes,
         YesComputed,
-        No,
-        No,
-        No,
     >
     where
         F: Fn(IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
@@ -656,9 +555,6 @@ impl<
         No,
         No,
         YesComputed,
-        No,
-        No,
-        No,
     >
 {
     pub fn ignore_init(
@@ -675,9 +571,6 @@ impl<
         No,
         Yes,
         YesComputed,
-        No,
-        No,
-        No,
     > {
         SchemaBuilder {
             default: self.default,
@@ -706,9 +599,6 @@ impl<
         No,
         YesComputed,
         YesComputed,
-        No,
-        No,
-        No,
     >
     where
         F: Fn(IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,

@@ -13,14 +13,14 @@ use crate::{
 pub struct Yes;
 pub struct No;
 
-pub struct SchemaBuilder<
+pub struct ConstantFieldBuilder<
     T,
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
     CtxOptions: Clone,
-    HasDefault,
-    HasDelete,
-    HasSuccess,
+    HasDefault = No,
+    HasDelete = No,
+    HasSuccess = No,
 > {
     _t: PhantomData<T>,
     _default: PhantomData<HasDefault>,
@@ -40,7 +40,7 @@ impl<
         O: IvoSchemaStruct,
         T,
         CtxOptions: Clone,
-    > Default for SchemaBuilder<T, I, O, CtxOptions, HasDefault, HasDelete, HasSuccess>
+    > Default for ConstantFieldBuilder<T, I, O, CtxOptions, HasDefault, HasDelete, HasSuccess>
 {
     fn default() -> Self {
         Self {
@@ -63,7 +63,7 @@ impl<
         T: Serialize,
         CtxOptions: Clone,
     > BuildableIvoProperty<I, O, CtxOptions>
-    for SchemaBuilder<T, I, O, CtxOptions, Yes, HasDelete, HasSuccess>
+    for ConstantFieldBuilder<T, I, O, CtxOptions, Yes, HasDelete, HasSuccess>
 {
     fn build(self) -> InternalIvoProperty<I, O, CtxOptions> {
         IvoProperty {
@@ -88,8 +88,8 @@ pub struct ConstantField;
 impl ConstantField {
     pub fn value<I: IvoSchemaStruct, O: IvoSchemaStruct, T: Serialize, CtxOptions: Clone + Send>(
         value: T,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, No, No> {
-        SchemaBuilder {
+    ) -> ConstantFieldBuilder<T, I, O, CtxOptions, Yes> {
+        ConstantFieldBuilder {
             value: Some(ComputableWithMiniSummary::Static(json!((value)))),
             on_delete_fns: None,
             on_success_fns: None,
@@ -99,11 +99,11 @@ impl ConstantField {
 
     pub fn computed<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, F>(
         resolver: F,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, No, No>
+    ) -> ConstantFieldBuilder<T, I, O, CtxOptions, Yes>
     where
         F: IntoResolverWithMiniSummary<T, I, O, CtxOptions>,
     {
-        SchemaBuilder {
+        ConstantFieldBuilder {
             value: Some(ComputableWithMiniSummary::SyncFunc(resolver.into_uniform())),
             on_delete_fns: None,
             on_success_fns: None,
@@ -113,11 +113,11 @@ impl ConstantField {
 
     pub fn computed_async<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, F>(
         resolver: F,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, No, No>
+    ) -> ConstantFieldBuilder<T, I, O, CtxOptions, Yes>
     where
         F: IntoAsyncResolverWithMiniSummary<T, I, O, CtxOptions>,
     {
-        SchemaBuilder {
+        ConstantFieldBuilder {
             value: Some(ComputableWithMiniSummary::AsyncFunc(
                 resolver.into_uniform(),
             )),
@@ -130,19 +130,19 @@ impl ConstantField {
 
 // ON_DELETE is only available if HasDelete is 'No'
 impl<HasDelete, HasSuccess, I: IvoSchemaStruct, O: IvoSchemaStruct, T, CtxOptions: Clone>
-    SchemaBuilder<T, I, O, CtxOptions, Yes, HasDelete, HasSuccess>
+    ConstantFieldBuilder<T, I, O, CtxOptions, Yes, HasDelete, HasSuccess>
 {
     pub fn on_delete<F, Fut>(
         self,
         handler: F,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, Yes, HasSuccess>
+    ) -> ConstantFieldBuilder<T, I, O, CtxOptions, Yes, Yes, HasSuccess>
     where
         F: Fn(&O, &CtxOptions) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = ()> + Send + Sync + 'static,
     {
         let h: DeleteHandler<O, CtxOptions> = Box::new(move |d, o| Box::pin(handler(d, o)));
 
-        SchemaBuilder {
+        ConstantFieldBuilder {
             value: self.value,
             on_delete_fns: Some(match self.on_delete_fns {
                 Some(hs) => {
@@ -162,19 +162,19 @@ impl<HasDelete, HasSuccess, I: IvoSchemaStruct, O: IvoSchemaStruct, T, CtxOption
 
 // ON_SUCCESS is only available if HasSuccess is 'No'
 impl<HasDelete, HasSuccess, I: IvoSchemaStruct, O: IvoSchemaStruct, T, CtxOptions: Clone>
-    SchemaBuilder<T, I, O, CtxOptions, Yes, HasDelete, HasSuccess>
+    ConstantFieldBuilder<T, I, O, CtxOptions, Yes, HasDelete, HasSuccess>
 {
     pub fn on_success<F, Fut>(
         self,
         handler: F,
-    ) -> SchemaBuilder<T, I, O, CtxOptions, Yes, HasDelete, Yes>
+    ) -> ConstantFieldBuilder<T, I, O, CtxOptions, Yes, HasDelete, Yes>
     where
         F: Fn(IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = ()> + Send + Sync + 'static,
     {
         let h: SuccessHandler<I, O, CtxOptions> = Box::new(move |s| Box::pin(handler(s)));
 
-        SchemaBuilder {
+        ConstantFieldBuilder {
             value: self.value,
             on_delete_fns: self.on_delete_fns,
             on_success_fns: Some(match self.on_success_fns {

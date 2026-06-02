@@ -87,11 +87,11 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: IvoEr
         }
     }
 
-    pub fn with_fields<F>(mut self, fields: F) -> Self
+    pub fn with_fields<Fields>(mut self, fields: Fields) -> Self
     where
-        F: Fn(IvoFieldbuilder<I, O, CtxOptions>) -> IvoFieldbuilder<I, O, CtxOptions>,
+        Fields: Fn(IvoFields<I, O, CtxOptions>) -> IvoFields<I, O, CtxOptions>,
     {
-        self._definitions = fields(IvoFieldbuilder::new()).definitions;
+        self._definitions = fields(IvoFields::new()).definitions;
 
         self.check_prop_definitions();
 
@@ -480,11 +480,11 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: IvoEr
     }
 }
 
-pub struct IvoFieldbuilder<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
+pub struct IvoFields<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
     pub definitions: InternalPropertyDefinitions<I, O, CtxOptions>,
 }
 
-impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> IvoFieldbuilder<I, O, CtxOptions> {
+impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> IvoFields<I, O, CtxOptions> {
     fn new() -> Self {
         Self {
             definitions: HashMap::new(),
