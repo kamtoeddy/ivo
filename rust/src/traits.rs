@@ -49,8 +49,6 @@ where
     fn into_uniform(self) -> UniformAsyncValidator<CtxOptions> {
         Box::new(move |value, summary| {
             let validator = self.clone();
-            let value = value.clone();
-            let summary = summary.clone();
 
             Box::pin(async move { validator(value, summary).await.map(|v| json!(v)) })
         })
@@ -92,8 +90,6 @@ where
     fn into_uniform(self) -> UniformAsyncReValidator<CtxOptions> {
         Box::new(move |value, summary| {
             let validator = self.clone();
-            let value = value.clone();
-            let summary = summary.clone();
 
             Box::pin(async move {
                 validator(
@@ -121,7 +117,6 @@ where
     fn into_uniform(self) -> UniformVirtualSanitiser<CtxOptions> {
         Box::new(move |summary| {
             let sanitizer = self.clone();
-            let summary = summary.clone();
 
             Box::pin(async move { json!(sanitizer(summary).await) })
         })
@@ -181,7 +176,6 @@ where
     fn into_uniform(self) -> UniformAsyncResolverWithMutSummary<CtxOptions> {
         Box::new(move |summary| {
             let resolver = self.clone();
-            let summary = summary.clone();
 
             Box::pin(async move { json!(resolver(summary).await) })
         })
@@ -230,7 +224,6 @@ where
     fn into_uniform(self) -> UniformAsyncResolverWithMiniSummary<CtxOptions> {
         Box::new(move |summary| {
             let resolver = self.clone();
-            let summary = summary.clone();
 
             Box::pin(async move { json!(resolver(summary).await) })
         })
