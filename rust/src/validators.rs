@@ -156,67 +156,61 @@ mod tests {
 
     #[test]
     fn test_string_validator() {
-        {
-            let validator = make_string_validator(StringValidatorOptions::MinMax {
-                max: None,
-                min: Some(1),
-                trim: None,
-            });
+        let validator = make_string_validator(StringValidatorOptions::MinMax {
+            max: None,
+            min: Some(1),
+            trim: None,
+        });
 
-            let v: Vec<i8> = vec![];
+        let v: Vec<i8> = vec![];
 
-            match validator(json!(v)) {
-                Err((e, _)) => assert_eq!(e, "Expected a string"),
-                _ => panic!("expected invalid"),
-            }
-
-            match validator(json!(true)) {
-                Err((e, _)) => assert_eq!(e, "Expected a string"),
-                _ => panic!("expected invalid"),
-            }
+        match validator(json!(v)) {
+            Err((e, _)) => assert_eq!(e, "Expected a string"),
+            _ => panic!("expected invalid"),
         }
 
-        {
-            let validator = make_string_validator(StringValidatorOptions::MinMax {
-                max: None,
-                min: Some(2),
-                trim: Some(true),
-            });
-
-            match validator(json!(" aa ")) {
-                Ok(s) => assert_eq!(s, "aa".to_string()),
-                Err(e) => panic!("unexpected invalid: {:?}", e),
-            }
-
-            match validator(json!("x")) {
-                Err((e, _)) => assert_eq!(e, "too_short"),
-                _ => panic!("expected invalid"),
-            }
+        match validator(json!(true)) {
+            Err((e, _)) => assert_eq!(e, "Expected a string"),
+            _ => panic!("expected invalid"),
         }
 
-        {
-            let allowed_roles = vec!["admin", "user", "moderator"]
-                .into_iter()
-                .map(|s| s.to_owned())
-                .collect::<Vec<String>>();
+        let validator = make_string_validator(StringValidatorOptions::MinMax {
+            max: None,
+            min: Some(2),
+            trim: Some(true),
+        });
 
-            let validator =
-                make_string_validator(StringValidatorOptions::Values(allowed_roles.clone()));
+        match validator(json!(" aa ")) {
+            Ok(s) => assert_eq!(s, "aa".to_string()),
+            Err(e) => panic!("unexpected invalid: {:?}", e),
+        }
 
-            let role = allowed_roles.get(0).unwrap().clone();
+        match validator(json!("x")) {
+            Err((e, _)) => assert_eq!(e, "too_short"),
+            _ => panic!("expected invalid"),
+        }
 
-            match validator(json!(role)) {
-                Ok(s) => assert_eq!(s, role),
-                Err(e) => panic!("unexpected invalid: {:?}", e),
+        let allowed_roles = vec!["admin", "user", "moderator"]
+            .into_iter()
+            .map(|s| s.to_owned())
+            .collect::<Vec<String>>();
+
+        let validator =
+            make_string_validator(StringValidatorOptions::Values(allowed_roles.clone()));
+
+        let role = allowed_roles.get(0).unwrap().clone();
+
+        match validator(json!(role)) {
+            Ok(s) => assert_eq!(s, role),
+            Err(e) => panic!("unexpected invalid: {:?}", e),
+        }
+
+        match validator(json!("invalid role")) {
+            Err((reason, metadata)) => {
+                assert_eq!(reason, "Invalid option selected");
+                assert_eq!(metadata, Some(json!({ "options": allowed_roles})))
             }
-
-            match validator(json!("invalid role")) {
-                Err((reason, metadata)) => {
-                    assert_eq!(reason, "Invalid option selected");
-                    assert_eq!(metadata, Some(json!({ "options": allowed_roles})))
-                }
-                _ => panic!("expected invalid"),
-            }
+            _ => panic!("expected invalid"),
         }
     }
 
