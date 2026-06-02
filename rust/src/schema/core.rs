@@ -1,7 +1,7 @@
+use crate::fields::base::BuildableIvoProperty;
 use crate::schema::error::{DefaultErrorTool, IvoErrorTool};
-use crate::schema::properties::base::BuildableIvoProperty;
 // use crate::schema::utils::TimeStampTool;
-use crate::schema::{error::SchemaError, properties::base::IvoProperty};
+use crate::schema::{error::SchemaError, fields::base::IvoProperty};
 use crate::traits::IvoSchemaStruct;
 use crate::types::ComputableWithMiniSummary;
 use serde_json::Value;

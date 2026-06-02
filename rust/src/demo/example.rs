@@ -2,7 +2,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::demo::slugify::{slugify, SlugifiedString};
-use crate::schema::properties::IvoField;
+use crate::fields::IvoField;
 use crate::IvoStruct;
 use crate::{schema::SchemaCore, types::IvoSummary};
 

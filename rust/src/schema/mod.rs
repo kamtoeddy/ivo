@@ -1,6 +1,6 @@
 pub mod core;
 pub mod error;
-pub mod properties;
+pub mod fields;
 pub mod utils;
 
 pub use utils::TimeStampTool;

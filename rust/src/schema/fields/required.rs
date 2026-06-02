@@ -3,7 +3,7 @@ use std::{future::Future, marker::PhantomData};
 use serde::{de::DeserializeOwned, Serialize};
 
 use crate::{
-    schema::properties::base::{BuildableIvoProperty, InternalIvoProperty, IvoProperty},
+    fields::base::{BuildableIvoProperty, InternalIvoProperty, IvoProperty},
     traits::{
         IntoAsyncFieldReValidator, IntoAsyncFieldValidator, IntoFieldReValidator,
         IntoFieldValidator, IvoSchemaStruct,

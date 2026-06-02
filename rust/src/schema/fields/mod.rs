@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 use serde::{de::DeserializeOwned, Serialize};
 
 use crate::{
-    schema::properties::{
+    fields::{
         constants::ConstantFieldBuilder, dependents::DependentFieldBuilder,
         enumerated::EnumFieldBuilder, lax::LaxFieldBuilder, required::RequiredFieldBuilder,
         virtuals::VirtualFieldBuilder,

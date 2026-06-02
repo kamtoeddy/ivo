@@ -4,7 +4,7 @@ use serde::Serialize;
 use serde_json::{json, Value};
 
 use crate::{
-    schema::properties::base::{BuildableIvoProperty, InternalIvoProperty, IvoProperty},
+    fields::base::{BuildableIvoProperty, InternalIvoProperty, IvoProperty},
     traits::{IntoAsyncResolverWithMiniSummary, IntoResolverWithMiniSummary, IvoSchemaStruct},
     types::{ComputableWithMiniSummary, DeleteHandler, IvoSummary, SuccessHandler},
 };

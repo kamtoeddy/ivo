@@ -6,5 +6,6 @@ pub mod validators;
 
 pub use ivo_struct::IvoStruct;
 
+pub use schema::fields;
 pub use schema::utils::TimeStampTool;
 pub use types::ValidatorResponse;
