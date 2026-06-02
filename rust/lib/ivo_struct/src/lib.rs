@@ -13,9 +13,14 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
     let vis = input.vis;
 
     // Extract fields from the struct
-    let fields = match input.data {
+    let (fields, field_names) = match input.data {
         Data::Struct(ref data) => match data.fields {
-            Fields::Named(ref fields) => &fields.named,
+            Fields::Named(ref fields) => {
+                let field_names = data.fields.iter().map(|f| f.ident.as_ref().unwrap());
+                let field_names = quote! { vec![#( stringify!(#field_names) ),*] };
+
+                (&fields.named, field_names)
+            }
             _ => panic!("IvoStruct only supports structs with named fields"),
         },
         _ => panic!("IvoStruct only supports structs"),
@@ -43,6 +48,7 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
 
     // Generate the new struct
     let expanded = quote! {
+
         // TODO: 👇 dynamically add derived traits of parent here
         #[derive(Debug, Default, Clone, Deserialize, Serialize)]
         #vis struct #partial_name {
@@ -50,6 +56,12 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
         }
 
         impl #crate_root::traits::IvoSchemaStruct for #name { }
+
+        impl #crate_root::traits::HasFields for #name {
+            fn fields() -> Vec<String> {
+                #field_names.into_iter().map(|f| String::from(f)).collect()
+            }
+        }
 
         impl #crate_root::traits::HasPartial for #name {
             type Partial = #partial_name;

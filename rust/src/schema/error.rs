@@ -96,10 +96,7 @@ impl SchemaError {
     }
 
     pub fn add(&mut self, field: &str, value: String) -> &mut Self {
-        let entry = self
-            .payload
-            .entry(field.to_string())
-            .or_insert_with(Vec::new);
+        let entry = self.payload.entry(field.to_string()).or_default();
 
         if !entry.contains(&value) {
             entry.push(value);

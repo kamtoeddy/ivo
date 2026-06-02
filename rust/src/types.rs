@@ -114,49 +114,115 @@ impl<CtxOptions: Clone> IvoMiniSummary<CtxOptions> {
     }
 }
 
+type InputValues = HashMap<String, Value>;
+type Changes = HashMap<String, Value>;
+
 #[derive(Clone)]
 // pub struct IvoSummary<CtxOptions: Clone> {
-pub struct IvoSummary<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
-    // _input: PhantomData<I>,
-    pub changes: Option<HashMap<String, Value>>,
-    pub context: Context,
-    pub input: I::Partial,
-    pub input_values: HashMap<String, Value>,
-    pub is_update: bool,
-    pub previous_values: Option<O>,
-    pub values: O,
-    pub options: CtxOptions,
+pub enum IvoSummary<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
+    Create {
+        context: Context,
+        input: I::Partial,
+        input_values: InputValues,
+        values: O,
+        options: CtxOptions,
+    },
+    Update {
+        changes: Changes,
+        context: Context,
+        input: I::Partial,
+        input_values: InputValues,
+        previous_values: O,
+        values: O,
+        options: CtxOptions,
+    },
 }
 
 impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> IvoSummary<I, O, CtxOptions> {
-    pub fn new(
-        changes: Option<HashMap<String, Value>>,
+    pub fn for_new(
         context: Context,
         input: I::Partial,
         input_values: HashMap<String, Value>,
-        is_update: bool,
-        previous_values: Option<O>,
         values: O,
         options: CtxOptions,
     ) -> Self {
-        Self {
+        Self::Create {
+            context,
+            input,
+            input_values,
+            values,
+            options,
+        }
+    }
+
+    pub fn for_update(
+        changes: HashMap<String, Value>,
+        context: Context,
+        input: I::Partial,
+        input_values: HashMap<String, Value>,
+        previous_values: O,
+        values: O,
+        options: CtxOptions,
+    ) -> Self {
+        Self::Update {
             changes,
             context,
             input,
             input_values,
-            is_update,
             previous_values,
             values,
             options,
         }
     }
 
-    // pub fn is_update(&self) -> bool {
-    //     self.is_update
-    // }
+    pub fn changes(&self) -> Option<&Changes> {
+        match &self {
+            IvoSummary::Update { changes, .. } => Some(changes),
+            _ => None,
+        }
+    }
+
+    pub fn is_update(&self) -> bool {
+        matches!(self, IvoSummary::Update { .. })
+    }
+
+    pub fn input(&self) -> &I::Partial {
+        match &self {
+            IvoSummary::Create { input, .. } => input,
+            IvoSummary::Update { input, .. } => input,
+        }
+    }
+
+    pub fn input_values(&self) -> &InputValues {
+        match &self {
+            IvoSummary::Create { input_values, .. } => input_values,
+            IvoSummary::Update { input_values, .. } => input_values,
+        }
+    }
+
+    pub fn values(&self) -> &O {
+        match &self {
+            IvoSummary::Create { values, .. } => values,
+            IvoSummary::Update { values, .. } => values,
+        }
+    }
+
+    pub fn get_options(&self) -> &CtxOptions {
+        match &self {
+            IvoSummary::Create { options, .. } => options,
+            IvoSummary::Update { options, .. } => options,
+        }
+    }
+
+    pub fn get_options_mut(&self) -> CtxOptions {
+        match &self {
+            IvoSummary::Create { options, .. } => options.clone(),
+            IvoSummary::Update { options, .. } => options.clone(),
+        }
+    }
 
     pub fn update_options(&mut self) {
-        todo!()
+        // todo!()
     }
 }
 

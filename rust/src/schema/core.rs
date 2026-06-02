@@ -27,6 +27,7 @@ pub struct SchemaCore<
     pub defaults: HashMap<String, Value>,
     pub partial_context: HashMap<String, Value>,
     pub values: HashMap<String, Value>,
+    fields_set: HashSet<String>,
 
     // maps
     pub alias_to_virtual_map: HashMap<String, String>,
@@ -62,6 +63,11 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: IvoEr
             _error_tool: PhantomData,
             _definitions: HashMap::new(),
             _options: None,
+            fields_set: {
+                let mut all_fields = O::fields();
+                all_fields.extend(I::fields());
+                all_fields.into_iter().collect()
+            },
             context: HashMap::new(),
             context_options: HashMap::new(),
             defaults: HashMap::new(),
@@ -105,7 +111,6 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: IvoEr
     }
 
     fn check_options(&self) {
-        ()
         // todo!()
     }
 
@@ -154,10 +159,8 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: IvoEr
             // regular prop
             self.props.insert(prop.clone());
 
-            if let Some(defv) = &def.default {
-                if let ComputableWithMiniSummary::Static(v) = defv {
-                    self.defaults.insert(prop.clone(), v.clone());
-                }
+            if let Some(ComputableWithMiniSummary::Static(v)) = &def.default {
+                self.defaults.insert(prop.clone(), v.clone());
             }
 
             if def.required.is_some() {
@@ -268,6 +271,17 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: IvoEr
         }
     }
 
+    pub fn fields(&self) -> Vec<String> {
+        let mut all_fields: Vec<_> = self.fields_set().clone().into_iter().collect();
+
+        all_fields.sort();
+        all_fields
+    }
+
+    pub fn fields_set(&self) -> &HashSet<String> {
+        &self.fields_set
+    }
+
     pub fn get_definition(&self, prop: &str) -> Option<&IvoProperty<Value, I, O, CtxOptions>> {
         self._definitions.get(prop)
     }
@@ -363,7 +377,7 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: IvoEr
             return false;
         }
 
-        return false;
+        false
 
         // fn is_in_transitive(
         //     core: &SchemaCore,

@@ -14,8 +14,12 @@ use crate::{
 };
 
 pub trait IvoSchemaStruct:
-    Send + Sync + 'static + DeserializeOwned + Serialize + HasPartial
+    Send + Sync + 'static + DeserializeOwned + Serialize + HasFields + HasPartial
 {
+}
+
+pub trait HasFields {
+    fn fields() -> Vec<String>;
 }
 
 pub trait HasPartial {

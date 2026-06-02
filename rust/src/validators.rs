@@ -73,10 +73,8 @@ fn validate_string_validator_options(options: &StringValidatorOptions) {
     match &options {
         StringValidatorOptions::MinMax { max, min, .. } => {
             match (max, min) {
-                (Some(max_value), Some(min_value)) => {
-                    if min_value >= max_value {
-                        panic!("String validator: min({min_value}) must be < max({max_value})")
-                    }
+                (Some(max_value), Some(min_value)) if min_value >= max_value => {
+                    panic!("String validator: min({min_value}) must be < max({max_value})")
                 }
                 (None, None) => panic!("String validator: min and max cannot both be None"),
                 _ => {}

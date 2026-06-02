@@ -32,6 +32,7 @@ pub struct UserInput {
     pub email: String,
     pub username: String,
     pub role: UserRole,
+    pub v_slug: SlugifiedString,
 }
 
 type MutUserSummary = IvoSummary<UserInput, User, UserCtxOptions>;
@@ -40,7 +41,7 @@ type MutUserSummary = IvoSummary<UserInput, User, UserCtxOptions>;
 // type CtxOptions = Option<String>;
 #[derive(Clone)]
 pub struct UserCtxOptions {
-    pub slug_id: SlugifiedString,
+    pub slug_id: Option<SlugifiedString>,
 }
 
 impl UserCtxOptions {
@@ -49,13 +50,13 @@ impl UserCtxOptions {
     }
 
     fn update_data(&mut self, slug: SlugifiedString) {
-        self.slug_id = slug
+        self.slug_id = Some(slug)
     }
 }
 
-pub struct DEMO;
+pub struct Demo;
 
-impl DEMO {
+impl Demo {
     pub fn get_schema() -> SchemaCore<UserInput, User, UserCtxOptions> {
         let resolver = || String::from("full name");
 
@@ -79,10 +80,10 @@ impl DEMO {
                                     ));
                                 }
 
-                                return Ok(String::from(v));
+                                Ok(v)
                             })
                             .re_validate_async(|uname: String, s: MutUserSummary| async move {
-                                let mut ctx_options = s.options;
+                                let mut ctx_options = s.get_options_mut();
 
                                 if ctx_options.find_by_username(&uname).await.is_some() {
                                     return Err((
@@ -102,6 +103,23 @@ impl DEMO {
                             .default(Some(String::from("default value")))
                             .depends_on(vec!["username"])
                             .resolve(|_| Some(String::from("resolved value"))),
+                    )
+                    .set(
+                        "slug",
+                        IvoField::DEPENDENT
+                            .default(SlugifiedString("".into()))
+                            .depends_on(vec!["username", "v_slug"])
+                            .resolve(|s: MutUserSummary| {
+                                if let Some(v_slug) = s.input().v_slug.clone() {
+                                    return v_slug;
+                                }
+
+                                if let Some(slug) = s.get_options().slug_id.clone() {
+                                    return slug;
+                                }
+
+                                s.values().slug_id.clone()
+                            }),
                     )
                     // general demo to make sure all fields work as expected
                     .set(
@@ -225,7 +243,7 @@ impl DEMO {
                         "v1",
                         IvoField::VIRTUAL
                             .validate_async(|v, _| async move {
-                                if v == true || v == false {
+                                if v || !v {
                                     Ok(v)
                                 } else {
                                     Err(("Invalid boolean".into(), None))

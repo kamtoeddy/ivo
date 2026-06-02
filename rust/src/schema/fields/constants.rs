@@ -155,7 +155,7 @@ impl<HasDelete, HasSuccess, I: IvoSchemaStruct, O: IvoSchemaStruct, T, CtxOption
             value: self.value,
             on_delete_fns: Some(match self.on_delete_fns {
                 Some(hs) => {
-                    let mut v = Vec::from(hs);
+                    let mut v = hs;
 
                     v.push(h);
 
@@ -188,7 +188,7 @@ impl<HasDelete, HasSuccess, I: IvoSchemaStruct, O: IvoSchemaStruct, T, CtxOption
             on_delete_fns: self.on_delete_fns,
             on_success_fns: Some(match self.on_success_fns {
                 Some(hs) => {
-                    let mut v = Vec::from(hs);
+                    let mut v = hs;
 
                     v.push(h);
 

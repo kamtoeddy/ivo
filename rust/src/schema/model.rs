@@ -72,7 +72,7 @@ impl<
                 // Run validators for props in context
 
                 error_tool.add(
-                    "lol".into(),
+                    "lol",
                     FieldError {
                         reason: "()".into(),
                         metadata: None,

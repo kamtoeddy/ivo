@@ -815,7 +815,7 @@ impl<
             should_update: self.should_update,
             on_failure_fns: Some(match self.on_failure_fns {
                 Some(hs) => {
-                    let mut v = Vec::from(hs);
+                    let mut v = hs;
 
                     v.push(h);
 
@@ -899,7 +899,7 @@ impl<
             on_failure_fns: self.on_failure_fns,
             on_success_fns: Some(match self.on_success_fns {
                 Some(hs) => {
-                    let mut v = Vec::from(hs);
+                    let mut v = hs;
 
                     v.push(h);
 

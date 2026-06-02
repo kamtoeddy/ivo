@@ -2,17 +2,24 @@ use std::time::Instant;
 
 use crate::{
     demo::{
-        example::{PartialUserInput, User, UserRole, DEMO},
+        example::{Demo, PartialUserInput, User, UserRole},
         slugify::slugify,
     },
     schema::error::UpdateError,
 };
 
 pub async fn run_example() {
-    let user_schema = DEMO::get_schema();
+    let user_schema = Demo::get_schema();
     let user_model = user_schema.get_model();
 
     println!("UserSchema props: {:?}\n", user_schema.props);
+    // let timer = Instant::now();
+    let f = user_schema.fields();
+    // println!("Fields extracted in {:?}\n", timer.elapsed());
+
+    // let timer = Instant::now();
+    println!("User fields: {:?}\n", f);
+    // println!("Fields printed in {:?}\n", timer.elapsed());
 
     let timer = Instant::now();
 
@@ -21,6 +28,7 @@ pub async fn run_example() {
             email: Some("1@1.com".to_string()),
             username: Some("john".to_string()),
             role: None,
+            v_slug: None,
         })
         .await;
 
@@ -65,6 +73,7 @@ pub async fn run_example() {
                 email: Some("1@1.com".to_string()),
                 username: Some("john".to_string()),
                 role: Some(UserRole::Admin),
+                v_slug: None,
             },
         )
         .await;
