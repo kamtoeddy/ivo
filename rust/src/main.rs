@@ -19,6 +19,7 @@ async fn main() {
             email: Some("1@1.com".to_string()),
             username: Some("john".to_string()),
             role: None,
+            is_admin: None,
         })
         .await;
 
@@ -52,6 +53,7 @@ async fn main() {
                 email: Some("1@1.com".to_string()),
                 username: Some("john".to_string()),
                 role: Some(UserRole::Admin),
+                is_admin: Some(None),
             },
         )
         .await;

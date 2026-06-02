@@ -35,6 +35,7 @@ pub struct UserInput {
     pub email: String,
     pub username: String,
     pub role: UserRole,
+    pub is_admin: Option<bool>,
 }
 
 // type CtxOptions = HashMap<String, Value>;
