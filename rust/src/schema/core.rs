@@ -1,5 +1,5 @@
 use crate::schema::error::{DefaultErrorTool, IvoErrorTool};
-use crate::schema::properties::base::IvoPropertyBuilder;
+use crate::schema::properties::base::BuildableIvoProperty;
 // use crate::schema::utils::TimeStampTool;
 use crate::schema::{error::SchemaError, properties::base::IvoProperty};
 use crate::traits::IvoSchemaStruct;
@@ -87,18 +87,29 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: IvoEr
         }
     }
 
-    pub fn field<D: IvoPropertyBuilder<I, O, CtxOptions>>(mut self, name: &str, def: D) -> Self {
-        self._definitions.insert(name.to_owned(), def.build());
+    pub fn with_fields<F>(mut self, fields: F) -> Self
+    where
+        F: Fn(IvoFieldbuilder<I, O, CtxOptions>) -> IvoFieldbuilder<I, O, CtxOptions>,
+    {
+        self._definitions = fields(IvoFieldbuilder::new()).definitions;
+
+        self.check_prop_definitions();
 
         self
     }
 
-    fn _check_options(&self) {
+    pub fn with_options(self) -> Self {
+        self.check_options();
+
+        self
+    }
+
+    fn check_options(&self) {
         ()
         // todo!()
     }
 
-    fn _check_prop_definitions(&mut self) {
+    fn check_prop_definitions(&mut self) {
         let mut err_tool = SchemaError::new();
 
         // First pass: register prop kinds and simple attributes
@@ -466,5 +477,23 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: IvoEr
         }
 
         stack.pop();
+    }
+}
+
+pub struct IvoFieldbuilder<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
+    pub definitions: InternalPropertyDefinitions<I, O, CtxOptions>,
+}
+
+impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> IvoFieldbuilder<I, O, CtxOptions> {
+    fn new() -> Self {
+        Self {
+            definitions: HashMap::new(),
+        }
+    }
+
+    pub fn set<D: BuildableIvoProperty<I, O, CtxOptions>>(mut self, name: &str, def: D) -> Self {
+        self.definitions.insert(name.to_owned(), def.build());
+
+        self
     }
 }

@@ -11,7 +11,7 @@ use crate::{
     },
 };
 
-pub trait IvoPropertyBuilder<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
+pub trait BuildableIvoProperty<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
     fn build(self) -> InternalIvoProperty<I, O, CtxOptions>;
 }
 

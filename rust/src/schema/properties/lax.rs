@@ -4,7 +4,7 @@ use serde::{de::DeserializeOwned, Serialize};
 use serde_json::{json, Value};
 
 use crate::{
-    schema::properties::base::{InternalIvoProperty, IvoProperty, IvoPropertyBuilder},
+    schema::properties::base::{InternalIvoProperty, IvoProperty, BuildableIvoProperty},
     traits::{
         IntoAsyncFieldReValidator, IntoAsyncFieldValidator, IntoFieldReValidator,
         IntoFieldValidator, IntoResolverWithMiniSummary, IvoSchemaStruct,
@@ -137,7 +137,7 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-    > IvoPropertyBuilder<I, O, CtxOptions>
+    > BuildableIvoProperty<I, O, CtxOptions>
     for SchemaBuilder<
         T,
         I,
