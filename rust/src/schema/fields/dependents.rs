@@ -1,4 +1,4 @@
-use std::{future::Future, marker::PhantomData};
+use std::marker::PhantomData;
 
 use serde::Serialize;
 use serde_json::{json, Value};
@@ -6,12 +6,12 @@ use serde_json::{json, Value};
 use crate::{
     fields::base::{BuildableIvoProperty, InternalIvoProperty, IvoProperty},
     traits::{
-        IntoAsyncResolverWithMutSummary, IntoResolverWithMiniSummary, IntoResolverWithMutSummary,
-        IvoSchemaStruct,
+        IntoAsyncResolverWithMutSummary, IntoDeleteHandler, IntoResolverWithMiniSummary,
+        IntoResolverWithMutSummary, IntoSuccessHandler, IvoSchemaStruct,
     },
     types::{
-        ComputableInit, ComputableWithMiniSummary, DeleteHandler, False, IvoSummary,
-        ResolverWithMutSummary, SuccessHandler,
+        ComputableInit, ComputableWithMiniSummary, DeleteHandler, False, ResolverWithMutSummary,
+        SuccessHandler,
     },
 };
 
@@ -276,15 +276,14 @@ impl<
         HasSuccess,
     >
 {
-    pub fn on_delete<F, Fut>(
+    pub fn on_delete<H>(
         self,
-        handler: F,
+        handler: H,
     ) -> DependentFieldBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, HasShouldUpdate, Yes, HasSuccess>
     where
-        F: Fn(&O, &CtxOptions) -> Fut + Send + Sync + 'static,
-        Fut: Future<Output = ()> + Send + Sync + 'static,
+        H: IntoDeleteHandler<O, CtxOptions>,
     {
-        let h: DeleteHandler<O, CtxOptions> = Box::new(move |d, o| Box::pin(handler(d, o)));
+        let h = handler.into_handler();
 
         DependentFieldBuilder {
             default: self.default,
@@ -330,15 +329,14 @@ impl<
         HasSuccess,
     >
 {
-    pub fn on_success<F, Fut>(
+    pub fn on_success<H>(
         self,
-        handler: F,
+        handler: H,
     ) -> DependentFieldBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, HasShouldUpdate, HasDelete, Yes>
     where
-        F: Fn(IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
-        Fut: Future<Output = ()> + Send + Sync + 'static,
+        H: IntoSuccessHandler<I, O, CtxOptions>,
     {
-        let h: SuccessHandler<I, O, CtxOptions> = Box::new(move |s| Box::pin(handler(s)));
+        let h = handler.into_handler();
 
         DependentFieldBuilder {
             default: self.default,

@@ -1,12 +1,15 @@
-use std::{future::Future, marker::PhantomData};
+use std::marker::PhantomData;
 
 use serde::Serialize;
 use serde_json::{json, Value};
 
 use crate::{
     fields::base::{BuildableIvoProperty, InternalIvoProperty, IvoProperty},
-    traits::{IntoAsyncResolverWithMiniSummary, IntoResolverWithMiniSummary, IvoSchemaStruct},
-    types::{ComputableWithMiniSummary, DeleteHandler, IvoSummary, SuccessHandler},
+    traits::{
+        IntoAsyncResolverWithMiniSummary, IntoDeleteHandler, IntoResolverWithMiniSummary,
+        IntoSuccessHandler, IvoSchemaStruct,
+    },
+    types::{ComputableWithMiniSummary, DeleteHandler, SuccessHandler},
 };
 
 // Marker Types
@@ -141,15 +144,14 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, T: Serialize, CtxOptions: Clone + S
 impl<HasDelete, HasSuccess, I: IvoSchemaStruct, O: IvoSchemaStruct, T, CtxOptions: Clone>
     ConstantFieldBuilder<T, I, O, CtxOptions, Yes, HasDelete, HasSuccess>
 {
-    pub fn on_delete<F, Fut>(
+    pub fn on_delete<H>(
         self,
-        handler: F,
+        handler: H,
     ) -> ConstantFieldBuilder<T, I, O, CtxOptions, Yes, Yes, HasSuccess>
     where
-        F: Fn(&O, &CtxOptions) -> Fut + Send + Sync + 'static,
-        Fut: Future<Output = ()> + Send + Sync + 'static,
+        H: IntoDeleteHandler<O, CtxOptions>,
     {
-        let h: DeleteHandler<O, CtxOptions> = Box::new(move |d, o| Box::pin(handler(d, o)));
+        let h = handler.into_handler();
 
         ConstantFieldBuilder {
             value: self.value,
@@ -173,15 +175,14 @@ impl<HasDelete, HasSuccess, I: IvoSchemaStruct, O: IvoSchemaStruct, T, CtxOption
 impl<HasDelete, HasSuccess, I: IvoSchemaStruct, O: IvoSchemaStruct, T, CtxOptions: Clone>
     ConstantFieldBuilder<T, I, O, CtxOptions, Yes, HasDelete, HasSuccess>
 {
-    pub fn on_success<F, Fut>(
+    pub fn on_success<H>(
         self,
-        handler: F,
+        handler: H,
     ) -> ConstantFieldBuilder<T, I, O, CtxOptions, Yes, HasDelete, Yes>
     where
-        F: Fn(IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
-        Fut: Future<Output = ()> + Send + Sync + 'static,
+        H: IntoSuccessHandler<I, O, CtxOptions>,
     {
-        let h: SuccessHandler<I, O, CtxOptions> = Box::new(move |s| Box::pin(handler(s)));
+        let h = handler.into_handler();
 
         ConstantFieldBuilder {
             value: self.value,

@@ -1,12 +1,12 @@
-use std::{future::Future, marker::PhantomData};
+use std::marker::PhantomData;
 
 use serde::{de::DeserializeOwned, Serialize};
 
 use crate::{
     fields::base::{BuildableIvoProperty, InternalIvoProperty, IvoProperty},
     traits::{
-        IntoAsyncFieldReValidator, IntoAsyncFieldValidator, IntoFieldReValidator,
-        IntoFieldValidator, IvoSchemaStruct,
+        IntoAsyncFieldReValidator, IntoAsyncFieldValidator, IntoDeleteHandler, IntoFailureHandler,
+        IntoFieldReValidator, IntoFieldValidator, IntoSuccessHandler, IvoSchemaStruct,
     },
     types::{
         ComputableInit, ComputableRequired, DeleteHandler, FailureHandler, FieldReValidator,
@@ -270,9 +270,9 @@ impl<
         HasSuccess,
     >
 {
-    pub fn on_delete<F, Fut>(
+    pub fn on_delete<H>(
         self,
-        handler: F,
+        handler: H,
     ) -> RequiredFieldBuilder<
         T,
         I,
@@ -286,10 +286,9 @@ impl<
         HasSuccess,
     >
     where
-        F: Fn(&O, &CtxOptions) -> Fut + Send + Sync + 'static,
-        Fut: Future<Output = ()> + Send + Sync + 'static,
+        H: IntoDeleteHandler<O, CtxOptions>,
     {
-        let h: DeleteHandler<O, CtxOptions> = Box::new(move |d, o| Box::pin(handler(d, o)));
+        let h = handler.into_handler();
 
         RequiredFieldBuilder {
             validator: self.validator,
@@ -305,32 +304,6 @@ impl<
                 }
                 _ => vec![h],
             }),
-            on_failure_fns: self.on_failure_fns,
-            on_success_fns: self.on_success_fns,
-            ..Default::default()
-        }
-    }
-
-    pub fn on_delete_fns(
-        self,
-        handlers: Vec<DeleteHandler<O, CtxOptions>>,
-    ) -> RequiredFieldBuilder<
-        T,
-        I,
-        O,
-        CtxOptions,
-        Yes,
-        HasRevalidator,
-        HasShouldUpdate,
-        Yes,
-        HasFailure,
-        HasSuccess,
-    > {
-        RequiredFieldBuilder {
-            validator: self.validator,
-            re_validator: self.re_validator,
-            should_update: self.should_update,
-            on_delete_fns: Some(handlers),
             on_failure_fns: self.on_failure_fns,
             on_success_fns: self.on_success_fns,
             ..Default::default()
@@ -363,9 +336,9 @@ impl<
         HasSuccess,
     >
 {
-    pub fn on_failure<F, Fut>(
+    pub fn on_failure<H>(
         self,
-        handler: F,
+        handler: H,
     ) -> RequiredFieldBuilder<
         T,
         I,
@@ -379,10 +352,9 @@ impl<
         HasSuccess,
     >
     where
-        F: Fn(IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
-        Fut: Future<Output = ()> + Send + Sync + 'static,
+        H: IntoFailureHandler<I, O, CtxOptions>,
     {
-        let h: FailureHandler<I, O, CtxOptions> = Box::new(move |s| Box::pin(handler(s)));
+        let h = handler.into_handler();
 
         RequiredFieldBuilder {
             validator: self.validator,
@@ -430,9 +402,9 @@ impl<
         HasSuccess,
     >
 {
-    pub fn on_success<F, Fut>(
+    pub fn on_success<H>(
         self,
-        handler: F,
+        handler: H,
     ) -> RequiredFieldBuilder<
         T,
         I,
@@ -446,10 +418,9 @@ impl<
         Yes,
     >
     where
-        F: Fn(IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
-        Fut: Future<Output = ()> + Send + Sync + 'static,
+        H: IntoSuccessHandler<I, O, CtxOptions>,
     {
-        let h: SuccessHandler<I, O, CtxOptions> = Box::new(move |s| Box::pin(handler(s)));
+        let h = handler.into_handler();
 
         RequiredFieldBuilder {
             validator: self.validator,

@@ -260,7 +260,7 @@ pub type BooleanResolverWithMutSummary<I, O, CtxOptions> =
 pub type VirtualSanitiser<T, I, O, CtxOptions> = AsyncResolverWithMutSummaryFn<T, I, O, CtxOptions>;
 
 pub type DeleteHandler<O, CtxOptions> =
-    Box<dyn Fn(&O, &CtxOptions) -> BoxFuture<'static, ()> + Send + Sync + 'static>;
+    Box<dyn Fn(O, CtxOptions) -> BoxFuture<'static, ()> + Send + Sync + 'static>;
 
 pub type FailureHandler<I, O, CtxOptions> =
     Box<dyn Fn(IvoSummary<I, O, CtxOptions>) -> BoxFuture<'static, ()> + Send + Sync + 'static>;

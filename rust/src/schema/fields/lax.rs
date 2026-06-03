@@ -6,8 +6,9 @@ use serde_json::{json, Value};
 use crate::{
     fields::base::{BuildableIvoProperty, InternalIvoProperty, IvoProperty},
     traits::{
-        IntoAsyncFieldReValidator, IntoAsyncFieldValidator, IntoFieldReValidator,
-        IntoFieldValidator, IntoResolverWithMiniSummary, IvoSchemaStruct,
+        IntoAsyncFieldReValidator, IntoAsyncFieldValidator, IntoDeleteHandler, IntoFailureHandler,
+        IntoFieldReValidator, IntoFieldValidator, IntoResolverWithMiniSummary, IntoSuccessHandler,
+        IvoSchemaStruct,
     },
     types::{
         BooleanResolverWithMutSummary, ComputableInit, ComputableRequired,
@@ -686,9 +687,9 @@ impl<
         HasSuccess,
     >
 {
-    pub fn on_delete<F, Fut>(
+    pub fn on_delete<H>(
         self,
-        handler: F,
+        handler: H,
     ) -> LaxFieldBuilder<
         T,
         I,
@@ -706,10 +707,9 @@ impl<
         HasSuccess,
     >
     where
-        F: Fn(&O, &CtxOptions) -> Fut + Send + Sync + 'static,
-        Fut: Future<Output = ()> + Send + Sync + 'static,
+        H: IntoDeleteHandler<O, CtxOptions>,
     {
-        let h: DeleteHandler<O, CtxOptions> = Box::new(move |d, o| Box::pin(handler(d, o)));
+        let h = handler.into_handler();
 
         LaxFieldBuilder {
             default: self.default,
@@ -768,9 +768,9 @@ impl<
         HasSuccess,
     >
 {
-    pub fn on_failure<F, Fut>(
+    pub fn on_failure<H>(
         self,
-        handler: F,
+        handler: H,
     ) -> LaxFieldBuilder<
         T,
         I,
@@ -788,11 +788,9 @@ impl<
         HasSuccess,
     >
     where
-        F: Fn(IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
-        Fut: Future<Output = ()> + Send + Sync + 'static,
+        H: IntoFailureHandler<I, O, CtxOptions>,
     {
-        let h: FailureHandler<I, O, CtxOptions> = Box::new(move |s| Box::pin(handler(s)));
-
+        let h = handler.into_handler();
         LaxFieldBuilder {
             default: self.default,
             validator: self.validator,
@@ -851,9 +849,9 @@ impl<
         HasSuccess,
     >
 {
-    pub fn on_success<F, Fut>(
+    pub fn on_success<H>(
         self,
-        handler: F,
+        handler: H,
     ) -> LaxFieldBuilder<
         T,
         I,
@@ -871,10 +869,9 @@ impl<
         Yes,
     >
     where
-        F: Fn(IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
-        Fut: Future<Output = ()> + Send + Sync + 'static,
+        H: IntoSuccessHandler<I, O, CtxOptions>,
     {
-        let h: SuccessHandler<I, O, CtxOptions> = Box::new(move |s| Box::pin(handler(s)));
+        let h = handler.into_handler();
 
         LaxFieldBuilder {
             default: self.default,

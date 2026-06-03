@@ -6,8 +6,9 @@ use serde_json::Value;
 use crate::{
     fields::base::{BuildableIvoProperty, InternalIvoProperty, IvoProperty},
     traits::{
-        IntoAsyncFieldReValidator, IntoAsyncFieldValidator, IntoFieldReValidator,
-        IntoFieldValidator, IntoVirtualSanitizer, IvoSchemaStruct,
+        IntoAsyncFieldReValidator, IntoAsyncFieldValidator, IntoFailureHandler,
+        IntoFieldReValidator, IntoFieldValidator, IntoSuccessHandler, IntoVirtualSanitizer,
+        IvoSchemaStruct,
     },
     types::{
         BooleanResolverWithMutSummary, ComputableInit, ComputableRequired, FailureHandler,
@@ -779,9 +780,9 @@ impl<
         HasSuccess,
     >
 {
-    pub fn on_failure<F, Fut>(
+    pub fn on_failure<H>(
         self,
-        handler: F,
+        handler: H,
     ) -> VirtualFieldBuilder<
         T,
         I,
@@ -799,10 +800,9 @@ impl<
         HasSuccess,
     >
     where
-        F: Fn(IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
-        Fut: Future<Output = ()> + Send + Sync + 'static,
+        H: IntoFailureHandler<I, O, CtxOptions>,
     {
-        let h: FailureHandler<I, O, CtxOptions> = Box::new(move |s| Box::pin(handler(s)));
+        let h = handler.into_handler();
 
         VirtualFieldBuilder {
             alias: self.alias,
@@ -862,9 +862,9 @@ impl<
         HasSuccess,
     >
 {
-    pub fn on_success<F, Fut>(
+    pub fn on_success<H>(
         self,
-        handler: F,
+        handler: H,
     ) -> VirtualFieldBuilder<
         T,
         I,
@@ -882,10 +882,9 @@ impl<
         Yes,
     >
     where
-        F: Fn(IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
-        Fut: Future<Output = ()> + Send + Sync + 'static,
+        H: IntoSuccessHandler<I, O, CtxOptions>,
     {
-        let h: SuccessHandler<I, O, CtxOptions> = Box::new(move |s| Box::pin(handler(s)));
+        let h = handler.into_handler();
 
         VirtualFieldBuilder {
             alias: self.alias,

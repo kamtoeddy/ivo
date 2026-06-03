@@ -1,4 +1,4 @@
-use std::{future::Future, marker::PhantomData};
+use std::marker::PhantomData;
 
 use serde::Serialize;
 use serde_json::{json, Value};
@@ -6,8 +6,8 @@ use serde_json::{json, Value};
 use crate::{
     fields::base::{BuildableIvoProperty, InternalIvoProperty, IvoProperty},
     traits::{
-        IntoAsyncResolverWithMiniSummary, IntoEnumErrorResolver, IntoResolverWithMiniSummary,
-        IvoSchemaStruct,
+        IntoAsyncResolverWithMiniSummary, IntoDeleteHandler, IntoEnumErrorResolver,
+        IntoFailureHandler, IntoResolverWithMiniSummary, IntoSuccessHandler, IvoSchemaStruct,
     },
     types::{
         BooleanResolverWithMutSummary, ComputableEnumeratedError, ComputableInit,
@@ -456,9 +456,9 @@ impl<
         HasSuccess,
     >
 {
-    pub fn on_delete<F, Fut>(
+    pub fn on_delete<H>(
         self,
-        handler: F,
+        handler: H,
     ) -> EnumFieldBuilder<
         T,
         I,
@@ -475,10 +475,9 @@ impl<
         HasSuccess,
     >
     where
-        F: Fn(&O, &CtxOptions) -> Fut + Send + Sync + 'static,
-        Fut: Future<Output = ()> + Send + Sync + 'static,
+        H: IntoDeleteHandler<O, CtxOptions>,
     {
-        let h: DeleteHandler<O, CtxOptions> = Box::new(move |d, o| Box::pin(handler(d, o)));
+        let h = handler.into_handler();
 
         EnumFieldBuilder {
             default: self.default,
@@ -534,9 +533,9 @@ impl<
         HasSuccess,
     >
 {
-    pub fn on_failure<F, Fut>(
+    pub fn on_failure<H>(
         self,
-        handler: F,
+        handler: H,
     ) -> EnumFieldBuilder<
         T,
         I,
@@ -553,10 +552,9 @@ impl<
         HasSuccess,
     >
     where
-        F: Fn(IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
-        Fut: Future<Output = ()> + Send + Sync + 'static,
+        H: IntoFailureHandler<I, O, CtxOptions>,
     {
-        let h: FailureHandler<I, O, CtxOptions> = Box::new(move |s| Box::pin(handler(s)));
+        let h = handler.into_handler();
 
         EnumFieldBuilder {
             default: self.default,
@@ -612,9 +610,9 @@ impl<
         HasSuccess,
     >
 {
-    pub fn on_success<F, Fut>(
+    pub fn on_success<H>(
         self,
-        handler: F,
+        handler: H,
     ) -> EnumFieldBuilder<
         T,
         I,
@@ -631,10 +629,9 @@ impl<
         Yes,
     >
     where
-        F: Fn(IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
-        Fut: Future<Output = ()> + Send + Sync + 'static,
+        H: IntoSuccessHandler<I, O, CtxOptions>,
     {
-        let h: SuccessHandler<I, O, CtxOptions> = Box::new(move |s| Box::pin(handler(s)));
+        let h = handler.into_handler();
 
         EnumFieldBuilder {
             default: self.default,

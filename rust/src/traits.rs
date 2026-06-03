@@ -5,7 +5,8 @@ use serde_json::{json, Value};
 
 use crate::{
     types::{
-        IvoMiniSummary, IvoSummary, UniformAsyncReValidator, UniformAsyncResolverWithMiniSummary,
+        DeleteHandler, FailureHandler, IvoMiniSummary, IvoSummary, SuccessHandler,
+        UniformAsyncReValidator, UniformAsyncResolverWithMiniSummary,
         UniformAsyncResolverWithMutSummary, UniformAsyncValidator, UniformEnumErrorResolver,
         UniformReValidator, UniformResolverWithMiniSummary, UniformResolverWithMutSummary,
         UniformValidator, UniformVirtualSanitiser,
@@ -27,6 +28,55 @@ pub trait HasPartial {
 }
 
 pub type Partial<T> = <T as HasPartial>::Partial;
+
+pub trait IntoDeleteHandler<O: IvoSchemaStruct, CtxOptions: Clone> {
+    fn into_handler(self) -> DeleteHandler<O, CtxOptions>;
+}
+
+impl<F, Fut, O, CtxOptions: Clone + Send + Sync + 'static> IntoDeleteHandler<O, CtxOptions> for F
+where
+    O: IvoSchemaStruct,
+    F: Fn(O, CtxOptions) -> Fut + Send + Sync + 'static,
+    Fut: Future<Output = ()> + Send + Sync + 'static,
+{
+    fn into_handler(self) -> DeleteHandler<O, CtxOptions> {
+        Box::new(move |o, s| Box::pin(self(o, s)))
+    }
+}
+
+pub trait IntoFailureHandler<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
+    fn into_handler(self) -> FailureHandler<I, O, CtxOptions>;
+}
+
+impl<F, Fut, I, O, CtxOptions: Clone + Send + Sync + 'static> IntoFailureHandler<I, O, CtxOptions>
+    for F
+where
+    I: IvoSchemaStruct,
+    O: IvoSchemaStruct,
+    F: Fn(IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
+    Fut: Future<Output = ()> + Send + Sync + 'static,
+{
+    fn into_handler(self) -> FailureHandler<I, O, CtxOptions> {
+        Box::new(move |s| Box::pin(self(s)))
+    }
+}
+
+pub trait IntoSuccessHandler<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
+    fn into_handler(self) -> SuccessHandler<I, O, CtxOptions>;
+}
+
+impl<F, Fut, I, O, CtxOptions: Clone + Send + Sync + 'static> IntoSuccessHandler<I, O, CtxOptions>
+    for F
+where
+    I: IvoSchemaStruct,
+    O: IvoSchemaStruct,
+    F: Fn(IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
+    Fut: Future<Output = ()> + Send + Sync + 'static,
+{
+    fn into_handler(self) -> SuccessHandler<I, O, CtxOptions> {
+        Box::new(move |s| Box::pin(self(s)))
+    }
+}
 
 pub trait IntoFieldValidator<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
     fn into_uniform(self) -> UniformValidator<I, O, CtxOptions>;
