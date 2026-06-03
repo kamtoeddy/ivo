@@ -3,7 +3,8 @@ use crate::schema::error::{DefaultErrorTool, FieldError, IvoErrorTool, UpdateErr
 use crate::types::Context;
 use std::collections::{HashMap, HashSet};
 
-use futures::future::BoxFuture;
+use futures::future::{join_all, BoxFuture};
+use futures::stream::{FuturesUnordered, StreamExt};
 use serde_json::{json, Value};
 
 use crate::traits::{IvoSchemaStruct, Partial};
@@ -70,6 +71,7 @@ impl<
                 self.resolve_constants(&mut context);
 
                 // Run validators for props in context
+                self.run_async_validator().await;
 
                 error_tool.add(
                     "lol",
@@ -105,10 +107,15 @@ impl<
         let value = json!(updates);
 
         match value {
-            Value::Object(_) => Ok((
-                serde_json::from_value(value).expect("json parse error"),
-                Box::new(move || Box::pin(async move {})),
-            )),
+            Value::Object(_) => {
+                // Run validators for props in context
+                self.run_async_validator().await;
+
+                Ok((
+                    serde_json::from_value(value).expect("json parse error"),
+                    Box::new(move || Box::pin(async move {})),
+                ))
+            }
             _ => Err((
                 UpdateError::NothingToUpdate,
                 Box::new(move || Box::pin(async move {})),
@@ -116,8 +123,36 @@ impl<
         }
     }
 
-    pub fn delete(&self, _data: &Output) {
-        todo!()
+    pub async fn delete(&self, data: &Output) {
+        let handle_delete_async = async |_data: &Output| {};
+
+        let mut tasks = FuturesUnordered::new();
+
+        for _ in 11..=21 {
+            tasks.push(handle_delete_async(data));
+        }
+
+        while tasks.next().await.is_some() {}
+    }
+
+    async fn run_async_validator(&self) {
+        let ids = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+        let tasks = ids.into_iter().map(|i| validate_async(i));
+
+        async fn validate_async(id: usize) -> (usize, usize) {
+            // Simulate some async I/O work
+
+            let v = (id, id * 2);
+
+            // tokio::task::spawn_blocking(|| async {})
+            //     .await
+            //     .unwrap()
+            //     .await;
+
+            v
+        }
+
+        for _ in join_all(tasks).await {}
     }
 
     fn add_timestamps(&self, _context: &mut Context) {
