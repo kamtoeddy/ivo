@@ -7,7 +7,7 @@ use crate::{
     fields::base::{BuildableIvoProperty, InternalIvoProperty, IvoProperty},
     traits::{
         IntoAsyncResolverWithMutSummary, IntoDeleteHandler, IntoResolverWithMiniSummary,
-        IntoResolverWithMutSummary, IntoSuccessHandler, IvoSchemaStruct,
+        IntoSuccessHandler, IntoUniformResolverWithMutSummary, IvoSchemaStruct,
     },
     types::{
         ComputableInit, ComputableWithMiniSummary, DeleteHandler, False, ResolverWithMutSummary,
@@ -211,7 +211,7 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
         resolver: R,
     ) -> DependentFieldBuilder<T, I, O, CtxOptions, Yes, Yes, Yes>
     where
-        R: IntoResolverWithMutSummary<T, I, O, CtxOptions>,
+        R: IntoUniformResolverWithMutSummary<T, I, O, CtxOptions>,
     {
         DependentFieldBuilder {
             default: self.default,

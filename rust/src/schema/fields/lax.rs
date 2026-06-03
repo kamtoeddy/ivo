@@ -1,4 +1,4 @@
-use std::{future::Future, marker::PhantomData};
+use std::marker::PhantomData;
 
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json::{json, Value};
@@ -7,13 +7,14 @@ use crate::{
     fields::base::{BuildableIvoProperty, InternalIvoProperty, IvoProperty},
     traits::{
         IntoAsyncFieldReValidator, IntoAsyncFieldValidator, IntoDeleteHandler, IntoFailureHandler,
-        IntoFieldReValidator, IntoFieldValidator, IntoResolverWithMiniSummary, IntoSuccessHandler,
+        IntoFieldReValidator, IntoFieldValidator, IntoRequiredResolverFn,
+        IntoResolverWithMiniSummary, IntoResolverWithMutSummaryFn, IntoSuccessHandler,
         IvoSchemaStruct,
     },
     types::{
         BooleanResolverWithMutSummary, ComputableInit, ComputableRequired,
         ComputableWithMiniSummary, DeleteHandler, FailureHandler, FieldReValidator, FieldValidator,
-        IvoSummary, SuccessHandler,
+        SuccessHandler,
     },
 };
 
@@ -312,21 +313,18 @@ impl<
         CtxOptions: Clone,
     > LaxFieldBuilder<T, I, O, CtxOptions, Yes, Yes, HasRevalidator>
 {
-    pub fn required_if<F, Fut>(
+    pub fn required_if<R>(
         self,
-        required_fn: F,
+        resolver: R,
     ) -> LaxFieldBuilder<T, I, O, CtxOptions, Yes, Yes, HasRevalidator, Yes>
     where
-        F: Fn(IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
-        Fut: Future<Output = (bool, String)> + Send + 'static,
+        R: IntoRequiredResolverFn<I, O, CtxOptions>,
     {
         LaxFieldBuilder {
             default: self.default,
             validator: self.validator,
             re_validator: self.re_validator,
-            required: Some(ComputableRequired::Func(Box::new(move |s| {
-                Box::pin(required_fn(s))
-            }))),
+            required: Some(ComputableRequired::Func(resolver.into_resolver())),
             ..Default::default()
         }
     }
@@ -342,19 +340,19 @@ impl<
         CtxOptions: Clone,
     > LaxFieldBuilder<T, I, O, CtxOptions, Yes, HasValidator, HasRevalidator, HasRequired>
 {
-    pub fn ignore_if<F>(
+    pub fn ignore_if<R>(
         self,
-        fx: F,
+        resolver: R,
     ) -> LaxFieldBuilder<T, I, O, CtxOptions, Yes, HasValidator, HasRevalidator, HasRequired, Yes>
     where
-        F: Fn(IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
+        R: IntoResolverWithMutSummaryFn<bool, I, O, CtxOptions>,
     {
         LaxFieldBuilder {
             default: self.default,
             validator: self.validator,
             re_validator: self.re_validator,
             required: self.required,
-            should_ignore_fn: Some(Box::new(fx)),
+            should_ignore_fn: Some(resolver.into_resolver()),
             ..Default::default()
         }
     }
@@ -384,9 +382,9 @@ impl<
         }
     }
 
-    pub fn allow_init_if<F>(
+    pub fn allow_init_if<R>(
         self,
-        fx: F,
+        resolver: R,
     ) -> LaxFieldBuilder<
         T,
         I,
@@ -400,14 +398,14 @@ impl<
         YesComputed,
     >
     where
-        F: Fn(IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
+        R: IntoResolverWithMutSummaryFn<bool, I, O, CtxOptions>,
     {
         LaxFieldBuilder {
             default: self.default,
             validator: self.validator,
             re_validator: self.re_validator,
             required: self.required,
-            should_init: Some(ComputableInit::Func(Box::new(fx))),
+            should_init: Some(ComputableInit::Func(resolver.into_resolver())),
             ..Default::default()
         }
     }
@@ -437,9 +435,9 @@ impl<
         }
     }
 
-    pub fn allow_update_if<F>(
+    pub fn allow_update_if<R>(
         self,
-        fx: F,
+        resolver: R,
     ) -> LaxFieldBuilder<
         T,
         I,
@@ -454,14 +452,14 @@ impl<
         YesComputed,
     >
     where
-        F: Fn(IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
+        R: IntoResolverWithMutSummaryFn<bool, I, O, CtxOptions>,
     {
         LaxFieldBuilder {
             default: self.default,
             validator: self.validator,
             re_validator: self.re_validator,
             required: self.required,
-            should_update: Some(ComputableInit::Func(Box::new(fx))),
+            should_update: Some(ComputableInit::Func(resolver.into_resolver())),
             ..Default::default()
         }
     }
@@ -490,9 +488,9 @@ impl<
         Yes,
     >
 {
-    pub fn allow_init_if<F>(
+    pub fn allow_init_if<R>(
         self,
-        fx: F,
+        resolver: R,
     ) -> LaxFieldBuilder<
         T,
         I,
@@ -507,14 +505,14 @@ impl<
         Yes,
     >
     where
-        F: Fn(IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
+        R: IntoResolverWithMutSummaryFn<bool, I, O, CtxOptions>,
     {
         LaxFieldBuilder {
             default: self.default,
             validator: self.validator,
             re_validator: self.re_validator,
             required: self.required,
-            should_init: Some(ComputableInit::Func(Box::new(fx))),
+            should_init: Some(ComputableInit::Func(resolver.into_resolver())),
             ..Default::default()
         }
     }
@@ -543,9 +541,9 @@ impl<
         YesComputed,
     >
 {
-    pub fn allow_update_if<F>(
+    pub fn allow_update_if<R>(
         self,
-        fx: F,
+        resolver: R,
     ) -> LaxFieldBuilder<
         T,
         I,
@@ -560,7 +558,7 @@ impl<
         YesComputed,
     >
     where
-        F: Fn(IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
+        R: IntoResolverWithMutSummaryFn<bool, I, O, CtxOptions>,
     {
         LaxFieldBuilder {
             default: self.default,
@@ -568,7 +566,7 @@ impl<
             re_validator: self.re_validator,
             required: self.required,
             should_init: self.should_init,
-            should_update: Some(ComputableInit::Func(Box::new(fx))),
+            should_update: Some(ComputableInit::Func(resolver.into_resolver())),
             ..Default::default()
         }
     }
@@ -624,9 +622,9 @@ impl<
         }
     }
 
-    pub fn allow_init_if<F>(
+    pub fn allow_init_if<R>(
         self,
-        fx: F,
+        resolver: R,
     ) -> LaxFieldBuilder<
         T,
         I,
@@ -641,7 +639,7 @@ impl<
         YesComputed,
     >
     where
-        F: Fn(IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
+        R: IntoResolverWithMutSummaryFn<bool, I, O, CtxOptions>,
     {
         LaxFieldBuilder {
             default: self.default,
@@ -649,7 +647,7 @@ impl<
             re_validator: self.re_validator,
             required: self.required,
             should_update: self.should_update,
-            should_init: Some(ComputableInit::Func(Box::new(fx))),
+            should_init: Some(ComputableInit::Func(resolver.into_resolver())),
             ..Default::default()
         }
     }

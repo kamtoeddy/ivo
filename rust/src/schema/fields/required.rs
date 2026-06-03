@@ -6,11 +6,12 @@ use crate::{
     fields::base::{BuildableIvoProperty, InternalIvoProperty, IvoProperty},
     traits::{
         IntoAsyncFieldReValidator, IntoAsyncFieldValidator, IntoDeleteHandler, IntoFailureHandler,
-        IntoFieldReValidator, IntoFieldValidator, IntoSuccessHandler, IvoSchemaStruct,
+        IntoFieldReValidator, IntoFieldValidator, IntoResolverWithMutSummaryFn, IntoSuccessHandler,
+        IvoSchemaStruct,
     },
     types::{
         ComputableInit, ComputableRequired, DeleteHandler, FailureHandler, FieldReValidator,
-        FieldValidator, IvoSummary, SuccessHandler, True,
+        FieldValidator, SuccessHandler, True,
     },
 };
 
@@ -230,17 +231,17 @@ impl<HasRevalidator, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clon
         }
     }
 
-    pub fn allow_update_if<F>(
+    pub fn allow_update_if<R>(
         self,
-        fx: F,
+        resolver: R,
     ) -> RequiredFieldBuilder<T, I, O, CtxOptions, Yes, HasRevalidator, No, Yes>
     where
-        F: Fn(IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
+        R: IntoResolverWithMutSummaryFn<bool, I, O, CtxOptions>,
     {
         RequiredFieldBuilder {
             validator: self.validator,
             re_validator: self.re_validator,
-            should_update: Some(ComputableInit::Func(Box::new(fx))),
+            should_update: Some(ComputableInit::Func(resolver.into_resolver())),
             ..Default::default()
         }
     }

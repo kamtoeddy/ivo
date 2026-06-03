@@ -130,8 +130,9 @@ impl SchemaError {
                 continue;
             }
 
-            err += format!("  [{}", prop.font_bold()).as_str();
-            err += format!("]\n",).as_str();
+            err += format!("  {}", "[".colored_red()).as_str();
+            err += format!("{}", prop.font_bold()).as_str();
+            err += format!("{}\n", "]".colored_red()).as_str();
 
             for (i, m) in errors.iter().enumerate() {
                 let idx = i + 1;

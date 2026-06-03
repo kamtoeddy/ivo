@@ -7,7 +7,8 @@ use crate::{
     fields::base::{BuildableIvoProperty, InternalIvoProperty, IvoProperty},
     traits::{
         IntoAsyncResolverWithMiniSummary, IntoDeleteHandler, IntoEnumErrorResolver,
-        IntoFailureHandler, IntoResolverWithMiniSummary, IntoSuccessHandler, IvoSchemaStruct,
+        IntoFailureHandler, IntoResolverWithMiniSummary, IntoResolverWithMutSummaryFn,
+        IntoSuccessHandler, IvoSchemaStruct,
     },
     types::{
         BooleanResolverWithMutSummary, ComputableEnumeratedError, ComputableInit,
@@ -305,18 +306,18 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
         }
     }
 
-    pub fn allow_init_if<F>(
+    pub fn allow_init_if<R>(
         self,
-        fx: F,
+        resolver: R,
     ) -> EnumFieldBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, YesComputed>
     where
-        F: Fn(IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
+        R: IntoResolverWithMutSummaryFn<bool, I, O, CtxOptions>,
     {
         EnumFieldBuilder {
             default: self.default,
             enum_values: self.enum_values,
             enum_error: self.enum_error,
-            should_init: Some(ComputableInit::Func(Box::new(fx))),
+            should_init: Some(ComputableInit::Func(resolver.into_resolver())),
             ..Default::default()
         }
     }
@@ -335,18 +336,18 @@ impl<HasDefault, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
         }
     }
 
-    pub fn allow_update_if<F>(
+    pub fn allow_update_if<R>(
         self,
-        fx: F,
+        resolver: R,
     ) -> EnumFieldBuilder<T, I, O, CtxOptions, Yes, Yes, HasDefault, No, No, YesComputed>
     where
-        F: Fn(IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
+        R: IntoResolverWithMutSummaryFn<bool, I, O, CtxOptions>,
     {
         EnumFieldBuilder {
             default: self.default,
             enum_values: self.enum_values,
             enum_error: self.enum_error,
-            should_update: Some(ComputableInit::Func(Box::new(fx))),
+            should_update: Some(ComputableInit::Func(resolver.into_resolver())),
             ..Default::default()
         }
     }
@@ -355,18 +356,18 @@ impl<HasDefault, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
 impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
     EnumFieldBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, No, Yes>
 {
-    pub fn allow_init_if<F>(
+    pub fn allow_init_if<R>(
         self,
-        fx: F,
+        resolver: R,
     ) -> EnumFieldBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, YesComputed, Yes>
     where
-        F: Fn(IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
+        R: IntoResolverWithMutSummaryFn<bool, I, O, CtxOptions>,
     {
         EnumFieldBuilder {
             default: self.default,
             enum_values: self.enum_values,
             enum_error: self.enum_error,
-            should_init: Some(ComputableInit::Func(Box::new(fx))),
+            should_init: Some(ComputableInit::Func(resolver.into_resolver())),
             ..Default::default()
         }
     }
