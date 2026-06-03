@@ -51,7 +51,8 @@ impl UserCtxOptions {
     }
 
     fn update_data(&mut self, slug: SlugifiedString) {
-        self.slug_id = Some(slug)
+        self.slug_id = Some(slug.clone());
+        println!("UserCtxOptions updated with slug id: \"{slug}\"")
     }
 }
 
@@ -96,7 +97,7 @@ pub static USER_SCHEMA: LazyLock<SchemaCore<UserInput, User, UserCtxOptions>> =
 
                                 ctx_options.update_data(slug);
 
-                                Ok(uname)
+                                Ok(format!("{}-revalidated" ,uname.to_lowercase()))
                             }),
                     )
                     .set(
@@ -120,7 +121,9 @@ pub static USER_SCHEMA: LazyLock<SchemaCore<UserInput, User, UserCtxOptions>> =
                                     return slug;
                                 }
 
-                                s.values().slug_id.clone()
+                                SlugifiedString("()".into())
+
+                                // s.values().slug_id.clone()
                             }),
                     )
                     // general demo to make sure all fields work as expected

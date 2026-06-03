@@ -1,6 +1,7 @@
 use crate::schema::core::SchemaCore;
 use crate::schema::error::{DefaultErrorTool, FieldError, IvoErrorTool, UpdateError};
 use crate::types::Context;
+
 use std::collections::{HashMap, HashSet};
 
 use futures::future::{join_all, BoxFuture};
@@ -40,6 +41,7 @@ impl<
     pub async fn create(
         &self,
         input: &Partial<Input>,
+        options: CtxOptions,
     ) -> Result<(Output, AsyncTriggerFn), (ErrorTool::ErrorPayload, AsyncTriggerFn)> {
         let value = json!(input);
 
@@ -71,7 +73,7 @@ impl<
                 self.resolve_constants(&mut context);
 
                 // Run validators for props in context
-                self.run_async_validator().await;
+                self.run_async_validator(input, options).await;
 
                 error_tool.add(
                     "lol",
@@ -103,13 +105,14 @@ impl<
         &self,
         _data: &Output,
         updates: &Partial<Input>,
+        options: CtxOptions,
     ) -> Result<(Partial<Output>, AsyncTriggerFn), (UpdateError<ErrorTool>, AsyncTriggerFn)> {
         let value = json!(updates);
 
         match value {
             Value::Object(_) => {
                 // Run validators for props in context
-                self.run_async_validator().await;
+                self.run_async_validator(updates, options).await;
 
                 Ok((
                     serde_json::from_value(value).expect("json parse error"),
@@ -135,7 +138,28 @@ impl<
         while tasks.next().await.is_some() {}
     }
 
-    async fn run_async_validator(&self) {
+    async fn run_async_validator(&self, _input: &Partial<Input>, _options: CtxOptions) {
+        println!("running validations\n");
+
+        // if let Some(def) = self.schema.get_definition("username") {
+        //     if let Some(FieldReValidator::Async(validator)) = &def.re_validator {
+        //         // let validator = validators();
+        //         let r = validator(
+        //             json!("IVO test Value"),
+        //             IvoSummary::for_new(
+        //                 HashMap::new(),
+        //                 input.clone(),
+        //                 HashMap::new(),
+        //                 // Default::default(),
+        //                 options,
+        //             ),
+        //         )
+        //         .await;
+
+        //         println!("async results for validations of username {:?}", r)
+        //     }
+        // }
+
         let ids = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
         let tasks = ids.into_iter().map(validate_async);
 

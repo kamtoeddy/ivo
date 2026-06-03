@@ -124,7 +124,7 @@ pub enum IvoSummary<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
         context: Context,
         input: I::Partial,
         input_values: InputValues,
-        values: O,
+        // values: O,
         options: CtxOptions,
     },
     Update {
@@ -143,14 +143,14 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> IvoSummary<I, O,
         context: Context,
         input: I::Partial,
         input_values: HashMap<String, Value>,
-        values: O,
+        // values: O,
         options: CtxOptions,
     ) -> Self {
         Self::Create {
             context,
             input,
             input_values,
-            values,
+            // values,
             options,
         }
     }
@@ -200,10 +200,11 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> IvoSummary<I, O,
         }
     }
 
-    pub fn values(&self) -> &O {
+    pub fn values(&self) -> Option<&O> {
         match &self {
-            IvoSummary::Create { values, .. } => values,
-            IvoSummary::Update { values, .. } => values,
+            // IvoSummary::Create { values, .. } => values,
+            IvoSummary::Update { values, .. } => Some(values),
+            _ => None,
         }
     }
 

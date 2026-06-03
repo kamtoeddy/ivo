@@ -90,12 +90,8 @@ where
     F: Fn(T, IvoSummary<I, O, CtxOptions>) -> ValidatorResponse<T> + Clone + Send + Sync + 'static,
 {
     fn into_uniform(self) -> UniformValidator<I, O, CtxOptions> {
-        Box::new(move |value, summary| {
-            self(
-                serde_json::from_value(value).expect("Failed to parse value"),
-                summary,
-            )
-            .map(|v| json!(v))
+        Box::new(move |v, s| {
+            self(serde_json::from_value(v).expect("Failed to parse value"), s).map(|v| json!(v))
         })
     }
 }
@@ -144,12 +140,8 @@ where
     F: Fn(T, IvoSummary<I, O, CtxOptions>) -> ValidatorResponse<T> + Clone + Send + Sync + 'static,
 {
     fn into_uniform(self) -> UniformReValidator<I, O, CtxOptions> {
-        Box::new(move |value, summary| {
-            self(
-                serde_json::from_value(value).expect("Failed to parse value"),
-                summary,
-            )
-            .map(|v| json!(v))
+        Box::new(move |v, s| {
+            self(serde_json::from_value(v).expect("Failed to parse value"), s).map(|v| json!(v))
         })
     }
 }

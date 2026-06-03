@@ -2,7 +2,7 @@ use std::time::Instant;
 
 use crate::{
     demo::{
-        example::{PartialUserInput, User, UserRole, USER_MODEL, USER_SCHEMA},
+        example::{PartialUserInput, User, UserCtxOptions, UserRole, USER_MODEL, USER_SCHEMA},
         slugify::slugify,
     },
     schema::error::UpdateError,
@@ -21,13 +21,18 @@ pub async fn run_example() {
 
     let timer = Instant::now();
 
+    let ctx_options = UserCtxOptions { slug_id: None };
+
     let r = USER_MODEL
-        .create(&PartialUserInput {
-            email: Some("1@1.com".to_string()),
-            username: Some("john".to_string()),
-            role: None,
-            v_slug: None,
-        })
+        .create(
+            &PartialUserInput {
+                email: Some("1@1.com".to_string()),
+                username: Some("john".to_string()),
+                role: None,
+                v_slug: None,
+            },
+            ctx_options.clone(),
+        )
         .await;
 
     let _ = match r {
@@ -77,6 +82,7 @@ pub async fn run_example() {
                 role: Some(UserRole::Admin),
                 v_slug: None,
             },
+            ctx_options,
         )
         .await;
 
