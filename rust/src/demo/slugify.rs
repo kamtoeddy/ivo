@@ -1,3 +1,5 @@
+use std::sync::LazyLock;
+
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use unicode_normalization::UnicodeNormalization;
@@ -13,13 +15,11 @@ impl std::fmt::Display for SlugifiedString {
     }
 }
 
-// 2. Compile Regexes lazily so they aren't re-compiled on every function call
-lazy_static::lazy_static! {
-    static ref RE_ACCENTS: Regex = Regex::new(r"[\u{0300}-\u{036f}]").unwrap();
-    static ref RE_SPACES: Regex = Regex::new(r"\s+").unwrap();
-    static ref RE_SPECIAL_CHARS: Regex = Regex::new(r"[^a-zA-Z0-9_!~\s]").unwrap();
-    static ref RE_MINUSES: Regex = Regex::new(r"-+").unwrap();
-}
+static RE_ACCENTS: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"[\u{0300}-\u{036f}]").unwrap());
+static RE_SPACES: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\s+").unwrap());
+static RE_SPECIAL_CHARS: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"[^a-zA-Z0-9_!~\s]").unwrap());
+static RE_MINUSES: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"-+").unwrap());
 
 pub fn slugify(s: &str) -> SlugifiedString {
     // .toLowerCase() & .normalize('NFD')
