@@ -6,6 +6,7 @@ use crate::{
         slugify::slugify,
     },
     schema::error::UpdateError,
+    utils::styled_text::Stylable,
 };
 
 pub async fn run_example() {
@@ -43,7 +44,11 @@ pub async fn run_example() {
         }
     };
 
-    println!("Create duration {:?}\n", timer.elapsed());
+    println!(
+        "{} {}\n",
+        "\nCreate duration:".font_bold(),
+        format!("{:?}", timer.elapsed()).colored_blue()
+    );
 
     let timer = Instant::now();
 
@@ -95,5 +100,9 @@ pub async fn run_example() {
         }
     };
 
-    println!("Update duration {:?}", timer.elapsed());
+    println!(
+        "{} {}\n",
+        "\nUpdate duration:".font_bold(),
+        format!("{:?}", timer.elapsed()).colored_blue()
+    );
 }

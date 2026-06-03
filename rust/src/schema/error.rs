@@ -2,6 +2,8 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
 
+use crate::utils::styled_text::Stylable;
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum UpdateError<E: IvoErrorTool> {
     NothingToUpdate,
@@ -84,6 +86,9 @@ pub struct SchemaError {
     payload: HashMap<String, Vec<String>>,
 }
 
+// const CLI_COLOR_RED: &'static str = "\x1b[31m";
+// const CLI_COLOR_RESET: &'static str = "\x1b[0m";
+
 impl SchemaError {
     pub fn new() -> Self {
         Self {
@@ -105,26 +110,40 @@ impl SchemaError {
         self
     }
 
-    pub fn throw(&self) {
-        println!("\nSchema errors:");
+    pub fn throw(self) {
+        // println!("\n{}", "Schema errors:".colored_red());
+        let mut err = format!("\n{}", "Schema errors:".font_bold());
 
-        for (prop, errors) in &self.payload {
-            println!();
+        let mut pv: Vec<_> = self.payload.into_iter().collect();
+        pv.sort_by(|a, b| a.0.cmp(&b.0));
+
+        for (prop, errors) in pv {
+            err += "\n";
+            // println!();
 
             if errors.len() == 1 {
-                println!("  [{prop}]: {}", errors[0]);
+                err += format!("  {}", "[".colored_red()).as_str();
+                err += format!("{}", prop.font_bold().colored_red()).as_str();
+                err += format!("{}", "]: ".colored_red()).as_str();
+                err += format!("{}\n", errors[0].colored_red()).as_str();
 
                 continue;
             }
 
-            println!("  [{prop}]:");
+            err += format!("  [{}", prop.font_bold()).as_str();
+            err += format!("]\n",).as_str();
 
             for (i, m) in errors.iter().enumerate() {
-                println!("    { }) {m}", i + 1);
+                let idx = i + 1;
+                err += format!("    {}) ", idx.colored_red()).as_str();
+                err += format!("{}\n", m.colored_red()).as_str();
+                // println!("    { }) {m}", i + 1);
             }
         }
 
-        println!("\nYour schema has some errors");
-        // panic!("\nYour schema has some errors");
+        print!("{}", err.colored_red());
+
+        println!("\n{}", "Invalid schema detected".colored_red(),);
+        // panic!("\nInvalid schema detected");
     }
 }
