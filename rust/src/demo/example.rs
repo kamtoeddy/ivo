@@ -1,8 +1,11 @@
+use std::sync::LazyLock;
+
 // use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 use crate::demo::slugify::{slugify, SlugifiedString};
 use crate::fields::IvoField;
+use crate::schema::Model;
 use crate::IvoStruct;
 use crate::{schema::SchemaCore, types::IvoSummary};
 
@@ -37,8 +40,6 @@ pub struct UserInput {
 
 type MutUserSummary = IvoSummary<UserInput, User, UserCtxOptions>;
 
-// type CtxOptions = HashMap<String, Value>;
-// type CtxOptions = Option<String>;
 #[derive(Clone)]
 pub struct UserCtxOptions {
     pub slug_id: Option<SlugifiedString>,
@@ -54,12 +55,11 @@ impl UserCtxOptions {
     }
 }
 
-pub struct Demo;
+pub static USER_MODEL: LazyLock<Model<UserInput, User, UserCtxOptions>> =
+    LazyLock::new(|| USER_SCHEMA.get_model());
 
-impl Demo {
-    pub fn get_schema() -> SchemaCore<UserInput, User, UserCtxOptions> {
-        let resolver = || String::from("full name");
-
+pub static USER_SCHEMA: LazyLock<SchemaCore<UserInput, User, UserCtxOptions>> =
+    LazyLock::new(|| {
         SchemaCore::new()
             .with_fields(|f| {
                 f.set("id", IvoField::CONSTANT.value(1234))
@@ -171,7 +171,7 @@ impl Demo {
                         IvoField::DEPENDENT
                             .default(String::from("Hello"))
                             .depends_on(vec!["first_name", "last_name"])
-                            .resolve(move |_| resolver())
+                            .resolve(|_| resolve_full_name())
                             .on_delete(|_, _| async {})
                             .on_success(|_| async {}),
                     )
@@ -180,8 +180,8 @@ impl Demo {
                         IvoField::DEPENDENT
                             .default_fn(|_| true)
                             .depends_on(vec!["first_name", "last_name"])
-                            .resolve_async(move |_| async move {
-                                resolver();
+                            .resolve_async(|_| async {
+                                resolve_full_name();
                                 false
                             })
                             .readonly()
@@ -291,5 +291,8 @@ impl Demo {
                     )
             })
             .with_options()
-    }
+    });
+
+fn resolve_full_name() -> String {
+    String::from("full name")
 }

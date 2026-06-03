@@ -31,7 +31,7 @@ pub struct Styled<'a, T: fmt::Display> {
     text: &'a T,
 }
 
-impl<'a, T: fmt::Display> fmt::Display for Styled<'_, T> {
+impl<'a, T: fmt::Display> fmt::Display for Styled<'a, T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,

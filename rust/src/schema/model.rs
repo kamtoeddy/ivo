@@ -137,7 +137,7 @@ impl<
 
     async fn run_async_validator(&self) {
         let ids = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-        let tasks = ids.into_iter().map(|i| validate_async(i));
+        let tasks = ids.into_iter().map(validate_async);
 
         async fn validate_async(id: usize) -> (usize, usize) {
             // Simulate some async I/O work
