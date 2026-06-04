@@ -1,4 +1,4 @@
-use serde_json::Value;
+use crate::types::ErasedStuff;
 
 // TimeStampTool
 #[derive(Debug, Clone)]
@@ -15,7 +15,7 @@ pub struct TimeStampTool {
 impl TimeStampTool {
     const IS_UPDATED_AT_NULLABLE_DEFAULT: bool = true;
 
-    pub fn new(timestamps: Option<&Value>) -> Self {
+    pub fn new(timestamps: Option<&ErasedStuff>) -> Self {
         // timestamps: Option<Boolean | Object>
         if timestamps.is_none() {
             return Self {
@@ -28,7 +28,7 @@ impl TimeStampTool {
         }
 
         match timestamps.unwrap() {
-            Value::Bool(b) => {
+            ErasedStuff::Bool(b) => {
                 if *b {
                     return Self {
                         keys: TimeStampKeys {
@@ -47,22 +47,22 @@ impl TimeStampTool {
                     };
                 }
             }
-            Value::Object(map) => {
+            ErasedStuff::Object(map) => {
                 let created_at = map
                     .get("created_at")
                     .and_then(|v| v.as_str())
                     .map(|s| s.to_string());
 
                 let updated_at = match map.get("updated_at") {
-                    Some(Value::Object(o)) => {
+                    Some(ErasedStuff::Object(o)) => {
                         o.get("key").and_then(|v| v.as_str()).map(|s| s.to_string())
                     }
-                    Some(Value::String(s)) => Some(s.clone()),
+                    Some(ErasedStuff::String(s)) => Some(s.clone()),
                     _ => None,
                 };
 
                 let nullable = match map.get("updated_at") {
-                    Some(Value::Object(o)) => o
+                    Some(ErasedStuff::Object(o)) => o
                         .get("nullable")
                         .and_then(|v| v.as_bool())
                         .unwrap_or(Self::IS_UPDATED_AT_NULLABLE_DEFAULT),

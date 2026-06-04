@@ -1,12 +1,10 @@
 use std::marker::PhantomData;
 
-use serde_json::Value;
-
 use crate::{
     traits::IvoSchemaStruct,
     types::{
         BooleanResolverWithMutSummary, ComputableEnumeratedError, ComputableInit,
-        ComputableRequired, ComputableWithMiniSummary, DeleteHandler, FailureHandler,
+        ComputableRequired, ComputableWithMiniSummary, DeleteHandler, ErasedStuff, FailureHandler,
         FieldReValidator, FieldValidator, ResolverWithMutSummary, SuccessHandler, VirtualSanitiser,
     },
 };
@@ -15,7 +13,7 @@ pub trait BuildableIvoProperty<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOption
     fn build(self) -> InternalIvoProperty<I, O, CtxOptions>;
 }
 
-pub type InternalIvoProperty<I, O, CtxOptions> = IvoProperty<Value, I, O, CtxOptions>;
+pub type InternalIvoProperty<I, O, CtxOptions> = IvoProperty<ErasedStuff, I, O, CtxOptions>;
 
 pub struct IvoProperty<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
     pub _i: PhantomData<I>,

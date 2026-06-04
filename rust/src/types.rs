@@ -5,6 +5,8 @@ use serde_json::Value;
 
 use crate::traits::IvoSchemaStruct;
 
+pub type ErasedStuff = Value; // TODO: rename to ErasedStuff
+
 #[derive(Debug)]
 pub struct True;
 
@@ -28,44 +30,59 @@ impl std::ops::Deref for False {
 }
 
 pub type UniformValidator<I, O, CtxOptions> = Box<
-    dyn Fn(Value, IvoSummary<I, O, CtxOptions>) -> ValidatorResponse<Value> + Send + Sync + 'static,
+    dyn Fn(ErasedStuff, IvoSummary<I, O, CtxOptions>) -> ValidatorResponse<ErasedStuff>
+        + Send
+        + Sync
+        + 'static,
 >;
 
 pub type UniformAsyncValidator<I, O, CtxOptions> = Box<
-    dyn Fn(Value, IvoSummary<I, O, CtxOptions>) -> BoxFuture<'static, ValidatorResponse<Value>>
+    dyn Fn(
+            ErasedStuff,
+            IvoSummary<I, O, CtxOptions>,
+        ) -> BoxFuture<'static, ValidatorResponse<ErasedStuff>>
         + Send
         + Sync
         + 'static,
 >;
 
 pub type UniformReValidator<I, O, CtxOptions> = Box<
-    dyn Fn(Value, IvoSummary<I, O, CtxOptions>) -> ValidatorResponse<Value> + Send + Sync + 'static,
->;
-
-pub type UniformAsyncReValidator<I, O, CtxOptions> = Box<
-    dyn Fn(Value, IvoSummary<I, O, CtxOptions>) -> BoxFuture<'static, ValidatorResponse<Value>>
+    dyn Fn(ErasedStuff, IvoSummary<I, O, CtxOptions>) -> ValidatorResponse<ErasedStuff>
         + Send
         + Sync
         + 'static,
 >;
 
-pub type UniformVirtualSanitiser<I, O, CtxOptions> =
-    Box<dyn Fn(IvoSummary<I, O, CtxOptions>) -> BoxFuture<'static, Value> + Send + Sync + 'static>;
+pub type UniformAsyncReValidator<I, O, CtxOptions> = Box<
+    dyn Fn(
+            ErasedStuff,
+            IvoSummary<I, O, CtxOptions>,
+        ) -> BoxFuture<'static, ValidatorResponse<ErasedStuff>>
+        + Send
+        + Sync
+        + 'static,
+>;
+
+pub type UniformVirtualSanitiser<I, O, CtxOptions> = Box<
+    dyn Fn(IvoSummary<I, O, CtxOptions>) -> BoxFuture<'static, ErasedStuff> + Send + Sync + 'static,
+>;
 
 pub type UniformEnumErrorResolver =
-    Box<dyn Fn((Value, Vec<Value>)) -> String + Send + Sync + 'static>;
+    Box<dyn Fn((ErasedStuff, Vec<ErasedStuff>)) -> String + Send + Sync + 'static>;
 
 pub type UniformResolverWithMutSummary<I, O, CtxOptions> =
-    Box<dyn Fn(IvoSummary<I, O, CtxOptions>) -> Value + Send + Sync + 'static>;
+    Box<dyn Fn(IvoSummary<I, O, CtxOptions>) -> ErasedStuff + Send + Sync + 'static>;
 
-pub type UniformAsyncResolverWithMutSummary<I, O, CtxOptions> =
-    Box<dyn Fn(IvoSummary<I, O, CtxOptions>) -> BoxFuture<'static, Value> + Send + Sync + 'static>;
+pub type UniformAsyncResolverWithMutSummary<I, O, CtxOptions> = Box<
+    dyn Fn(IvoSummary<I, O, CtxOptions>) -> BoxFuture<'static, ErasedStuff> + Send + Sync + 'static,
+>;
 
 pub type UniformResolverWithMiniSummary<CtxOptions> =
-    Box<dyn Fn(IvoMiniSummary<CtxOptions>) -> Value + Send + Sync + 'static>;
+    Box<dyn Fn(IvoMiniSummary<CtxOptions>) -> ErasedStuff + Send + Sync + 'static>;
 
-pub type UniformAsyncResolverWithMiniSummary<CtxOptions> =
-    Box<dyn Fn(IvoMiniSummary<CtxOptions>) -> BoxFuture<'static, Value> + Send + Sync + 'static>;
+pub type UniformAsyncResolverWithMiniSummary<CtxOptions> = Box<
+    dyn Fn(IvoMiniSummary<CtxOptions>) -> BoxFuture<'static, ErasedStuff> + Send + Sync + 'static,
+>;
 
 pub enum ComputableEnumeratedError {
     Static(String),
@@ -88,7 +105,7 @@ pub enum ComputableRequired<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: 
     Func(RequiredResolverFn<I, O, CtxOptions>),
 }
 
-pub type Context = HashMap<String, Value>;
+pub type Context = HashMap<String, ErasedStuff>;
 
 #[derive(Clone)]
 pub struct IvoMiniSummary<CtxOptions: Clone> {
@@ -114,8 +131,8 @@ impl<CtxOptions: Clone> IvoMiniSummary<CtxOptions> {
     }
 }
 
-type InputValues = HashMap<String, Value>;
-type Changes = HashMap<String, Value>;
+type InputValues = HashMap<String, ErasedStuff>;
+type Changes = HashMap<String, ErasedStuff>;
 
 #[derive(Clone)]
 // pub struct IvoSummary<CtxOptions: Clone> {
@@ -142,7 +159,7 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> IvoSummary<I, O,
     pub fn for_new(
         context: Context,
         input: I::Partial,
-        input_values: HashMap<String, Value>,
+        input_values: HashMap<String, ErasedStuff>,
         // values: O,
         options: CtxOptions,
     ) -> Self {
@@ -156,10 +173,10 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> IvoSummary<I, O,
     }
 
     pub fn for_update(
-        changes: HashMap<String, Value>,
+        changes: HashMap<String, ErasedStuff>,
         context: Context,
         input: I::Partial,
-        input_values: HashMap<String, Value>,
+        input_values: HashMap<String, ErasedStuff>,
         previous_values: O,
         values: O,
         options: CtxOptions,
@@ -269,6 +286,6 @@ pub type FailureHandler<I, O, CtxOptions> =
 pub type SuccessHandler<I, O, CtxOptions> =
     Box<dyn Fn(IvoSummary<I, O, CtxOptions>) -> BoxFuture<'static, ()> + Send + Sync + 'static>;
 
-pub type ValidatorResponse<T> = Result<T, (String, Option<Value>)>;
+pub type ValidatorResponse<T> = Result<T, (String, Option<ErasedStuff>)>;
 
-pub type ValidatorFn<T> = Box<dyn Fn(Value) -> ValidatorResponse<T> + Send + Sync + 'static>;
+pub type ValidatorFn<T> = Box<dyn Fn(ErasedStuff) -> ValidatorResponse<T> + Send + Sync + 'static>;

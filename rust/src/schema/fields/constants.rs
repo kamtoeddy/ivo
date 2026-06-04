@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
 use serde::Serialize;
-use serde_json::{json, Value};
+use serde_json::json;
 
 use crate::{
     fields::base::{BuildableIvoProperty, InternalIvoProperty, IvoProperty},
@@ -9,7 +9,7 @@ use crate::{
         IntoAsyncResolverWithMiniSummary, IntoDeleteHandler, IntoResolverWithMiniSummary,
         IntoSuccessHandler, IvoSchemaStruct,
     },
-    types::{ComputableWithMiniSummary, DeleteHandler, SuccessHandler},
+    types::{ComputableWithMiniSummary, DeleteHandler, ErasedStuff, SuccessHandler},
 };
 
 // Marker Types
@@ -30,7 +30,7 @@ pub struct ConstantFieldBuilder<
     _del_handlers: PhantomData<HasDelete>,
     _success_handlers: PhantomData<HasSuccess>,
     // actual data...
-    value: Option<ComputableWithMiniSummary<Value, CtxOptions>>,
+    value: Option<ComputableWithMiniSummary<ErasedStuff, CtxOptions>>,
     on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
     on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
 }

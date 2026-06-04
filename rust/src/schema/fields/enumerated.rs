@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
 use serde::Serialize;
-use serde_json::{json, Value};
+use serde_json::json;
 
 use crate::{
     fields::base::{BuildableIvoProperty, InternalIvoProperty, IvoProperty},
@@ -12,7 +12,8 @@ use crate::{
     },
     types::{
         BooleanResolverWithMutSummary, ComputableEnumeratedError, ComputableInit,
-        ComputableWithMiniSummary, DeleteHandler, FailureHandler, IvoSummary, SuccessHandler,
+        ComputableWithMiniSummary, DeleteHandler, ErasedStuff, FailureHandler, IvoSummary,
+        SuccessHandler,
     },
 };
 
@@ -47,9 +48,9 @@ pub struct EnumFieldBuilder<
     _on_failure_fns: PhantomData<HasFailure>,
     _on_success_fns: PhantomData<HasSuccess>,
     // actual data...
-    enum_values: Option<Vec<Value>>,
+    enum_values: Option<Vec<ErasedStuff>>,
     enum_error: Option<ComputableEnumeratedError>,
-    default: Option<ComputableWithMiniSummary<Value, CtxOptions>>,
+    default: Option<ComputableWithMiniSummary<ErasedStuff, CtxOptions>>,
     should_ignore_fn: Option<BooleanResolverWithMutSummary<I, O, CtxOptions>>,
     should_init: Option<ComputableInit<I, O, CtxOptions>>,
     should_update: Option<ComputableInit<I, O, CtxOptions>>,

@@ -1,12 +1,12 @@
 use crate::schema::core::SchemaCore;
 use crate::schema::error::{DefaultErrorTool, FieldError, IvoErrorTool, UpdateError};
-use crate::types::Context;
+use crate::types::{Context, ErasedStuff};
 
 use std::collections::{HashMap, HashSet};
 
 use futures::future::{join_all, BoxFuture};
 use futures::stream::{FuturesUnordered, StreamExt};
-use serde_json::{json, Value};
+use serde_json::json;
 
 use crate::traits::{IvoSchemaStruct, Partial};
 
@@ -24,7 +24,7 @@ pub struct Model<
     'schema,
     Input: IvoSchemaStruct,
     Output: IvoSchemaStruct,
-    CtxOptions: Clone = HashMap<String, Value>,
+    CtxOptions: Clone = HashMap<String, ErasedStuff>,
     ErrorTool: IvoErrorTool = DefaultErrorTool,
 > {
     schema: &'schema SchemaCore<Input, Output, CtxOptions, ErrorTool>,
@@ -46,7 +46,7 @@ impl<
         let value = json!(input);
 
         match value {
-            Value::Object(input_kv) => {
+            ErasedStuff::Object(input_kv) => {
                 let mut error_tool = ErrorTool::new();
 
                 // Build initial context from input (filter to schema props)
@@ -110,7 +110,7 @@ impl<
         let value = json!(updates);
 
         match value {
-            Value::Object(_) => {
+            ErasedStuff::Object(_) => {
                 // Run validators for props in context
                 self.run_async_validator(updates, options).await;
 
@@ -145,7 +145,7 @@ impl<
         //     if let Some(FieldReValidator::Async(validator)) = &def.re_validator {
         //         // let validator = validators();
         //         let r = validator(
-        //             json!("IVO test Value"),
+        //             json!("IVO test ErasedStuff"),
         //             IvoSummary::for_new(
         //                 HashMap::new(),
         //                 input.clone(),
@@ -186,11 +186,11 @@ impl<
         //     let keys = &self.schema.timestamp_tool.get_keys();
 
         //     if let Some(created_at_key) = keys.created_at.clone() {
-        //         context.insert(created_at_key, Value::String(now.clone()));
+        //         context.insert(created_at_key, ErasedStuff::String(now.clone()));
         //     }
 
         //     if let Some(updated_at_key) = keys.updated_at.clone() {
-        //         context.insert(updated_at_key, Value::String(now));
+        //         context.insert(updated_at_key, ErasedStuff::String(now));
         //     }
         // }
     }
@@ -199,7 +199,7 @@ impl<
     /// It will repeatedly evaluate defaults whose dependencies are satisfied (present in `context`).
     /// If unresolved defaults remain and schema option `error_on_unresolved_defaults` is true,
     /// returns Err(SchemaError) listing the unresolved props.
-    pub fn resolve_defaults(&self, context: &mut HashMap<String, Value>) {
+    pub fn resolve_defaults(&self, context: &mut HashMap<String, ErasedStuff>) {
         let mut _pending: HashSet<String> = self
             .schema
             .get_definitions()
@@ -218,7 +218,7 @@ impl<
     /// Resolve constants iteratively; constants may depend on other values in context.
     /// If unresolved constants remain and schema option `error_on_unresolved_constants` is true,
     /// returns Err(SchemaError) listing unresolved constants; otherwise returns Ok(())
-    pub fn resolve_constants(&self, context: &mut HashMap<String, Value>) {
+    pub fn resolve_constants(&self, context: &mut HashMap<String, ErasedStuff>) {
         let mut _pending: HashSet<String> = self
             .schema
             .constants

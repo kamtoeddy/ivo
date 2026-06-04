@@ -3,13 +3,12 @@ use crate::schema::error::{DefaultErrorTool, IvoErrorTool};
 // use crate::schema::utils::TimeStampTool;
 use crate::schema::{error::SchemaError, fields::base::IvoProperty};
 use crate::traits::IvoSchemaStruct;
-use crate::types::ComputableWithMiniSummary;
-use serde_json::Value;
+use crate::types::{ComputableWithMiniSummary, ErasedStuff};
 use std::collections::{HashMap, HashSet};
 use std::marker::PhantomData;
 
 type InternalPropertyDefinitions<I, O, CtxOptions> =
-    HashMap<String, IvoProperty<Value, I, O, CtxOptions>>;
+    HashMap<String, IvoProperty<ErasedStuff, I, O, CtxOptions>>;
 
 pub struct SchemaCore<
     I: IvoSchemaStruct,
@@ -19,14 +18,14 @@ pub struct SchemaCore<
 > {
     _error_tool: PhantomData<ErrorTool>,
     _definitions: InternalPropertyDefinitions<I, O, CtxOptions>,
-    _options: Option<Value>,
+    _options: Option<ErasedStuff>,
 
     // contexts & values
-    pub context: HashMap<String, Value>,
-    pub context_options: HashMap<String, Value>,
-    pub defaults: HashMap<String, Value>,
-    pub partial_context: HashMap<String, Value>,
-    pub values: HashMap<String, Value>,
+    pub context: HashMap<String, ErasedStuff>,
+    pub context_options: HashMap<String, ErasedStuff>,
+    pub defaults: HashMap<String, ErasedStuff>,
+    pub partial_context: HashMap<String, ErasedStuff>,
+    pub values: HashMap<String, ErasedStuff>,
     fields_set: HashSet<String>,
 
     // maps
@@ -37,9 +36,9 @@ pub struct SchemaCore<
     pub virtual_to_alias_map: HashMap<String, String>,
 
     // post validation/onSuccess maps (simplified)
-    pub post_validation_config_map: HashMap<String, Value>,
+    pub post_validation_config_map: HashMap<String, ErasedStuff>,
     pub prop_to_post_validation_config_ids_map: HashMap<String, HashSet<String>>,
-    pub on_success_config_map: HashMap<String, Value>,
+    pub on_success_config_map: HashMap<String, ErasedStuff>,
     pub prop_to_on_success_config_id_map: HashMap<String, HashSet<String>>,
 
     // props
@@ -282,7 +281,10 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: IvoEr
         &self.fields_set
     }
 
-    pub fn get_definition(&self, prop: &str) -> Option<&IvoProperty<Value, I, O, CtxOptions>> {
+    pub fn get_definition(
+        &self,
+        prop: &str,
+    ) -> Option<&IvoProperty<ErasedStuff, I, O, CtxOptions>> {
         self._definitions.get(prop)
     }
 

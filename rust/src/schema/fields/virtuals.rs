@@ -1,7 +1,6 @@
 use std::marker::PhantomData;
 
 use serde::{de::DeserializeOwned, Serialize};
-use serde_json::Value;
 
 use crate::{
     fields::base::{BuildableIvoProperty, InternalIvoProperty, IvoProperty},
@@ -11,8 +10,8 @@ use crate::{
         IntoResolverWithMutSummaryFn, IntoSuccessHandler, IntoVirtualSanitizer, IvoSchemaStruct,
     },
     types::{
-        BooleanResolverWithMutSummary, ComputableInit, ComputableRequired, FailureHandler,
-        FieldReValidator, FieldValidator, SuccessHandler, VirtualSanitiser,
+        BooleanResolverWithMutSummary, ComputableInit, ComputableRequired, ErasedStuff,
+        FailureHandler, FieldReValidator, FieldValidator, SuccessHandler, VirtualSanitiser,
     },
 };
 
@@ -53,7 +52,7 @@ pub struct VirtualFieldBuilder<
     validator: Option<FieldValidator<I, O, CtxOptions>>,
     re_validator: Option<FieldReValidator<I, O, CtxOptions>>,
     required: Option<ComputableRequired<I, O, CtxOptions>>,
-    sanitizer: Option<VirtualSanitiser<Value, I, O, CtxOptions>>,
+    sanitizer: Option<VirtualSanitiser<ErasedStuff, I, O, CtxOptions>>,
     should_ignore_fn: Option<BooleanResolverWithMutSummary<I, O, CtxOptions>>,
     should_init: Option<ComputableInit<I, O, CtxOptions>>,
     should_update: Option<ComputableInit<I, O, CtxOptions>>,

@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
 use serde::{de::DeserializeOwned, Serialize};
-use serde_json::{json, Value};
+use serde_json::json;
 
 use crate::{
     fields::base::{BuildableIvoProperty, InternalIvoProperty, IvoProperty},
@@ -13,8 +13,8 @@ use crate::{
     },
     types::{
         BooleanResolverWithMutSummary, ComputableInit, ComputableRequired,
-        ComputableWithMiniSummary, DeleteHandler, FailureHandler, FieldReValidator, FieldValidator,
-        SuccessHandler,
+        ComputableWithMiniSummary, DeleteHandler, ErasedStuff, FailureHandler, FieldReValidator,
+        FieldValidator, SuccessHandler,
     },
 };
 
@@ -51,7 +51,7 @@ pub struct LaxFieldBuilder<
     _on_failure_fns: PhantomData<HasFailure>,
     _on_success_fns: PhantomData<HasSuccess>,
     // actual data...
-    default: Option<ComputableWithMiniSummary<Value, CtxOptions>>,
+    default: Option<ComputableWithMiniSummary<ErasedStuff, CtxOptions>>,
     validator: Option<FieldValidator<I, O, CtxOptions>>,
     re_validator: Option<FieldReValidator<I, O, CtxOptions>>,
     required: Option<ComputableRequired<I, O, CtxOptions>>,
