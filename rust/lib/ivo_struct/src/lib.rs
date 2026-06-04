@@ -36,6 +36,44 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
         }
     });
 
+    // Generate individual parsing statements for each field block
+    let construct_struct_fields_for_from_map = fields.iter().map(|field| {
+            let field_name = &field.ident; // e.g., 'id'
+            let field_type = &field.ty;    // e.g., 'String'
+
+            quote! {
+                #field_name: {
+                    let name = stringify!(#field_name);
+
+                    map
+                        .get(name)
+                        .ok_or_else(|| format!("Missing required validation field: '{}'", name))?
+                        .as_any()
+                        .downcast_ref::<#field_type>()
+                        .cloned()
+                        .ok_or_else(|| format!("Type mismatch for field '{}': expected '{}'", name, stringify!(#field_type)))?
+                },
+            }
+        });
+
+    let construct_struct_fields_for_from_map_for_partial = fields.iter().map(|field| {
+        let field_name = &field.ident; // e.g., 'id'
+        let field_type = &field.ty; // e.g., 'String'
+
+        quote! {
+            #field_name: {
+                match map.get(stringify!(#field_name)) {
+                    Some(erased) => erased
+                        .as_any()
+                        .downcast_ref::<std::option::Option<#field_type>>()
+                        .cloned()
+                        .unwrap_or(None),
+                    _ => None,
+                }
+            },
+        }
+    });
+
     let found_crate = crate_name("ivo").expect("ivo is not present in Cargo.toml");
 
     let crate_root = match found_crate {
@@ -46,6 +84,30 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
         }
     };
 
+    let to_map_statements = fields.iter().map(|field| {
+        let field_name = &field.ident;
+
+        quote! {
+            map.insert(
+                stringify!(#field_name).to_string(),
+                erase_value(self.#field_name.clone())
+            );
+        }
+    });
+
+    let to_map_statements_for_partial = fields.iter().map(|field| {
+        let field_name = &field.ident;
+
+        quote! {
+            if let Some(value) = self.#field_name.clone() {
+                map.insert(
+                    stringify!(#field_name).to_string(),
+                    erase_value(value)
+                );
+            }
+        }
+    });
+
     // Generate the new struct
     let expanded = quote! {
 
@@ -55,10 +117,48 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
             #(#partial_fields,)*
         }
 
+        impl #crate_root::traits::PartialFromMap for #partial_name {
+            fn from_ivo_internal_map(map: &std::collections::HashMap<String, #crate_root::types::ErasedStuff>) -> Self {
+                Self {
+                    #( #construct_struct_fields_for_from_map_for_partial )*
+                }
+            }
+        }
+
+        impl #crate_root::traits::ToMap for #partial_name {
+            fn to_ivo_internal_map(&self) -> std::collections::HashMap<String, #crate_root::types::ErasedStuff> {
+                use #crate_root::types::erase_value;
+                let mut map = std::collections::HashMap::new();
+
+                #( #to_map_statements_for_partial )*
+
+                map
+            }
+        }
+
         impl #crate_root::traits::IvoSchemaStruct for #name { }
 
+        impl #crate_root::traits::FromMap for #name {
+            fn from_ivo_internal_map(map: &std::collections::HashMap<String, #crate_root::types::ErasedStuff>) -> Result<Self, String>{
+                Ok(Self {
+                    #( #construct_struct_fields_for_from_map )*
+                })
+            }
+        }
+
+        impl #crate_root::traits::ToMap for #name {
+            fn to_ivo_internal_map(&self) -> std::collections::HashMap<String, #crate_root::types::ErasedStuff> {
+                use #crate_root::types::erase_value;
+                let mut map = std::collections::HashMap::new();
+
+                #( #to_map_statements )*
+
+                map
+            }
+        }
+
         impl #crate_root::traits::HasFields for #name {
-            fn fields() -> Vec<String> {
+            fn ivo_internal_fields() -> Vec<String> {
                 #field_names.into_iter().map(|f| String::from(f)).collect()
             }
         }

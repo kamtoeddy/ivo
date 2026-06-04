@@ -10,6 +10,8 @@ use crate::{
 };
 
 pub async fn run_example() {
+    println!("Example started\n",);
+    // let schema = DEMO::make_schema();
     println!("UserSchema props: {:?}\n", USER_SCHEMA.props);
     // let timer = Instant::now();
     let f = USER_SCHEMA.fields();

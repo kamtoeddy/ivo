@@ -1,4 +1,4 @@
-use crate::types::ErasedStuff;
+use serde_json::Value;
 
 // TimeStampTool
 #[derive(Debug, Clone)]
@@ -13,80 +13,81 @@ pub struct TimeStampTool {
 }
 
 impl TimeStampTool {
-    const IS_UPDATED_AT_NULLABLE_DEFAULT: bool = true;
+    // const IS_UPDATED_AT_NULLABLE_DEFAULT: bool = true;
 
-    pub fn new(timestamps: Option<&ErasedStuff>) -> Self {
+    pub fn new(_timestamps: Option<&Value>) -> Self {
+        todo!()
         // timestamps: Option<Boolean | Object>
-        if timestamps.is_none() {
-            return Self {
-                keys: TimeStampKeys {
-                    created_at: None,
-                    updated_at: None,
-                },
-                nullable: false,
-            };
-        }
+        // if timestamps.is_none() {
+        //     return Self {
+        //         keys: TimeStampKeys {
+        //             created_at: None,
+        //             updated_at: None,
+        //         },
+        //         nullable: false,
+        //     };
+        // }
 
-        match timestamps.unwrap() {
-            ErasedStuff::Bool(b) => {
-                if *b {
-                    return Self {
-                        keys: TimeStampKeys {
-                            created_at: Some("created_at".into()),
-                            updated_at: Some("updated_at".into()),
-                        },
-                        nullable: Self::IS_UPDATED_AT_NULLABLE_DEFAULT,
-                    };
-                } else {
-                    return Self {
-                        keys: TimeStampKeys {
-                            created_at: None,
-                            updated_at: None,
-                        },
-                        nullable: false,
-                    };
-                }
-            }
-            ErasedStuff::Object(map) => {
-                let created_at = map
-                    .get("created_at")
-                    .and_then(|v| v.as_str())
-                    .map(|s| s.to_string());
+        // match timestamps.unwrap() {
+        //     Value::Bool(b) => {
+        //         if *b {
+        //             return Self {
+        //                 keys: TimeStampKeys {
+        //                     created_at: Some("created_at".into()),
+        //                     updated_at: Some("updated_at".into()),
+        //                 },
+        //                 nullable: Self::IS_UPDATED_AT_NULLABLE_DEFAULT,
+        //             };
+        //         } else {
+        //             return Self {
+        //                 keys: TimeStampKeys {
+        //                     created_at: None,
+        //                     updated_at: None,
+        //                 },
+        //                 nullable: false,
+        //             };
+        //         }
+        //     }
+        //     Value::Object(map) => {
+        //         let created_at = map
+        //             .get("created_at")
+        //             .and_then(|v| v.as_str())
+        //             .map(|s| s.to_string());
 
-                let updated_at = match map.get("updated_at") {
-                    Some(ErasedStuff::Object(o)) => {
-                        o.get("key").and_then(|v| v.as_str()).map(|s| s.to_string())
-                    }
-                    Some(ErasedStuff::String(s)) => Some(s.clone()),
-                    _ => None,
-                };
+        //         let updated_at = match map.get("updated_at") {
+        //             Some(Value::Object(o)) => {
+        //                 o.get("key").and_then(|v| v.as_str()).map(|s| s.to_string())
+        //             }
+        //             Some(Value::String(s)) => Some(s.clone()),
+        //             _ => None,
+        //         };
 
-                let nullable = match map.get("updated_at") {
-                    Some(ErasedStuff::Object(o)) => o
-                        .get("nullable")
-                        .and_then(|v| v.as_bool())
-                        .unwrap_or(Self::IS_UPDATED_AT_NULLABLE_DEFAULT),
-                    _ => Self::IS_UPDATED_AT_NULLABLE_DEFAULT,
-                };
+        //         let nullable = match map.get("updated_at") {
+        //             Some(Value::Object(o)) => o
+        //                 .get("nullable")
+        //                 .and_then(|v| v.as_bool())
+        //                 .unwrap_or(Self::IS_UPDATED_AT_NULLABLE_DEFAULT),
+        //             _ => Self::IS_UPDATED_AT_NULLABLE_DEFAULT,
+        //         };
 
-                return Self {
-                    keys: TimeStampKeys {
-                        created_at,
-                        updated_at,
-                    },
-                    nullable,
-                };
-            }
-            _ => {
-                return Self {
-                    keys: TimeStampKeys {
-                        created_at: None,
-                        updated_at: None,
-                    },
-                    nullable: false,
-                }
-            }
-        }
+        //         return Self {
+        //             keys: TimeStampKeys {
+        //                 created_at,
+        //                 updated_at,
+        //             },
+        //             nullable,
+        //         };
+        //     }
+        //     _ => {
+        //         return Self {
+        //             keys: TimeStampKeys {
+        //                 created_at: None,
+        //                 updated_at: None,
+        //             },
+        //             nullable: false,
+        //         }
+        //     }
+        // }
     }
 
     pub fn get_keys(&self) -> &TimeStampKeys {

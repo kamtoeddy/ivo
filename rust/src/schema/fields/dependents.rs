@@ -1,7 +1,6 @@
 use std::marker::PhantomData;
 
 use serde::Serialize;
-use serde_json::json;
 
 use crate::{
     fields::base::{BuildableIvoProperty, InternalIvoProperty, IvoProperty},
@@ -10,7 +9,7 @@ use crate::{
         IntoSuccessHandler, IntoUniformResolverWithMutSummary, IvoSchemaStruct,
     },
     types::{
-        ComputableInit, ComputableWithMiniSummary, DeleteHandler, ErasedStuff, False,
+        erase_value, ComputableInit, ComputableWithMiniSummary, DeleteHandler, ErasedStuff, False,
         ResolverWithMutSummary, SuccessHandler,
     },
 };
@@ -160,12 +159,16 @@ impl<
     }
 }
 
-impl<T: Serialize, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
-    DependentFieldBuilder<T, I, O, CtxOptions>
+impl<
+        T: Serialize + Clone + Send + Sync + 'static,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions: Clone,
+    > DependentFieldBuilder<T, I, O, CtxOptions>
 {
     pub fn default(self, value: T) -> DependentFieldBuilder<T, I, O, CtxOptions, Yes> {
         DependentFieldBuilder {
-            default: Some(ComputableWithMiniSummary::Static(json!(value))),
+            default: Some(ComputableWithMiniSummary::Static(erase_value(value))),
             ..Default::default()
         }
     }

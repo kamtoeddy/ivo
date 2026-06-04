@@ -1,7 +1,6 @@
 use std::marker::PhantomData;
 
 use serde::{de::DeserializeOwned, Serialize};
-use serde_json::json;
 
 use crate::{
     fields::base::{BuildableIvoProperty, InternalIvoProperty, IvoProperty},
@@ -12,7 +11,7 @@ use crate::{
         IvoSchemaStruct,
     },
     types::{
-        BooleanResolverWithMutSummary, ComputableInit, ComputableRequired,
+        erase_value, BooleanResolverWithMutSummary, ComputableInit, ComputableRequired,
         ComputableWithMiniSummary, DeleteHandler, ErasedStuff, FailureHandler, FieldReValidator,
         FieldValidator, SuccessHandler,
     },
@@ -211,7 +210,7 @@ impl<
 }
 
 impl<
-        T: DeserializeOwned + Serialize,
+        T: DeserializeOwned + Serialize + Clone + Send + Sync + 'static,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
@@ -219,7 +218,7 @@ impl<
 {
     pub fn default(self, value: T) -> LaxFieldBuilder<T, I, O, CtxOptions, Yes> {
         LaxFieldBuilder {
-            default: Some(ComputableWithMiniSummary::Static(json!(value))),
+            default: Some(ComputableWithMiniSummary::Static(erase_value(value))),
             ..Default::default()
         }
     }

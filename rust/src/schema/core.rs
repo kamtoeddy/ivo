@@ -3,7 +3,7 @@ use crate::schema::error::{DefaultErrorTool, IvoErrorTool};
 // use crate::schema::utils::TimeStampTool;
 use crate::schema::{error::SchemaError, fields::base::IvoProperty};
 use crate::traits::IvoSchemaStruct;
-use crate::types::{ComputableWithMiniSummary, ErasedStuff};
+use crate::types::ErasedStuff;
 use std::collections::{HashMap, HashSet};
 use std::marker::PhantomData;
 
@@ -23,7 +23,7 @@ pub struct SchemaCore<
     // contexts & values
     pub context: HashMap<String, ErasedStuff>,
     pub context_options: HashMap<String, ErasedStuff>,
-    pub defaults: HashMap<String, ErasedStuff>,
+    pub defaults: HashMap<String, &'static ErasedStuff>,
     pub partial_context: HashMap<String, ErasedStuff>,
     pub values: HashMap<String, ErasedStuff>,
     fields_set: HashSet<String>,
@@ -54,17 +54,17 @@ pub struct SchemaCore<
     // pub timestamp_tool: TimeStampTool,
 }
 
-impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: IvoErrorTool>
+impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: IvoErrorTool>
     SchemaCore<I, O, CtxOptions, ErrorTool>
 {
     pub fn new() -> Self {
-        Self {
+        let s = Self {
             _error_tool: PhantomData,
             _definitions: HashMap::new(),
             _options: None,
             fields_set: {
-                let mut all_fields = O::fields();
-                all_fields.extend(I::fields());
+                let mut all_fields = O::ivo_internal_fields();
+                all_fields.extend(I::ivo_internal_fields());
                 all_fields.into_iter().collect()
             },
             context: HashMap::new(),
@@ -89,7 +89,9 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: IvoEr
             readonly_props: HashSet::new(),
             required_props: HashSet::new(),
             virtuals: HashSet::new(),
-        }
+        };
+
+        s
     }
 
     pub fn with_fields<Fields>(mut self, fields: Fields) -> Self
@@ -158,9 +160,9 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: IvoEr
             // regular prop
             self.props.insert(prop.clone());
 
-            if let Some(ComputableWithMiniSummary::Static(v)) = &def.default {
-                self.defaults.insert(prop.clone(), v.clone());
-            }
+            // if let Some(ComputableWithMiniSummary::Static(v)) = &def.default {
+            //     self.defaults.insert(prop.clone(), v);
+            // }
 
             if def.required.is_some() {
                 self.required_props.insert(prop.clone());
@@ -198,44 +200,40 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: IvoEr
                         "Allowed values must have at least 2 values".to_string(),
                     );
                 } else {
-                    let mut uniq = HashSet::new();
-                    let mut ok = true;
+                    // let mut uniq = HashSet::new();
+                    // let mut ok = true;
 
-                    for v in enum_values {
-                        let s = serde_json::to_string(v).unwrap_or_default();
-                        if !uniq.insert(s) {
-                            ok = false;
-                            break;
-                        }
-                    }
+                    // for v in enum_values {
+                    //     if !uniq.insert(v) {
+                    //         ok = false;
+                    //         break;
+                    //     }
+                    // }
 
-                    if !ok {
-                        err_tool.add(
-                            prop,
-                            "Allowed values must be an array of unique values".to_string(),
-                        );
-                    } else {
-                        let set: HashSet<String> = enum_values
-                            .iter()
-                            .map(|v| serde_json::to_string(v).unwrap_or_default())
-                            .collect();
-                        self.props_to_allowed_values_map.insert(prop.clone(), set);
+                    // if !ok {
+                    //     err_tool.add(
+                    //         prop,
+                    //         "Allowed values must be an array of unique values".to_string(),
+                    //     );
+                    // } else {
+                    // let set: HashSet<ErasedStuff> =
+                    //     enum_values.iter().map(|v| v.clone()).collect();
+                    // self.props_to_allowed_values_map.insert(prop.clone(), set);
 
-                        if let Some(default_val) = self.defaults.get(prop) {
-                            let s = serde_json::to_string(default_val).unwrap_or_default();
-                            if !self
-                                .props_to_allowed_values_map
-                                .get(prop)
-                                .unwrap()
-                                .contains(&s)
-                            {
-                                err_tool.add(
-                                    prop,
-                                    "The default value must be an allowed value".to_string(),
-                                );
-                            }
-                        }
-                    }
+                    // if let Some(default_val) = self.defaults.get(prop) {
+                    //     if !self
+                    //         .props_to_allowed_values_map
+                    //         .get(prop)
+                    //         .unwrap()
+                    //         .contains(default_val)
+                    //     {
+                    //         err_tool.add(
+                    //             prop,
+                    //             "The default value must be an allowed value".to_string(),
+                    //         );
+                    //     }
+                    // }
+                    // }
                 }
             }
         }

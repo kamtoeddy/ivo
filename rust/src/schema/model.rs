@@ -6,9 +6,9 @@ use std::collections::{HashMap, HashSet};
 
 use futures::future::{join_all, BoxFuture};
 use futures::stream::{FuturesUnordered, StreamExt};
-use serde_json::json;
+use serde_json::Value;
 
-use crate::traits::{IvoSchemaStruct, Partial};
+use crate::traits::{IvoSchemaStruct, Partial, PartialFromMap, ToMap};
 
 pub type AsyncTriggerFn = Box<dyn Fn() -> BoxFuture<'static, ()> + Send + Sync>;
 
@@ -24,7 +24,7 @@ pub struct Model<
     'schema,
     Input: IvoSchemaStruct,
     Output: IvoSchemaStruct,
-    CtxOptions: Clone = HashMap<String, ErasedStuff>,
+    CtxOptions: Clone = HashMap<String, Value>,
     ErrorTool: IvoErrorTool = DefaultErrorTool,
 > {
     schema: &'schema SchemaCore<Input, Output, CtxOptions, ErrorTool>,
@@ -43,87 +43,93 @@ impl<
         input: &Partial<Input>,
         options: CtxOptions,
     ) -> Result<(Output, AsyncTriggerFn), (ErrorTool::ErrorPayload, AsyncTriggerFn)> {
-        let value = json!(input);
+        // let value = json!(input);
 
-        match value {
-            ErasedStuff::Object(input_kv) => {
-                let mut error_tool = ErrorTool::new();
+        let mut error_tool = ErrorTool::new();
+        let input_values = input.to_ivo_internal_map();
 
-                // Build initial context from input (filter to schema props)
-                let mut context: Context = HashMap::new();
-
-                for (k, v) in input_kv.into_iter() {
-                    if self.schema.is_prop(&k)
-                        || self.schema.is_virtual(&k)
-                        || self.schema.is_constant(&k)
-                    {
-                        context.insert(k, v);
-                        continue;
-                    }
-
-                    if let Some(virtual_prop) = self.schema.alias_to_virtual_map.get(&k) {
-                        context.insert(virtual_prop.clone(), v);
-                    }
-                }
-
-                // Resolve defaults iteratively (handles dependencies)
-                self.resolve_defaults(&mut context);
-
-                // Resolve constants iteratively (may depend on defaults)
-                self.resolve_constants(&mut context);
-
-                // Run validators for props in context
-                self.run_async_validator(input, options).await;
-
-                error_tool.add(
-                    "lol",
-                    FieldError {
-                        reason: "()".into(),
-                        metadata: None,
-                    },
-                );
-
-                if error_tool.is_loaded() {
-                    return Err((
-                        error_tool.payload(),
-                        Box::new(move || Box::pin(async move {})),
-                    ));
-                }
-
-                self.add_timestamps(&mut context);
-
-                Ok((
-                    serde_json::from_value(json!(context)).expect("json parse error"),
-                    Box::new(move || Box::pin(async move {})),
-                ))
-            }
-            _ => unreachable!(),
+        for (k, _) in input_values {
+            println!("'{k}' was provided");
         }
+
+        // Build initial context from input (filter to schema props)
+        let mut context: Context = HashMap::new();
+
+        // for (k, v) in input_kv.into_iter() {
+        //     if self.schema.is_prop(&k)
+        //         || self.schema.is_virtual(&k)
+        //         || self.schema.is_constant(&k)
+        //     {
+        //         context.insert(k, v);
+        //         continue;
+        //     }
+
+        //     if let Some(virtual_prop) = self.schema.alias_to_virtual_map.get(&k) {
+        //         context.insert(virtual_prop.clone(), v);
+        //     }
+        // }
+
+        // Resolve defaults iteratively (handles dependencies)
+        self.resolve_defaults(&mut context);
+
+        // Resolve constants iteratively (may depend on defaults)
+        self.resolve_constants(&mut context);
+
+        // Run validators for props in context
+        self.run_async_validator(input, options).await;
+
+        error_tool.add(
+            "lol",
+            FieldError {
+                reason: "()".into(),
+                metadata: None,
+            },
+        );
+
+        if error_tool.is_loaded() {
+            return Err((
+                error_tool.payload(),
+                Box::new(move || Box::pin(async move {})),
+            ));
+        }
+
+        self.add_timestamps(&mut context);
+
+        // let output = Output::from_ivo_internal_map(&context).unwrap();
+
+        // Ok((output, Box::new(move || Box::pin(async move {}))))
+
+        Err((
+            error_tool.payload(),
+            Box::new(move || Box::pin(async move {})),
+        ))
     }
 
     pub async fn update(
         &self,
-        _data: &Output,
+        data: &Output,
         updates: &Partial<Input>,
         options: CtxOptions,
     ) -> Result<(Partial<Output>, AsyncTriggerFn), (UpdateError<ErrorTool>, AsyncTriggerFn)> {
-        let value = json!(updates);
+        // Run validators for props in context
+        self.run_async_validator(updates, options).await;
 
-        match value {
-            ErasedStuff::Object(_) => {
-                // Run validators for props in context
-                self.run_async_validator(updates, options).await;
+        let _previous_values = data.to_ivo_internal_map();
+        let input_values = updates.to_ivo_internal_map();
+        let context: Context = HashMap::new();
 
-                Ok((
-                    serde_json::from_value(value).expect("json parse error"),
-                    Box::new(move || Box::pin(async move {})),
-                ))
-            }
-            _ => Err((
-                UpdateError::NothingToUpdate,
-                Box::new(move || Box::pin(async move {})),
-            )),
+        for (k, _) in input_values {
+            println!("'{k}' was provided");
         }
+
+        let output = Output::Partial::from_ivo_internal_map(&context);
+
+        Ok((output, Box::new(move || Box::pin(async move {}))))
+
+        // Err((
+        //     UpdateError::NothingToUpdate,
+        //     Box::new(move || Box::pin(async move {})),
+        // ))
     }
 
     pub async fn delete(&self, data: &Output) {
@@ -139,8 +145,6 @@ impl<
     }
 
     async fn run_async_validator(&self, _input: &Partial<Input>, _options: CtxOptions) {
-        println!("running validations\n");
-
         // if let Some(def) = self.schema.get_definition("username") {
         //     if let Some(FieldReValidator::Async(validator)) = &def.re_validator {
         //         // let validator = validators();

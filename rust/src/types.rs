@@ -1,4 +1,4 @@
-use std::{any::Any, collections::HashMap};
+use std::{any::Any, collections::HashMap, fmt::Debug};
 
 use futures::future::BoxFuture;
 use serde_json::Value;
@@ -11,13 +11,16 @@ pub trait CloneableAny: Any + Send + Sync {
     fn as_any_mut(&mut self) -> &mut dyn Any;
 }
 
-// 2. Implement this trait for ANY type that already implements Clone + Any + Send + Sync
 impl<T> CloneableAny for T
 where
+    // Note: We use Clone here, which is fine, but...
     T: Clone + Any + Send + Sync + 'static,
 {
     fn clone_box(&self) -> Box<dyn CloneableAny> {
-        Box::new(self.clone()) // This triggers the concrete type's clone method!
+        println!("🔴 start clonning box\n",);
+        // FIX: Force Rust to use T's explicit clone implementation,
+        // preventing it from resolving back to the Box's clone implementation.
+        Box::new(T::clone(self))
     }
 
     fn as_any(&self) -> &dyn Any {
@@ -29,14 +32,26 @@ where
     }
 }
 
-// 3. Implement standard Clone for our uniform Box type
+pub type ErasedStuff = Box<dyn CloneableAny>;
+
+// Keep this exactly as it was
 impl Clone for ErasedStuff {
     fn clone(&self) -> Self {
         self.clone_box()
     }
 }
 
-pub type ErasedStuff = Box<dyn CloneableAny + Send + Sync>;
+pub fn erase_value<T: Clone + Send + Sync + 'static>(value: T) -> ErasedStuff {
+    let e: ErasedStuff = Box::new(value);
+    e
+}
+
+pub fn parse_or_panic<T: Clone + Send + Sync + 'static>(v: ErasedStuff) -> T {
+    v.as_any()
+        .downcast_ref::<T>()
+        .expect("Failed to parse value")
+        .clone()
+}
 
 #[derive(Debug)]
 pub struct True;
@@ -138,7 +153,6 @@ pub enum ComputableRequired<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: 
 
 pub type Context = HashMap<String, ErasedStuff>;
 
-#[derive(Clone)]
 pub struct IvoMiniSummary<CtxOptions: Clone> {
     pub context: Context,
     pub options: CtxOptions,
@@ -165,7 +179,6 @@ impl<CtxOptions: Clone> IvoMiniSummary<CtxOptions> {
 type InputValues = HashMap<String, ErasedStuff>;
 type Changes = HashMap<String, ErasedStuff>;
 
-#[derive(Clone)]
 // pub struct IvoSummary<CtxOptions: Clone> {
 pub enum IvoSummary<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
     Create {

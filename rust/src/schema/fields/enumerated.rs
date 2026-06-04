@@ -1,7 +1,6 @@
 use std::marker::PhantomData;
 
 use serde::Serialize;
-use serde_json::json;
 
 use crate::{
     fields::base::{BuildableIvoProperty, InternalIvoProperty, IvoProperty},
@@ -11,7 +10,7 @@ use crate::{
         IntoSuccessHandler, IvoSchemaStruct,
     },
     types::{
-        BooleanResolverWithMutSummary, ComputableEnumeratedError, ComputableInit,
+        erase_value, BooleanResolverWithMutSummary, ComputableEnumeratedError, ComputableInit,
         ComputableWithMiniSummary, DeleteHandler, ErasedStuff, FailureHandler, IvoSummary,
         SuccessHandler,
     },
@@ -196,12 +195,16 @@ impl<
     }
 }
 
-impl<T: Serialize, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
-    EnumFieldBuilder<T, I, O, CtxOptions>
+impl<
+        T: Serialize + Clone + Send + Sync + 'static,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions: Clone,
+    > EnumFieldBuilder<T, I, O, CtxOptions>
 {
     pub fn values(self, values: Vec<T>) -> EnumFieldBuilder<T, I, O, CtxOptions, Yes> {
         EnumFieldBuilder {
-            enum_values: Some(values.into_iter().map(|v| json!(v)).collect()),
+            enum_values: Some(values.into_iter().map(|v| erase_value(v)).collect()),
             ..Default::default()
         }
     }
@@ -230,14 +233,18 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
     }
 }
 
-impl<T: Serialize, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
-    EnumFieldBuilder<T, I, O, CtxOptions, Yes, Yes>
+impl<
+        T: Serialize + Clone + Send + Sync + 'static,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions: Clone,
+    > EnumFieldBuilder<T, I, O, CtxOptions, Yes, Yes>
 {
     pub fn default(self, value: T) -> EnumFieldBuilder<T, I, O, CtxOptions, Yes, Yes, Yes> {
         EnumFieldBuilder {
             enum_values: self.enum_values,
             enum_error: self.enum_error,
-            default: Some(ComputableWithMiniSummary::Static(json!(value))),
+            default: Some(ComputableWithMiniSummary::Static(erase_value(value))),
             ..Default::default()
         }
     }

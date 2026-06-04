@@ -1,32 +1,43 @@
-use std::future::Future;
+use std::{collections::HashMap, future::Future};
 
 use futures::FutureExt;
 use serde::{de::DeserializeOwned, Serialize};
-use serde_json::json;
 
 use crate::{
     types::{
-        DeleteHandler, FailureHandler, IvoMiniSummary, IvoSummary, RequiredResolverFn,
-        ResolverWithMutSummaryFn, SuccessHandler, UniformAsyncReValidator,
-        UniformAsyncResolverWithMiniSummary, UniformAsyncResolverWithMutSummary,
-        UniformAsyncValidator, UniformEnumErrorResolver, UniformReValidator,
-        UniformResolverWithMiniSummary, UniformResolverWithMutSummary, UniformValidator,
-        UniformVirtualSanitiser,
+        erase_value, parse_or_panic, DeleteHandler, ErasedStuff, FailureHandler, IvoMiniSummary,
+        IvoSummary, RequiredResolverFn, ResolverWithMutSummaryFn, SuccessHandler,
+        UniformAsyncReValidator, UniformAsyncResolverWithMiniSummary,
+        UniformAsyncResolverWithMutSummary, UniformAsyncValidator, UniformEnumErrorResolver,
+        UniformReValidator, UniformResolverWithMiniSummary, UniformResolverWithMutSummary,
+        UniformValidator, UniformVirtualSanitiser,
     },
     ValidatorResponse,
 };
 
 pub trait IvoSchemaStruct:
-    Send + Sync + 'static + DeserializeOwned + Serialize + HasFields + HasPartial
+    Send + Sync + 'static + DeserializeOwned + Serialize + HasFields + HasPartial + FromMap + ToMap
 {
 }
 
+pub trait FromMap: Sized {
+    fn from_ivo_internal_map(map: &HashMap<String, ErasedStuff>) -> Result<Self, String>;
+}
+
+pub trait PartialFromMap: Sized {
+    fn from_ivo_internal_map(map: &HashMap<String, ErasedStuff>) -> Self;
+}
+
+pub trait ToMap: Sized {
+    fn to_ivo_internal_map(&self) -> HashMap<String, ErasedStuff>;
+}
+
 pub trait HasFields {
-    fn fields() -> Vec<String>;
+    fn ivo_internal_fields() -> Vec<String>;
 }
 
 pub trait HasPartial {
-    type Partial: Send + Sync + Clone + Serialize + DeserializeOwned;
+    type Partial: Send + Sync + Clone + Serialize + DeserializeOwned + PartialFromMap + ToMap;
 }
 
 pub type Partial<T> = <T as HasPartial>::Partial;
@@ -86,13 +97,11 @@ impl<F, T, I, O, CtxOptions: Clone> IntoFieldValidator<T, I, O, CtxOptions> for 
 where
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
-    T: DeserializeOwned + Serialize + Send + 'static,
+    T: DeserializeOwned + Serialize + Clone + Send + Sync + 'static,
     F: Fn(T, IvoSummary<I, O, CtxOptions>) -> ValidatorResponse<T> + Clone + Send + Sync + 'static,
 {
     fn into_uniform(self) -> UniformValidator<I, O, CtxOptions> {
-        Box::new(move |v, s| {
-            self(serde_json::from_value(v).expect("Failed to parse value"), s).map(|v| json!(v))
-        })
+        Box::new(move |v, s| self(parse_or_panic(v), s).map(|v| erase_value(v)))
     }
 }
 
@@ -104,20 +113,13 @@ impl<F, Fut, T, I, O, CtxOptions: Clone> IntoAsyncFieldValidator<T, I, O, CtxOpt
 where
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
-    T: DeserializeOwned + Serialize + Send + 'static,
-    F: Fn(T, IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
+    T: DeserializeOwned + Serialize + Clone + Send + Sync + 'static,
+    F: Fn(T, IvoSummary<I, O, CtxOptions>) -> Fut + Clone + Send + Sync + 'static,
     Fut: Future<Output = ValidatorResponse<T>> + Send + Sync + 'static,
 {
     fn into_uniform(self) -> UniformAsyncValidator<I, O, CtxOptions> {
         Box::new(move |v, s| {
-            Box::pin(
-                self(serde_json::from_value(v).expect("Failed to parse value"), s).map(
-                    |v| match v {
-                        Ok(d) => Ok(json!(d)),
-                        Err(e) => Err(e),
-                    },
-                ),
-            )
+            Box::pin(self(parse_or_panic(v), s).map(|r| r.map(|v| erase_value(v))))
         })
     }
 }
@@ -136,13 +138,11 @@ impl<F, T, I, O, CtxOptions: Clone> IntoFieldReValidator<T, I, O, CtxOptions> fo
 where
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
-    T: DeserializeOwned + Serialize + Send + 'static,
+    T: DeserializeOwned + Serialize + Clone + Send + Sync + 'static,
     F: Fn(T, IvoSummary<I, O, CtxOptions>) -> ValidatorResponse<T> + Clone + Send + Sync + 'static,
 {
     fn into_uniform(self) -> UniformReValidator<I, O, CtxOptions> {
-        Box::new(move |v, s| {
-            self(serde_json::from_value(v).expect("Failed to parse value"), s).map(|v| json!(v))
-        })
+        Box::new(move |v, s| self(parse_or_panic(v), s).map(|v| erase_value(v)))
     }
 }
 
@@ -160,20 +160,13 @@ impl<F, Fut, T, I, O, CtxOptions: Clone> IntoAsyncFieldReValidator<T, I, O, CtxO
 where
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
-    T: DeserializeOwned + Serialize + Send + 'static,
+    T: DeserializeOwned + Serialize + Clone + Send + Sync + 'static,
     F: Fn(T, IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = ValidatorResponse<T>> + Send + Sync + 'static,
 {
     fn into_uniform(self) -> UniformAsyncReValidator<I, O, CtxOptions> {
         Box::new(move |v, s| {
-            Box::pin(
-                self(serde_json::from_value(v).expect("Failed to parse value"), s).map(
-                    |v| match v {
-                        Ok(d) => Ok(json!(d)),
-                        Err(e) => Err(e),
-                    },
-                ),
-            )
+            Box::pin(self(parse_or_panic(v), s).map(|r| r.map(|v| erase_value(v))))
         })
     }
 }
@@ -192,12 +185,12 @@ impl<F, Fut, T, I, O, CtxOptions: Clone> IntoVirtualSanitizer<T, I, O, CtxOption
 where
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
-    T: DeserializeOwned + Serialize + Send + 'static,
+    T: DeserializeOwned + Serialize + Clone + Send + Sync + 'static,
     F: Fn(IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = T> + Send + Sync + 'static,
 {
     fn into_uniform(self) -> UniformVirtualSanitiser<I, O, CtxOptions> {
-        Box::new(move |s| Box::pin(self(s).map(|v| json!(v))))
+        Box::new(move |s| Box::pin(self(s).map(|v| erase_value(v))))
     }
 }
 
@@ -207,19 +200,14 @@ pub trait IntoEnumErrorResolver<T> {
 
 impl<F, T> IntoEnumErrorResolver<T> for F
 where
-    T: DeserializeOwned + Send + 'static,
+    T: DeserializeOwned + Clone + Send + Sync + 'static,
     F: Fn((T, Vec<T>)) -> String + Send + Sync + 'static,
 {
     fn into_uniform(self) -> UniformEnumErrorResolver {
         Box::new(move |(v, list)| {
             self((
-                serde_json::from_value(v).expect("Failed to deserialize some value"),
-                list.iter()
-                    .map(|v| {
-                        serde_json::from_value(v.clone())
-                            .expect("Failed to deserialize some values")
-                    })
-                    .collect(),
+                parse_or_panic(v),
+                list.into_iter().map(|v| parse_or_panic(v)).collect(),
             ))
         })
     }
@@ -269,11 +257,11 @@ pub trait IntoUniformResolverWithMutSummary<
 impl<F, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
     IntoUniformResolverWithMutSummary<T, I, O, CtxOptions> for F
 where
-    T: Serialize + 'static,
+    T: Serialize + Clone + Send + Sync + 'static,
     F: Fn(IvoSummary<I, O, CtxOptions>) -> T + Send + Sync + 'static,
 {
     fn into_uniform(self) -> UniformResolverWithMutSummary<I, O, CtxOptions> {
-        Box::new(move |s| json!(self(s)))
+        Box::new(move |s| erase_value(self(s)))
     }
 }
 
@@ -291,12 +279,12 @@ impl<F, Fut, T, I, O, CtxOptions: Clone> IntoAsyncResolverWithMutSummary<T, I, O
 where
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
-    T: Serialize + 'static,
+    T: Serialize + Clone + Send + Sync + 'static,
     F: Fn(IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = T> + Send + 'static,
 {
     fn into_uniform(self) -> UniformAsyncResolverWithMutSummary<I, O, CtxOptions> {
-        Box::new(move |s| Box::pin(self(s).map(|v| json!(v))))
+        Box::new(move |s| Box::pin(self(s).map(|v| erase_value(v))))
     }
 }
 
@@ -308,11 +296,11 @@ pub trait IntoResolverWithMiniSummary<T, I: IvoSchemaStruct, O: IvoSchemaStruct,
 impl<F, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
     IntoResolverWithMiniSummary<T, I, O, CtxOptions> for F
 where
-    T: Serialize + 'static,
+    T: Serialize + Clone + Send + Sync + 'static,
     F: Fn(IvoMiniSummary<CtxOptions>) -> T + Send + Sync + 'static,
 {
     fn into_uniform(self) -> UniformResolverWithMiniSummary<CtxOptions> {
-        Box::new(move |s| json!(self(s)))
+        Box::new(move |s| erase_value(self(s)))
     }
 }
 
@@ -329,11 +317,11 @@ pub trait IntoAsyncResolverWithMiniSummary<
 impl<F, Fut, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
     IntoAsyncResolverWithMiniSummary<T, I, O, CtxOptions> for F
 where
-    T: Serialize + 'static,
+    T: Serialize + Clone + Send + Sync + 'static,
     F: Fn(IvoMiniSummary<CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = T> + Send + 'static,
 {
     fn into_uniform(self) -> UniformAsyncResolverWithMiniSummary<CtxOptions> {
-        Box::new(move |s| Box::pin(self(s).map(|v| json!(v))))
+        Box::new(move |s| Box::pin(self(s).map(|v| erase_value(v))))
     }
 }

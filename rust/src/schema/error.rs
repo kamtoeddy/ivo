@@ -1,7 +1,8 @@
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde_json::Value;
 use std::collections::HashMap;
 
-use crate::{types::ErasedStuff, utils::styled_text::Stylable};
+use crate::utils::styled_text::Stylable;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum UpdateError<E: IvoErrorTool> {
@@ -14,7 +15,7 @@ pub type DefaultErrorPayload = HashMap<String, Vec<FieldError>>;
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct FieldError {
     pub reason: String,
-    pub metadata: Option<ErasedStuff>,
+    pub metadata: Option<Value>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]

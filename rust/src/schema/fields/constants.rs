@@ -1,7 +1,6 @@
 use std::marker::PhantomData;
 
 use serde::Serialize;
-use serde_json::json;
 
 use crate::{
     fields::base::{BuildableIvoProperty, InternalIvoProperty, IvoProperty},
@@ -9,7 +8,7 @@ use crate::{
         IntoAsyncResolverWithMiniSummary, IntoDeleteHandler, IntoResolverWithMiniSummary,
         IntoSuccessHandler, IvoSchemaStruct,
     },
-    types::{ComputableWithMiniSummary, DeleteHandler, ErasedStuff, SuccessHandler},
+    types::{erase_value, ComputableWithMiniSummary, DeleteHandler, ErasedStuff, SuccessHandler},
 };
 
 // Marker Types
@@ -78,22 +77,14 @@ impl<
         HasSuccess,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        T: Serialize,
+        T: Serialize + Clone + Send + Sync + 'static,
         CtxOptions: Clone,
     > BuildableIvoProperty<I, O, CtxOptions>
     for ConstantFieldBuilder<T, I, O, CtxOptions, Yes, HasDelete, HasSuccess>
 {
     fn build(self) -> InternalIvoProperty<I, O, CtxOptions> {
         IvoProperty {
-            value: Some(match self.value {
-                Some(v) => match v {
-                    ComputableWithMiniSummary::Static(val) => {
-                        ComputableWithMiniSummary::Static(json!(val))
-                    }
-                    _ => v,
-                },
-                _ => panic!("A constant property must have a value!"),
-            }),
+            value: self.value,
             on_delete_fns: self.on_delete_fns,
             on_success_fns: self.on_success_fns,
             ..Default::default()
@@ -101,12 +92,16 @@ impl<
     }
 }
 
-impl<I: IvoSchemaStruct, O: IvoSchemaStruct, T: Serialize, CtxOptions: Clone + Send>
-    ConstantFieldBuilder<T, I, O, CtxOptions>
+impl<
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        T: Serialize + Clone + Send + Sync + 'static,
+        CtxOptions: Clone + Send,
+    > ConstantFieldBuilder<T, I, O, CtxOptions>
 {
     pub fn value(self, value: T) -> ConstantFieldBuilder<T, I, O, CtxOptions, Yes> {
         ConstantFieldBuilder {
-            value: Some(ComputableWithMiniSummary::Static(json!((value)))),
+            value: Some(ComputableWithMiniSummary::Static(erase_value(value))),
             on_delete_fns: None,
             on_success_fns: None,
             ..Default::default()
