@@ -1,11 +1,42 @@
-use std::collections::HashMap;
+use std::{any::Any, collections::HashMap};
 
 use futures::future::BoxFuture;
 use serde_json::Value;
 
 use crate::traits::IvoSchemaStruct;
 
-pub type ErasedStuff = Value; // TODO: rename to ErasedStuff
+pub trait CloneableAny: Any + Send + Sync {
+    fn clone_box(&self) -> Box<dyn CloneableAny>;
+    fn as_any(&self) -> &dyn Any;
+    fn as_any_mut(&mut self) -> &mut dyn Any;
+}
+
+// 2. Implement this trait for ANY type that already implements Clone + Any + Send + Sync
+impl<T> CloneableAny for T
+where
+    T: Clone + Any + Send + Sync + 'static,
+{
+    fn clone_box(&self) -> Box<dyn CloneableAny> {
+        Box::new(self.clone()) // This triggers the concrete type's clone method!
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
+    }
+}
+
+// 3. Implement standard Clone for our uniform Box type
+impl Clone for ErasedStuff {
+    fn clone(&self) -> Self {
+        self.clone_box()
+    }
+}
+
+pub type ErasedStuff = Box<dyn CloneableAny + Send + Sync>;
 
 #[derive(Debug)]
 pub struct True;
@@ -286,6 +317,6 @@ pub type FailureHandler<I, O, CtxOptions> =
 pub type SuccessHandler<I, O, CtxOptions> =
     Box<dyn Fn(IvoSummary<I, O, CtxOptions>) -> BoxFuture<'static, ()> + Send + Sync + 'static>;
 
-pub type ValidatorResponse<T> = Result<T, (String, Option<ErasedStuff>)>;
+pub type ValidatorResponse<T> = Result<T, (String, Option<Value>)>;
 
-pub type ValidatorFn<T> = Box<dyn Fn(ErasedStuff) -> ValidatorResponse<T> + Send + Sync + 'static>;
+pub type ValidatorFn<T> = Box<dyn Fn(T) -> ValidatorResponse<T> + Send + Sync + 'static>;

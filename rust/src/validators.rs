@@ -3,7 +3,7 @@ use std::{collections::HashSet, sync::LazyLock};
 use regex::Regex;
 use serde_json::json;
 
-use crate::types::{ErasedStuff, ValidatorFn, ValidatorResponse};
+use crate::types::{ValidatorFn, ValidatorResponse};
 
 pub enum StringValidatorOptions {
     MinMax {
@@ -17,24 +17,21 @@ pub enum StringValidatorOptions {
 pub fn make_string_validator(options: StringValidatorOptions) -> ValidatorFn<String> {
     validate_string_validator_options(&options);
 
-    Box::new(move |value: ErasedStuff| {
-        let s = match value {
-            ErasedStuff::String(s) => match &options {
-                StringValidatorOptions::MinMax {
-                    trim: Some(should_trim),
-                    ..
-                } => {
-                    let mut v = s.as_str();
+    Box::new(move |value| {
+        let s = match &options {
+            StringValidatorOptions::MinMax {
+                trim: Some(should_trim),
+                ..
+            } => {
+                let mut v = value.as_str();
 
-                    if *should_trim {
-                        v = v.trim();
-                    }
-
-                    v.to_owned()
+                if *should_trim {
+                    v = v.trim();
                 }
-                _ => s.to_owned(),
-            },
-            _ => return Err(("Expected a string".into(), None)),
+
+                v.to_owned()
+            }
+            _ => value,
         };
 
         match &options {
@@ -90,12 +87,8 @@ fn validate_string_validator_options(options: &StringValidatorOptions) {
     };
 }
 
-pub fn validate_credit_card(value: ErasedStuff) -> ValidatorResponse<String> {
-    let s = match value {
-        ErasedStuff::String(s) => s.trim().to_string(),
-        ErasedStuff::Number(n) => n.to_string(),
-        other => other.to_string(),
-    };
+pub fn validate_credit_card(value: String) -> ValidatorResponse<String> {
+    let s = value.trim().to_string();
 
     if s.len() != 16 {
         return Err(("Invalid card number".into(), None));
@@ -128,7 +121,7 @@ static EMAIL_RE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])"#).unwrap()
 });
 
-pub fn validate_email(value: ErasedStuff) -> ValidatorResponse<String> {
+pub fn validate_email(value: String) -> ValidatorResponse<String> {
     let string_validation = make_string_validator(StringValidatorOptions::MinMax {
         max: None,
         min: Some(3),
@@ -156,34 +149,16 @@ mod tests {
     fn test_string_validator() {
         let validator = make_string_validator(StringValidatorOptions::MinMax {
             max: None,
-            min: Some(1),
-            trim: None,
-        });
-
-        let v: Vec<i8> = vec![];
-
-        match validator(json!(v)) {
-            Err((e, _)) => assert_eq!(e, "Expected a string"),
-            _ => panic!("expected invalid"),
-        }
-
-        match validator(json!(true)) {
-            Err((e, _)) => assert_eq!(e, "Expected a string"),
-            _ => panic!("expected invalid"),
-        }
-
-        let validator = make_string_validator(StringValidatorOptions::MinMax {
-            max: None,
             min: Some(2),
             trim: Some(true),
         });
 
-        match validator(json!(" aa ")) {
+        match validator(String::from(" aa ")) {
             Ok(s) => assert_eq!(s, "aa".to_string()),
             Err(e) => panic!("unexpected invalid: {:?}", e),
         }
 
-        match validator(json!("x")) {
+        match validator(String::from("x")) {
             Err((e, _)) => assert_eq!(e, "too_short"),
             _ => panic!("expected invalid"),
         }
@@ -198,12 +173,12 @@ mod tests {
 
         let role = allowed_roles.get(0).unwrap().clone();
 
-        match validator(json!(role)) {
+        match validator(String::from(role.clone())) {
             Ok(s) => assert_eq!(s, role),
             Err(e) => panic!("unexpected invalid: {:?}", e),
         }
 
-        match validator(json!("invalid role")) {
+        match validator(String::from("invalid role")) {
             Err((reason, metadata)) => {
                 assert_eq!(reason, "Invalid option selected");
                 assert_eq!(metadata, Some(json!({ "options": allowed_roles})))
@@ -214,21 +189,14 @@ mod tests {
 
     #[test]
     fn test_email() {
-        let v: Vec<i8> = vec![];
-
-        match validate_email(json!(v)) {
-            Err((e, _)) => assert_eq!(e, "Expected a string"),
-            _ => panic!("expected invalid"),
-        }
-
-        match validate_email(json!(true)) {
-            Err((e, _)) => assert_eq!(e, "Expected a string"),
-            _ => panic!("expected invalid"),
-        }
-
-        match validate_email(json!("test@example.com")) {
+        match validate_email("test@example.com".into()) {
             Ok(s) => assert_eq!(s, "test@example.com"),
             Err(e) => panic!("unexpected invalid: {:?}", e),
+        }
+
+        match validate_email("not-an-email".into()) {
+            Err((e, _)) => assert_eq!(e, "Invalid email"),
+            _ => panic!("expected invalid"),
         }
     }
 }
