@@ -1,7 +1,5 @@
 use std::marker::PhantomData;
 
-use serde::{de::DeserializeOwned, Serialize};
-
 use crate::{
     fields::{
         constants::ConstantFieldBuilder, dependents::DependentFieldBuilder,
@@ -19,25 +17,14 @@ mod lax;
 mod required;
 mod virtuals;
 
-pub struct IvoField<
-    T: DeserializeOwned + Serialize,
-    I: IvoSchemaStruct,
-    O: IvoSchemaStruct,
-    CtxOptions: Clone,
-> {
+pub struct IvoField<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
     _t: PhantomData<T>,
     _i: PhantomData<I>,
     _o: PhantomData<O>,
     _c: PhantomData<CtxOptions>,
 }
 
-impl<
-        T: DeserializeOwned + Serialize,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
-        CtxOptions: Clone,
-    > IvoField<T, I, O, CtxOptions>
-{
+impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> IvoField<T, I, O, CtxOptions> {
     pub const CONSTANT: ConstantFieldBuilder<T, I, O, CtxOptions> = ConstantFieldBuilder::new();
     pub const DEPENDENT: DependentFieldBuilder<T, I, O, CtxOptions> = DependentFieldBuilder::new();
     pub const ENUM: EnumFieldBuilder<T, I, O, CtxOptions> = EnumFieldBuilder::new();

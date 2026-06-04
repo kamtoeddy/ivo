@@ -1,7 +1,6 @@
 use std::{collections::HashMap, future::Future};
 
 use futures::FutureExt;
-use serde::{de::DeserializeOwned, Serialize};
 
 use crate::{
     types::{
@@ -16,7 +15,7 @@ use crate::{
 };
 
 pub trait IvoSchemaStruct:
-    Send + Sync + 'static + DeserializeOwned + Serialize + HasFields + HasPartial + FromMap + ToMap
+    Send + Sync + 'static + HasFields + HasPartial + FromMap + ToMap
 {
 }
 
@@ -37,7 +36,7 @@ pub trait HasFields {
 }
 
 pub trait HasPartial {
-    type Partial: Send + Sync + Clone + Serialize + DeserializeOwned + PartialFromMap + ToMap;
+    type Partial: Send + Sync + Clone + PartialFromMap + ToMap;
 }
 
 pub type Partial<T> = <T as HasPartial>::Partial;
@@ -97,7 +96,7 @@ impl<F, T, I, O, CtxOptions: Clone> IntoFieldValidator<T, I, O, CtxOptions> for 
 where
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
-    T: DeserializeOwned + Serialize + Clone + Send + Sync + 'static,
+    T: Clone + Send + Sync + 'static,
     F: Fn(T, IvoSummary<I, O, CtxOptions>) -> ValidatorResponse<T> + Clone + Send + Sync + 'static,
 {
     fn into_uniform(self) -> UniformValidator<I, O, CtxOptions> {
@@ -113,7 +112,7 @@ impl<F, Fut, T, I, O, CtxOptions: Clone> IntoAsyncFieldValidator<T, I, O, CtxOpt
 where
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
-    T: DeserializeOwned + Serialize + Clone + Send + Sync + 'static,
+    T: Clone + Send + Sync + 'static,
     F: Fn(T, IvoSummary<I, O, CtxOptions>) -> Fut + Clone + Send + Sync + 'static,
     Fut: Future<Output = ValidatorResponse<T>> + Send + Sync + 'static,
 {
@@ -124,13 +123,7 @@ where
     }
 }
 
-pub trait IntoFieldReValidator<
-    T: DeserializeOwned + Serialize,
-    I: IvoSchemaStruct,
-    O: IvoSchemaStruct,
-    CtxOptions: Clone,
->
-{
+pub trait IntoFieldReValidator<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
     fn into_uniform(self) -> UniformReValidator<I, O, CtxOptions>;
 }
 
@@ -138,7 +131,7 @@ impl<F, T, I, O, CtxOptions: Clone> IntoFieldReValidator<T, I, O, CtxOptions> fo
 where
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
-    T: DeserializeOwned + Serialize + Clone + Send + Sync + 'static,
+    T: Clone + Send + Sync + 'static,
     F: Fn(T, IvoSummary<I, O, CtxOptions>) -> ValidatorResponse<T> + Clone + Send + Sync + 'static,
 {
     fn into_uniform(self) -> UniformReValidator<I, O, CtxOptions> {
@@ -146,13 +139,7 @@ where
     }
 }
 
-pub trait IntoAsyncFieldReValidator<
-    T: DeserializeOwned + Serialize,
-    I: IvoSchemaStruct,
-    O: IvoSchemaStruct,
-    CtxOptions: Clone,
->
-{
+pub trait IntoAsyncFieldReValidator<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
     fn into_uniform(self) -> UniformAsyncReValidator<I, O, CtxOptions>;
 }
 
@@ -160,7 +147,7 @@ impl<F, Fut, T, I, O, CtxOptions: Clone> IntoAsyncFieldReValidator<T, I, O, CtxO
 where
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
-    T: DeserializeOwned + Serialize + Clone + Send + Sync + 'static,
+    T: Clone + Send + Sync + 'static,
     F: Fn(T, IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = ValidatorResponse<T>> + Send + Sync + 'static,
 {
@@ -171,13 +158,7 @@ where
     }
 }
 
-pub trait IntoVirtualSanitizer<
-    T: Serialize,
-    I: IvoSchemaStruct,
-    O: IvoSchemaStruct,
-    CtxOptions: Clone,
->
-{
+pub trait IntoVirtualSanitizer<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
     fn into_uniform(self) -> UniformVirtualSanitiser<I, O, CtxOptions>;
 }
 
@@ -185,7 +166,7 @@ impl<F, Fut, T, I, O, CtxOptions: Clone> IntoVirtualSanitizer<T, I, O, CtxOption
 where
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
-    T: DeserializeOwned + Serialize + Clone + Send + Sync + 'static,
+    T: Clone + Send + Sync + 'static,
     F: Fn(IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = T> + Send + Sync + 'static,
 {
@@ -200,7 +181,7 @@ pub trait IntoEnumErrorResolver<T> {
 
 impl<F, T> IntoEnumErrorResolver<T> for F
 where
-    T: DeserializeOwned + Clone + Send + Sync + 'static,
+    T: Clone + Send + Sync + 'static,
     F: Fn((T, Vec<T>)) -> String + Send + Sync + 'static,
 {
     fn into_uniform(self) -> UniformEnumErrorResolver {
@@ -236,7 +217,7 @@ pub trait IntoResolverWithMutSummaryFn<T, I: IvoSchemaStruct, O: IvoSchemaStruct
 impl<F, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
     IntoResolverWithMutSummaryFn<T, I, O, CtxOptions> for F
 where
-    T: Serialize + 'static,
+    T: 'static,
     F: Fn(IvoSummary<I, O, CtxOptions>) -> T + Send + Sync + 'static,
 {
     fn into_resolver(self) -> ResolverWithMutSummaryFn<T, I, O, CtxOptions> {
@@ -257,7 +238,7 @@ pub trait IntoUniformResolverWithMutSummary<
 impl<F, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
     IntoUniformResolverWithMutSummary<T, I, O, CtxOptions> for F
 where
-    T: Serialize + Clone + Send + Sync + 'static,
+    T: Clone + Send + Sync + 'static,
     F: Fn(IvoSummary<I, O, CtxOptions>) -> T + Send + Sync + 'static,
 {
     fn into_uniform(self) -> UniformResolverWithMutSummary<I, O, CtxOptions> {
@@ -279,7 +260,7 @@ impl<F, Fut, T, I, O, CtxOptions: Clone> IntoAsyncResolverWithMutSummary<T, I, O
 where
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
-    T: Serialize + Clone + Send + Sync + 'static,
+    T: Clone + Send + Sync + 'static,
     F: Fn(IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = T> + Send + 'static,
 {
@@ -296,7 +277,7 @@ pub trait IntoResolverWithMiniSummary<T, I: IvoSchemaStruct, O: IvoSchemaStruct,
 impl<F, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
     IntoResolverWithMiniSummary<T, I, O, CtxOptions> for F
 where
-    T: Serialize + Clone + Send + Sync + 'static,
+    T: Clone + Send + Sync + 'static,
     F: Fn(IvoMiniSummary<CtxOptions>) -> T + Send + Sync + 'static,
 {
     fn into_uniform(self) -> UniformResolverWithMiniSummary<CtxOptions> {
@@ -317,7 +298,7 @@ pub trait IntoAsyncResolverWithMiniSummary<
 impl<F, Fut, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
     IntoAsyncResolverWithMiniSummary<T, I, O, CtxOptions> for F
 where
-    T: Serialize + Clone + Send + Sync + 'static,
+    T: Clone + Send + Sync + 'static,
     F: Fn(IvoMiniSummary<CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = T> + Send + 'static,
 {

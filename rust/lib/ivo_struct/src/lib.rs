@@ -112,7 +112,7 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
     let expanded = quote! {
 
         // TODO: 👇 dynamically add derived traits of parent here
-        #[derive(Debug, Default, Clone, Deserialize, Serialize)]
+        #[derive(Debug, Default, Clone)]
         #vis struct #partial_name {
             #(#partial_fields,)*
         }

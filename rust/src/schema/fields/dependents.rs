@@ -1,7 +1,5 @@
 use std::marker::PhantomData;
 
-use serde::Serialize;
-
 use crate::{
     fields::base::{BuildableIvoProperty, InternalIvoProperty, IvoProperty},
     traits::{
@@ -160,7 +158,7 @@ impl<
 }
 
 impl<
-        T: Serialize + Clone + Send + Sync + 'static,
+        T: Clone + Send + Sync + 'static,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,

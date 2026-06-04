@@ -1,7 +1,5 @@
 use std::marker::PhantomData;
 
-use serde::{de::DeserializeOwned, Serialize};
-
 use crate::{
     fields::base::{BuildableIvoProperty, InternalIvoProperty, IvoProperty},
     traits::{
@@ -23,7 +21,7 @@ pub struct No;
 pub struct YesComputed;
 
 pub struct LaxFieldBuilder<
-    T: DeserializeOwned + Serialize,
+    T,
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
     CtxOptions: Clone,
@@ -73,7 +71,7 @@ impl<
         HasDelete,
         HasFailure,
         HasSuccess,
-        T: DeserializeOwned + Serialize,
+        T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
@@ -133,7 +131,7 @@ impl<
         HasDelete,
         HasFailure,
         HasSuccess,
-        T: DeserializeOwned + Serialize,
+        T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
@@ -170,7 +168,7 @@ impl<
         HasDelete,
         HasFailure,
         HasSuccess,
-        T: DeserializeOwned + Serialize,
+        T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
@@ -210,7 +208,7 @@ impl<
 }
 
 impl<
-        T: DeserializeOwned + Serialize + Clone + Send + Sync + 'static,
+        T: Clone + Send + Sync + 'static,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
@@ -236,12 +234,8 @@ impl<
     }
 }
 
-impl<
-        T: DeserializeOwned + Serialize,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
-        CtxOptions: Clone,
-    > LaxFieldBuilder<T, I, O, CtxOptions, Yes>
+impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
+    LaxFieldBuilder<T, I, O, CtxOptions, Yes>
 {
     pub fn validate<F>(self, validator: F) -> LaxFieldBuilder<T, I, O, CtxOptions, Yes, Yes>
     where
@@ -266,12 +260,8 @@ impl<
     }
 }
 
-impl<
-        T: DeserializeOwned + Serialize,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
-        CtxOptions: Clone,
-    > LaxFieldBuilder<T, I, O, CtxOptions, Yes, Yes>
+impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
+    LaxFieldBuilder<T, I, O, CtxOptions, Yes, Yes>
 {
     pub fn re_validate<F>(
         self,
@@ -304,13 +294,8 @@ impl<
     }
 }
 
-impl<
-        HasRevalidator,
-        T: DeserializeOwned + Serialize,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
-        CtxOptions: Clone,
-    > LaxFieldBuilder<T, I, O, CtxOptions, Yes, Yes, HasRevalidator>
+impl<HasRevalidator, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
+    LaxFieldBuilder<T, I, O, CtxOptions, Yes, Yes, HasRevalidator>
 {
     pub fn required_if<R>(
         self,
@@ -333,7 +318,7 @@ impl<
         HasValidator,
         HasRevalidator,
         HasRequired,
-        T: DeserializeOwned + Serialize,
+        T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
@@ -361,7 +346,7 @@ impl<
         HasValidator,
         HasRevalidator,
         HasRequired,
-        T: DeserializeOwned + Serialize,
+        T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
@@ -468,7 +453,7 @@ impl<
         HasValidator,
         HasRevalidator,
         HasRequired,
-        T: DeserializeOwned + Serialize,
+        T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
@@ -521,7 +506,7 @@ impl<
         HasValidator,
         HasRevalidator,
         HasRequired,
-        T: DeserializeOwned + Serialize,
+        T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
@@ -575,7 +560,7 @@ impl<
         HasValidator,
         HasRevalidator,
         HasRequired,
-        T: DeserializeOwned + Serialize,
+        T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
@@ -662,7 +647,7 @@ impl<
         HasShouldUpdate,
         HasFailure,
         HasSuccess,
-        T: DeserializeOwned + Serialize,
+        T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
@@ -743,7 +728,7 @@ impl<
         HasDelete,
         HasFailure,
         HasSuccess,
-        T: DeserializeOwned + Serialize,
+        T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
@@ -824,7 +809,7 @@ impl<
         HasDelete,
         HasFailure,
         HasSuccess,
-        T: DeserializeOwned + Serialize,
+        T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,

@@ -1,10 +1,9 @@
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
 
 use crate::utils::styled_text::Stylable;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Clone)]
 pub enum UpdateError<E: IvoErrorTool> {
     NothingToUpdate,
     ValidationError(E::ErrorPayload),
@@ -12,19 +11,19 @@ pub enum UpdateError<E: IvoErrorTool> {
 
 pub type DefaultErrorPayload = HashMap<String, Vec<FieldError>>;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Clone)]
 pub struct FieldError {
     pub reason: String,
     pub metadata: Option<Value>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ValidationErrorMessage {
     NothingToUpdate,
     ValidationError,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct IValidationError {
     pub message: ValidationErrorMessage,
     pub payload: HashMap<String, FieldError>,
@@ -32,7 +31,7 @@ pub struct IValidationError {
 
 // ErrorTool trait
 pub trait IvoErrorTool {
-    type ErrorPayload: Serialize + DeserializeOwned;
+    type ErrorPayload;
 
     fn new() -> Self;
     fn add(&mut self, field: &str, error: FieldError) -> &mut Self;

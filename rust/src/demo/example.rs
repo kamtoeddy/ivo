@@ -1,7 +1,6 @@
 use std::sync::LazyLock;
 
 // use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
 
 use crate::demo::slugify::{slugify, SlugifiedString};
 use crate::fields::IvoField;
@@ -11,14 +10,14 @@ use crate::{schema::SchemaCore, types::IvoSummary};
 
 // type DateWithTz = DateTime<Utc>;
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone)]
 pub enum UserRole {
     Admin,
     User,
     Moderator,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize, IvoStruct)]
+#[derive(Debug, Clone, IvoStruct)]
 pub struct User {
     // pub created_at: DateWithTz,
     pub id: String,
@@ -30,7 +29,7 @@ pub struct User {
     // pub updated_at: Option<DateWithTz>,
 }
 
-#[derive(Clone, Deserialize, Serialize, IvoStruct)]
+#[derive(Clone, IvoStruct)]
 pub struct UserInput {
     pub email: String,
     pub username: String,

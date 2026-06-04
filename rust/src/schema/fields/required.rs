@@ -1,7 +1,5 @@
 use std::marker::PhantomData;
 
-use serde::{de::DeserializeOwned, Serialize};
-
 use crate::{
     fields::base::{BuildableIvoProperty, InternalIvoProperty, IvoProperty},
     traits::{
@@ -183,12 +181,8 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
     }
 }
 
-impl<
-        T: DeserializeOwned + Serialize,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
-        CtxOptions: Clone,
-    > RequiredFieldBuilder<T, I, O, CtxOptions, Yes>
+impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
+    RequiredFieldBuilder<T, I, O, CtxOptions, Yes>
 {
     pub fn re_validate<F>(
         self,

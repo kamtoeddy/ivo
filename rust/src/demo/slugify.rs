@@ -1,11 +1,10 @@
 use std::sync::LazyLock;
 
 use regex::Regex;
-use serde::{Deserialize, Serialize};
 use unicode_normalization::UnicodeNormalization;
 
 // 1. Define the Type-Safe Newtype (equivalent to Nominal in TS)
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SlugifiedString(pub String);
 
 // Optional: Implement Display so it prints like a regular string
