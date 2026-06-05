@@ -131,6 +131,8 @@ impl<
         let _ = Output::Partial::from_ivo_internal_map(&context);
         let output = Output::Partial::from_ivo_internal_map(&previous_values);
 
+        println!("{output:?}");
+
         Ok((output, Box::new(move || Box::pin(async move {}))))
 
         // Err((

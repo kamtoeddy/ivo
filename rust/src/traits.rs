@@ -20,16 +20,15 @@ pub trait IvoSchemaStruct:
 {
 }
 
-#[allow(dead_code)]
 pub trait FromMap: Sized {
     fn from_ivo_internal_map(map: &HashMap<String, ErasedValue>) -> Result<Self, String>;
 }
 
-pub trait PartialFromMap: Sized {
+pub trait PartialFromMap {
     fn from_ivo_internal_map(map: &HashMap<String, ErasedValue>) -> Self;
 }
 
-pub trait ToMap: Sized {
+pub trait ToMap {
     fn to_ivo_internal_map(&self) -> HashMap<String, ErasedValue>;
 }
 
@@ -38,7 +37,7 @@ pub trait HasFields {
 }
 
 pub trait HasPartial {
-    type Partial: Send + Sync + Clone + PartialFromMap + ToMap;
+    type Partial: Debug + Send + Sync + Clone + PartialFromMap + ToMap;
 }
 
 pub type Partial<T> = <T as HasPartial>::Partial;
