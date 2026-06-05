@@ -1,10 +1,10 @@
 use std::{collections::HashSet, sync::LazyLock};
 
 use regex::Regex;
-use serde_json::json;
 
 use crate::types::{ValidatorFn, ValidatorResponse};
 
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum StringValidatorOptions {
     MinMax {
         max: Option<usize>,
@@ -14,10 +14,14 @@ pub enum StringValidatorOptions {
     Values(Vec<String>),
 }
 
-pub fn make_string_validator(options: StringValidatorOptions) -> ValidatorFn<String> {
+pub fn make_string_validator(
+    options: StringValidatorOptions,
+) -> ValidatorFn<String, StringValidatorOptions> {
     validate_string_validator_options(&options);
 
-    Box::new(move |value| {
+    Box::new(move |value: String| {
+        let options = options.clone();
+
         let s = match &options {
             StringValidatorOptions::MinMax {
                 trim: Some(should_trim),
@@ -40,13 +44,13 @@ pub fn make_string_validator(options: StringValidatorOptions) -> ValidatorFn<Str
 
                 if let Some(max_length) = max {
                     if str_length > *max_length {
-                        return Err(("too_long".into(), Some(json!({"max": max_length}))));
+                        return Err(("too_long".into(), Some(options)));
                     }
                 }
 
                 if let Some(min_length) = min {
                     if str_length < *min_length {
-                        return Err(("too_short".into(), Some(json!({"min": min_length}))));
+                        return Err(("too_short".into(), Some(options)));
                     }
                 }
 
@@ -54,10 +58,7 @@ pub fn make_string_validator(options: StringValidatorOptions) -> ValidatorFn<Str
             }
             StringValidatorOptions::Values(values) => {
                 if !values.contains(&s) {
-                    return Err((
-                        "Invalid option selected".into(),
-                        Some(json!({"options": values})),
-                    ));
+                    return Err(("Invalid option selected".into(), Some(options)));
                 }
 
                 Ok(s)
@@ -121,7 +122,7 @@ static EMAIL_RE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])"#).unwrap()
 });
 
-pub fn validate_email(value: String) -> ValidatorResponse<String> {
+pub fn validate_email(value: String) -> ValidatorResponse<String, StringValidatorOptions> {
     let string_validation = make_string_validator(StringValidatorOptions::MinMax {
         max: None,
         min: Some(3),
@@ -143,7 +144,6 @@ pub fn validate_email(value: String) -> ValidatorResponse<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json::json;
 
     #[test]
     fn test_string_validator() {
@@ -168,8 +168,9 @@ mod tests {
             .map(|s| s.to_owned())
             .collect::<Vec<String>>();
 
-        let validator =
-            make_string_validator(StringValidatorOptions::Values(allowed_roles.clone()));
+        let options = StringValidatorOptions::Values(allowed_roles.clone());
+
+        let validator = make_string_validator(options.clone());
 
         let role = allowed_roles.get(0).unwrap().clone();
 
@@ -181,7 +182,7 @@ mod tests {
         match validator(String::from("invalid role")) {
             Err((reason, metadata)) => {
                 assert_eq!(reason, "Invalid option selected");
-                assert_eq!(metadata, Some(json!({ "options": allowed_roles})))
+                assert_eq!(metadata, Some(options))
             }
             _ => panic!("expected invalid"),
         }

@@ -1,7 +1,6 @@
 use std::{collections::HashMap, fmt::Debug};
 
 use futures::future::BoxFuture;
-use serde_json::Value;
 
 use crate::{erased_value::ErasedValue, traits::IvoSchemaStruct};
 
@@ -282,6 +281,9 @@ pub type FailureHandler<I, O, CtxOptions> =
 pub type SuccessHandler<I, O, CtxOptions> =
     Box<dyn Fn(IvoSummary<I, O, CtxOptions>) -> BoxFuture<'static, ()> + Send + Sync + 'static>;
 
-pub type ValidatorResponse<T> = Result<T, (String, Option<Value>)>;
+pub type DefaultFieldErrorMetadata = ();
+pub type ValidatorResponse<T, ErrorMetadata = DefaultFieldErrorMetadata> =
+    Result<T, (String, Option<ErrorMetadata>)>;
 
-pub type ValidatorFn<T> = Box<dyn Fn(T) -> ValidatorResponse<T> + Send + Sync + 'static>;
+pub type ValidatorFn<T, ErrorMetadata = DefaultFieldErrorMetadata> =
+    Box<dyn Fn(T) -> ValidatorResponse<T, ErrorMetadata> + Send + Sync + 'static>;
