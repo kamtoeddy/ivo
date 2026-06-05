@@ -1,12 +1,10 @@
 use std::sync::LazyLock;
 
-// use chrono::{DateTime, Utc};
+use ivo::{IvoField, IvoStruct, IvoSummary, Model, SchemaCore};
 
-use crate::demo::slugify::{slugify, SlugifiedString};
-use crate::fields::IvoField;
-use crate::schema::Model;
-use crate::IvoStruct;
-use crate::{schema::SchemaCore, types::IvoSummary};
+use crate::utils::slugify::{SlugifiedString, slugify};
+
+// use chrono::{DateTime, Utc};
 
 // type DateWithTz = DateTime<Utc>;
 

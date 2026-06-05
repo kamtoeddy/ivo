@@ -280,5 +280,5 @@ pub type ValidatorResponse<T, ErrorMetadata = DefaultFieldErrorMetadata> =
 
 pub type ValidatorError<FieldErrorMetadata> = (String, Option<FieldErrorMetadata>);
 
-pub type ValidatorFn<T, ErrorMetadata = DefaultFieldErrorMetadata> =
-    Box<dyn Fn(T) -> ValidatorResponse<T, ErrorMetadata> + Send + Sync + 'static>;
+// pub type ValidatorFn<T, ErrorMetadata = DefaultFieldErrorMetadata> =
+//     Box<dyn Fn(T) -> ValidatorResponse<T, ErrorMetadata> + Send + Sync + 'static>;

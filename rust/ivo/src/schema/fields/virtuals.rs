@@ -1,17 +1,16 @@
-use std::{fmt::Debug, marker::PhantomData};
+use std::marker::PhantomData;
 
 use crate::{
-    erased_value::{erase_value, ErasedValue},
-    fields::base::{BuildableIvoProperty, InternalIvoProperty, IvoProperty},
+    erased_value::ErasedValue,
     schema::error::IvoErrorTool,
+    schema::fields::base::{BuildableIvoProperty, InternalIvoProperty, IvoProperty},
     traits::{
-        IntoAsyncFieldValidator, IntoDeleteHandler, IntoFailureHandler, IntoFieldValidator,
-        IntoRequiredResolverFn, IntoResolverWithMiniSummary, IntoResolverWithMutSummaryFn,
-        IntoSuccessHandler, IvoSchemaStruct,
+        IntoAsyncFieldValidator, IntoFailureHandler, IntoFieldValidator, IntoRequiredResolverFn,
+        IntoResolverWithMutSummaryFn, IntoSuccessHandler, IntoVirtualSanitizer, IvoSchemaStruct,
     },
     types::{
-        BooleanResolverWithMutSummary, ComputableInit, ComputableRequired,
-        ComputableWithMiniSummary, DeleteHandler, FailureHandler, FieldValidator, SuccessHandler,
+        BooleanResolverWithMutSummary, ComputableInit, ComputableRequired, FailureHandler,
+        FieldValidator, SuccessHandler, VirtualSanitiser,
     },
 };
 
@@ -20,56 +19,56 @@ pub struct Yes;
 pub struct No;
 pub struct YesComputed;
 
-pub struct LaxFieldBuilder<
+pub struct VirtualFieldBuilder<
     T,
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
     CtxOptions: Clone,
     ErrT: IvoErrorTool,
-    HasDefault = No,
     HasValidator = No,
+    HasAlias = No,
     HasRevalidator = No,
+    HasSanitizer = No,
     HasRequired = No,
     HasIgnore = No,
     HasShouldInit = No,
     HasShouldUpdate = No,
-    HasDelete = No,
     HasFailure = No,
     HasSuccess = No,
 > {
     _t: PhantomData<T>,
-    _default: PhantomData<HasDefault>,
+    _alias: PhantomData<HasAlias>,
     _validator: PhantomData<HasValidator>,
     _re_validator: PhantomData<HasRevalidator>,
     _required_fn: PhantomData<HasRequired>,
+    _sanitizer_fn: PhantomData<HasSanitizer>,
     _should_ignore: PhantomData<HasIgnore>,
     _should_init: PhantomData<HasShouldInit>,
     _should_update: PhantomData<HasShouldUpdate>,
-    _on_delete_fns: PhantomData<HasDelete>,
     _on_failure_fns: PhantomData<HasFailure>,
     _on_success_fns: PhantomData<HasSuccess>,
     // actual data...
-    default: Option<ComputableWithMiniSummary<ErasedValue, CtxOptions>>,
+    alias: Option<String>,
     validator: Option<FieldValidator<I, O, CtxOptions, ErrT>>,
     re_validator: Option<FieldValidator<I, O, CtxOptions, ErrT>>,
     required: Option<ComputableRequired<I, O, CtxOptions>>,
+    sanitizer: Option<VirtualSanitiser<ErasedValue, I, O, CtxOptions>>,
     should_ignore_fn: Option<BooleanResolverWithMutSummary<I, O, CtxOptions>>,
     should_init: Option<ComputableInit<I, O, CtxOptions>>,
     should_update: Option<ComputableInit<I, O, CtxOptions>>,
-    on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
     on_failure_fns: Option<Vec<FailureHandler<I, O, CtxOptions>>>,
     on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
 }
 
 impl<
-        HasDefault,
         HasValidator,
+        HasAlias,
         HasRevalidator,
+        HasSanitizer,
         HasRequired,
         HasIgnore,
         HasShouldInit,
         HasShouldUpdate,
-        HasDelete,
         HasFailure,
         HasSuccess,
         T,
@@ -78,45 +77,45 @@ impl<
         CtxOptions: Clone,
         ErrT: IvoErrorTool,
     >
-    LaxFieldBuilder<
+    VirtualFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
         ErrT,
-        HasDefault,
         HasValidator,
+        HasAlias,
         HasRevalidator,
+        HasSanitizer,
         HasRequired,
         HasIgnore,
         HasShouldInit,
         HasShouldUpdate,
-        HasDelete,
         HasFailure,
         HasSuccess,
     >
 {
     pub const fn new() -> Self {
         Self {
-            default: None,
+            alias: None,
             validator: None,
             re_validator: None,
             required: None,
+            sanitizer: None,
             should_ignore_fn: None,
             should_init: None,
             should_update: None,
-            on_delete_fns: None,
             on_failure_fns: None,
             on_success_fns: None,
             _t: PhantomData,
-            _default: PhantomData,
+            _alias: PhantomData,
             _validator: PhantomData,
             _re_validator: PhantomData,
             _required_fn: PhantomData,
+            _sanitizer_fn: PhantomData,
             _should_ignore: PhantomData,
             _should_init: PhantomData,
             _should_update: PhantomData,
-            _on_delete_fns: PhantomData,
             _on_failure_fns: PhantomData,
             _on_success_fns: PhantomData,
         }
@@ -124,14 +123,14 @@ impl<
 }
 
 impl<
-        HasDefault,
         HasValidator,
+        HasAlias,
         HasRevalidator,
+        HasSanitizer,
         HasRequired,
         HasIgnore,
         HasShouldInit,
         HasShouldUpdate,
-        HasDelete,
         HasFailure,
         HasSuccess,
         T,
@@ -140,20 +139,20 @@ impl<
         CtxOptions: Clone,
         ErrT: IvoErrorTool,
     > Default
-    for LaxFieldBuilder<
+    for VirtualFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
         ErrT,
-        HasDefault,
         HasValidator,
+        HasAlias,
         HasRevalidator,
+        HasSanitizer,
         HasRequired,
         HasIgnore,
         HasShouldInit,
         HasShouldUpdate,
-        HasDelete,
         HasFailure,
         HasSuccess,
     >
@@ -164,13 +163,13 @@ impl<
 }
 
 impl<
-        HasDefault,
+        HasAlias,
         HasRevalidator,
+        HasSanitizer,
         HasRequired,
         HasIgnore,
         HasShouldInit,
         HasShouldUpdate,
-        HasDelete,
         HasFailure,
         HasSuccess,
         T,
@@ -179,34 +178,35 @@ impl<
         CtxOptions: Clone,
         ErrT: IvoErrorTool,
     > BuildableIvoProperty<I, O, CtxOptions, ErrT>
-    for LaxFieldBuilder<
+    for VirtualFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
         ErrT,
         Yes,
+        HasAlias,
         HasRevalidator,
-        HasDefault,
+        HasSanitizer,
         HasRequired,
         HasIgnore,
         HasShouldInit,
         HasShouldUpdate,
-        HasDelete,
         HasFailure,
         HasSuccess,
     >
 {
     fn build(self) -> InternalIvoProperty<I, O, CtxOptions, ErrT> {
         IvoProperty {
-            default: self.default,
+            is_virtual: true,
+            alias: self.alias,
             validator: self.validator,
             re_validator: self.re_validator,
             required: self.required,
+            sanitizer: self.sanitizer,
             should_ignore: self.should_ignore_fn,
             should_init: self.should_init,
             should_update: self.should_update,
-            on_delete_fns: self.on_delete_fns,
             on_failure_fns: self.on_failure_fns,
             on_success_fns: self.on_success_fns,
             ..Default::default()
@@ -215,42 +215,53 @@ impl<
 }
 
 impl<
-        T: Clone + Debug + Send + Sync + 'static,
+        HasValidator,
+        HasRevalidator,
+        T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
         ErrT: IvoErrorTool,
-    > LaxFieldBuilder<T, I, O, CtxOptions, ErrT>
+    > VirtualFieldBuilder<T, I, O, CtxOptions, ErrT, HasValidator, No, HasRevalidator>
 {
-    pub fn default(self, value: T) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrT, Yes> {
-        LaxFieldBuilder {
-            default: Some(ComputableWithMiniSummary::Static(erase_value(value))),
-            ..Default::default()
-        }
-    }
-
-    pub fn default_fn<F>(self, default_fn: F) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrT, Yes>
-    where
-        F: IntoResolverWithMiniSummary<T, I, O, CtxOptions>,
-    {
-        LaxFieldBuilder {
-            default: Some(ComputableWithMiniSummary::SyncFunc(
-                default_fn.into_uniform(),
-            )),
+    pub fn alias(
+        self,
+        name: &str,
+    ) -> VirtualFieldBuilder<T, I, O, CtxOptions, ErrT, HasValidator, Yes> {
+        VirtualFieldBuilder {
+            alias: Some(name.to_string()),
+            validator: self.validator,
+            re_validator: self.re_validator,
+            sanitizer: self.sanitizer,
+            required: self.required,
+            should_ignore_fn: self.should_ignore_fn,
+            should_init: self.should_init,
+            should_update: self.should_update,
+            on_failure_fns: self.on_failure_fns,
+            on_success_fns: self.on_success_fns,
             ..Default::default()
         }
     }
 }
 
-impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErrorTool>
-    LaxFieldBuilder<T, I, O, CtxOptions, ErrT, Yes>
+impl<
+        HasAlias,
+        T,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions: Clone,
+        ErrT: IvoErrorTool,
+    > VirtualFieldBuilder<T, I, O, CtxOptions, ErrT, No, HasAlias>
 {
-    pub fn validate<F>(self, validator: F) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes>
+    pub fn validate<F>(
+        self,
+        validator: F,
+    ) -> VirtualFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, HasAlias>
     where
         F: IntoFieldValidator<T, I, O, CtxOptions, ErrT>,
     {
-        LaxFieldBuilder {
-            default: self.default,
+        VirtualFieldBuilder {
+            alias: self.alias,
             validator: Some(FieldValidator::Sync(validator.into_uniform())),
             ..Default::default()
         }
@@ -259,30 +270,36 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErro
     pub fn validate_async<F>(
         self,
         validator: F,
-    ) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes>
+    ) -> VirtualFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, HasAlias>
     where
         F: IntoAsyncFieldValidator<T, I, O, CtxOptions, ErrT>,
     {
-        LaxFieldBuilder {
-            default: self.default,
+        VirtualFieldBuilder {
+            alias: self.alias,
             validator: Some(FieldValidator::Async(validator.into_uniform())),
             ..Default::default()
         }
     }
 }
 
-impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErrorTool>
-    LaxFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes>
+impl<
+        HasAlias,
+        T,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions: Clone,
+        ErrT: IvoErrorTool,
+    > VirtualFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, HasAlias>
 {
     pub fn re_validate<F>(
         self,
         re_validator: F,
-    ) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, Yes>
+    ) -> VirtualFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, HasAlias, Yes>
     where
         F: IntoFieldValidator<T, I, O, CtxOptions, ErrT>,
     {
-        LaxFieldBuilder {
-            default: self.default,
+        VirtualFieldBuilder {
+            alias: self.alias,
             validator: self.validator,
             re_validator: Some(FieldValidator::Sync(re_validator.into_uniform())),
             ..Default::default()
@@ -292,12 +309,12 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErro
     pub fn re_validate_async<F>(
         self,
         re_validator: F,
-    ) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes>
+    ) -> VirtualFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, HasAlias, Yes>
     where
         F: IntoAsyncFieldValidator<T, I, O, CtxOptions, ErrT>,
     {
-        LaxFieldBuilder {
-            default: self.default,
+        VirtualFieldBuilder {
+            alias: self.alias,
             validator: self.validator,
             re_validator: Some(FieldValidator::Async(re_validator.into_uniform())),
             ..Default::default()
@@ -306,23 +323,24 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErro
 }
 
 impl<
+        HasAlias,
         HasRevalidator,
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
         ErrT: IvoErrorTool,
-    > LaxFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, HasRevalidator>
+    > VirtualFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, HasAlias, HasRevalidator>
 {
     pub fn required_if<R>(
         self,
         resolver: R,
-    ) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, HasRevalidator, Yes>
+    ) -> VirtualFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, HasAlias, HasRevalidator, No, Yes>
     where
         R: IntoRequiredResolverFn<I, O, CtxOptions>,
     {
-        LaxFieldBuilder {
-            default: self.default,
+        VirtualFieldBuilder {
+            alias: self.alias,
             validator: self.validator,
             re_validator: self.re_validator,
             required: Some(ComputableRequired::Func(resolver.into_resolver())),
@@ -332,7 +350,7 @@ impl<
 }
 
 impl<
-        HasValidator,
+        HasAlias,
         HasRevalidator,
         HasRequired,
         T,
@@ -340,31 +358,87 @@ impl<
         O: IvoSchemaStruct,
         CtxOptions: Clone,
         ErrT: IvoErrorTool,
-    > LaxFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, HasValidator, HasRevalidator, HasRequired>
+    >
+    VirtualFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, HasAlias, HasRevalidator, No, HasRequired>
 {
-    pub fn ignore_if<R>(
+    pub fn sanitize<F>(
         self,
-        resolver: R,
-    ) -> LaxFieldBuilder<
+        sanitizer: F,
+    ) -> VirtualFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
         ErrT,
         Yes,
-        HasValidator,
+        HasAlias,
         HasRevalidator,
+        Yes,
+        HasRequired,
+    >
+    where
+        F: IntoVirtualSanitizer<T, I, O, CtxOptions>,
+    {
+        VirtualFieldBuilder {
+            alias: self.alias,
+            validator: self.validator,
+            re_validator: self.re_validator,
+            required: self.required,
+            sanitizer: Some(sanitizer.into_uniform()),
+            ..Default::default()
+        }
+    }
+}
+
+impl<
+        HasAlias,
+        HasRevalidator,
+        HasSanitizer,
+        HasRequired,
+        T,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions: Clone,
+        ErrT: IvoErrorTool,
+    >
+    VirtualFieldBuilder<
+        T,
+        I,
+        O,
+        CtxOptions,
+        ErrT,
+        Yes,
+        HasAlias,
+        HasRevalidator,
+        HasSanitizer,
+        HasRequired,
+    >
+{
+    pub fn ignore_if<R>(
+        self,
+        resolver: R,
+    ) -> VirtualFieldBuilder<
+        T,
+        I,
+        O,
+        CtxOptions,
+        ErrT,
+        Yes,
+        HasAlias,
+        HasRevalidator,
+        HasSanitizer,
         HasRequired,
         Yes,
     >
     where
         R: IntoResolverWithMutSummaryFn<bool, I, O, CtxOptions>,
     {
-        LaxFieldBuilder {
-            default: self.default,
+        VirtualFieldBuilder {
+            alias: self.alias,
             validator: self.validator,
             re_validator: self.re_validator,
             required: self.required,
+            sanitizer: self.sanitizer,
             should_ignore_fn: Some(resolver.into_resolver()),
             ..Default::default()
         }
@@ -372,36 +446,51 @@ impl<
 }
 
 impl<
-        HasValidator,
+        HasAlias,
         HasRevalidator,
+        HasSanitizer,
         HasRequired,
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
         ErrT: IvoErrorTool,
-    > LaxFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, HasValidator, HasRevalidator, HasRequired>
-{
-    pub fn ignore_init(
-        self,
-    ) -> LaxFieldBuilder<
+    >
+    VirtualFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
         ErrT,
         Yes,
-        HasValidator,
+        HasAlias,
         HasRevalidator,
+        HasSanitizer,
+        HasRequired,
+    >
+{
+    pub fn ignore_init(
+        self,
+    ) -> VirtualFieldBuilder<
+        T,
+        I,
+        O,
+        CtxOptions,
+        ErrT,
+        Yes,
+        HasAlias,
+        HasRevalidator,
+        HasSanitizer,
         HasRequired,
         No,
         Yes,
     > {
-        LaxFieldBuilder {
-            default: self.default,
+        VirtualFieldBuilder {
+            alias: self.alias,
             validator: self.validator,
             re_validator: self.re_validator,
             required: self.required,
+            sanitizer: self.sanitizer,
             should_init: Some(ComputableInit::False),
             ..Default::default()
         }
@@ -410,15 +499,16 @@ impl<
     pub fn allow_init_if<R>(
         self,
         resolver: R,
-    ) -> LaxFieldBuilder<
+    ) -> VirtualFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
         ErrT,
         Yes,
-        HasValidator,
+        HasAlias,
         HasRevalidator,
+        HasSanitizer,
         HasRequired,
         No,
         YesComputed,
@@ -426,37 +516,40 @@ impl<
     where
         R: IntoResolverWithMutSummaryFn<bool, I, O, CtxOptions>,
     {
-        LaxFieldBuilder {
-            default: self.default,
+        VirtualFieldBuilder {
+            alias: self.alias,
             validator: self.validator,
             re_validator: self.re_validator,
             required: self.required,
+            sanitizer: self.sanitizer,
             should_init: Some(ComputableInit::Func(resolver.into_resolver())),
             ..Default::default()
         }
     }
 
-    pub fn readonly(
+    pub fn ignore_update(
         self,
-    ) -> LaxFieldBuilder<
+    ) -> VirtualFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
         ErrT,
         Yes,
-        HasValidator,
+        HasAlias,
         HasRevalidator,
+        HasSanitizer,
         HasRequired,
         No,
         No,
         Yes,
     > {
-        LaxFieldBuilder {
-            default: self.default,
+        VirtualFieldBuilder {
+            alias: self.alias,
             validator: self.validator,
             re_validator: self.re_validator,
             required: self.required,
+            sanitizer: self.sanitizer,
             should_update: Some(ComputableInit::False),
             ..Default::default()
         }
@@ -465,15 +558,16 @@ impl<
     pub fn allow_update_if<R>(
         self,
         resolver: R,
-    ) -> LaxFieldBuilder<
+    ) -> VirtualFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
         ErrT,
         Yes,
-        HasValidator,
+        HasAlias,
         HasRevalidator,
+        HasSanitizer,
         HasRequired,
         No,
         No,
@@ -482,20 +576,22 @@ impl<
     where
         R: IntoResolverWithMutSummaryFn<bool, I, O, CtxOptions>,
     {
-        LaxFieldBuilder {
-            default: self.default,
+        VirtualFieldBuilder {
+            alias: self.alias,
             validator: self.validator,
             re_validator: self.re_validator,
             required: self.required,
-            should_update: Some(ComputableInit::Func(resolver.into_resolver())),
+            sanitizer: self.sanitizer,
+            should_init: Some(ComputableInit::Func(resolver.into_resolver())),
             ..Default::default()
         }
     }
 }
 
 impl<
-        HasValidator,
+        HasAlias,
         HasRevalidator,
+        HasSanitizer,
         HasRequired,
         T,
         I: IvoSchemaStruct,
@@ -503,15 +599,16 @@ impl<
         CtxOptions: Clone,
         ErrT: IvoErrorTool,
     >
-    LaxFieldBuilder<
+    VirtualFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
         ErrT,
         Yes,
-        HasValidator,
+        HasAlias,
         HasRevalidator,
+        HasSanitizer,
         HasRequired,
         No,
         No,
@@ -521,15 +618,16 @@ impl<
     pub fn allow_init_if<R>(
         self,
         resolver: R,
-    ) -> LaxFieldBuilder<
+    ) -> VirtualFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
         ErrT,
         Yes,
-        HasValidator,
+        HasAlias,
         HasRevalidator,
+        HasSanitizer,
         HasRequired,
         No,
         YesComputed,
@@ -538,11 +636,12 @@ impl<
     where
         R: IntoResolverWithMutSummaryFn<bool, I, O, CtxOptions>,
     {
-        LaxFieldBuilder {
-            default: self.default,
+        VirtualFieldBuilder {
+            alias: self.alias,
             validator: self.validator,
             re_validator: self.re_validator,
             required: self.required,
+            sanitizer: self.sanitizer,
             should_init: Some(ComputableInit::Func(resolver.into_resolver())),
             ..Default::default()
         }
@@ -550,8 +649,9 @@ impl<
 }
 
 impl<
-        HasValidator,
+        HasAlias,
         HasRevalidator,
+        HasSanitizer,
         HasRequired,
         T,
         I: IvoSchemaStruct,
@@ -559,15 +659,16 @@ impl<
         CtxOptions: Clone,
         ErrT: IvoErrorTool,
     >
-    LaxFieldBuilder<
+    VirtualFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
         ErrT,
         Yes,
-        HasValidator,
+        HasAlias,
         HasRevalidator,
+        HasSanitizer,
         HasRequired,
         No,
         Yes,
@@ -577,15 +678,16 @@ impl<
     pub fn allow_update_if<R>(
         self,
         resolver: R,
-    ) -> LaxFieldBuilder<
+    ) -> VirtualFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
         ErrT,
         Yes,
-        HasValidator,
+        HasAlias,
         HasRevalidator,
+        HasSanitizer,
         HasRequired,
         No,
         Yes,
@@ -594,11 +696,12 @@ impl<
     where
         R: IntoResolverWithMutSummaryFn<bool, I, O, CtxOptions>,
     {
-        LaxFieldBuilder {
-            default: self.default,
+        VirtualFieldBuilder {
+            alias: self.alias,
             validator: self.validator,
             re_validator: self.re_validator,
             required: self.required,
+            sanitizer: self.sanitizer,
             should_init: self.should_init,
             should_update: Some(ComputableInit::Func(resolver.into_resolver())),
             ..Default::default()
@@ -607,8 +710,9 @@ impl<
 }
 
 impl<
-        HasValidator,
+        HasAlias,
         HasRevalidator,
+        HasSanitizer,
         HasRequired,
         T,
         I: IvoSchemaStruct,
@@ -616,15 +720,16 @@ impl<
         CtxOptions: Clone,
         ErrT: IvoErrorTool,
     >
-    LaxFieldBuilder<
+    VirtualFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
         ErrT,
         Yes,
-        HasValidator,
+        HasAlias,
         HasRevalidator,
+        HasSanitizer,
         HasRequired,
         No,
         No,
@@ -633,26 +738,27 @@ impl<
 {
     pub fn ignore_init(
         self,
-    ) -> LaxFieldBuilder<
+    ) -> VirtualFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
         ErrT,
         Yes,
-        HasValidator,
+        HasAlias,
         HasRevalidator,
+        HasSanitizer,
         HasRequired,
         No,
         Yes,
         YesComputed,
     > {
-        LaxFieldBuilder {
-            default: self.default,
+        VirtualFieldBuilder {
+            alias: self.alias,
             validator: self.validator,
             re_validator: self.re_validator,
             required: self.required,
-
+            sanitizer: self.sanitizer,
             should_update: self.should_update,
             should_init: Some(ComputableInit::False),
             ..Default::default()
@@ -662,15 +768,16 @@ impl<
     pub fn allow_init_if<R>(
         self,
         resolver: R,
-    ) -> LaxFieldBuilder<
+    ) -> VirtualFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
         ErrT,
         Yes,
-        HasValidator,
+        HasAlias,
         HasRevalidator,
+        HasSanitizer,
         HasRequired,
         No,
         YesComputed,
@@ -679,11 +786,12 @@ impl<
     where
         R: IntoResolverWithMutSummaryFn<bool, I, O, CtxOptions>,
     {
-        LaxFieldBuilder {
-            default: self.default,
+        VirtualFieldBuilder {
+            alias: self.alias,
             validator: self.validator,
             re_validator: self.re_validator,
             required: self.required,
+            sanitizer: self.sanitizer,
             should_update: self.should_update,
             should_init: Some(ComputableInit::Func(resolver.into_resolver())),
             ..Default::default()
@@ -691,98 +799,15 @@ impl<
     }
 }
 
-// ON_DELETE is only available if HasDelete is 'No'
-impl<
-        HasValidator,
-        HasRevalidator,
-        HasRequired,
-        HasIgnore,
-        HasShouldInit,
-        HasShouldUpdate,
-        HasFailure,
-        HasSuccess,
-        T,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
-        CtxOptions: Clone,
-        ErrT: IvoErrorTool,
-    >
-    LaxFieldBuilder<
-        T,
-        I,
-        O,
-        CtxOptions,
-        ErrT,
-        Yes,
-        HasValidator,
-        HasRevalidator,
-        HasRequired,
-        HasIgnore,
-        HasShouldInit,
-        HasShouldUpdate,
-        No,
-        HasFailure,
-        HasSuccess,
-    >
-{
-    pub fn on_delete<H>(
-        self,
-        handler: H,
-    ) -> LaxFieldBuilder<
-        T,
-        I,
-        O,
-        CtxOptions,
-        ErrT,
-        Yes,
-        HasValidator,
-        HasRevalidator,
-        HasRequired,
-        HasIgnore,
-        HasShouldInit,
-        HasShouldUpdate,
-        Yes,
-        HasFailure,
-        HasSuccess,
-    >
-    where
-        H: IntoDeleteHandler<O, CtxOptions>,
-    {
-        let h = handler.into_handler();
-
-        LaxFieldBuilder {
-            default: self.default,
-            validator: self.validator,
-            re_validator: self.re_validator,
-            required: self.required,
-            should_ignore_fn: self.should_ignore_fn,
-            should_init: self.should_init,
-            should_update: self.should_update,
-            on_delete_fns: Some(match self.on_delete_fns {
-                Some(hs) => {
-                    let mut v = hs;
-
-                    v.push(h);
-
-                    v
-                }
-                _ => vec![h],
-            }),
-            on_failure_fns: self.on_failure_fns,
-            on_success_fns: self.on_success_fns,
-            ..Default::default()
-        }
-    }
-}
-
 // ON_FAILURE is only available if HasFailure is 'No'
 impl<
+        HasAlias,
         HasRevalidator,
+        HasSanitizer,
         HasRequired,
         HasIgnore,
         HasShouldInit,
         HasShouldUpdate,
-        HasDelete,
         HasFailure,
         HasSuccess,
         T,
@@ -791,20 +816,20 @@ impl<
         CtxOptions: Clone,
         ErrT: IvoErrorTool,
     >
-    LaxFieldBuilder<
+    VirtualFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
         ErrT,
         Yes,
-        Yes,
+        HasAlias,
         HasRevalidator,
+        HasSanitizer,
         HasRequired,
         HasIgnore,
         HasShouldInit,
         HasShouldUpdate,
-        HasDelete,
         HasFailure,
         HasSuccess,
     >
@@ -812,20 +837,20 @@ impl<
     pub fn on_failure<H>(
         self,
         handler: H,
-    ) -> LaxFieldBuilder<
+    ) -> VirtualFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
         ErrT,
         Yes,
-        Yes,
+        HasAlias,
         HasRevalidator,
+        HasSanitizer,
         HasRequired,
         HasIgnore,
         HasShouldInit,
         HasShouldUpdate,
-        HasDelete,
         Yes,
         HasSuccess,
     >
@@ -833,15 +858,16 @@ impl<
         H: IntoFailureHandler<I, O, CtxOptions>,
     {
         let h = handler.into_handler();
-        LaxFieldBuilder {
-            default: self.default,
+
+        VirtualFieldBuilder {
+            alias: self.alias,
             validator: self.validator,
             re_validator: self.re_validator,
+            sanitizer: self.sanitizer,
             required: self.required,
             should_ignore_fn: self.should_ignore_fn,
             should_init: self.should_init,
             should_update: self.should_update,
-            on_delete_fns: self.on_delete_fns,
             on_failure_fns: Some(match self.on_failure_fns {
                 Some(hs) => {
                     let mut v = hs;
@@ -860,13 +886,13 @@ impl<
 
 // ON_SUCCESS is only available if HasSuccess is 'No'
 impl<
-        HasValidator,
+        HasAlias,
         HasRevalidator,
+        HasSanitizer,
         HasRequired,
         HasIgnore,
         HasShouldInit,
         HasShouldUpdate,
-        HasDelete,
         HasFailure,
         HasSuccess,
         T,
@@ -875,20 +901,20 @@ impl<
         CtxOptions: Clone,
         ErrT: IvoErrorTool,
     >
-    LaxFieldBuilder<
+    VirtualFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
         ErrT,
         Yes,
-        HasValidator,
+        HasAlias,
         HasRevalidator,
+        HasSanitizer,
         HasRequired,
         HasIgnore,
         HasShouldInit,
         HasShouldUpdate,
-        HasDelete,
         HasFailure,
         HasSuccess,
     >
@@ -896,20 +922,20 @@ impl<
     pub fn on_success<H>(
         self,
         handler: H,
-    ) -> LaxFieldBuilder<
+    ) -> VirtualFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
         ErrT,
         Yes,
-        HasValidator,
+        HasAlias,
         HasRevalidator,
+        HasSanitizer,
         HasRequired,
         HasIgnore,
         HasShouldInit,
         HasShouldUpdate,
-        HasDelete,
         HasFailure,
         Yes,
     >
@@ -918,15 +944,15 @@ impl<
     {
         let h = handler.into_handler();
 
-        LaxFieldBuilder {
-            default: self.default,
+        VirtualFieldBuilder {
+            alias: self.alias,
             validator: self.validator,
             re_validator: self.re_validator,
+            sanitizer: self.sanitizer,
             required: self.required,
             should_ignore_fn: self.should_ignore_fn,
             should_init: self.should_init,
             should_update: self.should_update,
-            on_delete_fns: self.on_delete_fns,
             on_failure_fns: self.on_failure_fns,
             on_success_fns: Some(match self.on_success_fns {
                 Some(hs) => {

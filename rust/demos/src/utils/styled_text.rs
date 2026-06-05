@@ -4,7 +4,7 @@ pub enum TextStyle {
     ColorBlue,
     // ColorGreen,
     // ColorYellow,
-    ColorRed,
+    // ColorRed,
     // ColorInversed,
     FontBold,
     // FontUnderlined,
@@ -14,7 +14,7 @@ pub enum TextStyle {
 impl TextStyle {
     pub fn to_ansi(&self) -> &'static str {
         match self {
-            Self::ColorRed => "\x1b[31m",
+            // Self::ColorRed => "\x1b[31m",
             // Self::ColorGreen => "\x1b[32m",
             // Self::ColorYellow => "\x1b[33m",
             Self::ColorBlue => "\x1b[34m",
@@ -63,9 +63,9 @@ pub trait Stylable: fmt::Display + Sized {
     //     self.colored(TextStyle::ColorYellow)
     // }
 
-    fn colored_red(&self) -> Styled<'_, Self> {
-        self.colored(TextStyle::ColorRed)
-    }
+    // fn colored_red(&self) -> Styled<'_, Self> {
+    //     self.colored(TextStyle::ColorRed)
+    // }
 
     fn font_bold(&self) -> Styled<'_, Self> {
         self.colored(TextStyle::FontBold)

@@ -1,0 +1,10 @@
+[package]
+name = "demos"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+ivo = { path = "../ivo" }
+regex = "1.10"
+unicode-normalization = "0.1"
+tokio = { version = "1.0", features = ["full"] } # TODO: move to dev deps

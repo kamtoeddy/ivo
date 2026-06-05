@@ -17,17 +17,17 @@ pub struct FieldError<FieldMetadata = DefaultFieldErrorMetadata> {
     pub metadata: Option<FieldMetadata>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ValidationErrorMessage {
-    NothingToUpdate,
-    ValidationError,
-}
+// #[derive(Debug, Clone, PartialEq, Eq)]
+// pub enum ValidationErrorMessage {
+//     NothingToUpdate,
+//     ValidationError,
+// }
 
-#[derive(Debug, Clone)]
-pub struct IValidationError {
-    pub message: ValidationErrorMessage,
-    pub payload: HashMap<String, FieldError>,
-}
+// #[derive(Debug, Clone)]
+// pub struct IValidationError {
+//     pub message: ValidationErrorMessage,
+//     pub payload: HashMap<String, FieldError>,
+// }
 
 // ErrorTool trait
 pub trait IvoErrorTool {

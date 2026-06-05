@@ -2,8 +2,10 @@ use std::{fmt::Debug, marker::PhantomData};
 
 use crate::{
     erased_value::{erase_value, ErasedValue},
-    fields::base::{BuildableIvoProperty, InternalIvoProperty, IvoProperty},
-    schema::error::IvoErrorTool,
+    schema::{
+        error::IvoErrorTool,
+        fields::base::{BuildableIvoProperty, InternalIvoProperty, IvoProperty},
+    },
     traits::{
         IntoAsyncResolverWithMiniSummary, IntoDeleteHandler, IntoEnumErrorResolver,
         IntoFailureHandler, IntoResolverWithMiniSummary, IntoResolverWithMutSummaryFn,

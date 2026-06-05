@@ -3,7 +3,7 @@ name = "ivo"
 version = "0.0.1"
 edition = "2021"
 description = "The schema valitator that brings user stories to life, inspired by ivo on npm"
-license-file = "../LICENSE"
+license-file = "../../LICENSE"
 keywords = ["schema", "validation"]
 homepage = "https://github.com/kamtoeddy/ivo#readme"
 repository = "https://github.com/kamtoeddy/ivo.git"
@@ -11,7 +11,5 @@ repository = "https://github.com/kamtoeddy/ivo.git"
 [dependencies]
 chrono = "0.4"
 futures = "0.3"
-ivo_struct = { path = "./lib/ivo_struct" }
+ivo_struct = { path = "./libs/ivo_struct" }
 regex = "1.10"
-tokio = { version = "1.0", features = ["full"] } # TODO: move to dev deps
-unicode-normalization = "0.1"

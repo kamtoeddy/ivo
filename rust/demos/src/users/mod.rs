@@ -1,15 +1,14 @@
+use ivo::UpdateError;
 use std::time::Instant;
 
+mod domain;
+
 use crate::{
-    demo::{
-        example::{PartialUserInput, User, UserCtxOptions, UserRole, USER_MODEL, USER_SCHEMA},
-        slugify::slugify,
-    },
-    schema::error::UpdateError,
-    utils::styled_text::Stylable,
+    users::domain::{PartialUserInput, USER_MODEL, USER_SCHEMA, User, UserCtxOptions, UserRole},
+    utils::{slugify::slugify, styled_text::Stylable},
 };
 
-pub async fn run_example() {
+pub async fn run_users_demo() {
     // let schema = DEMO::make_schema();
     println!("UserSchema props: {:?}\n", USER_SCHEMA.props);
     // let timer = Instant::now();

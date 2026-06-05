@@ -1,8 +1,8 @@
 use std::marker::PhantomData;
 
 use crate::{
-    fields::base::{BuildableIvoProperty, InternalIvoProperty, IvoProperty},
     schema::error::IvoErrorTool,
+    schema::fields::base::{BuildableIvoProperty, InternalIvoProperty, IvoProperty},
     traits::{
         IntoAsyncFieldValidator, IntoDeleteHandler, IntoFailureHandler, IntoFieldValidator,
         IntoResolverWithMutSummaryFn, IntoSuccessHandler, IvoSchemaStruct,

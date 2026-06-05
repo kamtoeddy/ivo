@@ -1,12 +1,14 @@
 use std::marker::PhantomData;
 
 use crate::{
-    fields::{
-        constants::ConstantFieldBuilder, dependents::DependentFieldBuilder,
-        enumerated::EnumFieldBuilder, lax::LaxFieldBuilder, required::RequiredFieldBuilder,
-        virtuals::VirtualFieldBuilder,
+    schema::{
+        error::IvoErrorTool,
+        fields::{
+            constants::ConstantFieldBuilder, dependents::DependentFieldBuilder,
+            enumerated::EnumFieldBuilder, lax::LaxFieldBuilder, required::RequiredFieldBuilder,
+            virtuals::VirtualFieldBuilder,
+        },
     },
-    schema::error::IvoErrorTool,
     traits::IvoSchemaStruct,
 };
 
