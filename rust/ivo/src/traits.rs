@@ -15,14 +15,28 @@ use crate::{
     ValidatorResponse,
 };
 
+/// ```
+/// if let Some(v) = inner.get(k){
+///          // ^___ v represents `ErasedValue` which becomes a concrete `T`, with `parse_or_panic::<T>(&v)`
+/// }
+/// ```
+pub struct OptionalErasedMap {
+    pub inner: HashMap<String, ErasedValue>,
+}
+
 pub trait IvoSchemaStruct:
     Debug + Eq + Send + Sync + 'static + HasFields + HasPartial + FromToMap + WithUpdateDetails
 {
 }
 
 pub trait FromToMap {
-    fn from_ivo_internal_map(map: &HashMap<String, ErasedValue>) -> Self;
-    fn to_ivo_internal_map(&self) -> HashMap<String, ErasedValue>;
+    fn ivo_internal_from_erased_map(map: &HashMap<String, ErasedValue>) -> Self;
+    fn ivo_internal_to_erased_map(&self) -> HashMap<String, ErasedValue>;
+}
+
+pub trait PartialFromToMap {
+    fn ivo_internal_from_optional_erased_map(map: &OptionalErasedMap) -> Self;
+    fn ivo_internal_to_optional_erased_map(&self) -> OptionalErasedMap;
 }
 
 pub trait HasFields {
@@ -30,7 +44,7 @@ pub trait HasFields {
 }
 
 pub trait HasPartial {
-    type Partial: Debug + Default + Send + Sync + Clone + FromToMap;
+    type Partial: Debug + Default + Send + Sync + Clone + PartialFromToMap;
 }
 
 pub trait WithUpdateDetails: HasPartial {

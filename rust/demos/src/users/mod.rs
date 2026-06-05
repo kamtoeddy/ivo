@@ -25,7 +25,7 @@ pub async fn run_users_demo() {
 
     let r = USER_MODEL
         .create(
-            &PartialUserInput {
+            PartialUserInput {
                 email: Some("1@1.com".to_string()),
                 username: Some("john".to_string()),
                 role: None,
@@ -75,8 +75,8 @@ pub async fn run_users_demo() {
 
     let r = USER_MODEL
         .update(
-            &user,
-            &PartialUserInput {
+            user.clone(),
+            PartialUserInput {
                 email: Some(user.email.clone()),
                 // role: Some(user.role.clone()),
                 role: Some(UserRole::User),

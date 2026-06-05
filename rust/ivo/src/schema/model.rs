@@ -8,7 +8,7 @@ use std::collections::{HashMap, HashSet};
 use futures::future::{join_all, BoxFuture};
 use futures::stream::{FuturesUnordered, StreamExt};
 
-use crate::traits::{FromToMap, IvoSchemaStruct, Partial};
+use crate::traits::{IvoSchemaStruct, Partial, PartialFromToMap};
 
 pub type AsyncTriggerFn = Box<dyn Fn() -> BoxFuture<'static, ()> + Send + Sync>;
 
@@ -40,20 +40,20 @@ impl<
 {
     pub async fn create(
         &self,
-        input: &Partial<I>,
+        input: Partial<I>,
         options: CtxOptions,
     ) -> Result<(O, AsyncTriggerFn), (ErrorTool::ErrorPayload, AsyncTriggerFn)> {
         let v = erase_value(String::from("create"));
         parse_or_panic::<String>(&v);
 
         let mut error_tool = ErrorTool::new();
-        let input_values = input.to_ivo_internal_map();
+        let input_values = input.ivo_internal_to_optional_erased_map();
 
-        println!();
-        for _ in input_values {
+        // println!();
+        for _ in input_values.inner {
             // println!("'{k}' was provided");
         }
-        println!();
+        // println!();
 
         // Build initial context from input (filter to schema props)
         let mut context: Context = HashMap::new();
@@ -79,7 +79,7 @@ impl<
         self.resolve_constants(&mut context);
 
         // Run validators for props in context
-        self.run_async_validator(input, options).await;
+        self.run_async_validator(&input, options).await;
 
         error_tool.add(
             "lol",
@@ -98,7 +98,7 @@ impl<
 
         self.add_timestamps(&mut context);
 
-        // let output = Output::from_ivo_internal_map(&context).unwrap();
+        // let output = Output::ivo_internal_from_erased_map(&context).unwrap();
 
         // Ok((output, Box::new(move || Box::pin(async move {}))))
 
@@ -110,41 +110,35 @@ impl<
 
     pub async fn update(
         &self,
-        data: &O,
-        updates: &Partial<I>,
+        data: O,
+        updates: Partial<I>,
         options: CtxOptions,
     ) -> Result<(Partial<O>, AsyncTriggerFn), (UpdateError<ErrorTool>, AsyncTriggerFn)> {
         // Run validators for props in context
-        self.run_async_validator(updates, options).await;
+        self.run_async_validator(&updates, options).await;
 
-        let previous_values = data.to_ivo_internal_map();
-        let input_values = updates.to_ivo_internal_map();
+        // let previous_values = data.ivo_internal_to_erased_map();
+        let input_values = updates.ivo_internal_to_optional_erased_map();
         // let context: Context = HashMap::new();
+
+        // in the updates provided are all none, the nothing to update
+        if input_values.inner.len() == 0 {
+            return Err((
+                UpdateError::NothingToUpdate,
+                Box::new(move || Box::pin(async move {})),
+            ));
+        }
 
         let mut changes = HashMap::new();
 
-        println!();
-        for (k, v) in input_values.iter() {
+        // println!();
+        for (k, v) in input_values.inner.iter() {
             // validate and set only values that have changed
             changes.insert(k.clone(), v.clone());
         }
-        println!();
+        // println!();
 
-        let mut new_data = previous_values.clone();
-
-        for (k, v) in changes.iter() {
-            // validate and set only values that have changed
-            new_data.insert(k.clone(), v.clone());
-        }
-
-        let new_output = O::from_ivo_internal_map(&new_data);
-
-        // let empty_input = I::Partial::default();
-        // println!("default partial input: {:?}", empty_input);
-
-        // let empty_output = O::Partial::default();
-        // println!("default partial output: {:?}", empty_output);
-
+        //
         let (updated_values, has_updated_fields) = data.ivo_internal_get_updates(&changes);
 
         if !has_updated_fields {

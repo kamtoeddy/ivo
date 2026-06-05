@@ -32,7 +32,7 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
         let ty = &f.ty;
         let field_vis = &f.vis;
         quote! {
-            #field_vis #name: std::option::Option<#ty>
+            #field_vis #name: std::option::Option<#ty>,
         }
     });
 
@@ -77,12 +77,13 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
         }
     });
 
+    // ivo_internal_to_optional_erased_map
     let to_map_statements_for_partial = fields.iter().map(|field| {
         let field_name = &field.ident;
 
         quote! {
             if let Some(value) = self.#field_name.clone() {
-                map.insert(
+                inner.insert(
                     stringify!(#field_name).to_string(),
                     erase_value(value)
                 );
@@ -90,13 +91,14 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
         }
     });
 
+    // ivo_internal_from_optional_erased_map
     let construct_struct_fields_for_from_map_for_partial = fields.iter().map(|field| {
         let field_name = &field.ident; // e.g., 'id'
         let field_type = &field.ty; // e.g., 'String'
 
         quote! {
             #field_name: {
-                match map.get(stringify!(#field_name)) {
+                match optional_map.inner.get(stringify!(#field_name)) {
                     Some(erased) => parse_value::<#field_type>(erased),
                     _ => None,
                 }
@@ -126,11 +128,11 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
     let expanded = quote! {
         #[derive(Clone, Debug, Default, PartialEq, Eq)]
         #vis struct #partial_name {
-            #(#partial_fields,)*
+            #( #partial_fields )*
         }
 
-        impl #crate_root::traits::FromToMap for #partial_name {
-            fn from_ivo_internal_map(map: &std::collections::HashMap<String, #crate_root::utils::erased_value::ErasedValue>) -> Self {
+        impl #crate_root::traits::PartialFromToMap for #partial_name {
+            fn ivo_internal_from_optional_erased_map(optional_map: &#crate_root::traits::OptionalErasedMap) -> Self {
                 use #crate_root::utils::erased_value::parse_value;
 
                 Self {
@@ -138,26 +140,27 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
                 }
             }
 
-            fn to_ivo_internal_map(&self) -> std::collections::HashMap<String, #crate_root::utils::erased_value::ErasedValue> {
+            fn ivo_internal_to_optional_erased_map(&self) -> #crate_root::traits::OptionalErasedMap {
+                use #crate_root::traits::OptionalErasedMap;
                 use #crate_root::utils::erased_value::erase_value;
-                let mut map = std::collections::HashMap::new();
+                let mut inner = std::collections::HashMap::new();
 
                 #( #to_map_statements_for_partial )*
 
-                map
+                OptionalErasedMap { inner }
             }
         }
 
         impl #crate_root::traits::IvoSchemaStruct for #name { }
 
         impl #crate_root::traits::FromToMap for #name {
-            fn from_ivo_internal_map(map: &std::collections::HashMap<String, #crate_root::utils::erased_value::ErasedValue>) -> Self{
+            fn ivo_internal_from_erased_map(map: &std::collections::HashMap<String, #crate_root::utils::erased_value::ErasedValue>) -> Self{
                 Self {
                     #( #construct_struct_fields_for_from_map )*
                 }
             }
 
-            fn to_ivo_internal_map(&self) -> std::collections::HashMap<String, #crate_root::utils::erased_value::ErasedValue> {
+            fn ivo_internal_to_erased_map(&self) -> std::collections::HashMap<String, #crate_root::utils::erased_value::ErasedValue> {
                 use #crate_root::utils::erased_value::erase_value;
                 let mut map = std::collections::HashMap::new();
 
