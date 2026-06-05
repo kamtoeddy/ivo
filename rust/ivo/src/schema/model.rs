@@ -1,7 +1,7 @@
 use crate::schema::core::SchemaCore;
 use crate::schema::error::{DefaultErrorTool, FieldError, IvoErrorTool, UpdateError};
 use crate::types::Context;
-use crate::utils::erased_value::{erase_value, parse_or_panic, ErasedValue};
+use crate::utils::erased_value::ErasedValue;
 
 use std::collections::{HashMap, HashSet};
 
@@ -43,9 +43,6 @@ impl<
         input: Partial<I>,
         options: CtxOptions,
     ) -> Result<(O, AsyncTriggerFn), (ErrorTool::ErrorPayload, AsyncTriggerFn)> {
-        let v = erase_value(String::from("create"));
-        parse_or_panic::<String>(&v);
-
         let mut error_tool = ErrorTool::new();
         let input_values = input.ivo_internal_to_optional_erased_map();
 

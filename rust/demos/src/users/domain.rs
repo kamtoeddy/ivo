@@ -59,7 +59,7 @@ pub static USER_SCHEMA: LazyLock<SchemaCore<UserInput, User, UserCtxOptions>> =
     LazyLock::new(|| {
         SchemaCore::new()
             .with_fields(|f| {
-                f.set("id", IvoField::CONSTANT.value(1234))
+                f.set("id", IvoField::CONSTANT.computed(|_| 1234))
                     .set(
                         "email",
                         IvoField::REQUIRED.validate(|_, _| Ok(String::from("Hello"))),
