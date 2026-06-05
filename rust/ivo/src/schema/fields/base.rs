@@ -1,7 +1,6 @@
 use std::marker::PhantomData;
 
 use crate::{
-    erased_value::ErasedValue,
     schema::error::IvoErrorTool,
     traits::IvoSchemaStruct,
     types::{
@@ -9,6 +8,7 @@ use crate::{
         ComputableRequired, ComputableWithMiniSummary, DeleteHandler, FailureHandler,
         FieldValidator, ResolverWithMutSummary, SuccessHandler, VirtualSanitiser,
     },
+    utils::erased_value::ErasedValue,
 };
 
 pub trait BuildableIvoProperty<

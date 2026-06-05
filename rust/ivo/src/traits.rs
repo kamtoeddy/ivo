@@ -3,7 +3,6 @@ use std::{collections::HashMap, fmt::Debug, future::Future};
 use futures::FutureExt;
 
 use crate::{
-    erased_value::{erase_value, parse_or_panic, ErasedValue},
     schema::error::IvoErrorTool,
     types::{
         DeleteHandler, FailureHandler, IvoMiniSummary, IvoSummary, RequiredResolverFn,
@@ -12,6 +11,7 @@ use crate::{
         UniformResolverWithMiniSummary, UniformResolverWithMutSummary, UniformValidator,
         UniformVirtualSanitiser, ValidatorError,
     },
+    utils::erased_value::{erase_value, parse_or_panic, ErasedValue},
     ValidatorResponse,
 };
 

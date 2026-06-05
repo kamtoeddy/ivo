@@ -1,4 +1,4 @@
-use crate::erased_value::ErasedValue;
+use crate::utils::erased_value::ErasedValue;
 
 use crate::schema::error::{DefaultErrorTool, IvoErrorTool};
 use crate::schema::fields::base::BuildableIvoProperty;

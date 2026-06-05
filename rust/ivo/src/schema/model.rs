@@ -1,7 +1,7 @@
-use crate::erased_value::{erase_value, parse_or_panic, ErasedValue};
 use crate::schema::core::SchemaCore;
 use crate::schema::error::{DefaultErrorTool, FieldError, IvoErrorTool, UpdateError};
 use crate::types::Context;
+use crate::utils::erased_value::{erase_value, parse_or_panic, ErasedValue};
 
 use std::collections::{HashMap, HashSet};
 

@@ -1,7 +1,6 @@
 use std::{fmt::Debug, marker::PhantomData};
 
 use crate::{
-    erased_value::{erase_value, ErasedValue},
     schema::{
         error::IvoErrorTool,
         fields::base::{BuildableIvoProperty, InternalIvoProperty, IvoProperty},
@@ -15,6 +14,7 @@ use crate::{
         BooleanResolverWithMutSummary, ComputableEnumeratedError, ComputableInit,
         ComputableWithMiniSummary, DeleteHandler, FailureHandler, IvoSummary, SuccessHandler,
     },
+    utils::erased_value::{erase_value, ErasedValue},
 };
 
 // Marker Types

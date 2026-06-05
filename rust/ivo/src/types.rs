@@ -3,9 +3,9 @@ use std::{collections::HashMap, fmt::Debug};
 use futures::future::BoxFuture;
 
 use crate::{
-    erased_value::ErasedValue,
     schema::error::{DefaultFieldErrorMetadata, IvoErrorTool},
     traits::IvoSchemaStruct,
+    utils::erased_value::ErasedValue,
 };
 
 #[derive(Debug)]
