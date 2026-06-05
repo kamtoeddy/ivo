@@ -10,14 +10,14 @@ use crate::{schema::SchemaCore, types::IvoSummary};
 
 // type DateWithTz = DateTime<Utc>;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum UserRole {
     Admin,
     User,
     // Moderator,
 }
 
-#[derive(Debug, Clone, IvoStruct)]
+#[derive(Debug, Clone, PartialEq, Eq, IvoStruct)]
 pub struct User {
     // pub created_at: DateWithTz,
     pub id: String,
@@ -29,7 +29,7 @@ pub struct User {
     // pub updated_at: Option<DateWithTz>,
 }
 
-#[derive(Clone, IvoStruct)]
+#[derive(Clone, Debug, PartialEq, Eq, IvoStruct)]
 pub struct UserInput {
     pub email: String,
     pub username: String,

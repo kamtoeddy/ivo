@@ -67,7 +67,7 @@ pub async fn run_example() {
         id: "id".into(),
         username,
         slug_id,
-        role: UserRole::User,
+        role: UserRole::Admin,
         // username_updated_at: None,
         // updated_at: None,
     };
@@ -78,9 +78,10 @@ pub async fn run_example() {
         .update(
             &user,
             &PartialUserInput {
-                email: Some("1@1.com".to_string()),
-                username: Some("john".to_string()),
-                role: Some(UserRole::Admin),
+                email: Some(user.email.clone()),
+                // role: Some(user.role.clone()),
+                role: Some(UserRole::User),
+                username: Some(user.username.clone()),
                 v_slug: None,
             },
             ctx_options,
@@ -89,7 +90,7 @@ pub async fn run_example() {
 
     let _ = match r {
         Ok((data, handle_success)) => {
-            println!("{:?}", data);
+            println!("Updates: {:?}", data);
             handle_success
         }
         Err((error, handle_failure)) => {

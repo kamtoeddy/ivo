@@ -23,27 +23,27 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: IvoEr
 
 pub struct Model<
     'schema,
-    Input: IvoSchemaStruct,
-    Output: IvoSchemaStruct,
+    I: IvoSchemaStruct,
+    O: IvoSchemaStruct,
     CtxOptions: Clone = HashMap<String, Value>,
     ErrorTool: IvoErrorTool = DefaultErrorTool,
 > {
-    schema: &'schema SchemaCore<Input, Output, CtxOptions, ErrorTool>,
+    schema: &'schema SchemaCore<I, O, CtxOptions, ErrorTool>,
 }
 
 impl<
         'schema,
-        Input: IvoSchemaStruct,
-        Output: IvoSchemaStruct,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
         CtxOptions: Clone,
         ErrorTool: IvoErrorTool,
-    > Model<'schema, Input, Output, CtxOptions, ErrorTool>
+    > Model<'schema, I, O, CtxOptions, ErrorTool>
 {
     pub async fn create(
         &self,
-        input: &Partial<Input>,
+        input: &Partial<I>,
         options: CtxOptions,
-    ) -> Result<(Output, AsyncTriggerFn), (ErrorTool::ErrorPayload, AsyncTriggerFn)> {
+    ) -> Result<(O, AsyncTriggerFn), (ErrorTool::ErrorPayload, AsyncTriggerFn)> {
         let v = erase_value(String::from("create"));
         parse_or_panic::<String>(&v);
 
@@ -51,8 +51,8 @@ impl<
         let input_values = input.to_ivo_internal_map();
 
         println!();
-        for (k, _) in input_values {
-            println!("'{k}' was provided");
+        for _ in input_values {
+            // println!("'{k}' was provided");
         }
         println!();
 
@@ -111,38 +111,49 @@ impl<
 
     pub async fn update(
         &self,
-        data: &Output,
-        updates: &Partial<Input>,
+        data: &O,
+        updates: &Partial<I>,
         options: CtxOptions,
-    ) -> Result<(Partial<Output>, AsyncTriggerFn), (UpdateError<ErrorTool>, AsyncTriggerFn)> {
+    ) -> Result<(Partial<O>, AsyncTriggerFn), (UpdateError<ErrorTool>, AsyncTriggerFn)> {
         // Run validators for props in context
         self.run_async_validator(updates, options).await;
 
         let previous_values = data.to_ivo_internal_map();
         let input_values = updates.to_ivo_internal_map();
-        let context: Context = HashMap::new();
+        // let context: Context = HashMap::new();
+
+        let mut changes = HashMap::new();
 
         println!();
-        for (k, _) in input_values {
-            println!("'{k}' was provided");
+        for (k, v) in input_values.iter() {
+            // validate and set only values that have changed
+            changes.insert(k.clone(), v.clone());
         }
         println!();
 
-        let _ = Output::Partial::from_ivo_internal_map(&context);
-        let output = Output::Partial::from_ivo_internal_map(&previous_values);
+        let mut new_data = previous_values.clone();
 
-        println!("{output:?}");
+        for (k, v) in changes.iter() {
+            // validate and set only values that have changed
+            new_data.insert(k.clone(), v.clone());
+        }
 
-        Ok((output, Box::new(move || Box::pin(async move {}))))
+        let new_output = O::from_ivo_internal_map(&new_data).unwrap();
 
-        // Err((
-        //     UpdateError::NothingToUpdate,
-        //     Box::new(move || Box::pin(async move {})),
-        // ))
+        if new_output == *data {
+            return Err((
+                UpdateError::NothingToUpdate,
+                Box::new(move || Box::pin(async move {})),
+            ));
+        }
+
+        let updated_values = O::Partial::from_ivo_internal_map(&changes);
+
+        Ok((updated_values, Box::new(move || Box::pin(async move {}))))
     }
 
-    pub async fn delete(&self, data: &Output) {
-        let handle_delete_async = async |_data: &Output| {};
+    pub async fn delete(&self, data: &O) {
+        let handle_delete_async = async |_data: &O| {};
 
         let mut tasks = FuturesUnordered::new();
 
@@ -153,7 +164,7 @@ impl<
         while tasks.next().await.is_some() {}
     }
 
-    async fn run_async_validator(&self, _input: &Partial<Input>, _options: CtxOptions) {
+    async fn run_async_validator(&self, _input: &Partial<I>, _options: CtxOptions) {
         // if let Some(def) = self.schema.get_definition("username") {
         //     if let Some(FieldReValidator::Async(validator)) = &def.re_validator {
         //         let r = validator(

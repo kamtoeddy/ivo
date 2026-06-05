@@ -7,7 +7,6 @@ use std::fmt::Debug;
 pub trait CloneableAny: Any + Send + Sync {
     fn clone_box(&self) -> Box<dyn CloneableAny>;
     fn as_any(&self) -> &dyn Any;
-    fn as_any_mut(&mut self) -> &mut dyn Any;
 }
 
 // 2. Implement this trait for ANY type that already implements Clone + Any + Send + Sync
@@ -20,10 +19,6 @@ where
     }
 
     fn as_any(&self) -> &dyn Any {
-        self
-    }
-
-    fn as_any_mut(&mut self) -> &mut dyn Any {
         self
     }
 }
@@ -41,10 +36,12 @@ pub fn erase_value<T: Clone + Debug + Send + Sync + 'static>(value: T) -> Box<dy
     Box::new(value)
 }
 
+pub fn parse_value<T: Clone + Debug + Send + Sync + 'static>(
+    e: &Box<dyn CloneableAny>,
+) -> Option<T> {
+    e.as_any().downcast_ref::<T>().cloned()
+}
+
 pub fn parse_or_panic<T: Clone + Debug + Send + Sync + 'static>(e: &Box<dyn CloneableAny>) -> T {
-    e.as_any()
-        .downcast_ref::<T>()
-        .cloned()
-        .expect("Failed to parse value")
-        .clone()
+    parse_value::<T>(e).expect("Failed to parse value").clone()
 }

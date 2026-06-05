@@ -16,7 +16,7 @@ use crate::{
 };
 
 pub trait IvoSchemaStruct:
-    Send + Sync + 'static + HasFields + HasPartial + FromMap + ToMap
+    Debug + Eq + Send + Sync + 'static + HasFields + HasPartial + FromMap + ToMap
 {
 }
 

@@ -63,11 +63,7 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
         quote! {
             #field_name: {
                 match map.get(stringify!(#field_name)) {
-                    Some(erased) => erased
-                        .as_any()
-                        .downcast_ref::<std::option::Option<#field_type>>()
-                        .cloned()
-                        .unwrap_or(None),
+                    Some(erased) => parse_value::<#field_type>(erased),
                     _ => None,
                 }
             },
@@ -112,13 +108,15 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
     let expanded = quote! {
 
         // TODO: 👇 dynamically add derived traits of parent here
-        #[derive(Debug, Default, Clone)]
+        #[derive(Clone, Debug, Default, PartialEq, Eq)]
         #vis struct #partial_name {
             #(#partial_fields,)*
         }
 
         impl #crate_root::traits::PartialFromMap for #partial_name {
             fn from_ivo_internal_map(map: &std::collections::HashMap<String, #crate_root::erased_value::ErasedValue>) -> Self {
+                use #crate_root::erased_value::parse_value;
+
                 Self {
                     #( #construct_struct_fields_for_from_map_for_partial )*
                 }
