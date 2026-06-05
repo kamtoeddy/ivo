@@ -8,7 +8,7 @@ use std::collections::{HashMap, HashSet};
 use futures::future::{join_all, BoxFuture};
 use futures::stream::{FuturesUnordered, StreamExt};
 
-use crate::traits::{IvoSchemaStruct, Partial, PartialFromMap, ToMap};
+use crate::traits::{FromToMap, IvoSchemaStruct, Partial};
 
 pub type AsyncTriggerFn = Box<dyn Fn() -> BoxFuture<'static, ()> + Send + Sync>;
 
@@ -137,7 +137,7 @@ impl<
             new_data.insert(k.clone(), v.clone());
         }
 
-        let new_output = O::from_ivo_internal_map(&new_data).unwrap();
+        let new_output = O::from_ivo_internal_map(&new_data);
 
         if new_output == *data {
             return Err((

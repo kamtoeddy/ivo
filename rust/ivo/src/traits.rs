@@ -16,19 +16,12 @@ use crate::{
 };
 
 pub trait IvoSchemaStruct:
-    Debug + Eq + Send + Sync + 'static + HasFields + HasPartial + FromMap + ToMap
+    Debug + Eq + Send + Sync + 'static + HasFields + HasPartial + FromToMap
 {
 }
 
-pub trait FromMap: Sized {
-    fn from_ivo_internal_map(map: &HashMap<String, ErasedValue>) -> Result<Self, String>;
-}
-
-pub trait PartialFromMap {
+pub trait FromToMap {
     fn from_ivo_internal_map(map: &HashMap<String, ErasedValue>) -> Self;
-}
-
-pub trait ToMap {
     fn to_ivo_internal_map(&self) -> HashMap<String, ErasedValue>;
 }
 
@@ -37,7 +30,7 @@ pub trait HasFields {
 }
 
 pub trait HasPartial {
-    type Partial: Debug + Send + Sync + Clone + PartialFromMap + ToMap;
+    type Partial: Debug + Send + Sync + Clone + FromToMap;
 }
 
 pub type Partial<T> = <T as HasPartial>::Partial;
