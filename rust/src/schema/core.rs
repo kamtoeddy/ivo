@@ -8,8 +8,8 @@ use crate::traits::IvoSchemaStruct;
 use std::collections::{HashMap, HashSet};
 use std::marker::PhantomData;
 
-type InternalPropertyDefinitions<I, O, CtxOptions> =
-    HashMap<String, IvoProperty<ErasedValue, I, O, CtxOptions>>;
+type InternalPropertyDefinitions<I, O, CtxOptions, ErrT> =
+    HashMap<String, IvoProperty<ErasedValue, I, O, CtxOptions, ErrT>>;
 
 pub struct SchemaCore<
     I: IvoSchemaStruct,
@@ -18,7 +18,7 @@ pub struct SchemaCore<
     ErrorTool: IvoErrorTool = DefaultErrorTool,
 > {
     _error_tool: PhantomData<ErrorTool>,
-    _definitions: InternalPropertyDefinitions<I, O, CtxOptions>,
+    _definitions: InternalPropertyDefinitions<I, O, CtxOptions, ErrorTool>,
     _options: Option<ErasedValue>,
 
     // contexts & values
@@ -97,7 +97,8 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: I
 
     pub fn with_fields<Fields>(mut self, fields: Fields) -> Self
     where
-        Fields: Fn(IvoFields<I, O, CtxOptions>) -> IvoFields<I, O, CtxOptions>,
+        Fields:
+            Fn(IvoFields<I, O, CtxOptions, ErrorTool>) -> IvoFields<I, O, CtxOptions, ErrorTool>,
     {
         self._definitions = fields(IvoFields::new()).definitions;
 
@@ -283,11 +284,11 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: I
     pub fn get_definition(
         &self,
         prop: &str,
-    ) -> Option<&IvoProperty<ErasedValue, I, O, CtxOptions>> {
+    ) -> Option<&IvoProperty<ErasedValue, I, O, CtxOptions, ErrorTool>> {
         self._definitions.get(prop)
     }
 
-    pub fn get_definitions(&self) -> &InternalPropertyDefinitions<I, O, CtxOptions> {
+    pub fn get_definitions(&self) -> &InternalPropertyDefinitions<I, O, CtxOptions, ErrorTool> {
         &self._definitions
     }
 
@@ -495,18 +496,29 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: I
     }
 }
 
-pub struct IvoFields<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
-    pub definitions: InternalPropertyDefinitions<I, O, CtxOptions>,
+pub struct IvoFields<
+    I: IvoSchemaStruct,
+    O: IvoSchemaStruct,
+    CtxOptions: Clone,
+    ErrorTool: IvoErrorTool,
+> {
+    pub definitions: InternalPropertyDefinitions<I, O, CtxOptions, ErrorTool>,
 }
 
-impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> IvoFields<I, O, CtxOptions> {
+impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: IvoErrorTool>
+    IvoFields<I, O, CtxOptions, ErrorTool>
+{
     fn new() -> Self {
         Self {
             definitions: HashMap::new(),
         }
     }
 
-    pub fn set<D: BuildableIvoProperty<I, O, CtxOptions>>(mut self, name: &str, def: D) -> Self {
+    pub fn set<D: BuildableIvoProperty<I, O, CtxOptions, ErrorTool>>(
+        mut self,
+        name: &str,
+        def: D,
+    ) -> Self {
         self.definitions.insert(name.to_owned(), def.build());
 
         self

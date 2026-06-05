@@ -2,24 +2,38 @@ use std::marker::PhantomData;
 
 use crate::{
     erased_value::ErasedValue,
+    schema::error::IvoErrorTool,
     traits::IvoSchemaStruct,
     types::{
         BooleanResolverWithMutSummary, ComputableEnumeratedError, ComputableInit,
         ComputableRequired, ComputableWithMiniSummary, DeleteHandler, FailureHandler,
-        FieldReValidator, FieldValidator, ResolverWithMutSummary, SuccessHandler, VirtualSanitiser,
+        FieldValidator, ResolverWithMutSummary, SuccessHandler, VirtualSanitiser,
     },
 };
 
-pub trait BuildableIvoProperty<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
-    fn build(self) -> InternalIvoProperty<I, O, CtxOptions>;
+pub trait BuildableIvoProperty<
+    I: IvoSchemaStruct,
+    O: IvoSchemaStruct,
+    CtxOptions: Clone,
+    ErrT: IvoErrorTool,
+>
+{
+    fn build(self) -> InternalIvoProperty<I, O, CtxOptions, ErrT>;
 }
 
-pub type InternalIvoProperty<I, O, CtxOptions> = IvoProperty<ErasedValue, I, O, CtxOptions>;
+pub type InternalIvoProperty<I, O, CtxOptions, ErrT> =
+    IvoProperty<ErasedValue, I, O, CtxOptions, ErrT>;
 
-pub struct IvoProperty<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
-    pub _i: PhantomData<I>,
+pub struct IvoProperty<
+    T,
+    I: IvoSchemaStruct,
+    O: IvoSchemaStruct,
+    CtxOptions: Clone,
+    ErrT: IvoErrorTool,
+> {
+    pub _i: PhantomData<ErrT>,
     pub alias: Option<String>,
-    pub enum_error: Option<ComputableEnumeratedError>,
+    pub enum_error: Option<ComputableEnumeratedError<ErrT>>,
     pub enum_values: Option<Vec<T>>,
     pub default: Option<ComputableWithMiniSummary<T, CtxOptions>>,
     pub depends_on: Option<Vec<String>>,
@@ -30,8 +44,8 @@ pub struct IvoProperty<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Cl
     pub required: Option<ComputableRequired<I, O, CtxOptions>>,
     pub resolver: Option<ResolverWithMutSummary<T, I, O, CtxOptions>>,
     pub sanitizer: Option<VirtualSanitiser<T, I, O, CtxOptions>>,
-    pub validator: Option<FieldValidator<I, O, CtxOptions>>,
-    pub re_validator: Option<FieldReValidator<I, O, CtxOptions>>,
+    pub validator: Option<FieldValidator<I, O, CtxOptions, ErrT>>,
+    pub re_validator: Option<FieldValidator<I, O, CtxOptions, ErrT>>,
     //
     pub should_ignore: Option<BooleanResolverWithMutSummary<I, O, CtxOptions>>,
     pub should_init: Option<ComputableInit<I, O, CtxOptions>>,
@@ -42,8 +56,8 @@ pub struct IvoProperty<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Cl
     pub on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
 }
 
-impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> Default
-    for IvoProperty<T, I, O, CtxOptions>
+impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErrorTool> Default
+    for IvoProperty<T, I, O, CtxOptions, ErrT>
 {
     fn default() -> Self {
         Self {

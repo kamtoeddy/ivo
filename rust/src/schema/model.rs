@@ -7,7 +7,6 @@ use std::collections::{HashMap, HashSet};
 
 use futures::future::{join_all, BoxFuture};
 use futures::stream::{FuturesUnordered, StreamExt};
-use serde_json::Value;
 
 use crate::traits::{IvoSchemaStruct, Partial, PartialFromMap, ToMap};
 
@@ -25,7 +24,7 @@ pub struct Model<
     'schema,
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
-    CtxOptions: Clone = HashMap<String, Value>,
+    CtxOptions: Clone = HashMap<String, ()>,
     ErrorTool: IvoErrorTool = DefaultErrorTool,
 > {
     schema: &'schema SchemaCore<I, O, CtxOptions, ErrorTool>,

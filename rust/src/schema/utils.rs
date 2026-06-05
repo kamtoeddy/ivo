@@ -1,5 +1,3 @@
-use serde_json::Value;
-
 // TimeStampTool
 #[derive(Debug, Clone)]
 pub struct TimeStampKeys {
@@ -15,7 +13,7 @@ pub struct TimeStampTool {
 impl TimeStampTool {
     // const IS_UPDATED_AT_NULLABLE_DEFAULT: bool = true;
 
-    pub fn new(_timestamps: Option<&Value>) -> Self {
+    pub fn new(_timestamps: Option<()>) -> Self {
         todo!()
         // timestamps: Option<Boolean | Object>
         // if timestamps.is_none() {

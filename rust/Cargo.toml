@@ -9,16 +9,9 @@ homepage = "https://github.com/kamtoeddy/ivo#readme"
 repository = "https://github.com/kamtoeddy/ivo.git"
 
 [dependencies]
-anyhow = "1.0"
-chrono = { version = "0.4", features = ["serde"] }
+chrono = "0.4"
 futures = "0.3"
 ivo_struct = { path = "./lib/ivo_struct" }
 regex = "1.10"
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-tokio = { version = "1.0", features = ["full"] }
+tokio = { version = "1.0", features = ["full"] } # TODO: move to dev deps
 unicode-normalization = "0.1"
-
-[dev-dependencies]
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"

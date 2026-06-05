@@ -157,7 +157,7 @@ pub static USER_SCHEMA: LazyLock<SchemaCore<UserInput, User, UserCtxOptions>> =
                         "enum",
                         IvoField::ENUM
                             .values(vec![true, false])
-                            .error_fn(|_| "".into())
+                            .error_fn(|_| ("".into(), None))
                             // .error("invalid option provided")
                             .default_fn(|_| true)
                             .readonly()

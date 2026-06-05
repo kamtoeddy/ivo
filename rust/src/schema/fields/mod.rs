@@ -6,6 +6,7 @@ use crate::{
         enumerated::EnumFieldBuilder, lax::LaxFieldBuilder, required::RequiredFieldBuilder,
         virtuals::VirtualFieldBuilder,
     },
+    schema::error::IvoErrorTool,
     traits::IvoSchemaStruct,
 };
 
@@ -17,18 +18,30 @@ mod lax;
 mod required;
 mod virtuals;
 
-pub struct IvoField<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
+pub struct IvoField<
+    T,
+    I: IvoSchemaStruct,
+    O: IvoSchemaStruct,
+    CtxOptions: Clone,
+    ErrT: IvoErrorTool,
+> {
     _t: PhantomData<T>,
     _i: PhantomData<I>,
     _o: PhantomData<O>,
     _c: PhantomData<CtxOptions>,
+    _err: PhantomData<ErrT>,
 }
 
-impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> IvoField<T, I, O, CtxOptions> {
-    pub const CONSTANT: ConstantFieldBuilder<T, I, O, CtxOptions> = ConstantFieldBuilder::new();
-    pub const DEPENDENT: DependentFieldBuilder<T, I, O, CtxOptions> = DependentFieldBuilder::new();
-    pub const ENUM: EnumFieldBuilder<T, I, O, CtxOptions> = EnumFieldBuilder::new();
-    pub const LAX: LaxFieldBuilder<T, I, O, CtxOptions> = LaxFieldBuilder::new();
-    pub const REQUIRED: RequiredFieldBuilder<T, I, O, CtxOptions> = RequiredFieldBuilder::new();
-    pub const VIRTUAL: VirtualFieldBuilder<T, I, O, CtxOptions> = VirtualFieldBuilder::new();
+impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErrorTool>
+    IvoField<T, I, O, CtxOptions, ErrT>
+{
+    pub const CONSTANT: ConstantFieldBuilder<T, I, O, CtxOptions, ErrT> =
+        ConstantFieldBuilder::new();
+    pub const DEPENDENT: DependentFieldBuilder<T, I, O, CtxOptions, ErrT> =
+        DependentFieldBuilder::new();
+    pub const ENUM: EnumFieldBuilder<T, I, O, CtxOptions, ErrT> = EnumFieldBuilder::new();
+    pub const LAX: LaxFieldBuilder<T, I, O, CtxOptions, ErrT> = LaxFieldBuilder::new();
+    pub const REQUIRED: RequiredFieldBuilder<T, I, O, CtxOptions, ErrT> =
+        RequiredFieldBuilder::new();
+    pub const VIRTUAL: VirtualFieldBuilder<T, I, O, CtxOptions, ErrT> = VirtualFieldBuilder::new();
 }

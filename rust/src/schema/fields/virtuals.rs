@@ -3,14 +3,14 @@ use std::marker::PhantomData;
 use crate::{
     erased_value::ErasedValue,
     fields::base::{BuildableIvoProperty, InternalIvoProperty, IvoProperty},
+    schema::error::IvoErrorTool,
     traits::{
-        IntoAsyncFieldReValidator, IntoAsyncFieldValidator, IntoFailureHandler,
-        IntoFieldReValidator, IntoFieldValidator, IntoRequiredResolverFn,
+        IntoAsyncFieldValidator, IntoFailureHandler, IntoFieldValidator, IntoRequiredResolverFn,
         IntoResolverWithMutSummaryFn, IntoSuccessHandler, IntoVirtualSanitizer, IvoSchemaStruct,
     },
     types::{
         BooleanResolverWithMutSummary, ComputableInit, ComputableRequired, FailureHandler,
-        FieldReValidator, FieldValidator, SuccessHandler, VirtualSanitiser,
+        FieldValidator, SuccessHandler, VirtualSanitiser,
     },
 };
 
@@ -24,6 +24,7 @@ pub struct VirtualFieldBuilder<
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
     CtxOptions: Clone,
+    ErrT: IvoErrorTool,
     HasValidator = No,
     HasAlias = No,
     HasRevalidator = No,
@@ -48,8 +49,8 @@ pub struct VirtualFieldBuilder<
     _on_success_fns: PhantomData<HasSuccess>,
     // actual data...
     alias: Option<String>,
-    validator: Option<FieldValidator<I, O, CtxOptions>>,
-    re_validator: Option<FieldReValidator<I, O, CtxOptions>>,
+    validator: Option<FieldValidator<I, O, CtxOptions, ErrT>>,
+    re_validator: Option<FieldValidator<I, O, CtxOptions, ErrT>>,
     required: Option<ComputableRequired<I, O, CtxOptions>>,
     sanitizer: Option<VirtualSanitiser<ErasedValue, I, O, CtxOptions>>,
     should_ignore_fn: Option<BooleanResolverWithMutSummary<I, O, CtxOptions>>,
@@ -74,12 +75,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
+        ErrT: IvoErrorTool,
     >
     VirtualFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
+        ErrT,
         HasValidator,
         HasAlias,
         HasRevalidator,
@@ -134,12 +137,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
+        ErrT: IvoErrorTool,
     > Default
     for VirtualFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
+        ErrT,
         HasValidator,
         HasAlias,
         HasRevalidator,
@@ -171,12 +176,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-    > BuildableIvoProperty<I, O, CtxOptions>
+        ErrT: IvoErrorTool,
+    > BuildableIvoProperty<I, O, CtxOptions, ErrT>
     for VirtualFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
+        ErrT,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -189,7 +196,7 @@ impl<
         HasSuccess,
     >
 {
-    fn build(self) -> InternalIvoProperty<I, O, CtxOptions> {
+    fn build(self) -> InternalIvoProperty<I, O, CtxOptions, ErrT> {
         IvoProperty {
             is_virtual: true,
             alias: self.alias,
@@ -214,9 +221,13 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-    > VirtualFieldBuilder<T, I, O, CtxOptions, HasValidator, No, HasRevalidator>
+        ErrT: IvoErrorTool,
+    > VirtualFieldBuilder<T, I, O, CtxOptions, ErrT, HasValidator, No, HasRevalidator>
 {
-    pub fn alias(self, name: &str) -> VirtualFieldBuilder<T, I, O, CtxOptions, HasValidator, Yes> {
+    pub fn alias(
+        self,
+        name: &str,
+    ) -> VirtualFieldBuilder<T, I, O, CtxOptions, ErrT, HasValidator, Yes> {
         VirtualFieldBuilder {
             alias: Some(name.to_string()),
             validator: self.validator,
@@ -233,15 +244,21 @@ impl<
     }
 }
 
-impl<HasAlias, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
-    VirtualFieldBuilder<T, I, O, CtxOptions, No, HasAlias>
+impl<
+        HasAlias,
+        T,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions: Clone,
+        ErrT: IvoErrorTool,
+    > VirtualFieldBuilder<T, I, O, CtxOptions, ErrT, No, HasAlias>
 {
     pub fn validate<F>(
         self,
         validator: F,
-    ) -> VirtualFieldBuilder<T, I, O, CtxOptions, Yes, HasAlias>
+    ) -> VirtualFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, HasAlias>
     where
-        F: IntoFieldValidator<T, I, O, CtxOptions>,
+        F: IntoFieldValidator<T, I, O, CtxOptions, ErrT>,
     {
         VirtualFieldBuilder {
             alias: self.alias,
@@ -253,9 +270,9 @@ impl<HasAlias, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
     pub fn validate_async<F>(
         self,
         validator: F,
-    ) -> VirtualFieldBuilder<T, I, O, CtxOptions, Yes, HasAlias>
+    ) -> VirtualFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, HasAlias>
     where
-        F: IntoAsyncFieldValidator<T, I, O, CtxOptions>,
+        F: IntoAsyncFieldValidator<T, I, O, CtxOptions, ErrT>,
     {
         VirtualFieldBuilder {
             alias: self.alias,
@@ -265,20 +282,26 @@ impl<HasAlias, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
     }
 }
 
-impl<HasAlias, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
-    VirtualFieldBuilder<T, I, O, CtxOptions, Yes, HasAlias>
+impl<
+        HasAlias,
+        T,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions: Clone,
+        ErrT: IvoErrorTool,
+    > VirtualFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, HasAlias>
 {
     pub fn re_validate<F>(
         self,
         re_validator: F,
-    ) -> VirtualFieldBuilder<T, I, O, CtxOptions, Yes, HasAlias, Yes>
+    ) -> VirtualFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, HasAlias, Yes>
     where
-        F: IntoFieldReValidator<T, I, O, CtxOptions>,
+        F: IntoFieldValidator<T, I, O, CtxOptions, ErrT>,
     {
         VirtualFieldBuilder {
             alias: self.alias,
             validator: self.validator,
-            re_validator: Some(FieldReValidator::Sync(re_validator.into_uniform())),
+            re_validator: Some(FieldValidator::Sync(re_validator.into_uniform())),
             ..Default::default()
         }
     }
@@ -286,26 +309,33 @@ impl<HasAlias, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
     pub fn re_validate_async<F>(
         self,
         re_validator: F,
-    ) -> VirtualFieldBuilder<T, I, O, CtxOptions, Yes, HasAlias, Yes>
+    ) -> VirtualFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, HasAlias, Yes>
     where
-        F: IntoAsyncFieldReValidator<T, I, O, CtxOptions>,
+        F: IntoAsyncFieldValidator<T, I, O, CtxOptions, ErrT>,
     {
         VirtualFieldBuilder {
             alias: self.alias,
             validator: self.validator,
-            re_validator: Some(FieldReValidator::Async(re_validator.into_uniform())),
+            re_validator: Some(FieldValidator::Async(re_validator.into_uniform())),
             ..Default::default()
         }
     }
 }
 
-impl<HasAlias, HasRevalidator, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
-    VirtualFieldBuilder<T, I, O, CtxOptions, Yes, HasAlias, HasRevalidator>
+impl<
+        HasAlias,
+        HasRevalidator,
+        T,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions: Clone,
+        ErrT: IvoErrorTool,
+    > VirtualFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, HasAlias, HasRevalidator>
 {
     pub fn required_if<R>(
         self,
         resolver: R,
-    ) -> VirtualFieldBuilder<T, I, O, CtxOptions, Yes, HasAlias, HasRevalidator, No, Yes>
+    ) -> VirtualFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, HasAlias, HasRevalidator, No, Yes>
     where
         R: IntoRequiredResolverFn<I, O, CtxOptions>,
     {
@@ -327,12 +357,25 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-    > VirtualFieldBuilder<T, I, O, CtxOptions, Yes, HasAlias, HasRevalidator, No, HasRequired>
+        ErrT: IvoErrorTool,
+    >
+    VirtualFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, HasAlias, HasRevalidator, No, HasRequired>
 {
     pub fn sanitize<F>(
         self,
         sanitizer: F,
-    ) -> VirtualFieldBuilder<T, I, O, CtxOptions, Yes, HasAlias, HasRevalidator, Yes, HasRequired>
+    ) -> VirtualFieldBuilder<
+        T,
+        I,
+        O,
+        CtxOptions,
+        ErrT,
+        Yes,
+        HasAlias,
+        HasRevalidator,
+        Yes,
+        HasRequired,
+    >
     where
         F: IntoVirtualSanitizer<T, I, O, CtxOptions>,
     {
@@ -356,12 +399,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
+        ErrT: IvoErrorTool,
     >
     VirtualFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
+        ErrT,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -377,6 +422,7 @@ impl<
         I,
         O,
         CtxOptions,
+        ErrT,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -408,12 +454,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
+        ErrT: IvoErrorTool,
     >
     VirtualFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
+        ErrT,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -428,6 +476,7 @@ impl<
         I,
         O,
         CtxOptions,
+        ErrT,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -455,6 +504,7 @@ impl<
         I,
         O,
         CtxOptions,
+        ErrT,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -484,6 +534,7 @@ impl<
         I,
         O,
         CtxOptions,
+        ErrT,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -512,6 +563,7 @@ impl<
         I,
         O,
         CtxOptions,
+        ErrT,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -545,12 +597,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
+        ErrT: IvoErrorTool,
     >
     VirtualFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
+        ErrT,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -569,6 +623,7 @@ impl<
         I,
         O,
         CtxOptions,
+        ErrT,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -602,12 +657,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
+        ErrT: IvoErrorTool,
     >
     VirtualFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
+        ErrT,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -626,6 +683,7 @@ impl<
         I,
         O,
         CtxOptions,
+        ErrT,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -660,12 +718,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
+        ErrT: IvoErrorTool,
     >
     VirtualFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
+        ErrT,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -683,6 +743,7 @@ impl<
         I,
         O,
         CtxOptions,
+        ErrT,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -712,6 +773,7 @@ impl<
         I,
         O,
         CtxOptions,
+        ErrT,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -752,12 +814,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
+        ErrT: IvoErrorTool,
     >
     VirtualFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
+        ErrT,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -778,6 +842,7 @@ impl<
         I,
         O,
         CtxOptions,
+        ErrT,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -834,12 +899,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
+        ErrT: IvoErrorTool,
     >
     VirtualFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
+        ErrT,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -860,6 +927,7 @@ impl<
         I,
         O,
         CtxOptions,
+        ErrT,
         Yes,
         HasAlias,
         HasRevalidator,

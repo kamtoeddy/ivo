@@ -3,6 +3,7 @@ use std::{fmt::Debug, marker::PhantomData};
 use crate::{
     erased_value::{erase_value, ErasedValue},
     fields::base::{BuildableIvoProperty, InternalIvoProperty, IvoProperty},
+    schema::error::IvoErrorTool,
     traits::{
         IntoAsyncResolverWithMiniSummary, IntoDeleteHandler, IntoResolverWithMiniSummary,
         IntoSuccessHandler, IvoSchemaStruct,
@@ -19,11 +20,13 @@ pub struct ConstantFieldBuilder<
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
     CtxOptions: Clone,
+    ErrT: IvoErrorTool,
     HasDefault = No,
     HasDelete = No,
     HasSuccess = No,
 > {
     _t: PhantomData<T>,
+    _err: PhantomData<ErrT>,
     _default: PhantomData<HasDefault>,
     _del_handlers: PhantomData<HasDelete>,
     _success_handlers: PhantomData<HasSuccess>,
@@ -41,7 +44,8 @@ impl<
         O: IvoSchemaStruct,
         T,
         CtxOptions: Clone,
-    > ConstantFieldBuilder<T, I, O, CtxOptions, HasDefault, HasDelete, HasSuccess>
+        ErrT: IvoErrorTool,
+    > ConstantFieldBuilder<T, I, O, CtxOptions, ErrT, HasDefault, HasDelete, HasSuccess>
 {
     pub const fn new() -> Self {
         Self {
@@ -49,6 +53,7 @@ impl<
             on_delete_fns: None,
             on_success_fns: None,
             _t: PhantomData,
+            _err: PhantomData,
             _default: PhantomData,
             _del_handlers: PhantomData,
             _success_handlers: PhantomData,
@@ -64,7 +69,9 @@ impl<
         O: IvoSchemaStruct,
         T,
         CtxOptions: Clone,
-    > Default for ConstantFieldBuilder<T, I, O, CtxOptions, HasDefault, HasDelete, HasSuccess>
+        ErrT: IvoErrorTool,
+    > Default
+    for ConstantFieldBuilder<T, I, O, CtxOptions, ErrT, HasDefault, HasDelete, HasSuccess>
 {
     fn default() -> Self {
         Self::new()
@@ -78,10 +85,11 @@ impl<
         O: IvoSchemaStruct,
         T: Clone + Debug + Send + Sync + 'static,
         CtxOptions: Clone,
-    > BuildableIvoProperty<I, O, CtxOptions>
-    for ConstantFieldBuilder<T, I, O, CtxOptions, Yes, HasDelete, HasSuccess>
+        ErrT: IvoErrorTool,
+    > BuildableIvoProperty<I, O, CtxOptions, ErrT>
+    for ConstantFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, HasDelete, HasSuccess>
 {
-    fn build(self) -> InternalIvoProperty<I, O, CtxOptions> {
+    fn build(self) -> InternalIvoProperty<I, O, CtxOptions, ErrT> {
         IvoProperty {
             value: self.value,
             on_delete_fns: self.on_delete_fns,
@@ -96,9 +104,10 @@ impl<
         O: IvoSchemaStruct,
         T: Clone + Debug + Send + Sync + 'static,
         CtxOptions: Clone + Send,
-    > ConstantFieldBuilder<T, I, O, CtxOptions>
+        ErrT: IvoErrorTool,
+    > ConstantFieldBuilder<T, I, O, CtxOptions, ErrT>
 {
-    pub fn value(self, value: T) -> ConstantFieldBuilder<T, I, O, CtxOptions, Yes> {
+    pub fn value(self, value: T) -> ConstantFieldBuilder<T, I, O, CtxOptions, ErrT, Yes> {
         ConstantFieldBuilder {
             value: Some(ComputableWithMiniSummary::Static(erase_value(value))),
             on_delete_fns: None,
@@ -107,7 +116,7 @@ impl<
         }
     }
 
-    pub fn computed<F>(self, resolver: F) -> ConstantFieldBuilder<T, I, O, CtxOptions, Yes>
+    pub fn computed<F>(self, resolver: F) -> ConstantFieldBuilder<T, I, O, CtxOptions, ErrT, Yes>
     where
         F: IntoResolverWithMiniSummary<T, I, O, CtxOptions>,
     {
@@ -119,7 +128,10 @@ impl<
         }
     }
 
-    pub fn computed_async<F>(self, resolver: F) -> ConstantFieldBuilder<T, I, O, CtxOptions, Yes>
+    pub fn computed_async<F>(
+        self,
+        resolver: F,
+    ) -> ConstantFieldBuilder<T, I, O, CtxOptions, ErrT, Yes>
     where
         F: IntoAsyncResolverWithMiniSummary<T, I, O, CtxOptions>,
     {
@@ -135,13 +147,20 @@ impl<
 }
 
 // ON_DELETE is only available if HasDelete is 'No'
-impl<HasDelete, HasSuccess, I: IvoSchemaStruct, O: IvoSchemaStruct, T, CtxOptions: Clone>
-    ConstantFieldBuilder<T, I, O, CtxOptions, Yes, HasDelete, HasSuccess>
+impl<
+        HasDelete,
+        HasSuccess,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        T,
+        CtxOptions: Clone,
+        ErrT: IvoErrorTool,
+    > ConstantFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, HasDelete, HasSuccess>
 {
     pub fn on_delete<H>(
         self,
         handler: H,
-    ) -> ConstantFieldBuilder<T, I, O, CtxOptions, Yes, Yes, HasSuccess>
+    ) -> ConstantFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, HasSuccess>
     where
         H: IntoDeleteHandler<O, CtxOptions>,
     {
@@ -166,13 +185,20 @@ impl<HasDelete, HasSuccess, I: IvoSchemaStruct, O: IvoSchemaStruct, T, CtxOption
 }
 
 // ON_SUCCESS is only available if HasSuccess is 'No'
-impl<HasDelete, HasSuccess, I: IvoSchemaStruct, O: IvoSchemaStruct, T, CtxOptions: Clone>
-    ConstantFieldBuilder<T, I, O, CtxOptions, Yes, HasDelete, HasSuccess>
+impl<
+        HasDelete,
+        HasSuccess,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        T,
+        CtxOptions: Clone,
+        ErrT: IvoErrorTool,
+    > ConstantFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, HasDelete, HasSuccess>
 {
     pub fn on_success<H>(
         self,
         handler: H,
-    ) -> ConstantFieldBuilder<T, I, O, CtxOptions, Yes, HasDelete, Yes>
+    ) -> ConstantFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, HasDelete, Yes>
     where
         H: IntoSuccessHandler<I, O, CtxOptions>,
     {

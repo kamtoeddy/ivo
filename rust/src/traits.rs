@@ -4,13 +4,13 @@ use futures::FutureExt;
 
 use crate::{
     erased_value::{erase_value, parse_or_panic, ErasedValue},
+    schema::error::IvoErrorTool,
     types::{
         DeleteHandler, FailureHandler, IvoMiniSummary, IvoSummary, RequiredResolverFn,
-        ResolverWithMutSummaryFn, SuccessHandler, UniformAsyncReValidator,
-        UniformAsyncResolverWithMiniSummary, UniformAsyncResolverWithMutSummary,
-        UniformAsyncValidator, UniformEnumErrorResolver, UniformReValidator,
+        ResolverWithMutSummaryFn, SuccessHandler, UniformAsyncResolverWithMiniSummary,
+        UniformAsyncResolverWithMutSummary, UniformAsyncValidator, UniformEnumErrorResolver,
         UniformResolverWithMiniSummary, UniformResolverWithMutSummary, UniformValidator,
-        UniformVirtualSanitiser,
+        UniformVirtualSanitiser, ValidatorError,
     },
     ValidatorResponse,
 };
@@ -89,70 +89,56 @@ where
     }
 }
 
-pub trait IntoFieldValidator<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
-    fn into_uniform(self) -> UniformValidator<I, O, CtxOptions>;
+pub trait IntoFieldValidator<
+    T,
+    I: IvoSchemaStruct,
+    O: IvoSchemaStruct,
+    CtxOptions: Clone,
+    ErrT: IvoErrorTool,
+>
+{
+    fn into_uniform(self) -> UniformValidator<I, O, CtxOptions, ErrT::FieldMetadata>;
 }
 
-impl<F, T, I, O, CtxOptions: Clone> IntoFieldValidator<T, I, O, CtxOptions> for F
+impl<F, T, I, O, CtxOptions: Clone, ErrT> IntoFieldValidator<T, I, O, CtxOptions, ErrT> for F
 where
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
+    ErrT: IvoErrorTool,
     T: Clone + Debug + Send + Sync + 'static,
-    F: Fn(T, IvoSummary<I, O, CtxOptions>) -> ValidatorResponse<T> + Clone + Send + Sync + 'static,
+    F: Fn(T, IvoSummary<I, O, CtxOptions>) -> ValidatorResponse<T, ErrT::FieldMetadata>
+        + Clone
+        + Send
+        + Sync
+        + 'static,
 {
-    fn into_uniform(self) -> UniformValidator<I, O, CtxOptions> {
+    fn into_uniform(self) -> UniformValidator<I, O, CtxOptions, ErrT::FieldMetadata> {
         Box::new(move |v, s| self(parse_or_panic::<T>(&v), s).map(|v| erase_value(v)))
     }
 }
 
-pub trait IntoAsyncFieldValidator<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
-    fn into_uniform(self) -> UniformAsyncValidator<I, O, CtxOptions>;
-}
-
-impl<F, Fut, T, I, O, CtxOptions: Clone> IntoAsyncFieldValidator<T, I, O, CtxOptions> for F
-where
+pub trait IntoAsyncFieldValidator<
+    T,
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
-    T: Clone + Debug + Send + Sync + 'static,
-    F: Fn(T, IvoSummary<I, O, CtxOptions>) -> Fut + Clone + Send + Sync + 'static,
-    Fut: Future<Output = ValidatorResponse<T>> + Send + Sync + 'static,
+    CtxOptions: Clone,
+    ErrT: IvoErrorTool,
+>
 {
-    fn into_uniform(self) -> UniformAsyncValidator<I, O, CtxOptions> {
-        Box::new(move |v, s| {
-            Box::pin(self(parse_or_panic::<T>(&v), s).map(|r| r.map(|v| erase_value(v))))
-        })
-    }
+    fn into_uniform(self) -> UniformAsyncValidator<I, O, CtxOptions, ErrT::FieldMetadata>;
 }
 
-pub trait IntoFieldReValidator<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
-    fn into_uniform(self) -> UniformReValidator<I, O, CtxOptions>;
-}
-
-impl<F, T, I, O, CtxOptions: Clone> IntoFieldReValidator<T, I, O, CtxOptions> for F
+impl<F, Fut, T, I, O, CtxOptions: Clone, ErrT> IntoAsyncFieldValidator<T, I, O, CtxOptions, ErrT>
+    for F
 where
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
-    T: Clone + Debug + Send + Sync + 'static,
-    F: Fn(T, IvoSummary<I, O, CtxOptions>) -> ValidatorResponse<T> + Clone + Send + Sync + 'static,
-{
-    fn into_uniform(self) -> UniformReValidator<I, O, CtxOptions> {
-        Box::new(move |v, s| self(parse_or_panic::<T>(&v), s).map(|v| erase_value(v)))
-    }
-}
-
-pub trait IntoAsyncFieldReValidator<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
-    fn into_uniform(self) -> UniformAsyncReValidator<I, O, CtxOptions>;
-}
-
-impl<F, Fut, T, I, O, CtxOptions: Clone> IntoAsyncFieldReValidator<T, I, O, CtxOptions> for F
-where
-    I: IvoSchemaStruct,
-    O: IvoSchemaStruct,
+    ErrT: IvoErrorTool,
     T: Clone + Debug + Send + Sync + 'static,
     F: Fn(T, IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
-    Fut: Future<Output = ValidatorResponse<T>> + Send + Sync + 'static,
+    Fut: Future<Output = ValidatorResponse<T, ErrT::FieldMetadata>> + Send + Sync + 'static,
 {
-    fn into_uniform(self) -> UniformAsyncReValidator<I, O, CtxOptions> {
+    fn into_uniform(self) -> UniformAsyncValidator<I, O, CtxOptions, ErrT::FieldMetadata> {
         Box::new(move |v: ErasedValue, s: IvoSummary<I, O, CtxOptions>| {
             let sv = erase_value(String::from("sv lol"));
             parse_or_panic::<T>(&sv);
@@ -180,16 +166,17 @@ where
     }
 }
 
-pub trait IntoEnumErrorResolver<T> {
-    fn into_uniform(self) -> UniformEnumErrorResolver;
+pub trait IntoEnumErrorResolver<T, ErrT: IvoErrorTool> {
+    fn into_uniform(self) -> UniformEnumErrorResolver<ErrT::FieldMetadata>;
 }
 
-impl<F, T> IntoEnumErrorResolver<T> for F
+impl<F, T, ErrT> IntoEnumErrorResolver<T, ErrT> for F
 where
+    ErrT: IvoErrorTool,
     T: Clone + Debug + Send + Sync + 'static,
-    F: Fn((T, Vec<T>)) -> String + Send + Sync + 'static,
+    F: Fn((T, Vec<T>)) -> ValidatorError<ErrT::FieldMetadata> + Send + Sync + 'static,
 {
-    fn into_uniform(self) -> UniformEnumErrorResolver {
+    fn into_uniform(self) -> UniformEnumErrorResolver<ErrT::FieldMetadata> {
         Box::new(move |(v, list)| {
             self((
                 parse_or_panic::<T>(&v),

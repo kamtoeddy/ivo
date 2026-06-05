@@ -2,7 +2,11 @@ use std::{collections::HashMap, fmt::Debug};
 
 use futures::future::BoxFuture;
 
-use crate::{erased_value::ErasedValue, traits::IvoSchemaStruct};
+use crate::{
+    erased_value::ErasedValue,
+    schema::error::{DefaultFieldErrorMetadata, IvoErrorTool},
+    traits::IvoSchemaStruct,
+};
 
 #[derive(Debug)]
 pub struct True;
@@ -26,35 +30,21 @@ impl std::ops::Deref for False {
     }
 }
 
-pub type UniformValidator<I, O, CtxOptions> = Box<
-    dyn Fn(ErasedValue, IvoSummary<I, O, CtxOptions>) -> ValidatorResponse<ErasedValue>
-        + Send
-        + Sync
-        + 'static,
->;
-
-pub type UniformAsyncValidator<I, O, CtxOptions> = Box<
+pub type UniformAsyncValidator<I, O, CtxOptions, FieldErrorMetadata> = Box<
     dyn Fn(
             ErasedValue,
             IvoSummary<I, O, CtxOptions>,
-        ) -> BoxFuture<'static, ValidatorResponse<ErasedValue>>
+        ) -> BoxFuture<'static, ValidatorResponse<ErasedValue, FieldErrorMetadata>>
         + Send
         + Sync
         + 'static,
 >;
 
-pub type UniformReValidator<I, O, CtxOptions> = Box<
-    dyn Fn(ErasedValue, IvoSummary<I, O, CtxOptions>) -> ValidatorResponse<ErasedValue>
-        + Send
-        + Sync
-        + 'static,
->;
-
-pub type UniformAsyncReValidator<I, O, CtxOptions> = Box<
+pub type UniformValidator<I, O, CtxOptions, FieldErrorMetadata> = Box<
     dyn Fn(
             ErasedValue,
             IvoSummary<I, O, CtxOptions>,
-        ) -> BoxFuture<'static, ValidatorResponse<ErasedValue>>
+        ) -> ValidatorResponse<ErasedValue, FieldErrorMetadata>
         + Send
         + Sync
         + 'static,
@@ -64,8 +54,12 @@ pub type UniformVirtualSanitiser<I, O, CtxOptions> = Box<
     dyn Fn(IvoSummary<I, O, CtxOptions>) -> BoxFuture<'static, ErasedValue> + Send + Sync + 'static,
 >;
 
-pub type UniformEnumErrorResolver =
-    Box<dyn Fn((ErasedValue, Vec<ErasedValue>)) -> String + Send + Sync + 'static>;
+pub type UniformEnumErrorResolver<FieldErrorMetadata> = Box<
+    dyn Fn((ErasedValue, Vec<ErasedValue>)) -> ValidatorError<FieldErrorMetadata>
+        + Send
+        + Sync
+        + 'static,
+>;
 
 pub type UniformResolverWithMutSummary<I, O, CtxOptions> =
     Box<dyn Fn(IvoSummary<I, O, CtxOptions>) -> ErasedValue + Send + Sync + 'static>;
@@ -81,9 +75,9 @@ pub type UniformAsyncResolverWithMiniSummary<CtxOptions> = Box<
     dyn Fn(IvoMiniSummary<CtxOptions>) -> BoxFuture<'static, ErasedValue> + Send + Sync + 'static,
 >;
 
-pub enum ComputableEnumeratedError {
+pub enum ComputableEnumeratedError<ErrT: IvoErrorTool> {
     Static(String),
-    Func(UniformEnumErrorResolver),
+    Func(UniformEnumErrorResolver<ErrT::FieldMetadata>),
 }
 
 pub enum ComputableWithMiniSummary<T, CtxOptions: Clone> {
@@ -239,14 +233,14 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> IvoSummary<I, O,
     }
 }
 
-pub enum FieldValidator<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
-    Async(UniformAsyncValidator<I, O, CtxOptions>),
-    Sync(UniformValidator<I, O, CtxOptions>),
-}
-
-pub enum FieldReValidator<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
-    Async(UniformAsyncReValidator<I, O, CtxOptions>),
-    Sync(UniformReValidator<I, O, CtxOptions>),
+pub enum FieldValidator<
+    I: IvoSchemaStruct,
+    O: IvoSchemaStruct,
+    CtxOptions: Clone,
+    ErrT: IvoErrorTool,
+> {
+    Async(UniformAsyncValidator<I, O, CtxOptions, ErrT::FieldMetadata>),
+    Sync(UniformValidator<I, O, CtxOptions, ErrT::FieldMetadata>),
 }
 
 pub type RequiredResolverFn<I, O, CtxOptions> = Box<
@@ -281,9 +275,10 @@ pub type FailureHandler<I, O, CtxOptions> =
 pub type SuccessHandler<I, O, CtxOptions> =
     Box<dyn Fn(IvoSummary<I, O, CtxOptions>) -> BoxFuture<'static, ()> + Send + Sync + 'static>;
 
-pub type DefaultFieldErrorMetadata = ();
 pub type ValidatorResponse<T, ErrorMetadata = DefaultFieldErrorMetadata> =
-    Result<T, (String, Option<ErrorMetadata>)>;
+    Result<T, ValidatorError<ErrorMetadata>>;
+
+pub type ValidatorError<FieldErrorMetadata> = (String, Option<FieldErrorMetadata>);
 
 pub type ValidatorFn<T, ErrorMetadata = DefaultFieldErrorMetadata> =
     Box<dyn Fn(T) -> ValidatorResponse<T, ErrorMetadata> + Send + Sync + 'static>;

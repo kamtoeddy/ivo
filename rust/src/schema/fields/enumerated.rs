@@ -3,6 +3,7 @@ use std::{fmt::Debug, marker::PhantomData};
 use crate::{
     erased_value::{erase_value, ErasedValue},
     fields::base::{BuildableIvoProperty, InternalIvoProperty, IvoProperty},
+    schema::error::IvoErrorTool,
     traits::{
         IntoAsyncResolverWithMiniSummary, IntoDeleteHandler, IntoEnumErrorResolver,
         IntoFailureHandler, IntoResolverWithMiniSummary, IntoResolverWithMutSummaryFn,
@@ -24,6 +25,7 @@ pub struct EnumFieldBuilder<
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
     CtxOptions: Clone,
+    ErrT: IvoErrorTool,
     HasValues = No,
     HasValueError = No,
     HasDefault = No,
@@ -46,7 +48,7 @@ pub struct EnumFieldBuilder<
     _on_success_fns: PhantomData<HasSuccess>,
     // actual data...
     enum_values: Option<Vec<ErasedValue>>,
-    enum_error: Option<ComputableEnumeratedError>,
+    enum_error: Option<ComputableEnumeratedError<ErrT>>,
     default: Option<ComputableWithMiniSummary<ErasedValue, CtxOptions>>,
     should_ignore_fn: Option<BooleanResolverWithMutSummary<I, O, CtxOptions>>,
     should_init: Option<ComputableInit<I, O, CtxOptions>>,
@@ -70,12 +72,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
+        ErrT: IvoErrorTool,
     >
     EnumFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
+        ErrT,
         HasValues,
         HasValueError,
         HasDefault,
@@ -126,12 +130,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
+        ErrT: IvoErrorTool,
     > Default
     for EnumFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
+        ErrT,
         HasValues,
         HasValueError,
         HasDefault,
@@ -160,12 +166,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-    > BuildableIvoProperty<I, O, CtxOptions>
+        ErrT: IvoErrorTool,
+    > BuildableIvoProperty<I, O, CtxOptions, ErrT>
     for EnumFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
+        ErrT,
         Yes,
         Yes,
         HasDefault,
@@ -177,7 +185,7 @@ impl<
         HasSuccess,
     >
 {
-    fn build(self) -> InternalIvoProperty<I, O, CtxOptions> {
+    fn build(self) -> InternalIvoProperty<I, O, CtxOptions, ErrT> {
         IvoProperty {
             enum_values: self.enum_values,
             enum_error: self.enum_error,
@@ -198,9 +206,10 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-    > EnumFieldBuilder<T, I, O, CtxOptions>
+        ErrT: IvoErrorTool,
+    > EnumFieldBuilder<T, I, O, CtxOptions, ErrT>
 {
-    pub fn values(self, values: Vec<T>) -> EnumFieldBuilder<T, I, O, CtxOptions, Yes> {
+    pub fn values(self, values: Vec<T>) -> EnumFieldBuilder<T, I, O, CtxOptions, ErrT, Yes> {
         EnumFieldBuilder {
             enum_values: Some(values.into_iter().map(|v| erase_value(v)).collect()),
             ..Default::default()
@@ -208,10 +217,10 @@ impl<
     }
 }
 
-impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
-    EnumFieldBuilder<T, I, O, CtxOptions, Yes>
+impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErrorTool>
+    EnumFieldBuilder<T, I, O, CtxOptions, ErrT, Yes>
 {
-    pub fn error(self, error: &str) -> EnumFieldBuilder<T, I, O, CtxOptions, Yes, Yes> {
+    pub fn error(self, error: &str) -> EnumFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes> {
         EnumFieldBuilder {
             enum_values: self.enum_values,
             enum_error: Some(ComputableEnumeratedError::Static(error.into())),
@@ -219,9 +228,9 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
         }
     }
 
-    pub fn error_fn<F>(self, error_fn: F) -> EnumFieldBuilder<T, I, O, CtxOptions, Yes, Yes>
+    pub fn error_fn<F>(self, error_fn: F) -> EnumFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes>
     where
-        F: IntoEnumErrorResolver<T>,
+        F: IntoEnumErrorResolver<T, ErrT>,
     {
         EnumFieldBuilder {
             enum_values: self.enum_values,
@@ -236,9 +245,10 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-    > EnumFieldBuilder<T, I, O, CtxOptions, Yes, Yes>
+        ErrT: IvoErrorTool,
+    > EnumFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes>
 {
-    pub fn default(self, value: T) -> EnumFieldBuilder<T, I, O, CtxOptions, Yes, Yes, Yes> {
+    pub fn default(self, value: T) -> EnumFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, Yes> {
         EnumFieldBuilder {
             enum_values: self.enum_values,
             enum_error: self.enum_error,
@@ -250,7 +260,7 @@ impl<
     pub fn default_fn<F>(
         self,
         default_fn: F,
-    ) -> EnumFieldBuilder<T, I, O, CtxOptions, Yes, Yes, Yes>
+    ) -> EnumFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, Yes>
     where
         F: IntoResolverWithMiniSummary<T, I, O, CtxOptions>,
     {
@@ -267,7 +277,7 @@ impl<
     pub fn default_async_fn<F>(
         self,
         default_fn: F,
-    ) -> EnumFieldBuilder<T, I, O, CtxOptions, Yes, Yes, Yes>
+    ) -> EnumFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, Yes>
     where
         F: IntoAsyncResolverWithMiniSummary<I, I, O, CtxOptions>,
     {
@@ -282,10 +292,13 @@ impl<
     }
 }
 
-impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
-    EnumFieldBuilder<T, I, O, CtxOptions, Yes, Yes, Yes>
+impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErrorTool>
+    EnumFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, Yes>
 {
-    pub fn ignore_if<F>(self, fx: F) -> EnumFieldBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, Yes>
+    pub fn ignore_if<F>(
+        self,
+        fx: F,
+    ) -> EnumFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, Yes, Yes>
     where
         F: Fn(IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
     {
@@ -299,10 +312,12 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
     }
 }
 
-impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
-    EnumFieldBuilder<T, I, O, CtxOptions, Yes, Yes, Yes>
+impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErrorTool>
+    EnumFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, Yes>
 {
-    pub fn ignore_init(self) -> EnumFieldBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, Yes> {
+    pub fn ignore_init(
+        self,
+    ) -> EnumFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, Yes, No, Yes> {
         EnumFieldBuilder {
             default: self.default,
             enum_values: self.enum_values,
@@ -315,7 +330,7 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
     pub fn allow_init_if<R>(
         self,
         resolver: R,
-    ) -> EnumFieldBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, YesComputed>
+    ) -> EnumFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, Yes, No, YesComputed>
     where
         R: IntoResolverWithMutSummaryFn<bool, I, O, CtxOptions>,
     {
@@ -329,10 +344,16 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
     }
 }
 
-impl<HasDefault, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
-    EnumFieldBuilder<T, I, O, CtxOptions, Yes, Yes, HasDefault>
+impl<
+        HasDefault,
+        T,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions: Clone,
+        ErrT: IvoErrorTool,
+    > EnumFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, HasDefault>
 {
-    pub fn readonly(self) -> EnumFieldBuilder<T, I, O, CtxOptions, Yes, Yes, HasDefault> {
+    pub fn readonly(self) -> EnumFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, HasDefault> {
         EnumFieldBuilder {
             default: self.default,
             enum_values: self.enum_values,
@@ -345,7 +366,7 @@ impl<HasDefault, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
     pub fn allow_update_if<R>(
         self,
         resolver: R,
-    ) -> EnumFieldBuilder<T, I, O, CtxOptions, Yes, Yes, HasDefault, No, No, YesComputed>
+    ) -> EnumFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, HasDefault, No, No, YesComputed>
     where
         R: IntoResolverWithMutSummaryFn<bool, I, O, CtxOptions>,
     {
@@ -359,13 +380,13 @@ impl<HasDefault, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
     }
 }
 
-impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
-    EnumFieldBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, No, Yes>
+impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErrorTool>
+    EnumFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, Yes, No, No, Yes>
 {
     pub fn allow_init_if<R>(
         self,
         resolver: R,
-    ) -> EnumFieldBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, YesComputed, Yes>
+    ) -> EnumFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, Yes, No, YesComputed, Yes>
     where
         R: IntoResolverWithMutSummaryFn<bool, I, O, CtxOptions>,
     {
@@ -379,13 +400,19 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
     }
 }
 
-impl<HasDefault, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
-    EnumFieldBuilder<T, I, O, CtxOptions, Yes, Yes, HasDefault, No, Yes, YesComputed>
+impl<
+        HasDefault,
+        T,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions: Clone,
+        ErrT: IvoErrorTool,
+    > EnumFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, HasDefault, No, Yes, YesComputed>
 {
     pub fn allow_update_if<F>(
         self,
         fx: F,
-    ) -> EnumFieldBuilder<T, I, O, CtxOptions, Yes, Yes, HasDefault, No, Yes, YesComputed>
+    ) -> EnumFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, HasDefault, No, Yes, YesComputed>
     where
         F: Fn(IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
     {
@@ -400,12 +427,12 @@ impl<HasDefault, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
     }
 }
 
-impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
-    EnumFieldBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, No, YesComputed>
+impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErrorTool>
+    EnumFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, Yes, No, No, YesComputed>
 {
     pub fn ignore_init(
         self,
-    ) -> EnumFieldBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, Yes, YesComputed> {
+    ) -> EnumFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, Yes, No, Yes, YesComputed> {
         EnumFieldBuilder {
             default: self.default,
             enum_values: self.enum_values,
@@ -419,7 +446,7 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
     pub fn allow_init_if<F>(
         self,
         fx: F,
-    ) -> EnumFieldBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, YesComputed, YesComputed>
+    ) -> EnumFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, Yes, No, YesComputed, YesComputed>
     where
         F: Fn(IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
     {
@@ -446,12 +473,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
+        ErrT: IvoErrorTool,
     >
     EnumFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
+        ErrT,
         Yes,
         Yes,
         HasDefault,
@@ -471,6 +500,7 @@ impl<
         I,
         O,
         CtxOptions,
+        ErrT,
         Yes,
         Yes,
         HasDefault,
@@ -523,12 +553,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
+        ErrT: IvoErrorTool,
     >
     EnumFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
+        ErrT,
         Yes,
         Yes,
         HasDefault,
@@ -548,6 +580,7 @@ impl<
         I,
         O,
         CtxOptions,
+        ErrT,
         Yes,
         Yes,
         HasDefault,
@@ -600,12 +633,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
+        ErrT: IvoErrorTool,
     >
     EnumFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
+        ErrT,
         Yes,
         Yes,
         HasDefault,
@@ -625,6 +660,7 @@ impl<
         I,
         O,
         CtxOptions,
+        ErrT,
         Yes,
         Yes,
         HasDefault,

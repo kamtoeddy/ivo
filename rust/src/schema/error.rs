@@ -1,4 +1,3 @@
-use serde_json::Value;
 use std::collections::HashMap;
 
 use crate::utils::styled_text::Stylable;
@@ -9,12 +8,13 @@ pub enum UpdateError<E: IvoErrorTool> {
     ValidationError(E::ErrorPayload),
 }
 
+pub type DefaultFieldErrorMetadata = ();
 pub type DefaultErrorPayload = HashMap<String, Vec<FieldError>>;
 
 #[derive(Debug, Clone)]
-pub struct FieldError {
+pub struct FieldError<FieldMetadata = DefaultFieldErrorMetadata> {
     pub reason: String,
-    pub metadata: Option<Value>,
+    pub metadata: Option<FieldMetadata>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -31,10 +31,11 @@ pub struct IValidationError {
 
 // ErrorTool trait
 pub trait IvoErrorTool {
+    type FieldMetadata;
     type ErrorPayload;
 
     fn new() -> Self;
-    fn add(&mut self, field: &str, error: FieldError) -> &mut Self;
+    fn add(&mut self, field: &str, error: FieldError<Self::FieldMetadata>) -> &mut Self;
     fn is_loaded(&self) -> bool;
     fn payload(&self) -> Self::ErrorPayload;
 }
@@ -53,6 +54,7 @@ impl DefaultErrorTool {
 }
 
 impl IvoErrorTool for DefaultErrorTool {
+    type FieldMetadata = DefaultFieldErrorMetadata;
     type ErrorPayload = DefaultErrorPayload;
 
     fn new() -> Self {

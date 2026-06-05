@@ -3,6 +3,7 @@ use std::{fmt::Debug, marker::PhantomData};
 use crate::{
     erased_value::{erase_value, ErasedValue},
     fields::base::{BuildableIvoProperty, InternalIvoProperty, IvoProperty},
+    schema::error::{DefaultErrorTool, IvoErrorTool},
     traits::{
         IntoAsyncResolverWithMutSummary, IntoDeleteHandler, IntoResolverWithMiniSummary,
         IntoSuccessHandler, IntoUniformResolverWithMutSummary, IvoSchemaStruct,
@@ -22,6 +23,7 @@ pub struct DependentFieldBuilder<
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
     CtxOptions: Clone,
+    ErrT: IvoErrorTool = DefaultErrorTool,
     HasDefault = No,
     HasParents = No,
     HasResolver = No,
@@ -30,6 +32,7 @@ pub struct DependentFieldBuilder<
     HasSuccess = No,
 > {
     _t: PhantomData<T>,
+    _err: PhantomData<ErrT>,
     _default: PhantomData<HasDefault>,
     _depends_on: PhantomData<HasParents>,
     _resolver: PhantomData<HasResolver>,
@@ -56,12 +59,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
+        ErrT: IvoErrorTool,
     >
     DependentFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
+        ErrT,
         HasDefault,
         HasParents,
         HasResolver,
@@ -79,6 +84,7 @@ impl<
             on_delete_fns: None,
             on_success_fns: None,
             _t: PhantomData,
+            _err: PhantomData,
             _default: PhantomData,
             _depends_on: PhantomData,
             _should_update: PhantomData,
@@ -100,12 +106,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
+        ErrT: IvoErrorTool,
     > Default
     for DependentFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
+        ErrT,
         HasDefault,
         HasParents,
         HasResolver,
@@ -127,12 +135,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-    > BuildableIvoProperty<I, O, CtxOptions>
+        ErrT: IvoErrorTool,
+    > BuildableIvoProperty<I, O, CtxOptions, ErrT>
     for DependentFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
+        ErrT,
         Yes,
         Yes,
         Yes,
@@ -141,7 +151,7 @@ impl<
         HasSuccess,
     >
 {
-    fn build(self) -> InternalIvoProperty<I, O, CtxOptions> {
+    fn build(self) -> InternalIvoProperty<I, O, CtxOptions, ErrT> {
         IvoProperty {
             default: self.default,
             depends_on: self.depends_on,
@@ -163,16 +173,20 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-    > DependentFieldBuilder<T, I, O, CtxOptions>
+        ErrT: IvoErrorTool,
+    > DependentFieldBuilder<T, I, O, CtxOptions, ErrT>
 {
-    pub fn default(self, value: T) -> DependentFieldBuilder<T, I, O, CtxOptions, Yes> {
+    pub fn default(self, value: T) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrT, Yes> {
         DependentFieldBuilder {
             default: Some(ComputableWithMiniSummary::Static(erase_value(value))),
             ..Default::default()
         }
     }
 
-    pub fn default_fn<F>(self, default_fn: F) -> DependentFieldBuilder<T, I, O, CtxOptions, Yes>
+    pub fn default_fn<F>(
+        self,
+        default_fn: F,
+    ) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrT, Yes>
     where
         F: IntoResolverWithMiniSummary<T, I, O, CtxOptions>,
     {
@@ -185,13 +199,13 @@ impl<
     }
 }
 
-impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
-    DependentFieldBuilder<T, I, O, CtxOptions, Yes>
+impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErrorTool>
+    DependentFieldBuilder<T, I, O, CtxOptions, ErrT, Yes>
 {
     pub fn depends_on(
         self,
         fields: Vec<&str>,
-    ) -> DependentFieldBuilder<T, I, O, CtxOptions, Yes, Yes> {
+    ) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes> {
         DependentFieldBuilder {
             default: self.default,
             depends_on: Some(
@@ -205,13 +219,13 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
     }
 }
 
-impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
-    DependentFieldBuilder<T, I, O, CtxOptions, Yes, Yes>
+impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErrorTool>
+    DependentFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes>
 {
     pub fn resolve<R>(
         self,
         resolver: R,
-    ) -> DependentFieldBuilder<T, I, O, CtxOptions, Yes, Yes, Yes>
+    ) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, Yes>
     where
         R: IntoUniformResolverWithMutSummary<T, I, O, CtxOptions>,
     {
@@ -226,7 +240,7 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
     pub fn resolve_async<R>(
         self,
         resolver: R,
-    ) -> DependentFieldBuilder<T, I, O, CtxOptions, Yes, Yes, Yes>
+    ) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, Yes>
     where
         R: IntoAsyncResolverWithMutSummary<T, I, O, CtxOptions>,
     {
@@ -239,12 +253,20 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
     }
 }
 
-impl<HasDelete, HasSuccess, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
-    DependentFieldBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, No, HasDelete, HasSuccess>
+impl<
+        HasDelete,
+        HasSuccess,
+        T,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions: Clone,
+        ErrT: IvoErrorTool,
+    > DependentFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, Yes, No, HasDelete, HasSuccess>
 {
     pub fn readonly(
         self,
-    ) -> DependentFieldBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, Yes, HasDelete, HasSuccess> {
+    ) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, Yes, Yes, HasDelete, HasSuccess>
+    {
         DependentFieldBuilder {
             default: self.default,
             depends_on: self.depends_on,
@@ -264,12 +286,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
+        ErrT: IvoErrorTool,
     >
     DependentFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
+        ErrT,
         Yes,
         Yes,
         Yes,
@@ -281,7 +305,19 @@ impl<
     pub fn on_delete<H>(
         self,
         handler: H,
-    ) -> DependentFieldBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, HasShouldUpdate, Yes, HasSuccess>
+    ) -> DependentFieldBuilder<
+        T,
+        I,
+        O,
+        CtxOptions,
+        ErrT,
+        Yes,
+        Yes,
+        Yes,
+        HasShouldUpdate,
+        Yes,
+        HasSuccess,
+    >
     where
         H: IntoDeleteHandler<O, CtxOptions>,
     {
@@ -317,12 +353,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
+        ErrT: IvoErrorTool,
     >
     DependentFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
+        ErrT,
         Yes,
         Yes,
         Yes,
@@ -334,7 +372,19 @@ impl<
     pub fn on_success<H>(
         self,
         handler: H,
-    ) -> DependentFieldBuilder<T, I, O, CtxOptions, Yes, Yes, Yes, HasShouldUpdate, HasDelete, Yes>
+    ) -> DependentFieldBuilder<
+        T,
+        I,
+        O,
+        CtxOptions,
+        ErrT,
+        Yes,
+        Yes,
+        Yes,
+        HasShouldUpdate,
+        HasDelete,
+        Yes,
+    >
     where
         H: IntoSuccessHandler<I, O, CtxOptions>,
     {
