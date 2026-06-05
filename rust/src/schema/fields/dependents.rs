@@ -1,14 +1,15 @@
-use std::marker::PhantomData;
+use std::{fmt::Debug, marker::PhantomData};
 
 use crate::{
+    erased_value::{erase_value, ErasedValue},
     fields::base::{BuildableIvoProperty, InternalIvoProperty, IvoProperty},
     traits::{
         IntoAsyncResolverWithMutSummary, IntoDeleteHandler, IntoResolverWithMiniSummary,
         IntoSuccessHandler, IntoUniformResolverWithMutSummary, IvoSchemaStruct,
     },
     types::{
-        erase_value, ComputableInit, ComputableWithMiniSummary, DeleteHandler, ErasedStuff, False,
-        ResolverWithMutSummary, SuccessHandler,
+        ComputableInit, ComputableWithMiniSummary, DeleteHandler, False, ResolverWithMutSummary,
+        SuccessHandler,
     },
 };
 
@@ -36,9 +37,9 @@ pub struct DependentFieldBuilder<
     _should_update: PhantomData<HasShouldUpdate>,
     _success_handlers: PhantomData<HasSuccess>,
     // actual data...
-    default: Option<ComputableWithMiniSummary<ErasedStuff, CtxOptions>>,
+    default: Option<ComputableWithMiniSummary<ErasedValue, CtxOptions>>,
     depends_on: Option<Vec<String>>,
-    resolver: Option<ResolverWithMutSummary<ErasedStuff, I, O, CtxOptions>>,
+    resolver: Option<ResolverWithMutSummary<ErasedValue, I, O, CtxOptions>>,
     should_update: Option<False>,
     on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
     on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
@@ -158,7 +159,7 @@ impl<
 }
 
 impl<
-        T: Clone + Send + Sync + 'static,
+        T: Clone + Debug + Send + Sync + 'static,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,

@@ -1,10 +1,11 @@
 use std::marker::PhantomData;
 
 use crate::{
+    erased_value::ErasedValue,
     traits::IvoSchemaStruct,
     types::{
         BooleanResolverWithMutSummary, ComputableEnumeratedError, ComputableInit,
-        ComputableRequired, ComputableWithMiniSummary, DeleteHandler, ErasedStuff, FailureHandler,
+        ComputableRequired, ComputableWithMiniSummary, DeleteHandler, FailureHandler,
         FieldReValidator, FieldValidator, ResolverWithMutSummary, SuccessHandler, VirtualSanitiser,
     },
 };
@@ -13,7 +14,7 @@ pub trait BuildableIvoProperty<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOption
     fn build(self) -> InternalIvoProperty<I, O, CtxOptions>;
 }
 
-pub type InternalIvoProperty<I, O, CtxOptions> = IvoProperty<ErasedStuff, I, O, CtxOptions>;
+pub type InternalIvoProperty<I, O, CtxOptions> = IvoProperty<ErasedValue, I, O, CtxOptions>;
 
 pub struct IvoProperty<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
     pub _i: PhantomData<I>,

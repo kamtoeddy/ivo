@@ -1,14 +1,15 @@
+use crate::erased_value::ErasedValue;
 use crate::fields::base::BuildableIvoProperty;
 use crate::schema::error::{DefaultErrorTool, IvoErrorTool};
 // use crate::schema::utils::TimeStampTool;
 use crate::schema::{error::SchemaError, fields::base::IvoProperty};
 use crate::traits::IvoSchemaStruct;
-use crate::types::ErasedStuff;
+
 use std::collections::{HashMap, HashSet};
 use std::marker::PhantomData;
 
 type InternalPropertyDefinitions<I, O, CtxOptions> =
-    HashMap<String, IvoProperty<ErasedStuff, I, O, CtxOptions>>;
+    HashMap<String, IvoProperty<ErasedValue, I, O, CtxOptions>>;
 
 pub struct SchemaCore<
     I: IvoSchemaStruct,
@@ -18,14 +19,14 @@ pub struct SchemaCore<
 > {
     _error_tool: PhantomData<ErrorTool>,
     _definitions: InternalPropertyDefinitions<I, O, CtxOptions>,
-    _options: Option<ErasedStuff>,
+    _options: Option<ErasedValue>,
 
     // contexts & values
-    pub context: HashMap<String, ErasedStuff>,
-    pub context_options: HashMap<String, ErasedStuff>,
-    pub defaults: HashMap<String, &'static ErasedStuff>,
-    pub partial_context: HashMap<String, ErasedStuff>,
-    pub values: HashMap<String, ErasedStuff>,
+    pub context: HashMap<String, ErasedValue>,
+    pub context_options: HashMap<String, ErasedValue>,
+    pub defaults: HashMap<String, &'static ErasedValue>,
+    pub partial_context: HashMap<String, ErasedValue>,
+    pub values: HashMap<String, ErasedValue>,
     fields_set: HashSet<String>,
 
     // maps
@@ -36,9 +37,9 @@ pub struct SchemaCore<
     pub virtual_to_alias_map: HashMap<String, String>,
 
     // post validation/onSuccess maps (simplified)
-    pub post_validation_config_map: HashMap<String, ErasedStuff>,
+    pub post_validation_config_map: HashMap<String, ErasedValue>,
     pub prop_to_post_validation_config_ids_map: HashMap<String, HashSet<String>>,
-    pub on_success_config_map: HashMap<String, ErasedStuff>,
+    pub on_success_config_map: HashMap<String, ErasedValue>,
     pub prop_to_on_success_config_id_map: HashMap<String, HashSet<String>>,
 
     // props
@@ -216,7 +217,7 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: I
                     //         "Allowed values must be an array of unique values".to_string(),
                     //     );
                     // } else {
-                    // let set: HashSet<ErasedStuff> =
+                    // let set: HashSet<ErasedValue> =
                     //     enum_values.iter().map(|v| v.clone()).collect();
                     // self.props_to_allowed_values_map.insert(prop.clone(), set);
 
@@ -282,7 +283,7 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: I
     pub fn get_definition(
         &self,
         prop: &str,
-    ) -> Option<&IvoProperty<ErasedStuff, I, O, CtxOptions>> {
+    ) -> Option<&IvoProperty<ErasedValue, I, O, CtxOptions>> {
         self._definitions.get(prop)
     }
 

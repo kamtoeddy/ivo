@@ -1,6 +1,7 @@
 use std::marker::PhantomData;
 
 use crate::{
+    erased_value::ErasedValue,
     fields::base::{BuildableIvoProperty, InternalIvoProperty, IvoProperty},
     traits::{
         IntoAsyncFieldReValidator, IntoAsyncFieldValidator, IntoFailureHandler,
@@ -8,8 +9,8 @@ use crate::{
         IntoResolverWithMutSummaryFn, IntoSuccessHandler, IntoVirtualSanitizer, IvoSchemaStruct,
     },
     types::{
-        BooleanResolverWithMutSummary, ComputableInit, ComputableRequired, ErasedStuff,
-        FailureHandler, FieldReValidator, FieldValidator, SuccessHandler, VirtualSanitiser,
+        BooleanResolverWithMutSummary, ComputableInit, ComputableRequired, FailureHandler,
+        FieldReValidator, FieldValidator, SuccessHandler, VirtualSanitiser,
     },
 };
 
@@ -50,7 +51,7 @@ pub struct VirtualFieldBuilder<
     validator: Option<FieldValidator<I, O, CtxOptions>>,
     re_validator: Option<FieldReValidator<I, O, CtxOptions>>,
     required: Option<ComputableRequired<I, O, CtxOptions>>,
-    sanitizer: Option<VirtualSanitiser<ErasedStuff, I, O, CtxOptions>>,
+    sanitizer: Option<VirtualSanitiser<ErasedValue, I, O, CtxOptions>>,
     should_ignore_fn: Option<BooleanResolverWithMutSummary<I, O, CtxOptions>>,
     should_init: Option<ComputableInit<I, O, CtxOptions>>,
     should_update: Option<ComputableInit<I, O, CtxOptions>>,

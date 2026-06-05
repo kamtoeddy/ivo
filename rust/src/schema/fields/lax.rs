@@ -1,6 +1,7 @@
-use std::marker::PhantomData;
+use std::{fmt::Debug, marker::PhantomData};
 
 use crate::{
+    erased_value::{erase_value, ErasedValue},
     fields::base::{BuildableIvoProperty, InternalIvoProperty, IvoProperty},
     traits::{
         IntoAsyncFieldReValidator, IntoAsyncFieldValidator, IntoDeleteHandler, IntoFailureHandler,
@@ -9,9 +10,9 @@ use crate::{
         IvoSchemaStruct,
     },
     types::{
-        erase_value, BooleanResolverWithMutSummary, ComputableInit, ComputableRequired,
-        ComputableWithMiniSummary, DeleteHandler, ErasedStuff, FailureHandler, FieldReValidator,
-        FieldValidator, SuccessHandler,
+        BooleanResolverWithMutSummary, ComputableInit, ComputableRequired,
+        ComputableWithMiniSummary, DeleteHandler, FailureHandler, FieldReValidator, FieldValidator,
+        SuccessHandler,
     },
 };
 
@@ -48,7 +49,7 @@ pub struct LaxFieldBuilder<
     _on_failure_fns: PhantomData<HasFailure>,
     _on_success_fns: PhantomData<HasSuccess>,
     // actual data...
-    default: Option<ComputableWithMiniSummary<ErasedStuff, CtxOptions>>,
+    default: Option<ComputableWithMiniSummary<ErasedValue, CtxOptions>>,
     validator: Option<FieldValidator<I, O, CtxOptions>>,
     re_validator: Option<FieldReValidator<I, O, CtxOptions>>,
     required: Option<ComputableRequired<I, O, CtxOptions>>,
@@ -208,7 +209,7 @@ impl<
 }
 
 impl<
-        T: Clone + Send + Sync + 'static,
+        T: Clone + Debug + Send + Sync + 'static,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,

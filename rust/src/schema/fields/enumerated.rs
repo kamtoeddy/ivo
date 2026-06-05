@@ -1,6 +1,7 @@
-use std::marker::PhantomData;
+use std::{fmt::Debug, marker::PhantomData};
 
 use crate::{
+    erased_value::{erase_value, ErasedValue},
     fields::base::{BuildableIvoProperty, InternalIvoProperty, IvoProperty},
     traits::{
         IntoAsyncResolverWithMiniSummary, IntoDeleteHandler, IntoEnumErrorResolver,
@@ -8,9 +9,8 @@ use crate::{
         IntoSuccessHandler, IvoSchemaStruct,
     },
     types::{
-        erase_value, BooleanResolverWithMutSummary, ComputableEnumeratedError, ComputableInit,
-        ComputableWithMiniSummary, DeleteHandler, ErasedStuff, FailureHandler, IvoSummary,
-        SuccessHandler,
+        BooleanResolverWithMutSummary, ComputableEnumeratedError, ComputableInit,
+        ComputableWithMiniSummary, DeleteHandler, FailureHandler, IvoSummary, SuccessHandler,
     },
 };
 
@@ -45,9 +45,9 @@ pub struct EnumFieldBuilder<
     _on_failure_fns: PhantomData<HasFailure>,
     _on_success_fns: PhantomData<HasSuccess>,
     // actual data...
-    enum_values: Option<Vec<ErasedStuff>>,
+    enum_values: Option<Vec<ErasedValue>>,
     enum_error: Option<ComputableEnumeratedError>,
-    default: Option<ComputableWithMiniSummary<ErasedStuff, CtxOptions>>,
+    default: Option<ComputableWithMiniSummary<ErasedValue, CtxOptions>>,
     should_ignore_fn: Option<BooleanResolverWithMutSummary<I, O, CtxOptions>>,
     should_init: Option<ComputableInit<I, O, CtxOptions>>,
     should_update: Option<ComputableInit<I, O, CtxOptions>>,
@@ -194,7 +194,7 @@ impl<
 }
 
 impl<
-        T: Clone + Send + Sync + 'static,
+        T: Clone + Debug + Send + Sync + 'static,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
@@ -232,7 +232,7 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
 }
 
 impl<
-        T: Clone + Send + Sync + 'static,
+        T: Clone + Debug + Send + Sync + 'static,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,

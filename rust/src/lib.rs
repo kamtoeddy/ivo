@@ -1,4 +1,5 @@
 pub mod demo;
+pub mod erased_value;
 pub mod schema;
 mod traits;
 pub mod types;

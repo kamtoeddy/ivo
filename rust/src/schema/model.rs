@@ -1,6 +1,7 @@
+use crate::erased_value::{erase_value, parse_or_panic, ErasedValue};
 use crate::schema::core::SchemaCore;
 use crate::schema::error::{DefaultErrorTool, FieldError, IvoErrorTool, UpdateError};
-use crate::types::{Context, ErasedStuff};
+use crate::types::Context;
 
 use std::collections::{HashMap, HashSet};
 
@@ -43,14 +44,17 @@ impl<
         input: &Partial<Input>,
         options: CtxOptions,
     ) -> Result<(Output, AsyncTriggerFn), (ErrorTool::ErrorPayload, AsyncTriggerFn)> {
-        // let value = json!(input);
+        let v = erase_value(String::from("create"));
+        parse_or_panic::<String>(&v);
 
         let mut error_tool = ErrorTool::new();
         let input_values = input.to_ivo_internal_map();
 
+        println!();
         for (k, _) in input_values {
             println!("'{k}' was provided");
         }
+        println!();
 
         // Build initial context from input (filter to schema props)
         let mut context: Context = HashMap::new();
@@ -114,15 +118,18 @@ impl<
         // Run validators for props in context
         self.run_async_validator(updates, options).await;
 
-        let _previous_values = data.to_ivo_internal_map();
+        let previous_values = data.to_ivo_internal_map();
         let input_values = updates.to_ivo_internal_map();
         let context: Context = HashMap::new();
 
+        println!();
         for (k, _) in input_values {
             println!("'{k}' was provided");
         }
+        println!();
 
-        let output = Output::Partial::from_ivo_internal_map(&context);
+        let _ = Output::Partial::from_ivo_internal_map(&context);
+        let output = Output::Partial::from_ivo_internal_map(&previous_values);
 
         Ok((output, Box::new(move || Box::pin(async move {}))))
 
@@ -147,9 +154,8 @@ impl<
     async fn run_async_validator(&self, _input: &Partial<Input>, _options: CtxOptions) {
         // if let Some(def) = self.schema.get_definition("username") {
         //     if let Some(FieldReValidator::Async(validator)) = &def.re_validator {
-        //         // let validator = validators();
         //         let r = validator(
-        //             json!("IVO test ErasedStuff"),
+        //             erase_value(String::from("IVO test ErasedValue")),
         //             IvoSummary::for_new(
         //                 HashMap::new(),
         //                 input.clone(),
@@ -158,9 +164,8 @@ impl<
         //                 options,
         //             ),
         //         )
-        //         .await;
-
-        //         println!("async results for validations of username {:?}", r)
+        //         .await
+        //         .map(|v| parse_or_panic::<String>(&v));
         //     }
         // }
 
@@ -190,11 +195,11 @@ impl<
         //     let keys = &self.schema.timestamp_tool.get_keys();
 
         //     if let Some(created_at_key) = keys.created_at.clone() {
-        //         context.insert(created_at_key, ErasedStuff::String(now.clone()));
+        //         context.insert(created_at_key, ErasedValue::String(now.clone()));
         //     }
 
         //     if let Some(updated_at_key) = keys.updated_at.clone() {
-        //         context.insert(updated_at_key, ErasedStuff::String(now));
+        //         context.insert(updated_at_key, ErasedValue::String(now));
         //     }
         // }
     }
@@ -203,7 +208,7 @@ impl<
     /// It will repeatedly evaluate defaults whose dependencies are satisfied (present in `context`).
     /// If unresolved defaults remain and schema option `error_on_unresolved_defaults` is true,
     /// returns Err(SchemaError) listing the unresolved props.
-    pub fn resolve_defaults(&self, context: &mut HashMap<String, ErasedStuff>) {
+    pub fn resolve_defaults(&self, context: &mut HashMap<String, ErasedValue>) {
         let mut _pending: HashSet<String> = self
             .schema
             .get_definitions()
@@ -222,7 +227,7 @@ impl<
     /// Resolve constants iteratively; constants may depend on other values in context.
     /// If unresolved constants remain and schema option `error_on_unresolved_constants` is true,
     /// returns Err(SchemaError) listing unresolved constants; otherwise returns Ok(())
-    pub fn resolve_constants(&self, context: &mut HashMap<String, ErasedStuff>) {
+    pub fn resolve_constants(&self, context: &mut HashMap<String, ErasedValue>) {
         let mut _pending: HashSet<String> = self
             .schema
             .constants

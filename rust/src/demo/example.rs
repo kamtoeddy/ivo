@@ -14,7 +14,7 @@ use crate::{schema::SchemaCore, types::IvoSummary};
 pub enum UserRole {
     Admin,
     User,
-    Moderator,
+    // Moderator,
 }
 
 #[derive(Debug, Clone, IvoStruct)]
@@ -51,7 +51,6 @@ impl UserCtxOptions {
 
     fn update_data(&mut self, slug: SlugifiedString) {
         self.slug_id = Some(slug.clone());
-        println!("UserCtxOptions updated with slug id: \"{slug}\"")
     }
 }
 

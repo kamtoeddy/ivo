@@ -1,12 +1,13 @@
-use std::marker::PhantomData;
+use std::{fmt::Debug, marker::PhantomData};
 
 use crate::{
+    erased_value::{erase_value, ErasedValue},
     fields::base::{BuildableIvoProperty, InternalIvoProperty, IvoProperty},
     traits::{
         IntoAsyncResolverWithMiniSummary, IntoDeleteHandler, IntoResolverWithMiniSummary,
         IntoSuccessHandler, IvoSchemaStruct,
     },
-    types::{erase_value, ComputableWithMiniSummary, DeleteHandler, ErasedStuff, SuccessHandler},
+    types::{ComputableWithMiniSummary, DeleteHandler, SuccessHandler},
 };
 
 // Marker Types
@@ -27,7 +28,7 @@ pub struct ConstantFieldBuilder<
     _del_handlers: PhantomData<HasDelete>,
     _success_handlers: PhantomData<HasSuccess>,
     // actual data...
-    value: Option<ComputableWithMiniSummary<ErasedStuff, CtxOptions>>,
+    value: Option<ComputableWithMiniSummary<ErasedValue, CtxOptions>>,
     on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
     on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
 }
@@ -75,7 +76,7 @@ impl<
         HasSuccess,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        T: Clone + Send + Sync + 'static,
+        T: Clone + Debug + Send + Sync + 'static,
         CtxOptions: Clone,
     > BuildableIvoProperty<I, O, CtxOptions>
     for ConstantFieldBuilder<T, I, O, CtxOptions, Yes, HasDelete, HasSuccess>
@@ -93,7 +94,7 @@ impl<
 impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        T: Clone + Send + Sync + 'static,
+        T: Clone + Debug + Send + Sync + 'static,
         CtxOptions: Clone + Send,
     > ConstantFieldBuilder<T, I, O, CtxOptions>
 {

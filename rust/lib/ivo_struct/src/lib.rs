@@ -118,7 +118,7 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
         }
 
         impl #crate_root::traits::PartialFromMap for #partial_name {
-            fn from_ivo_internal_map(map: &std::collections::HashMap<String, #crate_root::types::ErasedStuff>) -> Self {
+            fn from_ivo_internal_map(map: &std::collections::HashMap<String, #crate_root::erased_value::ErasedValue>) -> Self {
                 Self {
                     #( #construct_struct_fields_for_from_map_for_partial )*
                 }
@@ -126,8 +126,8 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
         }
 
         impl #crate_root::traits::ToMap for #partial_name {
-            fn to_ivo_internal_map(&self) -> std::collections::HashMap<String, #crate_root::types::ErasedStuff> {
-                use #crate_root::types::erase_value;
+            fn to_ivo_internal_map(&self) -> std::collections::HashMap<String, #crate_root::erased_value::ErasedValue> {
+                use #crate_root::erased_value::erase_value;
                 let mut map = std::collections::HashMap::new();
 
                 #( #to_map_statements_for_partial )*
@@ -139,7 +139,7 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
         impl #crate_root::traits::IvoSchemaStruct for #name { }
 
         impl #crate_root::traits::FromMap for #name {
-            fn from_ivo_internal_map(map: &std::collections::HashMap<String, #crate_root::types::ErasedStuff>) -> Result<Self, String>{
+            fn from_ivo_internal_map(map: &std::collections::HashMap<String, #crate_root::erased_value::ErasedValue>) -> Result<Self, String>{
                 Ok(Self {
                     #( #construct_struct_fields_for_from_map )*
                 })
@@ -147,8 +147,8 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
         }
 
         impl #crate_root::traits::ToMap for #name {
-            fn to_ivo_internal_map(&self) -> std::collections::HashMap<String, #crate_root::types::ErasedStuff> {
-                use #crate_root::types::erase_value;
+            fn to_ivo_internal_map(&self) -> std::collections::HashMap<String, #crate_root::erased_value::ErasedValue> {
+                use #crate_root::erased_value::erase_value;
                 let mut map = std::collections::HashMap::new();
 
                 #( #to_map_statements )*

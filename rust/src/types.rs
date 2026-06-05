@@ -1,57 +1,9 @@
-use std::{any::Any, collections::HashMap, fmt::Debug};
+use std::{collections::HashMap, fmt::Debug};
 
 use futures::future::BoxFuture;
 use serde_json::Value;
 
-use crate::traits::IvoSchemaStruct;
-
-pub trait CloneableAny: Any + Send + Sync {
-    fn clone_box(&self) -> Box<dyn CloneableAny>;
-    fn as_any(&self) -> &dyn Any;
-    fn as_any_mut(&mut self) -> &mut dyn Any;
-}
-
-impl<T> CloneableAny for T
-where
-    // Note: We use Clone here, which is fine, but...
-    T: Clone + Any + Send + Sync + 'static,
-{
-    fn clone_box(&self) -> Box<dyn CloneableAny> {
-        println!("🔴 start clonning box\n",);
-        // FIX: Force Rust to use T's explicit clone implementation,
-        // preventing it from resolving back to the Box's clone implementation.
-        Box::new(T::clone(self))
-    }
-
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-
-    fn as_any_mut(&mut self) -> &mut dyn Any {
-        self
-    }
-}
-
-pub type ErasedStuff = Box<dyn CloneableAny>;
-
-// Keep this exactly as it was
-impl Clone for ErasedStuff {
-    fn clone(&self) -> Self {
-        self.clone_box()
-    }
-}
-
-pub fn erase_value<T: Clone + Send + Sync + 'static>(value: T) -> ErasedStuff {
-    let e: ErasedStuff = Box::new(value);
-    e
-}
-
-pub fn parse_or_panic<T: Clone + Send + Sync + 'static>(v: ErasedStuff) -> T {
-    v.as_any()
-        .downcast_ref::<T>()
-        .expect("Failed to parse value")
-        .clone()
-}
+use crate::{erased_value::ErasedValue, traits::IvoSchemaStruct};
 
 #[derive(Debug)]
 pub struct True;
@@ -76,7 +28,7 @@ impl std::ops::Deref for False {
 }
 
 pub type UniformValidator<I, O, CtxOptions> = Box<
-    dyn Fn(ErasedStuff, IvoSummary<I, O, CtxOptions>) -> ValidatorResponse<ErasedStuff>
+    dyn Fn(ErasedValue, IvoSummary<I, O, CtxOptions>) -> ValidatorResponse<ErasedValue>
         + Send
         + Sync
         + 'static,
@@ -84,16 +36,16 @@ pub type UniformValidator<I, O, CtxOptions> = Box<
 
 pub type UniformAsyncValidator<I, O, CtxOptions> = Box<
     dyn Fn(
-            ErasedStuff,
+            ErasedValue,
             IvoSummary<I, O, CtxOptions>,
-        ) -> BoxFuture<'static, ValidatorResponse<ErasedStuff>>
+        ) -> BoxFuture<'static, ValidatorResponse<ErasedValue>>
         + Send
         + Sync
         + 'static,
 >;
 
 pub type UniformReValidator<I, O, CtxOptions> = Box<
-    dyn Fn(ErasedStuff, IvoSummary<I, O, CtxOptions>) -> ValidatorResponse<ErasedStuff>
+    dyn Fn(ErasedValue, IvoSummary<I, O, CtxOptions>) -> ValidatorResponse<ErasedValue>
         + Send
         + Sync
         + 'static,
@@ -101,33 +53,33 @@ pub type UniformReValidator<I, O, CtxOptions> = Box<
 
 pub type UniformAsyncReValidator<I, O, CtxOptions> = Box<
     dyn Fn(
-            ErasedStuff,
+            ErasedValue,
             IvoSummary<I, O, CtxOptions>,
-        ) -> BoxFuture<'static, ValidatorResponse<ErasedStuff>>
+        ) -> BoxFuture<'static, ValidatorResponse<ErasedValue>>
         + Send
         + Sync
         + 'static,
 >;
 
 pub type UniformVirtualSanitiser<I, O, CtxOptions> = Box<
-    dyn Fn(IvoSummary<I, O, CtxOptions>) -> BoxFuture<'static, ErasedStuff> + Send + Sync + 'static,
+    dyn Fn(IvoSummary<I, O, CtxOptions>) -> BoxFuture<'static, ErasedValue> + Send + Sync + 'static,
 >;
 
 pub type UniformEnumErrorResolver =
-    Box<dyn Fn((ErasedStuff, Vec<ErasedStuff>)) -> String + Send + Sync + 'static>;
+    Box<dyn Fn((ErasedValue, Vec<ErasedValue>)) -> String + Send + Sync + 'static>;
 
 pub type UniformResolverWithMutSummary<I, O, CtxOptions> =
-    Box<dyn Fn(IvoSummary<I, O, CtxOptions>) -> ErasedStuff + Send + Sync + 'static>;
+    Box<dyn Fn(IvoSummary<I, O, CtxOptions>) -> ErasedValue + Send + Sync + 'static>;
 
 pub type UniformAsyncResolverWithMutSummary<I, O, CtxOptions> = Box<
-    dyn Fn(IvoSummary<I, O, CtxOptions>) -> BoxFuture<'static, ErasedStuff> + Send + Sync + 'static,
+    dyn Fn(IvoSummary<I, O, CtxOptions>) -> BoxFuture<'static, ErasedValue> + Send + Sync + 'static,
 >;
 
 pub type UniformResolverWithMiniSummary<CtxOptions> =
-    Box<dyn Fn(IvoMiniSummary<CtxOptions>) -> ErasedStuff + Send + Sync + 'static>;
+    Box<dyn Fn(IvoMiniSummary<CtxOptions>) -> ErasedValue + Send + Sync + 'static>;
 
 pub type UniformAsyncResolverWithMiniSummary<CtxOptions> = Box<
-    dyn Fn(IvoMiniSummary<CtxOptions>) -> BoxFuture<'static, ErasedStuff> + Send + Sync + 'static,
+    dyn Fn(IvoMiniSummary<CtxOptions>) -> BoxFuture<'static, ErasedValue> + Send + Sync + 'static,
 >;
 
 pub enum ComputableEnumeratedError {
@@ -151,7 +103,7 @@ pub enum ComputableRequired<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: 
     Func(RequiredResolverFn<I, O, CtxOptions>),
 }
 
-pub type Context = HashMap<String, ErasedStuff>;
+pub type Context = HashMap<String, ErasedValue>;
 
 pub struct IvoMiniSummary<CtxOptions: Clone> {
     pub context: Context,
@@ -176,8 +128,8 @@ impl<CtxOptions: Clone> IvoMiniSummary<CtxOptions> {
     }
 }
 
-type InputValues = HashMap<String, ErasedStuff>;
-type Changes = HashMap<String, ErasedStuff>;
+type InputValues = HashMap<String, ErasedValue>;
+type Changes = HashMap<String, ErasedValue>;
 
 // pub struct IvoSummary<CtxOptions: Clone> {
 pub enum IvoSummary<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
@@ -203,7 +155,7 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> IvoSummary<I, O,
     pub fn for_new(
         context: Context,
         input: I::Partial,
-        input_values: HashMap<String, ErasedStuff>,
+        input_values: HashMap<String, ErasedValue>,
         // values: O,
         options: CtxOptions,
     ) -> Self {
@@ -217,10 +169,10 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> IvoSummary<I, O,
     }
 
     pub fn for_update(
-        changes: HashMap<String, ErasedStuff>,
+        changes: HashMap<String, ErasedValue>,
         context: Context,
         input: I::Partial,
-        input_values: HashMap<String, ErasedStuff>,
+        input_values: HashMap<String, ErasedValue>,
         previous_values: O,
         values: O,
         options: CtxOptions,
