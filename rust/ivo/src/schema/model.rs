@@ -139,14 +139,20 @@ impl<
 
         let new_output = O::from_ivo_internal_map(&new_data);
 
-        if new_output == *data {
+        // let empty_input = I::Partial::default();
+        // println!("default partial input: {:?}", empty_input);
+
+        // let empty_output = O::Partial::default();
+        // println!("default partial output: {:?}", empty_output);
+
+        let (updated_values, has_updated_fields) = data.ivo_internal_get_updates(&changes);
+
+        if !has_updated_fields {
             return Err((
                 UpdateError::NothingToUpdate,
                 Box::new(move || Box::pin(async move {})),
             ));
         }
-
-        let updated_values = O::Partial::from_ivo_internal_map(&changes);
 
         Ok((updated_values, Box::new(move || Box::pin(async move {}))))
     }

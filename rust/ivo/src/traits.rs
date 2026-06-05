@@ -16,7 +16,7 @@ use crate::{
 };
 
 pub trait IvoSchemaStruct:
-    Debug + Eq + Send + Sync + 'static + HasFields + HasPartial + FromToMap
+    Debug + Eq + Send + Sync + 'static + HasFields + HasPartial + FromToMap + WithUpdateDetails
 {
 }
 
@@ -30,7 +30,14 @@ pub trait HasFields {
 }
 
 pub trait HasPartial {
-    type Partial: Debug + Send + Sync + Clone + FromToMap;
+    type Partial: Debug + Default + Send + Sync + Clone + FromToMap;
+}
+
+pub trait WithUpdateDetails: HasPartial {
+    fn ivo_internal_get_updates(
+        &self,
+        updates: &HashMap<String, ErasedValue>,
+    ) -> (Self::Partial, bool);
 }
 
 pub type Partial<T> = <T as HasPartial>::Partial;

@@ -56,20 +56,6 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
             }
         });
 
-    let construct_struct_fields_for_from_map_for_partial = fields.iter().map(|field| {
-        let field_name = &field.ident; // e.g., 'id'
-        let field_type = &field.ty; // e.g., 'String'
-
-        quote! {
-            #field_name: {
-                match map.get(stringify!(#field_name)) {
-                    Some(erased) => parse_value::<#field_type>(erased),
-                    _ => None,
-                }
-            },
-        }
-    });
-
     let found_crate = crate_name("ivo").expect("ivo is not present in Cargo.toml");
 
     let crate_root = match found_crate {
@@ -103,6 +89,38 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
             }
         }
     });
+
+    let construct_struct_fields_for_from_map_for_partial = fields.iter().map(|field| {
+        let field_name = &field.ident; // e.g., 'id'
+        let field_type = &field.ty; // e.g., 'String'
+
+        quote! {
+            #field_name: {
+                match map.get(stringify!(#field_name)) {
+                    Some(erased) => parse_value::<#field_type>(erased),
+                    _ => None,
+                }
+            },
+        }
+    });
+
+    // let contruct_get_updated_values = {
+    //     let parse_fields = fields.iter().map(|field| {
+    //         let field_name = &field.ident; // e.g., 'id'
+    //         let field_type = &field.ty; // e.g., 'String'
+
+    //         quote! {
+    //             #field_name: {
+    //                 match map.get(stringify!(#field_name)) {
+    //                     Some(erased) => parse_value::<#field_type>(erased),
+    //                     _ => None,
+    //                 }
+    //             },
+    //         }
+    //     });
+
+    //     // perform more checks here?
+    // };
 
     // Generate the new struct
     let expanded = quote! {
@@ -157,6 +175,18 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
 
         impl #crate_root::traits::HasPartial for #name {
             type Partial = #partial_name;
+        }
+
+        impl #crate_root::traits::WithUpdateDetails for #name {
+            fn ivo_internal_get_updates(&self, updates: &std::collections::HashMap<String, #crate_root::utils::erased_value::ErasedValue>) -> (Self::Partial, bool) {
+                use #crate_root::utils::erased_value::parse_or_panic;
+                let mut partial_output = Self::Partial::default();
+                let mut has_updated_fields = false;
+
+
+
+                (partial_output, has_updated_fields)
+            }
         }
     };
 
