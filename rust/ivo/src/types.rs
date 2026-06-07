@@ -11,6 +11,11 @@ use crate::{
 #[derive(Debug)]
 pub struct True;
 
+// Marker Types
+pub struct Yes;
+pub struct No;
+pub struct YesComputed;
+
 // Optional: implement Deref to make it behave like bool
 impl std::ops::Deref for True {
     type Target = bool;
@@ -88,7 +93,8 @@ pub enum ComputableWithMiniSummary<T, CtxOptions: Clone> {
 
 pub enum ComputableInit<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
     False,
-    Func(ResolverWithMutSummaryFn<bool, I, O, CtxOptions>),
+    AsyncFunc(AsyncResolverWithMutSummaryFn<bool, I, O, CtxOptions>),
+    SyncFunc(ResolverWithMutSummaryFn<bool, I, O, CtxOptions>),
 }
 
 pub enum ComputableRequired<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
@@ -265,6 +271,19 @@ pub type BooleanResolverWithMutSummary<I, O, CtxOptions> =
     Box<dyn Fn(IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static>;
 
 pub type VirtualSanitiser<T, I, O, CtxOptions> = AsyncResolverWithMutSummaryFn<T, I, O, CtxOptions>;
+
+pub type PostValidatorValue = Vec<(&'static str, ErasedValue)>;
+pub type PostValidatorError<FieldErrorMetadata> = Vec<ValidatorError<FieldErrorMetadata>>;
+
+pub type PostValidatorFn<I, O, CtxOptions, FieldErrorMetadata> = Box<
+    dyn Fn(
+            IvoSummary<I, O, CtxOptions>,
+        )
+            -> BoxFuture<'static, Result<PostValidatorValue, PostValidatorError<FieldErrorMetadata>>>
+        + Send
+        + Sync
+        + 'static,
+>;
 
 pub type DeleteHandler<O, CtxOptions> =
     Box<dyn Fn(O, CtxOptions) -> BoxFuture<'static, ()> + Send + Sync + 'static>;

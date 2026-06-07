@@ -12,15 +12,11 @@ use crate::{
     },
     types::{
         BooleanResolverWithMutSummary, ComputableInit, ComputableRequired,
-        ComputableWithMiniSummary, DeleteHandler, FailureHandler, FieldValidator, SuccessHandler,
+        ComputableWithMiniSummary, DeleteHandler, FailureHandler, FieldValidator, No,
+        SuccessHandler, Yes, YesComputed,
     },
     utils::erased_value::{erase_value, ErasedValue},
 };
-
-// Marker Types
-pub struct Yes;
-pub struct No;
-pub struct YesComputed;
 
 pub struct LaxFieldBuilder<
     T,
@@ -433,7 +429,7 @@ impl<
             validator: self.validator,
             re_validator: self.re_validator,
             required: self.required,
-            should_init: Some(ComputableInit::Func(resolver.into_resolver())),
+            should_init: Some(ComputableInit::SyncFunc(resolver.into_resolver())),
             ..Default::default()
         }
     }
@@ -489,7 +485,7 @@ impl<
             validator: self.validator,
             re_validator: self.re_validator,
             required: self.required,
-            should_update: Some(ComputableInit::Func(resolver.into_resolver())),
+            should_update: Some(ComputableInit::SyncFunc(resolver.into_resolver())),
             ..Default::default()
         }
     }
@@ -545,7 +541,7 @@ impl<
             validator: self.validator,
             re_validator: self.re_validator,
             required: self.required,
-            should_init: Some(ComputableInit::Func(resolver.into_resolver())),
+            should_init: Some(ComputableInit::SyncFunc(resolver.into_resolver())),
             ..Default::default()
         }
     }
@@ -602,7 +598,7 @@ impl<
             re_validator: self.re_validator,
             required: self.required,
             should_init: self.should_init,
-            should_update: Some(ComputableInit::Func(resolver.into_resolver())),
+            should_update: Some(ComputableInit::SyncFunc(resolver.into_resolver())),
             ..Default::default()
         }
     }
@@ -687,7 +683,7 @@ impl<
             re_validator: self.re_validator,
             required: self.required,
             should_update: self.should_update,
-            should_init: Some(ComputableInit::Func(resolver.into_resolver())),
+            should_init: Some(ComputableInit::SyncFunc(resolver.into_resolver())),
             ..Default::default()
         }
     }

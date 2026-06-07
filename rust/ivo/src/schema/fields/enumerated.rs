@@ -12,15 +12,11 @@ use crate::{
     },
     types::{
         BooleanResolverWithMutSummary, ComputableEnumeratedError, ComputableInit,
-        ComputableWithMiniSummary, DeleteHandler, FailureHandler, IvoSummary, SuccessHandler,
+        ComputableWithMiniSummary, DeleteHandler, FailureHandler, IvoSummary, No, SuccessHandler,
+        Yes, YesComputed,
     },
     utils::erased_value::{erase_value, ErasedValue},
 };
-
-// Marker Types
-pub struct Yes;
-pub struct No;
-pub struct YesComputed;
 
 pub struct EnumFieldBuilder<
     T,
@@ -348,7 +344,7 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErro
             default: self.default,
             enum_values: self.enum_values,
             enum_error: self.enum_error,
-            should_init: Some(ComputableInit::Func(resolver.into_resolver())),
+            should_init: Some(ComputableInit::SyncFunc(resolver.into_resolver())),
             ..Default::default()
         }
     }
@@ -384,7 +380,7 @@ impl<
             default: self.default,
             enum_values: self.enum_values,
             enum_error: self.enum_error,
-            should_update: Some(ComputableInit::Func(resolver.into_resolver())),
+            should_update: Some(ComputableInit::SyncFunc(resolver.into_resolver())),
             ..Default::default()
         }
     }
@@ -404,7 +400,7 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErro
             default: self.default,
             enum_values: self.enum_values,
             enum_error: self.enum_error,
-            should_init: Some(ComputableInit::Func(resolver.into_resolver())),
+            should_init: Some(ComputableInit::SyncFunc(resolver.into_resolver())),
             ..Default::default()
         }
     }
@@ -431,7 +427,7 @@ impl<
             enum_values: self.enum_values,
             enum_error: self.enum_error,
             should_init: self.should_init,
-            should_update: Some(ComputableInit::Func(Box::new(fx))),
+            should_update: Some(ComputableInit::SyncFunc(Box::new(fx))),
             ..Default::default()
         }
     }
@@ -465,7 +461,7 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErro
             enum_values: self.enum_values,
             enum_error: self.enum_error,
             should_update: self.should_update,
-            should_init: Some(ComputableInit::Func(Box::new(fx))),
+            should_init: Some(ComputableInit::SyncFunc(Box::new(fx))),
             ..Default::default()
         }
     }

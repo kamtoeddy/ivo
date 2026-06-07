@@ -10,15 +10,11 @@ use crate::{
         IntoSuccessHandler, IntoUniformResolverWithMutSummary, IvoSchemaStruct,
     },
     types::{
-        ComputableInit, ComputableWithMiniSummary, DeleteHandler, False, ResolverWithMutSummary,
-        SuccessHandler,
+        ComputableInit, ComputableWithMiniSummary, DeleteHandler, False, No,
+        ResolverWithMutSummary, SuccessHandler, Yes,
     },
     utils::erased_value::{erase_value, ErasedValue},
 };
-
-// Marker Types
-pub struct Yes;
-pub struct No;
 
 pub struct DependentFieldBuilder<
     T,

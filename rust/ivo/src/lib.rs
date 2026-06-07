@@ -15,7 +15,6 @@ pub use schema::error::{
     UpdateError,
 };
 pub use schema::fields::IvoField;
-pub use schema::timestamp_tool::TimeStampTool;
 pub use schema::{Model, SchemaCore};
 pub use traits::{FromToMap, HasFields, HasPartial, IvoSchemaStruct, Partial};
 pub use types::{IvoMiniSummary, IvoSummary, ValidatorError, ValidatorResponse};

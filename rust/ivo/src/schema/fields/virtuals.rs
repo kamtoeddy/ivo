@@ -1,23 +1,20 @@
 use std::marker::PhantomData;
 
 use crate::{
-    schema::error::IvoErrorTool,
-    schema::fields::base::{BuildableIvoProperty, InternalIvoProperty, IvoProperty},
+    schema::{
+        error::IvoErrorTool,
+        fields::base::{BuildableIvoProperty, InternalIvoProperty, IvoProperty},
+    },
     traits::{
         IntoAsyncFieldValidator, IntoFailureHandler, IntoFieldValidator, IntoRequiredResolverFn,
         IntoResolverWithMutSummaryFn, IntoSuccessHandler, IntoVirtualSanitizer, IvoSchemaStruct,
     },
     types::{
         BooleanResolverWithMutSummary, ComputableInit, ComputableRequired, FailureHandler,
-        FieldValidator, SuccessHandler, VirtualSanitiser,
+        FieldValidator, No, SuccessHandler, VirtualSanitiser, Yes, YesComputed,
     },
     utils::erased_value::ErasedValue,
 };
-
-// Marker Types
-pub struct Yes;
-pub struct No;
-pub struct YesComputed;
 
 pub struct VirtualFieldBuilder<
     T,
@@ -525,7 +522,7 @@ impl<
             re_validator: self.re_validator,
             required: self.required,
             sanitizer: self.sanitizer,
-            should_init: Some(ComputableInit::Func(resolver.into_resolver())),
+            should_init: Some(ComputableInit::SyncFunc(resolver.into_resolver())),
             ..Default::default()
         }
     }
@@ -585,7 +582,7 @@ impl<
             re_validator: self.re_validator,
             required: self.required,
             sanitizer: self.sanitizer,
-            should_init: Some(ComputableInit::Func(resolver.into_resolver())),
+            should_init: Some(ComputableInit::SyncFunc(resolver.into_resolver())),
             ..Default::default()
         }
     }
@@ -645,7 +642,7 @@ impl<
             re_validator: self.re_validator,
             required: self.required,
             sanitizer: self.sanitizer,
-            should_init: Some(ComputableInit::Func(resolver.into_resolver())),
+            should_init: Some(ComputableInit::SyncFunc(resolver.into_resolver())),
             ..Default::default()
         }
     }
@@ -706,7 +703,7 @@ impl<
             required: self.required,
             sanitizer: self.sanitizer,
             should_init: self.should_init,
-            should_update: Some(ComputableInit::Func(resolver.into_resolver())),
+            should_update: Some(ComputableInit::SyncFunc(resolver.into_resolver())),
             ..Default::default()
         }
     }
@@ -796,7 +793,7 @@ impl<
             required: self.required,
             sanitizer: self.sanitizer,
             should_update: self.should_update,
-            should_init: Some(ComputableInit::Func(resolver.into_resolver())),
+            should_init: Some(ComputableInit::SyncFunc(resolver.into_resolver())),
             ..Default::default()
         }
     }

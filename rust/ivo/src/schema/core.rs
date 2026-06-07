@@ -2,7 +2,6 @@ use crate::utils::erased_value::ErasedValue;
 
 use crate::schema::error::{DefaultErrorTool, IvoErrorTool};
 use crate::schema::fields::base::BuildableIvoProperty;
-// use crate::schema::utils::TimeStampTool;
 use crate::schema::{error::SchemaError, fields::base::IvoProperty};
 use crate::traits::IvoSchemaStruct;
 

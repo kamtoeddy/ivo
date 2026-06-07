@@ -9,13 +9,9 @@ use crate::{
         IntoAsyncResolverWithMiniSummary, IntoDeleteHandler, IntoResolverWithMiniSummary,
         IntoSuccessHandler, IvoSchemaStruct,
     },
-    types::{ComputableWithMiniSummary, DeleteHandler, SuccessHandler},
+    types::{ComputableWithMiniSummary, DeleteHandler, No, SuccessHandler, Yes},
     utils::erased_value::{erase_value, ErasedValue},
 };
-
-// Marker Types
-pub struct Yes;
-pub struct No;
 
 pub struct ConstantFieldBuilder<
     T,

@@ -1,21 +1,19 @@
 use std::marker::PhantomData;
 
 use crate::{
-    schema::error::IvoErrorTool,
-    schema::fields::base::{BuildableIvoProperty, InternalIvoProperty, IvoProperty},
+    schema::{
+        error::IvoErrorTool,
+        fields::base::{BuildableIvoProperty, InternalIvoProperty, IvoProperty},
+    },
     traits::{
         IntoAsyncFieldValidator, IntoDeleteHandler, IntoFailureHandler, IntoFieldValidator,
         IntoResolverWithMutSummaryFn, IntoSuccessHandler, IvoSchemaStruct,
     },
     types::{
-        ComputableInit, ComputableRequired, DeleteHandler, FailureHandler, FieldValidator,
-        SuccessHandler, True,
+        ComputableInit, ComputableRequired, DeleteHandler, FailureHandler, FieldValidator, No,
+        SuccessHandler, True, Yes,
     },
 };
-
-// Marker Types
-pub struct Yes;
-pub struct No;
 
 pub struct RequiredFieldBuilder<
     T,
@@ -253,7 +251,7 @@ impl<
         RequiredFieldBuilder {
             validator: self.validator,
             re_validator: self.re_validator,
-            should_update: Some(ComputableInit::Func(resolver.into_resolver())),
+            should_update: Some(ComputableInit::SyncFunc(resolver.into_resolver())),
             ..Default::default()
         }
     }

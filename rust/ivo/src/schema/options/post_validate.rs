@@ -1,148 +1,132 @@
-use std::{fmt::Debug, marker::PhantomData};
+use std::marker::PhantomData;
 
 use crate::{
-    schema::{
-        error::IvoErrorTool,
-        fields::base::{BuildableIvoProperty, InternalIvoProperty, IvoProperty},
-    },
-    traits::{
-        IntoAsyncResolverWithMiniSummary, IntoDeleteHandler, IntoResolverWithMiniSummary,
-        IntoSuccessHandler, IvoSchemaStruct,
-    },
-    types::{ComputableWithMiniSummary, DeleteHandler, SuccessHandler},
-    utils::erased_value::{erase_value, ErasedValue},
+    schema::error::IvoErrorTool,
+    traits::{IntoPostValidator, IvoSchemaStruct, PostValidationConfig},
+    types::{No, PostValidatorFn, Yes},
 };
 
-// Marker Types
-pub struct Yes;
-pub struct No;
-
-pub struct ConstantFieldBuilder<
-    T,
+pub struct PostValidateBuilder<
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
     CtxOptions: Clone,
     ErrT: IvoErrorTool,
-    HasDefault = No,
-    HasDelete = No,
-    HasSuccess = No,
+    HasValidator = No,
+    HasPreValidator = No,
 > {
-    _t: PhantomData<T>,
-    _err: PhantomData<ErrT>,
-    _default: PhantomData<HasDefault>,
-    _del_handlers: PhantomData<HasDelete>,
-    _success_handlers: PhantomData<HasSuccess>,
+    _pre_v: PhantomData<HasPreValidator>,
+    _validator: PhantomData<HasValidator>,
     // actual data...
-    value: Option<ComputableWithMiniSummary<ErasedValue, CtxOptions>>,
-    on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
-    on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
+    pub fields: Vec<&'static str>,
+    pub pre_validator: Option<PostValidatorFn<I, O, CtxOptions, ErrT::FieldMetadata>>,
+    pub validators: Vec<PostValidatorFn<I, O, CtxOptions, ErrT::FieldMetadata>>,
 }
 
 impl<
-        HasDefault,
-        HasDelete,
-        HasSuccess,
+        HasPreValidator,
+        HasValidator,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        T,
         CtxOptions: Clone,
         ErrT: IvoErrorTool,
-    > ConstantFieldBuilder<T, I, O, CtxOptions, ErrT, HasDefault, HasDelete, HasSuccess>
-{
-    pub const fn new() -> Self {
-        Self {
-            value: None,
-            on_delete_fns: None,
-            on_success_fns: None,
-            _t: PhantomData,
-            _err: PhantomData,
-            _default: PhantomData,
-            _del_handlers: PhantomData,
-            _success_handlers: PhantomData,
-        }
-    }
-}
-
-impl<
-        HasDefault,
-        HasDelete,
-        HasSuccess,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
-        T,
-        CtxOptions: Clone,
-        ErrT: IvoErrorTool,
-    > Default
-    for ConstantFieldBuilder<T, I, O, CtxOptions, ErrT, HasDefault, HasDelete, HasSuccess>
+    > Default for PostValidateBuilder<I, O, CtxOptions, ErrT, HasPreValidator, HasValidator>
 {
     fn default() -> Self {
-        Self::new()
+        Self {
+            fields: vec![],
+            pre_validator: None,
+            validators: vec![],
+            _pre_v: PhantomData,
+            _validator: PhantomData,
+        }
     }
 }
 
+pub trait BuildablePostValidator<
+    I: IvoSchemaStruct,
+    O: IvoSchemaStruct,
+    CtxOptions: Clone,
+    ErrT: IvoErrorTool,
+>
+{
+    fn build(self) -> PostValidationConfig<I, O, CtxOptions, ErrT>;
+}
+
 impl<
-        HasDelete,
-        HasSuccess,
+        HasPreValidator,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        T: Clone + Debug + Send + Sync + 'static,
         CtxOptions: Clone,
         ErrT: IvoErrorTool,
-    > BuildableIvoProperty<I, O, CtxOptions, ErrT>
-    for ConstantFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, HasDelete, HasSuccess>
+    > BuildablePostValidator<I, O, CtxOptions, ErrT>
+    for PostValidateBuilder<I, O, CtxOptions, ErrT, Yes, HasPreValidator>
 {
-    fn build(self) -> InternalIvoProperty<I, O, CtxOptions, ErrT> {
-        IvoProperty {
-            value: self.value,
-            on_delete_fns: self.on_delete_fns,
-            on_success_fns: self.on_success_fns,
+    fn build(self) -> PostValidationConfig<I, O, CtxOptions, ErrT> {
+        PostValidationConfig {
+            fields: self.fields,
+            validators: self.validators,
+            pre_validator: self.pre_validator,
+        }
+    }
+}
+
+impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErrorTool>
+    PostValidateBuilder<I, O, CtxOptions, ErrT>
+{
+    pub fn fields<const N: usize>(
+        fields: [&'static str; N],
+    ) -> PostValidateBuilder<I, O, CtxOptions, ErrT, Yes> {
+        PostValidateBuilder {
+            fields: Vec::from(fields),
             ..Default::default()
         }
     }
 }
 
 impl<
+        HasValidator,
+        HasPreValidator,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        T: Clone + Debug + Send + Sync + 'static,
         CtxOptions: Clone + Send,
         ErrT: IvoErrorTool,
-    > ConstantFieldBuilder<T, I, O, CtxOptions, ErrT>
+    > PostValidateBuilder<I, O, CtxOptions, ErrT, HasValidator, HasPreValidator>
 {
-    pub fn value(self, value: T) -> ConstantFieldBuilder<T, I, O, CtxOptions, ErrT, Yes> {
-        ConstantFieldBuilder {
-            value: Some(ComputableWithMiniSummary::Static(erase_value(value))),
-            on_delete_fns: None,
-            on_success_fns: None,
-            ..Default::default()
-        }
-    }
-
-    pub fn computed<F>(self, resolver: F) -> ConstantFieldBuilder<T, I, O, CtxOptions, ErrT, Yes>
+    pub fn validate<F>(self, validator: F) -> PostValidateBuilder<I, O, CtxOptions, ErrT, Yes>
     where
-        F: IntoResolverWithMiniSummary<T, I, O, CtxOptions>,
+        F: IntoPostValidator<I, O, CtxOptions, ErrT>,
     {
-        ConstantFieldBuilder {
-            value: Some(ComputableWithMiniSummary::SyncFunc(resolver.into_uniform())),
-            on_delete_fns: None,
-            on_success_fns: None,
+        let mut validators = self.validators;
+        validators.push(validator.into_validator());
+
+        PostValidateBuilder {
+            fields: self.fields,
+            validators,
+            pre_validator: self.pre_validator,
             ..Default::default()
         }
     }
+}
 
-    pub fn computed_async<F>(
+impl<
+        HasValidator,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions: Clone + Send,
+        ErrT: IvoErrorTool,
+    > PostValidateBuilder<I, O, CtxOptions, ErrT, HasValidator, No>
+{
+    pub fn pre_validate<F>(
         self,
-        resolver: F,
-    ) -> ConstantFieldBuilder<T, I, O, CtxOptions, ErrT, Yes>
+        validator: F,
+    ) -> PostValidateBuilder<I, O, CtxOptions, ErrT, HasValidator, Yes>
     where
-        F: IntoAsyncResolverWithMiniSummary<T, I, O, CtxOptions>,
+        F: IntoPostValidator<I, O, CtxOptions, ErrT>,
     {
-        ConstantFieldBuilder {
-            value: Some(ComputableWithMiniSummary::AsyncFunc(
-                resolver.into_uniform(),
-            )),
-            on_delete_fns: None,
-            on_success_fns: None,
+        PostValidateBuilder {
+            fields: self.fields,
+            validators: self.validators,
+            pre_validator: Some(validator.into_validator()),
             ..Default::default()
         }
     }
