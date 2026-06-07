@@ -211,9 +211,17 @@ impl<
         ErrT: IvoErrorTool,
     > EnumFieldBuilder<T, I, O, CtxOptions, ErrT>
 {
-    pub fn values(self, values: Vec<T>) -> EnumFieldBuilder<T, I, O, CtxOptions, ErrT, Yes> {
+    pub fn values<const N: usize>(
+        self,
+        values: [T; N],
+    ) -> EnumFieldBuilder<T, I, O, CtxOptions, ErrT, Yes> {
         EnumFieldBuilder {
-            enum_values: Some(values.into_iter().map(|v| erase_value(v)).collect()),
+            enum_values: Some(
+                Vec::from(values)
+                    .into_iter()
+                    .map(|v| erase_value(v))
+                    .collect(),
+            ),
             ..Default::default()
         }
     }

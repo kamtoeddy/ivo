@@ -36,7 +36,7 @@ pub struct IvoProperty<
     pub enum_error: Option<ComputableEnumeratedError<ErrT>>,
     pub enum_values: Option<Vec<T>>,
     pub default: Option<ComputableWithMiniSummary<T, CtxOptions>>,
-    pub depends_on: Option<Vec<String>>,
+    pub depends_on: Option<Vec<&'static str>>,
     pub is_constant: bool,
     pub is_readonly: bool,
     pub is_virtual: bool,

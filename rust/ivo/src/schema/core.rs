@@ -25,7 +25,7 @@ pub struct SchemaCore<
     // contexts & values
     pub context: HashMap<String, ErasedValue>,
     pub context_options: HashMap<String, ErasedValue>,
-    pub defaults: HashMap<String, &'static ErasedValue>,
+    pub defaults: HashMap<String, ErasedValue>,
     pub partial_context: HashMap<String, ErasedValue>,
     pub values: HashMap<String, ErasedValue>,
     fields_set: HashSet<String>,
@@ -186,7 +186,7 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: I
 
                     for p in depends {
                         self.dependency_map
-                            .entry(p.clone())
+                            .entry(p.to_string())
                             .or_default()
                             .push(prop.clone());
                     }
@@ -453,6 +453,8 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: I
         if let Some(def) = self._definitions.get(node) {
             if let Some(deps) = &def.depends_on {
                 for dep in deps.iter() {
+                    let dep = &dep.to_string();
+
                     if !pending.contains(dep) {
                         continue; // only consider edges within pending set
                     }

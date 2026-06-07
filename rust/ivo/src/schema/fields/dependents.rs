@@ -43,7 +43,7 @@ pub struct DependentFieldBuilder<
     _success_handlers: PhantomData<HasSuccess>,
     // actual data...
     default: Option<ComputableWithMiniSummary<ErasedValue, CtxOptions>>,
-    depends_on: Option<Vec<String>>,
+    depends_on: Option<Vec<&'static str>>,
     resolver: Option<ResolverWithMutSummary<ErasedValue, I, O, CtxOptions>>,
     should_update: Option<False>,
     on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
@@ -204,18 +204,13 @@ impl<
 impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErrorTool>
     DependentFieldBuilder<T, I, O, CtxOptions, ErrT, Yes>
 {
-    pub fn depends_on(
+    pub fn depends_on<const N: usize>(
         self,
-        fields: Vec<&str>,
+        fields: [&'static str; N],
     ) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes> {
         DependentFieldBuilder {
             default: self.default,
-            depends_on: Some(
-                fields
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect::<Vec<String>>(),
-            ),
+            depends_on: Some(Vec::from(fields)),
             ..Default::default()
         }
     }

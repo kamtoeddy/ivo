@@ -15,11 +15,12 @@ use crate::{
     ValidatorResponse,
 };
 
-/// ```
-/// if let Some(v) = inner.get(k){
-///          // ^___ v represents `ErasedValue` which becomes a concrete `T`, with `parse_or_panic::<T>(&v)`
-/// }
-/// ```
+// ```
+// let map = OptionalErasedMap {inner: Default::default()};
+// if let Some(v) = map.inner.get("field_name".into()){
+//          // ^___ `v` represents `ErasedValue` which becomes a concrete `T`, with `parse_or_panic::<T>(&v)`
+// }
+// ```
 pub struct OptionalErasedMap {
     pub inner: HashMap<String, ErasedValue>,
 }

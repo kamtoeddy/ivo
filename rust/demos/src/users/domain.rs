@@ -100,14 +100,14 @@ pub static USER_SCHEMA: LazyLock<SchemaCore<UserInput, User, UserCtxOptions>> =
                         "username_last_updated_at",
                         IvoField::DEPENDENT
                             .default(Some(String::from("default value")))
-                            .depends_on(vec!["username"])
+                            .depends_on(["username"])
                             .resolve(|_| Some(String::from("resolved value"))),
                     )
                     .set(
                         "slug",
                         IvoField::DEPENDENT
                             .default(SlugifiedString("".into()))
-                            .depends_on(vec!["username", "v_slug"])
+                            .depends_on(["username", "v_slug"])
                             .resolve(|s: MutUserSummary| {
                                 if let Some(v_slug) = s.input().v_slug.clone() {
                                     return v_slug;
@@ -154,7 +154,7 @@ pub static USER_SCHEMA: LazyLock<SchemaCore<UserInput, User, UserCtxOptions>> =
                     .set(
                         "enum",
                         IvoField::ENUM
-                            .values(vec![true, false])
+                            .values([true, false])
                             .error_fn(|_| ("".into(), None))
                             // .error("invalid option provided")
                             .default_fn(|_| true)
@@ -167,7 +167,7 @@ pub static USER_SCHEMA: LazyLock<SchemaCore<UserInput, User, UserCtxOptions>> =
                         "d",
                         IvoField::DEPENDENT
                             .default(String::from("Hello"))
-                            .depends_on(vec!["first_name", "last_name"])
+                            .depends_on(["first_name", "last_name"])
                             .resolve(|_| resolve_full_name())
                             .on_delete(|_, _| async {})
                             .on_success(|_| async {}),
@@ -176,7 +176,7 @@ pub static USER_SCHEMA: LazyLock<SchemaCore<UserInput, User, UserCtxOptions>> =
                         "d1",
                         IvoField::DEPENDENT
                             .default_fn(|_| true)
-                            .depends_on(vec!["first_name", "last_name"])
+                            .depends_on(["first_name", "last_name"])
                             .resolve_async(|_| async {
                                 resolve_full_name();
                                 false
