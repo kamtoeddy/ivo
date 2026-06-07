@@ -51,8 +51,8 @@ impl UserCtxOptions {
 pub static USER_MODEL: LazyLock<Model<UserInput, User, UserCtxOptions>> =
     LazyLock::new(|| USER_SCHEMA.get_model());
 
-pub static USER_SCHEMA: LazyLock<SchemaCore<UserInput, User, UserCtxOptions>> =
-    LazyLock::new(|| {
+pub static USER_SCHEMA: LazyLock<SchemaCore<UserInput, User, UserCtxOptions>> = LazyLock::new(
+    || {
         SchemaCore::new()
             .with_fields(|f| {
                 f.set("id", IvoField::CONSTANT.computed(|_| 1234))
@@ -93,15 +93,10 @@ pub static USER_SCHEMA: LazyLock<SchemaCore<UserInput, User, UserCtxOptions>> =
                             .default(SlugifiedString("".into()))
                             .depends_on(["username", "v_slug"])
                             .resolve(|s: MutUserSummary| {
-                                if let Some(v_slug) = s.input().slug_id.clone() {
-                                    return SlugifiedString(v_slug);
-                                }
-
-                                if let Some(slug) = s.get_options().slug_id.clone() {
-                                    return slug;
-                                }
-
-                                SlugifiedString("something".into())
+                                s.get_options()
+                                    .slug_id
+                                    .clone()
+                                    .expect("\"slug_id\" should have been generated in post validator by this point")
                             }),
                     )
                     .set(
@@ -165,4 +160,5 @@ pub static USER_SCHEMA: LazyLock<SchemaCore<UserInput, User, UserCtxOptions>> =
                     })
                 })
             })
-    });
+    },
+);
