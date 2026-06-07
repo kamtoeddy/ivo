@@ -63,7 +63,7 @@ pub static USER_SCHEMA: LazyLock<SchemaCore<UserInput, User, UserCtxOptions>> =
                     .set(
                         "email",
                         IvoField::REQUIRED
-                            .validate(|email, _| validate_email(email).map_err(|e| (e.0, None))),
+                            .validate(|email, _| validate_email(email).map_err(|e| (e, None))),
                     )
                     .set(
                         "username",
