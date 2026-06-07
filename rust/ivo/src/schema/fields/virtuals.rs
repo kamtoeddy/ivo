@@ -224,6 +224,9 @@ impl<
         ErrT: IvoErrorTool,
     > VirtualFieldBuilder<T, I, O, CtxOptions, ErrT, HasValidator, No, HasRevalidator>
 {
+    /// this can used to mask the actual name of the virtual field from the public
+    /// if set, this name must replace the actual name of the virtual field on the input struct, I
+    /// i.e: I cannot have both the virtual field name and it alias
     pub fn alias(
         self,
         name: &str,

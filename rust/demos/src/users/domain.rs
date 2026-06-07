@@ -4,21 +4,17 @@ use ivo::{IvoField, IvoStruct, IvoSummary, Model, SchemaCore, validate_email};
 
 use crate::utils::slugify::{SlugifiedString, slugify};
 
-// use chrono::{DateTime, Utc};
-
-// type DateWithTz = DateTime<Utc>;
-
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum UserRole {
     Admin,
     User,
-    // Moderator,
+    Moderator,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, IvoStruct)]
 pub struct User {
     // pub created_at: DateWithTz,
-    pub id: String,
+    pub id: i32,
     pub email: String,
     pub username: String,
     pub slug_id: SlugifiedString,
@@ -32,7 +28,7 @@ pub struct UserInput {
     pub email: String,
     pub username: String,
     pub role: UserRole,
-    pub v_slug: SlugifiedString,
+    pub slug_id: String, // alias for v_slug
 }
 
 type MutUserSummary = IvoSummary<UserInput, User, UserCtxOptions>;
@@ -64,6 +60,10 @@ pub static USER_SCHEMA: LazyLock<SchemaCore<UserInput, User, UserCtxOptions>> =
                         "email",
                         IvoField::REQUIRED
                             .validate(|email, _| validate_email(email).map_err(|e| (e, None))),
+                    )
+                    .set(
+                        "role",
+                        IvoField::LAX.default(UserRole::User).ignore_if(|_| true),
                     )
                     .set(
                         "username",
@@ -105,192 +105,39 @@ pub static USER_SCHEMA: LazyLock<SchemaCore<UserInput, User, UserCtxOptions>> =
                             .resolve(|_| Some(String::from("resolved value"))),
                     )
                     .set(
-                        "slug",
+                        "slug_id",
                         IvoField::DEPENDENT
                             .default(SlugifiedString("".into()))
                             .depends_on(["username", "v_slug"])
                             .resolve(|s: MutUserSummary| {
-                                if let Some(v_slug) = s.input().v_slug.clone() {
-                                    return v_slug;
+                                if let Some(v_slug) = s.input().slug_id.clone() {
+                                    return SlugifiedString(v_slug);
                                 }
 
                                 if let Some(slug) = s.get_options().slug_id.clone() {
                                     return slug;
                                 }
 
-                                SlugifiedString("()".into())
+                                SlugifiedString("something".into())
                             }),
                     )
-                    // general demo to make sure all fields work as expected
                     .set(
-                        "c",
-                        IvoField::CONSTANT
-                            .value(String::from("String"))
-                            .on_success(|_| async {})
-                            .on_delete(|_, _| async {}),
-                    )
-                    .set(
-                        "c1",
-                        IvoField::CONSTANT
-                            .value(Some(String::from("Option<String>")))
-                            .on_success(|_| async {})
-                            .on_delete(|_, _| async {}),
-                    )
-                    .set(
-                        "c2",
-                        IvoField::CONSTANT
-                            .computed(|_| true)
-                            .on_delete(|_, _| async {})
-                            .on_success(|_| async { println!("on success 1") })
-                            .on_success(|_| async { println!("on success 2") }),
-                    )
-                    .set(
-                        "c3",
-                        IvoField::CONSTANT
-                            .computed_async(|_| async { false })
-                            .on_delete(|_, _| async {})
-                            .on_success(|_| async { println!("on success 1") })
-                            .on_success(|_| async { println!("on success 2") }),
-                    )
-                    .set(
-                        "enum",
-                        IvoField::ENUM
-                            .values([true, false])
-                            .error_fn(|_| ("".into(), None))
-                            // .error("invalid option provided")
-                            .default_fn(|_| true)
-                            .readonly()
-                            .on_delete(|_, _| async {})
-                            .on_failure(|_| async {})
-                            .on_success(|_| async {}),
-                    )
-                    .set(
-                        "d",
-                        IvoField::DEPENDENT
-                            .default(String::from("Hello"))
-                            .depends_on(["first_name", "last_name"])
-                            .resolve(|_| resolve_full_name())
-                            .on_delete(|_, _| async {})
-                            .on_success(|_| async {}),
-                    )
-                    .set(
-                        "d1",
-                        IvoField::DEPENDENT
-                            .default_fn(|_| true)
-                            .depends_on(["first_name", "last_name"])
-                            .resolve_async(|_| async {
-                                resolve_full_name();
-                                false
-                            })
-                            .readonly()
-                            .on_delete(|_, _| async {})
-                            .on_success(|_| async {}),
-                    )
-                    .set(
-                        "l",
-                        IvoField::LAX
-                            .default(false)
-                            .validate(|_, _| Ok(true))
-                            .readonly()
-                            .on_delete(|_, _| async {})
-                            .on_failure(|_| async {})
-                            .on_success(|_| async {}),
-                    )
-                    .set(
-                        "l1",
-                        IvoField::LAX
-                            .default_fn(|_| None)
-                            .validate_async(|_, _| async { Ok(Some(1)) })
-                            .re_validate(|_, _| Ok(Some(2)))
-                            .readonly()
-                            .on_delete(|_, _| async {})
-                            .on_failure(|_| async {})
-                            .on_success(|_| async {}),
-                    )
-                    .set(
-                        "l2",
-                        IvoField::LAX
-                            .default(None)
-                            .validate_async(|_, _| async { Ok(Some(true)) })
-                            .re_validate_async(|v, _| async move { Ok(v) })
-                            .readonly()
-                            .on_delete(|_, _| async {})
-                            .on_failure(|_| async {})
-                            .on_success(|_| async {}),
-                    )
-                    .set(
-                        "r",
-                        IvoField::REQUIRED
-                            .validate(|_, _| Err(("lol".into(), None)))
-                            .re_validate(|_, _| Ok(true))
-                            .readonly()
-                            .on_failure(|_| async {})
-                            .on_success(|_| async {})
-                            .on_delete(|_, _| async {}),
-                    )
-                    .set(
-                        "v",
+                        "v_slug",
                         IvoField::VIRTUAL
-                            .alias("lol")
-                            .validate(|_, _| Ok(true))
-                            .re_validate_async(|_, _| async { Ok(true) })
-                            .required_if(|_| async { (true, "lol".into()) })
-                            .sanitize(|_| async { false })
-                            .on_failure(|_| async {})
-                            .on_success(|_| async {}),
-                    )
-                    .set(
-                        "v1",
-                        IvoField::VIRTUAL
-                            .validate_async(|v, _| async move {
-                                if v || !v {
-                                    Ok(v)
-                                } else {
-                                    Err(("Invalid boolean".into(), None))
+                            .alias("slug_id")
+                            .validate(|value: String, _| {
+                                let value = slugify(value.trim()).0;
+
+                                if value.len() < 2 {
+                                    return Err((
+                                        "slug ids must be at least 2 characters long".into(),
+                                        None,
+                                    ));
                                 }
-                            })
-                            .re_validate(|_, _| Ok(true))
-                            .alias("lol")
-                            .required_if(|_| async {
-                                (true, "this field is required in this scenario".into())
-                            })
-                            .sanitize(|_| async { false })
-                            .on_failure(|_| async {})
-                            .on_success(|_| async {}),
-                    )
-                    .set(
-                        "v2",
-                        IvoField::VIRTUAL
-                            .validate(|_, _| Ok(true))
-                            .re_validate(|_, _| Ok(true))
-                            .alias("lol")
-                            .required_if(|_| async { (true, "lol".into()) })
-                            .sanitize(|_| async { false })
-                            .on_failure(|_| async {})
-                            .on_success(|_| async {}),
-                    )
-                    .set(
-                        "v3",
-                        IvoField::VIRTUAL
-                            .validate(|_, _| Ok(true))
-                            .alias("v3")
-                            .re_validate(|_, _| Ok(true))
-                            .required_if(|_| async { (true, "lol".into()) })
-                            .sanitize(|_| async { false })
-                            // .ignore_if(|_| false)
-                            .allow_update_if(|_| false)
-                            .allow_init_if(|_| false)
-                            // .ignore_init()
-                            // .ignore_update()
-                            .on_failure(|_| async {})
-                            .on_failure(|_| async {})
-                            .on_success(|_| async { println!("on success 1") })
-                            .on_success(|_| async { println!("on success 2") }),
+
+                                Ok(value)
+                            }),
                     )
             })
             .with_options()
     });
-
-fn resolve_full_name() -> String {
-    String::from("full name")
-}

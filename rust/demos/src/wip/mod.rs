@@ -1,14 +1,24 @@
-use ivo::UpdateError;
-use std::time::Instant;
+use ivo::{UpdateError, erase_value, parse_or_panic};
+use std::{collections::HashMap, time::Instant};
 
 mod domain;
 
 use crate::{
-    users::domain::{PartialUserInput, USER_MODEL, User, UserCtxOptions, UserRole},
+    users::domain::{PartialUserInput, USER_MODEL, USER_SCHEMA, User, UserCtxOptions, UserRole},
     utils::{slugify::slugify, styled_text::Stylable},
 };
 
 pub async fn run_users_demo() {
+    // let schema = DEMO::make_schema();
+    println!("UserSchema props: {:?}\n", USER_SCHEMA.props);
+    // let timer = Instant::now();
+    let f = USER_SCHEMA.fields();
+    // println!("Fields extracted in {:?}\n", timer.elapsed());
+
+    // let timer = Instant::now();
+    println!("User fields: {:?}\n", f);
+    // println!("Fields printed in {:?}\n", timer.elapsed());
+
     let timer = Instant::now();
 
     let ctx_options = UserCtxOptions { slug_id: None };
@@ -17,7 +27,7 @@ pub async fn run_users_demo() {
         email: Some("1@1.com".to_string()),
         username: Some("john".to_string()),
         role: Some(UserRole::Moderator),
-        slug_id: None,
+        v_slug: None,
     };
 
     let r = USER_MODEL.create(&input, ctx_options.clone()).await;
@@ -46,20 +56,24 @@ pub async fn run_users_demo() {
     };
 
     let user = User {
+        // created_at: DateWithTz::default(),
         email: "1@1.com".into(),
-        id: 1,
+        id: "id".into(),
         username,
         slug_id,
         role: UserRole::Admin,
+        // username_updated_at: None,
+        // updated_at: None,
     };
 
     println!("{:?}", user);
 
     let updates = PartialUserInput {
         email: Some(user.email.clone()),
+        // role: Some(user.role.clone()),
         role: Some(UserRole::User),
         username: Some(user.username.clone()),
-        slug_id: None,
+        v_slug: None,
     };
 
     let r = USER_MODEL.update(&user, &updates, ctx_options).await;
@@ -83,4 +97,12 @@ pub async fn run_users_demo() {
         "\nUpdate duration:".font_bold(),
         format!("{:?}", timer.elapsed()).colored_blue()
     );
+
+    let mut map = HashMap::new();
+    map.insert("k", Some(erase_value(1)));
+
+    // let l = map.get("k") ;
+    if let Some(Some(v)) = map.get("k") {
+        println!("k = {}", parse_or_panic::<i32>(&v))
+    }
 }

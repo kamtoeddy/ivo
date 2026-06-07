@@ -14,7 +14,7 @@ type InternalPropertyDefinitions<I, O, CtxOptions, ErrT> =
 
 pub struct SchemaCore<
     I: IvoSchemaStruct,
-    O: IvoSchemaStruct,
+    O: IvoSchemaStruct = I,
     CtxOptions: Clone = Option<u8>,
     ErrorTool: IvoErrorTool = DefaultErrorTool,
 > {

@@ -23,7 +23,7 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: IvoEr
 pub struct Model<
     'schema,
     I: IvoSchemaStruct,
-    O: IvoSchemaStruct,
+    O: IvoSchemaStruct = I,
     CtxOptions: Clone = HashMap<String, ()>,
     ErrorTool: IvoErrorTool = DefaultErrorTool,
 > {
