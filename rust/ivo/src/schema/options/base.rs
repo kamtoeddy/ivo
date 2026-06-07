@@ -6,17 +6,7 @@ use crate::{
     types::{BooleanResolverWithMutSummary, ComputableInit, DeleteHandler, No, SuccessHandler},
 };
 
-pub trait BuildableIvoOption<
-    I: IvoSchemaStruct,
-    O: IvoSchemaStruct,
-    CtxOptions: Clone,
-    ErrT: IvoErrorTool,
->
-{
-    fn build(self) -> IvoSchemaOption<I, O, CtxOptions, ErrT>;
-}
-
-pub struct IvoSchemaOption<
+pub struct SchemaOptions<
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
     CtxOptions: Clone,
@@ -41,7 +31,7 @@ pub struct IvoSchemaOption<
 }
 
 impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErrorTool> Default
-    for IvoSchemaOption<I, O, CtxOptions, ErrT>
+    for SchemaOptions<I, O, CtxOptions, ErrT>
 {
     fn default() -> Self {
         Self {
@@ -55,7 +45,7 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErrorTo
     }
 }
 
-pub struct IvoSchemaOptionBuilder<
+pub struct SchemaOptionsBuilder<
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
     CtxOptions: Clone,
@@ -67,12 +57,12 @@ pub struct IvoSchemaOptionBuilder<
     HasDelete = No,
     HasSuccess = No,
 > {
-    _on_delete_fns: PhantomData<HasDelete>,
-    _on_success_fns: PhantomData<HasSuccess>,
-    _post_validate: PhantomData<HasPostValidate>,
-    _should_ignore: PhantomData<HasIgnore>,
-    _should_update: PhantomData<HasShouldUpdate>,
-    _timestaps: PhantomData<HasTimestamps>,
+    pub _on_delete_fns: PhantomData<HasDelete>,
+    pub _on_success_fns: PhantomData<HasSuccess>,
+    pub _post_validate: PhantomData<HasPostValidate>,
+    pub _should_ignore: PhantomData<HasIgnore>,
+    pub _should_update: PhantomData<HasShouldUpdate>,
+    pub _timestaps: PhantomData<HasTimestamps>,
     //
     pub on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
     pub on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
@@ -91,10 +81,32 @@ pub struct IvoSchemaOptionBuilder<
     pub timestamps: Option<bool>,
 }
 
-impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErrorTool> Default
-    for IvoSchemaOptionBuilder<I, O, CtxOptions, ErrT>
+impl<
+        HasIgnore,
+        HasShouldUpdate,
+        HasPostValidate,
+        HasTimestamps,
+        HasDelete,
+        HasSuccess,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions: Clone,
+        ErrT: IvoErrorTool,
+    >
+    SchemaOptionsBuilder<
+        I,
+        O,
+        CtxOptions,
+        ErrT,
+        HasIgnore,
+        HasShouldUpdate,
+        HasPostValidate,
+        HasTimestamps,
+        HasDelete,
+        HasSuccess,
+    >
 {
-    fn default() -> Self {
+    pub const fn new() -> Self {
         Self {
             on_delete_fns: None,
             on_success_fns: None,
@@ -109,5 +121,35 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErrorTo
             _should_update: PhantomData,
             _timestaps: PhantomData,
         }
+    }
+}
+
+impl<
+        HasIgnore,
+        HasShouldUpdate,
+        HasPostValidate,
+        HasTimestamps,
+        HasDelete,
+        HasSuccess,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions: Clone,
+        ErrT: IvoErrorTool,
+    > Default
+    for SchemaOptionsBuilder<
+        I,
+        O,
+        CtxOptions,
+        ErrT,
+        HasIgnore,
+        HasShouldUpdate,
+        HasPostValidate,
+        HasTimestamps,
+        HasDelete,
+        HasSuccess,
+    >
+{
+    fn default() -> Self {
+        Self::new()
     }
 }

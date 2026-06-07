@@ -43,8 +43,8 @@ impl UserCtxOptions {
         None
     }
 
-    fn update_data(&mut self, slug: SlugifiedString) {
-        self.slug_id = Some(slug.clone());
+    fn update_slug_id(&mut self, slug_id: &SlugifiedString) {
+        self.slug_id = Some(slug_id.clone());
     }
 }
 
@@ -67,35 +67,18 @@ pub static USER_SCHEMA: LazyLock<SchemaCore<UserInput, User, UserCtxOptions>> =
                     )
                     .set(
                         "username",
-                        IvoField::REQUIRED
-                            .validate(|v: String, _| {
-                                const MIN_LEN: usize = 4;
+                        IvoField::REQUIRED.validate(|v: String, _| {
+                            const MIN_LEN: usize = 4;
 
-                                if v.len() <= MIN_LEN {
-                                    return Err((
-                                        format!("Username must be atleast {MIN_LEN} long"),
-                                        None,
-                                    ));
-                                }
+                            if v.len() <= MIN_LEN {
+                                return Err((
+                                    format!("Username must be atleast {MIN_LEN} long"),
+                                    None,
+                                ));
+                            }
 
-                                Ok(v)
-                            })
-                            .re_validate_async(|uname: String, s: MutUserSummary| async move {
-                                let mut ctx_options = s.get_options_mut();
-
-                                let slug = slugify(&uname);
-
-                                if ctx_options.find_user_by_slug_id(&slug).await.is_some() {
-                                    return Err((
-                                        format!("A user with a slug id: \"{slug}\" already exists"),
-                                        None,
-                                    ));
-                                }
-
-                                ctx_options.update_data(slug);
-
-                                Ok(format!("{}-revalidated", uname.to_lowercase()))
-                            }),
+                            Ok(v)
+                        }),
                     )
                     .set(
                         "username_last_updated_at",
@@ -123,10 +106,11 @@ pub static USER_SCHEMA: LazyLock<SchemaCore<UserInput, User, UserCtxOptions>> =
                     )
                     .set(
                         "v_slug",
-                        IvoField::VIRTUAL
-                            .alias("slug_id")
-                            .validate(|value: String, _| {
-                                let value = slugify(value.trim()).0;
+                        IvoField::VIRTUAL.alias("slug_id").validate(
+                            |value: String, s: MutUserSummary| {
+                                let slug = slugify(value.trim());
+
+                                let value = slug.0.clone();
 
                                 if value.len() < 2 {
                                     return Err((
@@ -135,9 +119,50 @@ pub static USER_SCHEMA: LazyLock<SchemaCore<UserInput, User, UserCtxOptions>> =
                                     ));
                                 }
 
+                                s.get_options_mut().update_slug_id(&slug);
+
                                 Ok(value)
-                            }),
+                            },
+                        ),
                     )
             })
-            .with_options()
+            .with_options(|o| {
+                o.post_validate(["username", "v_slug"], |pv| {
+                    pv.validate(|s: MutUserSummary| async move {
+                        let mut ctx_options = s.get_options_mut();
+                        let input = s.input();
+
+                        let slug_string = if let Some(slug_id) = input.slug_id.clone() {
+                            slug_id
+                        } else {
+                            input.username.clone().unwrap()
+                        };
+
+                        let slug_id = slugify(&slug_string);
+
+                        if ctx_options.find_user_by_slug_id(&slug_id).await.is_some() {
+                            let err = (
+                                format!("A user with a slug id: \"{slug_id}\" already exists"),
+                                None,
+                            );
+
+                            let mut errors = Vec::with_capacity(2);
+
+                            if input.username.is_some() {
+                                errors.push(("username", err.clone()));
+                            }
+
+                            if input.slug_id.is_some() {
+                                errors.push(("v_slug", err.clone()));
+                            }
+
+                            return Err(errors);
+                        }
+
+                        ctx_options.update_slug_id(&slug_id);
+
+                        Ok(Vec::with_capacity(0))
+                    })
+                })
+            })
     });

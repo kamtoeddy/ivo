@@ -11,9 +11,11 @@ pub struct PostValidateBuilder<
     O: IvoSchemaStruct,
     CtxOptions: Clone,
     ErrT: IvoErrorTool,
+    HasFields = No,
     HasValidator = No,
     HasPreValidator = No,
 > {
+    _has_fields: PhantomData<HasFields>,
     _pre_v: PhantomData<HasPreValidator>,
     _validator: PhantomData<HasValidator>,
     // actual data...
@@ -23,19 +25,22 @@ pub struct PostValidateBuilder<
 }
 
 impl<
+        HasFields,
         HasPreValidator,
         HasValidator,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
         ErrT: IvoErrorTool,
-    > Default for PostValidateBuilder<I, O, CtxOptions, ErrT, HasPreValidator, HasValidator>
+    > Default
+    for PostValidateBuilder<I, O, CtxOptions, ErrT, HasFields, HasPreValidator, HasValidator>
 {
     fn default() -> Self {
         Self {
             fields: vec![],
             pre_validator: None,
             validators: vec![],
+            _has_fields: PhantomData,
             _pre_v: PhantomData,
             _validator: PhantomData,
         }
@@ -59,7 +64,7 @@ impl<
         CtxOptions: Clone,
         ErrT: IvoErrorTool,
     > BuildablePostValidator<I, O, CtxOptions, ErrT>
-    for PostValidateBuilder<I, O, CtxOptions, ErrT, Yes, HasPreValidator>
+    for PostValidateBuilder<I, O, CtxOptions, ErrT, Yes, Yes, HasPreValidator>
 {
     fn build(self) -> PostValidationConfig<I, O, CtxOptions, ErrT> {
         PostValidationConfig {
@@ -90,9 +95,12 @@ impl<
         O: IvoSchemaStruct,
         CtxOptions: Clone + Send,
         ErrT: IvoErrorTool,
-    > PostValidateBuilder<I, O, CtxOptions, ErrT, HasValidator, HasPreValidator>
+    > PostValidateBuilder<I, O, CtxOptions, ErrT, Yes, HasValidator, HasPreValidator>
 {
-    pub fn validate<F>(self, validator: F) -> PostValidateBuilder<I, O, CtxOptions, ErrT, Yes>
+    pub fn validate<F>(
+        self,
+        validator: F,
+    ) -> PostValidateBuilder<I, O, CtxOptions, ErrT, Yes, Yes, HasPreValidator>
     where
         F: IntoPostValidator<I, O, CtxOptions, ErrT>,
     {
@@ -114,12 +122,12 @@ impl<
         O: IvoSchemaStruct,
         CtxOptions: Clone + Send,
         ErrT: IvoErrorTool,
-    > PostValidateBuilder<I, O, CtxOptions, ErrT, HasValidator, No>
+    > PostValidateBuilder<I, O, CtxOptions, ErrT, Yes, HasValidator, No>
 {
     pub fn pre_validate<F>(
         self,
         validator: F,
-    ) -> PostValidateBuilder<I, O, CtxOptions, ErrT, HasValidator, Yes>
+    ) -> PostValidateBuilder<I, O, CtxOptions, ErrT, Yes, HasValidator, Yes>
     where
         F: IntoPostValidator<I, O, CtxOptions, ErrT>,
     {

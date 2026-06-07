@@ -1,3 +1,5 @@
+use crate::schema::options::base::{SchemaOptions, SchemaOptionsBuilder};
+use crate::schema::options::BuildableSchemaOptions;
 use crate::utils::erased_value::ErasedValue;
 
 use crate::schema::error::{DefaultErrorTool, IvoErrorTool};
@@ -18,8 +20,8 @@ pub struct SchemaCore<
     ErrorTool: IvoErrorTool = DefaultErrorTool,
 > {
     _error_tool: PhantomData<ErrorTool>,
-    _definitions: InternalPropertyDefinitions<I, O, CtxOptions, ErrorTool>,
-    _options: Option<ErasedValue>,
+    definitions: InternalPropertyDefinitions<I, O, CtxOptions, ErrorTool>,
+    options: SchemaOptions<I, O, CtxOptions, ErrorTool>,
 
     // contexts & values
     pub context: HashMap<String, ErasedValue>,
@@ -61,8 +63,8 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: I
     pub fn new() -> Self {
         let s = Self {
             _error_tool: PhantomData,
-            _definitions: HashMap::new(),
-            _options: None,
+            definitions: HashMap::new(),
+            options: SchemaOptions::default(),
             fields_set: {
                 let mut all_fields = O::ivo_internal_fields();
                 all_fields.extend(I::ivo_internal_fields());
@@ -100,14 +102,20 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: I
         Fields:
             Fn(IvoFields<I, O, CtxOptions, ErrorTool>) -> IvoFields<I, O, CtxOptions, ErrorTool>,
     {
-        self._definitions = fields(IvoFields::new()).definitions;
+        self.definitions = fields(IvoFields::new()).definitions;
 
         self.check_prop_definitions();
 
         self
     }
 
-    pub fn with_options(self) -> Self {
+    pub fn with_options<Options, Buildable>(mut self, options: Options) -> Self
+    where
+        Options: Fn(SchemaOptionsBuilder<I, O, CtxOptions, ErrorTool>) -> Buildable,
+        Buildable: BuildableSchemaOptions<I, O, CtxOptions, ErrorTool>,
+    {
+        self.options = options(SchemaOptionsBuilder::<I, O, CtxOptions, ErrorTool>::new()).build();
+
         self.check_options();
 
         self
@@ -121,7 +129,7 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: I
         let mut err_tool = SchemaError::new();
 
         // First pass: register prop kinds and simple attributes
-        for (prop, def) in &self._definitions {
+        for (prop, def) in &self.definitions {
             // virtuals
             if def.is_virtual {
                 self.virtuals.insert(prop.clone());
@@ -194,7 +202,7 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: I
         }
 
         // Second pass: checks that require knowledge of all props
-        for (prop, def) in &self._definitions {
+        for (prop, def) in &self.definitions {
             if let Some(enum_values) = &def.enum_values {
                 if enum_values.len() < 2 {
                     err_tool.add(
@@ -248,7 +256,7 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: I
                 err_tool.add(dep, format!("Circular dependency identified with '{c}'"));
             }
 
-            if let Some(def) = self._definitions.get(dep) {
+            if let Some(def) = self.definitions.get(dep) {
                 if let Some(parents) = &def.depends_on {
                     for parent in parents {
                         for other in parents {
@@ -285,11 +293,11 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: I
         &self,
         prop: &str,
     ) -> Option<&IvoProperty<ErasedValue, I, O, CtxOptions, ErrorTool>> {
-        self._definitions.get(prop)
+        self.definitions.get(prop)
     }
 
     pub fn get_definitions(&self) -> &InternalPropertyDefinitions<I, O, CtxOptions, ErrorTool> {
-        &self._definitions
+        &self.definitions
     }
 
     /// Resolve defaults iteratively based on dependencies.
@@ -449,7 +457,7 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: I
         visited.insert(node.to_string());
         stack.push(node.to_string());
 
-        if let Some(def) = self._definitions.get(node) {
+        if let Some(def) = self.definitions.get(node) {
             if let Some(deps) = &def.depends_on {
                 for dep in deps.iter() {
                     let dep = &dep.to_string();

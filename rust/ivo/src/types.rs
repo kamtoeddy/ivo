@@ -273,7 +273,8 @@ pub type BooleanResolverWithMutSummary<I, O, CtxOptions> =
 pub type VirtualSanitiser<T, I, O, CtxOptions> = AsyncResolverWithMutSummaryFn<T, I, O, CtxOptions>;
 
 pub type PostValidatorValue = Vec<(&'static str, ErasedValue)>;
-pub type PostValidatorError<FieldErrorMetadata> = Vec<ValidatorError<FieldErrorMetadata>>;
+pub type PostValidatorError<FieldErrorMetadata> =
+    Vec<(&'static str, ValidatorError<FieldErrorMetadata>)>;
 
 pub type PostValidatorFn<I, O, CtxOptions, FieldErrorMetadata> = Box<
     dyn Fn(
