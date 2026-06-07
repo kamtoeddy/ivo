@@ -40,7 +40,7 @@ impl<
 {
     pub async fn create(
         &self,
-        input: Partial<I>,
+        input: &Partial<I>,
         options: CtxOptions,
     ) -> Result<(O, AsyncTriggerFn), (ErrorTool::ErrorPayload, AsyncTriggerFn)> {
         let mut error_tool = ErrorTool::new();
@@ -107,8 +107,8 @@ impl<
 
     pub async fn update(
         &self,
-        data: O,
-        updates: Partial<I>,
+        data: &O,
+        updates: &Partial<I>,
         options: CtxOptions,
     ) -> Result<(Partial<O>, AsyncTriggerFn), (UpdateError<ErrorTool>, AsyncTriggerFn)> {
         // Run validators for props in context

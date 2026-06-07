@@ -23,26 +23,21 @@ pub async fn run_users_demo() {
 
     let ctx_options = UserCtxOptions { slug_id: None };
 
-    let r = USER_MODEL
-        .create(
-            PartialUserInput {
-                email: Some("1@1.com".to_string()),
-                username: Some("john".to_string()),
-                role: None,
-                v_slug: None,
-            },
-            ctx_options.clone(),
-        )
-        .await;
+    let input = PartialUserInput {
+        email: Some("1@1.com".to_string()),
+        username: Some("john".to_string()),
+        role: None,
+        v_slug: None,
+    };
 
-    let _ = match r {
-        Ok((data, handle_success)) => {
+    let r = USER_MODEL.create(&input, ctx_options.clone()).await;
+
+    match r {
+        Ok((data, _handle_success)) => {
             println!("{:?}", data);
-            handle_success
         }
-        Err((payload, handle_failure)) => {
+        Err((payload, _handle_failure)) => {
             println!("Failed to create: {:?}", payload);
-            handle_failure
         }
     };
 
@@ -73,34 +68,27 @@ pub async fn run_users_demo() {
 
     println!("{:?}", user);
 
-    let r = USER_MODEL
-        .update(
-            user.clone(),
-            PartialUserInput {
-                email: Some(user.email.clone()),
-                // role: Some(user.role.clone()),
-                role: Some(UserRole::User),
-                username: Some(user.username.clone()),
-                v_slug: None,
-            },
-            ctx_options,
-        )
-        .await;
+    let updates = PartialUserInput {
+        email: Some(user.email.clone()),
+        // role: Some(user.role.clone()),
+        role: Some(UserRole::User),
+        username: Some(user.username.clone()),
+        v_slug: None,
+    };
 
-    let _ = match r {
-        Ok((data, handle_success)) => {
+    let r = USER_MODEL.update(&user, &updates, ctx_options).await;
+
+    match r {
+        Ok((data, _handle_success)) => {
             println!("Updates: {:?}", data);
-            handle_success
         }
-        Err((error, handle_failure)) => {
+        Err((error, _handle_failure)) => {
             match error {
                 UpdateError::NothingToUpdate => println!("Nothing to update"),
                 UpdateError::ValidationError(payload) => {
                     println!("Failed to update: {:?}", payload)
                 }
             };
-
-            handle_failure
         }
     };
 
