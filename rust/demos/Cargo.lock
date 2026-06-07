@@ -528,7 +528,7 @@ dependencies = [
  "chrono",
  "futures",
  "ivo_struct",
- "regex",
+ "ivo_validators",
 ]
 
 [[package]]
@@ -539,6 +539,13 @@ dependencies = [
  "quote",
  "serde",
  "syn 2.0.117",
+]
+
+[[package]]
+name = "ivo_validators"
+version = "0.0.1"
+dependencies = [
+ "regex",
 ]
 
 [[package]]

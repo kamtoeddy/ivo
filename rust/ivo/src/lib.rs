@@ -3,9 +3,12 @@ mod schema;
 pub mod traits;
 mod types;
 pub mod utils;
-mod validators;
 
 pub use ivo_struct::IvoStruct;
+
+#[cfg(feature = "validators")]
+#[doc(inline)]
+pub use ivo_validators::*;
 
 pub use schema::error::{
     DefaultErrorPayload, DefaultErrorTool, DefaultFieldErrorMetadata, FieldError, IvoErrorTool,

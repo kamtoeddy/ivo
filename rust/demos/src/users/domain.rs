@@ -1,6 +1,6 @@
 use std::sync::LazyLock;
 
-use ivo::{IvoField, IvoStruct, IvoSummary, Model, SchemaCore};
+use ivo::{IvoField, IvoStruct, IvoSummary, Model, SchemaCore, validate_email};
 
 use crate::utils::slugify::{SlugifiedString, slugify};
 
@@ -62,7 +62,8 @@ pub static USER_SCHEMA: LazyLock<SchemaCore<UserInput, User, UserCtxOptions>> =
                 f.set("id", IvoField::CONSTANT.computed(|_| 1234))
                     .set(
                         "email",
-                        IvoField::REQUIRED.validate(|_, _| Ok(String::from("Hello"))),
+                        IvoField::REQUIRED
+                            .validate(|email, _| validate_email(email).map_err(|e| (e.0, None))),
                     )
                     .set(
                         "username",

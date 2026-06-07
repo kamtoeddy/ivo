@@ -8,8 +8,11 @@ keywords = ["schema", "validation"]
 homepage = "https://github.com/kamtoeddy/ivo#readme"
 repository = "https://github.com/kamtoeddy/ivo.git"
 
+[features]
+validators = ["dep:ivo_validators"]
+
 [dependencies]
 chrono = "0.4"
 futures = "0.3"
 ivo_struct = { path = "./libs/ivo_struct" }
-regex = "1.10"
+ivo_validators = { path = "./libs/ivo_validators", optional = true}
