@@ -1,10 +1,33 @@
-use std::future::Future;
+use std::{collections::HashMap, fmt::Debug, future::Future};
+
+use futures::future::BoxFuture;
 
 use crate::{
-    schema::error::IvoErrorTool,
-    types::{IvoSummary, IvoValues, PostValidatorError, PostValidatorFn},
-    IvoSchemaStruct,
+    erase_value, schema::error::IvoErrorTool, types::IvoSummary, ErasedValue, IvoSchemaStruct,
+    ValidatorError,
 };
+
+pub struct IvoValues {
+    data: HashMap<String, ErasedValue>,
+}
+
+impl IvoValues {
+    pub fn new() -> Self {
+        Self {
+            data: HashMap::new(),
+        }
+    }
+
+    pub fn set<T: Clone + Debug + Send + Sync + 'static>(
+        &mut self,
+        field: &str,
+        value: T,
+    ) -> &mut Self {
+        self.data.insert(field.to_owned(), erase_value(value));
+
+        self
+    }
+}
 
 // pub trait IntoDeleteHandler<O: IvoSchemaStruct, CtxOptions: Clone> {
 //     fn into_handler(self) -> DeleteHandler<O, CtxOptions>;
@@ -73,3 +96,14 @@ where
         Box::new(move |s| Box::pin(self(s)))
     }
 }
+
+pub type PostValidatorError<FieldErrorMetadata> = Vec<(String, ValidatorError<FieldErrorMetadata>)>;
+
+pub type PostValidatorFn<I, O, CtxOptions, FieldErrorMetadata> = Box<
+    dyn Fn(
+            IvoSummary<I, O, CtxOptions>,
+        ) -> BoxFuture<'static, Result<IvoValues, PostValidatorError<FieldErrorMetadata>>>
+        + Send
+        + Sync
+        + 'static,
+>;

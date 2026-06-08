@@ -1,9 +1,8 @@
-use std::{collections::HashMap, fmt::Debug};
+use std::fmt::Debug;
 
 use futures::future::BoxFuture;
 
 use crate::{
-    erase_value,
     schema::error::{DefaultFieldErrorMetadata, IvoErrorTool},
     traits::IvoSchemaStruct,
     utils::erased_value::ErasedValue,
@@ -293,39 +292,6 @@ pub type BooleanResolverWithMutSummary<I, O, CtxOptions> =
     Box<dyn Fn(IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static>;
 
 pub type VirtualSanitiser<T, I, O, CtxOptions> = AsyncResolverWithMutSummaryFn<T, I, O, CtxOptions>;
-
-pub struct IvoValues {
-    data: HashMap<String, ErasedValue>,
-}
-
-impl IvoValues {
-    pub fn new() -> Self {
-        Self {
-            data: HashMap::new(),
-        }
-    }
-
-    pub fn set<T: Clone + Debug + Send + Sync + 'static>(
-        &mut self,
-        field: &str,
-        value: T,
-    ) -> &mut Self {
-        self.data.insert(field.to_owned(), erase_value(value));
-
-        self
-    }
-}
-
-pub type PostValidatorError<FieldErrorMetadata> = Vec<(String, ValidatorError<FieldErrorMetadata>)>;
-
-pub type PostValidatorFn<I, O, CtxOptions, FieldErrorMetadata> = Box<
-    dyn Fn(
-            IvoSummary<I, O, CtxOptions>,
-        ) -> BoxFuture<'static, Result<IvoValues, PostValidatorError<FieldErrorMetadata>>>
-        + Send
-        + Sync
-        + 'static,
->;
 
 pub type DeleteHandler<O, CtxOptions> =
     Box<dyn Fn(O, CtxOptions) -> BoxFuture<'static, ()> + Send + Sync + 'static>;

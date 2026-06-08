@@ -8,9 +8,12 @@ use crate::{
 };
 
 pub mod base;
+pub mod on_success;
 pub mod post_validate;
 pub mod timestamp_tool;
-mod traits;
+mod types;
+
+pub use types::IvoValues;
 
 pub trait BuildableSchemaOptions<
     I: IvoSchemaStruct,

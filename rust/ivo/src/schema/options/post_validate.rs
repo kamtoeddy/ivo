@@ -3,10 +3,10 @@ use std::marker::PhantomData;
 use crate::{
     schema::{
         error::IvoErrorTool,
-        options::traits::{IntoPostValidator, PostValidationConfig},
+        options::types::{IntoPostValidator, PostValidationConfig, PostValidatorFn},
     },
     traits::IvoSchemaStruct,
-    types::{No, PostValidatorFn, Yes},
+    types::{No, Yes},
 };
 
 pub struct PostValidateOptionBuilder<
