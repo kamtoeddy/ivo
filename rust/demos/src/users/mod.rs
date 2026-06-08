@@ -5,17 +5,17 @@ mod domain;
 
 use crate::{
     users::domain::{PartialUserInput, USER_MODEL, User, UserCtxOptions, UserRole},
-    utils::{slugify::slugify, styled_text::Stylable},
+    utils::styled_text::Stylable,
 };
 
 pub async fn run_users_demo() {
-    let timer = Instant::now();
-
     let ctx_options = UserCtxOptions { slug_id: None };
 
+    let timer = Instant::now();
+
     let input = PartialUserInput {
-        email: Some("1@1.com".to_string()),
-        username: Some("john".to_string()),
+        email: Some("1@1.com".into()),
+        username: Some("john".into()),
         role: Some(UserRole::Moderator),
         slug_id: None,
     };
@@ -42,7 +42,7 @@ pub async fn run_users_demo() {
     let (username, slug_id) = {
         let username = "John Doe";
 
-        (username.to_owned(), slugify(username))
+        (username.into(), username.into())
     };
 
     let user = User {

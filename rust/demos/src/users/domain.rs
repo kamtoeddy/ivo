@@ -90,7 +90,7 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
             .set(
                 "slug_id",
                 IvoField::DEPENDENT
-                    .default(SlugifiedString("".into()))
+                    .default("".into())
                     .depends_on(["username", "v_slug"])
                     .resolve(|s: MutUserSummary| {
                         s.get_options()
@@ -103,20 +103,20 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
                 "v_slug",
                 IvoField::VIRTUAL.alias("slug_id").validate(
                     |value: String, s: MutUserSummary| {
-                        let slug = slugify(value.trim());
+                        let slug_id = slugify(&value);
 
-                        let value = slug.0.clone();
+                        let validated = slug_id.value();
 
-                        if value.len() < 2 {
+                        if validated.len() < 2 {
                             return Err((
                                 "slug ids must be at least 2 characters long".into(),
                                 None,
                             ));
                         }
 
-                        s.get_options_mut().update_slug_id(&slug);
+                        s.get_options_mut().update_slug_id(&slug_id);
 
-                        Ok(value)
+                        Ok(validated)
                     },
                 ),
             )

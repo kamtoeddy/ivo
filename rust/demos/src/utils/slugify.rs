@@ -5,12 +5,30 @@ use unicode_normalization::UnicodeNormalization;
 
 // 1. Define the Type-Safe Newtype (equivalent to Nominal in TS)
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct SlugifiedString(pub String);
+pub struct SlugifiedString(String);
+
+impl SlugifiedString {
+    pub fn value(&self) -> String {
+        self.0.clone()
+    }
+}
 
 // Optional: Implement Display so it prints like a regular string
 impl std::fmt::Display for SlugifiedString {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
+    }
+}
+
+impl From<&str> for SlugifiedString {
+    fn from(value: &str) -> Self {
+        slugify(value)
+    }
+}
+
+impl From<String> for SlugifiedString {
+    fn from(value: String) -> Self {
+        slugify(&value)
     }
 }
 

@@ -1,6 +1,5 @@
 use crate::schema::core::Schema;
 use crate::schema::error::{DefaultErrorTool, FieldError, IvoErrorTool, UpdateError};
-use crate::types::Context;
 use crate::utils::erased_value::ErasedValue;
 
 use std::collections::{HashMap, HashSet};
@@ -44,16 +43,15 @@ impl<
         options: CtxOptions,
     ) -> Result<(O, AsyncTriggerFn), (ErrorTool::ErrorPayload, AsyncTriggerFn)> {
         let mut error_tool = ErrorTool::new();
-        let input_values = input.ivo_internal_to_optional_erased_map();
+        // let input_values = input.ivo_internal_to_optional_erased_map();
 
         // println!();
-        for _ in input_values.inner {
-            // println!("'{k}' was provided");
-        }
+        // for _ in input_values.inner {
+        //     // println!("'{k}' was provided");
+        // }
         // println!();
 
         // Build initial context from input (filter to schema props)
-        let mut context: Context = HashMap::new();
 
         // for (k, v) in input_kv.into_iter() {
         //     if self.schema.is_prop(&k)
@@ -70,10 +68,10 @@ impl<
         // }
 
         // Resolve defaults iteratively (handles dependencies)
-        self.resolve_defaults(&mut context);
+        // self.resolve_defaults(&mut context);
 
         // Resolve constants iteratively (may depend on defaults)
-        self.resolve_constants(&mut context);
+        // self.resolve_constants(&mut context);
 
         // Run validators for props in context
         self.run_async_validator(&input, options).await;
@@ -93,9 +91,9 @@ impl<
             ));
         }
 
-        self.add_timestamps(&mut context);
+        // self.add_timestamps(&mut context);
 
-        // let output = Output::ivo_internal_from_erased_map(&context).unwrap();
+        // let output = O::ivo_internal_from_erased_map(&context);
 
         // Ok((output, Box::new(move || Box::pin(async move {}))))
 
@@ -197,7 +195,7 @@ impl<
         for _ in join_all(tasks).await {}
     }
 
-    fn add_timestamps(&self, _context: &mut Context) {
+    fn _add_timestamps(&self, _data: &mut O::Partial) {
         // if self.schema.timestamp_tool.with_timestamps() {
         //     let now = chrono::Utc::now().to_rfc3339();
 

@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt::Debug};
+use std::fmt::Debug;
 
 use futures::future::BoxFuture;
 
@@ -104,8 +104,6 @@ pub enum ComputableRequired<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: 
     Static(True),
     Func(RequiredResolverFn<I, O, CtxOptions>),
 }
-
-pub type Context = HashMap<String, ErasedValue>;
 
 pub struct IvoMiniSummary<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
     input: I::Partial,
