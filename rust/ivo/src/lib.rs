@@ -16,5 +16,5 @@ pub use schema::error::{
 pub use schema::fields::IvoField;
 pub use schema::{Model, Schema};
 pub use traits::{FromToMap, HasFields, HasPartial, IvoSchemaStruct, Partial};
-pub use types::{IvoMiniSummary, IvoSummary, ValidatorError, ValidatorResponse};
+pub use types::{IvoMiniSummary, IvoSummary, IvoValues, ValidatorError, ValidatorResponse};
 pub use utils::erased_value::*;

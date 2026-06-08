@@ -1,8 +1,9 @@
-use std::fmt::Debug;
+use std::{collections::HashMap, fmt::Debug};
 
 use futures::future::BoxFuture;
 
 use crate::{
+    erase_value,
     schema::error::{DefaultFieldErrorMetadata, IvoErrorTool},
     traits::IvoSchemaStruct,
     utils::erased_value::ErasedValue,
@@ -293,15 +294,35 @@ pub type BooleanResolverWithMutSummary<I, O, CtxOptions> =
 
 pub type VirtualSanitiser<T, I, O, CtxOptions> = AsyncResolverWithMutSummaryFn<T, I, O, CtxOptions>;
 
-pub type PostValidatorValue = Vec<(&'static str, ErasedValue)>;
+pub struct IvoValues {
+    data: HashMap<&'static str, ErasedValue>,
+}
+
+impl IvoValues {
+    pub fn new() -> Self {
+        Self {
+            data: HashMap::new(),
+        }
+    }
+
+    pub fn set<T: Clone + Debug + Send + Sync + 'static>(
+        &mut self,
+        field: &'static str,
+        value: T,
+    ) -> &mut Self {
+        self.data.insert(field, erase_value(value));
+
+        self
+    }
+}
+
 pub type PostValidatorError<FieldErrorMetadata> =
     Vec<(&'static str, ValidatorError<FieldErrorMetadata>)>;
 
 pub type PostValidatorFn<I, O, CtxOptions, FieldErrorMetadata> = Box<
     dyn Fn(
             IvoSummary<I, O, CtxOptions>,
-        )
-            -> BoxFuture<'static, Result<PostValidatorValue, PostValidatorError<FieldErrorMetadata>>>
+        ) -> BoxFuture<'static, Result<IvoValues, PostValidatorError<FieldErrorMetadata>>>
         + Send
         + Sync
         + 'static,

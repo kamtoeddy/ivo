@@ -5,9 +5,9 @@ use futures::FutureExt;
 use crate::{
     schema::error::IvoErrorTool,
     types::{
-        DeleteHandler, FailureHandler, IvoMiniSummary, IvoSummary, PostValidatorError,
-        PostValidatorFn, PostValidatorValue, RequiredResolverFn, ResolverWithMutSummaryFn,
-        SuccessHandler, UniformAsyncResolverWithMiniSummary, UniformAsyncResolverWithMutSummary,
+        DeleteHandler, FailureHandler, IvoMiniSummary, IvoSummary, IvoValues, PostValidatorError,
+        PostValidatorFn, RequiredResolverFn, ResolverWithMutSummaryFn, SuccessHandler,
+        UniformAsyncResolverWithMiniSummary, UniformAsyncResolverWithMutSummary,
         UniformAsyncValidator, UniformEnumErrorResolver, UniformResolverWithMiniSummary,
         UniformResolverWithMutSummary, UniformValidator, UniformVirtualSanitiser, ValidatorError,
     },
@@ -211,7 +211,7 @@ where
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
     F: Fn(IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
-    Fut: Future<Output = Result<PostValidatorValue, PostValidatorError<ErrT::FieldMetadata>>>
+    Fut: Future<Output = Result<IvoValues, PostValidatorError<ErrT::FieldMetadata>>>
         + Send
         + Sync
         + 'static,

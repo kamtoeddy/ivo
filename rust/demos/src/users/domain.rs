@@ -1,6 +1,6 @@
 use std::sync::LazyLock;
 
-use ivo::{IvoField, IvoStruct, IvoSummary, Model, Schema, validate_email};
+use ivo::{IvoField, IvoStruct, IvoSummary, IvoValues, Model, Schema, validate_email};
 
 use crate::utils::slugify::{SlugifiedString, slugify};
 
@@ -154,7 +154,13 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
 
                     ctx_options.update_slug_id(&slug_id);
 
-                    Ok(Vec::with_capacity(0))
+                    // let mut validated = IvoValues::new();
+
+                    // validated
+                    //     .set("slug_id", slug_id.value())
+                    //     .set("username", "validated-username");
+
+                    Ok(IvoValues::new())
                 })
             })
         },
