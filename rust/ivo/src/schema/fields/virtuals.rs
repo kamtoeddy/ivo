@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 use crate::{
     schema::{
         error::IvoErrorTool,
-        fields::base::{BuildableIvoProperty, InternalIvoProperty, IvoProperty},
+        fields::base::{BuildableFieldConfig, FieldConfig, InternalFieldConfig},
     },
     traits::{
         IntoAsyncFieldValidator, IntoFailureHandler, IntoFieldValidator, IntoRequiredResolverFn,
@@ -174,7 +174,7 @@ impl<
         O: IvoSchemaStruct,
         CtxOptions: Clone,
         ErrT: IvoErrorTool,
-    > BuildableIvoProperty<I, O, CtxOptions, ErrT>
+    > BuildableFieldConfig<I, O, CtxOptions, ErrT>
     for VirtualFieldBuilder<
         T,
         I,
@@ -193,8 +193,8 @@ impl<
         HasSuccess,
     >
 {
-    fn build(self) -> InternalIvoProperty<I, O, CtxOptions, ErrT> {
-        IvoProperty {
+    fn build(self) -> InternalFieldConfig<I, O, CtxOptions, ErrT> {
+        FieldConfig {
             is_virtual: true,
             alias: self.alias,
             validator: self.validator,

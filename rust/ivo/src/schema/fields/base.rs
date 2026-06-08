@@ -11,20 +11,20 @@ use crate::{
     utils::erased_value::ErasedValue,
 };
 
-pub trait BuildableIvoProperty<
+pub trait BuildableFieldConfig<
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
     CtxOptions: Clone,
     ErrT: IvoErrorTool,
 >
 {
-    fn build(self) -> InternalIvoProperty<I, O, CtxOptions, ErrT>;
+    fn build(self) -> InternalFieldConfig<I, O, CtxOptions, ErrT>;
 }
 
-pub type InternalIvoProperty<I, O, CtxOptions, ErrT> =
-    IvoProperty<ErasedValue, I, O, CtxOptions, ErrT>;
+pub type InternalFieldConfig<I, O, CtxOptions, ErrT> =
+    FieldConfig<ErasedValue, I, O, CtxOptions, ErrT>;
 
-pub struct IvoProperty<
+pub struct FieldConfig<
     T,
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
@@ -57,7 +57,7 @@ pub struct IvoProperty<
 }
 
 impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErrorTool> Default
-    for IvoProperty<T, I, O, CtxOptions, ErrT>
+    for FieldConfig<T, I, O, CtxOptions, ErrT>
 {
     fn default() -> Self {
         Self {

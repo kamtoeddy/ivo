@@ -3,7 +3,7 @@ use std::{fmt::Debug, marker::PhantomData};
 use crate::{
     schema::{
         error::{DefaultErrorTool, IvoErrorTool},
-        fields::base::{BuildableIvoProperty, InternalIvoProperty, IvoProperty},
+        fields::base::{BuildableFieldConfig, FieldConfig, InternalFieldConfig},
     },
     traits::{
         IntoAsyncResolverWithMutSummary, IntoDeleteHandler, IntoResolverWithMiniSummary,
@@ -134,7 +134,7 @@ impl<
         O: IvoSchemaStruct,
         CtxOptions: Clone,
         ErrT: IvoErrorTool,
-    > BuildableIvoProperty<I, O, CtxOptions, ErrT>
+    > BuildableFieldConfig<I, O, CtxOptions, ErrT>
     for DependentFieldBuilder<
         T,
         I,
@@ -149,8 +149,8 @@ impl<
         HasSuccess,
     >
 {
-    fn build(self) -> InternalIvoProperty<I, O, CtxOptions, ErrT> {
-        IvoProperty {
+    fn build(self) -> InternalFieldConfig<I, O, CtxOptions, ErrT> {
+        FieldConfig {
             default: self.default,
             depends_on: self.depends_on,
             resolver: self.resolver,

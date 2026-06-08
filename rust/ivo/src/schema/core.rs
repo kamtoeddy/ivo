@@ -2,26 +2,23 @@ use crate::schema::options::base::{SchemaOptions, SchemaOptionsBuilder};
 use crate::schema::options::BuildableSchemaOptions;
 use crate::utils::erased_value::ErasedValue;
 
-use crate::schema::error::{DefaultErrorTool, IvoErrorTool};
-use crate::schema::fields::base::BuildableIvoProperty;
-use crate::schema::{error::SchemaError, fields::base::IvoProperty};
+use crate::schema::error::{DefaultErrorTool, IvoErrorTool, SchemaError};
+use crate::schema::fields::base::{BuildableFieldConfig, InternalFieldConfig};
 use crate::traits::IvoSchemaStruct;
 
 use std::collections::{HashMap, HashSet};
-use std::marker::PhantomData;
 
-type InternalPropertyDefinitions<I, O, CtxOptions, ErrT> =
-    HashMap<String, IvoProperty<ErasedValue, I, O, CtxOptions, ErrT>>;
+type InternalFieldConfigs<I, O, CtxOptions, ErrT> =
+    HashMap<String, InternalFieldConfig<I, O, CtxOptions, ErrT>>;
 
-pub struct SchemaCore<
+pub struct Schema<
     I: IvoSchemaStruct,
     O: IvoSchemaStruct = I,
     CtxOptions: Clone = Option<u8>,
     ErrorTool: IvoErrorTool = DefaultErrorTool,
 > {
-    _error_tool: PhantomData<ErrorTool>,
-    definitions: InternalPropertyDefinitions<I, O, CtxOptions, ErrorTool>,
-    options: SchemaOptions<I, O, CtxOptions, ErrorTool>,
+    field_configs: InternalFieldConfigs<I, O, CtxOptions, ErrorTool>,
+    _options: SchemaOptions<I, O, CtxOptions, ErrorTool>,
 
     // contexts & values
     pub context: HashMap<String, ErasedValue>,
@@ -58,13 +55,22 @@ pub struct SchemaCore<
 }
 
 impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: IvoErrorTool>
-    SchemaCore<I, O, CtxOptions, ErrorTool>
+    Schema<I, O, CtxOptions, ErrorTool>
 {
-    pub fn new() -> Self {
-        let s = Self {
-            _error_tool: PhantomData,
-            definitions: HashMap::new(),
-            options: SchemaOptions::default(),
+    pub fn new<FieldBuilder, OptionsBuilder, BuildableOptions>(
+        fields_builder: FieldBuilder,
+        options_builder: OptionsBuilder,
+    ) -> Self
+    where
+        FieldBuilder: Fn(
+            SchemaFields<I, O, CtxOptions, ErrorTool>,
+        ) -> SchemaFields<I, O, CtxOptions, ErrorTool>,
+        OptionsBuilder: Fn(SchemaOptionsBuilder<I, O, CtxOptions, ErrorTool>) -> BuildableOptions,
+        BuildableOptions: BuildableSchemaOptions<I, O, CtxOptions, ErrorTool>,
+    {
+        let mut s = Self {
+            field_configs: fields_builder(SchemaFields::new()).configs,
+            _options: options_builder(SchemaOptions::new()).build(),
             fields_set: {
                 let mut all_fields = O::ivo_internal_fields();
                 all_fields.extend(I::ivo_internal_fields());
@@ -94,42 +100,63 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: I
             virtuals: HashSet::new(),
         };
 
+        s.check_field_configs();
+        s.check_options();
+
         s
     }
 
-    pub fn with_fields<Fields>(mut self, fields: Fields) -> Self
-    where
-        Fields:
-            Fn(IvoFields<I, O, CtxOptions, ErrorTool>) -> IvoFields<I, O, CtxOptions, ErrorTool>,
-    {
-        self.definitions = fields(IvoFields::new()).definitions;
+    pub fn fields(&self) -> Vec<String> {
+        let mut all_fields: Vec<_> = self.fields_set().clone().into_iter().collect();
 
-        self.check_prop_definitions();
-
-        self
+        all_fields.sort();
+        all_fields
     }
 
-    pub fn with_options<Options, Buildable>(mut self, options: Options) -> Self
-    where
-        Options: Fn(SchemaOptionsBuilder<I, O, CtxOptions, ErrorTool>) -> Buildable,
-        Buildable: BuildableSchemaOptions<I, O, CtxOptions, ErrorTool>,
-    {
-        self.options = options(SchemaOptionsBuilder::<I, O, CtxOptions, ErrorTool>::new()).build();
+    pub fn fields_set(&self) -> &HashSet<String> {
+        &self.fields_set
+    }
 
-        self.check_options();
+    pub fn get_field_config(
+        &self,
+        prop: &str,
+    ) -> Option<&InternalFieldConfig<I, O, CtxOptions, ErrorTool>> {
+        self.field_configs.get(prop)
+    }
 
-        self
+    pub fn get_field_configs(&self) -> &InternalFieldConfigs<I, O, CtxOptions, ErrorTool> {
+        &self.field_configs
+    }
+
+    /// Resolve defaults iteratively based on dependencies.
+    /// It will repeatedly evaluate defaults whose dependencies are satisfied (present in `context`).
+    /// If there are unresolved defaults at the end and the schema option `error_on_unresolved_defaults` is true,
+    /// this function returns Err(SchemaError) containing the unresolved properties; otherwise returns Ok(()).
+    /// Return whether a name is a defined property
+    pub fn is_prop(&self, prop: &str) -> bool {
+        self.props.contains(prop)
+    }
+
+    /// Return whether a name is a defined virtual
+    pub fn is_virtual(&self, prop: &str) -> bool {
+        self.virtuals.contains(prop)
+    }
+
+    /// Return whether a name is a defined constant
+    pub fn is_constant(&self, prop: &str) -> bool {
+        self.constants.contains(prop)
     }
 
     fn check_options(&self) {
         // todo!()
     }
 
-    fn check_prop_definitions(&mut self) {
+    fn check_field_configs(&mut self) {
+        // todo!()
         let mut err_tool = SchemaError::new();
 
         // First pass: register prop kinds and simple attributes
-        for (prop, def) in &self.definitions {
+        for (prop, def) in &self.field_configs {
             // virtuals
             if def.is_virtual {
                 self.virtuals.insert(prop.clone());
@@ -167,7 +194,7 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: I
                 continue;
             }
 
-            // regular prop
+            // regular props
             self.props.insert(prop.clone());
 
             // if let Some(ComputableWithMiniSummary::Static(v)) = &def.default {
@@ -202,7 +229,7 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: I
         }
 
         // Second pass: checks that require knowledge of all props
-        for (prop, def) in &self.definitions {
+        for (prop, def) in &self.field_configs {
             if let Some(enum_values) = &def.enum_values {
                 if enum_values.len() < 2 {
                     err_tool.add(
@@ -256,7 +283,7 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: I
                 err_tool.add(dep, format!("Circular dependency identified with '{c}'"));
             }
 
-            if let Some(def) = self.definitions.get(dep) {
+            if let Some(def) = self.field_configs.get(dep) {
                 if let Some(parents) = &def.depends_on {
                     for parent in parents {
                         for other in parents {
@@ -278,51 +305,11 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: I
         }
     }
 
-    pub fn fields(&self) -> Vec<String> {
-        let mut all_fields: Vec<_> = self.fields_set().clone().into_iter().collect();
-
-        all_fields.sort();
-        all_fields
-    }
-
-    pub fn fields_set(&self) -> &HashSet<String> {
-        &self.fields_set
-    }
-
-    pub fn get_definition(
-        &self,
-        prop: &str,
-    ) -> Option<&IvoProperty<ErasedValue, I, O, CtxOptions, ErrorTool>> {
-        self.definitions.get(prop)
-    }
-
-    pub fn get_definitions(&self) -> &InternalPropertyDefinitions<I, O, CtxOptions, ErrorTool> {
-        &self.definitions
-    }
-
-    /// Resolve defaults iteratively based on dependencies.
-    /// It will repeatedly evaluate defaults whose dependencies are satisfied (present in `context`).
-    /// If there are unresolved defaults at the end and the schema option `error_on_unresolved_defaults` is true,
-    /// this function returns Err(SchemaError) containing the unresolved properties; otherwise returns Ok(()).
-    /// Return whether a name is a defined property
-    pub fn is_prop(&self, prop: &str) -> bool {
-        self.props.contains(prop)
-    }
-
-    /// Return whether a name is a defined virtual
-    pub fn is_virtual(&self, prop: &str) -> bool {
-        self.virtuals.contains(prop)
-    }
-
-    /// Return whether a name is a defined constant
-    pub fn is_constant(&self, prop: &str) -> bool {
-        self.constants.contains(prop)
-    }
-
     pub fn get_reserved_keys(&self) -> Vec<String> {
-        let mut keys: Vec<String> = self.props.iter().cloned().collect();
+        todo!()
+        // let mut keys: Vec<String> = self.props.iter().cloned().collect();
 
-        keys.extend(self.virtuals.iter().cloned());
+        // keys.extend(self.virtuals.iter().cloned());
 
         // if let Some(k) = &self.timestamp_tool.get_keys().created_at {
         //     if !k.is_empty() {
@@ -336,8 +323,8 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: I
         //     }
         // }
 
-        keys.sort();
-        keys
+        // keys.sort();
+        // keys
     }
 
     fn _get_circular_dependencies_of(&self, _property: &str) -> Vec<String> {
@@ -457,7 +444,7 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: I
         visited.insert(node.to_string());
         stack.push(node.to_string());
 
-        if let Some(def) = self.definitions.get(node) {
+        if let Some(def) = self.field_configs.get(node) {
             if let Some(deps) = &def.depends_on {
                 for dep in deps.iter() {
                     let dep = &dep.to_string();
@@ -506,30 +493,29 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: I
     }
 }
 
-pub struct IvoFields<
+pub struct SchemaFields<
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
     CtxOptions: Clone,
     ErrorTool: IvoErrorTool,
 > {
-    pub definitions: InternalPropertyDefinitions<I, O, CtxOptions, ErrorTool>,
+    configs: InternalFieldConfigs<I, O, CtxOptions, ErrorTool>,
 }
 
 impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: IvoErrorTool>
-    IvoFields<I, O, CtxOptions, ErrorTool>
+    SchemaFields<I, O, CtxOptions, ErrorTool>
 {
     fn new() -> Self {
         Self {
-            definitions: HashMap::new(),
+            configs: HashMap::new(),
         }
     }
 
-    pub fn set<D: BuildableIvoProperty<I, O, CtxOptions, ErrorTool>>(
-        mut self,
-        name: &str,
-        def: D,
-    ) -> Self {
-        self.definitions.insert(name.to_owned(), def.build());
+    pub fn set<Config>(mut self, name: &str, config: Config) -> Self
+    where
+        Config: BuildableFieldConfig<I, O, CtxOptions, ErrorTool>,
+    {
+        self.configs.insert(name.to_owned(), config.build());
 
         self
     }

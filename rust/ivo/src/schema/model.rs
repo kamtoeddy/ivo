@@ -1,4 +1,4 @@
-use crate::schema::core::SchemaCore;
+use crate::schema::core::Schema;
 use crate::schema::error::{DefaultErrorTool, FieldError, IvoErrorTool, UpdateError};
 use crate::types::Context;
 use crate::utils::erased_value::ErasedValue;
@@ -13,7 +13,7 @@ use crate::traits::{IvoSchemaStruct, Partial, PartialFromToMap};
 pub type AsyncTriggerFn = Box<dyn Fn() -> BoxFuture<'static, ()> + Send + Sync>;
 
 impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: IvoErrorTool>
-    SchemaCore<I, O, CtxOptions, ErrorTool>
+    Schema<I, O, CtxOptions, ErrorTool>
 {
     pub fn get_model(&self) -> Model<'_, I, O, CtxOptions, ErrorTool> {
         Model { schema: self }
@@ -27,7 +27,7 @@ pub struct Model<
     CtxOptions: Clone = HashMap<String, ()>,
     ErrorTool: IvoErrorTool = DefaultErrorTool,
 > {
-    schema: &'schema SchemaCore<I, O, CtxOptions, ErrorTool>,
+    schema: &'schema Schema<I, O, CtxOptions, ErrorTool>,
 }
 
 impl<
@@ -220,7 +220,7 @@ impl<
     pub fn resolve_defaults(&self, context: &mut HashMap<String, ErasedValue>) {
         let mut _pending: HashSet<String> = self
             .schema
-            .get_definitions()
+            .get_field_configs()
             .iter()
             .filter_map(|(k, def)| {
                 if def.default.is_some() {

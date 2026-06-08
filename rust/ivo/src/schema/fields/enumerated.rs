@@ -3,7 +3,7 @@ use std::{fmt::Debug, marker::PhantomData};
 use crate::{
     schema::{
         error::IvoErrorTool,
-        fields::base::{BuildableIvoProperty, InternalIvoProperty, IvoProperty},
+        fields::base::{BuildableFieldConfig, FieldConfig, InternalFieldConfig},
     },
     traits::{
         IntoAsyncResolverWithMiniSummary, IntoDeleteHandler, IntoEnumErrorResolver,
@@ -165,7 +165,7 @@ impl<
         O: IvoSchemaStruct,
         CtxOptions: Clone,
         ErrT: IvoErrorTool,
-    > BuildableIvoProperty<I, O, CtxOptions, ErrT>
+    > BuildableFieldConfig<I, O, CtxOptions, ErrT>
     for EnumFieldBuilder<
         T,
         I,
@@ -183,8 +183,8 @@ impl<
         HasSuccess,
     >
 {
-    fn build(self) -> InternalIvoProperty<I, O, CtxOptions, ErrT> {
-        IvoProperty {
+    fn build(self) -> InternalFieldConfig<I, O, CtxOptions, ErrT> {
+        FieldConfig {
             enum_values: self.enum_values,
             enum_error: self.enum_error,
             default: self.default,

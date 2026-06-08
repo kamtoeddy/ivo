@@ -45,6 +45,14 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErrorTo
     }
 }
 
+impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErrorTool>
+    SchemaOptions<I, O, CtxOptions, ErrT>
+{
+    pub const fn new() -> SchemaOptionsBuilder<I, O, CtxOptions, ErrT> {
+        SchemaOptionsBuilder::new()
+    }
+}
+
 pub struct SchemaOptionsBuilder<
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,

@@ -3,8 +3,6 @@ pub mod error;
 pub mod fields;
 pub mod options;
 
-// pub use utils::TimeStampTool;
-
-pub use core::SchemaCore;
+pub use core::Schema;
 pub mod model;
 pub use model::*;
