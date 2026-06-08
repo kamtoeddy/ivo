@@ -4,6 +4,7 @@ use crate::{
         on_success::{BuildableOnSuccess, OnSuccessOptionBuilder},
         post_validate::{BuildablePostValidator, PostValidateOptionBuilder},
     },
+    traits::IntoDeleteHandler,
     types::Yes,
     IvoErrorTool, IvoSchemaStruct,
 };
@@ -88,6 +89,38 @@ impl<
         HasSuccess,
     >
 {
+    pub fn on_delete<H>(
+        self,
+        handler: H,
+    ) -> SchemaOptionsBuilder<
+        I,
+        O,
+        CtxOptions,
+        ErrT,
+        HasIgnore,
+        HasShouldUpdate,
+        HasPostValidate,
+        HasTimestamps,
+        Yes,
+        HasSuccess,
+    >
+    where
+        H: IntoDeleteHandler<O, CtxOptions>,
+    {
+        let mut on_delete_fns = self.on_delete_fns.unwrap_or_default();
+        on_delete_fns.push(handler.into_handler());
+
+        SchemaOptionsBuilder {
+            on_delete_fns: Some(on_delete_fns),
+            on_success_fns: self.on_success_fns,
+            post_validate: self.post_validate,
+            should_ignore: self.should_ignore,
+            should_update: self.should_update,
+            timestamps: self.timestamps,
+            ..SchemaOptionsBuilder::default()
+        }
+    }
+
     pub fn on_success<const N: usize, Builder, Buildable>(
         self,
         fields: [&'static str; N],

@@ -31,21 +31,6 @@ impl IvoValues {
     }
 }
 
-// pub trait IntoDeleteHandler<O: IvoSchemaStruct, CtxOptions: Clone> {
-//     fn into_handler(self) -> DeleteHandler<O, CtxOptions>;
-// }
-
-// impl<F, Fut, O, CtxOptions: Clone> IntoDeleteHandler<O, CtxOptions> for F
-// where
-//     O: IvoSchemaStruct,
-//     F: Fn(O, CtxOptions) -> Fut + Send + Sync + 'static,
-//     Fut: Future<Output = ()> + Send + Sync + 'static,
-// {
-//     fn into_handler(self) -> DeleteHandler<O, CtxOptions> {
-//         Box::new(move |o, s| Box::pin(self(o, s)))
-//     }
-// }
-
 pub struct OnSuccessConfig<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
     pub fields: Vec<&'static str>,
     pub handlers: Vec<SuccessHandler<I, O, CtxOptions>>,

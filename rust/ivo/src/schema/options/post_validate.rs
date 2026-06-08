@@ -22,9 +22,9 @@ pub struct PostValidateOptionBuilder<
     _pre_v: PhantomData<HasPreValidator>,
     _validator: PhantomData<HasValidator>,
     // actual data...
-    pub fields: Vec<&'static str>,
-    pub pre_validator: Option<PostValidatorFn<I, O, CtxOptions, ErrT::FieldMetadata>>,
-    pub validators: Vec<PostValidatorFn<I, O, CtxOptions, ErrT::FieldMetadata>>,
+    fields: Vec<&'static str>,
+    pre_validator: Option<PostValidatorFn<I, O, CtxOptions, ErrT::FieldMetadata>>,
+    validators: Vec<PostValidatorFn<I, O, CtxOptions, ErrT::FieldMetadata>>,
 }
 
 impl<

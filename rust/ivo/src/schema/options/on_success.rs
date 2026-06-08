@@ -16,8 +16,8 @@ pub struct OnSuccessOptionBuilder<
     _f: PhantomData<HasFields>,
     _h: PhantomData<HasHandlers>,
     // actual data...
-    pub fields: Vec<&'static str>,
-    pub handlers: Vec<SuccessHandler<I, O, CtxOptions>>,
+    fields: Vec<&'static str>,
+    handlers: Vec<SuccessHandler<I, O, CtxOptions>>,
 }
 
 impl<HasFields, HasHandlers, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> Default

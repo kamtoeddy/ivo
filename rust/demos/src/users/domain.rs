@@ -163,9 +163,14 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
                     Ok(IvoValues::new())
                 })
             })
-            .on_success(["username", "v_slug"], |b| {
-                b.handle(|_| async { println!("success") })
+            .on_success(["email"], |b| {
+                b.handle(|_| async { println!("on success") })
             })
+            .on_success(["username", "v_slug"], |b| {
+                b.handle(|_| async { println!("on success") })
+            })
+            .on_delete(|_, _| async { println!("on delete") })
+            .on_delete(|_, _| async { println!("on delete") })
         },
     )
 });
