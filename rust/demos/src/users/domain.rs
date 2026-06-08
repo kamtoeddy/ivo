@@ -58,6 +58,7 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
             .set(
                 "email",
                 IvoField::REQUIRED
+                    .error("Please provide an email address")
                     .validate(async |email, _| validate_email(email).map_err(|e| (e, None))),
             )
             .set(
@@ -66,7 +67,9 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
             )
             .set(
                 "username",
-                IvoField::REQUIRED.validate(async |v: String, _|{
+                IvoField::REQUIRED
+                    .error("Please provide a username")
+                    .validate(async |v: String, _|{
                     const MIN_LEN: usize = 4;
 
                     if v.len() <= MIN_LEN {
@@ -92,7 +95,7 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
                 IvoField::DEPENDENT
                     .default("".into())
                     .depends_on(["username", "v_slug"])
-                    .resolve(async |s: MutUserSummary| {
+                    .resolve(async|s: MutUserSummary| {
                         s.get_options()
                             .slug_id
                             .clone()
@@ -101,7 +104,9 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
             )
             .set(
                 "v_slug",
-                IvoField::VIRTUAL.alias("slug_id").validate(
+                IvoField::VIRTUAL
+                    .alias("slug_id")
+                    .validate(
                     async |value: String, s: MutUserSummary| {
                         let slug_id = slugify(&value);
 
@@ -123,7 +128,7 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
         },
         |o| {
             o.post_validate(["username", "v_slug"], |b| {
-                b.validate(|s: MutUserSummary| async move {
+                b.validate(async |s: MutUserSummary| {
                     let mut ctx_options = s.get_options_mut();
                     let input = s.input();
 

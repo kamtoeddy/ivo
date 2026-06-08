@@ -9,7 +9,7 @@ use futures::stream::{FuturesUnordered, StreamExt};
 
 use crate::types::{IvoSchemaStruct, Partial, PartialFromToMap};
 
-pub type AsyncTriggerFn = Box<dyn Fn() -> BoxFuture<'static, ()> + Send + Sync>;
+type AsyncTriggerFn = Box<dyn Fn() -> BoxFuture<'static, ()> + Send + Sync>;
 
 impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: IvoErrorTool>
     Schema<I, O, CtxOptions, ErrorTool>

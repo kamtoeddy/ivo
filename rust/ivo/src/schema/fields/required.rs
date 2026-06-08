@@ -6,9 +6,9 @@ use crate::{
         fields::{
             base::{BuildableFieldConfig, FieldConfig, InternalFieldConfig},
             types::{
-                ComputableInit, ComputableRequired, IntoDeleteHandler, IntoFailureHandler,
-                IntoFieldValidator, IntoResolverWithMutSummaryFn, IntoSuccessHandler,
-                UniformValidator,
+                ComputableInit, ComputableRequired, ComputableRequiredError, IntoDeleteHandler,
+                IntoFailureHandler, IntoFieldValidator, IntoRequiredResolverFn,
+                IntoResolverWithMutSummaryFn, IntoSuccessHandler, UniformValidator,
             },
         },
     },
@@ -22,6 +22,7 @@ pub struct RequiredFieldBuilder<
     O: IvoSchemaStruct,
     CtxOptions: Clone,
     ErrT: IvoErrorTool,
+    HasRequiredError = No,
     HasValidator = No,
     HasRevalidator = No,
     HasShouldUpdate = No,
@@ -30,6 +31,7 @@ pub struct RequiredFieldBuilder<
     HasSuccess = No,
 > {
     _t: PhantomData<T>,
+    _err: PhantomData<HasRequiredError>,
     _validator: PhantomData<HasValidator>,
     _re_validator: PhantomData<HasRevalidator>,
     _should_update: PhantomData<HasShouldUpdate>,
@@ -37,6 +39,7 @@ pub struct RequiredFieldBuilder<
     _on_failure_fns: PhantomData<HasFailure>,
     _on_success_fns: PhantomData<HasSuccess>,
     // actual data...
+    required_error: Option<ComputableRequiredError<I, O, CtxOptions>>,
     validator: Option<UniformValidator<I, O, CtxOptions, ErrT::FieldMetadata>>,
     re_validator: Option<UniformValidator<I, O, CtxOptions, ErrT::FieldMetadata>>,
     should_update: Option<ComputableInit<I, O, CtxOptions>>,
@@ -46,6 +49,7 @@ pub struct RequiredFieldBuilder<
 }
 
 impl<
+        HasRequiredError,
         HasValidator,
         HasRevalidator,
         HasShouldUpdate,
@@ -64,6 +68,7 @@ impl<
         O,
         CtxOptions,
         ErrT,
+        HasRequiredError,
         HasValidator,
         HasRevalidator,
         HasShouldUpdate,
@@ -74,6 +79,7 @@ impl<
 {
     pub const fn new() -> Self {
         Self {
+            required_error: None,
             validator: None,
             re_validator: None,
             should_update: None,
@@ -81,6 +87,7 @@ impl<
             on_failure_fns: None,
             on_success_fns: None,
             _t: PhantomData,
+            _err: PhantomData,
             _validator: PhantomData,
             _re_validator: PhantomData,
             _should_update: PhantomData,
@@ -92,6 +99,7 @@ impl<
 }
 
 impl<
+        HasRequiredError,
         HasValidator,
         HasRevalidator,
         HasShouldUpdate,
@@ -110,6 +118,7 @@ impl<
         O,
         CtxOptions,
         ErrT,
+        HasRequiredError,
         HasValidator,
         HasRevalidator,
         HasShouldUpdate,
@@ -142,6 +151,7 @@ impl<
         CtxOptions,
         ErrT,
         Yes,
+        Yes,
         HasRevalidator,
         HasShouldUpdate,
         HasDelete,
@@ -151,6 +161,7 @@ impl<
 {
     fn build(self) -> InternalFieldConfig<I, O, CtxOptions, ErrT> {
         FieldConfig {
+            required_error: self.required_error,
             validator: self.validator,
             re_validator: self.re_validator,
             required: Some(ComputableRequired::Static(True)),
@@ -166,7 +177,34 @@ impl<
 impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErrorTool>
     RequiredFieldBuilder<T, I, O, CtxOptions, ErrT>
 {
-    pub fn validate<F>(self, validator: F) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrT, Yes>
+    pub fn error(
+        self,
+        error: &'static str,
+    ) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrT, Yes> {
+        RequiredFieldBuilder {
+            required_error: Some(ComputableRequiredError::Static(error)),
+            ..Default::default()
+        }
+    }
+
+    pub fn error_fn<R>(self, resolver: R) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrT, Yes>
+    where
+        R: IntoRequiredResolverFn<I, O, CtxOptions>,
+    {
+        RequiredFieldBuilder {
+            required_error: Some(ComputableRequiredError::Func(resolver.into_resolver())),
+            ..Default::default()
+        }
+    }
+}
+
+impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErrorTool>
+    RequiredFieldBuilder<T, I, O, CtxOptions, ErrT, Yes>
+{
+    pub fn validate<F>(
+        self,
+        validator: F,
+    ) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes>
     where
         F: IntoFieldValidator<T, I, O, CtxOptions, ErrT>,
     {
@@ -178,12 +216,12 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErro
 }
 
 impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErrorTool>
-    RequiredFieldBuilder<T, I, O, CtxOptions, ErrT, Yes>
+    RequiredFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes>
 {
     pub fn re_validate<F>(
         self,
         re_validator: F,
-    ) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes>
+    ) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, Yes>
     where
         F: IntoFieldValidator<T, I, O, CtxOptions, ErrT>,
     {
@@ -202,11 +240,11 @@ impl<
         O: IvoSchemaStruct,
         CtxOptions: Clone,
         ErrT: IvoErrorTool,
-    > RequiredFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, HasRevalidator>
+    > RequiredFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, HasRevalidator>
 {
     pub fn readonly(
         self,
-    ) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, HasRevalidator, Yes> {
+    ) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, HasRevalidator, Yes> {
         RequiredFieldBuilder {
             validator: self.validator,
             re_validator: self.re_validator,
@@ -218,7 +256,7 @@ impl<
     pub fn allow_update_if<R>(
         self,
         resolver: R,
-    ) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, HasRevalidator, Yes>
+    ) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, HasRevalidator, Yes>
     where
         R: IntoResolverWithMutSummaryFn<bool, I, O, CtxOptions>,
     {

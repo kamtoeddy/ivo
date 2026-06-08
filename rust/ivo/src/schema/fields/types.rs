@@ -127,7 +127,7 @@ impl<F, Fut, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone + Send + 
     IntoRequiredResolverFn<I, O, CtxOptions> for F
 where
     F: Fn(IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
-    Fut: Future<Output = (bool, String)> + Send + 'static,
+    Fut: Future<Output = RequiredError> + Send + 'static,
 {
     fn into_resolver(self) -> RequiredResolver<I, O, CtxOptions> {
         Box::new(move |s| Box::pin(self(s)))
@@ -264,8 +264,15 @@ pub enum ComputableRequired<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: 
     Func(RequiredResolver<I, O, CtxOptions>),
 }
 
+pub enum ComputableRequiredError<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
+    Static(&'static str),
+    Func(RequiredResolver<I, O, CtxOptions>),
+}
+
+pub type RequiredError = (bool, String);
+
 pub type RequiredResolver<I, O, CtxOptions> = Box<
-    dyn Fn(IvoSummary<I, O, CtxOptions>) -> BoxFuture<'static, (bool, String)>
+    dyn Fn(IvoSummary<I, O, CtxOptions>) -> BoxFuture<'static, RequiredError>
         + Send
         + Sync
         + 'static,
