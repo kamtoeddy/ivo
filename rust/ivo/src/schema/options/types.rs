@@ -73,7 +73,8 @@ where
     }
 }
 
-pub type PostValidatorError<FieldErrorMetadata> = Vec<(String, ValidatorError<FieldErrorMetadata>)>;
+pub type PostValidatorError<FieldErrorMetadata> =
+    HashMap<String, ValidatorError<FieldErrorMetadata>>;
 
 pub type PostValidatorFn<I, O, CtxOptions, FieldErrorMetadata> = Box<
     dyn Fn(

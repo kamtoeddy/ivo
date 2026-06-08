@@ -1,4 +1,4 @@
-use std::sync::LazyLock;
+use std::{collections::HashMap, sync::LazyLock};
 
 use ivo::{IvoField, IvoStruct, IvoSummary, IvoValues, Model, Schema, validate_email};
 
@@ -139,14 +139,14 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
                             None,
                         );
 
-                        let mut errors = Vec::with_capacity(2);
+                        let mut errors = HashMap::new();
 
                         if input.username.is_some() {
-                            errors.push(("username".into(), err.clone()));
+                            errors.insert("username".into(), err.clone());
                         }
 
                         if input.slug_id.is_some() {
-                            errors.push(("v_slug".into(), err));
+                            errors.insert("v_slug".into(), err);
                         }
 
                         return Err(errors);
