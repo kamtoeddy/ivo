@@ -122,7 +122,7 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
                 "l1",
                 IvoField::LAX
                     .default_fn(async |_| None)
-                    .validate(|_, _| async move { Ok(Some(1)) })
+                    .validate(async |_, _| Ok(Some(1)))
                     .re_validate(async |_, _| Ok(Some(2)))
                     .readonly()
                     .on_delete(async |_, _| {})

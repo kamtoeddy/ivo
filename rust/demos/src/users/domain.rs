@@ -31,7 +31,7 @@ pub struct UserInput {
     pub slug_id: String, // alias for v_slug
 }
 
-type MutUserSummary = IvoSummary<UserInput, User, UserCtxOptions>;
+type Summary = IvoSummary<UserInput, User, UserCtxOptions>;
 
 #[derive(Clone)]
 pub struct UserCtxOptions {
@@ -55,80 +55,74 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
     Schema::new(
         |f| {
             f.set("id", IvoField::CONSTANT.computed(async |_| 1234))
-            .set(
-                "email",
-                IvoField::REQUIRED
-                    .error("Please provide an email address")
-                    .validate(async |email, _| validate_email(email).map_err(|e| (e, None))),
-            )
-            .set(
-                "role",
-                IvoField::LAX.default(UserRole::User).ignore_if(async |_| true),
-            )
-            .set(
-                "username",
-                IvoField::REQUIRED
-                    .error("Please provide a username")
-                    .validate(async |v: String, _|{
-                    const MIN_LEN: usize = 4;
+                .set(
+                    "email",
+                    IvoField::REQUIRED
+                        .error("Please provide an email address")
+                        .validate(async |email, _| validate_email(email).map_err(|e| (e, None))),
+                )
+                .set(
+                    "role",
+                    IvoField::LAX
+                        .default(UserRole::User)
+                        .ignore_if(async |_| true),
+                )
+                .set(
+                    "username",
+                    IvoField::REQUIRED
+                        .error("Please provide a username")
+                        .validate(async |v: String, _| {
+                            const MIN_LEN: usize = 4;
 
-                    if v.len() <= MIN_LEN {
-                        return Err((
-                            format!("Username must be atleast {MIN_LEN} long"),
-                            None,
-                        ));
-                    }
+                            if v.len() <= MIN_LEN {
+                                return Err((
+                                    format!("Username must be atleast {MIN_LEN} long"),
+                                    None,
+                                ));
+                            }
 
-                    Ok(v)
-                }),
-            )
-            .set(
-                "username_last_updated_at",
-                IvoField::DEPENDENT
-                    .default(Some(String::from("default value")))
-                    .depends_on(["username"])
-                    .resolve(async |_| Some(String::from("resolved value")))
-                ,
-            )
-            .set(
-                "slug_id",
-                IvoField::DEPENDENT
-                    .default("".into())
-                    .depends_on(["username", "v_slug"])
-                    .resolve(async|s: MutUserSummary| {
-                        s.get_options()
-                            .slug_id
-                            .clone()
-                            .expect("\"slug_id\" should have been generated in post validator by this point")
-                    }),
-            )
-            .set(
-                "v_slug",
-                IvoField::VIRTUAL
-                    .alias("slug_id")
-                    .validate(
-                    async |value: String, s: MutUserSummary| {
-                        let slug_id = slugify(&value);
+                            Ok(v)
+                        }),
+                )
+                .set(
+                    "username_last_updated_at",
+                    IvoField::DEPENDENT
+                        .default(Some(String::from("default value")))
+                        .depends_on(["username"])
+                        .resolve(async |_| Some(String::from("resolved value"))),
+                )
+                .set(
+                    "slug_id",
+                    IvoField::DEPENDENT
+                        .default(SlugifiedString::from("value"))
+                        .depends_on(["username", "v_slug"])
+                        .resolve(async |s: Summary| s.get_options().slug_id.clone().unwrap()),
+                )
+                .set(
+                    "v_slug",
+                    IvoField::VIRTUAL.alias("slug_id").validate(
+                        async |value: String, s: Summary| {
+                            let slug_id = slugify(&value);
 
-                        let validated = slug_id.value();
+                            let validated = slug_id.value();
 
-                        if validated.len() < 2 {
-                            return Err((
-                                "slug ids must be at least 2 characters long".into(),
-                                None,
-                            ));
-                        }
+                            if validated.len() < 2 {
+                                return Err((
+                                    "slug ids must be at least 2 characters long".into(),
+                                    None,
+                                ));
+                            }
 
-                        s.get_options_mut().update_slug_id(&slug_id);
+                            s.get_options_mut().update_slug_id(&slug_id);
 
-                        Ok(validated)
-                    },
-                ),
-            )
+                            Ok(validated)
+                        },
+                    ),
+                )
         },
         |o| {
             o.post_validate(["username", "v_slug"], |b| {
-                b.validate(async |s: MutUserSummary| {
+                b.validate(async |s: Summary| {
                     let mut ctx_options = s.get_options_mut();
                     let input = s.input();
 
