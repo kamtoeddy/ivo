@@ -1,10 +1,12 @@
 use crate::{
-    schema::options::{
-        base::{SchemaOptions, SchemaOptionsBuilder},
-        on_success::{BuildableOnSuccess, OnSuccessOptionBuilder},
-        post_validate::{BuildablePostValidator, PostValidateOptionBuilder},
+    schema::{
+        fields::types::IntoDeleteHandler,
+        options::{
+            base::{SchemaOptions, SchemaOptionsBuilder},
+            on_success::{BuildableOnSuccess, OnSuccessOptionBuilder},
+            post_validate::{BuildablePostValidator, PostValidateOptionBuilder},
+        },
     },
-    traits::IntoDeleteHandler,
     types::Yes,
     IvoErrorTool, IvoSchemaStruct,
 };

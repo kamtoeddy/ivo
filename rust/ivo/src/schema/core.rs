@@ -4,7 +4,7 @@ use crate::utils::erased_value::ErasedValue;
 
 use crate::schema::error::{DefaultErrorTool, IvoErrorTool, SchemaError};
 use crate::schema::fields::base::{BuildableFieldConfig, InternalFieldConfig};
-use crate::traits::IvoSchemaStruct;
+use crate::types::IvoSchemaStruct;
 
 use std::collections::{HashMap, HashSet};
 

@@ -1,80 +1,12 @@
-use std::{collections::HashMap, fmt::Debug, future::Future};
-
-use futures::FutureExt;
+use futures::future::{BoxFuture, FutureExt};
+use std::{fmt::Debug, future::Future};
 
 use crate::{
-    schema::error::IvoErrorTool,
-    types::{
-        BooleanResolverWithMutSummary, DeleteHandler, FailureHandler, IvoMiniSummary, IvoSummary,
-        RequiredResolver, ResolverWithMutSummary, SuccessHandler, UniformEnumErrorResolver,
-        UniformResolverWithMiniSummary, UniformResolverWithMutSummary, UniformValidator,
-        UniformVirtualSanitiser, ValidatorError,
-    },
-    utils::erased_value::{erase_value, parse_or_panic, ErasedValue},
+    erase_value, parse_or_panic,
+    types::{DeleteHandler, FailureHandler, SuccessHandler, True},
+    ErasedValue, IvoErrorTool, IvoMiniSummary, IvoSchemaStruct, IvoSummary, ValidatorError,
     ValidatorResponse,
 };
-
-// ```
-// let map = OptionalErasedMap {inner: Default::default()};
-// if let Some(v) = map.inner.get("field_name".into()){
-//          // ^___ `v` represents `ErasedValue` which becomes a concrete `T`, with `parse_or_panic::<T>(&v)`
-// }
-// ```
-pub struct OptionalErasedMap {
-    pub inner: HashMap<String, ErasedValue>,
-}
-
-pub trait IvoSchemaStruct:
-    Debug
-    + Eq
-    + Send
-    + Sync
-    + Sized
-    + 'static
-    + HasFields
-    + HasPartial
-    + FromToMap
-    + WithUpdateDetails
-    + Into<Self::Partial>
-{
-}
-
-pub trait FromToMap {
-    fn ivo_internal_from_erased_map(map: &HashMap<String, ErasedValue>) -> Self;
-    fn ivo_internal_to_erased_map(&self) -> HashMap<String, ErasedValue>;
-}
-
-pub trait PartialFromToMap {
-    fn ivo_internal_from_optional_erased_map(map: &OptionalErasedMap) -> Self;
-    fn ivo_internal_to_optional_erased_map(&self) -> OptionalErasedMap;
-}
-
-pub trait HasFields {
-    fn ivo_internal_fields() -> Vec<String>;
-}
-
-pub trait HasPartial {
-    type Partial: Debug + Default + Send + Sync + Clone + PartialFromToMap;
-}
-
-pub trait WithUpdateDetails: HasPartial + Clone + Sized {
-    fn ivo_internal_get_updates(
-        &self,
-        updates: &HashMap<String, ErasedValue>,
-    ) -> (Self::Partial, bool);
-
-    fn ivo_internal_clone_with(&self, updates: &Self::Partial) -> Self {
-        let mut cloned = self.clone();
-
-        cloned.ivo_internal_update_with(updates);
-
-        cloned
-    }
-
-    fn ivo_internal_update_with(&mut self, updates: &Self::Partial);
-}
-
-pub type Partial<T> = <T as HasPartial>::Partial;
 
 pub trait IntoDeleteHandler<O: IvoSchemaStruct, CtxOptions: Clone> {
     fn into_handler(self) -> DeleteHandler<O, CtxOptions>;
@@ -279,3 +211,70 @@ where
         Box::new(move |s| Box::pin(self(s)))
     }
 }
+
+pub type UniformValidator<I, O, CtxOptions, FieldMetadata> = Box<
+    dyn Fn(
+            ErasedValue,
+            IvoSummary<I, O, CtxOptions>,
+        ) -> BoxFuture<'static, ValidatorResponse<ErasedValue, FieldMetadata>>
+        + Send
+        + Sync
+        + 'static,
+>;
+
+pub type UniformVirtualSanitiser<I, O, CtxOptions> = Box<
+    dyn Fn(IvoSummary<I, O, CtxOptions>) -> BoxFuture<'static, ErasedValue> + Send + Sync + 'static,
+>;
+
+pub type UniformEnumErrorResolver<FieldErrorMetadata> = Box<
+    dyn Fn((ErasedValue, Vec<ErasedValue>)) -> ValidatorError<FieldErrorMetadata>
+        + Send
+        + Sync
+        + 'static,
+>;
+
+pub type UniformResolverWithMutSummary<I, O, CtxOptions> = Box<
+    dyn Fn(IvoSummary<I, O, CtxOptions>) -> BoxFuture<'static, ErasedValue> + Send + Sync + 'static,
+>;
+
+pub type UniformResolverWithMiniSummary<I, O, CtxOptions> = Box<
+    dyn Fn(IvoMiniSummary<I, O, CtxOptions>) -> BoxFuture<'static, ErasedValue>
+        + Send
+        + Sync
+        + 'static,
+>;
+
+pub enum ComputableEnumeratedError<ErrT: IvoErrorTool> {
+    Static(String),
+    Func(UniformEnumErrorResolver<ErrT::FieldMetadata>),
+}
+
+pub enum ComputableWithMiniSummary<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
+    Static(T),
+    Func(UniformResolverWithMiniSummary<I, O, CtxOptions>),
+}
+
+pub enum ComputableInit<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
+    False,
+    Func(BooleanResolverWithMutSummary<I, O, CtxOptions>),
+}
+
+pub enum ComputableRequired<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
+    Static(True),
+    Func(RequiredResolver<I, O, CtxOptions>),
+}
+
+pub type RequiredResolver<I, O, CtxOptions> = Box<
+    dyn Fn(IvoSummary<I, O, CtxOptions>) -> BoxFuture<'static, (bool, String)>
+        + Send
+        + Sync
+        + 'static,
+>;
+
+pub type ResolverWithMutSummary<T, I, O, CtxOptions> =
+    Box<dyn Fn(IvoSummary<I, O, CtxOptions>) -> BoxFuture<'static, T> + Send + Sync + 'static>;
+
+pub type BooleanResolverWithMutSummary<I, O, CtxOptions> =
+    ResolverWithMutSummary<bool, I, O, CtxOptions>;
+
+pub type VirtualSanitiser<T, I, O, CtxOptions> = ResolverWithMutSummary<T, I, O, CtxOptions>;

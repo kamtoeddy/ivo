@@ -3,19 +3,19 @@ use std::{fmt::Debug, marker::PhantomData};
 use crate::{
     schema::{
         error::IvoErrorTool,
-        fields::base::{BuildableFieldConfig, FieldConfig, InternalFieldConfig},
+        fields::{
+            base::{BuildableFieldConfig, FieldConfig, InternalFieldConfig},
+            types::{
+                BooleanResolverWithMutSummary, ComputableEnumeratedError, ComputableInit,
+                ComputableWithMiniSummary, IntoBooleanResolverWithMutSummary, IntoDeleteHandler,
+                IntoEnumErrorResolver, IntoFailureHandler, IntoResolverWithMiniSummary,
+                IntoResolverWithMutSummaryFn, IntoSuccessHandler,
+            },
+        },
     },
-    traits::{
-        IntoBooleanResolverWithMutSummary, IntoDeleteHandler, IntoEnumErrorResolver,
-        IntoFailureHandler, IntoResolverWithMiniSummary, IntoResolverWithMutSummaryFn,
-        IntoSuccessHandler, IvoSchemaStruct,
-    },
-    types::{
-        BooleanResolverWithMutSummary, ComputableEnumeratedError, ComputableInit,
-        ComputableWithMiniSummary, DeleteHandler, FailureHandler, No, SuccessHandler, Yes,
-        YesComputed,
-    },
+    types::{DeleteHandler, FailureHandler, No, SuccessHandler, Yes, YesComputed},
     utils::erased_value::{erase_value, ErasedValue},
+    IvoSchemaStruct,
 };
 
 pub struct EnumFieldBuilder<

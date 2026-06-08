@@ -3,11 +3,17 @@ use std::{fmt::Debug, marker::PhantomData};
 use crate::{
     schema::{
         error::IvoErrorTool,
-        fields::base::{BuildableFieldConfig, FieldConfig, InternalFieldConfig},
+        fields::{
+            base::{BuildableFieldConfig, FieldConfig, InternalFieldConfig},
+            types::{
+                ComputableWithMiniSummary, IntoDeleteHandler, IntoResolverWithMiniSummary,
+                IntoSuccessHandler,
+            },
+        },
     },
-    traits::{IntoDeleteHandler, IntoResolverWithMiniSummary, IntoSuccessHandler, IvoSchemaStruct},
-    types::{ComputableWithMiniSummary, DeleteHandler, No, SuccessHandler, Yes},
+    types::{DeleteHandler, No, SuccessHandler, Yes},
     utils::erased_value::{erase_value, ErasedValue},
+    IvoSchemaStruct,
 };
 
 pub struct ConstantFieldBuilder<

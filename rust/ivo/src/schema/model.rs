@@ -7,7 +7,7 @@ use std::collections::{HashMap, HashSet};
 use futures::future::{join_all, BoxFuture};
 use futures::stream::{FuturesUnordered, StreamExt};
 
-use crate::traits::{IvoSchemaStruct, Partial, PartialFromToMap};
+use crate::types::{IvoSchemaStruct, Partial, PartialFromToMap};
 
 pub type AsyncTriggerFn = Box<dyn Fn() -> BoxFuture<'static, ()> + Send + Sync>;
 

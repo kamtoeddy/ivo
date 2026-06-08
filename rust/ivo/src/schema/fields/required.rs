@@ -3,16 +3,17 @@ use std::marker::PhantomData;
 use crate::{
     schema::{
         error::IvoErrorTool,
-        fields::base::{BuildableFieldConfig, FieldConfig, InternalFieldConfig},
+        fields::{
+            base::{BuildableFieldConfig, FieldConfig, InternalFieldConfig},
+            types::{
+                ComputableInit, ComputableRequired, IntoDeleteHandler, IntoFailureHandler,
+                IntoFieldValidator, IntoResolverWithMutSummaryFn, IntoSuccessHandler,
+                UniformValidator,
+            },
+        },
     },
-    traits::{
-        IntoDeleteHandler, IntoFailureHandler, IntoFieldValidator, IntoResolverWithMutSummaryFn,
-        IntoSuccessHandler, IvoSchemaStruct,
-    },
-    types::{
-        ComputableInit, ComputableRequired, DeleteHandler, FailureHandler, No, SuccessHandler,
-        True, UniformValidator, Yes,
-    },
+    types::{DeleteHandler, FailureHandler, No, SuccessHandler, True, Yes},
+    IvoSchemaStruct,
 };
 
 pub struct RequiredFieldBuilder<

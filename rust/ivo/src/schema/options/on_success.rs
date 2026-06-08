@@ -1,9 +1,9 @@
 use std::marker::PhantomData;
 
 use crate::{
-    schema::options::types::OnSuccessConfig,
-    traits::{IntoSuccessHandler, IvoSchemaStruct},
+    schema::{fields::types::IntoSuccessHandler, options::types::OnSuccessConfig},
     types::{No, SuccessHandler, Yes},
+    IvoSchemaStruct,
 };
 
 pub struct OnSuccessOptionBuilder<

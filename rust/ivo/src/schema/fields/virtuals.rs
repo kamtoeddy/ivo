@@ -3,17 +3,19 @@ use std::marker::PhantomData;
 use crate::{
     schema::{
         error::IvoErrorTool,
-        fields::base::{BuildableFieldConfig, FieldConfig, InternalFieldConfig},
+        fields::{
+            base::{BuildableFieldConfig, FieldConfig, InternalFieldConfig},
+            types::{
+                BooleanResolverWithMutSummary, ComputableInit, ComputableRequired,
+                IntoFailureHandler, IntoFieldValidator, IntoRequiredResolverFn,
+                IntoResolverWithMutSummaryFn, IntoSuccessHandler, IntoVirtualSanitizer,
+                UniformValidator, VirtualSanitiser,
+            },
+        },
     },
-    traits::{
-        IntoFailureHandler, IntoFieldValidator, IntoRequiredResolverFn,
-        IntoResolverWithMutSummaryFn, IntoSuccessHandler, IntoVirtualSanitizer, IvoSchemaStruct,
-    },
-    types::{
-        BooleanResolverWithMutSummary, ComputableInit, ComputableRequired, FailureHandler, No,
-        SuccessHandler, UniformValidator, VirtualSanitiser, Yes, YesComputed,
-    },
+    types::{FailureHandler, No, SuccessHandler, Yes, YesComputed},
     utils::erased_value::ErasedValue,
+    IvoSchemaStruct,
 };
 
 pub struct VirtualFieldBuilder<

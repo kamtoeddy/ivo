@@ -9,7 +9,7 @@ use crate::{
             virtuals::VirtualFieldBuilder,
         },
     },
-    traits::IvoSchemaStruct,
+    IvoSchemaStruct,
 };
 
 pub mod base;
@@ -18,6 +18,7 @@ mod dependents;
 mod enumerated;
 mod lax;
 mod required;
+pub mod types;
 mod virtuals;
 
 pub struct IvoField<

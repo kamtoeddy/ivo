@@ -3,10 +3,10 @@ use std::marker::PhantomData;
 use crate::{
     schema::{
         error::IvoErrorTool,
+        fields::types::{BooleanResolverWithMutSummary, ComputableInit},
         options::types::{OnSuccessConfig, PostValidationConfig},
     },
-    traits::IvoSchemaStruct,
-    types::{BooleanResolverWithMutSummary, ComputableInit, DeleteHandler, No},
+    types::{DeleteHandler, IvoSchemaStruct, No},
 };
 
 pub struct SchemaOptions<

@@ -3,17 +3,18 @@ use std::{fmt::Debug, marker::PhantomData};
 use crate::{
     schema::{
         error::{DefaultErrorTool, IvoErrorTool},
-        fields::base::{BuildableFieldConfig, FieldConfig, InternalFieldConfig},
+        fields::{
+            base::{BuildableFieldConfig, FieldConfig, InternalFieldConfig},
+            types::{
+                ComputableInit, ComputableWithMiniSummary, IntoDeleteHandler,
+                IntoResolverWithMiniSummary, IntoSuccessHandler, IntoUniformResolverWithMutSummary,
+                ResolverWithMutSummary,
+            },
+        },
     },
-    traits::{
-        IntoDeleteHandler, IntoResolverWithMiniSummary, IntoSuccessHandler,
-        IntoUniformResolverWithMutSummary, IvoSchemaStruct,
-    },
-    types::{
-        ComputableInit, ComputableWithMiniSummary, DeleteHandler, False, No,
-        ResolverWithMutSummary, SuccessHandler, Yes,
-    },
+    types::{DeleteHandler, False, No, SuccessHandler, Yes},
     utils::erased_value::{erase_value, ErasedValue},
+    IvoSchemaStruct,
 };
 
 pub struct DependentFieldBuilder<

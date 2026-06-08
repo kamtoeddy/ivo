@@ -5,8 +5,8 @@ use crate::{
         error::IvoErrorTool,
         options::types::{IntoPostValidator, PostValidationConfig, PostValidatorFn},
     },
-    traits::IvoSchemaStruct,
     types::{No, Yes},
+    IvoSchemaStruct,
 };
 
 pub struct PostValidateOptionBuilder<

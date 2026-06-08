@@ -1,14 +1,17 @@
 use std::marker::PhantomData;
 
 use crate::{
-    schema::error::IvoErrorTool,
-    traits::IvoSchemaStruct,
-    types::{
-        BooleanResolverWithMutSummary, ComputableEnumeratedError, ComputableInit,
-        ComputableRequired, ComputableWithMiniSummary, DeleteHandler, FailureHandler,
-        ResolverWithMutSummary, SuccessHandler, UniformValidator, VirtualSanitiser,
+    schema::{
+        error::IvoErrorTool,
+        fields::types::{
+            BooleanResolverWithMutSummary, ComputableEnumeratedError, ComputableInit,
+            ComputableRequired, ComputableWithMiniSummary, ResolverWithMutSummary,
+            UniformValidator, VirtualSanitiser,
+        },
     },
+    types::{DeleteHandler, FailureHandler, SuccessHandler},
     utils::erased_value::ErasedValue,
+    IvoSchemaStruct,
 };
 
 pub trait BuildableFieldConfig<

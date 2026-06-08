@@ -1,4 +1,4 @@
-use ivo::{UpdateError, traits::WithUpdateDetails};
+use ivo::{UpdateError, types::WithUpdateDetails};
 use std::time::Instant;
 
 mod domain;
