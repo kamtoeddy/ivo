@@ -213,6 +213,25 @@ impl<
 
     /// Resolve defaults iteratively based on dependencies.
     /// It will repeatedly evaluate defaults whose dependencies are satisfied (present in `context`).
+    /// If there are unresolved defaults at the end and the schema option `error_on_unresolved_defaults` is true,
+    /// this function returns Err(SchemaError) containing the unresolved properties; otherwise returns Ok(()).
+    /// Return whether a name is a defined property
+    fn _is_prop(&self, prop: &str) -> bool {
+        self.schema.props.contains(prop)
+    }
+
+    /// Return whether a name is a defined virtual
+    fn _is_virtual(&self, prop: &str) -> bool {
+        self.schema.virtuals.contains(prop)
+    }
+
+    /// Return whether a name is a defined constant
+    fn _is_constant(&self, prop: &str) -> bool {
+        self.schema.constants.contains(prop)
+    }
+
+    /// Resolve defaults iteratively based on dependencies.
+    /// It will repeatedly evaluate defaults whose dependencies are satisfied (present in `context`).
     /// If unresolved defaults remain and schema option `error_on_unresolved_defaults` is true,
     /// returns Err(SchemaError) listing the unresolved props.
     pub fn resolve_defaults(&self, context: &mut HashMap<String, ErasedValue>) {

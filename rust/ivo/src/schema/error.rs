@@ -73,9 +73,6 @@ pub struct SchemaError {
     payload: HashMap<String, Vec<String>>,
 }
 
-const CLI_STYLE_COLOR_RED: &'static str = "\x1b[31m";
-const CLI_STYLE_RESET: &'static str = "\x1b[0m";
-
 impl SchemaError {
     pub fn new() -> Self {
         Self {
@@ -98,6 +95,9 @@ impl SchemaError {
     }
 
     pub fn throw(self) {
+        const CLI_STYLE_COLOR_RED: &str = "\x1b[31m";
+        const CLI_STYLE_RESET: &str = "\x1b[0m";
+
         println!("\n{} Schema errors:", CLI_STYLE_COLOR_RED);
 
         let mut pv: Vec<_> = self.payload.into_iter().collect();

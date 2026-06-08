@@ -128,25 +128,6 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: I
         &self.field_configs
     }
 
-    /// Resolve defaults iteratively based on dependencies.
-    /// It will repeatedly evaluate defaults whose dependencies are satisfied (present in `context`).
-    /// If there are unresolved defaults at the end and the schema option `error_on_unresolved_defaults` is true,
-    /// this function returns Err(SchemaError) containing the unresolved properties; otherwise returns Ok(()).
-    /// Return whether a name is a defined property
-    pub fn is_prop(&self, prop: &str) -> bool {
-        self.props.contains(prop)
-    }
-
-    /// Return whether a name is a defined virtual
-    pub fn is_virtual(&self, prop: &str) -> bool {
-        self.virtuals.contains(prop)
-    }
-
-    /// Return whether a name is a defined constant
-    pub fn is_constant(&self, prop: &str) -> bool {
-        self.constants.contains(prop)
-    }
-
     fn check_options(&self) {
         // todo!()
     }

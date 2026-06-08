@@ -1,7 +1,7 @@
 use crate::{
     schema::options::{
         base::{SchemaOptions, SchemaOptionsBuilder},
-        post_validate::{BuildablePostValidator, PostValidateBuilder},
+        post_validate::{BuildablePostValidator, PostValidateOptionBuilder},
     },
     types::Yes,
     IvoErrorTool, IvoSchemaStruct,
@@ -100,10 +100,10 @@ impl<
         HasSuccess,
     >
     where
-        Builder: Fn(PostValidateBuilder<I, O, CtxOptions, ErrT, Yes>) -> Buildable,
+        Builder: Fn(PostValidateOptionBuilder<I, O, CtxOptions, ErrT, Yes>) -> Buildable,
         Buildable: BuildablePostValidator<I, O, CtxOptions, ErrT>,
     {
-        let config = builder(PostValidateBuilder::<I, O, CtxOptions, ErrT>::fields(
+        let config = builder(PostValidateOptionBuilder::<I, O, CtxOptions, ErrT>::fields(
             fields,
         ))
         .build();
