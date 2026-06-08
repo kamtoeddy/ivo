@@ -84,7 +84,8 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
                 IvoField::DEPENDENT
                     .default(Some(String::from("default value")))
                     .depends_on(["username"])
-                    .resolve(|_| Some(String::from("resolved value"))),
+                    .resolve(|_| Some(String::from("resolved value")))
+                ,
             )
             .set(
                 "slug_id",
@@ -126,13 +127,11 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
                     let mut ctx_options = s.get_options_mut();
                     let input = s.input();
 
-                    let slug_string = if let Some(slug_id) = input.slug_id.clone() {
-                        slug_id
+                    let slug_id = if input.slug_id.is_some() {
+                        ctx_options.slug_id.clone().unwrap()
                     } else {
-                        input.username.clone().unwrap()
+                        slugify(&input.username.clone().unwrap())
                     };
-
-                    let slug_id = slugify(&slug_string);
 
                     if ctx_options.find_user_by_slug_id(&slug_id).await.is_some() {
                         let err = (
@@ -147,7 +146,7 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
                         }
 
                         if input.slug_id.is_some() {
-                            errors.push(("v_slug", err.clone()));
+                            errors.push(("v_slug", err));
                         }
 
                         return Err(errors);

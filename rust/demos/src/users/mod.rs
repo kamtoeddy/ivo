@@ -53,13 +53,13 @@ pub async fn run_users_demo() {
         role: UserRole::Admin,
     };
 
-    println!("{:?}", user);
+    println!("{:?}\n", user);
 
     let updates = PartialUserInput {
         email: Some(user.email.clone()),
-        role: None,
-        // role: Some(UserRole::User),
-        username: Some(user.username.clone()),
+        // role: None,
+        role: Some(UserRole::User),
+        username: Some("new_username".into()),
         slug_id: None,
     };
 
@@ -67,7 +67,7 @@ pub async fn run_users_demo() {
 
     match r {
         Ok((data, _handle_success)) => {
-            println!("updates: {:?}", data);
+            println!("updates: {:?}\n", data);
             println!("old + updates: {:?}", user.ivo_internal_clone_with(&data));
         }
         Err((error, _handle_failure)) => {
