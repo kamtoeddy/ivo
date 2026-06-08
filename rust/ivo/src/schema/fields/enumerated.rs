@@ -6,14 +6,14 @@ use crate::{
         fields::base::{BuildableFieldConfig, FieldConfig, InternalFieldConfig},
     },
     traits::{
-        IntoAsyncResolverWithMiniSummary, IntoDeleteHandler, IntoEnumErrorResolver,
+        IntoBooleanResolverWithMutSummary, IntoDeleteHandler, IntoEnumErrorResolver,
         IntoFailureHandler, IntoResolverWithMiniSummary, IntoResolverWithMutSummaryFn,
         IntoSuccessHandler, IvoSchemaStruct,
     },
     types::{
         BooleanResolverWithMutSummary, ComputableEnumeratedError, ComputableInit,
-        ComputableWithMiniSummary, DeleteHandler, FailureHandler, IvoSummary, No, SuccessHandler,
-        Yes, YesComputed,
+        ComputableWithMiniSummary, DeleteHandler, FailureHandler, No, SuccessHandler, Yes,
+        YesComputed,
     },
     utils::erased_value::{erase_value, ErasedValue},
 };
@@ -273,26 +273,7 @@ impl<
         EnumFieldBuilder {
             enum_values: self.enum_values,
             enum_error: self.enum_error,
-            default: Some(ComputableWithMiniSummary::SyncFunc(
-                default_fn.into_uniform(),
-            )),
-            ..Default::default()
-        }
-    }
-
-    pub fn default_async_fn<F>(
-        self,
-        default_fn: F,
-    ) -> EnumFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, Yes>
-    where
-        F: IntoAsyncResolverWithMiniSummary<I, I, O, CtxOptions>,
-    {
-        EnumFieldBuilder {
-            enum_values: self.enum_values,
-            enum_error: self.enum_error,
-            default: Some(ComputableWithMiniSummary::AsyncFunc(
-                default_fn.into_uniform(),
-            )),
+            default: Some(ComputableWithMiniSummary::Func(default_fn.into_uniform())),
             ..Default::default()
         }
     }
@@ -301,18 +282,18 @@ impl<
 impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErrorTool>
     EnumFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, Yes>
 {
-    pub fn ignore_if<F>(
+    pub fn ignore_if<R>(
         self,
-        fx: F,
+        resolver: R,
     ) -> EnumFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, Yes, Yes>
     where
-        F: Fn(IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
+        R: IntoBooleanResolverWithMutSummary<I, O, CtxOptions>,
     {
         EnumFieldBuilder {
             default: self.default,
             enum_values: self.enum_values,
             enum_error: self.enum_error,
-            should_ignore_fn: Some(Box::new(fx)),
+            should_ignore_fn: Some(resolver.into_resolver()),
             ..Default::default()
         }
     }
@@ -344,7 +325,7 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErro
             default: self.default,
             enum_values: self.enum_values,
             enum_error: self.enum_error,
-            should_init: Some(ComputableInit::SyncFunc(resolver.into_resolver())),
+            should_init: Some(ComputableInit::Func(resolver.into_resolver())),
             ..Default::default()
         }
     }
@@ -380,7 +361,7 @@ impl<
             default: self.default,
             enum_values: self.enum_values,
             enum_error: self.enum_error,
-            should_update: Some(ComputableInit::SyncFunc(resolver.into_resolver())),
+            should_update: Some(ComputableInit::Func(resolver.into_resolver())),
             ..Default::default()
         }
     }
@@ -400,7 +381,7 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErro
             default: self.default,
             enum_values: self.enum_values,
             enum_error: self.enum_error,
-            should_init: Some(ComputableInit::SyncFunc(resolver.into_resolver())),
+            should_init: Some(ComputableInit::Func(resolver.into_resolver())),
             ..Default::default()
         }
     }
@@ -415,19 +396,19 @@ impl<
         ErrT: IvoErrorTool,
     > EnumFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, HasDefault, No, Yes, YesComputed>
 {
-    pub fn allow_update_if<F>(
+    pub fn allow_update_if<R>(
         self,
-        fx: F,
+        resolver: R,
     ) -> EnumFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, HasDefault, No, Yes, YesComputed>
     where
-        F: Fn(IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
+        R: IntoBooleanResolverWithMutSummary<I, O, CtxOptions>,
     {
         EnumFieldBuilder {
             default: self.default,
             enum_values: self.enum_values,
             enum_error: self.enum_error,
             should_init: self.should_init,
-            should_update: Some(ComputableInit::SyncFunc(Box::new(fx))),
+            should_update: Some(ComputableInit::Func(resolver.into_resolver())),
             ..Default::default()
         }
     }
@@ -449,19 +430,19 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErro
         }
     }
 
-    pub fn allow_init_if<F>(
+    pub fn allow_init_if<R>(
         self,
-        fx: F,
+        resolver: R,
     ) -> EnumFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, Yes, No, YesComputed, YesComputed>
     where
-        F: Fn(IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static,
+        R: IntoBooleanResolverWithMutSummary<I, O, CtxOptions>,
     {
         EnumFieldBuilder {
             default: self.default,
             enum_values: self.enum_values,
             enum_error: self.enum_error,
             should_update: self.should_update,
-            should_init: Some(ComputableInit::SyncFunc(Box::new(fx))),
+            should_init: Some(ComputableInit::Func(resolver.into_resolver())),
             ..Default::default()
         }
     }

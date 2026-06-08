@@ -6,7 +6,7 @@ use crate::{
     types::{
         BooleanResolverWithMutSummary, ComputableEnumeratedError, ComputableInit,
         ComputableRequired, ComputableWithMiniSummary, DeleteHandler, FailureHandler,
-        FieldValidator, ResolverWithMutSummary, SuccessHandler, VirtualSanitiser,
+        ResolverWithMutSummary, SuccessHandler, UniformValidator, VirtualSanitiser,
     },
     utils::erased_value::ErasedValue,
 };
@@ -44,8 +44,8 @@ pub struct FieldConfig<
     pub required: Option<ComputableRequired<I, O, CtxOptions>>,
     pub resolver: Option<ResolverWithMutSummary<T, I, O, CtxOptions>>,
     pub sanitizer: Option<VirtualSanitiser<T, I, O, CtxOptions>>,
-    pub validator: Option<FieldValidator<I, O, CtxOptions, ErrT>>,
-    pub re_validator: Option<FieldValidator<I, O, CtxOptions, ErrT>>,
+    pub validator: Option<UniformValidator<I, O, CtxOptions, ErrT::FieldMetadata>>,
+    pub re_validator: Option<UniformValidator<I, O, CtxOptions, ErrT::FieldMetadata>>,
     //
     pub should_ignore: Option<BooleanResolverWithMutSummary<I, O, CtxOptions>>,
     pub should_init: Option<ComputableInit<I, O, CtxOptions>>,

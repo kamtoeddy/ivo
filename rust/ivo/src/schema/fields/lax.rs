@@ -6,14 +6,14 @@ use crate::{
         fields::base::{BuildableFieldConfig, FieldConfig, InternalFieldConfig},
     },
     traits::{
-        IntoAsyncFieldValidator, IntoDeleteHandler, IntoFailureHandler, IntoFieldValidator,
-        IntoRequiredResolverFn, IntoResolverWithMiniSummary, IntoResolverWithMutSummaryFn,
-        IntoSuccessHandler, IvoSchemaStruct,
+        IntoDeleteHandler, IntoFailureHandler, IntoFieldValidator, IntoRequiredResolverFn,
+        IntoResolverWithMiniSummary, IntoResolverWithMutSummaryFn, IntoSuccessHandler,
+        IvoSchemaStruct,
     },
     types::{
         BooleanResolverWithMutSummary, ComputableInit, ComputableRequired,
-        ComputableWithMiniSummary, DeleteHandler, FailureHandler, FieldValidator, No,
-        SuccessHandler, Yes, YesComputed,
+        ComputableWithMiniSummary, DeleteHandler, FailureHandler, No, SuccessHandler,
+        UniformValidator, Yes, YesComputed,
     },
     utils::erased_value::{erase_value, ErasedValue},
 };
@@ -48,8 +48,8 @@ pub struct LaxFieldBuilder<
     _on_success_fns: PhantomData<HasSuccess>,
     // actual data...
     default: Option<ComputableWithMiniSummary<ErasedValue, I, O, CtxOptions>>,
-    validator: Option<FieldValidator<I, O, CtxOptions, ErrT>>,
-    re_validator: Option<FieldValidator<I, O, CtxOptions, ErrT>>,
+    validator: Option<UniformValidator<I, O, CtxOptions, ErrT::FieldMetadata>>,
+    re_validator: Option<UniformValidator<I, O, CtxOptions, ErrT::FieldMetadata>>,
     required: Option<ComputableRequired<I, O, CtxOptions>>,
     should_ignore_fn: Option<BooleanResolverWithMutSummary<I, O, CtxOptions>>,
     should_init: Option<ComputableInit<I, O, CtxOptions>>,
@@ -232,9 +232,7 @@ impl<
         F: IntoResolverWithMiniSummary<T, I, O, CtxOptions>,
     {
         LaxFieldBuilder {
-            default: Some(ComputableWithMiniSummary::SyncFunc(
-                default_fn.into_uniform(),
-            )),
+            default: Some(ComputableWithMiniSummary::Func(default_fn.into_uniform())),
             ..Default::default()
         }
     }
@@ -249,21 +247,7 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErro
     {
         LaxFieldBuilder {
             default: self.default,
-            validator: Some(FieldValidator::Sync(validator.into_uniform())),
-            ..Default::default()
-        }
-    }
-
-    pub fn validate_async<F>(
-        self,
-        validator: F,
-    ) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes>
-    where
-        F: IntoAsyncFieldValidator<T, I, O, CtxOptions, ErrT>,
-    {
-        LaxFieldBuilder {
-            default: self.default,
-            validator: Some(FieldValidator::Async(validator.into_uniform())),
+            validator: Some(validator.into_uniform()),
             ..Default::default()
         }
     }
@@ -275,29 +259,14 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErro
     pub fn re_validate<F>(
         self,
         re_validator: F,
-    ) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, Yes>
+    ) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes>
     where
         F: IntoFieldValidator<T, I, O, CtxOptions, ErrT>,
     {
         LaxFieldBuilder {
             default: self.default,
             validator: self.validator,
-            re_validator: Some(FieldValidator::Sync(re_validator.into_uniform())),
-            ..Default::default()
-        }
-    }
-
-    pub fn re_validate_async<F>(
-        self,
-        re_validator: F,
-    ) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes>
-    where
-        F: IntoAsyncFieldValidator<T, I, O, CtxOptions, ErrT>,
-    {
-        LaxFieldBuilder {
-            default: self.default,
-            validator: self.validator,
-            re_validator: Some(FieldValidator::Async(re_validator.into_uniform())),
+            re_validator: Some(re_validator.into_uniform()),
             ..Default::default()
         }
     }
@@ -429,7 +398,7 @@ impl<
             validator: self.validator,
             re_validator: self.re_validator,
             required: self.required,
-            should_init: Some(ComputableInit::SyncFunc(resolver.into_resolver())),
+            should_init: Some(ComputableInit::Func(resolver.into_resolver())),
             ..Default::default()
         }
     }
@@ -485,7 +454,7 @@ impl<
             validator: self.validator,
             re_validator: self.re_validator,
             required: self.required,
-            should_update: Some(ComputableInit::SyncFunc(resolver.into_resolver())),
+            should_update: Some(ComputableInit::Func(resolver.into_resolver())),
             ..Default::default()
         }
     }
@@ -541,7 +510,7 @@ impl<
             validator: self.validator,
             re_validator: self.re_validator,
             required: self.required,
-            should_init: Some(ComputableInit::SyncFunc(resolver.into_resolver())),
+            should_init: Some(ComputableInit::Func(resolver.into_resolver())),
             ..Default::default()
         }
     }
@@ -598,7 +567,7 @@ impl<
             re_validator: self.re_validator,
             required: self.required,
             should_init: self.should_init,
-            should_update: Some(ComputableInit::SyncFunc(resolver.into_resolver())),
+            should_update: Some(ComputableInit::Func(resolver.into_resolver())),
             ..Default::default()
         }
     }
@@ -683,7 +652,7 @@ impl<
             re_validator: self.re_validator,
             required: self.required,
             should_update: self.should_update,
-            should_init: Some(ComputableInit::SyncFunc(resolver.into_resolver())),
+            should_init: Some(ComputableInit::Func(resolver.into_resolver())),
             ..Default::default()
         }
     }

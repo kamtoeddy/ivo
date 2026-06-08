@@ -6,12 +6,12 @@ use crate::{
         fields::base::{BuildableFieldConfig, FieldConfig, InternalFieldConfig},
     },
     traits::{
-        IntoAsyncFieldValidator, IntoFailureHandler, IntoFieldValidator, IntoRequiredResolverFn,
+        IntoFailureHandler, IntoFieldValidator, IntoRequiredResolverFn,
         IntoResolverWithMutSummaryFn, IntoSuccessHandler, IntoVirtualSanitizer, IvoSchemaStruct,
     },
     types::{
-        BooleanResolverWithMutSummary, ComputableInit, ComputableRequired, FailureHandler,
-        FieldValidator, No, SuccessHandler, VirtualSanitiser, Yes, YesComputed,
+        BooleanResolverWithMutSummary, ComputableInit, ComputableRequired, FailureHandler, No,
+        SuccessHandler, UniformValidator, VirtualSanitiser, Yes, YesComputed,
     },
     utils::erased_value::ErasedValue,
 };
@@ -46,8 +46,8 @@ pub struct VirtualFieldBuilder<
     _on_success_fns: PhantomData<HasSuccess>,
     // actual data...
     alias: Option<String>,
-    validator: Option<FieldValidator<I, O, CtxOptions, ErrT>>,
-    re_validator: Option<FieldValidator<I, O, CtxOptions, ErrT>>,
+    validator: Option<UniformValidator<I, O, CtxOptions, ErrT::FieldMetadata>>,
+    re_validator: Option<UniformValidator<I, O, CtxOptions, ErrT::FieldMetadata>>,
     required: Option<ComputableRequired<I, O, CtxOptions>>,
     sanitizer: Option<VirtualSanitiser<ErasedValue, I, O, CtxOptions>>,
     should_ignore_fn: Option<BooleanResolverWithMutSummary<I, O, CtxOptions>>,
@@ -262,21 +262,7 @@ impl<
     {
         VirtualFieldBuilder {
             alias: self.alias,
-            validator: Some(FieldValidator::Sync(validator.into_uniform())),
-            ..Default::default()
-        }
-    }
-
-    pub fn validate_async<F>(
-        self,
-        validator: F,
-    ) -> VirtualFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, HasAlias>
-    where
-        F: IntoAsyncFieldValidator<T, I, O, CtxOptions, ErrT>,
-    {
-        VirtualFieldBuilder {
-            alias: self.alias,
-            validator: Some(FieldValidator::Async(validator.into_uniform())),
+            validator: Some(validator.into_uniform()),
             ..Default::default()
         }
     }
@@ -301,22 +287,7 @@ impl<
         VirtualFieldBuilder {
             alias: self.alias,
             validator: self.validator,
-            re_validator: Some(FieldValidator::Sync(re_validator.into_uniform())),
-            ..Default::default()
-        }
-    }
-
-    pub fn re_validate_async<F>(
-        self,
-        re_validator: F,
-    ) -> VirtualFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, HasAlias, Yes>
-    where
-        F: IntoAsyncFieldValidator<T, I, O, CtxOptions, ErrT>,
-    {
-        VirtualFieldBuilder {
-            alias: self.alias,
-            validator: self.validator,
-            re_validator: Some(FieldValidator::Async(re_validator.into_uniform())),
+            re_validator: Some(re_validator.into_uniform()),
             ..Default::default()
         }
     }
@@ -522,7 +493,7 @@ impl<
             re_validator: self.re_validator,
             required: self.required,
             sanitizer: self.sanitizer,
-            should_init: Some(ComputableInit::SyncFunc(resolver.into_resolver())),
+            should_init: Some(ComputableInit::Func(resolver.into_resolver())),
             ..Default::default()
         }
     }
@@ -582,7 +553,7 @@ impl<
             re_validator: self.re_validator,
             required: self.required,
             sanitizer: self.sanitizer,
-            should_init: Some(ComputableInit::SyncFunc(resolver.into_resolver())),
+            should_init: Some(ComputableInit::Func(resolver.into_resolver())),
             ..Default::default()
         }
     }
@@ -642,7 +613,7 @@ impl<
             re_validator: self.re_validator,
             required: self.required,
             sanitizer: self.sanitizer,
-            should_init: Some(ComputableInit::SyncFunc(resolver.into_resolver())),
+            should_init: Some(ComputableInit::Func(resolver.into_resolver())),
             ..Default::default()
         }
     }
@@ -703,7 +674,7 @@ impl<
             required: self.required,
             sanitizer: self.sanitizer,
             should_init: self.should_init,
-            should_update: Some(ComputableInit::SyncFunc(resolver.into_resolver())),
+            should_update: Some(ComputableInit::Func(resolver.into_resolver())),
             ..Default::default()
         }
     }
@@ -793,7 +764,7 @@ impl<
             required: self.required,
             sanitizer: self.sanitizer,
             should_update: self.should_update,
-            should_init: Some(ComputableInit::SyncFunc(resolver.into_resolver())),
+            should_init: Some(ComputableInit::Func(resolver.into_resolver())),
             ..Default::default()
         }
     }

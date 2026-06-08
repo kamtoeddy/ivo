@@ -4,8 +4,8 @@ use std::{collections::HashMap, time::Instant};
 mod domain;
 
 use crate::{
-    users::domain::{PartialUserInput, USER_MODEL, USER_SCHEMA, User, UserCtxOptions, UserRole},
     utils::{slugify::slugify, styled_text::Stylable},
+    wip::domain::{PartialUserInput, USER_MODEL, USER_SCHEMA, User, UserCtxOptions, UserRole},
 };
 
 pub async fn run_users_demo() {

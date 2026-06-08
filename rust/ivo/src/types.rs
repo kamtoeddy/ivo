@@ -35,76 +35,6 @@ impl std::ops::Deref for False {
     }
 }
 
-pub type UniformAsyncValidator<I, O, CtxOptions, FieldErrorMetadata> = Box<
-    dyn Fn(
-            ErasedValue,
-            IvoSummary<I, O, CtxOptions>,
-        ) -> BoxFuture<'static, ValidatorResponse<ErasedValue, FieldErrorMetadata>>
-        + Send
-        + Sync
-        + 'static,
->;
-
-pub type UniformValidator<I, O, CtxOptions, FieldErrorMetadata> = Box<
-    dyn Fn(
-            ErasedValue,
-            IvoSummary<I, O, CtxOptions>,
-        ) -> ValidatorResponse<ErasedValue, FieldErrorMetadata>
-        + Send
-        + Sync
-        + 'static,
->;
-
-pub type UniformVirtualSanitiser<I, O, CtxOptions> = Box<
-    dyn Fn(IvoSummary<I, O, CtxOptions>) -> BoxFuture<'static, ErasedValue> + Send + Sync + 'static,
->;
-
-pub type UniformEnumErrorResolver<FieldErrorMetadata> = Box<
-    dyn Fn((ErasedValue, Vec<ErasedValue>)) -> ValidatorError<FieldErrorMetadata>
-        + Send
-        + Sync
-        + 'static,
->;
-
-pub type UniformResolverWithMutSummary<I, O, CtxOptions> =
-    Box<dyn Fn(IvoSummary<I, O, CtxOptions>) -> ErasedValue + Send + Sync + 'static>;
-
-pub type UniformAsyncResolverWithMutSummary<I, O, CtxOptions> = Box<
-    dyn Fn(IvoSummary<I, O, CtxOptions>) -> BoxFuture<'static, ErasedValue> + Send + Sync + 'static,
->;
-
-pub type UniformResolverWithMiniSummary<I, O, CtxOptions> =
-    Box<dyn Fn(IvoMiniSummary<I, O, CtxOptions>) -> ErasedValue + Send + Sync + 'static>;
-
-pub type UniformAsyncResolverWithMiniSummary<I, O, CtxOptions> = Box<
-    dyn Fn(IvoMiniSummary<I, O, CtxOptions>) -> BoxFuture<'static, ErasedValue>
-        + Send
-        + Sync
-        + 'static,
->;
-
-pub enum ComputableEnumeratedError<ErrT: IvoErrorTool> {
-    Static(String),
-    Func(UniformEnumErrorResolver<ErrT::FieldMetadata>),
-}
-
-pub enum ComputableWithMiniSummary<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
-    Static(T),
-    AsyncFunc(UniformAsyncResolverWithMiniSummary<I, O, CtxOptions>),
-    SyncFunc(UniformResolverWithMiniSummary<I, O, CtxOptions>),
-}
-
-pub enum ComputableInit<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
-    False,
-    AsyncFunc(AsyncResolverWithMutSummaryFn<bool, I, O, CtxOptions>),
-    SyncFunc(ResolverWithMutSummaryFn<bool, I, O, CtxOptions>),
-}
-
-pub enum ComputableRequired<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
-    Static(True),
-    Func(RequiredResolverFn<I, O, CtxOptions>),
-}
-
 pub struct IvoMiniSummary<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
     input: I::Partial,
     input_values: I::Partial,
@@ -260,38 +190,72 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> IvoSummary<I, O,
     }
 }
 
-pub enum FieldValidator<
-    I: IvoSchemaStruct,
-    O: IvoSchemaStruct,
-    CtxOptions: Clone,
-    ErrT: IvoErrorTool,
-> {
-    Async(UniformAsyncValidator<I, O, CtxOptions, ErrT::FieldMetadata>),
-    Sync(UniformValidator<I, O, CtxOptions, ErrT::FieldMetadata>),
+pub type UniformValidator<I, O, CtxOptions, FieldMetadata> = Box<
+    dyn Fn(
+            ErasedValue,
+            IvoSummary<I, O, CtxOptions>,
+        ) -> BoxFuture<'static, ValidatorResponse<ErasedValue, FieldMetadata>>
+        + Send
+        + Sync
+        + 'static,
+>;
+
+pub type UniformVirtualSanitiser<I, O, CtxOptions> = Box<
+    dyn Fn(IvoSummary<I, O, CtxOptions>) -> BoxFuture<'static, ErasedValue> + Send + Sync + 'static,
+>;
+
+pub type UniformEnumErrorResolver<FieldErrorMetadata> = Box<
+    dyn Fn((ErasedValue, Vec<ErasedValue>)) -> ValidatorError<FieldErrorMetadata>
+        + Send
+        + Sync
+        + 'static,
+>;
+
+pub type UniformResolverWithMutSummary<I, O, CtxOptions> = Box<
+    dyn Fn(IvoSummary<I, O, CtxOptions>) -> BoxFuture<'static, ErasedValue> + Send + Sync + 'static,
+>;
+
+pub type UniformResolverWithMiniSummary<I, O, CtxOptions> = Box<
+    dyn Fn(IvoMiniSummary<I, O, CtxOptions>) -> BoxFuture<'static, ErasedValue>
+        + Send
+        + Sync
+        + 'static,
+>;
+
+pub enum ComputableEnumeratedError<ErrT: IvoErrorTool> {
+    Static(String),
+    Func(UniformEnumErrorResolver<ErrT::FieldMetadata>),
 }
 
-pub type RequiredResolverFn<I, O, CtxOptions> = Box<
+pub enum ComputableWithMiniSummary<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
+    Static(T),
+    Func(UniformResolverWithMiniSummary<I, O, CtxOptions>),
+}
+
+pub enum ComputableInit<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
+    False,
+    Func(BooleanResolverWithMutSummary<I, O, CtxOptions>),
+}
+
+pub enum ComputableRequired<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
+    Static(True),
+    Func(RequiredResolver<I, O, CtxOptions>),
+}
+
+pub type RequiredResolver<I, O, CtxOptions> = Box<
     dyn Fn(IvoSummary<I, O, CtxOptions>) -> BoxFuture<'static, (bool, String)>
         + Send
         + Sync
         + 'static,
 >;
 
-pub enum ResolverWithMutSummary<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
-    Async(AsyncResolverWithMutSummaryFn<T, I, O, CtxOptions>),
-    Sync(ResolverWithMutSummaryFn<T, I, O, CtxOptions>),
-}
-
-pub type AsyncResolverWithMutSummaryFn<T, I, O, CtxOptions> =
+pub type ResolverWithMutSummary<T, I, O, CtxOptions> =
     Box<dyn Fn(IvoSummary<I, O, CtxOptions>) -> BoxFuture<'static, T> + Send + Sync + 'static>;
 
-pub type ResolverWithMutSummaryFn<T, I, O, CtxOptions> =
-    Box<dyn Fn(IvoSummary<I, O, CtxOptions>) -> T + Send + Sync + 'static>;
-
 pub type BooleanResolverWithMutSummary<I, O, CtxOptions> =
-    Box<dyn Fn(IvoSummary<I, O, CtxOptions>) -> bool + Send + Sync + 'static>;
+    ResolverWithMutSummary<bool, I, O, CtxOptions>;
 
-pub type VirtualSanitiser<T, I, O, CtxOptions> = AsyncResolverWithMutSummaryFn<T, I, O, CtxOptions>;
+pub type VirtualSanitiser<T, I, O, CtxOptions> = ResolverWithMutSummary<T, I, O, CtxOptions>;
 
 pub type DeleteHandler<O, CtxOptions> =
     Box<dyn Fn(O, CtxOptions) -> BoxFuture<'static, ()> + Send + Sync + 'static>;

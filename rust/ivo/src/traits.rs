@@ -5,9 +5,8 @@ use futures::FutureExt;
 use crate::{
     schema::error::IvoErrorTool,
     types::{
-        DeleteHandler, FailureHandler, IvoMiniSummary, IvoSummary, RequiredResolverFn,
-        ResolverWithMutSummaryFn, SuccessHandler, UniformAsyncResolverWithMiniSummary,
-        UniformAsyncResolverWithMutSummary, UniformAsyncValidator, UniformEnumErrorResolver,
+        BooleanResolverWithMutSummary, DeleteHandler, FailureHandler, IvoMiniSummary, IvoSummary,
+        RequiredResolver, ResolverWithMutSummary, SuccessHandler, UniformEnumErrorResolver,
         UniformResolverWithMiniSummary, UniformResolverWithMutSummary, UniformValidator,
         UniformVirtualSanitiser, ValidatorError,
     },
@@ -135,36 +134,7 @@ pub trait IntoFieldValidator<
     fn into_uniform(self) -> UniformValidator<I, O, CtxOptions, ErrT::FieldMetadata>;
 }
 
-impl<F, T, I, O, CtxOptions: Clone, ErrT> IntoFieldValidator<T, I, O, CtxOptions, ErrT> for F
-where
-    I: IvoSchemaStruct,
-    O: IvoSchemaStruct,
-    ErrT: IvoErrorTool,
-    T: Clone + Debug + Send + Sync + 'static,
-    F: Fn(T, IvoSummary<I, O, CtxOptions>) -> ValidatorResponse<T, ErrT::FieldMetadata>
-        + Clone
-        + Send
-        + Sync
-        + 'static,
-{
-    fn into_uniform(self) -> UniformValidator<I, O, CtxOptions, ErrT::FieldMetadata> {
-        Box::new(move |v, s| self(parse_or_panic::<T>(&v), s).map(|v| erase_value(v)))
-    }
-}
-
-pub trait IntoAsyncFieldValidator<
-    T,
-    I: IvoSchemaStruct,
-    O: IvoSchemaStruct,
-    CtxOptions: Clone,
-    ErrT: IvoErrorTool,
->
-{
-    fn into_uniform(self) -> UniformAsyncValidator<I, O, CtxOptions, ErrT::FieldMetadata>;
-}
-
-impl<F, Fut, T, I, O, CtxOptions: Clone, ErrT> IntoAsyncFieldValidator<T, I, O, CtxOptions, ErrT>
-    for F
+impl<F, Fut, T, I, O, CtxOptions: Clone, ErrT> IntoFieldValidator<T, I, O, CtxOptions, ErrT> for F
 where
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
@@ -173,12 +143,8 @@ where
     F: Fn(T, IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = ValidatorResponse<T, ErrT::FieldMetadata>> + Send + Sync + 'static,
 {
-    fn into_uniform(self) -> UniformAsyncValidator<I, O, CtxOptions, ErrT::FieldMetadata> {
-        Box::new(move |v: ErasedValue, s: IvoSummary<I, O, CtxOptions>| {
-            let sv = erase_value(String::from("sv lol"));
-            parse_or_panic::<T>(&sv);
-            parse_or_panic::<T>(&v); // this fails
-
+    fn into_uniform(self) -> UniformValidator<I, O, CtxOptions, ErrT::FieldMetadata> {
+        Box::new(move |v, s| {
             Box::pin(self(parse_or_panic::<T>(&v), s).map(|r| r.map(|v| erase_value(v))))
         })
     }
@@ -222,7 +188,7 @@ where
 }
 
 pub trait IntoRequiredResolverFn<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
-    fn into_resolver(self) -> RequiredResolverFn<I, O, CtxOptions>;
+    fn into_resolver(self) -> RequiredResolver<I, O, CtxOptions>;
 }
 
 impl<F, Fut, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone + Send + 'static>
@@ -231,24 +197,25 @@ where
     F: Fn(IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = (bool, String)> + Send + 'static,
 {
-    fn into_resolver(self) -> RequiredResolverFn<I, O, CtxOptions> {
+    fn into_resolver(self) -> RequiredResolver<I, O, CtxOptions> {
         Box::new(move |s| Box::pin(self(s)))
     }
 }
 
 pub trait IntoResolverWithMutSummaryFn<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
 {
-    fn into_resolver(self) -> ResolverWithMutSummaryFn<T, I, O, CtxOptions>;
+    fn into_resolver(self) -> ResolverWithMutSummary<T, I, O, CtxOptions>;
 }
 
-impl<F, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
+impl<F, Fut, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
     IntoResolverWithMutSummaryFn<T, I, O, CtxOptions> for F
 where
     T: 'static,
-    F: Fn(IvoSummary<I, O, CtxOptions>) -> T + Send + Sync + 'static,
+    F: Fn(IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
+    Fut: Future<Output = T> + Send + 'static,
 {
-    fn into_resolver(self) -> ResolverWithMutSummaryFn<T, I, O, CtxOptions> {
-        Box::new(move |s| self(s))
+    fn into_resolver(self) -> ResolverWithMutSummary<T, I, O, CtxOptions> {
+        Box::new(move |s| Box::pin(self(s)))
     }
 }
 
@@ -262,28 +229,8 @@ pub trait IntoUniformResolverWithMutSummary<
     fn into_uniform(self) -> UniformResolverWithMutSummary<I, O, CtxOptions>;
 }
 
-impl<F, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
-    IntoUniformResolverWithMutSummary<T, I, O, CtxOptions> for F
-where
-    T: Clone + Debug + Send + Sync + 'static,
-    F: Fn(IvoSummary<I, O, CtxOptions>) -> T + Send + Sync + 'static,
-{
-    fn into_uniform(self) -> UniformResolverWithMutSummary<I, O, CtxOptions> {
-        Box::new(move |s| erase_value(self(s)))
-    }
-}
-
-pub trait IntoAsyncResolverWithMutSummary<
-    T,
-    I: IvoSchemaStruct,
-    O: IvoSchemaStruct,
-    CtxOptions: Clone,
->
-{
-    fn into_uniform(self) -> UniformAsyncResolverWithMutSummary<I, O, CtxOptions>;
-}
-
-impl<F, Fut, T, I, O, CtxOptions: Clone> IntoAsyncResolverWithMutSummary<T, I, O, CtxOptions> for F
+impl<F, Fut, T, I, O, CtxOptions: Clone> IntoUniformResolverWithMutSummary<T, I, O, CtxOptions>
+    for F
 where
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
@@ -291,7 +238,7 @@ where
     F: Fn(IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = T> + Send + 'static,
 {
-    fn into_uniform(self) -> UniformAsyncResolverWithMutSummary<I, O, CtxOptions> {
+    fn into_uniform(self) -> UniformResolverWithMutSummary<I, O, CtxOptions> {
         Box::new(move |s| Box::pin(self(s).map(|v| erase_value(v))))
     }
 }
@@ -301,35 +248,34 @@ pub trait IntoResolverWithMiniSummary<T, I: IvoSchemaStruct, O: IvoSchemaStruct,
     fn into_uniform(self) -> UniformResolverWithMiniSummary<I, O, CtxOptions>;
 }
 
-impl<F, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
-    IntoResolverWithMiniSummary<T, I, O, CtxOptions> for F
-where
-    T: Clone + Debug + Send + Sync + 'static,
-    F: Fn(IvoMiniSummary<I, O, CtxOptions>) -> T + Send + Sync + 'static,
-{
-    fn into_uniform(self) -> UniformResolverWithMiniSummary<I, O, CtxOptions> {
-        Box::new(move |s| erase_value(self(s)))
-    }
-}
-
-pub trait IntoAsyncResolverWithMiniSummary<
-    T,
-    I: IvoSchemaStruct,
-    O: IvoSchemaStruct,
-    CtxOptions: Clone,
->
-{
-    fn into_uniform(self) -> UniformAsyncResolverWithMiniSummary<I, O, CtxOptions>;
-}
-
 impl<F, Fut, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
-    IntoAsyncResolverWithMiniSummary<T, I, O, CtxOptions> for F
+    IntoResolverWithMiniSummary<T, I, O, CtxOptions> for F
 where
     T: Clone + Debug + Send + Sync + 'static,
     F: Fn(IvoMiniSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = T> + Send + 'static,
 {
-    fn into_uniform(self) -> UniformAsyncResolverWithMiniSummary<I, O, CtxOptions> {
+    fn into_uniform(self) -> UniformResolverWithMiniSummary<I, O, CtxOptions> {
         Box::new(move |s| Box::pin(self(s).map(|v| erase_value(v))))
+    }
+}
+
+pub trait IntoBooleanResolverWithMutSummary<
+    I: IvoSchemaStruct,
+    O: IvoSchemaStruct,
+    CtxOptions: Clone,
+>
+{
+    fn into_resolver(self) -> BooleanResolverWithMutSummary<I, O, CtxOptions>;
+}
+
+impl<F, Fut, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
+    IntoBooleanResolverWithMutSummary<I, O, CtxOptions> for F
+where
+    F: Fn(IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
+    Fut: Future<Output = bool> + Send + 'static,
+{
+    fn into_resolver(self) -> BooleanResolverWithMutSummary<I, O, CtxOptions> {
+        Box::new(move |s| Box::pin(self(s)))
     }
 }

@@ -54,19 +54,19 @@ pub static USER_MODEL: LazyLock<Model<UserInput, User, UserCtxOptions>> =
 pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = LazyLock::new(|| {
     Schema::new(
         |f| {
-            f.set("id", IvoField::CONSTANT.computed(|_| 1234))
+            f.set("id", IvoField::CONSTANT.computed(async |_| 1234))
             .set(
                 "email",
                 IvoField::REQUIRED
-                    .validate(|email, _| validate_email(email).map_err(|e| (e, None))),
+                    .validate(async |email, _| validate_email(email).map_err(|e| (e, None))),
             )
             .set(
                 "role",
-                IvoField::LAX.default(UserRole::User).ignore_if(|_| true),
+                IvoField::LAX.default(UserRole::User).ignore_if(async |_| true),
             )
             .set(
                 "username",
-                IvoField::REQUIRED.validate(|v: String, _| {
+                IvoField::REQUIRED.validate(async |v: String, _|{
                     const MIN_LEN: usize = 4;
 
                     if v.len() <= MIN_LEN {
@@ -84,7 +84,7 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
                 IvoField::DEPENDENT
                     .default(Some(String::from("default value")))
                     .depends_on(["username"])
-                    .resolve(|_| Some(String::from("resolved value")))
+                    .resolve(async |_| Some(String::from("resolved value")))
                 ,
             )
             .set(
@@ -92,7 +92,7 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
                 IvoField::DEPENDENT
                     .default("".into())
                     .depends_on(["username", "v_slug"])
-                    .resolve(|s: MutUserSummary| {
+                    .resolve(async |s: MutUserSummary| {
                         s.get_options()
                             .slug_id
                             .clone()
@@ -102,7 +102,7 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
             .set(
                 "v_slug",
                 IvoField::VIRTUAL.alias("slug_id").validate(
-                    |value: String, s: MutUserSummary| {
+                    async |value: String, s: MutUserSummary| {
                         let slug_id = slugify(&value);
 
                         let validated = slug_id.value();
@@ -163,14 +163,12 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
                     Ok(IvoValues::new())
                 })
             })
-            .on_success(["email"], |b| {
-                b.handle(|_| async { println!("on success") })
-            })
+            .on_success(["email"], |b| b.handle(async |_| println!("on success")))
             .on_success(["username", "v_slug"], |b| {
-                b.handle(|_| async { println!("on success") })
+                b.handle(async |_| println!("on success"))
             })
-            .on_delete(|_, _| async { println!("on delete") })
-            .on_delete(|_, _| async { println!("on delete") })
+            .on_delete(async |_, _| println!("on delete"))
+            .on_delete(async |_, _| println!("on delete"))
         },
     )
 });

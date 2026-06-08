@@ -6,8 +6,8 @@ use crate::{
         fields::base::{BuildableFieldConfig, FieldConfig, InternalFieldConfig},
     },
     traits::{
-        IntoAsyncResolverWithMutSummary, IntoDeleteHandler, IntoResolverWithMiniSummary,
-        IntoSuccessHandler, IntoUniformResolverWithMutSummary, IvoSchemaStruct,
+        IntoDeleteHandler, IntoResolverWithMiniSummary, IntoSuccessHandler,
+        IntoUniformResolverWithMutSummary, IvoSchemaStruct,
     },
     types::{
         ComputableInit, ComputableWithMiniSummary, DeleteHandler, False, No,
@@ -189,9 +189,7 @@ impl<
         F: IntoResolverWithMiniSummary<T, I, O, CtxOptions>,
     {
         DependentFieldBuilder {
-            default: Some(ComputableWithMiniSummary::SyncFunc(
-                default_fn.into_uniform(),
-            )),
+            default: Some(ComputableWithMiniSummary::Func(default_fn.into_uniform())),
             ..Default::default()
         }
     }
@@ -225,22 +223,7 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErro
         DependentFieldBuilder {
             default: self.default,
             depends_on: self.depends_on,
-            resolver: Some(ResolverWithMutSummary::Sync(resolver.into_uniform())),
-            ..Default::default()
-        }
-    }
-
-    pub fn resolve_async<R>(
-        self,
-        resolver: R,
-    ) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, Yes>
-    where
-        R: IntoAsyncResolverWithMutSummary<T, I, O, CtxOptions>,
-    {
-        DependentFieldBuilder {
-            default: self.default,
-            depends_on: self.depends_on,
-            resolver: Some(ResolverWithMutSummary::Async(resolver.into_uniform())),
+            resolver: Some(resolver.into_uniform()),
             ..Default::default()
         }
     }

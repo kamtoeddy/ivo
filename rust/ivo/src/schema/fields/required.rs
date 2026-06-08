@@ -6,12 +6,12 @@ use crate::{
         fields::base::{BuildableFieldConfig, FieldConfig, InternalFieldConfig},
     },
     traits::{
-        IntoAsyncFieldValidator, IntoDeleteHandler, IntoFailureHandler, IntoFieldValidator,
-        IntoResolverWithMutSummaryFn, IntoSuccessHandler, IvoSchemaStruct,
+        IntoDeleteHandler, IntoFailureHandler, IntoFieldValidator, IntoResolverWithMutSummaryFn,
+        IntoSuccessHandler, IvoSchemaStruct,
     },
     types::{
-        ComputableInit, ComputableRequired, DeleteHandler, FailureHandler, FieldValidator, No,
-        SuccessHandler, True, Yes,
+        ComputableInit, ComputableRequired, DeleteHandler, FailureHandler, No, SuccessHandler,
+        True, UniformValidator, Yes,
     },
 };
 
@@ -36,8 +36,8 @@ pub struct RequiredFieldBuilder<
     _on_failure_fns: PhantomData<HasFailure>,
     _on_success_fns: PhantomData<HasSuccess>,
     // actual data...
-    validator: Option<FieldValidator<I, O, CtxOptions, ErrT>>,
-    re_validator: Option<FieldValidator<I, O, CtxOptions, ErrT>>,
+    validator: Option<UniformValidator<I, O, CtxOptions, ErrT::FieldMetadata>>,
+    re_validator: Option<UniformValidator<I, O, CtxOptions, ErrT::FieldMetadata>>,
     should_update: Option<ComputableInit<I, O, CtxOptions>>,
     on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
     on_failure_fns: Option<Vec<FailureHandler<I, O, CtxOptions>>>,
@@ -170,20 +170,7 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErro
         F: IntoFieldValidator<T, I, O, CtxOptions, ErrT>,
     {
         RequiredFieldBuilder {
-            validator: Some(FieldValidator::Sync(validator.into_uniform())),
-            ..Default::default()
-        }
-    }
-
-    pub fn validate_async<F>(
-        self,
-        validator: F,
-    ) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrT, Yes>
-    where
-        F: IntoAsyncFieldValidator<T, I, O, CtxOptions, ErrT>,
-    {
-        RequiredFieldBuilder {
-            validator: Some(FieldValidator::Async(validator.into_uniform())),
+            validator: Some(validator.into_uniform()),
             ..Default::default()
         }
     }
@@ -201,21 +188,7 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErro
     {
         RequiredFieldBuilder {
             validator: self.validator,
-            re_validator: Some(FieldValidator::Sync(re_validator.into_uniform())),
-            ..Default::default()
-        }
-    }
-
-    pub fn re_validate_async<F>(
-        self,
-        re_validator: F,
-    ) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, Yes>
-    where
-        F: IntoAsyncFieldValidator<T, I, O, CtxOptions, ErrT>,
-    {
-        RequiredFieldBuilder {
-            validator: self.validator,
-            re_validator: Some(FieldValidator::Async(re_validator.into_uniform())),
+            re_validator: Some(re_validator.into_uniform()),
             ..Default::default()
         }
     }
@@ -244,14 +217,14 @@ impl<
     pub fn allow_update_if<R>(
         self,
         resolver: R,
-    ) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, HasRevalidator, No, Yes>
+    ) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, HasRevalidator, Yes>
     where
         R: IntoResolverWithMutSummaryFn<bool, I, O, CtxOptions>,
     {
         RequiredFieldBuilder {
             validator: self.validator,
             re_validator: self.re_validator,
-            should_update: Some(ComputableInit::SyncFunc(resolver.into_resolver())),
+            should_update: Some(ComputableInit::Func(resolver.into_resolver())),
             ..Default::default()
         }
     }

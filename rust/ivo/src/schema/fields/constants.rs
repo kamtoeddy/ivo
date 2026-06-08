@@ -5,10 +5,7 @@ use crate::{
         error::IvoErrorTool,
         fields::base::{BuildableFieldConfig, FieldConfig, InternalFieldConfig},
     },
-    traits::{
-        IntoAsyncResolverWithMiniSummary, IntoDeleteHandler, IntoResolverWithMiniSummary,
-        IntoSuccessHandler, IvoSchemaStruct,
-    },
+    traits::{IntoDeleteHandler, IntoResolverWithMiniSummary, IntoSuccessHandler, IvoSchemaStruct},
     types::{ComputableWithMiniSummary, DeleteHandler, No, SuccessHandler, Yes},
     utils::erased_value::{erase_value, ErasedValue},
 };
@@ -119,24 +116,7 @@ impl<
         F: IntoResolverWithMiniSummary<T, I, O, CtxOptions>,
     {
         ConstantFieldBuilder {
-            value: Some(ComputableWithMiniSummary::SyncFunc(resolver.into_uniform())),
-            on_delete_fns: None,
-            on_success_fns: None,
-            ..Default::default()
-        }
-    }
-
-    pub fn computed_async<F>(
-        self,
-        resolver: F,
-    ) -> ConstantFieldBuilder<T, I, O, CtxOptions, ErrT, Yes>
-    where
-        F: IntoAsyncResolverWithMiniSummary<T, I, O, CtxOptions>,
-    {
-        ConstantFieldBuilder {
-            value: Some(ComputableWithMiniSummary::AsyncFunc(
-                resolver.into_uniform(),
-            )),
+            value: Some(ComputableWithMiniSummary::Func(resolver.into_uniform())),
             on_delete_fns: None,
             on_success_fns: None,
             ..Default::default()
