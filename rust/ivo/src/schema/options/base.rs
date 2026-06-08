@@ -1,8 +1,8 @@
 use std::marker::PhantomData;
 
 use crate::{
-    schema::error::IvoErrorTool,
-    traits::{IvoSchemaStruct, PostValidationConfig},
+    schema::{error::IvoErrorTool, options::traits::PostValidationConfig},
+    traits::IvoSchemaStruct,
     types::{BooleanResolverWithMutSummary, ComputableInit, DeleteHandler, No, SuccessHandler},
 };
 

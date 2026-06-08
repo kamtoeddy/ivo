@@ -5,11 +5,11 @@ use futures::FutureExt;
 use crate::{
     schema::error::IvoErrorTool,
     types::{
-        DeleteHandler, FailureHandler, IvoMiniSummary, IvoSummary, IvoValues, PostValidatorError,
-        PostValidatorFn, RequiredResolverFn, ResolverWithMutSummaryFn, SuccessHandler,
-        UniformAsyncResolverWithMiniSummary, UniformAsyncResolverWithMutSummary,
-        UniformAsyncValidator, UniformEnumErrorResolver, UniformResolverWithMiniSummary,
-        UniformResolverWithMutSummary, UniformValidator, UniformVirtualSanitiser, ValidatorError,
+        DeleteHandler, FailureHandler, IvoMiniSummary, IvoSummary, RequiredResolverFn,
+        ResolverWithMutSummaryFn, SuccessHandler, UniformAsyncResolverWithMiniSummary,
+        UniformAsyncResolverWithMutSummary, UniformAsyncValidator, UniformEnumErrorResolver,
+        UniformResolverWithMiniSummary, UniformResolverWithMutSummary, UniformValidator,
+        UniformVirtualSanitiser, ValidatorError,
     },
     utils::erased_value::{erase_value, parse_or_panic, ErasedValue},
     ValidatorResponse,
@@ -181,43 +181,6 @@ where
 
             Box::pin(self(parse_or_panic::<T>(&v), s).map(|r| r.map(|v| erase_value(v))))
         })
-    }
-}
-
-pub struct PostValidationConfig<
-    I: IvoSchemaStruct,
-    O: IvoSchemaStruct,
-    CtxOptions: Clone,
-    ErrT: IvoErrorTool,
-> {
-    pub fields: Vec<&'static str>,
-    pub pre_validator: Option<PostValidatorFn<I, O, CtxOptions, ErrT::FieldMetadata>>,
-    pub validators: Vec<PostValidatorFn<I, O, CtxOptions, ErrT::FieldMetadata>>,
-}
-
-pub trait IntoPostValidator<
-    I: IvoSchemaStruct,
-    O: IvoSchemaStruct,
-    CtxOptions: Clone,
-    ErrT: IvoErrorTool,
->
-{
-    fn into_validator(self) -> PostValidatorFn<I, O, CtxOptions, ErrT::FieldMetadata>;
-}
-
-impl<F, Fut, I, O, CtxOptions: Clone, ErrT: IvoErrorTool> IntoPostValidator<I, O, CtxOptions, ErrT>
-    for F
-where
-    I: IvoSchemaStruct,
-    O: IvoSchemaStruct,
-    F: Fn(IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
-    Fut: Future<Output = Result<IvoValues, PostValidatorError<ErrT::FieldMetadata>>>
-        + Send
-        + Sync
-        + 'static,
-{
-    fn into_validator(self) -> PostValidatorFn<I, O, CtxOptions, ErrT::FieldMetadata> {
-        Box::new(move |s| Box::pin(self(s)))
     }
 }
 

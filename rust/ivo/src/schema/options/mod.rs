@@ -10,6 +10,7 @@ use crate::{
 pub mod base;
 pub mod post_validate;
 pub mod timestamp_tool;
+mod traits;
 
 pub trait BuildableSchemaOptions<
     I: IvoSchemaStruct,
