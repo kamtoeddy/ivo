@@ -1,4 +1,4 @@
-use ivo::UpdateError;
+use ivo::{UpdateError, traits::WithUpdateDetails};
 use std::time::Instant;
 
 mod domain;
@@ -57,7 +57,8 @@ pub async fn run_users_demo() {
 
     let updates = PartialUserInput {
         email: Some(user.email.clone()),
-        role: Some(UserRole::User),
+        role: None,
+        // role: Some(UserRole::User),
         username: Some(user.username.clone()),
         slug_id: None,
     };
@@ -66,7 +67,8 @@ pub async fn run_users_demo() {
 
     match r {
         Ok((data, _handle_success)) => {
-            println!("Updates: {:?}", data);
+            println!("updates: {:?}", data);
+            println!("old + updates: {:?}", user.ivo_internal_clone_with(&data));
         }
         Err((error, _handle_failure)) => {
             match error {

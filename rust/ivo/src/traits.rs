@@ -48,11 +48,21 @@ pub trait HasPartial {
     type Partial: Debug + Default + Send + Sync + Clone + PartialFromToMap;
 }
 
-pub trait WithUpdateDetails: HasPartial {
+pub trait WithUpdateDetails: HasPartial + Clone + Sized {
     fn ivo_internal_get_updates(
         &self,
         updates: &HashMap<String, ErasedValue>,
     ) -> (Self::Partial, bool);
+
+    fn ivo_internal_clone_with(&self, updates: &Self::Partial) -> Self {
+        let mut cloned = self.clone();
+
+        cloned.ivo_internal_update_with(updates);
+
+        cloned
+    }
+
+    fn ivo_internal_update_with(&mut self, updates: &Self::Partial);
 }
 
 pub type Partial<T> = <T as HasPartial>::Partial;

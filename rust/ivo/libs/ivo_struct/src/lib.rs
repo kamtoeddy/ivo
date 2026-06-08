@@ -106,23 +106,31 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
         }
     });
 
-    // let contruct_get_updated_values = {
-    //     let parse_fields = fields.iter().map(|field| {
-    //         let field_name = &field.ident; // e.g., 'id'
-    //         let field_type = &field.ty; // e.g., 'String'
+    let set_updated_values = fields.iter().map(|field| {
+        let field_name = &field.ident; // e.g., 'id'
 
-    //         quote! {
-    //             #field_name: {
-    //                 match map.get(stringify!(#field_name)) {
-    //                     Some(erased) => parse_value::<#field_type>(erased),
-    //                     _ => None,
-    //                 }
-    //             },
-    //         }
-    //     });
+        quote! {
+            if let Some(update) = updates.#field_name.clone() {
+                self.#field_name = update;
+            }
+        }
+    });
 
-    //     // perform more checks here?
-    // };
+    let process_updated_values = fields.iter().map(|field| {
+        let field_name = &field.ident; // e.g., 'id'
+        let field_type = &field.ty; // e.g., 'String'
+
+        quote! {
+            if let Some(erased) = updates.get(stringify!(#field_name)).clone() {
+                let update = parse_or_panic::<#field_type>(erased);
+
+                if self.#field_name != update {
+                    partial_output.#field_name = Some(update);
+                    has_updated_fields = true;
+                }
+            }
+        }
+    });
 
     // Generate the new struct
     let expanded = quote! {
@@ -186,9 +194,13 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
                 let mut partial_output = Self::Partial::default();
                 let mut has_updated_fields = false;
 
-
+                #( #process_updated_values )*
 
                 (partial_output, has_updated_fields)
+            }
+
+            fn ivo_internal_update_with(&mut self, updates: &Self::Partial) {
+                #( #set_updated_values )*
             }
         }
     };
