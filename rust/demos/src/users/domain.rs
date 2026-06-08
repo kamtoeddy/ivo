@@ -122,8 +122,8 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
             )
         },
         |o| {
-            o.post_validate(["username", "v_slug"], |pv| {
-                pv.validate(|s: MutUserSummary| async move {
+            o.post_validate(["username", "v_slug"], |b| {
+                b.validate(|s: MutUserSummary| async move {
                     let mut ctx_options = s.get_options_mut();
                     let input = s.input();
 
@@ -162,6 +162,9 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
 
                     Ok(IvoValues::new())
                 })
+            })
+            .on_success(["username", "v_slug"], |b| {
+                b.handle(|_| async { println!("success") })
             })
         },
     )

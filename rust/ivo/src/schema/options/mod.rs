@@ -1,6 +1,7 @@
 use crate::{
     schema::options::{
         base::{SchemaOptions, SchemaOptionsBuilder},
+        on_success::{BuildableOnSuccess, OnSuccessOptionBuilder},
         post_validate::{BuildablePostValidator, PostValidateOptionBuilder},
     },
     types::Yes,
@@ -87,6 +88,42 @@ impl<
         HasSuccess,
     >
 {
+    pub fn on_success<const N: usize, Builder, Buildable>(
+        self,
+        fields: [&'static str; N],
+        builder: Builder,
+    ) -> SchemaOptionsBuilder<
+        I,
+        O,
+        CtxOptions,
+        ErrT,
+        HasIgnore,
+        HasShouldUpdate,
+        HasPostValidate,
+        HasTimestamps,
+        HasDelete,
+        Yes,
+    >
+    where
+        Builder: Fn(OnSuccessOptionBuilder<I, O, CtxOptions, Yes>) -> Buildable,
+        Buildable: BuildableOnSuccess<I, O, CtxOptions>,
+    {
+        let config = builder(OnSuccessOptionBuilder::<I, O, CtxOptions>::fields(fields)).build();
+
+        let mut on_success_fns = self.on_success_fns.unwrap_or_default();
+        on_success_fns.push(config);
+
+        SchemaOptionsBuilder {
+            on_delete_fns: self.on_delete_fns,
+            on_success_fns: Some(on_success_fns),
+            post_validate: self.post_validate,
+            should_ignore: self.should_ignore,
+            should_update: self.should_update,
+            timestamps: self.timestamps,
+            ..SchemaOptionsBuilder::default()
+        }
+    }
+
     pub fn post_validate<const N: usize, Builder, Buildable>(
         self,
         fields: [&'static str; N],

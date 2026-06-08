@@ -1,9 +1,12 @@
 use std::marker::PhantomData;
 
 use crate::{
-    schema::{error::IvoErrorTool, options::types::PostValidationConfig},
+    schema::{
+        error::IvoErrorTool,
+        options::types::{OnSuccessConfig, PostValidationConfig},
+    },
     traits::IvoSchemaStruct,
-    types::{BooleanResolverWithMutSummary, ComputableInit, DeleteHandler, No, SuccessHandler},
+    types::{BooleanResolverWithMutSummary, ComputableInit, DeleteHandler, No},
 };
 
 pub struct SchemaOptions<
@@ -14,7 +17,7 @@ pub struct SchemaOptions<
 > {
     //
     pub on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
-    pub on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
+    pub on_success_fns: Option<Vec<OnSuccessConfig<I, O, CtxOptions>>>,
 
     pub post_validate: Option<Vec<PostValidationConfig<I, O, CtxOptions, ErrT>>>,
 
@@ -73,7 +76,7 @@ pub struct SchemaOptionsBuilder<
     pub _timestaps: PhantomData<HasTimestamps>,
     //
     pub on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
-    pub on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
+    pub on_success_fns: Option<Vec<OnSuccessConfig<I, O, CtxOptions>>>,
 
     pub post_validate: Option<Vec<PostValidationConfig<I, O, CtxOptions, ErrT>>>,
 

@@ -3,8 +3,10 @@ use std::{collections::HashMap, fmt::Debug, future::Future};
 use futures::future::BoxFuture;
 
 use crate::{
-    erase_value, schema::error::IvoErrorTool, types::IvoSummary, ErasedValue, IvoSchemaStruct,
-    ValidatorError,
+    erase_value,
+    schema::error::IvoErrorTool,
+    types::{IvoSummary, SuccessHandler},
+    ErasedValue, IvoSchemaStruct, ValidatorError,
 };
 
 pub struct IvoValues {
@@ -44,21 +46,10 @@ impl IvoValues {
 //     }
 // }
 
-// pub trait IntoSuccessHandler<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
-//     fn into_handler(self) -> SuccessHandler<I, O, CtxOptions>;
-// }
-
-// impl<F, Fut, I, O, CtxOptions: Clone> IntoSuccessHandler<I, O, CtxOptions> for F
-// where
-//     I: IvoSchemaStruct,
-//     O: IvoSchemaStruct,
-//     F: Fn(IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
-//     Fut: Future<Output = ()> + Send + Sync + 'static,
-// {
-//     fn into_handler(self) -> SuccessHandler<I, O, CtxOptions> {
-//         Box::new(move |s| Box::pin(self(s)))
-//     }
-// }
+pub struct OnSuccessConfig<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
+    pub fields: Vec<&'static str>,
+    pub handlers: Vec<SuccessHandler<I, O, CtxOptions>>,
+}
 
 pub struct PostValidationConfig<
     I: IvoSchemaStruct,
