@@ -38,7 +38,7 @@ pub struct DependentFieldBuilder<
     _should_update: PhantomData<HasShouldUpdate>,
     _success_handlers: PhantomData<HasSuccess>,
     // actual data...
-    default: Option<ComputableWithMiniSummary<ErasedValue, CtxOptions>>,
+    default: Option<ComputableWithMiniSummary<ErasedValue, I, O, CtxOptions>>,
     depends_on: Option<Vec<&'static str>>,
     resolver: Option<ResolverWithMutSummary<ErasedValue, I, O, CtxOptions>>,
     should_update: Option<False>,

@@ -73,11 +73,14 @@ pub type UniformAsyncResolverWithMutSummary<I, O, CtxOptions> = Box<
     dyn Fn(IvoSummary<I, O, CtxOptions>) -> BoxFuture<'static, ErasedValue> + Send + Sync + 'static,
 >;
 
-pub type UniformResolverWithMiniSummary<CtxOptions> =
-    Box<dyn Fn(IvoMiniSummary<CtxOptions>) -> ErasedValue + Send + Sync + 'static>;
+pub type UniformResolverWithMiniSummary<I, O, CtxOptions> =
+    Box<dyn Fn(IvoMiniSummary<I, O, CtxOptions>) -> ErasedValue + Send + Sync + 'static>;
 
-pub type UniformAsyncResolverWithMiniSummary<CtxOptions> = Box<
-    dyn Fn(IvoMiniSummary<CtxOptions>) -> BoxFuture<'static, ErasedValue> + Send + Sync + 'static,
+pub type UniformAsyncResolverWithMiniSummary<I, O, CtxOptions> = Box<
+    dyn Fn(IvoMiniSummary<I, O, CtxOptions>) -> BoxFuture<'static, ErasedValue>
+        + Send
+        + Sync
+        + 'static,
 >;
 
 pub enum ComputableEnumeratedError<ErrT: IvoErrorTool> {
@@ -85,10 +88,10 @@ pub enum ComputableEnumeratedError<ErrT: IvoErrorTool> {
     Func(UniformEnumErrorResolver<ErrT::FieldMetadata>),
 }
 
-pub enum ComputableWithMiniSummary<T, CtxOptions: Clone> {
+pub enum ComputableWithMiniSummary<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
     Static(T),
-    AsyncFunc(UniformAsyncResolverWithMiniSummary<CtxOptions>),
-    SyncFunc(UniformResolverWithMiniSummary<CtxOptions>),
+    AsyncFunc(UniformAsyncResolverWithMiniSummary<I, O, CtxOptions>),
+    SyncFunc(UniformResolverWithMiniSummary<I, O, CtxOptions>),
 }
 
 pub enum ComputableInit<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
@@ -104,18 +107,41 @@ pub enum ComputableRequired<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: 
 
 pub type Context = HashMap<String, ErasedValue>;
 
-pub struct IvoMiniSummary<CtxOptions: Clone> {
-    pub context: Context,
-    pub options: CtxOptions,
+pub struct IvoMiniSummary<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
+    input: I::Partial,
+    input_values: I::Partial,
+    values: O::Partial,
+    options: CtxOptions,
 }
 
-impl<CtxOptions: Clone> IvoMiniSummary<CtxOptions> {
-    pub fn new(context: Context, options: CtxOptions) -> Self {
-        Self { context, options }
+impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> IvoMiniSummary<I, O, CtxOptions> {
+    pub fn new(
+        input: I::Partial,
+        input_values: I::Partial,
+        values: O::Partial,
+        options: CtxOptions,
+    ) -> Self {
+        Self {
+            input,
+            input_values,
+            values,
+            options,
+        }
     }
 
-    pub fn ctx(&self) -> &Context {
-        &self.context
+    /// contains validated and up to date version of input_values
+    pub fn input(&self) -> I::Partial {
+        self.input.clone()
+    }
+
+    /// contains values provided at the start of the process
+    pub fn input_values(&self) -> I::Partial {
+        self.input_values.clone()
+    }
+
+    /// subset of output values related to current process
+    pub fn values(&self) -> O::Partial {
+        self.values.clone()
     }
 
     pub fn options(&self) -> &CtxOptions {
@@ -127,23 +153,17 @@ impl<CtxOptions: Clone> IvoMiniSummary<CtxOptions> {
     }
 }
 
-type InputValues = HashMap<String, ErasedValue>;
-type Changes = HashMap<String, ErasedValue>;
-
-// pub struct IvoSummary<CtxOptions: Clone> {
 pub enum IvoSummary<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
     Create {
-        context: Context,
         input: I::Partial,
-        input_values: InputValues,
-        // values: O,
+        input_values: I::Partial,
+        values: O::Partial,
         options: CtxOptions,
     },
     Update {
-        changes: Changes,
-        context: Context,
+        changes: O::Partial,
         input: I::Partial,
-        input_values: InputValues,
+        input_values: I::Partial,
         previous_values: O,
         values: O,
         options: CtxOptions,
@@ -152,33 +172,29 @@ pub enum IvoSummary<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
 
 impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> IvoSummary<I, O, CtxOptions> {
     pub fn for_new(
-        context: Context,
         input: I::Partial,
-        input_values: HashMap<String, ErasedValue>,
-        // values: O,
+        input_values: I::Partial,
+        values: O::Partial,
         options: CtxOptions,
     ) -> Self {
         Self::Create {
-            context,
             input,
             input_values,
-            // values,
+            values,
             options,
         }
     }
 
     pub fn for_update(
-        changes: HashMap<String, ErasedValue>,
-        context: Context,
+        changes: O::Partial,
         input: I::Partial,
-        input_values: HashMap<String, ErasedValue>,
+        input_values: I::Partial,
         previous_values: O,
         values: O,
         options: CtxOptions,
     ) -> Self {
         Self::Update {
             changes,
-            context,
             input,
             input_values,
             previous_values,
@@ -187,36 +203,43 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> IvoSummary<I, O,
         }
     }
 
-    pub fn changes(&self) -> Option<&Changes> {
+    /// subset of output values related to which will be
+    /// part of the final output of the current process
+    pub fn changes(&self) -> O::Partial {
         match &self {
-            IvoSummary::Update { changes, .. } => Some(changes),
-            _ => None,
+            IvoSummary::Create { values, .. } => values,
+            IvoSummary::Update { changes, .. } => changes,
         }
+        .clone()
     }
 
     pub fn is_update(&self) -> bool {
         matches!(self, IvoSummary::Update { .. })
     }
 
-    pub fn input(&self) -> &I::Partial {
+    /// contains validated and up to date version of input_values
+    pub fn input(&self) -> I::Partial {
         match &self {
             IvoSummary::Create { input, .. } => input,
             IvoSummary::Update { input, .. } => input,
         }
+        .clone()
     }
 
-    pub fn input_values(&self) -> &InputValues {
+    /// contains values provided at the start of the current process
+    pub fn input_values(&self) -> I::Partial {
         match &self {
             IvoSummary::Create { input_values, .. } => input_values,
             IvoSummary::Update { input_values, .. } => input_values,
         }
+        .clone()
     }
 
-    pub fn values(&self) -> Option<&O> {
+    /// subset of output values related to current process
+    pub fn values(&self) -> O::Partial {
         match &self {
-            // IvoSummary::Create { values, .. } => values,
-            IvoSummary::Update { values, .. } => Some(values),
-            _ => None,
+            IvoSummary::Create { values, .. } => values.clone(),
+            IvoSummary::Update { values, .. } => values.clone().into(),
         }
     }
 

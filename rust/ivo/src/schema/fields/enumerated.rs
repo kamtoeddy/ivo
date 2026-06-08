@@ -47,7 +47,7 @@ pub struct EnumFieldBuilder<
     // actual data...
     enum_values: Option<Vec<ErasedValue>>,
     enum_error: Option<ComputableEnumeratedError<ErrT>>,
-    default: Option<ComputableWithMiniSummary<ErasedValue, CtxOptions>>,
+    default: Option<ComputableWithMiniSummary<ErasedValue, I, O, CtxOptions>>,
     should_ignore_fn: Option<BooleanResolverWithMutSummary<I, O, CtxOptions>>,
     should_init: Option<ComputableInit<I, O, CtxOptions>>,
     should_update: Option<ComputableInit<I, O, CtxOptions>>,

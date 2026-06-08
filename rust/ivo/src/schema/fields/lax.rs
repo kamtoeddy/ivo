@@ -47,7 +47,7 @@ pub struct LaxFieldBuilder<
     _on_failure_fns: PhantomData<HasFailure>,
     _on_success_fns: PhantomData<HasSuccess>,
     // actual data...
-    default: Option<ComputableWithMiniSummary<ErasedValue, CtxOptions>>,
+    default: Option<ComputableWithMiniSummary<ErasedValue, I, O, CtxOptions>>,
     validator: Option<FieldValidator<I, O, CtxOptions, ErrT>>,
     re_validator: Option<FieldValidator<I, O, CtxOptions, ErrT>>,
     required: Option<ComputableRequired<I, O, CtxOptions>>,

@@ -27,12 +27,13 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
     };
 
     // Transform fields into Option<T>
-    let partial_fields = fields.iter().map(|f| {
-        let name = &f.ident;
-        let ty = &f.ty;
-        let field_vis = &f.vis;
+    let partial_fields = fields.iter().map(|field| {
+        let field_name = &field.ident;
+        let field_type = &field.ty;
+        let field_vis = &field.vis;
+
         quote! {
-            #field_vis #name: std::option::Option<#ty>,
+            #field_vis #field_name: std::option::Option<#field_type>,
         }
     });
 
@@ -132,7 +133,14 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
         }
     });
 
-    // Generate the new struct
+    let into_partial = fields.iter().map(|field| {
+        let field_name = &field.ident;
+
+        quote! {
+            #field_name: Some(value.#field_name),
+        }
+    });
+
     let expanded = quote! {
         #[derive(Clone, Debug, Default, PartialEq, Eq)]
         #vis struct #partial_name {
@@ -181,6 +189,14 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
         impl #crate_root::traits::HasFields for #name {
             fn ivo_internal_fields() -> Vec<String> {
                 #field_names.into_iter().map(|f| String::from(f)).collect()
+            }
+        }
+
+        impl From<#name> for #partial_name {
+            fn from(value: #name) -> #partial_name {
+                #partial_name {
+                    #( #into_partial )*
+                }
             }
         }
 

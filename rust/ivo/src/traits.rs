@@ -26,7 +26,17 @@ pub struct OptionalErasedMap {
 }
 
 pub trait IvoSchemaStruct:
-    Debug + Eq + Send + Sync + 'static + HasFields + HasPartial + FromToMap + WithUpdateDetails
+    Debug
+    + Eq
+    + Send
+    + Sync
+    + Sized
+    + 'static
+    + HasFields
+    + HasPartial
+    + FromToMap
+    + WithUpdateDetails
+    + Into<Self::Partial>
 {
 }
 
@@ -325,16 +335,16 @@ where
 
 pub trait IntoResolverWithMiniSummary<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
 {
-    fn into_uniform(self) -> UniformResolverWithMiniSummary<CtxOptions>;
+    fn into_uniform(self) -> UniformResolverWithMiniSummary<I, O, CtxOptions>;
 }
 
 impl<F, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
     IntoResolverWithMiniSummary<T, I, O, CtxOptions> for F
 where
     T: Clone + Debug + Send + Sync + 'static,
-    F: Fn(IvoMiniSummary<CtxOptions>) -> T + Send + Sync + 'static,
+    F: Fn(IvoMiniSummary<I, O, CtxOptions>) -> T + Send + Sync + 'static,
 {
-    fn into_uniform(self) -> UniformResolverWithMiniSummary<CtxOptions> {
+    fn into_uniform(self) -> UniformResolverWithMiniSummary<I, O, CtxOptions> {
         Box::new(move |s| erase_value(self(s)))
     }
 }
@@ -346,17 +356,17 @@ pub trait IntoAsyncResolverWithMiniSummary<
     CtxOptions: Clone,
 >
 {
-    fn into_uniform(self) -> UniformAsyncResolverWithMiniSummary<CtxOptions>;
+    fn into_uniform(self) -> UniformAsyncResolverWithMiniSummary<I, O, CtxOptions>;
 }
 
 impl<F, Fut, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
     IntoAsyncResolverWithMiniSummary<T, I, O, CtxOptions> for F
 where
     T: Clone + Debug + Send + Sync + 'static,
-    F: Fn(IvoMiniSummary<CtxOptions>) -> Fut + Send + Sync + 'static,
+    F: Fn(IvoMiniSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = T> + Send + 'static,
 {
-    fn into_uniform(self) -> UniformAsyncResolverWithMiniSummary<CtxOptions> {
+    fn into_uniform(self) -> UniformAsyncResolverWithMiniSummary<I, O, CtxOptions> {
         Box::new(move |s| Box::pin(self(s).map(|v| erase_value(v))))
     }
 }

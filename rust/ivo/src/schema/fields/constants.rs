@@ -29,7 +29,7 @@ pub struct ConstantFieldBuilder<
     _del_handlers: PhantomData<HasDelete>,
     _success_handlers: PhantomData<HasSuccess>,
     // actual data...
-    value: Option<ComputableWithMiniSummary<ErasedValue, CtxOptions>>,
+    value: Option<ComputableWithMiniSummary<ErasedValue, I, O, CtxOptions>>,
     on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
     on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
 }
