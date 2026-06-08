@@ -142,11 +142,11 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
                         let mut errors = Vec::with_capacity(2);
 
                         if input.username.is_some() {
-                            errors.push(("username", err.clone()));
+                            errors.push(("username".into(), err.clone()));
                         }
 
                         if input.slug_id.is_some() {
-                            errors.push(("v_slug", err));
+                            errors.push(("v_slug".into(), err));
                         }
 
                         return Err(errors);
@@ -157,8 +157,8 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
                     // let mut validated = IvoValues::new();
 
                     // validated
-                    //     .set("slug_id", slug_id.value())
-                    //     .set("username", "validated-username");
+                    //     .set("slug_id".into(), slug_id.value())
+                    //     .set("username".into(), "validated-username");
 
                     Ok(IvoValues::new())
                 })

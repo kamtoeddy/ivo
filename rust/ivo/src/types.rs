@@ -295,7 +295,7 @@ pub type BooleanResolverWithMutSummary<I, O, CtxOptions> =
 pub type VirtualSanitiser<T, I, O, CtxOptions> = AsyncResolverWithMutSummaryFn<T, I, O, CtxOptions>;
 
 pub struct IvoValues {
-    data: HashMap<&'static str, ErasedValue>,
+    data: HashMap<String, ErasedValue>,
 }
 
 impl IvoValues {
@@ -307,17 +307,16 @@ impl IvoValues {
 
     pub fn set<T: Clone + Debug + Send + Sync + 'static>(
         &mut self,
-        field: &'static str,
+        field: &str,
         value: T,
     ) -> &mut Self {
-        self.data.insert(field, erase_value(value));
+        self.data.insert(field.to_owned(), erase_value(value));
 
         self
     }
 }
 
-pub type PostValidatorError<FieldErrorMetadata> =
-    Vec<(&'static str, ValidatorError<FieldErrorMetadata>)>;
+pub type PostValidatorError<FieldErrorMetadata> = Vec<(String, ValidatorError<FieldErrorMetadata>)>;
 
 pub type PostValidatorFn<I, O, CtxOptions, FieldErrorMetadata> = Box<
     dyn Fn(

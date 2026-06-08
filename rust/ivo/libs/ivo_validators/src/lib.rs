@@ -92,17 +92,17 @@ fn validate_string_validator_options<const N: usize>(options: &StringValidatorOp
     };
 }
 
-pub fn validate_credit_card(value: String) -> ValidatorResponse<String, &'static str> {
+pub fn validate_credit_card(value: String) -> ValidatorResponse<String, String> {
     let s = value.trim().to_string();
 
     if s.len() != 16 {
-        return Err("Invalid card number");
+        return Err("Invalid card number".into());
     }
 
     let digits: Vec<u32> = s.chars().filter_map(|c| c.to_digit(10)).collect();
 
     if digits.len() != 16 {
-        return Err("Invalid card number");
+        return Err("Invalid card number".into());
     }
 
     let check = digits[15];
@@ -116,7 +116,7 @@ pub fn validate_credit_card(value: String) -> ValidatorResponse<String, &'static
     let sum: u32 = to_check.iter().sum();
 
     if (10 - (sum % 10)) != check {
-        return Err("Invalid card number");
+        return Err("Invalid card number".into());
     }
 
     Ok(s)
