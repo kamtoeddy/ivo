@@ -6,9 +6,9 @@ pub enum TextStyle {
     // ColorYellow,
     // ColorRed,
     // ColorInversed,
-    FontBold,
+    FontBold = 5,
     // FontUnderlined,
-    Reset,
+    Reset = 7,
 }
 
 impl TextStyle {

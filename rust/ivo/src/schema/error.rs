@@ -1,7 +1,5 @@
 use std::collections::HashMap;
 
-use crate::utils::styled_text::Stylable;
-
 #[derive(Debug, Clone)]
 pub enum UpdateError<E: IvoErrorTool> {
     NothingToUpdate,
@@ -75,8 +73,8 @@ pub struct SchemaError {
     payload: HashMap<String, Vec<String>>,
 }
 
-// const CLI_COLOR_RED: &'static str = "\x1b[31m";
-// const CLI_COLOR_RESET: &'static str = "\x1b[0m";
+const CLI_STYLE_COLOR_RED: &'static str = "\x1b[31m";
+const CLI_STYLE_RESET: &'static str = "\x1b[0m";
 
 impl SchemaError {
     pub fn new() -> Self {
@@ -100,40 +98,28 @@ impl SchemaError {
     }
 
     pub fn throw(self) {
-        // println!("\n{}", "Schema errors:".colored_red());
-        let mut err = format!("\n{}", "Schema errors:".font_bold());
+        println!("\n{} Schema errors:", CLI_STYLE_COLOR_RED);
 
         let mut pv: Vec<_> = self.payload.into_iter().collect();
         pv.sort_by(|a, b| a.0.cmp(&b.0));
 
         for (prop, errors) in pv {
-            err += "\n";
-            // println!();
+            println!();
 
             if errors.len() == 1 {
-                err += format!("  {}", "[".colored_red()).as_str();
-                err += format!("{}", prop.font_bold().colored_red()).as_str();
-                err += format!("{}", "]: ".colored_red()).as_str();
-                err += format!("{}\n", errors[0].colored_red()).as_str();
+                println!(" [{prop}]: {}", errors[0]);
 
                 continue;
             }
 
-            err += format!("  {}", "[".colored_red()).as_str();
-            err += format!("{}", prop.font_bold()).as_str();
-            err += format!("{}\n", "]".colored_red()).as_str();
+            println!(" [{prop}]:");
 
             for (i, m) in errors.iter().enumerate() {
-                let idx = i + 1;
-                err += format!("    {}) ", idx.colored_red()).as_str();
-                err += format!("{}\n", m.colored_red()).as_str();
-                // println!("    { }) {m}", i + 1);
+                println!("    { }) {m}", i + 1);
             }
         }
 
-        print!("{}", err.colored_red());
-
-        println!("\n{}", "Invalid schema detected".colored_red(),);
+        println!("\n{}Invalid schema detected", CLI_STYLE_RESET);
         // panic!("\nInvalid schema detected");
     }
 }
