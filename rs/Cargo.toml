@@ -1,4 +1,3 @@
 [workspace]
-members = ["ivo", "ivo_struct",  "ivo_validators"]
-exclude = ["demos"]
+members = ["ivo", "ivo_struct",  "ivo_validators", "demos"]
 resolver = "2"

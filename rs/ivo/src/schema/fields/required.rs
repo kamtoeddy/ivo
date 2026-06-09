@@ -22,9 +22,9 @@ pub struct RequiredFieldBuilder<
     O: IvoSchemaStruct,
     CtxOptions: Clone,
     ErrT: IvoErrorTool,
-    HasRequiredError = No,
     HasValidator = No,
     HasRevalidator = No,
+    HasRequiredError = No,
     HasShouldUpdate = No,
     HasDelete = No,
     HasFailure = No,
@@ -49,9 +49,9 @@ pub struct RequiredFieldBuilder<
 }
 
 impl<
-        HasRequiredError,
         HasValidator,
         HasRevalidator,
+        HasRequiredError,
         HasShouldUpdate,
         HasDelete,
         HasFailure,
@@ -68,9 +68,9 @@ impl<
         O,
         CtxOptions,
         ErrT,
-        HasRequiredError,
         HasValidator,
         HasRevalidator,
+        HasRequiredError,
         HasShouldUpdate,
         HasDelete,
         HasFailure,
@@ -99,9 +99,9 @@ impl<
 }
 
 impl<
-        HasRequiredError,
         HasValidator,
         HasRevalidator,
+        HasRequiredError,
         HasShouldUpdate,
         HasDelete,
         HasFailure,
@@ -118,9 +118,9 @@ impl<
         O,
         CtxOptions,
         ErrT,
-        HasRequiredError,
         HasValidator,
         HasRevalidator,
+        HasRequiredError,
         HasShouldUpdate,
         HasDelete,
         HasFailure,
@@ -134,6 +134,7 @@ impl<
 
 impl<
         HasRevalidator,
+        HasRequiredError,
         HasShouldUpdate,
         HasDelete,
         HasFailure,
@@ -151,8 +152,8 @@ impl<
         CtxOptions,
         ErrT,
         Yes,
-        Yes,
         HasRevalidator,
+        HasRequiredError,
         HasShouldUpdate,
         HasDelete,
         HasFailure,
@@ -174,20 +175,30 @@ impl<
     }
 }
 
-impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErrorTool>
-    RequiredFieldBuilder<T, I, O, CtxOptions, ErrT>
+impl<
+        HasValidator,
+        HasRevalidator,
+        T,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions: Clone,
+        ErrT: IvoErrorTool,
+    > RequiredFieldBuilder<T, I, O, CtxOptions, ErrT, HasValidator, HasRevalidator>
 {
-    pub fn error(
+    pub fn required_error(
         self,
         error: &'static str,
-    ) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrT, Yes> {
+    ) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrT, HasValidator, HasRevalidator, Yes> {
         RequiredFieldBuilder {
             required_error: Some(ComputableRequiredError::Static(error)),
             ..Default::default()
         }
     }
 
-    pub fn error_fn<R>(self, resolver: R) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrT, Yes>
+    pub fn required_error_fn<R>(
+        self,
+        resolver: R,
+    ) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrT, HasValidator, HasRevalidator, Yes>
     where
         R: IntoRequiredResolverFn<I, O, CtxOptions>,
     {
@@ -198,13 +209,19 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErro
     }
 }
 
-impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErrorTool>
-    RequiredFieldBuilder<T, I, O, CtxOptions, ErrT, Yes>
+impl<
+        HasRequiredError,
+        T,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions: Clone,
+        ErrT: IvoErrorTool,
+    > RequiredFieldBuilder<T, I, O, CtxOptions, ErrT, No, No, HasRequiredError>
 {
     pub fn validate<F>(
         self,
         validator: F,
-    ) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes>
+    ) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, No, HasRequiredError>
     where
         F: IntoFieldValidator<T, I, O, CtxOptions, ErrT>,
     {
@@ -215,13 +232,19 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErro
     }
 }
 
-impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErrorTool>
-    RequiredFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes>
+impl<
+        HasRequiredError,
+        T,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions: Clone,
+        ErrT: IvoErrorTool,
+    > RequiredFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, No, HasRequiredError>
 {
     pub fn re_validate<F>(
         self,
         re_validator: F,
-    ) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, Yes>
+    ) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, HasRequiredError>
     where
         F: IntoFieldValidator<T, I, O, CtxOptions, ErrT>,
     {
@@ -235,16 +258,18 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErro
 
 impl<
         HasRevalidator,
+        HasRequiredError,
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
         ErrT: IvoErrorTool,
-    > RequiredFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, HasRevalidator>
+    > RequiredFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, HasRevalidator, HasRequiredError>
 {
     pub fn readonly(
         self,
-    ) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, HasRevalidator, Yes> {
+    ) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, HasRevalidator, HasRequiredError, Yes>
+    {
         RequiredFieldBuilder {
             validator: self.validator,
             re_validator: self.re_validator,
@@ -256,7 +281,7 @@ impl<
     pub fn allow_update_if<R>(
         self,
         resolver: R,
-    ) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, HasRevalidator, Yes>
+    ) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, HasRevalidator, HasRequiredError, Yes>
     where
         R: IntoResolverWithMutSummaryFn<bool, I, O, CtxOptions>,
     {
@@ -272,6 +297,7 @@ impl<
 // ON_DELETE is only available if HasDelete is 'No'
 impl<
         HasRevalidator,
+        HasRequiredError,
         HasShouldUpdate,
         HasFailure,
         HasSuccess,
@@ -289,6 +315,7 @@ impl<
         ErrT,
         Yes,
         HasRevalidator,
+        HasRequiredError,
         HasShouldUpdate,
         No,
         HasFailure,
@@ -306,6 +333,7 @@ impl<
         ErrT,
         Yes,
         HasRevalidator,
+        HasRequiredError,
         HasShouldUpdate,
         Yes,
         HasFailure,
@@ -340,6 +368,7 @@ impl<
 // ON_FAILURE is only available if HasFailure is 'No'
 impl<
         HasRevalidator,
+        HasRequiredError,
         HasShouldUpdate,
         HasDelete,
         HasFailure,
@@ -358,6 +387,7 @@ impl<
         ErrT,
         Yes,
         HasRevalidator,
+        HasRequiredError,
         HasShouldUpdate,
         HasDelete,
         HasFailure,
@@ -375,6 +405,7 @@ impl<
         ErrT,
         Yes,
         HasRevalidator,
+        HasRequiredError,
         HasShouldUpdate,
         HasDelete,
         Yes,
@@ -409,6 +440,7 @@ impl<
 // ON_SUCCESS is only available if HasSuccess is 'No'
 impl<
         HasRevalidator,
+        HasRequiredError,
         HasShouldUpdate,
         HasDelete,
         HasFailure,
@@ -427,6 +459,7 @@ impl<
         ErrT,
         Yes,
         HasRevalidator,
+        HasRequiredError,
         HasShouldUpdate,
         HasDelete,
         HasFailure,
@@ -444,6 +477,7 @@ impl<
         ErrT,
         Yes,
         HasRevalidator,
+        HasRequiredError,
         HasShouldUpdate,
         HasDelete,
         HasFailure,

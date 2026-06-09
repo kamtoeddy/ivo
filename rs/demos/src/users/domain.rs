@@ -58,8 +58,11 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
                 .set(
                     "email",
                     IvoField::REQUIRED
-                        .error("Please provide an email address")
+                        .required_error("\"email\" is required!")
                         .validate(async |email, _| validate_email(email).map_err(|e| (e, None))),
+                    // .required_error_fn(async |_| {
+                    //     (false, "Please provide an email address".into())
+                    // }),
                 )
                 .set(
                     "role",
@@ -70,7 +73,7 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
                 .set(
                     "username",
                     IvoField::REQUIRED
-                        .error("Please provide a username")
+                        .required_error("Please provide a username")
                         .validate(async |v: String, _| {
                             const MIN_LEN: usize = 4;
 
