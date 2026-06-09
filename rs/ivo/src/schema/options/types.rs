@@ -43,8 +43,8 @@ pub struct PostValidationConfig<
     ErrT: IvoErrorTool,
 > {
     pub fields: Vec<&'static str>,
-    pub pre_validator: Option<PostValidatorFn<I, O, CtxOptions, ErrT::FieldMetadata>>,
-    pub validators: Vec<PostValidatorFn<I, O, CtxOptions, ErrT::FieldMetadata>>,
+    pub pre_validator: Option<PostValidator<I, O, CtxOptions, ErrT::FieldMetadata>>,
+    pub validators: Vec<PostValidator<I, O, CtxOptions, ErrT::FieldMetadata>>,
 }
 
 pub trait IntoPostValidator<
@@ -54,7 +54,7 @@ pub trait IntoPostValidator<
     ErrT: IvoErrorTool,
 >
 {
-    fn into_validator(self) -> PostValidatorFn<I, O, CtxOptions, ErrT::FieldMetadata>;
+    fn into_validator(self) -> PostValidator<I, O, CtxOptions, ErrT::FieldMetadata>;
 }
 
 impl<F, Fut, I, O, CtxOptions: Clone, ErrT: IvoErrorTool> IntoPostValidator<I, O, CtxOptions, ErrT>
@@ -68,7 +68,7 @@ where
         + Sync
         + 'static,
 {
-    fn into_validator(self) -> PostValidatorFn<I, O, CtxOptions, ErrT::FieldMetadata> {
+    fn into_validator(self) -> PostValidator<I, O, CtxOptions, ErrT::FieldMetadata> {
         Box::new(move |s| Box::pin(self(s)))
     }
 }
@@ -76,7 +76,7 @@ where
 pub type PostValidatorError<FieldErrorMetadata> =
     HashMap<String, ValidatorError<FieldErrorMetadata>>;
 
-pub type PostValidatorFn<I, O, CtxOptions, FieldErrorMetadata> = Box<
+pub type PostValidator<I, O, CtxOptions, FieldErrorMetadata> = Box<
     dyn Fn(
             IvoSummary<I, O, CtxOptions>,
         ) -> BoxFuture<'static, Result<IvoValues, PostValidatorError<FieldErrorMetadata>>>

@@ -9,7 +9,7 @@ use futures::stream::{FuturesUnordered, StreamExt};
 
 use crate::types::{IvoSchemaStruct, Partial, PartialFromToMap};
 
-type AsyncTriggerFn = Box<dyn Fn() -> BoxFuture<'static, ()> + Send + Sync>;
+type AsyncTrigger = Box<dyn Fn() -> BoxFuture<'static, ()> + Send + Sync>;
 
 impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: IvoErrorTool>
     Schema<I, O, CtxOptions, ErrorTool>
@@ -41,7 +41,7 @@ impl<
         &self,
         input: &Partial<I>,
         options: CtxOptions,
-    ) -> Result<(O, AsyncTriggerFn), (ErrorTool::ErrorPayload, AsyncTriggerFn)> {
+    ) -> Result<(O, AsyncTrigger), (ErrorTool::ErrorPayload, AsyncTrigger)> {
         let mut error_tool = ErrorTool::new();
         // let input_values = input.ivo_internal_to_optional_erased_map();
 
@@ -108,7 +108,7 @@ impl<
         data: &O,
         updates: &Partial<I>,
         options: CtxOptions,
-    ) -> Result<(Partial<O>, AsyncTriggerFn), (UpdateError<ErrorTool>, AsyncTriggerFn)> {
+    ) -> Result<(Partial<O>, AsyncTrigger), (UpdateError<ErrorTool>, AsyncTrigger)> {
         // Run validators for props in context
         self.run_async_validator(&updates, options).await;
 

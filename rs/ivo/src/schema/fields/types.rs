@@ -113,12 +113,12 @@ where
     }
 }
 
-pub trait IntoRequiredResolverFn<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
+pub trait IntoRequiredResolver<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
     fn into_resolver(self) -> RequiredResolver<I, O, CtxOptions>;
 }
 
 impl<F, Fut, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone + Send + 'static>
-    IntoRequiredResolverFn<I, O, CtxOptions> for F
+    IntoRequiredResolver<I, O, CtxOptions> for F
 where
     F: Fn(IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = RequiredError> + Send + 'static,
@@ -128,13 +128,12 @@ where
     }
 }
 
-pub trait IntoResolverWithMutSummaryFn<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
-{
+pub trait IntoResolverWithMutSummary<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
     fn into_resolver(self) -> ResolverWithMutSummary<T, I, O, CtxOptions>;
 }
 
 impl<F, Fut, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone>
-    IntoResolverWithMutSummaryFn<T, I, O, CtxOptions> for F
+    IntoResolverWithMutSummary<T, I, O, CtxOptions> for F
 where
     T: 'static,
     F: Fn(IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,

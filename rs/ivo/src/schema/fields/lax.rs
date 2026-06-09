@@ -8,8 +8,8 @@ use crate::{
             types::{
                 BooleanResolverWithMutSummary, ComputableInit, ComputableRequired,
                 ComputableWithMiniSummary, IntoDeleteHandler, IntoFailureHandler,
-                IntoFieldValidator, IntoRequiredResolverFn, IntoResolverWithMiniSummary,
-                IntoResolverWithMutSummaryFn, IntoSuccessHandler, UniformValidator,
+                IntoFieldValidator, IntoRequiredResolver, IntoResolverWithMiniSummary,
+                IntoResolverWithMutSummary, IntoSuccessHandler, UniformValidator,
             },
         },
     },
@@ -286,7 +286,7 @@ impl<
         resolver: R,
     ) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, HasRevalidator, Yes>
     where
-        R: IntoRequiredResolverFn<I, O, CtxOptions>,
+        R: IntoRequiredResolver<I, O, CtxOptions>,
     {
         LaxFieldBuilder {
             default: self.default,
@@ -325,7 +325,7 @@ impl<
         Yes,
     >
     where
-        R: IntoResolverWithMutSummaryFn<bool, I, O, CtxOptions>,
+        R: IntoResolverWithMutSummary<bool, I, O, CtxOptions>,
     {
         LaxFieldBuilder {
             default: self.default,
@@ -391,7 +391,7 @@ impl<
         YesComputed,
     >
     where
-        R: IntoResolverWithMutSummaryFn<bool, I, O, CtxOptions>,
+        R: IntoResolverWithMutSummary<bool, I, O, CtxOptions>,
     {
         LaxFieldBuilder {
             default: self.default,
@@ -447,7 +447,7 @@ impl<
         YesComputed,
     >
     where
-        R: IntoResolverWithMutSummaryFn<bool, I, O, CtxOptions>,
+        R: IntoResolverWithMutSummary<bool, I, O, CtxOptions>,
     {
         LaxFieldBuilder {
             default: self.default,
@@ -503,7 +503,7 @@ impl<
         Yes,
     >
     where
-        R: IntoResolverWithMutSummaryFn<bool, I, O, CtxOptions>,
+        R: IntoResolverWithMutSummary<bool, I, O, CtxOptions>,
     {
         LaxFieldBuilder {
             default: self.default,
@@ -559,7 +559,7 @@ impl<
         YesComputed,
     >
     where
-        R: IntoResolverWithMutSummaryFn<bool, I, O, CtxOptions>,
+        R: IntoResolverWithMutSummary<bool, I, O, CtxOptions>,
     {
         LaxFieldBuilder {
             default: self.default,
@@ -644,7 +644,7 @@ impl<
         YesComputed,
     >
     where
-        R: IntoResolverWithMutSummaryFn<bool, I, O, CtxOptions>,
+        R: IntoResolverWithMutSummary<bool, I, O, CtxOptions>,
     {
         LaxFieldBuilder {
             default: self.default,

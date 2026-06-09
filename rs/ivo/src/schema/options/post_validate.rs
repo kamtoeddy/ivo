@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 use crate::{
     schema::{
         error::IvoErrorTool,
-        options::types::{IntoPostValidator, PostValidationConfig, PostValidatorFn},
+        options::types::{IntoPostValidator, PostValidationConfig, PostValidator},
     },
     types::{No, Yes},
     IvoSchemaStruct,
@@ -23,8 +23,8 @@ pub struct PostValidateOptionBuilder<
     _validator: PhantomData<HasValidator>,
     // actual data...
     fields: Vec<&'static str>,
-    pre_validator: Option<PostValidatorFn<I, O, CtxOptions, ErrT::FieldMetadata>>,
-    validators: Vec<PostValidatorFn<I, O, CtxOptions, ErrT::FieldMetadata>>,
+    pre_validator: Option<PostValidator<I, O, CtxOptions, ErrT::FieldMetadata>>,
+    validators: Vec<PostValidator<I, O, CtxOptions, ErrT::FieldMetadata>>,
 }
 
 impl<

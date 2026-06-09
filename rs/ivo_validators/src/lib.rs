@@ -4,7 +4,7 @@ use regex::Regex;
 
 type ValidatorResponse<T, E = ()> = Result<T, E>;
 
-type ValidatorFn<T, E = ()> = Box<dyn Fn(T) -> ValidatorResponse<T, E>>;
+type Validator<T, E = ()> = Box<dyn Fn(T) -> ValidatorResponse<T, E>>;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum StringValidatorOptions<const N: usize> {
@@ -20,7 +20,7 @@ type StringValidatorError<const N: usize> = (String, Option<StringValidatorOptio
 
 pub fn make_string_validator<const N: usize>(
     options: StringValidatorOptions<N>,
-) -> ValidatorFn<String, StringValidatorError<N>> {
+) -> Validator<String, StringValidatorError<N>> {
     validate_string_validator_options(&options);
 
     Box::new(move |value: String| {
