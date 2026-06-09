@@ -98,6 +98,21 @@ where
     }
 }
 
+pub trait IntoRequiredErrorResolver<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
+    fn into_resolver(self) -> RequiredResolver<I, O, CtxOptions>;
+}
+
+impl<F, Fut, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone + Send + 'static>
+    IntoRequiredErrorResolver<I, O, CtxOptions> for F
+where
+    F: Fn(IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
+    Fut: Future<Output = String> + Send + 'static,
+{
+    fn into_resolver(self) -> RequiredResolver<I, O, CtxOptions> {
+        Box::new(move |s| Box::pin(self(s).map(|e| (true, e))))
+    }
+}
+
 pub trait IntoRequiredResolverFn<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
     fn into_resolver(self) -> RequiredResolver<I, O, CtxOptions>;
 }
