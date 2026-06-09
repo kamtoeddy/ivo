@@ -14,5 +14,5 @@ validators = ["dep:ivo_validators"]
 [dependencies]
 chrono = "0.4"
 futures = "0.3"
-ivo_struct = { path = "./libs/ivo_struct" }
-ivo_validators = { path = "./libs/ivo_validators", optional = true}
+ivo_struct = { path = "../ivo_struct" }
+ivo_validators = { path = "../ivo_validators", optional = true}

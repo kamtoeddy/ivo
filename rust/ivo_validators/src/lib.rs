@@ -162,9 +162,9 @@ mod tests {
 
         let validator = make_string_validator(options.clone());
 
-        let role = allowed_roles.get(0).unwrap().clone();
+        let role = allowed_roles.get(0).cloned().unwrap();
 
-        match validator(String::from(role.clone())) {
+        match validator(String::from(role)) {
             Ok(s) => assert_eq!(s, role),
             Err(e) => panic!("unexpected invalid: {:?}", e),
         }
