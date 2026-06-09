@@ -5,7 +5,7 @@ mod domain;
 
 use crate::{
     users::domain::{PartialUserInput, USER_MODEL, User, UserCtxOptions, UserRole},
-    utils::styled_text::Stylable,
+    utils::{format_bytes, styled_text::Stylable},
 };
 
 pub async fn run_users_demo() {
@@ -22,7 +22,7 @@ pub async fn run_users_demo() {
 
     let r = USER_MODEL.create(&input, ctx_options.clone()).await;
 
-    println!("size:  {} B", mem::size_of_val(&r));
+    println!("size:  {}", format_bytes(&mem::size_of_val(&r)));
 
     match r {
         Ok((data, _handle_success)) => {
