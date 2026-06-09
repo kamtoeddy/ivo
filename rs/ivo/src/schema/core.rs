@@ -209,53 +209,6 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: I
             }
         }
 
-        // Second pass: checks that require knowledge of all props
-        for (prop, def) in &self.field_configs {
-            if let Some(enum_values) = &def.enum_values {
-                if enum_values.len() < 2 {
-                    err_tool.add(
-                        prop,
-                        "Allowed values must have at least 2 values".to_string(),
-                    );
-                } else {
-                    // let mut uniq = HashSet::new();
-                    // let mut ok = true;
-
-                    // for v in enum_values {
-                    //     if !uniq.insert(v) {
-                    //         ok = false;
-                    //         break;
-                    //     }
-                    // }
-
-                    // if !ok {
-                    //     err_tool.add(
-                    //         prop,
-                    //         "Allowed values must be an array of unique values".to_string(),
-                    //     );
-                    // } else {
-                    // let set: HashSet<ErasedValue> =
-                    //     enum_values.iter().map(|v| v.clone()).collect();
-                    // self.props_to_allowed_values_map.insert(prop.clone(), set);
-
-                    // if let Some(default_val) = self.defaults.get(prop) {
-                    //     if !self
-                    //         .props_to_allowed_values_map
-                    //         .get(prop)
-                    //         .unwrap()
-                    //         .contains(default_val)
-                    //     {
-                    //         err_tool.add(
-                    //             prop,
-                    //             "The default value must be an allowed value".to_string(),
-                    //         );
-                    //     }
-                    // }
-                    // }
-                }
-            }
-        }
-
         // Dependency analyses
         for dep in &self.dependents {
             let circular = self._get_circular_dependencies_of(dep);

@@ -4,9 +4,9 @@ use crate::{
     schema::{
         error::IvoErrorTool,
         fields::types::{
-            BooleanResolverWithMutSummary, ComputableEnumeratedError, ComputableInit,
-            ComputableRequired, ComputableRequiredError, ComputableWithMiniSummary,
-            ResolverWithMutSummary, UniformValidator, VirtualSanitiser,
+            BooleanResolverWithMutSummary, ComputableInit, ComputableRequired,
+            ComputableRequiredError, ComputableWithMiniSummary, ResolverWithMutSummary,
+            UniformValidator, VirtualSanitiser,
         },
     },
     types::{DeleteHandler, FailureHandler, SuccessHandler},
@@ -36,8 +36,6 @@ pub struct FieldConfig<
 > {
     pub _i: PhantomData<ErrT>,
     pub alias: Option<String>,
-    pub enum_error: Option<ComputableEnumeratedError<ErrT>>,
-    pub enum_values: Option<Vec<T>>,
     pub default: Option<ComputableWithMiniSummary<T, I, O, CtxOptions>>,
     pub depends_on: Option<Vec<&'static str>>,
     pub is_constant: bool,
@@ -72,8 +70,6 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErro
             value: None,
             default: None,
             depends_on: None,
-            enum_values: None,
-            enum_error: None,
             re_validator: None,
             required: None,
             required_error: None,

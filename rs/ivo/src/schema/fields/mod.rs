@@ -5,8 +5,7 @@ use crate::{
         error::IvoErrorTool,
         fields::{
             constants::ConstantFieldBuilder, dependents::DependentFieldBuilder,
-            enumerated::EnumFieldBuilder, lax::LaxFieldBuilder, required::RequiredFieldBuilder,
-            virtuals::VirtualFieldBuilder,
+            lax::LaxFieldBuilder, required::RequiredFieldBuilder, virtuals::VirtualFieldBuilder,
         },
     },
     IvoSchemaStruct,
@@ -15,7 +14,6 @@ use crate::{
 pub mod base;
 mod constants;
 mod dependents;
-mod enumerated;
 mod lax;
 mod required;
 pub mod types;
@@ -55,9 +53,6 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: Iv
     ///     changes
     pub const DEPENDENT: DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool> =
         DependentFieldBuilder::new();
-
-    /// Enum field
-    pub const ENUM: EnumFieldBuilder<T, I, O, CtxOptions, ErrorTool> = EnumFieldBuilder::new();
 
     /// Lax field
     pub const LAX: LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool> = LaxFieldBuilder::new();

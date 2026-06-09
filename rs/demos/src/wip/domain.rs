@@ -75,18 +75,6 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
                     .on_success(async |_| println!("on success 2")),
             )
             .set(
-                "enum",
-                IvoField::ENUM
-                    .values([true, false])
-                    .error_fn(|_| ("".into(), None))
-                    // .error("invalid option provided")
-                    .default_fn(async |_| true)
-                    .readonly()
-                    .on_delete(async |_, _| {})
-                    .on_failure(async |_| {})
-                    .on_success(async |_| {}),
-            )
-            .set(
                 "d",
                 IvoField::DEPENDENT
                     .default(String::from("Hello"))
