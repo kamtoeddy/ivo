@@ -1,6 +1,2 @@
-/coverage
-/dist
-/node_modules
-
 # Finder (MacOS) folder config
 .DS_Store
