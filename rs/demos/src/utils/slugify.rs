@@ -35,7 +35,7 @@ impl From<String> for SlugifiedString {
 static RE_ACCENTS: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"[\u{0300}-\u{036f}]").unwrap());
 static RE_SPACES: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\s+").unwrap());
 static RE_SPECIAL_CHARS: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"[^a-zA-Z0-9_!~\s]").unwrap());
+    LazyLock::new(|| Regex::new(r"[^a-zA-Z0-9_~\s]").unwrap());
 static RE_MINUSES: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"-+").unwrap());
 
 pub fn slugify(s: &str) -> SlugifiedString {
@@ -71,11 +71,8 @@ mod test {
     #[test]
     fn test_slugify() {
         let data = vec![
-            ("John doe", SlugifiedString("john-doe".into())),
-            (
-                " Crème  Brûlée & Cafe!!! ",
-                SlugifiedString("creme-brulee-cafe!!!".into()),
-            ),
+            ("John doe", "john-doe".into()),
+            (" ?Crème  Brûlée & Cafe!!!? #*", "creme-brulee-cafe".into()),
         ];
 
         for (input, slug) in data.iter() {
