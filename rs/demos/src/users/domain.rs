@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::LazyLock};
+use std::{collections::HashMap, future::ready, sync::LazyLock};
 
 use ivo::{IvoField, IvoStruct, IvoSummary, IvoValues, Model, Schema, validate_email};
 
@@ -39,8 +39,8 @@ pub struct UserCtxOptions {
 }
 
 impl UserCtxOptions {
-    async fn find_user_by_slug_id(&self, _slug: &SlugifiedString) -> Option<User> {
-        None
+    fn find_user_by_slug_id(&self, _slug: &SlugifiedString) -> impl Future<Output = Option<User>> {
+        ready(None)
     }
 
     fn update_slug_id(&mut self, slug_id: &SlugifiedString) {
@@ -54,35 +54,35 @@ pub static USER_MODEL: LazyLock<Model<UserInput, User, UserCtxOptions>> =
 pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = LazyLock::new(|| {
     Schema::new(
         |f| {
-            f.set("id", IvoField::CONSTANT.computed(async |_| 1234))
+            f.set("id", IvoField::CONSTANT.computed(|_| ready(1234)))
                 .set(
                     "email",
                     IvoField::REQUIRED
                         .required_error("\"email\" is required!")
-                        .validate(async |email, _| validate_email(email).map_err(|e| (e, None))),
+                        .validate(|email, _| ready(validate_email(email).map_err(|e| (e, None)))),
                     // .required_error_fn(async |_| "Please provide an email address".into()),
                 )
                 .set(
                     "role",
                     IvoField::LAX
                         .default(UserRole::User)
-                        .ignore_if(async |_| true),
+                        .ignore_if(|_| ready(true)),
                 )
                 .set(
                     "username",
                     IvoField::REQUIRED
                         .required_error("Please provide a username")
-                        .validate(async |v: String, _| {
+                        .validate(|v: String, _| {
                             const MIN_LEN: usize = 4;
 
                             if v.len() <= MIN_LEN {
-                                return Err((
+                                return ready(Err((
                                     format!("Username must be atleast {MIN_LEN} long"),
                                     None,
-                                ));
+                                )));
                             }
 
-                            Ok(v)
+                            ready(Ok(v))
                         }),
                 )
                 .set(
@@ -90,35 +90,35 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
                     IvoField::DEPENDENT
                         .default(Some(String::from("default value")))
                         .depends_on(["username"])
-                        .resolve(async |_| Some(String::from("resolved value"))),
+                        .resolve(|_| ready(Some(String::from("resolved value")))),
                 )
                 .set(
                     "slug_id",
                     IvoField::DEPENDENT
                         .default(SlugifiedString::from("value"))
                         .depends_on(["username", "v_slug"])
-                        .resolve(async |s: Summary| s.get_options().slug_id.clone().unwrap()),
+                        .resolve(|s: Summary| ready(s.get_options().slug_id.clone().unwrap())),
                 )
                 .set(
                     "v_slug",
-                    IvoField::VIRTUAL.alias("slug_id").validate(
-                        async |value: String, s: Summary| {
+                    IvoField::VIRTUAL
+                        .alias("slug_id")
+                        .validate(|value: String, s: Summary| {
                             let slug_id = slugify(&value);
 
                             let validated = slug_id.value();
 
                             if validated.len() < 2 {
-                                return Err((
+                                return ready(Err((
                                     "slug ids must be at least 2 characters long".into(),
                                     None,
-                                ));
+                                )));
                             }
 
                             s.get_options_mut().update_slug_id(&slug_id);
 
-                            Ok(validated)
-                        },
-                    ),
+                            ready(Ok(validated))
+                        }),
                 )
         },
         |o| {
@@ -163,12 +163,29 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
                     Ok(IvoValues::new())
                 })
             })
-            .on_success(["email"], |b| b.handle(async |_| println!("on success")))
-            .on_success(["username", "v_slug"], |b| {
-                b.handle(async |_| println!("on success"))
+            .on_success(["email"], |b| {
+                b.handle(|_| {
+                    println!("on success");
+                    ready(())
+                })
             })
-            .on_delete(async |_, _| println!("on delete"))
-            .on_delete(async |_, _| println!("on delete"))
+            .on_success(["username", "v_slug"], |b| {
+                b.handle(|_| {
+                    println!("on success");
+
+                    ready(())
+                })
+            })
+            .on_delete(|_, _| {
+                println!("on delete");
+
+                ready(())
+            })
+            .on_delete(|_, _| {
+                println!("on delete");
+
+                ready(())
+            })
         },
     )
 });
