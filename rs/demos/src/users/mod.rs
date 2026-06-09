@@ -1,5 +1,5 @@
 use ivo::{UpdateError, types::WithUpdateDetails};
-use std::time::Instant;
+use std::{mem, time::Instant};
 
 mod domain;
 
@@ -21,6 +21,8 @@ pub async fn run_users_demo() {
     };
 
     let r = USER_MODEL.create(&input, ctx_options.clone()).await;
+
+    println!("size:  {} B", mem::size_of_val(&r));
 
     match r {
         Ok((data, _handle_success)) => {

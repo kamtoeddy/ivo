@@ -85,22 +85,16 @@ impl<
         );
 
         if error_tool.is_loaded() {
-            return Err((
-                error_tool.payload(),
-                Box::new(move || Box::pin(async move {})),
-            ));
+            return Err((error_tool.payload(), Box::new(move || Box::pin(async {}))));
         }
 
         // self.add_timestamps(&mut context);
 
         // let output = O::ivo_internal_from_erased_map(&context);
 
-        // Ok((output, Box::new(move || Box::pin(async move {}))))
+        // Ok((output, Box::new(move || Box::pin(async  {}))))
 
-        Err((
-            error_tool.payload(),
-            Box::new(move || Box::pin(async move {})),
-        ))
+        Err((error_tool.payload(), Box::new(move || Box::pin(async {}))))
     }
 
     pub async fn update(
@@ -120,7 +114,7 @@ impl<
         if input_values.inner.len() == 0 {
             return Err((
                 UpdateError::NothingToUpdate,
-                Box::new(move || Box::pin(async move {})),
+                Box::new(move || Box::pin(async {})),
             ));
         }
 
@@ -139,11 +133,11 @@ impl<
         if !has_updated_fields {
             return Err((
                 UpdateError::NothingToUpdate,
-                Box::new(move || Box::pin(async move {})),
+                Box::new(move || Box::pin(async {})),
             ));
         }
 
-        Ok((updated_values, Box::new(move || Box::pin(async move {}))))
+        Ok((updated_values, Box::new(move || Box::pin(async {}))))
     }
 
     pub async fn delete(&self, data: &O) {
