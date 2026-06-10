@@ -1,8 +1,8 @@
 use std::{collections::HashMap, future::ready, sync::LazyLock};
 
-use ivo::{FutureExt, IvoContext, IvoField, IvoStruct, IvoValues, Model, Schema, validate_email};
+use ivo::{validate_email, FutureExt, IvoContext, IvoField, IvoStruct, IvoValues, Model, Schema};
 
-use crate::utils::slugify::{SlugifiedString, slugify};
+use crate::utils::slugify::{slugify, SlugifiedString};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum UserRole {
@@ -44,7 +44,7 @@ impl<'a> UserCtxOptions {
         ready(None)
     }
 
-    fn update_slug_id(&'a self, _slug_id: &SlugifiedString) {
+    fn update_slug_id(&self, _slug_id: &SlugifiedString) {
         // self.slug_id = Some(slug_id.clone());
     }
 }
