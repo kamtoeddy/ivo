@@ -21,13 +21,13 @@ pub struct ConstantFieldBuilder<
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
     CtxOptions: Clone,
-    ErrT: IvoErrorTool,
+    ErrorTool: IvoErrorTool,
     HasDefault = No,
     HasDelete = No,
     HasSuccess = No,
 > {
     _t: PhantomData<T>,
-    _err: PhantomData<ErrT>,
+    _err: PhantomData<ErrorTool>,
     _default: PhantomData<HasDefault>,
     _del_handlers: PhantomData<HasDelete>,
     _success_handlers: PhantomData<HasSuccess>,
@@ -45,8 +45,8 @@ impl<
         O: IvoSchemaStruct,
         T,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
-    > ConstantFieldBuilder<T, I, O, CtxOptions, ErrT, HasDefault, HasDelete, HasSuccess>
+        ErrorTool: IvoErrorTool,
+    > ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasDefault, HasDelete, HasSuccess>
 {
     pub const fn new() -> Self {
         Self {
@@ -70,9 +70,9 @@ impl<
         O: IvoSchemaStruct,
         T,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
+        ErrorTool: IvoErrorTool,
     > Default
-    for ConstantFieldBuilder<T, I, O, CtxOptions, ErrT, HasDefault, HasDelete, HasSuccess>
+    for ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasDefault, HasDelete, HasSuccess>
 {
     fn default() -> Self {
         Self::new()
@@ -86,11 +86,11 @@ impl<
         O: IvoSchemaStruct,
         T: Clone + Debug + Send + Sync + 'static,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
-    > BuildableFieldConfig<I, O, CtxOptions, ErrT>
-    for ConstantFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, HasDelete, HasSuccess>
+        ErrorTool: IvoErrorTool,
+    > BuildableFieldConfig<I, O, CtxOptions, ErrorTool>
+    for ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, HasDelete, HasSuccess>
 {
-    fn build(self) -> InternalFieldConfig<I, O, CtxOptions, ErrT> {
+    fn build(self) -> InternalFieldConfig<I, O, CtxOptions, ErrorTool> {
         FieldConfig {
             value: self.value,
             on_delete_fns: self.on_delete_fns,
@@ -105,10 +105,10 @@ impl<
         O: IvoSchemaStruct,
         T: Clone + Debug + Send + Sync + 'static,
         CtxOptions: Clone + Send,
-        ErrT: IvoErrorTool,
-    > ConstantFieldBuilder<T, I, O, CtxOptions, ErrT>
+        ErrorTool: IvoErrorTool,
+    > ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool>
 {
-    pub fn value(self, value: T) -> ConstantFieldBuilder<T, I, O, CtxOptions, ErrT, Yes> {
+    pub fn value(self, value: T) -> ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes> {
         ConstantFieldBuilder {
             value: Some(ComputableWithMiniSummary::Static(erase_value(value))),
             on_delete_fns: None,
@@ -117,7 +117,10 @@ impl<
         }
     }
 
-    pub fn computed<F>(self, resolver: F) -> ConstantFieldBuilder<T, I, O, CtxOptions, ErrT, Yes>
+    pub fn computed<F>(
+        self,
+        resolver: F,
+    ) -> ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes>
     where
         F: IntoResolverWithMiniSummary<T, I, O, CtxOptions>,
     {
@@ -138,13 +141,13 @@ impl<
         O: IvoSchemaStruct,
         T,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
-    > ConstantFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, HasDelete, HasSuccess>
+        ErrorTool: IvoErrorTool,
+    > ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, HasDelete, HasSuccess>
 {
     pub fn on_delete<H>(
         self,
         handler: H,
-    ) -> ConstantFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, HasSuccess>
+    ) -> ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, Yes, HasSuccess>
     where
         H: IntoDeleteHandler<O, CtxOptions>,
     {
@@ -176,13 +179,13 @@ impl<
         O: IvoSchemaStruct,
         T,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
-    > ConstantFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, HasDelete, HasSuccess>
+        ErrorTool: IvoErrorTool,
+    > ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, HasDelete, HasSuccess>
 {
     pub fn on_success<H>(
         self,
         handler: H,
-    ) -> ConstantFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, HasDelete, Yes>
+    ) -> ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, HasDelete, Yes>
     where
         H: IntoSuccessHandler<I, O, CtxOptions>,
     {

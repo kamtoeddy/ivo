@@ -23,7 +23,7 @@ pub struct LaxFieldBuilder<
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
     CtxOptions: Clone,
-    ErrT: IvoErrorTool,
+    ErrorTool: IvoErrorTool,
     HasDefault = No,
     HasValidator = No,
     HasRevalidator = No,
@@ -48,8 +48,8 @@ pub struct LaxFieldBuilder<
     _on_success_fns: PhantomData<HasSuccess>,
     // actual data...
     default: Option<ComputableWithMiniSummary<ErasedValue, I, O, CtxOptions>>,
-    validator: Option<UniformValidator<I, O, CtxOptions, ErrT::FieldMetadata>>,
-    re_validator: Option<UniformValidator<I, O, CtxOptions, ErrT::FieldMetadata>>,
+    validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
+    re_validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
     required: Option<ComputableRequired<I, O, CtxOptions>>,
     should_ignore_fn: Option<BooleanResolverWithMutSummary<I, O, CtxOptions>>,
     should_init: Option<ComputableInit<I, O, CtxOptions>>,
@@ -74,14 +74,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
+        ErrorTool: IvoErrorTool,
     >
     LaxFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         HasDefault,
         HasValidator,
         HasRevalidator,
@@ -136,14 +136,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
+        ErrorTool: IvoErrorTool,
     > Default
     for LaxFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         HasDefault,
         HasValidator,
         HasRevalidator,
@@ -175,14 +175,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
-    > BuildableFieldConfig<I, O, CtxOptions, ErrT>
+        ErrorTool: IvoErrorTool,
+    > BuildableFieldConfig<I, O, CtxOptions, ErrorTool>
     for LaxFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         Yes,
         HasRevalidator,
         HasDefault,
@@ -195,7 +195,7 @@ impl<
         HasSuccess,
     >
 {
-    fn build(self) -> InternalFieldConfig<I, O, CtxOptions, ErrT> {
+    fn build(self) -> InternalFieldConfig<I, O, CtxOptions, ErrorTool> {
         FieldConfig {
             default: self.default,
             validator: self.validator,
@@ -217,17 +217,20 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
-    > LaxFieldBuilder<T, I, O, CtxOptions, ErrT>
+        ErrorTool: IvoErrorTool,
+    > LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool>
 {
-    pub fn default(self, value: T) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrT, Yes> {
+    pub fn default(self, value: T) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes> {
         LaxFieldBuilder {
             default: Some(ComputableWithMiniSummary::Static(erase_value(value))),
             ..Default::default()
         }
     }
 
-    pub fn default_fn<F>(self, default_fn: F) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrT, Yes>
+    pub fn default_fn<F>(
+        self,
+        default_fn: F,
+    ) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes>
     where
         F: IntoResolverWithMiniSummary<T, I, O, CtxOptions>,
     {
@@ -238,12 +241,15 @@ impl<
     }
 }
 
-impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErrorTool>
-    LaxFieldBuilder<T, I, O, CtxOptions, ErrT, Yes>
+impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: IvoErrorTool>
+    LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes>
 {
-    pub fn validate<F>(self, validator: F) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes>
+    pub fn validate<F>(
+        self,
+        validator: F,
+    ) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, Yes>
     where
-        F: IntoFieldValidator<T, I, O, CtxOptions, ErrT>,
+        F: IntoFieldValidator<T, I, O, CtxOptions, ErrorTool>,
     {
         LaxFieldBuilder {
             default: self.default,
@@ -253,15 +259,15 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErro
     }
 }
 
-impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErrorTool>
-    LaxFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes>
+impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: IvoErrorTool>
+    LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, Yes>
 {
     pub fn re_validate<F>(
         self,
         re_validator: F,
-    ) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes>
+    ) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, Yes>
     where
-        F: IntoFieldValidator<T, I, O, CtxOptions, ErrT>,
+        F: IntoFieldValidator<T, I, O, CtxOptions, ErrorTool>,
     {
         LaxFieldBuilder {
             default: self.default,
@@ -278,13 +284,13 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
-    > LaxFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, HasRevalidator>
+        ErrorTool: IvoErrorTool,
+    > LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, Yes, HasRevalidator>
 {
     pub fn required_if<R>(
         self,
         resolver: R,
-    ) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, HasRevalidator, Yes>
+    ) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, Yes, HasRevalidator, Yes>
     where
         R: IntoRequiredResolver<I, O, CtxOptions>,
     {
@@ -306,8 +312,9 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
-    > LaxFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, HasValidator, HasRevalidator, HasRequired>
+        ErrorTool: IvoErrorTool,
+    >
+    LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, HasValidator, HasRevalidator, HasRequired>
 {
     pub fn ignore_if<R>(
         self,
@@ -317,7 +324,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         Yes,
         HasValidator,
         HasRevalidator,
@@ -346,8 +353,9 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
-    > LaxFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, HasValidator, HasRevalidator, HasRequired>
+        ErrorTool: IvoErrorTool,
+    >
+    LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, HasValidator, HasRevalidator, HasRequired>
 {
     pub fn ignore_init(
         self,
@@ -356,7 +364,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         Yes,
         HasValidator,
         HasRevalidator,
@@ -382,7 +390,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         Yes,
         HasValidator,
         HasRevalidator,
@@ -410,7 +418,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         Yes,
         HasValidator,
         HasRevalidator,
@@ -437,7 +445,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         Yes,
         HasValidator,
         HasRevalidator,
@@ -468,14 +476,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
+        ErrorTool: IvoErrorTool,
     >
     LaxFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         Yes,
         HasValidator,
         HasRevalidator,
@@ -493,7 +501,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         Yes,
         HasValidator,
         HasRevalidator,
@@ -524,14 +532,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
+        ErrorTool: IvoErrorTool,
     >
     LaxFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         Yes,
         HasValidator,
         HasRevalidator,
@@ -549,7 +557,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         Yes,
         HasValidator,
         HasRevalidator,
@@ -581,14 +589,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
+        ErrorTool: IvoErrorTool,
     >
     LaxFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         Yes,
         HasValidator,
         HasRevalidator,
@@ -605,7 +613,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         Yes,
         HasValidator,
         HasRevalidator,
@@ -634,7 +642,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         Yes,
         HasValidator,
         HasRevalidator,
@@ -672,14 +680,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
+        ErrorTool: IvoErrorTool,
     >
     LaxFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         Yes,
         HasValidator,
         HasRevalidator,
@@ -700,7 +708,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         Yes,
         HasValidator,
         HasRevalidator,
@@ -756,14 +764,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
+        ErrorTool: IvoErrorTool,
     >
     LaxFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         Yes,
         Yes,
         HasRevalidator,
@@ -784,7 +792,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         Yes,
         Yes,
         HasRevalidator,
@@ -840,14 +848,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
+        ErrorTool: IvoErrorTool,
     >
     LaxFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         Yes,
         HasValidator,
         HasRevalidator,
@@ -868,7 +876,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         Yes,
         HasValidator,
         HasRevalidator,

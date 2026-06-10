@@ -59,22 +59,23 @@ pub trait IntoFieldValidator<
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
     CtxOptions: Clone,
-    ErrT: IvoErrorTool,
+    ErrorTool: IvoErrorTool,
 >
 {
-    fn into_uniform(self) -> UniformValidator<I, O, CtxOptions, ErrT::FieldMetadata>;
+    fn into_uniform(self) -> UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>;
 }
 
-impl<F, Fut, T, I, O, CtxOptions: Clone, ErrT> IntoFieldValidator<T, I, O, CtxOptions, ErrT> for F
+impl<F, Fut, T, I, O, CtxOptions: Clone, ErrorTool>
+    IntoFieldValidator<T, I, O, CtxOptions, ErrorTool> for F
 where
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
-    ErrT: IvoErrorTool,
+    ErrorTool: IvoErrorTool,
     T: Clone + Debug + Send + Sync + 'static,
     F: Fn(T, IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
-    Fut: Future<Output = ValidatorResponse<T, ErrT::FieldMetadata>> + Send + Sync + 'static,
+    Fut: Future<Output = ValidatorResponse<T, ErrorTool::FieldMetadata>> + Send + Sync + 'static,
 {
-    fn into_uniform(self) -> UniformValidator<I, O, CtxOptions, ErrT::FieldMetadata> {
+    fn into_uniform(self) -> UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata> {
         Box::new(move |v, s| {
             Box::pin(self(parse_or_panic::<T>(&v), s).map(|r| r.map(|v| erase_value(v))))
         })
@@ -187,7 +188,7 @@ where
 
 pub type UniformValidator<I, O, CtxOptions, FieldMetadata> = Box<
     dyn Fn(
-            ErasedValue,
+            &ErasedValue,
             IvoSummary<I, O, CtxOptions>,
         ) -> BoxFuture<'static, ValidatorResponse<ErasedValue, FieldMetadata>>
         + Send

@@ -17,16 +17,16 @@ pub mod post_validate;
 pub mod timestamp_tool;
 mod types;
 
-pub use types::IvoValues;
+pub use types::{IvoValues, PostValidatorResponse};
 
 pub trait BuildableSchemaOptions<
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
     CtxOptions: Clone,
-    ErrT: IvoErrorTool,
+    ErrorTool: IvoErrorTool,
 >
 {
-    fn build(self) -> SchemaOptions<I, O, CtxOptions, ErrT>;
+    fn build(self) -> SchemaOptions<I, O, CtxOptions, ErrorTool>;
 }
 
 impl<
@@ -39,13 +39,13 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
-    > BuildableSchemaOptions<I, O, CtxOptions, ErrT>
+        ErrorTool: IvoErrorTool,
+    > BuildableSchemaOptions<I, O, CtxOptions, ErrorTool>
     for SchemaOptionsBuilder<
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         HasIgnore,
         HasShouldUpdate,
         HasPostValidate,
@@ -54,7 +54,7 @@ impl<
         HasSuccess,
     >
 {
-    fn build(self) -> SchemaOptions<I, O, CtxOptions, ErrT> {
+    fn build(self) -> SchemaOptions<I, O, CtxOptions, ErrorTool> {
         SchemaOptions {
             on_delete_fns: self.on_delete_fns,
             on_success_fns: self.on_success_fns,
@@ -76,13 +76,13 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
+        ErrorTool: IvoErrorTool,
     >
     SchemaOptionsBuilder<
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         HasIgnore,
         HasShouldUpdate,
         HasPostValidate,
@@ -98,7 +98,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         HasIgnore,
         HasShouldUpdate,
         HasPostValidate,
@@ -131,7 +131,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         HasIgnore,
         HasShouldUpdate,
         HasPostValidate,
@@ -167,7 +167,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         HasIgnore,
         HasShouldUpdate,
         Yes,
@@ -176,13 +176,12 @@ impl<
         HasSuccess,
     >
     where
-        Builder: Fn(PostValidateOptionBuilder<I, O, CtxOptions, ErrT, Yes>) -> Buildable,
-        Buildable: BuildablePostValidator<I, O, CtxOptions, ErrT>,
+        Builder: Fn(PostValidateOptionBuilder<I, O, CtxOptions, ErrorTool, Yes>) -> Buildable,
+        Buildable: BuildablePostValidator<I, O, CtxOptions, ErrorTool>,
     {
-        let config = builder(PostValidateOptionBuilder::<I, O, CtxOptions, ErrT>::fields(
-            fields,
-        ))
-        .build();
+        let config =
+            builder(PostValidateOptionBuilder::<I, O, CtxOptions, ErrorTool>::fields(fields))
+                .build();
 
         let mut post_validate = self.post_validate.unwrap_or_default();
         post_validate.push(config);

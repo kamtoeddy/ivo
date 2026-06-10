@@ -18,23 +18,23 @@ pub trait BuildableFieldConfig<
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
     CtxOptions: Clone,
-    ErrT: IvoErrorTool,
+    ErrorTool: IvoErrorTool,
 >
 {
-    fn build(self) -> InternalFieldConfig<I, O, CtxOptions, ErrT>;
+    fn build(self) -> InternalFieldConfig<I, O, CtxOptions, ErrorTool>;
 }
 
-pub type InternalFieldConfig<I, O, CtxOptions, ErrT> =
-    FieldConfig<ErasedValue, I, O, CtxOptions, ErrT>;
+pub type InternalFieldConfig<I, O, CtxOptions, ErrorTool> =
+    FieldConfig<ErasedValue, I, O, CtxOptions, ErrorTool>;
 
 pub struct FieldConfig<
     T,
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
     CtxOptions: Clone,
-    ErrT: IvoErrorTool,
+    ErrorTool: IvoErrorTool,
 > {
-    pub _i: PhantomData<ErrT>,
+    pub _i: PhantomData<ErrorTool>,
     pub alias: Option<String>,
     pub default: Option<ComputableWithMiniSummary<T, I, O, CtxOptions>>,
     pub depends_on: Option<Vec<&'static str>>,
@@ -46,8 +46,8 @@ pub struct FieldConfig<
     pub required_error: Option<ComputableRequiredError<I, O, CtxOptions>>,
     pub resolver: Option<ResolverWithMutSummary<T, I, O, CtxOptions>>,
     pub sanitizer: Option<VirtualSanitiser<T, I, O, CtxOptions>>,
-    pub validator: Option<UniformValidator<I, O, CtxOptions, ErrT::FieldMetadata>>,
-    pub re_validator: Option<UniformValidator<I, O, CtxOptions, ErrT::FieldMetadata>>,
+    pub validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
+    pub re_validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
     //
     pub should_ignore: Option<BooleanResolverWithMutSummary<I, O, CtxOptions>>,
     pub should_init: Option<ComputableInit<I, O, CtxOptions>>,
@@ -58,8 +58,8 @@ pub struct FieldConfig<
     pub on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
 }
 
-impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErrorTool> Default
-    for FieldConfig<T, I, O, CtxOptions, ErrT>
+impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: IvoErrorTool> Default
+    for FieldConfig<T, I, O, CtxOptions, ErrorTool>
 {
     fn default() -> Self {
         Self {

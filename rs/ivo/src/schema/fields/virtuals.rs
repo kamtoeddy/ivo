@@ -23,7 +23,7 @@ pub struct VirtualFieldBuilder<
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
     CtxOptions: Clone,
-    ErrT: IvoErrorTool,
+    ErrorTool: IvoErrorTool,
     HasValidator = No,
     HasAlias = No,
     HasRevalidator = No,
@@ -48,8 +48,8 @@ pub struct VirtualFieldBuilder<
     _on_success_fns: PhantomData<HasSuccess>,
     // actual data...
     alias: Option<String>,
-    validator: Option<UniformValidator<I, O, CtxOptions, ErrT::FieldMetadata>>,
-    re_validator: Option<UniformValidator<I, O, CtxOptions, ErrT::FieldMetadata>>,
+    validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
+    re_validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
     required: Option<ComputableRequired<I, O, CtxOptions>>,
     sanitizer: Option<VirtualSanitiser<ErasedValue, I, O, CtxOptions>>,
     should_ignore_fn: Option<BooleanResolverWithMutSummary<I, O, CtxOptions>>,
@@ -74,14 +74,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
+        ErrorTool: IvoErrorTool,
     >
     VirtualFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         HasValidator,
         HasAlias,
         HasRevalidator,
@@ -136,14 +136,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
+        ErrorTool: IvoErrorTool,
     > Default
     for VirtualFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         HasValidator,
         HasAlias,
         HasRevalidator,
@@ -175,14 +175,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
-    > BuildableFieldConfig<I, O, CtxOptions, ErrT>
+        ErrorTool: IvoErrorTool,
+    > BuildableFieldConfig<I, O, CtxOptions, ErrorTool>
     for VirtualFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -195,7 +195,7 @@ impl<
         HasSuccess,
     >
 {
-    fn build(self) -> InternalFieldConfig<I, O, CtxOptions, ErrT> {
+    fn build(self) -> InternalFieldConfig<I, O, CtxOptions, ErrorTool> {
         FieldConfig {
             is_virtual: true,
             alias: self.alias,
@@ -220,8 +220,8 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
-    > VirtualFieldBuilder<T, I, O, CtxOptions, ErrT, HasValidator, No, HasRevalidator>
+        ErrorTool: IvoErrorTool,
+    > VirtualFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasValidator, No, HasRevalidator>
 {
     /// this can used to mask the actual name of the virtual field from the public
     /// if set, this name must replace the actual name of the virtual field on the input struct, I
@@ -229,7 +229,7 @@ impl<
     pub fn alias(
         self,
         name: &str,
-    ) -> VirtualFieldBuilder<T, I, O, CtxOptions, ErrT, HasValidator, Yes> {
+    ) -> VirtualFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasValidator, Yes> {
         VirtualFieldBuilder {
             alias: Some(name.to_string()),
             validator: self.validator,
@@ -252,15 +252,15 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
-    > VirtualFieldBuilder<T, I, O, CtxOptions, ErrT, No, HasAlias>
+        ErrorTool: IvoErrorTool,
+    > VirtualFieldBuilder<T, I, O, CtxOptions, ErrorTool, No, HasAlias>
 {
     pub fn validate<F>(
         self,
         validator: F,
-    ) -> VirtualFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, HasAlias>
+    ) -> VirtualFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, HasAlias>
     where
-        F: IntoFieldValidator<T, I, O, CtxOptions, ErrT>,
+        F: IntoFieldValidator<T, I, O, CtxOptions, ErrorTool>,
     {
         VirtualFieldBuilder {
             alias: self.alias,
@@ -276,15 +276,15 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
-    > VirtualFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, HasAlias>
+        ErrorTool: IvoErrorTool,
+    > VirtualFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, HasAlias>
 {
     pub fn re_validate<F>(
         self,
         re_validator: F,
-    ) -> VirtualFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, HasAlias, Yes>
+    ) -> VirtualFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, HasAlias, Yes>
     where
-        F: IntoFieldValidator<T, I, O, CtxOptions, ErrT>,
+        F: IntoFieldValidator<T, I, O, CtxOptions, ErrorTool>,
     {
         VirtualFieldBuilder {
             alias: self.alias,
@@ -302,13 +302,13 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
-    > VirtualFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, HasAlias, HasRevalidator>
+        ErrorTool: IvoErrorTool,
+    > VirtualFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, HasAlias, HasRevalidator>
 {
     pub fn required_if<R>(
         self,
         resolver: R,
-    ) -> VirtualFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, HasAlias, HasRevalidator, No, Yes>
+    ) -> VirtualFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, HasAlias, HasRevalidator, No, Yes>
     where
         R: IntoRequiredResolver<I, O, CtxOptions>,
     {
@@ -330,9 +330,20 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
+        ErrorTool: IvoErrorTool,
     >
-    VirtualFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, HasAlias, HasRevalidator, No, HasRequired>
+    VirtualFieldBuilder<
+        T,
+        I,
+        O,
+        CtxOptions,
+        ErrorTool,
+        Yes,
+        HasAlias,
+        HasRevalidator,
+        No,
+        HasRequired,
+    >
 {
     pub fn sanitize<F>(
         self,
@@ -342,7 +353,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -372,14 +383,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
+        ErrorTool: IvoErrorTool,
     >
     VirtualFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -395,7 +406,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -427,14 +438,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
+        ErrorTool: IvoErrorTool,
     >
     VirtualFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -449,7 +460,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -477,7 +488,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -507,7 +518,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -536,7 +547,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -570,14 +581,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
+        ErrorTool: IvoErrorTool,
     >
     VirtualFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -596,7 +607,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -630,14 +641,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
+        ErrorTool: IvoErrorTool,
     >
     VirtualFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -656,7 +667,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -691,14 +702,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
+        ErrorTool: IvoErrorTool,
     >
     VirtualFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -716,7 +727,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -746,7 +757,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -787,14 +798,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
+        ErrorTool: IvoErrorTool,
     >
     VirtualFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -815,7 +826,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -872,14 +883,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
+        ErrorTool: IvoErrorTool,
     >
     VirtualFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         Yes,
         HasAlias,
         HasRevalidator,
@@ -900,7 +911,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         Yes,
         HasAlias,
         HasRevalidator,

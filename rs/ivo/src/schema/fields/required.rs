@@ -21,7 +21,7 @@ pub struct RequiredFieldBuilder<
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
     CtxOptions: Clone,
-    ErrT: IvoErrorTool,
+    ErrorTool: IvoErrorTool,
     HasValidator = No,
     HasRevalidator = No,
     HasRequiredError = No,
@@ -40,8 +40,8 @@ pub struct RequiredFieldBuilder<
     _on_success_fns: PhantomData<HasSuccess>,
     // actual data...
     required_error: Option<ComputableRequiredError<I, O, CtxOptions>>,
-    validator: Option<UniformValidator<I, O, CtxOptions, ErrT::FieldMetadata>>,
-    re_validator: Option<UniformValidator<I, O, CtxOptions, ErrT::FieldMetadata>>,
+    validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
+    re_validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
     should_update: Option<ComputableInit<I, O, CtxOptions>>,
     on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
     on_failure_fns: Option<Vec<FailureHandler<I, O, CtxOptions>>>,
@@ -60,14 +60,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
+        ErrorTool: IvoErrorTool,
     >
     RequiredFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         HasValidator,
         HasRevalidator,
         HasRequiredError,
@@ -110,14 +110,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
+        ErrorTool: IvoErrorTool,
     > Default
     for RequiredFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         HasValidator,
         HasRevalidator,
         HasRequiredError,
@@ -143,14 +143,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
-    > BuildableFieldConfig<I, O, CtxOptions, ErrT>
+        ErrorTool: IvoErrorTool,
+    > BuildableFieldConfig<I, O, CtxOptions, ErrorTool>
     for RequiredFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         Yes,
         HasRevalidator,
         HasRequiredError,
@@ -160,7 +160,7 @@ impl<
         HasSuccess,
     >
 {
-    fn build(self) -> InternalFieldConfig<I, O, CtxOptions, ErrT> {
+    fn build(self) -> InternalFieldConfig<I, O, CtxOptions, ErrorTool> {
         FieldConfig {
             required_error: self.required_error,
             validator: self.validator,
@@ -182,13 +182,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
-    > RequiredFieldBuilder<T, I, O, CtxOptions, ErrT, HasValidator, HasRevalidator>
+        ErrorTool: IvoErrorTool,
+    > RequiredFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasValidator, HasRevalidator>
 {
     pub fn required_error(
         self,
         error: &'static str,
-    ) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrT, HasValidator, HasRevalidator, Yes> {
+    ) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasValidator, HasRevalidator, Yes>
+    {
         RequiredFieldBuilder {
             required_error: Some(ComputableRequiredError::Static(error)),
             ..Default::default()
@@ -198,7 +199,7 @@ impl<
     pub fn required_error_fn<R>(
         self,
         resolver: R,
-    ) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrT, HasValidator, HasRevalidator, Yes>
+    ) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasValidator, HasRevalidator, Yes>
     where
         R: IntoRequiredErrorResolver<I, O, CtxOptions>,
     {
@@ -215,15 +216,15 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
-    > RequiredFieldBuilder<T, I, O, CtxOptions, ErrT, No, No, HasRequiredError>
+        ErrorTool: IvoErrorTool,
+    > RequiredFieldBuilder<T, I, O, CtxOptions, ErrorTool, No, No, HasRequiredError>
 {
     pub fn validate<F>(
         self,
         validator: F,
-    ) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, No, HasRequiredError>
+    ) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, No, HasRequiredError>
     where
-        F: IntoFieldValidator<T, I, O, CtxOptions, ErrT>,
+        F: IntoFieldValidator<T, I, O, CtxOptions, ErrorTool>,
     {
         RequiredFieldBuilder {
             validator: Some(validator.into_uniform()),
@@ -238,15 +239,15 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
-    > RequiredFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, No, HasRequiredError>
+        ErrorTool: IvoErrorTool,
+    > RequiredFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, No, HasRequiredError>
 {
     pub fn re_validate<F>(
         self,
         re_validator: F,
-    ) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, HasRequiredError>
+    ) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, Yes, HasRequiredError>
     where
-        F: IntoFieldValidator<T, I, O, CtxOptions, ErrT>,
+        F: IntoFieldValidator<T, I, O, CtxOptions, ErrorTool>,
     {
         RequiredFieldBuilder {
             validator: self.validator,
@@ -263,13 +264,22 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
-    > RequiredFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, HasRevalidator, HasRequiredError>
+        ErrorTool: IvoErrorTool,
+    > RequiredFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, HasRevalidator, HasRequiredError>
 {
     pub fn readonly(
         self,
-    ) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, HasRevalidator, HasRequiredError, Yes>
-    {
+    ) -> RequiredFieldBuilder<
+        T,
+        I,
+        O,
+        CtxOptions,
+        ErrorTool,
+        Yes,
+        HasRevalidator,
+        HasRequiredError,
+        Yes,
+    > {
         RequiredFieldBuilder {
             validator: self.validator,
             re_validator: self.re_validator,
@@ -281,7 +291,17 @@ impl<
     pub fn allow_update_if<R>(
         self,
         resolver: R,
-    ) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, HasRevalidator, HasRequiredError, Yes>
+    ) -> RequiredFieldBuilder<
+        T,
+        I,
+        O,
+        CtxOptions,
+        ErrorTool,
+        Yes,
+        HasRevalidator,
+        HasRequiredError,
+        Yes,
+    >
     where
         R: IntoResolverWithMutSummary<bool, I, O, CtxOptions>,
     {
@@ -305,14 +325,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
+        ErrorTool: IvoErrorTool,
     >
     RequiredFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         Yes,
         HasRevalidator,
         HasRequiredError,
@@ -330,7 +350,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         Yes,
         HasRevalidator,
         HasRequiredError,
@@ -377,14 +397,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
+        ErrorTool: IvoErrorTool,
     >
     RequiredFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         Yes,
         HasRevalidator,
         HasRequiredError,
@@ -402,7 +422,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         Yes,
         HasRevalidator,
         HasRequiredError,
@@ -449,14 +469,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
+        ErrorTool: IvoErrorTool,
     >
     RequiredFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         Yes,
         HasRevalidator,
         HasRequiredError,
@@ -474,7 +494,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         Yes,
         HasRevalidator,
         HasRequiredError,

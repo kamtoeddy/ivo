@@ -13,13 +13,13 @@ pub struct SchemaOptions<
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
     CtxOptions: Clone,
-    ErrT: IvoErrorTool,
+    ErrorTool: IvoErrorTool,
 > {
     //
     pub on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
     pub on_success_fns: Option<Vec<OnSuccessConfig<I, O, CtxOptions>>>,
 
-    pub post_validate: Option<Vec<PostValidationConfig<I, O, CtxOptions, ErrT>>>,
+    pub post_validate: Option<Vec<PostValidationConfig<I, O, CtxOptions, ErrorTool>>>,
 
     pub should_ignore: Option<BooleanResolverWithMutSummary<I, O, CtxOptions>>,
     pub should_update: Option<ComputableInit<I, O, CtxOptions>>,
@@ -33,8 +33,8 @@ pub struct SchemaOptions<
     pub timestamps: Option<bool>,
 }
 
-impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErrorTool> Default
-    for SchemaOptions<I, O, CtxOptions, ErrT>
+impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: IvoErrorTool> Default
+    for SchemaOptions<I, O, CtxOptions, ErrorTool>
 {
     fn default() -> Self {
         Self {
@@ -48,10 +48,10 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErrorTo
     }
 }
 
-impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErrorTool>
-    SchemaOptions<I, O, CtxOptions, ErrT>
+impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: IvoErrorTool>
+    SchemaOptions<I, O, CtxOptions, ErrorTool>
 {
-    pub const fn new() -> SchemaOptionsBuilder<I, O, CtxOptions, ErrT> {
+    pub const fn new() -> SchemaOptionsBuilder<I, O, CtxOptions, ErrorTool> {
         SchemaOptionsBuilder::new()
     }
 }
@@ -60,7 +60,7 @@ pub struct SchemaOptionsBuilder<
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
     CtxOptions: Clone,
-    ErrT: IvoErrorTool,
+    ErrorTool: IvoErrorTool,
     HasIgnore = No,
     HasShouldUpdate = No,
     HasPostValidate = No,
@@ -78,7 +78,7 @@ pub struct SchemaOptionsBuilder<
     pub on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
     pub on_success_fns: Option<Vec<OnSuccessConfig<I, O, CtxOptions>>>,
 
-    pub post_validate: Option<Vec<PostValidationConfig<I, O, CtxOptions, ErrT>>>,
+    pub post_validate: Option<Vec<PostValidationConfig<I, O, CtxOptions, ErrorTool>>>,
 
     pub should_ignore: Option<BooleanResolverWithMutSummary<I, O, CtxOptions>>,
     pub should_update: Option<ComputableInit<I, O, CtxOptions>>,
@@ -102,13 +102,13 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
+        ErrorTool: IvoErrorTool,
     >
     SchemaOptionsBuilder<
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         HasIgnore,
         HasShouldUpdate,
         HasPostValidate,
@@ -145,13 +145,13 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
+        ErrorTool: IvoErrorTool,
     > Default
     for SchemaOptionsBuilder<
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         HasIgnore,
         HasShouldUpdate,
         HasPostValidate,

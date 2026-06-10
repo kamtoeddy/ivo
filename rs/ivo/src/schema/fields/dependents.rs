@@ -22,7 +22,7 @@ pub struct DependentFieldBuilder<
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
     CtxOptions: Clone,
-    ErrT: IvoErrorTool = DefaultErrorTool,
+    ErrorTool: IvoErrorTool = DefaultErrorTool,
     HasDefault = No,
     HasParents = No,
     HasResolver = No,
@@ -31,7 +31,7 @@ pub struct DependentFieldBuilder<
     HasSuccess = No,
 > {
     _t: PhantomData<T>,
-    _err: PhantomData<ErrT>,
+    _err: PhantomData<ErrorTool>,
     _default: PhantomData<HasDefault>,
     _depends_on: PhantomData<HasParents>,
     _resolver: PhantomData<HasResolver>,
@@ -58,14 +58,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
+        ErrorTool: IvoErrorTool,
     >
     DependentFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         HasDefault,
         HasParents,
         HasResolver,
@@ -105,14 +105,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
+        ErrorTool: IvoErrorTool,
     > Default
     for DependentFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         HasDefault,
         HasParents,
         HasResolver,
@@ -134,14 +134,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
-    > BuildableFieldConfig<I, O, CtxOptions, ErrT>
+        ErrorTool: IvoErrorTool,
+    > BuildableFieldConfig<I, O, CtxOptions, ErrorTool>
     for DependentFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         Yes,
         Yes,
         Yes,
@@ -150,7 +150,7 @@ impl<
         HasSuccess,
     >
 {
-    fn build(self) -> InternalFieldConfig<I, O, CtxOptions, ErrT> {
+    fn build(self) -> InternalFieldConfig<I, O, CtxOptions, ErrorTool> {
         FieldConfig {
             default: self.default,
             depends_on: self.depends_on,
@@ -172,10 +172,10 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
-    > DependentFieldBuilder<T, I, O, CtxOptions, ErrT>
+        ErrorTool: IvoErrorTool,
+    > DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool>
 {
-    pub fn default(self, value: T) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrT, Yes> {
+    pub fn default(self, value: T) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes> {
         DependentFieldBuilder {
             default: Some(ComputableWithMiniSummary::Static(erase_value(value))),
             ..Default::default()
@@ -185,7 +185,7 @@ impl<
     pub fn default_fn<F>(
         self,
         default_fn: F,
-    ) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrT, Yes>
+    ) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes>
     where
         F: IntoResolverWithMiniSummary<T, I, O, CtxOptions>,
     {
@@ -196,13 +196,13 @@ impl<
     }
 }
 
-impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErrorTool>
-    DependentFieldBuilder<T, I, O, CtxOptions, ErrT, Yes>
+impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: IvoErrorTool>
+    DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes>
 {
     pub fn depends_on<const N: usize>(
         self,
         fields: [&'static str; N],
-    ) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes> {
+    ) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, Yes> {
         DependentFieldBuilder {
             default: self.default,
             depends_on: Some(Vec::from(fields)),
@@ -211,13 +211,13 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErro
     }
 }
 
-impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrT: IvoErrorTool>
-    DependentFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes>
+impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: IvoErrorTool>
+    DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, Yes>
 {
     pub fn resolve<R>(
         self,
         resolver: R,
-    ) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, Yes>
+    ) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, Yes, Yes>
     where
         R: IntoUniformResolverWithMutSummary<T, I, O, CtxOptions>,
     {
@@ -237,13 +237,25 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
-    > DependentFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, Yes, No, HasDelete, HasSuccess>
+        ErrorTool: IvoErrorTool,
+    >
+    DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, Yes, Yes, No, HasDelete, HasSuccess>
 {
     pub fn readonly(
         self,
-    ) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrT, Yes, Yes, Yes, Yes, HasDelete, HasSuccess>
-    {
+    ) -> DependentFieldBuilder<
+        T,
+        I,
+        O,
+        CtxOptions,
+        ErrorTool,
+        Yes,
+        Yes,
+        Yes,
+        Yes,
+        HasDelete,
+        HasSuccess,
+    > {
         DependentFieldBuilder {
             default: self.default,
             depends_on: self.depends_on,
@@ -263,14 +275,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
+        ErrorTool: IvoErrorTool,
     >
     DependentFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         Yes,
         Yes,
         Yes,
@@ -287,7 +299,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         Yes,
         Yes,
         Yes,
@@ -330,14 +342,14 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone,
-        ErrT: IvoErrorTool,
+        ErrorTool: IvoErrorTool,
     >
     DependentFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         Yes,
         Yes,
         Yes,
@@ -354,7 +366,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrT,
+        ErrorTool,
         Yes,
         Yes,
         Yes,

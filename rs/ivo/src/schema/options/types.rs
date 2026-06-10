@@ -6,7 +6,7 @@ use crate::{
     erase_value,
     schema::error::IvoErrorTool,
     types::{IvoSummary, SuccessHandler},
-    ErasedValue, IvoSchemaStruct, ValidatorError,
+    DefaultFieldErrorMetadata, ErasedValue, IvoSchemaStruct, ValidatorError,
 };
 
 pub struct IvoValues {
@@ -40,46 +40,46 @@ pub struct PostValidationConfig<
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
     CtxOptions: Clone,
-    ErrT: IvoErrorTool,
+    ErrorTool: IvoErrorTool,
 > {
     pub fields: Vec<&'static str>,
-    pub pre_validator: Option<PostValidator<I, O, CtxOptions, ErrT::FieldMetadata>>,
-    pub validators: Vec<PostValidator<I, O, CtxOptions, ErrT::FieldMetadata>>,
+    pub pre_validator: Option<PostValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
+    pub validators: Vec<PostValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
 }
 
 pub trait IntoPostValidator<
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
     CtxOptions: Clone,
-    ErrT: IvoErrorTool,
+    ErrorTool: IvoErrorTool,
 >
 {
-    fn into_validator(self) -> PostValidator<I, O, CtxOptions, ErrT::FieldMetadata>;
+    fn into_validator(self) -> PostValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>;
 }
 
-impl<F, Fut, I, O, CtxOptions: Clone, ErrT: IvoErrorTool> IntoPostValidator<I, O, CtxOptions, ErrT>
-    for F
+impl<F, Fut, I, O, CtxOptions: Clone, ErrorTool: IvoErrorTool>
+    IntoPostValidator<I, O, CtxOptions, ErrorTool> for F
 where
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
     F: Fn(IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
-    Fut: Future<Output = Result<IvoValues, PostValidatorError<ErrT::FieldMetadata>>>
-        + Send
-        + Sync
-        + 'static,
+    Fut: Future<Output = PostValidatorResponse<ErrorTool::FieldMetadata>> + Send + Sync + 'static,
 {
-    fn into_validator(self) -> PostValidator<I, O, CtxOptions, ErrT::FieldMetadata> {
+    fn into_validator(self) -> PostValidator<I, O, CtxOptions, ErrorTool::FieldMetadata> {
         Box::new(move |s| Box::pin(self(s)))
     }
 }
 
-pub type PostValidatorError<FieldErrorMetadata> =
+pub type PostValidatorError<FieldErrorMetadata = DefaultFieldErrorMetadata> =
     HashMap<String, ValidatorError<FieldErrorMetadata>>;
+
+pub type PostValidatorResponse<FieldErrorMetadata = DefaultFieldErrorMetadata> =
+    Result<IvoValues, PostValidatorError<FieldErrorMetadata>>;
 
 pub type PostValidator<I, O, CtxOptions, FieldErrorMetadata> = Box<
     dyn Fn(
             IvoSummary<I, O, CtxOptions>,
-        ) -> BoxFuture<'static, Result<IvoValues, PostValidatorError<FieldErrorMetadata>>>
+        ) -> BoxFuture<'static, PostValidatorResponse<FieldErrorMetadata>>
         + Send
         + Sync
         + 'static,

@@ -8,8 +8,8 @@ use crate::types::IvoSchemaStruct;
 
 use std::collections::{HashMap, HashSet};
 
-type InternalFieldConfigs<I, O, CtxOptions, ErrT> =
-    HashMap<String, InternalFieldConfig<I, O, CtxOptions, ErrT>>;
+type InternalFieldConfigs<I, O, CtxOptions, ErrorTool> =
+    HashMap<String, InternalFieldConfig<I, O, CtxOptions, ErrorTool>>;
 
 pub struct Schema<
     I: IvoSchemaStruct,
