@@ -135,6 +135,8 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
                             ))
                         }),
                 )
+                .created_at(|| "Date.now()", None)
+                .updated_at(|| "Date.now()", Some("updated_on"), true)
         },
         |o| {
             o.post_validate(["username", "v_slug"], |b| {

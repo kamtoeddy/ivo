@@ -19,6 +19,8 @@ mod required;
 pub mod types;
 mod virtuals;
 
+pub use base::TimestampFieldConfig;
+
 pub struct IvoField<
     T,
     I: IvoSchemaStruct,

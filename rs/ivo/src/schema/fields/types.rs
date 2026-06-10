@@ -7,6 +7,22 @@ use crate::{
     ErasedValue, IvoContext, IvoErrorTool, IvoMiniContext, IvoSchemaStruct, ValidatorResponse,
 };
 
+pub type UniformTimestampResolver = Box<dyn Fn() -> ErasedValue + Send + Sync + 'static>;
+
+pub trait IntoUniformTimestampResolver<T: Clone + Debug + Send + Sync + 'static> {
+    fn into_resolver(self) -> UniformTimestampResolver;
+}
+
+impl<T, R> IntoUniformTimestampResolver<T> for R
+where
+    T: Clone + Debug + Send + Sync + 'static,
+    R: Fn() -> T + Send + Sync + 'static,
+{
+    fn into_resolver(self) -> UniformTimestampResolver {
+        Box::new(move || erase_value(self()))
+    }
+}
+
 pub trait IntoDeleteHandler<O: IvoSchemaStruct, CtxOptions: Clone> {
     fn into_handler(self) -> DeleteHandler<O, CtxOptions>;
 }
@@ -188,7 +204,7 @@ where
 
 pub type UniformValidator<I, O, CtxOptions, FieldMetadata> = Box<
     dyn Fn(
-            &ErasedValue,
+            ErasedValue,
             IvoContext<I, O>,
             CtxOptions,
         ) -> BoxFuture<'static, ValidatorResponse<ErasedValue, FieldMetadata>>

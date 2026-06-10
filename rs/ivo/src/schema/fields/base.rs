@@ -1,12 +1,10 @@
-use std::marker::PhantomData;
-
 use crate::{
     schema::{
         error::IvoErrorTool,
         fields::types::{
             BooleanResolverWithMutSummary, ComputableInit, ComputableRequired,
             ComputableRequiredError, ComputableWithMiniSummary, ResolverWithMutSummary,
-            UniformValidator, VirtualSanitiser,
+            UniformTimestampResolver, UniformValidator, VirtualSanitiser,
         },
     },
     types::{DeleteHandler, FailureHandler, SuccessHandler},
@@ -34,7 +32,6 @@ pub struct FieldConfig<
     CtxOptions: Clone,
     ErrorTool: IvoErrorTool,
 > {
-    pub _i: PhantomData<ErrorTool>,
     pub alias: Option<String>,
     pub default: Option<ComputableWithMiniSummary<T, I, O, CtxOptions>>,
     pub depends_on: Option<Vec<&'static str>>,
@@ -82,7 +79,13 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: Iv
             on_delete_fns: None,
             on_success_fns: None,
             on_failure_fns: None,
-            _i: PhantomData,
         }
     }
+}
+
+#[allow(dead_code)]
+pub struct TimestampFieldConfig {
+    pub name: &'static str,
+    pub resovler: UniformTimestampResolver,
+    pub is_optional: bool,
 }

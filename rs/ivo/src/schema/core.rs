@@ -1,12 +1,16 @@
+use crate::schema::fields::types::IntoUniformTimestampResolver;
+use crate::schema::fields::TimestampFieldConfig;
 use crate::schema::options::base::{SchemaOptions, SchemaOptionsBuilder};
 use crate::schema::options::BuildableSchemaOptions;
 use crate::utils::erased_value::ErasedValue;
 
 use crate::schema::error::{DefaultErrorTool, IvoErrorTool, SchemaError};
 use crate::schema::fields::base::{BuildableFieldConfig, InternalFieldConfig};
-use crate::types::IvoSchemaStruct;
+use crate::types::{IvoSchemaStruct, No, Yes};
 
 use std::collections::{HashMap, HashSet};
+use std::fmt::Debug;
+use std::marker::PhantomData;
 
 type InternalFieldConfigs<I, O, CtxOptions, ErrorTool> =
     HashMap<String, InternalFieldConfig<I, O, CtxOptions, ErrorTool>>;
@@ -19,6 +23,9 @@ pub struct Schema<
 > {
     field_configs: InternalFieldConfigs<I, O, CtxOptions, ErrorTool>,
     _options: SchemaOptions<I, O, CtxOptions, ErrorTool>,
+
+    _timestamp_created_at: Option<TimestampFieldConfig>,
+    _timestamp_upated_at: Option<TimestampFieldConfig>,
 
     // contexts & values
     pub context: HashMap<String, ErasedValue>,
@@ -57,20 +64,23 @@ pub struct Schema<
 impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: IvoErrorTool>
     Schema<I, O, CtxOptions, ErrorTool>
 {
-    pub fn new<FieldBuilder, OptionsBuilder, BuildableOptions>(
-        fields_builder: FieldBuilder,
-        options_builder: OptionsBuilder,
+    pub fn new<FieldMaker, OptionsMaker, BuildableOptions, HasCreatedAt, HasUpdatedAt>(
+        fields_maker: FieldMaker,
+        options_maker: OptionsMaker,
     ) -> Self
     where
-        FieldBuilder: Fn(
-            SchemaFields<I, O, CtxOptions, ErrorTool>,
-        ) -> SchemaFields<I, O, CtxOptions, ErrorTool>,
-        OptionsBuilder: Fn(SchemaOptionsBuilder<I, O, CtxOptions, ErrorTool>) -> BuildableOptions,
+        FieldMaker: Fn(
+            FieldBuilder<I, O, CtxOptions, ErrorTool>,
+        )
+            -> FieldBuilder<I, O, CtxOptions, ErrorTool, HasCreatedAt, HasUpdatedAt>,
+        OptionsMaker: Fn(SchemaOptionsBuilder<I, O, CtxOptions, ErrorTool>) -> BuildableOptions,
         BuildableOptions: BuildableSchemaOptions<I, O, CtxOptions, ErrorTool>,
     {
+        let fields = fields_maker(FieldBuilder::new());
+
         let mut s = Self {
-            field_configs: fields_builder(SchemaFields::new()).configs,
-            _options: options_builder(SchemaOptions::new()).build(),
+            field_configs: fields.configs,
+            _options: options_maker(SchemaOptions::new()).build(),
             fields_set: {
                 let mut all_fields = O::ivo_internal_fields();
                 all_fields.extend(I::ivo_internal_fields());
@@ -98,6 +108,8 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: I
             readonly_props: HashSet::new(),
             required_props: HashSet::new(),
             virtuals: HashSet::new(),
+            _timestamp_created_at: fields.timestamp_created_at,
+            _timestamp_upated_at: fields.timestamp_upated_at,
         };
 
         s.check_field_configs();
@@ -427,21 +439,37 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: I
     }
 }
 
-pub struct SchemaFields<
+pub struct FieldBuilder<
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
     CtxOptions: Clone,
     ErrorTool: IvoErrorTool,
+    HasCreatedAt = No,
+    HasUpdatedAt = No,
 > {
+    _c: PhantomData<HasCreatedAt>,
+    _u: PhantomData<HasUpdatedAt>,
     configs: InternalFieldConfigs<I, O, CtxOptions, ErrorTool>,
+    timestamp_created_at: Option<TimestampFieldConfig>,
+    timestamp_upated_at: Option<TimestampFieldConfig>,
 }
 
-impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: IvoErrorTool>
-    SchemaFields<I, O, CtxOptions, ErrorTool>
+impl<
+        HasCreatedAt,
+        HasUpdatedAt,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions: Clone,
+        ErrorTool: IvoErrorTool,
+    > FieldBuilder<I, O, CtxOptions, ErrorTool, HasCreatedAt, HasUpdatedAt>
 {
     fn new() -> Self {
         Self {
             configs: HashMap::new(),
+            timestamp_created_at: None,
+            timestamp_upated_at: None,
+            _c: PhantomData,
+            _u: PhantomData,
         }
     }
 
@@ -452,5 +480,80 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: IvoEr
         self.configs.insert(name.to_owned(), config.build());
 
         self
+    }
+}
+
+impl<
+        HasCreatedAt,
+        HasUpdatedAt,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions: Clone,
+        ErrorTool: IvoErrorTool,
+    > Default for FieldBuilder<I, O, CtxOptions, ErrorTool, HasCreatedAt, HasUpdatedAt>
+{
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<
+        HasUpdatedAt,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions: Clone,
+        ErrorTool: IvoErrorTool,
+    > FieldBuilder<I, O, CtxOptions, ErrorTool, No, HasUpdatedAt>
+{
+    pub fn created_at<T, R>(
+        self,
+        resolver: R,
+        name: Option<&'static str>,
+    ) -> FieldBuilder<I, O, CtxOptions, ErrorTool, Yes, HasUpdatedAt>
+    where
+        T: Clone + Debug + Send + Sync + 'static,
+        R: IntoUniformTimestampResolver<T>,
+    {
+        FieldBuilder {
+            configs: self.configs,
+            timestamp_created_at: Some(TimestampFieldConfig {
+                name: name.unwrap_or("created_at"),
+                resovler: resolver.into_resolver(),
+                is_optional: false,
+            }),
+            timestamp_upated_at: self.timestamp_upated_at,
+            ..Default::default()
+        }
+    }
+}
+
+impl<
+        HasCreatedAt,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions: Clone,
+        ErrorTool: IvoErrorTool,
+    > FieldBuilder<I, O, CtxOptions, ErrorTool, HasCreatedAt>
+{
+    pub fn updated_at<T, R>(
+        self,
+        resolver: R,
+        name: Option<&'static str>,
+        is_optional: bool,
+    ) -> FieldBuilder<I, O, CtxOptions, ErrorTool, HasCreatedAt, Yes>
+    where
+        T: Clone + Debug + Send + Sync + 'static,
+        R: IntoUniformTimestampResolver<T>,
+    {
+        FieldBuilder {
+            configs: self.configs,
+            timestamp_created_at: self.timestamp_created_at,
+            timestamp_upated_at: Some(TimestampFieldConfig {
+                name: name.unwrap_or("created_at"),
+                resovler: resolver.into_resolver(),
+                is_optional,
+            }),
+            ..Default::default()
+        }
     }
 }
