@@ -51,6 +51,7 @@ pub async fn run_users_demo() {
         email: "1@1.com".into(),
         id: 1,
         username,
+        username_updated_at: None,
         slug_id,
         role: UserRole::Admin,
     };
@@ -58,10 +59,12 @@ pub async fn run_users_demo() {
     println!("{:?}\n", user);
 
     let updates = PartialUserInput {
+        // email: None,
         email: Some(user.email.clone()),
         // role: None,
         role: Some(UserRole::User),
-        username: Some("new_username".into()),
+        // username: Some("new_username".into()),
+        username: None,
         slug_id: None,
     };
 

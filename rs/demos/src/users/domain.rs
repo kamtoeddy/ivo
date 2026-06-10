@@ -1,8 +1,8 @@
 use std::{collections::HashMap, future::ready, sync::LazyLock};
 
-use ivo::{validate_email, FutureExt, IvoContext, IvoField, IvoStruct, IvoValues, Model, Schema};
+use ivo::{FutureExt, IvoContext, IvoField, IvoStruct, IvoValues, Model, Schema, validate_email};
 
-use crate::utils::slugify::{slugify, SlugifiedString};
+use crate::utils::slugify::{SlugifiedString, slugify};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum UserRole {
@@ -19,7 +19,7 @@ pub struct User {
     pub username: String,
     pub slug_id: SlugifiedString,
     pub role: UserRole,
-    // pub username_updated_at: Option<DateWithTz>,
+    pub username_updated_at: Option<String>,
     // pub updated_at: Option<DateWithTz>,
 }
 
@@ -34,6 +34,7 @@ pub struct UserInput {
 #[derive(Clone)]
 pub struct UserCtxOptions {
     pub slug_id: Option<SlugifiedString>,
+    // pub locale: &'static str, // fr, en, de, etc
 }
 
 impl<'a> UserCtxOptions {
@@ -64,8 +65,7 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
                         .required_error("\"email\" is required!")
                         .validate(|email, _, _| {
                             ready(validate_email(email).map_err(|e| (e, None)))
-                        }),
-                    // .required_error_fn(async |_,_| "Please provide an email address".into()),
+                        }), // .required_error_fn(|_, _| ready("Please provide an email address".into())),
                 )
                 .set(
                     "role",
@@ -88,26 +88,32 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
                             }
 
                             ready(Ok(v))
+                        })
+                        .allow_update_if(|ctx: Ctx, _| {
+                            ready(is_username_or_slug_id_updatable(
+                                ctx.values().username_updated_at.unwrap(),
+                            ))
                         }),
                 )
                 .set(
                     "username_last_updated_at",
                     IvoField::DEPENDENT
-                        .default(Some(String::from("default value")))
+                        .default(None)
                         .depends_on(["username"])
-                        .resolve(|_, _| ready(Some(String::from("resolved value")))),
+                        .resolve(|_, _| ready(Some(String::from("now")))),
                 )
                 .set(
                     "slug_id",
                     IvoField::DEPENDENT
-                        .default(SlugifiedString::from("value"))
+                        .default(SlugifiedString::from(""))
                         .depends_on(["username", "v_slug"])
                         .resolve(|_, o: UserCtxOptions| ready(o.slug_id.clone().unwrap())),
                 )
                 .set(
                     "v_slug",
-                    IvoField::VIRTUAL.alias("slug_id").validate(
-                        |value: String, _, o: UserCtxOptions| {
+                    IvoField::VIRTUAL
+                        .alias("slug_id")
+                        .validate(|value: String, _, o: UserCtxOptions| {
                             let slug_id = slugify(&value);
 
                             let validated = slug_id.value();
@@ -122,8 +128,12 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
                             o.update_slug_id(&slug_id);
 
                             ready(Ok(validated))
-                        },
-                    ),
+                        })
+                        .allow_update_if(|ctx: Ctx, _| {
+                            ready(is_username_or_slug_id_updatable(
+                                ctx.values().username_updated_at.unwrap(),
+                            ))
+                        }),
                 )
         },
         |o| {
@@ -138,64 +148,35 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
                     };
 
                     o.find_user_by_slug_id(&slug_id).map(move |user| {
-                        if user.is_some() {
-                            let err = (
-                                format!("A user with a slug id: \"{slug_id}\" already exists"),
-                                None,
-                            );
+                        if user.is_none() {
+                            o.update_slug_id(&slug_id);
 
-                            let mut errors = HashMap::new();
+                            // let mut validated = IvoValues::new();
 
-                            if input.username.is_some() {
-                                errors.insert("username".into(), err.clone());
-                            }
+                            // validated
+                            //     .set("slug_id".into(), slug_id.value())
+                            //     .set("username".into(), "validated-username");
 
-                            if input.slug_id.is_some() {
-                                errors.insert("v_slug".into(), err);
-                            }
-
-                            return Err(errors);
+                            return Ok(IvoValues::new());
                         }
 
-                        o.update_slug_id(&slug_id);
+                        let err = (
+                            format!("A user with a slug id: \"{slug_id}\" already exists"),
+                            None,
+                        );
 
-                        // let mut validated = IvoValues::new();
+                        let mut errors = HashMap::new();
 
-                        // validated
-                        //     .set("slug_id".into(), slug_id.value())
-                        //     .set("username".into(), "validated-username");
+                        if input.username.is_some() {
+                            errors.insert("username".into(), err.clone());
+                        }
 
-                        Ok(IvoValues::new())
+                        if input.slug_id.is_some() {
+                            errors.insert("v_slug".into(), err);
+                        }
+
+                        Err(errors)
                     })
-
-                    // if o.find_user_by_slug_id(&slug_id).await.is_some() {
-                    //     let err = (
-                    //         format!("A user with a slug id: \"{slug_id}\" already exists"),
-                    //         None,
-                    //     );
-
-                    //     let mut errors = HashMap::new();
-
-                    //     if input.username.is_some() {
-                    //         errors.insert("username".into(), err.clone());
-                    //     }
-
-                    //     if input.slug_id.is_some() {
-                    //         errors.insert("v_slug".into(), err);
-                    //     }
-
-                    //     return Err(errors);
-                    // }
-
-                    // o.update_slug_id(&slug_id);
-
-                    // // let mut validated = IvoValues::new();
-
-                    // // validated
-                    // //     .set("slug_id".into(), slug_id.value())
-                    // //     .set("username".into(), "validated-username");
-
-                    // Ok(IvoValues::new())
                 })
             })
             .on_success(["email"], |b| {
@@ -224,3 +205,10 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
         },
     )
 });
+
+fn is_username_or_slug_id_updatable(username_updated_at: Option<String>) -> bool {
+    match username_updated_at {
+        Some(v) => v.as_str() == "yesterday",
+        _ => true,
+    }
+}
