@@ -22,7 +22,7 @@ pub struct LaxFieldBuilder<
     T,
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
-    CtxOptions: Clone,
+    CtxOptions,
     ErrorTool: IvoErrorTool,
     HasDefault = No,
     HasValidator = No,
@@ -73,7 +73,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     >
     LaxFieldBuilder<
@@ -135,7 +135,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     > Default
     for LaxFieldBuilder<
@@ -174,7 +174,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     > BuildableFieldConfig<I, O, CtxOptions, ErrorTool>
     for LaxFieldBuilder<
@@ -216,7 +216,7 @@ impl<
         T: Clone + Debug + Send + Sync + 'static,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     > LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool>
 {
@@ -241,7 +241,7 @@ impl<
     }
 }
 
-impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: IvoErrorTool>
+impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool>
     LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes>
 {
     pub fn validate<F>(
@@ -259,7 +259,7 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: Iv
     }
 }
 
-impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: IvoErrorTool>
+impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool>
     LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, Yes>
 {
     pub fn re_validate<F>(
@@ -283,7 +283,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     > LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, Yes, HasRevalidator>
 {
@@ -311,7 +311,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     >
     LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, HasValidator, HasRevalidator, HasRequired>
@@ -352,7 +352,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     >
     LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, HasValidator, HasRevalidator, HasRequired>
@@ -475,7 +475,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     >
     LaxFieldBuilder<
@@ -531,7 +531,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     >
     LaxFieldBuilder<
@@ -588,7 +588,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     >
     LaxFieldBuilder<
@@ -679,7 +679,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     >
     LaxFieldBuilder<
@@ -763,7 +763,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     >
     LaxFieldBuilder<
@@ -847,7 +847,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     >
     LaxFieldBuilder<

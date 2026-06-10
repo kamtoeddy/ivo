@@ -22,7 +22,7 @@ pub struct VirtualFieldBuilder<
     T,
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
-    CtxOptions: Clone,
+    CtxOptions,
     ErrorTool: IvoErrorTool,
     HasValidator = No,
     HasAlias = No,
@@ -73,7 +73,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     >
     VirtualFieldBuilder<
@@ -135,7 +135,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     > Default
     for VirtualFieldBuilder<
@@ -174,7 +174,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     > BuildableFieldConfig<I, O, CtxOptions, ErrorTool>
     for VirtualFieldBuilder<
@@ -219,7 +219,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     > VirtualFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasValidator, No, HasRevalidator>
 {
@@ -246,14 +246,8 @@ impl<
     }
 }
 
-impl<
-        HasAlias,
-        T,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
-        CtxOptions: Clone,
-        ErrorTool: IvoErrorTool,
-    > VirtualFieldBuilder<T, I, O, CtxOptions, ErrorTool, No, HasAlias>
+impl<HasAlias, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool>
+    VirtualFieldBuilder<T, I, O, CtxOptions, ErrorTool, No, HasAlias>
 {
     pub fn validate<F>(
         self,
@@ -270,14 +264,8 @@ impl<
     }
 }
 
-impl<
-        HasAlias,
-        T,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
-        CtxOptions: Clone,
-        ErrorTool: IvoErrorTool,
-    > VirtualFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, HasAlias>
+impl<HasAlias, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool>
+    VirtualFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, HasAlias>
 {
     pub fn re_validate<F>(
         self,
@@ -301,7 +289,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     > VirtualFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, HasAlias, HasRevalidator>
 {
@@ -329,7 +317,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     >
     VirtualFieldBuilder<
@@ -382,7 +370,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     >
     VirtualFieldBuilder<
@@ -437,7 +425,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     >
     VirtualFieldBuilder<
@@ -580,7 +568,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     >
     VirtualFieldBuilder<
@@ -640,7 +628,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     >
     VirtualFieldBuilder<
@@ -701,7 +689,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     >
     VirtualFieldBuilder<
@@ -797,7 +785,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     >
     VirtualFieldBuilder<
@@ -882,7 +870,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     >
     VirtualFieldBuilder<

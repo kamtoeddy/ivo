@@ -12,7 +12,7 @@ use crate::{
 pub struct PostValidateOptionBuilder<
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
-    CtxOptions: Clone,
+    CtxOptions,
     ErrorTool: IvoErrorTool,
     HasFields = No,
     HasValidator = No,
@@ -33,7 +33,7 @@ impl<
         HasValidator,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     > Default
     for PostValidateOptionBuilder<
@@ -61,7 +61,7 @@ impl<
 pub trait BuildablePostValidator<
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
-    CtxOptions: Clone,
+    CtxOptions,
     ErrorTool: IvoErrorTool,
 >
 {
@@ -72,7 +72,7 @@ impl<
         HasPreValidator,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     > BuildablePostValidator<I, O, CtxOptions, ErrorTool>
     for PostValidateOptionBuilder<I, O, CtxOptions, ErrorTool, Yes, Yes, HasPreValidator>
@@ -86,7 +86,7 @@ impl<
     }
 }
 
-impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: IvoErrorTool>
+impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool>
     PostValidateOptionBuilder<I, O, CtxOptions, ErrorTool>
 {
     pub fn fields<const N: usize>(
@@ -104,7 +104,7 @@ impl<
         HasPreValidator,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone + Send,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     > PostValidateOptionBuilder<I, O, CtxOptions, ErrorTool, Yes, HasValidator, HasPreValidator>
 {
@@ -127,13 +127,8 @@ impl<
     }
 }
 
-impl<
-        HasValidator,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
-        CtxOptions: Clone + Send,
-        ErrorTool: IvoErrorTool,
-    > PostValidateOptionBuilder<I, O, CtxOptions, ErrorTool, Yes, HasValidator, No>
+impl<HasValidator, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool>
+    PostValidateOptionBuilder<I, O, CtxOptions, ErrorTool, Yes, HasValidator, No>
 {
     pub fn pre_validate<F>(
         self,

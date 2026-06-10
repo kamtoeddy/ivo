@@ -9,6 +9,7 @@ pub use ivo_struct::IvoStruct;
 pub use ivo_validators::*;
 
 pub use futures::FutureExt;
+pub use futures_locks::RwLock;
 
 pub use schema::{
     error::{

@@ -15,7 +15,7 @@ use crate::{
 pub trait BuildableFieldConfig<
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
-    CtxOptions: Clone,
+    CtxOptions,
     ErrorTool: IvoErrorTool,
 >
 {
@@ -29,7 +29,7 @@ pub struct FieldConfig<
     T,
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
-    CtxOptions: Clone,
+    CtxOptions,
     ErrorTool: IvoErrorTool,
 > {
     pub alias: Option<String>,
@@ -55,7 +55,7 @@ pub struct FieldConfig<
     pub on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
 }
 
-impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: IvoErrorTool> Default
+impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool> Default
     for FieldConfig<T, I, O, CtxOptions, ErrorTool>
 {
     fn default() -> Self {

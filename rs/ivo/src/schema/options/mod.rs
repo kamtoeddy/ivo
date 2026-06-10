@@ -22,7 +22,7 @@ pub use types::{IvoValues, PostValidatorResponse};
 pub trait BuildableSchemaOptions<
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
-    CtxOptions: Clone,
+    CtxOptions,
     ErrorTool: IvoErrorTool,
 >
 {
@@ -38,7 +38,7 @@ impl<
         HasSuccess,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     > BuildableSchemaOptions<I, O, CtxOptions, ErrorTool>
     for SchemaOptionsBuilder<
@@ -75,7 +75,7 @@ impl<
         HasSuccess,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     >
     SchemaOptionsBuilder<

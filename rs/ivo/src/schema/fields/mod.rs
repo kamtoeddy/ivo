@@ -21,13 +21,8 @@ mod virtuals;
 
 pub use base::TimestampFieldConfig;
 
-pub struct IvoField<
-    T,
-    I: IvoSchemaStruct,
-    O: IvoSchemaStruct,
-    CtxOptions: Clone,
-    ErrorTool: IvoErrorTool,
-> {
+pub struct IvoField<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool>
+{
     _t: PhantomData<T>,
     _i: PhantomData<I>,
     _o: PhantomData<O>,
@@ -35,7 +30,7 @@ pub struct IvoField<
     _err: PhantomData<ErrorTool>,
 }
 
-impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: IvoErrorTool>
+impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool>
     IvoField<T, I, O, CtxOptions, ErrorTool>
 {
     /// A constant field is one whose value never changes after an entity is created.

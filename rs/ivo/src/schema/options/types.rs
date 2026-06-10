@@ -1,6 +1,7 @@
-use std::{collections::HashMap, fmt::Debug, future::Future};
+use std::{collections::HashMap, fmt::Debug, future::Future, sync::Arc};
 
 use futures::future::BoxFuture;
+use futures_locks::RwLock;
 
 use crate::{
     erase_value,
@@ -31,7 +32,7 @@ impl IvoValues {
     }
 }
 
-pub struct OnSuccessConfig<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
+pub struct OnSuccessConfig<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> {
     pub fields: Vec<&'static str>,
     pub handlers: Vec<SuccessHandler<I, O, CtxOptions>>,
 }
@@ -39,7 +40,7 @@ pub struct OnSuccessConfig<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: C
 pub struct PostValidationConfig<
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
-    CtxOptions: Clone,
+    CtxOptions,
     ErrorTool: IvoErrorTool,
 > {
     pub fields: Vec<&'static str>,
@@ -50,19 +51,19 @@ pub struct PostValidationConfig<
 pub trait IntoPostValidator<
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
-    CtxOptions: Clone,
+    CtxOptions,
     ErrorTool: IvoErrorTool,
 >
 {
     fn into_validator(self) -> PostValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>;
 }
 
-impl<F, Fut, I, O, CtxOptions: Clone, ErrorTool: IvoErrorTool>
+impl<F, Fut, I, O, CtxOptions, ErrorTool: IvoErrorTool>
     IntoPostValidator<I, O, CtxOptions, ErrorTool> for F
 where
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
-    F: Fn(IvoContext<I, O>, CtxOptions) -> Fut + Send + Sync + 'static,
+    F: Fn(Arc<IvoContext<I, O>>, Arc<RwLock<CtxOptions>>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = PostValidatorResponse<ErrorTool::FieldMetadata>> + Send + Sync + 'static,
 {
     fn into_validator(self) -> PostValidator<I, O, CtxOptions, ErrorTool::FieldMetadata> {
@@ -78,8 +79,8 @@ pub type PostValidatorResponse<FieldErrorMetadata = DefaultFieldErrorMetadata> =
 
 pub type PostValidator<I, O, CtxOptions, FieldErrorMetadata> = Box<
     dyn Fn(
-            IvoContext<I, O>,
-            CtxOptions,
+            Arc<IvoContext<I, O>>,
+            Arc<RwLock<CtxOptions>>,
         ) -> BoxFuture<'static, PostValidatorResponse<FieldErrorMetadata>>
         + Send
         + Sync

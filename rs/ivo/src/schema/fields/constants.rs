@@ -20,7 +20,7 @@ pub struct ConstantFieldBuilder<
     T,
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
-    CtxOptions: Clone,
+    CtxOptions,
     ErrorTool: IvoErrorTool,
     HasDefault = No,
     HasDelete = No,
@@ -44,7 +44,7 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         T,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     > ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasDefault, HasDelete, HasSuccess>
 {
@@ -69,7 +69,7 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         T,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     > Default
     for ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasDefault, HasDelete, HasSuccess>
@@ -85,7 +85,7 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         T: Clone + Debug + Send + Sync + 'static,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     > BuildableFieldConfig<I, O, CtxOptions, ErrorTool>
     for ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, HasDelete, HasSuccess>
@@ -104,7 +104,7 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         T: Clone + Debug + Send + Sync + 'static,
-        CtxOptions: Clone + Send,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     > ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool>
 {
@@ -140,7 +140,7 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         T,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     > ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, HasDelete, HasSuccess>
 {
@@ -178,7 +178,7 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         T,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     > ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, HasDelete, HasSuccess>
 {

@@ -7,11 +7,11 @@ use unicode_normalization::UnicodeNormalization;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SlugifiedString(String);
 
-impl SlugifiedString {
-    pub fn value(&self) -> String {
-        self.0.clone()
-    }
-}
+// impl SlugifiedString {
+//     pub fn value(&self) -> String {
+//         self.0.clone()
+//     }
+// }
 
 // Optional: Implement Display so it prints like a regular string
 impl std::fmt::Display for SlugifiedString {
@@ -29,6 +29,12 @@ impl From<&str> for SlugifiedString {
 impl From<String> for SlugifiedString {
     fn from(value: String) -> Self {
         slugify(&value)
+    }
+}
+
+impl From<SlugifiedString> for String {
+    fn from(value: SlugifiedString) -> Self {
+        value.0
     }
 }
 

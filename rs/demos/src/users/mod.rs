@@ -9,8 +9,6 @@ use crate::{
 };
 
 pub async fn run_users_demo() {
-    let ctx_options = UserCtxOptions { slug_id: None };
-
     let timer = Instant::now();
 
     let input = PartialUserInput {
@@ -20,7 +18,7 @@ pub async fn run_users_demo() {
         slug_id: None,
     };
 
-    let r = USER_MODEL.create(&input, ctx_options.clone()).await;
+    let r = USER_MODEL.create(&input, UserCtxOptions::new()).await;
 
     println!("size:  {}", format_bytes(&mem::size_of_val(&r)));
 
@@ -68,7 +66,9 @@ pub async fn run_users_demo() {
         slug_id: None,
     };
 
-    let r = USER_MODEL.update(&user, &updates, ctx_options).await;
+    let r = USER_MODEL
+        .update(&user, &updates, UserCtxOptions::new())
+        .await;
 
     match r {
         Ok((data, _handle_success)) => {

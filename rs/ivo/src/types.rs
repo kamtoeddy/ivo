@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt::Debug};
+use std::{collections::HashMap, fmt::Debug, sync::Arc};
 
 use futures::future::BoxFuture;
 
@@ -200,13 +200,21 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct> IvoContext<I, O> {
 }
 
 pub type DeleteHandler<O, CtxOptions> =
-    Box<dyn Fn(O, CtxOptions) -> BoxFuture<'static, ()> + Send + Sync + 'static>;
+    Box<dyn Fn(Arc<O>, Arc<CtxOptions>) -> BoxFuture<'static, ()> + Send + Sync + 'static>;
 
-pub type FailureHandler<I, O, CtxOptions> =
-    Box<dyn Fn(IvoContext<I, O>, CtxOptions) -> BoxFuture<'static, ()> + Send + Sync + 'static>;
+pub type FailureHandler<I, O, CtxOptions> = Box<
+    dyn Fn(Arc<IvoContext<I, O>>, Arc<CtxOptions>) -> BoxFuture<'static, ()>
+        + Send
+        + Sync
+        + 'static,
+>;
 
-pub type SuccessHandler<I, O, CtxOptions> =
-    Box<dyn Fn(IvoContext<I, O>, CtxOptions) -> BoxFuture<'static, ()> + Send + Sync + 'static>;
+pub type SuccessHandler<I, O, CtxOptions> = Box<
+    dyn Fn(Arc<IvoContext<I, O>>, Arc<CtxOptions>) -> BoxFuture<'static, ()>
+        + Send
+        + Sync
+        + 'static,
+>;
 
 pub type ValidatorResponse<T, ErrorMetadata = DefaultFieldErrorMetadata> =
     Result<T, ValidatorError<ErrorMetadata>>;

@@ -20,7 +20,7 @@ pub struct RequiredFieldBuilder<
     T,
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
-    CtxOptions: Clone,
+    CtxOptions,
     ErrorTool: IvoErrorTool,
     HasValidator = No,
     HasRevalidator = No,
@@ -59,7 +59,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     >
     RequiredFieldBuilder<
@@ -109,7 +109,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     > Default
     for RequiredFieldBuilder<
@@ -142,7 +142,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     > BuildableFieldConfig<I, O, CtxOptions, ErrorTool>
     for RequiredFieldBuilder<
@@ -181,7 +181,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     > RequiredFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasValidator, HasRevalidator>
 {
@@ -215,7 +215,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     > RequiredFieldBuilder<T, I, O, CtxOptions, ErrorTool, No, No, HasRequiredError>
 {
@@ -238,7 +238,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     > RequiredFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, No, HasRequiredError>
 {
@@ -263,7 +263,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     > RequiredFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, HasRevalidator, HasRequiredError>
 {
@@ -324,7 +324,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     >
     RequiredFieldBuilder<
@@ -396,7 +396,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     >
     RequiredFieldBuilder<
@@ -468,7 +468,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     >
     RequiredFieldBuilder<

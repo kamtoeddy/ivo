@@ -12,7 +12,7 @@ use crate::{
 pub struct SchemaOptions<
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
-    CtxOptions: Clone,
+    CtxOptions,
     ErrorTool: IvoErrorTool,
 > {
     //
@@ -33,7 +33,7 @@ pub struct SchemaOptions<
     pub timestamps: Option<bool>,
 }
 
-impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: IvoErrorTool> Default
+impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool> Default
     for SchemaOptions<I, O, CtxOptions, ErrorTool>
 {
     fn default() -> Self {
@@ -48,7 +48,7 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: IvoEr
     }
 }
 
-impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: IvoErrorTool>
+impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool>
     SchemaOptions<I, O, CtxOptions, ErrorTool>
 {
     pub const fn new() -> SchemaOptionsBuilder<I, O, CtxOptions, ErrorTool> {
@@ -59,7 +59,7 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: IvoEr
 pub struct SchemaOptionsBuilder<
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
-    CtxOptions: Clone,
+    CtxOptions,
     ErrorTool: IvoErrorTool,
     HasIgnore = No,
     HasShouldUpdate = No,
@@ -101,7 +101,7 @@ impl<
         HasSuccess,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     >
     SchemaOptionsBuilder<
@@ -144,7 +144,7 @@ impl<
         HasSuccess,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     > Default
     for SchemaOptionsBuilder<

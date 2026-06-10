@@ -18,7 +18,7 @@ type InternalFieldConfigs<I, O, CtxOptions, ErrorTool> =
 pub struct Schema<
     I: IvoSchemaStruct,
     O: IvoSchemaStruct = I,
-    CtxOptions: Clone = Option<u8>,
+    CtxOptions = Option<u8>,
     ErrorTool: IvoErrorTool = DefaultErrorTool,
 > {
     field_configs: InternalFieldConfigs<I, O, CtxOptions, ErrorTool>,
@@ -57,7 +57,7 @@ pub struct Schema<
     // pub timestamp_tool: TimeStampTool,
 }
 
-impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: IvoErrorTool>
+impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool>
     Schema<I, O, CtxOptions, ErrorTool>
 {
     pub fn new<FieldMaker, OptionsMaker, BuildableOptions, HasCreatedAt, HasUpdatedAt>(
@@ -434,7 +434,7 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: I
 pub struct FieldBuilder<
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
-    CtxOptions: Clone,
+    CtxOptions,
     ErrorTool: IvoErrorTool,
     HasCreatedAt = No,
     HasUpdatedAt = No,
@@ -451,7 +451,7 @@ impl<
         HasUpdatedAt,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     > FieldBuilder<I, O, CtxOptions, ErrorTool, HasCreatedAt, HasUpdatedAt>
 {
@@ -480,7 +480,7 @@ impl<
         HasUpdatedAt,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     > Default for FieldBuilder<I, O, CtxOptions, ErrorTool, HasCreatedAt, HasUpdatedAt>
 {
@@ -489,13 +489,8 @@ impl<
     }
 }
 
-impl<
-        HasUpdatedAt,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
-        CtxOptions: Clone,
-        ErrorTool: IvoErrorTool,
-    > FieldBuilder<I, O, CtxOptions, ErrorTool, No, HasUpdatedAt>
+impl<HasUpdatedAt, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool>
+    FieldBuilder<I, O, CtxOptions, ErrorTool, No, HasUpdatedAt>
 {
     pub fn created_at<T, R>(
         self,
@@ -519,13 +514,8 @@ impl<
     }
 }
 
-impl<
-        HasCreatedAt,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
-        CtxOptions: Clone,
-        ErrorTool: IvoErrorTool,
-    > FieldBuilder<I, O, CtxOptions, ErrorTool, HasCreatedAt>
+impl<HasCreatedAt, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool>
+    FieldBuilder<I, O, CtxOptions, ErrorTool, HasCreatedAt>
 {
     pub fn updated_at<T, R>(
         self,

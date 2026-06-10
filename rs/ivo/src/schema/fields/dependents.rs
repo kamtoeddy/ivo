@@ -21,7 +21,7 @@ pub struct DependentFieldBuilder<
     T,
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
-    CtxOptions: Clone,
+    CtxOptions,
     ErrorTool: IvoErrorTool = DefaultErrorTool,
     HasDefault = No,
     HasParents = No,
@@ -57,7 +57,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     >
     DependentFieldBuilder<
@@ -104,7 +104,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     > Default
     for DependentFieldBuilder<
@@ -133,7 +133,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     > BuildableFieldConfig<I, O, CtxOptions, ErrorTool>
     for DependentFieldBuilder<
@@ -171,7 +171,7 @@ impl<
         T: Clone + Debug + Send + Sync + 'static,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     > DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool>
 {
@@ -196,7 +196,7 @@ impl<
     }
 }
 
-impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: IvoErrorTool>
+impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool>
     DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes>
 {
     pub fn depends_on<const N: usize>(
@@ -211,7 +211,7 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: Iv
     }
 }
 
-impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: IvoErrorTool>
+impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool>
     DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, Yes>
 {
     pub fn resolve<R>(
@@ -236,7 +236,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     >
     DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, Yes, Yes, No, HasDelete, HasSuccess>
@@ -274,7 +274,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     >
     DependentFieldBuilder<
@@ -341,7 +341,7 @@ impl<
         T,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone,
+        CtxOptions,
         ErrorTool: IvoErrorTool,
     >
     DependentFieldBuilder<

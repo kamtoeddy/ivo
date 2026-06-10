@@ -11,7 +11,7 @@ use crate::types::{IvoSchemaStruct, Partial, PartialFromToMap};
 
 type AsyncTrigger = Box<dyn Fn() -> BoxFuture<'static, ()> + Send + Sync>;
 
-impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: IvoErrorTool>
+impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool>
     Schema<I, O, CtxOptions, ErrorTool>
 {
     pub fn get_model(&self) -> Model<'_, I, O, CtxOptions, ErrorTool> {
@@ -23,19 +23,14 @@ pub struct Model<
     'schema,
     I: IvoSchemaStruct,
     O: IvoSchemaStruct = I,
-    CtxOptions: Clone = HashMap<String, ()>,
+    CtxOptions = HashMap<String, ()>,
     ErrorTool: IvoErrorTool = DefaultErrorTool,
 > {
     schema: &'schema Schema<I, O, CtxOptions, ErrorTool>,
 }
 
-impl<
-        'schema,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
-        CtxOptions: Clone,
-        ErrorTool: IvoErrorTool,
-    > Model<'schema, I, O, CtxOptions, ErrorTool>
+impl<'schema, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool>
+    Model<'schema, I, O, CtxOptions, ErrorTool>
 {
     pub async fn create(
         &self,

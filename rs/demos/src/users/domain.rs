@@ -1,6 +1,12 @@
-use std::{collections::HashMap, future::ready, sync::LazyLock};
+use std::{
+    collections::HashMap,
+    future::ready,
+    sync::{Arc, LazyLock},
+};
 
-use ivo::{FutureExt, IvoContext, IvoField, IvoStruct, IvoValues, Model, Schema, validate_email};
+use ivo::{
+    FutureExt, IvoContext, IvoField, IvoStruct, IvoValues, Model, RwLock, Schema, validate_email,
+};
 
 use crate::utils::slugify::{SlugifiedString, slugify};
 
@@ -31,13 +37,16 @@ pub struct UserInput {
     pub slug_id: String, // alias for v_slug
 }
 
-#[derive(Clone)]
 pub struct UserCtxOptions {
     pub slug_id: Option<SlugifiedString>,
     // pub locale: &'static str, // fr, en, de, etc
 }
 
 impl<'a> UserCtxOptions {
+    pub fn new() -> Self {
+        Self { slug_id: None }
+    }
+
     fn find_user_by_slug_id(
         &self,
         _slug_id: &SlugifiedString,
@@ -45,12 +54,13 @@ impl<'a> UserCtxOptions {
         ready(None)
     }
 
-    fn update_slug_id(&self, _slug_id: &SlugifiedString) {
-        // self.slug_id = Some(slug_id.clone());
+    fn update_slug_id(&mut self, slug_id: &SlugifiedString) {
+        self.slug_id = Some(slug_id.clone());
     }
 }
 
-type Ctx = IvoContext<UserInput, User>;
+type Ctx = Arc<IvoContext<UserInput, User>>;
+type CtxOptions = Arc<RwLock<UserCtxOptions>>;
 
 pub static USER_MODEL: LazyLock<Model<UserInput, User, UserCtxOptions>> =
     LazyLock::new(|| USER_SCHEMA.get_model());
@@ -107,16 +117,14 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
                     IvoField::DEPENDENT
                         .default(SlugifiedString::from(""))
                         .depends_on(["username", "v_slug"])
-                        .resolve(|_, o: UserCtxOptions| ready(o.slug_id.clone().unwrap())),
+                        .resolve(|_, o: CtxOptions| o.read().map(|g| g.slug_id.clone().unwrap())),
                 )
                 .set(
                     "v_slug",
                     IvoField::VIRTUAL
                         .alias("slug_id")
-                        .validate(|value: String, _, o: UserCtxOptions| {
-                            let slug_id = slugify(&value);
-
-                            let validated = slug_id.value();
+                        .validate(|value: String, _, _| {
+                            let validated = value.trim();
 
                             if validated.len() < 2 {
                                 return ready(Err((
@@ -125,9 +133,7 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
                                 )));
                             }
 
-                            o.update_slug_id(&slug_id);
-
-                            ready(Ok(validated))
+                            ready(Ok(validated.into()))
                         })
                         .allow_update_if(|ctx: Ctx, _| {
                             ready(is_username_or_slug_id_updatable(
@@ -140,45 +146,46 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
         },
         |o| {
             o.post_validate(["username", "v_slug"], |b| {
-                b.validate(|ctx: Ctx, o: UserCtxOptions| {
+                b.validate(async |ctx: Ctx, o: CtxOptions| {
                     let input = ctx.input();
 
-                    let slug_id = if input.slug_id.is_some() {
-                        o.slug_id.clone().unwrap()
-                    } else {
-                        slugify(&input.username.clone().unwrap())
+                    let slug_string = match &input.slug_id {
+                        Some(v) => v.clone(),
+                        _ => input.username.as_ref().unwrap().clone(),
                     };
 
-                    o.find_user_by_slug_id(&slug_id).map(move |user| {
-                        if user.is_none() {
-                            o.update_slug_id(&slug_id);
+                    let slug_id = slugify(&slug_string);
 
-                            // let mut validated = IvoValues::new();
+                    let mut options = o.write().await;
 
-                            // validated
-                            //     .set("slug_id".into(), slug_id.value())
-                            //     .set("username".into(), "validated-username");
+                    if options.find_user_by_slug_id(&slug_id).await.is_none() {
+                        options.update_slug_id(&slug_id);
 
-                            return Ok(IvoValues::new());
-                        }
+                        // let mut validated = IvoValues::new();
 
-                        let err = (
-                            format!("A user with a slug id: \"{slug_id}\" already exists"),
-                            None,
-                        );
+                        // validated
+                        //     .set("slug_id".into(), slug_id.value())
+                        //     .set("username".into(), "validated-username");
 
-                        let mut errors = HashMap::new();
+                        return Ok(IvoValues::new());
+                    }
 
-                        if input.username.is_some() {
-                            errors.insert("username".into(), err.clone());
-                        }
+                    let err = (
+                        format!("A user with a slug id: \"{slug_id}\" already exists"),
+                        None,
+                    );
 
-                        if input.slug_id.is_some() {
-                            errors.insert("v_slug".into(), err);
-                        }
+                    let mut errors = HashMap::new();
 
-                        Err(errors)
-                    })
+                    if input.username.is_some() {
+                        errors.insert("username".into(), err.clone());
+                    }
+
+                    if input.slug_id.is_some() {
+                        errors.insert("v_slug".into(), err);
+                    }
+
+                    Err(errors)
                 })
             })
             .on_success(["email"], |b| {
