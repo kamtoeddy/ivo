@@ -28,12 +28,8 @@ pub struct Schema<
     _timestamp_upated_at: Option<TimestampFieldConfig>,
 
     // contexts & values
-    pub context: HashMap<String, ErasedValue>,
-    pub context_options: HashMap<String, ErasedValue>,
     pub defaults: HashMap<String, ErasedValue>,
-    pub partial_context: HashMap<String, ErasedValue>,
-    pub values: HashMap<String, ErasedValue>,
-    fields_set: HashSet<String>,
+    field_names: HashSet<String>,
 
     // maps
     pub alias_to_virtual_map: HashMap<String, String>,
@@ -81,16 +77,12 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: I
         let mut s = Self {
             field_configs: fields.configs,
             _options: options_maker(SchemaOptions::new()).build(),
-            fields_set: {
-                let mut all_fields = O::ivo_internal_fields();
-                all_fields.extend(I::ivo_internal_fields());
-                all_fields.into_iter().collect()
+            field_names: {
+                let mut names = O::ivo_internal_field_names();
+                names.extend(I::ivo_internal_field_names());
+                names.into_iter().collect()
             },
-            context: HashMap::new(),
-            context_options: HashMap::new(),
             defaults: HashMap::new(),
-            partial_context: HashMap::new(),
-            values: HashMap::new(),
             alias_to_virtual_map: HashMap::new(),
             dependency_map: HashMap::new(),
             props_to_allowed_values_map: HashMap::new(),
@@ -126,7 +118,7 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone, ErrorTool: I
     }
 
     pub fn fields_set(&self) -> &HashSet<String> {
-        &self.fields_set
+        &self.field_names
     }
 
     pub fn get_field_config(

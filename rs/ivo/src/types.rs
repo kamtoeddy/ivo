@@ -61,7 +61,7 @@ pub trait PartialFromToMap {
 }
 
 pub trait HasFields {
-    fn ivo_internal_fields() -> Vec<String>;
+    fn ivo_internal_field_names() -> Vec<String>;
 }
 
 pub trait HasPartial {

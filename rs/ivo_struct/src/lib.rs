@@ -187,7 +187,7 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
         }
 
         impl #crate_root::types::HasFields for #name {
-            fn ivo_internal_fields() -> Vec<String> {
+            fn ivo_internal_field_names() -> Vec<String> {
                 #field_names.into_iter().map(|f| String::from(f)).collect()
             }
         }
