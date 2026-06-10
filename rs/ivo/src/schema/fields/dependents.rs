@@ -6,9 +6,8 @@ use crate::{
         fields::{
             base::{BuildableFieldConfig, FieldConfig, InternalFieldConfig},
             types::{
-                ComputableInit, ComputableWithMiniSummary, IntoDeleteHandler,
-                IntoResolverWithMiniSummary, IntoSuccessHandler, IntoUniformResolverWithMutSummary,
-                ResolverWithMutSummary,
+                ComputableInit, ComputableWithMiniContext, IntoDeleteHandler,
+                IntoResolverWithMiniContext, IntoSuccessHandler, IntoUniformResolver, Resolver,
             },
         },
     },
@@ -39,9 +38,9 @@ pub struct DependentFieldBuilder<
     _should_update: PhantomData<HasShouldUpdate>,
     _success_handlers: PhantomData<HasSuccess>,
     // actual data...
-    default: Option<ComputableWithMiniSummary<ErasedValue, I, O, CtxOptions>>,
+    default: Option<ComputableWithMiniContext<ErasedValue, I, O, CtxOptions>>,
     depends_on: Option<Vec<&'static str>>,
-    resolver: Option<ResolverWithMutSummary<ErasedValue, I, O, CtxOptions>>,
+    resolver: Option<Resolver<ErasedValue, I, O, CtxOptions>>,
     should_update: Option<False>,
     on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
     on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
@@ -177,7 +176,7 @@ impl<
 {
     pub fn default(self, value: T) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes> {
         DependentFieldBuilder {
-            default: Some(ComputableWithMiniSummary::Static(erase_value(value))),
+            default: Some(ComputableWithMiniContext::Static(erase_value(value))),
             ..Default::default()
         }
     }
@@ -187,10 +186,10 @@ impl<
         default_fn: F,
     ) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes>
     where
-        F: IntoResolverWithMiniSummary<T, I, O, CtxOptions>,
+        F: IntoResolverWithMiniContext<T, I, O, CtxOptions>,
     {
         DependentFieldBuilder {
-            default: Some(ComputableWithMiniSummary::Func(default_fn.into_uniform())),
+            default: Some(ComputableWithMiniContext::Func(default_fn.into_uniform())),
             ..Default::default()
         }
     }
@@ -219,7 +218,7 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorT
         resolver: R,
     ) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, Yes, Yes>
     where
-        R: IntoUniformResolverWithMutSummary<T, I, O, CtxOptions>,
+        R: IntoUniformResolver<T, I, O, CtxOptions>,
     {
         DependentFieldBuilder {
             default: self.default,

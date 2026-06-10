@@ -11,7 +11,7 @@ where
     T: Clone + Debug + Send + Sync + 'static,
 {
     fn clone_box(&self) -> Box<dyn CloneableAny> {
-        Box::new(T::clone(&self)) // This triggers the concrete type's clone method!
+        Box::new(T::clone(self)) // This triggers the concrete type's clone method!
     }
 
     fn as_any(&self) -> &dyn Any {

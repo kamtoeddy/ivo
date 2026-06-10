@@ -2,9 +2,9 @@ use crate::{
     schema::{
         error::IvoErrorTool,
         fields::types::{
-            BooleanResolverWithMutSummary, ComputableInit, ComputableRequired,
-            ComputableRequiredError, ComputableWithMiniSummary, ResolverWithMutSummary,
-            UniformTimestampResolver, UniformValidator, VirtualSanitiser,
+            BooleanResolver, ComputableInit, ComputableRequired, ComputableRequiredError,
+            ComputableWithMiniContext, Resolver, UniformTimestampResolver, UniformValidator,
+            VirtualSanitiser,
         },
     },
     types::{DeleteHandler, FailureHandler, SuccessHandler},
@@ -33,20 +33,20 @@ pub struct FieldConfig<
     ErrorTool: IvoErrorTool,
 > {
     pub alias: Option<String>,
-    pub default: Option<ComputableWithMiniSummary<T, I, O, CtxOptions>>,
+    pub default: Option<ComputableWithMiniContext<T, I, O, CtxOptions>>,
     pub depends_on: Option<Vec<&'static str>>,
     pub is_constant: bool,
     pub is_readonly: bool,
     pub is_virtual: bool,
-    pub value: Option<ComputableWithMiniSummary<T, I, O, CtxOptions>>,
+    pub value: Option<ComputableWithMiniContext<T, I, O, CtxOptions>>,
     pub required: Option<ComputableRequired<I, O, CtxOptions>>,
     pub required_error: Option<ComputableRequiredError<I, O, CtxOptions>>,
-    pub resolver: Option<ResolverWithMutSummary<T, I, O, CtxOptions>>,
+    pub resolver: Option<Resolver<T, I, O, CtxOptions>>,
     pub sanitizer: Option<VirtualSanitiser<T, I, O, CtxOptions>>,
     pub validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
     pub re_validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
     //
-    pub should_ignore: Option<BooleanResolverWithMutSummary<I, O, CtxOptions>>,
+    pub should_ignore: Option<BooleanResolver<I, O, CtxOptions>>,
     pub should_init: Option<ComputableInit<I, O, CtxOptions>>,
     pub should_update: Option<ComputableInit<I, O, CtxOptions>>,
     // life cycle handlers

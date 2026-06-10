@@ -6,10 +6,9 @@ use crate::{
         fields::{
             base::{BuildableFieldConfig, FieldConfig, InternalFieldConfig},
             types::{
-                BooleanResolverWithMutSummary, ComputableInit, ComputableRequired,
-                IntoFailureHandler, IntoFieldValidator, IntoRequiredResolver,
-                IntoResolverWithMutSummary, IntoSuccessHandler, IntoVirtualSanitizer,
-                UniformValidator, VirtualSanitiser,
+                BooleanResolver, ComputableInit, ComputableRequired, IntoFailureHandler,
+                IntoFieldValidator, IntoRequiredResolver, IntoResolver, IntoSuccessHandler,
+                IntoVirtualSanitizer, UniformValidator, VirtualSanitiser,
             },
         },
     },
@@ -52,7 +51,7 @@ pub struct VirtualFieldBuilder<
     re_validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
     required: Option<ComputableRequired<I, O, CtxOptions>>,
     sanitizer: Option<VirtualSanitiser<ErasedValue, I, O, CtxOptions>>,
-    should_ignore_fn: Option<BooleanResolverWithMutSummary<I, O, CtxOptions>>,
+    should_ignore_fn: Option<BooleanResolver<I, O, CtxOptions>>,
     should_init: Option<ComputableInit<I, O, CtxOptions>>,
     should_update: Option<ComputableInit<I, O, CtxOptions>>,
     on_failure_fns: Option<Vec<FailureHandler<I, O, CtxOptions>>>,
@@ -403,7 +402,7 @@ impl<
         Yes,
     >
     where
-        R: IntoResolverWithMutSummary<bool, I, O, CtxOptions>,
+        R: IntoResolver<bool, I, O, CtxOptions>,
     {
         VirtualFieldBuilder {
             alias: self.alias,
@@ -486,7 +485,7 @@ impl<
         YesComputed,
     >
     where
-        R: IntoResolverWithMutSummary<bool, I, O, CtxOptions>,
+        R: IntoResolver<bool, I, O, CtxOptions>,
     {
         VirtualFieldBuilder {
             alias: self.alias,
@@ -546,7 +545,7 @@ impl<
         YesComputed,
     >
     where
-        R: IntoResolverWithMutSummary<bool, I, O, CtxOptions>,
+        R: IntoResolver<bool, I, O, CtxOptions>,
     {
         VirtualFieldBuilder {
             alias: self.alias,
@@ -606,7 +605,7 @@ impl<
         Yes,
     >
     where
-        R: IntoResolverWithMutSummary<bool, I, O, CtxOptions>,
+        R: IntoResolver<bool, I, O, CtxOptions>,
     {
         VirtualFieldBuilder {
             alias: self.alias,
@@ -666,7 +665,7 @@ impl<
         YesComputed,
     >
     where
-        R: IntoResolverWithMutSummary<bool, I, O, CtxOptions>,
+        R: IntoResolver<bool, I, O, CtxOptions>,
     {
         VirtualFieldBuilder {
             alias: self.alias,
@@ -756,7 +755,7 @@ impl<
         YesComputed,
     >
     where
-        R: IntoResolverWithMutSummary<bool, I, O, CtxOptions>,
+        R: IntoResolver<bool, I, O, CtxOptions>,
     {
         VirtualFieldBuilder {
             alias: self.alias,

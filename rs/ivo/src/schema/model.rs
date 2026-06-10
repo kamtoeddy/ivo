@@ -69,7 +69,7 @@ impl<'schema, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: Ivo
         // self.resolve_constants(&mut context);
 
         // Run validators for props in context
-        self.run_async_validator(&input, options).await;
+        self.run_async_validator(input, options).await;
 
         error_tool.add(
             "lol",
@@ -99,14 +99,14 @@ impl<'schema, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: Ivo
         options: CtxOptions,
     ) -> Result<(Partial<O>, AsyncTrigger), (UpdateError<ErrorTool>, AsyncTrigger)> {
         // Run validators for props in context
-        self.run_async_validator(&updates, options).await;
+        self.run_async_validator(updates, options).await;
 
         // let previous_values = data.ivo_internal_to_erased_map();
         let input_values = updates.ivo_internal_to_optional_erased_map();
         // let context: Context = HashMap::new();
 
         // in the updates provided are all none, the nothing to update
-        if input_values.inner.len() == 0 {
+        if input_values.inner.is_empty() {
             return Err((
                 UpdateError::NothingToUpdate,
                 Box::new(move || Box::pin(async {})),

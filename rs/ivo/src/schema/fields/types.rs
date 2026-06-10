@@ -146,27 +146,27 @@ where
     }
 }
 
-pub trait IntoResolverWithMutSummary<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> {
-    fn into_resolver(self) -> ResolverWithMutSummary<T, I, O, CtxOptions>;
+pub trait IntoResolver<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> {
+    fn into_resolver(self) -> Resolver<T, I, O, CtxOptions>;
 }
 
 impl<F, Fut, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>
-    IntoResolverWithMutSummary<T, I, O, CtxOptions> for F
+    IntoResolver<T, I, O, CtxOptions> for F
 where
     T: 'static,
     F: Fn(Arc<IvoContext<I, O>>, Arc<RwLock<CtxOptions>>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = T> + Send + 'static,
 {
-    fn into_resolver(self) -> ResolverWithMutSummary<T, I, O, CtxOptions> {
+    fn into_resolver(self) -> Resolver<T, I, O, CtxOptions> {
         Box::new(move |ctx, o| Box::pin(self(ctx, o)))
     }
 }
 
-pub trait IntoUniformResolverWithMutSummary<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> {
-    fn into_uniform(self) -> UniformResolverWithMutSummary<I, O, CtxOptions>;
+pub trait IntoUniformResolver<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> {
+    fn into_uniform(self) -> UniformResolver<I, O, CtxOptions>;
 }
 
-impl<F, Fut, T, I, O, CtxOptions> IntoUniformResolverWithMutSummary<T, I, O, CtxOptions> for F
+impl<F, Fut, T, I, O, CtxOptions> IntoUniformResolver<T, I, O, CtxOptions> for F
 where
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
@@ -174,23 +174,23 @@ where
     F: Fn(Arc<IvoContext<I, O>>, Arc<RwLock<CtxOptions>>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = T> + Send + 'static,
 {
-    fn into_uniform(self) -> UniformResolverWithMutSummary<I, O, CtxOptions> {
+    fn into_uniform(self) -> UniformResolver<I, O, CtxOptions> {
         Box::new(move |ctx, o| Box::pin(self(ctx, o).map(|v| erase_value(v))))
     }
 }
 
-pub trait IntoResolverWithMiniSummary<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> {
-    fn into_uniform(self) -> UniformResolverWithMiniSummary<I, O, CtxOptions>;
+pub trait IntoResolverWithMiniContext<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> {
+    fn into_uniform(self) -> UniformResolverWithMiniContext<I, O, CtxOptions>;
 }
 
 impl<F, Fut, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>
-    IntoResolverWithMiniSummary<T, I, O, CtxOptions> for F
+    IntoResolverWithMiniContext<T, I, O, CtxOptions> for F
 where
     T: Clone + Debug + Send + Sync + 'static,
     F: Fn(Arc<IvoMiniContext<I, O>>, Arc<RwLock<CtxOptions>>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = T> + Send + 'static,
 {
-    fn into_uniform(self) -> UniformResolverWithMiniSummary<I, O, CtxOptions> {
+    fn into_uniform(self) -> UniformResolverWithMiniContext<I, O, CtxOptions> {
         Box::new(move |ctx, o| Box::pin(self(ctx, o).map(|v| erase_value(v))))
     }
 }
@@ -213,28 +213,28 @@ pub type UniformVirtualSanitiser<I, O, CtxOptions> = Box<
         + 'static,
 >;
 
-pub type UniformResolverWithMutSummary<I, O, CtxOptions> = Box<
+pub type UniformResolver<I, O, CtxOptions> = Box<
     dyn Fn(Arc<IvoContext<I, O>>, Arc<RwLock<CtxOptions>>) -> BoxFuture<'static, ErasedValue>
         + Send
         + Sync
         + 'static,
 >;
 
-pub type UniformResolverWithMiniSummary<I, O, CtxOptions> = Box<
+pub type UniformResolverWithMiniContext<I, O, CtxOptions> = Box<
     dyn Fn(Arc<IvoMiniContext<I, O>>, Arc<RwLock<CtxOptions>>) -> BoxFuture<'static, ErasedValue>
         + Send
         + Sync
         + 'static,
 >;
 
-pub enum ComputableWithMiniSummary<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> {
+pub enum ComputableWithMiniContext<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> {
     Static(T),
-    Func(UniformResolverWithMiniSummary<I, O, CtxOptions>),
+    Func(UniformResolverWithMiniContext<I, O, CtxOptions>),
 }
 
 pub enum ComputableInit<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> {
     False,
-    Func(BooleanResolverWithMutSummary<I, O, CtxOptions>),
+    Func(BooleanResolver<I, O, CtxOptions>),
 }
 
 pub enum ComputableRequired<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> {
@@ -256,14 +256,13 @@ pub type RequiredResolver<I, O, CtxOptions> = Box<
         + 'static,
 >;
 
-pub type ResolverWithMutSummary<T, I, O, CtxOptions> = Box<
+pub type Resolver<T, I, O, CtxOptions> = Box<
     dyn Fn(Arc<IvoContext<I, O>>, Arc<RwLock<CtxOptions>>) -> BoxFuture<'static, T>
         + Send
         + Sync
         + 'static,
 >;
 
-pub type BooleanResolverWithMutSummary<I, O, CtxOptions> =
-    ResolverWithMutSummary<bool, I, O, CtxOptions>;
+pub type BooleanResolver<I, O, CtxOptions> = Resolver<bool, I, O, CtxOptions>;
 
-pub type VirtualSanitiser<T, I, O, CtxOptions> = ResolverWithMutSummary<T, I, O, CtxOptions>;
+pub type VirtualSanitiser<T, I, O, CtxOptions> = Resolver<T, I, O, CtxOptions>;

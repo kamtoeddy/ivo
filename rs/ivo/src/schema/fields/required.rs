@@ -7,8 +7,8 @@ use crate::{
             base::{BuildableFieldConfig, FieldConfig, InternalFieldConfig},
             types::{
                 ComputableInit, ComputableRequired, ComputableRequiredError, IntoDeleteHandler,
-                IntoFailureHandler, IntoFieldValidator, IntoRequiredErrorResolver,
-                IntoResolverWithMutSummary, IntoSuccessHandler, UniformValidator,
+                IntoFailureHandler, IntoFieldValidator, IntoRequiredErrorResolver, IntoResolver,
+                IntoSuccessHandler, UniformValidator,
             },
         },
     },
@@ -303,7 +303,7 @@ impl<
         Yes,
     >
     where
-        R: IntoResolverWithMutSummary<bool, I, O, CtxOptions>,
+        R: IntoResolver<bool, I, O, CtxOptions>,
     {
         RequiredFieldBuilder {
             validator: self.validator,

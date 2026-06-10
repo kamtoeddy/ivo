@@ -182,7 +182,7 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
             // regular props
             self.props.insert(prop.clone());
 
-            // if let Some(ComputableWithMiniSummary::Static(v)) = &def.default {
+            // if let Some(ComputableWithMiniContext::Static(v)) = &def.default {
             //     self.defaults.insert(prop.clone(), v);
             // }
 

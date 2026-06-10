@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 use crate::{
     schema::{
         error::IvoErrorTool,
-        fields::types::{BooleanResolverWithMutSummary, ComputableInit},
+        fields::types::{BooleanResolver, ComputableInit},
         options::types::{OnSuccessConfig, PostValidationConfig},
     },
     types::{DeleteHandler, IvoSchemaStruct, No},
@@ -21,7 +21,7 @@ pub struct SchemaOptions<
 
     pub post_validate: Option<Vec<PostValidationConfig<I, O, CtxOptions, ErrorTool>>>,
 
-    pub should_ignore: Option<BooleanResolverWithMutSummary<I, O, CtxOptions>>,
+    pub should_ignore: Option<BooleanResolver<I, O, CtxOptions>>,
     pub should_update: Option<ComputableInit<I, O, CtxOptions>>,
 
     // timestamps?:
@@ -80,7 +80,7 @@ pub struct SchemaOptionsBuilder<
 
     pub post_validate: Option<Vec<PostValidationConfig<I, O, CtxOptions, ErrorTool>>>,
 
-    pub should_ignore: Option<BooleanResolverWithMutSummary<I, O, CtxOptions>>,
+    pub should_ignore: Option<BooleanResolver<I, O, CtxOptions>>,
     pub should_update: Option<ComputableInit<I, O, CtxOptions>>,
 
     // timestamps?:

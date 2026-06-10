@@ -6,10 +6,9 @@ use crate::{
         fields::{
             base::{BuildableFieldConfig, FieldConfig, InternalFieldConfig},
             types::{
-                BooleanResolverWithMutSummary, ComputableInit, ComputableRequired,
-                ComputableWithMiniSummary, IntoDeleteHandler, IntoFailureHandler,
-                IntoFieldValidator, IntoRequiredResolver, IntoResolverWithMiniSummary,
-                IntoResolverWithMutSummary, IntoSuccessHandler, UniformValidator,
+                BooleanResolver, ComputableInit, ComputableRequired, ComputableWithMiniContext,
+                IntoDeleteHandler, IntoFailureHandler, IntoFieldValidator, IntoRequiredResolver,
+                IntoResolver, IntoResolverWithMiniContext, IntoSuccessHandler, UniformValidator,
             },
         },
     },
@@ -47,11 +46,11 @@ pub struct LaxFieldBuilder<
     _on_failure_fns: PhantomData<HasFailure>,
     _on_success_fns: PhantomData<HasSuccess>,
     // actual data...
-    default: Option<ComputableWithMiniSummary<ErasedValue, I, O, CtxOptions>>,
+    default: Option<ComputableWithMiniContext<ErasedValue, I, O, CtxOptions>>,
     validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
     re_validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
     required: Option<ComputableRequired<I, O, CtxOptions>>,
-    should_ignore_fn: Option<BooleanResolverWithMutSummary<I, O, CtxOptions>>,
+    should_ignore_fn: Option<BooleanResolver<I, O, CtxOptions>>,
     should_init: Option<ComputableInit<I, O, CtxOptions>>,
     should_update: Option<ComputableInit<I, O, CtxOptions>>,
     on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
@@ -222,7 +221,7 @@ impl<
 {
     pub fn default(self, value: T) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes> {
         LaxFieldBuilder {
-            default: Some(ComputableWithMiniSummary::Static(erase_value(value))),
+            default: Some(ComputableWithMiniContext::Static(erase_value(value))),
             ..Default::default()
         }
     }
@@ -232,10 +231,10 @@ impl<
         default_fn: F,
     ) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes>
     where
-        F: IntoResolverWithMiniSummary<T, I, O, CtxOptions>,
+        F: IntoResolverWithMiniContext<T, I, O, CtxOptions>,
     {
         LaxFieldBuilder {
-            default: Some(ComputableWithMiniSummary::Func(default_fn.into_uniform())),
+            default: Some(ComputableWithMiniContext::Func(default_fn.into_uniform())),
             ..Default::default()
         }
     }
@@ -332,7 +331,7 @@ impl<
         Yes,
     >
     where
-        R: IntoResolverWithMutSummary<bool, I, O, CtxOptions>,
+        R: IntoResolver<bool, I, O, CtxOptions>,
     {
         LaxFieldBuilder {
             default: self.default,
@@ -399,7 +398,7 @@ impl<
         YesComputed,
     >
     where
-        R: IntoResolverWithMutSummary<bool, I, O, CtxOptions>,
+        R: IntoResolver<bool, I, O, CtxOptions>,
     {
         LaxFieldBuilder {
             default: self.default,
@@ -455,7 +454,7 @@ impl<
         YesComputed,
     >
     where
-        R: IntoResolverWithMutSummary<bool, I, O, CtxOptions>,
+        R: IntoResolver<bool, I, O, CtxOptions>,
     {
         LaxFieldBuilder {
             default: self.default,
@@ -511,7 +510,7 @@ impl<
         Yes,
     >
     where
-        R: IntoResolverWithMutSummary<bool, I, O, CtxOptions>,
+        R: IntoResolver<bool, I, O, CtxOptions>,
     {
         LaxFieldBuilder {
             default: self.default,
@@ -567,7 +566,7 @@ impl<
         YesComputed,
     >
     where
-        R: IntoResolverWithMutSummary<bool, I, O, CtxOptions>,
+        R: IntoResolver<bool, I, O, CtxOptions>,
     {
         LaxFieldBuilder {
             default: self.default,
@@ -652,7 +651,7 @@ impl<
         YesComputed,
     >
     where
-        R: IntoResolverWithMutSummary<bool, I, O, CtxOptions>,
+        R: IntoResolver<bool, I, O, CtxOptions>,
     {
         LaxFieldBuilder {
             default: self.default,

@@ -1,5 +1,5 @@
-use ivo::{UpdateError, types::WithUpdateDetails};
-use std::{mem, time::Instant};
+use ivo::{UpdateError, erase_value, parse_or_panic, types::WithUpdateDetails};
+use std::{collections::HashMap, mem, time::Instant};
 
 mod domain;
 
@@ -90,4 +90,12 @@ pub async fn run_users_demo() {
         "\nUpdate duration:".font_bold(),
         format!("{:?}", timer.elapsed()).colored_blue()
     );
+
+    let mut map = HashMap::new();
+    map.insert("k", Some(erase_value(1)));
+
+    // let l = map.get("k") ;
+    if let Some(Some(v)) = map.get("k") {
+        println!("k = {}", parse_or_panic::<i32>(&v))
+    }
 }
