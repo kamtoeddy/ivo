@@ -20,7 +20,7 @@ pub use schema::{
     Model, Schema,
 };
 pub use types::{
-    FromToMap, HasFields, HasPartial, IvoMiniSummary, IvoSchemaStruct, IvoSummary, Partial,
+    FromToMap, HasFields, HasPartial, IvoContext, IvoMiniContext, IvoSchemaStruct, Partial,
     ValidatorError, ValidatorResponse,
 };
 pub use utils::erased_value::*;

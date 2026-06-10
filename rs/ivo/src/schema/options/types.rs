@@ -5,7 +5,7 @@ use futures::future::BoxFuture;
 use crate::{
     erase_value,
     schema::error::IvoErrorTool,
-    types::{IvoSummary, SuccessHandler},
+    types::{IvoContext, SuccessHandler},
     DefaultFieldErrorMetadata, ErasedValue, IvoSchemaStruct, ValidatorError,
 };
 
@@ -62,11 +62,11 @@ impl<F, Fut, I, O, CtxOptions: Clone, ErrorTool: IvoErrorTool>
 where
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
-    F: Fn(IvoSummary<I, O, CtxOptions>) -> Fut + Send + Sync + 'static,
+    F: Fn(IvoContext<I, O>, CtxOptions) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = PostValidatorResponse<ErrorTool::FieldMetadata>> + Send + Sync + 'static,
 {
     fn into_validator(self) -> PostValidator<I, O, CtxOptions, ErrorTool::FieldMetadata> {
-        Box::new(move |s| Box::pin(self(s)))
+        Box::new(move |ctx, o| Box::pin(self(ctx, o)))
     }
 }
 
@@ -78,7 +78,8 @@ pub type PostValidatorResponse<FieldErrorMetadata = DefaultFieldErrorMetadata> =
 
 pub type PostValidator<I, O, CtxOptions, FieldErrorMetadata> = Box<
     dyn Fn(
-            IvoSummary<I, O, CtxOptions>,
+            IvoContext<I, O>,
+            CtxOptions,
         ) -> BoxFuture<'static, PostValidatorResponse<FieldErrorMetadata>>
         + Send
         + Sync

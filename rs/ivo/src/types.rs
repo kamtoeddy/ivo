@@ -87,25 +87,18 @@ pub trait WithUpdateDetails: HasPartial + Clone + Sized {
 
 pub type Partial<T> = <T as HasPartial>::Partial;
 
-pub struct IvoMiniSummary<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
+pub struct IvoMiniContext<I: IvoSchemaStruct, O: IvoSchemaStruct> {
     input: I::Partial,
     input_values: I::Partial,
     values: O::Partial,
-    options: CtxOptions,
 }
 
-impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> IvoMiniSummary<I, O, CtxOptions> {
-    pub fn new(
-        input: I::Partial,
-        input_values: I::Partial,
-        values: O::Partial,
-        options: CtxOptions,
-    ) -> Self {
+impl<I: IvoSchemaStruct, O: IvoSchemaStruct> IvoMiniContext<I, O> {
+    pub fn new(input: I::Partial, input_values: I::Partial, values: O::Partial) -> Self {
         Self {
             input,
             input_values,
             values,
-            options,
         }
     }
 
@@ -123,22 +116,13 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> IvoMiniSummary<I
     pub fn values(&self) -> O::Partial {
         self.values.clone()
     }
-
-    pub fn options(&self) -> &CtxOptions {
-        &self.options
-    }
-
-    pub fn update_options(&mut self) {
-        todo!()
-    }
 }
 
-pub enum IvoSummary<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
+pub enum IvoContext<I: IvoSchemaStruct, O: IvoSchemaStruct> {
     Create {
         input: I::Partial,
         input_values: I::Partial,
         values: O::Partial,
-        options: CtxOptions,
     },
     Update {
         changes: O::Partial,
@@ -146,22 +130,15 @@ pub enum IvoSummary<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> {
         input_values: I::Partial,
         previous_values: O,
         values: O,
-        options: CtxOptions,
     },
 }
 
-impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> IvoSummary<I, O, CtxOptions> {
-    pub fn for_new(
-        input: I::Partial,
-        input_values: I::Partial,
-        values: O::Partial,
-        options: CtxOptions,
-    ) -> Self {
+impl<I: IvoSchemaStruct, O: IvoSchemaStruct> IvoContext<I, O> {
+    pub fn for_new(input: I::Partial, input_values: I::Partial, values: O::Partial) -> Self {
         Self::Create {
             input,
             input_values,
             values,
-            options,
         }
     }
 
@@ -171,7 +148,6 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> IvoSummary<I, O,
         input_values: I::Partial,
         previous_values: O,
         values: O,
-        options: CtxOptions,
     ) -> Self {
         Self::Update {
             changes,
@@ -179,7 +155,6 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> IvoSummary<I, O,
             input_values,
             previous_values,
             values,
-            options,
         }
     }
 
@@ -187,21 +162,21 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> IvoSummary<I, O,
     /// part of the final output of the current process
     pub fn changes(&self) -> O::Partial {
         match &self {
-            IvoSummary::Create { values, .. } => values,
-            IvoSummary::Update { changes, .. } => changes,
+            IvoContext::Create { values, .. } => values,
+            IvoContext::Update { changes, .. } => changes,
         }
         .clone()
     }
 
     pub fn is_update(&self) -> bool {
-        matches!(self, IvoSummary::Update { .. })
+        matches!(self, IvoContext::Update { .. })
     }
 
     /// contains validated and up to date version of input_values
     pub fn input(&self) -> I::Partial {
         match &self {
-            IvoSummary::Create { input, .. } => input,
-            IvoSummary::Update { input, .. } => input,
+            IvoContext::Create { input, .. } => input,
+            IvoContext::Update { input, .. } => input,
         }
         .clone()
     }
@@ -209,8 +184,8 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> IvoSummary<I, O,
     /// contains values provided at the start of the current process
     pub fn input_values(&self) -> I::Partial {
         match &self {
-            IvoSummary::Create { input_values, .. } => input_values,
-            IvoSummary::Update { input_values, .. } => input_values,
+            IvoContext::Create { input_values, .. } => input_values,
+            IvoContext::Update { input_values, .. } => input_values,
         }
         .clone()
     }
@@ -218,27 +193,9 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions: Clone> IvoSummary<I, O,
     /// subset of output values related to current process
     pub fn values(&self) -> O::Partial {
         match &self {
-            IvoSummary::Create { values, .. } => values.clone(),
-            IvoSummary::Update { values, .. } => values.clone().into(),
+            IvoContext::Create { values, .. } => values.clone(),
+            IvoContext::Update { values, .. } => values.clone().into(),
         }
-    }
-
-    pub fn get_options(&self) -> &CtxOptions {
-        match &self {
-            IvoSummary::Create { options, .. } => options,
-            IvoSummary::Update { options, .. } => options,
-        }
-    }
-
-    pub fn get_options_mut(&self) -> CtxOptions {
-        match &self {
-            IvoSummary::Create { options, .. } => options.clone(),
-            IvoSummary::Update { options, .. } => options.clone(),
-        }
-    }
-
-    pub fn update_options(&mut self) {
-        // todo!()
     }
 }
 
@@ -246,10 +203,10 @@ pub type DeleteHandler<O, CtxOptions> =
     Box<dyn Fn(O, CtxOptions) -> BoxFuture<'static, ()> + Send + Sync + 'static>;
 
 pub type FailureHandler<I, O, CtxOptions> =
-    Box<dyn Fn(IvoSummary<I, O, CtxOptions>) -> BoxFuture<'static, ()> + Send + Sync + 'static>;
+    Box<dyn Fn(IvoContext<I, O>, CtxOptions) -> BoxFuture<'static, ()> + Send + Sync + 'static>;
 
 pub type SuccessHandler<I, O, CtxOptions> =
-    Box<dyn Fn(IvoSummary<I, O, CtxOptions>) -> BoxFuture<'static, ()> + Send + Sync + 'static>;
+    Box<dyn Fn(IvoContext<I, O>, CtxOptions) -> BoxFuture<'static, ()> + Send + Sync + 'static>;
 
 pub type ValidatorResponse<T, ErrorMetadata = DefaultFieldErrorMetadata> =
     Result<T, ValidatorError<ErrorMetadata>>;
