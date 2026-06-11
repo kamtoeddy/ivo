@@ -18,7 +18,7 @@ use futures::future::{join_all, BoxFuture};
 
 use crate::types::{IvoSchemaStruct, Partial, PartialFromToMap, PartialMapOfErasedValues, RwLock};
 
-type AsyncTrigger<'a> = Box<dyn Fn() -> BoxFuture<'a, ()> + Send + Sync + 'a>;
+type AsyncHandlerTrigger<'a> = Box<dyn Fn() -> BoxFuture<'a, ()> + Send + Sync + 'a>;
 
 impl<
         I: IvoSchemaStruct,
@@ -54,7 +54,10 @@ impl<
         &self,
         input: &Partial<I>,
         options: CtxOptions,
-    ) -> Result<(O, AsyncTrigger<'schema>), (ErrorTool::ErrorPayload, AsyncTrigger<'schema>)> {
+    ) -> Result<
+        (O, AsyncHandlerTrigger<'schema>),
+        (ErrorTool::ErrorPayload, AsyncHandlerTrigger<'schema>),
+    > {
         let shared_rw_options = Arc::new(RwLock::new(options.clone()));
         let mini_ctx = Arc::new(input.clone());
 
@@ -166,8 +169,10 @@ impl<
         data: &O,
         updates: &Partial<I>,
         options: CtxOptions,
-    ) -> Result<(Partial<O>, AsyncTrigger<'schema>), (UpdateError<ErrorTool>, AsyncTrigger<'schema>)>
-    {
+    ) -> Result<
+        (Partial<O>, AsyncHandlerTrigger<'schema>),
+        (UpdateError<ErrorTool>, AsyncHandlerTrigger<'schema>),
+    > {
         let ctx = Arc::new(IvoContext::<I, O>::for_update(
             O::Partial::default(),
             updates.clone(),
@@ -178,15 +183,14 @@ impl<
 
         let erased_input_values = updates.ivo_internal_to_optional_erased_map();
 
-        let fields_provided = updates
-            .ivo_internal_to_optional_erased_map()
+        let fields_provided = erased_input_values
             .inner
             .keys()
             .map(|f| f.to_owned())
             .collect::<Vec<String>>();
 
-        // in the updates provided are all none, the nothing to update
-        if erased_input_values.inner.is_empty() {
+        // if the updates provided are all none, the nothing to update
+        if fields_provided.is_empty() {
             return Err((
                 UpdateError::NothingToUpdate,
                 self.prepare_failure_handlers(fields_provided, ctx, Arc::new(options)),
@@ -202,13 +206,22 @@ impl<
         // let updatables = data.ivo_internal_get_erased_updates_from_erased_values(&updatables);
 
         let shared_rw_options = Arc::new(RwLock::new(options.clone()));
-        // let ctx = Arc::new(IvoContext::<I, O>::for_update(
-        //     O::Partial::default(),
-        //     updates.clone(),
-        //     updates.clone(),
-        //     data.clone(),
-        //     data.clone(),
-        // ));
+
+        // 2.) evaluate missing required fields
+        let error_tool = self
+            .evaluate_missing_required_fields(
+                &fields_provided,
+                Arc::clone(&ctx),
+                Arc::clone(&shared_rw_options),
+            )
+            .await;
+
+        if error_tool.is_loaded() {
+            return Err((
+                UpdateError::ValidationError(error_tool.payload()),
+                self.prepare_failure_handlers(fields_provided, ctx, Arc::new(options)),
+            ));
+        }
 
         // Run validators for props in context
         self.run_validators(updates, Arc::clone(&shared_rw_options))
@@ -435,7 +448,7 @@ impl<
         fields_provided: Vec<String>,
         ctx: SharedIvoContext<I, O>,
         options: SharedCtxOptions<CtxOptions>,
-    ) -> AsyncTrigger<'schema> {
+    ) -> AsyncHandlerTrigger<'schema> {
         let mut handlers = vec![];
 
         for (field_name, config) in self.schema.get_field_configs() {
