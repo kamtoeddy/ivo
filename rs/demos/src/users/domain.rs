@@ -202,12 +202,12 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
                 })
             })
             .on_delete(|_, _| {
-                println!("on delete");
+                println!("on delete fn 1");
 
                 ready(())
             })
             .on_delete(|_, _| {
-                println!("on delete");
+                println!("on delete fn 2");
 
                 ready(())
             })

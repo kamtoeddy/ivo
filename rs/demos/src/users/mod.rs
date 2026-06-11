@@ -91,6 +91,15 @@ pub async fn run_users_demo() {
         format!("{:?}", timer.elapsed()).colored_blue()
     );
 
+    let timer = Instant::now();
+    USER_MODEL.delete(user.clone(), UserCtxOptions::new()).await;
+
+    println!(
+        "{} {}\n",
+        "\nDelete triggers:".font_bold(),
+        format!("{:?}", timer.elapsed()).colored_blue()
+    );
+
     let mut map = HashMap::new();
     map.insert("k", Some(erase_value(1)));
 

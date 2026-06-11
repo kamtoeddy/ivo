@@ -1,11 +1,12 @@
 use crate::schema::core::Schema;
 use crate::schema::error::{DefaultErrorTool, FieldError, IvoErrorTool, UpdateError};
+use crate::schema::types::SchemaInternals;
 use crate::utils::erased_value::ErasedValue;
 
 use std::collections::{HashMap, HashSet};
+use std::sync::Arc;
 
 use futures::future::{join_all, BoxFuture};
-use futures::stream::{FuturesUnordered, StreamExt};
 
 use crate::types::{IvoSchemaStruct, Partial, PartialFromToMap};
 
@@ -135,16 +136,17 @@ impl<'schema, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: Ivo
         Ok((updated_values, Box::new(move || Box::pin(async {}))))
     }
 
-    pub async fn delete(&self, data: &O) {
-        let handle_delete_async = async |_data: &O| {};
+    pub async fn delete(&self, data: O, options: CtxOptions) {
+        let data = Arc::new(data);
+        let options = Arc::new(options);
 
-        let mut tasks = FuturesUnordered::new();
+        if let Some(handlers) = &self.schema.options().on_delete_fns {
+            let tasks = handlers
+                .iter()
+                .map(|h| h(Arc::clone(&data), Arc::clone(&options)));
 
-        for _ in 11..=21 {
-            tasks.push(handle_delete_async(data));
+            for _ in join_all(tasks).await {}
         }
-
-        while tasks.next().await.is_some() {}
     }
 
     async fn run_async_validator(&self, _input: &Partial<I>, _options: CtxOptions) {
