@@ -1,12 +1,12 @@
 use crate::schema::fields::types::IntoUniformTimestampResolver;
 use crate::schema::fields::TimestampFieldConfig;
+use crate::schema::internal::SchemaInternals;
 use crate::schema::options::base::{SchemaOptions, SchemaOptionsBuilder};
 use crate::schema::options::BuildableSchemaOptions;
-use crate::schema::types::SchemaInternals;
 use crate::utils::erased_value::ErasedValue;
 
 use crate::schema::error::{DefaultErrorTool, IvoErrorTool, SchemaError};
-use crate::schema::fields::base::{BuildableFieldConfig, InternalFieldConfig};
+use crate::schema::fields::base::{BuildableFieldConfig, FieldType, InternalFieldConfig};
 use crate::types::{IvoSchemaStruct, No, Yes};
 
 use std::collections::{HashMap, HashSet};
@@ -144,7 +144,7 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
         // First pass: register prop kinds and simple attributes
         for (prop, def) in &self.field_configs {
             // virtuals
-            if def.is_virtual {
+            if matches!(def.field_type, FieldType::Virtual) {
                 self.virtuals.insert(prop.clone());
 
                 if let Some(alias) = &def.alias {
@@ -174,7 +174,7 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
             }
 
             // constants
-            if def.is_constant {
+            if matches!(def.field_type, FieldType::Constant) {
                 self.constants.insert(prop.clone());
 
                 continue;

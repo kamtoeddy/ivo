@@ -12,7 +12,8 @@ pub async fn run_users_demo() {
     let timer = Instant::now();
 
     let input = PartialUserInput {
-        email: Some("1@1.com".into()),
+        email: None,
+        // email: Some("1@1.com".into()),
         username: Some("john".into()),
         role: Some(UserRole::Moderator),
         slug_id: None,
@@ -26,8 +27,10 @@ pub async fn run_users_demo() {
         Ok((data, _handle_success)) => {
             println!("{:?}", data);
         }
-        Err((payload, _handle_failure)) => {
-            println!("Failed to create: {:?}", payload);
+        Err((payload, handle_failure)) => {
+            println!("\nFailed to create: {:?}\n", payload);
+
+            handle_failure().await;
         }
     };
 
@@ -75,13 +78,15 @@ pub async fn run_users_demo() {
             println!("updates: {:?}\n", data);
             println!("old + updates: {:?}", user.ivo_internal_clone_with(&data));
         }
-        Err((error, _handle_failure)) => {
+        Err((error, handle_failure)) => {
             match error {
                 UpdateError::NothingToUpdate => println!("Nothing to update"),
                 UpdateError::ValidationError(payload) => {
                     println!("Failed to update: {:?}", payload)
                 }
             };
+
+            handle_failure().await;
         }
     };
 
@@ -105,6 +110,6 @@ pub async fn run_users_demo() {
 
     // let l = map.get("k") ;
     if let Some(Some(v)) = map.get("k") {
-        println!("k = {}", parse_or_panic::<i32>(&v))
+        println!("k = {}", parse_or_panic::<i32>(v))
     }
 }

@@ -4,7 +4,7 @@ use crate::{
     schema::{
         error::IvoErrorTool,
         fields::{
-            base::{BuildableFieldConfig, FieldConfig, InternalFieldConfig},
+            base::{BuildableFieldConfig, FieldConfig, FieldType, InternalFieldConfig},
             types::{
                 ComputableWithMiniContext, IntoDeleteHandler, IntoResolverWithMiniContext,
                 IntoSuccessHandler,
@@ -32,7 +32,7 @@ pub struct ConstantFieldBuilder<
     _del_handlers: PhantomData<HasDelete>,
     _success_handlers: PhantomData<HasSuccess>,
     // actual data...
-    value: Option<ComputableWithMiniContext<ErasedValue, I, O, CtxOptions>>,
+    value: Option<ComputableWithMiniContext<ErasedValue, I, CtxOptions>>,
     on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
     on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
 }
@@ -92,6 +92,7 @@ impl<
 {
     fn build(self) -> InternalFieldConfig<I, O, CtxOptions, ErrorTool> {
         FieldConfig {
+            field_type: FieldType::Constant,
             value: self.value,
             on_delete_fns: self.on_delete_fns,
             on_success_fns: self.on_success_fns,
@@ -122,7 +123,7 @@ impl<
         resolver: F,
     ) -> ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes>
     where
-        F: IntoResolverWithMiniContext<T, I, O, CtxOptions>,
+        F: IntoResolverWithMiniContext<T, I, CtxOptions>,
     {
         ConstantFieldBuilder {
             value: Some(ComputableWithMiniContext::Func(resolver.into_uniform())),

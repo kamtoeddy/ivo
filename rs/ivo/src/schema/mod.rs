@@ -1,8 +1,8 @@
 pub mod core;
 pub mod error;
 pub mod fields;
+mod internal;
 pub mod options;
-pub mod types;
 
 pub use core::Schema;
 pub mod model;

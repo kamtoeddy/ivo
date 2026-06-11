@@ -25,6 +25,14 @@ pub trait BuildableFieldConfig<
 pub type InternalFieldConfig<I, O, CtxOptions, ErrorTool> =
     FieldConfig<ErasedValue, I, O, CtxOptions, ErrorTool>;
 
+pub enum FieldType {
+    Constant,
+    Dependent,
+    Lax,
+    Required,
+    Virtual,
+}
+
 pub struct FieldConfig<
     T,
     I: IvoSchemaStruct,
@@ -32,13 +40,12 @@ pub struct FieldConfig<
     CtxOptions,
     ErrorTool: IvoErrorTool,
 > {
+    pub field_type: FieldType,
     pub alias: Option<String>,
-    pub default: Option<ComputableWithMiniContext<T, I, O, CtxOptions>>,
+    pub default: Option<ComputableWithMiniContext<T, I, CtxOptions>>,
     pub depends_on: Option<Vec<&'static str>>,
-    pub is_constant: bool,
     pub is_readonly: bool,
-    pub is_virtual: bool,
-    pub value: Option<ComputableWithMiniContext<T, I, O, CtxOptions>>,
+    pub value: Option<ComputableWithMiniContext<T, I, CtxOptions>>,
     pub required: Option<ComputableRequired<I, O, CtxOptions>>,
     pub required_error: Option<ComputableRequiredError<I, O, CtxOptions>>,
     pub resolver: Option<Resolver<T, I, O, CtxOptions>>,
@@ -60,10 +67,9 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorT
 {
     fn default() -> Self {
         Self {
+            field_type: FieldType::Lax,
             alias: None,
-            is_constant: false,
             is_readonly: false,
-            is_virtual: false,
             value: None,
             default: None,
             depends_on: None,

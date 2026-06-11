@@ -1,9 +1,13 @@
-use std::{collections::HashMap, fmt::Debug, sync::Arc};
+#![allow(type_alias_bounds)]
+use std::{collections::HashMap, fmt::Debug};
 
 use futures::future::BoxFuture;
 pub use futures_locks::RwLock;
+pub use std::sync::Arc;
 
-use crate::{schema::error::DefaultFieldErrorMetadata, ErasedValue};
+use crate::{
+    internal::InitializableIvoContext, schema::error::DefaultFieldErrorMetadata, ErasedValue,
+};
 
 #[derive(Debug)]
 pub struct True;
@@ -32,7 +36,11 @@ impl std::ops::Deref for False {
     }
 }
 
-pub struct OptionalErasedMap {
+/// This is used to show that this map does not contain all
+/// the field of an ivo struct, but each erased value
+/// represents an actual value, T in the struct, not
+/// the Option<T>.
+pub struct PartialMapOfErasedValues {
     pub inner: HashMap<String, ErasedValue>,
 }
 
@@ -57,8 +65,9 @@ pub trait FromToMap {
 }
 
 pub trait PartialFromToMap {
-    fn ivo_internal_from_optional_erased_map(map: &OptionalErasedMap) -> Self;
-    fn ivo_internal_to_optional_erased_map(&self) -> OptionalErasedMap;
+    fn ivo_internal_from_optional_erased_map(map: PartialMapOfErasedValues) -> Self;
+    fn ivo_internal_from_optional_erased_map_ref(map: &PartialMapOfErasedValues) -> Self;
+    fn ivo_internal_to_optional_erased_map(&self) -> PartialMapOfErasedValues;
 }
 
 pub trait HasFields {
@@ -70,7 +79,17 @@ pub trait HasPartial {
 }
 
 pub trait WithUpdateDetails: HasPartial + Clone + Sized {
-    fn ivo_internal_get_updates(
+    // fn ivo_internal_get_updates_from_partial(
+    //     &self,
+    //     updates: &Self::Partial,
+    // ) -> (Self::Partial, bool);
+
+    fn ivo_internal_get_erased_updates_from_erased_values(
+        &self,
+        updates: &HashMap<String, ErasedValue>,
+    ) -> HashMap<String, ErasedValue>;
+
+    fn ivo_internal_get_updates_from_erased_values(
         &self,
         updates: &HashMap<String, ErasedValue>,
     ) -> (Self::Partial, bool);
@@ -87,42 +106,13 @@ pub trait WithUpdateDetails: HasPartial + Clone + Sized {
 }
 
 pub type SharedData<T> = Arc<T>;
-pub type SharedCtxOptions<CtxOptions> = SharedData<RwLock<CtxOptions>>;
+pub type SharedCtxOptions<CtxOptions> = SharedData<CtxOptions>;
+pub type SharedRwCtxOptions<CtxOptions> = SharedData<RwLock<CtxOptions>>;
 pub type SharedIvoContext<I, O> = SharedData<IvoContext<I, O>>;
-pub type SharedIvoMiniContext<I, O> = SharedData<IvoMiniContext<I, O>>;
+pub type SharedIvoMiniContext<I: IvoSchemaStruct> = SharedData<IvoMiniContext<I>>;
+pub type IvoMiniContext<I: IvoSchemaStruct> = I::Partial;
 
 pub type Partial<T> = <T as HasPartial>::Partial;
-
-pub struct IvoMiniContext<I: IvoSchemaStruct, O: IvoSchemaStruct> {
-    input: I::Partial,
-    input_values: I::Partial,
-    values: O::Partial,
-}
-
-impl<I: IvoSchemaStruct, O: IvoSchemaStruct> IvoMiniContext<I, O> {
-    pub fn new(input: I::Partial, input_values: I::Partial, values: O::Partial) -> Self {
-        Self {
-            input,
-            input_values,
-            values,
-        }
-    }
-
-    /// contains validated and up to date version of input_values
-    pub fn input(&self) -> I::Partial {
-        self.input.clone()
-    }
-
-    /// contains values provided at the start of the process
-    pub fn input_values(&self) -> I::Partial {
-        self.input_values.clone()
-    }
-
-    /// subset of output values related to current process
-    pub fn values(&self) -> O::Partial {
-        self.values.clone()
-    }
-}
 
 pub enum IvoContext<I: IvoSchemaStruct, O: IvoSchemaStruct> {
     Create {
@@ -139,8 +129,8 @@ pub enum IvoContext<I: IvoSchemaStruct, O: IvoSchemaStruct> {
     },
 }
 
-impl<I: IvoSchemaStruct, O: IvoSchemaStruct> IvoContext<I, O> {
-    pub fn for_new(input: I::Partial, input_values: I::Partial, values: O::Partial) -> Self {
+impl<I: IvoSchemaStruct, O: IvoSchemaStruct> InitializableIvoContext<I, O> for IvoContext<I, O> {
+    fn for_new(input: I::Partial, input_values: I::Partial, values: O::Partial) -> Self {
         Self::Create {
             input,
             input_values,
@@ -148,7 +138,7 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct> IvoContext<I, O> {
         }
     }
 
-    pub fn for_update(
+    fn for_update(
         changes: O::Partial,
         input: I::Partial,
         input_values: I::Partial,
@@ -163,7 +153,9 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct> IvoContext<I, O> {
             values,
         }
     }
+}
 
+impl<I: IvoSchemaStruct, O: IvoSchemaStruct> IvoContext<I, O> {
     /// subset of output values related to which will be
     /// part of the final output of the current process
     pub fn changes(&self) -> O::Partial {

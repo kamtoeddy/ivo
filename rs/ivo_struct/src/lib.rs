@@ -92,7 +92,7 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
         }
     });
 
-    // ivo_internal_from_optional_erased_map
+    // ivo_internal_from_optional_erased_map_ref
     let construct_struct_fields_for_from_map_for_partial = fields.iter().map(|field| {
         let field_name = &field.ident; // e.g., 'id'
         let field_type = &field.ty; // e.g., 'String'
@@ -107,6 +107,9 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
         }
     });
 
+    let construct_struct_fields_for_from_map_ref_for_partial =
+        construct_struct_fields_for_from_map_for_partial.clone();
+
     let set_updated_values = fields.iter().map(|field| {
         let field_name = &field.ident; // e.g., 'id'
 
@@ -117,12 +120,12 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
         }
     });
 
-    let process_updated_values = fields.iter().map(|field| {
+    let process_updates_from_erased_values = fields.iter().map(|field| {
         let field_name = &field.ident; // e.g., 'id'
         let field_type = &field.ty; // e.g., 'String'
 
         quote! {
-            if let Some(erased) = updates.get(stringify!(#field_name)).clone() {
+            if let Some(erased) = updates.get(stringify!(#field_name)) {
                 let update = parse_or_panic::<#field_type>(erased);
 
                 if self.#field_name != update {
@@ -132,6 +135,35 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
             }
         }
     });
+
+    let process_erased_updates_from_erased_values = fields.iter().map(|field| {
+        let field_name = &field.ident; // e.g., 'id'
+        let field_type = &field.ty; // e.g., 'String'
+
+        quote! {
+            let name = stringify!(#field_name);
+
+            // updates == HashMap<String, ErasedValue>
+            if let Some(erased) = updates.get(name).cloned() {
+                if self.#field_name != parse_or_panic::<#field_type>(&erased) {
+                    map.insert(name.to_string(), erased);
+                }
+            }
+        }
+    });
+
+    // let process_updates_from_partial = fields.iter().map(|field| {
+    //     let field_name = &field.ident; // e.g., 'id'
+
+    //     quote! {
+    //         if let Some(value) = updates.#field_name.clone() {
+    //             if self.#field_name != value {
+    //                 partial_output.#field_name = Some(value);
+    //                 has_updated_fields = true;
+    //             }
+    //         }
+    //     }
+    // });
 
     let into_partial = fields.iter().map(|field| {
         let field_name = &field.ident;
@@ -148,7 +180,7 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
         }
 
         impl #crate_root::types::PartialFromToMap for #partial_name {
-            fn ivo_internal_from_optional_erased_map(optional_map: &#crate_root::types::OptionalErasedMap) -> Self {
+            fn ivo_internal_from_optional_erased_map(optional_map: #crate_root::types::PartialMapOfErasedValues) -> Self {
                 use #crate_root::utils::erased_value::parse_value;
 
                 Self {
@@ -156,14 +188,22 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
                 }
             }
 
-            fn ivo_internal_to_optional_erased_map(&self) -> #crate_root::types::OptionalErasedMap {
-                use #crate_root::types::OptionalErasedMap;
+            fn ivo_internal_from_optional_erased_map_ref(optional_map: &#crate_root::types::PartialMapOfErasedValues) -> Self {
+                use #crate_root::utils::erased_value::parse_value;
+
+                Self {
+                    #( #construct_struct_fields_for_from_map_ref_for_partial )*
+                }
+            }
+
+            fn ivo_internal_to_optional_erased_map(&self) -> #crate_root::types::PartialMapOfErasedValues {
+                use #crate_root::types::PartialMapOfErasedValues;
                 use #crate_root::utils::erased_value::erase_value;
                 let mut inner = std::collections::HashMap::new();
 
                 #( #to_map_statements_for_partial )*
 
-                OptionalErasedMap { inner }
+                PartialMapOfErasedValues { inner }
             }
         }
 
@@ -205,12 +245,30 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
         }
 
         impl #crate_root::types::WithUpdateDetails for #name {
-            fn ivo_internal_get_updates(&self, updates: &std::collections::HashMap<String, #crate_root::utils::erased_value::ErasedValue>) -> (Self::Partial, bool) {
+            // fn ivo_internal_get_updates_from_partial(&self, updates: &Self::Partial) -> (Self::Partial, bool) {
+            //     let mut partial_output = Self::Partial::default();
+            //     let mut has_updated_fields = false;
+
+            //     #( #process_updates_from_partial )*
+
+            //     (partial_output, has_updated_fields)
+            // }
+
+            fn ivo_internal_get_erased_updates_from_erased_values(&self, updates: &std::collections::HashMap<String, #crate_root::utils::erased_value::ErasedValue>) -> std::collections::HashMap<String, #crate_root::utils::erased_value::ErasedValue> {
+                use #crate_root::utils::erased_value::parse_or_panic;
+                let mut map = std::collections::HashMap::new();
+
+                #( #process_erased_updates_from_erased_values )*
+
+                map
+            }
+
+            fn ivo_internal_get_updates_from_erased_values(&self, updates: &std::collections::HashMap<String, #crate_root::utils::erased_value::ErasedValue>) -> (Self::Partial, bool) {
                 use #crate_root::utils::erased_value::parse_or_panic;
                 let mut partial_output = Self::Partial::default();
                 let mut has_updated_fields = false;
 
-                #( #process_updated_values )*
+                #( #process_updates_from_erased_values )*
 
                 (partial_output, has_updated_fields)
             }

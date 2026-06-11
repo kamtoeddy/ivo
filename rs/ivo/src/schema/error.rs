@@ -21,7 +21,7 @@ pub trait IvoErrorTool {
     type ErrorPayload;
 
     fn new() -> Self;
-    fn add(&mut self, field: &str, error: FieldError<Self::FieldMetadata>) -> &mut Self;
+    fn add(&mut self, field_name: &str, error: FieldError<Self::FieldMetadata>) -> &mut Self;
     fn is_loaded(&self) -> bool;
     fn payload(&self) -> Self::ErrorPayload;
 }
@@ -49,10 +49,10 @@ impl IvoErrorTool for DefaultErrorTool {
         }
     }
 
-    fn add(&mut self, field: &str, value: FieldError) -> &mut Self {
-        if !self.payload.contains_key(field) {
+    fn add(&mut self, field_name: &str, value: FieldError) -> &mut Self {
+        if !self.payload.contains_key(field_name) {
             self.payload
-                .entry(field.to_string())
+                .entry(field_name.to_string())
                 .or_default()
                 .push(value);
         }

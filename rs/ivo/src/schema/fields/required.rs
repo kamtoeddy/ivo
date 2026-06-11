@@ -4,7 +4,7 @@ use crate::{
     schema::{
         error::IvoErrorTool,
         fields::{
-            base::{BuildableFieldConfig, FieldConfig, InternalFieldConfig},
+            base::{BuildableFieldConfig, FieldConfig, FieldType, InternalFieldConfig},
             types::{
                 ComputableInit, ComputableRequired, ComputableRequiredError, IntoDeleteHandler,
                 IntoFailureHandler, IntoFieldValidator, IntoRequiredErrorResolver, IntoResolver,
@@ -162,6 +162,7 @@ impl<
 {
     fn build(self) -> InternalFieldConfig<I, O, CtxOptions, ErrorTool> {
         FieldConfig {
+            field_type: FieldType::Required,
             required_error: self.required_error,
             validator: self.validator,
             re_validator: self.re_validator,

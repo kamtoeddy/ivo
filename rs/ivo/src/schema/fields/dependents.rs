@@ -4,7 +4,7 @@ use crate::{
     schema::{
         error::{DefaultErrorTool, IvoErrorTool},
         fields::{
-            base::{BuildableFieldConfig, FieldConfig, InternalFieldConfig},
+            base::{BuildableFieldConfig, FieldConfig, FieldType, InternalFieldConfig},
             types::{
                 ComputableInit, ComputableWithMiniContext, IntoDeleteHandler,
                 IntoResolverWithMiniContext, IntoSuccessHandler, IntoUniformResolver, Resolver,
@@ -38,7 +38,7 @@ pub struct DependentFieldBuilder<
     _should_update: PhantomData<HasShouldUpdate>,
     _success_handlers: PhantomData<HasSuccess>,
     // actual data...
-    default: Option<ComputableWithMiniContext<ErasedValue, I, O, CtxOptions>>,
+    default: Option<ComputableWithMiniContext<ErasedValue, I, CtxOptions>>,
     depends_on: Option<Vec<&'static str>>,
     resolver: Option<Resolver<ErasedValue, I, O, CtxOptions>>,
     should_update: Option<False>,
@@ -151,6 +151,7 @@ impl<
 {
     fn build(self) -> InternalFieldConfig<I, O, CtxOptions, ErrorTool> {
         FieldConfig {
+            field_type: FieldType::Dependent,
             default: self.default,
             depends_on: self.depends_on,
             resolver: self.resolver,
@@ -186,7 +187,7 @@ impl<
         default_fn: F,
     ) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes>
     where
-        F: IntoResolverWithMiniContext<T, I, O, CtxOptions>,
+        F: IntoResolverWithMiniContext<T, I, CtxOptions>,
     {
         DependentFieldBuilder {
             default: Some(ComputableWithMiniContext::Func(default_fn.into_uniform())),

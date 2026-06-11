@@ -4,7 +4,7 @@ use futures::future::BoxFuture;
 
 use crate::{
     erase_value, schema::error::IvoErrorTool, types::SuccessHandler, DefaultFieldErrorMetadata,
-    ErasedValue, IvoSchemaStruct, SharedCtxOptions, SharedIvoContext, ValidatorError,
+    ErasedValue, IvoSchemaStruct, SharedRwCtxOptions, SharedIvoContext, ValidatorError,
 };
 
 pub struct IvoValues {
@@ -60,7 +60,7 @@ impl<F, Fut, I, O, CtxOptions, ErrorTool: IvoErrorTool>
 where
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
-    F: Fn(SharedIvoContext<I, O>, SharedCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
+    F: Fn(SharedIvoContext<I, O>, SharedRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = PostValidatorResponse<ErrorTool::FieldMetadata>> + Send + Sync + 'static,
 {
     fn into_validator(self) -> PostValidator<I, O, CtxOptions, ErrorTool::FieldMetadata> {
@@ -77,7 +77,7 @@ pub type PostValidatorResponse<FieldErrorMetadata = DefaultFieldErrorMetadata> =
 pub type PostValidator<I, O, CtxOptions, FieldErrorMetadata> = Box<
     dyn Fn(
             SharedIvoContext<I, O>,
-            SharedCtxOptions<CtxOptions>,
+            SharedRwCtxOptions<CtxOptions>,
         ) -> BoxFuture<'static, PostValidatorResponse<FieldErrorMetadata>>
         + Send
         + Sync

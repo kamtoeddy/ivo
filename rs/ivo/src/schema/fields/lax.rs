@@ -4,7 +4,7 @@ use crate::{
     schema::{
         error::IvoErrorTool,
         fields::{
-            base::{BuildableFieldConfig, FieldConfig, InternalFieldConfig},
+            base::{BuildableFieldConfig, FieldConfig, FieldType, InternalFieldConfig},
             types::{
                 BooleanResolver, ComputableInit, ComputableRequired, ComputableWithMiniContext,
                 IntoDeleteHandler, IntoFailureHandler, IntoFieldValidator, IntoRequiredResolver,
@@ -46,7 +46,7 @@ pub struct LaxFieldBuilder<
     _on_failure_fns: PhantomData<HasFailure>,
     _on_success_fns: PhantomData<HasSuccess>,
     // actual data...
-    default: Option<ComputableWithMiniContext<ErasedValue, I, O, CtxOptions>>,
+    default: Option<ComputableWithMiniContext<ErasedValue, I, CtxOptions>>,
     validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
     re_validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
     required: Option<ComputableRequired<I, O, CtxOptions>>,
@@ -196,6 +196,7 @@ impl<
 {
     fn build(self) -> InternalFieldConfig<I, O, CtxOptions, ErrorTool> {
         FieldConfig {
+            field_type: FieldType::Lax,
             default: self.default,
             validator: self.validator,
             re_validator: self.re_validator,
@@ -231,7 +232,7 @@ impl<
         default_fn: F,
     ) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes>
     where
-        F: IntoResolverWithMiniContext<T, I, O, CtxOptions>,
+        F: IntoResolverWithMiniContext<T, I, CtxOptions>,
     {
         LaxFieldBuilder {
             default: Some(ComputableWithMiniContext::Func(default_fn.into_uniform())),

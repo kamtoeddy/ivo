@@ -1,11 +1,7 @@
-use std::{
-    collections::HashMap,
-    future::ready,
-    sync::{Arc, LazyLock},
-};
+use std::{collections::HashMap, future::ready, sync::LazyLock};
 
 use ivo::{
-    FutureExt, IvoContext, IvoField, IvoStruct, IvoValues, Model, Schema, SharedCtxOptions,
+    FutureExt, IvoField, IvoStruct, IvoValues, Model, Schema, SharedIvoContext, SharedRwCtxOptions,
     validate_email,
 };
 
@@ -38,6 +34,7 @@ pub struct UserInput {
     pub slug_id: String, // alias for v_slug
 }
 
+#[derive(Clone)]
 pub struct UserCtxOptions {
     pub slug_id: Option<SlugifiedString>,
     // pub locale: &'static str, // fr, en, de, etc
@@ -60,9 +57,9 @@ impl<'a> UserCtxOptions {
     }
 }
 
-type Ctx = Arc<IvoContext<UserInput, User>>;
-// type CtxOptions = SharedData<UserCtxOptions>;
-type RwCtxOptions = SharedCtxOptions<UserCtxOptions>;
+type Ctx = SharedIvoContext<UserInput, User>;
+// type CtxOptions = SharedCtxOptions<UserCtxOptions>;
+type RwCtxOptions = SharedRwCtxOptions<UserCtxOptions>;
 
 pub static USER_MODEL: LazyLock<Model<UserInput, User, UserCtxOptions>> =
     LazyLock::new(|| USER_SCHEMA.get_model());
@@ -75,15 +72,25 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
                     "email",
                     IvoField::REQUIRED
                         .required_error("\"email\" is required!")
-                        .validate(|email, _, _| {
-                            ready(validate_email(email).map_err(|e| (e, None)))
-                        }), // .required_error_fn(|_, _| ready("Please provide an email address".into())),
+                        .validate(|email, _, _| ready(validate_email(email).map_err(|e| (e, None))))
+                        .on_failure(|_, _| {
+                            println!("email: on failure handled");
+
+                            ready(())
+                        }),
+                    // .required_error_fn(|_, _| ready("Please provide an email address".into())),
                 )
                 .set(
                     "role",
                     IvoField::LAX
                         .default(UserRole::User)
-                        .ignore_if(|_, _| ready(true)),
+                        .validate(|v, _, _| ready(Ok(v)))
+                        .ignore_if(|_, _| ready(true))
+                        .on_failure(|_, _| {
+                            println!("role: on failure handled");
+
+                            ready(())
+                        }),
                 )
                 .set(
                     "username",
@@ -105,6 +112,11 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
                             ready(is_username_or_slug_id_updatable(
                                 ctx.values().username_updated_at.unwrap(),
                             ))
+                        })
+                        .on_failure(|_, _| {
+                            println!("username: on failure handled");
+
+                            ready(())
                         }),
                 )
                 .set(
