@@ -316,6 +316,10 @@ impl<
             }
         }
 
+        if validators.is_empty() {
+            return Ok(self.parse_ctx_values(ctx, HashMap::new(), HashMap::new()));
+        }
+
         let tasks =
             validators
                 .into_iter()
@@ -358,6 +362,15 @@ impl<
             return Err(error_tool.payload());
         }
 
+        Ok(self.parse_ctx_values(ctx, validated_inputs, validated_outputs))
+    }
+
+    fn parse_ctx_values(
+        &self,
+        ctx: SharedIvoContext<I, O>,
+        validated_inputs: HashMap<String, ErasedValue>,
+        validated_outputs: HashMap<String, ErasedValue>,
+    ) -> (I::Partial, O::Partial) {
         let mut old_outputs = ctx.values().ivo_internal_to_optional_erased_map();
 
         for (field, value) in validated_outputs {
@@ -378,10 +391,10 @@ impl<
                 .or_insert(value);
         }
 
-        Ok((
+        (
             I::Partial::ivo_internal_from_optional_erased_map(old_inputs),
             O::Partial::ivo_internal_from_optional_erased_map(old_outputs),
-        ))
+        )
     }
 
     async fn resolve_constants_and_defaults(
@@ -416,6 +429,10 @@ impl<
                 }
                 _ => {}
             }
+        }
+
+        if resolvers.is_empty() {
+            return default_values;
         }
 
         let tasks = resolvers.into_iter().map(async |(field_name, resolver)| {
@@ -500,6 +517,10 @@ impl<
                 }
                 _ => (),
             }
+        }
+
+        if resolvers.is_empty() {
+            return error_tool;
         }
 
         let tasks = resolvers.into_iter().map(async |(field_name, resolver)| {
