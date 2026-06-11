@@ -86,6 +86,11 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
                         .default(UserRole::User)
                         .validate(|v, _, _| ready(Ok(v)))
                         .ignore_if(|_, _| ready(true))
+                        .on_delete(|_, _| {
+                            println!("role: on delete handled");
+
+                            ready(())
+                        })
                         .on_failure(|_, _| {
                             println!("role: on failure handled");
 
@@ -112,6 +117,16 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
                             ready(is_username_or_slug_id_updatable(
                                 ctx.values().username_updated_at.unwrap(),
                             ))
+                        })
+                        .on_delete(|_, _| {
+                            println!("username: on delete 1 handled");
+
+                            ready(())
+                        })
+                        .on_delete(|_, _| {
+                            println!("username: on delete 2 handled");
+
+                            ready(())
                         })
                         .on_failure(|_, _| {
                             println!("username: on failure handled");

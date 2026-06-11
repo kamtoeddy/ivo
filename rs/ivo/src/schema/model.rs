@@ -253,8 +253,23 @@ impl<
     pub async fn delete(&self, data: O, options: CtxOptions) {
         let data = Arc::new(data);
         let options = Arc::new(options);
+        let mut handlers = vec![];
 
-        if let Some(handlers) = &self.schema.options().on_delete_fns {
+        for (_, config) in self.schema.get_field_configs() {
+            match &config.on_delete_fns {
+                Some(h_vec) => {
+                    handlers.extend(h_vec);
+                    continue;
+                }
+                _ => {}
+            }
+        }
+
+        if let Some(h_vec) = &self.schema.options().on_delete_fns {
+            handlers.extend(h_vec);
+        }
+
+        if !handlers.is_empty() {
             let tasks = handlers
                 .iter()
                 .map(|h| h(Arc::clone(&data), Arc::clone(&options)));

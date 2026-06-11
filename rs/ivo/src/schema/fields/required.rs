@@ -320,6 +320,7 @@ impl<
         HasRevalidator,
         HasRequiredError,
         HasShouldUpdate,
+        HasDelete,
         HasFailure,
         HasSuccess,
         T,
@@ -338,7 +339,7 @@ impl<
         HasRevalidator,
         HasRequiredError,
         HasShouldUpdate,
-        No,
+        HasDelete,
         HasFailure,
         HasSuccess,
     >
