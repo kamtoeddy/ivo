@@ -12,11 +12,12 @@ pub async fn run_users_demo() {
     let timer = Instant::now();
 
     let input = PartialUserInput {
-        email: None,
-        // email: Some("1@1.com".into()),
+        // email: None,
+        email: Some("1@1.com".into()),
         username: Some("john".into()),
         role: Some(UserRole::Moderator),
         slug_id: None,
+        // slug_id: Some("sloppy-slug-id".into()),
     };
 
     let r = USER_MODEL.create(&input, UserCtxOptions::new()).await;
@@ -52,7 +53,7 @@ pub async fn run_users_demo() {
         email: "1@1.com".into(),
         id: 1,
         username,
-        username_updated_at: None,
+        username_last_updated_at: None,
         slug_id,
         role: UserRole::Admin,
     };

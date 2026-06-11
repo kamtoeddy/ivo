@@ -1,4 +1,4 @@
-use crate::internal::InitializableIvoContext;
+use crate::internal::InternalIvoContextMethods;
 use crate::schema::core::Schema;
 use crate::schema::error::{DefaultErrorTool, FieldError, IvoErrorTool, UpdateError};
 use crate::schema::fields::base::{FieldType, InternalFieldConfig};
@@ -71,17 +71,18 @@ impl<
                 inner: default_values,
             });
 
-        println!("default values: {default_values:?}");
+        // println!("default values: {default_values:?}");
 
-        let ctx = Arc::new(IvoContext::<I, O>::for_new(
+        let ctx = Arc::new(IvoContext::<I, O>::new_create_ctx(
             input.clone(),
             input.clone(),
             default_values,
         ));
 
+        let erased_input_values = input.ivo_internal_to_optional_erased_map();
+
         // 2.) evaluate missing required fields
-        let fields_provided = input
-            .ivo_internal_to_optional_erased_map()
+        let fields_provided = erased_input_values
             .inner
             .keys()
             .map(|f| f.to_owned())
@@ -102,64 +103,35 @@ impl<
             ));
         }
 
-        let mut error_tool = ErrorTool::new();
-        // let input_values = input.ivo_internal_to_optional_erased_map();
-
-        // println!();
-        // for _ in input_values.inner {
-        //     // println!("'{k}' was provided");
-        // }
-        // println!();
-
-        // Build initial context from input (filter to schema props)
-
-        // for (k, v) in input_kv.into_iter() {
-        //     if self.schema.is_prop(&k)
-        //         || self.schema.is_virtual(&k)
-        //         || self.schema.is_constant(&k)
-        //     {
-        //         context.insert(k, v);
-        //         continue;
-        //     }
-
-        //     if let Some(virtual_prop) = self.schema.alias_to_virtual_map.get(&k) {
-        //         context.insert(virtual_prop.clone(), v);
-        //     }
-        // }
-
-        // Resolve defaults iteratively (handles dependencies)
-        // self.resolve_defaults(&mut context);
-
-        // Resolve constants iteratively (may depend on defaults)
-        // self.resolve_constants(&mut context);
-
         // Run validators for props in context
-        self.run_validators(input, Arc::clone(&shared_rw_options))
+        let validation = self
+            .run_validators(
+                &fields_provided,
+                &erased_input_values,
+                Arc::clone(&ctx),
+                Arc::clone(&shared_rw_options),
+            )
             .await;
 
-        error_tool.add(
-            "lol",
-            FieldError {
-                reason: "()".into(),
-                metadata: None,
-            },
-        );
-
-        if error_tool.is_loaded() {
+        if validation.is_err() {
             return Err((
-                error_tool.payload(),
+                validation.err().unwrap(),
                 self.prepare_failure_handlers(fields_provided, ctx, Arc::new(options)),
             ));
         }
 
+        let validated = validation.ok().unwrap();
+
+        let ctx = Arc::new(IvoContext::<I, O>::new_create_ctx(
+            validated.0,
+            ctx.input_values(),
+            validated.1,
+        ));
+
         // self.add_timestamps(&mut context);
 
-        // let output = O::ivo_internal_from_erased_map(&context);
-
-        // Ok((output, Box::new(move || Box::pin(async  {}))))
-
-        return Err((
-            error_tool.payload(),
+        return Ok((
+            O::ivo_internal_dangerously_get_values_from_partial(ctx.values()),
             self.prepare_failure_handlers(fields_provided, ctx, Arc::new(options)),
         ));
     }
@@ -173,7 +145,7 @@ impl<
         (Partial<O>, AsyncHandlerTrigger<'schema>),
         (UpdateError<ErrorTool>, AsyncHandlerTrigger<'schema>),
     > {
-        let ctx = Arc::new(IvoContext::<I, O>::for_update(
+        let ctx = Arc::new(IvoContext::<I, O>::new_update_ctx(
             O::Partial::default(),
             updates.clone(),
             updates.clone(),
@@ -197,12 +169,6 @@ impl<
             ));
         }
 
-        let mut updatables = HashMap::new();
-
-        for (k, v) in erased_input_values.inner.iter() {
-            updatables.insert(k.clone(), v.clone());
-        }
-
         // let updatables = data.ivo_internal_get_erased_updates_from_erased_values(&updatables);
 
         let shared_rw_options = Arc::new(RwLock::new(options.clone()));
@@ -224,15 +190,34 @@ impl<
         }
 
         // Run validators for props in context
-        self.run_validators(updates, Arc::clone(&shared_rw_options))
+        let validation = self
+            .run_validators(
+                &fields_provided,
+                &erased_input_values,
+                Arc::clone(&ctx),
+                Arc::clone(&shared_rw_options),
+            )
             .await;
 
-        //
-        let (updated_values, has_updated_fields) =
-            data.ivo_internal_get_updates_from_erased_values(&updatables);
+        if validation.is_err() {
+            return Err((
+                UpdateError::ValidationError(validation.err().unwrap()),
+                self.prepare_failure_handlers(fields_provided, ctx, Arc::new(options)),
+            ));
+        }
 
-        // let (updated_values, has_updated_fields) =
-        //     data.ivo_internal_get_updates_from_partial(updates);
+        let (validated_inputs, validated_outputs) = validation.ok().unwrap();
+
+        let ctx = Arc::new(IvoContext::<I, O>::new_update_ctx(
+            validated_outputs.clone(),
+            validated_inputs,
+            ctx.input_values(),
+            data.clone(),
+            data.clone(),
+        ));
+
+        let (updated_values, has_updated_fields) =
+            data.ivo_internal_get_updates_from_partial(&validated_outputs);
 
         if !has_updated_fields {
             return Err((
@@ -278,41 +263,125 @@ impl<
         }
     }
 
-    async fn run_validators(&self, _input: &Partial<I>, _options: SharedRwCtxOptions<CtxOptions>) {
-        // if let Some(def) = self.schema.get_definition("username") {
-        //     if let Some(FieldReValidator::Async(validator)) = &def.re_validator {
-        //         let r = validator(
-        //             erase_value(String::from("IVO test ErasedValue")),
-        //             IvoSummary::for_new(
-        //                 HashMap::new(),
-        //                 input.clone(),
-        //                 HashMap::new(),
-        //                 // Default::default(),
-        //                 options,
-        //             ),
-        //         )
-        //         .await
-        //         .map(|v| parse_or_panic::<String>(&v));
-        //     }
-        // }
+    async fn run_validators(
+        &self,
+        fields: &Vec<String>,
+        erased_input_values: &PartialMapOfErasedValues,
+        ctx: SharedIvoContext<I, O>,
+        options: SharedRwCtxOptions<CtxOptions>,
+    ) -> Result<(I::Partial, O::Partial), ErrorTool::ErrorPayload> {
+        let mut validators = vec![];
+        let schema_output_fields = O::ivo_internal_field_names();
+        let schema_input_fields = I::ivo_internal_field_names();
 
-        let ids = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-        let tasks = ids.into_iter().map(validate_async);
+        for field_name in fields {
+            if let Some(InternalFieldConfig {
+                depends_on,
+                validator,
+                ..
+            }) = self.schema.get_field_config(field_name)
+            {
+                if let Some(validator) = validator {
+                    validators.push((
+                        field_name,
+                        validator,
+                        schema_output_fields.contains(field_name),
+                        schema_input_fields.contains(field_name),
+                    ));
 
-        async fn validate_async(id: usize) -> (usize, usize) {
-            // Simulate some async I/O work
+                    continue;
+                }
 
-            let v = (id, id * 2);
+                // otherwise, field_name is an alias for a virtual field
+                // the current config depends on
+                if let Some(depends_on) = depends_on {
+                    for parent_name in depends_on {
+                        match self.schema.get_field_config(parent_name) {
+                            Some(InternalFieldConfig {
+                                alias: Some(alias),
+                                field_type: FieldType::Virtual,
+                                validator: Some(validator),
+                                ..
+                            }) if alias == field_name => {
+                                validators.push((field_name, validator, false, true));
 
-            // tokio::task::spawn_blocking(|| async {})
-            //     .await
-            //     .unwrap()
-            //     .await;
+                                continue;
+                            }
+                            _ => {}
+                        }
+                    }
 
-            v
+                    continue;
+                }
+            }
         }
 
-        for _ in join_all(tasks).await {}
+        let tasks =
+            validators
+                .into_iter()
+                .map(async |(field_name, validator, is_output, is_input)| {
+                    (
+                        field_name,
+                        validator(
+                            erased_input_values.inner.get(field_name).cloned().unwrap(),
+                            Arc::clone(&ctx),
+                            Arc::clone(&options),
+                        )
+                        .await,
+                        is_output,
+                        is_input,
+                    )
+                });
+
+        let mut error_tool = ErrorTool::new();
+        let mut validated_outputs = HashMap::new();
+        let mut validated_inputs = HashMap::new();
+
+        for (field_name, result, is_output, is_input) in join_all(tasks).await {
+            match result {
+                Err((reason, metadata)) => {
+                    error_tool.add(field_name, FieldError { reason, metadata });
+                }
+                Ok(value) => {
+                    if is_output {
+                        validated_outputs.insert(field_name.to_owned(), value.clone());
+                    }
+
+                    if is_input {
+                        validated_inputs.insert(field_name.to_owned(), value);
+                    }
+                }
+            }
+        }
+
+        if error_tool.is_loaded() {
+            return Err(error_tool.payload());
+        }
+
+        let mut old_outputs = ctx.values().ivo_internal_to_optional_erased_map();
+
+        for (field, value) in validated_outputs {
+            old_outputs
+                .inner
+                .entry(field)
+                .and_modify(|e| *e = value.clone())
+                .or_insert(value);
+        }
+
+        let mut old_inputs = ctx.input().ivo_internal_to_optional_erased_map();
+
+        for (field, value) in validated_inputs {
+            old_inputs
+                .inner
+                .entry(field)
+                .and_modify(|e| *e = value.clone())
+                .or_insert(value);
+        }
+
+        Ok((
+            I::Partial::ivo_internal_from_optional_erased_map(old_inputs),
+            O::Partial::ivo_internal_from_optional_erased_map(old_outputs),
+        ))
     }
 
     async fn resolve_constants_and_defaults(
@@ -327,11 +396,11 @@ impl<
             // constants
             match &config.value {
                 Some(ComputableWithMiniContext::Static(value)) => {
-                    default_values.insert(field_name, value.clone());
+                    default_values.insert(field_name.to_string(), value.clone());
                     continue;
                 }
                 Some(ComputableWithMiniContext::Func(resolver)) => {
-                    resolvers.push((field_name, resolver));
+                    resolvers.push((field_name.to_string(), resolver));
                     continue;
                 }
                 _ => {}
@@ -340,10 +409,10 @@ impl<
             // other fields with default values/resolvers
             match &config.default {
                 Some(ComputableWithMiniContext::Static(value)) => {
-                    default_values.insert(field_name, value.clone());
+                    default_values.insert(field_name.to_string(), value.clone());
                 }
                 Some(ComputableWithMiniContext::Func(resolver)) => {
-                    resolvers.push((field_name, resolver));
+                    resolvers.push((field_name.to_string(), resolver));
                 }
                 _ => {}
             }
@@ -351,7 +420,7 @@ impl<
 
         let tasks = resolvers.into_iter().map(async |(field_name, resolver)| {
             (
-                field_name,
+                field_name.clone(),
                 resolver(Arc::clone(&mini_ctx), Arc::clone(&options)).await,
             )
         });
@@ -361,9 +430,6 @@ impl<
         }
 
         default_values
-            .into_iter()
-            .map(|(f, v)| (f.to_owned(), v))
-            .collect()
     }
 
     async fn evaluate_missing_required_fields(
@@ -374,6 +440,7 @@ impl<
     ) -> ErrorTool {
         let mut error_tool = ErrorTool::new();
         let mut resolvers = vec![];
+        let is_update = ctx.is_update();
 
         for (field_name, config) in self.schema.get_field_configs() {
             if fields_provided.contains(field_name) {
@@ -383,10 +450,13 @@ impl<
             match config {
                 InternalFieldConfig {
                     field_type: FieldType::Required,
-                    required,
                     required_error,
                     ..
                 } => {
+                    if is_update {
+                        continue;
+                    }
+
                     match &required_error {
                         Some(ComputableRequiredError::Static(msg)) => {
                             error_tool.add(
@@ -396,19 +466,11 @@ impl<
                                     metadata: None,
                                 },
                             );
-
-                            continue;
                         }
                         Some(ComputableRequiredError::Func(resolver)) => {
                             resolvers.push((field_name, resolver));
-
-                            continue;
                         }
-                        _ => {}
-                    }
-
-                    match &required {
-                        Some(ComputableRequired::Func(_)) => {
+                        _ => {
                             error_tool.add(
                                 field_name,
                                 FieldError {
@@ -416,23 +478,27 @@ impl<
                                     metadata: None,
                                 },
                             );
+                        }
+                    }
 
-                            continue;
+                    continue;
+                }
+                // conditionally required configs
+                InternalFieldConfig {
+                    field_type: FieldType::Lax | FieldType::Virtual,
+                    required,
+                    ..
+                } => {
+                    match &required {
+                        Some(ComputableRequired::Func(resolver)) => {
+                            resolvers.push((field_name, resolver));
                         }
                         _ => {}
                     }
 
-                    error_tool.add(
-                        field_name,
-                        FieldError {
-                            reason: format!("\"{field_name}\" is required!"),
-                            metadata: None,
-                        },
-                    );
-
                     continue;
                 }
-                _ => {}
+                _ => (),
             }
         }
 

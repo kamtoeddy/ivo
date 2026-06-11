@@ -152,24 +152,33 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
         }
     });
 
-    // let process_updates_from_partial = fields.iter().map(|field| {
-    //     let field_name = &field.ident; // e.g., 'id'
+    let process_updates_from_partial = fields.iter().map(|field| {
+        let field_name = &field.ident; // e.g., 'id'
 
-    //     quote! {
-    //         if let Some(value) = updates.#field_name.clone() {
-    //             if self.#field_name != value {
-    //                 partial_output.#field_name = Some(value);
-    //                 has_updated_fields = true;
-    //             }
-    //         }
-    //     }
-    // });
+        quote! {
+            if let Some(value) = updates.#field_name.clone() {
+                if self.#field_name != value {
+                    partial_output.#field_name = Some(value);
+                    has_updated_fields = true;
+                }
+            }
+        }
+    });
 
     let into_partial = fields.iter().map(|field| {
         let field_name = &field.ident;
 
         quote! {
             #field_name: Some(value.#field_name),
+        }
+    });
+
+    let from_partial = fields.iter().map(|field| {
+        let field_name = &field.ident;
+
+        quote! {
+            #field_name: values.#field_name
+                .expect(format!("Missing field: '{}'", stringify!(#field_name)).as_str()),
         }
     });
 
@@ -245,14 +254,20 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
         }
 
         impl #crate_root::types::WithUpdateDetails for #name {
-            // fn ivo_internal_get_updates_from_partial(&self, updates: &Self::Partial) -> (Self::Partial, bool) {
-            //     let mut partial_output = Self::Partial::default();
-            //     let mut has_updated_fields = false;
+            fn ivo_internal_dangerously_get_values_from_partial(values: Self::Partial) -> Self {
+                Self {
+                    #( #from_partial )*
+                }
+            }
 
-            //     #( #process_updates_from_partial )*
+            fn ivo_internal_get_updates_from_partial(&self, updates: &Self::Partial) -> (Self::Partial, bool) {
+                let mut partial_output = Self::Partial::default();
+                let mut has_updated_fields = false;
 
-            //     (partial_output, has_updated_fields)
-            // }
+                #( #process_updates_from_partial )*
+
+                (partial_output, has_updated_fields)
+            }
 
             fn ivo_internal_get_erased_updates_from_erased_values(&self, updates: &std::collections::HashMap<String, #crate_root::utils::erased_value::ErasedValue>) -> std::collections::HashMap<String, #crate_root::utils::erased_value::ErasedValue> {
                 use #crate_root::utils::erased_value::parse_or_panic;

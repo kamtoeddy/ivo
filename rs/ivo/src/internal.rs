@@ -1,8 +1,9 @@
 use crate::IvoSchemaStruct;
 
-pub(crate) trait InitializableIvoContext<I: IvoSchemaStruct, O: IvoSchemaStruct> {
-    fn for_new(input: I::Partial, input_values: I::Partial, values: O::Partial) -> Self;
-    fn for_update(
+pub(crate) trait InternalIvoContextMethods<I: IvoSchemaStruct, O: IvoSchemaStruct> {
+    fn new_create_ctx(input: I::Partial, input_values: I::Partial, values: O::Partial) -> Self;
+
+    fn new_update_ctx(
         changes: O::Partial,
         input: I::Partial,
         input_values: I::Partial,

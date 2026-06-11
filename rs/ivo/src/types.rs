@@ -6,7 +6,7 @@ pub use futures_locks::RwLock;
 pub use std::sync::Arc;
 
 use crate::{
-    internal::InitializableIvoContext, schema::error::DefaultFieldErrorMetadata, ErasedValue,
+    internal::InternalIvoContextMethods, schema::error::DefaultFieldErrorMetadata, ErasedValue,
 };
 
 #[derive(Debug)]
@@ -79,10 +79,12 @@ pub trait HasPartial {
 }
 
 pub trait WithUpdateDetails: HasPartial + Clone + Sized {
-    // fn ivo_internal_get_updates_from_partial(
-    //     &self,
-    //     updates: &Self::Partial,
-    // ) -> (Self::Partial, bool);
+    fn ivo_internal_dangerously_get_values_from_partial(partial_values: Self::Partial) -> Self;
+
+    fn ivo_internal_get_updates_from_partial(
+        &self,
+        updates: &Self::Partial,
+    ) -> (Self::Partial, bool);
 
     fn ivo_internal_get_erased_updates_from_erased_values(
         &self,
@@ -129,8 +131,8 @@ pub enum IvoContext<I: IvoSchemaStruct, O: IvoSchemaStruct> {
     },
 }
 
-impl<I: IvoSchemaStruct, O: IvoSchemaStruct> InitializableIvoContext<I, O> for IvoContext<I, O> {
-    fn for_new(input: I::Partial, input_values: I::Partial, values: O::Partial) -> Self {
+impl<I: IvoSchemaStruct, O: IvoSchemaStruct> InternalIvoContextMethods<I, O> for IvoContext<I, O> {
+    fn new_create_ctx(input: I::Partial, input_values: I::Partial, values: O::Partial) -> Self {
         Self::Create {
             input,
             input_values,
@@ -138,7 +140,7 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct> InitializableIvoContext<I, O> for I
         }
     }
 
-    fn for_update(
+    fn new_update_ctx(
         changes: O::Partial,
         input: I::Partial,
         input_values: I::Partial,

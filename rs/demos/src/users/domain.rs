@@ -22,7 +22,7 @@ pub struct User {
     pub username: String,
     pub slug_id: SlugifiedString,
     pub role: UserRole,
-    pub username_updated_at: Option<String>,
+    pub username_last_updated_at: Option<String>,
     // pub updated_at: Option<DateWithTz>,
 }
 
@@ -104,7 +104,7 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
                         .validate(|v: String, _, _| {
                             const MIN_LEN: usize = 4;
 
-                            if v.len() <= MIN_LEN {
+                            if v.len() < MIN_LEN {
                                 return ready(Err((
                                     format!("Username must be atleast {MIN_LEN} long"),
                                     None,
@@ -115,7 +115,7 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
                         })
                         .allow_update_if(|ctx: Ctx, _| {
                             ready(is_username_or_slug_id_updatable(
-                                ctx.values().username_updated_at.unwrap(),
+                                ctx.values().username_last_updated_at.unwrap(),
                             ))
                         })
                         .on_delete(|_, _| {
@@ -166,7 +166,7 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
                         })
                         .allow_update_if(|ctx: Ctx, _| {
                             ready(is_username_or_slug_id_updatable(
-                                ctx.values().username_updated_at.unwrap(),
+                                ctx.values().username_last_updated_at.unwrap(),
                             ))
                         }),
                 )
@@ -244,8 +244,8 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
     )
 });
 
-fn is_username_or_slug_id_updatable(username_updated_at: Option<String>) -> bool {
-    match username_updated_at {
+fn is_username_or_slug_id_updatable(username_last_updated_at: Option<String>) -> bool {
+    match username_last_updated_at {
         Some(v) => v.as_str() == "yesterday",
         _ => true,
     }
