@@ -1,13 +1,10 @@
-use std::{collections::HashMap, fmt::Debug, future::Future, sync::Arc};
+use std::{collections::HashMap, fmt::Debug, future::Future};
 
 use futures::future::BoxFuture;
-use futures_locks::RwLock;
 
 use crate::{
-    erase_value,
-    schema::error::IvoErrorTool,
-    types::{IvoContext, SuccessHandler},
-    DefaultFieldErrorMetadata, ErasedValue, IvoSchemaStruct, ValidatorError,
+    erase_value, schema::error::IvoErrorTool, types::SuccessHandler, DefaultFieldErrorMetadata,
+    ErasedValue, IvoSchemaStruct, SharedCtxOptions, SharedIvoContext, ValidatorError,
 };
 
 pub struct IvoValues {
@@ -63,7 +60,7 @@ impl<F, Fut, I, O, CtxOptions, ErrorTool: IvoErrorTool>
 where
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
-    F: Fn(Arc<IvoContext<I, O>>, Arc<RwLock<CtxOptions>>) -> Fut + Send + Sync + 'static,
+    F: Fn(SharedIvoContext<I, O>, SharedCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = PostValidatorResponse<ErrorTool::FieldMetadata>> + Send + Sync + 'static,
 {
     fn into_validator(self) -> PostValidator<I, O, CtxOptions, ErrorTool::FieldMetadata> {
@@ -79,8 +76,8 @@ pub type PostValidatorResponse<FieldErrorMetadata = DefaultFieldErrorMetadata> =
 
 pub type PostValidator<I, O, CtxOptions, FieldErrorMetadata> = Box<
     dyn Fn(
-            Arc<IvoContext<I, O>>,
-            Arc<RwLock<CtxOptions>>,
+            SharedIvoContext<I, O>,
+            SharedCtxOptions<CtxOptions>,
         ) -> BoxFuture<'static, PostValidatorResponse<FieldErrorMetadata>>
         + Send
         + Sync

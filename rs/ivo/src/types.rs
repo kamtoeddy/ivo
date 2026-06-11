@@ -1,6 +1,7 @@
 use std::{collections::HashMap, fmt::Debug, sync::Arc};
 
 use futures::future::BoxFuture;
+pub use futures_locks::RwLock;
 
 use crate::{schema::error::DefaultFieldErrorMetadata, ErasedValue};
 
@@ -84,6 +85,11 @@ pub trait WithUpdateDetails: HasPartial + Clone + Sized {
 
     fn ivo_internal_update_with(&mut self, updates: &Self::Partial);
 }
+
+pub type SharedData<T> = Arc<T>;
+pub type SharedCtxOptions<CtxOptions> = SharedData<RwLock<CtxOptions>>;
+pub type SharedIvoContext<I, O> = SharedData<IvoContext<I, O>>;
+pub type SharedIvoMiniContext<I, O> = SharedData<IvoMiniContext<I, O>>;
 
 pub type Partial<T> = <T as HasPartial>::Partial;
 

@@ -5,7 +5,8 @@ use std::{
 };
 
 use ivo::{
-    FutureExt, IvoContext, IvoField, IvoStruct, IvoValues, Model, RwLock, Schema, validate_email,
+    FutureExt, IvoContext, IvoField, IvoStruct, IvoValues, Model, Schema, SharedCtxOptions,
+    validate_email,
 };
 
 use crate::utils::slugify::{SlugifiedString, slugify};
@@ -60,8 +61,8 @@ impl<'a> UserCtxOptions {
 }
 
 type Ctx = Arc<IvoContext<UserInput, User>>;
-// type CtxOptions = Arc<UserCtxOptions>;
-type RwCtxOptions = Arc<RwLock<UserCtxOptions>>;
+// type CtxOptions = SharedData<UserCtxOptions>;
+type RwCtxOptions = SharedCtxOptions<UserCtxOptions>;
 
 pub static USER_MODEL: LazyLock<Model<UserInput, User, UserCtxOptions>> =
     LazyLock::new(|| USER_SCHEMA.get_model());

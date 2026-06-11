@@ -9,7 +9,6 @@ pub use ivo_struct::IvoStruct;
 pub use ivo_validators::*;
 
 pub use futures::FutureExt;
-pub use futures_locks::RwLock;
 
 pub use schema::{
     error::{
@@ -21,7 +20,8 @@ pub use schema::{
     Model, Schema,
 };
 pub use types::{
-    FromToMap, HasFields, HasPartial, IvoContext, IvoMiniContext, IvoSchemaStruct, Partial,
-    ValidatorError, ValidatorResponse,
+    FromToMap, HasFields, HasPartial, IvoContext, IvoMiniContext, IvoSchemaStruct, Partial, RwLock,
+    SharedCtxOptions, SharedData, SharedIvoContext, SharedIvoMiniContext, ValidatorError,
+    ValidatorResponse,
 };
 pub use utils::erased_value::*;
