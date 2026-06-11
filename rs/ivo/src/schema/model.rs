@@ -11,7 +11,7 @@ use crate::{
     IvoContext, SharedCtxOptions, SharedIvoContext, SharedIvoMiniContext, SharedRwCtxOptions,
 };
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use futures::future::{join_all, BoxFuture};
@@ -61,7 +61,7 @@ impl<
         let shared_rw_options = Arc::new(RwLock::new(options.clone()));
         let mini_ctx = Arc::new(input.clone());
 
-        // 1.) resolve constants & defaults
+        // 1) Resolve constants & defaults
         let default_values = self
             .resolve_constants_and_defaults(mini_ctx, Arc::clone(&shared_rw_options))
             .await;
@@ -71,9 +71,7 @@ impl<
                 inner: default_values,
             });
 
-        // println!("default values: {default_values:?}");
-
-        let ctx = Arc::new(IvoContext::<I, O>::new_create_ctx(
+        let mut ctx = Arc::new(IvoContext::<I, O>::new_create_ctx(
             input.clone(),
             input.clone(),
             default_values,
@@ -81,7 +79,7 @@ impl<
 
         let erased_input_values = input.ivo_internal_to_optional_erased_map();
 
-        // 2.) evaluate missing required fields
+        // 2) Evaluate missing required fields
         let fields_provided = erased_input_values
             .inner
             .keys()
@@ -105,8 +103,8 @@ impl<
             )
         })?;
 
-        // Run validators
-        let (validated_inputs, validated_outputs) = self
+        // 3) Run validators
+        let (validated_inputs, validated_outputs, should_gen_new_ctx) = self
             .validate(
                 &fields_provided,
                 &erased_input_values,
@@ -125,14 +123,16 @@ impl<
                 )
             })?;
 
-        let ctx = Arc::new(IvoContext::<I, O>::new_create_ctx(
-            validated_inputs,
-            ctx.input_values(),
-            validated_outputs,
-        ));
+        if should_gen_new_ctx {
+            ctx = Arc::new(IvoContext::<I, O>::new_create_ctx(
+                validated_inputs,
+                ctx.input_values(),
+                validated_outputs,
+            ));
+        }
 
-        // Run re_validators
-        let (validated_inputs, validated_outputs) = self
+        // 4) Run re_validators
+        let (validated_inputs, validated_outputs, should_gen_new_ctx) = self
             .re_validate(
                 &fields_provided,
                 Arc::clone(&ctx),
@@ -150,13 +150,21 @@ impl<
                 )
             })?;
 
-        let ctx = Arc::new(IvoContext::<I, O>::new_create_ctx(
-            validated_inputs,
-            ctx.input_values(),
-            validated_outputs,
-        ));
+        if should_gen_new_ctx {
+            ctx = Arc::new(IvoContext::<I, O>::new_create_ctx(
+                validated_inputs,
+                ctx.input_values(),
+                validated_outputs,
+            ));
+        }
 
-        // self.add_timestamps(&mut context);
+        // 5) Run post-validators
+
+        // 6) Sanitize virtuals
+
+        // 7) Resolve values of dependent fields
+
+        // 8) Generate and set timestamps
 
         return Ok((
             O::ivo_internal_dangerously_get_values_from_partial(ctx.values()),
@@ -173,7 +181,7 @@ impl<
         (Partial<O>, AsyncHandlerTrigger<'schema>),
         (UpdateError<ErrorTool>, AsyncHandlerTrigger<'schema>),
     > {
-        let ctx = Arc::new(IvoContext::<I, O>::new_update_ctx(
+        let mut ctx = Arc::new(IvoContext::<I, O>::new_update_ctx(
             O::Partial::default(),
             updates.clone(),
             updates.clone(),
@@ -201,7 +209,7 @@ impl<
 
         let shared_rw_options = Arc::new(RwLock::new(options.clone()));
 
-        // 2.) evaluate missing required fields
+        // 1) Evaluate missing required fields
         self.evaluate_missing_required_fields(
             &fields_provided,
             Arc::clone(&ctx),
@@ -219,8 +227,8 @@ impl<
             )
         })?;
 
-        // Run validators
-        let (validated_inputs, validated_outputs) = self
+        // 2) Run validators
+        let (validated_inputs, validated_outputs, should_gen_new_ctx) = self
             .validate(
                 &fields_provided,
                 &erased_input_values,
@@ -239,16 +247,20 @@ impl<
                 )
             })?;
 
-        let ctx = Arc::new(IvoContext::<I, O>::new_update_ctx(
-            validated_outputs.clone(),
-            validated_inputs,
-            ctx.input_values(),
-            data.clone(),
-            data.clone(),
-        ));
+        drop(erased_input_values);
 
-        // Run re_validators
-        let (validated_inputs, validated_outputs) = self
+        if should_gen_new_ctx {
+            ctx = Arc::new(IvoContext::<I, O>::new_update_ctx(
+                validated_outputs.clone(),
+                validated_inputs,
+                ctx.input_values(),
+                data.clone(),
+                data.clone(),
+            ));
+        }
+
+        // 3) Run re_validators
+        let (validated_inputs, validated_outputs, should_gen_new_ctx) = self
             .re_validate(
                 &fields_provided,
                 Arc::clone(&ctx),
@@ -266,13 +278,21 @@ impl<
                 )
             })?;
 
-        let ctx = Arc::new(IvoContext::<I, O>::new_update_ctx(
-            validated_outputs.clone(),
-            validated_inputs,
-            ctx.input_values(),
-            data.clone(),
-            data.clone(),
-        ));
+        if should_gen_new_ctx {
+            ctx = Arc::new(IvoContext::<I, O>::new_update_ctx(
+                validated_outputs.clone(),
+                validated_inputs,
+                ctx.input_values(),
+                data.clone(),
+                data.clone(),
+            ));
+        }
+
+        // 4) Run post-validators
+
+        // 5) Sanitize virtuals
+
+        // 6) Resolve values of dependent fields
 
         let (updated_values, has_updated_fields) =
             data.ivo_internal_get_updates_from_partial(&validated_outputs);
@@ -284,9 +304,8 @@ impl<
             ));
         }
 
-        // assign timestamps if configured
+        // 7) Generate and set timestamps
 
-        // return updated values
         Ok((
             updated_values,
             self.prepare_failure_handlers(fields_provided, ctx, Arc::new(options)),
@@ -327,7 +346,7 @@ impl<
         erased_input_values: &PartialMapOfErasedValues,
         ctx: SharedIvoContext<I, O>,
         options: SharedRwCtxOptions<CtxOptions>,
-    ) -> Result<(I::Partial, O::Partial), ErrorTool::ErrorPayload> {
+    ) -> Result<(I::Partial, O::Partial, bool), ErrorTool::ErrorPayload> {
         let mut validators = vec![];
         let schema_output_fields = O::ivo_internal_field_names();
         let schema_input_fields = I::ivo_internal_field_names();
@@ -375,7 +394,7 @@ impl<
         }
 
         if validators.is_empty() {
-            return Ok(self.parse_ctx_values(ctx, HashMap::new(), HashMap::new()));
+            return Ok((ctx.input(), ctx.values(), false));
         }
 
         let tasks =
@@ -428,7 +447,7 @@ impl<
         fields: &Vec<String>,
         ctx: SharedIvoContext<I, O>,
         options: SharedRwCtxOptions<CtxOptions>,
-    ) -> Result<(I::Partial, O::Partial), ErrorTool::ErrorPayload> {
+    ) -> Result<(I::Partial, O::Partial, bool), ErrorTool::ErrorPayload> {
         let mut re_validators = vec![];
         let schema_output_fields = O::ivo_internal_field_names();
         let schema_input_fields = I::ivo_internal_field_names();
@@ -479,7 +498,7 @@ impl<
         }
 
         if re_validators.is_empty() {
-            return Ok(self.parse_ctx_values(ctx, HashMap::new(), HashMap::new()));
+            return Ok((ctx.input(), ctx.values(), false));
         }
 
         let tasks =
@@ -532,7 +551,7 @@ impl<
         ctx: SharedIvoContext<I, O>,
         validated_inputs: HashMap<String, ErasedValue>,
         validated_outputs: HashMap<String, ErasedValue>,
-    ) -> (I::Partial, O::Partial) {
+    ) -> (I::Partial, O::Partial, bool) {
         let mut old_outputs = ctx.values().ivo_internal_to_optional_erased_map();
 
         for (field, value) in validated_outputs {
@@ -556,6 +575,7 @@ impl<
         (
             I::Partial::ivo_internal_from_optional_erased_map(old_inputs),
             O::Partial::ivo_internal_from_optional_erased_map(old_outputs),
+            true,
         )
     }
 
@@ -741,75 +761,5 @@ impl<
 
             Box::pin(async { for _ in join_all(tasks).await {} })
         })
-    }
-
-    fn _add_timestamps(&self, _data: &mut O::Partial) {
-        // if self.schema.timestamp_tool.with_timestamps() {
-        //     let now = chrono::Utc::now().to_rfc3339();
-
-        //     let keys = &self.schema.timestamp_tool.get_keys();
-
-        //     if let Some(created_at_key) = keys.created_at.clone() {
-        //         context.insert(created_at_key, ErasedValue::String(now.clone()));
-        //     }
-
-        //     if let Some(updated_at_key) = keys.updated_at.clone() {
-        //         context.insert(updated_at_key, ErasedValue::String(now));
-        //     }
-        // }
-    }
-
-    /// Resolve defaults iteratively based on dependencies.
-    /// It will repeatedly evaluate defaults whose dependencies are satisfied (present in `context`).
-    /// If there are unresolved defaults at the end and the schema option `error_on_unresolved_defaults` is true,
-    /// this function returns Err(SchemaError) containing the unresolved properties; otherwise returns Ok(()).
-    /// Return whether a name is a defined property
-    fn _is_prop(&self, prop: &str) -> bool {
-        self.schema.props.contains(prop)
-    }
-
-    /// Return whether a name is a defined virtual
-    fn _is_virtual(&self, prop: &str) -> bool {
-        self.schema.virtuals.contains(prop)
-    }
-
-    /// Return whether a name is a defined constant
-    fn _is_constant(&self, prop: &str) -> bool {
-        self.schema.constants.contains(prop)
-    }
-
-    /// Resolve defaults iteratively based on dependencies.
-    /// It will repeatedly evaluate defaults whose dependencies are satisfied (present in `context`).
-    /// If unresolved defaults remain and schema option `error_on_unresolved_defaults` is true,
-    /// returns Err(SchemaError) listing the unresolved props.
-    pub fn resolve_defaults(&self, context: &mut HashMap<String, ErasedValue>) {
-        let mut _pending: HashSet<String> = self
-            .schema
-            .get_field_configs()
-            .iter()
-            .filter_map(|(k, def)| {
-                if def.default.is_some() {
-                    Some(k.clone())
-                } else {
-                    None
-                }
-            })
-            .filter(|k| !context.contains_key(k))
-            .collect();
-    }
-
-    /// Resolve constants iteratively; constants may depend on other values in context.
-    /// If unresolved constants remain and schema option `error_on_unresolved_constants` is true,
-    /// returns Err(SchemaError) listing unresolved constants; otherwise returns Ok(())
-    pub fn resolve_constants(&self, context: &mut HashMap<String, ErasedValue>) {
-        let mut _pending: HashSet<String> = self
-            .schema
-            .constants
-            .iter()
-            .filter(|k| !context.contains_key(*k))
-            .cloned()
-            .collect();
-
-        // todo!()
     }
 }
