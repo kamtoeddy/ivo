@@ -60,7 +60,8 @@ impl<'a> UserCtxOptions {
 }
 
 type Ctx = Arc<IvoContext<UserInput, User>>;
-type CtxOptions = Arc<RwLock<UserCtxOptions>>;
+// type CtxOptions = Arc<UserCtxOptions>;
+type RwCtxOptions = Arc<RwLock<UserCtxOptions>>;
 
 pub static USER_MODEL: LazyLock<Model<UserInput, User, UserCtxOptions>> =
     LazyLock::new(|| USER_SCHEMA.get_model());
@@ -117,7 +118,7 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
                     IvoField::DEPENDENT
                         .default(SlugifiedString::from(""))
                         .depends_on(["username", "v_slug"])
-                        .resolve(|_, o: CtxOptions| o.read().map(|g| g.slug_id.clone().unwrap())),
+                        .resolve(|_, o: RwCtxOptions| o.read().map(|g| g.slug_id.clone().unwrap())),
                 )
                 .set(
                     "v_slug",
@@ -146,7 +147,7 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
         },
         |o| {
             o.post_validate(["username", "v_slug"], |b| {
-                b.validate(async |ctx: Ctx, o: CtxOptions| {
+                b.validate(async |ctx: Ctx, o: RwCtxOptions| {
                     let input = ctx.input();
 
                     let slug_string = match &input.slug_id {

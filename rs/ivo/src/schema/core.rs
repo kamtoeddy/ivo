@@ -19,7 +19,7 @@ type InternalFieldConfigs<I, O, CtxOptions, ErrorTool> =
 pub struct Schema<
     I: IvoSchemaStruct,
     O: IvoSchemaStruct = I,
-    CtxOptions = Option<u8>,
+    CtxOptions = Option<()>,
     ErrorTool: IvoErrorTool = DefaultErrorTool,
 > {
     field_configs: InternalFieldConfigs<I, O, CtxOptions, ErrorTool>,
