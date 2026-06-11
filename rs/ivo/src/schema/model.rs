@@ -88,44 +88,72 @@ impl<
             .map(|f| f.to_owned())
             .collect::<Vec<String>>();
 
-        let error_tool = self
-            .evaluate_missing_required_fields(
-                &fields_provided,
-                Arc::clone(&ctx),
-                Arc::clone(&shared_rw_options),
+        self.evaluate_missing_required_fields(
+            &fields_provided,
+            Arc::clone(&ctx),
+            Arc::clone(&shared_rw_options),
+        )
+        .await
+        .map_err(|p| {
+            (
+                p,
+                self.prepare_failure_handlers(
+                    fields_provided.clone(),
+                    ctx.clone(),
+                    Arc::new(options.clone()),
+                ),
             )
-            .await;
+        })?;
 
-        if error_tool.is_loaded() {
-            return Err((
-                error_tool.payload(),
-                self.prepare_failure_handlers(fields_provided, ctx, Arc::new(options)),
-            ));
-        }
-
-        // Run validators for props in context
-        let validation = self
+        // Run validators
+        let (validated_inputs, validated_outputs) = self
             .run_validators(
                 &fields_provided,
                 &erased_input_values,
                 Arc::clone(&ctx),
                 Arc::clone(&shared_rw_options),
             )
-            .await;
-
-        if validation.is_err() {
-            return Err((
-                validation.err().unwrap(),
-                self.prepare_failure_handlers(fields_provided, ctx, Arc::new(options)),
-            ));
-        }
-
-        let validated = validation.ok().unwrap();
+            .await
+            .map_err(|p| {
+                (
+                    p,
+                    self.prepare_failure_handlers(
+                        fields_provided.clone(),
+                        ctx.clone(),
+                        Arc::new(options.clone()),
+                    ),
+                )
+            })?;
 
         let ctx = Arc::new(IvoContext::<I, O>::new_create_ctx(
-            validated.0,
+            validated_inputs,
             ctx.input_values(),
-            validated.1,
+            validated_outputs,
+        ));
+
+        // Run re_validators
+        let (validated_inputs, validated_outputs) = self
+            .run_re_validators(
+                &fields_provided,
+                Arc::clone(&ctx),
+                Arc::clone(&shared_rw_options),
+            )
+            .await
+            .map_err(|p| {
+                (
+                    p,
+                    self.prepare_failure_handlers(
+                        fields_provided.clone(),
+                        ctx.clone(),
+                        Arc::new(options.clone()),
+                    ),
+                )
+            })?;
+
+        let ctx = Arc::new(IvoContext::<I, O>::new_create_ctx(
+            validated_inputs,
+            ctx.input_values(),
+            validated_outputs,
         ));
 
         // self.add_timestamps(&mut context);
@@ -174,39 +202,69 @@ impl<
         let shared_rw_options = Arc::new(RwLock::new(options.clone()));
 
         // 2.) evaluate missing required fields
-        let error_tool = self
-            .evaluate_missing_required_fields(
-                &fields_provided,
-                Arc::clone(&ctx),
-                Arc::clone(&shared_rw_options),
+        self.evaluate_missing_required_fields(
+            &fields_provided,
+            Arc::clone(&ctx),
+            Arc::clone(&shared_rw_options),
+        )
+        .await
+        .map_err(|p| {
+            (
+                UpdateError::ValidationError(p),
+                self.prepare_failure_handlers(
+                    fields_provided.clone(),
+                    ctx.clone(),
+                    Arc::new(options.clone()),
+                ),
             )
-            .await;
+        })?;
 
-        if error_tool.is_loaded() {
-            return Err((
-                UpdateError::ValidationError(error_tool.payload()),
-                self.prepare_failure_handlers(fields_provided, ctx, Arc::new(options)),
-            ));
-        }
-
-        // Run validators for props in context
-        let validation = self
+        // Run validators
+        let (validated_inputs, validated_outputs) = self
             .run_validators(
                 &fields_provided,
                 &erased_input_values,
                 Arc::clone(&ctx),
                 Arc::clone(&shared_rw_options),
             )
-            .await;
+            .await
+            .map_err(|p| {
+                (
+                    UpdateError::ValidationError(p),
+                    self.prepare_failure_handlers(
+                        fields_provided.clone(),
+                        ctx.clone(),
+                        Arc::new(options.clone()),
+                    ),
+                )
+            })?;
 
-        if validation.is_err() {
-            return Err((
-                UpdateError::ValidationError(validation.err().unwrap()),
-                self.prepare_failure_handlers(fields_provided, ctx, Arc::new(options)),
-            ));
-        }
+        let ctx = Arc::new(IvoContext::<I, O>::new_update_ctx(
+            validated_outputs.clone(),
+            validated_inputs,
+            ctx.input_values(),
+            data.clone(),
+            data.clone(),
+        ));
 
-        let (validated_inputs, validated_outputs) = validation.ok().unwrap();
+        // Run re_validators
+        let (validated_inputs, validated_outputs) = self
+            .run_re_validators(
+                &fields_provided,
+                Arc::clone(&ctx),
+                Arc::clone(&shared_rw_options),
+            )
+            .await
+            .map_err(|p| {
+                (
+                    UpdateError::ValidationError(p),
+                    self.prepare_failure_handlers(
+                        fields_provided.clone(),
+                        ctx.clone(),
+                        Arc::new(options.clone()),
+                    ),
+                )
+            })?;
 
         let ctx = Arc::new(IvoContext::<I, O>::new_update_ctx(
             validated_outputs.clone(),
@@ -365,6 +423,110 @@ impl<
         Ok(self.parse_ctx_values(ctx, validated_inputs, validated_outputs))
     }
 
+    async fn run_re_validators(
+        &self,
+        fields: &Vec<String>,
+        ctx: SharedIvoContext<I, O>,
+        options: SharedRwCtxOptions<CtxOptions>,
+    ) -> Result<(I::Partial, O::Partial), ErrorTool::ErrorPayload> {
+        let mut re_validators = vec![];
+        let schema_output_fields = O::ivo_internal_field_names();
+        let schema_input_fields = I::ivo_internal_field_names();
+
+        let erased_input_values: PartialMapOfErasedValues =
+            ctx.input().ivo_internal_to_optional_erased_map();
+
+        for field_name in fields {
+            if let Some(InternalFieldConfig {
+                depends_on,
+                re_validator,
+                ..
+            }) = self.schema.get_field_config(field_name)
+            {
+                if let Some(re_validator) = re_validator {
+                    re_validators.push((
+                        field_name,
+                        re_validator,
+                        schema_output_fields.contains(field_name),
+                        schema_input_fields.contains(field_name),
+                    ));
+
+                    continue;
+                }
+
+                // otherwise, field_name is an alias for a virtual field
+                // the current config depends on
+                if let Some(depends_on) = depends_on {
+                    for parent_name in depends_on {
+                        match self.schema.get_field_config(parent_name) {
+                            Some(InternalFieldConfig {
+                                alias: Some(alias),
+                                field_type: FieldType::Virtual,
+                                re_validator: Some(re_validator),
+                                ..
+                            }) if alias == field_name => {
+                                re_validators.push((field_name, re_validator, false, true));
+
+                                continue;
+                            }
+                            _ => {}
+                        }
+                    }
+
+                    continue;
+                }
+            }
+        }
+
+        if re_validators.is_empty() {
+            return Ok(self.parse_ctx_values(ctx, HashMap::new(), HashMap::new()));
+        }
+
+        let tasks =
+            re_validators
+                .into_iter()
+                .map(async |(field_name, validator, is_output, is_input)| {
+                    (
+                        field_name,
+                        validator(
+                            erased_input_values.inner.get(field_name).cloned().unwrap(),
+                            Arc::clone(&ctx),
+                            Arc::clone(&options),
+                        )
+                        .await,
+                        is_output,
+                        is_input,
+                    )
+                });
+
+        let mut error_tool = ErrorTool::new();
+        let mut validated_outputs = HashMap::new();
+        let mut validated_inputs = HashMap::new();
+
+        for (field_name, result, is_output, is_input) in join_all(tasks).await {
+            match result {
+                Err((reason, metadata)) => {
+                    error_tool.add(field_name, FieldError { reason, metadata });
+                }
+                Ok(value) => {
+                    if is_output {
+                        validated_outputs.insert(field_name.to_owned(), value.clone());
+                    }
+
+                    if is_input {
+                        validated_inputs.insert(field_name.to_owned(), value);
+                    }
+                }
+            }
+        }
+
+        if error_tool.is_loaded() {
+            return Err(error_tool.payload());
+        }
+
+        Ok(self.parse_ctx_values(ctx, validated_inputs, validated_outputs))
+    }
+
     fn parse_ctx_values(
         &self,
         ctx: SharedIvoContext<I, O>,
@@ -454,7 +616,7 @@ impl<
         fields_provided: &Vec<String>,
         ctx: SharedIvoContext<I, O>,
         options: SharedRwCtxOptions<CtxOptions>,
-    ) -> ErrorTool {
+    ) -> Result<(), ErrorTool::ErrorPayload> {
         let mut error_tool = ErrorTool::new();
         let mut resolvers = vec![];
         let is_update = ctx.is_update();
@@ -520,7 +682,11 @@ impl<
         }
 
         if resolvers.is_empty() {
-            return error_tool;
+            if error_tool.is_loaded() {
+                return Err(error_tool.payload());
+            }
+
+            return Ok(());
         }
 
         let tasks = resolvers.into_iter().map(async |(field_name, resolver)| {
@@ -542,7 +708,11 @@ impl<
             }
         }
 
-        error_tool
+        if error_tool.is_loaded() {
+            return Err(error_tool.payload());
+        }
+
+        return Ok(());
     }
 
     fn prepare_failure_handlers(

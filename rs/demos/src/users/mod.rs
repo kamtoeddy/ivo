@@ -15,7 +15,8 @@ pub async fn run_users_demo() {
         // email: None,
         email: Some("1@1.com".into()),
         username: Some("john".into()),
-        role: Some(UserRole::Moderator),
+        role: None,
+        // role: Some(UserRole::Moderator),
         slug_id: None,
         // slug_id: Some("sloppy-slug-id".into()),
     };
@@ -64,9 +65,9 @@ pub async fn run_users_demo() {
         // email: None,
         email: Some(user.email.clone()),
         // role: None,
-        role: Some(UserRole::User),
-        // username: Some("new_username".into()),
-        username: None,
+        role: Some(UserRole::Moderator),
+        username: Some("new_username".into()),
+        // username: None,
         slug_id: None,
     };
 

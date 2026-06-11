@@ -106,12 +106,24 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
 
                             if v.len() < MIN_LEN {
                                 return ready(Err((
-                                    format!("Username must be atleast {MIN_LEN} long"),
+                                    format!("\"username\" must be at least {MIN_LEN} characters long"),
                                     None,
                                 )));
                             }
 
                             ready(Ok(v))
+                        })
+                        .re_validate(|v: String, _, _| {
+                            const MIN_LEN: usize = 5;
+
+                            if v.len() < MIN_LEN {
+                                return ready(Err((
+                                    format!("re-validation requires \"username\" to be at least {MIN_LEN} characters long"),
+                                    None,
+                                )));
+                            }
+
+                            ready(Ok(format!("revalidated-'{}'",v)))
                         })
                         .allow_update_if(|ctx: Ctx, _| {
                             ready(is_username_or_slug_id_updatable(
