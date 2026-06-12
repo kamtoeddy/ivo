@@ -14,7 +14,7 @@ pub async fn run_users_demo() {
     let input = PartialUserInput {
         // email: None,
         email: Some("1@1.com".into()),
-        username: Some("john".into()),
+        username: Some("john2".into()),
         role: None,
         // role: Some(UserRole::Moderator),
         slug_id: None,
@@ -68,10 +68,10 @@ pub async fn run_users_demo() {
         email: Some(user.email.clone()),
         // role: None,
         role: Some(UserRole::Moderator),
-        username: Some("new_username".into()),
-        // username: None,
+        username: None,
+        // username: Some("new_username".into()),
+        slug_id: Some("updated-slug-id: Lol".into()),
         // slug_id: None,
-        slug_id: Some("updated-slug-id".into()),
     };
 
     let r = USER_MODEL
@@ -81,7 +81,10 @@ pub async fn run_users_demo() {
     match r {
         Ok((data, handle_success)) => {
             println!("updates: {:?}\n", data);
-            println!("old + updates: {:?}\n", user.ivo_internal_clone_with(&data));
+            println!(
+                "old + updates: {:?}\n",
+                user.ivo_internal_clone_with_ref(&data)
+            );
 
             handle_success().await;
         }

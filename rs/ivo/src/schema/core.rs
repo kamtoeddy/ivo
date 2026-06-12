@@ -240,7 +240,7 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
             }
         }
 
-        if err_tool.is_payload_loaded() {
+        if err_tool.has_errors() {
             err_tool.throw();
         }
     }

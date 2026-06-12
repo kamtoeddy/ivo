@@ -199,6 +199,8 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
 
                     let slug_id = slugify(&slug_string);
 
+                    println!("post validating username & v_slug: [slug_string = {slug_string}] & [slug_id = {slug_id}]\n");
+
                     let mut options = o.write().await;
 
                     if options.find_user_by_slug_id(&slug_id).await.is_none() {

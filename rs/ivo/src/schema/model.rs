@@ -11,13 +11,14 @@ use crate::schema::fields::types::{
 };
 
 use crate::schema::internal::{InputFieldCollection, InputFieldInfo, SchemaInternals};
-use crate::schema::options::types::OnSuccessConfig;
+use crate::schema::options::types::{OnSuccessConfig, PostValidationConfig};
 use crate::utils::erased_value::ErasedValue;
 use crate::{
     IvoContext, SharedCtxOptions, SharedIvoContext, SharedIvoMiniContext, SharedRwCtxOptions,
 };
 
 use futures::future::{join_all, BoxFuture};
+use futures::FutureExt;
 
 use crate::types::{IvoSchemaStruct, Partial, PartialFromToMap, PartialMapOfErasedValues, RwLock};
 
@@ -157,6 +158,31 @@ impl<
         }
 
         // 5) Run post-validators
+        let (validated_inputs, validated_outputs, should_gen_new_ctx) = self
+            .post_validate(
+                &fields_provided,
+                Arc::clone(&ctx),
+                Arc::clone(&shared_rw_options),
+            )
+            .await
+            .map_err(|payload| {
+                (
+                    payload,
+                    self.prepare_failure_handlers(
+                        fields_provided.clone(),
+                        ctx.clone(),
+                        Arc::new(options.clone()),
+                    ),
+                )
+            })?;
+
+        if should_gen_new_ctx {
+            ctx = Arc::new(IvoContext::<I, O>::new_create_ctx(
+                validated_inputs,
+                ctx.input_values(),
+                validated_outputs,
+            ));
+        }
 
         // 6) Sanitize virtuals
 
@@ -249,7 +275,7 @@ impl<
                 validated_inputs,
                 ctx.input_values(),
                 data.clone(),
-                data.clone(),
+                data.ivo_internal_clone_with(validated_outputs),
             ));
         }
 
@@ -278,18 +304,61 @@ impl<
                 validated_inputs,
                 ctx.input_values(),
                 data.clone(),
-                data.clone(),
+                data.ivo_internal_clone_with(validated_outputs),
             ));
         }
 
         // 4) Run post-validators
+        let (validated_inputs, validated_outputs, should_gen_new_ctx) = self
+            .post_validate(
+                &fields_provided,
+                Arc::clone(&ctx),
+                Arc::clone(&shared_rw_options),
+            )
+            .await
+            .map_err(|payload| {
+                (
+                    UpdateError::ValidationError(payload),
+                    self.prepare_failure_handlers(
+                        fields_provided.clone(),
+                        ctx.clone(),
+                        Arc::new(options.clone()),
+                    ),
+                )
+            })?;
+
+        if should_gen_new_ctx {
+            ctx = Arc::new(IvoContext::<I, O>::new_update_ctx(
+                validated_outputs.clone(),
+                validated_inputs,
+                ctx.input_values(),
+                data.clone(),
+                data.ivo_internal_clone_with(validated_outputs),
+            ));
+        }
 
         // 5) Sanitize virtuals
 
         // 6) Resolve values of dependent fields
 
+        // println!("\n----------------------------------------------------------------------------------------------------------------------------------");
+
+        // println!(
+        //     "initial data: {:?} \n\ninput_values: {:?} \n\nchanges: {:?} \n\nvalidated inputs: {:?} \n\nvalidated outputs: {:?} \n\ninputs: {:?} \n\nvalues: {:?} \n\n should_gen_new_ctx: {}",
+        //     data,
+        //     ctx.input_values(),
+        //     ctx.changes(),
+        //     validated_inputs,
+        //     validated_outputs,
+        //     ctx.input(),
+        //     ctx.values(),
+        //     should_gen_new_ctx
+        // );
+
+        // println!("----------------------------------------------------------------------------------------------------------------------------------\n");
+
         let (updated_values, has_updated_fields) =
-            data.ivo_internal_get_updates_from_partial(&validated_outputs);
+            data.ivo_internal_get_updates_from_partial(&ctx.changes());
 
         if !has_updated_fields {
             return Err((
@@ -394,11 +463,11 @@ impl<
             }
         }
 
-        if error_tool.is_loaded() {
+        if error_tool.has_errors() {
             return Err(error_tool.payload());
         }
 
-        Ok(self.parse_ctx_values(ctx, validated_inputs, validated_outputs))
+        Ok(self.merge_ctx_values(ctx, validated_inputs, validated_outputs))
     }
 
     async fn re_validate(
@@ -469,11 +538,155 @@ impl<
             }
         }
 
-        if error_tool.is_loaded() {
+        if error_tool.has_errors() {
             return Err(error_tool.payload());
         }
 
-        Ok(self.parse_ctx_values(ctx, validated_inputs, validated_outputs))
+        Ok(self.merge_ctx_values(ctx, validated_inputs, validated_outputs))
+    }
+
+    async fn post_validate(
+        &self,
+        fields_provided: &InputFieldCollection,
+        ctx: SharedIvoContext<I, O>,
+        options: SharedRwCtxOptions<CtxOptions>,
+    ) -> Result<(I::Partial, O::Partial, bool), ErrorTool::ErrorPayload> {
+        let mut pre_validators = vec![];
+        let mut post_validators = vec![];
+
+        if let Some(configs) = &self.schema.options().post_validate {
+            for PostValidationConfig {
+                fields,
+                pre_validator,
+                validators,
+            } in configs
+            {
+                if fields
+                    .iter()
+                    .any(|f| fields_provided.contains(&f.to_string()))
+                {
+                    if pre_validator.is_some() {
+                        pre_validators.push((fields, pre_validator.as_ref().unwrap()));
+                    }
+
+                    for validator in validators {
+                        post_validators.push((fields, validator));
+                    }
+
+                    continue;
+                }
+            }
+        }
+
+        if post_validators.is_empty() {
+            return Ok((ctx.input(), ctx.values(), false));
+        }
+
+        let mut ctx = ctx.clone();
+        let mut error_tool = ErrorTool::new();
+        let mut validated_outputs = HashMap::new();
+        let mut validated_inputs = HashMap::new();
+
+        if !pre_validators.is_empty() {
+            let tasks = pre_validators.into_iter().map(|(fields, validator)| {
+                validator(Arc::clone(&ctx), Arc::clone(&options)).map(move |r| (fields, r))
+            });
+
+            for (fields, pre_validation) in join_all(tasks).await {
+                if pre_validation.is_err() {
+                    for (field_name, (reason, metadata)) in pre_validation.err().unwrap() {
+                        let field_name = field_name.as_str();
+
+                        if fields.contains(&field_name) {
+                            error_tool.add(field_name, FieldError { reason, metadata });
+                        }
+                    }
+
+                    continue;
+                }
+
+                for (field_name, value) in pre_validation.ok().unwrap().data {
+                    if let Some(field_info) = self.get_field_info(&field_name) {
+                        if field_info.is_input {
+                            validated_inputs.insert(field_info.name.clone(), value.clone());
+                        }
+
+                        if field_info.is_output {
+                            validated_outputs.insert(field_info.name, value);
+                        }
+                    }
+                }
+            }
+        }
+
+        if error_tool.has_errors() {
+            return Err(error_tool.payload());
+        }
+
+        // update the ctx if the pre validator returned any values
+        if !validated_inputs.is_empty() || !validated_outputs.is_empty() {
+            let (input, changes, _) =
+                self.merge_ctx_values(ctx.clone(), validated_inputs, validated_outputs);
+
+            ctx = match &*ctx {
+                IvoContext::Update {
+                    input_values,
+                    previous_values,
+                    values,
+                    ..
+                } => Arc::new(IvoContext::new_update_ctx(
+                    changes.clone(),
+                    input,
+                    input_values.clone(),
+                    previous_values.clone(),
+                    values.ivo_internal_clone_with(changes),
+                )),
+                _ => Arc::new(IvoContext::new_create_ctx(
+                    input,
+                    ctx.input_values(),
+                    changes,
+                )),
+            }
+        }
+
+        let tasks = post_validators.into_iter().map(|(fields, validator)| {
+            validator(Arc::clone(&ctx), Arc::clone(&options)).map(move |r| (fields, r))
+        });
+
+        let mut validated_outputs = HashMap::new();
+        let mut validated_inputs = HashMap::new();
+
+        for (fields, validation) in join_all(tasks).await {
+            if validation.is_err() {
+                for (field_name, (reason, metadata)) in validation.err().unwrap() {
+                    let field_name = field_name.as_str();
+
+                    if fields.contains(&field_name) {
+                        error_tool.add(field_name, FieldError { reason, metadata });
+                    }
+                }
+
+                continue;
+            }
+
+            for (field_name, value) in validation.ok().unwrap().data {
+                if let Some(field_info) = self.get_field_info(&field_name) {
+                    if field_info.is_input {
+                        validated_inputs.insert(field_info.name.clone(), value.clone());
+                    }
+
+                    if field_info.is_output {
+                        validated_outputs.insert(field_info.name, value);
+                    }
+                }
+            }
+        }
+
+        if error_tool.has_errors() {
+            return Err(error_tool.payload());
+        }
+
+        Ok(self.merge_ctx_values(ctx, validated_inputs, validated_outputs))
     }
 
     async fn resolve_constants_and_defaults(
@@ -599,7 +812,7 @@ impl<
         }
 
         if resolvers.is_empty() {
-            if error_tool.is_loaded() {
+            if error_tool.has_errors() {
                 return Err(error_tool.payload());
             }
 
@@ -625,7 +838,7 @@ impl<
             }
         }
 
-        if error_tool.is_loaded() {
+        if error_tool.has_errors() {
             return Err(error_tool.payload());
         }
 
@@ -711,7 +924,7 @@ impl<
         })
     }
 
-    fn parse_ctx_values(
+    fn merge_ctx_values(
         &self,
         ctx: SharedIvoContext<I, O>,
         validated_inputs: HashMap<String, ErasedValue>,
@@ -742,6 +955,50 @@ impl<
             O::Partial::ivo_internal_from_optional_erased_map(old_outputs),
             true,
         )
+    }
+
+    fn get_field_info(&self, field_name: &String) -> Option<InputFieldInfo> {
+        let schema_output_fields = O::ivo_internal_field_names();
+        let schema_input_fields = I::ivo_internal_field_names();
+
+        if let Some(InternalFieldConfig {
+            alias, depends_on, ..
+        }) = self.schema.get_field_config(field_name)
+        {
+            if depends_on.is_none() {
+                return Some(InputFieldInfo {
+                    config_name: field_name.clone(),
+                    is_input: schema_input_fields.contains(field_name),
+                    is_output: schema_output_fields.contains(field_name),
+                    name: alias.clone().unwrap_or(field_name.clone()),
+                });
+            }
+
+            // otherwise, field_name is an alias for a virtual field
+            // the current config depends on
+            if let Some(depends_on) = depends_on {
+                for parent_name in depends_on {
+                    match self.schema.get_field_config(parent_name) {
+                        Some(InternalFieldConfig {
+                            alias: Some(alias),
+                            field_type: FieldType::Virtual,
+                            validator: Some(validator),
+                            ..
+                        }) if alias == field_name => {
+                            return Some(InputFieldInfo {
+                                config_name: parent_name.to_string(),
+                                is_input: true,
+                                is_output: false,
+                                name: field_name.clone(),
+                            });
+                        }
+                        _ => {}
+                    }
+                }
+            }
+        }
+
+        None
     }
 
     fn parse_fields_provided(

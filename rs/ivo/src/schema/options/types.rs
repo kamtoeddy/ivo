@@ -8,7 +8,7 @@ use crate::{
 };
 
 pub struct IvoValues {
-    data: HashMap<String, ErasedValue>,
+    pub(crate) data: HashMap<String, ErasedValue>,
 }
 
 impl IvoValues {

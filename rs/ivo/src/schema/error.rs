@@ -21,8 +21,13 @@ pub trait IvoErrorTool {
     type ErrorPayload;
 
     fn new() -> Self;
+
     fn add(&mut self, field_name: &str, error: FieldError<Self::FieldMetadata>) -> &mut Self;
-    fn is_loaded(&self) -> bool;
+
+    fn errors(&self) -> Vec<(String, Vec<FieldError<Self::FieldMetadata>>)>;
+
+    fn has_errors(&self) -> bool;
+
     fn payload(&self) -> Self::ErrorPayload;
 }
 
@@ -60,7 +65,14 @@ impl IvoErrorTool for DefaultErrorTool {
         self
     }
 
-    fn is_loaded(&self) -> bool {
+    fn errors(&self) -> Vec<(String, Vec<FieldError<Self::FieldMetadata>>)> {
+        self.payload
+            .iter()
+            .map(|(k, v)| (k.to_owned(), v.to_owned()))
+            .collect()
+    }
+
+    fn has_errors(&self) -> bool {
         !self.payload.is_empty()
     }
 
@@ -80,7 +92,7 @@ impl SchemaError {
         }
     }
 
-    pub fn is_payload_loaded(&self) -> bool {
+    pub fn has_errors(&self) -> bool {
         !self.payload.is_empty()
     }
 

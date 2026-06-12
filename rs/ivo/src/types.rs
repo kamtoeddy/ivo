@@ -96,7 +96,11 @@ pub trait WithUpdateDetails: HasPartial + Clone + Sized {
         updates: &HashMap<String, ErasedValue>,
     ) -> (Self::Partial, bool);
 
-    fn ivo_internal_clone_with(&self, updates: &Self::Partial) -> Self {
+    fn ivo_internal_clone_with(&self, updates: Self::Partial) -> Self {
+        self.ivo_internal_clone_with_ref(&updates)
+    }
+
+    fn ivo_internal_clone_with_ref(&self, updates: &Self::Partial) -> Self {
         let mut cloned = self.clone();
 
         cloned.ivo_internal_update_with(updates);
@@ -116,6 +120,7 @@ pub type IvoMiniContext<I: IvoSchemaStruct> = I::Partial;
 
 pub type Partial<T> = <T as HasPartial>::Partial;
 
+#[derive(Clone, Copy)]
 pub enum IvoContext<I: IvoSchemaStruct, O: IvoSchemaStruct> {
     Create {
         input: I::Partial,
