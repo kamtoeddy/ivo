@@ -366,12 +366,10 @@ impl<
         let mut handlers = vec![];
 
         for (_, config) in self.schema.get_field_configs() {
-            match &config.on_delete_fns {
-                Some(h_vec) => {
-                    handlers.extend(h_vec);
-                    continue;
-                }
-                _ => {}
+            if let Some(h_vec) = &config.on_delete_fns {
+                handlers.extend(h_vec);
+
+                continue;
             }
         }
 
