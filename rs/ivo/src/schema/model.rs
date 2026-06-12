@@ -94,7 +94,7 @@ impl<
         if r.is_err() {
             return Err((
                 r.err().unwrap(),
-                self.prepare_failure_handlers(fields_provided, ctx.clone(), Arc::new(options)),
+                self.prepare_failure_handlers(fields_provided, ctx, Arc::new(options)),
             ));
         }
 
@@ -111,7 +111,7 @@ impl<
         if r.is_err() {
             return Err((
                 r.err().unwrap(),
-                self.prepare_failure_handlers(fields_provided, ctx.clone(), Arc::new(options)),
+                self.prepare_failure_handlers(fields_provided, ctx, Arc::new(options)),
             ));
         }
 
@@ -137,7 +137,7 @@ impl<
         if r.is_err() {
             return Err((
                 r.err().unwrap(),
-                self.prepare_failure_handlers(fields_provided, ctx.clone(), Arc::new(options)),
+                self.prepare_failure_handlers(fields_provided, ctx, Arc::new(options)),
             ));
         }
 
@@ -163,7 +163,7 @@ impl<
         if r.is_err() {
             return Err((
                 r.err().unwrap(),
-                self.prepare_failure_handlers(fields_provided, ctx.clone(), Arc::new(options)),
+                self.prepare_failure_handlers(fields_provided, ctx, Arc::new(options)),
             ));
         }
 
@@ -217,8 +217,6 @@ impl<
             ));
         }
 
-        // let updatables = data.ivo_internal_get_erased_updates_from_erased_values(&updatables);
-
         let shared_rw_options = Arc::new(RwLock::new(options.clone()));
 
         // 1) Evaluate missing required fields
@@ -233,7 +231,7 @@ impl<
         if r.is_err() {
             return Err((
                 UpdateError::ValidationError(r.err().unwrap()),
-                self.prepare_failure_handlers(fields_provided, ctx.clone(), Arc::new(options)),
+                self.prepare_failure_handlers(fields_provided, ctx, Arc::new(options)),
             ));
         }
 
@@ -252,7 +250,7 @@ impl<
         if r.is_err() {
             return Err((
                 UpdateError::ValidationError(r.err().unwrap()),
-                self.prepare_failure_handlers(fields_provided, ctx.clone(), Arc::new(options)),
+                self.prepare_failure_handlers(fields_provided, ctx, Arc::new(options)),
             ));
         }
 
@@ -280,7 +278,7 @@ impl<
         if r.is_err() {
             return Err((
                 UpdateError::ValidationError(r.err().unwrap()),
-                self.prepare_failure_handlers(fields_provided, ctx.clone(), Arc::new(options)),
+                self.prepare_failure_handlers(fields_provided, ctx, Arc::new(options)),
             ));
         }
 
@@ -308,7 +306,7 @@ impl<
         if r.is_err() {
             return Err((
                 UpdateError::ValidationError(r.err().unwrap()),
-                self.prepare_failure_handlers(fields_provided, ctx.clone(), Arc::new(options)),
+                self.prepare_failure_handlers(fields_provided, ctx, Arc::new(options)),
             ));
         }
 
