@@ -10,7 +10,7 @@ use crate::schema::fields::types::{
     ComputableRequired, ComputableRequiredError, ComputableWithMiniContext,
 };
 
-use crate::schema::internal::{InputFieldCollection, InputFieldInfo, SchemaInternals};
+use crate::schema::internal::{InputFieldCollection, SchemaInternals};
 use crate::schema::options::types::{OnSuccessConfig, PostValidationConfig};
 use crate::utils::erased_value::ErasedValue;
 use crate::{
@@ -83,7 +83,7 @@ impl<
 
         let erased_input_values = input.ivo_internal_to_optional_erased_map();
 
-        let fields_provided = self.parse_fields_provided(&erased_input_values);
+        let fields_provided = self.make_input_fields_collection(&erased_input_values);
 
         self.evaluate_missing_required_fields(
             &fields_provided,
@@ -91,9 +91,9 @@ impl<
             Arc::clone(&shared_rw_options),
         )
         .await
-        .map_err(|payload| {
+        .map_err(|p| {
             (
-                payload,
+                p,
                 self.prepare_failure_handlers(
                     fields_provided.clone(),
                     ctx.clone(),
@@ -215,7 +215,7 @@ impl<
 
         let erased_input_values = updates.ivo_internal_to_optional_erased_map();
 
-        let fields_provided = self.parse_fields_provided(&erased_input_values);
+        let fields_provided = self.make_input_fields_collection(&erased_input_values);
 
         // if the updates provided are all none, the nothing to update
         if fields_provided.fields.is_empty() {
@@ -403,9 +403,9 @@ impl<
         }
     }
 
-    async fn validate(
+    async fn validate<'a>(
         &self,
-        fields_provided: &InputFieldCollection,
+        fields_provided: &'a InputFieldCollection<'a, I, O, CtxOptions, ErrorTool>,
         erased_input_values: &PartialMapOfErasedValues,
         ctx: SharedIvoContext<I, O>,
         options: SharedRwCtxOptions<CtxOptions>,
@@ -470,9 +470,9 @@ impl<
         Ok(self.merge_ctx_values(ctx, validated_inputs, validated_outputs))
     }
 
-    async fn re_validate(
+    async fn re_validate<'a>(
         &self,
-        fields_provided: &InputFieldCollection,
+        fields_provided: &'a InputFieldCollection<'a, I, O, CtxOptions, ErrorTool>,
         ctx: SharedIvoContext<I, O>,
         options: SharedRwCtxOptions<CtxOptions>,
     ) -> Result<(I::Partial, O::Partial, bool), ErrorTool::ErrorPayload> {
@@ -545,9 +545,9 @@ impl<
         Ok(self.merge_ctx_values(ctx, validated_inputs, validated_outputs))
     }
 
-    async fn post_validate(
+    async fn post_validate<'a>(
         &self,
-        fields_provided: &InputFieldCollection,
+        fields_provided: &'a InputFieldCollection<'a, I, O, CtxOptions, ErrorTool>,
         ctx: SharedIvoContext<I, O>,
         options: SharedRwCtxOptions<CtxOptions>,
     ) -> Result<(I::Partial, O::Partial, bool), ErrorTool::ErrorPayload> {
@@ -606,7 +606,7 @@ impl<
                 }
 
                 for (field_name, value) in pre_validation.ok().unwrap().data {
-                    if let Some(field_info) = self.get_field_info(&field_name) {
+                    if let Some(field_info) = fields_provided.get(&field_name) {
                         if field_info.is_input {
                             validated_inputs.insert(field_info.name.clone(), value.clone());
                         }
@@ -670,7 +670,7 @@ impl<
             }
 
             for (field_name, value) in validation.ok().unwrap().data {
-                if let Some(field_info) = self.get_field_info(&field_name) {
+                if let Some(field_info) = fields_provided.get(&field_name) {
                     if field_info.is_input {
                         validated_inputs.insert(field_info.name.clone(), value.clone());
                     }
@@ -741,9 +741,9 @@ impl<
         default_values
     }
 
-    async fn evaluate_missing_required_fields(
+    async fn evaluate_missing_required_fields<'a>(
         &self,
-        fields_provided: &InputFieldCollection,
+        fields_provided: &'a InputFieldCollection<'a, I, O, CtxOptions, ErrorTool>,
         ctx: SharedIvoContext<I, O>,
         options: SharedRwCtxOptions<CtxOptions>,
     ) -> Result<(), ErrorTool::ErrorPayload> {
@@ -845,9 +845,9 @@ impl<
         return Ok(());
     }
 
-    fn prepare_failure_handlers(
+    fn prepare_failure_handlers<'a>(
         &self,
-        fields_provided: InputFieldCollection,
+        fields_provided: InputFieldCollection<'a, I, O, CtxOptions, ErrorTool>,
         ctx: SharedIvoContext<I, O>,
         options: SharedCtxOptions<CtxOptions>,
     ) -> AsyncHandlerTrigger<'schema> {
@@ -877,9 +877,9 @@ impl<
         })
     }
 
-    fn prepare_success_handlers(
+    fn prepare_success_handlers<'a>(
         &self,
-        fields_provided: InputFieldCollection,
+        fields_provided: InputFieldCollection<'a, I, O, CtxOptions, ErrorTool>,
         ctx: SharedIvoContext<I, O>,
         options: SharedCtxOptions<CtxOptions>,
     ) -> AsyncHandlerTrigger<'schema> {
@@ -957,108 +957,10 @@ impl<
         )
     }
 
-    fn get_field_info(&self, field_name: &String) -> Option<InputFieldInfo> {
-        let schema_output_fields = O::ivo_internal_field_names();
-        let schema_input_fields = I::ivo_internal_field_names();
-
-        if let Some(InternalFieldConfig {
-            alias, depends_on, ..
-        }) = self.schema.get_field_config(field_name)
-        {
-            if depends_on.is_none() {
-                return Some(InputFieldInfo {
-                    config_name: field_name.clone(),
-                    is_input: schema_input_fields.contains(field_name),
-                    is_output: schema_output_fields.contains(field_name),
-                    name: alias.clone().unwrap_or(field_name.clone()),
-                });
-            }
-
-            // otherwise, field_name is an alias for a virtual field
-            // the current config depends on
-            if let Some(depends_on) = depends_on {
-                for parent_name in depends_on {
-                    match self.schema.get_field_config(parent_name) {
-                        Some(InternalFieldConfig {
-                            alias: Some(alias),
-                            field_type: FieldType::Virtual,
-                            validator: Some(validator),
-                            ..
-                        }) if alias == field_name => {
-                            return Some(InputFieldInfo {
-                                config_name: parent_name.to_string(),
-                                is_input: true,
-                                is_output: false,
-                                name: field_name.clone(),
-                            });
-                        }
-                        _ => {}
-                    }
-                }
-            }
-        }
-
-        None
-    }
-
-    fn parse_fields_provided(
+    fn make_input_fields_collection(
         &self,
         erased_input_values: &PartialMapOfErasedValues,
-    ) -> InputFieldCollection {
-        let fields_names = erased_input_values
-            .inner
-            .keys()
-            .map(|f| f.to_owned())
-            .collect::<Vec<String>>();
-
-        let schema_output_fields = O::ivo_internal_field_names();
-        let schema_input_fields = I::ivo_internal_field_names();
-
-        let mut fields = Vec::with_capacity(fields_names.len());
-
-        for field_name in fields_names.iter() {
-            if let Some(InternalFieldConfig { depends_on, .. }) =
-                self.schema.get_field_config(field_name)
-            {
-                if depends_on.is_none() {
-                    fields.push(InputFieldInfo {
-                        config_name: field_name.clone(),
-                        is_input: schema_input_fields.contains(field_name),
-                        is_output: schema_output_fields.contains(field_name),
-                        name: field_name.clone(),
-                    });
-
-                    continue;
-                }
-
-                // otherwise, field_name is an alias for a virtual field
-                // the current config depends on
-                if let Some(depends_on) = depends_on {
-                    for parent_name in depends_on {
-                        match self.schema.get_field_config(parent_name) {
-                            Some(InternalFieldConfig {
-                                alias: Some(alias),
-                                field_type: FieldType::Virtual,
-                                validator: Some(validator),
-                                ..
-                            }) if alias == field_name => {
-                                fields.push(InputFieldInfo {
-                                    config_name: parent_name.to_string(),
-                                    is_input: true,
-                                    is_output: false,
-                                    name: field_name.clone(),
-                                });
-                                continue;
-                            }
-                            _ => {}
-                        }
-                    }
-
-                    continue;
-                }
-            }
-        }
-
-        InputFieldCollection::new(fields)
+    ) -> InputFieldCollection<'_, I, O, CtxOptions, ErrorTool> {
+        InputFieldCollection::new(self.schema, erased_input_values)
     }
 }
