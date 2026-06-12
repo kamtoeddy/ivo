@@ -68,7 +68,8 @@ pub async fn run_users_demo() {
         role: Some(UserRole::Moderator),
         username: Some("new_username".into()),
         // username: None,
-        slug_id: None,
+        // slug_id: None,
+        slug_id: Some("updated-slug-id".into()),
     };
 
     let r = USER_MODEL

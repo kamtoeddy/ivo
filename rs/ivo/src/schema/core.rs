@@ -1,5 +1,6 @@
 use crate::schema::fields::types::IntoUniformTimestampResolver;
 use crate::schema::fields::TimestampFieldConfig;
+
 use crate::schema::internal::SchemaInternals;
 use crate::schema::options::base::{SchemaOptions, SchemaOptionsBuilder};
 use crate::schema::options::BuildableSchemaOptions;
