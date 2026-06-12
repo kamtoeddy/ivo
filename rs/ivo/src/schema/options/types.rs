@@ -4,7 +4,7 @@ use futures::future::BoxFuture;
 
 use crate::{
     erase_value, schema::error::IvoErrorTool, types::SuccessHandler, DefaultFieldErrorMetadata,
-    ErasedValue, IvoSchemaStruct, SharedRwCtxOptions, SharedIvoContext, ValidatorError,
+    ErasedValue, IvoSchemaStruct, SharedIvoContext, SharedRwCtxOptions, ValidatorError,
 };
 
 pub struct IvoValues {

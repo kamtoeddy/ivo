@@ -1,3 +1,6 @@
+use std::collections::HashMap;
+use std::sync::Arc;
+
 use crate::internal::InternalIvoContextMethods;
 use crate::schema::core::Schema;
 use crate::schema::error::{DefaultErrorTool, FieldError, IvoErrorTool, UpdateError};
@@ -11,9 +14,6 @@ use crate::utils::erased_value::ErasedValue;
 use crate::{
     IvoContext, SharedCtxOptions, SharedIvoContext, SharedIvoMiniContext, SharedRwCtxOptions,
 };
-
-use std::collections::HashMap;
-use std::sync::Arc;
 
 use futures::future::{join_all, BoxFuture};
 
@@ -80,7 +80,7 @@ impl<
 
         let erased_input_values = input.ivo_internal_to_optional_erased_map();
 
-        let fields_provided = self.resolve_fields_provided(&erased_input_values);
+        let fields_provided = self.parse_fields_provided(&erased_input_values);
 
         self.evaluate_missing_required_fields(
             &fields_provided,
@@ -88,9 +88,9 @@ impl<
             Arc::clone(&shared_rw_options),
         )
         .await
-        .map_err(|p| {
+        .map_err(|payload| {
             (
-                p,
+                payload,
                 self.prepare_failure_handlers(
                     fields_provided.clone(),
                     ctx.clone(),
@@ -108,9 +108,9 @@ impl<
                 Arc::clone(&shared_rw_options),
             )
             .await
-            .map_err(|p| {
+            .map_err(|payload| {
                 (
-                    p,
+                    payload,
                     self.prepare_failure_handlers(
                         fields_provided.clone(),
                         ctx.clone(),
@@ -135,9 +135,9 @@ impl<
                 Arc::clone(&shared_rw_options),
             )
             .await
-            .map_err(|p| {
+            .map_err(|payload| {
                 (
-                    p,
+                    payload,
                     self.prepare_failure_handlers(
                         fields_provided.clone(),
                         ctx.clone(),
@@ -168,67 +168,6 @@ impl<
         ));
     }
 
-    fn resolve_fields_provided(
-        &self,
-        erased_input_values: &PartialMapOfErasedValues,
-    ) -> InputFieldCollection {
-        let fields_names = erased_input_values
-            .inner
-            .keys()
-            .map(|f| f.to_owned())
-            .collect::<Vec<String>>();
-
-        let schema_output_fields = O::ivo_internal_field_names();
-        let schema_input_fields = I::ivo_internal_field_names();
-
-        let mut fields = Vec::with_capacity(fields_names.len());
-
-        for field_name in fields_names.iter() {
-            if let Some(InternalFieldConfig { depends_on, .. }) =
-                self.schema.get_field_config(field_name)
-            {
-                if depends_on.is_none() {
-                    fields.push(InputFieldInfo {
-                        config_name: field_name.clone(),
-                        is_input: schema_input_fields.contains(field_name),
-                        is_output: schema_output_fields.contains(field_name),
-                        name: field_name.clone(),
-                    });
-
-                    continue;
-                }
-
-                // otherwise, field_name is an alias for a virtual field
-                // the current config depends on
-                if let Some(depends_on) = depends_on {
-                    for parent_name in depends_on {
-                        match self.schema.get_field_config(parent_name) {
-                            Some(InternalFieldConfig {
-                                alias: Some(alias),
-                                field_type: FieldType::Virtual,
-                                validator: Some(validator),
-                                ..
-                            }) if alias == field_name => {
-                                fields.push(InputFieldInfo {
-                                    config_name: parent_name.to_string(),
-                                    is_input: true,
-                                    is_output: false,
-                                    name: field_name.clone(),
-                                });
-                                continue;
-                            }
-                            _ => {}
-                        }
-                    }
-
-                    continue;
-                }
-            }
-        }
-
-        InputFieldCollection::new(fields)
-    }
-
     pub async fn update(
         &self,
         data: &O,
@@ -248,7 +187,7 @@ impl<
 
         let erased_input_values = updates.ivo_internal_to_optional_erased_map();
 
-        let fields_provided = self.resolve_fields_provided(&erased_input_values);
+        let fields_provided = self.parse_fields_provided(&erased_input_values);
 
         // if the updates provided are all none, the nothing to update
         if fields_provided.fields.is_empty() {
@@ -289,9 +228,9 @@ impl<
                 Arc::clone(&shared_rw_options),
             )
             .await
-            .map_err(|p| {
+            .map_err(|payload| {
                 (
-                    UpdateError::ValidationError(p),
+                    UpdateError::ValidationError(payload),
                     self.prepare_failure_handlers(
                         fields_provided.clone(),
                         ctx.clone(),
@@ -320,9 +259,9 @@ impl<
                 Arc::clone(&shared_rw_options),
             )
             .await
-            .map_err(|p| {
+            .map_err(|payload| {
                 (
-                    UpdateError::ValidationError(p),
+                    UpdateError::ValidationError(payload),
                     self.prepare_failure_handlers(
                         fields_provided.clone(),
                         ctx.clone(),
@@ -407,37 +346,10 @@ impl<
                 self.schema.get_field_config(&field_info.config_name)
             {
                 if let Some(validator) = validator {
-                    validators.push((
-                        field_info,
-                        validator,
-                        // schema_output_fields.contains(field_name),
-                        // schema_input_fields.contains(field_name),
-                    ));
+                    validators.push((field_info, validator));
 
                     continue;
                 }
-
-                // otherwise, field_name is an alias for a virtual field
-                // the current config depends on
-                // if let Some(depends_on) = depends_on {
-                //     for parent_name in depends_on {
-                //         match self.schema.get_field_config(parent_name) {
-                //             Some(InternalFieldConfig {
-                //                 alias: Some(alias),
-                //                 field_type: FieldType::Virtual,
-                //                 validator: Some(validator),
-                //                 ..
-                //             }) if alias == field_name => {
-                //                 validators.push((field_name, validator, false, true));
-
-                //                 continue;
-                //             }
-                //             _ => {}
-                //         }
-                //     }
-
-                //     continue;
-                // }
             }
         }
 
@@ -560,39 +472,6 @@ impl<
         }
 
         Ok(self.parse_ctx_values(ctx, validated_inputs, validated_outputs))
-    }
-
-    fn parse_ctx_values(
-        &self,
-        ctx: SharedIvoContext<I, O>,
-        validated_inputs: HashMap<String, ErasedValue>,
-        validated_outputs: HashMap<String, ErasedValue>,
-    ) -> (I::Partial, O::Partial, bool) {
-        let mut old_outputs = ctx.values().ivo_internal_to_optional_erased_map();
-
-        for (field, value) in validated_outputs {
-            old_outputs
-                .inner
-                .entry(field)
-                .and_modify(|e| *e = value.clone())
-                .or_insert(value);
-        }
-
-        let mut old_inputs = ctx.input().ivo_internal_to_optional_erased_map();
-
-        for (field, value) in validated_inputs {
-            old_inputs
-                .inner
-                .entry(field)
-                .and_modify(|e| *e = value.clone())
-                .or_insert(value);
-        }
-
-        (
-            I::Partial::ivo_internal_from_optional_erased_map(old_inputs),
-            O::Partial::ivo_internal_from_optional_erased_map(old_outputs),
-            true,
-        )
     }
 
     async fn resolve_constants_and_defaults(
@@ -777,5 +656,99 @@ impl<
 
             Box::pin(async { for _ in join_all(tasks).await {} })
         })
+    }
+
+    fn parse_ctx_values(
+        &self,
+        ctx: SharedIvoContext<I, O>,
+        validated_inputs: HashMap<String, ErasedValue>,
+        validated_outputs: HashMap<String, ErasedValue>,
+    ) -> (I::Partial, O::Partial, bool) {
+        let mut old_outputs = ctx.values().ivo_internal_to_optional_erased_map();
+
+        for (field, value) in validated_outputs {
+            old_outputs
+                .inner
+                .entry(field)
+                .and_modify(|e| *e = value.clone())
+                .or_insert(value);
+        }
+
+        let mut old_inputs = ctx.input().ivo_internal_to_optional_erased_map();
+
+        for (field, value) in validated_inputs {
+            old_inputs
+                .inner
+                .entry(field)
+                .and_modify(|e| *e = value.clone())
+                .or_insert(value);
+        }
+
+        (
+            I::Partial::ivo_internal_from_optional_erased_map(old_inputs),
+            O::Partial::ivo_internal_from_optional_erased_map(old_outputs),
+            true,
+        )
+    }
+
+    fn parse_fields_provided(
+        &self,
+        erased_input_values: &PartialMapOfErasedValues,
+    ) -> InputFieldCollection {
+        let fields_names = erased_input_values
+            .inner
+            .keys()
+            .map(|f| f.to_owned())
+            .collect::<Vec<String>>();
+
+        let schema_output_fields = O::ivo_internal_field_names();
+        let schema_input_fields = I::ivo_internal_field_names();
+
+        let mut fields = Vec::with_capacity(fields_names.len());
+
+        for field_name in fields_names.iter() {
+            if let Some(InternalFieldConfig { depends_on, .. }) =
+                self.schema.get_field_config(field_name)
+            {
+                if depends_on.is_none() {
+                    fields.push(InputFieldInfo {
+                        config_name: field_name.clone(),
+                        is_input: schema_input_fields.contains(field_name),
+                        is_output: schema_output_fields.contains(field_name),
+                        name: field_name.clone(),
+                    });
+
+                    continue;
+                }
+
+                // otherwise, field_name is an alias for a virtual field
+                // the current config depends on
+                if let Some(depends_on) = depends_on {
+                    for parent_name in depends_on {
+                        match self.schema.get_field_config(parent_name) {
+                            Some(InternalFieldConfig {
+                                alias: Some(alias),
+                                field_type: FieldType::Virtual,
+                                validator: Some(validator),
+                                ..
+                            }) if alias == field_name => {
+                                fields.push(InputFieldInfo {
+                                    config_name: parent_name.to_string(),
+                                    is_input: true,
+                                    is_output: false,
+                                    name: field_name.clone(),
+                                });
+                                continue;
+                            }
+                            _ => {}
+                        }
+                    }
+
+                    continue;
+                }
+            }
+        }
+
+        InputFieldCollection::new(fields)
     }
 }
