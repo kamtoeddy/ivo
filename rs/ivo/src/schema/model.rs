@@ -63,11 +63,10 @@ impl<
         (ErrorTool::ErrorPayload, AsyncHandlerTrigger<'schema>),
     > {
         let shared_rw_options = Arc::new(RwLock::new(options.clone()));
-        let mini_ctx = Arc::new(input.clone());
 
         // 1) Resolve constants & defaults
         let default_values = self
-            .resolve_constants_and_defaults(mini_ctx, Arc::clone(&shared_rw_options))
+            .resolve_constants_and_defaults(Arc::new(input.clone()), Arc::clone(&shared_rw_options))
             .await;
 
         let default_values =
@@ -82,7 +81,6 @@ impl<
         ));
 
         let erased_input_values = input.ivo_internal_to_optional_erased_map();
-
         let fields_provided = self.make_input_fields_collection(&erased_input_values);
 
         let r = self
@@ -209,7 +207,6 @@ impl<
         ));
 
         let erased_input_values = updates.ivo_internal_to_optional_erased_map();
-
         let fields_provided = self.make_input_fields_collection(&erased_input_values);
 
         // if the updates provided are all none, the nothing to update
