@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::future::ready;
 use std::sync::Arc;
 
 use crate::internal::InternalIvoContextMethods;
@@ -649,6 +650,10 @@ impl<
             }
         }
 
+        if handlers.is_empty() {
+            return Box::new(|| Box::pin(ready(())));
+        }
+
         Box::new(move || {
             let tasks = handlers
                 .iter()
@@ -690,6 +695,10 @@ impl<
                     handlers.extend(h_vec);
                 }
             }
+        }
+
+        if handlers.is_empty() {
+            return Box::new(|| Box::pin(ready(())));
         }
 
         Box::new(move || {
