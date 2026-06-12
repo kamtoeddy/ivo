@@ -10,6 +10,7 @@ use crate::schema::fields::types::{
 };
 
 use crate::schema::internal::{InputFieldCollection, InputFieldInfo, SchemaInternals};
+use crate::schema::options::types::OnSuccessConfig;
 use crate::utils::erased_value::ErasedValue;
 use crate::{
     IvoContext, SharedCtxOptions, SharedIvoContext, SharedIvoMiniContext, SharedRwCtxOptions,
@@ -164,7 +165,7 @@ impl<
 
         return Ok((
             O::ivo_internal_dangerously_get_values_from_partial(ctx.values()),
-            self.prepare_failure_handlers(fields_provided, ctx, Arc::new(options)),
+            self.prepare_success_handlers(fields_provided, ctx, Arc::new(options)),
         ));
     }
 
@@ -300,7 +301,7 @@ impl<
 
         Ok((
             updated_values,
-            self.prepare_failure_handlers(fields_provided, ctx, Arc::new(options)),
+            self.prepare_success_handlers(fields_provided, ctx, Arc::new(options)),
         ))
     }
 
@@ -645,6 +646,49 @@ impl<
             }) = self.schema.get_field_config(&field_info.config_name)
             {
                 handlers.extend(h_vec)
+            }
+        }
+
+        Box::new(move || {
+            let tasks = handlers
+                .iter()
+                .map(|h| h(Arc::clone(&ctx), Arc::clone(&options)))
+                .collect::<Vec<_>>();
+
+            Box::pin(async { for _ in join_all(tasks).await {} })
+        })
+    }
+
+    fn prepare_success_handlers(
+        &self,
+        fields_provided: InputFieldCollection,
+        ctx: SharedIvoContext<I, O>,
+        options: SharedCtxOptions<CtxOptions>,
+    ) -> AsyncHandlerTrigger<'schema> {
+        let mut handlers = vec![];
+
+        for field_info in fields_provided.fields.iter() {
+            if let Some(InternalFieldConfig {
+                on_success_fns: Some(h_vec),
+                ..
+            }) = self.schema.get_field_config(&field_info.config_name)
+            {
+                handlers.extend(h_vec)
+            }
+        }
+
+        if let Some(configs) = &self.schema.options().on_success_fns {
+            for OnSuccessConfig {
+                fields,
+                handlers: h_vec,
+            } in configs
+            {
+                if fields
+                    .iter()
+                    .any(|f| fields_provided.contains(&f.to_string()))
+                {
+                    handlers.extend(h_vec);
+                }
             }
         }
 

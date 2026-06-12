@@ -26,8 +26,10 @@ pub async fn run_users_demo() {
     println!("size:  {}", format_bytes(&mem::size_of_val(&r)));
 
     match r {
-        Ok((data, _handle_success)) => {
-            println!("{:?}", data);
+        Ok((data, handle_success)) => {
+            println!("{:?}\n", data);
+
+            handle_success().await;
         }
         Err((payload, handle_failure)) => {
             println!("\nFailed to create: {:?}\n", payload);
@@ -77,15 +79,17 @@ pub async fn run_users_demo() {
         .await;
 
     match r {
-        Ok((data, _handle_success)) => {
+        Ok((data, handle_success)) => {
             println!("updates: {:?}\n", data);
-            println!("old + updates: {:?}", user.ivo_internal_clone_with(&data));
+            println!("old + updates: {:?}\n", user.ivo_internal_clone_with(&data));
+
+            handle_success().await;
         }
         Err((error, handle_failure)) => {
             match error {
-                UpdateError::NothingToUpdate => println!("Nothing to update"),
+                UpdateError::NothingToUpdate => println!("Nothing to update\n"),
                 UpdateError::ValidationError(payload) => {
-                    println!("Failed to update: {:?}", payload)
+                    println!("Failed to update: {:?}\n", payload)
                 }
             };
 
