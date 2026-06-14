@@ -7,21 +7,10 @@ pub use std::sync::Arc;
 
 use crate::schema::error::DefaultFieldErrorMetadata;
 
-#[derive(Debug)]
-pub struct True;
-
 // Marker Types
 pub struct Yes;
 pub struct No;
 pub struct YesComputed;
-
-// Optional: implement Deref to make it behave like bool
-impl std::ops::Deref for True {
-    type Target = bool;
-    fn deref(&self) -> &Self::Target {
-        &true
-    }
-}
 
 #[derive(Debug)]
 pub struct False;

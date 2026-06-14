@@ -4,7 +4,7 @@ use std::{fmt::Debug, future::Future};
 
 use crate::{
     erase_value, parse_or_panic,
-    types::{DeleteHandler, ErasedValue, FailureHandler, SuccessHandler, True},
+    types::{DeleteHandler, ErasedValue, FailureHandler, SuccessHandler},
     IvoErrorTool, IvoSchemaStruct, SharedData, SharedIvoContext, SharedIvoMiniContext,
     SharedRwCtxOptions, ValidatorResponse,
 };
@@ -250,7 +250,7 @@ pub enum ComputableInit<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> {
 }
 
 pub enum ComputableRequired<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> {
-    Static(True),
+    True,
     Func(RequiredResolver<I, O, CtxOptions>),
 }
 

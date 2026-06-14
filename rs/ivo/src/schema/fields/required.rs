@@ -12,7 +12,7 @@ use crate::{
             },
         },
     },
-    types::{DeleteHandler, FailureHandler, No, SuccessHandler, True, Yes},
+    types::{DeleteHandler, FailureHandler, No, SuccessHandler, Yes},
     IvoSchemaStruct,
 };
 
@@ -166,7 +166,7 @@ impl<
             required_error: self.required_error,
             validator: self.validator,
             re_validator: self.re_validator,
-            required: Some(ComputableRequired::Static(True)),
+            required: Some(ComputableRequired::True),
             should_update: self.should_update,
             on_delete_fns: self.on_delete_fns,
             on_failure_fns: self.on_failure_fns,
