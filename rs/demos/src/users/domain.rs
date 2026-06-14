@@ -1,8 +1,8 @@
 use std::{array, collections::HashMap, future::ready, sync::LazyLock};
 
 use ivo::{
-    FutureExt, IvoField, IvoStruct, IvoValues, Model, Schema, SharedIvoContext, SharedRwCtxOptions,
-    validate_email,
+    FutureExt, IvoField, IvoStruct, IvoValues, Model, Schema, SharedCtxOptions, SharedIvoContext,
+    SharedRwCtxOptions, validate_email,
 };
 
 use crate::utils::slugify::{SlugifiedString, slugify};
@@ -65,7 +65,7 @@ impl<'a> UserCtxOptions {
 }
 
 type Ctx = SharedIvoContext<UserInput, User>;
-// type CtxOptions = SharedCtxOptions<UserCtxOptions>;
+type CtxOptions = SharedCtxOptions<UserCtxOptions>;
 type RwCtxOptions = SharedRwCtxOptions<UserCtxOptions>;
 
 pub static USER_MODEL: LazyLock<Model<UserInput, User, UserCtxOptions>> =
@@ -123,9 +123,7 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
                             ready(Ok(v))
                         })
                         .re_validate(async |uname: String, _, o: RwCtxOptions| {
-                            let options = o.read().await;
-
-                            if options.find_user_by_username(&uname).await.is_some() {
+                            if o.read().await.find_user_by_username(&uname).await.is_some() {
                                 return Err((
                                     "username: \"{uname}\" is already taken".into(),
                                     None,
@@ -151,6 +149,11 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
                         })
                         .on_failure(|_, _| {
                             println!("username: on failure handled");
+
+                            ready(())
+                        })
+                        .on_success(|_, o: CtxOptions| {
+                            println!("on success uname with slug_id: {:?}", o.slug_id);
 
                             ready(())
                         }),
@@ -191,6 +194,11 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
                             ready(is_username_or_slug_id_updatable(
                                 ctx.values().username_last_updated_at.unwrap(),
                             ))
+                        })
+                        .on_success(|_, o: CtxOptions| {
+                            println!("on success v_slug with slug_id: {:?}", o.slug_id);
+
+                            ready(())
                         }),
                 )
                 .created_at(|| "Date.now()", None)
@@ -278,32 +286,19 @@ fn is_username_or_slug_id_updatable(username_last_updated_at: Option<String>) ->
 }
 
 pub static USERS_LIST: LazyLock<[User; 3]> = LazyLock::new(|| {
-    [
+    array::from_fn(|i| {
+        let id = (i as i32) + 1;
+        let username = format!("user-{id}");
+
         User {
-            email: "1@mail.com".into(),
-            id: 1,
-            role: UserRole::Admin,
-            slug_id: SlugifiedString::from("user-1"),
-            username: "user-1".into(),
+            email: format!("user-{id}@mail.com"),
+            id,
+            role: UserRole::Moderator,
+            slug_id: SlugifiedString::from(username.as_str()),
+            username,
             username_last_updated_at: None,
-        },
-        User {
-            email: "2@mail.com".into(),
-            id: 2,
-            role: UserRole::Admin,
-            slug_id: SlugifiedString::from("user-2"),
-            username: "user-2".into(),
-            username_last_updated_at: None,
-        },
-        User {
-            email: "3@mail.com".into(),
-            id: 3,
-            role: UserRole::Admin,
-            slug_id: SlugifiedString::from("user-3"),
-            username: "user-3".into(),
-            username_last_updated_at: None,
-        },
-    ]
+        }
+    })
 });
 
 pub static USERS_BY_SLUG_ID: LazyLock<HashMap<SlugifiedString, User>> = LazyLock::new(|| {

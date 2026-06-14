@@ -62,7 +62,7 @@ impl<
         (O, AsyncHandlerTrigger<'schema>),
         (ErrorTool::ErrorPayload, AsyncHandlerTrigger<'schema>),
     > {
-        let shared_rw_options = Arc::new(RwLock::new(options.clone()));
+        let shared_rw_options = Arc::new(RwLock::new(options));
 
         // 1) Resolve constants & defaults
         let default_values = self
@@ -94,7 +94,11 @@ impl<
         if r.is_err() {
             return Err((
                 r.err().unwrap(),
-                self.prepare_failure_handlers(fields_provided, ctx, Arc::new(options)),
+                self.prepare_failure_handlers(
+                    fields_provided,
+                    ctx,
+                    Arc::new(unwrap_async_lock(shared_rw_options)),
+                ),
             ));
         }
 
@@ -111,7 +115,11 @@ impl<
         if r.is_err() {
             return Err((
                 r.err().unwrap(),
-                self.prepare_failure_handlers(fields_provided, ctx, Arc::new(options)),
+                self.prepare_failure_handlers(
+                    fields_provided,
+                    ctx,
+                    Arc::new(unwrap_async_lock(shared_rw_options)),
+                ),
             ));
         }
 
@@ -137,7 +145,11 @@ impl<
         if r.is_err() {
             return Err((
                 r.err().unwrap(),
-                self.prepare_failure_handlers(fields_provided, ctx, Arc::new(options)),
+                self.prepare_failure_handlers(
+                    fields_provided,
+                    ctx,
+                    Arc::new(unwrap_async_lock(shared_rw_options)),
+                ),
             ));
         }
 
@@ -163,7 +175,11 @@ impl<
         if r.is_err() {
             return Err((
                 r.err().unwrap(),
-                self.prepare_failure_handlers(fields_provided, ctx, Arc::new(options)),
+                self.prepare_failure_handlers(
+                    fields_provided,
+                    ctx,
+                    Arc::new(unwrap_async_lock(shared_rw_options)),
+                ),
             ));
         }
 
@@ -185,7 +201,11 @@ impl<
 
         return Ok((
             O::ivo_internal_dangerously_get_values_from_partial(ctx.values()),
-            self.prepare_success_handlers(fields_provided, ctx, Arc::new(options)),
+            self.prepare_success_handlers(
+                fields_provided,
+                ctx,
+                Arc::new(unwrap_async_lock(shared_rw_options)),
+            ),
         ));
     }
 
@@ -217,7 +237,7 @@ impl<
             ));
         }
 
-        let shared_rw_options = Arc::new(RwLock::new(options.clone()));
+        let shared_rw_options = Arc::new(RwLock::new(options));
 
         // 1) Evaluate missing required fields
         let r = self
@@ -231,7 +251,11 @@ impl<
         if r.is_err() {
             return Err((
                 UpdateError::ValidationError(r.err().unwrap()),
-                self.prepare_failure_handlers(fields_provided, ctx, Arc::new(options)),
+                self.prepare_failure_handlers(
+                    fields_provided,
+                    ctx,
+                    Arc::new((shared_rw_options).read().await.clone()),
+                ),
             ));
         }
 
@@ -250,7 +274,11 @@ impl<
         if r.is_err() {
             return Err((
                 UpdateError::ValidationError(r.err().unwrap()),
-                self.prepare_failure_handlers(fields_provided, ctx, Arc::new(options)),
+                self.prepare_failure_handlers(
+                    fields_provided,
+                    ctx,
+                    Arc::new(unwrap_async_lock(shared_rw_options)),
+                ),
             ));
         }
 
@@ -278,7 +306,11 @@ impl<
         if r.is_err() {
             return Err((
                 UpdateError::ValidationError(r.err().unwrap()),
-                self.prepare_failure_handlers(fields_provided, ctx, Arc::new(options)),
+                self.prepare_failure_handlers(
+                    fields_provided,
+                    ctx,
+                    Arc::new(unwrap_async_lock(shared_rw_options)),
+                ),
             ));
         }
 
@@ -306,7 +338,11 @@ impl<
         if r.is_err() {
             return Err((
                 UpdateError::ValidationError(r.err().unwrap()),
-                self.prepare_failure_handlers(fields_provided, ctx, Arc::new(options)),
+                self.prepare_failure_handlers(
+                    fields_provided,
+                    ctx,
+                    Arc::new(unwrap_async_lock(shared_rw_options)),
+                ),
             ));
         }
 
@@ -348,7 +384,11 @@ impl<
         if !has_updated_fields {
             return Err((
                 UpdateError::NothingToUpdate,
-                self.prepare_failure_handlers(fields_provided, ctx, Arc::new(options)),
+                self.prepare_failure_handlers(
+                    fields_provided,
+                    ctx,
+                    Arc::new(unwrap_async_lock(shared_rw_options)),
+                ),
             ));
         }
 
@@ -356,7 +396,11 @@ impl<
 
         Ok((
             updated_values,
-            self.prepare_success_handlers(fields_provided, ctx, Arc::new(options)),
+            self.prepare_success_handlers(
+                fields_provided,
+                ctx,
+                Arc::new(unwrap_async_lock(shared_rw_options)),
+            ),
         ))
     }
 
@@ -945,5 +989,13 @@ impl<
         erased_input_values: &PartialMapOfErasedValues,
     ) -> InputFieldCollection<'_, I, O, CtxOptions, ErrorTool> {
         InputFieldCollection::new(self.schema, erased_input_values)
+    }
+}
+
+/// this is a sync alternative to: shared_rw_options.read().await.clone()
+fn unwrap_async_lock<T>(lock: Arc<RwLock<T>>) -> T {
+    match Arc::into_inner(lock).unwrap().try_unwrap() {
+        Ok(raw_data) => raw_data,
+        _ => panic!("error unwrapping shared RwLock"),
     }
 }
