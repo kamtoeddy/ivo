@@ -567,7 +567,7 @@ impl<
         ctx: SharedIvoContext<I, O>,
         options: SharedRwCtxOptions<CtxOptions>,
     ) -> Result<(I::Partial, O::Partial, bool), ErrorTool::ErrorPayload> {
-        let mut validators = vec![];
+        let mut validators = Vec::with_capacity(fields_provided.fields.len());
 
         for field_info in fields_provided.fields.iter() {
             if let Some(InternalFieldConfig {
@@ -631,7 +631,7 @@ impl<
         ctx: SharedIvoContext<I, O>,
         options: SharedRwCtxOptions<CtxOptions>,
     ) -> Result<(I::Partial, O::Partial, bool), ErrorTool::ErrorPayload> {
-        let mut re_validators = vec![];
+        let mut re_validators = Vec::with_capacity(fields_provided.fields.len());
 
         for field_info in fields_provided.fields.iter() {
             if let Some(InternalFieldConfig {
@@ -847,7 +847,7 @@ impl<
         ctx: SharedIvoContext<I, O>,
         options: SharedRwCtxOptions<CtxOptions>,
     ) -> (I::Partial, O::Partial, bool) {
-        let mut sanitizers = vec![];
+        let mut sanitizers = Vec::with_capacity(fields_provided.fields.len());
 
         for field_info in fields_provided.fields.iter() {
             if let Some(InternalFieldConfig {
@@ -1119,7 +1119,7 @@ impl<
         ctx: SharedIvoContext<I, O>,
         options: SharedCtxOptions<CtxOptions>,
     ) -> AsyncHandlerTrigger<'schema> {
-        let mut handlers = vec![];
+        let mut handlers = Vec::with_capacity(fields_provided.fields.len());
 
         for field_info in fields_provided.fields.iter() {
             if let Some(InternalFieldConfig {

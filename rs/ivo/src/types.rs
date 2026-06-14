@@ -52,7 +52,7 @@ pub trait IvoSchemaStruct:
     + HasFields
     + HasPartial
     + FromToMap
-    + WithUpdateDetails
+    + MethodsOfIvoStruct
     + Into<Self::Partial>
 {
 }
@@ -84,7 +84,7 @@ pub trait HasPartial {
         + MethodsOfPartialIvoStructs;
 }
 
-pub trait WithUpdateDetails: HasPartial + Clone + Sized {
+pub trait MethodsOfIvoStruct: HasPartial + Clone + Sized {
     fn ivo_internal_dangerously_get_values_from_partial(partial_values: Self::Partial) -> Self;
 
     fn ivo_internal_get_updates_from_partial(

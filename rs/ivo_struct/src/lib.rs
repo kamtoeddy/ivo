@@ -300,7 +300,7 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
             type Partial = #partial_name;
         }
 
-        impl #crate_root::types::WithUpdateDetails for #name {
+        impl #crate_root::types::MethodsOfIvoStruct for #name {
             fn ivo_internal_dangerously_get_values_from_partial(values: Self::Partial) -> Self {
                 Self {
                     #( #from_partial )*
