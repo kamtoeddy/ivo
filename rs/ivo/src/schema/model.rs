@@ -214,6 +214,52 @@ impl<
         }
 
         // 7) Resolve values of dependent fields
+        let (
+            mut validated_inputs,
+            mut validated_outputs,
+            mut should_gen_new_ctx,
+            mut dependent_fields_resolved,
+        ) = self
+            .resolve_dependent_values(
+                &fields_provided,
+                Arc::clone(&ctx),
+                Arc::clone(&shared_rw_options),
+            )
+            .await;
+
+        if should_gen_new_ctx {
+            ctx = Arc::new(IvoContext::<I, O>::new_create_ctx(
+                validated_inputs,
+                ctx.input_values(),
+                validated_outputs,
+            ));
+        }
+
+        while !dependent_fields_resolved.is_empty() {
+            let col = InputFieldCollection::from_fields(
+                &self.schema,
+                &dependent_fields_resolved,
+                &fields_provided.schema_input_fields,
+                &fields_provided.schema_output_fields,
+            );
+
+            (
+                validated_inputs,
+                validated_outputs,
+                should_gen_new_ctx,
+                dependent_fields_resolved,
+            ) = self
+                .resolve_dependent_values(&col, Arc::clone(&ctx), Arc::clone(&shared_rw_options))
+                .await;
+
+            if should_gen_new_ctx {
+                ctx = Arc::new(IvoContext::<I, O>::new_create_ctx(
+                    validated_inputs,
+                    ctx.input_values(),
+                    validated_outputs,
+                ));
+            }
+        }
 
         // 8) Generate and set timestamps
 
@@ -386,13 +432,66 @@ impl<
             .await;
 
         if should_gen_new_ctx {
-            ctx = Arc::new(IvoContext::<I, O>::new_create_ctx(
+            ctx = Arc::new(IvoContext::<I, O>::new_update_ctx(
+                validated_outputs.clone(),
                 validated_inputs,
                 ctx.input_values(),
-                validated_outputs,
+                data.clone(),
+                data.ivo_internal_clone_with(validated_outputs),
             ));
         }
+
         // 6) Resolve values of dependent fields
+        let (
+            mut validated_inputs,
+            mut validated_outputs,
+            mut should_gen_new_ctx,
+            mut dependent_fields_resolved,
+        ) = self
+            .resolve_dependent_values(
+                &fields_provided,
+                Arc::clone(&ctx),
+                Arc::clone(&shared_rw_options),
+            )
+            .await;
+
+        if should_gen_new_ctx {
+            ctx = Arc::new(IvoContext::<I, O>::new_update_ctx(
+                validated_outputs.clone(),
+                validated_inputs,
+                ctx.input_values(),
+                data.clone(),
+                data.ivo_internal_clone_with(validated_outputs),
+            ));
+        }
+
+        while !dependent_fields_resolved.is_empty() {
+            let col = InputFieldCollection::from_fields(
+                &self.schema,
+                &dependent_fields_resolved,
+                &fields_provided.schema_input_fields,
+                &fields_provided.schema_output_fields,
+            );
+
+            (
+                validated_inputs,
+                validated_outputs,
+                should_gen_new_ctx,
+                dependent_fields_resolved,
+            ) = self
+                .resolve_dependent_values(&col, Arc::clone(&ctx), Arc::clone(&shared_rw_options))
+                .await;
+
+            if should_gen_new_ctx {
+                ctx = Arc::new(IvoContext::<I, O>::new_update_ctx(
+                    validated_outputs.clone(),
+                    validated_inputs,
+                    ctx.input_values(),
+                    data.clone(),
+                    data.ivo_internal_clone_with(validated_outputs),
+                ));
+            }
+        }
 
         // println!("\n----------------------------------------------------------------------------------------------------------------------------------");
 
@@ -524,7 +623,7 @@ impl<
             return Err(error_tool.payload());
         }
 
-        Ok(self.merge_ctx_values(ctx, validated_inputs, validated_outputs))
+        Ok(self.extract_updated_ctx_values(ctx, validated_inputs, validated_outputs))
     }
 
     async fn re_validate<'a>(
@@ -596,7 +695,7 @@ impl<
             return Err(error_tool.payload());
         }
 
-        Ok(self.merge_ctx_values(ctx, validated_inputs, validated_outputs))
+        Ok(self.extract_updated_ctx_values(ctx, validated_inputs, validated_outputs))
     }
 
     async fn post_validate<'a>(
@@ -680,7 +779,7 @@ impl<
         // update the ctx if the pre validator returned any values
         if !validated_inputs.is_empty() || !validated_outputs.is_empty() {
             let (input, changes, _) =
-                self.merge_ctx_values(ctx.clone(), validated_inputs, validated_outputs);
+                self.extract_updated_ctx_values(ctx.clone(), validated_inputs, validated_outputs);
 
             ctx = match &*ctx {
                 IvoContext::Update {
@@ -740,7 +839,7 @@ impl<
             return Err(error_tool.payload());
         }
 
-        Ok(self.merge_ctx_values(ctx, validated_inputs, validated_outputs))
+        Ok(self.extract_updated_ctx_values(ctx, validated_inputs, validated_outputs))
     }
 
     async fn sanitize_virtuals<'a>(
@@ -790,7 +889,7 @@ impl<
             validated_inputs.insert(f.name.clone(), value.clone());
         }
 
-        self.merge_ctx_values(ctx, validated_inputs, HashMap::new())
+        self.extract_updated_ctx_values(ctx, validated_inputs, HashMap::new())
     }
 
     async fn resolve_dependent_values<'a>(
@@ -798,7 +897,7 @@ impl<
         fields_provided: &'a InputFieldCollection<'a, I, O, CtxOptions, ErrorTool>,
         ctx: SharedIvoContext<I, O>,
         options: SharedRwCtxOptions<CtxOptions>,
-    ) -> (I::Partial, O::Partial, bool) {
+    ) -> (I::Partial, O::Partial, bool, Vec<InputFieldInfo>) {
         let mut resolvers = vec![];
 
         for (field_name, config) in self.schema.get_field_configs() {
@@ -821,7 +920,7 @@ impl<
         }
 
         if resolvers.is_empty() {
-            return (ctx.input(), ctx.values(), false);
+            return (ctx.input(), ctx.values(), false, Vec::with_capacity(0));
         }
 
         let tasks = resolvers.into_iter().map(async |(field_info, resolver)| {
@@ -833,14 +932,14 @@ impl<
 
         let values = ctx.values();
         let mut validated_outputs = HashMap::new();
-        let mut resolved = vec![];
+        let mut fields_updated = vec![];
 
         for (field_name, value) in join_all(tasks).await {
             // only keep fields that have been updated
             if !values.ivo_internal_is_value_equal(field_name, &value) {
                 validated_outputs.insert(field_name.clone(), value.clone());
 
-                resolved.push(InputFieldInfo {
+                fields_updated.push(InputFieldInfo {
                     config_name: field_name.clone(),
                     is_input: false,
                     is_output: true,
@@ -849,9 +948,14 @@ impl<
             }
         }
 
-        // resolve recurssively here
+        if fields_updated.is_empty() {
+            return (ctx.input(), values, false, Vec::with_capacity(0));
+        }
 
-        self.merge_ctx_values(ctx, HashMap::new(), validated_outputs)
+        let (i, o, should) =
+            self.extract_updated_ctx_values(ctx, HashMap::new(), validated_outputs);
+
+        (i, o, should, fields_updated)
     }
 
     async fn resolve_constants_and_defaults(
@@ -1089,49 +1193,24 @@ impl<
         })
     }
 
-    fn merge_ctx_values(
+    fn extract_updated_ctx_values(
         &self,
         ctx: SharedIvoContext<I, O>,
         validated_inputs: HashMap<String, ErasedValue>,
         validated_outputs: HashMap<String, ErasedValue>,
     ) -> (I::Partial, O::Partial, bool) {
-        // let (updated_inputs, do_inputs_have_updates) = ctx
-        //     .input()
-        //     .ivo_internal_clone_with_erased_updates(&validated_inputs);
+        let (updated_inputs, do_inputs_have_updates) = ctx
+            .input()
+            .ivo_internal_clone_with_erased_updates(&validated_inputs);
 
-        // let (updated_outputs, do_outputs_have_updates) = ctx
-        //     .values()
-        //     .ivo_internal_clone_with_erased_updates(&validated_outputs);
-
-        // (
-        //     updated_inputs,
-        //     updated_outputs,
-        //     do_inputs_have_updates || do_outputs_have_updates,
-        // )
-        let mut old_inputs = ctx.input().ivo_internal_to_optional_erased_map();
-
-        for (field, value) in validated_inputs {
-            old_inputs
-                .inner
-                .entry(field)
-                .and_modify(|e| *e = value.clone())
-                .or_insert(value);
-        }
-
-        let mut old_outputs = ctx.values().ivo_internal_to_optional_erased_map();
-
-        for (field, value) in validated_outputs {
-            old_outputs
-                .inner
-                .entry(field)
-                .and_modify(|e| *e = value.clone())
-                .or_insert(value);
-        }
+        let (updated_outputs, do_outputs_have_updates) = ctx
+            .values()
+            .ivo_internal_clone_with_erased_updates(&validated_outputs);
 
         (
-            I::Partial::ivo_internal_from_optional_erased_map(old_inputs),
-            O::Partial::ivo_internal_from_optional_erased_map(old_outputs),
-            true,
+            updated_inputs,
+            updated_outputs,
+            do_inputs_have_updates || do_outputs_have_updates,
         )
     }
 

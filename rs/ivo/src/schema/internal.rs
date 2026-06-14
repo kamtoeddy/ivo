@@ -27,8 +27,8 @@ pub(super) struct InputFieldCollection<
     ErrorTool: IvoErrorTool,
 > {
     schema: &'a Schema<I, O, CtxOptions, ErrorTool>,
-    schema_input_fields: Vec<String>,
-    schema_output_fields: Vec<String>,
+    pub schema_input_fields: Vec<String>,
+    pub schema_output_fields: Vec<String>,
     config_names: HashSet<String>,
     pub fields: Vec<InputFieldInfo>,
 }
@@ -71,6 +71,27 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
             schema_output_fields,
             config_names,
             fields,
+        }
+    }
+
+    pub fn from_fields(
+        schema: &'a Schema<I, O, CtxOptions, ErrorTool>,
+        fields: &Vec<InputFieldInfo>,
+        schema_input_fields: &Vec<String>,
+        schema_output_fields: &Vec<String>,
+    ) -> Self {
+        let mut config_names = HashSet::new();
+
+        for field_info in fields.iter() {
+            config_names.insert(field_info.config_name.clone());
+        }
+
+        Self {
+            schema,
+            schema_input_fields: schema_input_fields.clone(),
+            schema_output_fields: schema_output_fields.clone(),
+            config_names,
+            fields: fields.clone(),
         }
     }
 

@@ -151,14 +151,17 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
         let field_type = &field.ty; // e.g., 'String'
 
         quote! {
-            if let Some(value) = self.#field_name.as_ref() {
-                if let Some(erased) = updates.get(stringify!(#field_name)) {
-                    let update = parse_or_panic::<#field_type>(erased);
+            if let Some(erased) = updates.get(stringify!(#field_name)) {
+                let update = parse_or_panic::<#field_type>(erased);
 
-                    if value != &update {
-                        partial_output.#field_name = Some(update);
-                        has_updated_fields = true;
-                    }
+                let should_update = match self.#field_name.as_ref() {
+                    Some(value) => value != &update,
+                    _ => true
+                };
+
+                if should_update {
+                    partial_output.#field_name = Some(update);
+                    has_updated_fields = true;
                 }
             }
         }
