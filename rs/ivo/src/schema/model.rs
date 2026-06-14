@@ -11,7 +11,7 @@ use crate::schema::fields::types::{
 
 use crate::schema::internal::{InputFieldCollection, InputFieldInfo};
 use crate::schema::options::types::{OnSuccessConfig, PostValidationConfig};
-use crate::utils::erased_value::ErasedValue;
+
 use crate::{
     IvoContext, SharedCtxOptions, SharedIvoContext, SharedIvoMiniContext, SharedRwCtxOptions,
 };
@@ -20,7 +20,7 @@ use futures::future::{join_all, BoxFuture};
 use futures::FutureExt;
 
 use crate::types::{
-    IvoSchemaStruct, MethodsOfPartialIvoStructs, Partial, PartialFromToMap,
+    ErasedValue, IvoSchemaStruct, MethodsOfPartialIvoStructs, Partial, PartialFromToMap,
     PartialMapOfErasedValues, RwLock,
 };
 

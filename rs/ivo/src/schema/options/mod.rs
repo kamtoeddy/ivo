@@ -33,7 +33,6 @@ impl<
         HasIgnore,
         HasShouldUpdate,
         HasPostValidate,
-        HasTimestamps,
         HasDelete,
         HasSuccess,
         I: IvoSchemaStruct,
@@ -49,7 +48,6 @@ impl<
         HasIgnore,
         HasShouldUpdate,
         HasPostValidate,
-        HasTimestamps,
         HasDelete,
         HasSuccess,
     >
@@ -61,7 +59,6 @@ impl<
             post_validate: self.post_validate,
             should_ignore: self.should_ignore,
             should_update: self.should_update,
-            timestamps: self.timestamps,
         }
     }
 }
@@ -70,7 +67,6 @@ impl<
         HasIgnore,
         HasShouldUpdate,
         HasPostValidate,
-        HasTimestamps,
         HasDelete,
         HasSuccess,
         I: IvoSchemaStruct,
@@ -86,7 +82,6 @@ impl<
         HasIgnore,
         HasShouldUpdate,
         HasPostValidate,
-        HasTimestamps,
         HasDelete,
         HasSuccess,
     >
@@ -102,7 +97,6 @@ impl<
         HasIgnore,
         HasShouldUpdate,
         HasPostValidate,
-        HasTimestamps,
         Yes,
         HasSuccess,
     >
@@ -118,7 +112,6 @@ impl<
             post_validate: self.post_validate,
             should_ignore: self.should_ignore,
             should_update: self.should_update,
-            timestamps: self.timestamps,
             ..SchemaOptionsBuilder::default()
         }
     }
@@ -135,7 +128,6 @@ impl<
         HasIgnore,
         HasShouldUpdate,
         HasPostValidate,
-        HasTimestamps,
         HasDelete,
         Yes,
     >
@@ -154,7 +146,6 @@ impl<
             post_validate: self.post_validate,
             should_ignore: self.should_ignore,
             should_update: self.should_update,
-            timestamps: self.timestamps,
             ..SchemaOptionsBuilder::default()
         }
     }
@@ -171,7 +162,6 @@ impl<
         HasIgnore,
         HasShouldUpdate,
         Yes,
-        HasTimestamps,
         HasDelete,
         HasSuccess,
     >
@@ -192,7 +182,6 @@ impl<
             post_validate: Some(post_validate),
             should_ignore: self.should_ignore,
             should_update: self.should_update,
-            timestamps: self.timestamps,
             ..SchemaOptionsBuilder::default()
         }
     }

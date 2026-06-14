@@ -202,7 +202,7 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
 
         impl #crate_root::types::PartialFromToMap for #partial_name {
             fn ivo_internal_from_optional_erased_map(optional_map: #crate_root::types::PartialMapOfErasedValues) -> Self {
-                use #crate_root::utils::erased_value::parse_value;
+                use #crate_root::parse_value;
 
                 Self {
                     #( #construct_struct_fields_for_from_map_for_partial )*
@@ -210,7 +210,7 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
             }
 
             fn ivo_internal_from_optional_erased_map_ref(optional_map: &#crate_root::types::PartialMapOfErasedValues) -> Self {
-                use #crate_root::utils::erased_value::parse_value;
+                use #crate_root::parse_value;
 
                 Self {
                     #( #construct_struct_fields_for_from_map_ref_for_partial )*
@@ -219,7 +219,7 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
 
             fn ivo_internal_to_optional_erased_map(&self) -> #crate_root::types::PartialMapOfErasedValues {
                 use #crate_root::types::PartialMapOfErasedValues;
-                use #crate_root::utils::erased_value::erase_value;
+                use #crate_root::erase_value;
                 let mut inner = std::collections::HashMap::new();
 
                 #( #to_map_statements_for_partial )*
@@ -229,8 +229,8 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
         }
 
         impl #crate_root::types::MethodsOfPartialIvoStructs for #partial_name {
-            fn ivo_internal_clone_with_erased_updates(&self, updates: &std::collections::HashMap<String, #crate_root::utils::erased_value::ErasedValue>) -> (Self, bool) {
-                use #crate_root::utils::erased_value::parse_or_panic;
+            fn ivo_internal_clone_with_erased_updates(&self, updates: &std::collections::HashMap<String, #crate_root::ErasedValue>) -> (Self, bool) {
+                use #crate_root::parse_or_panic;
                 let mut partial_output = self.clone();
                 let mut has_updated_fields = false;
 
@@ -252,9 +252,9 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
             fn ivo_internal_is_value_equal(
                 &self,
                 field_name: &String,
-                value: &#crate_root::utils::erased_value::ErasedValue,
+                value: &#crate_root::ErasedValue,
             ) -> bool {
-                use #crate_root::utils::erased_value::parse_or_panic;
+                use #crate_root::parse_or_panic;
                 let mut is_equal = false;
 
                 #( #partial_is_value_equal )*
@@ -274,14 +274,14 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
         impl #crate_root::types::IvoSchemaStruct for #name { }
 
         impl #crate_root::types::FromToMap for #name {
-            fn ivo_internal_from_erased_map(map: &std::collections::HashMap<String, #crate_root::utils::erased_value::ErasedValue>) -> Self{
+            fn ivo_internal_from_erased_map(map: &std::collections::HashMap<String, #crate_root::ErasedValue>) -> Self{
                 Self {
                     #( #construct_struct_fields_for_from_map )*
                 }
             }
 
-            fn ivo_internal_to_erased_map(&self) -> std::collections::HashMap<String, #crate_root::utils::erased_value::ErasedValue> {
-                use #crate_root::utils::erased_value::erase_value;
+            fn ivo_internal_to_erased_map(&self) -> std::collections::HashMap<String, #crate_root::ErasedValue> {
+                use #crate_root::erase_value;
                 let mut map = std::collections::HashMap::new();
 
                 #( #to_map_statements )*

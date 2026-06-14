@@ -12,8 +12,7 @@ use crate::{
             },
         },
     },
-    types::{FailureHandler, No, SuccessHandler, Yes, YesComputed},
-    utils::erased_value::ErasedValue,
+    types::{ErasedValue, FailureHandler, No, SuccessHandler, Yes, YesComputed},
     IvoSchemaStruct,
 };
 

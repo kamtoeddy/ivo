@@ -11,8 +11,7 @@ use crate::{
             },
         },
     },
-    types::{DeleteHandler, False, No, SuccessHandler, Yes},
-    utils::erased_value::{erase_value, ErasedValue},
+    types::{erase_value, DeleteHandler, ErasedValue, False, No, SuccessHandler, Yes},
     IvoSchemaStruct,
 };
 

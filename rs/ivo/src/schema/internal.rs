@@ -152,7 +152,6 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
 {
     fn clone(&self) -> Self {
         Self {
-            // cache: self.cache.clone(),
             config_names: self.config_names.clone(),
             fields: self.fields.clone(),
             schema: self.schema,

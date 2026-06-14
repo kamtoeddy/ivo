@@ -1,11 +1,11 @@
 #![allow(type_alias_bounds)]
-use std::{collections::HashMap, fmt::Debug};
+use std::{any::Any, collections::HashMap, fmt::Debug};
 
 use futures::future::BoxFuture;
 pub use futures_locks::RwLock;
 pub use std::sync::Arc;
 
-use crate::{schema::error::DefaultFieldErrorMetadata, ErasedValue};
+use crate::schema::error::DefaultFieldErrorMetadata;
 
 #[derive(Debug)]
 pub struct True;
@@ -126,6 +126,46 @@ pub type SharedIvoMiniContext<I: IvoSchemaStruct> = SharedData<IvoMiniContext<I>
 pub type IvoMiniContext<I: IvoSchemaStruct> = I::Partial;
 
 pub type Partial<T> = <T as HasPartial>::Partial;
+
+pub trait CloneableAny: Any + Send + Sync {
+    fn clone_box(&self) -> Box<dyn CloneableAny>;
+    fn as_any(&self) -> &dyn Any;
+}
+
+impl<T> CloneableAny for T
+where
+    T: Clone + Debug + Send + Sync + 'static,
+{
+    fn clone_box(&self) -> Box<dyn CloneableAny> {
+        Box::new(T::clone(self)) // This triggers the concrete type's clone method!
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
+
+impl Clone for Box<dyn CloneableAny> {
+    fn clone(&self) -> Self {
+        self.clone_box()
+    }
+}
+
+pub type ErasedValue = Box<dyn CloneableAny>;
+
+pub fn erase_value<T: Clone + Debug + Send + Sync + 'static>(value: T) -> Box<dyn CloneableAny> {
+    Box::new(value)
+}
+
+pub fn parse_value<T: Clone + Debug + Send + Sync + 'static>(
+    e: &Box<dyn CloneableAny>,
+) -> Option<T> {
+    e.as_any().downcast_ref::<T>().cloned()
+}
+
+pub fn parse_or_panic<T: Clone + Debug + Send + Sync + 'static>(e: &Box<dyn CloneableAny>) -> T {
+    parse_value::<T>(e).expect("Failed to parse value").clone()
+}
 
 #[derive(Clone, Copy)]
 pub enum IvoContext<I: IvoSchemaStruct, O: IvoSchemaStruct> {

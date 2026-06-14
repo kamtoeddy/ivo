@@ -23,14 +23,6 @@ pub struct SchemaOptions<
 
     pub should_ignore: Option<BooleanResolver<I, O, CtxOptions>>,
     pub should_update: Option<ComputableInit<I, O, CtxOptions>>,
-
-    // timestamps?:
-    //     | boolean
-    //     | {
-    //         createdAt?: boolean | string;
-    //         updatedAt?: boolean | string | { key?: string; nullable?: boolean };
-    //     };
-    pub timestamps: Option<bool>,
 }
 
 impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool> Default
@@ -43,7 +35,6 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool
             post_validate: None,
             should_ignore: None,
             should_update: None,
-            timestamps: None,
         }
     }
 }
@@ -64,7 +55,6 @@ pub struct SchemaOptionsBuilder<
     HasIgnore = No,
     HasShouldUpdate = No,
     HasPostValidate = No,
-    HasTimestamps = No,
     HasDelete = No,
     HasSuccess = No,
 > {
@@ -73,7 +63,6 @@ pub struct SchemaOptionsBuilder<
     pub _post_validate: PhantomData<HasPostValidate>,
     pub _should_ignore: PhantomData<HasIgnore>,
     pub _should_update: PhantomData<HasShouldUpdate>,
-    pub _timestaps: PhantomData<HasTimestamps>,
     //
     pub on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
     pub on_success_fns: Option<Vec<OnSuccessConfig<I, O, CtxOptions>>>,
@@ -82,21 +71,12 @@ pub struct SchemaOptionsBuilder<
 
     pub should_ignore: Option<BooleanResolver<I, O, CtxOptions>>,
     pub should_update: Option<ComputableInit<I, O, CtxOptions>>,
-
-    // timestamps?:
-    //     | boolean
-    //     | {
-    //         createdAt?: boolean | string;
-    //         updatedAt?: boolean | string | { key?: string; nullable?: boolean };
-    //     };
-    pub timestamps: Option<bool>,
 }
 
 impl<
         HasIgnore,
         HasShouldUpdate,
         HasPostValidate,
-        HasTimestamps,
         HasDelete,
         HasSuccess,
         I: IvoSchemaStruct,
@@ -112,7 +92,6 @@ impl<
         HasIgnore,
         HasShouldUpdate,
         HasPostValidate,
-        HasTimestamps,
         HasDelete,
         HasSuccess,
     >
@@ -124,13 +103,11 @@ impl<
             post_validate: None,
             should_ignore: None,
             should_update: None,
-            timestamps: None,
             _on_delete_fns: PhantomData,
             _on_success_fns: PhantomData,
             _post_validate: PhantomData,
             _should_ignore: PhantomData,
             _should_update: PhantomData,
-            _timestaps: PhantomData,
         }
     }
 }
@@ -139,7 +116,6 @@ impl<
         HasIgnore,
         HasShouldUpdate,
         HasPostValidate,
-        HasTimestamps,
         HasDelete,
         HasSuccess,
         I: IvoSchemaStruct,
@@ -155,7 +131,6 @@ impl<
         HasIgnore,
         HasShouldUpdate,
         HasPostValidate,
-        HasTimestamps,
         HasDelete,
         HasSuccess,
     >

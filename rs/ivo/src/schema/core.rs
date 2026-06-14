@@ -25,7 +25,7 @@ pub struct Schema<
     pub(crate) options: SchemaOptions<I, O, CtxOptions, ErrorTool>,
 
     _timestamp_created_at: Option<TimestampFieldConfig>,
-    _timestamp_upated_at: Option<TimestampFieldConfig>,
+    _timestamp_updated_at: Option<TimestampFieldConfig>,
 }
 
 impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool>
@@ -49,7 +49,7 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
             field_configs: fields.configs,
             options: options_maker(SchemaOptions::new()).build(),
             _timestamp_created_at: fields.timestamp_created_at,
-            _timestamp_upated_at: fields.timestamp_upated_at,
+            _timestamp_updated_at: fields.timestamp_upated_at,
         };
 
         s.check_field_configs();

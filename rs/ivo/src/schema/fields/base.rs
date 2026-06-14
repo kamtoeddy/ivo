@@ -7,8 +7,7 @@ use crate::{
             VirtualSanitizer,
         },
     },
-    types::{DeleteHandler, FailureHandler, SuccessHandler},
-    utils::erased_value::ErasedValue,
+    types::{DeleteHandler, ErasedValue, FailureHandler, SuccessHandler},
     IvoSchemaStruct,
 };
 
