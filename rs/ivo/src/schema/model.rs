@@ -2,7 +2,6 @@ use std::collections::{HashMap, HashSet};
 use std::future::ready;
 use std::sync::Arc;
 
-use crate::internal::InternalIvoContextMethods;
 use crate::schema::core::Schema;
 use crate::schema::error::{DefaultErrorTool, FieldError, IvoErrorTool, UpdateError};
 use crate::schema::fields::base::{FieldType, InternalFieldConfig};
@@ -10,7 +9,7 @@ use crate::schema::fields::types::{
     ComputableRequired, ComputableRequiredError, ComputableWithMiniContext,
 };
 
-use crate::schema::internal::{InputFieldCollection, InputFieldInfo, SchemaInternals};
+use crate::schema::internal::{InputFieldCollection, InputFieldInfo};
 use crate::schema::options::types::{OnSuccessConfig, PostValidationConfig};
 use crate::utils::erased_value::ErasedValue;
 use crate::{
@@ -540,7 +539,7 @@ impl<
         let options = Arc::new(options);
         let mut handlers = vec![];
 
-        for (_, config) in self.schema.get_field_configs() {
+        for (_, config) in self.schema.field_configs.iter() {
             if let Some(h_vec) = &config.on_delete_fns {
                 handlers.extend(h_vec);
 
@@ -548,7 +547,7 @@ impl<
             }
         }
 
-        if let Some(h_vec) = &self.schema.options().on_delete_fns {
+        if let Some(h_vec) = &self.schema.options.on_delete_fns {
             handlers.extend(h_vec);
         }
 
@@ -574,7 +573,7 @@ impl<
             if let Some(InternalFieldConfig {
                 validator: Some(validator),
                 ..
-            }) = self.schema.get_field_config(&field_info.config_name)
+            }) = self.schema.field_configs.get(&field_info.config_name)
             {
                 validators.push((field_info, validator));
             }
@@ -638,7 +637,7 @@ impl<
             if let Some(InternalFieldConfig {
                 re_validator: Some(re_validator),
                 ..
-            }) = self.schema.get_field_config(&field_info.config_name)
+            }) = self.schema.field_configs.get(&field_info.config_name)
             {
                 re_validators.push((field_info, re_validator));
             }
@@ -707,7 +706,7 @@ impl<
         let mut pre_validators = vec![];
         let mut post_validators = vec![];
 
-        if let Some(configs) = &self.schema.options().post_validate {
+        if let Some(configs) = &self.schema.options.post_validate {
             for PostValidationConfig {
                 fields,
                 pre_validator,
@@ -855,7 +854,7 @@ impl<
                 field_type: FieldType::Virtual,
                 sanitizer: Some(sanitizer),
                 ..
-            }) = self.schema.get_field_config(&field_info.config_name)
+            }) = self.schema.field_configs.get(&field_info.config_name)
             {
                 sanitizers.push((field_info, sanitizer));
             }
@@ -900,7 +899,7 @@ impl<
     ) -> (I::Partial, O::Partial, bool, Vec<InputFieldInfo>) {
         let mut resolvers = vec![];
 
-        for (field_name, config) in self.schema.get_field_configs() {
+        for (field_name, config) in self.schema.field_configs.iter() {
             if let InternalFieldConfig {
                 field_type: FieldType::Dependent,
                 depends_on,
@@ -936,7 +935,7 @@ impl<
 
         for (field_name, value) in join_all(tasks).await {
             // only keep fields that have been updated
-            if !values.ivo_internal_is_value_equal(field_name, &value) {
+            if !values.ivo_internal_is_value_equal(&field_name, &value) {
                 validated_outputs.insert(field_name.clone(), value.clone());
 
                 fields_updated.push(InputFieldInfo {
@@ -966,7 +965,7 @@ impl<
         let mut default_values = HashMap::new();
         let mut resolvers = vec![];
 
-        for (field_name, config) in self.schema.get_field_configs() {
+        for (field_name, config) in self.schema.field_configs.iter() {
             // constants
             match &config.value {
                 Some(ComputableWithMiniContext::Static(value)) => {
@@ -1020,7 +1019,7 @@ impl<
         let mut resolvers = vec![];
         let is_update = ctx.is_update();
 
-        for (field_name, config) in self.schema.get_field_configs() {
+        for (field_name, config) in self.schema.field_configs.iter() {
             if fields_provided.contains(field_name) {
                 continue;
             }
@@ -1126,7 +1125,7 @@ impl<
             if let Some(InternalFieldConfig {
                 on_failure_fns: Some(h_vec),
                 ..
-            }) = self.schema.get_field_config(&field_info.config_name)
+            }) = self.schema.field_configs.get(&field_info.config_name)
             {
                 handlers.extend(h_vec)
             }
@@ -1174,13 +1173,13 @@ impl<
             if let Some(InternalFieldConfig {
                 on_success_fns: Some(h_vec),
                 ..
-            }) = self.schema.get_field_config(&field_name)
+            }) = self.schema.field_configs.get(&field_name)
             {
                 handlers.extend(h_vec)
             }
         }
 
-        if let Some(configs) = &self.schema.options().on_success_fns {
+        if let Some(configs) = &self.schema.options.on_success_fns {
             for OnSuccessConfig {
                 fields,
                 handlers: h_vec,

@@ -1,23 +1,10 @@
 use std::collections::HashSet;
 
 use crate::{
-    schema::{
-        fields::base::{FieldType, InternalFieldConfig},
-        options::base::SchemaOptions,
-    },
+    schema::fields::base::{FieldType, InternalFieldConfig},
     types::PartialMapOfErasedValues,
     IvoErrorTool, IvoSchemaStruct, Schema,
 };
-
-pub(super) trait SchemaInternals<
-    I: IvoSchemaStruct,
-    O: IvoSchemaStruct,
-    CtxOptions,
-    ErrorTool: IvoErrorTool,
->
-{
-    fn options(&self) -> &SchemaOptions<I, O, CtxOptions, ErrorTool>;
-}
 
 pub(super) struct InputFieldCollection<
     'a,
@@ -122,7 +109,7 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
     ) -> Option<InputFieldInfo> {
         if let Some(InternalFieldConfig {
             alias, depends_on, ..
-        }) = schema.get_field_config(field_name)
+        }) = schema.field_configs.get(field_name)
         {
             if depends_on.is_none() {
                 return Some(InputFieldInfo {
@@ -137,7 +124,7 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
             // the current config depends on
 
             for parent_name in depends_on.as_ref().unwrap() {
-                match schema.get_field_config(parent_name) {
+                match schema.field_configs.get(&parent_name.to_string()) {
                     Some(InternalFieldConfig {
                         alias: Some(alias),
                         field_type: FieldType::Virtual,

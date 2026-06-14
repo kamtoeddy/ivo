@@ -5,9 +5,7 @@ use futures::future::BoxFuture;
 pub use futures_locks::RwLock;
 pub use std::sync::Arc;
 
-use crate::{
-    internal::InternalIvoContextMethods, schema::error::DefaultFieldErrorMetadata, ErasedValue,
-};
+use crate::{schema::error::DefaultFieldErrorMetadata, ErasedValue};
 
 #[derive(Debug)]
 pub struct True;
@@ -145,8 +143,12 @@ pub enum IvoContext<I: IvoSchemaStruct, O: IvoSchemaStruct> {
     },
 }
 
-impl<I: IvoSchemaStruct, O: IvoSchemaStruct> InternalIvoContextMethods<I, O> for IvoContext<I, O> {
-    fn new_create_ctx(input: I::Partial, input_values: I::Partial, values: O::Partial) -> Self {
+impl<I: IvoSchemaStruct, O: IvoSchemaStruct> IvoContext<I, O> {
+    pub(crate) fn new_create_ctx(
+        input: I::Partial,
+        input_values: I::Partial,
+        values: O::Partial,
+    ) -> Self {
         Self::Create {
             input,
             input_values,
@@ -154,7 +156,7 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct> InternalIvoContextMethods<I, O> for
         }
     }
 
-    fn new_update_ctx(
+    pub(crate) fn new_update_ctx(
         changes: O::Partial,
         input: I::Partial,
         input_values: I::Partial,
@@ -169,9 +171,6 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct> InternalIvoContextMethods<I, O> for
             values,
         }
     }
-}
-
-impl<I: IvoSchemaStruct, O: IvoSchemaStruct> IvoContext<I, O> {
     /// subset of output values related to which will be
     /// part of the final output of the current process
     pub fn changes(&self) -> O::Partial {

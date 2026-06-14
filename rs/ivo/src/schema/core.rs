@@ -1,7 +1,6 @@
 use crate::schema::fields::types::IntoUniformTimestampResolver;
 use crate::schema::fields::TimestampFieldConfig;
 
-use crate::schema::internal::SchemaInternals;
 use crate::schema::options::base::{SchemaOptions, SchemaOptionsBuilder};
 use crate::schema::options::BuildableSchemaOptions;
 
@@ -22,8 +21,8 @@ pub struct Schema<
     CtxOptions = Option<()>,
     ErrorTool: IvoErrorTool = DefaultErrorTool,
 > {
-    field_configs: InternalFieldConfigs<I, O, CtxOptions, ErrorTool>,
-    options: SchemaOptions<I, O, CtxOptions, ErrorTool>,
+    pub(crate) field_configs: InternalFieldConfigs<I, O, CtxOptions, ErrorTool>,
+    pub(crate) options: SchemaOptions<I, O, CtxOptions, ErrorTool>,
 
     _timestamp_created_at: Option<TimestampFieldConfig>,
     _timestamp_upated_at: Option<TimestampFieldConfig>,
@@ -57,17 +56,6 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
         s.check_options();
 
         s
-    }
-
-    pub fn get_field_config(
-        &self,
-        prop: &str,
-    ) -> Option<&InternalFieldConfig<I, O, CtxOptions, ErrorTool>> {
-        self.field_configs.get(prop)
-    }
-
-    pub fn get_field_configs(&self) -> &InternalFieldConfigs<I, O, CtxOptions, ErrorTool> {
-        &self.field_configs
     }
 
     fn check_options(&self) {
@@ -225,13 +213,5 @@ impl<HasCreatedAt, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool
             }),
             ..Default::default()
         }
-    }
-}
-
-impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool>
-    SchemaInternals<I, O, CtxOptions, ErrorTool> for Schema<I, O, CtxOptions, ErrorTool>
-{
-    fn options(&self) -> &SchemaOptions<I, O, CtxOptions, ErrorTool> {
-        &self.options
     }
 }

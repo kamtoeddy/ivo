@@ -1,4 +1,3 @@
-mod internal;
 mod schema;
 pub mod types;
 pub mod utils;
