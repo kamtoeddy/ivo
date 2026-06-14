@@ -196,8 +196,15 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
                                 ctx.values().username_last_updated_at.unwrap(),
                             ))
                         })
-                        .on_success(|_, o: CtxOptions| {
-                            println!("on success v_slug with slug_id: {:?}", o.slug_id);
+                        .on_success(|ctx: Ctx, o: CtxOptions| {
+                            println!(
+                                "on success v_slug with ctx.input().slug_id: {:?}",
+                                ctx.input().slug_id
+                            );
+                            println!(
+                                "on success v_slug with ctx_options.slug_id: {:?}",
+                                o.slug_id
+                            );
 
                             ready(())
                         }),

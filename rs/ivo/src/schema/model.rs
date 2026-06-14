@@ -469,14 +469,12 @@ impl<
         let mut validators = vec![];
 
         for field_info in fields_provided.fields.iter() {
-            if let Some(InternalFieldConfig { validator, .. }) =
-                self.schema.get_field_config(&field_info.config_name)
+            if let Some(InternalFieldConfig {
+                validator: Some(validator),
+                ..
+            }) = self.schema.get_field_config(&field_info.config_name)
             {
-                if let Some(validator) = validator {
-                    validators.push((field_info, validator));
-
-                    continue;
-                }
+                validators.push((field_info, validator));
             }
         }
 
@@ -535,14 +533,12 @@ impl<
         let mut re_validators = vec![];
 
         for field_info in fields_provided.fields.iter() {
-            if let Some(InternalFieldConfig { re_validator, .. }) =
-                self.schema.get_field_config(&field_info.config_name)
+            if let Some(InternalFieldConfig {
+                re_validator: Some(re_validator),
+                ..
+            }) = self.schema.get_field_config(&field_info.config_name)
             {
-                if let Some(re_validator) = re_validator {
-                    re_validators.push((field_info, re_validator));
-
-                    continue;
-                }
+                re_validators.push((field_info, re_validator));
             }
         }
 
