@@ -1,4 +1,7 @@
-use ivo::{UpdateError, erase_value, parse_or_panic, types::WithUpdateDetails};
+use ivo::{
+    UpdateError, erase_value, parse_or_panic,
+    types::{WithUpdateDetails, WithUpdateDetailsForPartials},
+};
 use std::{collections::HashMap, mem, time::Instant};
 
 mod domain;
@@ -20,6 +23,14 @@ pub async fn run_users_demo() {
         slug_id: None,
         // slug_id: Some("sloppy-slug-id".into()),
     };
+
+    let mut updates = HashMap::new();
+    updates.insert("slug", erase_value(Some(1)));
+
+    println!(
+        "has slug been updated: {}",
+        input.ivo_internal_is_value_equal(&String::from("slug"), &erase_value::<Option<i32>>(None))
+    );
 
     let r = USER_MODEL.create(&input, UserCtxOptions::new()).await;
 
@@ -123,3 +134,24 @@ pub async fn run_users_demo() {
         println!("k = {}", parse_or_panic::<i32>(v))
     }
 }
+
+// pub async fn run_users_demo() {
+//     let input = PartialUserInput {
+//         // email: None,
+//         email: Some("1@1.com".into()),
+//         username: Some("user-10".into()),
+//         role: None,
+//         // role: Some(UserRole::Moderator),
+//         // slug_id: None,
+//         slug_id: Some("slug-id".into()),
+//         // slug_id: Some("sloppy-slug-id".into()),
+//     };
+
+//     println!(
+//         "has slug been updated: {}",
+//         !input.ivo_internal_is_value_equal(
+//             &String::from("slug_id"),
+//             &erase_value(String::from("slug-id")) // &erase_value::<Option<String>>(None)
+//         )
+//     );
+// }

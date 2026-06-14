@@ -10,7 +10,7 @@ use crate::schema::fields::types::{
     ComputableRequired, ComputableRequiredError, ComputableWithMiniContext,
 };
 
-use crate::schema::internal::{InputFieldCollection, SchemaInternals};
+use crate::schema::internal::{InputFieldCollection, InputFieldInfo, SchemaInternals};
 use crate::schema::options::types::{OnSuccessConfig, PostValidationConfig};
 use crate::utils::erased_value::ErasedValue;
 use crate::{
@@ -20,7 +20,10 @@ use crate::{
 use futures::future::{join_all, BoxFuture};
 use futures::FutureExt;
 
-use crate::types::{IvoSchemaStruct, Partial, PartialFromToMap, PartialMapOfErasedValues, RwLock};
+use crate::types::{
+    IvoSchemaStruct, Partial, PartialFromToMap, PartialMapOfErasedValues, RwLock,
+    WithUpdateDetailsForPartials,
+};
 
 type AsyncHandlerTrigger<'a> = Box<dyn Fn() -> BoxFuture<'a, ()> + Send + Sync + 'a>;
 
@@ -790,6 +793,67 @@ impl<
         self.merge_ctx_values(ctx, validated_inputs, HashMap::new())
     }
 
+    async fn resolve_dependent_values<'a>(
+        &self,
+        fields_provided: &'a InputFieldCollection<'a, I, O, CtxOptions, ErrorTool>,
+        ctx: SharedIvoContext<I, O>,
+        options: SharedRwCtxOptions<CtxOptions>,
+    ) -> (I::Partial, O::Partial, bool) {
+        let mut resolvers = vec![];
+
+        for (field_name, config) in self.schema.get_field_configs() {
+            if let InternalFieldConfig {
+                field_type: FieldType::Dependent,
+                depends_on,
+                resolver,
+                ..
+            } = config
+            {
+                if depends_on
+                    .as_ref()
+                    .unwrap()
+                    .iter()
+                    .any(|parent| fields_provided.contains(&parent.to_string()))
+                {
+                    resolvers.push((field_name, resolver.as_ref().unwrap()));
+                }
+            }
+        }
+
+        if resolvers.is_empty() {
+            return (ctx.input(), ctx.values(), false);
+        }
+
+        let tasks = resolvers.into_iter().map(async |(field_info, resolver)| {
+            (
+                field_info,
+                resolver(Arc::clone(&ctx), Arc::clone(&options)).await,
+            )
+        });
+
+        let values = ctx.values();
+        let mut validated_outputs = HashMap::new();
+        let mut resolved = vec![];
+
+        for (field_name, value) in join_all(tasks).await {
+            // only keep fields that have been updated
+            if !values.ivo_internal_is_value_equal(field_name, &value) {
+                validated_outputs.insert(field_name.clone(), value.clone());
+
+                resolved.push(InputFieldInfo {
+                    config_name: field_name.clone(),
+                    is_input: false,
+                    is_output: true,
+                    name: field_name.clone(),
+                });
+            }
+        }
+
+        // resolve recurssively here
+
+        self.merge_ctx_values(ctx, HashMap::new(), validated_outputs)
+    }
+
     async fn resolve_constants_and_defaults(
         &self,
         mini_ctx: SharedIvoMiniContext<I>,
@@ -1031,6 +1095,19 @@ impl<
         validated_inputs: HashMap<String, ErasedValue>,
         validated_outputs: HashMap<String, ErasedValue>,
     ) -> (I::Partial, O::Partial, bool) {
+        // let (updated_inputs, do_inputs_have_updates) = ctx
+        //     .input()
+        //     .ivo_internal_clone_with_erased_updates(&validated_inputs);
+
+        // let (updated_outputs, do_outputs_have_updates) = ctx
+        //     .values()
+        //     .ivo_internal_clone_with_erased_updates(&validated_outputs);
+
+        // (
+        //     updated_inputs,
+        //     updated_outputs,
+        //     do_inputs_have_updates || do_outputs_have_updates,
+        // )
         let mut old_inputs = ctx.input().ivo_internal_to_optional_erased_map();
 
         for (field, value) in validated_inputs {
