@@ -1,7 +1,4 @@
-use ivo::{
-    UpdateError, erase_value, parse_or_panic,
-    types::{WithUpdateDetails, WithUpdateDetailsForPartials},
-};
+use ivo::{UpdateError, erase_value, parse_or_panic, types::WithUpdateDetails};
 use std::{collections::HashMap, mem, time::Instant};
 
 mod domain;
@@ -23,14 +20,6 @@ pub async fn run_users_demo() {
         slug_id: None,
         // slug_id: Some("sloppy-slug-id".into()),
     };
-
-    let mut updates = HashMap::new();
-    updates.insert("slug", erase_value(Some(1)));
-
-    println!(
-        "has slug been updated: {}",
-        input.ivo_internal_is_value_equal(&String::from("slug"), &erase_value::<Option<i32>>(None))
-    );
 
     let r = USER_MODEL.create(&input, UserCtxOptions::new()).await;
 
