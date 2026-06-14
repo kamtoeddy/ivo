@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::future::ready;
 use std::sync::Arc;
 
@@ -21,8 +21,8 @@ use futures::future::{join_all, BoxFuture};
 use futures::FutureExt;
 
 use crate::types::{
-    IvoSchemaStruct, Partial, PartialFromToMap, PartialMapOfErasedValues, RwLock,
-    WithUpdateDetailsForPartials,
+    IvoSchemaStruct, MethodsOfPartialIvoStructs, Partial, PartialFromToMap,
+    PartialMapOfErasedValues, RwLock,
 };
 
 type AsyncHandlerTrigger<'a> = Box<dyn Fn() -> BoxFuture<'a, ()> + Send + Sync + 'a>;
@@ -1152,13 +1152,29 @@ impl<
         ctx: SharedIvoContext<I, O>,
         options: SharedCtxOptions<CtxOptions>,
     ) -> AsyncHandlerTrigger<'schema> {
-        let mut handlers = vec![];
+        let mut field_names = HashSet::new();
 
         for field_info in fields_provided.fields.iter() {
+            field_names.insert(field_info.config_name.clone());
+        }
+
+        if ctx.is_update() {
+            for field_name in ctx.changes().ivo_internal_fields_provided() {
+                field_names.insert(field_name);
+            }
+        } else {
+            for field_name in ctx.values().ivo_internal_fields_provided() {
+                field_names.insert(field_name);
+            }
+        }
+
+        let mut handlers = vec![];
+
+        for field_name in field_names {
             if let Some(InternalFieldConfig {
                 on_success_fns: Some(h_vec),
                 ..
-            }) = self.schema.get_field_config(&field_info.config_name)
+            }) = self.schema.get_field_config(&field_name)
             {
                 handlers.extend(h_vec)
             }
@@ -1203,9 +1219,14 @@ impl<
             .input()
             .ivo_internal_clone_with_erased_updates(&validated_inputs);
 
-        let (updated_outputs, do_outputs_have_updates) = ctx
-            .values()
-            .ivo_internal_clone_with_erased_updates(&validated_outputs);
+        let output_values = if ctx.is_update() {
+            ctx.changes()
+        } else {
+            ctx.values()
+        };
+
+        let (updated_outputs, do_outputs_have_updates) =
+            output_values.ivo_internal_clone_with_erased_updates(&validated_outputs);
 
         (
             updated_inputs,

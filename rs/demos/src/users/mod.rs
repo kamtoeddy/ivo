@@ -68,10 +68,10 @@ pub async fn run_users_demo() {
         email: Some(user.email.clone()),
         // role: None,
         role: Some(UserRole::Moderator),
-        // username: None,
-        username: Some("new_username".into()),
-        // slug_id: Some("updated-slug-id: Lol".into()),
-        slug_id: None,
+        username: None,
+        // username: Some("new_username".into()),
+        slug_id: Some("updated-slug-id: Lol".into()),
+        // slug_id: None,
     };
 
     let r = USER_MODEL

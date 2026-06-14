@@ -83,7 +83,7 @@ pub trait HasPartial {
         + Sync
         + Clone
         + PartialFromToMap
-        + WithUpdateDetailsForPartials;
+        + MethodsOfPartialIvoStructs;
 }
 
 pub trait WithUpdateDetails: HasPartial + Clone + Sized {
@@ -109,13 +109,15 @@ pub trait WithUpdateDetails: HasPartial + Clone + Sized {
     fn ivo_internal_update_with(&mut self, updates: &Self::Partial);
 }
 
-pub trait WithUpdateDetailsForPartials: Clone + Sized {
-    fn ivo_internal_is_value_equal(&self, field_name: &String, value: &ErasedValue) -> bool;
-
+pub trait MethodsOfPartialIvoStructs: Clone + Sized {
     fn ivo_internal_clone_with_erased_updates(
         &self,
         updates: &HashMap<String, ErasedValue>,
     ) -> (Self, bool);
+
+    fn ivo_internal_fields_provided(&self) -> Vec<String>;
+
+    fn ivo_internal_is_value_equal(&self, field_name: &String, value: &ErasedValue) -> bool;
 }
 
 pub type SharedData<T> = Arc<T>;

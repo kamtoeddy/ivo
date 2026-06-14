@@ -154,6 +154,16 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
         }
     });
 
+    let partial_fields_provided = fields.iter().map(|field| {
+        let field_name = &field.ident; // e.g., 'id'
+
+        quote! {
+            if self.#field_name.is_some() {
+                fields_provided.push(stringify!(#field_name).to_string());
+            }
+        }
+    });
+
     let process_updates_from_partial = fields.iter().map(|field| {
         let field_name = &field.ident; // e.g., 'id'
 
@@ -218,7 +228,27 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
             }
         }
 
-        impl #crate_root::types::WithUpdateDetailsForPartials for #partial_name {
+        impl #crate_root::types::MethodsOfPartialIvoStructs for #partial_name {
+            fn ivo_internal_clone_with_erased_updates(&self, updates: &std::collections::HashMap<String, #crate_root::utils::erased_value::ErasedValue>) -> (Self, bool) {
+                use #crate_root::utils::erased_value::parse_or_panic;
+                let mut partial_output = self.clone();
+                let mut has_updated_fields = false;
+
+                #( #partial_clone_with_erased_updates )*
+
+                (partial_output, has_updated_fields)
+            }
+
+
+            fn ivo_internal_fields_provided(&self) -> Vec<String> {
+                let mut fields_provided = vec![];
+
+
+                #( #partial_fields_provided )*
+
+                fields_provided
+            }
+
             fn ivo_internal_is_value_equal(
                 &self,
                 field_name: &String,
@@ -230,16 +260,6 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
                 #( #partial_is_value_equal )*
 
                 is_equal
-            }
-
-            fn ivo_internal_clone_with_erased_updates(&self, updates: &std::collections::HashMap<String, #crate_root::utils::erased_value::ErasedValue>) -> (Self, bool) {
-                use #crate_root::utils::erased_value::parse_or_panic;
-                let mut partial_output = self.clone();
-                let mut has_updated_fields = false;
-
-                #( #partial_clone_with_erased_updates )*
-
-                (partial_output, has_updated_fields)
             }
         }
 
