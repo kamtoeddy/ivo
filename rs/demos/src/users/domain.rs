@@ -170,7 +170,16 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
                     IvoField::DEPENDENT
                         .default(SlugifiedString::from(""))
                         .depends_on(["username", "v_slug"])
-                        .resolve(|_, o: RwCtxOptions| o.read().map(|g| g.slug_id.clone().unwrap())),
+                        .resolve(|_, o: RwCtxOptions| o.read().map(|g| g.slug_id.clone().unwrap()))
+                        .on_success(|ctx: Ctx, o: CtxOptions| {
+                            println!("on success dependent slug_id: {:?}", ctx.values().slug_id);
+                            println!(
+                                "on success dependent slug_id with ctx_options.slug_id: {:?}",
+                                o.slug_id
+                            );
+
+                            ready(())
+                        }),
                 )
                 .set(
                     "v_slug",

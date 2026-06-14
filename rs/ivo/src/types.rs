@@ -94,16 +94,6 @@ pub trait WithUpdateDetails: HasPartial + Clone + Sized {
         updates: &Self::Partial,
     ) -> (Self::Partial, bool);
 
-    fn ivo_internal_get_erased_updates_from_erased_values(
-        &self,
-        updates: &HashMap<String, ErasedValue>,
-    ) -> HashMap<String, ErasedValue>;
-
-    fn ivo_internal_get_updates_from_erased_values(
-        &self,
-        updates: &HashMap<String, ErasedValue>,
-    ) -> (Self::Partial, bool);
-
     fn ivo_internal_clone_with(&self, updates: Self::Partial) -> Self {
         self.ivo_internal_clone_with_ref(&updates)
     }
@@ -120,35 +110,12 @@ pub trait WithUpdateDetails: HasPartial + Clone + Sized {
 }
 
 pub trait WithUpdateDetailsForPartials: Clone + Sized {
-    // fn ivo_internal_dangerously_get_values_from_partial(partial_values: Self) -> Self;
-
-    // fn ivo_internal_get_updates_from_partial(&self, updates: &Self) -> (Self, bool);
-
-    // fn ivo_internal_get_erased_updates_from_erased_values(
-    //     &self,
-    //     updates: &HashMap<String, ErasedValue>,
-    // ) -> HashMap<String, ErasedValue>;
-
     fn ivo_internal_is_value_equal(&self, field_name: &String, value: &ErasedValue) -> bool;
 
     fn ivo_internal_clone_with_erased_updates(
         &self,
         updates: &HashMap<String, ErasedValue>,
     ) -> (Self, bool);
-
-    // fn ivo_internal_clone_with(&self, updates: Self) -> Self {
-    //     self.ivo_internal_clone_with_ref(&updates)
-    // }
-
-    // fn ivo_internal_clone_with_ref(&self, updates: &Self) -> Self {
-    //     let mut cloned = self.clone();
-
-    //     cloned.ivo_internal_update_with(updates);
-
-    //     cloned
-    // }
-
-    // fn ivo_internal_update_with(&mut self, updates: &Self);
 }
 
 pub type SharedData<T> = Arc<T>;
