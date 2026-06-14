@@ -85,6 +85,7 @@ pub struct SchemaError {
     payload: HashMap<String, Vec<String>>,
 }
 
+#[allow(dead_code)]
 impl SchemaError {
     pub fn new() -> Self {
         Self {
