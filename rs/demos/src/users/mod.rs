@@ -14,7 +14,7 @@ pub async fn run_users_demo() {
     let input = PartialUserInput {
         // email: None,
         email: Some("1@1.com".into()),
-        username: Some("john2".into()),
+        username: Some("user-1".into()),
         role: None,
         // role: Some(UserRole::Moderator),
         slug_id: None,

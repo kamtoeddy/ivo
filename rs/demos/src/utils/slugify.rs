@@ -1,4 +1,4 @@
-use std::sync::LazyLock;
+use std::{hash::Hash, sync::LazyLock};
 
 use regex::Regex;
 use unicode_normalization::UnicodeNormalization;
@@ -17,6 +17,12 @@ pub struct SlugifiedString(String);
 impl std::fmt::Display for SlugifiedString {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
+    }
+}
+
+impl Hash for SlugifiedString {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.0.hash(state);
     }
 }
 

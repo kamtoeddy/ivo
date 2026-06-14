@@ -1,4 +1,4 @@
-use std::{collections::HashMap, future::ready, sync::LazyLock};
+use std::{array, collections::HashMap, future::ready, sync::LazyLock};
 
 use ivo::{
     FutureExt, IvoField, IvoStruct, IvoValues, Model, Schema, SharedIvoContext, SharedRwCtxOptions,
@@ -45,11 +45,18 @@ impl<'a> UserCtxOptions {
         Self { slug_id: None }
     }
 
+    fn find_user_by_username(
+        &self,
+        username: &String,
+    ) -> impl Future<Output = Option<User>> + use<'a> {
+        ready(USERS_BY_USERNAME.get(username).cloned())
+    }
+
     fn find_user_by_slug_id(
         &self,
-        _slug_id: &SlugifiedString,
+        slug_id: &SlugifiedString,
     ) -> impl Future<Output = Option<User>> + use<'a> {
-        ready(None)
+        ready(USERS_BY_SLUG_ID.get(slug_id).cloned())
     }
 
     fn update_slug_id(&mut self, slug_id: &SlugifiedString) {
@@ -106,24 +113,26 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
 
                             if v.len() < MIN_LEN {
                                 return ready(Err((
-                                    format!("\"username\" must be at least {MIN_LEN} characters long"),
+                                    format!(
+                                        "\"username\" must be at least {MIN_LEN} characters long"
+                                    ),
                                     None,
                                 )));
                             }
 
                             ready(Ok(v))
                         })
-                        .re_validate(|v: String, _, _| {
-                            const MIN_LEN: usize = 5;
+                        .re_validate(async |uname: String, _, o: RwCtxOptions| {
+                            let options = o.read().await;
 
-                            if v.len() < MIN_LEN {
-                                return ready(Err((
-                                    format!("re-validation requires \"username\" to be at least {MIN_LEN} characters long"),
+                            if options.find_user_by_username(&uname).await.is_some() {
+                                return Err((
+                                    "username: \"{uname}\" is already taken".into(),
                                     None,
-                                )));
+                                ));
                             }
 
-                            ready(Ok(format!("revalidated-'{}'",v)))
+                            Ok(format!("revalidated-'{}'", uname))
                         })
                         .allow_update_if(|ctx: Ctx, _| {
                             ready(is_username_or_slug_id_updatable(
@@ -165,7 +174,7 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
                     IvoField::VIRTUAL
                         .alias("slug_id")
                         .validate(|value: String, _, _| {
-                            println!("validating v_slug as slug_id with: {}\n",value.clone());
+                            println!("validating v_slug as slug_id with: {}\n", value.clone());
 
                             let validated = value.trim();
 
@@ -199,7 +208,10 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
 
                     let slug_id = slugify(&slug_string);
 
-                    println!("post validating username & v_slug: [slug_string = {slug_string}] & [slug_id = {slug_id}]\n");
+                    println!(
+                        "post validating username & v_slug: [slug_string = {}] & [slug_id = {}]\n",
+                        slug_string, slug_id
+                    );
 
                     let mut options = o.write().await;
 
@@ -222,12 +234,10 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
 
                     let mut errors = HashMap::new();
 
-                    if input.username.is_some() {
-                        errors.insert("username".into(), err.clone());
-                    }
-
                     if input.slug_id.is_some() {
                         errors.insert("v_slug".into(), err);
+                    } else if input.username.is_some() {
+                        errors.insert("username".into(), err);
                     }
 
                     Err(errors)
@@ -266,3 +276,50 @@ fn is_username_or_slug_id_updatable(username_last_updated_at: Option<String>) ->
         _ => true,
     }
 }
+
+pub static USERS_LIST: LazyLock<[User; 3]> = LazyLock::new(|| {
+    [
+        User {
+            email: "1@mail.com".into(),
+            id: 1,
+            role: UserRole::Admin,
+            slug_id: SlugifiedString::from("user-1"),
+            username: "user-1".into(),
+            username_last_updated_at: None,
+        },
+        User {
+            email: "2@mail.com".into(),
+            id: 2,
+            role: UserRole::Admin,
+            slug_id: SlugifiedString::from("user-2"),
+            username: "user-2".into(),
+            username_last_updated_at: None,
+        },
+        User {
+            email: "3@mail.com".into(),
+            id: 3,
+            role: UserRole::Admin,
+            slug_id: SlugifiedString::from("user-3"),
+            username: "user-3".into(),
+            username_last_updated_at: None,
+        },
+    ]
+});
+
+pub static USERS_BY_SLUG_ID: LazyLock<HashMap<SlugifiedString, User>> = LazyLock::new(|| {
+    let collection: [(SlugifiedString, User); 3] = array::from_fn(|i| {
+        let u = USERS_LIST[i].clone();
+        (u.slug_id.clone(), u)
+    });
+
+    HashMap::from(collection)
+});
+
+pub static USERS_BY_USERNAME: LazyLock<HashMap<String, User>> = LazyLock::new(|| {
+    let collection: [(String, User); 3] = array::from_fn(|i| {
+        let u = USERS_LIST[i].clone();
+        (u.username.clone(), u)
+    });
+
+    HashMap::from(collection)
+});
