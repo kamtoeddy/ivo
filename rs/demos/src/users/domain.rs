@@ -7,14 +7,14 @@ use ivo::{
 
 use crate::utils::slugify::{SlugifiedString, slugify};
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum UserRole {
     Admin,
     User,
     Moderator,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, IvoStruct)]
+#[derive(Debug, Clone, PartialEq, IvoStruct)]
 pub struct User {
     // pub created_at: DateWithTz,
     pub id: i32,
@@ -26,7 +26,7 @@ pub struct User {
     // pub updated_at: Option<DateWithTz>,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, IvoStruct)]
+#[derive(Clone, Debug, PartialEq, IvoStruct)]
 pub struct UserInput {
     pub email: String,
     pub username: String,

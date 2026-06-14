@@ -33,7 +33,6 @@ pub struct PartialMapOfErasedValues {
 
 pub trait IvoSchemaStruct:
     Debug
-    + Eq
     + Send
     + Sync
     + Sized
@@ -63,7 +62,7 @@ pub trait HasFields {
 
 pub trait HasPartial {
     type Partial: PartialEq
-        + Eq
+        // + Eq
         + Debug
         + Default
         + Send

@@ -1,9 +1,10 @@
-use demos::users::run_users_demo;
+use demos::places::run_places_demo;
 
-// #[tokio::main]
-#[async_std::main]
+#[tokio::main]
+// #[async_std::main]
 async fn main() {
-    run_users_demo().await
+    // run_users_demo().await;
+    run_places_demo().await;
 }
 
 // use smol::io;

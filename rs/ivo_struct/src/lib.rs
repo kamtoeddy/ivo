@@ -195,7 +195,7 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
     });
 
     let expanded = quote! {
-        #[derive(Clone, Debug, Default, PartialEq, Eq)]
+        #[derive(Clone, Debug, Default, PartialEq)]
         #vis struct #partial_name {
             #( #partial_fields )*
         }

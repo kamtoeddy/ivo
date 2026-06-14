@@ -26,7 +26,7 @@ pub trait IvoErrorTool {
 
     fn has_errors(&self) -> bool;
 
-    fn payload(&self) -> Self::ErrorPayload;
+    fn payload(self) -> Self::ErrorPayload;
 }
 
 // DefaultErrorTool implementation
@@ -67,8 +67,8 @@ impl IvoErrorTool for DefaultErrorTool {
         !self.payload.is_empty()
     }
 
-    fn payload(&self) -> DefaultErrorPayload {
-        self.payload.clone()
+    fn payload(self) -> DefaultErrorPayload {
+        self.payload
     }
 }
 
