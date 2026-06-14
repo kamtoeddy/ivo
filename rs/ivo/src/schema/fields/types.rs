@@ -101,7 +101,7 @@ where
 }
 
 pub trait IntoVirtualSanitizer<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> {
-    fn into_uniform(self) -> UniformVirtualSanitiser<I, O, CtxOptions>;
+    fn into_uniform(self) -> UniformVirtualSanitizer<I, O, CtxOptions>;
 }
 
 impl<F, Fut, T, I, O, CtxOptions> IntoVirtualSanitizer<T, I, O, CtxOptions> for F
@@ -109,11 +109,13 @@ where
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
     T: Clone + Debug + Send + Sync + 'static,
-    F: Fn(SharedIvoContext<I, O>, SharedRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
+    F: Fn(T, SharedIvoContext<I, O>, SharedRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = T> + Send + Sync + 'static,
 {
-    fn into_uniform(self) -> UniformVirtualSanitiser<I, O, CtxOptions> {
-        Box::new(move |ctx, o| Box::pin(self(ctx, o).map(|v| erase_value(v))))
+    fn into_uniform(self) -> UniformVirtualSanitizer<I, O, CtxOptions> {
+        Box::new(move |v, ctx, o| {
+            Box::pin(self(parse_or_panic(&v), ctx, o).map(|v| erase_value(v)))
+        })
     }
 }
 
@@ -206,8 +208,9 @@ pub type UniformValidator<I, O, CtxOptions, FieldMetadata> = Box<
         + 'static,
 >;
 
-pub type UniformVirtualSanitiser<I, O, CtxOptions> = Box<
+pub type UniformVirtualSanitizer<I, O, CtxOptions> = Box<
     dyn Fn(
+            ErasedValue,
             SharedIvoContext<I, O>,
             SharedRwCtxOptions<CtxOptions>,
         ) -> BoxFuture<'static, ErasedValue>
@@ -277,4 +280,9 @@ pub type Resolver<T, I, O, CtxOptions> = Box<
 
 pub type BooleanResolver<I, O, CtxOptions> = Resolver<bool, I, O, CtxOptions>;
 
-pub type VirtualSanitiser<T, I, O, CtxOptions> = Resolver<T, I, O, CtxOptions>;
+pub type VirtualSanitizer<T, I, O, CtxOptions> = Box<
+    dyn Fn(T, SharedIvoContext<I, O>, SharedRwCtxOptions<CtxOptions>) -> BoxFuture<'static, T>
+        + Send
+        + Sync
+        + 'static,
+>;

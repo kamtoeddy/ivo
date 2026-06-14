@@ -8,7 +8,7 @@ use crate::{
             types::{
                 BooleanResolver, ComputableInit, ComputableRequired, IntoFailureHandler,
                 IntoFieldValidator, IntoRequiredResolver, IntoResolver, IntoSuccessHandler,
-                IntoVirtualSanitizer, UniformValidator, VirtualSanitiser,
+                IntoVirtualSanitizer, UniformValidator, VirtualSanitizer,
             },
         },
     },
@@ -50,7 +50,7 @@ pub struct VirtualFieldBuilder<
     validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
     re_validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
     required: Option<ComputableRequired<I, O, CtxOptions>>,
-    sanitizer: Option<VirtualSanitiser<ErasedValue, I, O, CtxOptions>>,
+    sanitizer: Option<VirtualSanitizer<ErasedValue, I, O, CtxOptions>>,
     should_ignore_fn: Option<BooleanResolver<I, O, CtxOptions>>,
     should_init: Option<ComputableInit<I, O, CtxOptions>>,
     should_update: Option<ComputableInit<I, O, CtxOptions>>,

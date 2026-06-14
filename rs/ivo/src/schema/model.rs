@@ -194,6 +194,21 @@ impl<
         }
 
         // 6) Sanitize virtuals
+        let (validated_inputs, validated_outputs, should_gen_new_ctx) = self
+            .sanitize_virtuals(
+                &fields_provided,
+                Arc::clone(&ctx),
+                Arc::clone(&shared_rw_options),
+            )
+            .await;
+
+        if should_gen_new_ctx {
+            ctx = Arc::new(IvoContext::<I, O>::new_create_ctx(
+                validated_inputs,
+                ctx.input_values(),
+                validated_outputs,
+            ));
+        }
 
         // 7) Resolve values of dependent fields
 
@@ -359,7 +374,21 @@ impl<
         }
 
         // 5) Sanitize virtuals
+        let (validated_inputs, validated_outputs, should_gen_new_ctx) = self
+            .sanitize_virtuals(
+                &fields_provided,
+                Arc::clone(&ctx),
+                Arc::clone(&shared_rw_options),
+            )
+            .await;
 
+        if should_gen_new_ctx {
+            ctx = Arc::new(IvoContext::<I, O>::new_create_ctx(
+                validated_inputs,
+                ctx.input_values(),
+                validated_outputs,
+            ));
+        }
         // 6) Resolve values of dependent fields
 
         // println!("\n----------------------------------------------------------------------------------------------------------------------------------");
@@ -505,9 +534,6 @@ impl<
     ) -> Result<(I::Partial, O::Partial, bool), ErrorTool::ErrorPayload> {
         let mut re_validators = vec![];
 
-        let erased_input_values: PartialMapOfErasedValues =
-            ctx.input().ivo_internal_to_optional_erased_map();
-
         for field_info in fields_provided.fields.iter() {
             if let Some(InternalFieldConfig { re_validator, .. }) =
                 self.schema.get_field_config(&field_info.config_name)
@@ -523,6 +549,8 @@ impl<
         if re_validators.is_empty() {
             return Ok((ctx.input(), ctx.values(), false));
         }
+
+        let erased_input_values = ctx.input().ivo_internal_to_optional_erased_map();
 
         let tasks = re_validators
             .into_iter()
@@ -714,6 +742,56 @@ impl<
         }
 
         Ok(self.merge_ctx_values(ctx, validated_inputs, validated_outputs))
+    }
+
+    async fn sanitize_virtuals<'a>(
+        &self,
+        fields_provided: &'a InputFieldCollection<'a, I, O, CtxOptions, ErrorTool>,
+        ctx: SharedIvoContext<I, O>,
+        options: SharedRwCtxOptions<CtxOptions>,
+    ) -> (I::Partial, O::Partial, bool) {
+        let mut sanitizers = vec![];
+
+        for field_info in fields_provided.fields.iter() {
+            if let Some(InternalFieldConfig {
+                field_type: FieldType::Virtual,
+                sanitizer: Some(sanitizer),
+                ..
+            }) = self.schema.get_field_config(&field_info.config_name)
+            {
+                sanitizers.push((field_info, sanitizer));
+            }
+        }
+
+        if sanitizers.is_empty() {
+            return (ctx.input(), ctx.values(), false);
+        }
+
+        let erased_input_values = ctx.input().ivo_internal_to_optional_erased_map();
+
+        let tasks = sanitizers.into_iter().map(async |(field_info, sanitizer)| {
+            (
+                field_info,
+                sanitizer(
+                    erased_input_values
+                        .inner
+                        .get(&field_info.name)
+                        .cloned()
+                        .unwrap(),
+                    Arc::clone(&ctx),
+                    Arc::clone(&options),
+                )
+                .await,
+            )
+        });
+
+        let mut validated_inputs = HashMap::new();
+
+        for (f, value) in join_all(tasks).await {
+            validated_inputs.insert(f.name.clone(), value.clone());
+        }
+
+        self.merge_ctx_values(ctx, validated_inputs, HashMap::new())
     }
 
     async fn resolve_constants_and_defaults(
@@ -957,20 +1035,20 @@ impl<
         validated_inputs: HashMap<String, ErasedValue>,
         validated_outputs: HashMap<String, ErasedValue>,
     ) -> (I::Partial, O::Partial, bool) {
-        let mut old_outputs = ctx.values().ivo_internal_to_optional_erased_map();
+        let mut old_inputs = ctx.input().ivo_internal_to_optional_erased_map();
 
-        for (field, value) in validated_outputs {
-            old_outputs
+        for (field, value) in validated_inputs {
+            old_inputs
                 .inner
                 .entry(field)
                 .and_modify(|e| *e = value.clone())
                 .or_insert(value);
         }
 
-        let mut old_inputs = ctx.input().ivo_internal_to_optional_erased_map();
+        let mut old_outputs = ctx.values().ivo_internal_to_optional_erased_map();
 
-        for (field, value) in validated_inputs {
-            old_inputs
+        for (field, value) in validated_outputs {
+            old_outputs
                 .inner
                 .entry(field)
                 .and_modify(|e| *e = value.clone())

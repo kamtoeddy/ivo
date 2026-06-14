@@ -190,6 +190,7 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
 
                             ready(Ok(validated.into()))
                         })
+                        .sanitize(|v, _, _| ready(format!("sanitized-'{v}'")))
                         .allow_update_if(|ctx: Ctx, _| {
                             ready(is_username_or_slug_id_updatable(
                                 ctx.values().username_last_updated_at.unwrap(),
