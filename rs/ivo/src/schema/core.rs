@@ -8,7 +8,7 @@ use crate::schema::error::{DefaultErrorTool, IvoErrorTool};
 use crate::schema::fields::base::{BuildableFieldConfig, FieldType, InternalFieldConfig};
 use crate::types::{IvoSchemaStruct, No, Yes};
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
@@ -45,14 +45,17 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
     {
         let fields = fields_maker(FieldBuilder::new());
 
-        let mut s = Self {
-            field_configs: fields.configs,
+        let s = Self {
+            field_configs: Self::make_field_configs(
+                fields.configs,
+                &fields.timestamp_created_at,
+                &fields.timestamp_upated_at,
+            ),
             options: options_maker(SchemaOptions::new()).build(),
             _timestamp_created_at: fields.timestamp_created_at,
             _timestamp_updated_at: fields.timestamp_upated_at,
         };
 
-        s.check_field_configs();
         s.check_options();
 
         s
@@ -62,26 +65,112 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
         // todo!()
     }
 
-    fn check_field_configs(&mut self) {
-        // todo!()
-        // let mut err_tool = SchemaError::new();
+    fn make_field_configs(
+        config_tuples: Vec<(String, InternalFieldConfig<I, O, CtxOptions, ErrorTool>)>,
+        timestamp_created_at: &Option<TimestampFieldConfig>,
+        timestamp_updated_at: &Option<TimestampFieldConfig>,
+    ) -> InternalFieldConfigs<I, O, CtxOptions, ErrorTool> {
+        let mut field_names = HashSet::new();
+        let mut alias_to_virtual = HashMap::new();
 
-        // First pass: register prop kinds and simple attributes
-        for (_, def) in &self.field_configs {
+        for (field_name, config) in config_tuples.iter() {
+            let field_name_str = field_name.as_str();
+
+            if field_names.contains(field_name) {
+                panic!("[{field_name}]: occurs more than once, please remove duplicates");
+            }
+
+            if let Some(TimestampFieldConfig { name, .. }) = timestamp_created_at {
+                if field_name == name {
+                    panic!(
+                        "[{field_name}]: \"{name}\" is already set as the \"created_at\" timestamp"
+                    );
+                }
+            }
+
+            if let Some(TimestampFieldConfig { name, .. }) = timestamp_updated_at {
+                if field_name == name {
+                    panic!(
+                        "[{field_name}]: \"{name}\" is already set as the \"updated_at\" timestamp"
+                    );
+                }
+            }
+
+            field_names.insert(field_name);
+
             // virtuals
-            if matches!(def.field_type, FieldType::Virtual) {
-                continue;
+            match config {
+                InternalFieldConfig {
+                    field_type: FieldType::Virtual,
+                    alias,
+                    ..
+                } => {
+                    if let Some(alias) = alias {
+                        if field_name == alias {
+                            panic!("[{field_name}]: virtual alias name must be different from field name");
+                        }
+
+                        if let Some(other_field) = alias_to_virtual.get(&alias) {
+                            panic!("[{field_name}]: \"{alias}\" is already the alias of \"{other_field}\"");
+                        }
+
+                        if let Some(TimestampFieldConfig { name, .. }) = timestamp_created_at {
+                            if alias == name {
+                                panic!(
+                                    "[{field_name}]: \"{name}\" is not a valid alias because it has already been set as the \"created_at\" timestamp"
+                                );
+                            }
+                        }
+
+                        if let Some(TimestampFieldConfig { name, .. }) = timestamp_updated_at {
+                            if alias == name {
+                                panic!(
+                                    "[{field_name}]: \"{name}\" is not a valid alias because it has already been set as the \"updated_at\" timestamp"
+                                );
+                            }
+                        }
+
+                        for (name, config) in config_tuples.iter() {
+                            if name != alias {
+                                continue;
+                            }
+
+                            if let Some(depends_on) = config.depends_on.as_ref() {
+                                if !depends_on.iter().any(|parent| parent == &field_name_str) {
+                                    panic!("[{field_name}]: \"{alias}\" is not a valid alias for field because \"{alias}\" does not depend on \"{field_name}\"");
+                                }
+
+                                alias_to_virtual.insert(alias, field_name);
+
+                                continue;
+                            }
+
+                            panic!("[{field_name}]: \"{alias}\" is not a valid alias for field because it is not a depent field");
+                        }
+                    }
+
+                    continue;
+                }
+                _ => (),
             }
 
             // dependents
-            if matches!(def.field_type, FieldType::Dependent) {
-                continue;
+            match config {
+                InternalFieldConfig {
+                    field_type: FieldType::Dependent,
+                    ..
+                } => {}
+                _ => (),
             }
         }
 
-        // if err_tool.has_errors() {
-        //     err_tool.throw();
-        // }
+        let mut field_configs = HashMap::new();
+
+        for (field_name, config) in config_tuples {
+            field_configs.insert(field_name, config);
+        }
+
+        field_configs
     }
 
     pub fn get_reserved_keys(&self) -> Vec<String> {
@@ -117,7 +206,7 @@ pub struct FieldBuilder<
 > {
     _c: PhantomData<HasCreatedAt>,
     _u: PhantomData<HasUpdatedAt>,
-    configs: InternalFieldConfigs<I, O, CtxOptions, ErrorTool>,
+    configs: Vec<(String, InternalFieldConfig<I, O, CtxOptions, ErrorTool>)>,
     timestamp_created_at: Option<TimestampFieldConfig>,
     timestamp_upated_at: Option<TimestampFieldConfig>,
 }
@@ -133,7 +222,7 @@ impl<
 {
     fn new() -> Self {
         Self {
-            configs: HashMap::new(),
+            configs: Vec::new(),
             timestamp_created_at: None,
             timestamp_upated_at: None,
             _c: PhantomData,
@@ -145,7 +234,7 @@ impl<
     where
         Config: BuildableFieldConfig<I, O, CtxOptions, ErrorTool>,
     {
-        self.configs.insert(name.to_owned(), config.build());
+        self.configs.push((name.to_owned(), config.build()));
 
         self
     }
@@ -207,7 +296,7 @@ impl<HasCreatedAt, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool
             configs: self.configs,
             timestamp_created_at: self.timestamp_created_at,
             timestamp_upated_at: Some(TimestampFieldConfig {
-                name: name.unwrap_or("created_at"),
+                name: name.unwrap_or("updated_at"),
                 resovler: resolver.into_resolver(),
                 is_optional,
             }),
