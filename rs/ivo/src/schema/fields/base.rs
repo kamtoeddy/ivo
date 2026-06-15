@@ -2,8 +2,8 @@ use crate::{
     schema::{
         error::IvoErrorTool,
         fields::types::{
-            BooleanResolver, ComputableInit, ComputableRequired, ComputableRequiredError,
-            ComputableWithMiniContext, Resolver, UniformTimestampResolver, UniformValidator,
+            BooleanResolver, ComputableInit, ComputableRequiredError, ComputableWithMiniContext,
+            RequiredResolver, Resolver, UniformTimestampResolver, UniformValidator,
             VirtualSanitizer,
         },
     },
@@ -45,7 +45,7 @@ pub struct FieldConfig<
     pub depends_on: Option<Vec<&'static str>>,
     pub is_readonly: bool,
     pub value: Option<ComputableWithMiniContext<T, I, CtxOptions>>,
-    pub required: Option<ComputableRequired<I, O, CtxOptions>>,
+    pub required_fn: Option<RequiredResolver<I, O, CtxOptions>>,
     pub required_error: Option<ComputableRequiredError<I, O, CtxOptions>>,
     pub resolver: Option<Resolver<T, I, O, CtxOptions>>,
     pub sanitizer: Option<VirtualSanitizer<T, I, O, CtxOptions>>,
@@ -73,7 +73,7 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorT
             default: None,
             depends_on: None,
             re_validator: None,
-            required: None,
+            required_fn: None,
             required_error: None,
             resolver: None,
             sanitizer: None,

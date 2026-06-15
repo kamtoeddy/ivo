@@ -6,9 +6,10 @@ use crate::{
         fields::{
             base::{BuildableFieldConfig, FieldConfig, FieldType, InternalFieldConfig},
             types::{
-                BooleanResolver, ComputableInit, ComputableRequired, ComputableWithMiniContext,
-                IntoDeleteHandler, IntoFailureHandler, IntoFieldValidator, IntoRequiredResolver,
-                IntoResolver, IntoResolverWithMiniContext, IntoSuccessHandler, UniformValidator,
+                BooleanResolver, ComputableInit, ComputableWithMiniContext, IntoDeleteHandler,
+                IntoFailureHandler, IntoFieldValidator, IntoRequiredResolver, IntoResolver,
+                IntoResolverWithMiniContext, IntoSuccessHandler, RequiredResolver,
+                UniformValidator,
             },
         },
     },
@@ -51,7 +52,7 @@ pub struct LaxFieldBuilder<
     default: Option<ComputableWithMiniContext<ErasedValue, I, CtxOptions>>,
     validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
     re_validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
-    required: Option<ComputableRequired<I, O, CtxOptions>>,
+    required_fn: Option<RequiredResolver<I, O, CtxOptions>>,
     should_ignore_fn: Option<BooleanResolver<I, O, CtxOptions>>,
     should_init: Option<ComputableInit<I, O, CtxOptions>>,
     should_update: Option<ComputableInit<I, O, CtxOptions>>,
@@ -100,7 +101,7 @@ impl<
             default: None,
             validator: None,
             re_validator: None,
-            required: None,
+            required_fn: None,
             should_ignore_fn: None,
             should_init: None,
             should_update: None,
@@ -202,7 +203,7 @@ impl<
             default: self.default,
             validator: self.validator,
             re_validator: self.re_validator,
-            required: self.required,
+            required_fn: self.required_fn,
             should_ignore: self.should_ignore_fn,
             should_init: self.should_init,
             should_update: self.should_update,
@@ -300,7 +301,7 @@ impl<
             default: self.default,
             validator: self.validator,
             re_validator: self.re_validator,
-            required: Some(ComputableRequired::Func(resolver.into_resolver())),
+            required_fn: Some(resolver.into_resolver()),
             ..Default::default()
         }
     }
@@ -340,7 +341,7 @@ impl<
             default: self.default,
             validator: self.validator,
             re_validator: self.re_validator,
-            required: self.required,
+            required_fn: self.required_fn,
             should_ignore_fn: Some(resolver.into_resolver()),
             ..Default::default()
         }
@@ -378,7 +379,7 @@ impl<
             default: self.default,
             validator: self.validator,
             re_validator: self.re_validator,
-            required: self.required,
+            required_fn: self.required_fn,
             should_init: Some(ComputableInit::False),
             ..Default::default()
         }
@@ -407,7 +408,7 @@ impl<
             default: self.default,
             validator: self.validator,
             re_validator: self.re_validator,
-            required: self.required,
+            required_fn: self.required_fn,
             should_init: Some(ComputableInit::Func(resolver.into_resolver())),
             ..Default::default()
         }
@@ -433,7 +434,7 @@ impl<
             default: self.default,
             validator: self.validator,
             re_validator: self.re_validator,
-            required: self.required,
+            required_fn: self.required_fn,
             should_update: Some(ComputableInit::False),
             ..Default::default()
         }
@@ -463,7 +464,7 @@ impl<
             default: self.default,
             validator: self.validator,
             re_validator: self.re_validator,
-            required: self.required,
+            required_fn: self.required_fn,
             should_update: Some(ComputableInit::Func(resolver.into_resolver())),
             ..Default::default()
         }
@@ -519,7 +520,7 @@ impl<
             default: self.default,
             validator: self.validator,
             re_validator: self.re_validator,
-            required: self.required,
+            required_fn: self.required_fn,
             should_init: Some(ComputableInit::Func(resolver.into_resolver())),
             ..Default::default()
         }
@@ -575,7 +576,7 @@ impl<
             default: self.default,
             validator: self.validator,
             re_validator: self.re_validator,
-            required: self.required,
+            required_fn: self.required_fn,
             should_init: self.should_init,
             should_update: Some(ComputableInit::Func(resolver.into_resolver())),
             ..Default::default()
@@ -628,7 +629,7 @@ impl<
             default: self.default,
             validator: self.validator,
             re_validator: self.re_validator,
-            required: self.required,
+            required_fn: self.required_fn,
 
             should_update: self.should_update,
             should_init: Some(ComputableInit::False),
@@ -660,7 +661,7 @@ impl<
             default: self.default,
             validator: self.validator,
             re_validator: self.re_validator,
-            required: self.required,
+            required_fn: self.required_fn,
             should_update: self.should_update,
             should_init: Some(ComputableInit::Func(resolver.into_resolver())),
             ..Default::default()
@@ -731,7 +732,7 @@ impl<
             default: self.default,
             validator: self.validator,
             re_validator: self.re_validator,
-            required: self.required,
+            required_fn: self.required_fn,
             should_ignore_fn: self.should_ignore_fn,
             should_init: self.should_init,
             should_update: self.should_update,
@@ -814,7 +815,7 @@ impl<
             default: self.default,
             validator: self.validator,
             re_validator: self.re_validator,
-            required: self.required,
+            required_fn: self.required_fn,
             should_ignore_fn: self.should_ignore_fn,
             should_init: self.should_init,
             should_update: self.should_update,
@@ -899,7 +900,7 @@ impl<
             default: self.default,
             validator: self.validator,
             re_validator: self.re_validator,
-            required: self.required,
+            required_fn: self.required_fn,
             should_ignore_fn: self.should_ignore_fn,
             should_init: self.should_init,
             should_update: self.should_update,

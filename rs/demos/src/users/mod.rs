@@ -12,8 +12,8 @@ pub async fn run_users_demo() {
     let timer = Instant::now();
 
     let input = PartialUserInput {
-        // email: None,
-        email: Some("1@1.com".into()),
+        email: None,
+        // email: Some("1@1.com".into()),
         username: Some("user-10".into()),
         role: None,
         // role: Some(UserRole::Moderator),

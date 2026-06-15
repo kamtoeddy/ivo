@@ -38,7 +38,7 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
     });
 
     // Generate individual parsing statements for each field block
-    let construct_struct_fields_for_from_map = fields.iter().map(|field| {
+    let construct_struct_fields_for_from_erased_map = fields.iter().map(|field| {
             let field_name = &field.ident; // e.g., 'id'
             let field_type = &field.ty;    // e.g., 'String'
 
@@ -67,7 +67,7 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
         }
     };
 
-    let to_map_statements = fields.iter().map(|field| {
+    let construct_erased_map_from_ivo_struct = fields.iter().map(|field| {
         let field_name = &field.ident;
 
         quote! {
@@ -79,7 +79,7 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
     });
 
     // ivo_internal_to_optional_erased_map
-    let to_map_statements_for_partial = fields.iter().map(|field| {
+    let construct_erased_map_from_partial_struct = fields.iter().map(|field| {
         let field_name = &field.ident;
 
         quote! {
@@ -222,7 +222,7 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
                 use #crate_root::erase_value;
                 let mut inner = std::collections::HashMap::new();
 
-                #( #to_map_statements_for_partial )*
+                #( #construct_erased_map_from_partial_struct )*
 
                 PartialMapOfErasedValues { inner }
             }
@@ -276,7 +276,7 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
         impl #crate_root::types::FromToMap for #name {
             fn ivo_internal_from_erased_map(map: &std::collections::HashMap<String, #crate_root::ErasedValue>) -> Self{
                 Self {
-                    #( #construct_struct_fields_for_from_map )*
+                    #( #construct_struct_fields_for_from_erased_map )*
                 }
             }
 
@@ -284,7 +284,7 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
                 use #crate_root::erase_value;
                 let mut map = std::collections::HashMap::new();
 
-                #( #to_map_statements )*
+                #( #construct_erased_map_from_ivo_struct )*
 
                 map
             }

@@ -45,7 +45,7 @@ pub trait IvoSchemaStruct:
 {
 }
 
-pub trait FromToMap {
+pub trait FromToMap: HasPartial {
     fn ivo_internal_from_erased_map(map: &HashMap<String, ErasedValue>) -> Self;
     fn ivo_internal_to_erased_map(&self) -> HashMap<String, ErasedValue>;
 }
@@ -62,7 +62,6 @@ pub trait HasFields {
 
 pub trait HasPartial {
     type Partial: PartialEq
-        // + Eq
         + Debug
         + Default
         + Send

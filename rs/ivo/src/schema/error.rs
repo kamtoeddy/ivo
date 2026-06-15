@@ -53,12 +53,10 @@ impl IvoErrorTool for DefaultErrorTool {
     }
 
     fn add(&mut self, field_name: &str, value: FieldError) -> &mut Self {
-        if !self.payload.contains_key(field_name) {
-            self.payload
-                .entry(field_name.to_string())
-                .or_default()
-                .push(value);
-        }
+        self.payload
+            .entry(field_name.to_string())
+            .and_modify(|e| e.push(value.clone()))
+            .or_insert_with(|| vec![value]);
 
         self
     }

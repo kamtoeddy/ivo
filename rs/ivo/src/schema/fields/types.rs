@@ -249,11 +249,6 @@ pub enum ComputableInit<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> {
     Func(BooleanResolver<I, O, CtxOptions>),
 }
 
-pub enum ComputableRequired<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> {
-    True,
-    Func(RequiredResolver<I, O, CtxOptions>),
-}
-
 pub enum ComputableRequiredError<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> {
     Static(&'static str),
     Func(RequiredResolver<I, O, CtxOptions>),

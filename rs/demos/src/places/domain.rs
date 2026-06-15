@@ -1,9 +1,6 @@
 use std::{collections::HashMap, future::ready, sync::LazyLock, time::Instant};
 
-use ivo::{
-    FieldError, IvoErrorTool, IvoField, IvoStruct, Model, Schema, SharedCtxOptions,
-    SharedIvoContext, SharedRwCtxOptions,
-};
+use ivo::{FieldError, IvoErrorTool, IvoField, IvoStruct, Model, Schema, SharedIvoContext};
 use serde::Deserialize;
 
 use crate::utils::styled_text::Stylable;
@@ -36,17 +33,17 @@ impl<'a> PlacesCtxOptions {
         Self
     }
 
-    fn find_user_by_coordinates(
-        &self,
-        _coordinates: &String,
-    ) -> impl Future<Output = Option<Place>> + use<'a> {
-        ready(None)
-    }
+    // fn find_user_by_coordinates(
+    //     &self,
+    //     _coordinates: &String,
+    // ) -> impl Future<Output = Option<Place>> + use<'a> {
+    //     ready(None)
+    // }
 }
 
 type Ctx = SharedIvoContext<PlaceInput, Place>;
-type CtxOptions = SharedCtxOptions<PlacesCtxOptions>;
-type RwCtxOptions = SharedRwCtxOptions<PlacesCtxOptions>;
+// type CtxOptions = SharedCtxOptions<PlacesCtxOptions>;
+// type RwCtxOptions = SharedRwCtxOptions<PlacesCtxOptions>;
 
 #[derive(Debug, Deserialize)]
 struct LocationDetails {
@@ -86,18 +83,18 @@ pub static PLACE_SCHEMA: LazyLock<Schema<PlaceInput, Place, PlacesCtxOptions, Pl
                     "coordinates",
                     IvoField::REQUIRED
                         .required_error("please provide \"coordinates\"")
-                        .validate(|Coodinates { lat, lon }: Coodinates, _, _| {
-                            if lat.is_nan() || lon.is_nan() {
+                        .validate(|c: Coodinates, _, _| {
+                            if c.lat.is_nan() || c.lon.is_nan() {
                                 return ready(Err(("InvalidNumber".into(), None)));
                             }
 
                             let mut errors = vec![];
 
-                            if !(-90.0..=90.0).contains(&lat) {
+                            if !(-90.0..=90.0).contains(&c.lat) {
                                 errors.push("LatitudeOutOfRange: [-90, 90]".into());
                             }
 
-                            if !(-180.0..=180.0).contains(&lon) {
+                            if !(-180.0..=180.0).contains(&c.lon) {
                                 errors.push("LongitudeOutOfRange: [-180, 180]".into());
                             }
 
@@ -105,7 +102,7 @@ pub static PLACE_SCHEMA: LazyLock<Schema<PlaceInput, Place, PlacesCtxOptions, Pl
                                 return ready(Err(("Out of range error".into(), Some(errors))));
                             }
 
-                            ready(Ok(Coodinates { lat, lon }))
+                            ready(Ok(c))
                         })
                         .on_delete(|_, _| {
                             println!("[coordinates]: on delete 1 handled");
@@ -151,6 +148,7 @@ pub static PLACE_SCHEMA: LazyLock<Schema<PlaceInput, Place, PlacesCtxOptions, Pl
                                     "\nFetch location details:".font_bold(),
                                     format!("{:?}", timer.elapsed()).colored_red()
                                 );
+
                                 timer = Instant::now();
                                 r.json::<ResolvedLocationResults>()
                             }) {
@@ -181,7 +179,7 @@ pub static PLACE_SCHEMA: LazyLock<Schema<PlaceInput, Place, PlacesCtxOptions, Pl
                                 }
                             }
 
-                            Some(String::from(""))
+                            Some(ctx.values().name.unwrap().unwrap())
                         })
                         .on_success(|_, _| {
                             println!("[name]: on success",);
@@ -206,26 +204,28 @@ pub static PLACE_SCHEMA: LazyLock<Schema<PlaceInput, Place, PlacesCtxOptions, Pl
         )
     });
 
+type PlacesErrorToolFieldMetadata = Vec<String>;
+
 pub struct PlacesErrorTool {
     errors: HashMap<String, Vec<String>>,
 }
 
 impl IvoErrorTool for PlacesErrorTool {
-    type FieldMetadata = Vec<String>;
+    type FieldMetadata = PlacesErrorToolFieldMetadata;
     type ErrorPayload = HashMap<String, Vec<String>>;
 
     fn add(&mut self, field_name: &str, error: FieldError<Self::FieldMetadata>) -> &mut Self {
-        self.errors.entry(field_name.to_owned()).and_modify(|e| {
-            e.push(error.reason);
+        self.errors
+            .entry(field_name.to_owned())
+            .and_modify(|e| append_error(e, error.clone()))
+            .or_insert_with(|| {
+                let mut errors = vec![];
 
-            if error.metadata.is_some() {
-                for err in error.metadata.unwrap() {
-                    e.push(err);
-                }
-            }
+                append_error(&mut errors, error);
 
-            ()
-        });
+                errors
+            });
+
         self
     }
 
@@ -241,5 +241,15 @@ impl IvoErrorTool for PlacesErrorTool {
 
     fn payload(self) -> Self::ErrorPayload {
         self.errors
+    }
+}
+
+fn append_error(errors: &mut Vec<String>, error: FieldError<PlacesErrorToolFieldMetadata>) {
+    errors.push(error.reason.clone());
+
+    if error.metadata.is_some() {
+        for err in error.metadata.clone().unwrap() {
+            errors.push(err);
+        }
     }
 }

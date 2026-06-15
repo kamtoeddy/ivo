@@ -6,9 +6,9 @@ use crate::{
         fields::{
             base::{BuildableFieldConfig, FieldConfig, FieldType, InternalFieldConfig},
             types::{
-                ComputableInit, ComputableRequired, ComputableRequiredError, IntoDeleteHandler,
-                IntoFailureHandler, IntoFieldValidator, IntoRequiredErrorResolver, IntoResolver,
-                IntoSuccessHandler, UniformValidator,
+                ComputableInit, ComputableRequiredError, IntoDeleteHandler, IntoFailureHandler,
+                IntoFieldValidator, IntoRequiredErrorResolver, IntoResolver, IntoSuccessHandler,
+                UniformValidator,
             },
         },
     },
@@ -166,7 +166,6 @@ impl<
             required_error: self.required_error,
             validator: self.validator,
             re_validator: self.re_validator,
-            required: Some(ComputableRequired::True),
             should_update: self.should_update,
             on_delete_fns: self.on_delete_fns,
             on_failure_fns: self.on_failure_fns,
@@ -192,6 +191,8 @@ impl<
     ) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasValidator, HasRevalidator, Yes>
     {
         RequiredFieldBuilder {
+            validator: self.validator,
+            re_validator: self.re_validator,
             required_error: Some(ComputableRequiredError::Static(error)),
             ..Default::default()
         }
@@ -205,6 +206,8 @@ impl<
         R: IntoRequiredErrorResolver<I, O, CtxOptions>,
     {
         RequiredFieldBuilder {
+            validator: self.validator,
+            re_validator: self.re_validator,
             required_error: Some(ComputableRequiredError::Func(resolver.into_resolver())),
             ..Default::default()
         }
@@ -229,6 +232,7 @@ impl<
     {
         RequiredFieldBuilder {
             validator: Some(validator.into_uniform()),
+            required_error: self.required_error,
             ..Default::default()
         }
     }
@@ -253,6 +257,7 @@ impl<
         RequiredFieldBuilder {
             validator: self.validator,
             re_validator: Some(re_validator.into_uniform()),
+            required_error: self.required_error,
             ..Default::default()
         }
     }
@@ -284,6 +289,7 @@ impl<
         RequiredFieldBuilder {
             validator: self.validator,
             re_validator: self.re_validator,
+            required_error: self.required_error,
             should_update: Some(ComputableInit::False),
             ..Default::default()
         }
@@ -309,6 +315,7 @@ impl<
         RequiredFieldBuilder {
             validator: self.validator,
             re_validator: self.re_validator,
+            required_error: self.required_error,
             should_update: Some(ComputableInit::Func(resolver.into_resolver())),
             ..Default::default()
         }
@@ -369,6 +376,7 @@ impl<
         RequiredFieldBuilder {
             validator: self.validator,
             re_validator: self.re_validator,
+            required_error: self.required_error,
             should_update: self.should_update,
             on_delete_fns: Some(match self.on_delete_fns {
                 Some(hs) => {
@@ -441,6 +449,7 @@ impl<
         RequiredFieldBuilder {
             validator: self.validator,
             re_validator: self.re_validator,
+            required_error: self.required_error,
             should_update: self.should_update,
             on_delete_fns: self.on_delete_fns,
             on_failure_fns: Some(match self.on_failure_fns {
@@ -513,6 +522,7 @@ impl<
         RequiredFieldBuilder {
             validator: self.validator,
             re_validator: self.re_validator,
+            required_error: self.required_error,
             should_update: self.should_update,
             on_delete_fns: self.on_delete_fns,
             on_failure_fns: self.on_failure_fns,

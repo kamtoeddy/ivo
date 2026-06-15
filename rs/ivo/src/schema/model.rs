@@ -5,9 +5,7 @@ use std::sync::Arc;
 use crate::schema::core::Schema;
 use crate::schema::error::{DefaultErrorTool, FieldError, IvoErrorTool, UpdateError};
 use crate::schema::fields::base::{FieldType, InternalFieldConfig};
-use crate::schema::fields::types::{
-    ComputableRequired, ComputableRequiredError, ComputableWithMiniContext,
-};
+use crate::schema::fields::types::{ComputableRequiredError, ComputableWithMiniContext};
 
 use crate::schema::internal::{InputFieldCollection, InputFieldInfo};
 use crate::schema::options::types::{OnSuccessConfig, PostValidationConfig};
@@ -1034,7 +1032,7 @@ impl<
                         continue;
                     }
 
-                    match &required_error {
+                    match required_error {
                         Some(ComputableRequiredError::Static(msg)) => {
                             error_tool.add(
                                 field_name,
@@ -1060,21 +1058,11 @@ impl<
 
                     continue;
                 }
-                // conditionally required configs
                 InternalFieldConfig {
                     field_type: FieldType::Lax | FieldType::Virtual,
-                    required,
+                    required_fn: Some(resolver),
                     ..
-                } => {
-                    match &required {
-                        Some(ComputableRequired::Func(resolver)) => {
-                            resolvers.push((field_name, resolver));
-                        }
-                        _ => {}
-                    }
-
-                    continue;
-                }
+                } => resolvers.push((field_name, resolver)),
                 _ => (),
             }
         }

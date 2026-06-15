@@ -12,6 +12,7 @@ pub async fn run_places_demo() {
     let timer = Instant::now();
 
     let input = PartialPlaceInput {
+        // coordinates: None,
         coordinates: Some(Coodinates {
             lat: 4.756841301293143,
             lon: 11.235494655828541,
@@ -43,13 +44,20 @@ pub async fn run_places_demo() {
 
     let user = Place {
         id: 1,
-        coordinates: Coodinates { lat: 1.3, lon: 1.3 },
-        name: None,
+        coordinates: Coodinates {
+            lat: 4.756841301293143,
+            lon: 11.235494655828541,
+        },
+        name: Some("Centre Administratif, Bafia, Mbam-et-Inoubou, Centre, Cameroun".into()),
     };
 
     println!("{:?}\n", user);
 
     let updates = PartialPlaceInput {
+        // coordinates: Some(Coodinates {
+        //     lat: 4.756841301293143,
+        //     lon: 11.235494655828541,
+        // }),
         coordinates: Some(Coodinates {
             lat: 4.756841301293143,
             lon: 11.235494655828541,
