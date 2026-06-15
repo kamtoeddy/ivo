@@ -40,7 +40,7 @@ fn should_reject_with_same_alias_name() {
 
 #[test]
 #[should_panic(
-    expected = "[virtual_field]: \"lax\" is not a valid alias for field because it is not a depent field"
+    expected = "[virtual_field]: \"lax\" is not a valid alias for field because it is not a dependent field"
 )]
 fn should_reject_with_alias_as_non_dependent_field() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]

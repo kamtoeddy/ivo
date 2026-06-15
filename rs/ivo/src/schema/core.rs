@@ -145,7 +145,7 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
                                 continue;
                             }
 
-                            panic!("[{field_name}]: \"{alias}\" is not a valid alias for field because it is not a depent field");
+                            panic!("[{field_name}]: \"{alias}\" is not a valid alias for field because it is not a dependent field");
                         }
                     }
 
