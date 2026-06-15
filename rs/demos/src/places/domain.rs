@@ -1,9 +1,7 @@
-use std::{collections::HashMap, future::ready, sync::LazyLock, time::Instant};
+use std::{collections::HashMap, future::ready, sync::LazyLock};
 
 use ivo::{FieldError, IvoErrorTool, IvoField, IvoStruct, Model, Schema, SharedIvoContext};
 use serde::Deserialize;
-
-use crate::utils::styled_text::Stylable;
 
 const LOCATION_SERVICE_URL: &'static str = "https://misc-api.kamtoeddy.com/geo/details-with-tz";
 
@@ -51,12 +49,14 @@ struct LocationDetails {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct ResolvedLocationDetails {
     details: LocationDetails,
     tz: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct ResolvedLocationResults {
     data: Option<ResolvedLocationDetails>,
     error: Option<String>,
@@ -135,36 +135,22 @@ pub static PLACE_SCHEMA: LazyLock<Schema<PlaceInput, Place, PlacesCtxOptions, Pl
                         .depends_on(["coordinates"])
                         .resolve(async |ctx: Ctx, _| {
                             let v = ctx.values().coordinates.unwrap();
-                            let mut timer = Instant::now();
 
                             match reqwest::get(format!(
                                 "{LOCATION_SERVICE_URL}?lat={}&lon={}",
                                 v.lat, v.lon
                             ))
                             .await
-                            .map(|r| {
-                                println!(
-                                    "{} {}\n",
-                                    "\nFetch location details:".font_bold(),
-                                    format!("{:?}", timer.elapsed()).colored_red()
-                                );
-
-                                timer = Instant::now();
-                                r.json::<ResolvedLocationResults>()
-                            }) {
+                            .map(|r| r.json::<ResolvedLocationResults>())
+                            {
                                 Ok(resp) => {
                                     let resp = resp.await;
 
                                     if resp.is_ok() {
                                         let data = resp.unwrap();
 
-                                        println!("data: {:?}\n", data);
+                                        // println!("data: {:?}\n", data);
 
-                                        println!(
-                                            "{} {}\n",
-                                            "\nParse location details:".font_bold(),
-                                            format!("{:?}", timer.elapsed()).colored_blue()
-                                        );
                                         if let Some(d) = data.data {
                                             return d.details.display_name;
                                         }

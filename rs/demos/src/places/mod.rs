@@ -60,7 +60,7 @@ pub async fn run_places_demo() {
         //     lon: 11.235494655828541,
         // }),
         coordinates: Some(Coodinates {
-            lat: 4.756841301293143,
+            lat: 14.756841301293143,
             lon: 11.235494655828541,
         }),
     };
