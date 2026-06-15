@@ -1,0 +1,25 @@
+name: RS CI
+
+on:
+  push:
+    branches: ["main", "rust"]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        env:
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo test -r
+
+  test-nightly:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        env:
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      - uses: dtolnay/rust-toolchain@nightly
+      - run: cargo test -r
