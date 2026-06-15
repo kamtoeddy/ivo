@@ -196,7 +196,7 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
             .set(
                 "v_slug",
                 IvoField::VIRTUAL
-                    .alias("v_slug")
+                    .alias("slug_id")
                     .validate(|value: String, _, _| {
                         println!("[v_slug_as_slug_id]: validating: {}\n", value.clone());
 
