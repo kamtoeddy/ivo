@@ -1,3 +1,14 @@
 [workspace]
-members = ["ivo", "ivo_struct", "ivo_validators", "tests", "demos",]
+members = ["crates/*", "tests", "demos",]
 resolver = "2"
+
+[workspace.package]
+version = "0.0.1"
+edition = "2021"
+authors = ["kamtoeddy <lollipopkalog@gmail.com>"]
+license-file = "../LICENSE"
+repository = "https://github.com/kamtoeddy/ivo/rs"
+homepage = "https://github.com/kamtoeddy/ivo/rs"
+keywords = ["json", "serialization", "zero-copy", "simd", "serde"]
+categories = ["encoding", "parsing"]
+rust-version = "1.71"

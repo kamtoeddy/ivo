@@ -4,7 +4,7 @@ use quote::{format_ident, quote};
 use syn::{parse_macro_input, Data, DeriveInput, Fields};
 
 #[proc_macro_derive(IvoStruct)]
-pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
+pub fn make_ivo_derive(input: TokenStream) -> TokenStream {
     // pub fn make_partial_derive(input: TokenStream) -> TokenStream {
     // Parse the input tokens into a syntax tree
     let input = parse_macro_input!(input as DeriveInput);
@@ -67,7 +67,7 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
         }
     };
 
-    let construct_erased_map_from_ivo_struct = fields.iter().map(|field| {
+    let construct_erased_map_from_ivo_derive = fields.iter().map(|field| {
         let field_name = &field.ident;
 
         quote! {
@@ -284,7 +284,7 @@ pub fn make_ivo_struct(input: TokenStream) -> TokenStream {
                 use #crate_root::erase_value;
                 let mut map = std::collections::HashMap::new();
 
-                #( #construct_erased_map_from_ivo_struct )*
+                #( #construct_erased_map_from_ivo_derive )*
 
                 map
             }

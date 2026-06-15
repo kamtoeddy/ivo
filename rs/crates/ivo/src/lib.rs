@@ -1,7 +1,7 @@
 mod schema;
 pub mod types;
 
-pub use ivo_struct::IvoStruct;
+pub use ivo_derive::IvoStruct;
 
 #[cfg(feature = "validators")]
 #[doc(inline)]

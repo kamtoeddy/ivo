@@ -1,0 +1,19 @@
+[package]
+name = "ivo_derive"
+license-file = "../../../LICENSE"
+repository.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+categories.workspace = true
+description = "Proc-macro crate for #[derive(IvoStruct)] — part of ivo"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro-crate = "3.1"
+quote = "1.0"
+syn = { version = "2.0", features = ["full"] }

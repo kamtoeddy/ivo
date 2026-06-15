@@ -1,12 +1,14 @@
 [package]
 name = "ivo"
-version = "0.0.1"
-edition = "2021"
+license-file = "../../../LICENSE"
+repository.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+categories.workspace = true
 description = "The schema valitator that brings user stories to life, inspired by ivo on npm"
-license-file = "../../LICENSE"
-keywords = ["schema", "validation"]
-homepage = "https://github.com/kamtoeddy/ivo#readme"
-repository = "https://github.com/kamtoeddy/ivo.git"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
 
 [features]
 validators = ["dep:ivo_validators"]
@@ -14,5 +16,5 @@ validators = ["dep:ivo_validators"]
 [dependencies]
 futures = "0.3"
 futures-locks = "0.7"
-ivo_struct = { path = "../ivo_struct" }
+ivo_derive = { path = "../ivo_derive" }
 ivo_validators = { path = "../ivo_validators", optional = true}
