@@ -7,7 +7,7 @@ use crate::schema::error::{DefaultErrorTool, FieldError, IvoErrorTool, UpdateErr
 use crate::schema::fields::base::{FieldType, InternalFieldConfig};
 use crate::schema::fields::types::{ComputableRequiredError, ComputableWithMiniContext};
 
-use crate::schema::internal::{InputFieldCollection, InputFieldInfo};
+use crate::schema::internal::{FieldInfo, FieldInfoCollection};
 use crate::schema::options::types::{OnSuccessConfig, PostValidationConfig};
 
 use crate::{
@@ -81,7 +81,7 @@ impl<
         ));
 
         let erased_input_values = input.ivo_internal_to_optional_erased_map();
-        let fields_provided = self.make_input_fields_collection(&erased_input_values);
+        let fields_provided = FieldInfoCollection::new(&self.schema, &erased_input_values);
 
         let r = self
             .evaluate_missing_required_fields(
@@ -95,7 +95,7 @@ impl<
             return Err((
                 r.err().unwrap(),
                 self.prepare_failure_handlers(
-                    fields_provided,
+                    fields_provided.fields,
                     ctx,
                     Arc::new(unwrap_async_lock(shared_rw_options)),
                 ),
@@ -116,7 +116,7 @@ impl<
             return Err((
                 r.err().unwrap(),
                 self.prepare_failure_handlers(
-                    fields_provided,
+                    fields_provided.fields,
                     ctx,
                     Arc::new(unwrap_async_lock(shared_rw_options)),
                 ),
@@ -146,7 +146,7 @@ impl<
             return Err((
                 r.err().unwrap(),
                 self.prepare_failure_handlers(
-                    fields_provided,
+                    fields_provided.fields,
                     ctx,
                     Arc::new(unwrap_async_lock(shared_rw_options)),
                 ),
@@ -176,7 +176,7 @@ impl<
             return Err((
                 r.err().unwrap(),
                 self.prepare_failure_handlers(
-                    fields_provided,
+                    fields_provided.fields,
                     ctx,
                     Arc::new(unwrap_async_lock(shared_rw_options)),
                 ),
@@ -233,9 +233,9 @@ impl<
         }
 
         while !dependent_fields_resolved.is_empty() {
-            let col = InputFieldCollection::from_fields(
+            let col = FieldInfoCollection::from_fields(
                 &self.schema,
-                &dependent_fields_resolved,
+                dependent_fields_resolved,
                 &fields_provided.schema_input_fields,
                 &fields_provided.schema_output_fields,
             );
@@ -287,17 +287,37 @@ impl<
             data.clone(),
         ));
 
+        let old_partial_values: O::Partial = data.clone().into();
         let erased_input_values = updates.ivo_internal_to_optional_erased_map();
-        let fields_provided = self.make_input_fields_collection(&erased_input_values);
+        let mut fields_provided = FieldInfoCollection::new(&self.schema, &erased_input_values);
+        let mut updated_fields_vec = Vec::with_capacity(fields_provided.fields.len());
+        let mut erased_updates = PartialMapOfErasedValues::new();
+
+        for (field_name, value) in erased_input_values.inner.iter() {
+            let f = fields_provided.get(field_name).unwrap();
+
+            if (f.is_input && !f.is_output)
+                || !old_partial_values.ivo_internal_is_value_equal(field_name, value)
+            {
+                updated_fields_vec.push(f.clone());
+
+                erased_updates
+                    .inner
+                    .insert(field_name.to_owned(), value.clone());
+            }
+        }
+
+        drop(erased_input_values);
 
         // if the updates provided are all none, the nothing to update
-        if fields_provided.fields.is_empty() {
+        if updated_fields_vec.is_empty() {
             return Err((
                 UpdateError::NothingToUpdate,
-                self.prepare_failure_handlers(fields_provided, ctx, Arc::new(options)),
+                self.prepare_failure_handlers(Vec::with_capacity(0), ctx, Arc::new(options)),
             ));
         }
 
+        fields_provided.set_fields(updated_fields_vec);
         let shared_rw_options = Arc::new(RwLock::new(options));
 
         // 1) Evaluate missing required fields
@@ -313,7 +333,7 @@ impl<
             return Err((
                 UpdateError::ValidationError(r.err().unwrap()),
                 self.prepare_failure_handlers(
-                    fields_provided,
+                    fields_provided.fields,
                     ctx,
                     Arc::new((shared_rw_options).read().await.clone()),
                 ),
@@ -324,19 +344,17 @@ impl<
         let r = self
             .validate(
                 &fields_provided,
-                &erased_input_values,
+                &erased_updates,
                 Arc::clone(&ctx),
                 Arc::clone(&shared_rw_options),
             )
             .await;
 
-        drop(erased_input_values);
-
         if r.is_err() {
             return Err((
                 UpdateError::ValidationError(r.err().unwrap()),
                 self.prepare_failure_handlers(
-                    fields_provided,
+                    fields_provided.fields,
                     ctx,
                     Arc::new(unwrap_async_lock(shared_rw_options)),
                 ),
@@ -368,7 +386,7 @@ impl<
             return Err((
                 UpdateError::ValidationError(r.err().unwrap()),
                 self.prepare_failure_handlers(
-                    fields_provided,
+                    fields_provided.fields,
                     ctx,
                     Arc::new(unwrap_async_lock(shared_rw_options)),
                 ),
@@ -400,7 +418,7 @@ impl<
             return Err((
                 UpdateError::ValidationError(r.err().unwrap()),
                 self.prepare_failure_handlers(
-                    fields_provided,
+                    fields_provided.fields,
                     ctx,
                     Arc::new(unwrap_async_lock(shared_rw_options)),
                 ),
@@ -438,6 +456,34 @@ impl<
             ));
         }
 
+        let erased_updates = ctx.values().ivo_internal_to_optional_erased_map();
+
+        let fields_updated_vec = fields_provided
+            .fields
+            .iter()
+            .filter_map(|f| {
+                if f.is_input && !f.is_output {
+                    return Some(f.clone());
+                }
+
+                if !old_partial_values.ivo_internal_is_value_equal(
+                    &f.name,
+                    &erased_updates.inner.get(&f.name).unwrap(),
+                ) {
+                    return Some(f.clone());
+                }
+
+                None
+            })
+            .collect();
+
+        let fields_updated = FieldInfoCollection::from_fields(
+            &self.schema,
+            fields_updated_vec,
+            &fields_provided.schema_input_fields,
+            &fields_provided.schema_output_fields,
+        );
+
         // 6) Resolve values of dependent fields
         let (
             mut validated_inputs,
@@ -446,7 +492,7 @@ impl<
             mut dependent_fields_resolved,
         ) = self
             .resolve_dependent_values(
-                &fields_provided,
+                &fields_updated,
                 Arc::clone(&ctx),
                 Arc::clone(&shared_rw_options),
             )
@@ -463,9 +509,9 @@ impl<
         }
 
         while !dependent_fields_resolved.is_empty() {
-            let col = InputFieldCollection::from_fields(
+            let col = FieldInfoCollection::from_fields(
                 &self.schema,
-                &dependent_fields_resolved,
+                dependent_fields_resolved,
                 &fields_provided.schema_input_fields,
                 &fields_provided.schema_output_fields,
             );
@@ -513,7 +559,7 @@ impl<
             return Err((
                 UpdateError::NothingToUpdate,
                 self.prepare_failure_handlers(
-                    fields_provided,
+                    fields_provided.fields,
                     ctx,
                     Arc::new(unwrap_async_lock(shared_rw_options)),
                 ),
@@ -525,7 +571,7 @@ impl<
         Ok((
             updated_values,
             self.prepare_success_handlers(
-                fields_provided,
+                fields_updated,
                 ctx,
                 Arc::new(unwrap_async_lock(shared_rw_options)),
             ),
@@ -560,7 +606,7 @@ impl<
 
     async fn validate<'a>(
         &self,
-        fields_provided: &'a InputFieldCollection<'a, I, O, CtxOptions, ErrorTool>,
+        fields_provided: &'a FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool>,
         erased_input_values: &PartialMapOfErasedValues,
         ctx: SharedIvoContext<I, O>,
         options: SharedRwCtxOptions<CtxOptions>,
@@ -625,7 +671,7 @@ impl<
 
     async fn re_validate<'a>(
         &self,
-        fields_provided: &'a InputFieldCollection<'a, I, O, CtxOptions, ErrorTool>,
+        fields_provided: &'a FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool>,
         ctx: SharedIvoContext<I, O>,
         options: SharedRwCtxOptions<CtxOptions>,
     ) -> Result<(I::Partial, O::Partial, bool), ErrorTool::ErrorPayload> {
@@ -697,7 +743,7 @@ impl<
 
     async fn post_validate<'a>(
         &self,
-        fields_provided: &'a InputFieldCollection<'a, I, O, CtxOptions, ErrorTool>,
+        fields_provided: &'a FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool>,
         ctx: SharedIvoContext<I, O>,
         options: SharedRwCtxOptions<CtxOptions>,
     ) -> Result<(I::Partial, O::Partial, bool), ErrorTool::ErrorPayload> {
@@ -841,7 +887,7 @@ impl<
 
     async fn sanitize_virtuals<'a>(
         &self,
-        fields_provided: &'a InputFieldCollection<'a, I, O, CtxOptions, ErrorTool>,
+        fields_provided: &'a FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool>,
         ctx: SharedIvoContext<I, O>,
         options: SharedRwCtxOptions<CtxOptions>,
     ) -> (I::Partial, O::Partial, bool) {
@@ -891,10 +937,10 @@ impl<
 
     async fn resolve_dependent_values<'a>(
         &self,
-        fields_provided: &'a InputFieldCollection<'a, I, O, CtxOptions, ErrorTool>,
+        fields_changed: &'a FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool>,
         ctx: SharedIvoContext<I, O>,
         options: SharedRwCtxOptions<CtxOptions>,
-    ) -> (I::Partial, O::Partial, bool, Vec<InputFieldInfo>) {
+    ) -> (I::Partial, O::Partial, bool, Vec<FieldInfo>) {
         let mut resolvers = vec![];
 
         for (field_name, config) in self.schema.field_configs.iter() {
@@ -909,7 +955,7 @@ impl<
                     .as_ref()
                     .unwrap()
                     .iter()
-                    .any(|parent| fields_provided.contains(&parent.to_string()))
+                    .any(|parent| fields_changed.contains(&parent.to_string()))
                 {
                     resolvers.push((field_name, resolver.as_ref().unwrap()));
                 }
@@ -936,7 +982,7 @@ impl<
             if !values.ivo_internal_is_value_equal(&field_name, &value) {
                 validated_outputs.insert(field_name.clone(), value.clone());
 
-                fields_updated.push(InputFieldInfo {
+                fields_updated.push(FieldInfo {
                     config_name: field_name.clone(),
                     is_input: false,
                     is_output: true,
@@ -1009,7 +1055,7 @@ impl<
 
     async fn evaluate_missing_required_fields<'a>(
         &self,
-        fields_provided: &'a InputFieldCollection<'a, I, O, CtxOptions, ErrorTool>,
+        fields_provided: &'a FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool>,
         ctx: SharedIvoContext<I, O>,
         options: SharedRwCtxOptions<CtxOptions>,
     ) -> Result<(), ErrorTool::ErrorPayload> {
@@ -1101,15 +1147,19 @@ impl<
         return Ok(());
     }
 
-    fn prepare_failure_handlers<'a>(
+    fn prepare_failure_handlers(
         &self,
-        fields_provided: InputFieldCollection<'a, I, O, CtxOptions, ErrorTool>,
+        fields_provided: Vec<FieldInfo>,
         ctx: SharedIvoContext<I, O>,
         options: SharedCtxOptions<CtxOptions>,
     ) -> AsyncHandlerTrigger<'schema> {
-        let mut handlers = Vec::with_capacity(fields_provided.fields.len());
+        if fields_provided.is_empty() {
+            return Box::new(|| Box::pin(ready(())));
+        }
 
-        for field_info in fields_provided.fields.iter() {
+        let mut handlers = Vec::with_capacity(fields_provided.len());
+
+        for field_info in fields_provided.iter() {
             if let Some(InternalFieldConfig {
                 on_failure_fns: Some(h_vec),
                 ..
@@ -1135,13 +1185,13 @@ impl<
 
     fn prepare_success_handlers<'a>(
         &self,
-        fields_provided: InputFieldCollection<'a, I, O, CtxOptions, ErrorTool>,
+        fields_updated: FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool>,
         ctx: SharedIvoContext<I, O>,
         options: SharedCtxOptions<CtxOptions>,
     ) -> AsyncHandlerTrigger<'schema> {
         let mut field_names = HashSet::new();
 
-        for field_info in fields_provided.fields.iter() {
+        for field_info in fields_updated.fields.iter() {
             field_names.insert(field_info.config_name.clone());
         }
 
@@ -1175,7 +1225,7 @@ impl<
             {
                 if fields
                     .iter()
-                    .any(|f| fields_provided.contains(&f.to_string()))
+                    .any(|f| fields_updated.contains(&f.to_string()))
                 {
                     handlers.extend(h_vec);
                 }
@@ -1220,13 +1270,6 @@ impl<
             updated_outputs,
             do_inputs_have_updates || do_outputs_have_updates,
         )
-    }
-
-    fn make_input_fields_collection(
-        &self,
-        erased_input_values: &PartialMapOfErasedValues,
-    ) -> InputFieldCollection<'_, I, O, CtxOptions, ErrorTool> {
-        InputFieldCollection::new(self.schema, erased_input_values)
     }
 }
 

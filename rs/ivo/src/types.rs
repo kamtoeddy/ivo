@@ -31,6 +31,14 @@ pub struct PartialMapOfErasedValues {
     pub inner: HashMap<String, ErasedValue>,
 }
 
+impl PartialMapOfErasedValues {
+    pub fn new() -> Self {
+        Self {
+            inner: HashMap::new(),
+        }
+    }
+}
+
 pub trait IvoSchemaStruct:
     Debug
     + Send

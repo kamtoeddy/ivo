@@ -6,7 +6,7 @@ use crate::{
     IvoErrorTool, IvoSchemaStruct, Schema,
 };
 
-pub(super) struct InputFieldCollection<
+pub(super) struct FieldInfoCollection<
     'a,
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
@@ -17,11 +17,11 @@ pub(super) struct InputFieldCollection<
     pub schema_input_fields: Vec<String>,
     pub schema_output_fields: Vec<String>,
     config_names: HashSet<String>,
-    pub fields: Vec<InputFieldInfo>,
+    pub fields: Vec<FieldInfo>,
 }
 
 impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool>
-    InputFieldCollection<'a, I, O, CtxOptions, ErrorTool>
+    FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool>
 {
     pub fn new(
         schema: &'a Schema<I, O, CtxOptions, ErrorTool>,
@@ -61,9 +61,20 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
         }
     }
 
+    pub fn set_fields(&mut self, fields: Vec<FieldInfo>) {
+        let mut config_names = HashSet::new();
+
+        for field_info in fields.iter() {
+            config_names.insert(field_info.config_name.clone());
+        }
+
+        self.config_names = config_names;
+        self.fields = fields;
+    }
+
     pub fn from_fields(
         schema: &'a Schema<I, O, CtxOptions, ErrorTool>,
-        fields: &Vec<InputFieldInfo>,
+        fields: Vec<FieldInfo>,
         schema_input_fields: &Vec<String>,
         schema_output_fields: &Vec<String>,
     ) -> Self {
@@ -78,7 +89,7 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
             schema_input_fields: schema_input_fields.clone(),
             schema_output_fields: schema_output_fields.clone(),
             config_names,
-            fields: fields.clone(),
+            fields,
         }
     }
 
@@ -86,11 +97,11 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
         self.config_names.contains(field_name)
     }
 
-    fn _find(&self, field_name: &String) -> Option<InputFieldInfo> {
+    fn _find(&self, field_name: &String) -> Option<FieldInfo> {
         self.fields.iter().find(|f| f.name == *field_name).cloned()
     }
 
-    pub fn get(&self, field_name: &String) -> Option<InputFieldInfo> {
+    pub fn get(&self, field_name: &String) -> Option<FieldInfo> {
         self._find(field_name).or_else(|| {
             Self::get_field_info(
                 field_name,
@@ -106,13 +117,13 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
         schema: &Schema<I, O, CtxOptions, ErrorTool>,
         schema_input_fields: &Vec<String>,
         schema_output_fields: &Vec<String>,
-    ) -> Option<InputFieldInfo> {
+    ) -> Option<FieldInfo> {
         if let Some(InternalFieldConfig {
             alias, depends_on, ..
         }) = schema.field_configs.get(field_name)
         {
             if depends_on.is_none() {
-                return Some(InputFieldInfo {
+                return Some(FieldInfo {
                     config_name: field_name.clone(),
                     is_input: schema_input_fields.contains(field_name),
                     is_output: schema_output_fields.contains(field_name),
@@ -131,7 +142,7 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
                         validator: Some(validator),
                         ..
                     }) if alias == field_name => {
-                        return Some(InputFieldInfo {
+                        return Some(FieldInfo {
                             config_name: parent_name.to_string(),
                             is_input: true,
                             is_output: false,
@@ -148,7 +159,7 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
 }
 
 impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool> Clone
-    for InputFieldCollection<'a, I, O, CtxOptions, ErrorTool>
+    for FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool>
 {
     fn clone(&self) -> Self {
         Self {
@@ -162,7 +173,7 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
 }
 
 #[derive(Clone, Debug)]
-pub(super) struct InputFieldInfo {
+pub(super) struct FieldInfo {
     pub name: String,
     pub config_name: String,
     pub is_input: bool,

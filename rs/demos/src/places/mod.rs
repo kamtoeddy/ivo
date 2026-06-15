@@ -42,7 +42,7 @@ pub async fn run_places_demo() {
 
     let timer = Instant::now();
 
-    let user = Place {
+    let place = Place {
         id: 1,
         coordinates: Coodinates {
             lat: 4.756841301293143,
@@ -51,11 +51,12 @@ pub async fn run_places_demo() {
         name: Some("Centre Administratif, Bafia, Mbam-et-Inoubou, Centre, Cameroun".into()),
     };
 
-    println!("{:?}\n", user);
+    println!("{:?}\n", place);
 
     let updates = PartialPlaceInput {
+        // coordinates: None,
         // coordinates: Some(Coodinates {
-        //     lat: 4.756841301293143,
+        //     lat: 10.756841301293143,
         //     lon: 11.235494655828541,
         // }),
         coordinates: Some(Coodinates {
@@ -65,7 +66,7 @@ pub async fn run_places_demo() {
     };
 
     let r = PLACE_MODEL
-        .update(&user, &updates, PlacesCtxOptions::new())
+        .update(&place, &updates, PlacesCtxOptions::new())
         .await;
 
     match r {
@@ -73,7 +74,7 @@ pub async fn run_places_demo() {
             println!("updates: {:?}\n", data);
             println!(
                 "old + updates: {:?}\n",
-                user.ivo_internal_clone_with_ref(&data)
+                place.ivo_internal_clone_with_ref(&data)
             );
 
             handle_success().await;
