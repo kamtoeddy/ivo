@@ -1,3 +1,3 @@
 #![cfg(test)]
 
-mod schema_configs;
+mod field_configs;
