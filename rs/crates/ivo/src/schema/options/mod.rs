@@ -1,3 +1,9 @@
+pub mod base;
+pub mod on_success;
+pub mod post_validate;
+pub mod timestamp_tool;
+pub(crate) mod types;
+
 use crate::{
     schema::{
         fields::types::IntoDeleteHandler,
@@ -10,12 +16,6 @@ use crate::{
     types::Yes,
     IvoErrorTool, IvoSchemaStruct,
 };
-
-pub mod base;
-pub mod on_success;
-pub mod post_validate;
-pub mod timestamp_tool;
-pub(crate) mod types;
 
 pub use types::{IvoValues, PostValidatorResponse};
 

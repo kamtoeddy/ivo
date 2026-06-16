@@ -129,7 +129,7 @@ pub fn generate_partial_struct<T: ToTokens>(
             }
         }
 
-        impl #crate_root::types::MethodsOfPartialIvoStructs for #partial_struct_name {
+        impl #crate_root::types::MethodsOfPartialIvoStruct for #partial_struct_name {
             fn ivo_internal_clone_with_erased_updates(&self, updates: &std::collections::HashMap<String, #crate_root::ErasedValue>) -> (Self, bool) {
                 use #crate_root::parse_or_panic;
                 let mut partial_output = self.clone();

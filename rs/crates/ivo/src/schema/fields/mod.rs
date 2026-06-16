@@ -1,3 +1,11 @@
+pub mod base;
+mod constants;
+mod dependents;
+mod lax;
+mod required;
+pub mod types;
+mod virtuals;
+
 use std::marker::PhantomData;
 
 use crate::{
@@ -10,14 +18,6 @@ use crate::{
     },
     IvoSchemaStruct,
 };
-
-pub mod base;
-mod constants;
-mod dependents;
-mod lax;
-mod required;
-pub mod types;
-mod virtuals;
 
 pub use base::TimestampFieldConfig;
 

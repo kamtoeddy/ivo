@@ -109,13 +109,13 @@ pub fn generate_ivo_struct_impls<T: ToTokens>(
             }
         }
 
-        impl #crate_root::types::HasFields for #struct_name {
+        impl #crate_root::types::IvoFieldNames for #struct_name {
             fn ivo_internal_field_names() -> Vec<String> {
                 #field_names.into_iter().map(|f| String::from(f)).collect()
             }
         }
 
-        impl #crate_root::types::HasPartial for #struct_name {
+        impl #crate_root::types::WithPartialStruct for #struct_name {
             type Partial = #partial_struct_name;
         }
 

@@ -1,9 +1,9 @@
 #![allow(type_alias_bounds)]
-use std::{any::Any, collections::HashMap, fmt::Debug};
 
 use futures::future::BoxFuture;
 pub use futures_locks::RwLock;
 pub use std::sync::Arc;
+use std::{any::Any, collections::HashMap, fmt::Debug};
 
 use crate::schema::error::DefaultFieldErrorMetadata;
 
@@ -13,7 +13,7 @@ pub struct No;
 pub struct YesComputed;
 
 #[derive(Debug)]
-pub struct False;
+pub(crate) struct False;
 
 // Optional: implement Deref to make it behave like bool
 impl std::ops::Deref for False {
@@ -45,15 +45,15 @@ pub trait IvoSchemaStruct:
     + Sync
     + Sized
     + 'static
-    + HasFields
-    + HasPartial
+    + IvoFieldNames
+    + WithPartialStruct
     + FromToMap
     + MethodsOfIvoStruct
     + Into<Self::Partial>
 {
 }
 
-pub trait FromToMap: HasPartial {
+pub trait FromToMap: WithPartialStruct {
     fn ivo_internal_from_erased_map(map: &HashMap<String, ErasedValue>) -> Self;
     fn ivo_internal_to_erased_map(&self) -> HashMap<String, ErasedValue>;
 }
@@ -64,11 +64,11 @@ pub trait PartialFromToMap {
     fn ivo_internal_to_optional_erased_map(&self) -> PartialMapOfErasedValues;
 }
 
-pub trait HasFields {
+pub trait IvoFieldNames {
     fn ivo_internal_field_names() -> Vec<String>;
 }
 
-pub trait HasPartial {
+pub trait WithPartialStruct {
     type Partial: PartialEq
         + Debug
         + Default
@@ -76,10 +76,10 @@ pub trait HasPartial {
         + Sync
         + Clone
         + PartialFromToMap
-        + MethodsOfPartialIvoStructs;
+        + MethodsOfPartialIvoStruct;
 }
 
-pub trait MethodsOfIvoStruct: HasPartial + Clone + Sized {
+pub trait MethodsOfIvoStruct: WithPartialStruct + Clone + Sized {
     fn ivo_internal_dangerously_get_values_from_partial(partial_values: Self::Partial) -> Self;
 
     fn ivo_internal_get_updates_from_partial(
@@ -102,7 +102,7 @@ pub trait MethodsOfIvoStruct: HasPartial + Clone + Sized {
     fn ivo_internal_update_with(&mut self, updates: &Self::Partial);
 }
 
-pub trait MethodsOfPartialIvoStructs: Clone + Sized {
+pub trait MethodsOfPartialIvoStruct: Clone + Sized {
     fn ivo_internal_clone_with_erased_updates(
         &self,
         updates: &HashMap<String, ErasedValue>,
@@ -120,7 +120,7 @@ pub type SharedIvoContext<I, O> = SharedData<IvoContext<I, O>>;
 pub type SharedIvoMiniContext<I: IvoSchemaStruct> = SharedData<IvoMiniContext<I>>;
 pub type IvoMiniContext<I: IvoSchemaStruct> = I::Partial;
 
-pub type Partial<T> = <T as HasPartial>::Partial;
+pub type Partial<T> = <T as WithPartialStruct>::Partial;
 
 pub trait CloneableAny: Any + Send + Sync {
     fn clone_box(&self) -> Box<dyn CloneableAny>;

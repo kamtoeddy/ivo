@@ -10,18 +10,18 @@ pub struct OnSuccessOptionBuilder<
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
     CtxOptions,
-    HasFields = No,
+    IvoFieldNames = No,
     HasHandlers = No,
 > {
-    _f: PhantomData<HasFields>,
+    _f: PhantomData<IvoFieldNames>,
     _h: PhantomData<HasHandlers>,
     // actual data...
     fields: Vec<&'static str>,
     handlers: Vec<SuccessHandler<I, O, CtxOptions>>,
 }
 
-impl<HasFields, HasHandlers, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> Default
-    for OnSuccessOptionBuilder<I, O, CtxOptions, HasFields, HasHandlers>
+impl<IvoFieldNames, HasHandlers, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> Default
+    for OnSuccessOptionBuilder<I, O, CtxOptions, IvoFieldNames, HasHandlers>
 {
     fn default() -> Self {
         Self {

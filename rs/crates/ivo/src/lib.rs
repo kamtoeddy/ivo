@@ -1,3 +1,4 @@
+mod model;
 mod schema;
 pub mod types;
 
@@ -16,10 +17,14 @@ pub use schema::{
     },
     fields::IvoField,
     options::{IvoValues, PostValidatorResponse},
-    Model, Schema,
+    Schema,
 };
+
+pub use model::Model;
+
 pub use types::{
-    erase_value, parse_or_panic, parse_value, Arc, ErasedValue, FromToMap, HasFields, HasPartial,
-    IvoContext, IvoMiniContext, IvoSchemaStruct, Partial, RwLock, SharedCtxOptions, SharedData,
+    erase_value, parse_or_panic, parse_value, Arc, ErasedValue, FromToMap, IvoContext,
+    IvoFieldNames, IvoMiniContext, IvoSchemaStruct, Partial, RwLock, SharedCtxOptions, SharedData,
     SharedIvoContext, SharedIvoMiniContext, SharedRwCtxOptions, ValidatorError, ValidatorResponse,
+    WithPartialStruct,
 };

@@ -1,13 +1,15 @@
+mod internal;
+
 use std::collections::{HashMap, HashSet};
 use std::future::ready;
 use std::sync::Arc;
 
-use crate::schema::core::Schema;
+use crate::model::internal::{FieldInfo, FieldInfoCollection};
 use crate::schema::error::{DefaultErrorTool, FieldError, IvoErrorTool, UpdateError};
 use crate::schema::fields::base::{FieldType, InternalFieldConfig};
 use crate::schema::fields::types::{ComputableRequiredError, ComputableWithMiniContext};
+use crate::schema::Schema;
 
-use crate::schema::internal::{FieldInfo, FieldInfoCollection};
 use crate::schema::options::types::{OnSuccessConfig, PostValidationConfig};
 
 use crate::{
@@ -18,7 +20,7 @@ use futures::future::{join_all, BoxFuture};
 use futures::FutureExt;
 
 use crate::types::{
-    ErasedValue, IvoSchemaStruct, MethodsOfPartialIvoStructs, Partial, PartialFromToMap,
+    ErasedValue, IvoSchemaStruct, MethodsOfPartialIvoStruct, Partial, PartialFromToMap,
     PartialMapOfErasedValues, RwLock,
 };
 
@@ -535,22 +537,6 @@ impl<
                 ));
             }
         }
-
-        // println!("\n----------------------------------------------------------------------------------------------------------------------------------");
-
-        // println!(
-        //     "initial data: {:?} \n\ninput_values: {:?} \n\nchanges: {:?} \n\nvalidated inputs: {:?} \n\nvalidated outputs: {:?} \n\ninputs: {:?} \n\nvalues: {:?} \n\n should_gen_new_ctx: {}",
-        //     data,
-        //     ctx.input_values(),
-        //     ctx.changes(),
-        //     validated_inputs,
-        //     validated_outputs,
-        //     ctx.input(),
-        //     ctx.values(),
-        //     should_gen_new_ctx
-        // );
-
-        // println!("----------------------------------------------------------------------------------------------------------------------------------\n");
 
         let (updated_values, has_updated_fields) =
             data.ivo_internal_get_updates_from_partial(&ctx.changes());

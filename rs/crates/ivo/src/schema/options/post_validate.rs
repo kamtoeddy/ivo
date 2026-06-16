@@ -14,11 +14,11 @@ pub struct PostValidateOptionBuilder<
     O: IvoSchemaStruct,
     CtxOptions,
     ErrorTool: IvoErrorTool,
-    HasFields = No,
+    IvoFieldNames = No,
     HasValidator = No,
     HasPreValidator = No,
 > {
-    _has_fields: PhantomData<HasFields>,
+    _has_fields: PhantomData<IvoFieldNames>,
     _pre_v: PhantomData<HasPreValidator>,
     _validator: PhantomData<HasValidator>,
     // actual data...
@@ -28,7 +28,7 @@ pub struct PostValidateOptionBuilder<
 }
 
 impl<
-        HasFields,
+        IvoFieldNames,
         HasPreValidator,
         HasValidator,
         I: IvoSchemaStruct,
@@ -41,7 +41,7 @@ impl<
         O,
         CtxOptions,
         ErrorTool,
-        HasFields,
+        IvoFieldNames,
         HasPreValidator,
         HasValidator,
     >
