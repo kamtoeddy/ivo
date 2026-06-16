@@ -14,9 +14,9 @@ jobs:
         bun-version: [1.x]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
       - name: Use Bun.js v${{ matrix.bun-version }}
-        uses: oven-sh/setup-bun@v1
+        uses: oven-sh/setup-bun@v2
         with:
           version: ${{ matrix.bun-version }}
 
