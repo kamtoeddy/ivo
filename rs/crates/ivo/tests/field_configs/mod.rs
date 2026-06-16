@@ -160,7 +160,7 @@ fn should_reject_if_field_name_is_same_updated_at_if_enabled_with_custom_name() 
 }
 
 #[test]
-#[should_panic(expected = "[id]: is an output field. It must be present on \u{1b}[1mData")]
+#[should_panic(expected = "[id]: is a purely output field. It must be present on \u{1b}[1mData")]
 fn should_reject_if_constant_field_does_not_exist_on_output_struct() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
@@ -183,21 +183,34 @@ fn should_reject_if_constant_field_does_not_exist_on_output_struct() {
 fn should_reject_if_dependent_field_does_not_exist_on_output_struct() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
-        _c: String,
+        lax: String,
     }
 
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct DataInput {
+        lax: String,
         virtual_field: String,
     }
 
     let _: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set("dependent", IvoField::CONSTANT.computed(|_, _| ready(12)))
-                .set(
-                    "virtual_field",
-                    IvoField::VIRTUAL.validate(|v: String, _, _| ready(Ok(v))),
-                )
+            f.set(
+                "dependent",
+                IvoField::DEPENDENT
+                    .default(1)
+                    .depends_on(["lax"])
+                    .resolve(|_, _| ready(12)),
+            )
+            .set(
+                "lax",
+                IvoField::LAX
+                    .default("default".into())
+                    .validate(|v: String, _, _| ready(Ok(v))),
+            )
+            .set(
+                "virtual_field",
+                IvoField::VIRTUAL.validate(|v: String, _, _| ready(Ok(v))),
+            )
         },
         |o| o,
     );

@@ -147,8 +147,25 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
 
             field_names.insert(field_name);
 
-            // virtuals
             match config {
+                InternalFieldConfig {
+                    field_type: FieldType::Constant,
+                    ..
+                } => {
+                    if !output_field_names.contains(field_name) {
+                        panic!(
+                            "\n{COLOR_RED}[{field_name}]: is a purely output field. It must be present on {output_struct_name}{STYLE_RESET}\n"
+                        );
+                    }
+
+                    if input_field_names.contains(field_name) {
+                        panic!(
+                            "\n{COLOR_RED}[{field_name}]: is a purely output field. It should not be present on {input_struct_name}{STYLE_RESET}\n"
+                        );
+                    }
+
+                    continue;
+                }
                 InternalFieldConfig {
                     field_type: FieldType::Virtual,
                     alias,
@@ -226,10 +243,6 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
             }
 
             match config {
-                InternalFieldConfig {
-                    field_type: FieldType::Dependent,
-                    ..
-                } => {}
                 InternalFieldConfig {
                     field_type: FieldType::Lax | FieldType::Required,
                     ..
