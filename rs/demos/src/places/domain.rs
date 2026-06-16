@@ -172,8 +172,8 @@ pub static PLACE_SCHEMA: LazyLock<Schema<PlaceInput, Place, PlacesCtxOptions, Pl
                             ready(())
                         }),
                 )
-                .created_at(|| "Date.now()", None)
-                .updated_at(|| "Date.now()", Some("updated_on"), true)
+                // .created_at(|| "Date.now()", None)
+                // .updated_at(|| "Date.now()", Some("updated_on"), true)
             },
             |o| {
                 o.on_delete(|_, _| {

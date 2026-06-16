@@ -12,8 +12,8 @@ pub async fn run_users_demo() {
     let timer = Instant::now();
 
     let input = PartialUserInput {
-        email: None,
-        // email: Some("1@1.com".into()),
+        // email: None,
+        email: Some("1@1.com".into()),
         username: Some("user-10".into()),
         role: None,
         // role: Some(UserRole::Moderator),
@@ -53,12 +53,14 @@ pub async fn run_users_demo() {
     };
 
     let user = User {
+        created_at: "just now".into(),
         email: "1@1.com".into(),
         id: 1,
         username,
         username_last_updated_at: None,
         slug_id,
         role: UserRole::Admin,
+        updated_on: None,
     };
 
     println!("{:?}\n", user);
@@ -122,8 +124,4 @@ pub async fn run_users_demo() {
     if let Some(Some(v)) = map.get("k") {
         println!("k = {}", parse_or_panic::<i32>(v))
     }
-
-    let struct_name = User::ivo_internal_name();
-
-    println!("Partial<{struct_name}> = Partial{struct_name}")
 }
