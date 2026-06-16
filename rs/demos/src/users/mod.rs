@@ -1,4 +1,4 @@
-use ivo::{UpdateError, erase_value, parse_or_panic, types::MethodsOfIvoStruct};
+use ivo::{UpdateError, erase_value, parse_or_panic, types::IvoStructMethods};
 use std::{collections::HashMap, mem, time::Instant};
 
 mod domain;
@@ -122,4 +122,8 @@ pub async fn run_users_demo() {
     if let Some(Some(v)) = map.get("k") {
         println!("k = {}", parse_or_panic::<i32>(v))
     }
+
+    let struct_name = User::ivo_internal_name();
+
+    println!("Partial<{struct_name}> = Partial{struct_name}")
 }

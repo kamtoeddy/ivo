@@ -92,7 +92,7 @@ pub fn generate_ivo_struct_impls<T: ToTokens>(
 
         impl #crate_root::types::IvoSchemaStruct for #struct_name { }
 
-        impl #crate_root::types::FromToMap for #struct_name {
+        impl #crate_root::types::IvoStructFromToErasedMap for #struct_name {
             fn ivo_internal_from_erased_map(map: &std::collections::HashMap<String, #crate_root::ErasedValue>) -> Self{
                 Self {
                     #( #construct_struct_fields_for_from_erased_map )*
@@ -109,17 +109,12 @@ pub fn generate_ivo_struct_impls<T: ToTokens>(
             }
         }
 
-        impl #crate_root::types::IvoFieldNames for #struct_name {
-            fn ivo_internal_field_names() -> Vec<String> {
-                #field_names.into_iter().map(|f| String::from(f)).collect()
-            }
-        }
 
-        impl #crate_root::types::WithPartialStruct for #struct_name {
+        impl #crate_root::types::WithIvoStructPartial for #struct_name {
             type Partial = #partial_struct_name;
         }
 
-        impl #crate_root::types::MethodsOfIvoStruct for #struct_name {
+        impl #crate_root::types::IvoStructMethods for #struct_name {
             fn ivo_internal_dangerously_get_values_from_partial(values: Self::Partial) -> Self {
                 Self {
                     #( #from_partial )*
@@ -137,6 +132,14 @@ pub fn generate_ivo_struct_impls<T: ToTokens>(
 
             fn ivo_internal_update_with(&mut self, updates: &Self::Partial) {
                 #( #set_updated_values )*
+            }
+
+            fn ivo_internal_field_names() -> Vec<String> {
+                #field_names.into_iter().map(|f| String::from(f)).collect()
+            }
+
+            fn ivo_internal_name() -> String {
+                String::from(stringify!(#struct_name))
             }
         }
     }

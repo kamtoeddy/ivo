@@ -24,7 +24,7 @@ impl std::ops::Deref for False {
 }
 
 /// This is used to show that this map does not contain all
-/// the field of an ivo struct, but each erased value
+/// the fields of an ivo struct, but each erased value
 /// represents an actual value, T in the struct, not
 /// the Option<T>.
 pub struct PartialMapOfErasedValues {
@@ -45,41 +45,36 @@ pub trait IvoSchemaStruct:
     + Sync
     + Sized
     + 'static
-    + IvoFieldNames
-    + WithPartialStruct
-    + FromToMap
-    + MethodsOfIvoStruct
+    + WithIvoStructPartial
+    + IvoStructFromToErasedMap
+    + IvoStructMethods
     + Into<Self::Partial>
 {
 }
 
-pub trait FromToMap: WithPartialStruct {
+pub trait IvoStructFromToErasedMap: WithIvoStructPartial {
     fn ivo_internal_from_erased_map(map: &HashMap<String, ErasedValue>) -> Self;
     fn ivo_internal_to_erased_map(&self) -> HashMap<String, ErasedValue>;
 }
 
-pub trait PartialFromToMap {
+pub trait IvoStructPartialFromToErasedMap {
     fn ivo_internal_from_optional_erased_map(map: PartialMapOfErasedValues) -> Self;
     fn ivo_internal_from_optional_erased_map_ref(map: &PartialMapOfErasedValues) -> Self;
     fn ivo_internal_to_optional_erased_map(&self) -> PartialMapOfErasedValues;
 }
 
-pub trait IvoFieldNames {
-    fn ivo_internal_field_names() -> Vec<String>;
-}
-
-pub trait WithPartialStruct {
+pub trait WithIvoStructPartial {
     type Partial: PartialEq
         + Debug
         + Default
         + Send
         + Sync
         + Clone
-        + PartialFromToMap
-        + MethodsOfPartialIvoStruct;
+        + IvoStructPartialFromToErasedMap
+        + IvoStructPartialMethods;
 }
 
-pub trait MethodsOfIvoStruct: WithPartialStruct + Clone + Sized {
+pub trait IvoStructMethods: WithIvoStructPartial + Clone {
     fn ivo_internal_dangerously_get_values_from_partial(partial_values: Self::Partial) -> Self;
 
     fn ivo_internal_get_updates_from_partial(
@@ -100,9 +95,13 @@ pub trait MethodsOfIvoStruct: WithPartialStruct + Clone + Sized {
     }
 
     fn ivo_internal_update_with(&mut self, updates: &Self::Partial);
+
+    fn ivo_internal_field_names() -> Vec<String>;
+
+    fn ivo_internal_name() -> String;
 }
 
-pub trait MethodsOfPartialIvoStruct: Clone + Sized {
+pub trait IvoStructPartialMethods: Clone {
     fn ivo_internal_clone_with_erased_updates(
         &self,
         updates: &HashMap<String, ErasedValue>,
@@ -116,11 +115,11 @@ pub trait MethodsOfPartialIvoStruct: Clone + Sized {
 pub type SharedData<T> = Arc<T>;
 pub type SharedCtxOptions<CtxOptions> = SharedData<CtxOptions>;
 pub type SharedRwCtxOptions<CtxOptions> = SharedData<RwLock<CtxOptions>>;
-pub type SharedIvoContext<I, O> = SharedData<IvoContext<I, O>>;
+pub type SharedIvoContext<I: IvoSchemaStruct, O: IvoSchemaStruct> = SharedData<IvoContext<I, O>>;
 pub type SharedIvoMiniContext<I: IvoSchemaStruct> = SharedData<IvoMiniContext<I>>;
 pub type IvoMiniContext<I: IvoSchemaStruct> = I::Partial;
 
-pub type Partial<T> = <T as WithPartialStruct>::Partial;
+pub type Partial<T> = <T as WithIvoStructPartial>::Partial;
 
 pub trait CloneableAny: Any + Send + Sync {
     fn clone_box(&self) -> Box<dyn CloneableAny>;
@@ -247,17 +246,17 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct> IvoContext<I, O> {
     }
 }
 
-pub type DeleteHandler<O, CtxOptions> =
+pub type DeleteHandler<O: IvoSchemaStruct, CtxOptions> =
     Box<dyn Fn(Arc<O>, Arc<CtxOptions>) -> BoxFuture<'static, ()> + Send + Sync + 'static>;
 
-pub type FailureHandler<I, O, CtxOptions> = Box<
+pub type FailureHandler<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> = Box<
     dyn Fn(Arc<IvoContext<I, O>>, Arc<CtxOptions>) -> BoxFuture<'static, ()>
         + Send
         + Sync
         + 'static,
 >;
 
-pub type SuccessHandler<I, O, CtxOptions> = Box<
+pub type SuccessHandler<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> = Box<
     dyn Fn(Arc<IvoContext<I, O>>, Arc<CtxOptions>) -> BoxFuture<'static, ()>
         + Send
         + Sync

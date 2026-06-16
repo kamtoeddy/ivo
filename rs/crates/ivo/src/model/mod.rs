@@ -20,8 +20,8 @@ use futures::future::{join_all, BoxFuture};
 use futures::FutureExt;
 
 use crate::types::{
-    ErasedValue, IvoSchemaStruct, MethodsOfPartialIvoStruct, Partial, PartialFromToMap,
-    PartialMapOfErasedValues, RwLock,
+    ErasedValue, IvoSchemaStruct, IvoStructPartialFromToErasedMap, IvoStructPartialMethods,
+    Partial, PartialMapOfErasedValues, RwLock,
 };
 
 type AsyncHandlerTrigger<'a> = Box<dyn Fn() -> BoxFuture<'a, ()> + Send + Sync + 'a>;

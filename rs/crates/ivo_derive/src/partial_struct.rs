@@ -101,7 +101,7 @@ pub fn generate_partial_struct<T: ToTokens>(
             #( #partial_fields )*
         }
 
-        impl #crate_root::types::PartialFromToMap for #partial_struct_name {
+        impl #crate_root::types::IvoStructPartialFromToErasedMap for #partial_struct_name {
             fn ivo_internal_from_optional_erased_map(optional_map: #crate_root::types::PartialMapOfErasedValues) -> Self {
                 use #crate_root::parse_value;
 
@@ -129,7 +129,7 @@ pub fn generate_partial_struct<T: ToTokens>(
             }
         }
 
-        impl #crate_root::types::MethodsOfPartialIvoStruct for #partial_struct_name {
+        impl #crate_root::types::IvoStructPartialMethods for #partial_struct_name {
             fn ivo_internal_clone_with_erased_updates(&self, updates: &std::collections::HashMap<String, #crate_root::ErasedValue>) -> (Self, bool) {
                 use #crate_root::parse_or_panic;
                 let mut partial_output = self.clone();

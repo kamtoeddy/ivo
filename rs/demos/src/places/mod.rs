@@ -1,4 +1,4 @@
-use ivo::{UpdateError, types::MethodsOfIvoStruct};
+use ivo::{UpdateError, types::IvoStructMethods};
 use std::time::Instant;
 
 mod domain;
