@@ -51,24 +51,16 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
     {
         let fields = f(FieldBuilder::new());
 
-        let s = Self {
+        Self {
             field_configs: Self::make_field_configs(
                 fields.configs,
                 &fields.timestamp_created_at,
                 &fields.timestamp_upated_at,
             ),
-            options: o(SchemaOptions::new()).build(),
+            options: Self::make_options(o(SchemaOptions::new()).build()),
             _timestamp_created_at: fields.timestamp_created_at,
             _timestamp_updated_at: fields.timestamp_upated_at,
-        };
-
-        s.check_options();
-
-        s
-    }
-
-    fn check_options(&self) {
-        // todo!()
+        }
     }
 
     fn make_field_configs(
@@ -119,12 +111,11 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
             }
         }
 
+        let mut constant_field_names = HashSet::new();
         let mut field_names = HashSet::new();
         let mut alias_to_virtual = HashMap::new();
 
         for (field_name, config) in config_tuples.iter() {
-            let field_name_str = field_name.as_str();
-
             if field_names.contains(field_name) {
                 panic!("\n{COLOR_RED}[{field_name}]: occurs more than once, please remove duplicates{STYLE_RESET}\n");
             }
@@ -164,6 +155,8 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
                         );
                     }
 
+                    constant_field_names.insert(field_name);
+
                     continue;
                 }
                 InternalFieldConfig {
@@ -195,6 +188,8 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
                                 );
                             }
                         }
+
+                        let field_name_str = field_name.as_str();
 
                         for (name, config) in config_tuples.iter() {
                             if name != alias {
@@ -256,6 +251,63 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
             }
         }
 
+        for (field_name, config) in config_tuples.iter() {
+            match config {
+                InternalFieldConfig {
+                    field_type: FieldType::Dependent,
+                    depends_on: Some(parent_fields),
+                    ..
+                } => {
+                    if parent_fields.is_empty() {
+                        panic!("\n{COLOR_RED}[{field_name}]: must depend on at least one lax, required, virtual or other dependent field on your schema{STYLE_RESET}\n");
+                    }
+
+                    // if HashSet::from(parent_fields).len() != parent_fields.len() {
+                    //     panic!("\n{COLOR_RED}[{field_name}]: must depend on at least one lax, required, virtual or other dependent field on your schema{STYLE_RESET}\n");
+                    // }
+
+                    for parent_field in parent_fields {
+                        let parent_field_string = parent_field.to_string();
+
+                        if !field_names.contains(&parent_field_string) {
+                            panic!(
+                                "\n{COLOR_RED}[{field_name}]: cannot depend on \"{parent_field}\" because it is not a field on your schema{STYLE_RESET}\n"
+                            );
+                        }
+
+                        if parent_field == field_name {
+                            panic!(
+                                "\n{COLOR_RED}[{field_name}]: cannot depend on itself{STYLE_RESET}\n"
+                            );
+                        }
+
+                        if constant_field_names.contains(&parent_field_string) {
+                            panic!(
+                                "\n{COLOR_RED}[{field_name}]: cannot depend on \"{parent_field}\" because it is a constant{STYLE_RESET}\n"
+                            );
+                        }
+
+                        if let Some(TimestampFieldConfig { name, .. }) = timestamp_created_at {
+                            if parent_field == name {
+                                panic!(
+                                    "\n{COLOR_RED}[{field_name}]: cannot depend on \"{parent_field}\" because it is the creation timestamp on {output_struct_name}{STYLE_RESET}\n"
+                                );
+                            }
+                        }
+
+                        if let Some(TimestampFieldConfig { name, .. }) = timestamp_updated_at {
+                            if parent_field == name {
+                                panic!(
+                                    "\n{COLOR_RED}[{field_name}]: cannot depend on \"{parent_field}\" because it is the update timestamp on {output_struct_name}{STYLE_RESET}\n"
+                                );
+                            }
+                        }
+                    }
+                }
+                _ => (),
+            }
+        }
+
         let mut field_configs = HashMap::new();
 
         for (field_name, config) in config_tuples {
@@ -265,26 +317,10 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
         field_configs
     }
 
-    pub fn get_reserved_keys(&self) -> Vec<String> {
-        todo!()
-        // let mut keys: Vec<String> = self.props.iter().cloned().collect();
-
-        // keys.extend(self.virtuals.iter().cloned());
-
-        // if let Some(k) = &self.timestamp_tool.get_keys().created_at {
-        //     if !k.is_empty() {
-        //         keys.push(k.clone());
-        //     }
-        // }
-
-        // if let Some(k) = &self.timestamp_tool.get_keys().updated_at {
-        //     if !k.is_empty() {
-        //         keys.push(k.clone());
-        //     }
-        // }
-
-        // keys.sort();
-        // keys
+    fn make_options(
+        options: SchemaOptions<I, O, CtxOptions, ErrorTool>,
+    ) -> SchemaOptions<I, O, CtxOptions, ErrorTool> {
+        options
     }
 }
 
