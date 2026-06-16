@@ -40,7 +40,7 @@ fn should_reject_if_field_name_is_already_set() {
 
 #[test]
 #[should_panic(
-    expected = "[created_at]: \"created_at\" is already set as the \"created_at\" timestamp"
+    expected = "[created_at]: is not a valid field name. It is the creation timestamp on"
 )]
 fn should_reject_if_field_name_is_same_created_at_if_enabled_with_default_name() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
@@ -71,7 +71,7 @@ fn should_reject_if_field_name_is_same_created_at_if_enabled_with_default_name()
 
 #[test]
 #[should_panic(
-    expected = "[custom_created_at]: \"custom_created_at\" is already set as the \"created_at\" timestamp"
+    expected = "[custom_created_at]: is not a valid field name. It is the creation timestamp on"
 )]
 fn should_reject_if_field_name_is_same_created_at_if_enabled_with_custom_name() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
@@ -100,9 +100,7 @@ fn should_reject_if_field_name_is_same_created_at_if_enabled_with_custom_name() 
 }
 
 #[test]
-#[should_panic(
-    expected = "[updated_at]: \"updated_at\" is already set as the \"updated_at\" timestamp"
-)]
+#[should_panic(expected = "[updated_at]: is not a valid field name. It is the update timestamp on")]
 fn should_reject_if_field_name_is_same_updated_at_if_enabled_with_default_name() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
@@ -132,7 +130,7 @@ fn should_reject_if_field_name_is_same_updated_at_if_enabled_with_default_name()
 
 #[test]
 #[should_panic(
-    expected = "[custom_updated_at]: \"custom_updated_at\" is already set as the \"updated_at\" timestamp"
+    expected = "[custom_updated_at]: is not a valid field name. It is the update timestamp on"
 )]
 fn should_reject_if_field_name_is_same_updated_at_if_enabled_with_custom_name() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]

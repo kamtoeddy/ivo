@@ -128,7 +128,7 @@ fn should_reject_with_alias_as_unrelated_dependent_field() {
 
 #[test]
 #[should_panic(
-    expected = "[virtual_field]: \"created_at\" is not a valid alias because it has already been set as the \"created_at\" timestamp"
+    expected = "[virtual_field]: \"created_at\" is not a valid alias. It is the creation timestamp on"
 )]
 fn should_reject_if_alias_is_same_created_at_if_enabled_with_default_name() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
@@ -158,7 +158,7 @@ fn should_reject_if_alias_is_same_created_at_if_enabled_with_default_name() {
 
 #[test]
 #[should_panic(
-    expected = "[virtual_field]: \"custom_created_at\" is not a valid alias because it has already been set as the \"created_at\" timestamp"
+    expected = "[virtual_field]: \"custom_created_at\" is not a valid alias. It is the creation timestamp on"
 )]
 fn should_reject_if_alias_is_same_created_at_if_enabled_with_custom_name() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
@@ -187,7 +187,7 @@ fn should_reject_if_alias_is_same_created_at_if_enabled_with_custom_name() {
 
 #[test]
 #[should_panic(
-    expected = "[virtual_field]: \"updated_at\" is not a valid alias because it has already been set as the \"updated_at\" timestamp"
+    expected = "[virtual_field]: \"updated_at\" is not a valid alias. It is the update timestamp on"
 )]
 fn should_reject_if_alias_is_same_updated_at_if_enabled_with_default_name() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
@@ -217,7 +217,7 @@ fn should_reject_if_alias_is_same_updated_at_if_enabled_with_default_name() {
 
 #[test]
 #[should_panic(
-    expected = "[virtual_field]: \"custom_updated_at\" is not a valid alias because it has already been set as the \"updated_at\" timestamp"
+    expected = "[virtual_field]: \"custom_updated_at\" is not a valid alias. It is the update timestamp on"
 )]
 fn should_reject_if_alias_is_same_updated_at_if_enabled_with_custom_name() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]

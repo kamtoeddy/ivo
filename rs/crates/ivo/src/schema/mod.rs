@@ -17,6 +17,10 @@ use crate::types::{IvoSchemaStruct, No, Yes};
 type InternalFieldConfigs<I, O, CtxOptions, ErrorTool> =
     HashMap<String, InternalFieldConfig<I, O, CtxOptions, ErrorTool>>;
 
+const COLOR_RED: &str = "\x1b[31m";
+const STYLE_RESET: &str = "\x1b[0m";
+const FONT_BOLD: &str = "\x1b[1m";
+
 pub struct Schema<
     I: IvoSchemaStruct,
     O: IvoSchemaStruct = I,
@@ -72,6 +76,15 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
         timestamp_created_at: &Option<TimestampFieldConfig>,
         timestamp_updated_at: &Option<TimestampFieldConfig>,
     ) -> InternalFieldConfigs<I, O, CtxOptions, ErrorTool> {
+        let input_struct_name = format!(
+            "{FONT_BOLD}{}{STYLE_RESET}{COLOR_RED}",
+            I::ivo_internal_name()
+        );
+        let output_struct_name = format!(
+            "{FONT_BOLD}{}{STYLE_RESET}{COLOR_RED}",
+            O::ivo_internal_name()
+        );
+
         let mut field_names = HashSet::new();
         let mut alias_to_virtual = HashMap::new();
 
@@ -79,13 +92,13 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
             let field_name_str = field_name.as_str();
 
             if field_names.contains(field_name) {
-                panic!("[{field_name}]: occurs more than once, please remove duplicates");
+                panic!("\n{COLOR_RED}[{field_name}]: occurs more than once, please remove duplicates{STYLE_RESET}\n");
             }
 
             if let Some(TimestampFieldConfig { name, .. }) = timestamp_created_at {
                 if field_name == name {
                     panic!(
-                        "[{field_name}]: \"{name}\" is already set as the \"created_at\" timestamp"
+                        "\n{COLOR_RED}[{field_name}]: is not a valid field name. It is the creation timestamp on {output_struct_name}{STYLE_RESET}\n"
                     );
                 }
             }
@@ -93,7 +106,7 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
             if let Some(TimestampFieldConfig { name, .. }) = timestamp_updated_at {
                 if field_name == name {
                     panic!(
-                        "[{field_name}]: \"{name}\" is already set as the \"updated_at\" timestamp"
+                        "\n{COLOR_RED}[{field_name}]: is not a valid field name. It is the update timestamp on {output_struct_name}{STYLE_RESET}\n"
                     );
                 }
             }
@@ -109,17 +122,17 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
                 } => {
                     if let Some(alias) = alias {
                         if field_name == alias {
-                            panic!("[{field_name}]: virtual alias name must be different from field name");
+                            panic!("\n{COLOR_RED}[{field_name}]: virtual alias name must be different from field name{STYLE_RESET}\n");
                         }
 
                         if let Some(other_field) = alias_to_virtual.get(&alias) {
-                            panic!("[{field_name}]: \"{alias}\" is already the alias of \"{other_field}\"");
+                            panic!("\n{COLOR_RED}[{field_name}]: \"{alias}\" is already the alias of \"{other_field}\"{STYLE_RESET}\n");
                         }
 
                         if let Some(TimestampFieldConfig { name, .. }) = timestamp_created_at {
                             if alias == name {
                                 panic!(
-                                    "[{field_name}]: \"{name}\" is not a valid alias because it has already been set as the \"created_at\" timestamp"
+                                    "\n{COLOR_RED}[{field_name}]: \"{alias}\" is not a valid alias. It is the creation timestamp on {output_struct_name}{STYLE_RESET}\n"
                                 );
                             }
                         }
@@ -127,7 +140,7 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
                         if let Some(TimestampFieldConfig { name, .. }) = timestamp_updated_at {
                             if alias == name {
                                 panic!(
-                                    "[{field_name}]: \"{name}\" is not a valid alias because it has already been set as the \"updated_at\" timestamp"
+                                    "\n{COLOR_RED}[{field_name}]: \"{alias}\" is not a valid alias. It is the update timestamp on {output_struct_name}{STYLE_RESET}\n"
                                 );
                             }
                         }
@@ -139,7 +152,7 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
 
                             if let Some(depends_on) = config.depends_on.as_ref() {
                                 if !depends_on.iter().any(|parent| parent == &field_name_str) {
-                                    panic!("[{field_name}]: \"{alias}\" is not a valid alias for field because \"{alias}\" does not depend on \"{field_name}\"");
+                                    panic!("\n{COLOR_RED}[{field_name}]: \"{alias}\" is not a valid alias for field because \"{alias}\" does not depend on \"{field_name}\"{STYLE_RESET}\n");
                                 }
 
                                 alias_to_virtual.insert(alias, field_name);
@@ -147,17 +160,11 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
                                 continue;
                             }
 
-                            panic!("[{field_name}]: \"{alias}\" is not a valid alias for field because it is not a dependent field");
+                            panic!("\n{COLOR_RED}[{field_name}]: \"{alias}\" is not a valid alias for field because it is not a dependent field{STYLE_RESET}\n");
                         }
                     }
-
-                    continue;
                 }
-                _ => (),
-            }
-
-            // dependents
-            match config {
+                // dependents
                 InternalFieldConfig {
                     field_type: FieldType::Dependent,
                     ..
