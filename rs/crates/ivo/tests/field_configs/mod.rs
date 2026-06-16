@@ -157,3 +157,145 @@ fn should_reject_if_field_name_is_same_updated_at_if_enabled_with_custom_name() 
         |o| o,
     );
 }
+
+#[test]
+#[should_panic(expected = "[id]: is an output field. It must be present on \u{1b}[1mData")]
+fn should_reject_if_constant_field_does_not_exist_on_output_struct() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        _c: String,
+    }
+
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct DataInput {
+        _c: String,
+    }
+
+    let _: Schema<DataInput, Data> = Schema::new(
+        |f| f.set("id", IvoField::CONSTANT.computed(|_, _| ready(12))),
+        |o| o,
+    );
+}
+
+#[test]
+#[should_panic(expected = "[dependent]: is an output field. It must be present on \u{1b}[1mData")]
+fn should_reject_if_dependent_field_does_not_exist_on_output_struct() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        _c: String,
+    }
+
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct DataInput {
+        virtual_field: String,
+    }
+
+    let _: Schema<DataInput, Data> = Schema::new(
+        |f| {
+            f.set("dependent", IvoField::CONSTANT.computed(|_, _| ready(12)))
+                .set(
+                    "virtual_field",
+                    IvoField::VIRTUAL.validate(|v: String, _, _| ready(Ok(v))),
+                )
+        },
+        |o| o,
+    );
+}
+
+#[test]
+#[should_panic(expected = "[lax]: is an input field. It must be present on \u{1b}[1mDataInput")]
+fn should_reject_if_lax_field_does_not_exist_on_input_struct() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        lax: i32,
+    }
+
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct DataInput {
+        _c: String,
+    }
+
+    let _: Schema<DataInput, Data> = Schema::new(
+        |f| {
+            f.set(
+                "lax",
+                IvoField::LAX.default(12).validate(|v, _, _| ready(Ok(v))),
+            )
+        },
+        |o| o,
+    );
+}
+
+#[test]
+#[should_panic(expected = "[lax]: is an output field. It must be present on \u{1b}[1mData")]
+fn should_reject_if_lax_field_does_not_exist_on_output_struct() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        _c: String,
+    }
+
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct DataInput {
+        lax: i32,
+    }
+
+    let _: Schema<DataInput, Data> = Schema::new(
+        |f| {
+            f.set(
+                "lax",
+                IvoField::LAX.default(12).validate(|v, _, _| ready(Ok(v))),
+            )
+        },
+        |o| o,
+    );
+}
+
+#[test]
+#[should_panic(
+    expected = "[required]: is an input field. It must be present on \u{1b}[1mDataInput"
+)]
+fn should_reject_if_required_field_does_not_exist_on_input_struct() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        required: i32,
+    }
+
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct DataInput {
+        _c: String,
+    }
+
+    let _: Schema<DataInput, Data> = Schema::new(
+        |f| {
+            f.set(
+                "required",
+                IvoField::REQUIRED.validate(|v: i32, _, _| ready(Ok(v))),
+            )
+        },
+        |o| o,
+    );
+}
+
+#[test]
+#[should_panic(expected = "[required]: is an output field. It must be present on \u{1b}[1mData")]
+fn should_reject_if_required_field_does_not_exist_on_output_struct() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        _c: String,
+    }
+
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct DataInput {
+        required: i32,
+    }
+
+    let _: Schema<DataInput, Data> = Schema::new(
+        |f| {
+            f.set(
+                "required",
+                IvoField::REQUIRED.validate(|v: i32, _, _| ready(Ok(v))),
+            )
+        },
+        |o| o,
+    );
+}

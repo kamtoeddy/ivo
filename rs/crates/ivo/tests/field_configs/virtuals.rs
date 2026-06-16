@@ -291,7 +291,9 @@ fn should_reject_if_alias_already_used() {
 }
 
 #[test]
-#[should_panic(expected = "[virtual_field]: \"alias_name\" must be present on \u{1b}[1mDataInput")]
+#[should_panic(
+    expected = "[virtual_field]: is an input field. Hence, \"alias_name\" must be present on \u{1b}[1mDataInput"
+)]
 fn should_reject_if_alias_does_not_exist_on_input_struct() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
@@ -329,7 +331,7 @@ fn should_reject_if_alias_does_not_exist_on_input_struct() {
 
 #[test]
 #[should_panic(
-    expected = "[virtual_field]: has an alias. Hence, cannot be present on \u{1b}[1mDataInput"
+    expected = "[virtual_field]: has an alias. Only its alias must be present on \u{1b}[1mDataInput"
 )]
 fn should_reject_if_both_alias_and_field_name_exist_on_input_struct() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
@@ -446,6 +448,82 @@ fn should_allow_virtuals_with_alias_as_non_field_name() {
                         IvoField::VIRTUAL
                             .alias("alias_name")
                             .validate(|v: String, _, _| ready(Ok(v))),
+                    )
+            },
+            |o| o,
+        );
+    });
+
+    assert!(result.is_ok())
+}
+
+#[test]
+#[should_panic(
+    expected = "[virtual_field]: is an input field. It must be present on \u{1b}[1mDataInput"
+)]
+fn should_reject_if_no_alias_is_provided_and_field_name_does_not_exist_on_input_struct() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        id: i32,
+        dependent: String,
+        lax: String,
+    }
+
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct DataInput {
+        lax: String,
+    }
+
+    let _: Schema<DataInput, Data> = Schema::new(
+        |f| {
+            f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
+                .set("lax", IvoField::LAX.default(1))
+                .set(
+                    "dependent",
+                    IvoField::DEPENDENT
+                        .default(1)
+                        .depends_on(["lax", "virtual_field"])
+                        .resolve(|_, _| ready(2)),
+                )
+                .set(
+                    "virtual_field",
+                    IvoField::VIRTUAL.validate(|v: String, _, _| ready(Ok(v))),
+                )
+        },
+        |o| o,
+    );
+}
+
+#[test]
+fn should_allow_if_no_alias_is_provided_but_field_name_exists_on_input_struct() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        id: i32,
+        dependent: String,
+        lax: String,
+    }
+
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct DataInput {
+        lax: String,
+        virtual_field: String,
+    }
+
+    let result = panic::catch_unwind(|| {
+        let _: Schema<DataInput, Data> = Schema::new(
+            |f| {
+                f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
+                    .set("lax", IvoField::LAX.default(1))
+                    .set(
+                        "dependent",
+                        IvoField::DEPENDENT
+                            .default(1)
+                            .depends_on(["lax", "virtual_field"])
+                            .resolve(|_, _| ready(2)),
+                    )
+                    .set(
+                        "virtual_field",
+                        IvoField::VIRTUAL.validate(|v: String, _, _| ready(Ok(v))),
                     )
             },
             |o| o,

@@ -77,6 +77,7 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
         timestamp_updated_at: &Option<TimestampFieldConfig>,
     ) -> InternalFieldConfigs<I, O, CtxOptions, ErrorTool> {
         let input_field_names = I::ivo_internal_field_names();
+        let output_field_names = O::ivo_internal_field_names();
 
         let input_struct_name = format!(
             "{FONT_BOLD}{}{STYLE_RESET}{COLOR_RED}",
@@ -166,15 +167,22 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
 
                         if !input_field_names.contains(alias) {
                             panic!(
-                                "\n{COLOR_RED}[{field_name}]: \"{alias}\" must be present on {input_struct_name}{STYLE_RESET}\n");
+                                "\n{COLOR_RED}[{field_name}]: is an input field. Hence, \"{alias}\" must be present on {input_struct_name}{STYLE_RESET}\n");
                         }
 
                         if input_field_names.contains(field_name) {
                             panic!(
-                                "\n{COLOR_RED}[{field_name}]: has an alias. Hence, cannot be present on {input_struct_name}{STYLE_RESET}\n");
+                                "\n{COLOR_RED}[{field_name}]: has an alias. Only its alias must be present on {input_struct_name}{STYLE_RESET}\n");
                         }
 
                         alias_to_virtual.insert(alias, field_name);
+
+                        continue;
+                    }
+
+                    if !input_field_names.contains(field_name) {
+                        panic!(
+                                "\n{COLOR_RED}[{field_name}]: is an input field. It must be present on {input_struct_name}{STYLE_RESET}\n");
                     }
 
                     continue;
@@ -182,12 +190,25 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
                 _ => (),
             }
 
+            if !output_field_names.contains(field_name) {
+                panic!(
+                    "\n{COLOR_RED}[{field_name}]: is an output field. It must be present on {output_struct_name}{STYLE_RESET}\n");
+            }
+
             match config {
-                // dependents
                 InternalFieldConfig {
                     field_type: FieldType::Dependent,
                     ..
                 } => {}
+                InternalFieldConfig {
+                    field_type: FieldType::Lax | FieldType::Required,
+                    ..
+                } => {
+                    if !input_field_names.contains(field_name) {
+                        panic!(
+                        "\n{COLOR_RED}[{field_name}]: is an input field. It must be present on {input_struct_name}{STYLE_RESET}\n");
+                    }
+                }
                 _ => (),
             }
         }
