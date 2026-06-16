@@ -1,5 +1,6 @@
 #![cfg(test)]
 
+mod timestamps;
 mod virtuals;
 
 #[cfg(test)]
@@ -51,7 +52,7 @@ fn should_reject_if_field_name_is_same_created_at_if_enabled_with_default_name()
 
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct DataInput {
-        created_at: String,
+        _c: String,
     }
 
     let _: Schema<DataInput, Data> = Schema::new(
@@ -82,7 +83,7 @@ fn should_reject_if_field_name_is_same_created_at_if_enabled_with_custom_name() 
 
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct DataInput {
-        custom_created_at: String,
+        _c: String,
     }
 
     let _: Schema<DataInput, Data> = Schema::new(
@@ -110,7 +111,7 @@ fn should_reject_if_field_name_is_same_updated_at_if_enabled_with_default_name()
 
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct DataInput {
-        updated_at: String,
+        _c: String,
     }
 
     let _: Schema<DataInput, Data> = Schema::new(
@@ -141,7 +142,7 @@ fn should_reject_if_field_name_is_same_updated_at_if_enabled_with_custom_name() 
 
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct DataInput {
-        custom_updated_at: String,
+        _c: String,
     }
 
     let _: Schema<DataInput, Data> = Schema::new(

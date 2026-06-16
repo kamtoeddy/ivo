@@ -78,16 +78,46 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
     ) -> InternalFieldConfigs<I, O, CtxOptions, ErrorTool> {
         let input_field_names = I::ivo_internal_field_names();
         let output_field_names = O::ivo_internal_field_names();
-
         let input_struct_name = format!(
             "{FONT_BOLD}{}{STYLE_RESET}{COLOR_RED}",
             I::ivo_internal_name()
         );
-
         let output_struct_name = format!(
             "{FONT_BOLD}{}{STYLE_RESET}{COLOR_RED}",
             O::ivo_internal_name()
         );
+
+        if let Some(TimestampFieldConfig { name, .. }) = timestamp_created_at {
+            let name_owned = name.to_string();
+
+            if !output_field_names.contains(&name_owned) {
+                panic!(
+                    "\n{COLOR_RED}[{name}]: is a purely output field. It must be present on {output_struct_name}{STYLE_RESET}\n"
+                );
+            }
+
+            if input_field_names.contains(&name_owned) {
+                panic!(
+                    "\n{COLOR_RED}[{name}]: is a purely output field. It should not be present on {input_struct_name}{STYLE_RESET}\n"
+                );
+            }
+        }
+
+        if let Some(TimestampFieldConfig { name, .. }) = timestamp_updated_at {
+            let name_owned = name.to_string();
+
+            if !output_field_names.contains(&name_owned) {
+                panic!(
+                    "\n{COLOR_RED}[{name}]: is a purely output field. It must be present on {output_struct_name}{STYLE_RESET}\n"
+                );
+            }
+
+            if input_field_names.contains(&name_owned) {
+                panic!(
+                    "\n{COLOR_RED}[{name}]: is a purely output field. It should not be present on {input_struct_name}{STYLE_RESET}\n"
+                );
+            }
+        }
 
         let mut field_names = HashSet::new();
         let mut alias_to_virtual = HashMap::new();

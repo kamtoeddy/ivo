@@ -134,6 +134,7 @@ fn should_reject_if_alias_is_same_created_at_if_enabled_with_default_name() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
         id: i32,
+        created_at: String,
     }
 
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
@@ -164,6 +165,7 @@ fn should_reject_if_alias_is_same_created_at_if_enabled_with_custom_name() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
         id: i32,
+        custom_created_at: String,
     }
 
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
@@ -193,6 +195,7 @@ fn should_reject_if_alias_is_same_updated_at_if_enabled_with_default_name() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
         id: i32,
+        updated_at: String,
     }
 
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
@@ -223,6 +226,7 @@ fn should_reject_if_alias_is_same_updated_at_if_enabled_with_custom_name() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
         id: i32,
+        custom_updated_at: String,
     }
 
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
