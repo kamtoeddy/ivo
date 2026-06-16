@@ -17,7 +17,7 @@ fn should_reject_with_same_alias_name() {
         virtual_field: i32,
     }
 
-    let _: Schema<Data, DataInput> = Schema::new(
+    let _: Schema<DataInput, Data> = Schema::new(
         |f| {
             f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
                 .set(
@@ -56,7 +56,7 @@ fn should_reject_with_alias_as_non_dependent_field() {
         virtual_field: i32,
     }
 
-    let _: Schema<Data, DataInput> = Schema::new(
+    let _: Schema<DataInput, Data> = Schema::new(
         |f| {
             f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
                 .set("lax", IvoField::LAX.default(1))
@@ -97,7 +97,7 @@ fn should_reject_with_alias_as_unrelated_dependent_field() {
         virtual_field: i32,
     }
 
-    let _: Schema<Data, DataInput> = Schema::new(
+    let _: Schema<DataInput, Data> = Schema::new(
         |f| {
             f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
                 .set("lax", IvoField::LAX.default(1))
@@ -141,7 +141,7 @@ fn should_reject_if_alias_is_same_created_at_if_enabled_with_default_name() {
         virtual_field: String,
     }
 
-    let _: Schema<Data, DataInput> = Schema::new(
+    let _: Schema<DataInput, Data> = Schema::new(
         |f| {
             f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
                 .set(
@@ -171,7 +171,7 @@ fn should_reject_if_alias_is_same_created_at_if_enabled_with_custom_name() {
         virtual_field: String,
     }
 
-    let _: Schema<Data, DataInput> = Schema::new(
+    let _: Schema<DataInput, Data> = Schema::new(
         |f| {
             f.set(
                 "virtual_field",
@@ -200,7 +200,7 @@ fn should_reject_if_alias_is_same_updated_at_if_enabled_with_default_name() {
         virtual_field: String,
     }
 
-    let _: Schema<Data, DataInput> = Schema::new(
+    let _: Schema<DataInput, Data> = Schema::new(
         |f| {
             f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
                 .set(
@@ -230,7 +230,7 @@ fn should_reject_if_alias_is_same_updated_at_if_enabled_with_custom_name() {
         virtual_field: String,
     }
 
-    let _: Schema<Data, DataInput> = Schema::new(
+    let _: Schema<DataInput, Data> = Schema::new(
         |f| {
             f.set(
                 "virtual_field",
@@ -248,23 +248,21 @@ fn should_reject_if_alias_is_same_updated_at_if_enabled_with_custom_name() {
 #[should_panic(
     expected = "[virtual_field]: \"dependent\" is already the alias of \"virtual_field1\""
 )]
-fn should_reject_with_alias_already_used() {
+fn should_reject_if_alias_already_used() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
         id: i32,
         dependent: String,
-
         lax: String,
     }
 
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct DataInput {
+        dependent: i32,
         lax: String,
-        virtual_field: i32,
-        virtual_field1: i32,
     }
 
-    let _: Schema<Data, DataInput> = Schema::new(
+    let _: Schema<DataInput, Data> = Schema::new(
         |f| {
             f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
                 .set("lax", IvoField::LAX.default(1))
@@ -293,24 +291,101 @@ fn should_reject_with_alias_already_used() {
 }
 
 #[test]
-fn should_allow_virtuals_with_alias_as_direct_dependent_field() {
+#[should_panic(expected = "[virtual_field]: \"alias_name\" must be present on \u{1b}[1mDataInput")]
+fn should_reject_if_alias_does_not_exist_on_input_struct() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
         id: i32,
         dependent: String,
-
         lax: String,
     }
 
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct DataInput {
         lax: String,
-        virtual_field: i32,
+    }
+
+    let _: Schema<DataInput, Data> = Schema::new(
+        |f| {
+            f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
+                .set("lax", IvoField::LAX.default(1))
+                .set(
+                    "dependent",
+                    IvoField::DEPENDENT
+                        .default(1)
+                        .depends_on(["lax", "virtual_field"])
+                        .resolve(|_, _| ready(2)),
+                )
+                .set(
+                    "virtual_field",
+                    IvoField::VIRTUAL
+                        .alias("alias_name")
+                        .validate(|v: String, _, _| ready(Ok(v))),
+                )
+        },
+        |o| o,
+    );
+}
+
+#[test]
+#[should_panic(
+    expected = "[virtual_field]: has an alias. Hence, cannot be present on \u{1b}[1mDataInput"
+)]
+fn should_reject_if_both_alias_and_field_name_exist_on_input_struct() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        id: i32,
+        dependent: String,
+        lax: String,
+    }
+
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct DataInput {
+        alias_name: String,
+        lax: String,
+        virtual_field: String,
+    }
+
+    let _: Schema<DataInput, Data> = Schema::new(
+        |f| {
+            f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
+                .set("lax", IvoField::LAX.default(1))
+                .set(
+                    "dependent",
+                    IvoField::DEPENDENT
+                        .default(1)
+                        .depends_on(["lax", "virtual_field"])
+                        .resolve(|_, _| ready(2)),
+                )
+                .set(
+                    "virtual_field",
+                    IvoField::VIRTUAL
+                        .alias("alias_name")
+                        .validate(|v: String, _, _| ready(Ok(v))),
+                )
+        },
+        |o| o,
+    );
+}
+
+#[test]
+fn should_allow_virtuals_with_alias_as_direct_dependent_field() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        id: i32,
+        dependent: String,
+        lax: String,
+    }
+
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct DataInput {
+        lax: String,
+        dependent: i32,
         virtual_field1: i32,
     }
 
     let result = panic::catch_unwind(|| {
-        let _: Schema<Data, DataInput> = Schema::new(
+        let _: Schema<DataInput, Data> = Schema::new(
             |f| {
                 f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
                     .set("lax", IvoField::LAX.default(1))
@@ -350,12 +425,12 @@ fn should_allow_virtuals_with_alias_as_non_field_name() {
 
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct DataInput {
+        alias_name: i32,
         lax: String,
-        virtual_field: i32,
     }
 
     let result = panic::catch_unwind(|| {
-        let _: Schema<Data, DataInput> = Schema::new(
+        let _: Schema<DataInput, Data> = Schema::new(
             |f| {
                 f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
                     .set("lax", IvoField::LAX.default(1))
@@ -369,7 +444,7 @@ fn should_allow_virtuals_with_alias_as_non_field_name() {
                     .set(
                         "virtual_field",
                         IvoField::VIRTUAL
-                            .alias("non_field_name")
+                            .alias("alias_name")
                             .validate(|v: String, _, _| ready(Ok(v))),
                     )
             },

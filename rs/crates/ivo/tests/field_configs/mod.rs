@@ -20,7 +20,7 @@ fn should_reject_if_field_name_is_already_set() {
         lax: String,
     }
 
-    let _: Schema<Data, DataInput> = Schema::new(
+    let _: Schema<DataInput, Data> = Schema::new(
         |f| {
             f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
                 .set(
@@ -54,7 +54,7 @@ fn should_reject_if_field_name_is_same_created_at_if_enabled_with_default_name()
         created_at: String,
     }
 
-    let _: Schema<Data, DataInput> = Schema::new(
+    let _: Schema<DataInput, Data> = Schema::new(
         |f| {
             f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
                 .set(
@@ -85,7 +85,7 @@ fn should_reject_if_field_name_is_same_created_at_if_enabled_with_custom_name() 
         custom_created_at: String,
     }
 
-    let _: Schema<Data, DataInput> = Schema::new(
+    let _: Schema<DataInput, Data> = Schema::new(
         |f| {
             f.set(
                 "custom_created_at",
@@ -113,7 +113,7 @@ fn should_reject_if_field_name_is_same_updated_at_if_enabled_with_default_name()
         updated_at: String,
     }
 
-    let _: Schema<Data, DataInput> = Schema::new(
+    let _: Schema<DataInput, Data> = Schema::new(
         |f| {
             f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
                 .set(
@@ -144,7 +144,7 @@ fn should_reject_if_field_name_is_same_updated_at_if_enabled_with_custom_name() 
         custom_updated_at: String,
     }
 
-    let _: Schema<Data, DataInput> = Schema::new(
+    let _: Schema<DataInput, Data> = Schema::new(
         |f| {
             f.set(
                 "custom_updated_at",

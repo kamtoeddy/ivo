@@ -76,10 +76,13 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
         timestamp_created_at: &Option<TimestampFieldConfig>,
         timestamp_updated_at: &Option<TimestampFieldConfig>,
     ) -> InternalFieldConfigs<I, O, CtxOptions, ErrorTool> {
+        let input_field_names = I::ivo_internal_field_names();
+
         let input_struct_name = format!(
             "{FONT_BOLD}{}{STYLE_RESET}{COLOR_RED}",
             I::ivo_internal_name()
         );
+
         let output_struct_name = format!(
             "{FONT_BOLD}{}{STYLE_RESET}{COLOR_RED}",
             O::ivo_internal_name()
@@ -155,15 +158,31 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
                                     panic!("\n{COLOR_RED}[{field_name}]: \"{alias}\" is not a valid alias for field because \"{alias}\" does not depend on \"{field_name}\"{STYLE_RESET}\n");
                                 }
 
-                                alias_to_virtual.insert(alias, field_name);
-
                                 continue;
                             }
 
                             panic!("\n{COLOR_RED}[{field_name}]: \"{alias}\" is not a valid alias for field because it is not a dependent field{STYLE_RESET}\n");
                         }
+
+                        if !input_field_names.contains(alias) {
+                            panic!(
+                                "\n{COLOR_RED}[{field_name}]: \"{alias}\" must be present on {input_struct_name}{STYLE_RESET}\n");
+                        }
+
+                        if input_field_names.contains(field_name) {
+                            panic!(
+                                "\n{COLOR_RED}[{field_name}]: has an alias. Hence, cannot be present on {input_struct_name}{STYLE_RESET}\n");
+                        }
+
+                        alias_to_virtual.insert(alias, field_name);
                     }
+
+                    continue;
                 }
+                _ => (),
+            }
+
+            match config {
                 // dependents
                 InternalFieldConfig {
                     field_type: FieldType::Dependent,
