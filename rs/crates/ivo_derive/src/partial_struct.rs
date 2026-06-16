@@ -72,14 +72,17 @@ pub fn generate_partial_struct<T: ToTokens>(
         }
     });
 
-    let partial_is_value_equal = fields.iter().map(|field| {
-        let internal_field_name = &field.ident; // e.g., 'id'
+    let is_value_equal_match_arms = fields.iter().map(|field| {
+        let field_name = &field.ident; // e.g., 'id'
         let field_type = &field.ty; // e.g., 'String'
+        let field_name_str = field_name.as_ref().unwrap().to_string();
 
         quote! {
-            if field_name == &stringify!(#internal_field_name) {
-                if let Some(current_value) = self.#internal_field_name.as_ref() {
-                    is_equal = current_value == &parse_or_panic::<#field_type>(value);
+            #field_name_str => {
+                if let Some(current_value) = self.#field_name.as_ref() {
+                    current_value == &parse_or_panic::<#field_type>(value)
+                } else {
+                    false
                 }
             }
         }
@@ -156,11 +159,11 @@ pub fn generate_partial_struct<T: ToTokens>(
                 value: &#crate_root::ErasedValue,
             ) -> bool {
                 use #crate_root::parse_or_panic;
-                let mut is_equal = false;
 
-                #( #partial_is_value_equal )*
-
-                is_equal
+                match field_name.as_str() {
+                    #( #is_value_equal_match_arms ),*
+                    _ => false,
+                }
             }
         }
     }

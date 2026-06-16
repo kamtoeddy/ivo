@@ -16,14 +16,14 @@ pub enum UserRole {
 
 #[derive(Debug, Clone, PartialEq, IvoStruct)]
 pub struct User {
-    pub created_at: String,
+    // pub created_at: String,
     pub id: i32,
     pub email: String,
     pub username: String,
     pub slug_id: SlugifiedString,
     pub role: UserRole,
     pub username_last_updated_at: Option<String>,
-    pub updated_on: Option<String>,
+    // pub updated_on: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, IvoStruct)]
@@ -230,8 +230,8 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
                         ready(())
                     }),
             )
-            .created_at(|| "Date.now()", None)
-            .updated_at(|| "Date.now()", Some("updated_on"), true)
+            // .created_at(|| "Date.now()", None)
+            // .updated_at(|| "Date.now()", Some("updated_on"), true)
         },
         |o| {
             o.post_validate(["username", "v_slug"], |b| {
@@ -320,14 +320,14 @@ pub static USERS_LIST: LazyLock<[User; 3]> = LazyLock::new(|| {
         let username = format!("user-{id}");
 
         User {
-            created_at: "now".into(),
+            // created_at: "now".into(),
             email: format!("user-{id}@mail.com"),
             id,
             role: UserRole::Moderator,
             slug_id: SlugifiedString::from(username.as_str()),
             username,
             username_last_updated_at: None,
-            updated_on: None,
+            // updated_on: None,
         }
     })
 });

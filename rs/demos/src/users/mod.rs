@@ -53,14 +53,14 @@ pub async fn run_users_demo() {
     };
 
     let user = User {
-        created_at: "just now".into(),
+        // created_at: "just now".into(),
         email: "1@1.com".into(),
         id: 1,
         username,
         username_last_updated_at: None,
         slug_id,
         role: UserRole::Admin,
-        updated_on: None,
+        // updated_on: None,
     };
 
     println!("{:?}\n", user);
