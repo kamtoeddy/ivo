@@ -11,7 +11,7 @@ pub use ivo_validators::*;
 pub use futures::FutureExt;
 
 pub use schema::{
-    error::{
+    error_tool::{
         DefaultErrorPayload, DefaultErrorTool, DefaultFieldErrorMetadata, FieldError, IvoErrorTool,
         UpdateError,
     },

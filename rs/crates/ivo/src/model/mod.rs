@@ -5,7 +5,7 @@ use std::future::ready;
 use std::sync::Arc;
 
 use crate::model::internal::{FieldInfo, FieldInfoCollection};
-use crate::schema::error::{DefaultErrorTool, FieldError, IvoErrorTool, UpdateError};
+use crate::schema::error_tool::{DefaultErrorTool, FieldError, IvoErrorTool, UpdateError};
 use crate::schema::fields::base::{FieldType, InternalFieldConfig};
 use crate::schema::fields::types::{ComputableRequiredError, ComputableWithMiniContext};
 use crate::schema::Schema;

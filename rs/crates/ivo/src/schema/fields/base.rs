@@ -1,6 +1,6 @@
 use crate::{
     schema::{
-        error::IvoErrorTool,
+        error_tool::IvoErrorTool,
         fields::types::{
             BooleanResolver, ComputableInit, ComputableRequiredError, ComputableWithMiniContext,
             RequiredResolver, Resolver, UniformTimestampResolver, UniformValidator,

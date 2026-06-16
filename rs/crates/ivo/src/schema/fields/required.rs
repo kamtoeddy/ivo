@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 
 use crate::{
     schema::{
-        error::IvoErrorTool,
+        error_tool::IvoErrorTool,
         fields::{
             base::{BuildableFieldConfig, FieldConfig, FieldType, InternalFieldConfig},
             types::{

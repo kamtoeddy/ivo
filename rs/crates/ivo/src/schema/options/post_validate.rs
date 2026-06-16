@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 
 use crate::{
     schema::{
-        error::IvoErrorTool,
+        error_tool::IvoErrorTool,
         options::types::{IntoPostValidator, PostValidationConfig, PostValidator},
     },
     types::{No, Yes},

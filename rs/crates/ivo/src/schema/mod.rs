@@ -1,4 +1,4 @@
-pub mod error;
+pub mod error_tool;
 pub mod fields;
 pub mod options;
 
@@ -6,7 +6,7 @@ use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
-use crate::schema::error::{DefaultErrorTool, IvoErrorTool};
+use crate::schema::error_tool::{DefaultErrorTool, IvoErrorTool};
 use crate::schema::fields::base::{BuildableFieldConfig, FieldType, InternalFieldConfig};
 use crate::schema::fields::types::IntoUniformTimestampResolver;
 use crate::schema::fields::TimestampFieldConfig;

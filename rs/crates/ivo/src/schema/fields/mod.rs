@@ -10,7 +10,7 @@ use std::marker::PhantomData;
 
 use crate::{
     schema::{
-        error::IvoErrorTool,
+        error_tool::IvoErrorTool,
         fields::{
             constants::ConstantFieldBuilder, dependents::DependentFieldBuilder,
             lax::LaxFieldBuilder, required::RequiredFieldBuilder, virtuals::VirtualFieldBuilder,

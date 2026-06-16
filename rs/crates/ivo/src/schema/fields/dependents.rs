@@ -2,7 +2,7 @@ use std::{fmt::Debug, marker::PhantomData};
 
 use crate::{
     schema::{
-        error::{DefaultErrorTool, IvoErrorTool},
+        error_tool::{DefaultErrorTool, IvoErrorTool},
         fields::{
             base::{BuildableFieldConfig, FieldConfig, FieldType, InternalFieldConfig},
             types::{

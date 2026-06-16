@@ -5,7 +5,7 @@ pub use futures_locks::RwLock;
 pub use std::sync::Arc;
 use std::{any::Any, collections::HashMap, fmt::Debug};
 
-use crate::schema::error::DefaultFieldErrorMetadata;
+use crate::schema::error_tool::DefaultFieldErrorMetadata;
 
 // Marker Types
 pub struct Yes;
