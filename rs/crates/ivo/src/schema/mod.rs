@@ -38,8 +38,8 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
     Schema<I, O, CtxOptions, ErrorTool>
 {
     pub fn new<FieldMaker, OptionsMaker, BuildableOptions, HasCreatedAt, HasUpdatedAt>(
-        fields_maker: FieldMaker,
-        options_maker: OptionsMaker,
+        f: FieldMaker,
+        o: OptionsMaker,
     ) -> Self
     where
         FieldMaker: Fn(
@@ -49,7 +49,7 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
         OptionsMaker: Fn(SchemaOptionsBuilder<I, O, CtxOptions, ErrorTool>) -> BuildableOptions,
         BuildableOptions: BuildableSchemaOptions<I, O, CtxOptions, ErrorTool>,
     {
-        let fields = fields_maker(FieldBuilder::new());
+        let fields = f(FieldBuilder::new());
 
         let s = Self {
             field_configs: Self::make_field_configs(
@@ -57,7 +57,7 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
                 &fields.timestamp_created_at,
                 &fields.timestamp_upated_at,
             ),
-            options: options_maker(SchemaOptions::new()).build(),
+            options: o(SchemaOptions::new()).build(),
             _timestamp_created_at: fields.timestamp_created_at,
             _timestamp_updated_at: fields.timestamp_upated_at,
         };
