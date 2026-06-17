@@ -114,6 +114,7 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
         let mut constant_field_names = HashSet::new();
         let mut field_names = HashSet::new();
         let mut alias_to_virtual = HashMap::new();
+        let mut dependent_configs = Vec::new();
 
         for (field_name, config) in config_tuples.iter() {
             if field_names.contains(field_name) {
@@ -239,6 +240,12 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
 
             match config {
                 InternalFieldConfig {
+                    field_type: FieldType::Dependent,
+                    ..
+                } => {
+                    dependent_configs.push((field_name, config));
+                }
+                InternalFieldConfig {
                     field_type: FieldType::Lax | FieldType::Required,
                     ..
                 } => {
@@ -251,60 +258,57 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
             }
         }
 
-        for (field_name, config) in config_tuples.iter() {
-            match config {
-                InternalFieldConfig {
-                    field_type: FieldType::Dependent,
-                    depends_on: Some(parent_fields),
-                    ..
-                } => {
-                    if parent_fields.is_empty() {
-                        panic!("\n{COLOR_RED}[{field_name}]: must depend on at least one lax, required, virtual or other dependent field on your schema{STYLE_RESET}\n");
-                    }
+        for (field_name, InternalFieldConfig { depends_on, .. }) in dependent_configs {
+            let parent_fields = depends_on.as_ref().unwrap();
 
-                    // if HashSet::from(parent_fields).len() != parent_fields.len() {
-                    //     panic!("\n{COLOR_RED}[{field_name}]: must depend on at least one lax, required, virtual or other dependent field on your schema{STYLE_RESET}\n");
-                    // }
+            if parent_fields.is_empty() {
+                panic!("\n{COLOR_RED}[{field_name}]: must depend on at least one lax, required, virtual or other dependent field on your schema{STYLE_RESET}\n");
+            }
 
-                    for parent_field in parent_fields {
-                        let parent_field_string = parent_field.to_string();
+            let mut parent_fields_provided = HashSet::new();
 
-                        if !field_names.contains(&parent_field_string) {
-                            panic!(
-                                "\n{COLOR_RED}[{field_name}]: cannot depend on \"{parent_field}\" because it is not a field on your schema{STYLE_RESET}\n"
-                            );
-                        }
+            for parent_field in parent_fields {
+                let parent_field_string = parent_field.to_string();
 
-                        if parent_field == field_name {
-                            panic!(
-                                "\n{COLOR_RED}[{field_name}]: cannot depend on itself{STYLE_RESET}\n"
-                            );
-                        }
-
-                        if constant_field_names.contains(&parent_field_string) {
-                            panic!(
-                                "\n{COLOR_RED}[{field_name}]: cannot depend on \"{parent_field}\" because it is a constant{STYLE_RESET}\n"
-                            );
-                        }
-
-                        if let Some(TimestampFieldConfig { name, .. }) = timestamp_created_at {
-                            if parent_field == name {
-                                panic!(
+                if let Some(TimestampFieldConfig { name, .. }) = timestamp_created_at {
+                    if parent_field == name {
+                        panic!(
                                     "\n{COLOR_RED}[{field_name}]: cannot depend on \"{parent_field}\" because it is the creation timestamp on {output_struct_name}{STYLE_RESET}\n"
                                 );
-                            }
-                        }
-
-                        if let Some(TimestampFieldConfig { name, .. }) = timestamp_updated_at {
-                            if parent_field == name {
-                                panic!(
-                                    "\n{COLOR_RED}[{field_name}]: cannot depend on \"{parent_field}\" because it is the update timestamp on {output_struct_name}{STYLE_RESET}\n"
-                                );
-                            }
-                        }
                     }
                 }
-                _ => (),
+
+                if let Some(TimestampFieldConfig { name, .. }) = timestamp_updated_at {
+                    if parent_field == name {
+                        panic!(
+                                    "\n{COLOR_RED}[{field_name}]: cannot depend on \"{parent_field}\" because it is the update timestamp on {output_struct_name}{STYLE_RESET}\n"
+                                );
+                    }
+                }
+
+                if !field_names.contains(&parent_field_string) {
+                    panic!(
+                                "\n{COLOR_RED}[{field_name}]: cannot depend on \"{parent_field}\" because it is not a field on your schema{STYLE_RESET}\n"
+                            );
+                }
+
+                if parent_field == field_name {
+                    panic!("\n{COLOR_RED}[{field_name}]: cannot depend on itself{STYLE_RESET}\n");
+                }
+
+                if parent_fields_provided.contains(parent_field) {
+                    panic!(
+                                "\n{COLOR_RED}[{field_name}]: \"{parent_field}\" has been provided as a parent field multiple times. remove all duplicates to proceed{STYLE_RESET}\n"
+                            );
+                }
+
+                if constant_field_names.contains(&parent_field_string) {
+                    panic!(
+                                "\n{COLOR_RED}[{field_name}]: cannot depend on \"{parent_field}\" because it is a constant{STYLE_RESET}\n"
+                            );
+                }
+
+                parent_fields_provided.insert(parent_field);
             }
         }
 

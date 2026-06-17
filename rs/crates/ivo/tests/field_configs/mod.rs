@@ -1,5 +1,6 @@
 #![cfg(test)]
 
+mod dependents;
 mod timestamps;
 mod virtuals;
 
