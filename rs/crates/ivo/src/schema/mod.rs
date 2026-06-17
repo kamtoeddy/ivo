@@ -112,6 +112,7 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
         }
 
         let mut constant_field_names = HashSet::new();
+        let mut dependent_field_to_parent_fields = HashMap::new();
         let mut field_names = HashSet::new();
         let mut alias_to_virtual = HashMap::new();
         let mut dependent_configs = Vec::new();
@@ -241,9 +242,12 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
             match config {
                 InternalFieldConfig {
                     field_type: FieldType::Dependent,
+                    depends_on,
                     ..
                 } => {
                     dependent_configs.push((field_name, config));
+                    dependent_field_to_parent_fields
+                        .insert(field_name, depends_on.as_ref().unwrap());
                 }
                 InternalFieldConfig {
                     field_type: FieldType::Lax | FieldType::Required,
@@ -308,6 +312,16 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
                             );
                 }
 
+                if let Some(redundant_field) = Self::get_redundant_dependency_on_parent(
+                    field_name,
+                    &parent_field_string,
+                    &dependent_field_to_parent_fields,
+                ) {
+                    panic!(
+                                "\n{COLOR_RED}[{field_name}]: should not depend on \"{parent_field}\" and \"{redundant_field}\" because \"{parent_field}\" already depends on \"{redundant_field}\"{STYLE_RESET}\n"
+                            );
+                }
+
                 parent_fields_provided.insert(parent_field);
             }
         }
@@ -325,6 +339,33 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
         options: SchemaOptions<I, O, CtxOptions, ErrorTool>,
     ) -> SchemaOptions<I, O, CtxOptions, ErrorTool> {
         options
+    }
+
+    /// Given feilds a, b, c, d such that a -> [b, c], b -> [c], c -> [d]
+    ///
+    /// => redundancy(a, b) = Some(c)
+    ///
+    /// => redundancy(a, c) = None
+    ///
+    /// => a -> [b] is the only valid config for a
+    fn get_redundant_dependency_on_parent<'r>(
+        field_name: &String,
+        parent_name: &String,
+        dependent_field_to_parent_fields: &HashMap<&String, &Vec<&'r str>>,
+    ) -> Option<&'r str> {
+        if let Some(parent_deps) = dependent_field_to_parent_fields.get(parent_name).as_ref() {
+            let deps = dependent_field_to_parent_fields.get(field_name).unwrap();
+
+            for parent_dep in parent_deps.iter() {
+                if deps.contains(parent_dep) {
+                    return Some(parent_dep);
+                }
+            }
+
+            return None;
+        }
+
+        None
     }
 }
 

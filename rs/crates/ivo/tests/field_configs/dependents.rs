@@ -369,6 +369,55 @@ fn should_reject_dependency_of_constant_fields() {
 }
 
 #[test]
+#[should_panic(
+    expected = "[dependent]: should not depend on \"dependent_parent\" and \"lax\" because \"dependent_parent\" already depends on \"lax\""
+)]
+fn should_reject_any_redundant_dependencies() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        id: i32,
+        dependent: String,
+        dependent_parent: String,
+        lax: String,
+        required: String,
+        updated_at: String,
+    }
+
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct DataInput {
+        lax: String,
+        required: String,
+    }
+
+    let _: Schema<DataInput, Data> = Schema::new(
+        |f| {
+            f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
+                .set("lax", IvoField::LAX.default(1))
+                .set(
+                    "dependent_parent",
+                    IvoField::DEPENDENT
+                        .default(2)
+                        .depends_on(["lax"])
+                        .resolve(|_, _| ready(4)),
+                )
+                .set(
+                    "dependent",
+                    IvoField::DEPENDENT
+                        .default(2)
+                        .depends_on(["lax", "required", "dependent_parent"])
+                        .resolve(|_, _| ready(4)),
+                )
+                .set(
+                    "required",
+                    IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(v))),
+                )
+                .updated_at(|| "Date.now()", None, true)
+        },
+        |o| o,
+    );
+}
+
+#[test]
 fn should_allow_dependency_on_normal_lax_or_required_fields() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
