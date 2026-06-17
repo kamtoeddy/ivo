@@ -1,8 +1,8 @@
 use std::{array, collections::HashMap, future::ready, sync::LazyLock};
 
 use ivo::{
-    FutureExt, IvoField, IvoStruct, IvoValues, Model, Schema, SharedCtxOptions, SharedData,
-    SharedIvoContext, SharedRwCtxOptions, validate_email,
+    IvoField, IvoStruct, IvoValues, Model, Schema, SharedCtxOptions, SharedData, SharedIvoContext,
+    SharedRwCtxOptions, validate_email,
 };
 
 use crate::utils::slugify::{SlugifiedString, slugify};
@@ -37,12 +37,16 @@ pub struct UserInput {
 #[derive(Clone)]
 pub struct UserCtxOptions {
     pub slug_id: Option<SlugifiedString>,
+    pub slug_id_resolver_run_count: i8,
     // pub locale: &'static str, // fr, en, de, etc
 }
 
 impl<'a> UserCtxOptions {
     pub fn new() -> Self {
-        Self { slug_id: None }
+        Self {
+            slug_id: None,
+            slug_id_resolver_run_count: 0,
+        }
     }
 
     fn find_user_by_username(
@@ -174,7 +178,15 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
                 IvoField::DEPENDENT
                     .default(SlugifiedString::from(""))
                     .depends_on(["username", "v_slug"])
-                    .resolve(|_, o: RwCtxOptions| o.read().map(|g| g.slug_id.clone().unwrap()))
+                    .resolve(async |_, o: RwCtxOptions| {
+                        let mut guard = o.write().await;
+
+                        let slug_id = guard.slug_id.clone().unwrap();
+
+                        guard.slug_id_resolver_run_count += 1;
+
+                        slug_id
+                    })
                     .on_success(|ctx: Ctx, o: CtxOptions| {
                         println!(
                             "[dependent_slug_id]: on success: {:?}",
@@ -182,7 +194,12 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
                         );
                         println!(
                             "[_________________]: on success with ctx_options.slug_id: {:?}",
-                            o.slug_id
+                            o.slug_id,
+                        );
+
+                        assert_eq!(
+                            o.slug_id_resolver_run_count, 1,
+                            "this resolver should have run only once"
                         );
 
                         ready(())

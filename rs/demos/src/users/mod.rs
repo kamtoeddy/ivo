@@ -17,8 +17,8 @@ pub async fn run_users_demo() {
         username: Some("user-10".into()),
         role: None,
         // role: Some(UserRole::Moderator),
-        slug_id: None,
-        // slug_id: Some("sloppy-slug-id".into()),
+        // slug_id: None,
+        slug_id: Some("sloppy-slug-id".into()),
     };
 
     let r = USER_MODEL.create(&input, UserCtxOptions::new()).await;
@@ -70,8 +70,8 @@ pub async fn run_users_demo() {
         email: Some(user.email.clone()),
         // role: None,
         role: Some(UserRole::Moderator),
-        username: None,
-        // username: Some("new_username".into()),
+        // username: None,
+        username: Some("new_username".into()),
         slug_id: Some("updated-slug-id: Lol".into()),
         // slug_id: None,
     };
