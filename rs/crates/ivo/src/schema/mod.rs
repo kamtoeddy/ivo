@@ -323,12 +323,12 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
             {
                 if depth == 0 {
                     panic!(
-                            "\n{COLOR_RED}[{field_name}]: should not depend on \"{redundant_field}\" and \"{parent_field}\" because \"{redundant_field}\" already depends on \"{parent_field}\"{STYLE_RESET}\n"
+                            "\n{COLOR_RED}[{field_name}]: should not depend on \"{parent_field}\" and \"{redundant_field}\" because \"{parent_field}\" depends on \"{redundant_field}\"{STYLE_RESET}\n"
                );
                 }
 
                 panic!(
-                           "\n{COLOR_RED}[{field_name}]: should not depend on \"{redundant_field}\" and \"{parent_field}\" because \"{redundant_field}\" indirectly depends on \"{parent_field}\"{STYLE_RESET}\n"
+                           "\n{COLOR_RED}[{field_name}]: should not depend on \"{parent_field}\" and \"{redundant_field}\" because \"{parent_field}\" indirectly depends on \"{redundant_field}\"{STYLE_RESET}\n"
                        );
             }
         }
@@ -370,13 +370,13 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
                         continue;
                     }
 
-                    if let Some((p, _, d)) = Self::is_field_redundantly_dependent_on_parent(
+                    if let Some((_, r, d)) = Self::is_field_redundantly_dependent_on_parent(
                         field_name,
                         parent_name,
                         dependent_field_to_parent_fields,
                         0,
                     ) {
-                        return Some((p, field_name, d));
+                        return Some((field_name, r, d));
                     }
                 }
             }
@@ -398,7 +398,7 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
             .as_ref()
         {
             if parent_deps.contains(&parent_name) {
-                return Some((parent_name, field_name, depth));
+                return Some((field_name, parent_name, depth));
             }
 
             for field_name in parent_deps.iter() {

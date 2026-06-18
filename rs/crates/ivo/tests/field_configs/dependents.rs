@@ -370,7 +370,7 @@ fn should_reject_dependency_of_constant_fields() {
 
 #[test]
 #[should_panic(
-    expected = "[a]: should not depend on \"b\" and \"c\" because \"b\" already depends on \"c\""
+    expected = "[a]: should not depend on \"b\" and \"c\" because \"b\" depends on \"c\""
 )]
 fn should_reject_any_redundant_dependencies() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
