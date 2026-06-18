@@ -316,10 +316,7 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
             }
 
             if let Some((parent_field, redundant_field, depth)) =
-                Self::get_redundant_dependency_on_parent(
-                    field_name,
-                    &dependent_field_to_parent_fields,
-                )
+                Self::get_redundant_dependency(field_name, &dependent_field_to_parent_fields)
             {
                 if depth == 0 {
                     panic!(
@@ -359,7 +356,7 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
     /// => redundancy(a, b) = Some(d)  **&**  redundancy(a, d) = None
     ///
     /// => a -> \[b\] is the only valid config for a
-    fn get_redundant_dependency_on_parent<'r>(
+    fn get_redundant_dependency<'r>(
         field_name: &String,
         dependent_field_to_parent_fields: &HashMap<&String, &Vec<&'r str>>,
     ) -> Option<(&'r str, &'r str, i32)> {
