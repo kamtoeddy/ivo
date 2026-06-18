@@ -464,6 +464,88 @@ fn should_reject_any_deeply_redundant_dependencies() {
 }
 
 #[test]
+#[should_panic(expected = "[a]: circular dependency identified between \"a <-> b\"")]
+fn should_reject_any_circular_dependencies() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        a: String,
+        b: String,
+        c: String,
+    }
+
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct DataInput {
+        c: String,
+    }
+
+    let _: Schema<DataInput, Data> = Schema::new(
+        |f| {
+            f.set("c", IvoField::LAX.default(1))
+                .set(
+                    "a",
+                    IvoField::DEPENDENT
+                        .default(2)
+                        .depends_on(["b"])
+                        .resolve(|_, _| ready(4)),
+                )
+                .set(
+                    "b",
+                    IvoField::DEPENDENT
+                        .default(2)
+                        .depends_on(["a", "c"])
+                        .resolve(|_, _| ready(4)),
+                )
+        },
+        |o| o,
+    );
+}
+
+#[test]
+#[should_panic(expected = "[a]: circular dependency identified between \"a <-> b <-> c\"")]
+fn should_reject_any_deeply_circular_dependencies() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        a: String,
+        b: String,
+        c: String,
+        d: String,
+    }
+
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct DataInput {
+        d: String,
+    }
+
+    let _: Schema<DataInput, Data> = Schema::new(
+        |f| {
+            f.set(
+                "a",
+                IvoField::DEPENDENT
+                    .default(2)
+                    .depends_on(["b"])
+                    .resolve(|_, _| ready(4)),
+            )
+            .set(
+                "b",
+                IvoField::DEPENDENT
+                    .default(2)
+                    .depends_on(["c"])
+                    .resolve(|_, _| ready(4)),
+            )
+            .set(
+                "c",
+                IvoField::DEPENDENT
+                    .default(2)
+                    .depends_on(["a", "d"])
+                    .resolve(|_, _| ready(4)),
+            )
+            .set("d", IvoField::LAX.default(1))
+        },
+        |o| o,
+    );
+}
+
+#[test]
 fn should_allow_dependency_on_normal_lax_or_required_fields() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {

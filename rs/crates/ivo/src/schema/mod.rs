@@ -328,6 +328,18 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
                            "\n{COLOR_RED}[{field_name}]: should not depend on \"{parent_field}\" and \"{redundant_field}\" because \"{parent_field}\" indirectly depends on \"{redundant_field}\"{STYLE_RESET}\n"
                        );
             }
+
+            if let Some(chain) = Self::get_circular_dependency_chain(
+                field_name,
+                parent_fields,
+                &dependent_field_to_parent_fields,
+            ) {
+                let chain = chain.join(" <-> ");
+
+                panic!(
+                           "\n{COLOR_RED}[{field_name}]: circular dependency identified between \"{chain}\"{STYLE_RESET}\n"
+                       );
+            }
         }
 
         let mut field_configs = HashMap::new();
@@ -379,7 +391,7 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
             }
         }
 
-        return None;
+        None
     }
 
     fn is_field_redundantly_dependent_on_parent<'r>(
@@ -415,38 +427,72 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
         None
     }
 
-    // Given fields a, b, c, d
+    /// Given fields a, b, c, d
+    ///
+    /// if a -> \[b\]  **&**  b -> \[a\]
+    ///
+    /// => circular_dependency_chain(a) = Some(vec!\[a, b\])
+    ///
+    /// if a -> \[b\]  **&**  b -> \[c\]  **&**  c -> \[a\]
+    ///
+    /// => circular_dependency_chain(a) = Some(vec!\[a, b, c\])
+    ///
+    /// if a -> \[b\]  **OR**  a -> \[b\]  **&**  b -> \[c, d\]  **OR**  a -> \[b\]  **&**  b -> \[c\]  **&**  c -> \[d\]
+    ///
+    /// => circular_dependency_chain(a) = None
+    fn get_circular_dependency_chain<'c>(
+        dependent_field_name: &'c String,
+        parent_fields: &Vec<&'c str>,
+        dependent_field_to_parent_fields: &HashMap<&String, &Vec<&'c str>>,
+    ) -> Option<Vec<&'c str>> {
+        for parent_name in parent_fields.iter() {
+            if let Some(chain) = Self::is_field_circularly_dependent_on_parent(
+                dependent_field_name,
+                parent_name,
+                dependent_field_to_parent_fields,
+                vec![dependent_field_name],
+            ) {
+                return Some(chain);
+            }
+        }
 
-    // if a -> \[b\]  **&**  b -> \[a\]
+        None
+    }
 
-    // => circular_dependency_chain(a) = Some(vec!\[a, b\])
+    fn is_field_circularly_dependent_on_parent<'c>(
+        dependent_field_name: &'c str,
+        parent_name: &'c str,
+        dependent_field_to_parent_fields: &HashMap<&String, &Vec<&'c str>>,
+        mut visited_nodes: Vec<&'c str>,
+    ) -> Option<Vec<&'c str>> {
+        if let Some(parent_deps) = dependent_field_to_parent_fields
+            .get(&parent_name.to_string())
+            .as_ref()
+        {
+            visited_nodes.push(parent_name);
 
-    // if a -> \[b\]  **&**  b -> \[c\]  **&**  c -> \[a\]
+            if parent_deps.contains(&dependent_field_name) {
+                return Some(visited_nodes);
+            }
 
-    // => circular_dependency_chain(a) = Some(vec!\[a, b, c\])
+            for field_name in parent_deps.iter() {
+                let r = Self::is_field_circularly_dependent_on_parent(
+                    dependent_field_name,
+                    field_name,
+                    dependent_field_to_parent_fields,
+                    visited_nodes.clone(),
+                );
 
-    // if a -> \[b\]  **OR**  a -> \[b\]  **&**  b -> \[c, d\]  **OR**  a -> \[b\]  **&**  b -> \[c\]  **&**  c -> \[d\]
+                if r.is_some() {
+                    return r;
+                }
+            }
 
-    // => circular_dependency_chain(a) = None
-    // fn get_circular_dependency_chain<'r>(
-    //     field_name: &String,
-    //     parent_name: &String,
-    //     dependent_field_to_parent_fields: &HashMap<&String, &Vec<&'r str>>,
-    // ) -> Option<Vec<&'r str>> {
-    //     if let Some(parent_deps) = dependent_field_to_parent_fields.get(parent_name).as_ref() {
-    //         let deps = dependent_field_to_parent_fields.get(field_name).unwrap();
+            return None;
+        }
 
-    //         // for parent_dep in parent_deps.iter() {
-    //         //     if deps.contains(parent_dep) {
-    //         //         return Some(parent_dep);
-    //         //     }
-    //         // }
-
-    //         return None;
-    //     }
-
-    //     None
-    // }
+        None
+    }
 }
 
 pub struct FieldBuilder<
