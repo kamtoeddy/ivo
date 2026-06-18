@@ -3,13 +3,14 @@ pub mod fields;
 pub mod options;
 
 use std::collections::{HashMap, HashSet};
-use std::fmt::Debug;
 use std::marker::PhantomData;
 
 use crate::schema::error_tool::{DefaultErrorTool, IvoErrorTool};
-use crate::schema::fields::base::{BuildableFieldConfig, FieldType, InternalFieldConfig};
-use crate::schema::fields::types::IntoUniformTimestampResolver;
-use crate::schema::fields::TimestampFieldConfig;
+use crate::schema::fields::base::{
+    BuildableFieldConfig, BuildableTimestampConfig, FieldType, InternalFieldConfig,
+    TimestampConfigBuilder,
+};
+use crate::schema::fields::TimestampConfig;
 use crate::schema::options::base::{SchemaOptions, SchemaOptionsBuilder};
 use crate::schema::options::BuildableSchemaOptions;
 use crate::types::{IvoSchemaStruct, No, Yes};
@@ -29,44 +30,35 @@ pub struct Schema<
 > {
     pub(crate) field_configs: InternalFieldConfigs<I, O, CtxOptions, ErrorTool>,
     pub(crate) options: SchemaOptions<I, O, CtxOptions, ErrorTool>,
-
-    _timestamp_created_at: Option<TimestampFieldConfig>,
-    _timestamp_updated_at: Option<TimestampFieldConfig>,
+    pub(crate) _timestamp_configs: Option<TimestampConfig>,
 }
 
 impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool>
     Schema<I, O, CtxOptions, ErrorTool>
 {
-    pub fn new<FieldMaker, OptionsMaker, BuildableOptions, HasCreatedAt, HasUpdatedAt>(
+    pub fn new<FieldMaker, OptionsMaker, BuildableOptions, WithTimestamps>(
         f: FieldMaker,
         o: OptionsMaker,
     ) -> Self
     where
         FieldMaker: Fn(
             FieldBuilder<I, O, CtxOptions, ErrorTool>,
-        )
-            -> FieldBuilder<I, O, CtxOptions, ErrorTool, HasCreatedAt, HasUpdatedAt>,
+        ) -> FieldBuilder<I, O, CtxOptions, ErrorTool, WithTimestamps>,
         OptionsMaker: Fn(SchemaOptionsBuilder<I, O, CtxOptions, ErrorTool>) -> BuildableOptions,
         BuildableOptions: BuildableSchemaOptions<I, O, CtxOptions, ErrorTool>,
     {
         let fields = f(FieldBuilder::new());
 
         Self {
-            field_configs: Self::make_field_configs(
-                fields.configs,
-                &fields.timestamp_created_at,
-                &fields.timestamp_upated_at,
-            ),
+            field_configs: Self::make_field_configs(fields.configs, &fields.timestamp_config),
             options: Self::make_options(o(SchemaOptions::new()).build()),
-            _timestamp_created_at: fields.timestamp_created_at,
-            _timestamp_updated_at: fields.timestamp_upated_at,
+            _timestamp_configs: fields.timestamp_config,
         }
     }
 
     fn make_field_configs(
         config_tuples: Vec<(String, InternalFieldConfig<I, O, CtxOptions, ErrorTool>)>,
-        timestamp_created_at: &Option<TimestampFieldConfig>,
-        timestamp_updated_at: &Option<TimestampFieldConfig>,
+        timestamp_configs: &Option<TimestampConfig>,
     ) -> InternalFieldConfigs<I, O, CtxOptions, ErrorTool> {
         let input_field_names = I::ivo_internal_field_names();
         let output_field_names = O::ivo_internal_field_names();
@@ -79,7 +71,11 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
             O::ivo_internal_name()
         );
 
-        if let Some(TimestampFieldConfig { name, .. }) = timestamp_created_at {
+        if let Some(TimestampConfig {
+            created_at: Some(name),
+            ..
+        }) = timestamp_configs
+        {
             let name_owned = name.to_string();
 
             if !output_field_names.contains(&name_owned) {
@@ -95,7 +91,11 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
             }
         }
 
-        if let Some(TimestampFieldConfig { name, .. }) = timestamp_updated_at {
+        if let Some(TimestampConfig {
+            updated_at: Some(name),
+            ..
+        }) = timestamp_configs
+        {
             let name_owned = name.to_string();
 
             if !output_field_names.contains(&name_owned) {
@@ -122,7 +122,11 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
                 panic!("\n{COLOR_RED}[{field_name}]: occurs more than once, please remove duplicates{STYLE_RESET}\n");
             }
 
-            if let Some(TimestampFieldConfig { name, .. }) = timestamp_created_at {
+            if let Some(TimestampConfig {
+                created_at: Some(name),
+                ..
+            }) = timestamp_configs
+            {
                 if field_name == name {
                     panic!(
                         "\n{COLOR_RED}[{field_name}]: is not a valid field name. It is the creation timestamp on {output_struct_name}{STYLE_RESET}\n"
@@ -130,7 +134,11 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
                 }
             }
 
-            if let Some(TimestampFieldConfig { name, .. }) = timestamp_updated_at {
+            if let Some(TimestampConfig {
+                updated_at: Some(name),
+                ..
+            }) = timestamp_configs
+            {
                 if field_name == name {
                     panic!(
                         "\n{COLOR_RED}[{field_name}]: is not a valid field name. It is the update timestamp on {output_struct_name}{STYLE_RESET}\n"
@@ -175,7 +183,11 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
                             panic!("\n{COLOR_RED}[{field_name}]: \"{alias}\" is already the alias of \"{other_field}\"{STYLE_RESET}\n");
                         }
 
-                        if let Some(TimestampFieldConfig { name, .. }) = timestamp_created_at {
+                        if let Some(TimestampConfig {
+                            created_at: Some(name),
+                            ..
+                        }) = timestamp_configs
+                        {
                             if alias == name {
                                 panic!(
                                     "\n{COLOR_RED}[{field_name}]: \"{alias}\" is not a valid alias. It is the creation timestamp on {output_struct_name}{STYLE_RESET}\n"
@@ -183,7 +195,11 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
                             }
                         }
 
-                        if let Some(TimestampFieldConfig { name, .. }) = timestamp_updated_at {
+                        if let Some(TimestampConfig {
+                            updated_at: Some(name),
+                            ..
+                        }) = timestamp_configs
+                        {
                             if alias == name {
                                 panic!(
                                     "\n{COLOR_RED}[{field_name}]: \"{alias}\" is not a valid alias. It is the update timestamp on {output_struct_name}{STYLE_RESET}\n"
@@ -274,7 +290,11 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
             for parent_field in parent_fields {
                 let parent_field_string = parent_field.to_string();
 
-                if let Some(TimestampFieldConfig { name, .. }) = timestamp_created_at {
+                if let Some(TimestampConfig {
+                    created_at: Some(name),
+                    ..
+                }) = timestamp_configs
+                {
                     if parent_field == name {
                         panic!(
                                     "\n{COLOR_RED}[{field_name}]: cannot depend on \"{parent_field}\" because it is the creation timestamp on {output_struct_name}{STYLE_RESET}\n"
@@ -282,7 +302,11 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
                     }
                 }
 
-                if let Some(TimestampFieldConfig { name, .. }) = timestamp_updated_at {
+                if let Some(TimestampConfig {
+                    updated_at: Some(name),
+                    ..
+                }) = timestamp_configs
+                {
                     if parent_field == name {
                         panic!(
                                     "\n{COLOR_RED}[{field_name}]: cannot depend on \"{parent_field}\" because it is the update timestamp on {output_struct_name}{STYLE_RESET}\n"
@@ -500,32 +524,21 @@ pub struct FieldBuilder<
     O: IvoSchemaStruct,
     CtxOptions,
     ErrorTool: IvoErrorTool,
-    HasCreatedAt = No,
-    HasUpdatedAt = No,
+    WithTimestamps = No,
 > {
-    _c: PhantomData<HasCreatedAt>,
-    _u: PhantomData<HasUpdatedAt>,
+    _t: PhantomData<WithTimestamps>,
     configs: Vec<(String, InternalFieldConfig<I, O, CtxOptions, ErrorTool>)>,
-    timestamp_created_at: Option<TimestampFieldConfig>,
-    timestamp_upated_at: Option<TimestampFieldConfig>,
+    timestamp_config: Option<TimestampConfig>,
 }
 
-impl<
-        HasCreatedAt,
-        HasUpdatedAt,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
-        CtxOptions,
-        ErrorTool: IvoErrorTool,
-    > FieldBuilder<I, O, CtxOptions, ErrorTool, HasCreatedAt, HasUpdatedAt>
+impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool>
+    FieldBuilder<I, O, CtxOptions, ErrorTool>
 {
     fn new() -> Self {
         Self {
             configs: Vec::new(),
-            timestamp_created_at: None,
-            timestamp_upated_at: None,
-            _c: PhantomData,
-            _u: PhantomData,
+            timestamp_config: None,
+            _t: PhantomData,
         }
     }
 
@@ -539,67 +552,21 @@ impl<
     }
 }
 
-impl<
-        HasCreatedAt,
-        HasUpdatedAt,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
-        CtxOptions,
-        ErrorTool: IvoErrorTool,
-    > Default for FieldBuilder<I, O, CtxOptions, ErrorTool, HasCreatedAt, HasUpdatedAt>
+impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool>
+    FieldBuilder<I, O, CtxOptions, ErrorTool>
 {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl<HasUpdatedAt, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool>
-    FieldBuilder<I, O, CtxOptions, ErrorTool, No, HasUpdatedAt>
-{
-    pub fn created_at<T, R>(
+    pub fn set_timestamps<BuildableConfig, R>(
         self,
-        resolver: R,
-        name: Option<&'static str>,
-    ) -> FieldBuilder<I, O, CtxOptions, ErrorTool, Yes, HasUpdatedAt>
+        t: R,
+    ) -> FieldBuilder<I, O, CtxOptions, ErrorTool, Yes>
     where
-        T: Clone + Debug + Send + Sync + 'static,
-        R: IntoUniformTimestampResolver<T>,
+        BuildableConfig: BuildableTimestampConfig,
+        R: Fn(TimestampConfigBuilder) -> BuildableConfig,
     {
         FieldBuilder {
             configs: self.configs,
-            timestamp_created_at: Some(TimestampFieldConfig {
-                name: name.unwrap_or("created_at"),
-                resovler: resolver.into_resolver(),
-                is_optional: false,
-            }),
-            timestamp_upated_at: self.timestamp_upated_at,
-            ..Default::default()
-        }
-    }
-}
-
-impl<HasCreatedAt, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool>
-    FieldBuilder<I, O, CtxOptions, ErrorTool, HasCreatedAt>
-{
-    pub fn updated_at<T, R>(
-        self,
-        resolver: R,
-        name: Option<&'static str>,
-        is_optional: bool,
-    ) -> FieldBuilder<I, O, CtxOptions, ErrorTool, HasCreatedAt, Yes>
-    where
-        T: Clone + Debug + Send + Sync + 'static,
-        R: IntoUniformTimestampResolver<T>,
-    {
-        FieldBuilder {
-            configs: self.configs,
-            timestamp_created_at: self.timestamp_created_at,
-            timestamp_upated_at: Some(TimestampFieldConfig {
-                name: name.unwrap_or("updated_at"),
-                resovler: resolver.into_resolver(),
-                is_optional,
-            }),
-            ..Default::default()
+            timestamp_config: Some(t(TimestampConfigBuilder::new()).build()),
+            _t: PhantomData,
         }
     }
 }

@@ -21,7 +21,7 @@ fn should_reject_if_created_at_is_enabled_with_default_name_but_missing_from_out
     let _: Schema<DataInput, Data> = Schema::new(
         |f| {
             f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
-                .created_at(|| "Date.now()", None)
+                .set_timestamps(|t| t.date_fn(|| "Date.now()").created_at(None))
         },
         |o| o,
     );
@@ -45,7 +45,10 @@ fn should_reject_if_created_at_is_enabled_with_custom_name_but_missing_from_outp
     let _: Schema<DataInput, Data> = Schema::new(
         |f| {
             f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
-                .created_at(|| "Date.now()", Some("custom_created_at"))
+                .set_timestamps(|t| {
+                    t.date_fn(|| "Date.now()")
+                        .created_at(Some("custom_created_at"))
+                })
         },
         |o| o,
     );
@@ -68,7 +71,7 @@ fn should_allow_if_created_at_is_enabled_with_default_name_and_is_on_output() {
         let _: Schema<DataInput, Data> = Schema::new(
             |f| {
                 f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
-                    .created_at(|| "Date.now()", None)
+                    .set_timestamps(|t| t.date_fn(|| "Date.now()").created_at(None))
             },
             |o| o,
         );
@@ -94,7 +97,10 @@ fn should_allow_if_created_at_is_enabled_with_custom_name_band_is_onoutput() {
         let _: Schema<DataInput, Data> = Schema::new(
             |f| {
                 f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
-                    .created_at(|| "Date.now()", Some("custom_created_at"))
+                    .set_timestamps(|t| {
+                        t.date_fn(|| "Date.now()")
+                            .created_at(Some("custom_created_at"))
+                    })
             },
             |o| o,
         );
@@ -121,7 +127,7 @@ fn should_reject_if_updated_at_is_enabled_with_default_name_but_missing_from_out
     let _: Schema<DataInput, Data> = Schema::new(
         |f| {
             f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
-                .updated_at(|| "Date.now()", None, true)
+                .set_timestamps(|t| t.date_fn(|| "Date.now()").updated_at(None, true))
         },
         |o| o,
     );
@@ -145,7 +151,10 @@ fn should_reject_if_updated_at_is_enabled_with_custom_name_but_missing_from_outp
     let _: Schema<DataInput, Data> = Schema::new(
         |f| {
             f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
-                .updated_at(|| "Date.now()", Some("custom_updated_at"), true)
+                .set_timestamps(|t| {
+                    t.date_fn(|| "Date.now()")
+                        .updated_at(Some("custom_updated_at"), true)
+                })
         },
         |o| o,
     );
@@ -168,7 +177,7 @@ fn should_allow_if_updated_at_is_enabled_with_default_name_and_is_on_output() {
         let _: Schema<DataInput, Data> = Schema::new(
             |f| {
                 f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
-                    .updated_at(|| "Date.now()", None, true)
+                    .set_timestamps(|t| t.date_fn(|| "Date.now()").updated_at(None, true))
             },
             |o| o,
         );
@@ -194,7 +203,10 @@ fn should_allow_if_updated_at_is_enabled_with_custom_name_and_is_on_output() {
         let _: Schema<DataInput, Data> = Schema::new(
             |f| {
                 f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
-                    .updated_at(|| "Date.now()", Some("custom_updated_at"), true)
+                    .set_timestamps(|t| {
+                        t.date_fn(|| "Date.now()")
+                            .updated_at(Some("custom_updated_at"), true)
+                    })
             },
             |o| o,
         );

@@ -151,7 +151,7 @@ fn should_reject_if_alias_is_same_created_at_if_enabled_with_default_name() {
                         .alias("created_at")
                         .validate(|v: String, _, _| ready(Ok(v))),
                 )
-                .created_at(|| "Date.now()", None)
+                .set_timestamps(|t| t.date_fn(|| "Date.now()").created_at(None))
         },
         |o| o,
     );
@@ -181,7 +181,10 @@ fn should_reject_if_alias_is_same_created_at_if_enabled_with_custom_name() {
                     .alias("custom_created_at")
                     .validate(|v: String, _, _| ready(Ok(v))),
             )
-            .created_at(|| "Date.now()", Some("custom_created_at"))
+            .set_timestamps(|t| {
+                t.date_fn(|| "Date.now()")
+                    .created_at(Some("custom_created_at"))
+            })
         },
         |o| o,
     );
@@ -212,7 +215,7 @@ fn should_reject_if_alias_is_same_updated_at_if_enabled_with_default_name() {
                         .alias("updated_at")
                         .validate(|v: String, _, _| ready(Ok(v))),
                 )
-                .updated_at(|| "Date.now()", None, true)
+                .set_timestamps(|t| t.date_fn(|| "Date.now()").updated_at(None, true))
         },
         |o| o,
     );
@@ -242,7 +245,10 @@ fn should_reject_if_alias_is_same_updated_at_if_enabled_with_custom_name() {
                     .alias("custom_updated_at")
                     .validate(|v: String, _, _| ready(Ok(v))),
             )
-            .updated_at(|| "Date.now()", Some("custom_updated_at"), true)
+            .set_timestamps(|t| {
+                t.date_fn(|| "Date.now()")
+                    .updated_at(Some("custom_updated_at"), true)
+            })
         },
         |o| o,
     );

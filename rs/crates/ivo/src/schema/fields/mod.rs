@@ -19,7 +19,7 @@ use crate::{
     IvoSchemaStruct,
 };
 
-pub use base::TimestampFieldConfig;
+pub use base::TimestampConfig;
 
 pub struct IvoField<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool>
 {

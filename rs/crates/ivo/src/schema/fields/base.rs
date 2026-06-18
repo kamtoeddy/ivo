@@ -1,13 +1,15 @@
+use std::{fmt::Debug, marker::PhantomData};
+
 use crate::{
     schema::{
         error_tool::IvoErrorTool,
         fields::types::{
             BooleanResolver, ComputableInit, ComputableRequiredError, ComputableWithMiniContext,
-            RequiredResolver, Resolver, UniformTimestampResolver, UniformValidator,
-            VirtualSanitizer,
+            IntoUniformTimestampResolver, RequiredResolver, Resolver, UniformTimestampResolver,
+            UniformValidator, VirtualSanitizer,
         },
     },
-    types::{DeleteHandler, ErasedValue, FailureHandler, SuccessHandler},
+    types::{DeleteHandler, ErasedValue, FailureHandler, No, SuccessHandler, Yes},
     IvoSchemaStruct,
 };
 
@@ -88,9 +90,111 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorT
     }
 }
 
-#[allow(dead_code)]
-pub struct TimestampFieldConfig {
-    pub name: &'static str,
+pub struct TimestampConfig {
+    pub created_at: Option<&'static str>,
+    pub updated_at: Option<&'static str>,
     pub resovler: UniformTimestampResolver,
-    pub is_optional: bool,
+    pub with_optional_updated_at: bool,
+}
+
+pub trait BuildableTimestampConfig {
+    fn build(self) -> TimestampConfig;
+}
+
+pub struct TimestampConfigBuilder<HasDateFn = No, HasCreatedAt = No, HasUpdatedAt = No> {
+    created_at: Option<&'static str>,
+    updated_at: Option<&'static str>,
+    resovler: Option<UniformTimestampResolver>,
+    with_optional_updated_at: bool,
+    _c: PhantomData<HasCreatedAt>,
+    _r: PhantomData<HasDateFn>,
+    _u: PhantomData<HasUpdatedAt>,
+}
+
+impl BuildableTimestampConfig for TimestampConfigBuilder<Yes, Yes> {
+    fn build(self) -> TimestampConfig {
+        TimestampConfig {
+            created_at: self.created_at,
+            updated_at: self.updated_at,
+            resovler: self.resovler.unwrap(),
+            with_optional_updated_at: self.with_optional_updated_at,
+        }
+    }
+}
+
+impl<HasCreatedAt> BuildableTimestampConfig for TimestampConfigBuilder<Yes, HasCreatedAt, Yes> {
+    fn build(self) -> TimestampConfig {
+        TimestampConfig {
+            created_at: self.created_at,
+            updated_at: self.updated_at,
+            resovler: self.resovler.unwrap(),
+            with_optional_updated_at: self.with_optional_updated_at,
+        }
+    }
+}
+
+impl TimestampConfigBuilder {
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
+
+impl<HasDateFn, HasCreatedAt, HasUpdatedAt> Default
+    for TimestampConfigBuilder<HasDateFn, HasCreatedAt, HasUpdatedAt>
+{
+    fn default() -> Self {
+        Self {
+            created_at: None,
+            updated_at: None,
+            resovler: None,
+            with_optional_updated_at: false,
+            _c: PhantomData,
+            _r: PhantomData,
+            _u: PhantomData,
+        }
+    }
+}
+
+impl TimestampConfigBuilder {
+    pub fn date_fn<T, R>(self, resolver: R) -> TimestampConfigBuilder<Yes>
+    where
+        T: Clone + Debug + Send + Sync + 'static,
+        R: IntoUniformTimestampResolver<T>,
+    {
+        TimestampConfigBuilder {
+            resovler: Some(resolver.into_resolver()),
+            ..Default::default()
+        }
+    }
+}
+
+impl<HasUpdatedAt> TimestampConfigBuilder<Yes, No, HasUpdatedAt> {
+    pub fn created_at(
+        self,
+        custom_name: Option<&'static str>,
+    ) -> TimestampConfigBuilder<Yes, Yes, HasUpdatedAt> {
+        TimestampConfigBuilder {
+            resovler: self.resovler,
+            created_at: Some(custom_name.unwrap_or("created_at")),
+            updated_at: self.updated_at,
+            with_optional_updated_at: self.with_optional_updated_at,
+            ..Default::default()
+        }
+    }
+}
+
+impl<HasCreatedAt> TimestampConfigBuilder<Yes, HasCreatedAt, No> {
+    pub fn updated_at(
+        self,
+        custom_name: Option<&'static str>,
+        is_optional: bool,
+    ) -> TimestampConfigBuilder<Yes, HasCreatedAt, Yes> {
+        TimestampConfigBuilder {
+            resovler: self.resovler,
+            created_at: self.created_at,
+            updated_at: Some(custom_name.unwrap_or("updated_at")),
+            with_optional_updated_at: is_optional,
+            ..Default::default()
+        }
+    }
 }

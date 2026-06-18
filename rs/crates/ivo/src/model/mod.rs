@@ -1257,6 +1257,13 @@ impl<
             do_inputs_have_updates || do_outputs_have_updates,
         )
     }
+
+    fn _attach_time_stamps(&self, data: O::Partial, _is_update: bool) -> O::Partial {
+        // if let Some(resolver) =
+
+        data
+        // updated_outputs
+    }
 }
 
 /// this is a sync alternative to: shared_rw_options.read().await.clone()
