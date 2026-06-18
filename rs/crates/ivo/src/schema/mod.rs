@@ -316,7 +316,7 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
             }
 
             if let Some((parent_field, redundant_field, depth)) =
-                Self::get_redundant_dependency(field_name, &dependent_field_to_parent_fields)
+                Self::get_redundant_dependency(parent_fields, &dependent_field_to_parent_fields)
             {
                 if depth == 0 {
                     panic!(
@@ -357,33 +357,29 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
     ///
     /// => a -> \[b\] is the only valid config for a
     fn get_redundant_dependency<'r>(
-        field_name: &String,
+        parent_fields: &Vec<&'r str>,
         dependent_field_to_parent_fields: &HashMap<&String, &Vec<&'r str>>,
     ) -> Option<(&'r str, &'r str, i32)> {
-        if let Some(parent_deps) = dependent_field_to_parent_fields.get(field_name).as_ref() {
-            for parent_name in parent_deps.iter() {
-                for field_name in parent_deps.iter() {
-                    if field_name == parent_name {
-                        continue;
-                    }
+        for parent_name in parent_fields.iter() {
+            for field_name in parent_fields.iter() {
+                if field_name == parent_name {
+                    continue;
+                }
 
-                    if let Some((redundant_field, depth)) =
-                        Self::is_field_redundantly_dependent_on_parent(
-                            field_name,
-                            parent_name,
-                            dependent_field_to_parent_fields,
-                            0,
-                        )
-                    {
-                        return Some((field_name, redundant_field, depth));
-                    }
+                if let Some((redundant_field, depth)) =
+                    Self::is_field_redundantly_dependent_on_parent(
+                        field_name,
+                        parent_name,
+                        dependent_field_to_parent_fields,
+                        0,
+                    )
+                {
+                    return Some((field_name, redundant_field, depth));
                 }
             }
-
-            return None;
         }
 
-        None
+        return None;
     }
 
     fn is_field_redundantly_dependent_on_parent<'r>(
