@@ -5,8 +5,7 @@ use crate::{
         error_tool::IvoErrorTool,
         fields::types::{
             BooleanResolver, ComputableInit, ComputableRequiredError, ComputableWithMiniContext,
-            IntoUniformTimestampResolver, RequiredResolver, Resolver, UniformTimestampResolver,
-            UniformValidator, VirtualSanitizer,
+            RequiredResolver, Resolver, TimestampResolver, UniformValidator, VirtualSanitizer,
         },
     },
     types::{DeleteHandler, ErasedValue, FailureHandler, No, SuccessHandler, Yes},
@@ -90,57 +89,66 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorT
     }
 }
 
-pub struct TimestampConfig {
+pub struct TimestampConfig<T: Clone + Debug + Send + Sync + 'static> {
     pub created_at: Option<&'static str>,
     pub updated_at: Option<&'static str>,
-    pub resovler: UniformTimestampResolver,
+    pub resolver: TimestampResolver<T>,
     pub with_optional_updated_at: bool,
 }
 
-pub trait BuildableTimestampConfig {
-    fn build(self) -> TimestampConfig;
+pub trait BuildableTimestampConfig<T: Clone + Debug + Send + Sync + 'static> {
+    fn build(self) -> TimestampConfig<T>;
 }
 
-pub struct TimestampConfigBuilder<HasDateFn = No, HasCreatedAt = No, HasUpdatedAt = No> {
+pub struct TimestampConfigBuilder<
+    T: Clone + Debug + Send + Sync + 'static,
+    HasDateFn = No,
+    HasCreatedAt = No,
+    HasUpdatedAt = No,
+> {
     created_at: Option<&'static str>,
     updated_at: Option<&'static str>,
-    resovler: Option<UniformTimestampResolver>,
+    resovler: Option<TimestampResolver<T>>,
     with_optional_updated_at: bool,
     _c: PhantomData<HasCreatedAt>,
     _r: PhantomData<HasDateFn>,
     _u: PhantomData<HasUpdatedAt>,
 }
 
-impl BuildableTimestampConfig for TimestampConfigBuilder<Yes, Yes> {
-    fn build(self) -> TimestampConfig {
+impl<T: Clone + Debug + Send + Sync + 'static> BuildableTimestampConfig<T>
+    for TimestampConfigBuilder<T, Yes, Yes>
+{
+    fn build(self) -> TimestampConfig<T> {
         TimestampConfig {
             created_at: self.created_at,
             updated_at: self.updated_at,
-            resovler: self.resovler.unwrap(),
+            resolver: self.resovler.unwrap(),
             with_optional_updated_at: self.with_optional_updated_at,
         }
     }
 }
 
-impl<HasCreatedAt> BuildableTimestampConfig for TimestampConfigBuilder<Yes, HasCreatedAt, Yes> {
-    fn build(self) -> TimestampConfig {
+impl<HasCreatedAt, T: Clone + Debug + Send + Sync + 'static> BuildableTimestampConfig<T>
+    for TimestampConfigBuilder<T, Yes, HasCreatedAt, Yes>
+{
+    fn build(self) -> TimestampConfig<T> {
         TimestampConfig {
             created_at: self.created_at,
             updated_at: self.updated_at,
-            resovler: self.resovler.unwrap(),
+            resolver: self.resovler.unwrap(),
             with_optional_updated_at: self.with_optional_updated_at,
         }
     }
 }
 
-impl TimestampConfigBuilder {
+impl<T: Clone + Debug + Send + Sync + 'static> TimestampConfigBuilder<T> {
     pub fn new() -> Self {
         Self::default()
     }
 }
 
-impl<HasDateFn, HasCreatedAt, HasUpdatedAt> Default
-    for TimestampConfigBuilder<HasDateFn, HasCreatedAt, HasUpdatedAt>
+impl<HasDateFn, HasCreatedAt, HasUpdatedAt, T: Clone + Debug + Send + Sync + 'static> Default
+    for TimestampConfigBuilder<T, HasDateFn, HasCreatedAt, HasUpdatedAt>
 {
     fn default() -> Self {
         Self {
@@ -155,24 +163,25 @@ impl<HasDateFn, HasCreatedAt, HasUpdatedAt> Default
     }
 }
 
-impl TimestampConfigBuilder {
-    pub fn date_fn<T, R>(self, resolver: R) -> TimestampConfigBuilder<Yes>
+impl<T: Clone + Debug + Send + Sync + 'static> TimestampConfigBuilder<T> {
+    pub fn date_fn<R>(self, resolver: R) -> TimestampConfigBuilder<T, Yes>
     where
-        T: Clone + Debug + Send + Sync + 'static,
-        R: IntoUniformTimestampResolver<T>,
+        R: Fn() -> T + Send + Sync + 'static,
     {
         TimestampConfigBuilder {
-            resovler: Some(resolver.into_resolver()),
+            resovler: Some(Box::new(resolver)),
             ..Default::default()
         }
     }
 }
 
-impl<HasUpdatedAt> TimestampConfigBuilder<Yes, No, HasUpdatedAt> {
+impl<HasUpdatedAt, T: Clone + Debug + Send + Sync + 'static>
+    TimestampConfigBuilder<T, Yes, No, HasUpdatedAt>
+{
     pub fn created_at(
         self,
         custom_name: Option<&'static str>,
-    ) -> TimestampConfigBuilder<Yes, Yes, HasUpdatedAt> {
+    ) -> TimestampConfigBuilder<T, Yes, Yes, HasUpdatedAt> {
         TimestampConfigBuilder {
             resovler: self.resovler,
             created_at: Some(custom_name.unwrap_or("created_at")),
@@ -183,12 +192,14 @@ impl<HasUpdatedAt> TimestampConfigBuilder<Yes, No, HasUpdatedAt> {
     }
 }
 
-impl<HasCreatedAt> TimestampConfigBuilder<Yes, HasCreatedAt, No> {
+impl<HasCreatedAt, T: Clone + Debug + Send + Sync + 'static>
+    TimestampConfigBuilder<T, Yes, HasCreatedAt, No>
+{
     pub fn updated_at(
         self,
         custom_name: Option<&'static str>,
         is_optional: bool,
-    ) -> TimestampConfigBuilder<Yes, HasCreatedAt, Yes> {
+    ) -> TimestampConfigBuilder<T, Yes, HasCreatedAt, Yes> {
         TimestampConfigBuilder {
             resovler: self.resovler,
             created_at: self.created_at,

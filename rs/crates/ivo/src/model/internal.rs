@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, fmt::Debug};
 
 use crate::{
     schema::fields::base::{FieldType, InternalFieldConfig},
@@ -12,19 +12,26 @@ pub(super) struct FieldInfoCollection<
     O: IvoSchemaStruct,
     CtxOptions,
     ErrorTool: IvoErrorTool,
+    Timestamp: Clone + Debug + Send + Sync + 'static,
 > {
     config_names: HashSet<String>,
-    schema: &'a Schema<I, O, CtxOptions, ErrorTool>,
+    schema: &'a Schema<I, O, CtxOptions, ErrorTool, Timestamp>,
     pub fields: Vec<FieldInfo>,
     pub schema_input_fields: HashSet<String>,
     pub schema_output_fields: HashSet<String>,
 }
 
-impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool>
-    FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool>
+impl<
+        'a,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions,
+        ErrorTool: IvoErrorTool,
+        Timestamp: Clone + Debug + Send + Sync + 'static,
+    > FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool, Timestamp>
 {
     pub fn new(
-        schema: &'a Schema<I, O, CtxOptions, ErrorTool>,
+        schema: &'a Schema<I, O, CtxOptions, ErrorTool, Timestamp>,
         erased_input_values: &PartialMapOfErasedValues,
     ) -> Self {
         let mut config_names = HashSet::new();
@@ -73,7 +80,7 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
     }
 
     pub fn from_fields(
-        schema: &'a Schema<I, O, CtxOptions, ErrorTool>,
+        schema: &'a Schema<I, O, CtxOptions, ErrorTool, Timestamp>,
         fields: Vec<FieldInfo>,
         schema_input_fields: &HashSet<String>,
         schema_output_fields: &HashSet<String>,
@@ -114,7 +121,7 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
 
     pub fn get_field_info(
         field_name: &String,
-        schema: &Schema<I, O, CtxOptions, ErrorTool>,
+        schema: &Schema<I, O, CtxOptions, ErrorTool, Timestamp>,
         schema_input_fields: &HashSet<String>,
         schema_output_fields: &HashSet<String>,
     ) -> Option<FieldInfo> {
@@ -158,8 +165,14 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
     }
 }
 
-impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool> Clone
-    for FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool>
+impl<
+        'a,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions,
+        ErrorTool: IvoErrorTool,
+        Timestamp: Clone + Debug + Send + Sync + 'static,
+    > Clone for FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool, Timestamp>
 {
     fn clone(&self) -> Self {
         Self {

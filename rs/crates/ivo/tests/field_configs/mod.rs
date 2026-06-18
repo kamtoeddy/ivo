@@ -4,6 +4,7 @@ mod dependents;
 mod timestamps;
 mod virtuals;
 
+use ivo::DefaultErrorTool;
 #[cfg(test)]
 use ivo::{IvoField, IvoStruct, Schema};
 use std::future::ready;
@@ -56,7 +57,7 @@ fn should_reject_if_field_name_is_same_created_at_if_enabled_with_default_name()
         _c: String,
     }
 
-    let _: Schema<DataInput, Data> = Schema::new(
+    let _: Schema<DataInput, Data, Option<()>, DefaultErrorTool, &'static str> = Schema::new(
         |f| {
             f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
                 .set(
@@ -87,7 +88,7 @@ fn should_reject_if_field_name_is_same_created_at_if_enabled_with_custom_name() 
         _c: String,
     }
 
-    let _: Schema<DataInput, Data> = Schema::new(
+    let _: Schema<DataInput, Data, Option<()>, DefaultErrorTool, &'static str> = Schema::new(
         |f| {
             f.set(
                 "custom_created_at",
@@ -118,7 +119,7 @@ fn should_reject_if_field_name_is_same_updated_at_if_enabled_with_default_name()
         _c: String,
     }
 
-    let _: Schema<DataInput, Data> = Schema::new(
+    let _: Schema<DataInput, Data, Option<()>, DefaultErrorTool, &'static str> = Schema::new(
         |f| {
             f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
                 .set(
@@ -149,7 +150,7 @@ fn should_reject_if_field_name_is_same_updated_at_if_enabled_with_custom_name() 
         _c: String,
     }
 
-    let _: Schema<DataInput, Data> = Schema::new(
+    let _: Schema<DataInput, Data, Option<()>, DefaultErrorTool, &'static str> = Schema::new(
         |f| {
             f.set(
                 "custom_updated_at",

@@ -3,6 +3,7 @@ pub mod fields;
 pub mod options;
 
 use std::collections::{HashMap, HashSet};
+use std::fmt::Debug;
 use std::marker::PhantomData;
 
 use crate::schema::error_tool::{DefaultErrorTool, IvoErrorTool};
@@ -27,14 +28,21 @@ pub struct Schema<
     O: IvoSchemaStruct = I,
     CtxOptions = Option<()>,
     ErrorTool: IvoErrorTool = DefaultErrorTool,
+    Timestamp: Clone + Debug + Send + Sync + 'static = (),
 > {
     pub(crate) field_configs: InternalFieldConfigs<I, O, CtxOptions, ErrorTool>,
     pub(crate) options: SchemaOptions<I, O, CtxOptions, ErrorTool>,
-    pub(crate) _timestamp_configs: Option<TimestampConfig>,
+    pub(crate) _timestamp_configs: Option<TimestampConfig<Timestamp>>,
 }
 
-impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool>
-    Schema<I, O, CtxOptions, ErrorTool>
+impl<
+        'a,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions,
+        ErrorTool: IvoErrorTool,
+        Timestamp: Clone + Debug + Send + Sync + 'static,
+    > Schema<I, O, CtxOptions, ErrorTool, Timestamp>
 {
     pub fn new<FieldMaker, OptionsMaker, BuildableOptions, WithTimestamps>(
         f: FieldMaker,
@@ -42,8 +50,9 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
     ) -> Self
     where
         FieldMaker: Fn(
-            FieldBuilder<I, O, CtxOptions, ErrorTool>,
-        ) -> FieldBuilder<I, O, CtxOptions, ErrorTool, WithTimestamps>,
+            FieldBuilder<I, O, CtxOptions, ErrorTool, Timestamp>,
+        )
+            -> FieldBuilder<I, O, CtxOptions, ErrorTool, Timestamp, WithTimestamps>,
         OptionsMaker: Fn(SchemaOptionsBuilder<I, O, CtxOptions, ErrorTool>) -> BuildableOptions,
         BuildableOptions: BuildableSchemaOptions<I, O, CtxOptions, ErrorTool>,
     {
@@ -58,7 +67,7 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
 
     fn make_field_configs(
         config_tuples: Vec<(String, InternalFieldConfig<I, O, CtxOptions, ErrorTool>)>,
-        timestamp_configs: &Option<TimestampConfig>,
+        timestamp_configs: &Option<TimestampConfig<Timestamp>>,
     ) -> InternalFieldConfigs<I, O, CtxOptions, ErrorTool> {
         let input_field_names = I::ivo_internal_field_names();
         let output_field_names = O::ivo_internal_field_names();
@@ -524,15 +533,21 @@ pub struct FieldBuilder<
     O: IvoSchemaStruct,
     CtxOptions,
     ErrorTool: IvoErrorTool,
+    T: Clone + Debug + Send + Sync + 'static,
     WithTimestamps = No,
 > {
     _t: PhantomData<WithTimestamps>,
     configs: Vec<(String, InternalFieldConfig<I, O, CtxOptions, ErrorTool>)>,
-    timestamp_config: Option<TimestampConfig>,
+    timestamp_config: Option<TimestampConfig<T>>,
 }
 
-impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool>
-    FieldBuilder<I, O, CtxOptions, ErrorTool>
+impl<
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions,
+        ErrorTool: IvoErrorTool,
+        T: Clone + Debug + Send + Sync + 'static,
+    > FieldBuilder<I, O, CtxOptions, ErrorTool, T>
 {
     fn new() -> Self {
         Self {
@@ -552,16 +567,21 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool
     }
 }
 
-impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool>
-    FieldBuilder<I, O, CtxOptions, ErrorTool>
+impl<
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions,
+        ErrorTool: IvoErrorTool,
+        T: Clone + Debug + Send + Sync + 'static,
+    > FieldBuilder<I, O, CtxOptions, ErrorTool, T>
 {
     pub fn set_timestamps<BuildableConfig, R>(
         self,
         t: R,
-    ) -> FieldBuilder<I, O, CtxOptions, ErrorTool, Yes>
+    ) -> FieldBuilder<I, O, CtxOptions, ErrorTool, T, Yes>
     where
-        BuildableConfig: BuildableTimestampConfig,
-        R: Fn(TimestampConfigBuilder) -> BuildableConfig,
+        BuildableConfig: BuildableTimestampConfig<T>,
+        R: Fn(TimestampConfigBuilder<T>) -> BuildableConfig,
     {
         FieldBuilder {
             configs: self.configs,

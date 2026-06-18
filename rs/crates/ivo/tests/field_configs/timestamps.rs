@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use ivo::{IvoField, IvoStruct, Schema};
+use ivo::{DefaultErrorTool, IvoField, IvoStruct, Schema};
 use std::{future::ready, panic};
 
 #[test]
@@ -18,7 +18,7 @@ fn should_reject_if_created_at_is_enabled_with_default_name_but_missing_from_out
         _c: String,
     }
 
-    let _: Schema<DataInput, Data> = Schema::new(
+    let _: Schema<DataInput, Data, Option<()>, DefaultErrorTool, &'static str> = Schema::new(
         |f| {
             f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
                 .set_timestamps(|t| t.date_fn(|| "Date.now()").created_at(None))
@@ -42,7 +42,7 @@ fn should_reject_if_created_at_is_enabled_with_custom_name_but_missing_from_outp
         _c: String,
     }
 
-    let _: Schema<DataInput, Data> = Schema::new(
+    let _: Schema<DataInput, Data, Option<()>, DefaultErrorTool, &'static str> = Schema::new(
         |f| {
             f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
                 .set_timestamps(|t| {
@@ -68,7 +68,7 @@ fn should_allow_if_created_at_is_enabled_with_default_name_and_is_on_output() {
     }
 
     let result = panic::catch_unwind(|| {
-        let _: Schema<DataInput, Data> = Schema::new(
+        let _: Schema<DataInput, Data, Option<()>, DefaultErrorTool, &'static str> = Schema::new(
             |f| {
                 f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
                     .set_timestamps(|t| t.date_fn(|| "Date.now()").created_at(None))
@@ -94,7 +94,7 @@ fn should_allow_if_created_at_is_enabled_with_custom_name_band_is_onoutput() {
     }
 
     let result = panic::catch_unwind(|| {
-        let _: Schema<DataInput, Data> = Schema::new(
+        let _: Schema<DataInput, Data, Option<()>, DefaultErrorTool, &'static str> = Schema::new(
             |f| {
                 f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
                     .set_timestamps(|t| {
@@ -124,7 +124,7 @@ fn should_reject_if_updated_at_is_enabled_with_default_name_but_missing_from_out
         _c: String,
     }
 
-    let _: Schema<DataInput, Data> = Schema::new(
+    let _: Schema<DataInput, Data, Option<()>, DefaultErrorTool, &'static str> = Schema::new(
         |f| {
             f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
                 .set_timestamps(|t| t.date_fn(|| "Date.now()").updated_at(None, true))
@@ -148,7 +148,7 @@ fn should_reject_if_updated_at_is_enabled_with_custom_name_but_missing_from_outp
         _c: String,
     }
 
-    let _: Schema<DataInput, Data> = Schema::new(
+    let _: Schema<DataInput, Data, Option<()>, DefaultErrorTool, &'static str> = Schema::new(
         |f| {
             f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
                 .set_timestamps(|t| {
@@ -174,7 +174,7 @@ fn should_allow_if_updated_at_is_enabled_with_default_name_and_is_on_output() {
     }
 
     let result = panic::catch_unwind(|| {
-        let _: Schema<DataInput, Data> = Schema::new(
+        let _: Schema<DataInput, Data, Option<()>, DefaultErrorTool, &'static str> = Schema::new(
             |f| {
                 f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
                     .set_timestamps(|t| t.date_fn(|| "Date.now()").updated_at(None, true))
@@ -200,7 +200,7 @@ fn should_allow_if_updated_at_is_enabled_with_custom_name_and_is_on_output() {
     }
 
     let result = panic::catch_unwind(|| {
-        let _: Schema<DataInput, Data> = Schema::new(
+        let _: Schema<DataInput, Data, Option<()>, DefaultErrorTool, &'static str> = Schema::new(
             |f| {
                 f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
                     .set_timestamps(|t| {

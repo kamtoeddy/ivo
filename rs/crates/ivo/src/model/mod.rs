@@ -1,6 +1,7 @@
 mod internal;
 
 use std::collections::{HashMap, HashSet};
+use std::fmt::Debug;
 use std::future::ready;
 use std::sync::Arc;
 
@@ -8,12 +9,14 @@ use crate::model::internal::{FieldInfo, FieldInfoCollection};
 use crate::schema::error_tool::{DefaultErrorTool, FieldError, IvoErrorTool, UpdateError};
 use crate::schema::fields::base::{FieldType, InternalFieldConfig};
 use crate::schema::fields::types::{ComputableRequiredError, ComputableWithMiniContext};
+use crate::schema::fields::TimestampConfig;
 use crate::schema::Schema;
 
 use crate::schema::options::types::{OnSuccessConfig, PostValidationConfig};
 
 use crate::{
-    IvoContext, SharedCtxOptions, SharedIvoContext, SharedIvoMiniContext, SharedRwCtxOptions,
+    erase_value, IvoContext, SharedCtxOptions, SharedIvoContext, SharedIvoMiniContext,
+    SharedRwCtxOptions,
 };
 
 use futures::future::{join_all, BoxFuture};
@@ -31,9 +34,10 @@ impl<
         O: IvoSchemaStruct,
         CtxOptions: Clone + Sync + Send,
         ErrorTool: IvoErrorTool,
-    > Schema<I, O, CtxOptions, ErrorTool>
+        Timestamp: Clone + Debug + Send + Sync + 'static,
+    > Schema<I, O, CtxOptions, ErrorTool, Timestamp>
 {
-    pub fn get_model(&self) -> Model<'_, I, O, CtxOptions, ErrorTool> {
+    pub fn get_model(&self) -> Model<'_, I, O, CtxOptions, ErrorTool, Timestamp> {
         Model { schema: self }
     }
 }
@@ -44,8 +48,9 @@ pub struct Model<
     O: IvoSchemaStruct = I,
     CtxOptions: Clone + Sync + Send = HashMap<String, ()>,
     ErrorTool: IvoErrorTool = DefaultErrorTool,
+    Timestamp: Clone + Debug + Send + Sync + 'static = (),
 > {
-    schema: &'schema Schema<I, O, CtxOptions, ErrorTool>,
+    schema: &'schema Schema<I, O, CtxOptions, ErrorTool, Timestamp>,
 }
 
 impl<
@@ -54,7 +59,8 @@ impl<
         O: IvoSchemaStruct,
         CtxOptions: Clone + Sync + Send,
         ErrorTool: IvoErrorTool,
-    > Model<'schema, I, O, CtxOptions, ErrorTool>
+        Timestamp: Clone + Debug + Send + Sync + 'static,
+    > Model<'schema, I, O, CtxOptions, ErrorTool, Timestamp>
 {
     pub async fn create(
         &self,
@@ -592,7 +598,7 @@ impl<
 
     async fn validate<'a>(
         &self,
-        fields_provided: &'a FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool>,
+        fields_provided: &'a FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool, Timestamp>,
         erased_input_values: &PartialMapOfErasedValues,
         ctx: SharedIvoContext<I, O>,
         options: SharedRwCtxOptions<CtxOptions>,
@@ -657,7 +663,7 @@ impl<
 
     async fn re_validate<'a>(
         &self,
-        fields_provided: &'a FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool>,
+        fields_provided: &'a FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool, Timestamp>,
         ctx: SharedIvoContext<I, O>,
         options: SharedRwCtxOptions<CtxOptions>,
     ) -> Result<(I::Partial, O::Partial, bool), ErrorTool::ErrorPayload> {
@@ -729,7 +735,7 @@ impl<
 
     async fn post_validate<'a>(
         &self,
-        fields_provided: &'a FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool>,
+        fields_provided: &'a FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool, Timestamp>,
         ctx: SharedIvoContext<I, O>,
         options: SharedRwCtxOptions<CtxOptions>,
     ) -> Result<(I::Partial, O::Partial, bool), ErrorTool::ErrorPayload> {
@@ -873,7 +879,7 @@ impl<
 
     async fn sanitize_virtuals<'a>(
         &self,
-        fields_provided: &'a FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool>,
+        fields_provided: &'a FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool, Timestamp>,
         ctx: SharedIvoContext<I, O>,
         options: SharedRwCtxOptions<CtxOptions>,
     ) -> (I::Partial, O::Partial, bool) {
@@ -923,7 +929,7 @@ impl<
 
     async fn resolve_dependent_values<'a>(
         &self,
-        fields_changed: &'a FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool>,
+        fields_changed: &'a FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool, Timestamp>,
         ctx: SharedIvoContext<I, O>,
         options: SharedRwCtxOptions<CtxOptions>,
     ) -> (I::Partial, O::Partial, bool, Vec<FieldInfo>) {
@@ -1041,7 +1047,7 @@ impl<
 
     async fn evaluate_missing_required_fields<'a>(
         &self,
-        fields_provided: &'a FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool>,
+        fields_provided: &'a FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool, Timestamp>,
         ctx: SharedIvoContext<I, O>,
         options: SharedRwCtxOptions<CtxOptions>,
     ) -> Result<(), ErrorTool::ErrorPayload> {
@@ -1171,7 +1177,7 @@ impl<
 
     fn prepare_success_handlers<'a>(
         &self,
-        fields_updated: FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool>,
+        fields_updated: FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool, Timestamp>,
         ctx: SharedIvoContext<I, O>,
         options: SharedCtxOptions<CtxOptions>,
     ) -> AsyncHandlerTrigger<'schema> {
@@ -1258,8 +1264,36 @@ impl<
         )
     }
 
-    fn _attach_time_stamps(&self, data: O::Partial, _is_update: bool) -> O::Partial {
-        // if let Some(resolver) =
+    fn _attach_time_stamps(&self, data: O::Partial, is_update: bool) -> O::Partial {
+        if let Some(TimestampConfig {
+            created_at,
+            resolver,
+            updated_at,
+            with_optional_updated_at,
+        }) = self.schema._timestamp_configs.as_ref()
+        {
+            let now = resolver();
+
+            if !is_update {
+                if let Some(_created_at) = created_at {
+                    // data.set(created_at, erase_value(now));
+                }
+            }
+
+            if let Some(_updated_at) = updated_at {
+                if *with_optional_updated_at {
+                    if is_update {
+                        // data.set(updated_at, erase_value(Some(now)));
+                    } else {
+                        // data.set(updated_at, erase_value::<Option<Timestamp>>(None));
+                    }
+                } else {
+                    // data.set(updated_at, erase_value(now));
+                }
+            }
+
+            erase_value(now);
+        }
 
         data
         // updated_outputs
