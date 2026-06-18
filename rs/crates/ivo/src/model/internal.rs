@@ -13,11 +13,11 @@ pub(super) struct FieldInfoCollection<
     CtxOptions,
     ErrorTool: IvoErrorTool,
 > {
-    schema: &'a Schema<I, O, CtxOptions, ErrorTool>,
-    pub schema_input_fields: Vec<String>,
-    pub schema_output_fields: Vec<String>,
     config_names: HashSet<String>,
+    schema: &'a Schema<I, O, CtxOptions, ErrorTool>,
     pub fields: Vec<FieldInfo>,
+    pub schema_input_fields: HashSet<String>,
+    pub schema_output_fields: HashSet<String>,
 }
 
 impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool>
@@ -75,8 +75,8 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
     pub fn from_fields(
         schema: &'a Schema<I, O, CtxOptions, ErrorTool>,
         fields: Vec<FieldInfo>,
-        schema_input_fields: &Vec<String>,
-        schema_output_fields: &Vec<String>,
+        schema_input_fields: &HashSet<String>,
+        schema_output_fields: &HashSet<String>,
     ) -> Self {
         let mut config_names = HashSet::new();
 
@@ -115,8 +115,8 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
     pub fn get_field_info(
         field_name: &String,
         schema: &Schema<I, O, CtxOptions, ErrorTool>,
-        schema_input_fields: &Vec<String>,
-        schema_output_fields: &Vec<String>,
+        schema_input_fields: &HashSet<String>,
+        schema_output_fields: &HashSet<String>,
     ) -> Option<FieldInfo> {
         if let Some(InternalFieldConfig {
             alias, depends_on, ..

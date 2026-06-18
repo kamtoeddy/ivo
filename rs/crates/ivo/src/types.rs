@@ -3,7 +3,11 @@
 use futures::future::BoxFuture;
 pub use futures_locks::RwLock;
 pub use std::sync::Arc;
-use std::{any::Any, collections::HashMap, fmt::Debug};
+use std::{
+    any::Any,
+    collections::{HashMap, HashSet},
+    fmt::Debug,
+};
 
 use crate::schema::error_tool::DefaultFieldErrorMetadata;
 
@@ -96,7 +100,7 @@ pub trait IvoStructMethods: WithIvoStructPartial + Clone {
 
     fn ivo_internal_update_with(&mut self, updates: &Self::Partial);
 
-    fn ivo_internal_field_names() -> Vec<String>;
+    fn ivo_internal_field_names() -> HashSet<String>;
 
     fn ivo_internal_name() -> String;
 }

@@ -134,7 +134,7 @@ pub fn generate_ivo_struct_impls<T: ToTokens>(
                 #( #set_updated_values )*
             }
 
-            fn ivo_internal_field_names() -> Vec<String> {
+            fn ivo_internal_field_names() -> std::collections::HashSet<String> {
                 #field_names.into_iter().map(|f| String::from(f)).collect()
             }
 
