@@ -370,48 +370,94 @@ fn should_reject_dependency_of_constant_fields() {
 
 #[test]
 #[should_panic(
-    expected = "[dependent]: should not depend on \"dependent_parent\" and \"lax\" because \"dependent_parent\" already depends on \"lax\""
+    expected = "[a]: should not depend on \"b\" and \"c\" because \"b\" already depends on \"c\""
 )]
 fn should_reject_any_redundant_dependencies() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
-        id: i32,
-        dependent: String,
-        dependent_parent: String,
-        lax: String,
-        required: String,
-        updated_at: String,
+        a: String,
+        b: String,
+        c: String,
+        d: String,
     }
 
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct DataInput {
-        lax: String,
-        required: String,
+        c: String,
+        d: String,
     }
 
     let _: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
-                .set("lax", IvoField::LAX.default(1))
+            f.set("c", IvoField::LAX.default(1))
                 .set(
-                    "dependent_parent",
+                    "b",
                     IvoField::DEPENDENT
                         .default(2)
-                        .depends_on(["lax"])
+                        .depends_on(["c"])
                         .resolve(|_, _| ready(4)),
                 )
                 .set(
-                    "dependent",
+                    "a",
                     IvoField::DEPENDENT
                         .default(2)
-                        .depends_on(["lax", "required", "dependent_parent"])
+                        .depends_on(["c", "d", "b"])
                         .resolve(|_, _| ready(4)),
                 )
                 .set(
-                    "required",
+                    "d",
                     IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(v))),
                 )
-                .updated_at(|| "Date.now()", None, true)
+        },
+        |o| o,
+    );
+}
+
+#[test]
+#[should_panic(
+    expected = "[a]: should not depend on \"b\" and \"d\" because \"b\" indirectly depends on \"d\""
+)]
+fn should_reject_any_deeply_redundant_dependencies() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        a: String,
+        b: String,
+        c: String,
+        d: String,
+    }
+
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct DataInput {
+        d: String,
+    }
+
+    let _: Schema<DataInput, Data> = Schema::new(
+        |f| {
+            f.set(
+                "c",
+                IvoField::DEPENDENT
+                    .default(2)
+                    .depends_on(["d"])
+                    .resolve(|_, _| ready(4)),
+            )
+            .set(
+                "b",
+                IvoField::DEPENDENT
+                    .default(2)
+                    .depends_on(["c"])
+                    .resolve(|_, _| ready(4)),
+            )
+            .set(
+                "a",
+                IvoField::DEPENDENT
+                    .default(2)
+                    .depends_on(["b", "d"])
+                    .resolve(|_, _| ready(4)),
+            )
+            .set(
+                "d",
+                IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(v))),
+            )
         },
         |o| o,
     );

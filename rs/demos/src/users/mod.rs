@@ -1,5 +1,5 @@
 use ivo::{UpdateError, erase_value, parse_or_panic, types::IvoStructMethods};
-use std::{collections::HashMap, mem, time::Instant};
+use std::{collections::HashMap, mem, sync::LazyLock, time::Instant};
 
 mod domain;
 
@@ -9,6 +9,9 @@ use crate::{
 };
 
 pub async fn run_users_demo() {
+    // println!("runner\n\n");
+    LazyLock::force(&USER_MODEL);
+
     let timer = Instant::now();
 
     let input = PartialUserInput {
@@ -21,6 +24,7 @@ pub async fn run_users_demo() {
         slug_id: Some("sloppy-slug-id".into()),
     };
 
+    // println!("runner2\n\n");
     let r = USER_MODEL.create(&input, UserCtxOptions::new()).await;
 
     println!("size:  {}", format_bytes(&mem::size_of_val(&r)));

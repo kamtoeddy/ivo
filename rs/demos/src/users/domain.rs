@@ -1,11 +1,14 @@
-use std::{array, collections::HashMap, future::ready, sync::LazyLock};
+use std::{array, collections::HashMap, future::ready, sync::LazyLock, time::Instant};
 
 use ivo::{
     IvoField, IvoStruct, IvoValues, Model, Schema, SharedCtxOptions, SharedData, SharedIvoContext,
     SharedRwCtxOptions, validate_email,
 };
 
-use crate::utils::slugify::{SlugifiedString, slugify};
+use crate::utils::{
+    slugify::{SlugifiedString, slugify},
+    styled_text::Stylable,
+};
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum UserRole {
@@ -76,7 +79,10 @@ pub static USER_MODEL: LazyLock<Model<UserInput, User, UserCtxOptions>> =
     LazyLock::new(|| USER_SCHEMA.get_model());
 
 pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = LazyLock::new(|| {
-    Schema::new(
+    let timer = Instant::now();
+
+    println!("\nstart schema creation");
+    let schema = Schema::new(
         |f| {
             f.set(
                 "id",
@@ -321,7 +327,14 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
                 ready(())
             })
         },
-    )
+    );
+    println!(
+        "{} {}\n",
+        "\nUser schema created:".font_bold(),
+        format!("{:?}", timer.elapsed()).colored_red()
+    );
+
+    schema
 });
 
 fn is_username_or_slug_id_updatable(username_last_updated_at: Option<String>) -> bool {

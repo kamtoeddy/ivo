@@ -312,17 +312,24 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
                             );
                 }
 
-                if let Some(redundant_field) = Self::get_redundant_dependency_on_parent(
+                parent_fields_provided.insert(parent_field);
+            }
+
+            if let Some((parent_field, redundant_field, depth)) =
+                Self::get_redundant_dependency_on_parent(
                     field_name,
-                    &parent_field_string,
                     &dependent_field_to_parent_fields,
-                ) {
+                )
+            {
+                if depth == 0 {
                     panic!(
-                                "\n{COLOR_RED}[{field_name}]: should not depend on \"{parent_field}\" and \"{redundant_field}\" because \"{parent_field}\" already depends on \"{redundant_field}\"{STYLE_RESET}\n"
-                            );
+                            "\n{COLOR_RED}[{field_name}]: should not depend on \"{redundant_field}\" and \"{parent_field}\" because \"{redundant_field}\" already depends on \"{parent_field}\"{STYLE_RESET}\n"
+               );
                 }
 
-                parent_fields_provided.insert(parent_field);
+                panic!(
+                           "\n{COLOR_RED}[{field_name}]: should not depend on \"{redundant_field}\" and \"{parent_field}\" because \"{redundant_field}\" indirectly depends on \"{parent_field}\"{STYLE_RESET}\n"
+                       );
             }
         }
 
@@ -341,24 +348,36 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
         options
     }
 
-    /// Given feilds a, b, c, d such that a -> [b, c], b -> [c], c -> [d]
+    /// Given fields a, b, c, d such that a -> \[b, c\]  **&**  b -> \[c\]  **&**  c -> \[d\]
     ///
-    /// => redundancy(a, b) = Some(c)
+    /// => redundancy(a, b) = Some(c)  **&**  redundancy(a, c) = None
     ///
-    /// => redundancy(a, c) = None
+    /// => a -> \[b\] is the only valid config for a
     ///
-    /// => a -> [b] is the only valid config for a
+    /// Given fields a, b, c, d such that a -> \[b, d\]  **&**  b -> \[c\]  **&**  c -> \[d\]
+    ///
+    /// => redundancy(a, b) = Some(d)  **&**  redundancy(a, d) = None
+    ///
+    /// => a -> \[b\] is the only valid config for a
     fn get_redundant_dependency_on_parent<'r>(
         field_name: &String,
-        parent_name: &String,
         dependent_field_to_parent_fields: &HashMap<&String, &Vec<&'r str>>,
-    ) -> Option<&'r str> {
-        if let Some(parent_deps) = dependent_field_to_parent_fields.get(parent_name).as_ref() {
-            let deps = dependent_field_to_parent_fields.get(field_name).unwrap();
+    ) -> Option<(&'r str, &'r str, i32)> {
+        if let Some(parent_deps) = dependent_field_to_parent_fields.get(field_name).as_ref() {
+            for parent_name in parent_deps.iter() {
+                for field_name in parent_deps.iter() {
+                    if field_name == parent_name {
+                        continue;
+                    }
 
-            for parent_dep in parent_deps.iter() {
-                if deps.contains(parent_dep) {
-                    return Some(parent_dep);
+                    if let Some((p, _, d)) = Self::is_field_redundantly_dependent_on_parent(
+                        field_name,
+                        parent_name,
+                        dependent_field_to_parent_fields,
+                        0,
+                    ) {
+                        return Some((p, field_name, d));
+                    }
                 }
             }
 
@@ -367,6 +386,72 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
 
         None
     }
+
+    fn is_field_redundantly_dependent_on_parent<'r>(
+        field_name: &'r str,
+        parent_name: &'r str,
+        dependent_field_to_parent_fields: &HashMap<&String, &Vec<&'r str>>,
+        depth: i32,
+    ) -> Option<(&'r str, &'r str, i32)> {
+        if let Some(parent_deps) = dependent_field_to_parent_fields
+            .get(&field_name.to_string())
+            .as_ref()
+        {
+            if parent_deps.contains(&parent_name) {
+                return Some((parent_name, field_name, depth));
+            }
+
+            for field_name in parent_deps.iter() {
+                let r = Self::is_field_redundantly_dependent_on_parent(
+                    field_name,
+                    parent_name,
+                    dependent_field_to_parent_fields,
+                    depth + 1,
+                );
+
+                if r.is_some() {
+                    return r;
+                }
+            }
+
+            return None;
+        }
+
+        None
+    }
+
+    // Given fields a, b, c, d
+
+    // if a -> \[b\]  **&**  b -> \[a\]
+
+    // => circular_dependency_chain(a) = Some(vec!\[a, b\])
+
+    // if a -> \[b\]  **&**  b -> \[c\]  **&**  c -> \[a\]
+
+    // => circular_dependency_chain(a) = Some(vec!\[a, b, c\])
+
+    // if a -> \[b\]  **OR**  a -> \[b\]  **&**  b -> \[c, d\]  **OR**  a -> \[b\]  **&**  b -> \[c\]  **&**  c -> \[d\]
+
+    // => circular_dependency_chain(a) = None
+    // fn get_circular_dependency_chain<'r>(
+    //     field_name: &String,
+    //     parent_name: &String,
+    //     dependent_field_to_parent_fields: &HashMap<&String, &Vec<&'r str>>,
+    // ) -> Option<Vec<&'r str>> {
+    //     if let Some(parent_deps) = dependent_field_to_parent_fields.get(parent_name).as_ref() {
+    //         let deps = dependent_field_to_parent_fields.get(field_name).unwrap();
+
+    //         // for parent_dep in parent_deps.iter() {
+    //         //     if deps.contains(parent_dep) {
+    //         //         return Some(parent_dep);
+    //         //     }
+    //         // }
+
+    //         return None;
+    //     }
+
+    //     None
+    // }
 }
 
 pub struct FieldBuilder<
