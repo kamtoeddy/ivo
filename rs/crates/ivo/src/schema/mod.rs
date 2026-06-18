@@ -370,13 +370,15 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
                         continue;
                     }
 
-                    if let Some((_, r, d)) = Self::is_field_redundantly_dependent_on_parent(
-                        field_name,
-                        parent_name,
-                        dependent_field_to_parent_fields,
-                        0,
-                    ) {
-                        return Some((field_name, r, d));
+                    if let Some((redundant_field, depth)) =
+                        Self::is_field_redundantly_dependent_on_parent(
+                            field_name,
+                            parent_name,
+                            dependent_field_to_parent_fields,
+                            0,
+                        )
+                    {
+                        return Some((field_name, redundant_field, depth));
                     }
                 }
             }
@@ -392,13 +394,13 @@ impl<'a, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoError
         parent_name: &'r str,
         dependent_field_to_parent_fields: &HashMap<&String, &Vec<&'r str>>,
         depth: i32,
-    ) -> Option<(&'r str, &'r str, i32)> {
+    ) -> Option<(&'r str, i32)> {
         if let Some(parent_deps) = dependent_field_to_parent_fields
             .get(&field_name.to_string())
             .as_ref()
         {
             if parent_deps.contains(&parent_name) {
-                return Some((field_name, parent_name, depth));
+                return Some((parent_name, depth));
             }
 
             for field_name in parent_deps.iter() {
