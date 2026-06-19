@@ -1,6 +1,8 @@
+
 [package]
-name = "ivo_derive"
+name = "ivo-derive"
 license-file = "../../../LICENSE"
+publish = true
 repository.workspace = true
 homepage.workspace = true
 keywords.workspace = true

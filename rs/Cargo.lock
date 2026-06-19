@@ -260,9 +260,9 @@ checksum = "72f5acc6cb2ba439de613abc23857ec3d78374d8ed5ac84e9d11336e87da8649"
 
 [[package]]
 name = "bytes"
-version = "1.11.1"
+version = "1.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e748733b7cbc798e1434b6ac524f0c1ff2ab456fe201501e6497c8417a4fc33"
+checksum = "8ae3f5d315924270530207e2a68396c3cc547f6dca3fbdca317cfb1a51edb593"
 
 [[package]]
 name = "cc"
@@ -350,7 +350,7 @@ checksum = "d0a5c400df2834b80a4c3327b3aad3a4c4cd4de0629063962b03235697506a28"
 
 [[package]]
 name = "demos"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "async-std",
  "ivo",
@@ -873,17 +873,17 @@ checksum = "8f42a60cbdf9a97f5d2305f08a87dc4e09308d1276d28c869c684d7777685682"
 
 [[package]]
 name = "ivo"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "futures",
  "futures-locks",
- "ivo_derive",
- "ivo_validators",
+ "ivo-derive",
+ "ivo-validators",
 ]
 
 [[package]]
-name = "ivo_derive"
-version = "0.0.1"
+name = "ivo-derive"
+version = "0.0.2"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -892,8 +892,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "ivo_validators"
-version = "0.0.1"
+name = "ivo-validators"
+version = "0.0.2"
 dependencies = [
  "regex",
 ]
@@ -2057,9 +2057,9 @@ dependencies = [
 
 [[package]]
 name = "webpki-root-certs"
-version = "1.0.7"
+version = "1.0.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f31141ce3fc3e300ae89b78c0dd67f9708061d1d2eda54b8209346fd6be9a92c"
+checksum = "0d46a5a140e6f7afeccd8eae97eff335163939eac8b929834875168b29b3d267"
 dependencies = [
  "rustls-pki-types",
 ]

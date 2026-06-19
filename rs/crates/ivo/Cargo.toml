@@ -1,6 +1,8 @@
+
 [package]
 name = "ivo"
 license-file = "../../../LICENSE"
+publish = true
 repository.workspace = true
 homepage.workspace = true
 keywords.workspace = true
@@ -11,10 +13,10 @@ edition.workspace = true
 rust-version.workspace = true
 
 [features]
-validators = ["dep:ivo_validators"]
+validators = ["dep:ivo-validators"]
 
 [dependencies]
 futures = "0.3"
 futures-locks = "0.7"
-ivo_derive = { path = "../ivo_derive" }
-ivo_validators = { path = "../ivo_validators", optional = true}
+ivo-derive = { path = "../ivo_derive", version = "0.0.2" }
+ivo-validators = { path = "../ivo_validators", version = "0.0.2", optional = true}

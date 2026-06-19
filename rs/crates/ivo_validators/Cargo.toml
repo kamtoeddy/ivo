@@ -1,11 +1,13 @@
+
 [package]
-name = "ivo_validators"
+name = "ivo-validators"
 license-file = "../../../LICENSE"
+publish = true
 repository.workspace = true
 homepage.workspace = true
 keywords.workspace = true
 categories.workspace = true
-description = "optional built-in validators for ivo"
+description = "Optional built-in validators for ivo"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

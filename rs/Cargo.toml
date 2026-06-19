@@ -1,14 +1,14 @@
 [workspace]
-members = ["crates/*", "demos",]
+members = ["crates/*", "demos"]
 resolver = "2"
 
 [workspace.package]
-version = "0.0.1"
+version = "0.0.2"
 edition = "2021"
 authors = ["kamtoeddy <lollipopkalog@gmail.com>"]
 license-file = "../LICENSE"
 repository = "https://github.com/kamtoeddy/ivo/rs"
 homepage = "https://github.com/kamtoeddy/ivo/rs"
-keywords = ["json", "serialization", "zero-copy", "simd", "serde"]
+keywords = ["schema", "validation"]
 categories = ["encoding", "parsing"]
 rust-version = "1.71"
