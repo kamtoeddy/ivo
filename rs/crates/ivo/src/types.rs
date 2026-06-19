@@ -27,6 +27,10 @@ impl std::ops::Deref for False {
     }
 }
 
+pub trait IvoFieldValue: Clone + Debug + Send + Sync + 'static {}
+
+impl<T> IvoFieldValue for T where T: Clone + Debug + Send + Sync + 'static {}
+
 /// This is used to show that this map does not contain all
 /// the fields of an ivo struct, but each erased value
 /// represents an actual value, T in the struct, not
@@ -134,7 +138,7 @@ pub trait CloneableAny: Any + Send + Sync {
 
 impl<T> CloneableAny for T
 where
-    T: Clone + Debug + Send + Sync + 'static,
+    T: IvoFieldValue,
 {
     fn clone_box(&self) -> Box<dyn CloneableAny> {
         Box::new(T::clone(self)) // This triggers the concrete type's clone method!
@@ -153,17 +157,15 @@ impl Clone for Box<dyn CloneableAny> {
 
 pub type ErasedValue = Box<dyn CloneableAny>;
 
-pub fn erase_value<T: Clone + Debug + Send + Sync + 'static>(value: T) -> Box<dyn CloneableAny> {
+pub fn erase_value<T: IvoFieldValue>(value: T) -> Box<dyn CloneableAny> {
     Box::new(value)
 }
 
-pub fn parse_value<T: Clone + Debug + Send + Sync + 'static>(
-    e: &Box<dyn CloneableAny>,
-) -> Option<T> {
+pub fn parse_value<T: IvoFieldValue>(e: &Box<dyn CloneableAny>) -> Option<T> {
     e.as_any().downcast_ref::<T>().cloned()
 }
 
-pub fn parse_or_panic<T: Clone + Debug + Send + Sync + 'static>(e: &Box<dyn CloneableAny>) -> T {
+pub fn parse_or_panic<T: IvoFieldValue>(e: &Box<dyn CloneableAny>) -> T {
     parse_value::<T>(e).expect("Failed to parse value").clone()
 }
 

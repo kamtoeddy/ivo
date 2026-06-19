@@ -1,4 +1,4 @@
-use std::{fmt::Debug, marker::PhantomData};
+use std::marker::PhantomData;
 
 use crate::{
     schema::{
@@ -14,14 +14,14 @@ use crate::{
         },
     },
     types::{
-        erase_value, DeleteHandler, ErasedValue, FailureHandler, No, SuccessHandler, Yes,
-        YesComputed,
+        erase_value, DeleteHandler, ErasedValue, FailureHandler, IvoFieldValue, No, SuccessHandler,
+        Yes, YesComputed,
     },
     IvoSchemaStruct,
 };
 
 pub struct LaxFieldBuilder<
-    T,
+    T: IvoFieldValue,
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
     CtxOptions,
@@ -72,7 +72,7 @@ impl<
         HasDelete,
         HasFailure,
         HasSuccess,
-        T,
+        T: IvoFieldValue,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions,
@@ -134,7 +134,7 @@ impl<
         HasDelete,
         HasFailure,
         HasSuccess,
-        T,
+        T: IvoFieldValue,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions,
@@ -173,7 +173,7 @@ impl<
         HasDelete,
         HasFailure,
         HasSuccess,
-        T,
+        T: IvoFieldValue,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions,
@@ -216,7 +216,7 @@ impl<
 }
 
 impl<
-        T: Clone + Debug + Send + Sync + 'static,
+        T: IvoFieldValue,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions,
@@ -244,8 +244,13 @@ impl<
     }
 }
 
-impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool>
-    LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes>
+impl<
+        T: IvoFieldValue,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions,
+        ErrorTool: IvoErrorTool,
+    > LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes>
 {
     pub fn validate<F>(
         self,
@@ -262,8 +267,13 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorT
     }
 }
 
-impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool>
-    LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, Yes>
+impl<
+        T: IvoFieldValue,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions,
+        ErrorTool: IvoErrorTool,
+    > LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, Yes>
 {
     pub fn re_validate<F>(
         self,
@@ -283,7 +293,7 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorT
 
 impl<
         HasRevalidator,
-        T,
+        T: IvoFieldValue,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions,
@@ -311,7 +321,7 @@ impl<
         HasValidator,
         HasRevalidator,
         HasRequired,
-        T,
+        T: IvoFieldValue,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions,
@@ -352,7 +362,7 @@ impl<
         HasValidator,
         HasRevalidator,
         HasRequired,
-        T,
+        T: IvoFieldValue,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions,
@@ -475,7 +485,7 @@ impl<
         HasValidator,
         HasRevalidator,
         HasRequired,
-        T,
+        T: IvoFieldValue,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions,
@@ -531,7 +541,7 @@ impl<
         HasValidator,
         HasRevalidator,
         HasRequired,
-        T,
+        T: IvoFieldValue,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions,
@@ -588,7 +598,7 @@ impl<
         HasValidator,
         HasRevalidator,
         HasRequired,
-        T,
+        T: IvoFieldValue,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions,
@@ -679,7 +689,7 @@ impl<
         HasShouldUpdate,
         HasFailure,
         HasSuccess,
-        T,
+        T: IvoFieldValue,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions,
@@ -763,7 +773,7 @@ impl<
         HasDelete,
         HasFailure,
         HasSuccess,
-        T,
+        T: IvoFieldValue,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions,
@@ -847,7 +857,7 @@ impl<
         HasDelete,
         HasFailure,
         HasSuccess,
-        T,
+        T: IvoFieldValue,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions,

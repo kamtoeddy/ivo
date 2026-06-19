@@ -2,17 +2,16 @@
 
 use futures::future::{BoxFuture, FutureExt};
 
-use std::{fmt::Debug, future::Future};
+use std::future::Future;
 
 use crate::{
     erase_value, parse_or_panic,
-    types::{DeleteHandler, ErasedValue, FailureHandler, SuccessHandler},
+    types::{DeleteHandler, ErasedValue, FailureHandler, IvoFieldValue, SuccessHandler},
     IvoErrorTool, IvoSchemaStruct, SharedData, SharedIvoContext, SharedIvoMiniContext,
     SharedRwCtxOptions, ValidatorResponse,
 };
 
-pub type TimestampResolver<T: Clone + Debug + Send + Sync + 'static> =
-    Box<dyn Fn() -> T + Send + Sync + 'static>;
+pub type TimestampResolver<T: IvoFieldValue> = Box<dyn Fn() -> T + Send + Sync + 'static>;
 
 pub trait IntoDeleteHandler<O: IvoSchemaStruct, CtxOptions> {
     fn into_handler(self) -> DeleteHandler<O, CtxOptions>;
@@ -78,7 +77,7 @@ where
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
     ErrorTool: IvoErrorTool,
-    T: Clone + Debug + Send + Sync + 'static,
+    T: IvoFieldValue,
     F: Fn(T, SharedIvoContext<I, O>, SharedRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = ValidatorResponse<T, ErrorTool::FieldMetadata>> + Send + Sync + 'static,
 {
@@ -97,7 +96,7 @@ impl<F, Fut, T, I, O, CtxOptions> IntoVirtualSanitizer<T, I, O, CtxOptions> for 
 where
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
-    T: Clone + Debug + Send + Sync + 'static,
+    T: IvoFieldValue,
     F: Fn(T, SharedIvoContext<I, O>, SharedRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = T> + Send + Sync + 'static,
 {
@@ -162,7 +161,7 @@ impl<F, Fut, T, I, O, CtxOptions> IntoUniformResolver<T, I, O, CtxOptions> for F
 where
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
-    T: Clone + Debug + Send + Sync + 'static,
+    T: IvoFieldValue,
     F: Fn(SharedIvoContext<I, O>, SharedRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = T> + Send + 'static,
 {
@@ -177,7 +176,7 @@ pub trait IntoResolverWithMiniContext<T, I: IvoSchemaStruct, CtxOptions> {
 
 impl<F, Fut, T, I: IvoSchemaStruct, CtxOptions> IntoResolverWithMiniContext<T, I, CtxOptions> for F
 where
-    T: Clone + Debug + Send + Sync + 'static,
+    T: IvoFieldValue,
     F: Fn(SharedIvoMiniContext<I>, SharedRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = T> + Send + 'static,
 {

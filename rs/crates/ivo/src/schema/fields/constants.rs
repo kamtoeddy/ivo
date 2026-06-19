@@ -1,4 +1,4 @@
-use std::{fmt::Debug, marker::PhantomData};
+use std::marker::PhantomData;
 
 use crate::{
     schema::{
@@ -11,12 +11,12 @@ use crate::{
             },
         },
     },
-    types::{erase_value, DeleteHandler, ErasedValue, No, SuccessHandler, Yes},
+    types::{erase_value, DeleteHandler, ErasedValue, IvoFieldValue, No, SuccessHandler, Yes},
     IvoSchemaStruct,
 };
 
 pub struct ConstantFieldBuilder<
-    T,
+    T: IvoFieldValue,
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
     CtxOptions,
@@ -42,7 +42,7 @@ impl<
         HasSuccess,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        T,
+        T: IvoFieldValue,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     > ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasDefault, HasDelete, HasSuccess>
@@ -67,7 +67,7 @@ impl<
         HasSuccess,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        T,
+        T: IvoFieldValue,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     > Default
@@ -83,7 +83,7 @@ impl<
         HasSuccess,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        T: Clone + Debug + Send + Sync + 'static,
+        T: IvoFieldValue,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     > BuildableFieldConfig<I, O, CtxOptions, ErrorTool>
@@ -103,7 +103,7 @@ impl<
 impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        T: Clone + Debug + Send + Sync + 'static,
+        T: IvoFieldValue,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     > ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool>
@@ -139,7 +139,7 @@ impl<
         HasSuccess,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        T,
+        T: IvoFieldValue,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     > ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, HasDelete, HasSuccess>
@@ -177,7 +177,7 @@ impl<
         HasSuccess,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        T,
+        T: IvoFieldValue,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     > ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, HasDelete, HasSuccess>

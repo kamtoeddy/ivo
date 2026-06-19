@@ -12,12 +12,12 @@ use crate::{
             },
         },
     },
-    types::{ErasedValue, FailureHandler, No, SuccessHandler, Yes, YesComputed},
+    types::{ErasedValue, FailureHandler, IvoFieldValue, No, SuccessHandler, Yes, YesComputed},
     IvoSchemaStruct,
 };
 
 pub struct VirtualFieldBuilder<
-    T,
+    T: IvoFieldValue,
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
     CtxOptions,
@@ -68,7 +68,7 @@ impl<
         HasShouldUpdate,
         HasFailure,
         HasSuccess,
-        T,
+        T: IvoFieldValue,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions,
@@ -130,7 +130,7 @@ impl<
         HasShouldUpdate,
         HasFailure,
         HasSuccess,
-        T,
+        T: IvoFieldValue,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions,
@@ -169,7 +169,7 @@ impl<
         HasShouldUpdate,
         HasFailure,
         HasSuccess,
-        T,
+        T: IvoFieldValue,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions,
@@ -214,7 +214,7 @@ impl<
 impl<
         HasValidator,
         HasRevalidator,
-        T,
+        T: IvoFieldValue,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions,
@@ -244,8 +244,14 @@ impl<
     }
 }
 
-impl<HasAlias, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool>
-    VirtualFieldBuilder<T, I, O, CtxOptions, ErrorTool, No, HasAlias>
+impl<
+        HasAlias,
+        T: IvoFieldValue,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions,
+        ErrorTool: IvoErrorTool,
+    > VirtualFieldBuilder<T, I, O, CtxOptions, ErrorTool, No, HasAlias>
 {
     pub fn validate<F>(
         self,
@@ -262,8 +268,14 @@ impl<HasAlias, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool:
     }
 }
 
-impl<HasAlias, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool>
-    VirtualFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, HasAlias>
+impl<
+        HasAlias,
+        T: IvoFieldValue,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions,
+        ErrorTool: IvoErrorTool,
+    > VirtualFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, HasAlias>
 {
     pub fn re_validate<F>(
         self,
@@ -284,7 +296,7 @@ impl<HasAlias, T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool:
 impl<
         HasAlias,
         HasRevalidator,
-        T,
+        T: IvoFieldValue,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions,
@@ -312,7 +324,7 @@ impl<
         HasAlias,
         HasRevalidator,
         HasRequired,
-        T,
+        T: IvoFieldValue,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions,
@@ -365,7 +377,7 @@ impl<
         HasRevalidator,
         HasSanitizer,
         HasRequired,
-        T,
+        T: IvoFieldValue,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions,
@@ -420,7 +432,7 @@ impl<
         HasRevalidator,
         HasSanitizer,
         HasRequired,
-        T,
+        T: IvoFieldValue,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions,
@@ -563,7 +575,7 @@ impl<
         HasRevalidator,
         HasSanitizer,
         HasRequired,
-        T,
+        T: IvoFieldValue,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions,
@@ -623,7 +635,7 @@ impl<
         HasRevalidator,
         HasSanitizer,
         HasRequired,
-        T,
+        T: IvoFieldValue,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions,
@@ -684,7 +696,7 @@ impl<
         HasRevalidator,
         HasSanitizer,
         HasRequired,
-        T,
+        T: IvoFieldValue,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions,
@@ -780,7 +792,7 @@ impl<
         HasShouldUpdate,
         HasFailure,
         HasSuccess,
-        T,
+        T: IvoFieldValue,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions,
@@ -865,7 +877,7 @@ impl<
         HasShouldUpdate,
         HasFailure,
         HasSuccess,
-        T,
+        T: IvoFieldValue,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions,

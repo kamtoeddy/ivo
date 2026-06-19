@@ -1,4 +1,4 @@
-use std::{fmt::Debug, marker::PhantomData};
+use std::marker::PhantomData;
 
 use crate::{
     schema::{
@@ -11,12 +11,14 @@ use crate::{
             },
         },
     },
-    types::{erase_value, DeleteHandler, ErasedValue, False, No, SuccessHandler, Yes},
+    types::{
+        erase_value, DeleteHandler, ErasedValue, False, IvoFieldValue, No, SuccessHandler, Yes,
+    },
     IvoSchemaStruct,
 };
 
 pub struct DependentFieldBuilder<
-    T,
+    T: IvoFieldValue,
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
     CtxOptions,
@@ -52,7 +54,7 @@ impl<
         HasShouldUpdate,
         HasDelete,
         HasSuccess,
-        T,
+        T: IvoFieldValue,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions,
@@ -99,7 +101,7 @@ impl<
         HasShouldUpdate,
         HasDelete,
         HasSuccess,
-        T,
+        T: IvoFieldValue,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions,
@@ -128,7 +130,7 @@ impl<
         HasShouldUpdate,
         HasDelete,
         HasSuccess,
-        T,
+        T: IvoFieldValue,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions,
@@ -167,7 +169,7 @@ impl<
 }
 
 impl<
-        T: Clone + Debug + Send + Sync + 'static,
+        T: IvoFieldValue,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions,
@@ -195,8 +197,13 @@ impl<
     }
 }
 
-impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool>
-    DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes>
+impl<
+        T: IvoFieldValue,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions,
+        ErrorTool: IvoErrorTool,
+    > DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes>
 {
     pub fn depends_on<const N: usize>(
         self,
@@ -210,8 +217,13 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorT
     }
 }
 
-impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool>
-    DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, Yes>
+impl<
+        T: IvoFieldValue,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions,
+        ErrorTool: IvoErrorTool,
+    > DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, Yes>
 {
     pub fn resolve<R>(
         self,
@@ -232,7 +244,7 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorT
 impl<
         HasDelete,
         HasSuccess,
-        T,
+        T: IvoFieldValue,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions,
@@ -270,7 +282,7 @@ impl<
         HasShouldUpdate,
         HasDelete,
         HasSuccess,
-        T,
+        T: IvoFieldValue,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions,
@@ -337,7 +349,7 @@ impl<
         HasShouldUpdate,
         HasDelete,
         HasSuccess,
-        T,
+        T: IvoFieldValue,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions,

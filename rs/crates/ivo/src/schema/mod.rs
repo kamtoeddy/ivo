@@ -14,7 +14,7 @@ use crate::schema::fields::base::{
 use crate::schema::fields::TimestampConfig;
 use crate::schema::options::base::{SchemaOptions, SchemaOptionsBuilder};
 use crate::schema::options::BuildableSchemaOptions;
-use crate::types::{IvoSchemaStruct, No, Yes};
+use crate::types::{IvoFieldValue, IvoSchemaStruct, No, Yes};
 
 type InternalFieldConfigs<I, O, CtxOptions, ErrorTool> =
     HashMap<String, InternalFieldConfig<I, O, CtxOptions, ErrorTool>>;
@@ -532,7 +532,7 @@ pub struct FieldBuilder<
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
     CtxOptions,
-    T: Clone + Debug + Send + Sync + 'static,
+    T: IvoFieldValue,
     ErrorTool: IvoErrorTool,
     WithTimestamps = No,
 > {

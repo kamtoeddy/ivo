@@ -1,10 +1,13 @@
-use std::{collections::HashMap, fmt::Debug, future::Future};
+use std::{collections::HashMap, future::Future};
 
 use futures::future::BoxFuture;
 
 use crate::{
-    erase_value, schema::error_tool::IvoErrorTool, types::SuccessHandler, DefaultFieldErrorMetadata,
-    ErasedValue, IvoSchemaStruct, SharedIvoContext, SharedRwCtxOptions, ValidatorError,
+    erase_value,
+    schema::error_tool::IvoErrorTool,
+    types::{IvoFieldValue, SuccessHandler},
+    DefaultFieldErrorMetadata, ErasedValue, IvoSchemaStruct, SharedIvoContext, SharedRwCtxOptions,
+    ValidatorError,
 };
 
 pub struct IvoValues {
@@ -18,11 +21,7 @@ impl IvoValues {
         }
     }
 
-    pub fn set<T: Clone + Debug + Send + Sync + 'static>(
-        &mut self,
-        field: &str,
-        value: T,
-    ) -> &mut Self {
+    pub fn set<T: IvoFieldValue>(&mut self, field: &str, value: T) -> &mut Self {
         self.data.insert(field.to_owned(), erase_value(value));
 
         self
