@@ -134,6 +134,7 @@ pub type Partial<T> = <T as WithIvoStructPartial>::Partial;
 pub trait CloneableAny: Any + Send + Sync {
     fn clone_box(&self) -> Box<dyn CloneableAny>;
     fn as_any(&self) -> &dyn Any;
+    fn runtime_type_name(&self) -> &'static str;
 }
 
 impl<T> CloneableAny for T
@@ -146,6 +147,10 @@ where
 
     fn as_any(&self) -> &dyn Any {
         self
+    }
+
+    fn runtime_type_name(&self) -> &'static str {
+        std::any::type_name::<T>()
     }
 }
 
@@ -165,8 +170,25 @@ pub fn parse_value<T: IvoFieldValue>(e: &Box<dyn CloneableAny>) -> Option<T> {
     e.as_any().downcast_ref::<T>().cloned()
 }
 
-pub fn parse_or_panic<T: IvoFieldValue>(e: &Box<dyn CloneableAny>) -> T {
-    parse_value::<T>(e).expect("Failed to parse value").clone()
+pub fn parse_or_panic<T: IvoFieldValue>(
+    erased_value: &Box<dyn CloneableAny>,
+    field_name: Option<&str>,
+) -> T {
+    let value = parse_value::<T>(erased_value);
+
+    if value.is_some() {
+        return value.unwrap();
+    }
+
+    let expected_type_path = std::any::type_name::<T>();
+    let actual_type_path = erased_value.runtime_type_name();
+    let field_name = field_name
+        .map(|n| format!("\"{n}\""))
+        .unwrap_or("value".into());
+
+    value.expect(&format!(
+        "\nFailed to parse {field_name}. Expected: \"{expected_type_path}\", but got \"{actual_type_path}\"\n"
+    ))
 }
 
 #[derive(Clone, Copy)]

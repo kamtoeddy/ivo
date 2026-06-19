@@ -56,8 +56,9 @@ pub fn generate_partial_struct<T: ToTokens>(
         let field_type = &field.ty; // e.g., 'String'
 
         quote! {
-            if let Some(erased) = updates.get(stringify!(#field_name)) {
-                let update = parse_or_panic::<#field_type>(erased);
+            let name = stringify!(#field_name);
+            if let Some(erased) = updates.get(name) {
+                let update = parse_or_panic::<#field_type>(erased, Some(name));
 
                 let should_update = match self.#field_name.as_ref() {
                     Some(value) => value != &update,
@@ -80,7 +81,7 @@ pub fn generate_partial_struct<T: ToTokens>(
         quote! {
             #field_name_str => {
                 if let Some(current_value) = self.#field_name.as_ref() {
-                    current_value == &parse_or_panic::<#field_type>(value)
+                    current_value == &parse_or_panic::<#field_type>(value, Some(#field_name_str))
                 } else {
                     false
                 }
@@ -95,7 +96,7 @@ pub fn generate_partial_struct<T: ToTokens>(
 
         quote! {
             #field_name_str => {
-                self.#field_name = Some(parse_or_panic::<#field_type>(value));
+                self.#field_name = Some(parse_or_panic::<#field_type>(value, Some(#field_name_str)));
             }
         }
     });

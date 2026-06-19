@@ -127,6 +127,6 @@ pub async fn run_users_demo() {
 
     // let l = map.get("k") ;
     if let Some(Some(v)) = map.get("k") {
-        println!("k = {}", parse_or_panic::<i32>(v))
+        println!("k = {}", parse_or_panic::<i32>(v, Some("k")))
     }
 }
