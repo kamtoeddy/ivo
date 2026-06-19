@@ -28,19 +28,12 @@ pub trait IvoFieldValue: Clone + Debug + Send + Sync + 'static {}
 impl<T> IvoFieldValue for T where T: Clone + Debug + Send + Sync + 'static {}
 
 pub trait IvoSchemaStruct:
-    Debug
-    + Send
-    + Sync
-    + Sized
-    + 'static
-    + WithIvoPartialStruct
-    + IvoStructMethods
-    + Into<Self::Partial>
+    Send + Sync + Sized + 'static + WithIvoPartialStruct + IvoStructMethods + Into<Self::Partial>
 {
 }
 
 pub trait WithIvoPartialStruct {
-    type Partial: PartialEq + Debug + Default + Send + Sync + Clone + IvoStructPartialMethods;
+    type Partial: PartialEq + Default + Send + Sync + Clone + IvoStructPartialMethods;
 }
 
 pub trait IvoStructMethods: WithIvoPartialStruct + Clone {
