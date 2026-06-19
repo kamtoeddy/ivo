@@ -11,11 +11,11 @@ pub(super) struct FieldInfoCollection<
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
     CtxOptions,
-    ErrorTool: IvoErrorTool,
     Timestamp: Clone + Debug + Send + Sync + 'static,
+    ErrorTool: IvoErrorTool,
 > {
     config_names: HashSet<String>,
-    schema: &'a Schema<I, O, CtxOptions, ErrorTool, Timestamp>,
+    schema: &'a Schema<I, O, CtxOptions, Timestamp, ErrorTool>,
     pub fields: Vec<FieldInfo>,
     pub schema_input_fields: HashSet<String>,
     pub schema_output_fields: HashSet<String>,
@@ -26,12 +26,12 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
         Timestamp: Clone + Debug + Send + Sync + 'static,
-    > FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool, Timestamp>
+        ErrorTool: IvoErrorTool,
+    > FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>
 {
     pub fn new(
-        schema: &'a Schema<I, O, CtxOptions, ErrorTool, Timestamp>,
+        schema: &'a Schema<I, O, CtxOptions, Timestamp, ErrorTool>,
         erased_input_values: &PartialMapOfErasedValues,
     ) -> Self {
         let mut config_names = HashSet::new();
@@ -80,7 +80,7 @@ impl<
     }
 
     pub fn from_fields(
-        schema: &'a Schema<I, O, CtxOptions, ErrorTool, Timestamp>,
+        schema: &'a Schema<I, O, CtxOptions, Timestamp, ErrorTool>,
         fields: Vec<FieldInfo>,
         schema_input_fields: &HashSet<String>,
         schema_output_fields: &HashSet<String>,
@@ -121,7 +121,7 @@ impl<
 
     pub fn get_field_info(
         field_name: &String,
-        schema: &Schema<I, O, CtxOptions, ErrorTool, Timestamp>,
+        schema: &Schema<I, O, CtxOptions, Timestamp, ErrorTool>,
         schema_input_fields: &HashSet<String>,
         schema_output_fields: &HashSet<String>,
     ) -> Option<FieldInfo> {
@@ -172,7 +172,7 @@ impl<
         CtxOptions,
         ErrorTool: IvoErrorTool,
         Timestamp: Clone + Debug + Send + Sync + 'static,
-    > Clone for FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool, Timestamp>
+    > Clone for FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>
 {
     fn clone(&self) -> Self {
         Self {

@@ -88,6 +88,18 @@ pub fn generate_partial_struct<T: ToTokens>(
         }
     });
 
+    let set_value_match_arms = fields.iter().map(|field| {
+        let field_name = &field.ident; // e.g., 'id'
+        let field_type = &field.ty; // e.g., 'String'
+        let field_name_str = field_name.as_ref().unwrap().to_string();
+
+        quote! {
+            #field_name_str => {
+                self.#field_name = Some(parse_or_panic::<#field_type>(value));
+            }
+        }
+    });
+
     let partial_fields_provided = fields.iter().map(|field| {
         let field_name = &field.ident; // e.g., 'id'
 
@@ -164,6 +176,19 @@ pub fn generate_partial_struct<T: ToTokens>(
                     #( #is_value_equal_match_arms ),*
                     _ => false,
                 }
+            }
+
+            fn ivo_internal_set(
+                &mut self,
+                field_name: &String,
+                value: &#crate_root::ErasedValue,
+            ) {
+                use #crate_root::parse_or_panic;
+
+                match field_name.as_str() {
+                    #( #set_value_match_arms ),*
+                    _ => (),
+                };
             }
         }
     }

@@ -1,4 +1,10 @@
-use std::{array, collections::HashMap, future::ready, sync::LazyLock, time::Instant};
+use std::{
+    array,
+    collections::HashMap,
+    future::ready,
+    sync::LazyLock,
+    time::{self, Instant},
+};
 
 use ivo::{
     IvoField, IvoStruct, IvoValues, Model, Schema, SharedCtxOptions, SharedData, SharedIvoContext,
@@ -17,16 +23,19 @@ pub enum UserRole {
     Moderator,
 }
 
+type Timestamp = String;
+
 #[derive(Debug, Clone, PartialEq, IvoStruct)]
 pub struct User {
-    // pub created_at: String,
+    pub created_at: Timestamp,
     pub id: i32,
     pub email: String,
     pub username: String,
     pub slug_id: SlugifiedString,
     pub role: UserRole,
     pub username_last_updated_at: Option<String>,
-    // pub updated_on: Option<String>,
+    pub updated_on: Timestamp,
+    // pub updated_on: Option<Timestamp>,
 }
 
 #[derive(Clone, Debug, PartialEq, IvoStruct)]
@@ -75,190 +84,199 @@ type Ctx = SharedIvoContext<UserInput, User>;
 type CtxOptions = SharedCtxOptions<UserCtxOptions>;
 type RwCtxOptions = SharedRwCtxOptions<UserCtxOptions>;
 
-pub static USER_MODEL: LazyLock<Model<UserInput, User, UserCtxOptions>> =
+pub static USER_MODEL: LazyLock<Model<UserInput, User, UserCtxOptions, Timestamp>> =
     LazyLock::new(|| USER_SCHEMA.get_model());
 
-pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = LazyLock::new(|| {
-    let timer = Instant::now();
+pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timestamp>> =
+    LazyLock::new(|| {
+        let timer = Instant::now();
 
-    println!("\nstart schema creation");
-    let schema = Schema::new(
-        |f| {
-            f.set(
-                "id",
-                IvoField::CONSTANT
-                    .computed(|_, _| ready(1234))
-                    .on_success(|ctx: Ctx, _| {
-                        println!("[id]: on success: {:?}", ctx.values().id);
+        println!("\nstart schema creation");
+        let schema = Schema::new(
+            |f| {
+                f.set(
+                    "id",
+                    IvoField::CONSTANT
+                        .computed(|_, _| ready(1234))
+                        .on_success(|ctx: Ctx, _| {
+                            println!("[id]: on success: {:?}", ctx.values().id);
 
-                        ready(())
-                    }),
-            )
-            .set(
-                "email",
-                IvoField::REQUIRED
-                    .required_error("\"email\" was not provided!")
-                    .validate(|email, _, _| ready(validate_email(email).map_err(|e| (e, None))))
-                    .on_failure(|_, _| {
-                        println!("[email]: on failure handled");
+                            ready(())
+                        }),
+                )
+                .set(
+                    "email",
+                    IvoField::REQUIRED
+                        .required_error("\"email\" was not provided!")
+                        .validate(|email, _, _| ready(validate_email(email).map_err(|e| (e, None))))
+                        .on_failure(|_, _| {
+                            println!("[email]: on failure handled");
 
-                        ready(())
-                    }),
-                // .required_error_fn(|_, _| ready("Please provide an email address".into())),
-            )
-            .set(
-                "role",
-                IvoField::LAX
-                    .default(UserRole::User)
-                    .validate(|v, _, _| ready(Ok(v)))
-                    .ignore_if(|_, _| ready(true))
-                    .on_delete(|_, _| {
-                        println!("[role]: on delete handled");
+                            ready(())
+                        }),
+                    // .required_error_fn(|_, _| ready("Please provide an email address".into())),
+                )
+                .set(
+                    "role",
+                    IvoField::LAX
+                        .default(UserRole::User)
+                        .validate(|v, _, _| ready(Ok(v)))
+                        .ignore_if(|_, _| ready(true))
+                        .on_delete(|_, _| {
+                            println!("[role]: on delete handled");
 
-                        ready(())
-                    })
-                    .on_failure(|_, _| {
-                        println!("[role]: on failure handled");
+                            ready(())
+                        })
+                        .on_failure(|_, _| {
+                            println!("[role]: on failure handled");
 
-                        ready(())
-                    }),
-            )
-            .set(
-                "username",
-                IvoField::REQUIRED
-                    .required_error("Please provide a username")
-                    .validate(|v: String, _, _| {
-                        const MIN_LEN: usize = 4;
+                            ready(())
+                        }),
+                )
+                .set(
+                    "username",
+                    IvoField::REQUIRED
+                        .required_error("Please provide a username")
+                        .validate(|v: String, _, _| {
+                            const MIN_LEN: usize = 4;
 
-                        if v.len() < MIN_LEN {
-                            return ready(Err((
-                                format!("\"username\" must be at least {MIN_LEN} characters long"),
-                                None,
-                            )));
-                        }
+                            if v.len() < MIN_LEN {
+                                return ready(Err((
+                                    format!(
+                                        "\"username\" must be at least {MIN_LEN} characters long"
+                                    ),
+                                    None,
+                                )));
+                            }
 
-                        ready(Ok(v))
-                    })
-                    .re_validate(async |uname: String, _, o: RwCtxOptions| {
-                        if o.read().await.find_user_by_username(&uname).await.is_some() {
-                            return Err(("username: \"{uname}\" is already taken".into(), None));
-                        }
+                            ready(Ok(v))
+                        })
+                        .re_validate(async |uname: String, _, o: RwCtxOptions| {
+                            if o.read().await.find_user_by_username(&uname).await.is_some() {
+                                return Err((
+                                    "username: \"{uname}\" is already taken".into(),
+                                    None,
+                                ));
+                            }
 
-                        Ok(format!("revalidated-'{}'", uname))
-                    })
-                    .allow_update_if(|ctx: Ctx, _| {
-                        ready(is_username_or_slug_id_updatable(
-                            ctx.values().username_last_updated_at.unwrap(),
-                        ))
-                    })
-                    .on_delete(|_, _| {
-                        println!("[username]: on delete 1 handled");
+                            Ok(format!("revalidated-'{}'", uname))
+                        })
+                        .allow_update_if(|ctx: Ctx, _| {
+                            ready(is_username_or_slug_id_updatable(
+                                ctx.values().username_last_updated_at.unwrap(),
+                            ))
+                        })
+                        .on_delete(|_, _| {
+                            println!("[username]: on delete 1 handled");
 
-                        ready(())
-                    })
-                    .on_delete(|_, _| {
-                        println!("[username]: on delete 2 handled");
+                            ready(())
+                        })
+                        .on_delete(|_, _| {
+                            println!("[username]: on delete 2 handled");
 
-                        ready(())
-                    })
-                    .on_failure(|_, _| {
-                        println!("[username]: on failure handled");
+                            ready(())
+                        })
+                        .on_failure(|_, _| {
+                            println!("[username]: on failure handled");
 
-                        ready(())
-                    })
-                    .on_success(|_, o: CtxOptions| {
-                        println!("[username]: on success uname with slug_id: {:?}", o.slug_id);
+                            ready(())
+                        })
+                        .on_success(|_, o: CtxOptions| {
+                            println!("[username]: on success uname with slug_id: {:?}", o.slug_id);
 
-                        ready(())
-                    }),
-            )
-            .set(
-                "username_last_updated_at",
-                IvoField::DEPENDENT
-                    .default(None)
-                    .depends_on(["username"])
-                    .resolve(|_, _| ready(Some(String::from("now")))),
-            )
-            .set(
-                "slug_id",
-                IvoField::DEPENDENT
-                    .default(SlugifiedString::from(""))
-                    .depends_on(["username", "v_slug"])
-                    .resolve(async |_, o: RwCtxOptions| {
-                        let mut guard = o.write().await;
+                            ready(())
+                        }),
+                )
+                .set(
+                    "username_last_updated_at",
+                    IvoField::DEPENDENT
+                        .default(None)
+                        .depends_on(["username"])
+                        .resolve(|_, _| ready(Some(String::from("now")))),
+                )
+                .set(
+                    "slug_id",
+                    IvoField::DEPENDENT
+                        .default(SlugifiedString::from(""))
+                        .depends_on(["username", "v_slug"])
+                        .resolve(async |_, o: RwCtxOptions| {
+                            let mut guard = o.write().await;
 
-                        let slug_id = guard.slug_id.clone().unwrap();
+                            let slug_id = guard.slug_id.clone().unwrap();
 
-                        guard.slug_id_resolver_run_count += 1;
+                            guard.slug_id_resolver_run_count += 1;
 
-                        slug_id
-                    })
-                    .on_success(|ctx: Ctx, o: CtxOptions| {
-                        println!(
-                            "[dependent_slug_id]: on success: {:?}",
-                            ctx.values().slug_id
-                        );
-                        println!(
-                            "[_________________]: on success with ctx_options.slug_id: {:?}",
-                            o.slug_id,
-                        );
+                            slug_id
+                        })
+                        .on_success(|ctx: Ctx, o: CtxOptions| {
+                            println!(
+                                "[dependent_slug_id]: on success: {:?}",
+                                ctx.values().slug_id
+                            );
+                            println!(
+                                "[_________________]: on success with ctx_options.slug_id: {:?}",
+                                o.slug_id,
+                            );
 
-                        assert_eq!(
-                            o.slug_id_resolver_run_count, 1,
-                            "this resolver should have run only once"
-                        );
+                            assert_eq!(
+                                o.slug_id_resolver_run_count, 1,
+                                "this resolver should have run only once"
+                            );
 
-                        ready(())
-                    })
-                    .on_delete(|data: SharedData<User>, _| {
-                        println!("[dependent_slug_id]: on delete: {:?}", data.slug_id);
+                            ready(())
+                        })
+                        .on_delete(|data: SharedData<User>, _| {
+                            println!("[dependent_slug_id]: on delete: {:?}", data.slug_id);
 
-                        ready(())
-                    }),
-            )
-            .set(
-                "v_slug",
-                IvoField::VIRTUAL
-                    .alias("slug_id")
-                    .validate(|value: String, _, _| {
-                        println!("[v_slug_as_slug_id]: validating: {}\n", value.clone());
+                            ready(())
+                        }),
+                )
+                .set(
+                    "v_slug",
+                    IvoField::VIRTUAL
+                        .alias("slug_id")
+                        .validate(|value: String, _, _| {
+                            println!("[v_slug_as_slug_id]: validating: {}\n", value.clone());
 
-                        let validated = value.trim();
+                            let validated = value.trim();
 
-                        if validated.len() < 2 {
-                            return ready(Err((
-                                "slug ids must be at least 2 characters long".into(),
-                                None,
-                            )));
-                        }
+                            if validated.len() < 2 {
+                                return ready(Err((
+                                    "slug ids must be at least 2 characters long".into(),
+                                    None,
+                                )));
+                            }
 
-                        ready(Ok(validated.into()))
-                    })
-                    .sanitize(|v, _, _| ready(format!("sanitized-'{v}'")))
-                    .allow_update_if(|ctx: Ctx, _| {
-                        ready(is_username_or_slug_id_updatable(
-                            ctx.values().username_last_updated_at.unwrap(),
-                        ))
-                    })
-                    .on_success(|ctx: Ctx, o: CtxOptions| {
-                        println!(
-                            "[v_slug_as_slug_id]: on success with ctx.input().slug_id: {:?}",
-                            ctx.input().slug_id
-                        );
-                        println!(
-                            "[_________________]: on success with ctx_options.slug_id: {:?}",
-                            o.slug_id
-                        );
+                            ready(Ok(validated.into()))
+                        })
+                        .sanitize(|v, _, _| ready(format!("sanitized-'{v}'")))
+                        .allow_update_if(|ctx: Ctx, _| {
+                            ready(is_username_or_slug_id_updatable(
+                                ctx.values().username_last_updated_at.unwrap(),
+                            ))
+                        })
+                        .on_success(|ctx: Ctx, o: CtxOptions| {
+                            println!(
+                                "[v_slug_as_slug_id]: on success with ctx.input().slug_id: {:?}",
+                                ctx.input().slug_id
+                            );
+                            println!(
+                                "[_________________]: on success with ctx_options.slug_id: {:?}",
+                                o.slug_id
+                            );
 
-                        ready(())
-                    }),
-            )
-            // .created_at(|| "Date.now()", None)
-            // .updated_at(|| "Date.now()", Some("updated_on"), true)
-        },
-        |o| {
-            o.post_validate(["username", "v_slug"], |b| {
-                b.validate(async |ctx: Ctx, o: RwCtxOptions| {
+                            ready(())
+                        }),
+                )
+                .set_timestamps(|t| {
+                    t.date_fn(|| time::UNIX_EPOCH.elapsed().unwrap().as_micros().to_string())
+                        .created_at(None)
+                        .updated_at(Some("updated_on"), false)
+                })
+            },
+            |o| {
+                o.post_validate(["username", "v_slug"], |b| {
+                    b.validate(async |ctx: Ctx, o: RwCtxOptions| {
                     let input = ctx.input();
 
                     let slug_string = match &input.slug_id {
@@ -302,40 +320,40 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions>> = Lazy
 
                     Err(errors)
                 })
-            })
-            .on_success(["email"], |b| {
-                b.handle(|_, _| {
-                    println!("[options.on_success]: [email]");
+                })
+                .on_success(["email"], |b| {
+                    b.handle(|_, _| {
+                        println!("[options.on_success]: [email]");
+                        ready(())
+                    })
+                })
+                .on_success(["username", "v_slug"], |b| {
+                    b.handle(|_, _| {
+                        println!("[options.on_success]: [username, v_slug]");
+
+                        ready(())
+                    })
+                })
+                .on_delete(|_, _| {
+                    println!("[options.on_delete]: fn 1");
+
                     ready(())
                 })
-            })
-            .on_success(["username", "v_slug"], |b| {
-                b.handle(|_, _| {
-                    println!("[options.on_success]: [username, v_slug]");
+                .on_delete(|_, _| {
+                    println!("[options.on_delete]: fn 2");
 
                     ready(())
                 })
-            })
-            .on_delete(|_, _| {
-                println!("[options.on_delete]: fn 1");
+            },
+        );
+        println!(
+            "{} {}\n",
+            "\nUser schema created:".font_bold(),
+            format!("{:?}", timer.elapsed()).colored_red()
+        );
 
-                ready(())
-            })
-            .on_delete(|_, _| {
-                println!("[options.on_delete]: fn 2");
-
-                ready(())
-            })
-        },
-    );
-    println!(
-        "{} {}\n",
-        "\nUser schema created:".font_bold(),
-        format!("{:?}", timer.elapsed()).colored_red()
-    );
-
-    schema
-});
+        schema
+    });
 
 fn is_username_or_slug_id_updatable(username_last_updated_at: Option<String>) -> bool {
     match username_last_updated_at {
@@ -350,13 +368,14 @@ pub static USERS_LIST: LazyLock<[User; 3]> = LazyLock::new(|| {
         let username = format!("user-{id}");
 
         User {
-            // created_at: "now".into(),
+            created_at: "now".into(),
             email: format!("user-{id}@mail.com"),
             id,
             role: UserRole::Moderator,
             slug_id: SlugifiedString::from(username.as_str()),
             username,
             username_last_updated_at: None,
+            updated_on: "updated now".into(),
             // updated_on: None,
         }
     })

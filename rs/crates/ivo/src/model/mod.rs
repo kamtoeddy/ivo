@@ -33,11 +33,11 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone + Sync + Send,
-        ErrorTool: IvoErrorTool,
         Timestamp: Clone + Debug + Send + Sync + 'static,
-    > Schema<I, O, CtxOptions, ErrorTool, Timestamp>
+        ErrorTool: IvoErrorTool,
+    > Schema<I, O, CtxOptions, Timestamp, ErrorTool>
 {
-    pub fn get_model(&self) -> Model<'_, I, O, CtxOptions, ErrorTool, Timestamp> {
+    pub fn get_model(&self) -> Model<'_, I, O, CtxOptions, Timestamp, ErrorTool> {
         Model { schema: self }
     }
 }
@@ -47,10 +47,10 @@ pub struct Model<
     I: IvoSchemaStruct,
     O: IvoSchemaStruct = I,
     CtxOptions: Clone + Sync + Send = HashMap<String, ()>,
-    ErrorTool: IvoErrorTool = DefaultErrorTool,
     Timestamp: Clone + Debug + Send + Sync + 'static = (),
+    ErrorTool: IvoErrorTool = DefaultErrorTool,
 > {
-    schema: &'schema Schema<I, O, CtxOptions, ErrorTool, Timestamp>,
+    schema: &'schema Schema<I, O, CtxOptions, Timestamp, ErrorTool>,
 }
 
 impl<
@@ -58,9 +58,9 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions: Clone + Sync + Send,
-        ErrorTool: IvoErrorTool,
         Timestamp: Clone + Debug + Send + Sync + 'static,
-    > Model<'schema, I, O, CtxOptions, ErrorTool, Timestamp>
+        ErrorTool: IvoErrorTool,
+    > Model<'schema, I, O, CtxOptions, Timestamp, ErrorTool>
 {
     pub async fn create(
         &self,
@@ -267,9 +267,18 @@ impl<
         }
 
         // 8) Generate and set timestamps
+        let (values, should_gen_new_ctx) = self.attach_timestamps(ctx.values(), false);
+
+        if should_gen_new_ctx {
+            ctx = Arc::new(IvoContext::<I, O>::new_create_ctx(
+                ctx.input(),
+                ctx.input_values(),
+                values.clone(),
+            ));
+        }
 
         return Ok((
-            O::ivo_internal_dangerously_get_values_from_partial(ctx.values()),
+            O::ivo_internal_dangerously_get_values_from_partial(values),
             self.prepare_success_handlers(
                 fields_provided,
                 ctx,
@@ -559,6 +568,17 @@ impl<
         }
 
         // 7) Generate and set timestamps
+        let (updated_values, should_gen_new_ctx) = self.attach_timestamps(updated_values, true);
+
+        if should_gen_new_ctx {
+            ctx = Arc::new(IvoContext::<I, O>::new_update_ctx(
+                updated_values.clone(),
+                ctx.input(),
+                ctx.input_values(),
+                data.clone(),
+                data.ivo_internal_clone_with(updated_values.clone()),
+            ));
+        }
 
         Ok((
             updated_values,
@@ -598,7 +618,7 @@ impl<
 
     async fn validate<'a>(
         &self,
-        fields_provided: &'a FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool, Timestamp>,
+        fields_provided: &'a FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
         erased_input_values: &PartialMapOfErasedValues,
         ctx: SharedIvoContext<I, O>,
         options: SharedRwCtxOptions<CtxOptions>,
@@ -663,7 +683,7 @@ impl<
 
     async fn re_validate<'a>(
         &self,
-        fields_provided: &'a FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool, Timestamp>,
+        fields_provided: &'a FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
         ctx: SharedIvoContext<I, O>,
         options: SharedRwCtxOptions<CtxOptions>,
     ) -> Result<(I::Partial, O::Partial, bool), ErrorTool::ErrorPayload> {
@@ -735,7 +755,7 @@ impl<
 
     async fn post_validate<'a>(
         &self,
-        fields_provided: &'a FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool, Timestamp>,
+        fields_provided: &'a FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
         ctx: SharedIvoContext<I, O>,
         options: SharedRwCtxOptions<CtxOptions>,
     ) -> Result<(I::Partial, O::Partial, bool), ErrorTool::ErrorPayload> {
@@ -879,7 +899,7 @@ impl<
 
     async fn sanitize_virtuals<'a>(
         &self,
-        fields_provided: &'a FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool, Timestamp>,
+        fields_provided: &'a FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
         ctx: SharedIvoContext<I, O>,
         options: SharedRwCtxOptions<CtxOptions>,
     ) -> (I::Partial, O::Partial, bool) {
@@ -929,7 +949,7 @@ impl<
 
     async fn resolve_dependent_values<'a>(
         &self,
-        fields_changed: &'a FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool, Timestamp>,
+        fields_changed: &'a FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
         ctx: SharedIvoContext<I, O>,
         options: SharedRwCtxOptions<CtxOptions>,
     ) -> (I::Partial, O::Partial, bool, Vec<FieldInfo>) {
@@ -1047,7 +1067,7 @@ impl<
 
     async fn evaluate_missing_required_fields<'a>(
         &self,
-        fields_provided: &'a FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool, Timestamp>,
+        fields_provided: &'a FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
         ctx: SharedIvoContext<I, O>,
         options: SharedRwCtxOptions<CtxOptions>,
     ) -> Result<(), ErrorTool::ErrorPayload> {
@@ -1177,7 +1197,7 @@ impl<
 
     fn prepare_success_handlers<'a>(
         &self,
-        fields_updated: FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool, Timestamp>,
+        fields_updated: FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
         ctx: SharedIvoContext<I, O>,
         options: SharedCtxOptions<CtxOptions>,
     ) -> AsyncHandlerTrigger<'schema> {
@@ -1264,7 +1284,9 @@ impl<
         )
     }
 
-    fn _attach_time_stamps(&self, data: O::Partial, is_update: bool) -> O::Partial {
+    fn attach_timestamps(&self, mut data: O::Partial, is_update: bool) -> (O::Partial, bool) {
+        let mut was_updated = false;
+
         if let Some(TimestampConfig {
             created_at,
             resolver,
@@ -1275,28 +1297,31 @@ impl<
             let now = resolver();
 
             if !is_update {
-                if let Some(_created_at) = created_at {
-                    // data.set(created_at, erase_value(now));
+                if let Some(created_at) = created_at {
+                    data.ivo_internal_set(&created_at.to_string(), &erase_value(now.clone()));
+                    was_updated = true;
                 }
             }
 
-            if let Some(_updated_at) = updated_at {
+            if let Some(updated_at) = updated_at {
                 if *with_optional_updated_at {
                     if is_update {
-                        // data.set(updated_at, erase_value(Some(now)));
+                        data.ivo_internal_set(&updated_at.to_string(), &erase_value(Some(now)));
                     } else {
-                        // data.set(updated_at, erase_value::<Option<Timestamp>>(None));
+                        data.ivo_internal_set(
+                            &updated_at.to_string(),
+                            &erase_value::<Option<Timestamp>>(None),
+                        );
                     }
                 } else {
-                    // data.set(updated_at, erase_value(now));
+                    data.ivo_internal_set(&updated_at.to_string(), &erase_value(now));
                 }
-            }
 
-            erase_value(now);
+                was_updated = true;
+            }
         }
 
-        data
-        // updated_outputs
+        (data, was_updated)
     }
 }
 

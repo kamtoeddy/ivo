@@ -27,8 +27,8 @@ pub struct Schema<
     I: IvoSchemaStruct,
     O: IvoSchemaStruct = I,
     CtxOptions = Option<()>,
-    ErrorTool: IvoErrorTool = DefaultErrorTool,
     Timestamp: Clone + Debug + Send + Sync + 'static = (),
+    ErrorTool: IvoErrorTool = DefaultErrorTool,
 > {
     pub(crate) field_configs: InternalFieldConfigs<I, O, CtxOptions, ErrorTool>,
     pub(crate) options: SchemaOptions<I, O, CtxOptions, ErrorTool>,
@@ -40,9 +40,9 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
         Timestamp: Clone + Debug + Send + Sync + 'static,
-    > Schema<I, O, CtxOptions, ErrorTool, Timestamp>
+        ErrorTool: IvoErrorTool,
+    > Schema<I, O, CtxOptions, Timestamp, ErrorTool>
 {
     pub fn new<FieldMaker, OptionsMaker, BuildableOptions, WithTimestamps>(
         f: FieldMaker,
@@ -50,9 +50,9 @@ impl<
     ) -> Self
     where
         FieldMaker: Fn(
-            FieldBuilder<I, O, CtxOptions, ErrorTool, Timestamp>,
+            FieldBuilder<I, O, CtxOptions, Timestamp, ErrorTool>,
         )
-            -> FieldBuilder<I, O, CtxOptions, ErrorTool, Timestamp, WithTimestamps>,
+            -> FieldBuilder<I, O, CtxOptions, Timestamp, ErrorTool, WithTimestamps>,
         OptionsMaker: Fn(SchemaOptionsBuilder<I, O, CtxOptions, ErrorTool>) -> BuildableOptions,
         BuildableOptions: BuildableSchemaOptions<I, O, CtxOptions, ErrorTool>,
     {
@@ -532,8 +532,8 @@ pub struct FieldBuilder<
     I: IvoSchemaStruct,
     O: IvoSchemaStruct,
     CtxOptions,
-    ErrorTool: IvoErrorTool,
     T: Clone + Debug + Send + Sync + 'static,
+    ErrorTool: IvoErrorTool,
     WithTimestamps = No,
 > {
     _t: PhantomData<WithTimestamps>,
@@ -545,9 +545,9 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions,
+        Timestamp: Clone + Debug + Send + Sync + 'static,
         ErrorTool: IvoErrorTool,
-        T: Clone + Debug + Send + Sync + 'static,
-    > FieldBuilder<I, O, CtxOptions, ErrorTool, T>
+    > FieldBuilder<I, O, CtxOptions, Timestamp, ErrorTool>
 {
     fn new() -> Self {
         Self {
@@ -571,17 +571,17 @@ impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions,
+        Timestamp: Clone + Debug + Send + Sync + 'static,
         ErrorTool: IvoErrorTool,
-        T: Clone + Debug + Send + Sync + 'static,
-    > FieldBuilder<I, O, CtxOptions, ErrorTool, T>
+    > FieldBuilder<I, O, CtxOptions, Timestamp, ErrorTool>
 {
     pub fn set_timestamps<BuildableConfig, R>(
         self,
         t: R,
-    ) -> FieldBuilder<I, O, CtxOptions, ErrorTool, T, Yes>
+    ) -> FieldBuilder<I, O, CtxOptions, Timestamp, ErrorTool, Yes>
     where
-        BuildableConfig: BuildableTimestampConfig<T>,
-        R: Fn(TimestampConfigBuilder<T>) -> BuildableConfig,
+        BuildableConfig: BuildableTimestampConfig<Timestamp>,
+        R: Fn(TimestampConfigBuilder<Timestamp>) -> BuildableConfig,
     {
         FieldBuilder {
             configs: self.configs,

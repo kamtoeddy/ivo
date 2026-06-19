@@ -114,6 +114,8 @@ pub trait IvoStructPartialMethods: Clone {
     fn ivo_internal_fields_provided(&self) -> Vec<String>;
 
     fn ivo_internal_is_value_equal(&self, field_name: &String, value: &ErasedValue) -> bool;
+
+    fn ivo_internal_set(&mut self, field_name: &String, value: &ErasedValue);
 }
 
 pub type SharedData<T> = Arc<T>;

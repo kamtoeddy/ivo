@@ -62,133 +62,134 @@ struct ResolvedLocationResults {
     error: Option<String>,
 }
 
-pub static PLACE_MODEL: LazyLock<Model<PlaceInput, Place, PlacesCtxOptions, PlacesErrorTool>> =
+pub static PLACE_MODEL: LazyLock<Model<PlaceInput, Place, PlacesCtxOptions, (), PlacesErrorTool>> =
     LazyLock::new(|| PLACE_SCHEMA.get_model());
 
-pub static PLACE_SCHEMA: LazyLock<Schema<PlaceInput, Place, PlacesCtxOptions, PlacesErrorTool>> =
-    LazyLock::new(|| {
-        Schema::new(
-            |f| {
-                f.set(
-                    "id",
-                    IvoField::CONSTANT
-                        .computed(|_, _| ready(1234))
-                        .on_success(|ctx: Ctx, _| {
-                            println!("[id]: on success: {:?}", ctx.values().id);
+pub static PLACE_SCHEMA: LazyLock<
+    Schema<PlaceInput, Place, PlacesCtxOptions, (), PlacesErrorTool>,
+> = LazyLock::new(|| {
+    Schema::new(
+        |f| {
+            f.set(
+                "id",
+                IvoField::CONSTANT
+                    .computed(|_, _| ready(1234))
+                    .on_success(|ctx: Ctx, _| {
+                        println!("[id]: on success: {:?}", ctx.values().id);
 
-                            ready(())
-                        }),
-                )
-                .set(
-                    "coordinates",
-                    IvoField::REQUIRED
-                        .required_error("please provide \"coordinates\"")
-                        .validate(|c: Coodinates, _, _| {
-                            if c.lat.is_nan() || c.lon.is_nan() {
-                                return ready(Err(("InvalidNumber".into(), None)));
-                            }
+                        ready(())
+                    }),
+            )
+            .set(
+                "coordinates",
+                IvoField::REQUIRED
+                    .required_error("please provide \"coordinates\"")
+                    .validate(|c: Coodinates, _, _| {
+                        if c.lat.is_nan() || c.lon.is_nan() {
+                            return ready(Err(("InvalidNumber".into(), None)));
+                        }
 
-                            let mut errors = vec![];
+                        let mut errors = vec![];
 
-                            if !(-90.0..=90.0).contains(&c.lat) {
-                                errors.push("LatitudeOutOfRange: [-90, 90]".into());
-                            }
+                        if !(-90.0..=90.0).contains(&c.lat) {
+                            errors.push("LatitudeOutOfRange: [-90, 90]".into());
+                        }
 
-                            if !(-180.0..=180.0).contains(&c.lon) {
-                                errors.push("LongitudeOutOfRange: [-180, 180]".into());
-                            }
+                        if !(-180.0..=180.0).contains(&c.lon) {
+                            errors.push("LongitudeOutOfRange: [-180, 180]".into());
+                        }
 
-                            if !errors.is_empty() {
-                                return ready(Err(("Out of range error".into(), Some(errors))));
-                            }
+                        if !errors.is_empty() {
+                            return ready(Err(("Out of range error".into(), Some(errors))));
+                        }
 
-                            ready(Ok(c))
-                        })
-                        .on_delete(|_, _| {
-                            println!("[coordinates]: on delete 1 handled");
+                        ready(Ok(c))
+                    })
+                    .on_delete(|_, _| {
+                        println!("[coordinates]: on delete 1 handled");
 
-                            ready(())
-                        })
-                        .on_delete(|_, _| {
-                            println!("[coordinates]: on delete 2 handled");
+                        ready(())
+                    })
+                    .on_delete(|_, _| {
+                        println!("[coordinates]: on delete 2 handled");
 
-                            ready(())
-                        })
-                        .on_failure(|_, _| {
-                            println!("[coordinates]: on failure handled");
+                        ready(())
+                    })
+                    .on_failure(|_, _| {
+                        println!("[coordinates]: on failure handled");
 
-                            ready(())
-                        })
-                        .on_success(|ctx: Ctx, _| {
-                            println!(
-                                "[coordinates]: on success uname with slug_id: {:?}",
-                                ctx.values().coordinates
-                            );
+                        ready(())
+                    })
+                    .on_success(|ctx: Ctx, _| {
+                        println!(
+                            "[coordinates]: on success uname with slug_id: {:?}",
+                            ctx.values().coordinates
+                        );
 
-                            ready(())
-                        }),
-                )
-                .set(
-                    "name",
-                    IvoField::DEPENDENT
-                        .default(None)
-                        .depends_on(["coordinates"])
-                        .resolve(async |ctx: Ctx, _| {
-                            let v = ctx.values().coordinates.unwrap();
+                        ready(())
+                    }),
+            )
+            .set(
+                "name",
+                IvoField::DEPENDENT
+                    .default(None)
+                    .depends_on(["coordinates"])
+                    .resolve(async |ctx: Ctx, _| {
+                        let v = ctx.values().coordinates.unwrap();
 
-                            match reqwest::get(format!(
-                                "{LOCATION_SERVICE_URL}?lat={}&lon={}",
-                                v.lat, v.lon
-                            ))
-                            .await
-                            .map(|r| r.json::<ResolvedLocationResults>())
-                            {
-                                Ok(resp) => {
-                                    let resp = resp.await;
+                        match reqwest::get(format!(
+                            "{LOCATION_SERVICE_URL}?lat={}&lon={}",
+                            v.lat, v.lon
+                        ))
+                        .await
+                        .map(|r| r.json::<ResolvedLocationResults>())
+                        {
+                            Ok(resp) => {
+                                let resp = resp.await;
 
-                                    if resp.is_ok() {
-                                        let data = resp.unwrap();
+                                if resp.is_ok() {
+                                    let data = resp.unwrap();
 
-                                        // println!("data: {:?}\n", data);
+                                    // println!("data: {:?}\n", data);
 
-                                        if let Some(d) = data.data {
-                                            return d.details.display_name;
-                                        }
-                                    } else {
-                                        let error = resp.err().unwrap();
-
-                                        println!("resp: {:?}", error);
+                                    if let Some(d) = data.data {
+                                        return d.details.display_name;
                                     }
-                                }
-                                Err(e) => {
-                                    println!("Err: {e:?}")
+                                } else {
+                                    let error = resp.err().unwrap();
+
+                                    println!("resp: {:?}", error);
                                 }
                             }
+                            Err(e) => {
+                                println!("Err: {e:?}")
+                            }
+                        }
 
-                            Some(ctx.values().name.unwrap().unwrap())
-                        })
-                        .on_success(|_, _| {
-                            println!("[name]: on success",);
-                            ready(())
-                        }),
-                )
-                // .created_at(|| "Date.now()", None)
-                // .updated_at(|| "Date.now()", Some("updated_on"), true)
-            },
-            |o| {
-                o.on_delete(|_, _| {
-                    println!("[options.on_delete]: fn 1");
+                        Some(ctx.values().name.unwrap().unwrap())
+                    })
+                    .on_success(|_, _| {
+                        println!("[name]: on success",);
+                        ready(())
+                    }),
+            )
+            // .created_at(|| "Date.now()", None)
+            // .updated_at(|| "Date.now()", Some("updated_on"), true)
+        },
+        |o| {
+            o.on_delete(|_, _| {
+                println!("[options.on_delete]: fn 1");
 
-                    ready(())
-                })
-                .on_delete(|_, _| {
-                    println!("[options.on_delete]: fn 2");
+                ready(())
+            })
+            .on_delete(|_, _| {
+                println!("[options.on_delete]: fn 2");
 
-                    ready(())
-                })
-            },
-        )
-    });
+                ready(())
+            })
+        },
+    )
+});
 
 type PlacesErrorToolFieldMetadata = Vec<String>;
 
