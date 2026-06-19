@@ -32,7 +32,7 @@ pub struct Schema<
 > {
     pub(crate) field_configs: InternalFieldConfigs<I, O, CtxOptions, ErrorTool>,
     pub(crate) options: SchemaOptions<I, O, CtxOptions, ErrorTool>,
-    pub(crate) _timestamp_configs: Option<TimestampConfig<Timestamp>>,
+    pub(crate) timestamp_configs: Option<TimestampConfig<Timestamp>>,
 }
 
 impl<
@@ -61,7 +61,7 @@ impl<
         Self {
             field_configs: Self::make_field_configs(fields.configs, &fields.timestamp_config),
             options: Self::make_options(o(SchemaOptions::new()).build()),
-            _timestamp_configs: fields.timestamp_config,
+            timestamp_configs: fields.timestamp_config,
         }
     }
 

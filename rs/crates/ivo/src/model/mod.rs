@@ -1244,7 +1244,7 @@ impl<
             resolver,
             updated_at,
             with_optional_updated_at,
-        }) = self.schema._timestamp_configs.as_ref()
+        }) = self.schema.timestamp_configs.as_ref()
         {
             let now = resolver();
 
