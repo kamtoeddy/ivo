@@ -79,6 +79,18 @@ pub fn generate_partial_struct<T: ToTokens>(
         }
     });
 
+    let get_erased_value_match_arms = fields.iter().map(|field| {
+        let field_name = &field.ident; // e.g., 'id'
+        let field_type = &field.ty; // e.g., 'String'
+        let field_name_str = field_name.as_ref().unwrap().to_string();
+
+        quote! {
+            #field_name_str => {
+                erase_value::<#field_type>(self.#field_name.clone().unwrap())
+            }
+        }
+    });
+
     let partial_fields_provided = fields.iter().map(|field| {
         let field_name = &field.ident; // e.g., 'id'
 
@@ -131,6 +143,15 @@ pub fn generate_partial_struct<T: ToTokens>(
                 #( #partial_fields_provided )*
 
                 fields_provided
+            }
+
+            fn ivo_internal_get_erased_value(&self, field_name: &String)-> #crate_root::ErasedValue {
+                use #crate_root::erase_value;
+
+                match field_name.as_str() {
+                    #( #get_erased_value_match_arms ),*
+                    _ => panic!("\"{field_name}\" does not exist on your struct"),
+                }
             }
 
             fn ivo_internal_is_value_equal(

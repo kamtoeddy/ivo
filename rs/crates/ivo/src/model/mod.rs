@@ -114,7 +114,6 @@ impl<
         let r = self
             .validate(
                 &fields_provided,
-                &erased_input_values,
                 Arc::clone(&ctx),
                 Arc::clone(&shared_rw_options),
             )
@@ -298,7 +297,6 @@ impl<
         let erased_input_values = updates.ivo_internal_to_optional_erased_map();
         let mut fields_provided = FieldInfoCollection::new(&self.schema, &erased_input_values);
         let mut updated_fields_vec = Vec::with_capacity(fields_provided.fields.len());
-        let mut erased_updates = PartialMapOfErasedValues::new();
 
         for (field_name, value) in erased_input_values.inner.iter() {
             let f = fields_provided.get(field_name).unwrap();
@@ -307,10 +305,6 @@ impl<
                 || !old_partial_values.ivo_internal_is_value_equal(field_name, value)
             {
                 updated_fields_vec.push(f.clone());
-
-                erased_updates
-                    .inner
-                    .insert(field_name.to_owned(), value.clone());
             }
         }
 
@@ -351,7 +345,6 @@ impl<
         let r = self
             .validate(
                 &fields_provided,
-                &erased_updates,
                 Arc::clone(&ctx),
                 Arc::clone(&shared_rw_options),
             )
@@ -599,7 +592,6 @@ impl<
     async fn validate<'a>(
         &self,
         fields_provided: &'a FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
-        erased_input_values: &PartialMapOfErasedValues,
         ctx: SharedIvoContext<I, O>,
         options: SharedRwCtxOptions<CtxOptions>,
     ) -> Result<(I::Partial, O::Partial, bool), ErrorTool::ErrorPayload> {
@@ -619,11 +611,13 @@ impl<
             return Ok((ctx.input(), ctx.values(), false));
         }
 
+        let mut validated_inputs = ctx.input();
+
         let tasks = validators.into_iter().map(async |(f, validator)| {
             (
                 f,
                 validator(
-                    erased_input_values.inner.get(&f.name).cloned().unwrap(),
+                    validated_inputs.ivo_internal_get_erased_value(&f.name),
                     Arc::clone(&ctx),
                     Arc::clone(&options),
                 )
@@ -632,7 +626,6 @@ impl<
         });
 
         let mut error_tool = ErrorTool::new();
-        let mut validated_inputs = ctx.input();
         let mut validated_outputs = if ctx.is_update() {
             ctx.changes()
         } else {
@@ -690,28 +683,21 @@ impl<
             return Ok((ctx.input(), ctx.values(), false));
         }
 
-        let erased_input_values = ctx.input().ivo_internal_to_optional_erased_map();
+        let mut validated_inputs = ctx.input();
 
-        let tasks = re_validators
-            .into_iter()
-            .map(async |(field_info, validator)| {
-                (
-                    field_info,
-                    validator(
-                        erased_input_values
-                            .inner
-                            .get(&field_info.name)
-                            .cloned()
-                            .unwrap(),
-                        Arc::clone(&ctx),
-                        Arc::clone(&options),
-                    )
-                    .await,
+        let tasks = re_validators.into_iter().map(async |(f, validator)| {
+            (
+                f,
+                validator(
+                    validated_inputs.ivo_internal_get_erased_value(&f.name),
+                    Arc::clone(&ctx),
+                    Arc::clone(&options),
                 )
-            });
+                .await,
+            )
+        });
 
         let mut error_tool = ErrorTool::new();
-        let mut validated_inputs = ctx.input();
         let mut validated_outputs = if ctx.is_update() {
             ctx.changes()
         } else {
