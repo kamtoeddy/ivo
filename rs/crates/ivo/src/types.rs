@@ -3,11 +3,7 @@
 use futures::future::BoxFuture;
 pub use futures_locks::RwLock;
 pub use std::sync::Arc;
-use std::{
-    any::Any,
-    collections::{HashMap, HashSet},
-    fmt::Debug,
-};
+use std::{any::Any, collections::HashSet, fmt::Debug};
 
 use crate::schema::error_tool::DefaultFieldErrorMetadata;
 
@@ -31,39 +27,23 @@ pub trait IvoFieldValue: Clone + Debug + Send + Sync + 'static {}
 
 impl<T> IvoFieldValue for T where T: Clone + Debug + Send + Sync + 'static {}
 
-/// This is used to show that this map does not contain all
-/// the fields of an ivo struct, but each erased value
-/// represents an actual value, T in the struct, not
-/// the Option<T>.
-pub struct PartialMapOfErasedValues {
-    pub inner: HashMap<String, ErasedValue>,
-}
-
-impl PartialMapOfErasedValues {
-    pub fn new() -> Self {
-        Self {
-            inner: HashMap::new(),
-        }
-    }
-}
-
 pub trait IvoSchemaStruct:
     Debug
     + Send
     + Sync
     + Sized
     + 'static
-    + WithIvoStructPartial
+    + WithIvoPartialStruct
     + IvoStructMethods
     + Into<Self::Partial>
 {
 }
 
-pub trait WithIvoStructPartial {
+pub trait WithIvoPartialStruct {
     type Partial: PartialEq + Debug + Default + Send + Sync + Clone + IvoStructPartialMethods;
 }
 
-pub trait IvoStructMethods: WithIvoStructPartial + Clone {
+pub trait IvoStructMethods: WithIvoPartialStruct + Clone {
     fn ivo_internal_dangerously_get_values_from_partial(partial_values: Self::Partial) -> Self;
 
     fn ivo_internal_get_updates_from_partial(
@@ -109,7 +89,7 @@ pub type SharedIvoContext<I: IvoSchemaStruct, O: IvoSchemaStruct> = SharedData<I
 pub type SharedIvoMiniContext<I: IvoSchemaStruct> = SharedData<IvoMiniContext<I>>;
 pub type IvoMiniContext<I: IvoSchemaStruct> = I::Partial;
 
-pub type Partial<T> = <T as WithIvoStructPartial>::Partial;
+pub type Partial<T> = <T as WithIvoPartialStruct>::Partial;
 
 pub trait CloneableAny: Any + Send + Sync {
     fn clone_box(&self) -> Box<dyn CloneableAny>;
