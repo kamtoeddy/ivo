@@ -22,10 +22,7 @@ use crate::{
 use futures::future::{join_all, BoxFuture};
 use futures::FutureExt;
 
-use crate::types::{
-    ErasedValue, IvoSchemaStruct, IvoStructPartialFromToErasedMap, IvoStructPartialMethods,
-    Partial, PartialMapOfErasedValues, RwLock,
-};
+use crate::types::{IvoSchemaStruct, IvoStructPartialMethods, Partial, RwLock};
 
 type AsyncHandlerTrigger<'a> = Box<dyn Fn() -> BoxFuture<'a, ()> + Send + Sync + 'a>;
 
@@ -77,19 +74,20 @@ impl<
             .resolve_constants_and_defaults(Arc::new(input.clone()), Arc::clone(&shared_rw_options))
             .await;
 
-        let default_values =
-            O::Partial::ivo_internal_from_optional_erased_map(PartialMapOfErasedValues {
-                inner: default_values,
-            });
-
         let mut ctx = Arc::new(IvoContext::<I, O>::new_create_ctx(
             input.clone(),
             input.clone(),
             default_values,
         ));
 
-        let erased_input_values = input.ivo_internal_to_optional_erased_map();
-        let fields_provided = FieldInfoCollection::new(&self.schema, &erased_input_values);
+        let mut fields_provided = FieldInfoCollection::new(&self.schema);
+        let mut field_info_vec = vec![];
+
+        for field_name in input.ivo_internal_fields_provided() {
+            field_info_vec.push(fields_provided.get(&field_name).unwrap());
+        }
+
+        fields_provided.set_fields(field_info_vec);
 
         let r = self
             .evaluate_missing_required_fields(
@@ -285,6 +283,20 @@ impl<
         (Partial<O>, AsyncHandlerTrigger<'schema>),
         (UpdateError<ErrorTool>, AsyncHandlerTrigger<'schema>),
     > {
+        let old_partial_values: O::Partial = data.clone().into();
+        let mut fields_provided = FieldInfoCollection::new(&self.schema);
+        let mut updated_fields = vec![];
+
+        for (field_name, value) in updates.ivo_internal_to_erased_tuples() {
+            let f = fields_provided.get(&field_name).unwrap();
+
+            if (f.is_input && !f.is_output)
+                || !old_partial_values.ivo_internal_is_value_equal(&field_name, &value)
+            {
+                updated_fields.push(f);
+            }
+        }
+
         let mut ctx = Arc::new(IvoContext::<I, O>::new_update_ctx(
             O::Partial::default(),
             updates.clone(),
@@ -293,32 +305,15 @@ impl<
             data.clone(),
         ));
 
-        let old_partial_values: O::Partial = data.clone().into();
-        let erased_input_values = updates.ivo_internal_to_optional_erased_map();
-        let mut fields_provided = FieldInfoCollection::new(&self.schema, &erased_input_values);
-        let mut updated_fields_vec = Vec::with_capacity(fields_provided.fields.len());
-
-        for (field_name, value) in erased_input_values.inner.iter() {
-            let f = fields_provided.get(field_name).unwrap();
-
-            if (f.is_input && !f.is_output)
-                || !old_partial_values.ivo_internal_is_value_equal(field_name, value)
-            {
-                updated_fields_vec.push(f.clone());
-            }
-        }
-
-        drop(erased_input_values);
-
         // if the updates provided are all none, the nothing to update
-        if updated_fields_vec.is_empty() {
+        if updated_fields.is_empty() {
             return Err((
                 UpdateError::NothingToUpdate,
-                self.prepare_failure_handlers(Vec::with_capacity(0), ctx, Arc::new(options)),
+                self.prepare_failure_handlers(vec![], ctx, Arc::new(options)),
             ));
         }
 
-        fields_provided.set_fields(updated_fields_vec);
+        fields_provided.set_fields(updated_fields);
         let shared_rw_options = Arc::new(RwLock::new(options));
 
         // 1) Evaluate missing required fields
@@ -456,7 +451,7 @@ impl<
             ));
         }
 
-        let erased_updates = ctx.values().ivo_internal_to_optional_erased_map();
+        let erased_updates = ctx.values();
 
         let fields_updated_vec = fields_provided
             .fields
@@ -468,7 +463,7 @@ impl<
 
                 if !old_partial_values.ivo_internal_is_value_equal(
                     &f.name,
-                    &erased_updates.inner.get(&f.name).unwrap(),
+                    &erased_updates.ivo_internal_get_erased_value(&f.name),
                 ) {
                     return Some(f.clone());
                 }
@@ -912,17 +907,13 @@ impl<
             return (ctx.input(), ctx.values(), false);
         }
 
-        let erased_input_values = ctx.input().ivo_internal_to_optional_erased_map();
+        let input_values = ctx.input();
 
         let tasks = sanitizers.into_iter().map(async |(field_info, sanitizer)| {
             (
                 field_info,
                 sanitizer(
-                    erased_input_values
-                        .inner
-                        .get(&field_info.name)
-                        .cloned()
-                        .unwrap(),
+                    input_values.ivo_internal_get_erased_value(&field_info.name),
                     Arc::clone(&ctx),
                     Arc::clone(&options),
                 )
@@ -969,7 +960,7 @@ impl<
         }
 
         if resolvers.is_empty() {
-            return (ctx.values(), Vec::with_capacity(0));
+            return (ctx.values(), vec![]);
         }
 
         let tasks = resolvers.into_iter().map(async |(field_info, resolver)| {
@@ -1004,15 +995,15 @@ impl<
         &self,
         mini_ctx: SharedIvoMiniContext<I>,
         options: SharedRwCtxOptions<CtxOptions>,
-    ) -> HashMap<String, ErasedValue> {
-        let mut default_values = HashMap::new();
+    ) -> O::Partial {
+        let mut default_values = O::Partial::default();
         let mut resolvers = vec![];
 
         for (field_name, config) in self.schema.field_configs.iter() {
             // constants
             match &config.value {
                 Some(ComputableWithMiniContext::Static(value)) => {
-                    default_values.insert(field_name.to_string(), value.clone());
+                    default_values.ivo_internal_set(field_name, value);
                     continue;
                 }
                 Some(ComputableWithMiniContext::Func(resolver)) => {
@@ -1025,7 +1016,7 @@ impl<
             // other fields with default values/resolvers
             match &config.default {
                 Some(ComputableWithMiniContext::Static(value)) => {
-                    default_values.insert(field_name.to_string(), value.clone());
+                    default_values.ivo_internal_set(field_name, value);
                 }
                 Some(ComputableWithMiniContext::Func(resolver)) => {
                     resolvers.push((field_name.to_string(), resolver));
@@ -1046,7 +1037,7 @@ impl<
         });
 
         for (field_name, value) in join_all(tasks).await {
-            default_values.insert(field_name, value);
+            default_values.ivo_internal_set(&field_name, &value);
         }
 
         default_values

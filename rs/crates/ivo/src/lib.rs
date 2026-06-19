@@ -24,7 +24,7 @@ pub use model::Model;
 
 pub use types::{
     erase_value, parse_or_panic, parse_value, Arc, ErasedValue, IvoContext, IvoMiniContext,
-    IvoSchemaStruct, IvoStructFromToErasedMap, Partial, RwLock, SharedCtxOptions, SharedData,
-    SharedIvoContext, SharedIvoMiniContext, SharedRwCtxOptions, ValidatorError, ValidatorResponse,
+    IvoSchemaStruct, Partial, RwLock, SharedCtxOptions, SharedData, SharedIvoContext,
+    SharedIvoMiniContext, SharedRwCtxOptions, ValidatorError, ValidatorResponse,
     WithIvoStructPartial,
 };

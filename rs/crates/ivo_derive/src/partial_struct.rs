@@ -19,38 +19,6 @@ pub fn generate_partial_struct<T: ToTokens>(
         }
     });
 
-    // ivo_internal_to_optional_erased_map
-    let construct_erased_map_from_partial_struct = fields.iter().map(|field| {
-        let field_name = &field.ident;
-
-        quote! {
-            if let Some(value) = self.#field_name.clone() {
-                inner.insert(
-                    stringify!(#field_name).to_string(),
-                    erase_value(value)
-                );
-            }
-        }
-    });
-
-    // ivo_internal_from_optional_erased_map_ref
-    let construct_struct_fields_for_from_map_for_partial = fields.iter().map(|field| {
-        let field_name = &field.ident; // e.g., 'id'
-        let field_type = &field.ty; // e.g., 'String'
-
-        quote! {
-            #field_name: {
-                match optional_map.inner.get(stringify!(#field_name)) {
-                    Some(erased) => parse_value::<#field_type>(erased),
-                    _ => None,
-                }
-            },
-        }
-    });
-
-    let construct_struct_fields_for_from_map_ref_for_partial =
-        construct_struct_fields_for_from_map_for_partial.clone();
-
     let is_value_equal_match_arms = fields.iter().map(|field| {
         let field_name = &field.ident; // e.g., 'id'
         let field_type = &field.ty; // e.g., 'String'
@@ -91,12 +59,22 @@ pub fn generate_partial_struct<T: ToTokens>(
         }
     });
 
-    let partial_fields_provided = fields.iter().map(|field| {
+    let contruct_fields_provided = fields.iter().map(|field| {
         let field_name = &field.ident; // e.g., 'id'
 
         quote! {
             if self.#field_name.is_some() {
                 fields_provided.push(stringify!(#field_name).to_string());
+            }
+        }
+    });
+
+    let construct_erased_tuples = fields.iter().map(|field| {
+        let field_name = &field.ident;
+
+        quote! {
+            if let Some(value) = self.#field_name.clone() {
+                tuples.push((stringify!(#field_name).to_string(), erase_value(value)));
             }
         }
     });
@@ -107,40 +85,11 @@ pub fn generate_partial_struct<T: ToTokens>(
             #( #partial_fields )*
         }
 
-        impl #crate_root::types::IvoStructPartialFromToErasedMap for #partial_struct_name {
-            fn ivo_internal_from_optional_erased_map(optional_map: #crate_root::types::PartialMapOfErasedValues) -> Self {
-                use #crate_root::parse_value;
-
-                Self {
-                    #( #construct_struct_fields_for_from_map_for_partial )*
-                }
-            }
-
-            fn ivo_internal_from_optional_erased_map_ref(optional_map: &#crate_root::types::PartialMapOfErasedValues) -> Self {
-                use #crate_root::parse_value;
-
-                Self {
-                    #( #construct_struct_fields_for_from_map_ref_for_partial )*
-                }
-            }
-
-            fn ivo_internal_to_optional_erased_map(&self) -> #crate_root::types::PartialMapOfErasedValues {
-                use #crate_root::types::PartialMapOfErasedValues;
-                use #crate_root::erase_value;
-                let mut inner = std::collections::HashMap::new();
-
-                #( #construct_erased_map_from_partial_struct )*
-
-                PartialMapOfErasedValues { inner }
-            }
-        }
-
         impl #crate_root::types::IvoStructPartialMethods for #partial_struct_name {
             fn ivo_internal_fields_provided(&self) -> Vec<String> {
                 let mut fields_provided = vec![];
 
-
-                #( #partial_fields_provided )*
+                #( #contruct_fields_provided )*
 
                 fields_provided
             }
@@ -178,6 +127,16 @@ pub fn generate_partial_struct<T: ToTokens>(
                     #( #set_value_match_arms ),*
                     _ => (),
                 };
+            }
+
+            fn ivo_internal_to_erased_tuples(&self) -> Vec<(String, #crate_root::ErasedValue)> {
+                use #crate_root::erase_value;
+
+                let mut tuples = Vec::new();
+
+                #( #construct_erased_tuples )*
+
+                tuples
             }
         }
     }

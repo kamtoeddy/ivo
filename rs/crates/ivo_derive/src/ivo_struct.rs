@@ -9,37 +9,6 @@ pub fn generate_ivo_struct_impls<T: ToTokens>(
     fields: &Punctuated<Field, Comma>,
     field_names: &T,
 ) -> TokenStream {
-    // Generate individual parsing statements for each field block
-    let construct_struct_fields_for_from_erased_map = fields.iter().map(|field| {
-            let field_name = &field.ident; // e.g., 'id'
-            let field_type = &field.ty;    // e.g., 'String'
-
-            quote! {
-                #field_name: {
-                    let name = stringify!(#field_name);
-
-                    map
-                        .get(name)
-                        .expect(format!("Missing required validation field: '{}'", name).as_str())
-                        .as_any()
-                        .downcast_ref::<#field_type>()
-                        .cloned()
-                        .expect(format!("Type mismatch for field '{}': expected '{}'", name, stringify!(#field_type)).as_str())
-                },
-            }
-        });
-
-    let construct_erased_map_from_ivo_derive = fields.iter().map(|field| {
-        let field_name = &field.ident;
-
-        quote! {
-            map.insert(
-                stringify!(#field_name).to_string(),
-                erase_value(self.#field_name.clone())
-            );
-        }
-    });
-
     let set_updated_values = fields.iter().map(|field| {
         let field_name = &field.ident; // e.g., 'id'
 
@@ -91,24 +60,6 @@ pub fn generate_ivo_struct_impls<T: ToTokens>(
         }
 
         impl #crate_root::types::IvoSchemaStruct for #struct_name { }
-
-        impl #crate_root::types::IvoStructFromToErasedMap for #struct_name {
-            fn ivo_internal_from_erased_map(map: &std::collections::HashMap<String, #crate_root::ErasedValue>) -> Self{
-                Self {
-                    #( #construct_struct_fields_for_from_erased_map )*
-                }
-            }
-
-            fn ivo_internal_to_erased_map(&self) -> std::collections::HashMap<String, #crate_root::ErasedValue> {
-                use #crate_root::erase_value;
-                let mut map = std::collections::HashMap::new();
-
-                #( #construct_erased_map_from_ivo_derive )*
-
-                map
-            }
-        }
-
 
         impl #crate_root::types::WithIvoStructPartial for #struct_name {
             type Partial = #partial_struct_name;

@@ -2,7 +2,6 @@ use std::{collections::HashSet, fmt::Debug};
 
 use crate::{
     schema::fields::base::{FieldType, InternalFieldConfig},
-    types::PartialMapOfErasedValues,
     IvoErrorTool, IvoSchemaStruct, Schema,
 };
 
@@ -30,41 +29,13 @@ impl<
         ErrorTool: IvoErrorTool,
     > FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>
 {
-    pub fn new(
-        schema: &'a Schema<I, O, CtxOptions, Timestamp, ErrorTool>,
-        erased_input_values: &PartialMapOfErasedValues,
-    ) -> Self {
-        let mut config_names = HashSet::new();
-
-        let fields_names = erased_input_values
-            .inner
-            .keys()
-            .map(|f| f.to_owned())
-            .collect::<Vec<String>>();
-
-        let schema_input_fields = I::ivo_internal_field_names();
-        let schema_output_fields = O::ivo_internal_field_names();
-
-        let mut fields = Vec::with_capacity(fields_names.len());
-
-        for field_name in fields_names.iter() {
-            if let Some(field_info) = Self::get_field_info(
-                field_name,
-                &schema,
-                &schema_input_fields,
-                &schema_output_fields,
-            ) {
-                config_names.insert(field_info.config_name.clone());
-                fields.push(field_info);
-            }
-        }
-
+    pub fn new(schema: &'a Schema<I, O, CtxOptions, Timestamp, ErrorTool>) -> Self {
         Self {
             schema,
-            schema_input_fields,
-            schema_output_fields,
-            config_names,
-            fields,
+            schema_input_fields: I::ivo_internal_field_names(),
+            schema_output_fields: O::ivo_internal_field_names(),
+            config_names: HashSet::new(),
+            fields: Vec::new(),
         }
     }
 

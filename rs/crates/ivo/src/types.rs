@@ -54,32 +54,13 @@ pub trait IvoSchemaStruct:
     + Sized
     + 'static
     + WithIvoStructPartial
-    + IvoStructFromToErasedMap
     + IvoStructMethods
     + Into<Self::Partial>
 {
 }
 
-pub trait IvoStructFromToErasedMap: WithIvoStructPartial {
-    fn ivo_internal_from_erased_map(map: &HashMap<String, ErasedValue>) -> Self;
-    fn ivo_internal_to_erased_map(&self) -> HashMap<String, ErasedValue>;
-}
-
-pub trait IvoStructPartialFromToErasedMap {
-    fn ivo_internal_from_optional_erased_map(map: PartialMapOfErasedValues) -> Self;
-    fn ivo_internal_from_optional_erased_map_ref(map: &PartialMapOfErasedValues) -> Self;
-    fn ivo_internal_to_optional_erased_map(&self) -> PartialMapOfErasedValues;
-}
-
 pub trait WithIvoStructPartial {
-    type Partial: PartialEq
-        + Debug
-        + Default
-        + Send
-        + Sync
-        + Clone
-        + IvoStructPartialFromToErasedMap
-        + IvoStructPartialMethods;
+    type Partial: PartialEq + Debug + Default + Send + Sync + Clone + IvoStructPartialMethods;
 }
 
 pub trait IvoStructMethods: WithIvoStructPartial + Clone {
@@ -117,6 +98,8 @@ pub trait IvoStructPartialMethods: Clone {
     fn ivo_internal_is_value_equal(&self, field_name: &String, value: &ErasedValue) -> bool;
 
     fn ivo_internal_set(&mut self, field_name: &String, value: &ErasedValue);
+
+    fn ivo_internal_to_erased_tuples(&self) -> Vec<(String, ErasedValue)>;
 }
 
 pub type SharedData<T> = Arc<T>;
