@@ -219,12 +219,7 @@ impl<
         }
 
         // 7) Resolve values of dependent fields
-        let (
-            mut validated_inputs,
-            mut validated_outputs,
-            mut should_gen_new_ctx,
-            mut dependent_fields_resolved,
-        ) = self
+        let (mut validated_outputs, mut dependent_fields_resolved) = self
             .resolve_dependent_values(
                 &fields_provided,
                 Arc::clone(&ctx),
@@ -232,9 +227,9 @@ impl<
             )
             .await;
 
-        if should_gen_new_ctx {
+        if !dependent_fields_resolved.is_empty() {
             ctx = Arc::new(IvoContext::<I, O>::new_create_ctx(
-                validated_inputs,
+                ctx.input(),
                 ctx.input_values(),
                 validated_outputs,
             ));
@@ -248,18 +243,13 @@ impl<
                 &fields_provided.schema_output_fields,
             );
 
-            (
-                validated_inputs,
-                validated_outputs,
-                should_gen_new_ctx,
-                dependent_fields_resolved,
-            ) = self
+            (validated_outputs, dependent_fields_resolved) = self
                 .resolve_dependent_values(&col, Arc::clone(&ctx), Arc::clone(&shared_rw_options))
                 .await;
 
-            if should_gen_new_ctx {
+            if !dependent_fields_resolved.is_empty() {
                 ctx = Arc::new(IvoContext::<I, O>::new_create_ctx(
-                    validated_inputs,
+                    ctx.input(),
                     ctx.input_values(),
                     validated_outputs,
                 ));
@@ -502,12 +492,7 @@ impl<
         );
 
         // 6) Resolve values of dependent fields
-        let (
-            mut validated_inputs,
-            mut validated_outputs,
-            mut should_gen_new_ctx,
-            mut dependent_fields_resolved,
-        ) = self
+        let (mut validated_outputs, mut dependent_fields_resolved) = self
             .resolve_dependent_values(
                 &fields_updated,
                 Arc::clone(&ctx),
@@ -515,10 +500,10 @@ impl<
             )
             .await;
 
-        if should_gen_new_ctx {
+        if !dependent_fields_resolved.is_empty() {
             ctx = Arc::new(IvoContext::<I, O>::new_update_ctx(
                 validated_outputs.clone(),
-                validated_inputs,
+                ctx.input(),
                 ctx.input_values(),
                 data.clone(),
                 data.ivo_internal_clone_with(validated_outputs),
@@ -533,19 +518,14 @@ impl<
                 &fields_provided.schema_output_fields,
             );
 
-            (
-                validated_inputs,
-                validated_outputs,
-                should_gen_new_ctx,
-                dependent_fields_resolved,
-            ) = self
+            (validated_outputs, dependent_fields_resolved) = self
                 .resolve_dependent_values(&col, Arc::clone(&ctx), Arc::clone(&shared_rw_options))
                 .await;
 
-            if should_gen_new_ctx {
+            if !dependent_fields_resolved.is_empty() {
                 ctx = Arc::new(IvoContext::<I, O>::new_update_ctx(
                     validated_outputs.clone(),
-                    validated_inputs,
+                    ctx.input(),
                     ctx.input_values(),
                     data.clone(),
                     data.ivo_internal_clone_with(validated_outputs),
@@ -652,23 +632,30 @@ impl<
         });
 
         let mut error_tool = ErrorTool::new();
-        let mut validated_outputs = HashMap::new();
-        let mut validated_inputs = HashMap::new();
+        let mut validated_inputs = ctx.input();
+        let mut validated_outputs = if ctx.is_update() {
+            ctx.changes()
+        } else {
+            ctx.values()
+        };
+        let mut has_updates = false;
 
-        for (f, result) in join_all(tasks).await {
-            let field_name = f.name.clone();
+        for (field_info, result) in join_all(tasks).await {
+            let field_name = field_info.name.clone();
 
             match result {
                 Err((reason, metadata)) => {
                     error_tool.add(field_name.as_str(), FieldError { reason, metadata });
                 }
                 Ok(value) => {
-                    if f.is_input {
-                        validated_inputs.insert(field_name.clone(), value.clone());
+                    if field_info.is_input {
+                        validated_inputs.ivo_internal_set(&field_name, &value);
+                        has_updates = true;
                     }
 
-                    if f.is_output {
-                        validated_outputs.insert(field_name, value);
+                    if field_info.is_output {
+                        validated_outputs.ivo_internal_set(&field_name, &value);
+                        has_updates = true;
                     }
                 }
             }
@@ -678,7 +665,7 @@ impl<
             return Err(error_tool.payload());
         }
 
-        Ok(self.extract_updated_ctx_values(ctx, validated_inputs, validated_outputs))
+        Ok((validated_inputs, validated_outputs, has_updates))
     }
 
     async fn re_validate<'a>(
@@ -724,8 +711,13 @@ impl<
             });
 
         let mut error_tool = ErrorTool::new();
-        let mut validated_outputs = HashMap::new();
-        let mut validated_inputs = HashMap::new();
+        let mut validated_inputs = ctx.input();
+        let mut validated_outputs = if ctx.is_update() {
+            ctx.changes()
+        } else {
+            ctx.values()
+        };
+        let mut has_updates = false;
 
         for (field_info, result) in join_all(tasks).await {
             let field_name = field_info.name.clone();
@@ -736,11 +728,13 @@ impl<
                 }
                 Ok(value) => {
                     if field_info.is_input {
-                        validated_inputs.insert(field_name.clone(), value.clone());
+                        validated_inputs.ivo_internal_set(&field_name, &value);
+                        has_updates = true;
                     }
 
                     if field_info.is_output {
-                        validated_outputs.insert(field_name, value);
+                        validated_outputs.ivo_internal_set(&field_name, &value);
+                        has_updates = true;
                     }
                 }
             }
@@ -750,7 +744,7 @@ impl<
             return Err(error_tool.payload());
         }
 
-        Ok(self.extract_updated_ctx_values(ctx, validated_inputs, validated_outputs))
+        Ok((validated_inputs, validated_outputs, has_updates))
     }
 
     async fn post_validate<'a>(
@@ -790,10 +784,16 @@ impl<
             return Ok((ctx.input(), ctx.values(), false));
         }
 
+        let is_update = ctx.is_update();
         let mut ctx = ctx.clone();
         let mut error_tool = ErrorTool::new();
-        let mut validated_outputs = HashMap::new();
-        let mut validated_inputs = HashMap::new();
+        let mut validated_inputs = ctx.input();
+        let mut validated_outputs = if is_update {
+            ctx.changes()
+        } else {
+            ctx.values()
+        };
+        let mut has_updates = false;
 
         if !pre_validators.is_empty() {
             let tasks = pre_validators.into_iter().map(|(fields, validator)| {
@@ -816,11 +816,13 @@ impl<
                 for (field_name, value) in pre_validation.ok().unwrap().data {
                     if let Some(field_info) = fields_provided.get(&field_name) {
                         if field_info.is_input {
-                            validated_inputs.insert(field_info.name.clone(), value.clone());
+                            validated_inputs.ivo_internal_set(&field_info.name, &value);
+                            has_updates = true;
                         }
 
                         if field_info.is_output {
-                            validated_outputs.insert(field_info.name, value);
+                            validated_outputs.ivo_internal_set(&field_info.name, &value);
+                            has_updates = true;
                         }
                     }
                 }
@@ -832,10 +834,7 @@ impl<
         }
 
         // update the ctx if the pre validator returned any values
-        if !validated_inputs.is_empty() || !validated_outputs.is_empty() {
-            let (input, changes, _) =
-                self.extract_updated_ctx_values(ctx.clone(), validated_inputs, validated_outputs);
-
+        if has_updates {
             ctx = match &*ctx {
                 IvoContext::Update {
                     input_values,
@@ -843,16 +842,16 @@ impl<
                     values,
                     ..
                 } => Arc::new(IvoContext::new_update_ctx(
-                    changes.clone(),
-                    input,
+                    validated_outputs.clone(),
+                    validated_inputs,
                     input_values.clone(),
                     previous_values.clone(),
-                    values.ivo_internal_clone_with(changes),
+                    values.ivo_internal_clone_with(validated_outputs),
                 )),
                 _ => Arc::new(IvoContext::new_create_ctx(
-                    input,
+                    validated_inputs,
                     ctx.input_values(),
-                    changes,
+                    validated_outputs,
                 )),
             }
         }
@@ -861,8 +860,13 @@ impl<
             validator(Arc::clone(&ctx), Arc::clone(&options)).map(move |r| (fields, r))
         });
 
-        let mut validated_outputs = HashMap::new();
-        let mut validated_inputs = HashMap::new();
+        let mut validated_inputs = ctx.input();
+        let mut validated_outputs = if is_update {
+            ctx.changes()
+        } else {
+            ctx.values()
+        };
+        let mut has_updates = has_updates;
 
         for (fields, validation) in join_all(tasks).await {
             if validation.is_err() {
@@ -880,11 +884,13 @@ impl<
             for (field_name, value) in validation.ok().unwrap().data {
                 if let Some(field_info) = fields_provided.get(&field_name) {
                     if field_info.is_input {
-                        validated_inputs.insert(field_info.name.clone(), value.clone());
+                        validated_inputs.ivo_internal_set(&field_info.name, &value);
+                        has_updates = true;
                     }
 
                     if field_info.is_output {
-                        validated_outputs.insert(field_info.name, value);
+                        validated_outputs.ivo_internal_set(&field_info.name, &value);
+                        has_updates = true;
                     }
                 }
             }
@@ -894,7 +900,7 @@ impl<
             return Err(error_tool.payload());
         }
 
-        Ok(self.extract_updated_ctx_values(ctx, validated_inputs, validated_outputs))
+        Ok((validated_inputs, validated_outputs, has_updates))
     }
 
     async fn sanitize_virtuals<'a>(
@@ -938,13 +944,15 @@ impl<
             )
         });
 
-        let mut validated_inputs = HashMap::new();
+        let mut validated_inputs = ctx.input();
+        let mut has_updates = false;
 
         for (f, value) in join_all(tasks).await {
-            validated_inputs.insert(f.name.clone(), value.clone());
+            validated_inputs.ivo_internal_set(&f.name, &value);
+            has_updates = true;
         }
 
-        self.extract_updated_ctx_values(ctx, validated_inputs, HashMap::new())
+        (validated_inputs, ctx.values(), has_updates)
     }
 
     async fn resolve_dependent_values<'a>(
@@ -952,7 +960,7 @@ impl<
         fields_changed: &'a FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
         ctx: SharedIvoContext<I, O>,
         options: SharedRwCtxOptions<CtxOptions>,
-    ) -> (I::Partial, O::Partial, bool, Vec<FieldInfo>) {
+    ) -> (O::Partial, Vec<FieldInfo>) {
         let mut resolvers = vec![];
 
         for (field_name, config) in self.schema.field_configs.iter() {
@@ -975,7 +983,7 @@ impl<
         }
 
         if resolvers.is_empty() {
-            return (ctx.input(), ctx.values(), false, Vec::with_capacity(0));
+            return (ctx.values(), Vec::with_capacity(0));
         }
 
         let tasks = resolvers.into_iter().map(async |(field_info, resolver)| {
@@ -986,13 +994,13 @@ impl<
         });
 
         let values = ctx.values();
-        let mut validated_outputs = HashMap::new();
+        let mut updated_values = values.clone();
         let mut fields_updated = vec![];
 
         for (field_name, value) in join_all(tasks).await {
             // only keep fields that have been updated
             if !values.ivo_internal_is_value_equal(&field_name, &value) {
-                validated_outputs.insert(field_name.clone(), value.clone());
+                updated_values.ivo_internal_set(field_name, &value);
 
                 fields_updated.push(FieldInfo {
                     config_name: field_name.clone(),
@@ -1003,14 +1011,7 @@ impl<
             }
         }
 
-        if fields_updated.is_empty() {
-            return (ctx.input(), values, false, Vec::with_capacity(0));
-        }
-
-        let (i, o, should) =
-            self.extract_updated_ctx_values(ctx, HashMap::new(), validated_outputs);
-
-        (i, o, should, fields_updated)
+        (updated_values, fields_updated)
     }
 
     async fn resolve_constants_and_defaults(
@@ -1256,32 +1257,6 @@ impl<
 
             Box::pin(async { for _ in join_all(tasks).await {} })
         })
-    }
-
-    fn extract_updated_ctx_values(
-        &self,
-        ctx: SharedIvoContext<I, O>,
-        validated_inputs: HashMap<String, ErasedValue>,
-        validated_outputs: HashMap<String, ErasedValue>,
-    ) -> (I::Partial, O::Partial, bool) {
-        let (updated_inputs, do_inputs_have_updates) = ctx
-            .input()
-            .ivo_internal_clone_with_erased_updates(&validated_inputs);
-
-        let output_values = if ctx.is_update() {
-            ctx.changes()
-        } else {
-            ctx.values()
-        };
-
-        let (updated_outputs, do_outputs_have_updates) =
-            output_values.ivo_internal_clone_with_erased_updates(&validated_outputs);
-
-        (
-            updated_inputs,
-            updated_outputs,
-            do_inputs_have_updates || do_outputs_have_updates,
-        )
     }
 
     fn attach_timestamps(&self, mut data: O::Partial, is_update: bool) -> (O::Partial, bool) {

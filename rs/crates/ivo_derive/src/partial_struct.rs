@@ -51,28 +51,6 @@ pub fn generate_partial_struct<T: ToTokens>(
     let construct_struct_fields_for_from_map_ref_for_partial =
         construct_struct_fields_for_from_map_for_partial.clone();
 
-    let partial_clone_with_erased_updates = fields.iter().map(|field| {
-        let field_name = &field.ident; // e.g., 'id'
-        let field_type = &field.ty; // e.g., 'String'
-
-        quote! {
-            let name = stringify!(#field_name);
-            if let Some(erased) = updates.get(name) {
-                let update = parse_or_panic::<#field_type>(erased, Some(name));
-
-                let should_update = match self.#field_name.as_ref() {
-                    Some(value) => value != &update,
-                    _ => true
-                };
-
-                if should_update {
-                    partial_output.#field_name = Some(update);
-                    has_updated_fields = true;
-                }
-            }
-        }
-    });
-
     let is_value_equal_match_arms = fields.iter().map(|field| {
         let field_name = &field.ident; // e.g., 'id'
         let field_type = &field.ty; // e.g., 'String'
@@ -146,17 +124,6 @@ pub fn generate_partial_struct<T: ToTokens>(
         }
 
         impl #crate_root::types::IvoStructPartialMethods for #partial_struct_name {
-            fn ivo_internal_clone_with_erased_updates(&self, updates: &std::collections::HashMap<String, #crate_root::ErasedValue>) -> (Self, bool) {
-                use #crate_root::parse_or_panic;
-                let mut partial_output = self.clone();
-                let mut has_updated_fields = false;
-
-                #( #partial_clone_with_erased_updates )*
-
-                (partial_output, has_updated_fields)
-            }
-
-
             fn ivo_internal_fields_provided(&self) -> Vec<String> {
                 let mut fields_provided = vec![];
 

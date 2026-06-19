@@ -110,11 +110,6 @@ pub trait IvoStructMethods: WithIvoStructPartial + Clone {
 }
 
 pub trait IvoStructPartialMethods: Clone {
-    fn ivo_internal_clone_with_erased_updates(
-        &self,
-        updates: &HashMap<String, ErasedValue>,
-    ) -> (Self, bool);
-
     fn ivo_internal_fields_provided(&self) -> Vec<String>;
 
     fn ivo_internal_is_value_equal(&self, field_name: &String, value: &ErasedValue) -> bool;
