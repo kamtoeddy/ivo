@@ -194,12 +194,12 @@ impl<
             ctx = Arc::new(IvoContext::<I, O>::new_create_ctx(
                 validated_inputs,
                 ctx.input_values(),
-                validated_outputs,
+                ctx.values(),
             ));
         }
 
         // 6) Sanitize virtuals
-        let (validated_inputs, validated_outputs, should_gen_new_ctx) = self
+        let (validated_inputs, should_gen_new_ctx) = self
             .sanitize_virtuals(
                 &fields_provided,
                 Arc::clone(&ctx),
@@ -433,7 +433,7 @@ impl<
         }
 
         // 5) Sanitize virtuals
-        let (validated_inputs, validated_outputs, should_gen_new_ctx) = self
+        let (validated_inputs, should_gen_new_ctx) = self
             .sanitize_virtuals(
                 &fields_provided,
                 Arc::clone(&ctx),
@@ -442,12 +442,14 @@ impl<
             .await;
 
         if should_gen_new_ctx {
+            let changes = ctx.changes();
+
             ctx = Arc::new(IvoContext::<I, O>::new_update_ctx(
-                validated_outputs.clone(),
+                changes.clone(),
                 validated_inputs,
                 ctx.input_values(),
                 data.clone(),
-                data.ivo_internal_clone_with(validated_outputs),
+                data.ivo_internal_clone_with(changes),
             ));
         }
 
@@ -889,7 +891,7 @@ impl<
         fields_provided: &'a FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
         ctx: SharedIvoContext<I, O>,
         options: SharedRwCtxOptions<CtxOptions>,
-    ) -> (I::Partial, O::Partial, bool) {
+    ) -> (I::Partial, bool) {
         let mut sanitizers = Vec::with_capacity(fields_provided.fields.len());
 
         for field_info in fields_provided.fields.iter() {
@@ -904,7 +906,7 @@ impl<
         }
 
         if sanitizers.is_empty() {
-            return (ctx.input(), ctx.values(), false);
+            return (ctx.input(), false);
         }
 
         let input_values = ctx.input();
@@ -929,7 +931,7 @@ impl<
             has_updates = true;
         }
 
-        (validated_inputs, ctx.values(), has_updates)
+        (validated_inputs, has_updates)
     }
 
     async fn resolve_dependent_values<'a>(
