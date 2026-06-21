@@ -10,10 +10,9 @@ use crate::{
                 IntoResolverWithMiniContext, IntoSuccessHandler, IntoUniformResolver, Resolver,
             },
         },
+        types::{DeleteHandler, IvoFieldValue, No, SuccessHandler, Yes},
     },
-    types::{
-        erase_value, DeleteHandler, ErasedValue, False, IvoFieldValue, No, SuccessHandler, Yes,
-    },
+    types::{erase_value, ErasedValue},
     IvoSchemaStruct,
 };
 
@@ -42,7 +41,7 @@ pub struct DependentFieldBuilder<
     default: Option<ComputableWithMiniContext<ErasedValue, I, CtxOptions>>,
     depends_on: Option<Vec<&'static str>>,
     resolver: Option<Resolver<ErasedValue, I, O, CtxOptions>>,
-    should_update: Option<False>,
+    should_update: Option<ComputableInit<I, O, CtxOptions>>,
     on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
     on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
 }
@@ -156,11 +155,7 @@ impl<
             default: self.default,
             depends_on: self.depends_on,
             resolver: self.resolver,
-            should_update: if self.should_update.is_some() {
-                Some(ComputableInit::False)
-            } else {
-                None
-            },
+            should_update: self.should_update,
             on_delete_fns: self.on_delete_fns,
             on_success_fns: self.on_success_fns,
             ..Default::default()
@@ -271,7 +266,7 @@ impl<
             default: self.default,
             depends_on: self.depends_on,
             resolver: self.resolver,
-            should_update: Some(False),
+            should_update: Some(ComputableInit::False),
             ..Default::default()
         }
     }

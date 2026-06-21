@@ -1,4 +1,7 @@
-use ivo::{UpdateError, erase_value, parse_or_panic, types::IvoStructMethods};
+use ivo::{
+    UpdateError,
+    types::{IvoStructMethods, erase_value, parse_or_panic},
+};
 use std::{collections::HashMap, mem, sync::LazyLock, time::Instant};
 
 mod domain;

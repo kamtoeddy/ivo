@@ -15,8 +15,8 @@ use crate::{
             constants::ConstantFieldBuilder, dependents::DependentFieldBuilder,
             lax::LaxFieldBuilder, required::RequiredFieldBuilder, virtuals::VirtualFieldBuilder,
         },
+        types::IvoFieldValue,
     },
-    types::IvoFieldValue,
     IvoSchemaStruct,
 };
 

@@ -7,8 +7,9 @@ use crate::{
             BooleanResolver, ComputableInit, ComputableRequiredError, ComputableWithMiniContext,
             RequiredResolver, Resolver, TimestampResolver, UniformValidator, VirtualSanitizer,
         },
+        types::{DeleteHandler, FailureHandler, IvoFieldValue, No, SuccessHandler, Yes},
     },
-    types::{DeleteHandler, ErasedValue, FailureHandler, IvoFieldValue, No, SuccessHandler, Yes},
+    types::ErasedValue,
     IvoSchemaStruct,
 };
 

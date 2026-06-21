@@ -3,10 +3,12 @@ use std::{collections::HashMap, future::Future};
 use futures::future::BoxFuture;
 
 use crate::{
-    erase_value,
-    schema::error_tool::IvoErrorTool,
-    types::{IvoFieldValue, SuccessHandler},
-    DefaultFieldErrorMetadata, ErasedValue, IvoSchemaStruct, SharedIvoContext, SharedRwCtxOptions,
+    schema::{
+        error_tool::IvoErrorTool,
+        types::{IvoFieldValue, SuccessHandler},
+    },
+    types::{erase_value, ErasedValue},
+    DefaultFieldErrorMetadata, IvoSchemaStruct, SharedIvoContext, SharedRwCtxOptions,
     ValidatorError,
 };
 

@@ -5,8 +5,10 @@ use crate::{
         error_tool::IvoErrorTool,
         fields::types::{BooleanResolver, ComputableInit},
         options::types::{OnSuccessConfig, PostValidationConfig},
+        types::DeleteHandler,
+        No,
     },
-    types::{DeleteHandler, IvoSchemaStruct, No},
+    types::IvoSchemaStruct,
 };
 
 pub struct SchemaOptions<

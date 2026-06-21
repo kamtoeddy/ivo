@@ -4,8 +4,8 @@ use crate::{
     schema::{
         error_tool::IvoErrorTool,
         options::types::{IntoPostValidator, PostValidationConfig, PostValidator},
+        No, Yes,
     },
-    types::{No, Yes},
     IvoSchemaStruct,
 };
 

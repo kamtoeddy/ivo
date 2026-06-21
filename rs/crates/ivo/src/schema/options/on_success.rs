@@ -1,8 +1,10 @@
 use std::marker::PhantomData;
 
 use crate::{
-    schema::{fields::types::IntoSuccessHandler, options::types::OnSuccessConfig},
-    types::{No, SuccessHandler, Yes},
+    schema::{
+        fields::types::IntoSuccessHandler, options::types::OnSuccessConfig, types::SuccessHandler,
+        No, Yes,
+    },
     IvoSchemaStruct,
 };
 

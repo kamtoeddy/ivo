@@ -10,8 +10,9 @@ use crate::{
                 IntoSuccessHandler,
             },
         },
+        types::{DeleteHandler, IvoFieldValue, No, SuccessHandler, Yes},
     },
-    types::{erase_value, DeleteHandler, ErasedValue, IvoFieldValue, No, SuccessHandler, Yes},
+    types::{erase_value, ErasedValue},
     IvoSchemaStruct,
 };
 

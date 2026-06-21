@@ -1,5 +1,7 @@
 mod internal;
 
+use futures::future::{join_all, BoxFuture};
+use futures::FutureExt;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 use std::future::ready;
@@ -15,14 +17,10 @@ use crate::schema::Schema;
 use crate::schema::options::types::{OnSuccessConfig, PostValidationConfig};
 
 use crate::{
-    erase_value, IvoContext, SharedCtxOptions, SharedIvoContext, SharedIvoMiniContext,
-    SharedRwCtxOptions,
+    IvoContext, SharedCtxOptions, SharedIvoContext, SharedIvoMiniContext, SharedRwCtxOptions,
 };
 
-use futures::future::{join_all, BoxFuture};
-use futures::FutureExt;
-
-use crate::types::{IvoSchemaStruct, IvoStructPartialMethods, Partial, RwLock};
+use crate::types::{erase_value, IvoSchemaStruct, IvoStructPartialMethods, Partial, RwLock};
 
 type AsyncHandlerTrigger<'a> = Box<dyn Fn() -> BoxFuture<'a, ()> + Send + Sync + 'a>;
 

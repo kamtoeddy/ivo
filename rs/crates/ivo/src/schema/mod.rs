@@ -1,10 +1,13 @@
 pub mod error_tool;
 pub mod fields;
 pub mod options;
+mod types;
 
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 use std::marker::PhantomData;
+pub use types::IvoFieldValue;
+use types::{No, Yes};
 
 use crate::schema::error_tool::{DefaultErrorTool, IvoErrorTool};
 use crate::schema::fields::base::{
@@ -14,7 +17,7 @@ use crate::schema::fields::base::{
 use crate::schema::fields::TimestampConfig;
 use crate::schema::options::base::{SchemaOptions, SchemaOptionsBuilder};
 use crate::schema::options::BuildableSchemaOptions;
-use crate::types::{IvoFieldValue, IvoSchemaStruct, No, Yes};
+use crate::types::IvoSchemaStruct;
 
 type InternalFieldConfigs<I, O, CtxOptions, ErrorTool> =
     HashMap<String, InternalFieldConfig<I, O, CtxOptions, ErrorTool>>;

@@ -11,8 +11,9 @@ use crate::{
                 RequiredResolver, UniformValidator, VirtualSanitizer,
             },
         },
+        types::{FailureHandler, IvoFieldValue, No, SuccessHandler, Yes, YesComputed},
     },
-    types::{ErasedValue, FailureHandler, IvoFieldValue, No, SuccessHandler, Yes, YesComputed},
+    types::ErasedValue,
     IvoSchemaStruct,
 };
 

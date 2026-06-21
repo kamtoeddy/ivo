@@ -5,8 +5,8 @@ use futures::future::{BoxFuture, FutureExt};
 use std::future::Future;
 
 use crate::{
-    erase_value, parse_or_panic,
-    types::{DeleteHandler, ErasedValue, FailureHandler, IvoFieldValue, SuccessHandler},
+    schema::types::{DeleteHandler, FailureHandler, IvoFieldValue, SuccessHandler},
+    types::{erase_value, parse_or_panic, ErasedValue},
     IvoErrorTool, IvoSchemaStruct, SharedData, SharedIvoContext, SharedIvoMiniContext,
     SharedRwCtxOptions, ValidatorResponse,
 };

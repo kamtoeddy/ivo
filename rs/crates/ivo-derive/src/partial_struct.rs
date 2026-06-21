@@ -94,8 +94,8 @@ pub fn generate_partial_struct<T: ToTokens>(
                 fields_provided
             }
 
-            fn ivo_internal_get_erased_value(&self, field_name: &String)-> #crate_root::ErasedValue {
-                use #crate_root::erase_value;
+            fn ivo_internal_get_erased_value(&self, field_name: &String)-> #crate_root::types::ErasedValue {
+                use #crate_root::types::erase_value;
 
                 match field_name.as_str() {
                     #( #get_erased_value_match_arms ),*
@@ -106,9 +106,9 @@ pub fn generate_partial_struct<T: ToTokens>(
             fn ivo_internal_is_value_equal(
                 &self,
                 field_name: &String,
-                value: &#crate_root::ErasedValue,
+                value: &#crate_root::types::ErasedValue,
             ) -> bool {
-                use #crate_root::parse_or_panic;
+                use #crate_root::types::parse_or_panic;
 
                 match field_name.as_str() {
                     #( #is_value_equal_match_arms ),*
@@ -119,9 +119,9 @@ pub fn generate_partial_struct<T: ToTokens>(
             fn ivo_internal_set(
                 &mut self,
                 field_name: &String,
-                value: &#crate_root::ErasedValue,
+                value: &#crate_root::types::ErasedValue,
             ) {
-                use #crate_root::parse_or_panic;
+                use #crate_root::types::parse_or_panic;
 
                 match field_name.as_str() {
                     #( #set_value_match_arms ),*
@@ -129,8 +129,8 @@ pub fn generate_partial_struct<T: ToTokens>(
                 };
             }
 
-            fn ivo_internal_to_erased_tuples(&self) -> Vec<(String, #crate_root::ErasedValue)> {
-                use #crate_root::erase_value;
+            fn ivo_internal_to_erased_tuples(&self) -> Vec<(String, #crate_root::types::ErasedValue)> {
+                use #crate_root::types::erase_value;
 
                 let mut tuples = Vec::new();
 

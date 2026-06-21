@@ -11,8 +11,8 @@ use crate::{
                 UniformValidator,
             },
         },
+        types::{DeleteHandler, FailureHandler, IvoFieldValue, No, SuccessHandler, Yes},
     },
-    types::{DeleteHandler, FailureHandler, IvoFieldValue, No, SuccessHandler, Yes},
     IvoSchemaStruct,
 };
 

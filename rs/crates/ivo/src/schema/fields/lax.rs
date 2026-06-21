@@ -12,11 +12,11 @@ use crate::{
                 UniformValidator,
             },
         },
+        types::{
+            DeleteHandler, FailureHandler, IvoFieldValue, No, SuccessHandler, Yes, YesComputed,
+        },
     },
-    types::{
-        erase_value, DeleteHandler, ErasedValue, FailureHandler, IvoFieldValue, No, SuccessHandler,
-        Yes, YesComputed,
-    },
+    types::{erase_value, ErasedValue},
     IvoSchemaStruct,
 };
 

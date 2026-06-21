@@ -1,31 +1,9 @@
 #![allow(type_alias_bounds)]
 
-use futures::future::BoxFuture;
 pub use futures_locks::RwLock;
-pub use std::sync::Arc;
-use std::{any::Any, collections::HashSet, fmt::Debug};
+use std::{any::Any, collections::HashSet, sync::Arc};
 
-use crate::schema::error_tool::DefaultFieldErrorMetadata;
-
-// Marker Types
-pub struct Yes;
-pub struct No;
-pub struct YesComputed;
-
-#[derive(Debug)]
-pub(crate) struct False;
-
-// Optional: implement Deref to make it behave like bool
-impl std::ops::Deref for False {
-    type Target = bool;
-    fn deref(&self) -> &Self::Target {
-        &false
-    }
-}
-
-pub trait IvoFieldValue: Clone + Debug + Send + Sync + 'static {}
-
-impl<T> IvoFieldValue for T where T: Clone + Debug + Send + Sync + 'static {}
+use crate::schema::{error_tool::DefaultFieldErrorMetadata, IvoFieldValue};
 
 pub trait IvoSchemaStruct:
     Send + Sync + Sized + 'static + WithIvoPartialStruct + IvoStructMethods + Into<Self::Partial>
@@ -229,24 +207,7 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct> IvoContext<I, O> {
     }
 }
 
-pub type DeleteHandler<O: IvoSchemaStruct, CtxOptions> =
-    Box<dyn Fn(Arc<O>, Arc<CtxOptions>) -> BoxFuture<'static, ()> + Send + Sync + 'static>;
-
-pub type FailureHandler<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> = Box<
-    dyn Fn(Arc<IvoContext<I, O>>, Arc<CtxOptions>) -> BoxFuture<'static, ()>
-        + Send
-        + Sync
-        + 'static,
->;
-
-pub type SuccessHandler<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> = Box<
-    dyn Fn(Arc<IvoContext<I, O>>, Arc<CtxOptions>) -> BoxFuture<'static, ()>
-        + Send
-        + Sync
-        + 'static,
->;
-
-pub type ValidatorResponse<T, ErrorMetadata = DefaultFieldErrorMetadata> =
+pub type ValidatorResponse<T: IvoFieldValue, ErrorMetadata = DefaultFieldErrorMetadata> =
     Result<T, ValidatorError<ErrorMetadata>>;
 
 pub type ValidatorError<FieldErrorMetadata> = (String, Option<FieldErrorMetadata>);

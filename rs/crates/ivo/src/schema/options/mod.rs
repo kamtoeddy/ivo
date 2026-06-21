@@ -12,8 +12,8 @@ use crate::{
             on_success::{BuildableOnSuccess, OnSuccessOptionBuilder},
             post_validate::{BuildablePostValidator, PostValidateOptionBuilder},
         },
+        Yes,
     },
-    types::Yes,
     IvoErrorTool, IvoSchemaStruct,
 };
 
