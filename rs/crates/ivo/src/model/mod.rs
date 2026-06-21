@@ -29,7 +29,7 @@ type AsyncHandlerTrigger<'a> = Box<dyn Fn() -> BoxFuture<'a, ()> + Send + Sync +
 impl<
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone + Sync + Send,
+        CtxOptions: Sync + Send,
         Timestamp: Clone + Debug + Send + Sync + 'static,
         ErrorTool: IvoErrorTool,
     > Schema<I, O, CtxOptions, Timestamp, ErrorTool>
@@ -43,7 +43,7 @@ pub struct Model<
     'schema,
     I: IvoSchemaStruct,
     O: IvoSchemaStruct = I,
-    CtxOptions: Clone + Sync + Send = HashMap<String, ()>,
+    CtxOptions: Sync + Send = HashMap<String, ()>,
     Timestamp: Clone + Debug + Send + Sync + 'static = (),
     ErrorTool: IvoErrorTool = DefaultErrorTool,
 > {
@@ -54,7 +54,7 @@ impl<
         'schema,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
-        CtxOptions: Clone + Sync + Send,
+        CtxOptions: Sync + Send,
         Timestamp: Clone + Debug + Send + Sync + 'static,
         ErrorTool: IvoErrorTool,
     > Model<'schema, I, O, CtxOptions, Timestamp, ErrorTool>
@@ -331,7 +331,7 @@ impl<
                 self.prepare_failure_handlers(
                     fields_provided.fields,
                     ctx,
-                    Arc::new((shared_rw_options).read().await.clone()),
+                    Arc::new(unwrap_async_lock(shared_rw_options)),
                 ),
             ));
         }
