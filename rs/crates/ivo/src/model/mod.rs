@@ -1036,6 +1036,7 @@ impl<
             {
                 InternalFieldConfig {
                     field_type: FieldType::Lax | FieldType::Required | FieldType::Virtual,
+                    default,
                     should_ignore,
                     should_init,
                     should_update,
@@ -1059,6 +1060,18 @@ impl<
                         }
                         Some(IsFieldProvisionEnabled::Func(resolver)) => {
                             resolvers.push((field_info, resolver, false));
+                        }
+                        Some(IsFieldProvisionEnabled::Readonly) if previous_values.is_some() => {
+                            if let Some(ValueResolverWithMiniContext::Static(value)) = default {
+                                // readonly means: don't update if value has changed
+                                // i.e: prev_value != default_value
+                                if !previous_values
+                                    .unwrap()
+                                    .ivo_internal_is_value_equal(&field_info.name, value)
+                                {
+                                    input.ivo_internal_remove_value(&field_info.name);
+                                }
+                            }
                         }
                         _ => final_field_info_vec.push(field_info.to_owned()),
                     };

@@ -250,6 +250,7 @@ pub enum ValueResolverWithMiniContext<T, I: IvoSchemaStruct, CtxOptions> {
 
 pub enum IsFieldProvisionEnabled<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> {
     False,
+    Readonly,
     Func(BooleanResolver<I, O, CtxOptions>),
 }
 

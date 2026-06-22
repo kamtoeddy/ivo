@@ -530,7 +530,7 @@ impl<
             validator: self.validator,
             re_validator: self.re_validator,
             required_fn: self.required_fn,
-            should_update: Some(IsFieldProvisionEnabled::False),
+            should_update: Some(IsFieldProvisionEnabled::Readonly),
             ..Default::default()
         }
     }

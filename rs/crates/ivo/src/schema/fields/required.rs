@@ -6,9 +6,9 @@ use crate::{
         fields::{
             base::{BuildableFieldConfig, FieldConfig, FieldType, InternalFieldConfig},
             types::{
-                ComputableRequiredError, IsFieldProvisionEnabled, IntoDeleteHandler, IntoFailureHandler,
-                IntoFieldValidator, IntoRequiredErrorResolver, IntoResolver, IntoSuccessHandler,
-                UniformValidator,
+                ComputableRequiredError, IntoDeleteHandler, IntoFailureHandler, IntoFieldValidator,
+                IntoRequiredErrorResolver, IntoResolver, IntoSuccessHandler,
+                IsFieldProvisionEnabled, UniformValidator,
             },
         },
         types::{DeleteHandler, FailureHandler, IvoFieldValue, No, SuccessHandler, Yes},
@@ -290,7 +290,7 @@ impl<
             validator: self.validator,
             re_validator: self.re_validator,
             required_error: self.required_error,
-            should_update: Some(IsFieldProvisionEnabled::False),
+            should_update: Some(IsFieldProvisionEnabled::Readonly),
             ..Default::default()
         }
     }

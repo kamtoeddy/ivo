@@ -292,7 +292,7 @@ impl<
             default: self.default,
             depends_on: self.depends_on,
             resolver: self.resolver,
-            should_update: Some(IsFieldProvisionEnabled::False),
+            should_update: Some(IsFieldProvisionEnabled::Readonly),
             ..Default::default()
         }
     }
