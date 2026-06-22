@@ -168,7 +168,61 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct> IvoContext<I, O> {
             values,
         }
     }
-    /// subset of output values related to which will be
+
+    pub(crate) fn full_values(&self) -> Option<O> {
+        match &self {
+            IvoContext::Update { values, .. } => Some(values.clone()),
+            _ => None,
+        }
+    }
+
+    pub(crate) fn set_changes(&mut self, changes: O::Partial) -> &mut Self {
+        match self {
+            IvoContext::Create { values, .. } => {
+                *values = changes;
+            }
+            IvoContext::Update {
+                changes: prev_changes,
+                ..
+            } => {
+                *prev_changes = changes;
+            }
+        };
+
+        self
+    }
+
+    pub(crate) fn set_full_values(&mut self, values: O) -> &mut Self {
+        match self {
+            IvoContext::Update {
+                values: prev_values,
+                ..
+            } => {
+                *prev_values = values;
+            }
+            _ => (),
+        };
+
+        self
+    }
+
+    pub(crate) fn set_input(&mut self, input: I::Partial) -> &mut Self {
+        match self {
+            IvoContext::Create {
+                input: prev_input, ..
+            } => {
+                *prev_input = input;
+            }
+            IvoContext::Update {
+                input: prev_input, ..
+            } => {
+                *prev_input = input;
+            }
+        };
+
+        self
+    }
+
     /// part of the final output of the current process
     pub fn changes(&self) -> O::Partial {
         match &self {

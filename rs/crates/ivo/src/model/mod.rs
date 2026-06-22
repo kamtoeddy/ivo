@@ -89,11 +89,7 @@ impl<
             )
             .await;
 
-        ctx = Arc::new(IvoContext::<I, O>::new_create_ctx(
-            input,
-            ctx.input_values(),
-            ctx.values(),
-        ));
+        Arc::make_mut(&mut ctx).set_input(input);
 
         let r = self
             .evaluate_missing_required_fields(
@@ -137,11 +133,9 @@ impl<
         let (validated_inputs, validated_outputs, should_gen_new_ctx) = r.ok().unwrap();
 
         if should_gen_new_ctx {
-            ctx = Arc::new(IvoContext::<I, O>::new_create_ctx(
-                validated_inputs,
-                ctx.input_values(),
-                validated_outputs,
-            ));
+            Arc::make_mut(&mut ctx)
+                .set_input(validated_inputs)
+                .set_changes(validated_outputs);
         }
 
         // 4) Run re_validators
@@ -167,11 +161,9 @@ impl<
         let (validated_inputs, validated_outputs, should_gen_new_ctx) = r.ok().unwrap();
 
         if should_gen_new_ctx {
-            ctx = Arc::new(IvoContext::<I, O>::new_create_ctx(
-                validated_inputs,
-                ctx.input_values(),
-                validated_outputs,
-            ));
+            Arc::make_mut(&mut ctx)
+                .set_input(validated_inputs)
+                .set_changes(validated_outputs);
         }
 
         // 5) Run post-validators
@@ -197,11 +189,7 @@ impl<
         let (validated_inputs, validated_outputs, should_gen_new_ctx) = r.ok().unwrap();
 
         if should_gen_new_ctx {
-            ctx = Arc::new(IvoContext::<I, O>::new_create_ctx(
-                validated_inputs,
-                ctx.input_values(),
-                ctx.values(),
-            ));
+            Arc::make_mut(&mut ctx).set_input(validated_inputs);
         }
 
         // 6) Sanitize virtuals
@@ -214,11 +202,9 @@ impl<
             .await;
 
         if should_gen_new_ctx {
-            ctx = Arc::new(IvoContext::<I, O>::new_create_ctx(
-                validated_inputs,
-                ctx.input_values(),
-                validated_outputs,
-            ));
+            Arc::make_mut(&mut ctx)
+                .set_input(validated_inputs)
+                .set_changes(validated_outputs);
         }
 
         // 7) Resolve values of dependent fields
@@ -231,11 +217,7 @@ impl<
             .await;
 
         if !dependent_fields_resolved.is_empty() {
-            ctx = Arc::new(IvoContext::<I, O>::new_create_ctx(
-                ctx.input(),
-                ctx.input_values(),
-                validated_outputs,
-            ));
+            Arc::make_mut(&mut ctx).set_changes(validated_outputs);
         }
 
         while !dependent_fields_resolved.is_empty() {
@@ -251,11 +233,7 @@ impl<
                 .await;
 
             if !dependent_fields_resolved.is_empty() {
-                ctx = Arc::new(IvoContext::<I, O>::new_create_ctx(
-                    ctx.input(),
-                    ctx.input_values(),
-                    validated_outputs,
-                ));
+                Arc::make_mut(&mut ctx).set_changes(validated_outputs);
             }
         }
 
@@ -263,11 +241,7 @@ impl<
         let (values, should_gen_new_ctx) = self.attach_timestamps(ctx.values(), false);
 
         if should_gen_new_ctx {
-            ctx = Arc::new(IvoContext::<I, O>::new_create_ctx(
-                ctx.input(),
-                ctx.input_values(),
-                values.clone(),
-            ));
+            Arc::make_mut(&mut ctx).set_changes(values.clone());
         }
 
         return Ok((
@@ -310,13 +284,7 @@ impl<
             )
             .await;
 
-        ctx = Arc::new(IvoContext::<I, O>::new_update_ctx(
-            ctx.changes(),
-            input,
-            updates.clone(),
-            data.clone(),
-            data.clone(),
-        ));
+        Arc::make_mut(&mut ctx).set_input(input);
 
         // if the updates provided are all none, the nothing to update
         if fields_provided.fields.is_empty() {
@@ -373,13 +341,10 @@ impl<
         let (validated_inputs, validated_outputs, should_gen_new_ctx) = r.ok().unwrap();
 
         if should_gen_new_ctx {
-            ctx = Arc::new(IvoContext::<I, O>::new_update_ctx(
-                validated_outputs.clone(),
-                validated_inputs,
-                ctx.input_values(),
-                data.clone(),
-                data.ivo_internal_clone_with(validated_outputs),
-            ));
+            Arc::make_mut(&mut ctx)
+                .set_input(validated_inputs)
+                .set_changes(validated_outputs.clone())
+                .set_full_values(data.ivo_internal_clone_with(validated_outputs));
         }
 
         // 3) Run re_validators
@@ -405,13 +370,10 @@ impl<
         let (validated_inputs, validated_outputs, should_gen_new_ctx) = r.ok().unwrap();
 
         if should_gen_new_ctx {
-            ctx = Arc::new(IvoContext::<I, O>::new_update_ctx(
-                validated_outputs.clone(),
-                validated_inputs,
-                ctx.input_values(),
-                data.clone(),
-                data.ivo_internal_clone_with(validated_outputs),
-            ));
+            Arc::make_mut(&mut ctx)
+                .set_input(validated_inputs)
+                .set_changes(validated_outputs.clone())
+                .set_full_values(data.ivo_internal_clone_with(validated_outputs));
         }
 
         // 4) Run post-validators
@@ -437,13 +399,10 @@ impl<
         let (validated_inputs, validated_outputs, should_gen_new_ctx) = r.ok().unwrap();
 
         if should_gen_new_ctx {
-            ctx = Arc::new(IvoContext::<I, O>::new_update_ctx(
-                validated_outputs.clone(),
-                validated_inputs,
-                ctx.input_values(),
-                data.clone(),
-                data.ivo_internal_clone_with(validated_outputs),
-            ));
+            Arc::make_mut(&mut ctx)
+                .set_input(validated_inputs)
+                .set_changes(validated_outputs.clone())
+                .set_full_values(data.ivo_internal_clone_with(validated_outputs));
         }
 
         // 5) Sanitize virtuals
@@ -456,15 +415,7 @@ impl<
             .await;
 
         if should_gen_new_ctx {
-            let changes = ctx.changes();
-
-            ctx = Arc::new(IvoContext::<I, O>::new_update_ctx(
-                changes.clone(),
-                validated_inputs,
-                ctx.input_values(),
-                data.clone(),
-                data.ivo_internal_clone_with(changes),
-            ));
+            Arc::make_mut(&mut ctx).set_input(validated_inputs);
         }
 
         let erased_updates = ctx.values();
@@ -505,13 +456,9 @@ impl<
             .await;
 
         if !dependent_fields_resolved.is_empty() {
-            ctx = Arc::new(IvoContext::<I, O>::new_update_ctx(
-                validated_outputs.clone(),
-                ctx.input(),
-                ctx.input_values(),
-                data.clone(),
-                data.ivo_internal_clone_with(validated_outputs),
-            ));
+            Arc::make_mut(&mut ctx)
+                .set_changes(validated_outputs.clone())
+                .set_full_values(data.ivo_internal_clone_with(validated_outputs));
         }
 
         while !dependent_fields_resolved.is_empty() {
@@ -527,13 +474,9 @@ impl<
                 .await;
 
             if !dependent_fields_resolved.is_empty() {
-                ctx = Arc::new(IvoContext::<I, O>::new_update_ctx(
-                    validated_outputs.clone(),
-                    ctx.input(),
-                    ctx.input_values(),
-                    data.clone(),
-                    data.ivo_internal_clone_with(validated_outputs),
-                ));
+                Arc::make_mut(&mut ctx)
+                    .set_changes(validated_outputs.clone())
+                    .set_full_values(data.ivo_internal_clone_with(validated_outputs));
             }
         }
 
@@ -555,13 +498,9 @@ impl<
         let (updated_values, should_gen_new_ctx) = self.attach_timestamps(updated_values, true);
 
         if should_gen_new_ctx {
-            ctx = Arc::new(IvoContext::<I, O>::new_update_ctx(
-                updated_values.clone(),
-                ctx.input(),
-                ctx.input_values(),
-                data.clone(),
-                data.ivo_internal_clone_with(updated_values.clone()),
-            ));
+            Arc::make_mut(&mut ctx)
+                .set_changes(updated_values.clone())
+                .set_full_values(data.ivo_internal_clone_with(updated_values.clone()));
         }
 
         Ok((
@@ -832,24 +771,13 @@ impl<
 
         // update the ctx if the pre validator returned any values
         if has_updates {
-            ctx = match &*ctx {
-                IvoContext::Update {
-                    input_values,
-                    previous_values,
-                    values,
-                    ..
-                } => Arc::new(IvoContext::new_update_ctx(
-                    validated_outputs.clone(),
-                    validated_inputs,
-                    input_values.clone(),
-                    previous_values.clone(),
-                    values.ivo_internal_clone_with(validated_outputs),
-                )),
-                _ => Arc::new(IvoContext::new_create_ctx(
-                    validated_inputs,
-                    ctx.input_values(),
-                    validated_outputs,
-                )),
+            Arc::make_mut(&mut ctx)
+                .set_input(validated_inputs)
+                .set_changes(validated_outputs.clone());
+
+            if let Some(values) = ctx.full_values() {
+                Arc::make_mut(&mut ctx)
+                    .set_full_values(values.ivo_internal_clone_with(validated_outputs));
             }
         }
 
