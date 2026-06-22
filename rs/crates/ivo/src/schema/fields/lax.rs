@@ -6,14 +6,15 @@ use crate::{
         fields::{
             base::{BuildableFieldConfig, FieldConfig, FieldType, InternalFieldConfig},
             types::{
-                BooleanResolver, IsFieldProvisionEnabled, IntoBooleanResolver, IntoDeleteHandler,
-                IntoFailureHandler, IntoFieldValidator, IntoRequiredResolver, IntoResolver,
-                IntoSuccessHandler, IntoValueResolverWithMiniContext, RequiredResolver,
+                BooleanResolver, IntoBooleanResolver, IntoDeleteHandler, IntoFailureHandler,
+                IntoFieldValidator, IntoRequiredResolver, IntoResolver, IntoSuccessHandler,
+                IntoValueResolverWithMiniContext, IsFieldProvisionEnabled, RequiredResolver,
                 UniformValidator, ValueResolverWithMiniContext,
             },
         },
         types::{
-            DeleteHandler, FailureHandler, IvoFieldValue, No, SuccessHandler, Yes, YesComputed,
+            DeleteHandler, FailureHandler, IsProvided, IsProvidedButNotComputed, IvoFieldValue, No,
+            SuccessHandler, Yes, YesComputed,
         },
     },
     types::{erase_value, ErasedValue},
@@ -164,7 +165,8 @@ impl<
 }
 
 impl<
-        HasDefault,
+        HasDefault: IsProvided,
+        HasValidator,
         HasRevalidator,
         HasRequired,
         HasIgnore,
@@ -185,9 +187,9 @@ impl<
         O,
         CtxOptions,
         ErrorTool,
-        Yes,
-        HasRevalidator,
         HasDefault,
+        HasValidator,
+        HasRevalidator,
         HasRequired,
         HasIgnore,
         HasShouldInit,
@@ -233,7 +235,7 @@ impl<
     pub fn default_fn<F>(
         self,
         default_fn: F,
-    ) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes>
+    ) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, YesComputed>
     where
         F: IntoValueResolverWithMiniContext<T, I, CtxOptions>,
     {
@@ -247,17 +249,18 @@ impl<
 }
 
 impl<
+        HasDefault: IsProvided,
         T: IvoFieldValue,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
-    > LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes>
+    > LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasDefault>
 {
     pub fn validate<F>(
         self,
         validator: F,
-    ) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, Yes>
+    ) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasDefault, Yes>
     where
         F: IntoFieldValidator<T, I, O, CtxOptions, ErrorTool>,
     {
@@ -270,17 +273,18 @@ impl<
 }
 
 impl<
+        HasDefault: IsProvided,
         T: IvoFieldValue,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
-    > LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, Yes>
+    > LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasDefault, Yes>
 {
     pub fn re_validate<F>(
         self,
         re_validator: F,
-    ) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, Yes>
+    ) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasDefault, Yes>
     where
         F: IntoFieldValidator<T, I, O, CtxOptions, ErrorTool>,
     {
@@ -294,18 +298,19 @@ impl<
 }
 
 impl<
+        HasDefault: IsProvided,
         HasRevalidator,
         T: IvoFieldValue,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
-    > LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, Yes, HasRevalidator>
+    > LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasDefault, Yes, HasRevalidator>
 {
     pub fn required_if<R>(
         self,
         resolver: R,
-    ) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, Yes, HasRevalidator, Yes>
+    ) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasDefault, Yes, HasRevalidator, Yes>
     where
         R: IntoRequiredResolver<I, O, CtxOptions>,
     {
@@ -320,6 +325,7 @@ impl<
 }
 
 impl<
+        HasDefault: IsProvided,
         HasValidator,
         HasRevalidator,
         HasRequired,
@@ -329,7 +335,17 @@ impl<
         CtxOptions,
         ErrorTool: IvoErrorTool,
     >
-    LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, HasValidator, HasRevalidator, HasRequired>
+    LaxFieldBuilder<
+        T,
+        I,
+        O,
+        CtxOptions,
+        ErrorTool,
+        HasDefault,
+        HasValidator,
+        HasRevalidator,
+        HasRequired,
+    >
 {
     pub fn ignore_if<R>(
         self,
@@ -340,7 +356,7 @@ impl<
         O,
         CtxOptions,
         ErrorTool,
-        Yes,
+        HasDefault,
         HasValidator,
         HasRevalidator,
         HasRequired,
@@ -361,6 +377,7 @@ impl<
 }
 
 impl<
+        HasDefault: IsProvided,
         HasValidator,
         HasRevalidator,
         HasRequired,
@@ -370,7 +387,17 @@ impl<
         CtxOptions,
         ErrorTool: IvoErrorTool,
     >
-    LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, HasValidator, HasRevalidator, HasRequired>
+    LaxFieldBuilder<
+        T,
+        I,
+        O,
+        CtxOptions,
+        ErrorTool,
+        HasDefault,
+        HasValidator,
+        HasRevalidator,
+        HasRequired,
+    >
 {
     pub fn ignore_init(
         self,
@@ -380,7 +407,7 @@ impl<
         O,
         CtxOptions,
         ErrorTool,
-        Yes,
+        HasDefault,
         HasValidator,
         HasRevalidator,
         HasRequired,
@@ -406,7 +433,7 @@ impl<
         O,
         CtxOptions,
         ErrorTool,
-        Yes,
+        HasDefault,
         HasValidator,
         HasRevalidator,
         HasRequired,
@@ -426,32 +453,6 @@ impl<
         }
     }
 
-    pub fn readonly(
-        self,
-    ) -> LaxFieldBuilder<
-        T,
-        I,
-        O,
-        CtxOptions,
-        ErrorTool,
-        Yes,
-        HasValidator,
-        HasRevalidator,
-        HasRequired,
-        No,
-        No,
-        Yes,
-    > {
-        LaxFieldBuilder {
-            default: self.default,
-            validator: self.validator,
-            re_validator: self.re_validator,
-            required_fn: self.required_fn,
-            should_update: Some(IsFieldProvisionEnabled::False),
-            ..Default::default()
-        }
-    }
-
     pub fn allow_update_if<R>(
         self,
         resolver: R,
@@ -461,7 +462,7 @@ impl<
         O,
         CtxOptions,
         ErrorTool,
-        Yes,
+        HasDefault,
         HasValidator,
         HasRevalidator,
         HasRequired,
@@ -484,6 +485,7 @@ impl<
 }
 
 impl<
+        HasDefault: IsProvidedButNotComputed,
         HasValidator,
         HasRevalidator,
         HasRequired,
@@ -499,7 +501,59 @@ impl<
         O,
         CtxOptions,
         ErrorTool,
+        HasDefault,
+        HasValidator,
+        HasRevalidator,
+        HasRequired,
+    >
+{
+    /// During updates, the current value of the field is compared with it's
+    /// default value. If both values are equal, updates will be allowed.
+    pub fn readonly(
+        self,
+    ) -> LaxFieldBuilder<
+        T,
+        I,
+        O,
+        CtxOptions,
+        ErrorTool,
+        HasDefault,
+        HasValidator,
+        HasRevalidator,
+        HasRequired,
+        No,
+        No,
         Yes,
+    > {
+        LaxFieldBuilder {
+            default: self.default,
+            validator: self.validator,
+            re_validator: self.re_validator,
+            required_fn: self.required_fn,
+            should_update: Some(IsFieldProvisionEnabled::False),
+            ..Default::default()
+        }
+    }
+}
+
+impl<
+        HasDefault: IsProvided,
+        HasValidator,
+        HasRevalidator,
+        HasRequired,
+        T: IvoFieldValue,
+        I: IvoSchemaStruct,
+        O: IvoSchemaStruct,
+        CtxOptions,
+        ErrorTool: IvoErrorTool,
+    >
+    LaxFieldBuilder<
+        T,
+        I,
+        O,
+        CtxOptions,
+        ErrorTool,
+        HasDefault,
         HasValidator,
         HasRevalidator,
         HasRequired,
@@ -517,7 +571,7 @@ impl<
         O,
         CtxOptions,
         ErrorTool,
-        Yes,
+        HasDefault,
         HasValidator,
         HasRevalidator,
         HasRequired,
@@ -540,6 +594,7 @@ impl<
 }
 
 impl<
+        HasDefault: IsProvided,
         HasValidator,
         HasRevalidator,
         HasRequired,
@@ -555,7 +610,7 @@ impl<
         O,
         CtxOptions,
         ErrorTool,
-        Yes,
+        HasDefault,
         HasValidator,
         HasRevalidator,
         HasRequired,
@@ -573,7 +628,7 @@ impl<
         O,
         CtxOptions,
         ErrorTool,
-        Yes,
+        HasDefault,
         HasValidator,
         HasRevalidator,
         HasRequired,
@@ -597,6 +652,7 @@ impl<
 }
 
 impl<
+        HasDefault: IsProvided,
         HasValidator,
         HasRevalidator,
         HasRequired,
@@ -612,7 +668,7 @@ impl<
         O,
         CtxOptions,
         ErrorTool,
-        Yes,
+        HasDefault,
         HasValidator,
         HasRevalidator,
         HasRequired,
@@ -629,7 +685,7 @@ impl<
         O,
         CtxOptions,
         ErrorTool,
-        Yes,
+        HasDefault,
         HasValidator,
         HasRevalidator,
         HasRequired,
@@ -658,7 +714,7 @@ impl<
         O,
         CtxOptions,
         ErrorTool,
-        Yes,
+        HasDefault,
         HasValidator,
         HasRevalidator,
         HasRequired,
@@ -683,6 +739,7 @@ impl<
 
 // ON_DELETE is only available if HasDelete is 'No'
 impl<
+        HasDefault: IsProvided,
         HasValidator,
         HasRevalidator,
         HasRequired,
@@ -703,7 +760,7 @@ impl<
         O,
         CtxOptions,
         ErrorTool,
-        Yes,
+        HasDefault,
         HasValidator,
         HasRevalidator,
         HasRequired,
@@ -724,7 +781,7 @@ impl<
         O,
         CtxOptions,
         ErrorTool,
-        Yes,
+        HasDefault,
         HasValidator,
         HasRevalidator,
         HasRequired,
@@ -767,6 +824,7 @@ impl<
 
 // ON_FAILURE is only available if HasFailure is 'No'
 impl<
+        HasDefault: IsProvided,
         HasRevalidator,
         HasRequired,
         HasIgnore,
@@ -787,7 +845,7 @@ impl<
         O,
         CtxOptions,
         ErrorTool,
-        Yes,
+        HasDefault,
         Yes,
         HasRevalidator,
         HasRequired,
@@ -808,7 +866,7 @@ impl<
         O,
         CtxOptions,
         ErrorTool,
-        Yes,
+        HasDefault,
         Yes,
         HasRevalidator,
         HasRequired,
@@ -850,6 +908,7 @@ impl<
 
 // ON_SUCCESS is only available if HasSuccess is 'No'
 impl<
+        HasDefault: IsProvided,
         HasValidator,
         HasRevalidator,
         HasRequired,
@@ -871,7 +930,7 @@ impl<
         O,
         CtxOptions,
         ErrorTool,
-        Yes,
+        HasDefault,
         HasValidator,
         HasRevalidator,
         HasRequired,
@@ -892,7 +951,7 @@ impl<
         O,
         CtxOptions,
         ErrorTool,
-        Yes,
+        HasDefault,
         HasValidator,
         HasRevalidator,
         HasRequired,

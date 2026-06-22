@@ -6,11 +6,15 @@ use crate::{
         fields::{
             base::{BuildableFieldConfig, FieldConfig, FieldType, InternalFieldConfig},
             types::{
-                IsFieldProvisionEnabled, IntoDeleteHandler, IntoSuccessHandler, IntoUniformResolver,
-                IntoValueResolverWithMiniContext, Resolver, ValueResolverWithMiniContext,
+                IntoDeleteHandler, IntoSuccessHandler, IntoUniformResolver,
+                IntoValueResolverWithMiniContext, IsFieldProvisionEnabled, Resolver,
+                ValueResolverWithMiniContext,
             },
         },
-        types::{DeleteHandler, IvoFieldValue, No, SuccessHandler, Yes},
+        types::{
+            DeleteHandler, IsProvided, IsProvidedButNotComputed, IvoFieldValue, No, SuccessHandler,
+            Yes, YesComputed,
+        },
     },
     types::{erase_value, ErasedValue},
     IvoSchemaStruct,
@@ -126,6 +130,7 @@ impl<
 }
 
 impl<
+        HasDefault: IsProvided,
         HasShouldUpdate,
         HasDelete,
         HasSuccess,
@@ -141,7 +146,7 @@ impl<
         O,
         CtxOptions,
         ErrorTool,
-        Yes,
+        HasDefault,
         Yes,
         Yes,
         HasShouldUpdate,
@@ -181,7 +186,7 @@ impl<
     pub fn default_fn<F>(
         self,
         default_fn: F,
-    ) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes>
+    ) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool, YesComputed>
     where
         F: IntoValueResolverWithMiniContext<T, I, CtxOptions>,
     {
@@ -195,17 +200,18 @@ impl<
 }
 
 impl<
+        HasDefault: IsProvided,
         T: IvoFieldValue,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
-    > DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes>
+    > DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasDefault>
 {
     pub fn depends_on<const N: usize>(
         self,
         fields: [&'static str; N],
-    ) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, Yes> {
+    ) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasDefault, Yes> {
         DependentFieldBuilder {
             default: self.default,
             depends_on: Some(Vec::from(fields)),
@@ -215,17 +221,18 @@ impl<
 }
 
 impl<
+        HasDefault: IsProvided,
         T: IvoFieldValue,
         I: IvoSchemaStruct,
         O: IvoSchemaStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
-    > DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, Yes>
+    > DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasDefault, Yes>
 {
     pub fn resolve<R>(
         self,
         resolver: R,
-    ) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, Yes, Yes>
+    ) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasDefault, Yes, Yes>
     where
         R: IntoUniformResolver<T, I, O, CtxOptions>,
     {
@@ -239,6 +246,7 @@ impl<
 }
 
 impl<
+        HasDefault: IsProvidedButNotComputed,
         HasDelete,
         HasSuccess,
         T: IvoFieldValue,
@@ -247,8 +255,24 @@ impl<
         CtxOptions,
         ErrorTool: IvoErrorTool,
     >
-    DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, Yes, Yes, No, HasDelete, HasSuccess>
+    DependentFieldBuilder<
+        T,
+        I,
+        O,
+        CtxOptions,
+        ErrorTool,
+        HasDefault,
+        Yes,
+        Yes,
+        No,
+        HasDelete,
+        HasSuccess,
+    >
 {
+    /// During updates, the current value of the field is compared with it's
+    /// default value. If both values are equal, this field's resolver will be called.
+    ///
+    /// This rule does not work with computed default values.
     pub fn readonly(
         self,
     ) -> DependentFieldBuilder<
@@ -257,7 +281,7 @@ impl<
         O,
         CtxOptions,
         ErrorTool,
-        Yes,
+        HasDefault,
         Yes,
         Yes,
         Yes,
@@ -276,6 +300,7 @@ impl<
 
 // ON_DELETE is only available if HasDelete is 'No'
 impl<
+        HasDefault: IsProvided,
         HasShouldUpdate,
         HasDelete,
         HasSuccess,
@@ -291,7 +316,7 @@ impl<
         O,
         CtxOptions,
         ErrorTool,
-        Yes,
+        HasDefault,
         Yes,
         Yes,
         HasShouldUpdate,
@@ -308,7 +333,7 @@ impl<
         O,
         CtxOptions,
         ErrorTool,
-        Yes,
+        HasDefault,
         Yes,
         Yes,
         HasShouldUpdate,
@@ -343,6 +368,7 @@ impl<
 
 // ON_SUCCESS is only available if HasSuccess is 'No'
 impl<
+        HasDefault: IsProvided,
         HasShouldUpdate,
         HasDelete,
         HasSuccess,
@@ -358,7 +384,7 @@ impl<
         O,
         CtxOptions,
         ErrorTool,
-        Yes,
+        HasDefault,
         Yes,
         Yes,
         HasShouldUpdate,
@@ -375,7 +401,7 @@ impl<
         O,
         CtxOptions,
         ErrorTool,
-        Yes,
+        HasDefault,
         Yes,
         Yes,
         HasShouldUpdate,

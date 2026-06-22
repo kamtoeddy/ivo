@@ -13,6 +13,12 @@ impl<T> IvoFieldValue for T where T: Clone + Debug + Send + Sync + 'static {}
 pub struct Yes;
 pub struct No;
 pub struct YesComputed;
+pub trait IsProvided {}
+pub trait IsProvidedButNotComputed: IsProvided {}
+
+impl IsProvided for Yes {}
+impl IsProvided for YesComputed {}
+impl IsProvidedButNotComputed for Yes {}
 
 pub type DeleteHandler<O: IvoSchemaStruct, CtxOptions> =
     Box<dyn Fn(Arc<O>, Arc<CtxOptions>) -> BoxFuture<'static, ()> + Send + Sync + 'static>;

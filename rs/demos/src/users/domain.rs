@@ -120,7 +120,9 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
                     "role",
                     IvoField::LAX
                         .default(UserRole::User)
+                        // .default_fn(|_, _| ready(UserRole::User))
                         .validate(|v, _, _| ready(Ok(v)))
+                        // .readonly()
                         // .ignore_init()
                         .ignore_if(|_, _| ready(true))
                         .on_delete(|_, _| {
