@@ -261,6 +261,15 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct> IvoContext<I, O> {
             IvoContext::Update { values, .. } => values.clone().into(),
         }
     }
+
+    pub fn previous_values(&self) -> Option<O> {
+        match &self {
+            IvoContext::Update {
+                previous_values, ..
+            } => Some(previous_values.clone()),
+            _ => None,
+        }
+    }
 }
 
 pub type ValidatorResponse<T: IvoFieldValue, ErrorMetadata = DefaultFieldErrorMetadata> =

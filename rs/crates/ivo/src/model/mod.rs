@@ -883,23 +883,42 @@ impl<
         options: SharedRwCtxOptions<CtxOptions>,
     ) -> (O::Partial, Vec<FieldInfo>) {
         let mut resolvers = vec![];
+        let previous_values: Option<O::Partial> = ctx.previous_values().map(|v| v.into());
+        let is_update = previous_values.as_ref().is_some();
+        let previous_values = previous_values.unwrap_or_default();
 
         for (field_name, config) in self.schema.field_configs.iter() {
-            if let InternalFieldConfig {
-                field_type: FieldType::Dependent,
-                depends_on,
-                resolver,
-                ..
-            } = config
-            {
-                if depends_on
-                    .as_ref()
-                    .unwrap()
-                    .iter()
-                    .any(|parent| fields_changed.contains(&parent.to_string()))
-                {
-                    resolvers.push((field_name, resolver.as_ref().unwrap()));
+            match config {
+                InternalFieldConfig {
+                    field_type: FieldType::Dependent,
+                    default: Some(ValueResolverWithMiniContext::Static(default_value)),
+                    should_update: Some(IsFieldProvisionEnabled::Readonly),
+                    ..
+                } => {
+                    // readonly means: don't update if value has changed
+                    // i.e: prev_value != default_value
+                    if is_update
+                        && !previous_values.ivo_internal_is_value_equal(&field_name, default_value)
+                    {
+                        continue;
+                    }
                 }
+                InternalFieldConfig {
+                    field_type: FieldType::Dependent,
+                    depends_on,
+                    resolver,
+                    ..
+                } => {
+                    if depends_on
+                        .as_ref()
+                        .unwrap()
+                        .iter()
+                        .any(|parent| fields_changed.contains(&parent.to_string()))
+                    {
+                        resolvers.push((field_name, resolver.as_ref().unwrap()));
+                    }
+                }
+                _ => {}
             }
         }
 
