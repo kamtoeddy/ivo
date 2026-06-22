@@ -10,7 +10,9 @@ use std::sync::Arc;
 use crate::model::internal::{FieldInfo, FieldInfoCollection};
 use crate::schema::error_tool::{DefaultErrorTool, FieldError, IvoErrorTool, UpdateError};
 use crate::schema::fields::base::{FieldType, InternalFieldConfig};
-use crate::schema::fields::types::{ComputableRequiredError, ValueResolverWithMiniContext};
+use crate::schema::fields::types::{
+    ComputableRequiredError, IsFieldProvisionEnabled, ValueResolverWithMiniContext,
+};
 use crate::schema::fields::TimestampConfig;
 use crate::schema::Schema;
 
@@ -78,14 +80,15 @@ impl<
             default_values,
         ));
 
-        let mut fields_provided = FieldInfoCollection::new(&self.schema);
-        let mut field_info_vec = vec![];
+        let (input, fields_provided) = self
+            .filter_init_fields(input, Arc::clone(&ctx), Arc::clone(&shared_rw_options))
+            .await;
 
-        for field_name in input.ivo_internal_fields_provided() {
-            field_info_vec.push(fields_provided.get(&field_name).unwrap());
-        }
-
-        fields_provided.set_fields(field_info_vec);
+        ctx = Arc::new(IvoContext::<I, O>::new_create_ctx(
+            input,
+            ctx.input_values(),
+            ctx.values(),
+        ));
 
         let r = self
             .evaluate_missing_required_fields(
@@ -1041,6 +1044,91 @@ impl<
         }
 
         default_values
+    }
+
+    async fn filter_init_fields<'a>(
+        &'a self,
+        input_values: &I::Partial,
+        ctx: SharedIvoContext<I, O>,
+        options: SharedRwCtxOptions<CtxOptions>,
+    ) -> (
+        I::Partial,
+        FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
+    ) {
+        let mut resolvers = vec![];
+        let mut input = input_values.clone();
+        let mut fields_provided = FieldInfoCollection::new(&self.schema);
+        let mut field_info_vec = vec![];
+
+        for field_name in input_values.ivo_internal_fields_provided() {
+            field_info_vec.push(fields_provided.get(&field_name).unwrap());
+        }
+
+        let mut final_field_info_vec = vec![];
+
+        for field_info in field_info_vec.iter() {
+            match self
+                .schema
+                .field_configs
+                .get(&field_info.config_name)
+                .as_ref()
+                .unwrap()
+            {
+                InternalFieldConfig {
+                    field_type: FieldType::Lax | FieldType::Required | FieldType::Virtual,
+                    should_init: Some(should_init),
+                    ..
+                } => {
+                    match should_init {
+                        IsFieldProvisionEnabled::False => {
+                            input.ivo_internal_remove_value(&field_info.name);
+                        }
+                        IsFieldProvisionEnabled::Func(resolver) => {
+                            resolvers.push((field_info, resolver, false));
+                        }
+                    };
+                }
+                InternalFieldConfig {
+                    field_type: FieldType::Lax | FieldType::Required | FieldType::Virtual,
+                    should_ignore: Some(resolver),
+                    ..
+                } => {
+                    resolvers.push((field_info, resolver, true));
+                }
+                _ => final_field_info_vec.push(field_info.to_owned()),
+            }
+        }
+
+        if resolvers.is_empty() {
+            fields_provided.set_fields(final_field_info_vec);
+
+            return (input, fields_provided);
+        }
+
+        let tasks = resolvers
+            .into_iter()
+            .map(async |(field_info, resolver, negate)| {
+                (
+                    field_info,
+                    resolver(Arc::clone(&ctx), Arc::clone(&options))
+                        .map(|r| if negate { !r } else { r })
+                        .await,
+                )
+            });
+
+        for (field_info, should_init) in join_all(tasks).await {
+            if should_init {
+                final_field_info_vec.push(field_info.to_owned());
+
+                continue;
+            }
+
+            input.ivo_internal_remove_value(&field_info.name);
+        }
+
+        fields_provided.set_fields(final_field_info_vec);
+
+        return (input, fields_provided);
     }
 
     async fn evaluate_missing_required_fields<'a>(

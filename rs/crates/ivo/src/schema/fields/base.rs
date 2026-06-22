@@ -4,9 +4,9 @@ use crate::{
     schema::{
         error_tool::IvoErrorTool,
         fields::types::{
-            BooleanResolver, ComputableInitWithMiniContext, ComputableRequiredError,
-            ComputableUpdate, RequiredResolver, Resolver, TimestampResolver, UniformValidator,
-            ValueResolverWithMiniContext, VirtualSanitizer,
+            BooleanResolver, ComputableRequiredError, IsFieldProvisionEnabled, RequiredResolver,
+            Resolver, TimestampResolver, UniformValidator, ValueResolverWithMiniContext,
+            VirtualSanitizer,
         },
         types::{DeleteHandler, FailureHandler, IvoFieldValue, No, SuccessHandler, Yes},
     },
@@ -55,8 +55,8 @@ pub struct FieldConfig<
     pub re_validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
     //
     pub should_ignore: Option<BooleanResolver<I, O, CtxOptions>>,
-    pub should_init: Option<ComputableInitWithMiniContext<bool, I, CtxOptions>>,
-    pub should_update: Option<ComputableUpdate<I, O, CtxOptions>>,
+    pub should_init: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
+    pub should_update: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
     // life cycle handlers
     pub on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
     pub on_failure_fns: Option<Vec<FailureHandler<I, O, CtxOptions>>>,

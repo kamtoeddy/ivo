@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 use crate::{
     schema::{
         error_tool::IvoErrorTool,
-        fields::types::{BooleanResolver, ComputableUpdate},
+        fields::types::{BooleanResolver, IsFieldProvisionEnabled},
         options::types::{OnSuccessConfig, PostValidationConfig},
         types::DeleteHandler,
         No,
@@ -24,7 +24,7 @@ pub struct SchemaOptions<
     pub post_validate: Option<Vec<PostValidationConfig<I, O, CtxOptions, ErrorTool>>>,
 
     pub should_ignore: Option<BooleanResolver<I, O, CtxOptions>>,
-    pub should_update: Option<ComputableUpdate<I, O, CtxOptions>>,
+    pub should_update: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
 }
 
 impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool> Default
@@ -72,7 +72,7 @@ pub struct SchemaOptionsBuilder<
     pub post_validate: Option<Vec<PostValidationConfig<I, O, CtxOptions, ErrorTool>>>,
 
     pub should_ignore: Option<BooleanResolver<I, O, CtxOptions>>,
-    pub should_update: Option<ComputableUpdate<I, O, CtxOptions>>,
+    pub should_update: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
 }
 
 impl<

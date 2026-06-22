@@ -1,7 +1,7 @@
 #![allow(type_alias_bounds)]
 
 pub use futures_locks::RwLock;
-use std::{any::Any, collections::HashSet, sync::Arc};
+use std::{any::Any, collections::HashSet, fmt::Debug, sync::Arc};
 
 use crate::schema::{error_tool::DefaultFieldErrorMetadata, IvoFieldValue};
 
@@ -11,7 +11,7 @@ pub trait IvoSchemaStruct:
 }
 
 pub trait WithIvoPartialStruct {
-    type Partial: PartialEq + Default + Send + Sync + Clone + IvoStructPartialMethods;
+    type Partial: PartialEq + Debug + Default + Send + Sync + Clone + IvoStructPartialMethods;
 }
 
 pub trait IvoStructMethods: WithIvoPartialStruct + Clone {
@@ -49,6 +49,8 @@ pub trait IvoStructPartialMethods: Clone {
     fn ivo_internal_is_value_equal(&self, field_name: &String, value: &ErasedValue) -> bool;
 
     fn ivo_internal_set(&mut self, field_name: &String, value: &ErasedValue);
+
+    fn ivo_internal_remove_value(&mut self, field_name: &String);
 
     fn ivo_internal_to_erased_tuples(&self) -> Vec<(String, ErasedValue)>;
 }

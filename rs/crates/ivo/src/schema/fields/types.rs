@@ -186,18 +186,17 @@ where
     }
 }
 
-pub trait IntoInitResolverWithMiniContext<T, I: IvoSchemaStruct, CtxOptions> {
-    fn into_resolver(self) -> InitResolverWithMiniCtx<T, I, CtxOptions>;
+pub trait IntoBooleanResolver<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> {
+    fn into_resolver(self) -> BooleanResolver<I, O, CtxOptions>;
 }
 
-impl<F, Fut, T, I: IvoSchemaStruct, CtxOptions> IntoInitResolverWithMiniContext<T, I, CtxOptions>
-    for F
+impl<F, Fut, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>
+    IntoBooleanResolver<I, O, CtxOptions> for F
 where
-    T: IvoFieldValue,
-    F: Fn(SharedIvoMiniContext<I>, SharedRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
-    Fut: Future<Output = T> + Send + 'static,
+    F: Fn(SharedIvoContext<I, O>, SharedRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
+    Fut: Future<Output = bool> + Send + 'static,
 {
-    fn into_resolver(self) -> InitResolverWithMiniCtx<T, I, CtxOptions> {
+    fn into_resolver(self) -> BooleanResolver<I, O, CtxOptions> {
         Box::new(move |ctx, o| Box::pin(self(ctx, o)))
     }
 }
@@ -249,13 +248,7 @@ pub enum ValueResolverWithMiniContext<T, I: IvoSchemaStruct, CtxOptions> {
     Func(UniformValueResolverWithMiniContext<I, CtxOptions>),
 }
 
-pub enum ComputableInitWithMiniContext<T, I: IvoSchemaStruct, CtxOptions> {
-    False,
-    Static(T),
-    Func(InitResolverWithMiniCtx<T, I, CtxOptions>),
-}
-
-pub enum ComputableUpdate<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> {
+pub enum IsFieldProvisionEnabled<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> {
     False,
     Func(BooleanResolver<I, O, CtxOptions>),
 }
@@ -279,13 +272,6 @@ pub type RequiredResolver<I, O, CtxOptions> = Box<
 
 pub type Resolver<T, I, O, CtxOptions> = Box<
     dyn Fn(SharedIvoContext<I, O>, SharedRwCtxOptions<CtxOptions>) -> BoxFuture<'static, T>
-        + Send
-        + Sync
-        + 'static,
->;
-
-pub type InitResolverWithMiniCtx<T, I, CtxOptions> = Box<
-    dyn Fn(SharedIvoMiniContext<I>, SharedRwCtxOptions<CtxOptions>) -> BoxFuture<'static, T>
         + Send
         + Sync
         + 'static,

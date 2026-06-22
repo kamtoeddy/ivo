@@ -6,7 +6,7 @@ use crate::{
         fields::{
             base::{BuildableFieldConfig, FieldConfig, FieldType, InternalFieldConfig},
             types::{
-                ComputableUpdate, IntoDeleteHandler, IntoSuccessHandler, IntoUniformResolver,
+                IsFieldProvisionEnabled, IntoDeleteHandler, IntoSuccessHandler, IntoUniformResolver,
                 IntoValueResolverWithMiniContext, Resolver, ValueResolverWithMiniContext,
             },
         },
@@ -41,7 +41,7 @@ pub struct DependentFieldBuilder<
     default: Option<ValueResolverWithMiniContext<ErasedValue, I, CtxOptions>>,
     depends_on: Option<Vec<&'static str>>,
     resolver: Option<Resolver<ErasedValue, I, O, CtxOptions>>,
-    should_update: Option<ComputableUpdate<I, O, CtxOptions>>,
+    should_update: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
     on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
     on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
 }
@@ -268,7 +268,7 @@ impl<
             default: self.default,
             depends_on: self.depends_on,
             resolver: self.resolver,
-            should_update: Some(ComputableUpdate::False),
+            should_update: Some(IsFieldProvisionEnabled::False),
             ..Default::default()
         }
     }

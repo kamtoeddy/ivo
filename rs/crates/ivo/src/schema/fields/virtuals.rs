@@ -6,10 +6,9 @@ use crate::{
         fields::{
             base::{BuildableFieldConfig, FieldConfig, FieldType, InternalFieldConfig},
             types::{
-                BooleanResolver, ComputableInitWithMiniContext, ComputableUpdate,
-                IntoFailureHandler, IntoFieldValidator, IntoInitResolverWithMiniContext,
-                IntoRequiredResolver, IntoResolver, IntoSuccessHandler, IntoVirtualSanitizer,
-                RequiredResolver, UniformValidator, VirtualSanitizer,
+                BooleanResolver, IsFieldProvisionEnabled, IntoBooleanResolver, IntoFailureHandler,
+                IntoFieldValidator, IntoRequiredResolver, IntoResolver, IntoSuccessHandler,
+                IntoVirtualSanitizer, RequiredResolver, UniformValidator, VirtualSanitizer,
             },
         },
         types::{FailureHandler, IvoFieldValue, No, SuccessHandler, Yes, YesComputed},
@@ -53,8 +52,8 @@ pub struct VirtualFieldBuilder<
     required_fn: Option<RequiredResolver<I, O, CtxOptions>>,
     sanitizer: Option<VirtualSanitizer<ErasedValue, I, O, CtxOptions>>,
     should_ignore_fn: Option<BooleanResolver<I, O, CtxOptions>>,
-    should_init: Option<ComputableInitWithMiniContext<bool, I, CtxOptions>>,
-    should_update: Option<ComputableUpdate<I, O, CtxOptions>>,
+    should_init: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
+    should_update: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
     on_failure_fns: Option<Vec<FailureHandler<I, O, CtxOptions>>>,
     on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
 }
@@ -475,7 +474,7 @@ impl<
             re_validator: self.re_validator,
             required_fn: self.required_fn,
             sanitizer: self.sanitizer,
-            should_init: Some(ComputableInitWithMiniContext::False),
+            should_init: Some(IsFieldProvisionEnabled::False),
             ..Default::default()
         }
     }
@@ -498,7 +497,7 @@ impl<
         YesComputed,
     >
     where
-        R: IntoInitResolverWithMiniContext<bool, I, CtxOptions>,
+        R: IntoBooleanResolver<I, O, CtxOptions>,
     {
         VirtualFieldBuilder {
             alias: self.alias,
@@ -506,9 +505,7 @@ impl<
             re_validator: self.re_validator,
             required_fn: self.required_fn,
             sanitizer: self.sanitizer,
-            should_init: Some(ComputableInitWithMiniContext::Func(
-                resolver.into_resolver(),
-            )),
+            should_init: Some(IsFieldProvisionEnabled::Func(resolver.into_resolver())),
             ..Default::default()
         }
     }
@@ -536,7 +533,7 @@ impl<
             re_validator: self.re_validator,
             required_fn: self.required_fn,
             sanitizer: self.sanitizer,
-            should_update: Some(ComputableUpdate::False),
+            should_update: Some(IsFieldProvisionEnabled::False),
             ..Default::default()
         }
     }
@@ -568,7 +565,7 @@ impl<
             re_validator: self.re_validator,
             required_fn: self.required_fn,
             sanitizer: self.sanitizer,
-            should_update: Some(ComputableUpdate::Func(resolver.into_resolver())),
+            should_update: Some(IsFieldProvisionEnabled::Func(resolver.into_resolver())),
             ..Default::default()
         }
     }
@@ -620,7 +617,7 @@ impl<
         Yes,
     >
     where
-        R: IntoInitResolverWithMiniContext<bool, I, CtxOptions>,
+        R: IntoBooleanResolver<I, O, CtxOptions>,
     {
         VirtualFieldBuilder {
             alias: self.alias,
@@ -628,9 +625,7 @@ impl<
             re_validator: self.re_validator,
             required_fn: self.required_fn,
             sanitizer: self.sanitizer,
-            should_init: Some(ComputableInitWithMiniContext::Func(
-                resolver.into_resolver(),
-            )),
+            should_init: Some(IsFieldProvisionEnabled::Func(resolver.into_resolver())),
             ..Default::default()
         }
     }
@@ -691,7 +686,7 @@ impl<
             required_fn: self.required_fn,
             sanitizer: self.sanitizer,
             should_init: self.should_init,
-            should_update: Some(ComputableUpdate::Func(resolver.into_resolver())),
+            should_update: Some(IsFieldProvisionEnabled::Func(resolver.into_resolver())),
             ..Default::default()
         }
     }
@@ -748,7 +743,7 @@ impl<
             required_fn: self.required_fn,
             sanitizer: self.sanitizer,
             should_update: self.should_update,
-            should_init: Some(ComputableInitWithMiniContext::False),
+            should_init: Some(IsFieldProvisionEnabled::False),
             ..Default::default()
         }
     }
@@ -772,7 +767,7 @@ impl<
         YesComputed,
     >
     where
-        R: IntoInitResolverWithMiniContext<bool, I, CtxOptions>,
+        R: IntoBooleanResolver<I, O, CtxOptions>,
     {
         VirtualFieldBuilder {
             alias: self.alias,
@@ -781,9 +776,7 @@ impl<
             required_fn: self.required_fn,
             sanitizer: self.sanitizer,
             should_update: self.should_update,
-            should_init: Some(ComputableInitWithMiniContext::Func(
-                resolver.into_resolver(),
-            )),
+            should_init: Some(IsFieldProvisionEnabled::Func(resolver.into_resolver())),
             ..Default::default()
         }
     }

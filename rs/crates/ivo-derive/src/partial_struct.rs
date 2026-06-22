@@ -47,6 +47,18 @@ pub fn generate_partial_struct<T: ToTokens>(
         }
     });
 
+    let remove_value_match_arms = fields.iter().map(|field| {
+        let field_name = &field.ident; // e.g., 'id'
+        let field_type = &field.ty; // e.g., 'String'
+        let field_name_str = field_name.as_ref().unwrap().to_string();
+
+        quote! {
+            #field_name_str => {
+                self.#field_name = std::option::Option::<#field_type>::None;
+            }
+        }
+    });
+
     let get_erased_value_match_arms = fields.iter().map(|field| {
         let field_name = &field.ident; // e.g., 'id'
         let field_type = &field.ty; // e.g., 'String'
@@ -125,6 +137,13 @@ pub fn generate_partial_struct<T: ToTokens>(
 
                 match field_name.as_str() {
                     #( #set_value_match_arms ),*
+                    _ => (),
+                };
+            }
+
+            fn ivo_internal_remove_value(&mut self, field_name: &String) {
+                match field_name.as_str() {
+                    #( #remove_value_match_arms ),*
                     _ => (),
                 };
             }

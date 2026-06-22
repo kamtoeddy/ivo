@@ -21,8 +21,8 @@ pub async fn run_users_demo() {
         // email: None,
         email: Some("1@1.com".into()),
         username: Some("user-10".into()),
-        role: None,
-        // role: Some(UserRole::Moderator),
+        // role: None,
+        role: Some(UserRole::Moderator),
         // slug_id: None,
         slug_id: Some("sloppy-slug-id".into()),
     };
