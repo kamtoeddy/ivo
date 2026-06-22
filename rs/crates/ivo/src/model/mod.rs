@@ -130,9 +130,9 @@ impl<
             ));
         }
 
-        let (validated_inputs, validated_outputs, should_gen_new_ctx) = r.ok().unwrap();
+        let (validated_inputs, validated_outputs, should_update_ctx) = r.ok().unwrap();
 
-        if should_gen_new_ctx {
+        if should_update_ctx {
             Arc::make_mut(&mut ctx)
                 .set_input(validated_inputs)
                 .set_changes(validated_outputs);
@@ -158,9 +158,9 @@ impl<
             ));
         }
 
-        let (validated_inputs, validated_outputs, should_gen_new_ctx) = r.ok().unwrap();
+        let (validated_inputs, validated_outputs, should_update_ctx) = r.ok().unwrap();
 
-        if should_gen_new_ctx {
+        if should_update_ctx {
             Arc::make_mut(&mut ctx)
                 .set_input(validated_inputs)
                 .set_changes(validated_outputs);
@@ -186,14 +186,14 @@ impl<
             ));
         }
 
-        let (validated_inputs, validated_outputs, should_gen_new_ctx) = r.ok().unwrap();
+        let (validated_inputs, validated_outputs, should_update_ctx) = r.ok().unwrap();
 
-        if should_gen_new_ctx {
+        if should_update_ctx {
             Arc::make_mut(&mut ctx).set_input(validated_inputs);
         }
 
         // 6) Sanitize virtuals
-        let (validated_inputs, should_gen_new_ctx) = self
+        let (validated_inputs, should_update_ctx) = self
             .sanitize_virtuals(
                 &fields_provided,
                 Arc::clone(&ctx),
@@ -201,7 +201,7 @@ impl<
             )
             .await;
 
-        if should_gen_new_ctx {
+        if should_update_ctx {
             Arc::make_mut(&mut ctx)
                 .set_input(validated_inputs)
                 .set_changes(validated_outputs);
@@ -238,9 +238,9 @@ impl<
         }
 
         // 8) Generate and set timestamps
-        let (values, should_gen_new_ctx) = self.attach_timestamps(ctx.values(), false);
+        let (values, should_update_ctx) = self.attach_timestamps(ctx.values(), false);
 
-        if should_gen_new_ctx {
+        if should_update_ctx {
             Arc::make_mut(&mut ctx).set_changes(values.clone());
         }
 
@@ -338,9 +338,9 @@ impl<
             ));
         }
 
-        let (validated_inputs, validated_outputs, should_gen_new_ctx) = r.ok().unwrap();
+        let (validated_inputs, validated_outputs, should_update_ctx) = r.ok().unwrap();
 
-        if should_gen_new_ctx {
+        if should_update_ctx {
             Arc::make_mut(&mut ctx)
                 .set_input(validated_inputs)
                 .set_changes(validated_outputs.clone())
@@ -367,9 +367,9 @@ impl<
             ));
         }
 
-        let (validated_inputs, validated_outputs, should_gen_new_ctx) = r.ok().unwrap();
+        let (validated_inputs, validated_outputs, should_update_ctx) = r.ok().unwrap();
 
-        if should_gen_new_ctx {
+        if should_update_ctx {
             Arc::make_mut(&mut ctx)
                 .set_input(validated_inputs)
                 .set_changes(validated_outputs.clone())
@@ -396,9 +396,9 @@ impl<
             ));
         }
 
-        let (validated_inputs, validated_outputs, should_gen_new_ctx) = r.ok().unwrap();
+        let (validated_inputs, validated_outputs, should_update_ctx) = r.ok().unwrap();
 
-        if should_gen_new_ctx {
+        if should_update_ctx {
             Arc::make_mut(&mut ctx)
                 .set_input(validated_inputs)
                 .set_changes(validated_outputs.clone())
@@ -406,7 +406,7 @@ impl<
         }
 
         // 5) Sanitize virtuals
-        let (validated_inputs, should_gen_new_ctx) = self
+        let (validated_inputs, should_update_ctx) = self
             .sanitize_virtuals(
                 &fields_provided,
                 Arc::clone(&ctx),
@@ -414,7 +414,7 @@ impl<
             )
             .await;
 
-        if should_gen_new_ctx {
+        if should_update_ctx {
             Arc::make_mut(&mut ctx).set_input(validated_inputs);
         }
 
@@ -495,9 +495,9 @@ impl<
         }
 
         // 7) Generate and set timestamps
-        let (updated_values, should_gen_new_ctx) = self.attach_timestamps(updated_values, true);
+        let (updated_values, should_update_ctx) = self.attach_timestamps(updated_values, true);
 
-        if should_gen_new_ctx {
+        if should_update_ctx {
             Arc::make_mut(&mut ctx)
                 .set_changes(updated_values.clone())
                 .set_full_values(data.ivo_internal_clone_with(updated_values.clone()));
