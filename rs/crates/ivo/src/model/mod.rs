@@ -22,7 +22,7 @@ use crate::{
     IvoContext, SharedCtxOptions, SharedIvoContext, SharedIvoMiniContext, SharedRwCtxOptions,
 };
 
-use crate::types::{erase_value, IvoSchemaStruct, IvoStructPartialMethods, Partial, RwLock};
+use crate::types::{erase_value, IvoSchemaStruct, IvoStructPartialMethods, RwLock};
 
 type AsyncHandlerTrigger<'a> = Box<dyn Fn() -> BoxFuture<'a, ()> + Send + Sync + 'a>;
 
@@ -61,7 +61,7 @@ impl<
 {
     pub async fn create(
         &self,
-        input: &Partial<I>,
+        input: &I::Partial,
         options: CtxOptions,
     ) -> Result<
         (O, AsyncHandlerTrigger<'schema>),
@@ -257,10 +257,10 @@ impl<
     pub async fn update(
         &self,
         data: &O,
-        updates: &Partial<I>,
+        updates: &I::Partial,
         options: CtxOptions,
     ) -> Result<
-        (Partial<O>, AsyncHandlerTrigger<'schema>),
+        (O::Partial, AsyncHandlerTrigger<'schema>),
         (UpdateError<ErrorTool>, AsyncHandlerTrigger<'schema>),
     > {
         let old_partial_values: O::Partial = data.clone().into();
