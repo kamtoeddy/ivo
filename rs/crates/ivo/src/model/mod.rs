@@ -69,7 +69,7 @@ impl<
     > {
         let shared_rw_options = Arc::new(RwLock::new(options));
 
-        // 1) Resolve constants & defaults
+        // Resolve constants & defaults
         let default_values = self
             .resolve_constants_and_defaults(Arc::new(input.clone()), Arc::clone(&shared_rw_options))
             .await;
@@ -110,7 +110,7 @@ impl<
             ));
         }
 
-        // 3) Run validators
+        // Run validators
         let r = self
             .validate(
                 &fields_provided,
@@ -138,7 +138,7 @@ impl<
                 .set_changes(validated_outputs);
         }
 
-        // 4) Run re_validators
+        // Run re_validators
         let r = self
             .re_validate(
                 &fields_provided,
@@ -166,7 +166,7 @@ impl<
                 .set_changes(validated_outputs);
         }
 
-        // 5) Run post-validators
+        // Run post-validators
         let r = self
             .post_validate(
                 &fields_provided,
@@ -194,7 +194,7 @@ impl<
                 .set_changes(validated_outputs);
         }
 
-        // 6) Sanitize virtuals
+        // Sanitize virtuals
         let (validated_inputs, should_update_ctx) = self
             .sanitize_virtuals(
                 &fields_provided,
@@ -207,7 +207,7 @@ impl<
             Arc::make_mut(&mut ctx).set_input(validated_inputs);
         }
 
-        // 7) Resolve values of dependent fields
+        // Resolve values of dependent fields
         let (mut validated_outputs, mut dependent_fields_resolved) = self
             .resolve_dependent_values(
                 &fields_provided,
@@ -237,7 +237,7 @@ impl<
             }
         }
 
-        // 8) Generate and set timestamps
+        // Generate and set timestamps
         let (values, should_update_ctx) = self.attach_timestamps(ctx.values(), false);
 
         if should_update_ctx {
@@ -298,7 +298,7 @@ impl<
             ));
         }
 
-        // 1) Evaluate missing required fields
+        // Evaluate missing required fields
         let r = self
             .evaluate_missing_required_fields(
                 &fields_provided,
@@ -318,7 +318,7 @@ impl<
             ));
         }
 
-        // 2) Run validators
+        // Run validators
         let r = self
             .validate(
                 &fields_provided,
@@ -347,7 +347,7 @@ impl<
                 .set_full_values(data.ivo_internal_clone_with(validated_outputs));
         }
 
-        // 3) Run re_validators
+        // Run re_validators
         let r = self
             .re_validate(
                 &fields_provided,
@@ -376,7 +376,7 @@ impl<
                 .set_full_values(data.ivo_internal_clone_with(validated_outputs));
         }
 
-        // 4) Run post-validators
+        // Run post-validators
         let r = self
             .post_validate(
                 &fields_provided,
@@ -405,7 +405,7 @@ impl<
                 .set_full_values(data.ivo_internal_clone_with(validated_outputs));
         }
 
-        // 5) Sanitize virtuals
+        // Sanitize virtuals
         let (validated_inputs, should_update_ctx) = self
             .sanitize_virtuals(
                 &fields_provided,
@@ -446,7 +446,7 @@ impl<
             &fields_provided.schema_output_fields,
         );
 
-        // 6) Resolve values of dependent fields
+        // Resolve values of dependent fields
         let (mut validated_outputs, mut dependent_fields_resolved) = self
             .resolve_dependent_values(
                 &fields_updated,
@@ -494,7 +494,7 @@ impl<
             ));
         }
 
-        // 7) Generate and set timestamps
+        // Generate and set timestamps
         let (updated_values, should_update_ctx) = self.attach_timestamps(updated_values, true);
 
         if should_update_ctx {
