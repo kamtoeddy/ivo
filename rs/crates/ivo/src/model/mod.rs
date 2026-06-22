@@ -81,7 +81,12 @@ impl<
         ));
 
         let (input, fields_provided) = self
-            .filter_init_fields(input, Arc::clone(&ctx), Arc::clone(&shared_rw_options))
+            .filter_input_fields_allowed(
+                None,
+                input,
+                Arc::clone(&ctx),
+                Arc::clone(&shared_rw_options),
+            )
             .await;
 
         ctx = Arc::new(IvoContext::<I, O>::new_create_ctx(
@@ -285,18 +290,6 @@ impl<
         (UpdateError<ErrorTool>, AsyncHandlerTrigger<'schema>),
     > {
         let old_partial_values: O::Partial = data.clone().into();
-        let mut fields_provided = FieldInfoCollection::new(&self.schema);
-        let mut updated_fields = vec![];
-
-        for (field_name, value) in updates.ivo_internal_to_erased_tuples() {
-            let f = fields_provided.get(&field_name).unwrap();
-
-            if (f.is_input && !f.is_output)
-                || !old_partial_values.ivo_internal_is_value_equal(&field_name, &value)
-            {
-                updated_fields.push(f);
-            }
-        }
 
         let mut ctx = Arc::new(IvoContext::<I, O>::new_update_ctx(
             O::Partial::default(),
@@ -306,16 +299,36 @@ impl<
             data.clone(),
         ));
 
+        let shared_rw_options = Arc::new(RwLock::new(options));
+
+        let (input, fields_provided) = self
+            .filter_input_fields_allowed(
+                Some(&old_partial_values),
+                updates,
+                Arc::clone(&ctx),
+                Arc::clone(&shared_rw_options),
+            )
+            .await;
+
+        ctx = Arc::new(IvoContext::<I, O>::new_update_ctx(
+            ctx.changes(),
+            input,
+            updates.clone(),
+            data.clone(),
+            data.clone(),
+        ));
+
         // if the updates provided are all none, the nothing to update
-        if updated_fields.is_empty() {
+        if fields_provided.fields.is_empty() {
             return Err((
                 UpdateError::NothingToUpdate,
-                self.prepare_failure_handlers(vec![], ctx, Arc::new(options)),
+                self.prepare_failure_handlers(
+                    vec![],
+                    ctx,
+                    Arc::new(unwrap_async_lock(shared_rw_options)),
+                ),
             ));
         }
-
-        fields_provided.set_fields(updated_fields);
-        let shared_rw_options = Arc::new(RwLock::new(options));
 
         // 1) Evaluate missing required fields
         let r = self
@@ -1046,8 +1059,9 @@ impl<
         default_values
     }
 
-    async fn filter_init_fields<'a>(
+    async fn filter_input_fields_allowed<'a>(
         &'a self,
+        previous_values: Option<&O::Partial>,
         input_values: &I::Partial,
         ctx: SharedIvoContext<I, O>,
         options: SharedRwCtxOptions<CtxOptions>,
@@ -1055,14 +1069,32 @@ impl<
         I::Partial,
         FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
     ) {
+        let mut is_update = false;
+
         let mut resolvers = vec![];
         let mut input = input_values.clone();
         let mut fields_provided = FieldInfoCollection::new(&self.schema);
         let mut field_info_vec = vec![];
 
-        for field_name in input_values.ivo_internal_fields_provided() {
-            field_info_vec.push(fields_provided.get(&field_name).unwrap());
+        if let Some(previous_values) = previous_values {
+            is_update = true;
+
+            for (field_name, value) in input_values.ivo_internal_to_erased_tuples() {
+                let field_info = fields_provided.get(&field_name).unwrap();
+
+                if (field_info.is_input && !field_info.is_output)
+                    || !previous_values.ivo_internal_is_value_equal(&field_name, &value)
+                {
+                    field_info_vec.push(field_info);
+                }
+            }
+        } else {
+            for field_name in input_values.ivo_internal_fields_provided() {
+                field_info_vec.push(fields_provided.get(&field_name).unwrap());
+            }
         }
+
+        let is_update = is_update;
 
         let mut final_field_info_vec = vec![];
 
@@ -1076,24 +1108,32 @@ impl<
             {
                 InternalFieldConfig {
                     field_type: FieldType::Lax | FieldType::Required | FieldType::Virtual,
-                    should_init: Some(should_init),
+                    should_ignore,
+                    should_init,
+                    should_update,
                     ..
                 } => {
-                    match should_init {
-                        IsFieldProvisionEnabled::False => {
+                    if let Some(resolver) = should_ignore {
+                        resolvers.push((field_info, resolver, true));
+
+                        continue;
+                    }
+
+                    let source = if is_update {
+                        should_update
+                    } else {
+                        should_init
+                    };
+
+                    match source {
+                        Some(IsFieldProvisionEnabled::False) => {
                             input.ivo_internal_remove_value(&field_info.name);
                         }
-                        IsFieldProvisionEnabled::Func(resolver) => {
+                        Some(IsFieldProvisionEnabled::Func(resolver)) => {
                             resolvers.push((field_info, resolver, false));
                         }
+                        _ => final_field_info_vec.push(field_info.to_owned()),
                     };
-                }
-                InternalFieldConfig {
-                    field_type: FieldType::Lax | FieldType::Required | FieldType::Virtual,
-                    should_ignore: Some(resolver),
-                    ..
-                } => {
-                    resolvers.push((field_info, resolver, true));
                 }
                 _ => final_field_info_vec.push(field_info.to_owned()),
             }
