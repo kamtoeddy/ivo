@@ -10,7 +10,7 @@ use std::sync::Arc;
 use crate::model::internal::{FieldInfo, FieldInfoCollection};
 use crate::schema::error_tool::{DefaultErrorTool, FieldError, IvoErrorTool, UpdateError};
 use crate::schema::fields::base::{FieldType, InternalFieldConfig};
-use crate::schema::fields::types::{ComputableRequiredError, ComputableWithMiniContext};
+use crate::schema::fields::types::{ComputableRequiredError, ValueResolverWithMiniContext};
 use crate::schema::fields::TimestampConfig;
 use crate::schema::Schema;
 
@@ -1002,11 +1002,11 @@ impl<
         for (field_name, config) in self.schema.field_configs.iter() {
             // constants
             match &config.value {
-                Some(ComputableWithMiniContext::Static(value)) => {
+                Some(ValueResolverWithMiniContext::Static(value)) => {
                     default_values.ivo_internal_set(field_name, value);
                     continue;
                 }
-                Some(ComputableWithMiniContext::Func(resolver)) => {
+                Some(ValueResolverWithMiniContext::Func(resolver)) => {
                     resolvers.push((field_name.to_string(), resolver));
                     continue;
                 }
@@ -1015,10 +1015,10 @@ impl<
 
             // other fields with default values/resolvers
             match &config.default {
-                Some(ComputableWithMiniContext::Static(value)) => {
+                Some(ValueResolverWithMiniContext::Static(value)) => {
                     default_values.ivo_internal_set(field_name, value);
                 }
-                Some(ComputableWithMiniContext::Func(resolver)) => {
+                Some(ValueResolverWithMiniContext::Func(resolver)) => {
                     resolvers.push((field_name.to_string(), resolver));
                 }
                 _ => {}

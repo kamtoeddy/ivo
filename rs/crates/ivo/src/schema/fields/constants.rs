@@ -6,8 +6,8 @@ use crate::{
         fields::{
             base::{BuildableFieldConfig, FieldConfig, FieldType, InternalFieldConfig},
             types::{
-                ComputableWithMiniContext, IntoDeleteHandler, IntoResolverWithMiniContext,
-                IntoSuccessHandler,
+                IntoDeleteHandler, IntoSuccessHandler, IntoValueResolverWithMiniContext,
+                ValueResolverWithMiniContext,
             },
         },
         types::{DeleteHandler, IvoFieldValue, No, SuccessHandler, Yes},
@@ -32,7 +32,7 @@ pub struct ConstantFieldBuilder<
     _del_handlers: PhantomData<HasDelete>,
     _success_handlers: PhantomData<HasSuccess>,
     // actual data...
-    value: Option<ComputableWithMiniContext<ErasedValue, I, CtxOptions>>,
+    value: Option<ValueResolverWithMiniContext<ErasedValue, I, CtxOptions>>,
     on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
     on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
 }
@@ -111,7 +111,7 @@ impl<
 {
     pub fn value(self, value: T) -> ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes> {
         ConstantFieldBuilder {
-            value: Some(ComputableWithMiniContext::Static(erase_value(value))),
+            value: Some(ValueResolverWithMiniContext::Static(erase_value(value))),
             on_delete_fns: None,
             on_success_fns: None,
             ..Default::default()
@@ -123,10 +123,10 @@ impl<
         resolver: F,
     ) -> ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes>
     where
-        F: IntoResolverWithMiniContext<T, I, CtxOptions>,
+        F: IntoValueResolverWithMiniContext<T, I, CtxOptions>,
     {
         ConstantFieldBuilder {
-            value: Some(ComputableWithMiniContext::Func(resolver.into_uniform())),
+            value: Some(ValueResolverWithMiniContext::Func(resolver.into_uniform())),
             on_delete_fns: None,
             on_success_fns: None,
             ..Default::default()

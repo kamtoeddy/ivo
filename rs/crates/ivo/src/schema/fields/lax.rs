@@ -6,10 +6,11 @@ use crate::{
         fields::{
             base::{BuildableFieldConfig, FieldConfig, FieldType, InternalFieldConfig},
             types::{
-                BooleanResolver, ComputableInit, ComputableWithMiniContext, IntoDeleteHandler,
-                IntoFailureHandler, IntoFieldValidator, IntoRequiredResolver, IntoResolver,
-                IntoResolverWithMiniContext, IntoSuccessHandler, RequiredResolver,
-                UniformValidator,
+                BooleanResolver, ComputableInitWithMiniContext, ComputableUpdate,
+                IntoDeleteHandler, IntoFailureHandler, IntoFieldValidator,
+                IntoInitResolverWithMiniContext, IntoRequiredResolver, IntoResolver,
+                IntoSuccessHandler, IntoValueResolverWithMiniContext, RequiredResolver,
+                UniformValidator, ValueResolverWithMiniContext,
             },
         },
         types::{
@@ -49,13 +50,13 @@ pub struct LaxFieldBuilder<
     _on_failure_fns: PhantomData<HasFailure>,
     _on_success_fns: PhantomData<HasSuccess>,
     // actual data...
-    default: Option<ComputableWithMiniContext<ErasedValue, I, CtxOptions>>,
+    default: Option<ValueResolverWithMiniContext<ErasedValue, I, CtxOptions>>,
     validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
     re_validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
     required_fn: Option<RequiredResolver<I, O, CtxOptions>>,
     should_ignore_fn: Option<BooleanResolver<I, O, CtxOptions>>,
-    should_init: Option<ComputableInit<I, O, CtxOptions>>,
-    should_update: Option<ComputableInit<I, O, CtxOptions>>,
+    should_init: Option<ComputableInitWithMiniContext<bool, I, CtxOptions>>,
+    should_update: Option<ComputableUpdate<I, O, CtxOptions>>,
     on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
     on_failure_fns: Option<Vec<FailureHandler<I, O, CtxOptions>>>,
     on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
@@ -225,7 +226,7 @@ impl<
 {
     pub fn default(self, value: T) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes> {
         LaxFieldBuilder {
-            default: Some(ComputableWithMiniContext::Static(erase_value(value))),
+            default: Some(ValueResolverWithMiniContext::Static(erase_value(value))),
             ..Default::default()
         }
     }
@@ -235,10 +236,12 @@ impl<
         default_fn: F,
     ) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes>
     where
-        F: IntoResolverWithMiniContext<T, I, CtxOptions>,
+        F: IntoValueResolverWithMiniContext<T, I, CtxOptions>,
     {
         LaxFieldBuilder {
-            default: Some(ComputableWithMiniContext::Func(default_fn.into_uniform())),
+            default: Some(ValueResolverWithMiniContext::Func(
+                default_fn.into_uniform(),
+            )),
             ..Default::default()
         }
     }
@@ -390,7 +393,7 @@ impl<
             validator: self.validator,
             re_validator: self.re_validator,
             required_fn: self.required_fn,
-            should_init: Some(ComputableInit::False),
+            should_init: Some(ComputableInitWithMiniContext::False),
             ..Default::default()
         }
     }
@@ -412,14 +415,16 @@ impl<
         YesComputed,
     >
     where
-        R: IntoResolver<bool, I, O, CtxOptions>,
+        R: IntoInitResolverWithMiniContext<bool, I, CtxOptions>,
     {
         LaxFieldBuilder {
             default: self.default,
             validator: self.validator,
             re_validator: self.re_validator,
             required_fn: self.required_fn,
-            should_init: Some(ComputableInit::Func(resolver.into_resolver())),
+            should_init: Some(ComputableInitWithMiniContext::Func(
+                resolver.into_resolver(),
+            )),
             ..Default::default()
         }
     }
@@ -445,7 +450,7 @@ impl<
             validator: self.validator,
             re_validator: self.re_validator,
             required_fn: self.required_fn,
-            should_update: Some(ComputableInit::False),
+            should_update: Some(ComputableUpdate::False),
             ..Default::default()
         }
     }
@@ -475,7 +480,7 @@ impl<
             validator: self.validator,
             re_validator: self.re_validator,
             required_fn: self.required_fn,
-            should_update: Some(ComputableInit::Func(resolver.into_resolver())),
+            should_update: Some(ComputableUpdate::Func(resolver.into_resolver())),
             ..Default::default()
         }
     }
@@ -524,14 +529,16 @@ impl<
         Yes,
     >
     where
-        R: IntoResolver<bool, I, O, CtxOptions>,
+        R: IntoInitResolverWithMiniContext<bool, I, CtxOptions>,
     {
         LaxFieldBuilder {
             default: self.default,
             validator: self.validator,
             re_validator: self.re_validator,
             required_fn: self.required_fn,
-            should_init: Some(ComputableInit::Func(resolver.into_resolver())),
+            should_init: Some(ComputableInitWithMiniContext::Func(
+                resolver.into_resolver(),
+            )),
             ..Default::default()
         }
     }
@@ -588,7 +595,7 @@ impl<
             re_validator: self.re_validator,
             required_fn: self.required_fn,
             should_init: self.should_init,
-            should_update: Some(ComputableInit::Func(resolver.into_resolver())),
+            should_update: Some(ComputableUpdate::Func(resolver.into_resolver())),
             ..Default::default()
         }
     }
@@ -642,7 +649,7 @@ impl<
             required_fn: self.required_fn,
 
             should_update: self.should_update,
-            should_init: Some(ComputableInit::False),
+            should_init: Some(ComputableInitWithMiniContext::False),
             ..Default::default()
         }
     }
@@ -665,7 +672,7 @@ impl<
         YesComputed,
     >
     where
-        R: IntoResolver<bool, I, O, CtxOptions>,
+        R: IntoInitResolverWithMiniContext<bool, I, CtxOptions>,
     {
         LaxFieldBuilder {
             default: self.default,
@@ -673,7 +680,9 @@ impl<
             re_validator: self.re_validator,
             required_fn: self.required_fn,
             should_update: self.should_update,
-            should_init: Some(ComputableInit::Func(resolver.into_resolver())),
+            should_init: Some(ComputableInitWithMiniContext::Func(
+                resolver.into_resolver(),
+            )),
             ..Default::default()
         }
     }

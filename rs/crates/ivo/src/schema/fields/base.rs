@@ -4,8 +4,9 @@ use crate::{
     schema::{
         error_tool::IvoErrorTool,
         fields::types::{
-            BooleanResolver, ComputableInit, ComputableRequiredError, ComputableWithMiniContext,
-            RequiredResolver, Resolver, TimestampResolver, UniformValidator, VirtualSanitizer,
+            BooleanResolver, ComputableInitWithMiniContext, ComputableRequiredError,
+            ComputableUpdate, RequiredResolver, Resolver, TimestampResolver, UniformValidator,
+            ValueResolverWithMiniContext, VirtualSanitizer,
         },
         types::{DeleteHandler, FailureHandler, IvoFieldValue, No, SuccessHandler, Yes},
     },
@@ -43,10 +44,9 @@ pub struct FieldConfig<
 > {
     pub field_type: FieldType,
     pub alias: Option<String>,
-    pub default: Option<ComputableWithMiniContext<T, I, CtxOptions>>,
+    pub default: Option<ValueResolverWithMiniContext<T, I, CtxOptions>>,
     pub depends_on: Option<Vec<&'static str>>,
-    pub is_readonly: bool,
-    pub value: Option<ComputableWithMiniContext<T, I, CtxOptions>>,
+    pub value: Option<ValueResolverWithMiniContext<T, I, CtxOptions>>,
     pub required_fn: Option<RequiredResolver<I, O, CtxOptions>>,
     pub required_error: Option<ComputableRequiredError<I, O, CtxOptions>>,
     pub resolver: Option<Resolver<T, I, O, CtxOptions>>,
@@ -55,8 +55,8 @@ pub struct FieldConfig<
     pub re_validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
     //
     pub should_ignore: Option<BooleanResolver<I, O, CtxOptions>>,
-    pub should_init: Option<ComputableInit<I, O, CtxOptions>>,
-    pub should_update: Option<ComputableInit<I, O, CtxOptions>>,
+    pub should_init: Option<ComputableInitWithMiniContext<bool, I, CtxOptions>>,
+    pub should_update: Option<ComputableUpdate<I, O, CtxOptions>>,
     // life cycle handlers
     pub on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
     pub on_failure_fns: Option<Vec<FailureHandler<I, O, CtxOptions>>>,
@@ -70,7 +70,6 @@ impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorT
         Self {
             field_type: FieldType::Lax,
             alias: None,
-            is_readonly: false,
             value: None,
             default: None,
             depends_on: None,

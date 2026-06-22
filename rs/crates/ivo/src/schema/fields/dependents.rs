@@ -6,8 +6,8 @@ use crate::{
         fields::{
             base::{BuildableFieldConfig, FieldConfig, FieldType, InternalFieldConfig},
             types::{
-                ComputableInit, ComputableWithMiniContext, IntoDeleteHandler,
-                IntoResolverWithMiniContext, IntoSuccessHandler, IntoUniformResolver, Resolver,
+                ComputableUpdate, IntoDeleteHandler, IntoSuccessHandler, IntoUniformResolver,
+                IntoValueResolverWithMiniContext, Resolver, ValueResolverWithMiniContext,
             },
         },
         types::{DeleteHandler, IvoFieldValue, No, SuccessHandler, Yes},
@@ -38,10 +38,10 @@ pub struct DependentFieldBuilder<
     _should_update: PhantomData<HasShouldUpdate>,
     _success_handlers: PhantomData<HasSuccess>,
     // actual data...
-    default: Option<ComputableWithMiniContext<ErasedValue, I, CtxOptions>>,
+    default: Option<ValueResolverWithMiniContext<ErasedValue, I, CtxOptions>>,
     depends_on: Option<Vec<&'static str>>,
     resolver: Option<Resolver<ErasedValue, I, O, CtxOptions>>,
-    should_update: Option<ComputableInit<I, O, CtxOptions>>,
+    should_update: Option<ComputableUpdate<I, O, CtxOptions>>,
     on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
     on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
 }
@@ -173,7 +173,7 @@ impl<
 {
     pub fn default(self, value: T) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes> {
         DependentFieldBuilder {
-            default: Some(ComputableWithMiniContext::Static(erase_value(value))),
+            default: Some(ValueResolverWithMiniContext::Static(erase_value(value))),
             ..Default::default()
         }
     }
@@ -183,10 +183,12 @@ impl<
         default_fn: F,
     ) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes>
     where
-        F: IntoResolverWithMiniContext<T, I, CtxOptions>,
+        F: IntoValueResolverWithMiniContext<T, I, CtxOptions>,
     {
         DependentFieldBuilder {
-            default: Some(ComputableWithMiniContext::Func(default_fn.into_uniform())),
+            default: Some(ValueResolverWithMiniContext::Func(
+                default_fn.into_uniform(),
+            )),
             ..Default::default()
         }
     }
@@ -266,7 +268,7 @@ impl<
             default: self.default,
             depends_on: self.depends_on,
             resolver: self.resolver,
-            should_update: Some(ComputableInit::False),
+            should_update: Some(ComputableUpdate::False),
             ..Default::default()
         }
     }

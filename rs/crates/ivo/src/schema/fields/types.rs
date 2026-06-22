@@ -170,18 +170,35 @@ where
     }
 }
 
-pub trait IntoResolverWithMiniContext<T, I: IvoSchemaStruct, CtxOptions> {
-    fn into_uniform(self) -> UniformResolverWithMiniContext<I, CtxOptions>;
+pub trait IntoValueResolverWithMiniContext<T, I: IvoSchemaStruct, CtxOptions> {
+    fn into_uniform(self) -> UniformValueResolverWithMiniContext<I, CtxOptions>;
 }
 
-impl<F, Fut, T, I: IvoSchemaStruct, CtxOptions> IntoResolverWithMiniContext<T, I, CtxOptions> for F
+impl<F, Fut, T, I: IvoSchemaStruct, CtxOptions> IntoValueResolverWithMiniContext<T, I, CtxOptions>
+    for F
 where
     T: IvoFieldValue,
     F: Fn(SharedIvoMiniContext<I>, SharedRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = T> + Send + 'static,
 {
-    fn into_uniform(self) -> UniformResolverWithMiniContext<I, CtxOptions> {
+    fn into_uniform(self) -> UniformValueResolverWithMiniContext<I, CtxOptions> {
         Box::new(move |ctx, o| Box::pin(self(ctx, o).map(|v| erase_value(v))))
+    }
+}
+
+pub trait IntoInitResolverWithMiniContext<T, I: IvoSchemaStruct, CtxOptions> {
+    fn into_resolver(self) -> InitResolverWithMiniCtx<T, I, CtxOptions>;
+}
+
+impl<F, Fut, T, I: IvoSchemaStruct, CtxOptions> IntoInitResolverWithMiniContext<T, I, CtxOptions>
+    for F
+where
+    T: IvoFieldValue,
+    F: Fn(SharedIvoMiniContext<I>, SharedRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
+    Fut: Future<Output = T> + Send + 'static,
+{
+    fn into_resolver(self) -> InitResolverWithMiniCtx<T, I, CtxOptions> {
+        Box::new(move |ctx, o| Box::pin(self(ctx, o)))
     }
 }
 
@@ -217,7 +234,7 @@ pub type UniformResolver<I, O, CtxOptions> = Box<
         + 'static,
 >;
 
-pub type UniformResolverWithMiniContext<I, CtxOptions> = Box<
+pub type UniformValueResolverWithMiniContext<I, CtxOptions> = Box<
     dyn Fn(
             SharedIvoMiniContext<I>,
             SharedRwCtxOptions<CtxOptions>,
@@ -227,12 +244,18 @@ pub type UniformResolverWithMiniContext<I, CtxOptions> = Box<
         + 'static,
 >;
 
-pub enum ComputableWithMiniContext<T, I: IvoSchemaStruct, CtxOptions> {
+pub enum ValueResolverWithMiniContext<T, I: IvoSchemaStruct, CtxOptions> {
     Static(T),
-    Func(UniformResolverWithMiniContext<I, CtxOptions>),
+    Func(UniformValueResolverWithMiniContext<I, CtxOptions>),
 }
 
-pub enum ComputableInit<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> {
+pub enum ComputableInitWithMiniContext<T, I: IvoSchemaStruct, CtxOptions> {
+    False,
+    Static(T),
+    Func(InitResolverWithMiniCtx<T, I, CtxOptions>),
+}
+
+pub enum ComputableUpdate<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> {
     False,
     Func(BooleanResolver<I, O, CtxOptions>),
 }
@@ -256,6 +279,13 @@ pub type RequiredResolver<I, O, CtxOptions> = Box<
 
 pub type Resolver<T, I, O, CtxOptions> = Box<
     dyn Fn(SharedIvoContext<I, O>, SharedRwCtxOptions<CtxOptions>) -> BoxFuture<'static, T>
+        + Send
+        + Sync
+        + 'static,
+>;
+
+pub type InitResolverWithMiniCtx<T, I, CtxOptions> = Box<
+    dyn Fn(SharedIvoMiniContext<I>, SharedRwCtxOptions<CtxOptions>) -> BoxFuture<'static, T>
         + Send
         + Sync
         + 'static,

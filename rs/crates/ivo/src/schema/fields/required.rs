@@ -6,7 +6,7 @@ use crate::{
         fields::{
             base::{BuildableFieldConfig, FieldConfig, FieldType, InternalFieldConfig},
             types::{
-                ComputableInit, ComputableRequiredError, IntoDeleteHandler, IntoFailureHandler,
+                ComputableRequiredError, ComputableUpdate, IntoDeleteHandler, IntoFailureHandler,
                 IntoFieldValidator, IntoRequiredErrorResolver, IntoResolver, IntoSuccessHandler,
                 UniformValidator,
             },
@@ -42,7 +42,7 @@ pub struct RequiredFieldBuilder<
     required_error: Option<ComputableRequiredError<I, O, CtxOptions>>,
     validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
     re_validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
-    should_update: Option<ComputableInit<I, O, CtxOptions>>,
+    should_update: Option<ComputableUpdate<I, O, CtxOptions>>,
     on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
     on_failure_fns: Option<Vec<FailureHandler<I, O, CtxOptions>>>,
     on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
@@ -290,7 +290,7 @@ impl<
             validator: self.validator,
             re_validator: self.re_validator,
             required_error: self.required_error,
-            should_update: Some(ComputableInit::False),
+            should_update: Some(ComputableUpdate::False),
             ..Default::default()
         }
     }
@@ -316,7 +316,7 @@ impl<
             validator: self.validator,
             re_validator: self.re_validator,
             required_error: self.required_error,
-            should_update: Some(ComputableInit::Func(resolver.into_resolver())),
+            should_update: Some(ComputableUpdate::Func(resolver.into_resolver())),
             ..Default::default()
         }
     }
