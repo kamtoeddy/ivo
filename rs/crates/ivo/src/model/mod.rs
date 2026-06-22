@@ -1016,16 +1016,15 @@ impl<
         I::Partial,
         FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
     ) {
-        let mut is_update = false;
+        let is_update = previous_values.is_some();
+        let previous_values = previous_values.cloned().unwrap_or_default();
 
         let mut resolvers = vec![];
         let mut input = input_values.clone();
         let mut fields_provided = FieldInfoCollection::new(&self.schema);
         let mut field_info_vec = vec![];
 
-        if let Some(previous_values) = previous_values {
-            is_update = true;
-
+        if is_update {
             for (field_name, value) in input_values.ivo_internal_to_erased_tuples() {
                 let field_info = fields_provided.get(&field_name).unwrap();
 
@@ -1040,8 +1039,6 @@ impl<
                 field_info_vec.push(fields_provided.get(&field_name).unwrap());
             }
         }
-
-        let is_update = is_update;
 
         let mut final_field_info_vec = vec![];
 
@@ -1080,12 +1077,11 @@ impl<
                         Some(IsFieldProvisionEnabled::Func(resolver)) => {
                             resolvers.push((field_info, resolver, false));
                         }
-                        Some(IsFieldProvisionEnabled::Readonly) if previous_values.is_some() => {
+                        Some(IsFieldProvisionEnabled::Readonly) if is_update => {
                             if let Some(ValueResolverWithMiniContext::Static(value)) = default {
                                 // readonly means: don't update if value has changed
                                 // i.e: prev_value != default_value
                                 if !previous_values
-                                    .unwrap()
                                     .ivo_internal_is_value_equal(&field_info.name, value)
                                 {
                                     input.ivo_internal_remove_value(&field_info.name);
