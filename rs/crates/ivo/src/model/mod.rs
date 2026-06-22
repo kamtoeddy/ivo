@@ -189,7 +189,9 @@ impl<
         let (validated_inputs, validated_outputs, should_update_ctx) = r.ok().unwrap();
 
         if should_update_ctx {
-            Arc::make_mut(&mut ctx).set_input(validated_inputs);
+            Arc::make_mut(&mut ctx)
+                .set_input(validated_inputs)
+                .set_changes(validated_outputs);
         }
 
         // 6) Sanitize virtuals
@@ -202,9 +204,7 @@ impl<
             .await;
 
         if should_update_ctx {
-            Arc::make_mut(&mut ctx)
-                .set_input(validated_inputs)
-                .set_changes(validated_outputs);
+            Arc::make_mut(&mut ctx).set_input(validated_inputs);
         }
 
         // 7) Resolve values of dependent fields
