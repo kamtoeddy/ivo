@@ -3,7 +3,7 @@
 use ivo::{IvoField, IvoStruct, Schema, SharedData, SharedIvoContext, UpdateError};
 use std::future::ready;
 
-use crate::test_matrix;
+use crate::async_test_matrix;
 
 async fn should_not_create_if_primary_validation_fails() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
@@ -66,9 +66,7 @@ async fn should_not_create_if_primary_validation_fails() {
     }
 }
 
-test_matrix!(should_not_create_if_primary_validation_fails, async {
-    should_not_create_if_primary_validation_fails().await
-});
+async_test_matrix!(should_not_create_if_primary_validation_fails);
 
 async fn should_create_properly() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
@@ -114,9 +112,7 @@ async fn should_create_properly() {
     }
 }
 
-test_matrix!(should_create_properly, async {
-    should_create_properly().await
-});
+async_test_matrix!(should_create_properly);
 
 async fn should_update_properly() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
@@ -176,9 +172,7 @@ async fn should_update_properly() {
     }
 }
 
-test_matrix!(should_update_properly, async {
-    should_update_properly().await
-});
+async_test_matrix!(should_update_properly);
 
 // LAX: ON_DELETE
 async fn should_trigger_on_delete_handlers() {
@@ -226,10 +220,9 @@ async fn should_trigger_on_delete_handlers() {
         .await;
 }
 
-test_matrix!(
-    should_trigger_on_delete_handlers,
+async_test_matrix!(
     "[lax]: on_delete triggered with value: lax_string_value",
-    async { should_trigger_on_delete_handlers().await }
+    should_trigger_on_delete_handlers
 );
 
 // LAX: ON_FAILURE
@@ -292,10 +285,9 @@ async fn should_trigger_on_failure_handlers_at_creation() {
     }
 }
 
-test_matrix!(
-    should_trigger_on_failure_handlers_at_creation,
+async_test_matrix!(
     "[lax]: on_failure triggered with value: fail_validation",
-    async { should_trigger_on_failure_handlers_at_creation().await }
+    should_trigger_on_failure_handlers_at_creation
 );
 
 async fn should_trigger_on_failure_handlers_at_creation_with_ignored_value() {
@@ -375,10 +367,9 @@ async fn should_trigger_on_failure_handlers_at_creation_with_ignored_value() {
     }
 }
 
-test_matrix!(
-    should_trigger_on_failure_handlers_at_creation_with_ignored_value,
+async_test_matrix!(
     "[lax]: on_failure triggered with value: to be ignored",
-    async { should_trigger_on_failure_handlers_at_creation_with_ignored_value().await }
+    should_trigger_on_failure_handlers_at_creation_with_ignored_value
 );
 
 async fn should_trigger_on_failure_handlers_during_updates() {
@@ -450,10 +441,9 @@ async fn should_trigger_on_failure_handlers_during_updates() {
     }
 }
 
-test_matrix!(
-    should_trigger_on_failure_handlers_during_updates,
+async_test_matrix!(
     "[lax]: on_failure triggered with value: fail_validation",
-    async { should_trigger_on_failure_handlers_during_updates().await }
+    should_trigger_on_failure_handlers_during_updates
 );
 
 async fn should_trigger_on_failure_handlers_during_updates_with_unchanged_values() {
@@ -524,10 +514,9 @@ async fn should_trigger_on_failure_handlers_during_updates_with_unchanged_values
     }
 }
 
-test_matrix!(
-    should_trigger_on_failure_handlers_during_updates_with_unchanged_values,
+async_test_matrix!(
     "[lax]: on_failure triggered with value: some_value",
-    async { should_trigger_on_failure_handlers_during_updates_with_unchanged_values().await }
+    should_trigger_on_failure_handlers_during_updates_with_unchanged_values
 );
 
 async fn should_trigger_on_failure_handlers_during_updates_with_ignored_value() {
@@ -618,8 +607,7 @@ async fn should_trigger_on_failure_handlers_during_updates_with_ignored_value() 
     }
 }
 
-test_matrix!(
-    should_trigger_on_failure_handlers_during_updates_with_ignored_value,
+async_test_matrix!(
     "[lax]: on_failure triggered with value: update to be ignored",
-    async { should_trigger_on_failure_handlers_during_updates_with_ignored_value().await }
+    should_trigger_on_failure_handlers_during_updates_with_ignored_value
 );
