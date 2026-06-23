@@ -1,9 +1,9 @@
-pub mod base;
+pub(crate) mod base;
 mod constants;
 mod dependents;
 mod lax;
 mod required;
-pub mod types;
+pub(crate) mod types;
 mod virtuals;
 
 use std::marker::PhantomData;

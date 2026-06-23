@@ -2,13 +2,13 @@ mod model;
 mod schema;
 pub mod types;
 
+pub use futures::FutureExt;
+
 pub use ivo_derive::IvoStruct;
 
 #[cfg(feature = "validators")]
 #[doc(inline)]
 pub use ivo_validators::*;
-
-pub use futures::FutureExt;
 
 pub use schema::{
     error_tool::{
