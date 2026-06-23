@@ -34,24 +34,18 @@ pub struct DefaultErrorTool {
     payload: DefaultErrorPayload,
 }
 
-impl DefaultErrorTool {
-    pub fn new() -> Self {
-        Self {
-            payload: HashMap::new(),
-        }
-    }
-}
-
 impl IvoErrorTool for DefaultErrorTool {
     type FieldMetadata = DefaultFieldErrorMetadata;
     type ErrorPayload = DefaultErrorPayload;
 
+    #[inline]
     fn new() -> Self {
         Self {
             payload: HashMap::new(),
         }
     }
 
+    #[inline]
     fn add(&mut self, field_name: &str, value: FieldError) -> &mut Self {
         self.payload
             .entry(field_name.to_string())
@@ -61,10 +55,12 @@ impl IvoErrorTool for DefaultErrorTool {
         self
     }
 
+    #[inline(always)]
     fn has_errors(&self) -> bool {
         !self.payload.is_empty()
     }
 
+    #[inline(always)]
     fn payload(self) -> DefaultErrorPayload {
         self.payload
     }

@@ -50,7 +50,6 @@ pub fn generate_ivo_struct_impls<T: ToTokens>(
     });
 
     quote! {
-
         impl From<#struct_name> for #partial_struct_name {
             fn from(value: #struct_name) -> #partial_struct_name {
                 #partial_struct_name {
@@ -66,6 +65,8 @@ pub fn generate_ivo_struct_impls<T: ToTokens>(
         }
 
         impl #crate_root::types::IvoStructMethods for #struct_name {
+
+            #[inline(always)]
             fn ivo_internal_dangerously_get_values_from_partial(values: Self::Partial) -> Self {
                 Self {
                     #( #from_partial )*
@@ -85,10 +86,12 @@ pub fn generate_ivo_struct_impls<T: ToTokens>(
                 #( #set_updated_values )*
             }
 
+            #[inline]
             fn ivo_internal_field_names() -> std::collections::HashSet<String> {
                 #field_names.into_iter().map(|f| String::from(f)).collect()
             }
 
+            #[inline]
             fn ivo_internal_name() -> String {
                 String::from(stringify!(#struct_name))
             }

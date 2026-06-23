@@ -29,6 +29,7 @@ impl<
         ErrorTool: IvoErrorTool,
     > FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>
 {
+    #[inline]
     pub fn new(schema: &'a Schema<I, O, CtxOptions, Timestamp, ErrorTool>) -> Self {
         Self {
             schema,
@@ -39,9 +40,9 @@ impl<
         }
     }
 
+    #[inline]
     pub fn add(&mut self, field_info: FieldInfo) {
-        if !self.config_names.contains(&field_info.config_name) {
-            self.config_names.insert(field_info.config_name.clone());
+        if self.config_names.insert(field_info.config_name.clone()) {
             self.fields.push(field_info);
         }
     }
@@ -78,10 +79,12 @@ impl<
         }
     }
 
+    #[inline(always)]
     pub fn contains(&self, field_name: &String) -> bool {
         self.config_names.contains(field_name)
     }
 
+    #[inline(always)]
     fn _find(&self, field_name: &String) -> Option<FieldInfo> {
         self.fields.iter().find(|f| f.name == *field_name).cloned()
     }
@@ -97,7 +100,7 @@ impl<
         })
     }
 
-    pub fn get_field_info(
+    fn get_field_info(
         field_name: &String,
         schema: &Schema<I, O, CtxOptions, Timestamp, ErrorTool>,
         schema_input_fields: &HashSet<String>,
@@ -112,7 +115,7 @@ impl<
                     config_name: field_name.clone(),
                     is_input: schema_input_fields.contains(field_name),
                     is_output: schema_output_fields.contains(field_name),
-                    name: alias.clone().unwrap_or(field_name.clone()),
+                    name: alias.clone().unwrap_or_else(|| field_name.clone()),
                 });
             }
 

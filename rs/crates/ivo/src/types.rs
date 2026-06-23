@@ -117,7 +117,7 @@ pub fn parse_or_panic<T: IvoFieldValue>(
     let actual_type_path = erased_value.runtime_type_name();
     let field_name = field_name
         .map(|n| format!("\"{n}\""))
-        .unwrap_or("value".into());
+        .unwrap_or_else(|| "value".into());
 
     value.expect(&format!(
         "\nFailed to parse {field_name}. Expected: \"{expected_type_path}\", but got \"{actual_type_path}\"\n"
@@ -141,6 +141,7 @@ pub enum IvoContext<I: IvoSchemaStruct, O: IvoSchemaStruct> {
 }
 
 impl<I: IvoSchemaStruct, O: IvoSchemaStruct> IvoContext<I, O> {
+    #[inline]
     pub(crate) fn new_create_ctx(
         input: I::Partial,
         input_values: I::Partial,
@@ -153,6 +154,7 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct> IvoContext<I, O> {
         }
     }
 
+    #[inline]
     pub(crate) fn new_update_ctx(
         changes: O::Partial,
         input: I::Partial,
@@ -169,6 +171,7 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct> IvoContext<I, O> {
         }
     }
 
+    #[inline(always)]
     pub(crate) fn full_values(&self) -> Option<O> {
         match &self {
             IvoContext::Update { values, .. } => Some(values.clone()),
@@ -176,6 +179,7 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct> IvoContext<I, O> {
         }
     }
 
+    #[inline(always)]
     pub(crate) fn set_changes(&mut self, changes: O::Partial) -> &mut Self {
         match self {
             IvoContext::Create { values, .. } => {
@@ -192,6 +196,7 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct> IvoContext<I, O> {
         self
     }
 
+    #[inline(always)]
     pub(crate) fn set_full_values(&mut self, values: O) -> &mut Self {
         match self {
             IvoContext::Update {
@@ -206,6 +211,7 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct> IvoContext<I, O> {
         self
     }
 
+    #[inline(always)]
     pub(crate) fn set_input(&mut self, input: I::Partial) -> &mut Self {
         match self {
             IvoContext::Create {
@@ -224,6 +230,7 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct> IvoContext<I, O> {
     }
 
     /// part of the final output of the current process
+    #[inline(always)]
     pub fn changes(&self) -> O::Partial {
         match &self {
             IvoContext::Create { values, .. } => values,
@@ -232,11 +239,13 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct> IvoContext<I, O> {
         .clone()
     }
 
+    #[inline(always)]
     pub fn is_update(&self) -> bool {
         matches!(self, IvoContext::Update { .. })
     }
 
     /// contains validated and up to date version of input_values
+    #[inline(always)]
     pub fn input(&self) -> I::Partial {
         match &self {
             IvoContext::Create { input, .. } => input,
@@ -246,6 +255,7 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct> IvoContext<I, O> {
     }
 
     /// contains values provided at the start of the current process
+    #[inline(always)]
     pub fn input_values(&self) -> I::Partial {
         match &self {
             IvoContext::Create { input_values, .. } => input_values,
@@ -255,6 +265,7 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct> IvoContext<I, O> {
     }
 
     /// subset of output values related to current process
+    #[inline(always)]
     pub fn values(&self) -> O::Partial {
         match &self {
             IvoContext::Create { values, .. } => values.clone(),
@@ -262,6 +273,7 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct> IvoContext<I, O> {
         }
     }
 
+    #[inline(always)]
     pub fn previous_values(&self) -> Option<O> {
         match &self {
             IvoContext::Update {
