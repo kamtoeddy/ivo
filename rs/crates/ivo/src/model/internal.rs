@@ -39,6 +39,13 @@ impl<
         }
     }
 
+    pub fn add(&mut self, field_info: FieldInfo) {
+        if !self.config_names.contains(&field_info.config_name) {
+            self.config_names.insert(field_info.config_name.clone());
+            self.fields.push(field_info);
+        }
+    }
+
     pub fn set_fields(&mut self, fields: Vec<FieldInfo>) {
         let mut config_names = HashSet::new();
 

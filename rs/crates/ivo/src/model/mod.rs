@@ -208,27 +208,28 @@ impl<
         }
 
         // Resolve values of dependent fields
-        let mut fields_to_resolve = fields_provided.fields.clone();
+        let mut dependent_fields_col = FieldInfoCollection::from_fields(
+            &self.schema,
+            fields_provided.fields.clone(),
+            &fields_provided.schema_input_fields,
+            &fields_provided.schema_output_fields,
+        );
 
         loop {
-            let col = FieldInfoCollection::from_fields(
-                &self.schema,
-                fields_to_resolve,
-                &fields_provided.schema_input_fields,
-                &fields_provided.schema_output_fields,
-            );
-
             let (validated_outputs, dependent_fields_resolved) = self
-                .resolve_dependent_values(&col, Arc::clone(&ctx), Arc::clone(&shared_rw_options))
+                .resolve_dependent_values(
+                    &dependent_fields_col,
+                    Arc::clone(&ctx),
+                    Arc::clone(&shared_rw_options),
+                )
                 .await;
 
             if dependent_fields_resolved.is_empty() {
                 break;
             }
 
-            fields_to_resolve = dependent_fields_resolved;
-
             Arc::make_mut(&mut ctx).set_changes(validated_outputs);
+            dependent_fields_col.set_fields(dependent_fields_resolved);
         }
 
         // Generate and set timestamps
@@ -416,7 +417,7 @@ impl<
 
         let erased_updates = ctx.values();
 
-        let mut fields_updated_vec = fields_provided
+        let fields_updated_vec = fields_provided
             .fields
             .iter()
             .filter_map(|f| {
@@ -435,19 +436,19 @@ impl<
             })
             .collect();
 
-        let mut fields_updated;
+        let mut fields_updated = FieldInfoCollection::from_fields(
+            &self.schema,
+            fields_updated_vec,
+            &fields_provided.schema_input_fields,
+            &fields_provided.schema_output_fields,
+        );
+
+        let mut dependent_fields_col = fields_updated.clone();
 
         loop {
-            fields_updated = FieldInfoCollection::from_fields(
-                &self.schema,
-                fields_updated_vec,
-                &fields_provided.schema_input_fields,
-                &fields_provided.schema_output_fields,
-            );
-
             let (validated_outputs, dependent_fields_resolved) = self
                 .resolve_dependent_values(
-                    &fields_updated,
+                    &dependent_fields_col,
                     Arc::clone(&ctx),
                     Arc::clone(&shared_rw_options),
                 )
@@ -457,8 +458,11 @@ impl<
                 break;
             }
 
-            fields_updated_vec = dependent_fields_resolved;
+            for field_info in dependent_fields_resolved.iter() {
+                fields_updated.add(field_info.clone());
+            }
 
+            dependent_fields_col.set_fields(dependent_fields_resolved);
             Arc::make_mut(&mut ctx)
                 .set_changes(validated_outputs.clone())
                 .set_full_values(data.ivo_internal_clone_with(validated_outputs));
