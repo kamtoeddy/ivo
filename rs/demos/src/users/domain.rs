@@ -10,13 +10,14 @@ use ivo::{
     IvoField, IvoStruct, IvoValues, Model, Schema, SharedCtxOptions, SharedData, SharedIvoContext,
     SharedRwCtxOptions, validate_email,
 };
+use serde::Serialize;
 
 use crate::utils::{
     slugify::{SlugifiedString, slugify},
     styled_text::Stylable,
 };
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Serialize)]
 pub enum UserRole {
     Admin,
     User,
@@ -26,6 +27,7 @@ pub enum UserRole {
 type Timestamp = String;
 
 #[derive(Debug, Clone, PartialEq, IvoStruct)]
+#[ivo(derive(Serialize))]
 pub struct User {
     pub created_at: Timestamp,
     pub id: i32,
@@ -39,6 +41,7 @@ pub struct User {
 }
 
 #[derive(Clone, Debug, PartialEq, IvoStruct)]
+#[ivo(derive(Serialize))]
 pub struct UserInput {
     pub email: String,
     pub username: String,
@@ -66,6 +69,11 @@ impl<'a> UserCtxOptions {
         username: &String,
     ) -> impl Future<Output = Option<User>> + use<'a> {
         ready(USERS_BY_USERNAME.get(username).cloned())
+    }
+
+    fn _to_json(&self) {
+        let _ = serde_json::to_string(&PartialUser::default());
+        let _ = serde_json::to_string(&PartialUserInput::default());
     }
 
     fn find_user_by_slug_id(

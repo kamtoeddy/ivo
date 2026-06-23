@@ -1,10 +1,11 @@
 use std::{hash::Hash, sync::LazyLock};
 
 use regex::Regex;
+use serde::Serialize;
 use unicode_normalization::UnicodeNormalization;
 
 // 1. Define the Type-Safe Newtype (equivalent to Nominal in TS)
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct SlugifiedString(String);
 
 // impl SlugifiedString {

@@ -8,7 +8,7 @@ mod partial_struct;
 
 use crate::{ivo_struct::generate_ivo_struct_impls, partial_struct::generate_partial_struct};
 
-#[proc_macro_derive(IvoStruct)]
+#[proc_macro_derive(IvoStruct, attributes(ivo))]
 pub fn derive_ivo_struct(input: TokenStream) -> TokenStream {
     // Parse the input tokens into a syntax tree
     let input = parse_macro_input!(input as DeriveInput);
@@ -48,8 +48,13 @@ pub fn derive_ivo_struct(input: TokenStream) -> TokenStream {
         &field_names,
     );
 
-    let partial_struct_tokens =
-        generate_partial_struct(&crate_root, &partial_struct_name, &vis, &fields);
+    let partial_struct_tokens = generate_partial_struct(
+        &crate_root,
+        &partial_struct_name,
+        &vis,
+        &fields,
+        &input.attrs,
+    );
 
     TokenStream::from(quote! {
         #partial_struct_tokens

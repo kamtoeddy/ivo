@@ -1,12 +1,15 @@
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
-use syn::{punctuated::Punctuated, token::Comma, Field, Ident, Visibility};
+use syn::{
+    punctuated::Punctuated, token::Comma, Attribute, Field, Ident, Meta, Visibility,
+};
 
 pub fn generate_partial_struct<T: ToTokens>(
     crate_root: &T,
     partial_struct_name: &Ident,
     vis: &Visibility,
     fields: &Punctuated<Field, Comma>,
+    attrs: &Vec<Attribute>,
 ) -> TokenStream {
     // Transform fields into Option<T>
     let partial_fields = fields.iter().map(|field| {
@@ -54,7 +57,7 @@ pub fn generate_partial_struct<T: ToTokens>(
 
         quote! {
             #field_name_str => {
-                self.#field_name = std::option::Option::<#field_type>::None;
+                self.#field_name = None::<#field_type>;
             }
         }
     });
@@ -91,7 +94,10 @@ pub fn generate_partial_struct<T: ToTokens>(
         }
     });
 
+    let provided_derive_attrs = extract_attached_derives(attrs);
+
     quote! {
+        #provided_derive_attrs
         #[derive(Clone, Debug, Default, PartialEq)]
         #vis struct #partial_struct_name {
             #( #partial_fields )*
@@ -159,5 +165,60 @@ pub fn generate_partial_struct<T: ToTokens>(
                 tuples
             }
         }
+    }
+}
+
+fn extract_attached_derives(attrs: &Vec<Attribute>) -> TokenStream {
+    let mut has_derive_attr = false;
+    let mut traits_to_derive = vec![];
+
+    // 1. Loop through all attributes attached to the struct
+    for attr in attrs.iter() {
+        // Look for `#[ivo(...)]`
+        if attr.path().is_ident("ivo") {
+            let meta_list = match &attr.meta {
+                Meta::List(list) => list,
+                _ => panic!("Expected \"#[ivo(...)]\" format"),
+            };
+
+            let _ = meta_list.parse_nested_meta(|meta| {
+                // #[ivo(derive(A, B, C))]
+                if meta.path.is_ident("derive") {
+                    has_derive_attr = true;
+
+                    let _ = meta.parse_nested_meta(|nested| {
+                        if let Some(ident) = nested.path.get_ident().cloned() {
+                            traits_to_derive.push(ident);
+                        }
+
+                        Ok(())
+                    });
+
+                    return Ok(());
+                }
+
+                Ok(())
+
+                // panic!(
+                //     "\"{}\" is not a valid attribute",
+                //     meta.path
+                //         .get_ident()
+                //         .as_ref()
+                //         .map(|i| format!("{i}"))
+                //         .unwrap_or_else(|| String::from(""))
+                // )
+            });
+
+            break;
+        }
+    }
+
+    // 2. Wrap them back up into a standard macro block if found
+    if !traits_to_derive.is_empty() {
+        quote! { #[derive(#( #traits_to_derive ),*)] }
+    } else if has_derive_attr {
+        panic!("Expected \"#[ivo(derive(...))]\" to contain at least 1 valid identifier")
+    } else {
+        quote! {}
     }
 }
