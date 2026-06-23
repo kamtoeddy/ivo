@@ -2,13 +2,13 @@ use std::{collections::HashSet, fmt::Debug};
 
 use crate::{
     schema::fields::base::{FieldType, InternalFieldConfig},
-    IvoErrorTool, IvoSchemaStruct, Schema,
+    IvoErrorTool, IvoStruct, Schema,
 };
 
 pub(super) struct FieldInfoCollection<
     'a,
-    I: IvoSchemaStruct,
-    O: IvoSchemaStruct,
+    I: IvoStruct,
+    O: IvoStruct,
     CtxOptions,
     Timestamp: Clone + Debug + Send + Sync + 'static,
     ErrorTool: IvoErrorTool,
@@ -22,8 +22,8 @@ pub(super) struct FieldInfoCollection<
 
 impl<
         'a,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         Timestamp: Clone + Debug + Send + Sync + 'static,
         ErrorTool: IvoErrorTool,
@@ -148,8 +148,8 @@ impl<
 
 impl<
         'a,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
         Timestamp: Clone + Debug + Send + Sync + 'static,

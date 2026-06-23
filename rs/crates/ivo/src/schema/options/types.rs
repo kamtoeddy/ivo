@@ -8,8 +8,7 @@ use crate::{
         types::{IvoFieldValue, SuccessHandler},
     },
     types::{erase_value, ErasedValue},
-    DefaultFieldErrorMetadata, IvoSchemaStruct, SharedIvoContext, SharedRwCtxOptions,
-    ValidatorError,
+    DefaultFieldErrorMetadata, IvoStruct, SharedIvoContext, SharedRwCtxOptions, ValidatorError,
 };
 
 pub struct IvoValues {
@@ -30,37 +29,26 @@ impl IvoValues {
     }
 }
 
-pub struct OnSuccessConfig<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> {
+pub struct OnSuccessConfig<I: IvoStruct, O: IvoStruct, CtxOptions> {
     pub fields: Vec<&'static str>,
     pub handlers: Vec<SuccessHandler<I, O, CtxOptions>>,
 }
 
-pub struct PostValidationConfig<
-    I: IvoSchemaStruct,
-    O: IvoSchemaStruct,
-    CtxOptions,
-    ErrorTool: IvoErrorTool,
-> {
+pub struct PostValidationConfig<I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool> {
     pub fields: Vec<&'static str>,
     pub pre_validator: Option<PostValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
     pub validators: Vec<PostValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
 }
 
-pub trait IntoPostValidator<
-    I: IvoSchemaStruct,
-    O: IvoSchemaStruct,
-    CtxOptions,
-    ErrorTool: IvoErrorTool,
->
-{
+pub trait IntoPostValidator<I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool> {
     fn into_validator(self) -> PostValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>;
 }
 
 impl<F, Fut, I, O, CtxOptions, ErrorTool: IvoErrorTool>
     IntoPostValidator<I, O, CtxOptions, ErrorTool> for F
 where
-    I: IvoSchemaStruct,
-    O: IvoSchemaStruct,
+    I: IvoStruct,
+    O: IvoStruct,
     F: Fn(SharedIvoContext<I, O>, SharedRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = PostValidatorResponse<ErrorTool::FieldMetadata>> + Send + Sync + 'static,
 {

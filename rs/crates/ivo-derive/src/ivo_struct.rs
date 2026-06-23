@@ -58,9 +58,9 @@ pub fn generate_ivo_struct_impls<T: ToTokens>(
             }
         }
 
-        impl #crate_root::types::IvoSchemaStruct for #struct_name { }
+        impl #crate_root::IvoStruct for #struct_name { }
 
-        impl #crate_root::types::WithIvoPartialStruct for #struct_name {
+        impl #crate_root::types::IvoWithPartialStruct for #struct_name {
             type Partial = #partial_struct_name;
         }
 

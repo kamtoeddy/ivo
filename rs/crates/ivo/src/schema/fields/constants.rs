@@ -13,13 +13,13 @@ use crate::{
         types::{DeleteHandler, IvoFieldValue, No, SuccessHandler, Yes},
     },
     types::{erase_value, ErasedValue},
-    IvoSchemaStruct,
+    IvoStruct,
 };
 
 pub struct ConstantFieldBuilder<
     T: IvoFieldValue,
-    I: IvoSchemaStruct,
-    O: IvoSchemaStruct,
+    I: IvoStruct,
+    O: IvoStruct,
     CtxOptions,
     ErrorTool: IvoErrorTool,
     HasDefault = No,
@@ -41,8 +41,8 @@ impl<
         HasDefault,
         HasDelete,
         HasSuccess,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         T: IvoFieldValue,
         CtxOptions,
         ErrorTool: IvoErrorTool,
@@ -66,8 +66,8 @@ impl<
         HasDefault,
         HasDelete,
         HasSuccess,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         T: IvoFieldValue,
         CtxOptions,
         ErrorTool: IvoErrorTool,
@@ -82,8 +82,8 @@ impl<
 impl<
         HasDelete,
         HasSuccess,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         T: IvoFieldValue,
         CtxOptions,
         ErrorTool: IvoErrorTool,
@@ -101,13 +101,8 @@ impl<
     }
 }
 
-impl<
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
-        T: IvoFieldValue,
-        CtxOptions,
-        ErrorTool: IvoErrorTool,
-    > ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool>
+impl<I: IvoStruct, O: IvoStruct, T: IvoFieldValue, CtxOptions, ErrorTool: IvoErrorTool>
+    ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool>
 {
     pub fn value(self, value: T) -> ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes> {
         ConstantFieldBuilder {
@@ -138,8 +133,8 @@ impl<
 impl<
         HasDelete,
         HasSuccess,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         T: IvoFieldValue,
         CtxOptions,
         ErrorTool: IvoErrorTool,
@@ -176,8 +171,8 @@ impl<
 impl<
         HasDelete,
         HasSuccess,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         T: IvoFieldValue,
         CtxOptions,
         ErrorTool: IvoErrorTool,

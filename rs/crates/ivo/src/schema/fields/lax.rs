@@ -18,13 +18,13 @@ use crate::{
         },
     },
     types::{erase_value, ErasedValue},
-    IvoSchemaStruct,
+    IvoStruct,
 };
 
 pub struct LaxFieldBuilder<
     T: IvoFieldValue,
-    I: IvoSchemaStruct,
-    O: IvoSchemaStruct,
+    I: IvoStruct,
+    O: IvoStruct,
     CtxOptions,
     ErrorTool: IvoErrorTool,
     HasDefault = No,
@@ -74,8 +74,8 @@ impl<
         HasFailure,
         HasSuccess,
         T: IvoFieldValue,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     >
@@ -136,8 +136,8 @@ impl<
         HasFailure,
         HasSuccess,
         T: IvoFieldValue,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     > Default
@@ -176,8 +176,8 @@ impl<
         HasFailure,
         HasSuccess,
         T: IvoFieldValue,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     > BuildableFieldConfig<I, O, CtxOptions, ErrorTool>
@@ -217,13 +217,8 @@ impl<
     }
 }
 
-impl<
-        T: IvoFieldValue,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
-        CtxOptions,
-        ErrorTool: IvoErrorTool,
-    > LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool>
+impl<T: IvoFieldValue, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool>
+    LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool>
 {
     pub fn default(self, value: T) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes> {
         LaxFieldBuilder {
@@ -251,8 +246,8 @@ impl<
 impl<
         HasDefault: IsProvided,
         T: IvoFieldValue,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     > LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasDefault>
@@ -275,8 +270,8 @@ impl<
 impl<
         HasDefault: IsProvided,
         T: IvoFieldValue,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     > LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasDefault, Yes>
@@ -301,8 +296,8 @@ impl<
         HasDefault: IsProvided,
         HasRevalidator,
         T: IvoFieldValue,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     > LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasDefault, Yes, HasRevalidator>
@@ -330,8 +325,8 @@ impl<
         HasRevalidator,
         HasRequired,
         T: IvoFieldValue,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     >
@@ -382,8 +377,8 @@ impl<
         HasRevalidator,
         HasRequired,
         T: IvoFieldValue,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     >
@@ -490,8 +485,8 @@ impl<
         HasRevalidator,
         HasRequired,
         T: IvoFieldValue,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     >
@@ -542,8 +537,8 @@ impl<
         HasRevalidator,
         HasRequired,
         T: IvoFieldValue,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     >
@@ -599,8 +594,8 @@ impl<
         HasRevalidator,
         HasRequired,
         T: IvoFieldValue,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     >
@@ -657,8 +652,8 @@ impl<
         HasRevalidator,
         HasRequired,
         T: IvoFieldValue,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     >
@@ -749,8 +744,8 @@ impl<
         HasFailure,
         HasSuccess,
         T: IvoFieldValue,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     >
@@ -834,8 +829,8 @@ impl<
         HasFailure,
         HasSuccess,
         T: IvoFieldValue,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     >
@@ -919,8 +914,8 @@ impl<
         HasFailure,
         HasSuccess,
         T: IvoFieldValue,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     >

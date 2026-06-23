@@ -5,12 +5,12 @@ use crate::{
         fields::types::IntoSuccessHandler, options::types::OnSuccessConfig, types::SuccessHandler,
         No, Yes,
     },
-    IvoSchemaStruct,
+    IvoStruct,
 };
 
 pub struct OnSuccessOptionBuilder<
-    I: IvoSchemaStruct,
-    O: IvoSchemaStruct,
+    I: IvoStruct,
+    O: IvoStruct,
     CtxOptions,
     IvoFieldNames = No,
     HasHandlers = No,
@@ -22,7 +22,7 @@ pub struct OnSuccessOptionBuilder<
     handlers: Vec<SuccessHandler<I, O, CtxOptions>>,
 }
 
-impl<IvoFieldNames, HasHandlers, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> Default
+impl<IvoFieldNames, HasHandlers, I: IvoStruct, O: IvoStruct, CtxOptions> Default
     for OnSuccessOptionBuilder<I, O, CtxOptions, IvoFieldNames, HasHandlers>
 {
     fn default() -> Self {
@@ -35,11 +35,11 @@ impl<IvoFieldNames, HasHandlers, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOpti
     }
 }
 
-pub trait BuildableOnSuccess<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> {
+pub trait BuildableOnSuccess<I: IvoStruct, O: IvoStruct, CtxOptions> {
     fn build(self) -> OnSuccessConfig<I, O, CtxOptions>;
 }
 
-impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> BuildableOnSuccess<I, O, CtxOptions>
+impl<I: IvoStruct, O: IvoStruct, CtxOptions> BuildableOnSuccess<I, O, CtxOptions>
     for OnSuccessOptionBuilder<I, O, CtxOptions, Yes, Yes>
 {
     fn build(self) -> OnSuccessConfig<I, O, CtxOptions> {
@@ -50,7 +50,7 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> BuildableOnSuccess<I, O
     }
 }
 
-impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> OnSuccessOptionBuilder<I, O, CtxOptions> {
+impl<I: IvoStruct, O: IvoStruct, CtxOptions> OnSuccessOptionBuilder<I, O, CtxOptions> {
     pub fn fields<const N: usize>(
         fields: [&'static str; N],
     ) -> OnSuccessOptionBuilder<I, O, CtxOptions, Yes> {
@@ -61,7 +61,7 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> OnSuccessOptionBuilder<
     }
 }
 
-impl<HasHandlers, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions>
+impl<HasHandlers, I: IvoStruct, O: IvoStruct, CtxOptions>
     OnSuccessOptionBuilder<I, O, CtxOptions, Yes, HasHandlers>
 {
     pub fn handle<H>(self, handler: H) -> OnSuccessOptionBuilder<I, O, CtxOptions, Yes, Yes>

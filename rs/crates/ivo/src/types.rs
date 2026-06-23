@@ -5,16 +5,16 @@ use std::{any::Any, collections::HashSet, fmt::Debug, sync::Arc};
 
 use crate::schema::{error_tool::DefaultFieldErrorMetadata, IvoFieldValue};
 
-pub trait IvoSchemaStruct:
-    Send + Sync + Sized + 'static + WithIvoPartialStruct + IvoStructMethods + Into<Self::Partial>
+pub trait IvoStruct:
+    Send + Sync + Sized + 'static + IvoWithPartialStruct + IvoStructMethods + Into<Self::Partial>
 {
 }
 
-pub trait WithIvoPartialStruct {
-    type Partial: PartialEq + Debug + Default + Send + Sync + Clone + IvoStructPartialMethods;
+pub trait IvoWithPartialStruct {
+    type Partial: PartialEq + Debug + Default + Send + Sync + Clone + IvoPartialStructMethods;
 }
 
-pub trait IvoStructMethods: WithIvoPartialStruct + Clone {
+pub trait IvoStructMethods: IvoWithPartialStruct + Clone {
     fn ivo_internal_dangerously_get_values_from_partial(partial_values: Self::Partial) -> Self;
 
     fn ivo_internal_get_updates_from_partial(
@@ -41,7 +41,7 @@ pub trait IvoStructMethods: WithIvoPartialStruct + Clone {
     fn ivo_internal_name() -> String;
 }
 
-pub trait IvoStructPartialMethods: Clone {
+pub trait IvoPartialStructMethods: Clone {
     fn ivo_internal_fields_provided(&self) -> Vec<String>;
 
     fn ivo_internal_get_erased_value(&self, field_name: &String) -> ErasedValue;
@@ -58,11 +58,11 @@ pub trait IvoStructPartialMethods: Clone {
 pub type SharedData<T> = Arc<T>;
 pub type SharedCtxOptions<CtxOptions> = SharedData<CtxOptions>;
 pub type SharedRwCtxOptions<CtxOptions> = SharedData<RwLock<CtxOptions>>;
-pub type SharedIvoContext<I: IvoSchemaStruct, O: IvoSchemaStruct> = SharedData<IvoContext<I, O>>;
-pub type SharedIvoMiniContext<I: IvoSchemaStruct> = SharedData<IvoMiniContext<I>>;
-pub type IvoMiniContext<I: IvoSchemaStruct> = I::Partial;
+pub type SharedIvoContext<I: IvoStruct, O: IvoStruct> = SharedData<IvoContext<I, O>>;
+pub type SharedIvoMiniContext<I: IvoStruct> = SharedData<IvoMiniContext<I>>;
+pub type IvoMiniContext<I: IvoStruct> = I::Partial;
 
-pub type Partial<T> = <T as WithIvoPartialStruct>::Partial;
+pub type Partial<T> = <T as IvoWithPartialStruct>::Partial;
 
 pub trait CloneableAny: Any + Send + Sync {
     fn clone_box(&self) -> Box<dyn CloneableAny>;
@@ -125,7 +125,7 @@ pub fn parse_or_panic<T: IvoFieldValue>(
 }
 
 #[derive(Clone, Copy)]
-pub enum IvoContext<I: IvoSchemaStruct, O: IvoSchemaStruct> {
+pub enum IvoContext<I: IvoStruct, O: IvoStruct> {
     Create {
         input: I::Partial,
         input_values: I::Partial,
@@ -140,7 +140,7 @@ pub enum IvoContext<I: IvoSchemaStruct, O: IvoSchemaStruct> {
     },
 }
 
-impl<I: IvoSchemaStruct, O: IvoSchemaStruct> IvoContext<I, O> {
+impl<I: IvoStruct, O: IvoStruct> IvoContext<I, O> {
     #[inline]
     pub(crate) fn new_create_ctx(
         input: I::Partial,

@@ -22,13 +22,13 @@ use crate::{
     IvoContext, SharedCtxOptions, SharedIvoContext, SharedIvoMiniContext, SharedRwCtxOptions,
 };
 
-use crate::types::{erase_value, IvoSchemaStruct, IvoStructPartialMethods, RwLock};
+use crate::types::{erase_value, IvoPartialStructMethods, IvoStruct, RwLock};
 
 type AsyncHandlerTrigger<'a> = Box<dyn Fn() -> BoxFuture<'a, ()> + Send + Sync + 'a>;
 
 impl<
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions: Sync + Send,
         Timestamp: Clone + Debug + Send + Sync + 'static,
         ErrorTool: IvoErrorTool,
@@ -41,8 +41,8 @@ impl<
 
 pub struct Model<
     'schema,
-    I: IvoSchemaStruct,
-    O: IvoSchemaStruct = I,
+    I: IvoStruct,
+    O: IvoStruct = I,
     CtxOptions: Sync + Send = HashMap<String, ()>,
     Timestamp: Clone + Debug + Send + Sync + 'static = (),
     ErrorTool: IvoErrorTool = DefaultErrorTool,
@@ -52,8 +52,8 @@ pub struct Model<
 
 impl<
         'schema,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions: Sync + Send,
         Timestamp: Clone + Debug + Send + Sync + 'static,
         ErrorTool: IvoErrorTool,

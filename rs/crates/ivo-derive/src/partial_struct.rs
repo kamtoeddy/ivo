@@ -97,7 +97,7 @@ pub fn generate_partial_struct<T: ToTokens>(
             #( #partial_fields )*
         }
 
-        impl #crate_root::types::IvoStructPartialMethods for #partial_struct_name {
+        impl #crate_root::types::IvoPartialStructMethods for #partial_struct_name {
             #[inline]
             fn ivo_internal_fields_provided(&self) -> Vec<String> {
                 let mut fields_provided = vec![];

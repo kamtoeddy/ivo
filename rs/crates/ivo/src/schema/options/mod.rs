@@ -13,18 +13,12 @@ use crate::{
         },
         Yes,
     },
-    IvoErrorTool, IvoSchemaStruct,
+    IvoErrorTool, IvoStruct,
 };
 
 pub use types::{IvoValues, PostValidatorResponse};
 
-pub trait BuildableSchemaOptions<
-    I: IvoSchemaStruct,
-    O: IvoSchemaStruct,
-    CtxOptions,
-    ErrorTool: IvoErrorTool,
->
-{
+pub trait BuildableSchemaOptions<I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool> {
     fn build(self) -> SchemaOptions<I, O, CtxOptions, ErrorTool>;
 }
 
@@ -34,8 +28,8 @@ impl<
         HasPostValidate,
         HasDelete,
         HasSuccess,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     > BuildableSchemaOptions<I, O, CtxOptions, ErrorTool>
@@ -68,8 +62,8 @@ impl<
         HasPostValidate,
         HasDelete,
         HasSuccess,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     >

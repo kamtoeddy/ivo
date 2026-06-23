@@ -17,13 +17,13 @@ use crate::{
         },
     },
     types::{erase_value, ErasedValue},
-    IvoSchemaStruct,
+    IvoStruct,
 };
 
 pub struct DependentFieldBuilder<
     T: IvoFieldValue,
-    I: IvoSchemaStruct,
-    O: IvoSchemaStruct,
+    I: IvoStruct,
+    O: IvoStruct,
     CtxOptions,
     ErrorTool: IvoErrorTool = DefaultErrorTool,
     HasDefault = No,
@@ -58,8 +58,8 @@ impl<
         HasDelete,
         HasSuccess,
         T: IvoFieldValue,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     >
@@ -105,8 +105,8 @@ impl<
         HasDelete,
         HasSuccess,
         T: IvoFieldValue,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     > Default
@@ -135,8 +135,8 @@ impl<
         HasDelete,
         HasSuccess,
         T: IvoFieldValue,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     > BuildableFieldConfig<I, O, CtxOptions, ErrorTool>
@@ -168,13 +168,8 @@ impl<
     }
 }
 
-impl<
-        T: IvoFieldValue,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
-        CtxOptions,
-        ErrorTool: IvoErrorTool,
-    > DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool>
+impl<T: IvoFieldValue, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool>
+    DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool>
 {
     pub fn default(self, value: T) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes> {
         DependentFieldBuilder {
@@ -202,8 +197,8 @@ impl<
 impl<
         HasDefault: IsProvided,
         T: IvoFieldValue,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     > DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasDefault>
@@ -223,8 +218,8 @@ impl<
 impl<
         HasDefault: IsProvided,
         T: IvoFieldValue,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     > DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasDefault, Yes>
@@ -250,8 +245,8 @@ impl<
         HasDelete,
         HasSuccess,
         T: IvoFieldValue,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     >
@@ -305,8 +300,8 @@ impl<
         HasDelete,
         HasSuccess,
         T: IvoFieldValue,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     >
@@ -373,8 +368,8 @@ impl<
         HasDelete,
         HasSuccess,
         T: IvoFieldValue,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     >

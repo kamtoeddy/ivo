@@ -17,7 +17,7 @@ use crate::schema::fields::base::{
 use crate::schema::fields::TimestampConfig;
 use crate::schema::options::base::{SchemaOptions, SchemaOptionsBuilder};
 use crate::schema::options::BuildableSchemaOptions;
-use crate::types::IvoSchemaStruct;
+use crate::types::IvoStruct;
 
 type InternalFieldConfigs<I, O, CtxOptions, ErrorTool> =
     HashMap<String, InternalFieldConfig<I, O, CtxOptions, ErrorTool>>;
@@ -27,8 +27,8 @@ const STYLE_RESET: &str = "\x1b[0m";
 const FONT_BOLD: &str = "\x1b[1m";
 
 pub struct Schema<
-    I: IvoSchemaStruct,
-    O: IvoSchemaStruct = I,
+    I: IvoStruct,
+    O: IvoStruct = I,
     CtxOptions = Option<()>,
     Timestamp: Clone + Debug + Send + Sync + 'static = (),
     ErrorTool: IvoErrorTool = DefaultErrorTool,
@@ -40,8 +40,8 @@ pub struct Schema<
 
 impl<
         'a,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         Timestamp: Clone + Debug + Send + Sync + 'static,
         ErrorTool: IvoErrorTool,
@@ -532,8 +532,8 @@ impl<
 }
 
 pub struct FieldBuilder<
-    I: IvoSchemaStruct,
-    O: IvoSchemaStruct,
+    I: IvoStruct,
+    O: IvoStruct,
     CtxOptions,
     T: IvoFieldValue,
     ErrorTool: IvoErrorTool,
@@ -545,8 +545,8 @@ pub struct FieldBuilder<
 }
 
 impl<
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         Timestamp: Clone + Debug + Send + Sync + 'static,
         ErrorTool: IvoErrorTool,
@@ -571,8 +571,8 @@ impl<
 }
 
 impl<
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         Timestamp: Clone + Debug + Send + Sync + 'static,
         ErrorTool: IvoErrorTool,

@@ -13,13 +13,13 @@ use crate::{
         },
         types::{DeleteHandler, FailureHandler, IvoFieldValue, No, SuccessHandler, Yes},
     },
-    IvoSchemaStruct,
+    IvoStruct,
 };
 
 pub struct RequiredFieldBuilder<
     T: IvoFieldValue,
-    I: IvoSchemaStruct,
-    O: IvoSchemaStruct,
+    I: IvoStruct,
+    O: IvoStruct,
     CtxOptions,
     ErrorTool: IvoErrorTool,
     HasValidator = No,
@@ -57,8 +57,8 @@ impl<
         HasFailure,
         HasSuccess,
         T: IvoFieldValue,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     >
@@ -107,8 +107,8 @@ impl<
         HasFailure,
         HasSuccess,
         T: IvoFieldValue,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     > Default
@@ -140,8 +140,8 @@ impl<
         HasFailure,
         HasSuccess,
         T: IvoFieldValue,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     > BuildableFieldConfig<I, O, CtxOptions, ErrorTool>
@@ -179,8 +179,8 @@ impl<
         HasValidator,
         HasRevalidator,
         T: IvoFieldValue,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     > RequiredFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasValidator, HasRevalidator>
@@ -217,8 +217,8 @@ impl<
 impl<
         HasRequiredError,
         T: IvoFieldValue,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     > RequiredFieldBuilder<T, I, O, CtxOptions, ErrorTool, No, No, HasRequiredError>
@@ -241,8 +241,8 @@ impl<
 impl<
         HasRequiredError,
         T: IvoFieldValue,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     > RequiredFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, No, HasRequiredError>
@@ -267,8 +267,8 @@ impl<
         HasRevalidator,
         HasRequiredError,
         T: IvoFieldValue,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     > RequiredFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, HasRevalidator, HasRequiredError>
@@ -331,8 +331,8 @@ impl<
         HasFailure,
         HasSuccess,
         T: IvoFieldValue,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     >
@@ -404,8 +404,8 @@ impl<
         HasFailure,
         HasSuccess,
         T: IvoFieldValue,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     >
@@ -477,8 +477,8 @@ impl<
         HasFailure,
         HasSuccess,
         T: IvoFieldValue,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     >

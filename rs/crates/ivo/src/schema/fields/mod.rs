@@ -17,15 +17,15 @@ use crate::{
         },
         types::IvoFieldValue,
     },
-    IvoSchemaStruct,
+    IvoStruct,
 };
 
 pub use base::TimestampConfig;
 
 pub struct IvoField<
     T: IvoFieldValue,
-    I: IvoSchemaStruct,
-    O: IvoSchemaStruct,
+    I: IvoStruct,
+    O: IvoStruct,
     CtxOptions,
     ErrorTool: IvoErrorTool,
 > {
@@ -36,13 +36,8 @@ pub struct IvoField<
     _err: PhantomData<ErrorTool>,
 }
 
-impl<
-        T: IvoFieldValue,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
-        CtxOptions,
-        ErrorTool: IvoErrorTool,
-    > IvoField<T, I, O, CtxOptions, ErrorTool>
+impl<T: IvoFieldValue, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool>
+    IvoField<T, I, O, CtxOptions, ErrorTool>
 {
     /// A constant field is one whose value never changes after an entity is created.
     ///

@@ -11,16 +11,10 @@ use crate::{
         types::{DeleteHandler, FailureHandler, IvoFieldValue, No, SuccessHandler, Yes},
     },
     types::ErasedValue,
-    IvoSchemaStruct,
+    IvoStruct,
 };
 
-pub trait BuildableFieldConfig<
-    I: IvoSchemaStruct,
-    O: IvoSchemaStruct,
-    CtxOptions,
-    ErrorTool: IvoErrorTool,
->
-{
+pub trait BuildableFieldConfig<I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool> {
     fn build(self) -> InternalFieldConfig<I, O, CtxOptions, ErrorTool>;
 }
 
@@ -35,13 +29,7 @@ pub enum FieldType {
     Virtual,
 }
 
-pub struct FieldConfig<
-    T,
-    I: IvoSchemaStruct,
-    O: IvoSchemaStruct,
-    CtxOptions,
-    ErrorTool: IvoErrorTool,
-> {
+pub struct FieldConfig<T, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool> {
     pub field_type: FieldType,
     pub alias: Option<String>,
     pub default: Option<ValueResolverWithMiniContext<T, I, CtxOptions>>,
@@ -63,7 +51,7 @@ pub struct FieldConfig<
     pub on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
 }
 
-impl<T, I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool> Default
+impl<T, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool> Default
     for FieldConfig<T, I, O, CtxOptions, ErrorTool>
 {
     fn default() -> Self {

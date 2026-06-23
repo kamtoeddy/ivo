@@ -8,15 +8,10 @@ use crate::{
         types::DeleteHandler,
         No,
     },
-    types::IvoSchemaStruct,
+    types::IvoStruct,
 };
 
-pub struct SchemaOptions<
-    I: IvoSchemaStruct,
-    O: IvoSchemaStruct,
-    CtxOptions,
-    ErrorTool: IvoErrorTool,
-> {
+pub struct SchemaOptions<I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool> {
     //
     pub on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
     pub on_success_fns: Option<Vec<OnSuccessConfig<I, O, CtxOptions>>>,
@@ -27,7 +22,7 @@ pub struct SchemaOptions<
     pub should_update: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
 }
 
-impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool> Default
+impl<I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool> Default
     for SchemaOptions<I, O, CtxOptions, ErrorTool>
 {
     fn default() -> Self {
@@ -41,7 +36,7 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool
     }
 }
 
-impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool>
+impl<I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool>
     SchemaOptions<I, O, CtxOptions, ErrorTool>
 {
     pub const fn new() -> SchemaOptionsBuilder<I, O, CtxOptions, ErrorTool> {
@@ -50,8 +45,8 @@ impl<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions, ErrorTool: IvoErrorTool
 }
 
 pub struct SchemaOptionsBuilder<
-    I: IvoSchemaStruct,
-    O: IvoSchemaStruct,
+    I: IvoStruct,
+    O: IvoStruct,
     CtxOptions,
     ErrorTool: IvoErrorTool,
     HasIgnore = No,
@@ -81,8 +76,8 @@ impl<
         HasPostValidate,
         HasDelete,
         HasSuccess,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     >
@@ -120,8 +115,8 @@ impl<
         HasPostValidate,
         HasDelete,
         HasSuccess,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     > Default

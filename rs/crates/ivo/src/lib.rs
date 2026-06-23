@@ -23,7 +23,7 @@ pub use schema::{
 pub use model::Model;
 
 pub use types::{
-    IvoContext, IvoMiniContext, IvoSchemaStruct, Partial, RwLock, SharedCtxOptions, SharedData,
-    SharedIvoContext, SharedIvoMiniContext, SharedRwCtxOptions, ValidatorError, ValidatorResponse,
-    WithIvoPartialStruct,
+    IvoContext, IvoMiniContext, IvoStruct, IvoWithPartialStruct, Partial, RwLock, SharedCtxOptions,
+    SharedData, SharedIvoContext, SharedIvoMiniContext, SharedRwCtxOptions, ValidatorError,
+    ValidatorResponse,
 };

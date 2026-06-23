@@ -6,21 +6,21 @@ use crate::{
         fields::{
             base::{BuildableFieldConfig, FieldConfig, FieldType, InternalFieldConfig},
             types::{
-                BooleanResolver, IsFieldProvisionEnabled, IntoBooleanResolver, IntoFailureHandler,
-                IntoFieldValidator, IntoRequiredResolver, IntoResolver, IntoSuccessHandler,
-                IntoVirtualSanitizer, RequiredResolver, UniformValidator, VirtualSanitizer,
+                BooleanResolver, IntoBooleanResolver, IntoFailureHandler, IntoFieldValidator,
+                IntoRequiredResolver, IntoResolver, IntoSuccessHandler, IntoVirtualSanitizer,
+                IsFieldProvisionEnabled, RequiredResolver, UniformValidator, VirtualSanitizer,
             },
         },
         types::{FailureHandler, IvoFieldValue, No, SuccessHandler, Yes, YesComputed},
     },
     types::ErasedValue,
-    IvoSchemaStruct,
+    IvoStruct,
 };
 
 pub struct VirtualFieldBuilder<
     T: IvoFieldValue,
-    I: IvoSchemaStruct,
-    O: IvoSchemaStruct,
+    I: IvoStruct,
+    O: IvoStruct,
     CtxOptions,
     ErrorTool: IvoErrorTool,
     HasValidator = No,
@@ -70,8 +70,8 @@ impl<
         HasFailure,
         HasSuccess,
         T: IvoFieldValue,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     >
@@ -132,8 +132,8 @@ impl<
         HasFailure,
         HasSuccess,
         T: IvoFieldValue,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     > Default
@@ -171,8 +171,8 @@ impl<
         HasFailure,
         HasSuccess,
         T: IvoFieldValue,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     > BuildableFieldConfig<I, O, CtxOptions, ErrorTool>
@@ -216,8 +216,8 @@ impl<
         HasValidator,
         HasRevalidator,
         T: IvoFieldValue,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     > VirtualFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasValidator, No, HasRevalidator>
@@ -248,8 +248,8 @@ impl<
 impl<
         HasAlias,
         T: IvoFieldValue,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     > VirtualFieldBuilder<T, I, O, CtxOptions, ErrorTool, No, HasAlias>
@@ -272,8 +272,8 @@ impl<
 impl<
         HasAlias,
         T: IvoFieldValue,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     > VirtualFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, HasAlias>
@@ -298,8 +298,8 @@ impl<
         HasAlias,
         HasRevalidator,
         T: IvoFieldValue,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     > VirtualFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, HasAlias, HasRevalidator>
@@ -326,8 +326,8 @@ impl<
         HasRevalidator,
         HasRequired,
         T: IvoFieldValue,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     >
@@ -379,8 +379,8 @@ impl<
         HasSanitizer,
         HasRequired,
         T: IvoFieldValue,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     >
@@ -434,8 +434,8 @@ impl<
         HasSanitizer,
         HasRequired,
         T: IvoFieldValue,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     >
@@ -577,8 +577,8 @@ impl<
         HasSanitizer,
         HasRequired,
         T: IvoFieldValue,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     >
@@ -637,8 +637,8 @@ impl<
         HasSanitizer,
         HasRequired,
         T: IvoFieldValue,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     >
@@ -698,8 +698,8 @@ impl<
         HasSanitizer,
         HasRequired,
         T: IvoFieldValue,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     >
@@ -794,8 +794,8 @@ impl<
         HasFailure,
         HasSuccess,
         T: IvoFieldValue,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     >
@@ -879,8 +879,8 @@ impl<
         HasFailure,
         HasSuccess,
         T: IvoFieldValue,
-        I: IvoSchemaStruct,
-        O: IvoSchemaStruct,
+        I: IvoStruct,
+        O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     >

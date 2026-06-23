@@ -3,7 +3,7 @@
 use futures::future::BoxFuture;
 use std::{fmt::Debug, sync::Arc};
 
-use crate::{IvoContext, IvoSchemaStruct};
+use crate::{IvoContext, IvoStruct};
 
 pub trait IvoFieldValue: Clone + Debug + Send + Sync + 'static {}
 
@@ -20,17 +20,17 @@ impl IsProvided for Yes {}
 impl IsProvided for YesComputed {}
 impl IsProvidedButNotComputed for Yes {}
 
-pub type DeleteHandler<O: IvoSchemaStruct, CtxOptions> =
+pub type DeleteHandler<O: IvoStruct, CtxOptions> =
     Box<dyn Fn(Arc<O>, Arc<CtxOptions>) -> BoxFuture<'static, ()> + Send + Sync + 'static>;
 
-pub type FailureHandler<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> = Box<
+pub type FailureHandler<I: IvoStruct, O: IvoStruct, CtxOptions> = Box<
     dyn Fn(Arc<IvoContext<I, O>>, Arc<CtxOptions>) -> BoxFuture<'static, ()>
         + Send
         + Sync
         + 'static,
 >;
 
-pub type SuccessHandler<I: IvoSchemaStruct, O: IvoSchemaStruct, CtxOptions> = Box<
+pub type SuccessHandler<I: IvoStruct, O: IvoStruct, CtxOptions> = Box<
     dyn Fn(Arc<IvoContext<I, O>>, Arc<CtxOptions>) -> BoxFuture<'static, ()>
         + Send
         + Sync
