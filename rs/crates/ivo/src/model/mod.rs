@@ -80,7 +80,7 @@ impl<
             default_values,
         ));
 
-        let (input, fields_provided, _) = self
+        let (input, relevant_fields_provided, fields_provided) = self
             .filter_input_fields_allowed(
                 None,
                 input,
@@ -93,7 +93,7 @@ impl<
 
         let r = self
             .evaluate_missing_required_fields(
-                &fields_provided,
+                &relevant_fields_provided,
                 Arc::clone(&ctx),
                 Arc::clone(&shared_rw_options),
             )
@@ -113,7 +113,7 @@ impl<
         // Run validators
         let r = self
             .validate(
-                &fields_provided,
+                &relevant_fields_provided,
                 Arc::clone(&ctx),
                 Arc::clone(&shared_rw_options),
             )
@@ -141,7 +141,7 @@ impl<
         // Run re_validators
         let r = self
             .re_validate(
-                &fields_provided,
+                &relevant_fields_provided,
                 Arc::clone(&ctx),
                 Arc::clone(&shared_rw_options),
             )
@@ -169,7 +169,7 @@ impl<
         // Run post-validators
         let r = self
             .post_validate(
-                &fields_provided,
+                &relevant_fields_provided,
                 Arc::clone(&ctx),
                 Arc::clone(&shared_rw_options),
             )
@@ -197,7 +197,7 @@ impl<
         // Sanitize virtuals
         let (validated_inputs, should_update_ctx) = self
             .sanitize_virtuals(
-                &fields_provided,
+                &relevant_fields_provided,
                 Arc::clone(&ctx),
                 Arc::clone(&shared_rw_options),
             )
@@ -210,9 +210,9 @@ impl<
         // Resolve values of dependent fields
         let mut dependent_fields_col = FieldInfoCollection::from_fields(
             &self.schema,
-            fields_provided.fields.clone(),
-            &fields_provided.schema_input_fields,
-            &fields_provided.schema_output_fields,
+            relevant_fields_provided.fields.clone(),
+            &relevant_fields_provided.schema_input_fields,
+            &relevant_fields_provided.schema_output_fields,
         );
 
         loop {
@@ -242,7 +242,7 @@ impl<
         return Ok((
             O::ivo_internal_dangerously_get_values_from_partial(values),
             self.prepare_success_handlers(
-                fields_provided,
+                relevant_fields_provided,
                 ctx,
                 Arc::new(unwrap_async_lock(shared_rw_options)),
             ),

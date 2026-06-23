@@ -298,6 +298,89 @@ test_matrix!(
     async { should_trigger_on_failure_handlers_at_creation().await }
 );
 
+async fn should_trigger_on_failure_handlers_at_creation_with_ignored_value() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        lax: String,
+        lax2: String,
+    }
+
+    #[derive(Debug, Clone, IvoStruct)]
+    struct DataInput {
+        lax: String,
+        lax2: String,
+    }
+
+    let schema: Schema<DataInput, Data> = Schema::new(
+        |f| {
+            f.set(
+                "lax",
+                IvoField::LAX
+                    .default("default_value".into())
+                    .validate(|v: String, _, _| {
+                        if v == "fail_validation" {
+                            return ready(Err(("validation failed".into(), None)));
+                        }
+
+                        ready(Ok(v))
+                    })
+                    .ignore_init()
+                    .on_failure(|ctx: SharedIvoContext<DataInput, Data>, _| {
+                        if true {
+                            panic!(
+                                "[lax]: on_failure triggered with value: {}",
+                                ctx.input_values().lax.unwrap().as_str()
+                            );
+                        }
+
+                        ready(())
+                    }),
+            )
+            .set(
+                "lax2",
+                IvoField::LAX
+                    .default("default_value".into())
+                    .validate(|v: String, _, _| {
+                        if v == "fail_validation" {
+                            return ready(Err(("validation failed".into(), None)));
+                        }
+
+                        ready(Ok(v))
+                    }),
+            )
+        },
+        |o| o,
+    );
+
+    let model = schema.get_model();
+
+    let input = PartialDataInput {
+        lax: Some("to be ignored".into()),
+        lax2: Some("fail_validation".into()),
+    };
+
+    let r = model.create(&input, None).await;
+
+    match r {
+        Err((payload, handle_failure)) => {
+            assert!(payload.get("lax").is_none());
+
+            assert_eq!(
+                payload.get("lax2").unwrap()[0].reason,
+                "validation failed".to_string()
+            );
+            handle_failure().await;
+        }
+        _ => unreachable!(),
+    }
+}
+
+test_matrix!(
+    should_trigger_on_failure_handlers_at_creation_with_ignored_value,
+    "[lax]: on_failure triggered with value: to be ignored",
+    async { should_trigger_on_failure_handlers_at_creation_with_ignored_value().await }
+);
+
 async fn should_trigger_on_failure_handlers_during_updates() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
@@ -445,4 +528,98 @@ test_matrix!(
     should_trigger_on_failure_handlers_during_updates_with_unchanged_values,
     "[lax]: on_failure triggered with value: some_value",
     async { should_trigger_on_failure_handlers_during_updates_with_unchanged_values().await }
+);
+
+async fn should_trigger_on_failure_handlers_during_updates_with_ignored_value() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        lax: String,
+        lax2: String,
+    }
+
+    #[derive(Debug, Clone, IvoStruct)]
+    struct DataInput {
+        lax: String,
+        lax2: String,
+    }
+
+    let schema: Schema<DataInput, Data> = Schema::new(
+        |f| {
+            f.set(
+                "lax",
+                IvoField::LAX
+                    .default("default_value".into())
+                    .validate(|v: String, _, _| {
+                        if v == "fail_validation" {
+                            return ready(Err(("validation failed".into(), None)));
+                        }
+
+                        ready(Ok(v))
+                    })
+                    .allow_update_if(|_, _| ready(false))
+                    .on_failure(|ctx: SharedIvoContext<DataInput, Data>, _| {
+                        if true {
+                            panic!(
+                                "[lax]: on_failure triggered with value: {}",
+                                ctx.input_values().lax.unwrap().as_str()
+                            );
+                        }
+
+                        ready(())
+                    }),
+            )
+            .set(
+                "lax2",
+                IvoField::LAX
+                    .default("default_value".into())
+                    .validate(|v: String, _, _| {
+                        if v == "fail_validation" {
+                            return ready(Err(("validation failed".into(), None)));
+                        }
+
+                        ready(Ok(v))
+                    }),
+            )
+        },
+        |o| o,
+    );
+
+    let model = schema.get_model();
+
+    let data = Data {
+        lax: "lax1".into(),
+        lax2: "lax2".into(),
+    };
+
+    let input = PartialDataInput {
+        lax: Some("update to be ignored".into()),
+        lax2: Some("fail_validation".into()),
+    };
+
+    let r = model.update(&data, &input, None).await;
+
+    match r {
+        Err((e, handle_failure)) => {
+            match e {
+                UpdateError::ValidationError(payload) => {
+                    assert!(payload.get("lax").is_none());
+
+                    assert_eq!(
+                        payload.get("lax2").unwrap()[0].reason,
+                        "validation failed".to_string()
+                    );
+                }
+                _ => unreachable!(),
+            }
+
+            handle_failure().await;
+        }
+        _ => unreachable!(),
+    }
+}
+
+test_matrix!(
+    should_trigger_on_failure_handlers_during_updates_with_ignored_value,
+    "[lax]: on_failure triggered with value: update to be ignored",
+    async { should_trigger_on_failure_handlers_during_updates_with_ignored_value().await }
 );
