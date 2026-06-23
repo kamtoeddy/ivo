@@ -8,7 +8,6 @@ use crate::test_matrix;
 async fn should_not_create_if_primary_validation_fails() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
-        id: i32,
         lax: String,
     }
 
@@ -21,21 +20,20 @@ async fn should_not_create_if_primary_validation_fails() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1)))
-                .set(
-                    "lax",
-                    IvoField::LAX
-                        .default("default_value".into())
-                        .validate(|v: String, _, _| {
-                            let validated = v.trim();
+            f.set(
+                "lax",
+                IvoField::LAX
+                    .default("default_value".into())
+                    .validate(|v: String, _, _| {
+                        let validated = v.trim();
 
-                            if validated.len() < 2 {
-                                return ready(Err((MIN_LENGTH_ERROR.into(), None)));
-                            }
+                        if validated.len() < 2 {
+                            return ready(Err((MIN_LENGTH_ERROR.into(), None)));
+                        }
 
-                            ready(Ok(v))
-                        }),
-                )
+                        ready(Ok(v))
+                    }),
+            )
         },
         |o| o,
     );
@@ -75,7 +73,6 @@ test_matrix!(should_not_create_if_primary_validation_fails, async {
 async fn should_create_properly() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
-        id: i32,
         lax: String,
     }
 
@@ -86,13 +83,12 @@ async fn should_create_properly() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1)))
-                .set(
-                    "lax",
-                    IvoField::LAX
-                        .default("default_value".into())
-                        .validate(|v: String, _, _| ready(Ok(v))),
-                )
+            f.set(
+                "lax",
+                IvoField::LAX
+                    .default("default_value".into())
+                    .validate(|v: String, _, _| ready(Ok(v))),
+            )
         },
         |o| o,
     );
@@ -112,13 +108,7 @@ async fn should_create_properly() {
 
     match r {
         Ok((d, _)) => {
-            assert_eq!(
-                d,
-                Data {
-                    id: 1,
-                    lax: lax_value
-                }
-            )
+            assert_eq!(d, Data { lax: lax_value })
         }
         _ => unreachable!(),
     }
