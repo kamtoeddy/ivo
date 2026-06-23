@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use ivo::{IvoField, IvoStruct, Schema, SharedData};
+use ivo::{IvoField, IvoStruct, Schema, SharedData, SharedIvoContext, UpdateError};
 use std::future::ready;
 
 use crate::test_matrix;
@@ -230,4 +230,219 @@ test_matrix!(
     should_trigger_on_delete_handlers,
     "[lax]: on_delete triggered with value: lax_string_value",
     async { should_trigger_on_delete_handlers().await }
+);
+
+// LAX: ON_FAILURE
+async fn should_trigger_on_failure_handlers_at_creation() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        lax: String,
+    }
+
+    #[derive(Debug, Clone, IvoStruct)]
+    struct DataInput {
+        lax: String,
+    }
+
+    let schema: Schema<DataInput, Data> = Schema::new(
+        |f| {
+            f.set(
+                "lax",
+                IvoField::LAX
+                    .default("default_value".into())
+                    .validate(|v: String, _, _| {
+                        if v == "fail_validation" {
+                            return ready(Err(("validation failed".into(), None)));
+                        }
+
+                        ready(Ok(v))
+                    })
+                    .on_failure(|ctx: SharedIvoContext<DataInput, Data>, _| {
+                        if true {
+                            panic!(
+                                "[lax]: on_failure triggered with value: {}",
+                                ctx.input().lax.unwrap().as_str()
+                            );
+                        }
+
+                        ready(())
+                    }),
+            )
+        },
+        |o| o,
+    );
+
+    let model = schema.get_model();
+
+    let input = PartialDataInput {
+        lax: Some("fail_validation".into()),
+    };
+
+    let r = model.create(&input, None).await;
+
+    match r {
+        Err((payload, handle_failure)) => {
+            assert_eq!(
+                payload.get("lax").unwrap()[0].reason,
+                "validation failed".to_string()
+            );
+            handle_failure().await;
+        }
+        _ => unreachable!(),
+    }
+}
+
+test_matrix!(
+    should_trigger_on_failure_handlers_at_creation,
+    "[lax]: on_failure triggered with value: fail_validation",
+    async { should_trigger_on_failure_handlers_at_creation().await }
+);
+
+async fn should_trigger_on_failure_handlers_during_updates() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        lax: String,
+    }
+
+    #[derive(Debug, Clone, IvoStruct)]
+    struct DataInput {
+        lax: String,
+    }
+
+    let schema: Schema<DataInput, Data> = Schema::new(
+        |f| {
+            f.set(
+                "lax",
+                IvoField::LAX
+                    .default("default_value".into())
+                    .validate(|v: String, _, _| {
+                        if v == "fail_validation" {
+                            return ready(Err(("validation failed".into(), None)));
+                        }
+
+                        ready(Ok(v))
+                    })
+                    .on_failure(|ctx: SharedIvoContext<DataInput, Data>, _| {
+                        if true {
+                            panic!(
+                                "[lax]: on_failure triggered with value: {}",
+                                ctx.input().lax.unwrap().as_str()
+                            );
+                        }
+
+                        ready(())
+                    }),
+            )
+        },
+        |o| o,
+    );
+
+    let model = schema.get_model();
+
+    let data = Data {
+        lax: "some value".into(),
+    };
+
+    let input = PartialDataInput {
+        lax: Some("fail_validation".into()),
+    };
+
+    let r = model.update(&data, &input, None).await;
+
+    match r {
+        Err((e, handle_failure)) => {
+            match e {
+                UpdateError::ValidationError(payload) => {
+                    assert_eq!(
+                        payload.get("lax").unwrap()[0].reason,
+                        "validation failed".to_string()
+                    );
+                }
+                _ => unreachable!(),
+            }
+
+            handle_failure().await;
+        }
+        _ => unreachable!(),
+    }
+}
+
+test_matrix!(
+    should_trigger_on_failure_handlers_during_updates,
+    "[lax]: on_failure triggered with value: fail_validation",
+    async { should_trigger_on_failure_handlers_during_updates().await }
+);
+
+async fn should_trigger_on_failure_handlers_during_updates_with_unchanged_values() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        lax: String,
+    }
+
+    #[derive(Debug, Clone, IvoStruct)]
+    struct DataInput {
+        lax: String,
+    }
+
+    let schema: Schema<DataInput, Data> = Schema::new(
+        |f| {
+            f.set(
+                "lax",
+                IvoField::LAX
+                    .default("default_value".into())
+                    .validate(|v: String, _, _| {
+                        if v == "fail_validation" {
+                            return ready(Err(("validation failed".into(), None)));
+                        }
+
+                        ready(Ok(v))
+                    })
+                    .on_failure(|ctx: SharedIvoContext<DataInput, Data>, _| {
+                        if true {
+                            panic!(
+                                "[lax]: on_failure triggered with value: {}",
+                                ctx.input().lax.unwrap().as_str()
+                            );
+                        }
+
+                        ready(())
+                    }),
+            )
+        },
+        |o| o,
+    );
+
+    let model = schema.get_model();
+
+    let lax_value = "some_value".to_string();
+
+    let data = Data {
+        lax: lax_value.clone(),
+    };
+
+    let input = PartialDataInput {
+        lax: Some(lax_value),
+    };
+
+    let r = model.update(&data, &input, None).await;
+
+    match r {
+        Err((e, handle_failure)) => {
+            match e {
+                UpdateError::NothingToUpdate => {
+                    assert!(!false)
+                }
+                _ => unreachable!(),
+            }
+
+            handle_failure().await;
+        }
+        _ => unreachable!(),
+    }
+}
+
+test_matrix!(
+    should_trigger_on_failure_handlers_during_updates_with_unchanged_values,
+    "[lax]: on_failure triggered with value: some_value",
+    async { should_trigger_on_failure_handlers_during_updates_with_unchanged_values().await }
 );

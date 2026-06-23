@@ -80,7 +80,7 @@ impl<
             default_values,
         ));
 
-        let (input, fields_provided) = self
+        let (input, fields_provided, _) = self
             .filter_input_fields_allowed(
                 None,
                 input,
@@ -270,7 +270,7 @@ impl<
 
         let shared_rw_options = Arc::new(RwLock::new(options));
 
-        let (input, fields_provided) = self
+        let (input, relevant_fields_provided, fields_provided) = self
             .filter_input_fields_allowed(
                 Some(&old_partial_values),
                 updates,
@@ -282,11 +282,11 @@ impl<
         Arc::make_mut(&mut ctx).set_input(input);
 
         // if the updates provided are all none, the nothing to update
-        if fields_provided.fields.is_empty() {
+        if relevant_fields_provided.fields.is_empty() {
             return Err((
                 UpdateError::NothingToUpdate,
                 self.prepare_failure_handlers(
-                    vec![],
+                    fields_provided.fields,
                     ctx,
                     Arc::new(unwrap_async_lock(shared_rw_options)),
                 ),
@@ -296,7 +296,7 @@ impl<
         // Evaluate missing required fields
         let r = self
             .evaluate_missing_required_fields(
-                &fields_provided,
+                &relevant_fields_provided,
                 Arc::clone(&ctx),
                 Arc::clone(&shared_rw_options),
             )
@@ -316,7 +316,7 @@ impl<
         // Run validators
         let r = self
             .validate(
-                &fields_provided,
+                &relevant_fields_provided,
                 Arc::clone(&ctx),
                 Arc::clone(&shared_rw_options),
             )
@@ -345,7 +345,7 @@ impl<
         // Run re_validators
         let r = self
             .re_validate(
-                &fields_provided,
+                &relevant_fields_provided,
                 Arc::clone(&ctx),
                 Arc::clone(&shared_rw_options),
             )
@@ -374,7 +374,7 @@ impl<
         // Run post-validators
         let r = self
             .post_validate(
-                &fields_provided,
+                &relevant_fields_provided,
                 Arc::clone(&ctx),
                 Arc::clone(&shared_rw_options),
             )
@@ -403,7 +403,7 @@ impl<
         // Sanitize virtuals
         let (validated_inputs, should_update_ctx) = self
             .sanitize_virtuals(
-                &fields_provided,
+                &relevant_fields_provided,
                 Arc::clone(&ctx),
                 Arc::clone(&shared_rw_options),
             )
@@ -414,10 +414,9 @@ impl<
         }
 
         // Resolve values of dependent fields
-
         let erased_updates = ctx.values();
 
-        let fields_updated_vec = fields_provided
+        let fields_updated_vec = relevant_fields_provided
             .fields
             .iter()
             .filter_map(|f| {
@@ -439,8 +438,8 @@ impl<
         let mut fields_updated = FieldInfoCollection::from_fields(
             &self.schema,
             fields_updated_vec,
-            &fields_provided.schema_input_fields,
-            &fields_provided.schema_output_fields,
+            &relevant_fields_provided.schema_input_fields,
+            &relevant_fields_provided.schema_output_fields,
         );
 
         let mut dependent_fields_col = fields_updated.clone();
@@ -1003,6 +1002,7 @@ impl<
     ) -> (
         I::Partial,
         FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
+        FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
     ) {
         let is_update = previous_values.is_some();
         let previous_values = previous_values.cloned().unwrap_or_default();
@@ -1015,6 +1015,7 @@ impl<
         if is_update {
             for (field_name, value) in input_values.ivo_internal_to_erased_tuples() {
                 let field_info = fields_provided.get(&field_name).unwrap();
+                fields_provided.add(field_info.clone());
 
                 if (field_info.is_input && !field_info.is_output)
                     || !previous_values.ivo_internal_is_value_equal(&field_name, &value)
@@ -1024,7 +1025,10 @@ impl<
             }
         } else {
             for field_name in input_values.ivo_internal_fields_provided() {
-                field_info_vec.push(fields_provided.get(&field_name).unwrap());
+                let field_info = fields_provided.get(&field_name).unwrap();
+                fields_provided.add(field_info.clone());
+
+                field_info_vec.push(field_info);
             }
         }
 
@@ -1083,10 +1087,12 @@ impl<
             }
         }
 
-        if resolvers.is_empty() {
-            fields_provided.set_fields(final_field_info_vec);
+        let mut relevant_fields_provided = FieldInfoCollection::new(&self.schema);
 
-            return (input, fields_provided);
+        if resolvers.is_empty() {
+            relevant_fields_provided.set_fields(final_field_info_vec);
+
+            return (input, relevant_fields_provided, fields_provided);
         }
 
         let tasks = resolvers
@@ -1110,9 +1116,9 @@ impl<
             input.ivo_internal_remove_value(&field_info.name);
         }
 
-        fields_provided.set_fields(final_field_info_vec);
+        relevant_fields_provided.set_fields(final_field_info_vec);
 
-        return (input, fields_provided);
+        return (input, relevant_fields_provided, fields_provided);
     }
 
     async fn evaluate_missing_required_fields<'a>(
