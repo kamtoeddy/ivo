@@ -208,33 +208,27 @@ impl<
         }
 
         // Resolve values of dependent fields
-        let (mut validated_outputs, mut dependent_fields_resolved) = self
-            .resolve_dependent_values(
-                &fields_provided,
-                Arc::clone(&ctx),
-                Arc::clone(&shared_rw_options),
-            )
-            .await;
+        let mut fields_to_resolve = fields_provided.fields.clone();
 
-        if !dependent_fields_resolved.is_empty() {
-            Arc::make_mut(&mut ctx).set_changes(validated_outputs);
-        }
-
-        while !dependent_fields_resolved.is_empty() {
+        loop {
             let col = FieldInfoCollection::from_fields(
                 &self.schema,
-                dependent_fields_resolved,
+                fields_to_resolve,
                 &fields_provided.schema_input_fields,
                 &fields_provided.schema_output_fields,
             );
 
-            (validated_outputs, dependent_fields_resolved) = self
+            let (validated_outputs, dependent_fields_resolved) = self
                 .resolve_dependent_values(&col, Arc::clone(&ctx), Arc::clone(&shared_rw_options))
                 .await;
 
-            if !dependent_fields_resolved.is_empty() {
-                Arc::make_mut(&mut ctx).set_changes(validated_outputs);
+            if dependent_fields_resolved.is_empty() {
+                break;
             }
+
+            fields_to_resolve = dependent_fields_resolved;
+
+            Arc::make_mut(&mut ctx).set_changes(validated_outputs);
         }
 
         // Generate and set timestamps
@@ -418,9 +412,11 @@ impl<
             Arc::make_mut(&mut ctx).set_input(validated_inputs);
         }
 
+        // Resolve values of dependent fields
+
         let erased_updates = ctx.values();
 
-        let fields_updated_vec = fields_provided
+        let mut fields_updated_vec = fields_provided
             .fields
             .iter()
             .filter_map(|f| {
@@ -439,45 +435,33 @@ impl<
             })
             .collect();
 
-        let fields_updated = FieldInfoCollection::from_fields(
-            &self.schema,
-            fields_updated_vec,
-            &fields_provided.schema_input_fields,
-            &fields_provided.schema_output_fields,
-        );
+        let mut fields_updated;
 
-        // Resolve values of dependent fields
-        let (mut validated_outputs, mut dependent_fields_resolved) = self
-            .resolve_dependent_values(
-                &fields_updated,
-                Arc::clone(&ctx),
-                Arc::clone(&shared_rw_options),
-            )
-            .await;
-
-        if !dependent_fields_resolved.is_empty() {
-            Arc::make_mut(&mut ctx)
-                .set_changes(validated_outputs.clone())
-                .set_full_values(data.ivo_internal_clone_with(validated_outputs));
-        }
-
-        while !dependent_fields_resolved.is_empty() {
-            let col = FieldInfoCollection::from_fields(
+        loop {
+            fields_updated = FieldInfoCollection::from_fields(
                 &self.schema,
-                dependent_fields_resolved,
+                fields_updated_vec,
                 &fields_provided.schema_input_fields,
                 &fields_provided.schema_output_fields,
             );
 
-            (validated_outputs, dependent_fields_resolved) = self
-                .resolve_dependent_values(&col, Arc::clone(&ctx), Arc::clone(&shared_rw_options))
+            let (validated_outputs, dependent_fields_resolved) = self
+                .resolve_dependent_values(
+                    &fields_updated,
+                    Arc::clone(&ctx),
+                    Arc::clone(&shared_rw_options),
+                )
                 .await;
 
-            if !dependent_fields_resolved.is_empty() {
-                Arc::make_mut(&mut ctx)
-                    .set_changes(validated_outputs.clone())
-                    .set_full_values(data.ivo_internal_clone_with(validated_outputs));
+            if dependent_fields_resolved.is_empty() {
+                break;
             }
+
+            fields_updated_vec = dependent_fields_resolved;
+
+            Arc::make_mut(&mut ctx)
+                .set_changes(validated_outputs.clone())
+                .set_full_values(data.ivo_internal_clone_with(validated_outputs));
         }
 
         let (updated_values, has_updated_fields) =
