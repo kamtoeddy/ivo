@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use ivo::{IvoField, IvoStruct, Schema};
+use ivo::{IvoField, IvoStruct, Schema, SharedData};
 use std::future::ready;
 
 use crate::test_matrix;
@@ -189,3 +189,55 @@ async fn should_update_properly() {
 test_matrix!(should_update_properly, async {
     should_update_properly().await
 });
+
+// LAX: ON_DELETE
+async fn should_trigger_on_delete_handlers() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        lax: String,
+    }
+
+    #[derive(Debug, Clone, IvoStruct)]
+    struct DataInput {
+        lax: String,
+    }
+
+    let schema: Schema<DataInput, Data> = Schema::new(
+        |f| {
+            f.set(
+                "lax",
+                IvoField::LAX
+                    .default("default_value".into())
+                    .validate(|v: String, _, _| ready(Ok(v)))
+                    .on_delete(|data: SharedData<Data>, _| {
+                        if true {
+                            panic!(
+                                "[lax]: on_delete triggered with value: {}",
+                                data.lax.as_str()
+                            );
+                        }
+
+                        ready(())
+                    }),
+            )
+        },
+        |o| o,
+    );
+
+    let model = schema.get_model();
+
+    model
+        .delete(
+            Data {
+                lax: String::from("lax_string_value"),
+            },
+            None,
+        )
+        .await;
+}
+
+test_matrix!(
+    should_trigger_on_delete_handlers,
+    "[lax]: on_delete triggered with value: lax_string_value",
+    async { should_trigger_on_delete_handlers().await }
+);

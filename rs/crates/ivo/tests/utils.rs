@@ -28,4 +28,32 @@ macro_rules! test_matrix {
             }
         }
     };
+    ($name:ident, $panic_msg: literal, $async_body:expr) => {
+        // The paste macro allows identifier concatenation
+        paste::paste! {
+            // 1. TOKIO RUNNER
+            #[tokio::test]
+            #[should_panic(expected = $panic_msg)]
+            async fn [< $name _tokio >]() {
+                let test_future = $async_body;
+                test_future.await;
+            }
+
+            // 2. ASYNC-STD RUNNER
+            #[async_std::test]
+            #[should_panic(expected = $panic_msg)]
+            async fn [< $name _async_std >]() {
+                let test_future = $async_body;
+                test_future.await;
+            }
+
+            // 3. SMOL RUNNER
+            #[test]
+            #[should_panic(expected = $panic_msg)]
+            fn [< $name _smol >]() {
+                let test_future = $async_body;
+                smol::block_on(test_future);
+            }
+        }
+    };
 }
