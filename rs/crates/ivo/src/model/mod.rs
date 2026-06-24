@@ -130,9 +130,7 @@ impl<
             ));
         }
 
-        let (validated_inputs, validated_outputs, should_update_ctx) = r.ok().unwrap();
-
-        if should_update_ctx {
+        if let Some((validated_inputs, validated_outputs)) = r.ok().unwrap() {
             Arc::make_mut(&mut ctx)
                 .set_input(validated_inputs)
                 .set_changes(validated_outputs);
@@ -158,9 +156,7 @@ impl<
             ));
         }
 
-        let (validated_inputs, validated_outputs, should_update_ctx) = r.ok().unwrap();
-
-        if should_update_ctx {
+        if let Some((validated_inputs, validated_outputs)) = r.ok().unwrap() {
             Arc::make_mut(&mut ctx)
                 .set_input(validated_inputs)
                 .set_changes(validated_outputs);
@@ -186,24 +182,21 @@ impl<
             ));
         }
 
-        let (validated_inputs, validated_outputs, should_update_ctx) = r.ok().unwrap();
-
-        if should_update_ctx {
+        if let Some((validated_inputs, validated_outputs)) = r.ok().unwrap() {
             Arc::make_mut(&mut ctx)
                 .set_input(validated_inputs)
                 .set_changes(validated_outputs);
         }
 
         // Sanitize virtuals
-        let (validated_inputs, should_update_ctx) = self
+        if let Some(validated_inputs) = self
             .sanitize_virtuals(
                 &relevant_fields_provided,
                 Arc::clone(&ctx),
                 Arc::clone(&shared_rw_options),
             )
-            .await;
-
-        if should_update_ctx {
+            .await
+        {
             Arc::make_mut(&mut ctx).set_input(validated_inputs);
         }
 
@@ -216,17 +209,16 @@ impl<
         );
 
         loop {
-            let (validated_outputs, dependent_fields_resolved) = self
+            let Some((validated_outputs, dependent_fields_resolved)) = self
                 .resolve_dependent_values(
                     &dependent_fields_col,
                     Arc::clone(&ctx),
                     Arc::clone(&shared_rw_options),
                 )
-                .await;
-
-            if dependent_fields_resolved.is_empty() {
+                .await
+            else {
                 break;
-            }
+            };
 
             Arc::make_mut(&mut ctx).set_changes(validated_outputs);
             dependent_fields_col.set_fields(dependent_fields_resolved);
@@ -333,9 +325,7 @@ impl<
             ));
         }
 
-        let (validated_inputs, validated_outputs, should_update_ctx) = r.ok().unwrap();
-
-        if should_update_ctx {
+        if let Some((validated_inputs, validated_outputs)) = r.ok().unwrap() {
             Arc::make_mut(&mut ctx)
                 .set_input(validated_inputs)
                 .set_changes(validated_outputs.clone())
@@ -362,9 +352,7 @@ impl<
             ));
         }
 
-        let (validated_inputs, validated_outputs, should_update_ctx) = r.ok().unwrap();
-
-        if should_update_ctx {
+        if let Some((validated_inputs, validated_outputs)) = r.ok().unwrap() {
             Arc::make_mut(&mut ctx)
                 .set_input(validated_inputs)
                 .set_changes(validated_outputs.clone())
@@ -391,9 +379,7 @@ impl<
             ));
         }
 
-        let (validated_inputs, validated_outputs, should_update_ctx) = r.ok().unwrap();
-
-        if should_update_ctx {
+        if let Some((validated_inputs, validated_outputs)) = r.ok().unwrap() {
             Arc::make_mut(&mut ctx)
                 .set_input(validated_inputs)
                 .set_changes(validated_outputs.clone())
@@ -401,15 +387,15 @@ impl<
         }
 
         // Sanitize virtuals
-        let (validated_inputs, should_update_ctx) = self
+
+        if let Some(validated_inputs) = self
             .sanitize_virtuals(
                 &relevant_fields_provided,
                 Arc::clone(&ctx),
                 Arc::clone(&shared_rw_options),
             )
-            .await;
-
-        if should_update_ctx {
+            .await
+        {
             Arc::make_mut(&mut ctx).set_input(validated_inputs);
         }
 
@@ -445,17 +431,16 @@ impl<
         let mut dependent_fields_col = fields_updated.clone();
 
         loop {
-            let (validated_outputs, dependent_fields_resolved) = self
+            let Some((validated_outputs, dependent_fields_resolved)) = self
                 .resolve_dependent_values(
                     &dependent_fields_col,
                     Arc::clone(&ctx),
                     Arc::clone(&shared_rw_options),
                 )
-                .await;
-
-            if dependent_fields_resolved.is_empty() {
+                .await
+            else {
                 break;
-            }
+            };
 
             for field_info in dependent_fields_resolved.iter() {
                 fields_updated.add(field_info.clone());
@@ -531,7 +516,7 @@ impl<
         fields_provided: &'a FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
         ctx: SharedIvoContext<I, O>,
         options: SharedRwCtxOptions<CtxOptions>,
-    ) -> Result<(I::Partial, O::Partial, bool), ErrorTool::ErrorPayload> {
+    ) -> Result<Option<(I::Partial, O::Partial)>, ErrorTool::ErrorPayload> {
         let mut validators = Vec::with_capacity(fields_provided.fields.len());
 
         for field_info in fields_provided.fields.iter() {
@@ -545,7 +530,7 @@ impl<
         }
 
         if validators.is_empty() {
-            return Ok((ctx.input(), ctx.values(), false));
+            return Ok(None);
         }
 
         let mut validated_inputs = ctx.input();
@@ -595,7 +580,11 @@ impl<
             return Err(error_tool.payload());
         }
 
-        Ok((validated_inputs, validated_outputs, has_updates))
+        if has_updates {
+            return Ok(Some((validated_inputs, validated_outputs)));
+        }
+
+        Ok(None)
     }
 
     async fn re_validate<'a>(
@@ -603,7 +592,7 @@ impl<
         fields_provided: &'a FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
         ctx: SharedIvoContext<I, O>,
         options: SharedRwCtxOptions<CtxOptions>,
-    ) -> Result<(I::Partial, O::Partial, bool), ErrorTool::ErrorPayload> {
+    ) -> Result<Option<(I::Partial, O::Partial)>, ErrorTool::ErrorPayload> {
         let mut re_validators = Vec::with_capacity(fields_provided.fields.len());
 
         for field_info in fields_provided.fields.iter() {
@@ -617,7 +606,7 @@ impl<
         }
 
         if re_validators.is_empty() {
-            return Ok((ctx.input(), ctx.values(), false));
+            return Ok(None);
         }
 
         let mut validated_inputs = ctx.input();
@@ -667,7 +656,11 @@ impl<
             return Err(error_tool.payload());
         }
 
-        Ok((validated_inputs, validated_outputs, has_updates))
+        if has_updates {
+            return Ok(Some((validated_inputs, validated_outputs)));
+        }
+
+        Ok(None)
     }
 
     async fn post_validate<'a>(
@@ -675,7 +668,7 @@ impl<
         fields_provided: &'a FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
         ctx: SharedIvoContext<I, O>,
         options: SharedRwCtxOptions<CtxOptions>,
-    ) -> Result<(I::Partial, O::Partial, bool), ErrorTool::ErrorPayload> {
+    ) -> Result<Option<(I::Partial, O::Partial)>, ErrorTool::ErrorPayload> {
         let mut pre_validators = vec![];
         let mut post_validators = vec![];
 
@@ -704,7 +697,7 @@ impl<
         }
 
         if post_validators.is_empty() {
-            return Ok((ctx.input(), ctx.values(), false));
+            return Ok(None);
         }
 
         let is_update = ctx.is_update();
@@ -812,7 +805,11 @@ impl<
             return Err(error_tool.payload());
         }
 
-        Ok((validated_inputs, validated_outputs, has_updates))
+        if has_updates {
+            return Ok(Some((validated_inputs, validated_outputs)));
+        }
+
+        Ok(None)
     }
 
     async fn sanitize_virtuals<'a>(
@@ -820,7 +817,7 @@ impl<
         fields_provided: &'a FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
         ctx: SharedIvoContext<I, O>,
         options: SharedRwCtxOptions<CtxOptions>,
-    ) -> (I::Partial, bool) {
+    ) -> Option<I::Partial> {
         let mut sanitizers = Vec::with_capacity(fields_provided.fields.len());
 
         for field_info in fields_provided.fields.iter() {
@@ -835,7 +832,7 @@ impl<
         }
 
         if sanitizers.is_empty() {
-            return (ctx.input(), false);
+            return None;
         }
 
         let input_values = ctx.input();
@@ -860,7 +857,11 @@ impl<
             has_updates = true;
         }
 
-        (validated_inputs, has_updates)
+        if has_updates {
+            return Some(validated_inputs);
+        }
+
+        None
     }
 
     async fn resolve_dependent_values<'a>(
@@ -868,7 +869,7 @@ impl<
         fields_changed: &'a FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
         ctx: SharedIvoContext<I, O>,
         options: SharedRwCtxOptions<CtxOptions>,
-    ) -> (O::Partial, Vec<FieldInfo>) {
+    ) -> Option<(O::Partial, Vec<FieldInfo>)> {
         let mut resolvers = vec![];
         let previous_values: Option<O::Partial> = ctx.previous_values().map(|v| v.into());
         let is_update = previous_values.as_ref().is_some();
@@ -910,7 +911,7 @@ impl<
         }
 
         if resolvers.is_empty() {
-            return (ctx.values(), vec![]);
+            return None;
         }
 
         let tasks = resolvers.into_iter().map(async |(field_info, resolver)| {
@@ -938,7 +939,11 @@ impl<
             }
         }
 
-        (updated_values, fields_updated)
+        if fields_updated.is_empty() {
+            return None;
+        }
+
+        Some((updated_values, fields_updated))
     }
 
     async fn resolve_constants_and_defaults(
