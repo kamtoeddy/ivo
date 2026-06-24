@@ -6,8 +6,8 @@ use crate::{
         fields::{
             base::{BuildableFieldConfig, FieldConfig, FieldType, InternalFieldConfig},
             types::{
-                BooleanResolver, IntoBooleanResolver, IntoDeleteHandler, IntoFailureHandler,
-                IntoFieldValidator, IntoRequiredResolver, IntoResolver, IntoSuccessHandler,
+                BooleanResolver, IntoDeleteHandler, IntoFailureHandler, IntoFieldValidator,
+                IntoRequiredResolver, IntoResolver, IntoSuccessHandler,
                 IntoValueResolverWithMiniContext, IsFieldProvisionEnabled, RequiredResolver,
                 UniformValidator, ValueResolverWithMiniContext,
             },
@@ -32,8 +32,8 @@ pub struct LaxFieldBuilder<
     HasRevalidator = No,
     HasRequired = No,
     HasIgnore = No,
-    HasShouldInit = No,
-    HasShouldUpdate = No,
+    HasIgnoreInit = No,
+    HasIgnoreUpdate = No,
     HasDelete = No,
     HasFailure = No,
     HasSuccess = No,
@@ -44,8 +44,8 @@ pub struct LaxFieldBuilder<
     _re_validator: PhantomData<HasRevalidator>,
     _required_fn: PhantomData<HasRequired>,
     _should_ignore: PhantomData<HasIgnore>,
-    _should_init: PhantomData<HasShouldInit>,
-    _should_update: PhantomData<HasShouldUpdate>,
+    _ignore_init: PhantomData<HasIgnoreInit>,
+    _ignore_update: PhantomData<HasIgnoreUpdate>,
     _on_delete_fns: PhantomData<HasDelete>,
     _on_failure_fns: PhantomData<HasFailure>,
     _on_success_fns: PhantomData<HasSuccess>,
@@ -54,9 +54,9 @@ pub struct LaxFieldBuilder<
     validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
     re_validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
     required_fn: Option<RequiredResolver<I, O, CtxOptions>>,
-    should_ignore_fn: Option<BooleanResolver<I, O, CtxOptions>>,
-    should_init: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
-    should_update: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
+    should_ignore: Option<BooleanResolver<I, O, CtxOptions>>,
+    ignore_init: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
+    ignore_update: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
     on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
     on_failure_fns: Option<Vec<FailureHandler<I, O, CtxOptions>>>,
     on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
@@ -68,8 +68,8 @@ impl<
         HasRevalidator,
         HasRequired,
         HasIgnore,
-        HasShouldInit,
-        HasShouldUpdate,
+        HasIgnoreInit,
+        HasIgnoreUpdate,
         HasDelete,
         HasFailure,
         HasSuccess,
@@ -90,8 +90,8 @@ impl<
         HasRevalidator,
         HasRequired,
         HasIgnore,
-        HasShouldInit,
-        HasShouldUpdate,
+        HasIgnoreInit,
+        HasIgnoreUpdate,
         HasDelete,
         HasFailure,
         HasSuccess,
@@ -103,9 +103,9 @@ impl<
             validator: None,
             re_validator: None,
             required_fn: None,
-            should_ignore_fn: None,
-            should_init: None,
-            should_update: None,
+            should_ignore: None,
+            ignore_init: None,
+            ignore_update: None,
             on_delete_fns: None,
             on_failure_fns: None,
             on_success_fns: None,
@@ -115,8 +115,8 @@ impl<
             _re_validator: PhantomData,
             _required_fn: PhantomData,
             _should_ignore: PhantomData,
-            _should_init: PhantomData,
-            _should_update: PhantomData,
+            _ignore_init: PhantomData,
+            _ignore_update: PhantomData,
             _on_delete_fns: PhantomData,
             _on_failure_fns: PhantomData,
             _on_success_fns: PhantomData,
@@ -130,8 +130,8 @@ impl<
         HasRevalidator,
         HasRequired,
         HasIgnore,
-        HasShouldInit,
-        HasShouldUpdate,
+        HasIgnoreInit,
+        HasIgnoreUpdate,
         HasDelete,
         HasFailure,
         HasSuccess,
@@ -152,8 +152,8 @@ impl<
         HasRevalidator,
         HasRequired,
         HasIgnore,
-        HasShouldInit,
-        HasShouldUpdate,
+        HasIgnoreInit,
+        HasIgnoreUpdate,
         HasDelete,
         HasFailure,
         HasSuccess,
@@ -170,8 +170,8 @@ impl<
         HasRevalidator,
         HasRequired,
         HasIgnore,
-        HasShouldInit,
-        HasShouldUpdate,
+        HasIgnoreInit,
+        HasIgnoreUpdate,
         HasDelete,
         HasFailure,
         HasSuccess,
@@ -192,8 +192,8 @@ impl<
         HasRevalidator,
         HasRequired,
         HasIgnore,
-        HasShouldInit,
-        HasShouldUpdate,
+        HasIgnoreInit,
+        HasIgnoreUpdate,
         HasDelete,
         HasFailure,
         HasSuccess,
@@ -206,9 +206,9 @@ impl<
             validator: self.validator,
             re_validator: self.re_validator,
             required_fn: self.required_fn,
-            should_ignore: self.should_ignore_fn,
-            should_init: self.should_init,
-            should_update: self.should_update,
+            ignore: self.should_ignore,
+            ignore_init: self.ignore_init,
+            ignore_update: self.ignore_update,
             on_delete_fns: self.on_delete_fns,
             on_failure_fns: self.on_failure_fns,
             on_success_fns: self.on_success_fns,
@@ -302,7 +302,7 @@ impl<
         ErrorTool: IvoErrorTool,
     > LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasDefault, Yes, HasRevalidator>
 {
-    pub fn required_if<R>(
+    pub fn required<R>(
         self,
         resolver: R,
     ) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasDefault, Yes, HasRevalidator, Yes>
@@ -342,7 +342,7 @@ impl<
         HasRequired,
     >
 {
-    pub fn ignore_if<R>(
+    pub fn ignore<R>(
         self,
         resolver: R,
     ) -> LaxFieldBuilder<
@@ -365,35 +365,11 @@ impl<
             validator: self.validator,
             re_validator: self.re_validator,
             required_fn: self.required_fn,
-            should_ignore_fn: Some(resolver.into_resolver()),
+            should_ignore: Some(resolver.into_resolver()),
             ..Default::default()
         }
     }
-}
 
-impl<
-        HasDefault: IsProvided,
-        HasValidator,
-        HasRevalidator,
-        HasRequired,
-        T: IvoFieldValue,
-        I: IvoStruct,
-        O: IvoStruct,
-        CtxOptions,
-        ErrorTool: IvoErrorTool,
-    >
-    LaxFieldBuilder<
-        T,
-        I,
-        O,
-        CtxOptions,
-        ErrorTool,
-        HasDefault,
-        HasValidator,
-        HasRevalidator,
-        HasRequired,
-    >
-{
     pub fn ignore_init(
         self,
     ) -> LaxFieldBuilder<
@@ -414,43 +390,13 @@ impl<
             validator: self.validator,
             re_validator: self.re_validator,
             required_fn: self.required_fn,
-            should_init: Some(IsFieldProvisionEnabled::False),
+            ignore_init: Some(IsFieldProvisionEnabled::False),
             ..Default::default()
         }
     }
 
-    pub fn allow_init_if<R>(
+    pub fn ignore_update(
         self,
-        resolver: R,
-    ) -> LaxFieldBuilder<
-        T,
-        I,
-        O,
-        CtxOptions,
-        ErrorTool,
-        HasDefault,
-        HasValidator,
-        HasRevalidator,
-        HasRequired,
-        No,
-        YesComputed,
-    >
-    where
-        R: IntoBooleanResolver<I, O, CtxOptions>,
-    {
-        LaxFieldBuilder {
-            default: self.default,
-            validator: self.validator,
-            re_validator: self.re_validator,
-            required_fn: self.required_fn,
-            should_init: Some(IsFieldProvisionEnabled::Func(resolver.into_resolver())),
-            ..Default::default()
-        }
-    }
-
-    pub fn allow_update_if<R>(
-        self,
-        resolver: R,
     ) -> LaxFieldBuilder<
         T,
         I,
@@ -463,17 +409,14 @@ impl<
         HasRequired,
         No,
         No,
-        YesComputed,
-    >
-    where
-        R: IntoResolver<bool, I, O, CtxOptions>,
-    {
+        Yes,
+    > {
         LaxFieldBuilder {
             default: self.default,
             validator: self.validator,
             re_validator: self.re_validator,
             required_fn: self.required_fn,
-            should_update: Some(IsFieldProvisionEnabled::Func(resolver.into_resolver())),
+            ignore_update: Some(IsFieldProvisionEnabled::False),
             ..Default::default()
         }
     }
@@ -484,6 +427,8 @@ impl<
         HasValidator,
         HasRevalidator,
         HasRequired,
+        HasIgnore,
+        HasIgnoreInit,
         T: IvoFieldValue,
         I: IvoStruct,
         O: IvoStruct,
@@ -500,6 +445,8 @@ impl<
         HasValidator,
         HasRevalidator,
         HasRequired,
+        HasIgnore,
+        HasIgnoreInit,
     >
 {
     /// During updates, the current value of the field is compared with it's
@@ -516,8 +463,8 @@ impl<
         HasValidator,
         HasRevalidator,
         HasRequired,
-        No,
-        No,
+        HasIgnore,
+        HasIgnoreInit,
         Yes,
     > {
         LaxFieldBuilder {
@@ -525,208 +472,9 @@ impl<
             validator: self.validator,
             re_validator: self.re_validator,
             required_fn: self.required_fn,
-            should_update: Some(IsFieldProvisionEnabled::Readonly),
-            ..Default::default()
-        }
-    }
-}
-
-impl<
-        HasDefault: IsProvided,
-        HasValidator,
-        HasRevalidator,
-        HasRequired,
-        T: IvoFieldValue,
-        I: IvoStruct,
-        O: IvoStruct,
-        CtxOptions,
-        ErrorTool: IvoErrorTool,
-    >
-    LaxFieldBuilder<
-        T,
-        I,
-        O,
-        CtxOptions,
-        ErrorTool,
-        HasDefault,
-        HasValidator,
-        HasRevalidator,
-        HasRequired,
-        No,
-        No,
-        Yes,
-    >
-{
-    pub fn allow_init_if<R>(
-        self,
-        resolver: R,
-    ) -> LaxFieldBuilder<
-        T,
-        I,
-        O,
-        CtxOptions,
-        ErrorTool,
-        HasDefault,
-        HasValidator,
-        HasRevalidator,
-        HasRequired,
-        No,
-        YesComputed,
-        Yes,
-    >
-    where
-        R: IntoBooleanResolver<I, O, CtxOptions>,
-    {
-        LaxFieldBuilder {
-            default: self.default,
-            validator: self.validator,
-            re_validator: self.re_validator,
-            required_fn: self.required_fn,
-            should_init: Some(IsFieldProvisionEnabled::Func(resolver.into_resolver())),
-            ..Default::default()
-        }
-    }
-}
-
-impl<
-        HasDefault: IsProvided,
-        HasValidator,
-        HasRevalidator,
-        HasRequired,
-        T: IvoFieldValue,
-        I: IvoStruct,
-        O: IvoStruct,
-        CtxOptions,
-        ErrorTool: IvoErrorTool,
-    >
-    LaxFieldBuilder<
-        T,
-        I,
-        O,
-        CtxOptions,
-        ErrorTool,
-        HasDefault,
-        HasValidator,
-        HasRevalidator,
-        HasRequired,
-        No,
-        Yes,
-        YesComputed,
-    >
-{
-    pub fn allow_update_if<R>(
-        self,
-        resolver: R,
-    ) -> LaxFieldBuilder<
-        T,
-        I,
-        O,
-        CtxOptions,
-        ErrorTool,
-        HasDefault,
-        HasValidator,
-        HasRevalidator,
-        HasRequired,
-        No,
-        Yes,
-        YesComputed,
-    >
-    where
-        R: IntoResolver<bool, I, O, CtxOptions>,
-    {
-        LaxFieldBuilder {
-            default: self.default,
-            validator: self.validator,
-            re_validator: self.re_validator,
-            required_fn: self.required_fn,
-            should_init: self.should_init,
-            should_update: Some(IsFieldProvisionEnabled::Func(resolver.into_resolver())),
-            ..Default::default()
-        }
-    }
-}
-
-impl<
-        HasDefault: IsProvided,
-        HasValidator,
-        HasRevalidator,
-        HasRequired,
-        T: IvoFieldValue,
-        I: IvoStruct,
-        O: IvoStruct,
-        CtxOptions,
-        ErrorTool: IvoErrorTool,
-    >
-    LaxFieldBuilder<
-        T,
-        I,
-        O,
-        CtxOptions,
-        ErrorTool,
-        HasDefault,
-        HasValidator,
-        HasRevalidator,
-        HasRequired,
-        No,
-        No,
-        YesComputed,
-    >
-{
-    pub fn ignore_init(
-        self,
-    ) -> LaxFieldBuilder<
-        T,
-        I,
-        O,
-        CtxOptions,
-        ErrorTool,
-        HasDefault,
-        HasValidator,
-        HasRevalidator,
-        HasRequired,
-        No,
-        Yes,
-        YesComputed,
-    > {
-        LaxFieldBuilder {
-            default: self.default,
-            validator: self.validator,
-            re_validator: self.re_validator,
-            required_fn: self.required_fn,
-
-            should_update: self.should_update,
-            should_init: Some(IsFieldProvisionEnabled::False),
-            ..Default::default()
-        }
-    }
-
-    pub fn allow_init_if<R>(
-        self,
-        resolver: R,
-    ) -> LaxFieldBuilder<
-        T,
-        I,
-        O,
-        CtxOptions,
-        ErrorTool,
-        HasDefault,
-        HasValidator,
-        HasRevalidator,
-        HasRequired,
-        No,
-        YesComputed,
-        YesComputed,
-    >
-    where
-        R: IntoBooleanResolver<I, O, CtxOptions>,
-    {
-        LaxFieldBuilder {
-            default: self.default,
-            validator: self.validator,
-            re_validator: self.re_validator,
-            required_fn: self.required_fn,
-            should_update: self.should_update,
-            should_init: Some(IsFieldProvisionEnabled::Func(resolver.into_resolver())),
+            should_ignore: self.should_ignore,
+            ignore_init: self.ignore_init,
+            ignore_update: Some(IsFieldProvisionEnabled::Readonly),
             ..Default::default()
         }
     }
@@ -739,8 +487,8 @@ impl<
         HasRevalidator,
         HasRequired,
         HasIgnore,
-        HasShouldInit,
-        HasShouldUpdate,
+        HasIgnoreInit,
+        HasIgnoreUpdate,
         HasFailure,
         HasSuccess,
         T: IvoFieldValue,
@@ -760,8 +508,8 @@ impl<
         HasRevalidator,
         HasRequired,
         HasIgnore,
-        HasShouldInit,
-        HasShouldUpdate,
+        HasIgnoreInit,
+        HasIgnoreUpdate,
         No,
         HasFailure,
         HasSuccess,
@@ -781,8 +529,8 @@ impl<
         HasRevalidator,
         HasRequired,
         HasIgnore,
-        HasShouldInit,
-        HasShouldUpdate,
+        HasIgnoreInit,
+        HasIgnoreUpdate,
         Yes,
         HasFailure,
         HasSuccess,
@@ -797,9 +545,9 @@ impl<
             validator: self.validator,
             re_validator: self.re_validator,
             required_fn: self.required_fn,
-            should_ignore_fn: self.should_ignore_fn,
-            should_init: self.should_init,
-            should_update: self.should_update,
+            should_ignore: self.should_ignore,
+            ignore_init: self.ignore_init,
+            ignore_update: self.ignore_update,
             on_delete_fns: Some(match self.on_delete_fns {
                 Some(hs) => {
                     let mut v = hs;
@@ -823,8 +571,8 @@ impl<
         HasRevalidator,
         HasRequired,
         HasIgnore,
-        HasShouldInit,
-        HasShouldUpdate,
+        HasIgnoreInit,
+        HasIgnoreUpdate,
         HasDelete,
         HasFailure,
         HasSuccess,
@@ -845,8 +593,8 @@ impl<
         HasRevalidator,
         HasRequired,
         HasIgnore,
-        HasShouldInit,
-        HasShouldUpdate,
+        HasIgnoreInit,
+        HasIgnoreUpdate,
         HasDelete,
         HasFailure,
         HasSuccess,
@@ -866,8 +614,8 @@ impl<
         HasRevalidator,
         HasRequired,
         HasIgnore,
-        HasShouldInit,
-        HasShouldUpdate,
+        HasIgnoreInit,
+        HasIgnoreUpdate,
         HasDelete,
         Yes,
         HasSuccess,
@@ -881,9 +629,9 @@ impl<
             validator: self.validator,
             re_validator: self.re_validator,
             required_fn: self.required_fn,
-            should_ignore_fn: self.should_ignore_fn,
-            should_init: self.should_init,
-            should_update: self.should_update,
+            should_ignore: self.should_ignore,
+            ignore_init: self.ignore_init,
+            ignore_update: self.ignore_update,
             on_delete_fns: self.on_delete_fns,
             on_failure_fns: Some(match self.on_failure_fns {
                 Some(hs) => {
@@ -908,8 +656,8 @@ impl<
         HasRevalidator,
         HasRequired,
         HasIgnore,
-        HasShouldInit,
-        HasShouldUpdate,
+        HasIgnoreInit,
+        HasIgnoreUpdate,
         HasDelete,
         HasFailure,
         HasSuccess,
@@ -930,8 +678,8 @@ impl<
         HasRevalidator,
         HasRequired,
         HasIgnore,
-        HasShouldInit,
-        HasShouldUpdate,
+        HasIgnoreInit,
+        HasIgnoreUpdate,
         HasDelete,
         HasFailure,
         HasSuccess,
@@ -951,8 +699,8 @@ impl<
         HasRevalidator,
         HasRequired,
         HasIgnore,
-        HasShouldInit,
-        HasShouldUpdate,
+        HasIgnoreInit,
+        HasIgnoreUpdate,
         HasDelete,
         HasFailure,
         Yes,
@@ -967,9 +715,9 @@ impl<
             validator: self.validator,
             re_validator: self.re_validator,
             required_fn: self.required_fn,
-            should_ignore_fn: self.should_ignore_fn,
-            should_init: self.should_init,
-            should_update: self.should_update,
+            should_ignore: self.should_ignore,
+            ignore_init: self.ignore_init,
+            ignore_update: self.ignore_update,
             on_delete_fns: self.on_delete_fns,
             on_failure_fns: self.on_failure_fns,
             on_success_fns: Some(match self.on_success_fns {

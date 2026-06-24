@@ -32,7 +32,7 @@ async fn should_trigger_on_success_handlers_at_creation_if_provided() {
 
                         ready(Ok(v))
                     })
-                    .allow_update_if(|_, _| ready(false))
+                    .ignore_update()
                     .on_success(|ctx: SharedIvoContext<DataInput, Data>, _| {
                         if true {
                             panic!(
@@ -117,7 +117,7 @@ async fn should_trigger_on_success_handlers_at_creation_even_if_not_provided() {
 
                         ready(Ok(v))
                     })
-                    .allow_update_if(|_, _| ready(false))
+                    .ignore_update()
                     .on_success(|ctx: SharedIvoContext<DataInput, Data>, _| {
                         if true {
                             panic!(
@@ -479,7 +479,7 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_i
 
                         ready(Ok(v))
                     })
-                    .allow_update_if(|_, _| ready(false))
+                    .ignore_update()
                     .on_success(|ctx: SharedIvoContext<DataInput, Data>, _| {
                         if true {
                             panic!(

@@ -12,12 +12,11 @@ mod on_success;
 // TODO:
 // [x] default
 // [x] default_fn
-// [ ] allow_init_if
-// [ ] allow_update_if
-// [ ] ignore_if
+// [ ] ignore
 // [ ] ignore_init
+// [ ] ignore_update
 // [ ] readonly
-// [ ] required_if
+// [ ] required
 // [x] validate
 // [x] re_validate
 // [ ] post_validate

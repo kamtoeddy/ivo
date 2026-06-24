@@ -132,7 +132,7 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
                         .validate(|v, _, _| ready(Ok(v)))
                         // .readonly()
                         // .ignore_init()
-                        .ignore_if(|_, _| ready(true))
+                        .ignore(|_, _| ready(true))
                         .on_delete(|_, _| {
                             println!("[role]: on delete handled");
 
@@ -261,7 +261,7 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
                             ready(Ok(validated.into()))
                         })
                         .sanitize(|v, _, _| ready(format!("sanitized-'{v}'")))
-                        .allow_update_if(|ctx: Ctx, _| {
+                        .ignore(|ctx: Ctx, _| {
                             ready(is_username_or_slug_id_updatable(
                                 ctx.values().username_last_updated_at.unwrap(),
                             ))

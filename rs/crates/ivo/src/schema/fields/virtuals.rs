@@ -29,8 +29,8 @@ pub struct VirtualFieldBuilder<
     HasSanitizer = No,
     HasRequired = No,
     HasIgnore = No,
-    HasShouldInit = No,
-    HasShouldUpdate = No,
+    HasIgnoreInit = No,
+    HasIgnoreUpdate = No,
     HasFailure = No,
     HasSuccess = No,
 > {
@@ -41,8 +41,8 @@ pub struct VirtualFieldBuilder<
     _required_fn: PhantomData<HasRequired>,
     _sanitizer_fn: PhantomData<HasSanitizer>,
     _should_ignore: PhantomData<HasIgnore>,
-    _should_init: PhantomData<HasShouldInit>,
-    _should_update: PhantomData<HasShouldUpdate>,
+    _ignore_init: PhantomData<HasIgnoreInit>,
+    _ignore_update: PhantomData<HasIgnoreUpdate>,
     _on_failure_fns: PhantomData<HasFailure>,
     _on_success_fns: PhantomData<HasSuccess>,
     // actual data...
@@ -51,9 +51,9 @@ pub struct VirtualFieldBuilder<
     re_validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
     required_fn: Option<RequiredResolver<I, O, CtxOptions>>,
     sanitizer: Option<VirtualSanitizer<ErasedValue, I, O, CtxOptions>>,
-    should_ignore_fn: Option<BooleanResolver<I, O, CtxOptions>>,
-    should_init: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
-    should_update: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
+    ignore: Option<BooleanResolver<I, O, CtxOptions>>,
+    ignore_init: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
+    ignore_update: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
     on_failure_fns: Option<Vec<FailureHandler<I, O, CtxOptions>>>,
     on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
 }
@@ -65,8 +65,8 @@ impl<
         HasSanitizer,
         HasRequired,
         HasIgnore,
-        HasShouldInit,
-        HasShouldUpdate,
+        HasIgnoreInit,
+        HasIgnoreUpdate,
         HasFailure,
         HasSuccess,
         T: IvoFieldValue,
@@ -87,8 +87,8 @@ impl<
         HasSanitizer,
         HasRequired,
         HasIgnore,
-        HasShouldInit,
-        HasShouldUpdate,
+        HasIgnoreInit,
+        HasIgnoreUpdate,
         HasFailure,
         HasSuccess,
     >
@@ -100,9 +100,9 @@ impl<
             re_validator: None,
             required_fn: None,
             sanitizer: None,
-            should_ignore_fn: None,
-            should_init: None,
-            should_update: None,
+            ignore: None,
+            ignore_init: None,
+            ignore_update: None,
             on_failure_fns: None,
             on_success_fns: None,
             _t: PhantomData,
@@ -112,8 +112,8 @@ impl<
             _required_fn: PhantomData,
             _sanitizer_fn: PhantomData,
             _should_ignore: PhantomData,
-            _should_init: PhantomData,
-            _should_update: PhantomData,
+            _ignore_init: PhantomData,
+            _ignore_update: PhantomData,
             _on_failure_fns: PhantomData,
             _on_success_fns: PhantomData,
         }
@@ -127,8 +127,8 @@ impl<
         HasSanitizer,
         HasRequired,
         HasIgnore,
-        HasShouldInit,
-        HasShouldUpdate,
+        HasIgnoreInit,
+        HasIgnoreUpdate,
         HasFailure,
         HasSuccess,
         T: IvoFieldValue,
@@ -149,8 +149,8 @@ impl<
         HasSanitizer,
         HasRequired,
         HasIgnore,
-        HasShouldInit,
-        HasShouldUpdate,
+        HasIgnoreInit,
+        HasIgnoreUpdate,
         HasFailure,
         HasSuccess,
     >
@@ -166,8 +166,8 @@ impl<
         HasSanitizer,
         HasRequired,
         HasIgnore,
-        HasShouldInit,
-        HasShouldUpdate,
+        HasIgnoreInit,
+        HasIgnoreUpdate,
         HasFailure,
         HasSuccess,
         T: IvoFieldValue,
@@ -188,8 +188,8 @@ impl<
         HasSanitizer,
         HasRequired,
         HasIgnore,
-        HasShouldInit,
-        HasShouldUpdate,
+        HasIgnoreInit,
+        HasIgnoreUpdate,
         HasFailure,
         HasSuccess,
     >
@@ -202,9 +202,9 @@ impl<
             re_validator: self.re_validator,
             required_fn: self.required_fn,
             sanitizer: self.sanitizer,
-            should_ignore: self.should_ignore_fn,
-            should_init: self.should_init,
-            should_update: self.should_update,
+            ignore: self.ignore,
+            ignore_init: self.ignore_init,
+            ignore_update: self.ignore_update,
             on_failure_fns: self.on_failure_fns,
             on_success_fns: self.on_success_fns,
             ..Default::default()
@@ -235,9 +235,9 @@ impl<
             re_validator: self.re_validator,
             sanitizer: self.sanitizer,
             required_fn: self.required_fn,
-            should_ignore_fn: self.should_ignore_fn,
-            should_init: self.should_init,
-            should_update: self.should_update,
+            ignore: self.ignore,
+            ignore_init: self.ignore_init,
+            ignore_update: self.ignore_update,
             on_failure_fns: self.on_failure_fns,
             on_success_fns: self.on_success_fns,
             ..Default::default()
@@ -304,7 +304,7 @@ impl<
         ErrorTool: IvoErrorTool,
     > VirtualFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, HasAlias, HasRevalidator>
 {
-    pub fn required_if<R>(
+    pub fn required<R>(
         self,
         resolver: R,
     ) -> VirtualFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, HasAlias, HasRevalidator, No, Yes>
@@ -397,7 +397,7 @@ impl<
         HasRequired,
     >
 {
-    pub fn ignore_if<R>(
+    pub fn ignore<R>(
         self,
         resolver: R,
     ) -> VirtualFieldBuilder<
@@ -422,36 +422,11 @@ impl<
             re_validator: self.re_validator,
             required_fn: self.required_fn,
             sanitizer: self.sanitizer,
-            should_ignore_fn: Some(resolver.into_resolver()),
+            ignore: Some(resolver.into_resolver()),
             ..Default::default()
         }
     }
-}
 
-impl<
-        HasAlias,
-        HasRevalidator,
-        HasSanitizer,
-        HasRequired,
-        T: IvoFieldValue,
-        I: IvoStruct,
-        O: IvoStruct,
-        CtxOptions,
-        ErrorTool: IvoErrorTool,
-    >
-    VirtualFieldBuilder<
-        T,
-        I,
-        O,
-        CtxOptions,
-        ErrorTool,
-        Yes,
-        HasAlias,
-        HasRevalidator,
-        HasSanitizer,
-        HasRequired,
-    >
-{
     pub fn ignore_init(
         self,
     ) -> VirtualFieldBuilder<
@@ -474,38 +449,7 @@ impl<
             re_validator: self.re_validator,
             required_fn: self.required_fn,
             sanitizer: self.sanitizer,
-            should_init: Some(IsFieldProvisionEnabled::False),
-            ..Default::default()
-        }
-    }
-
-    pub fn allow_init_if<R>(
-        self,
-        resolver: R,
-    ) -> VirtualFieldBuilder<
-        T,
-        I,
-        O,
-        CtxOptions,
-        ErrorTool,
-        Yes,
-        HasAlias,
-        HasRevalidator,
-        HasSanitizer,
-        HasRequired,
-        No,
-        YesComputed,
-    >
-    where
-        R: IntoBooleanResolver<I, O, CtxOptions>,
-    {
-        VirtualFieldBuilder {
-            alias: self.alias,
-            validator: self.validator,
-            re_validator: self.re_validator,
-            required_fn: self.required_fn,
-            sanitizer: self.sanitizer,
-            should_init: Some(IsFieldProvisionEnabled::Func(resolver.into_resolver())),
+            ignore_init: Some(IsFieldProvisionEnabled::False),
             ..Default::default()
         }
     }
@@ -533,39 +477,7 @@ impl<
             re_validator: self.re_validator,
             required_fn: self.required_fn,
             sanitizer: self.sanitizer,
-            should_update: Some(IsFieldProvisionEnabled::False),
-            ..Default::default()
-        }
-    }
-
-    pub fn allow_update_if<R>(
-        self,
-        resolver: R,
-    ) -> VirtualFieldBuilder<
-        T,
-        I,
-        O,
-        CtxOptions,
-        ErrorTool,
-        Yes,
-        HasAlias,
-        HasRevalidator,
-        HasSanitizer,
-        HasRequired,
-        No,
-        No,
-        YesComputed,
-    >
-    where
-        R: IntoResolver<bool, I, O, CtxOptions>,
-    {
-        VirtualFieldBuilder {
-            alias: self.alias,
-            validator: self.validator,
-            re_validator: self.re_validator,
-            required_fn: self.required_fn,
-            sanitizer: self.sanitizer,
-            should_update: Some(IsFieldProvisionEnabled::Func(resolver.into_resolver())),
+            ignore_update: Some(IsFieldProvisionEnabled::False),
             ..Default::default()
         }
     }
@@ -598,7 +510,7 @@ impl<
         Yes,
     >
 {
-    pub fn allow_init_if<R>(
+    pub fn ignore<R>(
         self,
         resolver: R,
     ) -> VirtualFieldBuilder<
@@ -625,7 +537,7 @@ impl<
             re_validator: self.re_validator,
             required_fn: self.required_fn,
             sanitizer: self.sanitizer,
-            should_init: Some(IsFieldProvisionEnabled::Func(resolver.into_resolver())),
+            ignore_init: Some(IsFieldProvisionEnabled::Func(resolver.into_resolver())),
             ..Default::default()
         }
     }
@@ -685,8 +597,8 @@ impl<
             re_validator: self.re_validator,
             required_fn: self.required_fn,
             sanitizer: self.sanitizer,
-            should_init: self.should_init,
-            should_update: Some(IsFieldProvisionEnabled::Func(resolver.into_resolver())),
+            ignore_init: self.ignore_init,
+            ignore_update: Some(IsFieldProvisionEnabled::Func(resolver.into_resolver())),
             ..Default::default()
         }
     }
@@ -742,13 +654,13 @@ impl<
             re_validator: self.re_validator,
             required_fn: self.required_fn,
             sanitizer: self.sanitizer,
-            should_update: self.should_update,
-            should_init: Some(IsFieldProvisionEnabled::False),
+            ignore_update: self.ignore_update,
+            ignore_init: Some(IsFieldProvisionEnabled::False),
             ..Default::default()
         }
     }
 
-    pub fn allow_init_if<R>(
+    pub fn ignore<R>(
         self,
         resolver: R,
     ) -> VirtualFieldBuilder<
@@ -775,8 +687,8 @@ impl<
             re_validator: self.re_validator,
             required_fn: self.required_fn,
             sanitizer: self.sanitizer,
-            should_update: self.should_update,
-            should_init: Some(IsFieldProvisionEnabled::Func(resolver.into_resolver())),
+            ignore_update: self.ignore_update,
+            ignore_init: Some(IsFieldProvisionEnabled::Func(resolver.into_resolver())),
             ..Default::default()
         }
     }
@@ -789,8 +701,8 @@ impl<
         HasSanitizer,
         HasRequired,
         HasIgnore,
-        HasShouldInit,
-        HasShouldUpdate,
+        HasIgnoreInit,
+        HasIgnoreUpdate,
         HasFailure,
         HasSuccess,
         T: IvoFieldValue,
@@ -811,8 +723,8 @@ impl<
         HasSanitizer,
         HasRequired,
         HasIgnore,
-        HasShouldInit,
-        HasShouldUpdate,
+        HasIgnoreInit,
+        HasIgnoreUpdate,
         HasFailure,
         HasSuccess,
     >
@@ -832,8 +744,8 @@ impl<
         HasSanitizer,
         HasRequired,
         HasIgnore,
-        HasShouldInit,
-        HasShouldUpdate,
+        HasIgnoreInit,
+        HasIgnoreUpdate,
         Yes,
         HasSuccess,
     >
@@ -848,9 +760,9 @@ impl<
             re_validator: self.re_validator,
             sanitizer: self.sanitizer,
             required_fn: self.required_fn,
-            should_ignore_fn: self.should_ignore_fn,
-            should_init: self.should_init,
-            should_update: self.should_update,
+            ignore: self.ignore,
+            ignore_init: self.ignore_init,
+            ignore_update: self.ignore_update,
             on_failure_fns: Some(match self.on_failure_fns {
                 Some(hs) => {
                     let mut v = hs;
@@ -874,8 +786,8 @@ impl<
         HasSanitizer,
         HasRequired,
         HasIgnore,
-        HasShouldInit,
-        HasShouldUpdate,
+        HasIgnoreInit,
+        HasIgnoreUpdate,
         HasFailure,
         HasSuccess,
         T: IvoFieldValue,
@@ -896,8 +808,8 @@ impl<
         HasSanitizer,
         HasRequired,
         HasIgnore,
-        HasShouldInit,
-        HasShouldUpdate,
+        HasIgnoreInit,
+        HasIgnoreUpdate,
         HasFailure,
         HasSuccess,
     >
@@ -917,8 +829,8 @@ impl<
         HasSanitizer,
         HasRequired,
         HasIgnore,
-        HasShouldInit,
-        HasShouldUpdate,
+        HasIgnoreInit,
+        HasIgnoreUpdate,
         HasFailure,
         Yes,
     >
@@ -933,9 +845,9 @@ impl<
             re_validator: self.re_validator,
             sanitizer: self.sanitizer,
             required_fn: self.required_fn,
-            should_ignore_fn: self.should_ignore_fn,
-            should_init: self.should_init,
-            should_update: self.should_update,
+            ignore: self.ignore,
+            ignore_init: self.ignore_init,
+            ignore_update: self.ignore_update,
             on_failure_fns: self.on_failure_fns,
             on_success_fns: Some(match self.on_success_fns {
                 Some(hs) => {

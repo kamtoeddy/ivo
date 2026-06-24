@@ -25,7 +25,7 @@ pub struct RequiredFieldBuilder<
     HasValidator = No,
     HasRevalidator = No,
     HasRequiredError = No,
-    HasShouldUpdate = No,
+    HasIgnoreUpdate = No,
     HasDelete = No,
     HasFailure = No,
     HasSuccess = No,
@@ -34,7 +34,7 @@ pub struct RequiredFieldBuilder<
     _err: PhantomData<HasRequiredError>,
     _validator: PhantomData<HasValidator>,
     _re_validator: PhantomData<HasRevalidator>,
-    _should_update: PhantomData<HasShouldUpdate>,
+    _ignore_update: PhantomData<HasIgnoreUpdate>,
     _on_delete_fns: PhantomData<HasDelete>,
     _on_failure_fns: PhantomData<HasFailure>,
     _on_success_fns: PhantomData<HasSuccess>,
@@ -42,7 +42,7 @@ pub struct RequiredFieldBuilder<
     required_error: Option<ComputableRequiredError<I, O, CtxOptions>>,
     validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
     re_validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
-    should_update: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
+    ignore_update: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
     on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
     on_failure_fns: Option<Vec<FailureHandler<I, O, CtxOptions>>>,
     on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
@@ -52,7 +52,7 @@ impl<
         HasValidator,
         HasRevalidator,
         HasRequiredError,
-        HasShouldUpdate,
+        HasIgnoreUpdate,
         HasDelete,
         HasFailure,
         HasSuccess,
@@ -71,7 +71,7 @@ impl<
         HasValidator,
         HasRevalidator,
         HasRequiredError,
-        HasShouldUpdate,
+        HasIgnoreUpdate,
         HasDelete,
         HasFailure,
         HasSuccess,
@@ -82,7 +82,7 @@ impl<
             required_error: None,
             validator: None,
             re_validator: None,
-            should_update: None,
+            ignore_update: None,
             on_delete_fns: None,
             on_failure_fns: None,
             on_success_fns: None,
@@ -90,7 +90,7 @@ impl<
             _err: PhantomData,
             _validator: PhantomData,
             _re_validator: PhantomData,
-            _should_update: PhantomData,
+            _ignore_update: PhantomData,
             _on_delete_fns: PhantomData,
             _on_failure_fns: PhantomData,
             _on_success_fns: PhantomData,
@@ -102,7 +102,7 @@ impl<
         HasValidator,
         HasRevalidator,
         HasRequiredError,
-        HasShouldUpdate,
+        HasIgnoreUpdate,
         HasDelete,
         HasFailure,
         HasSuccess,
@@ -121,7 +121,7 @@ impl<
         HasValidator,
         HasRevalidator,
         HasRequiredError,
-        HasShouldUpdate,
+        HasIgnoreUpdate,
         HasDelete,
         HasFailure,
         HasSuccess,
@@ -135,7 +135,7 @@ impl<
 impl<
         HasRevalidator,
         HasRequiredError,
-        HasShouldUpdate,
+        HasIgnoreUpdate,
         HasDelete,
         HasFailure,
         HasSuccess,
@@ -154,7 +154,7 @@ impl<
         Yes,
         HasRevalidator,
         HasRequiredError,
-        HasShouldUpdate,
+        HasIgnoreUpdate,
         HasDelete,
         HasFailure,
         HasSuccess,
@@ -166,7 +166,7 @@ impl<
             required_error: self.required_error,
             validator: self.validator,
             re_validator: self.re_validator,
-            should_update: self.should_update,
+            ignore_update: self.ignore_update,
             on_delete_fns: self.on_delete_fns,
             on_failure_fns: self.on_failure_fns,
             on_success_fns: self.on_success_fns,
@@ -273,7 +273,7 @@ impl<
         ErrorTool: IvoErrorTool,
     > RequiredFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, HasRevalidator, HasRequiredError>
 {
-    pub fn readonly(
+    pub fn ignore_update(
         self,
     ) -> RequiredFieldBuilder<
         T,
@@ -290,7 +290,7 @@ impl<
             validator: self.validator,
             re_validator: self.re_validator,
             required_error: self.required_error,
-            should_update: Some(IsFieldProvisionEnabled::Readonly),
+            ignore_update: Some(IsFieldProvisionEnabled::False),
             ..Default::default()
         }
     }
@@ -316,7 +316,7 @@ impl<
             validator: self.validator,
             re_validator: self.re_validator,
             required_error: self.required_error,
-            should_update: Some(IsFieldProvisionEnabled::Func(resolver.into_resolver())),
+            ignore_update: Some(IsFieldProvisionEnabled::Func(resolver.into_resolver())),
             ..Default::default()
         }
     }
@@ -326,7 +326,7 @@ impl<
 impl<
         HasRevalidator,
         HasRequiredError,
-        HasShouldUpdate,
+        HasIgnoreUpdate,
         HasDelete,
         HasFailure,
         HasSuccess,
@@ -345,7 +345,7 @@ impl<
         Yes,
         HasRevalidator,
         HasRequiredError,
-        HasShouldUpdate,
+        HasIgnoreUpdate,
         HasDelete,
         HasFailure,
         HasSuccess,
@@ -363,7 +363,7 @@ impl<
         Yes,
         HasRevalidator,
         HasRequiredError,
-        HasShouldUpdate,
+        HasIgnoreUpdate,
         Yes,
         HasFailure,
         HasSuccess,
@@ -377,7 +377,7 @@ impl<
             validator: self.validator,
             re_validator: self.re_validator,
             required_error: self.required_error,
-            should_update: self.should_update,
+            ignore_update: self.ignore_update,
             on_delete_fns: Some(match self.on_delete_fns {
                 Some(hs) => {
                     let mut v = hs;
@@ -399,7 +399,7 @@ impl<
 impl<
         HasRevalidator,
         HasRequiredError,
-        HasShouldUpdate,
+        HasIgnoreUpdate,
         HasDelete,
         HasFailure,
         HasSuccess,
@@ -418,7 +418,7 @@ impl<
         Yes,
         HasRevalidator,
         HasRequiredError,
-        HasShouldUpdate,
+        HasIgnoreUpdate,
         HasDelete,
         HasFailure,
         HasSuccess,
@@ -436,7 +436,7 @@ impl<
         Yes,
         HasRevalidator,
         HasRequiredError,
-        HasShouldUpdate,
+        HasIgnoreUpdate,
         HasDelete,
         Yes,
         HasSuccess,
@@ -450,7 +450,7 @@ impl<
             validator: self.validator,
             re_validator: self.re_validator,
             required_error: self.required_error,
-            should_update: self.should_update,
+            ignore_update: self.ignore_update,
             on_delete_fns: self.on_delete_fns,
             on_failure_fns: Some(match self.on_failure_fns {
                 Some(hs) => {
@@ -472,7 +472,7 @@ impl<
 impl<
         HasRevalidator,
         HasRequiredError,
-        HasShouldUpdate,
+        HasIgnoreUpdate,
         HasDelete,
         HasFailure,
         HasSuccess,
@@ -491,7 +491,7 @@ impl<
         Yes,
         HasRevalidator,
         HasRequiredError,
-        HasShouldUpdate,
+        HasIgnoreUpdate,
         HasDelete,
         HasFailure,
         HasSuccess,
@@ -509,7 +509,7 @@ impl<
         Yes,
         HasRevalidator,
         HasRequiredError,
-        HasShouldUpdate,
+        HasIgnoreUpdate,
         HasDelete,
         HasFailure,
         Yes,
@@ -523,7 +523,7 @@ impl<
             validator: self.validator,
             re_validator: self.re_validator,
             required_error: self.required_error,
-            should_update: self.should_update,
+            ignore_update: self.ignore_update,
             on_delete_fns: self.on_delete_fns,
             on_failure_fns: self.on_failure_fns,
             on_success_fns: Some(match self.on_success_fns {

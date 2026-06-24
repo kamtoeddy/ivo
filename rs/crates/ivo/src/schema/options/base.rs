@@ -19,7 +19,7 @@ pub struct SchemaOptions<I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoE
     pub post_validate: Option<Vec<PostValidationConfig<I, O, CtxOptions, ErrorTool>>>,
 
     pub should_ignore: Option<BooleanResolver<I, O, CtxOptions>>,
-    pub should_update: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
+    pub ignore_update: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
 }
 
 impl<I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool> Default
@@ -31,7 +31,7 @@ impl<I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool> Default
             on_success_fns: None,
             post_validate: None,
             should_ignore: None,
-            should_update: None,
+            ignore_update: None,
         }
     }
 }
@@ -50,7 +50,7 @@ pub struct SchemaOptionsBuilder<
     CtxOptions,
     ErrorTool: IvoErrorTool,
     HasIgnore = No,
-    HasShouldUpdate = No,
+    HasIgnoreUpdate = No,
     HasPostValidate = No,
     HasDelete = No,
     HasSuccess = No,
@@ -59,7 +59,7 @@ pub struct SchemaOptionsBuilder<
     pub _on_success_fns: PhantomData<HasSuccess>,
     pub _post_validate: PhantomData<HasPostValidate>,
     pub _should_ignore: PhantomData<HasIgnore>,
-    pub _should_update: PhantomData<HasShouldUpdate>,
+    pub _ignore_update: PhantomData<HasIgnoreUpdate>,
     //
     pub on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
     pub on_success_fns: Option<Vec<OnSuccessConfig<I, O, CtxOptions>>>,
@@ -67,12 +67,12 @@ pub struct SchemaOptionsBuilder<
     pub post_validate: Option<Vec<PostValidationConfig<I, O, CtxOptions, ErrorTool>>>,
 
     pub should_ignore: Option<BooleanResolver<I, O, CtxOptions>>,
-    pub should_update: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
+    pub ignore_update: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
 }
 
 impl<
         HasIgnore,
-        HasShouldUpdate,
+        HasIgnoreUpdate,
         HasPostValidate,
         HasDelete,
         HasSuccess,
@@ -87,7 +87,7 @@ impl<
         CtxOptions,
         ErrorTool,
         HasIgnore,
-        HasShouldUpdate,
+        HasIgnoreUpdate,
         HasPostValidate,
         HasDelete,
         HasSuccess,
@@ -99,19 +99,19 @@ impl<
             on_success_fns: None,
             post_validate: None,
             should_ignore: None,
-            should_update: None,
+            ignore_update: None,
             _on_delete_fns: PhantomData,
             _on_success_fns: PhantomData,
             _post_validate: PhantomData,
             _should_ignore: PhantomData,
-            _should_update: PhantomData,
+            _ignore_update: PhantomData,
         }
     }
 }
 
 impl<
         HasIgnore,
-        HasShouldUpdate,
+        HasIgnoreUpdate,
         HasPostValidate,
         HasDelete,
         HasSuccess,
@@ -126,7 +126,7 @@ impl<
         CtxOptions,
         ErrorTool,
         HasIgnore,
-        HasShouldUpdate,
+        HasIgnoreUpdate,
         HasPostValidate,
         HasDelete,
         HasSuccess,

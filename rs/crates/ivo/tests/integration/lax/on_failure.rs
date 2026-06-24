@@ -325,7 +325,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
 
                         ready(Ok(v))
                     })
-                    .allow_update_if(|_, _| ready(false))
+                    .ignore_update()
                     .on_failure(|ctx: SharedIvoContext<DataInput, Data>, _| {
                         if true {
                             panic!(

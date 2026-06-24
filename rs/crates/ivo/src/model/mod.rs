@@ -880,7 +880,7 @@ impl<
                 InternalFieldConfig {
                     field_type: FieldType::Dependent,
                     default: Some(ValueResolverWithMiniContext::Static(default_value)),
-                    should_update: Some(IsFieldProvisionEnabled::Readonly),
+                    ignore_update: Some(IsFieldProvisionEnabled::Readonly),
                     ..
                 } => {
                     // readonly means: don't update if value has changed
@@ -1050,9 +1050,9 @@ impl<
                 InternalFieldConfig {
                     field_type: FieldType::Lax | FieldType::Required | FieldType::Virtual,
                     default,
-                    should_ignore,
-                    should_init,
-                    should_update,
+                    ignore: should_ignore,
+                    ignore_init,
+                    ignore_update,
                     ..
                 } => {
                     if let Some(resolver) = should_ignore {
@@ -1062,9 +1062,9 @@ impl<
                     }
 
                     let source = if is_update {
-                        should_update
+                        ignore_update
                     } else {
-                        should_init
+                        ignore_init
                     };
 
                     match source {
@@ -1111,8 +1111,8 @@ impl<
                 )
             });
 
-        for (field_info, should_init) in join_all(tasks).await {
-            if should_init {
+        for (field_info, ignore_init) in join_all(tasks).await {
+            if ignore_init {
                 final_field_info_vec.push(field_info.to_owned());
 
                 continue;

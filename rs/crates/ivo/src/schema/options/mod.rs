@@ -24,7 +24,7 @@ pub trait BuildableSchemaOptions<I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTo
 
 impl<
         HasIgnore,
-        HasShouldUpdate,
+        HasIgnoreUpdate,
         HasPostValidate,
         HasDelete,
         HasSuccess,
@@ -39,7 +39,7 @@ impl<
         CtxOptions,
         ErrorTool,
         HasIgnore,
-        HasShouldUpdate,
+        HasIgnoreUpdate,
         HasPostValidate,
         HasDelete,
         HasSuccess,
@@ -51,14 +51,14 @@ impl<
             on_success_fns: self.on_success_fns,
             post_validate: self.post_validate,
             should_ignore: self.should_ignore,
-            should_update: self.should_update,
+            ignore_update: self.ignore_update,
         }
     }
 }
 
 impl<
         HasIgnore,
-        HasShouldUpdate,
+        HasIgnoreUpdate,
         HasPostValidate,
         HasDelete,
         HasSuccess,
@@ -73,7 +73,7 @@ impl<
         CtxOptions,
         ErrorTool,
         HasIgnore,
-        HasShouldUpdate,
+        HasIgnoreUpdate,
         HasPostValidate,
         HasDelete,
         HasSuccess,
@@ -88,7 +88,7 @@ impl<
         CtxOptions,
         ErrorTool,
         HasIgnore,
-        HasShouldUpdate,
+        HasIgnoreUpdate,
         HasPostValidate,
         Yes,
         HasSuccess,
@@ -104,7 +104,7 @@ impl<
             on_success_fns: self.on_success_fns,
             post_validate: self.post_validate,
             should_ignore: self.should_ignore,
-            should_update: self.should_update,
+            ignore_update: self.ignore_update,
             ..SchemaOptionsBuilder::default()
         }
     }
@@ -119,7 +119,7 @@ impl<
         CtxOptions,
         ErrorTool,
         HasIgnore,
-        HasShouldUpdate,
+        HasIgnoreUpdate,
         HasPostValidate,
         HasDelete,
         Yes,
@@ -138,7 +138,7 @@ impl<
             on_success_fns: Some(on_success_fns),
             post_validate: self.post_validate,
             should_ignore: self.should_ignore,
-            should_update: self.should_update,
+            ignore_update: self.ignore_update,
             ..SchemaOptionsBuilder::default()
         }
     }
@@ -153,7 +153,7 @@ impl<
         CtxOptions,
         ErrorTool,
         HasIgnore,
-        HasShouldUpdate,
+        HasIgnoreUpdate,
         Yes,
         HasDelete,
         HasSuccess,
@@ -174,7 +174,7 @@ impl<
             on_success_fns: self.on_success_fns,
             post_validate: Some(post_validate),
             should_ignore: self.should_ignore,
-            should_update: self.should_update,
+            ignore_update: self.ignore_update,
             ..SchemaOptionsBuilder::default()
         }
     }

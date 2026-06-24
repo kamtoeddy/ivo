@@ -29,7 +29,7 @@ pub struct DependentFieldBuilder<
     HasDefault = No,
     HasParents = No,
     HasResolver = No,
-    HasShouldUpdate = No,
+    HasReadonly = No,
     HasDelete = No,
     HasSuccess = No,
 > {
@@ -39,13 +39,13 @@ pub struct DependentFieldBuilder<
     _depends_on: PhantomData<HasParents>,
     _resolver: PhantomData<HasResolver>,
     _del_handlers: PhantomData<HasDelete>,
-    _should_update: PhantomData<HasShouldUpdate>,
+    _readonly: PhantomData<HasReadonly>,
     _success_handlers: PhantomData<HasSuccess>,
     // actual data...
     default: Option<ValueResolverWithMiniContext<ErasedValue, I, CtxOptions>>,
     depends_on: Option<Vec<&'static str>>,
     resolver: Option<Resolver<ErasedValue, I, O, CtxOptions>>,
-    should_update: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
+    ignore_update: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
     on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
     on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
 }
@@ -54,7 +54,7 @@ impl<
         HasDefault,
         HasParents,
         HasResolver,
-        HasShouldUpdate,
+        HasReadonly,
         HasDelete,
         HasSuccess,
         T: IvoFieldValue,
@@ -72,7 +72,7 @@ impl<
         HasDefault,
         HasParents,
         HasResolver,
-        HasShouldUpdate,
+        HasReadonly,
         HasDelete,
         HasSuccess,
     >
@@ -82,14 +82,14 @@ impl<
             default: None,
             depends_on: None,
             resolver: None,
-            should_update: None,
+            ignore_update: None,
             on_delete_fns: None,
             on_success_fns: None,
             _t: PhantomData,
             _err: PhantomData,
             _default: PhantomData,
             _depends_on: PhantomData,
-            _should_update: PhantomData,
+            _readonly: PhantomData,
             _resolver: PhantomData,
             _del_handlers: PhantomData,
             _success_handlers: PhantomData,
@@ -101,7 +101,7 @@ impl<
         HasDefault,
         HasParents,
         HasResolver,
-        HasShouldUpdate,
+        HasReadonly,
         HasDelete,
         HasSuccess,
         T: IvoFieldValue,
@@ -119,7 +119,7 @@ impl<
         HasDefault,
         HasParents,
         HasResolver,
-        HasShouldUpdate,
+        HasReadonly,
         HasDelete,
         HasSuccess,
     >
@@ -131,7 +131,7 @@ impl<
 
 impl<
         HasDefault: IsProvided,
-        HasShouldUpdate,
+        HasReadonly,
         HasDelete,
         HasSuccess,
         T: IvoFieldValue,
@@ -149,7 +149,7 @@ impl<
         HasDefault,
         Yes,
         Yes,
-        HasShouldUpdate,
+        HasReadonly,
         HasDelete,
         HasSuccess,
     >
@@ -160,7 +160,7 @@ impl<
             default: self.default,
             depends_on: self.depends_on,
             resolver: self.resolver,
-            should_update: self.should_update,
+            ignore_update: self.ignore_update,
             on_delete_fns: self.on_delete_fns,
             on_success_fns: self.on_success_fns,
             ..Default::default()
@@ -287,7 +287,7 @@ impl<
             default: self.default,
             depends_on: self.depends_on,
             resolver: self.resolver,
-            should_update: Some(IsFieldProvisionEnabled::Readonly),
+            ignore_update: Some(IsFieldProvisionEnabled::Readonly),
             ..Default::default()
         }
     }
@@ -296,7 +296,7 @@ impl<
 // ON_DELETE is only available if HasDelete is 'No'
 impl<
         HasDefault: IsProvided,
-        HasShouldUpdate,
+        HasReadonly,
         HasDelete,
         HasSuccess,
         T: IvoFieldValue,
@@ -314,7 +314,7 @@ impl<
         HasDefault,
         Yes,
         Yes,
-        HasShouldUpdate,
+        HasReadonly,
         HasDelete,
         HasSuccess,
     >
@@ -331,7 +331,7 @@ impl<
         HasDefault,
         Yes,
         Yes,
-        HasShouldUpdate,
+        HasReadonly,
         Yes,
         HasSuccess,
     >
@@ -344,7 +344,7 @@ impl<
             default: self.default,
             depends_on: self.depends_on,
             resolver: self.resolver,
-            should_update: self.should_update,
+            ignore_update: self.ignore_update,
             on_delete_fns: Some(match self.on_delete_fns {
                 Some(hs) => {
                     let mut v = hs;
@@ -364,7 +364,7 @@ impl<
 // ON_SUCCESS is only available if HasSuccess is 'No'
 impl<
         HasDefault: IsProvided,
-        HasShouldUpdate,
+        HasReadonly,
         HasDelete,
         HasSuccess,
         T: IvoFieldValue,
@@ -382,7 +382,7 @@ impl<
         HasDefault,
         Yes,
         Yes,
-        HasShouldUpdate,
+        HasReadonly,
         HasDelete,
         HasSuccess,
     >
@@ -399,7 +399,7 @@ impl<
         HasDefault,
         Yes,
         Yes,
-        HasShouldUpdate,
+        HasReadonly,
         HasDelete,
         Yes,
     >
@@ -412,7 +412,7 @@ impl<
             default: self.default,
             depends_on: self.depends_on,
             resolver: self.resolver,
-            should_update: self.should_update,
+            ignore_update: self.ignore_update,
             on_delete_fns: self.on_delete_fns,
             on_success_fns: Some(match self.on_success_fns {
                 Some(hs) => {
