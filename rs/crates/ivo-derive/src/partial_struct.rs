@@ -1,8 +1,6 @@
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
-use syn::{
-    punctuated::Punctuated, token::Comma, Attribute, Field, Ident, Meta, Visibility,
-};
+use syn::{punctuated::Punctuated, token::Comma, Attribute, Field, Ident, Meta, Visibility};
 
 pub fn generate_partial_struct<T: ToTokens>(
     crate_root: &T,
@@ -94,10 +92,10 @@ pub fn generate_partial_struct<T: ToTokens>(
         }
     });
 
-    let provided_derive_attrs = extract_attached_derives(attrs);
+    let derive_attrs_provided = extract_derive_attrs_provided(attrs);
 
     quote! {
-        #provided_derive_attrs
+        #derive_attrs_provided
         #[derive(Clone, Debug, Default, PartialEq)]
         #vis struct #partial_struct_name {
             #( #partial_fields )*
@@ -168,7 +166,7 @@ pub fn generate_partial_struct<T: ToTokens>(
     }
 }
 
-fn extract_attached_derives(attrs: &Vec<Attribute>) -> TokenStream {
+fn extract_derive_attrs_provided(attrs: &Vec<Attribute>) -> TokenStream {
     let mut has_derive_attr = false;
     let mut traits_to_derive = vec![];
 
@@ -198,15 +196,6 @@ fn extract_attached_derives(attrs: &Vec<Attribute>) -> TokenStream {
                 }
 
                 Ok(())
-
-                // panic!(
-                //     "\"{}\" is not a valid attribute",
-                //     meta.path
-                //         .get_ident()
-                //         .as_ref()
-                //         .map(|i| format!("{i}"))
-                //         .unwrap_or_else(|| String::from(""))
-                // )
             });
 
             break;

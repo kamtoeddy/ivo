@@ -71,11 +71,6 @@ impl<'a> UserCtxOptions {
         ready(USERS_BY_USERNAME.get(username).cloned())
     }
 
-    fn _to_json(&self) {
-        let _ = serde_json::to_string(&PartialUser::default());
-        let _ = serde_json::to_string(&PartialUserInput::default());
-    }
-
     fn find_user_by_slug_id(
         &self,
         slug_id: &SlugifiedString,
@@ -85,6 +80,11 @@ impl<'a> UserCtxOptions {
 
     fn update_slug_id(&mut self, slug_id: &SlugifiedString) {
         self.slug_id = Some(slug_id.clone());
+    }
+
+    fn _to_json(&self) {
+        let _ = serde_json::to_string(&PartialUser::default());
+        let _ = serde_json::to_string(&PartialUserInput::default());
     }
 }
 
