@@ -10,8 +10,8 @@ mod on_failure;
 mod on_success;
 
 // TODO:
-// [ ] default
-// [ ] default_fn
+// [x] default
+// [x] default_fn
 // [ ] allow_init_if
 // [ ] allow_update_if
 // [ ] ignore_if
@@ -25,7 +25,71 @@ mod on_success;
 // [x] on_failure
 // [x] on_success
 
-async fn should_not_create_if_any_primary_validation_fails() {
+// default values & fns
+
+async fn should_properly_use_default_value_of_missing_fields_at_creation() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        lax: i32,
+    }
+
+    #[derive(Debug, Clone, IvoStruct)]
+    struct DataInput {
+        lax: i32,
+    }
+
+    let default_value = 1;
+
+    let schema: Schema<DataInput, Data> = Schema::new(
+        |f| f.set("lax", IvoField::LAX.default(default_value)),
+        |o| o,
+    );
+
+    let model = schema.get_model();
+
+    let r = model.create(&PartialDataInput { lax: None }, None).await;
+
+    match r {
+        Ok((data, _)) => assert_eq!(data, Data { lax: default_value }),
+        _ => unreachable!(),
+    }
+}
+
+async_test_matrix!(should_properly_use_default_value_of_missing_fields_at_creation);
+
+async fn should_properly_resolve_default_values_of_missing_fields_at_creation() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        lax: i32,
+    }
+
+    #[derive(Debug, Clone, IvoStruct)]
+    struct DataInput {
+        lax: i32,
+    }
+
+    const DEFAULT_VALUE: i32 = 1_000;
+
+    let schema: Schema<DataInput, Data> = Schema::new(
+        |f| f.set("lax", IvoField::LAX.default_fn(|_, _| ready(DEFAULT_VALUE))),
+        |o| o,
+    );
+
+    let model = schema.get_model();
+
+    let r = model.create(&PartialDataInput { lax: None }, None).await;
+
+    match r {
+        Ok((data, _)) => assert_eq!(data, Data { lax: DEFAULT_VALUE }),
+        _ => unreachable!(),
+    }
+}
+
+async_test_matrix!(should_properly_resolve_default_values_of_missing_fields_at_creation);
+
+// validators
+
+async fn should_not_create_if_primary_validation_fails() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
         lax: String,
@@ -106,9 +170,103 @@ async fn should_not_create_if_any_primary_validation_fails() {
     }
 }
 
-async_test_matrix!(should_not_create_if_any_primary_validation_fails);
+async_test_matrix!(should_not_create_if_primary_validation_fails);
 
-async fn should_not_create_if_secondary_any_validation_fails() {
+async fn should_not_update_if_primary_validation_fails() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        id: i32,
+        lax: i32,
+    }
+
+    #[derive(Debug, Clone, IvoStruct)]
+    struct DataInput {
+        lax: i32,
+    }
+
+    const LAX_OUT_OF_RANGE_ERROR: &str = "lax must be between 1 & 5 inclussive";
+    const LAX_VALUE_RANGE: RangeInclusive<i32> = 1..=5;
+
+    let schema: Schema<DataInput, Data> = Schema::new(
+        |f| {
+            f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1)))
+                .set(
+                    "lax",
+                    IvoField::LAX.default(1).validate(|v: i32, _, _| {
+                        if !LAX_VALUE_RANGE.contains(&v) {
+                            return ready(Err((LAX_OUT_OF_RANGE_ERROR.into(), None)));
+                        }
+
+                        ready(Ok(v))
+                    }),
+                )
+        },
+        |o| o,
+    );
+
+    let model = schema.get_model();
+
+    let data = Data { id: 1, lax: 2 };
+
+    let lax_values = [-1, 0, LAX_VALUE_RANGE.max().unwrap() + 1];
+
+    for lax_value in lax_values {
+        let r = model
+            .update(
+                &data,
+                &PartialDataInput {
+                    lax: Some(lax_value),
+                },
+                None,
+            )
+            .await;
+
+        match r {
+            Err((e, _)) => match e {
+                UpdateError::ValidationError(p) => {
+                    assert_eq!(p.get("lax").unwrap()[0].reason, LAX_OUT_OF_RANGE_ERROR);
+                }
+                _ => unreachable!(),
+            },
+            _ => unreachable!(),
+        }
+    }
+
+    for updated_value in LAX_VALUE_RANGE.clone() {
+        if updated_value == data.lax {
+            continue;
+        }
+
+        let r = model
+            .update(
+                &data,
+                &PartialDataInput {
+                    lax: Some(updated_value),
+                },
+                None,
+            )
+            .await;
+
+        match r {
+            Ok((d, _)) => {
+                assert_eq!(
+                    d,
+                    PartialData {
+                        id: None,
+                        lax: Some(updated_value),
+                    }
+                )
+            }
+            _ => unreachable!(),
+        }
+    }
+}
+
+async_test_matrix!(should_not_update_if_primary_validation_fails);
+
+// re-validators
+
+async fn should_not_create_if_re_validation_fails() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
         lax: String,
@@ -202,101 +360,9 @@ async fn should_not_create_if_secondary_any_validation_fails() {
     }
 }
 
-async_test_matrix!(should_not_create_if_secondary_any_validation_fails);
+async_test_matrix!(should_not_create_if_re_validation_fails);
 
-async fn should_not_update_if_any_primary_validation_fails() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        id: i32,
-        lax: i32,
-    }
-
-    #[derive(Debug, Clone, IvoStruct)]
-    struct DataInput {
-        lax: i32,
-    }
-
-    const LAX_OUT_OF_RANGE_ERROR: &str = "lax must be between 1 & 5 inclussive";
-    const LAX_VALUE_RANGE: RangeInclusive<i32> = 1..=5;
-
-    let schema: Schema<DataInput, Data> = Schema::new(
-        |f| {
-            f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1)))
-                .set(
-                    "lax",
-                    IvoField::LAX.default(1).validate(|v: i32, _, _| {
-                        if !LAX_VALUE_RANGE.contains(&v) {
-                            return ready(Err((LAX_OUT_OF_RANGE_ERROR.into(), None)));
-                        }
-
-                        ready(Ok(v))
-                    }),
-                )
-        },
-        |o| o,
-    );
-
-    let model = schema.get_model();
-
-    let data = Data { id: 1, lax: 2 };
-
-    let lax_values = [-1, 0, LAX_VALUE_RANGE.max().unwrap() + 1];
-
-    for lax_value in lax_values {
-        let r = model
-            .update(
-                &data,
-                &PartialDataInput {
-                    lax: Some(lax_value),
-                },
-                None,
-            )
-            .await;
-
-        match r {
-            Err((e, _)) => match e {
-                UpdateError::ValidationError(p) => {
-                    assert_eq!(p.get("lax").unwrap()[0].reason, LAX_OUT_OF_RANGE_ERROR);
-                }
-                _ => unreachable!(),
-            },
-            _ => unreachable!(),
-        }
-    }
-
-    for updated_value in LAX_VALUE_RANGE.clone() {
-        if updated_value == data.lax {
-            continue;
-        }
-
-        let r = model
-            .update(
-                &data,
-                &PartialDataInput {
-                    lax: Some(updated_value),
-                },
-                None,
-            )
-            .await;
-
-        match r {
-            Ok((d, _)) => {
-                assert_eq!(
-                    d,
-                    PartialData {
-                        id: None,
-                        lax: Some(updated_value),
-                    }
-                )
-            }
-            _ => unreachable!(),
-        }
-    }
-}
-
-async_test_matrix!(should_not_update_if_any_primary_validation_fails);
-
-async fn should_not_update_if_any_secondary_validation_fails() {
+async fn should_not_update_if_re_validation_fails() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
         id: i32,
@@ -408,4 +474,4 @@ async fn should_not_update_if_any_secondary_validation_fails() {
     }
 }
 
-async_test_matrix!(should_not_update_if_any_secondary_validation_fails);
+async_test_matrix!(should_not_update_if_re_validation_fails);
