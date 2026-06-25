@@ -1069,7 +1069,7 @@ impl<
                     ..
                 } => {
                     if let Some(resolver) = ignore {
-                        resolvers.push((field_info, resolver, true));
+                        resolvers.push((field_info, resolver));
 
                         continue;
                     }
@@ -1085,7 +1085,7 @@ impl<
                             input.ivo_internal_remove_value(&field_info.name);
                         }
                         Some(IsFieldProvisionEnabled::Func(resolver)) => {
-                            resolvers.push((field_info, resolver, false));
+                            resolvers.push((field_info, resolver));
                         }
                         Some(IsFieldProvisionEnabled::Readonly) if is_update => {
                             if let Some(ValueResolverWithMiniContext::Static(value)) = default {
@@ -1131,25 +1131,21 @@ impl<
             return (input, output, relevant_fields_provided, fields_provided);
         }
 
-        let tasks = resolvers
-            .into_iter()
-            .map(async |(field_info, resolver, negate)| {
-                (
-                    field_info,
-                    resolver(Arc::clone(&ctx), Arc::clone(&options))
-                        .map(|r| if negate { !r } else { r })
-                        .await,
-                )
-            });
+        let tasks = resolvers.into_iter().map(async |(field_info, resolver)| {
+            (
+                field_info,
+                resolver(Arc::clone(&ctx), Arc::clone(&options)).await,
+            )
+        });
 
-        for (field_info, ignore_init) in join_all(tasks).await {
-            if ignore_init {
-                final_field_info_vec.push(field_info.to_owned());
+        for (field_info, ignore) in join_all(tasks).await {
+            if ignore {
+                input.ivo_internal_remove_value(&field_info.name);
 
                 continue;
             }
 
-            input.ivo_internal_remove_value(&field_info.name);
+            final_field_info_vec.push(field_info.to_owned());
 
             if field_info.is_output {
                 output.ivo_internal_set(

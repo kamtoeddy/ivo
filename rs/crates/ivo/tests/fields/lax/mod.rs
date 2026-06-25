@@ -1,8 +1,9 @@
-use ivo::{types::IvoStructMethods, IvoField, IvoStruct, Schema, SharedIvoContext, UpdateError};
+use ivo::{IvoField, IvoStruct, IvoStructMethods, Schema, SharedIvoContext, UpdateError};
 use std::{future::ready, ops::RangeInclusive, panic};
 
 use crate::async_test_matrix;
 
+mod ignore;
 mod on_delete;
 mod on_failure;
 mod on_success;
@@ -10,7 +11,7 @@ mod on_success;
 // TODO:
 // [x] default
 // [x] default_fn
-// [ ] ignore
+// [x] ignore
 // [ ] ignore_init
 // [ ] ignore_update
 // [x] readonly
@@ -194,15 +195,15 @@ async fn should_ignore_updates_on_readonly_fields_if_values_are_different_from_d
         }
     );
 
-    let updated = data.ivo_internal_clone_with(updates);
+    let data = data.ivo_internal_clone_with(updates);
 
-    assert_eq!(updated, Data { lax: updated_value });
+    assert_eq!(data, Data { lax: updated_value });
 
     let updated_value = 3;
 
     let r = model
         .update(
-            &updated,
+            &data,
             &PartialDataInput {
                 lax: Some(updated_value),
             },
@@ -222,7 +223,7 @@ async_test_matrix!(
 
 // required
 
-async fn should_respect_required_rule() {
+async fn should_respect_the_required_rule() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
         lax: String,
@@ -335,7 +336,7 @@ async fn should_respect_required_rule() {
     }
 }
 
-async_test_matrix!(should_respect_required_rule);
+async_test_matrix!(should_respect_the_required_rule);
 
 // validators
 
