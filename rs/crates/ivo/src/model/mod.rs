@@ -208,18 +208,14 @@ impl<
             &relevant_fields_provided.schema_output_fields,
         );
 
-        loop {
-            let Some((validated_outputs, dependent_fields_resolved)) = self
-                .resolve_dependent_values(
-                    &dependent_fields_col,
-                    Arc::clone(&ctx),
-                    Arc::clone(&shared_rw_options),
-                )
-                .await
-            else {
-                break;
-            };
-
+        while let Some((validated_outputs, dependent_fields_resolved)) = self
+            .resolve_dependent_values(
+                &dependent_fields_col,
+                Arc::clone(&ctx),
+                Arc::clone(&shared_rw_options),
+            )
+            .await
+        {
             Arc::make_mut(&mut ctx).set_changes(validated_outputs);
             dependent_fields_col.set_fields(dependent_fields_resolved);
         }
@@ -400,7 +396,7 @@ impl<
         }
 
         // Resolve values of dependent fields
-        let erased_updates = ctx.values();
+        let updated_values = ctx.values();
 
         let fields_updated_vec = relevant_fields_provided
             .fields
@@ -412,7 +408,7 @@ impl<
 
                 if !old_partial_values.ivo_internal_is_value_equal(
                     &f.name,
-                    &erased_updates.ivo_internal_get_erased_value(&f.name),
+                    &updated_values.ivo_internal_get_erased_value(&f.name),
                 ) {
                     return Some(f.clone());
                 }
@@ -430,18 +426,14 @@ impl<
 
         let mut dependent_fields_col = fields_updated.clone();
 
-        loop {
-            let Some((validated_outputs, dependent_fields_resolved)) = self
-                .resolve_dependent_values(
-                    &dependent_fields_col,
-                    Arc::clone(&ctx),
-                    Arc::clone(&shared_rw_options),
-                )
-                .await
-            else {
-                break;
-            };
-
+        while let Some((validated_outputs, dependent_fields_resolved)) = self
+            .resolve_dependent_values(
+                &dependent_fields_col,
+                Arc::clone(&ctx),
+                Arc::clone(&shared_rw_options),
+            )
+            .await
+        {
             for field_info in dependent_fields_resolved.iter() {
                 fields_updated.add(field_info.clone());
             }
