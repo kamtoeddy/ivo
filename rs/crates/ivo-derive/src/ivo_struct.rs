@@ -73,13 +73,17 @@ pub fn generate_ivo_struct_impls<T: ToTokens>(
                 }
             }
 
-            fn ivo_internal_get_updates_from_partial(&self, updates: &Self::Partial) -> (Self::Partial, bool) {
+            fn ivo_internal_get_updates_from_partial(&self, updates: &Self::Partial) -> std::option::Option<Self::Partial> {
                 let mut partial_output = Self::Partial::default();
                 let mut has_updated_fields = false;
 
                 #( #process_updates_from_partial )*
 
-                (partial_output, has_updated_fields)
+                if has_updated_fields {
+                    return Some(partial_output);
+                }
+
+                None
             }
 
             fn ivo_internal_update_with(&mut self, updates: &Self::Partial) {

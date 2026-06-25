@@ -21,7 +21,7 @@ pub trait IvoStructMethods: IvoWithPartialStruct + Clone {
     fn ivo_internal_get_updates_from_partial(
         &self,
         updates: &Self::Partial,
-    ) -> (Self::Partial, bool);
+    ) -> Option<Self::Partial>;
 
     fn ivo_internal_clone_with(&self, updates: Self::Partial) -> Self {
         self.ivo_internal_clone_with_ref(&updates)

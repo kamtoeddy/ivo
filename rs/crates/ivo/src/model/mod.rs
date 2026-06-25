@@ -91,17 +91,16 @@ impl<
 
         Arc::make_mut(&mut ctx).set_input(input);
 
-        let r = self
+        if let Err(payload) = self
             .evaluate_missing_required_fields(
                 &relevant_fields_provided,
                 Arc::clone(&ctx),
                 Arc::clone(&shared_rw_options),
             )
-            .await;
-
-        if r.is_err() {
+            .await
+        {
             return Err((
-                r.err().unwrap(),
+                payload,
                 self.prepare_failure_handlers(
                     fields_provided.fields,
                     ctx,
@@ -111,85 +110,88 @@ impl<
         }
 
         // Run validators
-        let r = self
+        match self
             .validate(
                 &relevant_fields_provided,
                 Arc::clone(&ctx),
                 Arc::clone(&shared_rw_options),
             )
-            .await;
-
-        if r.is_err() {
-            return Err((
-                r.err().unwrap(),
-                self.prepare_failure_handlers(
-                    fields_provided.fields,
-                    ctx,
-                    Arc::new(unwrap_async_lock(shared_rw_options)),
-                ),
-            ));
-        }
-
-        if let Some((validated_inputs, validated_outputs)) = r.ok().unwrap() {
-            Arc::make_mut(&mut ctx)
-                .set_input(validated_inputs)
-                .set_changes(validated_outputs);
-        }
+            .await
+        {
+            Ok(Some((validated_inputs, validated_outputs))) => {
+                Arc::make_mut(&mut ctx)
+                    .set_input(validated_inputs)
+                    .set_changes(validated_outputs);
+            }
+            Err(payload) => {
+                return Err((
+                    payload,
+                    self.prepare_failure_handlers(
+                        fields_provided.fields,
+                        ctx,
+                        Arc::new(unwrap_async_lock(shared_rw_options)),
+                    ),
+                ));
+            }
+            _ => (),
+        };
 
         // Run re_validators
-        let r = self
+        match self
             .re_validate(
                 &relevant_fields_provided,
                 Arc::clone(&ctx),
                 Arc::clone(&shared_rw_options),
             )
-            .await;
-
-        if r.is_err() {
-            return Err((
-                r.err().unwrap(),
-                self.prepare_failure_handlers(
-                    fields_provided.fields,
-                    ctx,
-                    Arc::new(unwrap_async_lock(shared_rw_options)),
-                ),
-            ));
-        }
-
-        if let Some((validated_inputs, validated_outputs)) = r.ok().unwrap() {
-            Arc::make_mut(&mut ctx)
-                .set_input(validated_inputs)
-                .set_changes(validated_outputs);
-        }
+            .await
+        {
+            Ok(Some((validated_inputs, validated_outputs))) => {
+                Arc::make_mut(&mut ctx)
+                    .set_input(validated_inputs)
+                    .set_changes(validated_outputs);
+            }
+            Err(payload) => {
+                return Err((
+                    payload,
+                    self.prepare_failure_handlers(
+                        fields_provided.fields,
+                        ctx,
+                        Arc::new(unwrap_async_lock(shared_rw_options)),
+                    ),
+                ));
+            }
+            _ => (),
+        };
 
         // Run post-validators
-        let r = self
+        match self
             .post_validate(
                 &relevant_fields_provided,
                 Arc::clone(&ctx),
                 Arc::clone(&shared_rw_options),
             )
-            .await;
-
-        if r.is_err() {
-            return Err((
-                r.err().unwrap(),
-                self.prepare_failure_handlers(
-                    fields_provided.fields,
-                    ctx,
-                    Arc::new(unwrap_async_lock(shared_rw_options)),
-                ),
-            ));
-        }
-
-        if let Some((validated_inputs, validated_outputs)) = r.ok().unwrap() {
-            Arc::make_mut(&mut ctx)
-                .set_input(validated_inputs)
-                .set_changes(validated_outputs);
-        }
+            .await
+        {
+            Ok(Some((validated_inputs, validated_outputs))) => {
+                Arc::make_mut(&mut ctx)
+                    .set_input(validated_inputs)
+                    .set_changes(validated_outputs);
+            }
+            Err(payload) => {
+                return Err((
+                    payload,
+                    self.prepare_failure_handlers(
+                        fields_provided.fields,
+                        ctx,
+                        Arc::new(unwrap_async_lock(shared_rw_options)),
+                    ),
+                ));
+            }
+            _ => (),
+        };
 
         // Sanitize virtuals
-        if let Some(validated_inputs) = self
+        if let Some(sanitized_inputs) = self
             .sanitize_virtuals(
                 &relevant_fields_provided,
                 Arc::clone(&ctx),
@@ -197,7 +199,7 @@ impl<
             )
             .await
         {
-            Arc::make_mut(&mut ctx).set_input(validated_inputs);
+            Arc::make_mut(&mut ctx).set_input(sanitized_inputs);
         }
 
         // Resolve values of dependent fields
@@ -282,17 +284,16 @@ impl<
         }
 
         // Evaluate missing required fields
-        let r = self
+        if let Err(payload) = self
             .evaluate_missing_required_fields(
                 &relevant_fields_provided,
                 Arc::clone(&ctx),
                 Arc::clone(&shared_rw_options),
             )
-            .await;
-
-        if r.is_err() {
+            .await
+        {
             return Err((
-                UpdateError::ValidationError(r.err().unwrap()),
+                UpdateError::ValidationError(payload),
                 self.prepare_failure_handlers(
                     fields_provided.fields,
                     ctx,
@@ -302,89 +303,91 @@ impl<
         }
 
         // Run validators
-        let r = self
+        match self
             .validate(
                 &relevant_fields_provided,
                 Arc::clone(&ctx),
                 Arc::clone(&shared_rw_options),
             )
-            .await;
-
-        if r.is_err() {
-            return Err((
-                UpdateError::ValidationError(r.err().unwrap()),
-                self.prepare_failure_handlers(
-                    fields_provided.fields,
-                    ctx,
-                    Arc::new(unwrap_async_lock(shared_rw_options)),
-                ),
-            ));
-        }
-
-        if let Some((validated_inputs, validated_outputs)) = r.ok().unwrap() {
-            Arc::make_mut(&mut ctx)
-                .set_input(validated_inputs)
-                .set_changes(validated_outputs.clone())
-                .set_full_values(data.ivo_internal_clone_with(validated_outputs));
-        }
+            .await
+        {
+            Ok(Some((validated_inputs, validated_outputs))) => {
+                Arc::make_mut(&mut ctx)
+                    .set_input(validated_inputs)
+                    .set_changes(validated_outputs.clone())
+                    .set_full_values(data.ivo_internal_clone_with(validated_outputs));
+            }
+            Err(payload) => {
+                return Err((
+                    UpdateError::ValidationError(payload),
+                    self.prepare_failure_handlers(
+                        fields_provided.fields,
+                        ctx,
+                        Arc::new(unwrap_async_lock(shared_rw_options)),
+                    ),
+                ))
+            }
+            _ => (),
+        };
 
         // Run re_validators
-        let r = self
+        match self
             .re_validate(
                 &relevant_fields_provided,
                 Arc::clone(&ctx),
                 Arc::clone(&shared_rw_options),
             )
-            .await;
-
-        if r.is_err() {
-            return Err((
-                UpdateError::ValidationError(r.err().unwrap()),
-                self.prepare_failure_handlers(
-                    fields_provided.fields,
-                    ctx,
-                    Arc::new(unwrap_async_lock(shared_rw_options)),
-                ),
-            ));
-        }
-
-        if let Some((validated_inputs, validated_outputs)) = r.ok().unwrap() {
-            Arc::make_mut(&mut ctx)
-                .set_input(validated_inputs)
-                .set_changes(validated_outputs.clone())
-                .set_full_values(data.ivo_internal_clone_with(validated_outputs));
-        }
+            .await
+        {
+            Ok(Some((validated_inputs, validated_outputs))) => {
+                Arc::make_mut(&mut ctx)
+                    .set_input(validated_inputs)
+                    .set_changes(validated_outputs.clone())
+                    .set_full_values(data.ivo_internal_clone_with(validated_outputs));
+            }
+            Err(payload) => {
+                return Err((
+                    UpdateError::ValidationError(payload),
+                    self.prepare_failure_handlers(
+                        fields_provided.fields,
+                        ctx,
+                        Arc::new(unwrap_async_lock(shared_rw_options)),
+                    ),
+                ))
+            }
+            _ => (),
+        };
 
         // Run post-validators
-        let r = self
+        match self
             .post_validate(
                 &relevant_fields_provided,
                 Arc::clone(&ctx),
                 Arc::clone(&shared_rw_options),
             )
-            .await;
-
-        if r.is_err() {
-            return Err((
-                UpdateError::ValidationError(r.err().unwrap()),
-                self.prepare_failure_handlers(
-                    fields_provided.fields,
-                    ctx,
-                    Arc::new(unwrap_async_lock(shared_rw_options)),
-                ),
-            ));
-        }
-
-        if let Some((validated_inputs, validated_outputs)) = r.ok().unwrap() {
-            Arc::make_mut(&mut ctx)
-                .set_input(validated_inputs)
-                .set_changes(validated_outputs.clone())
-                .set_full_values(data.ivo_internal_clone_with(validated_outputs));
-        }
+            .await
+        {
+            Ok(Some((validated_inputs, validated_outputs))) => {
+                Arc::make_mut(&mut ctx)
+                    .set_input(validated_inputs)
+                    .set_changes(validated_outputs.clone())
+                    .set_full_values(data.ivo_internal_clone_with(validated_outputs));
+            }
+            Err(payload) => {
+                return Err((
+                    UpdateError::ValidationError(payload),
+                    self.prepare_failure_handlers(
+                        fields_provided.fields,
+                        ctx,
+                        Arc::new(unwrap_async_lock(shared_rw_options)),
+                    ),
+                ))
+            }
+            _ => (),
+        };
 
         // Sanitize virtuals
-
-        if let Some(validated_inputs) = self
+        if let Some(sanitized_inputs) = self
             .sanitize_virtuals(
                 &relevant_fields_provided,
                 Arc::clone(&ctx),
@@ -392,7 +395,7 @@ impl<
             )
             .await
         {
-            Arc::make_mut(&mut ctx).set_input(validated_inputs);
+            Arc::make_mut(&mut ctx).set_input(sanitized_inputs);
         }
 
         // Resolve values of dependent fields
@@ -444,10 +447,8 @@ impl<
                 .set_full_values(data.ivo_internal_clone_with(validated_outputs));
         }
 
-        let (updated_values, has_updated_fields) =
-            data.ivo_internal_get_updates_from_partial(&ctx.changes());
-
-        if !has_updated_fields {
+        let Some(updated_values) = data.ivo_internal_get_updates_from_partial(&ctx.changes())
+        else {
             return Err((
                 UpdateError::NothingToUpdate,
                 self.prepare_failure_handlers(
@@ -456,7 +457,7 @@ impl<
                     Arc::new(unwrap_async_lock(shared_rw_options)),
                 ),
             ));
-        }
+        };
 
         // Generate and set timestamps
         let (updated_values, should_update_ctx) = self.attach_timestamps(updated_values, true);
@@ -840,16 +841,16 @@ impl<
             )
         });
 
-        let mut validated_inputs = ctx.input();
+        let mut input_values = ctx.input();
         let mut has_updates = false;
 
         for (f, value) in join_all(tasks).await {
-            validated_inputs.ivo_internal_set(&f.name, &value);
+            input_values.ivo_internal_set(&f.name, &value);
             has_updates = true;
         }
 
         if has_updates {
-            return Some(validated_inputs);
+            return Some(input_values);
         }
 
         None
