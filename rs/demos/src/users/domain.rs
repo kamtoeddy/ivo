@@ -172,11 +172,11 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
 
                             Ok(format!("revalidated-'{}'", uname))
                         })
-                        .allow_update_if(|ctx: Ctx, _| {
-                            ready(is_username_or_slug_id_updatable(
-                                ctx.values().username_last_updated_at.unwrap(),
-                            ))
-                        })
+                        // .ignore_update(|ctx: Ctx, _| {
+                        //     ready(is_username_or_slug_id_updatable(
+                        //         ctx.values().username_last_updated_at.unwrap(),
+                        //     ))
+                        // })
                         .on_delete(|_, _| {
                             println!("[username]: on delete 1 handled");
 
@@ -261,11 +261,11 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
                             ready(Ok(validated.into()))
                         })
                         .sanitize(|v, _, _| ready(format!("sanitized-'{v}'")))
-                        .ignore(|ctx: Ctx, _| {
-                            ready(is_username_or_slug_id_updatable(
-                                ctx.values().username_last_updated_at.unwrap(),
-                            ))
-                        })
+                        // .ignore(|ctx: Ctx, _| {
+                        //     ready(is_username_or_slug_id_updatable(
+                        //         ctx.values().username_last_updated_at.unwrap(),
+                        //     ))
+                        // })
                         .on_success(|ctx: Ctx, o: CtxOptions| {
                             println!(
                                 "[v_slug_as_slug_id]: on success with ctx.input().slug_id: {:?}",
@@ -366,12 +366,12 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
         schema
     });
 
-fn is_username_or_slug_id_updatable(username_last_updated_at: Option<String>) -> bool {
-    match username_last_updated_at {
-        Some(v) => v.as_str() == "yesterday",
-        _ => true,
-    }
-}
+// fn is_username_or_slug_id_updatable(username_last_updated_at: Option<String>) -> bool {
+//     match username_last_updated_at {
+//         Some(v) => v.as_str() == "yesterday",
+//         _ => true,
+//     }
+// }
 
 pub static USERS_LIST: LazyLock<[User; 3]> = LazyLock::new(|| {
     array::from_fn(|i| {

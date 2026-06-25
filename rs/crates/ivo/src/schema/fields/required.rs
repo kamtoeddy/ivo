@@ -273,7 +273,7 @@ impl<
         ErrorTool: IvoErrorTool,
     > RequiredFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, HasRevalidator, HasRequiredError>
 {
-    pub fn ignore_update(
+    pub fn readonly(
         self,
     ) -> RequiredFieldBuilder<
         T,
@@ -290,12 +290,12 @@ impl<
             validator: self.validator,
             re_validator: self.re_validator,
             required_error: self.required_error,
-            ignore_update: Some(IsFieldProvisionEnabled::False),
+            ignore_update: Some(IsFieldProvisionEnabled::Readonly),
             ..Default::default()
         }
     }
 
-    pub fn allow_update_if<R>(
+    pub fn ignore_update<R>(
         self,
         resolver: R,
     ) -> RequiredFieldBuilder<
