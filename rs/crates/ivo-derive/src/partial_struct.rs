@@ -82,7 +82,7 @@ pub fn generate_partial_struct<T: ToTokens>(
         }
     });
 
-    let construct_erased_tuples = fields.iter().map(|field| {
+    let construct_enumerated_tuples = fields.iter().map(|field| {
         let field_name = &field.ident;
 
         quote! {
@@ -102,6 +102,16 @@ pub fn generate_partial_struct<T: ToTokens>(
         }
 
         impl #crate_root::types::IvoPartialStructMethods for #partial_struct_name {
+            fn ivo_internal_enumerate(&self) -> Vec<(String, #crate_root::types::ErasedValue)> {
+                use #crate_root::types::erase_value;
+
+                let mut tuples = Vec::new();
+
+                #( #construct_enumerated_tuples )*
+
+                tuples
+            }
+
             #[inline]
             fn ivo_internal_fields_provided(&self) -> Vec<String> {
                 let mut fields_provided = vec![];
@@ -151,16 +161,6 @@ pub fn generate_partial_struct<T: ToTokens>(
                     #( #remove_value_match_arms ),*
                     _ => (),
                 };
-            }
-
-            fn ivo_internal_to_erased_tuples(&self) -> Vec<(String, #crate_root::types::ErasedValue)> {
-                use #crate_root::types::erase_value;
-
-                let mut tuples = Vec::new();
-
-                #( #construct_erased_tuples )*
-
-                tuples
             }
         }
     }

@@ -1031,7 +1031,7 @@ impl<
         let mut field_info_vec = vec![];
 
         if is_update {
-            for (field_name, value) in input_values.ivo_internal_to_erased_tuples() {
+            for (field_name, value) in input_values.ivo_internal_enumerate() {
                 let field_info = fields_provided.get(&field_name).unwrap();
                 fields_provided.add(field_info.clone());
 

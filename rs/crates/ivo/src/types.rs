@@ -43,6 +43,8 @@ pub trait IvoStructMethods: IvoWithPartialStruct + Clone {
 }
 
 pub trait IvoPartialStructMethods: Clone {
+    fn ivo_internal_enumerate(&self) -> Vec<(String, ErasedValue)>;
+
     fn ivo_internal_fields_provided(&self) -> Vec<String>;
 
     fn ivo_internal_get_erased_value(&self, field_name: &str) -> ErasedValue;
@@ -52,8 +54,6 @@ pub trait IvoPartialStructMethods: Clone {
     fn ivo_internal_set(&mut self, field_name: &str, value: &ErasedValue);
 
     fn ivo_internal_remove_value(&mut self, field_name: &str);
-
-    fn ivo_internal_to_erased_tuples(&self) -> Vec<(String, ErasedValue)>;
 }
 
 pub type SharedData<T> = Arc<T>;
