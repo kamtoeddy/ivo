@@ -129,13 +129,13 @@ pub fn parse_or_panic<T: IvoFieldValue>(
 pub enum IvoContext<I: IvoStruct, O: IvoStruct> {
     Create {
         input: I::Partial,
-        input_values: I::Partial,
+        raw_input: I::Partial,
         values: O::Partial,
     },
     Update {
         changes: O::Partial,
         input: I::Partial,
-        input_values: I::Partial,
+        raw_input: I::Partial,
         previous_values: O,
         values: O,
     },
@@ -145,12 +145,12 @@ impl<I: IvoStruct, O: IvoStruct> IvoContext<I, O> {
     #[inline]
     pub(crate) fn new_create_ctx(
         input: I::Partial,
-        input_values: I::Partial,
+        raw_input: I::Partial,
         values: O::Partial,
     ) -> Self {
         Self::Create {
             input,
-            input_values,
+            raw_input,
             values,
         }
     }
@@ -159,14 +159,14 @@ impl<I: IvoStruct, O: IvoStruct> IvoContext<I, O> {
     pub(crate) fn new_update_ctx(
         changes: O::Partial,
         input: I::Partial,
-        input_values: I::Partial,
+        raw_input: I::Partial,
         previous_values: O,
         values: O,
     ) -> Self {
         Self::Update {
             changes,
             input,
-            input_values,
+            raw_input,
             previous_values,
             values,
         }
@@ -255,10 +255,10 @@ impl<I: IvoStruct, O: IvoStruct> IvoContext<I, O> {
 
     /// contains values provided at the start of the current process
     #[inline(always)]
-    pub fn input_values(&self) -> I::Partial {
+    pub fn raw_input(&self) -> I::Partial {
         match &self {
-            IvoContext::Create { input_values, .. } => input_values,
-            IvoContext::Update { input_values, .. } => input_values,
+            IvoContext::Create { raw_input, .. } => raw_input,
+            IvoContext::Update { raw_input, .. } => raw_input,
         }
         .clone()
     }

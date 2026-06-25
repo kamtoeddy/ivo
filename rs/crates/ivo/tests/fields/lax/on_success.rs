@@ -35,7 +35,7 @@ async fn should_trigger_on_success_handlers_at_creation_if_provided() {
                         if true {
                             panic!(
                                 "[lax]: on_success triggered with value: {}",
-                                ctx.input_values().lax.unwrap().as_str()
+                                ctx.raw_input().lax.unwrap().as_str()
                             );
                         }
 

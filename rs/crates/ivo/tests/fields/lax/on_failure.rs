@@ -99,7 +99,7 @@ async fn should_trigger_on_failure_handlers_at_creation_even_if_provided_and_ign
                         if true {
                             panic!(
                                 "[lax]: on_failure triggered with value: {}",
-                                ctx.input_values().lax.unwrap().as_str()
+                                ctx.raw_input().lax.unwrap().as_str()
                             );
                         }
 
@@ -328,7 +328,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                         if true {
                             panic!(
                                 "[lax]: on_failure triggered with value: {}",
-                                ctx.input_values().lax.unwrap().as_str()
+                                ctx.raw_input().lax.unwrap().as_str()
                             );
                         }
 
