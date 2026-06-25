@@ -1,5 +1,3 @@
-#![cfg(test)]
-
 use ivo::{IvoField, IvoStruct, Schema, UpdateError};
 use std::{future::ready, ops::RangeInclusive, panic};
 

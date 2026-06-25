@@ -1,5 +1,3 @@
-#![cfg(test)]
-
 use seahash::SeaHasher;
 use std::hash::{Hash, Hasher};
 

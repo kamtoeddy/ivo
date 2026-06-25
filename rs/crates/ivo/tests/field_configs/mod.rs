@@ -1,12 +1,8 @@
-#![cfg(test)]
-
 mod dependents;
 mod timestamps;
 mod virtuals;
 
-use ivo::DefaultErrorTool;
-#[cfg(test)]
-use ivo::{IvoField, IvoStruct, Schema};
+use ivo::{DefaultErrorTool, IvoField, IvoStruct, Schema};
 use std::future::ready;
 
 #[test]

@@ -1,5 +1,3 @@
-#![cfg(test)]
-
 use ivo_validators::{make_string_validator, validate_email, StringValidatorOptions};
 
 #[test]

@@ -1,5 +1,3 @@
-#![cfg(test)]
-
 use std::future::ready;
 
 use ivo::{IvoField, IvoStruct, Schema, SharedIvoContext};

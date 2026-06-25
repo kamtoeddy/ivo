@@ -1,5 +1,3 @@
-#![cfg(test)]
-
 use ivo::{DefaultErrorTool, IvoField, IvoStruct, Schema};
 use std::{future::ready, panic};
 
