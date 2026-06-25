@@ -1,3 +1,4 @@
 mod field_configs;
-mod integration;
+mod fields;
+mod ivo_derive;
 pub mod utils;
