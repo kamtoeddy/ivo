@@ -93,7 +93,7 @@ impl<
         self._find(field_name).or_else(|| {
             Self::get_field_info(
                 field_name,
-                &self.schema,
+                self.schema,
                 &self.schema_input_fields,
                 &self.schema_output_fields,
             )
@@ -123,7 +123,7 @@ impl<
             // the current config depends on
 
             for parent_name in depends_on.as_ref().unwrap() {
-                match schema.field_configs.get(&parent_name.to_string()) {
+                match schema.field_configs.get(*parent_name) {
                     Some(InternalFieldConfig {
                         alias: Some(alias),
                         field_type: FieldType::Virtual,

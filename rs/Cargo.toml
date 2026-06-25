@@ -11,4 +11,4 @@ repository = "https://github.com/kamtoeddy/ivo/rs"
 homepage = "https://github.com/kamtoeddy/ivo/rs"
 keywords = ["schema", "validation"]
 categories = ["encoding", "parsing"]
-rust-version = "1.71"
+rust-version = "1.80.0"

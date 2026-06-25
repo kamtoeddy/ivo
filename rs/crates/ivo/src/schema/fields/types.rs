@@ -1,4 +1,4 @@
-#![allow(type_alias_bounds)]
+#![expect(type_alias_bounds)]
 
 use futures::future::{BoxFuture, FutureExt};
 

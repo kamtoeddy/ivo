@@ -1,3 +1,5 @@
+#![expect(clippy::type_complexity)]
+
 use std::marker::PhantomData;
 
 use crate::{

@@ -1,4 +1,5 @@
-#![allow(type_alias_bounds)]
+#![expect(type_alias_bounds)]
+#![expect(clippy::borrowed_box)]
 
 pub use futures_locks::RwLock;
 use std::{any::Any, collections::HashSet, fmt::Debug, sync::Arc};
@@ -44,13 +45,13 @@ pub trait IvoStructMethods: IvoWithPartialStruct + Clone {
 pub trait IvoPartialStructMethods: Clone {
     fn ivo_internal_fields_provided(&self) -> Vec<String>;
 
-    fn ivo_internal_get_erased_value(&self, field_name: &String) -> ErasedValue;
+    fn ivo_internal_get_erased_value(&self, field_name: &str) -> ErasedValue;
 
-    fn ivo_internal_is_value_equal(&self, field_name: &String, value: &ErasedValue) -> bool;
+    fn ivo_internal_is_value_equal(&self, field_name: &str, value: &ErasedValue) -> bool;
 
-    fn ivo_internal_set(&mut self, field_name: &String, value: &ErasedValue);
+    fn ivo_internal_set(&mut self, field_name: &str, value: &ErasedValue);
 
-    fn ivo_internal_remove_value(&mut self, field_name: &String);
+    fn ivo_internal_remove_value(&mut self, field_name: &str);
 
     fn ivo_internal_to_erased_tuples(&self) -> Vec<(String, ErasedValue)>;
 }
@@ -109,8 +110,8 @@ pub fn parse_or_panic<T: IvoFieldValue>(
 ) -> T {
     let value = parse_value::<T>(erased_value);
 
-    if value.is_some() {
-        return value.unwrap();
+    if let Some(actual_value) = value {
+        return actual_value;
     }
 
     let expected_type_path = std::any::type_name::<T>();
@@ -119,9 +120,9 @@ pub fn parse_or_panic<T: IvoFieldValue>(
         .map(|n| format!("\"{n}\""))
         .unwrap_or_else(|| "value".into());
 
-    value.expect(&format!(
+    panic!(
         "\nFailed to parse {field_name}. Expected: \"{expected_type_path}\", but got \"{actual_type_path}\"\n"
-    ))
+    )
 }
 
 #[derive(Clone, Copy)]
@@ -198,14 +199,12 @@ impl<I: IvoStruct, O: IvoStruct> IvoContext<I, O> {
 
     #[inline(always)]
     pub(crate) fn set_full_values(&mut self, values: O) -> &mut Self {
-        match self {
-            IvoContext::Update {
-                values: prev_values,
-                ..
-            } => {
-                *prev_values = values;
-            }
-            _ => (),
+        if let IvoContext::Update {
+            values: prev_values,
+            ..
+        } = self
+        {
+            *prev_values = values;
         };
 
         self

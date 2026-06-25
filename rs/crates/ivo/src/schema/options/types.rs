@@ -29,6 +29,12 @@ impl IvoValues {
     }
 }
 
+impl Default for IvoValues {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 pub struct OnSuccessConfig<I: IvoStruct, O: IvoStruct, CtxOptions> {
     pub fields: Vec<&'static str>,
     pub handlers: Vec<SuccessHandler<I, O, CtxOptions>>,

@@ -1,3 +1,5 @@
+#![expect(clippy::new_ret_no_self)]
+
 use std::marker::PhantomData;
 
 use crate::{

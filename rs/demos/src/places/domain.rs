@@ -3,7 +3,7 @@ use std::{collections::HashMap, future::ready, sync::LazyLock};
 use ivo::{FieldError, IvoErrorTool, IvoField, IvoStruct, Model, Schema, SharedIvoContext};
 use serde::Deserialize;
 
-const LOCATION_SERVICE_URL: &'static str = "https://misc-api.kamtoeddy.com/geo/details-with-tz";
+const LOCATION_SERVICE_URL: &str = "https://misc-api.kamtoeddy.com/geo/details-with-tz";
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Coodinates {
@@ -26,7 +26,7 @@ pub struct PlaceInput {
 #[derive(Clone)]
 pub struct PlacesCtxOptions;
 
-impl<'a> PlacesCtxOptions {
+impl PlacesCtxOptions {
     pub fn new() -> Self {
         Self
     }
@@ -147,14 +147,9 @@ pub static PLACE_SCHEMA: LazyLock<
                             Ok(resp) => {
                                 let resp = resp.await;
 
-                                if resp.is_ok() {
-                                    let data = resp.unwrap();
-
-                                    // println!("data: {:?}\n", data);
-
-                                    if let Some(d) = data.data {
-                                        return d.details.display_name;
-                                    }
+                                if let Ok(ResolvedLocationResults { data: Some(d), .. }) = resp {
+                                    // println!("data: {:?}\n", d);
+                                    return d.details.display_name;
                                 } else {
                                     let error = resp.err().unwrap();
 

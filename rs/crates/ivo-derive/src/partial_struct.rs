@@ -7,7 +7,7 @@ pub fn generate_partial_struct<T: ToTokens>(
     partial_struct_name: &Ident,
     vis: &Visibility,
     fields: &Punctuated<Field, Comma>,
-    attrs: &Vec<Attribute>,
+    attrs: &[Attribute],
 ) -> TokenStream {
     // Transform fields into Option<T>
     let partial_fields = fields.iter().map(|field| {
@@ -111,10 +111,10 @@ pub fn generate_partial_struct<T: ToTokens>(
                 fields_provided
             }
 
-            fn ivo_internal_get_erased_value(&self, field_name: &String)-> #crate_root::types::ErasedValue {
+            fn ivo_internal_get_erased_value(&self, field_name: &str)-> #crate_root::types::ErasedValue {
                 use #crate_root::types::erase_value;
 
-                match field_name.as_str() {
+                match field_name {
                     #( #get_erased_value_match_arms ),*
                     _ => panic!("\"{field_name}\" does not exist on your struct"),
                 }
@@ -122,12 +122,12 @@ pub fn generate_partial_struct<T: ToTokens>(
 
             fn ivo_internal_is_value_equal(
                 &self,
-                field_name: &String,
+                field_name: &str,
                 value: &#crate_root::types::ErasedValue,
             ) -> bool {
                 use #crate_root::types::parse_or_panic;
 
-                match field_name.as_str() {
+                match field_name {
                     #( #is_value_equal_match_arms ),*
                     _ => false,
                 }
@@ -135,19 +135,19 @@ pub fn generate_partial_struct<T: ToTokens>(
 
             fn ivo_internal_set(
                 &mut self,
-                field_name: &String,
+                field_name: &str,
                 value: &#crate_root::types::ErasedValue,
             ) {
                 use #crate_root::types::parse_or_panic;
 
-                match field_name.as_str() {
+                match field_name {
                     #( #set_value_match_arms ),*
                     _ => (),
                 };
             }
 
-            fn ivo_internal_remove_value(&mut self, field_name: &String) {
-                match field_name.as_str() {
+            fn ivo_internal_remove_value(&mut self, field_name: &str) {
+                match field_name {
                     #( #remove_value_match_arms ),*
                     _ => (),
                 };
@@ -166,7 +166,7 @@ pub fn generate_partial_struct<T: ToTokens>(
     }
 }
 
-fn extract_derive_attrs_provided(attrs: &Vec<Attribute>) -> TokenStream {
+fn extract_derive_attrs_provided(attrs: &[Attribute]) -> TokenStream {
     let mut has_derive_attr = false;
     let mut traits_to_derive = vec![];
 

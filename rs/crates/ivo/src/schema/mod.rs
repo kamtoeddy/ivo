@@ -39,7 +39,6 @@ pub struct Schema<
 }
 
 impl<
-        'a,
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
@@ -280,11 +279,9 @@ impl<
                 InternalFieldConfig {
                     field_type: FieldType::Lax | FieldType::Required,
                     ..
-                } => {
-                    if !input_field_names.contains(field_name) {
-                        panic!(
+                } if !input_field_names.contains(field_name) => {
+                    panic!(
                         "\n{COLOR_RED}[{field_name}]: is an input field. It must be present on {input_struct_name}{STYLE_RESET}\n");
-                    }
                 }
                 _ => (),
             }
@@ -477,7 +474,7 @@ impl<
     ///
     /// => circular_dependency_chain(a) = None
     fn get_circular_dependency_chain<'c>(
-        dependent_field_name: &'c String,
+        dependent_field_name: &'c str,
         parent_fields: &Vec<&'c str>,
         dependent_field_to_parent_fields: &HashMap<&String, &Vec<&'c str>>,
     ) -> Option<Vec<&'c str>> {

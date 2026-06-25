@@ -131,5 +131,5 @@ pub fn validate_email(value: String) -> ValidatorResponse<String, String> {
         return Ok(value);
     }
 
-    return Err("Invalid email".into());
+    Err("Invalid email".into())
 }

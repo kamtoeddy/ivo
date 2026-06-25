@@ -53,7 +53,7 @@ impl<T: IvoFieldValue, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErr
     /// - have a default value or a function to generate one
     /// - one or more parent fields to react to
     /// - a resolver (function) used to generate it's value, everytime the value of any of its parent fields
-    ///     changes
+    ///   changes
     pub const DEPENDENT: DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool> =
         DependentFieldBuilder::new();
 
@@ -68,7 +68,7 @@ impl<T: IvoFieldValue, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErr
     ///
     /// A virtual field must:
     /// - be used in combination with dependent fields. i.e: a virtual field must be a parent to
-    /// one or more dependent fields
+    ///   one or more dependent fields
     /// - have a validator
     pub const VIRTUAL: VirtualFieldBuilder<T, I, O, CtxOptions, ErrorTool> =
         VirtualFieldBuilder::new();

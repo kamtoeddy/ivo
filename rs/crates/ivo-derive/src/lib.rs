@@ -44,7 +44,7 @@ pub fn derive_ivo_struct(input: TokenStream) -> TokenStream {
         &crate_root,
         &struct_name,
         &partial_struct_name,
-        &fields,
+        fields,
         &field_names,
     );
 
@@ -52,7 +52,7 @@ pub fn derive_ivo_struct(input: TokenStream) -> TokenStream {
         &crate_root,
         &partial_struct_name,
         &vis,
-        &fields,
+        fields,
         &input.attrs,
     );
 

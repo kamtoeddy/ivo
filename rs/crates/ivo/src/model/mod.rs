@@ -202,7 +202,7 @@ impl<
 
         // Resolve values of dependent fields
         let mut dependent_fields_col = FieldInfoCollection::from_fields(
-            &self.schema,
+            self.schema,
             relevant_fields_provided.fields.clone(),
             &relevant_fields_provided.schema_input_fields,
             &relevant_fields_provided.schema_output_fields,
@@ -231,14 +231,14 @@ impl<
             Arc::make_mut(&mut ctx).set_changes(values.clone());
         }
 
-        return Ok((
+        Ok((
             O::ivo_internal_dangerously_get_values_from_partial(values),
             self.prepare_success_handlers(
                 relevant_fields_provided,
                 ctx,
                 Arc::new(unwrap_async_lock(shared_rw_options)),
             ),
-        ));
+        ))
     }
 
     pub async fn update(
@@ -422,7 +422,7 @@ impl<
             .collect();
 
         let mut fields_updated = FieldInfoCollection::from_fields(
-            &self.schema,
+            self.schema,
             fields_updated_vec,
             &relevant_fields_provided.schema_input_fields,
             &relevant_fields_provided.schema_output_fields,
@@ -771,7 +771,6 @@ impl<
         } else {
             ctx.values()
         };
-        let mut has_updates = has_updates;
 
         for (fields, validation) in join_all(tasks).await {
             if validation.is_err() {
@@ -886,7 +885,7 @@ impl<
                     // readonly means: don't update if value has changed
                     // i.e: prev_value != default_value
                     if is_update
-                        && !previous_values.ivo_internal_is_value_equal(&field_name, default_value)
+                        && !previous_values.ivo_internal_is_value_equal(field_name, default_value)
                     {
                         continue;
                     }
@@ -896,15 +895,13 @@ impl<
                     depends_on,
                     resolver,
                     ..
-                } => {
-                    if depends_on
-                        .as_ref()
-                        .unwrap()
-                        .iter()
-                        .any(|parent| fields_changed.contains(&parent.to_string()))
-                    {
-                        resolvers.push((field_name, resolver.as_ref().unwrap()));
-                    }
+                } if depends_on
+                    .as_ref()
+                    .unwrap()
+                    .iter()
+                    .any(|parent| fields_changed.contains(&parent.to_string())) =>
+                {
+                    resolvers.push((field_name, resolver.as_ref().unwrap()));
                 }
                 _ => {}
             }
@@ -927,7 +924,7 @@ impl<
 
         for (field_name, value) in join_all(tasks).await {
             // only keep fields that have been updated
-            if !values.ivo_internal_is_value_equal(&field_name, &value) {
+            if !values.ivo_internal_is_value_equal(field_name, &value) {
                 updated_values.ivo_internal_set(field_name, &value);
 
                 fields_updated.push(FieldInfo {
@@ -1014,7 +1011,7 @@ impl<
 
         let mut resolvers = vec![];
         let mut input = input_values.clone();
-        let mut fields_provided = FieldInfoCollection::new(&self.schema);
+        let mut fields_provided = FieldInfoCollection::new(self.schema);
         let mut field_info_vec = vec![];
 
         if is_update {
@@ -1092,7 +1089,7 @@ impl<
             }
         }
 
-        let mut relevant_fields_provided = FieldInfoCollection::new(&self.schema);
+        let mut relevant_fields_provided = FieldInfoCollection::new(self.schema);
 
         if resolvers.is_empty() {
             relevant_fields_provided.set_fields(final_field_info_vec);
@@ -1123,7 +1120,7 @@ impl<
 
         relevant_fields_provided.set_fields(final_field_info_vec);
 
-        return (input, relevant_fields_provided, fields_provided);
+        (input, relevant_fields_provided, fields_provided)
     }
 
     async fn evaluate_missing_required_fields<'a>(
@@ -1217,7 +1214,7 @@ impl<
             return Err(error_tool.payload());
         }
 
-        return Ok(());
+        Ok(())
     }
 
     fn prepare_failure_handlers(
@@ -1333,7 +1330,7 @@ impl<
 
             if !is_update {
                 if let Some(created_at) = created_at {
-                    data.ivo_internal_set(&created_at.to_string(), &erase_value(now.clone()));
+                    data.ivo_internal_set(created_at, &erase_value(now.clone()));
                     was_updated = true;
                 }
             }
@@ -1341,15 +1338,12 @@ impl<
             if let Some(updated_at) = updated_at {
                 if *with_optional_updated_at {
                     if is_update {
-                        data.ivo_internal_set(&updated_at.to_string(), &erase_value(Some(now)));
+                        data.ivo_internal_set(updated_at, &erase_value(Some(now)));
                     } else {
-                        data.ivo_internal_set(
-                            &updated_at.to_string(),
-                            &erase_value::<Option<Timestamp>>(None),
-                        );
+                        data.ivo_internal_set(updated_at, &erase_value::<Option<Timestamp>>(None));
                     }
                 } else {
-                    data.ivo_internal_set(&updated_at.to_string(), &erase_value(now));
+                    data.ivo_internal_set(updated_at, &erase_value(now));
                 }
 
                 was_updated = true;
