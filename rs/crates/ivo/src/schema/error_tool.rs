@@ -29,7 +29,7 @@ pub trait IvoErrorTool {
     fn payload(self) -> Self::ErrorPayload;
 }
 
-// DefaultErrorTool implementation
+#[derive(Debug)]
 pub struct DefaultErrorTool {
     payload: DefaultErrorPayload,
 }

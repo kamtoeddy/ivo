@@ -7,8 +7,8 @@ use std::future::Future;
 use crate::{
     schema::types::{DeleteHandler, FailureHandler, IvoFieldValue, SuccessHandler},
     types::{erase_value, parse_or_panic, ErasedValue},
-    IvoErrorTool, IvoStruct, SharedData, SharedIvoContext, SharedIvoMiniContext,
-    SharedRwCtxOptions, ValidatorResponse,
+    IvoErrorTool, IvoStruct, SharedData, SharedIvoContext, SharedIvoInput, SharedRwCtxOptions,
+    ValidatorResponse,
 };
 
 pub type TimestampResolver<T: IvoFieldValue> = Box<dyn Fn() -> T + Send + Sync + 'static>;
@@ -168,7 +168,7 @@ pub trait IntoValueResolverWithMiniContext<T, I: IvoStruct, CtxOptions> {
 impl<F, Fut, T, I: IvoStruct, CtxOptions> IntoValueResolverWithMiniContext<T, I, CtxOptions> for F
 where
     T: IvoFieldValue,
-    F: Fn(SharedIvoMiniContext<I>, SharedRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
+    F: Fn(SharedIvoInput<I>, SharedRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = T> + Send + 'static,
 {
     fn into_uniform(self) -> UniformValueResolverWithMiniContext<I, CtxOptions> {
@@ -223,10 +223,7 @@ pub type UniformResolver<I, O, CtxOptions> = Box<
 >;
 
 pub type UniformValueResolverWithMiniContext<I, CtxOptions> = Box<
-    dyn Fn(
-            SharedIvoMiniContext<I>,
-            SharedRwCtxOptions<CtxOptions>,
-        ) -> BoxFuture<'static, ErasedValue>
+    dyn Fn(SharedIvoInput<I>, SharedRwCtxOptions<CtxOptions>) -> BoxFuture<'static, ErasedValue>
         + Send
         + Sync
         + 'static,

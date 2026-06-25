@@ -1,4 +1,4 @@
-use ivo::{IvoField, IvoStruct, Schema, UpdateError};
+use ivo::{types::IvoStructMethods, IvoField, IvoStruct, Schema, UpdateError};
 use std::{future::ready, ops::RangeInclusive, panic};
 
 use crate::async_test_matrix;
@@ -13,7 +13,7 @@ mod on_success;
 // [ ] ignore
 // [ ] ignore_init
 // [ ] ignore_update
-// [ ] readonly
+// [x] readonly
 // [ ] required
 // [x] validate
 // [x] re_validate
@@ -83,6 +83,142 @@ async fn should_properly_resolve_default_values_of_missing_fields_at_creation() 
 }
 
 async_test_matrix!(should_properly_resolve_default_values_of_missing_fields_at_creation);
+
+// readonly
+
+async fn should_ignore_updates_on_readonly_fields_if_values_are_different_from_default_after_creation(
+) {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        lax: i32,
+    }
+
+    #[derive(Debug, Clone, IvoStruct)]
+    struct DataInput {
+        lax: i32,
+    }
+
+    let default_value = 1;
+
+    let schema: Schema<DataInput, Data> = Schema::new(
+        |f| f.set("lax", IvoField::LAX.default(default_value).readonly()),
+        |o| o,
+    );
+
+    let model = schema.get_model();
+
+    let lax_value = 40;
+
+    let (data, _) = model
+        .create(
+            &PartialDataInput {
+                lax: Some(lax_value),
+            },
+            None,
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(data, Data { lax: lax_value });
+
+    let updated_value = 2;
+
+    let r = model
+        .update(
+            &data,
+            &PartialDataInput {
+                lax: Some(updated_value),
+            },
+            None,
+        )
+        .await;
+
+    match r {
+        Err((e, _)) => assert!(matches!(e, UpdateError::NothingToUpdate)),
+        _ => unreachable!(),
+    }
+}
+
+async_test_matrix!(
+    should_ignore_updates_on_readonly_fields_if_values_are_different_from_default_after_creation
+);
+
+async fn should_ignore_updates_on_readonly_fields_if_values_are_different_from_default_after_updates(
+) {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        lax: i32,
+    }
+
+    #[derive(Debug, Clone, IvoStruct)]
+    struct DataInput {
+        lax: i32,
+    }
+
+    const DEFAULT_VALUE: i32 = 1;
+
+    let schema: Schema<DataInput, Data> = Schema::new(
+        |f| f.set("lax", IvoField::LAX.default(DEFAULT_VALUE).readonly()),
+        |o| o,
+    );
+
+    let model = schema.get_model();
+
+    let (data, _) = model
+        .create(&PartialDataInput { lax: None }, None)
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(data, Data { lax: DEFAULT_VALUE });
+
+    let updated_value = 2;
+
+    let (updates, _) = model
+        .update(
+            &data,
+            &PartialDataInput {
+                lax: Some(updated_value),
+            },
+            None,
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updates,
+        PartialData {
+            lax: Some(updated_value)
+        }
+    );
+
+    let updated = data.ivo_internal_clone_with(updates);
+
+    assert_eq!(updated, Data { lax: updated_value });
+
+    let updated_value = 3;
+
+    let r = model
+        .update(
+            &updated,
+            &PartialDataInput {
+                lax: Some(updated_value),
+            },
+            None,
+        )
+        .await;
+
+    match r {
+        Err((e, _)) => assert!(matches!(e, UpdateError::NothingToUpdate)),
+        _ => unreachable!(),
+    }
+}
+
+async_test_matrix!(
+    should_ignore_updates_on_readonly_fields_if_values_are_different_from_default_after_updates
+);
 
 // validators
 

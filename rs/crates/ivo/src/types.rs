@@ -60,8 +60,7 @@ pub type SharedData<T> = Arc<T>;
 pub type SharedCtxOptions<CtxOptions> = SharedData<CtxOptions>;
 pub type SharedRwCtxOptions<CtxOptions> = SharedData<RwLock<CtxOptions>>;
 pub type SharedIvoContext<I: IvoStruct, O: IvoStruct> = SharedData<IvoContext<I, O>>;
-pub type SharedIvoMiniContext<I: IvoStruct> = SharedData<IvoMiniContext<I>>;
-pub type IvoMiniContext<I: IvoStruct> = I::Partial;
+pub type SharedIvoInput<I: IvoStruct> = SharedData<I::Partial>;
 
 pub type Partial<T> = <T as IvoWithPartialStruct>::Partial;
 
@@ -173,14 +172,6 @@ impl<I: IvoStruct, O: IvoStruct> IvoContext<I, O> {
     }
 
     #[inline(always)]
-    pub(crate) fn full_values(&self) -> Option<O> {
-        match &self {
-            IvoContext::Update { values, .. } => Some(values.clone()),
-            _ => None,
-        }
-    }
-
-    #[inline(always)]
     pub(crate) fn set_changes(&mut self, changes: O::Partial) -> &mut Self {
         match self {
             IvoContext::Create { values, .. } => {
@@ -269,6 +260,14 @@ impl<I: IvoStruct, O: IvoStruct> IvoContext<I, O> {
         match &self {
             IvoContext::Create { values, .. } => values.clone(),
             IvoContext::Update { values, .. } => values.clone().into(),
+        }
+    }
+
+    #[inline(always)]
+    pub fn full_values(&self) -> Option<O> {
+        match &self {
+            IvoContext::Update { values, .. } => Some(values.clone()),
+            _ => None,
         }
     }
 

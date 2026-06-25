@@ -18,9 +18,7 @@ use crate::schema::Schema;
 
 use crate::schema::options::types::{OnSuccessConfig, PostValidationConfig};
 
-use crate::{
-    IvoContext, SharedCtxOptions, SharedIvoContext, SharedIvoMiniContext, SharedRwCtxOptions,
-};
+use crate::{IvoContext, SharedCtxOptions, SharedIvoContext, SharedRwCtxOptions};
 
 use crate::types::{erase_value, IvoPartialStructMethods, IvoStruct, RwLock};
 
@@ -68,19 +66,14 @@ impl<
         (ErrorTool::ErrorPayload, AsyncHandlerTrigger<'schema>),
     > {
         let shared_rw_options = Arc::new(RwLock::new(options));
-
-        // Resolve constants & defaults
-        let default_values = self
-            .resolve_constants_and_defaults(Arc::new(input.clone()), Arc::clone(&shared_rw_options))
-            .await;
-
         let mut ctx = Arc::new(IvoContext::<I, O>::new_create_ctx(
             input.clone(),
             input.clone(),
-            default_values,
+            O::Partial::default(),
         ));
 
-        let (input, relevant_fields_provided, fields_provided) = self
+        // filter out ignored fields
+        let (input, output, relevant_fields_provided, fields_provided) = self
             .filter_input_fields_allowed(
                 None,
                 input,
@@ -89,7 +82,16 @@ impl<
             )
             .await;
 
-        Arc::make_mut(&mut ctx).set_input(input);
+        Arc::make_mut(&mut ctx)
+            .set_input(input.clone())
+            .set_changes(output);
+
+        // Resolve constants & defaults
+        let partial_values = self
+            .resolve_constants_and_defaults(&input, Arc::clone(&shared_rw_options))
+            .await;
+
+        Arc::make_mut(&mut ctx).set_changes(partial_values);
 
         if let Err(payload) = self
             .evaluate_missing_required_fields(
@@ -260,7 +262,7 @@ impl<
 
         let shared_rw_options = Arc::new(RwLock::new(options));
 
-        let (input, relevant_fields_provided, fields_provided) = self
+        let (input, output, relevant_fields_provided, fields_provided) = self
             .filter_input_fields_allowed(
                 Some(&old_partial_values),
                 updates,
@@ -269,7 +271,7 @@ impl<
             )
             .await;
 
-        Arc::make_mut(&mut ctx).set_input(input);
+        Arc::make_mut(&mut ctx).set_input(input).set_changes(output);
 
         // if the updates provided are all none, the nothing to update
         if relevant_fields_provided.fields.is_empty() {
@@ -938,34 +940,51 @@ impl<
 
     async fn resolve_constants_and_defaults(
         &self,
-        mini_ctx: SharedIvoMiniContext<I>,
+        input: &I::Partial,
         options: SharedRwCtxOptions<CtxOptions>,
     ) -> O::Partial {
         let mut default_values = O::Partial::default();
         let mut resolvers = vec![];
 
+        let fields_provided = input.ivo_internal_fields_provided();
+
         for (field_name, config) in self.schema.field_configs.iter() {
-            // constants
-            match &config.value {
-                Some(ValueResolverWithMiniContext::Static(value)) => {
-                    default_values.ivo_internal_set(field_name, value);
-                    continue;
-                }
-                Some(ValueResolverWithMiniContext::Func(resolver)) => {
-                    resolvers.push((field_name.to_string(), resolver));
-                    continue;
-                }
-                _ => {}
+            if matches!(config.field_type, FieldType::Lax) && fields_provided.contains(field_name) {
+                default_values
+                    .ivo_internal_set(field_name, &input.ivo_internal_get_erased_value(field_name));
+
+                continue;
             }
 
-            // other fields with default values/resolvers
-            match &config.default {
-                Some(ValueResolverWithMiniContext::Static(value)) => {
-                    default_values.ivo_internal_set(field_name, value);
-                }
-                Some(ValueResolverWithMiniContext::Func(resolver)) => {
-                    resolvers.push((field_name.to_string(), resolver));
-                }
+            match config {
+                InternalFieldConfig {
+                    field_type: FieldType::Constant,
+                    value,
+                    ..
+                } => match value {
+                    Some(ValueResolverWithMiniContext::Static(value)) => {
+                        default_values.ivo_internal_set(field_name, value);
+
+                        continue;
+                    }
+                    Some(ValueResolverWithMiniContext::Func(resolver)) => {
+                        resolvers.push((field_name.to_string(), resolver));
+                        continue;
+                    }
+                    _ => {}
+                },
+                InternalFieldConfig {
+                    field_type: FieldType::Dependent | FieldType::Lax,
+                    default: Some(default),
+                    ..
+                } => match default {
+                    ValueResolverWithMiniContext::Static(value) => {
+                        default_values.ivo_internal_set(field_name, value);
+                    }
+                    ValueResolverWithMiniContext::Func(resolver) => {
+                        resolvers.push((field_name.to_string(), resolver));
+                    }
+                },
                 _ => {}
             }
         }
@@ -974,10 +993,12 @@ impl<
             return default_values;
         }
 
+        let shared_input = Arc::new(input.clone());
+
         let tasks = resolvers.into_iter().map(async |(field_name, resolver)| {
             (
                 field_name.clone(),
-                resolver(Arc::clone(&mini_ctx), Arc::clone(&options)).await,
+                resolver(Arc::clone(&shared_input), Arc::clone(&options)).await,
             )
         });
 
@@ -996,6 +1017,7 @@ impl<
         options: SharedRwCtxOptions<CtxOptions>,
     ) -> (
         I::Partial,
+        O::Partial,
         FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
         FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
     ) {
@@ -1004,6 +1026,7 @@ impl<
 
         let mut resolvers = vec![];
         let mut input = input_values.clone();
+        let mut output = O::Partial::default();
         let mut fields_provided = FieldInfoCollection::new(self.schema);
         let mut field_info_vec = vec![];
 
@@ -1040,12 +1063,12 @@ impl<
                 InternalFieldConfig {
                     field_type: FieldType::Lax | FieldType::Required | FieldType::Virtual,
                     default,
-                    ignore: should_ignore,
+                    ignore,
                     ignore_init,
                     ignore_update,
                     ..
                 } => {
-                    if let Some(resolver) = should_ignore {
+                    if let Some(resolver) = ignore {
                         resolvers.push((field_info, resolver, true));
 
                         continue;
@@ -1066,19 +1089,37 @@ impl<
                         }
                         Some(IsFieldProvisionEnabled::Readonly) if is_update => {
                             if let Some(ValueResolverWithMiniContext::Static(value)) = default {
-                                // readonly means: don't update if value has changed
-                                // i.e: prev_value != default_value
-                                if !previous_values
+                                // readonly means: only allow update if value prev_value == default_value
+
+                                if previous_values
                                     .ivo_internal_is_value_equal(&field_info.name, value)
                                 {
-                                    input.ivo_internal_remove_value(&field_info.name);
+                                    final_field_info_vec.push(field_info.to_owned());
+
+                                    if field_info.is_output {
+                                        output.ivo_internal_set(
+                                            &field_info.name,
+                                            &input.ivo_internal_get_erased_value(&field_info.name),
+                                        );
+                                    }
+
+                                    continue;
                                 }
                             }
                         }
-                        _ => final_field_info_vec.push(field_info.to_owned()),
+                        _ => {
+                            final_field_info_vec.push(field_info.to_owned());
+
+                            if field_info.is_output {
+                                output.ivo_internal_set(
+                                    &field_info.name,
+                                    &input.ivo_internal_get_erased_value(&field_info.name),
+                                );
+                            }
+                        }
                     };
                 }
-                _ => final_field_info_vec.push(field_info.to_owned()),
+                _ => {}
             }
         }
 
@@ -1087,7 +1128,7 @@ impl<
         if resolvers.is_empty() {
             relevant_fields_provided.set_fields(final_field_info_vec);
 
-            return (input, relevant_fields_provided, fields_provided);
+            return (input, output, relevant_fields_provided, fields_provided);
         }
 
         let tasks = resolvers
@@ -1109,11 +1150,18 @@ impl<
             }
 
             input.ivo_internal_remove_value(&field_info.name);
+
+            if field_info.is_output {
+                output.ivo_internal_set(
+                    &field_info.name,
+                    &input.ivo_internal_get_erased_value(&field_info.name),
+                );
+            }
         }
 
         relevant_fields_provided.set_fields(final_field_info_vec);
 
-        (input, relevant_fields_provided, fields_provided)
+        (input, output, relevant_fields_provided, fields_provided)
     }
 
     async fn evaluate_missing_required_fields<'a>(
