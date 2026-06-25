@@ -1,4 +1,4 @@
-use ivo::{types::IvoStructMethods, IvoField, IvoStruct, Schema, UpdateError};
+use ivo::{types::IvoStructMethods, IvoField, IvoStruct, Schema, SharedIvoContext, UpdateError};
 use std::{future::ready, ops::RangeInclusive, panic};
 
 use crate::async_test_matrix;
@@ -14,7 +14,7 @@ mod on_success;
 // [ ] ignore_init
 // [ ] ignore_update
 // [x] readonly
-// [ ] required
+// [x] required
 // [x] validate
 // [x] re_validate
 // [ ] post_validate
@@ -219,6 +219,123 @@ async fn should_ignore_updates_on_readonly_fields_if_values_are_different_from_d
 async_test_matrix!(
     should_ignore_updates_on_readonly_fields_if_values_are_different_from_default_after_updates
 );
+
+// required
+
+async fn should_respect_required_rule() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        lax: String,
+        other: String,
+    }
+
+    #[derive(Debug, Clone, IvoStruct)]
+    struct DataInput {
+        lax: String,
+        other: String,
+    }
+
+    let default_lax_value = "default_lax_value";
+
+    let schema: Schema<DataInput, Data> = Schema::new(
+        |f| {
+            f.set(
+                "other",
+                IvoField::LAX
+                    .default(String::from("default_other_value"))
+                    .validate(|v, _, _| ready(Ok(v))),
+            )
+            .set(
+                "lax",
+                IvoField::LAX
+                    .default(default_lax_value.to_string())
+                    .validate(|v, _, _| ready(Ok(v)))
+                    .required(|ctx: SharedIvoContext<DataInput, Data>, _| {
+                        if ctx.is_update() {
+                            if "require_lax_for_update" == ctx.previous_values().unwrap().other {
+                                return ready(Some("lax is required for this update".into()));
+                            }
+
+                            return ready(None);
+                        }
+
+                        if Some("required_lax_for_init".into()) == ctx.input().other {
+                            return ready(Some("lax is required to create at this time".into()));
+                        }
+
+                        ready(None)
+                    }),
+            )
+        },
+        |o| o,
+    );
+
+    let model = schema.get_model();
+
+    let r = model
+        .create(
+            &PartialDataInput {
+                lax: None,
+                other: Some("required_lax_for_init".into()),
+            },
+            None,
+        )
+        .await;
+
+    match r {
+        Err((payload, _)) => assert_eq!(
+            payload.get("lax").unwrap()[0].reason,
+            "lax is required to create at this time"
+        ),
+        _ => unreachable!(),
+    }
+
+    let other_value = "require_lax_for_update".to_string();
+
+    let (data, _) = model
+        .create(
+            &PartialDataInput {
+                lax: None,
+                other: Some(other_value.clone()),
+            },
+            None,
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        data,
+        Data {
+            lax: default_lax_value.to_string(),
+            other: other_value
+        }
+    );
+
+    let r = model
+        .update(
+            &data,
+            &PartialDataInput {
+                lax: None,
+                other: Some("some update".into()),
+            },
+            None,
+        )
+        .await;
+
+    match r {
+        Err((e, _)) => match e {
+            UpdateError::ValidationError(payload) => assert_eq!(
+                payload.get("lax").unwrap()[0].reason,
+                "lax is required for this update"
+            ),
+            _ => unreachable!(),
+        },
+        _ => unreachable!(),
+    }
+}
+
+async_test_matrix!(should_respect_required_rule);
 
 // validators
 

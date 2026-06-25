@@ -111,7 +111,7 @@ where
     Fut: Future<Output = String> + Send + 'static,
 {
     fn into_resolver(self) -> RequiredResolver<I, O, CtxOptions> {
-        Box::new(move |ctx, o| Box::pin(self(ctx, o).map(|e| (true, e))))
+        Box::new(move |ctx, o| Box::pin(self(ctx, o).map(|e| Some(e))))
     }
 }
 
@@ -245,7 +245,7 @@ pub enum ComputableRequiredError<I: IvoStruct, O: IvoStruct, CtxOptions> {
     Func(RequiredResolver<I, O, CtxOptions>),
 }
 
-pub type RequiredError = (bool, String);
+pub type RequiredError = Option<String>;
 
 pub type RequiredResolver<I, O, CtxOptions> = Box<
     dyn Fn(

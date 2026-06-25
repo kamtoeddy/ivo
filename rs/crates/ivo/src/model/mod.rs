@@ -1239,8 +1239,8 @@ impl<
             )
         });
 
-        for (field_name, (is_required, reason)) in join_all(tasks).await {
-            if is_required {
+        for (field_name, required) in join_all(tasks).await {
+            if let Some(reason) = required {
                 error_tool.add(
                     field_name,
                     FieldError {
