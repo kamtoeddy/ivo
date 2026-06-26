@@ -1359,9 +1359,11 @@ impl<
                     let value = if let Some(value) = now.clone() {
                         value
                     } else {
-                        now = Some(resolve());
+                        let value = resolve();
 
-                        now.clone().unwrap()
+                        now = Some(value.clone());
+
+                        value
                     };
 
                     data.ivo_internal_set(created_at, &erase_value(value));
