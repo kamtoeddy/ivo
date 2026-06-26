@@ -1363,24 +1363,37 @@ impl<
             with_optional_updated_at,
         }) = self.schema.timestamp_configs.as_ref()
         {
-            let now = resolver();
+            let mut resolve = resolver.lock().unwrap();
+            let mut now: Option<Timestamp> = None;
 
             if !is_update {
                 if let Some(created_at) = created_at {
-                    data.ivo_internal_set(created_at, &erase_value(now.clone()));
+                    let value = if let Some(value) = now.clone() {
+                        value
+                    } else {
+                        now = Some(resolve());
+
+                        now.clone().unwrap()
+                    };
+
+                    data.ivo_internal_set(created_at, &erase_value(value));
                     was_updated = true;
                 }
             }
 
             if let Some(updated_at) = updated_at {
-                if *with_optional_updated_at {
-                    if is_update {
-                        data.ivo_internal_set(updated_at, &erase_value(Some(now)));
-                    } else {
-                        data.ivo_internal_set(updated_at, &erase_value::<Option<Timestamp>>(None));
-                    }
+                let is_optional = *with_optional_updated_at;
+
+                if is_optional && !is_update {
+                    data.ivo_internal_set(updated_at, &erase_value::<Option<Timestamp>>(None));
                 } else {
-                    data.ivo_internal_set(updated_at, &erase_value(now));
+                    let value = now.unwrap_or_else(|| resolve());
+
+                    if is_optional {
+                        data.ivo_internal_set(updated_at, &erase_value(Some(value)));
+                    } else {
+                        data.ivo_internal_set(updated_at, &erase_value(value));
+                    }
                 }
 
                 was_updated = true;

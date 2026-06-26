@@ -47,11 +47,11 @@ impl<
     > Schema<I, O, CtxOptions, Timestamp, ErrorTool>
 {
     pub fn new<FieldMaker, OptionsMaker, BuildableOptions, WithTimestamps>(
-        f: FieldMaker,
+        mut f: FieldMaker,
         o: OptionsMaker,
     ) -> Self
     where
-        FieldMaker: Fn(
+        FieldMaker: FnMut(
             FieldBuilder<I, O, CtxOptions, Timestamp, ErrorTool>,
         )
             -> FieldBuilder<I, O, CtxOptions, Timestamp, ErrorTool, WithTimestamps>,
@@ -577,11 +577,11 @@ impl<
 {
     pub fn set_timestamps<BuildableConfig, R>(
         self,
-        t: R,
+        mut t: R,
     ) -> FieldBuilder<I, O, CtxOptions, Timestamp, ErrorTool, Yes>
     where
         BuildableConfig: BuildableTimestampConfig<Timestamp>,
-        R: Fn(TimestampConfigBuilder<Timestamp>) -> BuildableConfig,
+        R: FnMut(TimestampConfigBuilder<Timestamp>) -> BuildableConfig,
     {
         FieldBuilder {
             configs: self.configs,
