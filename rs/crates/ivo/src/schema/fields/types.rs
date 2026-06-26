@@ -76,7 +76,10 @@ where
 {
     fn into_uniform(self) -> UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata> {
         Box::new(move |v, ctx, o| {
-            Box::pin(self(parse_or_panic::<T>(&v, None), ctx, o).map(|r| r.map(|v| erase_value(v))))
+            Box::pin(
+                self(parse_or_panic::<T>(&v, None), ctx, o)
+                    .map(|result| result.map(|value| erase_value(value))),
+            )
         })
     }
 }
