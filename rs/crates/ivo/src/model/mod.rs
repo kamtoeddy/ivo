@@ -82,16 +82,14 @@ impl<
             )
             .await;
 
+        // Resolve constants & defaults
+        let output = self
+            .attach_constants_and_defaults(output, &input, Arc::clone(&shared_rw_options))
+            .await;
+
         Arc::make_mut(&mut ctx)
             .set_input(input.clone())
             .set_changes(output);
-
-        // Resolve constants & defaults
-        let partial_values = self
-            .resolve_constants_and_defaults(&input, Arc::clone(&shared_rw_options))
-            .await;
-
-        Arc::make_mut(&mut ctx).set_changes(partial_values);
 
         if let Err(payload) = self
             .evaluate_missing_required_fields(
@@ -558,14 +556,14 @@ impl<
                     error_tool.add(field_name.as_str(), FieldError { reason, metadata });
                 }
                 Ok(value) => {
+                    has_updates = true;
+
                     if field_info.is_input {
                         validated_inputs.ivo_internal_set(&field_name, &value);
-                        has_updates = true;
                     }
 
                     if field_info.is_output {
                         validated_outputs.ivo_internal_set(&field_name, &value);
-                        has_updates = true;
                     }
                 }
             }
@@ -634,14 +632,14 @@ impl<
                     error_tool.add(field_name.as_str(), FieldError { reason, metadata });
                 }
                 Ok(value) => {
+                    has_updates = true;
+
                     if field_info.is_input {
                         validated_inputs.ivo_internal_set(&field_name, &value);
-                        has_updates = true;
                     }
 
                     if field_info.is_output {
                         validated_outputs.ivo_internal_set(&field_name, &value);
-                        has_updates = true;
                     }
                 }
             }
@@ -726,14 +724,14 @@ impl<
 
                 for (field_name, value) in pre_validation.ok().unwrap().data {
                     if let Some(field_info) = fields_provided.get(&field_name) {
+                        has_updates = true;
+
                         if field_info.is_input {
                             validated_inputs.ivo_internal_set(&field_info.name, &value);
-                            has_updates = true;
                         }
 
                         if field_info.is_output {
                             validated_outputs.ivo_internal_set(&field_info.name, &value);
-                            has_updates = true;
                         }
                     }
                 }
@@ -782,14 +780,14 @@ impl<
 
             for (field_name, value) in validation.ok().unwrap().data {
                 if let Some(field_info) = fields_provided.get(&field_name) {
+                    has_updates = true;
+
                     if field_info.is_input {
                         validated_inputs.ivo_internal_set(&field_info.name, &value);
-                        has_updates = true;
                     }
 
                     if field_info.is_output {
                         validated_outputs.ivo_internal_set(&field_info.name, &value);
-                        has_updates = true;
                     }
                 }
             }
@@ -844,18 +842,12 @@ impl<
         });
 
         let mut input_values = ctx.input();
-        let mut has_updates = false;
 
         for (f, value) in join_all(tasks).await {
             input_values.ivo_internal_set(&f.name, &value);
-            has_updates = true;
         }
 
-        if has_updates {
-            return Some(input_values);
-        }
-
-        None
+        Some(input_values)
     }
 
     async fn resolve_dependent_values<'a>(
@@ -938,21 +930,17 @@ impl<
         Some((updated_values, fields_updated))
     }
 
-    async fn resolve_constants_and_defaults(
+    async fn attach_constants_and_defaults(
         &self,
+        mut output: O::Partial,
         input: &I::Partial,
         options: SharedRwCtxOptions<CtxOptions>,
     ) -> O::Partial {
-        let mut default_values = O::Partial::default();
         let mut resolvers = vec![];
-
         let fields_provided = input.ivo_internal_fields_provided();
 
         for (field_name, config) in self.schema.field_configs.iter() {
             if matches!(config.field_type, FieldType::Lax) && fields_provided.contains(field_name) {
-                default_values
-                    .ivo_internal_set(field_name, &input.ivo_internal_get_erased_value(field_name));
-
                 continue;
             }
 
@@ -963,7 +951,7 @@ impl<
                     ..
                 } => match value {
                     Some(ValueResolverWithMiniContext::Static(value)) => {
-                        default_values.ivo_internal_set(field_name, value);
+                        output.ivo_internal_set(field_name, value);
 
                         continue;
                     }
@@ -979,7 +967,7 @@ impl<
                     ..
                 } => match default {
                     ValueResolverWithMiniContext::Static(value) => {
-                        default_values.ivo_internal_set(field_name, value);
+                        output.ivo_internal_set(field_name, value);
                     }
                     ValueResolverWithMiniContext::Func(resolver) => {
                         resolvers.push((field_name.to_string(), resolver));
@@ -990,7 +978,7 @@ impl<
         }
 
         if resolvers.is_empty() {
-            return default_values;
+            return output;
         }
 
         let shared_input = Arc::new(input.clone());
@@ -1003,10 +991,10 @@ impl<
         });
 
         for (field_name, value) in join_all(tasks).await {
-            default_values.ivo_internal_set(&field_name, &value);
+            output.ivo_internal_set(&field_name, &value);
         }
 
-        default_values
+        output
     }
 
     async fn filter_input_fields_allowed<'a>(
@@ -1364,7 +1352,7 @@ impl<
         }) = self.schema.timestamp_configs.as_ref()
         {
             let mut resolve = resolver.lock().unwrap();
-            let mut now: Option<Timestamp> = None;
+            let mut now = None;
 
             if !is_update {
                 if let Some(created_at) = created_at {
