@@ -16,6 +16,7 @@ use crate::schema::fields::base::{
 };
 use crate::schema::fields::TimestampConfig;
 use crate::schema::options::base::{SchemaOptions, SchemaOptionsBuilder};
+use crate::schema::options::types::PostValidationConfig;
 use crate::schema::options::BuildableSchemaOptions;
 use crate::types::IvoStruct;
 
@@ -46,6 +47,7 @@ impl<
         ErrorTool: IvoErrorTool,
     > Schema<I, O, CtxOptions, Timestamp, ErrorTool>
 {
+    #[track_caller]
     pub fn new<FieldMaker, OptionsMaker, BuildableOptions, WithTimestamps>(
         mut f: FieldMaker,
         o: OptionsMaker,
@@ -67,6 +69,7 @@ impl<
         }
     }
 
+    #[track_caller]
     fn make_field_configs(
         config_tuples: Vec<(String, InternalFieldConfig<I, O, CtxOptions, ErrorTool>)>,
         timestamp_configs: &Option<TimestampConfig<Timestamp>>,
@@ -384,9 +387,22 @@ impl<
         field_configs
     }
 
+    #[track_caller]
     fn make_options(
         options: SchemaOptions<I, O, CtxOptions, ErrorTool>,
     ) -> SchemaOptions<I, O, CtxOptions, ErrorTool> {
+        if let Some(configs) = options.post_validate.as_ref() {
+            let option_name = "options.post_validate";
+
+            for PostValidationConfig { fields, .. } in configs {
+                if fields.len() < 2 {
+                    panic!(
+                        "\n{COLOR_RED}[{option_name}]: post-validation expects at least 2 fields {STYLE_RESET}\n"
+                    );
+                }
+            }
+        }
+
         options
     }
 

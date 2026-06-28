@@ -18,10 +18,11 @@ mod on_success;
 // [x] required
 // [x] validate
 // [x] re_validate
-// [ ] post_validate
 // [x] on_delete
 // [x] on_failure
 // [x] on_success
+// [ ] o.on_success
+// [ ] o.post_validate
 
 // default values & fns
 

@@ -5,7 +5,7 @@ use std::marker::PhantomData;
 use crate::{
     schema::{
         error_tool::IvoErrorTool,
-        fields::types::{BooleanResolver, IsFieldProvisionEnabled},
+        fields::types::BooleanResolver,
         options::types::{OnSuccessConfig, PostValidationConfig},
         types::DeleteHandler,
         No,
@@ -20,8 +20,8 @@ pub struct SchemaOptions<I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoE
 
     pub post_validate: Option<Vec<PostValidationConfig<I, O, CtxOptions, ErrorTool>>>,
 
-    pub should_ignore: Option<BooleanResolver<I, O, CtxOptions>>,
-    pub ignore_update: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
+    pub ignore: Option<BooleanResolver<I, O, CtxOptions>>,
+    pub ignore_update: Option<bool>,
 }
 
 impl<I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool> Default
@@ -32,7 +32,7 @@ impl<I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool> Default
             on_delete_fns: None,
             on_success_fns: None,
             post_validate: None,
-            should_ignore: None,
+            ignore: None,
             ignore_update: None,
         }
     }
@@ -51,33 +51,33 @@ pub struct SchemaOptionsBuilder<
     O: IvoStruct,
     CtxOptions,
     ErrorTool: IvoErrorTool,
-    HasIgnore = No,
-    HasIgnoreUpdate = No,
     HasPostValidate = No,
     HasDelete = No,
     HasSuccess = No,
+    HasIgnore = No,
+    HasIgnoreUpdate = No,
 > {
-    pub _on_delete_fns: PhantomData<HasDelete>,
-    pub _on_success_fns: PhantomData<HasSuccess>,
-    pub _post_validate: PhantomData<HasPostValidate>,
-    pub _should_ignore: PhantomData<HasIgnore>,
-    pub _ignore_update: PhantomData<HasIgnoreUpdate>,
+    _on_delete_fns: PhantomData<HasDelete>,
+    _on_success_fns: PhantomData<HasSuccess>,
+    _post_validate: PhantomData<HasPostValidate>,
+    _ignore: PhantomData<HasIgnore>,
+    _ignore_update: PhantomData<HasIgnoreUpdate>,
     //
-    pub on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
-    pub on_success_fns: Option<Vec<OnSuccessConfig<I, O, CtxOptions>>>,
+    pub(crate) on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
+    pub(crate) on_success_fns: Option<Vec<OnSuccessConfig<I, O, CtxOptions>>>,
 
-    pub post_validate: Option<Vec<PostValidationConfig<I, O, CtxOptions, ErrorTool>>>,
+    pub(crate) post_validate: Option<Vec<PostValidationConfig<I, O, CtxOptions, ErrorTool>>>,
 
-    pub should_ignore: Option<BooleanResolver<I, O, CtxOptions>>,
-    pub ignore_update: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
+    pub(crate) ignore: Option<BooleanResolver<I, O, CtxOptions>>,
+    pub(crate) ignore_update: Option<bool>,
 }
 
 impl<
-        HasIgnore,
-        HasIgnoreUpdate,
         HasPostValidate,
         HasDelete,
         HasSuccess,
+        HasIgnore,
+        HasIgnoreUpdate,
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
@@ -88,11 +88,11 @@ impl<
         O,
         CtxOptions,
         ErrorTool,
-        HasIgnore,
-        HasIgnoreUpdate,
         HasPostValidate,
         HasDelete,
         HasSuccess,
+        HasIgnore,
+        HasIgnoreUpdate,
     >
 {
     pub const fn new() -> Self {
@@ -100,23 +100,40 @@ impl<
             on_delete_fns: None,
             on_success_fns: None,
             post_validate: None,
-            should_ignore: None,
+            ignore: None,
             ignore_update: None,
             _on_delete_fns: PhantomData,
             _on_success_fns: PhantomData,
             _post_validate: PhantomData,
-            _should_ignore: PhantomData,
+            _ignore: PhantomData,
             _ignore_update: PhantomData,
+        }
+    }
+
+    pub fn from(
+        on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
+        on_success_fns: Option<Vec<OnSuccessConfig<I, O, CtxOptions>>>,
+        post_validate: Option<Vec<PostValidationConfig<I, O, CtxOptions, ErrorTool>>>,
+        ignore: Option<BooleanResolver<I, O, CtxOptions>>,
+        ignore_update: Option<bool>,
+    ) -> Self {
+        Self {
+            on_delete_fns,
+            on_success_fns,
+            post_validate,
+            ignore,
+            ignore_update,
+            ..Default::default()
         }
     }
 }
 
 impl<
-        HasIgnore,
-        HasIgnoreUpdate,
         HasPostValidate,
         HasDelete,
         HasSuccess,
+        HasIgnore,
+        HasIgnoreUpdate,
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
@@ -127,11 +144,11 @@ impl<
         O,
         CtxOptions,
         ErrorTool,
-        HasIgnore,
-        HasIgnoreUpdate,
         HasPostValidate,
         HasDelete,
         HasSuccess,
+        HasIgnore,
+        HasIgnoreUpdate,
     >
 {
     fn default() -> Self {
