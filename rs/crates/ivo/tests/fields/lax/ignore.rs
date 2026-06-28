@@ -27,13 +27,13 @@ async fn should_respect_the_ignore_rule() {
                 "other",
                 IvoField::LAX
                     .default(String::from("default_other_value"))
-                    .validate(|v, _, _| ready(Ok(v))),
+                    .validate(|_, _, _| ready(Ok(None))),
             )
             .set(
                 "lax",
                 IvoField::LAX
                     .default(default_lax_value.to_string())
-                    .validate(|v, _, _| ready(Ok(v)))
+                    .validate(|_, _, _| ready(Ok(None)))
                     .ignore(|ctx: SharedIvoContext<DataInput, Data>, _| {
                         if ctx.is_update() {
                             if "ignore_lax_for_update" == ctx.previous_values().unwrap().other {
@@ -151,13 +151,13 @@ async fn should_respect_the_ignore_init_rule() {
                 "other",
                 IvoField::LAX
                     .default(String::from("default_other_value"))
-                    .validate(|v, _, _| ready(Ok(v))),
+                    .validate(|_, _, _| ready(Ok(None))),
             )
             .set(
                 "lax",
                 IvoField::LAX
                     .default(default_lax_value.to_string())
-                    .validate(|v, _, _| ready(Ok(v)))
+                    .validate(|_, _, _| ready(Ok(None)))
                     .ignore_init(),
             )
         },
@@ -236,13 +236,13 @@ async fn should_respect_the_ignore_update_rule() {
                 "other",
                 IvoField::LAX
                     .default(String::from("default_other_value"))
-                    .validate(|v, _, _| ready(Ok(v))),
+                    .validate(|_, _, _| ready(Ok(None))),
             )
             .set(
                 "lax",
                 IvoField::LAX
                     .default(default_lax_value.to_string())
-                    .validate(|v, _, _| ready(Ok(v)))
+                    .validate(|_, _, _| ready(Ok(None)))
                     .ignore_update(),
             )
         },

@@ -78,7 +78,7 @@ where
         Box::new(move |v, ctx, o| {
             Box::pin(
                 self(parse_or_panic::<T>(&v, None), ctx, o)
-                    .map(|result| result.map(|value| erase_value(value))),
+                    .map(|result| result.map(|option| option.map(|value| erase_value(value)))),
             )
         })
     }

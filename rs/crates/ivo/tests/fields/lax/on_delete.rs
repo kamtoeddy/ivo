@@ -21,7 +21,7 @@ async fn should_trigger_on_delete_handlers() {
                 "lax",
                 IvoField::LAX
                     .default("default_value".into())
-                    .validate(|v: String, _, _| ready(Ok(v)))
+                    .validate(|v: String, _, _| ready(Ok(Some(v))))
                     .on_delete(|data: SharedData<Data>, _| {
                         if true {
                             panic!(

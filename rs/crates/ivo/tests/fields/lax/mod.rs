@@ -108,13 +108,13 @@ async fn should_respect_the_required_rule() {
                 "other",
                 IvoField::LAX
                     .default(String::from("default_other_value"))
-                    .validate(|v, _, _| ready(Ok(v))),
+                    .validate(|_, _, _| ready(Ok(None))),
             )
             .set(
                 "lax",
                 IvoField::LAX
                     .default(default_lax_value.to_string())
-                    .validate(|v, _, _| ready(Ok(v)))
+                    .validate(|_, _, _| ready(Ok(None)))
                     .required(|ctx: SharedIvoContext<DataInput, Data>, _| {
                         if ctx.is_update() {
                             if "require_lax_for_update" == ctx.previous_values().unwrap().other {
@@ -230,7 +230,7 @@ async fn should_not_create_if_primary_validation_fails() {
                             return ready(Err((MIN_LENGTH_ERROR.into(), None)));
                         }
 
-                        ready(Ok(v))
+                        ready(Ok(Some(validated.into())))
                     }),
             )
         },
@@ -312,7 +312,7 @@ async fn should_not_update_if_primary_validation_fails() {
                             return ready(Err((LAX_OUT_OF_RANGE_ERROR.into(), None)));
                         }
 
-                        ready(Ok(v))
+                        ready(Ok(Some(v)))
                     }),
                 )
         },
@@ -408,7 +408,7 @@ async fn should_not_create_if_re_validation_fails() {
                             return ready(Err((MIN_LENGTH_ERROR.into(), None)));
                         }
 
-                        ready(Ok(v))
+                        ready(Ok(Some(validated.into())))
                     })
                     .re_validate(|v: String, _, _| {
                         let validated = v.trim();
@@ -417,7 +417,7 @@ async fn should_not_create_if_re_validation_fails() {
                             return ready(Err((MIN_REVALIDATION_LENGTH_ERROR.into(), None)));
                         }
 
-                        ready(Ok(v))
+                        ready(Ok(Some(v)))
                     }),
             )
         },
@@ -508,7 +508,7 @@ async fn should_not_update_if_re_validation_fails() {
                                 return ready(Err((LAX_OUT_OF_RANGE_ERROR.into(), None)));
                             }
 
-                            ready(Ok(v))
+                            ready(Ok(Some(v)))
                         })
                         .re_validate(|v: i32, _, _| {
                             if !REVALIDATED_LAX_VALUE_RANGE.contains(&v) {
@@ -518,7 +518,7 @@ async fn should_not_update_if_re_validation_fails() {
                                 )));
                             }
 
-                            ready(Ok(v))
+                            ready(Ok(Some(v)))
                         }),
                 )
         },

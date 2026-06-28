@@ -32,7 +32,7 @@ fn should_reject_if_parent_array_is_empty() {
                 )
                 .set(
                     "required",
-                    IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(v))),
+                    IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
                 )
                 .set_timestamps(|t| t.date_fn(|| "Date.now()").updated_at(None, true))
         },
@@ -74,7 +74,7 @@ fn should_reject_dependency_of_created_at_field_with_default_name() {
                 )
                 .set(
                     "required",
-                    IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(v))),
+                    IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
                 )
                 .set_timestamps(|t| {
                     t.date_fn(|| "Date.now()")
@@ -120,7 +120,7 @@ fn should_reject_dependency_of_created_at_field_with_custom_name() {
                 )
                 .set(
                     "required",
-                    IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(v))),
+                    IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
                 )
                 .set_timestamps(|t| {
                     t.date_fn(|| "Date.now()")
@@ -166,7 +166,7 @@ fn should_reject_dependency_of_updated_at_field_with_default_name() {
                 )
                 .set(
                     "required",
-                    IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(v))),
+                    IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
                 )
                 .set_timestamps(|t| t.date_fn(|| "Date.now()").updated_at(None, true))
         },
@@ -208,7 +208,7 @@ fn should_reject_dependency_of_updated_at_field_with_custom_name() {
                 )
                 .set(
                     "required",
-                    IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(v))),
+                    IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
                 )
                 .set_timestamps(|t| {
                     t.date_fn(|| "Date.now()")
@@ -251,7 +251,7 @@ fn should_reject_if_any_parent_field_provided_does_not_belong_on_schema() {
                 )
                 .set(
                     "required",
-                    IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(v))),
+                    IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
                 )
                 .set_timestamps(|t| t.date_fn(|| "Date.now()").updated_at(None, true))
         },
@@ -288,7 +288,7 @@ fn should_reject_if_any_parent_field_name_is_same_as_dependent_field_name() {
                 )
                 .set(
                     "required",
-                    IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(v))),
+                    IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
                 )
                 .set_timestamps(|t| t.date_fn(|| "Date.now()").updated_at(None, true))
         },
@@ -327,7 +327,7 @@ fn should_reject_if_duplicate_parent_fields_are_provided() {
                 )
                 .set(
                     "required",
-                    IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(v))),
+                    IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
                 )
                 .set_timestamps(|t| t.date_fn(|| "Date.now()").updated_at(None, true))
         },
@@ -366,7 +366,7 @@ fn should_reject_dependency_of_constant_fields() {
                 )
                 .set(
                     "required",
-                    IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(v))),
+                    IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
                 )
                 .set_timestamps(|t| t.date_fn(|| "Date.now()").updated_at(None, true))
         },
@@ -412,7 +412,7 @@ fn should_reject_any_redundant_dependencies() {
                 )
                 .set(
                     "d",
-                    IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(v))),
+                    IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
                 )
         },
         |o| o,
@@ -462,7 +462,7 @@ fn should_reject_any_deeply_redundant_dependencies() {
             )
             .set(
                 "d",
-                IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(v))),
+                IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
             )
         },
         |o| o,
@@ -580,7 +580,7 @@ fn should_allow_dependency_on_normal_lax_or_required_fields() {
                     )
                     .set(
                         "required",
-                        IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(v))),
+                        IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
                     .set_timestamps(|t| t.date_fn(|| "Date.now()").updated_at(None, true))
             },
@@ -603,7 +603,7 @@ fn should_allow_dependency_on_normal_lax_or_required_fields() {
                     )
                     .set(
                         "required",
-                        IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(v))),
+                        IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
                     .set_timestamps(|t| t.date_fn(|| "Date.now()").updated_at(None, true))
             },
@@ -626,7 +626,7 @@ fn should_allow_dependency_on_normal_lax_or_required_fields() {
                     )
                     .set(
                         "required",
-                        IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(v))),
+                        IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
                     .set_timestamps(|t| t.date_fn(|| "Date.now()").updated_at(None, true))
             },
@@ -674,7 +674,7 @@ fn should_allow_dependency_on_other_dependent_fields() {
                     )
                     .set(
                         "required",
-                        IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(v))),
+                        IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
                     .set_timestamps(|t| t.date_fn(|| "Date.now()").updated_at(None, true))
             },
@@ -704,7 +704,7 @@ fn should_allow_dependency_on_other_dependent_fields() {
                     )
                     .set(
                         "required",
-                        IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(v))),
+                        IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
                     .set_timestamps(|t| t.date_fn(|| "Date.now()").updated_at(None, true))
             },
@@ -753,11 +753,11 @@ fn should_allow_dependency_on_virtual_fields() {
                     )
                     .set(
                         "required",
-                        IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(v))),
+                        IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
                     .set(
                         "virtual_field",
-                        IvoField::VIRTUAL.validate(|v: String, _, _| ready(Ok(v))),
+                        IvoField::VIRTUAL.validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
                     .set_timestamps(|t| t.date_fn(|| "Date.now()").updated_at(None, true))
             },
@@ -787,11 +787,11 @@ fn should_allow_dependency_on_virtual_fields() {
                     )
                     .set(
                         "required",
-                        IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(v))),
+                        IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
                     .set(
                         "virtual_field",
-                        IvoField::VIRTUAL.validate(|v: String, _, _| ready(Ok(v))),
+                        IvoField::VIRTUAL.validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
                     .set_timestamps(|t| t.date_fn(|| "Date.now()").updated_at(None, true))
             },
@@ -821,11 +821,11 @@ fn should_allow_dependency_on_virtual_fields() {
                     )
                     .set(
                         "required",
-                        IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(v))),
+                        IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
                     .set(
                         "virtual_field",
-                        IvoField::VIRTUAL.validate(|v: String, _, _| ready(Ok(v))),
+                        IvoField::VIRTUAL.validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
                     .set_timestamps(|t| t.date_fn(|| "Date.now()").updated_at(None, true))
             },
@@ -855,11 +855,11 @@ fn should_allow_dependency_on_virtual_fields() {
                     )
                     .set(
                         "required",
-                        IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(v))),
+                        IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
                     .set(
                         "virtual_field",
-                        IvoField::VIRTUAL.validate(|v: String, _, _| ready(Ok(v))),
+                        IvoField::VIRTUAL.validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
                     .set_timestamps(|t| t.date_fn(|| "Date.now()").updated_at(None, true))
             },
@@ -900,13 +900,13 @@ fn should_allow_dependency_on_virtual_fields_with_aliases() {
                     )
                     .set(
                         "required",
-                        IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(v))),
+                        IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
                     .set(
                         "virtual_field",
                         IvoField::VIRTUAL
                             .alias("alias_name")
-                            .validate(|v: String, _, _| ready(Ok(v))),
+                            .validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
                     .set_timestamps(|t| t.date_fn(|| "Date.now()").updated_at(None, true))
             },
@@ -944,13 +944,13 @@ fn should_allow_dependency_on_virtual_fields_with_aliases() {
                     )
                     .set(
                         "required",
-                        IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(v))),
+                        IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
                     .set(
                         "virtual_field",
                         IvoField::VIRTUAL
                             .alias("dependent")
-                            .validate(|v: String, _, _| ready(Ok(v))),
+                            .validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
                     .set_timestamps(|t| t.date_fn(|| "Date.now()").updated_at(None, true))
             },

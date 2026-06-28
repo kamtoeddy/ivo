@@ -29,7 +29,7 @@ fn should_reject_with_same_alias_name() {
                     "virtual_field",
                     IvoField::VIRTUAL
                         .alias("virtual_field")
-                        .validate(|v: String, _, _| ready(Ok(v))),
+                        .validate(|v: String, _, _| ready(Ok(Some(v)))),
                 )
         },
         |o| o,
@@ -69,7 +69,7 @@ fn should_reject_with_alias_as_non_dependent_field() {
                     "virtual_field",
                     IvoField::VIRTUAL
                         .alias("lax")
-                        .validate(|v: String, _, _| ready(Ok(v))),
+                        .validate(|v: String, _, _| ready(Ok(Some(v)))),
                 )
         },
         |o| o,
@@ -117,7 +117,7 @@ fn should_reject_with_alias_as_unrelated_dependent_field() {
                     "virtual_field",
                     IvoField::VIRTUAL
                         .alias("dependent1")
-                        .validate(|v: String, _, _| ready(Ok(v))),
+                        .validate(|v: String, _, _| ready(Ok(Some(v)))),
                 )
         },
         |o| o,
@@ -147,7 +147,7 @@ fn should_reject_if_alias_is_same_created_at_if_enabled_with_default_name() {
                     "virtual_field",
                     IvoField::VIRTUAL
                         .alias("created_at")
-                        .validate(|v: String, _, _| ready(Ok(v))),
+                        .validate(|v: String, _, _| ready(Ok(Some(v)))),
                 )
                 .set_timestamps(|t| t.date_fn(|| "Date.now()").created_at(None))
         },
@@ -177,7 +177,7 @@ fn should_reject_if_alias_is_same_created_at_if_enabled_with_custom_name() {
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("custom_created_at")
-                    .validate(|v: String, _, _| ready(Ok(v))),
+                    .validate(|v: String, _, _| ready(Ok(Some(v)))),
             )
             .set_timestamps(|t| {
                 t.date_fn(|| "Date.now()")
@@ -211,7 +211,7 @@ fn should_reject_if_alias_is_same_updated_at_if_enabled_with_default_name() {
                     "virtual_field",
                     IvoField::VIRTUAL
                         .alias("updated_at")
-                        .validate(|v: String, _, _| ready(Ok(v))),
+                        .validate(|v: String, _, _| ready(Ok(Some(v)))),
                 )
                 .set_timestamps(|t| t.date_fn(|| "Date.now()").updated_at(None, true))
         },
@@ -241,7 +241,7 @@ fn should_reject_if_alias_is_same_updated_at_if_enabled_with_custom_name() {
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("custom_updated_at")
-                    .validate(|v: String, _, _| ready(Ok(v))),
+                    .validate(|v: String, _, _| ready(Ok(Some(v)))),
             )
             .set_timestamps(|t| {
                 t.date_fn(|| "Date.now()")
@@ -285,13 +285,13 @@ fn should_reject_if_alias_already_used() {
                     "virtual_field1",
                     IvoField::VIRTUAL
                         .alias("dependent")
-                        .validate(|v: String, _, _| ready(Ok(v))),
+                        .validate(|v: String, _, _| ready(Ok(Some(v)))),
                 )
                 .set(
                     "virtual_field",
                     IvoField::VIRTUAL
                         .alias("dependent")
-                        .validate(|v: String, _, _| ready(Ok(v))),
+                        .validate(|v: String, _, _| ready(Ok(Some(v)))),
                 )
         },
         |o| o,
@@ -330,7 +330,7 @@ fn should_reject_if_alias_does_not_exist_on_input_struct() {
                     "virtual_field",
                     IvoField::VIRTUAL
                         .alias("alias_name")
-                        .validate(|v: String, _, _| ready(Ok(v))),
+                        .validate(|v: String, _, _| ready(Ok(Some(v)))),
                 )
         },
         |o| o,
@@ -371,7 +371,7 @@ fn should_reject_if_both_alias_and_field_name_exist_on_input_struct() {
                     "virtual_field",
                     IvoField::VIRTUAL
                         .alias("alias_name")
-                        .validate(|v: String, _, _| ready(Ok(v))),
+                        .validate(|v: String, _, _| ready(Ok(Some(v)))),
                 )
         },
         |o| o,
@@ -410,11 +410,11 @@ fn should_allow_virtuals_with_alias_as_direct_dependent_field() {
                         "virtual_field",
                         IvoField::VIRTUAL
                             .alias("dependent")
-                            .validate(|v: String, _, _| ready(Ok(v))),
+                            .validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
                     .set(
                         "virtual_field1",
-                        IvoField::VIRTUAL.validate(|v: String, _, _| ready(Ok(v))),
+                        IvoField::VIRTUAL.validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
             },
             |o| o,
@@ -455,7 +455,7 @@ fn should_allow_virtuals_with_alias_as_non_field_name() {
                         "virtual_field",
                         IvoField::VIRTUAL
                             .alias("alias_name")
-                            .validate(|v: String, _, _| ready(Ok(v))),
+                            .validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
             },
             |o| o,
@@ -495,7 +495,7 @@ fn should_reject_if_no_alias_is_provided_and_field_name_does_not_exist_on_input_
                 )
                 .set(
                     "virtual_field",
-                    IvoField::VIRTUAL.validate(|v: String, _, _| ready(Ok(v))),
+                    IvoField::VIRTUAL.validate(|v: String, _, _| ready(Ok(Some(v)))),
                 )
         },
         |o| o,
@@ -531,7 +531,7 @@ fn should_allow_if_no_alias_is_provided_but_field_name_exists_on_input_struct() 
                     )
                     .set(
                         "virtual_field",
-                        IvoField::VIRTUAL.validate(|v: String, _, _| ready(Ok(v))),
+                        IvoField::VIRTUAL.validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
             },
             |o| o,

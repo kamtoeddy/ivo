@@ -26,7 +26,7 @@ async fn should_trigger_on_failure_handlers_at_creation() {
                             return ready(Err(("validation failed".into(), None)));
                         }
 
-                        ready(Ok(v))
+                        ready(Ok(Some(v)))
                     })
                     .on_failure(|ctx: SharedIvoContext<DataInput, Data>, _| {
                         if true {
@@ -92,7 +92,7 @@ async fn should_trigger_on_failure_handlers_at_creation_even_if_provided_and_ign
                             return ready(Err(("validation failed".into(), None)));
                         }
 
-                        ready(Ok(v))
+                        ready(Ok(Some(v)))
                     })
                     .ignore_init()
                     .on_failure(|ctx: SharedIvoContext<DataInput, Data>, _| {
@@ -115,7 +115,7 @@ async fn should_trigger_on_failure_handlers_at_creation_even_if_provided_and_ign
                             return ready(Err(("validation failed".into(), None)));
                         }
 
-                        ready(Ok(v))
+                        ready(Ok(Some(v)))
                     }),
             )
         },
@@ -172,7 +172,7 @@ async fn should_trigger_on_failure_handlers_during_updates() {
                             return ready(Err(("validation failed".into(), None)));
                         }
 
-                        ready(Ok(v))
+                        ready(Ok(Some(v)))
                     })
                     .on_failure(|ctx: SharedIvoContext<DataInput, Data>, _| {
                         if true {
@@ -246,7 +246,7 @@ async fn should_trigger_on_failure_handlers_during_updates_with_unchanged_values
                             return ready(Err(("validation failed".into(), None)));
                         }
 
-                        ready(Ok(v))
+                        ready(Ok(Some(v)))
                     })
                     .on_failure(|ctx: SharedIvoContext<DataInput, Data>, _| {
                         if true {
@@ -321,7 +321,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                             return ready(Err(("validation failed".into(), None)));
                         }
 
-                        ready(Ok(v))
+                        ready(Ok(Some(v)))
                     })
                     .ignore_update()
                     .on_failure(|ctx: SharedIvoContext<DataInput, Data>, _| {
@@ -344,7 +344,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                             return ready(Err(("validation failed".into(), None)));
                         }
 
-                        ready(Ok(v))
+                        ready(Ok(Some(v)))
                     }),
             )
         },

@@ -555,7 +555,7 @@ impl<
                 Err((reason, metadata)) => {
                     error_tool.add(field_name.as_str(), FieldError { reason, metadata });
                 }
-                Ok(value) => {
+                Ok(Some(value)) => {
                     has_updates = true;
 
                     if field_info.is_input {
@@ -566,6 +566,7 @@ impl<
                         validated_outputs.ivo_internal_set(&field_name, &value);
                     }
                 }
+                _ => {}
             }
         }
 
@@ -631,7 +632,7 @@ impl<
                 Err((reason, metadata)) => {
                     error_tool.add(field_name.as_str(), FieldError { reason, metadata });
                 }
-                Ok(value) => {
+                Ok(Some(value)) => {
                     has_updates = true;
 
                     if field_info.is_input {
@@ -642,6 +643,7 @@ impl<
                         validated_outputs.ivo_internal_set(&field_name, &value);
                     }
                 }
+                _ => {}
             }
         }
 

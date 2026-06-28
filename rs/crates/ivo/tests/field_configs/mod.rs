@@ -26,11 +26,13 @@ fn should_reject_if_field_name_is_already_set() {
                     "lax",
                     IvoField::LAX
                         .default("value".into())
-                        .validate(|v: String, _, _| ready(Ok(v))),
+                        .validate(|v: String, _, _| ready(Ok(Some(v)))),
                 )
                 .set(
                     "lax",
-                    IvoField::LAX.default(true).validate(|v, _, _| ready(Ok(v))),
+                    IvoField::LAX
+                        .default(true)
+                        .validate(|_, _, _| ready(Ok(None))),
                 )
         },
         |o| o,
@@ -60,7 +62,7 @@ fn should_reject_if_field_name_is_same_created_at_if_enabled_with_default_name()
                     "created_at",
                     IvoField::LAX
                         .default("value".into())
-                        .validate(|v: String, _, _| ready(Ok(v))),
+                        .validate(|v: String, _, _| ready(Ok(Some(v)))),
                 )
                 .set_timestamps(|t| t.date_fn(|| "Date.now()").created_at(None))
         },
@@ -90,7 +92,7 @@ fn should_reject_if_field_name_is_same_created_at_if_enabled_with_custom_name() 
                 "custom_created_at",
                 IvoField::LAX
                     .default("value".into())
-                    .validate(|v: String, _, _| ready(Ok(v))),
+                    .validate(|v: String, _, _| ready(Ok(Some(v)))),
             )
             .set_timestamps(|t| {
                 t.date_fn(|| "Date.now()")
@@ -122,7 +124,7 @@ fn should_reject_if_field_name_is_same_updated_at_if_enabled_with_default_name()
                     "updated_at",
                     IvoField::LAX
                         .default("value".into())
-                        .validate(|v: String, _, _| ready(Ok(v))),
+                        .validate(|v: String, _, _| ready(Ok(Some(v)))),
                 )
                 .set_timestamps(|t| t.date_fn(|| "Date.now()").updated_at(None, true))
         },
@@ -152,7 +154,7 @@ fn should_reject_if_field_name_is_same_updated_at_if_enabled_with_custom_name() 
                 "custom_updated_at",
                 IvoField::LAX
                     .default("value".into())
-                    .validate(|v: String, _, _| ready(Ok(v))),
+                    .validate(|v: String, _, _| ready(Ok(Some(v)))),
             )
             .set_timestamps(|t| {
                 t.date_fn(|| "Date.now()")
@@ -209,11 +211,11 @@ fn should_reject_if_dependent_field_does_not_exist_on_output_struct() {
                 "lax",
                 IvoField::LAX
                     .default("default".into())
-                    .validate(|v: String, _, _| ready(Ok(v))),
+                    .validate(|v: String, _, _| ready(Ok(Some(v)))),
             )
             .set(
                 "virtual_field",
-                IvoField::VIRTUAL.validate(|v: String, _, _| ready(Ok(v))),
+                IvoField::VIRTUAL.validate(|v: String, _, _| ready(Ok(Some(v)))),
             )
         },
         |o| o,
@@ -237,7 +239,9 @@ fn should_reject_if_lax_field_does_not_exist_on_input_struct() {
         |f| {
             f.set(
                 "lax",
-                IvoField::LAX.default(12).validate(|v, _, _| ready(Ok(v))),
+                IvoField::LAX
+                    .default(12)
+                    .validate(|_, _, _| ready(Ok(None))),
             )
         },
         |o| o,
@@ -261,7 +265,9 @@ fn should_reject_if_lax_field_does_not_exist_on_output_struct() {
         |f| {
             f.set(
                 "lax",
-                IvoField::LAX.default(12).validate(|v, _, _| ready(Ok(v))),
+                IvoField::LAX
+                    .default(12)
+                    .validate(|_, _, _| ready(Ok(None))),
             )
         },
         |o| o,
@@ -287,7 +293,7 @@ fn should_reject_if_required_field_does_not_exist_on_input_struct() {
         |f| {
             f.set(
                 "required",
-                IvoField::REQUIRED.validate(|v: i32, _, _| ready(Ok(v))),
+                IvoField::REQUIRED.validate(|v: i32, _, _| ready(Ok(Some(v)))),
             )
         },
         |o| o,
@@ -311,7 +317,7 @@ fn should_reject_if_required_field_does_not_exist_on_output_struct() {
         |f| {
             f.set(
                 "required",
-                IvoField::REQUIRED.validate(|v: i32, _, _| ready(Ok(v))),
+                IvoField::REQUIRED.validate(|v: i32, _, _| ready(Ok(Some(v)))),
             )
         },
         |o| o,

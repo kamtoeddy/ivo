@@ -116,7 +116,13 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
                     "email",
                     IvoField::REQUIRED
                         .required_error("\"email\" was not provided!")
-                        .validate(|email, _, _| ready(validate_email(email).map_err(|e| (e, None))))
+                        .validate(|email, _, _| {
+                            ready(
+                                validate_email(email)
+                                    .map(|v| Some(v))
+                                    .map_err(|e| (e, None)),
+                            )
+                        })
                         .on_failure(|_, _| {
                             println!("[email]: on failure handled");
 
@@ -129,7 +135,7 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
                     IvoField::LAX
                         .default(UserRole::User)
                         // .default_fn(|_, _| ready(UserRole::User))
-                        .validate(|v, _, _| ready(Ok(v)))
+                        .validate(|_, _, _| ready(Ok(None)))
                         // .readonly()
                         // .ignore_init()
                         .ignore(|_, _| ready(true))
@@ -160,7 +166,7 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
                                 )));
                             }
 
-                            ready(Ok(v))
+                            ready(Ok(Some(v)))
                         })
                         .re_validate(async |uname: String, _, o: RwCtxOptions| {
                             if o.read().await.find_user_by_username(&uname).await.is_some() {
@@ -170,7 +176,7 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
                                 ));
                             }
 
-                            Ok(format!("revalidated-'{}'", uname))
+                            Ok(Some(format!("revalidated-'{}'", uname)))
                         })
                         // .ignore_update(|ctx: Ctx, _| {
                         //     ready(is_username_or_slug_id_updatable(
@@ -258,7 +264,7 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
                                 )));
                             }
 
-                            ready(Ok(validated.into()))
+                            ready(Ok(Some(validated.into())))
                         })
                         .sanitize(|v, _, _| ready(format!("sanitized-'{v}'")))
                         // .ignore(|ctx: Ctx, _| {

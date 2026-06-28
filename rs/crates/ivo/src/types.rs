@@ -283,6 +283,6 @@ impl<I: IvoStruct, O: IvoStruct> IvoContext<I, O> {
 }
 
 pub type ValidatorResponse<T: IvoFieldValue, ErrorMetadata = DefaultFieldErrorMetadata> =
-    Result<T, ValidatorError<ErrorMetadata>>;
+    Result<Option<T>, ValidatorError<ErrorMetadata>>;
 
 pub type ValidatorError<FieldErrorMetadata> = (String, Option<FieldErrorMetadata>);

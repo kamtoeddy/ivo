@@ -28,7 +28,7 @@ async fn should_trigger_on_success_handlers_at_creation_if_provided() {
                             return ready(Err(("validation failed".into(), None)));
                         }
 
-                        ready(Ok(v))
+                        ready(Ok(Some(v)))
                     })
                     .ignore_update()
                     .on_success(|ctx: SharedIvoContext<DataInput, Data>, _| {
@@ -51,7 +51,7 @@ async fn should_trigger_on_success_handlers_at_creation_if_provided() {
                             return ready(Err(("validation failed".into(), None)));
                         }
 
-                        ready(Ok(v))
+                        ready(Ok(Some(v)))
                     }),
             )
         },
@@ -113,7 +113,7 @@ async fn should_trigger_on_success_handlers_at_creation_even_if_not_provided() {
                             return ready(Err(("validation failed".into(), None)));
                         }
 
-                        ready(Ok(v))
+                        ready(Ok(Some(v)))
                     })
                     .ignore_update()
                     .on_success(|ctx: SharedIvoContext<DataInput, Data>, _| {
@@ -136,7 +136,7 @@ async fn should_trigger_on_success_handlers_at_creation_even_if_not_provided() {
                             return ready(Err(("validation failed".into(), None)));
                         }
 
-                        ready(Ok(v))
+                        ready(Ok(Some(v)))
                     }),
             )
         },
@@ -201,7 +201,7 @@ async fn should_trigger_on_success_handlers_at_creation_even_if_provided_and_ign
                             return ready(Err(("validation failed".into(), None)));
                         }
 
-                        ready(Ok(v))
+                        ready(Ok(Some(v)))
                     })
                     .ignore_init()
                     .on_success(|ctx: SharedIvoContext<DataInput, Data>, _| {
@@ -224,7 +224,7 @@ async fn should_trigger_on_success_handlers_at_creation_even_if_provided_and_ign
                             return ready(Err(("validation failed".into(), None)));
                         }
 
-                        ready(Ok(v))
+                        ready(Ok(Some(v)))
                     }),
             )
         },
@@ -290,7 +290,7 @@ async fn should_trigger_on_success_handlers_during_updates_if_provided() {
                             return ready(Err(("validation failed".into(), None)));
                         }
 
-                        ready(Ok(v))
+                        ready(Ok(Some(v)))
                     })
                     .on_success(|ctx: SharedIvoContext<DataInput, Data>, _| {
                         if true {
@@ -312,7 +312,7 @@ async fn should_trigger_on_success_handlers_during_updates_if_provided() {
                             return ready(Err(("validation failed".into(), None)));
                         }
 
-                        ready(Ok(v))
+                        ready(Ok(Some(v)))
                     }),
             )
         },
@@ -384,7 +384,7 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_not_provided()
                             return ready(Err(("validation failed".into(), None)));
                         }
 
-                        ready(Ok(v))
+                        ready(Ok(Some(v)))
                     })
                     .on_success(|ctx: SharedIvoContext<DataInput, Data>, _| {
                         if true {
@@ -406,7 +406,7 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_not_provided()
                             return ready(Err(("validation failed".into(), None)));
                         }
 
-                        ready(Ok(v))
+                        ready(Ok(Some(v)))
                     }),
             )
         },
@@ -475,7 +475,7 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_i
                             return ready(Err(("validation failed".into(), None)));
                         }
 
-                        ready(Ok(v))
+                        ready(Ok(Some(v)))
                     })
                     .ignore_update()
                     .on_success(|ctx: SharedIvoContext<DataInput, Data>, _| {
@@ -498,7 +498,7 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_i
                             return ready(Err(("validation failed".into(), None)));
                         }
 
-                        ready(Ok(v))
+                        ready(Ok(Some(v)))
                     }),
             )
         },

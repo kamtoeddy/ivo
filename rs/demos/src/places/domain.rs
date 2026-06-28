@@ -103,7 +103,7 @@ pub static PLACE_SCHEMA: LazyLock<
                             return ready(Err(("Out of range error".into(), Some(errors))));
                         }
 
-                        ready(Ok(c))
+                        ready(Ok(Some(c)))
                     })
                     .on_delete(|_, _| {
                         println!("[coordinates]: on delete 1 handled");
