@@ -12,3 +12,6 @@ homepage = "https://github.com/kamtoeddy/ivo/rs"
 keywords = ["schema", "validation"]
 categories = ["encoding", "parsing"]
 rust-version = "1.80.0"
+
+[workspace.dependencies]
+futures-locks = "0.7"

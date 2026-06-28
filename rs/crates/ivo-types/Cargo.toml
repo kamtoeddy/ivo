@@ -13,4 +13,4 @@ edition.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-futures-locks = "0.7"
+futures-locks.workspace = true
