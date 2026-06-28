@@ -440,17 +440,25 @@ impl<
                         continue;
                     };
 
+                    if let Some(InternalFieldConfig {
+                        field_type: FieldType::Virtual,
+                        ..
+                    }) = field_configs.get(&owned_field_name)
+                    {
+                        field_names.insert(field_name);
+
+                        continue;
+                    };
+
                     if output_field_names.contains(&owned_field_name) {
-                        if !field_configs.contains_key(&owned_field_name) {
-                            panic!(
+                        panic!(
                         "\n{COLOR_RED}[{option_name}]: timestamps are not allowed in on_success. remove \"{field_name}\"{STYLE_RESET}\n"
                     );
-                        }
-                    } else {
-                        panic!(
+                    }
+
+                    panic!(
                             "\n{COLOR_RED}[{option_name}]: \"{field_name}\" does not exist on your schema{STYLE_RESET}\n"
                         );
-                    };
                 }
             }
         }
