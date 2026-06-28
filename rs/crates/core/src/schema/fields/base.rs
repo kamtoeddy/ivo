@@ -1,4 +1,4 @@
-use std::{marker::PhantomData, sync::Mutex};
+use std::marker::PhantomData;
 
 use ivo_types::{types::ErasedValue, IvoErrorTool};
 
@@ -80,7 +80,7 @@ impl<T, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool> Default
 pub struct TimestampConfig<T: IvoFieldValue> {
     pub created_at: Option<&'static str>,
     pub updated_at: Option<&'static str>,
-    pub resolver: Mutex<TimestampResolver<T>>,
+    pub resolver: TimestampResolver<T>,
     pub with_optional_updated_at: bool,
 }
 
@@ -108,7 +108,7 @@ impl<T: IvoFieldValue> BuildableTimestampConfig<T> for TimestampConfigBuilder<T,
         TimestampConfig {
             created_at: self.created_at,
             updated_at: self.updated_at,
-            resolver: Mutex::new(self.resovler.unwrap()),
+            resolver: self.resovler.unwrap(),
             with_optional_updated_at: self.with_optional_updated_at,
         }
     }
@@ -121,7 +121,7 @@ impl<HasCreatedAt, T: IvoFieldValue> BuildableTimestampConfig<T>
         TimestampConfig {
             created_at: self.created_at,
             updated_at: self.updated_at,
-            resolver: Mutex::new(self.resovler.unwrap()),
+            resolver: self.resovler.unwrap(),
             with_optional_updated_at: self.with_optional_updated_at,
         }
     }
@@ -152,7 +152,7 @@ impl<HasDateFn, HasCreatedAt, HasUpdatedAt, T: IvoFieldValue> Default
 impl<T: IvoFieldValue> TimestampConfigBuilder<T> {
     pub fn date_fn<R>(self, resolver: R) -> TimestampConfigBuilder<T, Yes>
     where
-        R: FnMut() -> T + Send + Sync + 'static,
+        R: Fn() -> T + Send + Sync + 'static,
     {
         TimestampConfigBuilder {
             resovler: Some(Box::new(resolver)),

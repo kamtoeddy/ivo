@@ -1356,7 +1356,6 @@ impl<
             with_optional_updated_at,
         }) = self.schema.timestamp_configs.as_ref()
         {
-            let mut resolve = resolver.lock().unwrap();
             let mut now = None;
 
             if !is_update {
@@ -1364,7 +1363,7 @@ impl<
                     let value = if let Some(value) = now.clone() {
                         value
                     } else {
-                        let value = resolve();
+                        let value = resolver();
 
                         now = Some(value.clone());
 
@@ -1383,7 +1382,7 @@ impl<
                     data.ivo_internal_set(updated_at, &erase_value::<Option<Timestamp>>(None));
                 } else {
                     #[expect(clippy::redundant_closure)]
-                    let value = now.unwrap_or_else(|| resolve());
+                    let value = now.unwrap_or_else(resolver);
 
                     if is_optional {
                         data.ivo_internal_set(updated_at, &erase_value(Some(value)));

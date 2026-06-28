@@ -47,11 +47,11 @@ impl<
 {
     #[track_caller]
     pub fn new<FieldMaker, OptionsMaker, BuildableOptions, WithTimestamps>(
-        mut f: FieldMaker,
+        f: FieldMaker,
         o: OptionsMaker,
     ) -> Self
     where
-        FieldMaker: FnMut(
+        FieldMaker: Fn(
             FieldBuilder<I, O, CtxOptions, Timestamp, ErrorTool>,
         )
             -> FieldBuilder<I, O, CtxOptions, Timestamp, ErrorTool, WithTimestamps>,
@@ -649,11 +649,11 @@ impl<
 {
     pub fn set_timestamps<BuildableConfig, R>(
         self,
-        mut t: R,
+        t: R,
     ) -> FieldBuilder<I, O, CtxOptions, Timestamp, ErrorTool, Yes>
     where
         BuildableConfig: BuildableTimestampConfig<Timestamp>,
-        R: FnMut(TimestampConfigBuilder<Timestamp>) -> BuildableConfig,
+        R: Fn(TimestampConfigBuilder<Timestamp>) -> BuildableConfig,
     {
         FieldBuilder {
             configs: self.configs,

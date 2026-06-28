@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoField, IvoStruct, IvoStructMethods, Schema, SharedIvoContext, UpdateError};
+use ivo::{IvoField, IvoStruct, Schema, SharedIvoContext, UpdateError};
 
 use crate::async_test_matrix;
 
@@ -102,7 +102,7 @@ async fn should_respect_the_ignore_rule() {
         }
     );
 
-    let data = data.ivo_internal_clone_with(updates);
+    let data = data.clone_with_updates(&updates);
 
     let other_value = "some other update".to_string();
 
@@ -411,7 +411,7 @@ async fn should_ignore_updates_on_readonly_fields_if_values_are_different_from_d
         }
     );
 
-    let data = data.ivo_internal_clone_with(updates);
+    let data = data.clone_with_updates(&updates);
 
     assert_eq!(data, Data { lax: updated_value });
 

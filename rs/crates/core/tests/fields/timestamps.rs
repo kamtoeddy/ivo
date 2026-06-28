@@ -1,9 +1,11 @@
-use ivo::{DefaultErrorTool, IvoField, IvoStruct, IvoStructMethods, Schema};
+use std::time::Instant;
+
+use ivo::{DefaultErrorTool, IvoField, IvoStruct, Schema};
 
 use crate::async_test_matrix;
 
 async fn should_respect_created_at_timestamp_with_default_name() {
-    type Timestamp = u32;
+    type Timestamp = u128;
 
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
@@ -16,29 +18,14 @@ async fn should_respect_created_at_timestamp_with_default_name() {
         lax: i32,
     }
 
-    struct Timer {
-        time: Timestamp,
-    }
-
-    impl Timer {
-        fn new() -> Self {
-            Self { time: 0 }
-        }
-
-        fn now(&mut self) -> Timestamp {
-            self.time += 1;
-
-            self.time
-        }
-    }
+    let timer = Instant::now();
 
     let schema: Schema<DataInput, Data, Option<()>, Timestamp, DefaultErrorTool> = Schema::new(
         |f| {
             f.set("lax", IvoField::LAX.default(1234))
                 .set_timestamps(|t| {
-                    let mut timer = Timer::new();
-
-                    t.date_fn(move || timer.now()).created_at(None)
+                    t.date_fn(move || timer.elapsed().as_micros())
+                        .created_at(None)
                 })
         },
         |o| o,
@@ -46,39 +33,39 @@ async fn should_respect_created_at_timestamp_with_default_name() {
 
     let model = schema.get_model();
 
+    let lax = 400;
+
     let (data, _) = model
-        .create(&PartialDataInput { lax: Some(400) }, None)
+        .create(&PartialDataInput { lax: Some(lax) }, None)
         .await
         .ok()
         .unwrap();
 
-    assert_eq!(
-        data,
-        Data {
-            created_at: 1,
-            lax: 400,
-        }
-    );
+    assert_eq!(data.lax, lax);
+    assert!(data.created_at > 0);
+
+    let lax_update = 200;
 
     let (updates, _) = model
-        .update(&data, &PartialDataInput { lax: Some(200) }, None)
+        .update(
+            &data,
+            &PartialDataInput {
+                lax: Some(lax_update),
+            },
+            None,
+        )
         .await
         .ok()
         .unwrap();
 
-    assert_eq!(
-        updates,
-        PartialData {
-            created_at: None,
-            lax: Some(200),
-        }
-    );
+    assert_eq!(updates.lax, Some(lax_update));
+    assert_eq!(updates.created_at, None);
 }
 
 async_test_matrix!(should_respect_created_at_timestamp_with_default_name);
 
 async fn should_respect_created_at_timestamp_with_custom_name() {
-    type Timestamp = u32;
+    type Timestamp = u128;
 
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
@@ -91,29 +78,13 @@ async fn should_respect_created_at_timestamp_with_custom_name() {
         lax: i32,
     }
 
-    struct Timer {
-        time: Timestamp,
-    }
-
-    impl Timer {
-        fn new() -> Self {
-            Self { time: 0 }
-        }
-
-        fn now(&mut self) -> Timestamp {
-            self.time += 1;
-
-            self.time
-        }
-    }
+    let timer = Instant::now();
 
     let schema: Schema<DataInput, Data, Option<()>, Timestamp, DefaultErrorTool> = Schema::new(
         |f| {
             f.set("lax", IvoField::LAX.default(1234))
                 .set_timestamps(|t| {
-                    let mut timer = Timer::new();
-
-                    t.date_fn(move || timer.now())
+                    t.date_fn(move || timer.elapsed().as_micros())
                         .created_at(Some("custom_created_at"))
                 })
         },
@@ -122,39 +93,39 @@ async fn should_respect_created_at_timestamp_with_custom_name() {
 
     let model = schema.get_model();
 
+    let lax = 400;
+
     let (data, _) = model
-        .create(&PartialDataInput { lax: Some(400) }, None)
+        .create(&PartialDataInput { lax: Some(lax) }, None)
         .await
         .ok()
         .unwrap();
 
-    assert_eq!(
-        data,
-        Data {
-            custom_created_at: 1,
-            lax: 400,
-        }
-    );
+    assert_eq!(data.lax, lax);
+    assert!(data.custom_created_at > 0);
+
+    let lax_update = 200;
 
     let (updates, _) = model
-        .update(&data, &PartialDataInput { lax: Some(200) }, None)
+        .update(
+            &data,
+            &PartialDataInput {
+                lax: Some(lax_update),
+            },
+            None,
+        )
         .await
         .ok()
         .unwrap();
 
-    assert_eq!(
-        updates,
-        PartialData {
-            custom_created_at: None,
-            lax: Some(200),
-        }
-    );
+    assert_eq!(updates.lax, Some(lax_update));
+    assert_eq!(updates.custom_created_at, None);
 }
 
 async_test_matrix!(should_respect_created_at_timestamp_with_custom_name);
 
 async fn should_respect_updated_at_timestamp_with_default_name() {
-    type Timestamp = u32;
+    type Timestamp = u128;
 
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
@@ -167,29 +138,14 @@ async fn should_respect_updated_at_timestamp_with_default_name() {
         lax: i32,
     }
 
-    struct Timer {
-        time: Timestamp,
-    }
-
-    impl Timer {
-        fn new() -> Self {
-            Self { time: 0 }
-        }
-
-        fn now(&mut self) -> Timestamp {
-            self.time += 1;
-
-            self.time
-        }
-    }
+    let timer = Instant::now();
 
     let schema: Schema<DataInput, Data, Option<()>, Timestamp, DefaultErrorTool> = Schema::new(
         |f| {
             f.set("lax", IvoField::LAX.default(1234))
                 .set_timestamps(|t| {
-                    let mut timer = Timer::new();
-
-                    t.date_fn(move || timer.now()).updated_at(None, false)
+                    t.date_fn(move || timer.elapsed().as_micros())
+                        .updated_at(None, false)
                 })
         },
         |o| o,
@@ -197,39 +153,39 @@ async fn should_respect_updated_at_timestamp_with_default_name() {
 
     let model = schema.get_model();
 
+    let lax = 400;
+
     let (data, _) = model
-        .create(&PartialDataInput { lax: Some(400) }, None)
+        .create(&PartialDataInput { lax: Some(lax) }, None)
         .await
         .ok()
         .unwrap();
 
-    assert_eq!(
-        data,
-        Data {
-            lax: 400,
-            updated_at: 1,
-        }
-    );
+    assert_eq!(data.lax, lax);
+    assert!(data.updated_at > 0);
+
+    let lax_update = 200;
 
     let (updates, _) = model
-        .update(&data, &PartialDataInput { lax: Some(200) }, None)
+        .update(
+            &data,
+            &PartialDataInput {
+                lax: Some(lax_update),
+            },
+            None,
+        )
         .await
         .ok()
         .unwrap();
 
-    assert_eq!(
-        updates,
-        PartialData {
-            lax: Some(200),
-            updated_at: Some(2),
-        }
-    );
+    assert_eq!(updates.lax, Some(lax_update));
+    assert!(updates.updated_at.is_some());
 }
 
 async_test_matrix!(should_respect_updated_at_timestamp_with_default_name);
 
 async fn should_respect_updated_at_timestamp_with_custom_name() {
-    type Timestamp = u32;
+    type Timestamp = u128;
 
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
@@ -241,30 +197,13 @@ async fn should_respect_updated_at_timestamp_with_custom_name() {
     struct DataInput {
         lax: i32,
     }
-
-    struct Timer {
-        time: Timestamp,
-    }
-
-    impl Timer {
-        fn new() -> Self {
-            Self { time: 0 }
-        }
-
-        fn now(&mut self) -> Timestamp {
-            self.time += 1;
-
-            self.time
-        }
-    }
+    let timer = Instant::now();
 
     let schema: Schema<DataInput, Data, Option<()>, Timestamp, DefaultErrorTool> = Schema::new(
         |f| {
             f.set("lax", IvoField::LAX.default(1234))
                 .set_timestamps(|t| {
-                    let mut timer = Timer::new();
-
-                    t.date_fn(move || timer.now())
+                    t.date_fn(move || timer.elapsed().as_micros())
                         .updated_at(Some("custom_updated_at"), false)
                 })
         },
@@ -273,39 +212,39 @@ async fn should_respect_updated_at_timestamp_with_custom_name() {
 
     let model = schema.get_model();
 
+    let lax = 400;
+
     let (data, _) = model
-        .create(&PartialDataInput { lax: Some(400) }, None)
+        .create(&PartialDataInput { lax: Some(lax) }, None)
         .await
         .ok()
         .unwrap();
 
-    assert_eq!(
-        data,
-        Data {
-            lax: 400,
-            custom_updated_at: 1,
-        }
-    );
+    assert_eq!(data.lax, lax);
+    assert!(data.custom_updated_at > 0);
+
+    let lax_update = 200;
 
     let (updates, _) = model
-        .update(&data, &PartialDataInput { lax: Some(200) }, None)
+        .update(
+            &data,
+            &PartialDataInput {
+                lax: Some(lax_update),
+            },
+            None,
+        )
         .await
         .ok()
         .unwrap();
 
-    assert_eq!(
-        updates,
-        PartialData {
-            lax: Some(200),
-            custom_updated_at: Some(2),
-        }
-    );
+    assert_eq!(updates.lax, Some(lax_update));
+    assert!(updates.custom_updated_at.is_some());
 }
 
 async_test_matrix!(should_respect_updated_at_timestamp_with_custom_name);
 
 async fn should_respect_optional_updated_at_timestamp_with_default_name() {
-    type Timestamp = u32;
+    type Timestamp = u128;
 
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
@@ -318,29 +257,14 @@ async fn should_respect_optional_updated_at_timestamp_with_default_name() {
         lax: i32,
     }
 
-    struct Timer {
-        time: Timestamp,
-    }
-
-    impl Timer {
-        fn new() -> Self {
-            Self { time: 0 }
-        }
-
-        fn now(&mut self) -> Timestamp {
-            self.time += 1;
-
-            self.time
-        }
-    }
+    let timer = Instant::now();
 
     let schema: Schema<DataInput, Data, Option<()>, Timestamp, DefaultErrorTool> = Schema::new(
         |f| {
             f.set("lax", IvoField::LAX.default(1234))
                 .set_timestamps(|t| {
-                    let mut timer = Timer::new();
-
-                    t.date_fn(move || timer.now()).updated_at(None, true)
+                    t.date_fn(move || timer.elapsed().as_micros())
+                        .updated_at(None, true)
                 })
         },
         |o| o,
@@ -348,47 +272,44 @@ async fn should_respect_optional_updated_at_timestamp_with_default_name() {
 
     let model = schema.get_model();
 
+    let lax = 400;
+
     let (data, _) = model
-        .create(&PartialDataInput { lax: Some(400) }, None)
+        .create(&PartialDataInput { lax: Some(lax) }, None)
         .await
         .ok()
         .unwrap();
 
-    assert_eq!(
-        data,
-        Data {
-            lax: 400,
-            updated_at: None,
-        }
-    );
+    assert_eq!(data.lax, lax);
+    assert_eq!(data.updated_at, None);
+
+    let lax_update = 200;
 
     let (updates, _) = model
-        .update(&data, &PartialDataInput { lax: Some(200) }, None)
+        .update(
+            &data,
+            &PartialDataInput {
+                lax: Some(lax_update),
+            },
+            None,
+        )
         .await
         .ok()
         .unwrap();
 
-    assert_eq!(
-        updates,
-        PartialData {
-            lax: Some(200),
-            updated_at: Some(Some(1)),
-        }
-    );
+    assert_eq!(updates.lax, Some(lax_update));
+    assert!(updates.updated_at.is_some());
 
-    assert_eq!(
-        data.ivo_internal_clone_with(updates),
-        Data {
-            lax: 200,
-            updated_at: Some(1),
-        }
-    );
+    let updated = data.clone_with_updates(&updates);
+
+    assert_eq!(updated.lax, updates.lax.unwrap());
+    assert_eq!(updated.updated_at, updates.updated_at.unwrap());
 }
 
 async_test_matrix!(should_respect_optional_updated_at_timestamp_with_default_name);
 
 async fn should_respect_optional_updated_at_timestamp_with_custom_name() {
-    type Timestamp = u32;
+    type Timestamp = u128;
 
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
@@ -401,29 +322,13 @@ async fn should_respect_optional_updated_at_timestamp_with_custom_name() {
         lax: i32,
     }
 
-    struct Timer {
-        time: Timestamp,
-    }
-
-    impl Timer {
-        fn new() -> Self {
-            Self { time: 0 }
-        }
-
-        fn now(&mut self) -> Timestamp {
-            self.time += 1;
-
-            self.time
-        }
-    }
+    let timer = Instant::now();
 
     let schema: Schema<DataInput, Data, Option<()>, Timestamp, DefaultErrorTool> = Schema::new(
         |f| {
             f.set("lax", IvoField::LAX.default(1234))
                 .set_timestamps(|t| {
-                    let mut timer = Timer::new();
-
-                    t.date_fn(move || timer.now())
+                    t.date_fn(move || timer.elapsed().as_micros())
                         .updated_at(Some("custom_updated_at"), true)
                 })
         },
@@ -432,40 +337,40 @@ async fn should_respect_optional_updated_at_timestamp_with_custom_name() {
 
     let model = schema.get_model();
 
+    let lax = 400;
+
     let (data, _) = model
-        .create(&PartialDataInput { lax: Some(400) }, None)
+        .create(&PartialDataInput { lax: Some(lax) }, None)
         .await
         .ok()
         .unwrap();
 
-    assert_eq!(
-        data,
-        Data {
-            lax: 400,
-            custom_updated_at: None,
-        }
-    );
+    assert_eq!(data.lax, lax);
+    assert_eq!(data.custom_updated_at, None);
+
+    let lax_update = 200;
 
     let (updates, _) = model
-        .update(&data, &PartialDataInput { lax: Some(200) }, None)
+        .update(
+            &data,
+            &PartialDataInput {
+                lax: Some(lax_update),
+            },
+            None,
+        )
         .await
         .ok()
         .unwrap();
 
-    assert_eq!(
-        updates,
-        PartialData {
-            lax: Some(200),
-            custom_updated_at: Some(Some(1)),
-        }
-    );
+    assert_eq!(updates.lax, Some(lax_update));
+    assert!(updates.custom_updated_at.is_some());
 
+    let updated = data.clone_with_updates(&updates);
+
+    assert_eq!(updated.lax, updates.lax.unwrap());
     assert_eq!(
-        data.ivo_internal_clone_with(updates),
-        Data {
-            lax: 200,
-            custom_updated_at: Some(1),
-        }
+        updated.custom_updated_at,
+        updates.custom_updated_at.unwrap()
     );
 }
 

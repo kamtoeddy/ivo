@@ -19,9 +19,8 @@ pub extern crate ivo_types as __private_types;
 
 pub use ivo_types::{
     DefaultErrorPayload, DefaultErrorTool, DefaultFieldErrorMetadata, FieldError, IvoErrorTool,
-    IvoFieldValue, IvoPartialStructMethods, IvoStruct, IvoStructMethods, IvoWithPartialStruct,
-    Partial, PostValidatorError, PostValidatorResponse, RwLock, UpdateError, ValidatorError,
-    ValidatorResponse,
+    IvoFieldValue, IvoStruct, Partial, PostValidatorError, PostValidatorResponse, RwLock,
+    UpdateError, ValidatorError, ValidatorResponse,
 };
 
 pub use types::{

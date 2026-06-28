@@ -11,7 +11,7 @@ use crate::{
     ValidatorResponse,
 };
 
-pub type TimestampResolver<T: IvoFieldValue> = Box<dyn FnMut() -> T + Send + Sync + 'static>;
+pub type TimestampResolver<T: IvoFieldValue> = Box<dyn Fn() -> T + Send + Sync + 'static>;
 
 pub trait IntoDeleteHandler<O: IvoStruct, CtxOptions> {
     fn into_handler(self) -> DeleteHandler<O, CtxOptions>;
