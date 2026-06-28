@@ -180,13 +180,25 @@ impl<HasCreatedAt, T: IvoFieldValue> TimestampConfigBuilder<T, Yes, HasCreatedAt
     pub fn updated_at(
         self,
         custom_name: Option<&'static str>,
-        is_optional: bool,
     ) -> TimestampConfigBuilder<T, Yes, HasCreatedAt, Yes> {
         TimestampConfigBuilder {
             resovler: self.resovler,
             created_at: self.created_at,
             updated_at: Some(custom_name.unwrap_or("updated_at")),
-            with_optional_updated_at: is_optional,
+            with_optional_updated_at: false,
+            ..Default::default()
+        }
+    }
+
+    pub fn optional_updated_at(
+        self,
+        custom_name: Option<&'static str>,
+    ) -> TimestampConfigBuilder<T, Yes, HasCreatedAt, Yes> {
+        TimestampConfigBuilder {
+            resovler: self.resovler,
+            created_at: self.created_at,
+            updated_at: Some(custom_name.unwrap_or("updated_at")),
+            with_optional_updated_at: true,
             ..Default::default()
         }
     }

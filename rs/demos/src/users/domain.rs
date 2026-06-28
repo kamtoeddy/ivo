@@ -7,7 +7,7 @@ use std::{
 };
 
 use ivo::{
-    IvoField, IvoStruct, Model, Schema, SharedCtxOptions, SharedIvoData, SharedIvoContext,
+    IvoField, IvoStruct, Model, Schema, SharedCtxOptions, SharedIvoContext, SharedIvoData,
     SharedRwCtxOptions, validate_email,
 };
 use serde::Serialize;
@@ -284,7 +284,7 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
                 .set_timestamps(|t| {
                     t.date_fn(|| time::UNIX_EPOCH.elapsed().unwrap().as_micros().to_string())
                         .created_at(None)
-                        .updated_at(Some("updated_on"), false)
+                        .updated_at(Some("updated_on"))
                 })
             },
             |o| {

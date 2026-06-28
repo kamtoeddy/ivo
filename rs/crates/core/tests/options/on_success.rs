@@ -178,7 +178,7 @@ fn should_reject_if_updated_at_timestamp_with_default_name_is_provided_to_the_fi
         |f| {
             f.set("lax", IvoField::LAX.default(1234))
                 .set("lax_1", IvoField::LAX.default(5678))
-                .set_timestamps(|t| t.date_fn(|| 1234).updated_at(None, false))
+                .set_timestamps(|t| t.date_fn(|| 1234).updated_at(None))
         },
         |o| {
             o.on_success(["lax", "lax_1", "updated_at"], |s| {
@@ -210,10 +210,7 @@ fn should_reject_if_updated_at_timestamp_with_custom_name_is_provided_to_the_fie
         |f| {
             f.set("lax", IvoField::LAX.default(1234))
                 .set("lax_1", IvoField::LAX.default(5678))
-                .set_timestamps(|t| {
-                    t.date_fn(|| 1234)
-                        .updated_at(Some("custom_updated_at"), false)
-                })
+                .set_timestamps(|t| t.date_fn(|| 1234).updated_at(Some("custom_updated_at")))
         },
         |o| {
             o.on_success(["lax", "lax_1", "custom_updated_at"], |s| {

@@ -145,7 +145,7 @@ async fn should_respect_updated_at_timestamp_with_default_name() {
             f.set("lax", IvoField::LAX.default(1234))
                 .set_timestamps(|t| {
                     t.date_fn(move || timer.elapsed().as_micros())
-                        .updated_at(None, false)
+                        .updated_at(None)
                 })
         },
         |o| o,
@@ -204,7 +204,7 @@ async fn should_respect_updated_at_timestamp_with_custom_name() {
             f.set("lax", IvoField::LAX.default(1234))
                 .set_timestamps(|t| {
                     t.date_fn(move || timer.elapsed().as_micros())
-                        .updated_at(Some("custom_updated_at"), false)
+                        .updated_at(Some("custom_updated_at"))
                 })
         },
         |o| o,
@@ -264,7 +264,7 @@ async fn should_respect_optional_updated_at_timestamp_with_default_name() {
             f.set("lax", IvoField::LAX.default(1234))
                 .set_timestamps(|t| {
                     t.date_fn(move || timer.elapsed().as_micros())
-                        .updated_at(None, true)
+                        .optional_updated_at(None)
                 })
         },
         |o| o,
@@ -329,7 +329,7 @@ async fn should_respect_optional_updated_at_timestamp_with_custom_name() {
             f.set("lax", IvoField::LAX.default(1234))
                 .set_timestamps(|t| {
                     t.date_fn(move || timer.elapsed().as_micros())
-                        .updated_at(Some("custom_updated_at"), true)
+                        .optional_updated_at(Some("custom_updated_at"))
                 })
         },
         |o| o,

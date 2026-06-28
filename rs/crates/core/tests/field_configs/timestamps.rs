@@ -125,7 +125,7 @@ fn should_reject_if_updated_at_is_enabled_with_default_name_but_missing_from_out
     let _: Schema<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Schema::new(
         |f| {
             f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
-                .set_timestamps(|t| t.date_fn(|| "Date.now()").updated_at(None, true))
+                .set_timestamps(|t| t.date_fn(|| "Date.now()").optional_updated_at(None))
         },
         |o| o,
     );
@@ -151,7 +151,7 @@ fn should_reject_if_updated_at_is_enabled_with_custom_name_but_missing_from_outp
             f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
                 .set_timestamps(|t| {
                     t.date_fn(|| "Date.now()")
-                        .updated_at(Some("custom_updated_at"), true)
+                        .optional_updated_at(Some("custom_updated_at"))
                 })
         },
         |o| o,
@@ -175,7 +175,7 @@ fn should_allow_if_updated_at_is_enabled_with_default_name_and_is_on_output() {
         let _: Schema<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Schema::new(
             |f| {
                 f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
-                    .set_timestamps(|t| t.date_fn(|| "Date.now()").updated_at(None, true))
+                    .set_timestamps(|t| t.date_fn(|| "Date.now()").optional_updated_at(None))
             },
             |o| o,
         );
@@ -203,7 +203,7 @@ fn should_allow_if_updated_at_is_enabled_with_custom_name_and_is_on_output() {
                 f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
                     .set_timestamps(|t| {
                         t.date_fn(|| "Date.now()")
-                            .updated_at(Some("custom_updated_at"), true)
+                            .optional_updated_at(Some("custom_updated_at"))
                     })
             },
             |o| o,

@@ -126,7 +126,7 @@ fn should_reject_if_field_name_is_same_updated_at_if_enabled_with_default_name()
                         .default("value".into())
                         .validate(|v: String, _, _| ready(Ok(Some(v)))),
                 )
-                .set_timestamps(|t| t.date_fn(|| "Date.now()").updated_at(None, true))
+                .set_timestamps(|t| t.date_fn(|| "Date.now()").optional_updated_at(None))
         },
         |o| o,
     );
@@ -158,7 +158,7 @@ fn should_reject_if_field_name_is_same_updated_at_if_enabled_with_custom_name() 
             )
             .set_timestamps(|t| {
                 t.date_fn(|| "Date.now()")
-                    .updated_at(Some("custom_updated_at"), true)
+                    .optional_updated_at(Some("custom_updated_at"))
             })
         },
         |o| o,
