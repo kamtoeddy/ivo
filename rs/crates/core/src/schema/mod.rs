@@ -15,7 +15,7 @@ use crate::schema::fields::base::{
 };
 use crate::schema::fields::TimestampConfig;
 use crate::schema::options::base::{SchemaOptions, SchemaOptionsBuilder};
-use crate::schema::options::types::PostValidationConfig;
+use crate::schema::options::types::{OnSuccessConfig, PostValidationConfig};
 use crate::schema::options::BuildableSchemaOptions;
 
 type InternalFieldConfigs<I, O, CtxOptions, ErrorTool> =
@@ -414,6 +414,53 @@ impl<
         input_field_names: &HashSet<String>,
         output_field_names: &HashSet<String>,
     ) -> SchemaOptions<I, O, CtxOptions, ErrorTool> {
+        if let Some(configs) = options.on_success_fns.as_ref() {
+            let option_name = "options.on_success";
+            let mut field_names = HashSet::new();
+
+            for OnSuccessConfig { fields, .. } in configs {
+                if fields.len() < 2 {
+                    panic!(
+                        "\n{COLOR_RED}[{option_name}]: grouped on_success should have at least 2 fields {STYLE_RESET}\n"
+                    );
+                }
+
+                for field_name in fields {
+                    if field_names.contains(field_name) {
+                        panic!(
+                            "\n{COLOR_RED}[{option_name}]: remove duplicates of \"{field_name}\" in grouped on_success config{STYLE_RESET}\n"
+                        );
+                    }
+
+                    let owned_field_name = field_name.to_string();
+
+                    if let Some(virtual_field) = alias_to_virtual_map.get(&owned_field_name) {
+                        panic!(
+                            "\n{COLOR_RED}[{option_name}]: \"{field_name}\" is an alias; use \"{virtual_field}\" instead{STYLE_RESET}\n"
+                        );
+                    };
+
+                    if input_field_names.contains(&owned_field_name) {
+                        field_names.insert(field_name);
+
+                        continue;
+                    };
+
+                    if output_field_names.contains(&owned_field_name) {
+                        if !field_configs.contains_key(&owned_field_name) {
+                            panic!(
+                        "\n{COLOR_RED}[{option_name}]: timestamps are not allowed in on_success. remove \"{field_name}\"{STYLE_RESET}\n"
+                    );
+                        }
+                    } else {
+                        panic!(
+                            "\n{COLOR_RED}[{option_name}]: \"{field_name}\" does not exist on your schema{STYLE_RESET}\n"
+                        );
+                    };
+                }
+            }
+        }
+
         if let Some(configs) = options.post_validate.as_ref() {
             let option_name = "options.post_validate";
             let mut field_names = HashSet::new();
