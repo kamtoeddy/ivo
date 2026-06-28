@@ -7,7 +7,7 @@ use std::{
 };
 
 use ivo::{
-    IvoField, IvoStruct, Model, Schema, SharedCtxOptions, SharedData, SharedIvoContext,
+    IvoField, IvoStruct, Model, Schema, SharedCtxOptions, SharedIvoData, SharedIvoContext,
     SharedRwCtxOptions, validate_email,
 };
 use serde::Serialize;
@@ -238,7 +238,7 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
 
                             ready(())
                         })
-                        .on_delete(|data: SharedData<User>, _| {
+                        .on_delete(|data: SharedIvoData<User>, _| {
                             println!("[dependent_slug_id]: on delete: {:?}", data.slug_id);
 
                             ready(())

@@ -4,11 +4,11 @@ use std::sync::Arc;
 
 use ivo_types::{IvoStruct, RwLock};
 
-pub type SharedData<T> = Arc<T>;
-pub type SharedCtxOptions<CtxOptions> = SharedData<CtxOptions>;
-pub type SharedRwCtxOptions<CtxOptions> = SharedData<RwLock<CtxOptions>>;
-pub type SharedIvoContext<I: IvoStruct, O: IvoStruct> = SharedData<IvoContext<I, O>>;
-pub type SharedIvoInput<I: IvoStruct> = SharedData<I::Partial>;
+pub type SharedIvoData<T> = Arc<T>;
+pub type SharedCtxOptions<CtxOptions> = SharedIvoData<CtxOptions>;
+pub type SharedRwCtxOptions<CtxOptions> = SharedIvoData<RwLock<CtxOptions>>;
+pub type SharedIvoContext<I: IvoStruct, O: IvoStruct> = SharedIvoData<IvoContext<I, O>>;
+pub type SharedIvoInput<I: IvoStruct> = SharedIvoData<I::Partial>;
 
 #[derive(Clone, Copy)]
 pub enum IvoContext<I: IvoStruct, O: IvoStruct> {

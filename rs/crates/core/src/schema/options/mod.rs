@@ -4,7 +4,7 @@ mod post_validate;
 pub(crate) mod types;
 
 use crate::{
-    schema::{fields::types::IntoDeleteHandler, Yes},
+    schema::{fields::types::IntoDeleteHandler, options::types::IntoShouldUpdateResolver, Yes},
     IvoErrorTool, IvoStruct,
 };
 use base::{SchemaOptions, SchemaOptionsBuilder};
@@ -19,7 +19,6 @@ impl<
         HasPostValidate,
         HasDelete,
         HasSuccess,
-        HasIgnore,
         HasIgnoreUpdate,
         I: IvoStruct,
         O: IvoStruct,
@@ -34,7 +33,6 @@ impl<
         HasPostValidate,
         HasDelete,
         HasSuccess,
-        HasIgnore,
         HasIgnoreUpdate,
     >
 {
@@ -43,7 +41,6 @@ impl<
             on_delete_fns: self.on_delete_fns,
             on_success_fns: self.on_success_fns,
             post_validate: self.post_validate,
-            ignore: self.ignore,
             ignore_update: self.ignore_update,
         }
     }
@@ -53,7 +50,6 @@ impl<
         HasPostValidate,
         HasDelete,
         HasSuccess,
-        HasIgnore,
         HasIgnoreUpdate,
         I: IvoStruct,
         O: IvoStruct,
@@ -65,11 +61,10 @@ impl<
         O,
         CtxOptions,
         ErrorTool,
-        HasIgnore,
-        HasIgnoreUpdate,
         HasPostValidate,
         HasDelete,
         HasSuccess,
+        HasIgnoreUpdate,
     >
 {
     pub fn on_delete<H>(
@@ -83,7 +78,6 @@ impl<
         HasPostValidate,
         Yes,
         HasSuccess,
-        HasIgnore,
         HasIgnoreUpdate,
     >
     where
@@ -96,7 +90,6 @@ impl<
             Some(on_delete_fns),
             self.on_success_fns,
             self.post_validate,
-            self.ignore,
             self.ignore_update,
         )
     }
@@ -113,7 +106,6 @@ impl<
         HasPostValidate,
         HasDelete,
         Yes,
-        HasIgnore,
         HasIgnoreUpdate,
     >
     where
@@ -129,7 +121,6 @@ impl<
             self.on_delete_fns,
             Some(on_success_fns),
             self.post_validate,
-            self.ignore,
             self.ignore_update,
         )
     }
@@ -146,7 +137,6 @@ impl<
         Yes,
         HasDelete,
         HasSuccess,
-        HasIgnore,
         HasIgnoreUpdate,
     >
     where
@@ -164,8 +154,42 @@ impl<
             self.on_delete_fns,
             self.on_success_fns,
             Some(post_validate),
-            self.ignore,
             self.ignore_update,
+        )
+    }
+}
+
+impl<
+        HasPostValidate,
+        HasDelete,
+        HasSuccess,
+        I: IvoStruct,
+        O: IvoStruct,
+        CtxOptions,
+        ErrorTool: IvoErrorTool,
+    > SchemaOptionsBuilder<I, O, CtxOptions, ErrorTool, HasPostValidate, HasDelete, HasSuccess>
+{
+    pub fn ignore_update<R>(
+        self,
+        handler: R,
+    ) -> SchemaOptionsBuilder<
+        I,
+        O,
+        CtxOptions,
+        ErrorTool,
+        HasPostValidate,
+        HasDelete,
+        HasSuccess,
+        Yes,
+    >
+    where
+        R: IntoShouldUpdateResolver<I, O, CtxOptions>,
+    {
+        SchemaOptionsBuilder::from(
+            self.on_delete_fns,
+            self.on_success_fns,
+            self.post_validate,
+            Some(handler.into_resolver()),
         )
     }
 }

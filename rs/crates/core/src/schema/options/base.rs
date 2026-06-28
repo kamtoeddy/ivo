@@ -18,8 +18,7 @@ pub struct SchemaOptions<I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoE
 
     pub post_validate: Option<Vec<PostValidationConfig<I, O, CtxOptions, ErrorTool>>>,
 
-    pub ignore: Option<BooleanResolver<I, O, CtxOptions>>,
-    pub ignore_update: Option<bool>,
+    pub ignore_update: Option<BooleanResolver<I, O, CtxOptions>>,
 }
 
 impl<I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool> Default
@@ -30,7 +29,6 @@ impl<I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool> Default
             on_delete_fns: None,
             on_success_fns: None,
             post_validate: None,
-            ignore: None,
             ignore_update: None,
         }
     }
@@ -52,29 +50,23 @@ pub struct SchemaOptionsBuilder<
     HasPostValidate = No,
     HasDelete = No,
     HasSuccess = No,
-    HasIgnore = No,
     HasIgnoreUpdate = No,
 > {
     _on_delete_fns: PhantomData<HasDelete>,
     _on_success_fns: PhantomData<HasSuccess>,
     _post_validate: PhantomData<HasPostValidate>,
-    _ignore: PhantomData<HasIgnore>,
     _ignore_update: PhantomData<HasIgnoreUpdate>,
     //
     pub(crate) on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
     pub(crate) on_success_fns: Option<Vec<OnSuccessConfig<I, O, CtxOptions>>>,
-
     pub(crate) post_validate: Option<Vec<PostValidationConfig<I, O, CtxOptions, ErrorTool>>>,
-
-    pub(crate) ignore: Option<BooleanResolver<I, O, CtxOptions>>,
-    pub(crate) ignore_update: Option<bool>,
+    pub(crate) ignore_update: Option<BooleanResolver<I, O, CtxOptions>>,
 }
 
 impl<
         HasPostValidate,
         HasDelete,
         HasSuccess,
-        HasIgnore,
         HasIgnoreUpdate,
         I: IvoStruct,
         O: IvoStruct,
@@ -89,7 +81,6 @@ impl<
         HasPostValidate,
         HasDelete,
         HasSuccess,
-        HasIgnore,
         HasIgnoreUpdate,
     >
 {
@@ -98,12 +89,10 @@ impl<
             on_delete_fns: None,
             on_success_fns: None,
             post_validate: None,
-            ignore: None,
             ignore_update: None,
             _on_delete_fns: PhantomData,
             _on_success_fns: PhantomData,
             _post_validate: PhantomData,
-            _ignore: PhantomData,
             _ignore_update: PhantomData,
         }
     }
@@ -112,14 +101,12 @@ impl<
         on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
         on_success_fns: Option<Vec<OnSuccessConfig<I, O, CtxOptions>>>,
         post_validate: Option<Vec<PostValidationConfig<I, O, CtxOptions, ErrorTool>>>,
-        ignore: Option<BooleanResolver<I, O, CtxOptions>>,
-        ignore_update: Option<bool>,
+        ignore_update: Option<BooleanResolver<I, O, CtxOptions>>,
     ) -> Self {
         Self {
             on_delete_fns,
             on_success_fns,
             post_validate,
-            ignore,
             ignore_update,
             ..Default::default()
         }
@@ -130,7 +117,6 @@ impl<
         HasPostValidate,
         HasDelete,
         HasSuccess,
-        HasIgnore,
         HasIgnoreUpdate,
         I: IvoStruct,
         O: IvoStruct,
@@ -145,7 +131,6 @@ impl<
         HasPostValidate,
         HasDelete,
         HasSuccess,
-        HasIgnore,
         HasIgnoreUpdate,
     >
 {

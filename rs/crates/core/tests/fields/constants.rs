@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{DefaultErrorTool, IvoField, IvoStruct, Schema, SharedData, SharedIvoContext};
+use ivo::{DefaultErrorTool, IvoField, IvoStruct, Schema, SharedIvoData, SharedIvoContext};
 
 use crate::async_test_matrix;
 
@@ -153,7 +153,7 @@ async fn should_trigger_on_delete_handlers_with_static_values() {
                 "constant",
                 IvoField::CONSTANT
                     .value(constant)
-                    .on_delete(|data: SharedData<Data>, _| {
+                    .on_delete(|data: SharedIvoData<Data>, _| {
                         if true {
                             panic!(
                                 "[constant]: on_delete triggered with value: {}",
@@ -199,7 +199,7 @@ async fn should_trigger_on_delete_handlers_with_computed_values() {
                 "constant",
                 IvoField::CONSTANT
                     .computed(move |_, _| ready(constant))
-                    .on_delete(|data: SharedData<Data>, _| {
+                    .on_delete(|data: SharedIvoData<Data>, _| {
                         if true {
                             panic!(
                                 "[constant]: on_delete triggered with value: {}",

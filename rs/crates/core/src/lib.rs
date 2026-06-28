@@ -10,7 +10,7 @@ pub use ivo_derive::IvoStruct;
 #[doc(inline)]
 pub use ivo_validators::*;
 
-pub use schema::{fields::IvoField, Schema};
+pub use schema::{fields::IvoField, options::types::ShouldUpdateResolverData, Schema};
 
 pub use model::Model;
 
@@ -24,5 +24,6 @@ pub use ivo_types::{
 };
 
 pub use types::{
-    IvoContext, SharedCtxOptions, SharedData, SharedIvoContext, SharedIvoInput, SharedRwCtxOptions,
+    IvoContext, SharedCtxOptions, SharedIvoContext, SharedIvoData, SharedIvoInput,
+    SharedRwCtxOptions,
 };

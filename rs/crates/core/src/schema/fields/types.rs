@@ -7,7 +7,7 @@ use std::future::Future;
 
 use crate::{
     schema::types::{DeleteHandler, FailureHandler, IvoFieldValue, SuccessHandler},
-    IvoErrorTool, IvoStruct, SharedData, SharedIvoContext, SharedIvoInput, SharedRwCtxOptions,
+    IvoErrorTool, IvoStruct, SharedIvoContext, SharedIvoData, SharedIvoInput, SharedRwCtxOptions,
     ValidatorResponse,
 };
 
@@ -20,7 +20,7 @@ pub trait IntoDeleteHandler<O: IvoStruct, CtxOptions> {
 impl<F, Fut, Data, CtxOptions> IntoDeleteHandler<Data, CtxOptions> for F
 where
     Data: IvoStruct,
-    F: Fn(SharedData<Data>, SharedData<CtxOptions>) -> Fut + Send + Sync + 'static,
+    F: Fn(SharedIvoData<Data>, SharedIvoData<CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = ()> + Send + Sync + 'static,
 {
     fn into_handler(self) -> DeleteHandler<Data, CtxOptions> {
@@ -36,7 +36,7 @@ impl<F, Fut, I, O, CtxOptions> IntoFailureHandler<I, O, CtxOptions> for F
 where
     I: IvoStruct,
     O: IvoStruct,
-    F: Fn(SharedIvoContext<I, O>, SharedData<CtxOptions>) -> Fut + Send + Sync + 'static,
+    F: Fn(SharedIvoContext<I, O>, SharedIvoData<CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = ()> + Send + Sync + 'static,
 {
     fn into_handler(self) -> FailureHandler<I, O, CtxOptions> {
@@ -52,7 +52,7 @@ impl<F, Fut, I, O, CtxOptions> IntoSuccessHandler<I, O, CtxOptions> for F
 where
     I: IvoStruct,
     O: IvoStruct,
-    F: Fn(SharedIvoContext<I, O>, SharedData<CtxOptions>) -> Fut + Send + Sync + 'static,
+    F: Fn(SharedIvoContext<I, O>, SharedIvoData<CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = ()> + Send + Sync + 'static,
 {
     fn into_handler(self) -> SuccessHandler<I, O, CtxOptions> {
