@@ -18,7 +18,7 @@ use crate::schema::Schema;
 
 use crate::schema::options::types::{OnSuccessConfig, PostValidationConfig};
 
-use crate::{IvoContext, SharedCtxOptions, SharedIvoContext, SharedRwCtxOptions};
+use crate::{IvoContext, IvoValues, SharedCtxOptions, SharedIvoContext, SharedRwCtxOptions};
 
 use crate::types::{erase_value, IvoPartialStructMethods, IvoStruct, RwLock};
 
@@ -676,8 +676,8 @@ impl<
                     .iter()
                     .any(|f| fields_provided.contains(&f.to_string()))
                 {
-                    if pre_validator.is_some() {
-                        pre_validators.push((fields, pre_validator.as_ref().unwrap()));
+                    if let Some(pre_validator) = pre_validator.as_ref() {
+                        pre_validators.push((fields, pre_validator));
                     }
 
                     for validator in validators {
@@ -710,28 +710,29 @@ impl<
             });
 
             for (fields, pre_validation) in join_all(tasks).await {
-                if pre_validation.is_err() {
-                    for (field_name, (reason, metadata)) in pre_validation.err().unwrap() {
-                        let field_name = field_name.as_str();
+                match pre_validation {
+                    Err(payload) => {
+                        for (field_name, (reason, metadata)) in payload {
+                            let field_name = field_name.as_str();
 
-                        if fields.contains(&field_name) {
-                            error_tool.add(field_name, FieldError { reason, metadata });
+                            if fields.contains(&field_name) {
+                                error_tool.add(field_name, FieldError { reason, metadata });
+                            }
                         }
                     }
+                    Ok(IvoValues { data }) => {
+                        for (field_name, value) in data {
+                            if let Some(field_info) = fields_provided.get(&field_name) {
+                                has_updates = true;
 
-                    continue;
-                }
+                                if field_info.is_input {
+                                    validated_inputs.ivo_internal_set(&field_info.name, &value);
+                                }
 
-                for (field_name, value) in pre_validation.ok().unwrap().data {
-                    if let Some(field_info) = fields_provided.get(&field_name) {
-                        has_updates = true;
-
-                        if field_info.is_input {
-                            validated_inputs.ivo_internal_set(&field_info.name, &value);
-                        }
-
-                        if field_info.is_output {
-                            validated_outputs.ivo_internal_set(&field_info.name, &value);
+                                if field_info.is_output {
+                                    validated_outputs.ivo_internal_set(&field_info.name, &value);
+                                }
+                            }
                         }
                     }
                 }
@@ -766,28 +767,29 @@ impl<
         };
 
         for (fields, validation) in join_all(tasks).await {
-            if validation.is_err() {
-                for (field_name, (reason, metadata)) in validation.err().unwrap() {
-                    let field_name = field_name.as_str();
+            match validation {
+                Err(payload) => {
+                    for (field_name, (reason, metadata)) in payload {
+                        let field_name = field_name.as_str();
 
-                    if fields.contains(&field_name) {
-                        error_tool.add(field_name, FieldError { reason, metadata });
+                        if fields.contains(&field_name) {
+                            error_tool.add(field_name, FieldError { reason, metadata });
+                        }
                     }
                 }
+                Ok(IvoValues { data }) => {
+                    for (field_name, value) in data {
+                        if let Some(field_info) = fields_provided.get(&field_name) {
+                            has_updates = true;
 
-                continue;
-            }
+                            if field_info.is_input {
+                                validated_inputs.ivo_internal_set(&field_info.name, &value);
+                            }
 
-            for (field_name, value) in validation.ok().unwrap().data {
-                if let Some(field_info) = fields_provided.get(&field_name) {
-                    has_updates = true;
-
-                    if field_info.is_input {
-                        validated_inputs.ivo_internal_set(&field_info.name, &value);
-                    }
-
-                    if field_info.is_output {
-                        validated_outputs.ivo_internal_set(&field_info.name, &value);
+                            if field_info.is_output {
+                                validated_outputs.ivo_internal_set(&field_info.name, &value);
+                            }
+                        }
                     }
                 }
             }
