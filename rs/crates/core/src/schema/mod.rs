@@ -60,9 +60,27 @@ impl<
     {
         let fields = f(FieldBuilder::new());
 
+        let input_field_names = I::ivo_internal_field_names();
+        let output_field_names = O::ivo_internal_field_names();
+
+        let (field_configs, alias_to_virtual_map) = Self::make_field_configs(
+            fields.configs,
+            &fields.timestamp_config,
+            &input_field_names,
+            &output_field_names,
+        );
+
+        let options = Self::make_options(
+            o(SchemaOptions::new()).build(),
+            &field_configs,
+            &alias_to_virtual_map,
+            &input_field_names,
+            &output_field_names,
+        );
+
         Self {
-            field_configs: Self::make_field_configs(fields.configs, &fields.timestamp_config),
-            options: Self::make_options(o(SchemaOptions::new()).build()),
+            field_configs,
+            options,
             timestamp_configs: fields.timestamp_config,
         }
     }
@@ -71,9 +89,12 @@ impl<
     fn make_field_configs(
         config_tuples: Vec<(String, InternalFieldConfig<I, O, CtxOptions, ErrorTool>)>,
         timestamp_configs: &Option<TimestampConfig<Timestamp>>,
-    ) -> InternalFieldConfigs<I, O, CtxOptions, ErrorTool> {
-        let input_field_names = I::ivo_internal_field_names();
-        let output_field_names = O::ivo_internal_field_names();
+        input_field_names: &HashSet<String>,
+        output_field_names: &HashSet<String>,
+    ) -> (
+        InternalFieldConfigs<I, O, CtxOptions, ErrorTool>,
+        HashMap<String, String>,
+    ) {
         let input_struct_name = format!(
             "{FONT_BOLD}{}{STYLE_RESET}{COLOR_RED}",
             I::ivo_internal_name()
@@ -191,7 +212,7 @@ impl<
                             panic!("\n{COLOR_RED}[{field_name}]: virtual alias name must be different from field name{STYLE_RESET}\n");
                         }
 
-                        if let Some(other_field) = alias_to_virtual.get(&alias) {
+                        if let Some(other_field) = alias_to_virtual.get(alias) {
                             panic!("\n{COLOR_RED}[{field_name}]: \"{alias}\" is already the alias of \"{other_field}\"{STYLE_RESET}\n");
                         }
 
@@ -247,7 +268,7 @@ impl<
                                 "\n{COLOR_RED}[{field_name}]: has an alias. Only its alias must be present on {input_struct_name}{STYLE_RESET}\n");
                         }
 
-                        alias_to_virtual.insert(alias, field_name);
+                        alias_to_virtual.insert(alias.clone(), field_name.clone());
 
                         continue;
                     }
@@ -382,21 +403,58 @@ impl<
             field_configs.insert(field_name, config);
         }
 
-        field_configs
+        (field_configs, alias_to_virtual)
     }
 
     #[track_caller]
     fn make_options(
         options: SchemaOptions<I, O, CtxOptions, ErrorTool>,
+        field_configs: &InternalFieldConfigs<I, O, CtxOptions, ErrorTool>,
+        alias_to_virtual_map: &HashMap<String, String>,
+        input_field_names: &HashSet<String>,
+        output_field_names: &HashSet<String>,
     ) -> SchemaOptions<I, O, CtxOptions, ErrorTool> {
         if let Some(configs) = options.post_validate.as_ref() {
             let option_name = "options.post_validate";
+            let mut field_names = HashSet::new();
 
             for PostValidationConfig { fields, .. } in configs {
                 if fields.len() < 2 {
                     panic!(
                         "\n{COLOR_RED}[{option_name}]: post-validation expects at least 2 fields {STYLE_RESET}\n"
                     );
+                }
+
+                for field_name in fields {
+                    if field_names.contains(field_name) {
+                        panic!(
+                            "\n{COLOR_RED}[{option_name}]: remove duplicates of \"{field_name}\" in your post-validation config{STYLE_RESET}\n"
+                        );
+                    }
+
+                    let owned_field_name = field_name.to_string();
+
+                    if let Some(virtual_field) = alias_to_virtual_map.get(&owned_field_name) {
+                        panic!(
+                            "\n{COLOR_RED}[{option_name}]: \"{field_name}\" is an alias; use \"{virtual_field}\" instead{STYLE_RESET}\n"
+                        );
+                    };
+
+                    if input_field_names.contains(&owned_field_name) {
+                        field_names.insert(field_name);
+
+                        continue;
+                    };
+
+                    if output_field_names.contains(&owned_field_name) {
+                        panic!(
+                        "\n{COLOR_RED}[{option_name}]: \"{field_name}\" cannot be post_validated{STYLE_RESET}\n"
+                    );
+                    } else if !field_configs.contains_key(&owned_field_name) {
+                        panic!(
+                            "\n{COLOR_RED}[{option_name}]: \"{field_name}\" does not exist on your schema{STYLE_RESET}\n"
+                        );
+                    };
                 }
             }
         }

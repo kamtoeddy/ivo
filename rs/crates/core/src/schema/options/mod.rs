@@ -137,7 +137,7 @@ impl<
     pub fn post_validate<const N: usize, Builder, Buildable>(
         self,
         fields: [&'static str; N],
-        builder: Builder,
+        mut builder: Builder,
     ) -> SchemaOptionsBuilder<
         I,
         O,
@@ -150,7 +150,7 @@ impl<
         HasIgnoreUpdate,
     >
     where
-        Builder: Fn(PostValidateOptionBuilder<I, O, CtxOptions, ErrorTool, Yes>) -> Buildable,
+        Builder: FnMut(PostValidateOptionBuilder<I, O, CtxOptions, ErrorTool, Yes>) -> Buildable,
         Buildable: BuildablePostValidator<I, O, CtxOptions, ErrorTool>,
     {
         let config =

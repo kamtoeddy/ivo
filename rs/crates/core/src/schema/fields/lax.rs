@@ -629,6 +629,7 @@ impl<
         H: IntoFailureHandler<I, O, CtxOptions>,
     {
         let h = handler.into_handler();
+
         LaxFieldBuilder {
             default: self.default,
             validator: self.validator,
