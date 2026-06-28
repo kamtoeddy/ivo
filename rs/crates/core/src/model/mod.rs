@@ -1341,7 +1341,7 @@ impl<
                 handlers: h_vec,
             } in configs
             {
-                if fields.len() == 0
+                if fields.is_empty()
                     || fields
                         .iter()
                         .any(|f| fields_updated.contains(&f.to_string()))
@@ -1400,7 +1400,6 @@ impl<
                 if is_optional && !is_update {
                     data.ivo_internal_set(updated_at, &erase_value::<Option<Timestamp>>(None));
                 } else {
-                    #[expect(clippy::redundant_closure)]
                     let value = now.unwrap_or_else(resolver);
 
                     if is_optional {

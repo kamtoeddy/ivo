@@ -21,7 +21,7 @@ mod on_success;
 // [x] on_delete
 // [x] on_failure
 // [x] on_success
-// [ ] o.on_success
+// [x] o.on_success
 // [ ] o.post_validate
 
 // default values & fns
