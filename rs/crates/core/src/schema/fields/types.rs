@@ -114,7 +114,7 @@ where
     Fut: Future<Output = String> + Send + 'static,
 {
     fn into_resolver(self) -> RequiredResolver<I, O, CtxOptions> {
-        Box::new(move |ctx, o| Box::pin(self(ctx, o).map(|e| Some(e))))
+        Box::new(move |ctx, o| Box::pin(self(ctx, o).map(Some)))
     }
 }
 

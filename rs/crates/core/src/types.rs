@@ -1,5 +1,4 @@
 #![expect(type_alias_bounds)]
-#![expect(clippy::borrowed_box)]
 
 use std::sync::Arc;
 

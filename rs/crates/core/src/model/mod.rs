@@ -1055,73 +1055,64 @@ impl<
         let mut final_field_info_vec = vec![];
 
         for field_info in field_info_vec.iter() {
-            match self
-                .schema
-                .field_configs
-                .get(&field_info.config_name)
-                .as_ref()
-                .unwrap()
+            if let Some(InternalFieldConfig {
+                field_type: FieldType::Lax | FieldType::Required | FieldType::Virtual,
+                default,
+                ignore,
+                ignore_init,
+                ignore_update,
+                ..
+            }) = self.schema.field_configs.get(&field_info.config_name)
             {
-                InternalFieldConfig {
-                    field_type: FieldType::Lax | FieldType::Required | FieldType::Virtual,
-                    default,
-                    ignore,
-                    ignore_init,
-                    ignore_update,
-                    ..
-                } => {
-                    if let Some(resolver) = ignore {
-                        resolvers.push((field_info, resolver));
+                if let Some(resolver) = ignore {
+                    resolvers.push((field_info, resolver));
 
-                        continue;
-                    }
-
-                    let source = if is_update {
-                        ignore_update
-                    } else {
-                        ignore_init
-                    };
-
-                    match source {
-                        Some(IsFieldProvisionEnabled::False) => {
-                            input.ivo_internal_unset(&field_info.name);
-                        }
-                        Some(IsFieldProvisionEnabled::Func(resolver)) => {
-                            resolvers.push((field_info, resolver));
-                        }
-                        Some(IsFieldProvisionEnabled::Readonly) if is_update => {
-                            if let Some(ValueResolverWithMiniContext::Static(value)) = default {
-                                // readonly means: only allow update if value prev_value == default_value
-
-                                if previous_values
-                                    .ivo_internal_is_value_equal(&field_info.name, value)
-                                {
-                                    final_field_info_vec.push(field_info.to_owned());
-
-                                    if field_info.is_output {
-                                        output.ivo_internal_set(
-                                            &field_info.name,
-                                            &input.ivo_internal_get_erased_value(&field_info.name),
-                                        );
-                                    }
-
-                                    continue;
-                                }
-                            }
-                        }
-                        _ => {
-                            final_field_info_vec.push(field_info.to_owned());
-
-                            if field_info.is_output {
-                                output.ivo_internal_set(
-                                    &field_info.name,
-                                    &input.ivo_internal_get_erased_value(&field_info.name),
-                                );
-                            }
-                        }
-                    };
+                    continue;
                 }
-                _ => {}
+
+                let source = if is_update {
+                    ignore_update
+                } else {
+                    ignore_init
+                };
+
+                match source {
+                    Some(IsFieldProvisionEnabled::False) => {
+                        input.ivo_internal_unset(&field_info.name);
+                    }
+                    Some(IsFieldProvisionEnabled::Func(resolver)) => {
+                        resolvers.push((field_info, resolver));
+                    }
+                    Some(IsFieldProvisionEnabled::Readonly) if is_update => {
+                        if let Some(ValueResolverWithMiniContext::Static(value)) = default {
+                            // readonly means: only allow update if value prev_value == default_value
+
+                            if previous_values.ivo_internal_is_value_equal(&field_info.name, value)
+                            {
+                                final_field_info_vec.push(field_info.to_owned());
+
+                                if field_info.is_output {
+                                    output.ivo_internal_set(
+                                        &field_info.name,
+                                        &input.ivo_internal_get_erased_value(&field_info.name),
+                                    );
+                                }
+
+                                continue;
+                            }
+                        }
+                    }
+                    _ => {
+                        final_field_info_vec.push(field_info.to_owned());
+
+                        if field_info.is_output {
+                            output.ivo_internal_set(
+                                &field_info.name,
+                                &input.ivo_internal_get_erased_value(&field_info.name),
+                            );
+                        }
+                    }
+                };
             }
         }
 
@@ -1391,6 +1382,7 @@ impl<
                 if is_optional && !is_update {
                     data.ivo_internal_set(updated_at, &erase_value::<Option<Timestamp>>(None));
                 } else {
+                    #[expect(clippy::redundant_closure)]
                     let value = now.unwrap_or_else(|| resolve());
 
                     if is_optional {
