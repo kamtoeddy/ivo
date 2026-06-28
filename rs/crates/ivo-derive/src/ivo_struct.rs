@@ -50,55 +50,54 @@ pub fn generate_ivo_struct_impls<T: ToTokens>(
     });
 
     quote! {
-        impl From<#struct_name> for #partial_struct_name {
-            fn from(value: #struct_name) -> #partial_struct_name {
-                #partial_struct_name {
-                    #( #into_partial )*
-                }
-            }
-        }
-
-        impl #crate_root::IvoStruct for #struct_name { }
-
-        impl #crate_root::types::IvoWithPartialStruct for #struct_name {
-            type Partial = #partial_struct_name;
-        }
-
-        impl #crate_root::types::IvoStructMethods for #struct_name {
-
-            #[inline(always)]
-            fn ivo_internal_dangerously_get_values_from_partial(values: Self::Partial) -> Self {
-                Self {
-                    #( #from_partial )*
+            impl From<#struct_name> for #partial_struct_name {
+                fn from(value: #struct_name) -> #partial_struct_name {
+                    #partial_struct_name {
+                        #( #into_partial )*
+                    }
                 }
             }
 
-            fn ivo_internal_get_updates_from_partial(&self, updates: &Self::Partial) -> std::option::Option<Self::Partial> {
-                let mut partial_output = Self::Partial::default();
-                let mut has_updated_fields = false;
+            impl #crate_root::__private_types::IvoStruct for #struct_name { }
 
-                #( #process_updates_from_partial )*
+            impl #crate_root::__private_types::types::IvoWithPartialStruct for #struct_name {
+                type Partial = #partial_struct_name;
+            }
 
-                if has_updated_fields {
-                    return Some(partial_output);
+            impl #crate_root::__private_types::types::IvoStructMethods for #struct_name {
+                #[inline(always)]
+                fn ivo_internal_dangerously_get_values_from_partial(values: Self::Partial) -> Self {
+                    Self {
+                        #( #from_partial )*
+                    }
                 }
 
-                None
-            }
+                fn ivo_internal_get_updates_from_partial(&self, updates: &Self::Partial) -> std::option::Option<Self::Partial> {
+                    let mut partial_output = Self::Partial::default();
+                    let mut has_updated_fields = false;
 
-            fn ivo_internal_update_with(&mut self, updates: &Self::Partial) {
-                #( #set_updated_values )*
-            }
+                    #( #process_updates_from_partial )*
 
-            #[inline]
-            fn ivo_internal_field_names() -> std::collections::HashSet<String> {
-                #field_names.into_iter().map(|f| String::from(f)).collect()
-            }
+                    if has_updated_fields {
+                        return Some(partial_output);
+                    }
 
-            #[inline]
-            fn ivo_internal_name() -> String {
-                String::from(stringify!(#struct_name))
+                    None
+                }
+
+                fn ivo_internal_update_with(&mut self, updates: &Self::Partial) {
+                    #( #set_updated_values )*
+                }
+
+                #[inline]
+                fn ivo_internal_field_names() -> std::collections::HashSet<String> {
+                    #field_names.into_iter().map(|f| String::from(f)).collect()
+                }
+
+                #[inline]
+                fn ivo_internal_name() -> String {
+                    String::from(stringify!(#struct_name))
+                }
             }
-        }
     }
 }

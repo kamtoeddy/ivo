@@ -1,4 +1,4 @@
-use ivo::{UpdateError, types::IvoStructMethods};
+use ivo::{IvoStruct, UpdateError};
 use std::time::Instant;
 
 mod domain;
@@ -72,10 +72,7 @@ pub async fn run_places_demo() {
     match r {
         Ok((data, handle_success)) => {
             println!("updates: {:?}\n", data);
-            println!(
-                "old + updates: {:?}\n",
-                place.ivo_internal_clone_with_ref(&data)
-            );
+            println!("old + updates: {:?}\n", place.clone_with_updates(&data));
 
             handle_success().await;
         }

@@ -51,9 +51,9 @@ pub fn derive_ivo_struct(input: TokenStream) -> TokenStream {
     let partial_struct_tokens = generate_partial_struct(
         &crate_root,
         &partial_struct_name,
-        &vis,
         fields,
         &input.attrs,
+        &vis,
     );
 
     TokenStream::from(quote! {

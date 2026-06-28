@@ -1,63 +1,48 @@
-#![expect(clippy::type_complexity)]
-
 use std::marker::PhantomData;
+
+use ivo_types::IvoErrorTool;
 
 use crate::{
     schema::{
-        error_tool::IvoErrorTool,
         fields::{
             base::{BuildableFieldConfig, FieldConfig, FieldType, InternalFieldConfig},
             types::{
-                BooleanResolver, IntoDeleteHandler, IntoFailureHandler, IntoFieldValidator,
-                IntoRequiredResolver, IntoResolver, IntoSuccessHandler,
-                IntoValueResolverWithMiniContext, IsFieldProvisionEnabled, RequiredResolver,
-                UniformValidator, ValueResolverWithMiniContext,
+                ComputableRequiredError, IntoDeleteHandler, IntoFailureHandler, IntoFieldValidator,
+                IntoRequiredErrorResolver, IntoResolver, IntoSuccessHandler,
+                IsFieldProvisionEnabled, UniformValidator,
             },
         },
-        types::{
-            DeleteHandler, FailureHandler, IsProvided, IsProvidedButNotComputed, IvoFieldValue, No,
-            SuccessHandler, Yes, YesComputed,
-        },
+        types::{DeleteHandler, FailureHandler, IvoFieldValue, No, SuccessHandler, Yes},
     },
-    types::{erase_value, ErasedValue},
     IvoStruct,
 };
 
-pub struct LaxFieldBuilder<
+pub struct RequiredFieldBuilder<
     T: IvoFieldValue,
     I: IvoStruct,
     O: IvoStruct,
     CtxOptions,
     ErrorTool: IvoErrorTool,
-    HasDefault = No,
     HasValidator = No,
     HasRevalidator = No,
-    HasRequired = No,
-    HasIgnore = No,
-    HasIgnoreInit = No,
+    HasRequiredError = No,
     HasIgnoreUpdate = No,
     HasDelete = No,
     HasFailure = No,
     HasSuccess = No,
 > {
     _t: PhantomData<T>,
-    _default: PhantomData<HasDefault>,
+    _err: PhantomData<HasRequiredError>,
     _validator: PhantomData<HasValidator>,
     _re_validator: PhantomData<HasRevalidator>,
-    _required_fn: PhantomData<HasRequired>,
-    _ignore: PhantomData<HasIgnore>,
-    _ignore_init: PhantomData<HasIgnoreInit>,
     _ignore_update: PhantomData<HasIgnoreUpdate>,
     _on_delete_fns: PhantomData<HasDelete>,
     _on_failure_fns: PhantomData<HasFailure>,
     _on_success_fns: PhantomData<HasSuccess>,
     // actual data...
-    default: Option<ValueResolverWithMiniContext<ErasedValue, I, CtxOptions>>,
+    required_error: Option<ComputableRequiredError<I, O, CtxOptions>>,
     validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
     re_validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
-    required_fn: Option<RequiredResolver<I, O, CtxOptions>>,
-    should_ignore: Option<BooleanResolver<I, O, CtxOptions>>,
-    ignore_init: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
     ignore_update: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
     on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
     on_failure_fns: Option<Vec<FailureHandler<I, O, CtxOptions>>>,
@@ -65,12 +50,9 @@ pub struct LaxFieldBuilder<
 }
 
 impl<
-        HasDefault,
         HasValidator,
         HasRevalidator,
-        HasRequired,
-        HasIgnore,
-        HasIgnoreInit,
+        HasRequiredError,
         HasIgnoreUpdate,
         HasDelete,
         HasFailure,
@@ -81,18 +63,15 @@ impl<
         CtxOptions,
         ErrorTool: IvoErrorTool,
     >
-    LaxFieldBuilder<
+    RequiredFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
         ErrorTool,
-        HasDefault,
         HasValidator,
         HasRevalidator,
-        HasRequired,
-        HasIgnore,
-        HasIgnoreInit,
+        HasRequiredError,
         HasIgnoreUpdate,
         HasDelete,
         HasFailure,
@@ -101,23 +80,17 @@ impl<
 {
     pub const fn new() -> Self {
         Self {
-            default: None,
+            required_error: None,
             validator: None,
             re_validator: None,
-            required_fn: None,
-            should_ignore: None,
-            ignore_init: None,
             ignore_update: None,
             on_delete_fns: None,
             on_failure_fns: None,
             on_success_fns: None,
             _t: PhantomData,
-            _default: PhantomData,
+            _err: PhantomData,
             _validator: PhantomData,
             _re_validator: PhantomData,
-            _required_fn: PhantomData,
-            _ignore: PhantomData,
-            _ignore_init: PhantomData,
             _ignore_update: PhantomData,
             _on_delete_fns: PhantomData,
             _on_failure_fns: PhantomData,
@@ -127,12 +100,9 @@ impl<
 }
 
 impl<
-        HasDefault,
         HasValidator,
         HasRevalidator,
-        HasRequired,
-        HasIgnore,
-        HasIgnoreInit,
+        HasRequiredError,
         HasIgnoreUpdate,
         HasDelete,
         HasFailure,
@@ -143,18 +113,15 @@ impl<
         CtxOptions,
         ErrorTool: IvoErrorTool,
     > Default
-    for LaxFieldBuilder<
+    for RequiredFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
         ErrorTool,
-        HasDefault,
         HasValidator,
         HasRevalidator,
-        HasRequired,
-        HasIgnore,
-        HasIgnoreInit,
+        HasRequiredError,
         HasIgnoreUpdate,
         HasDelete,
         HasFailure,
@@ -167,12 +134,8 @@ impl<
 }
 
 impl<
-        HasDefault: IsProvided,
-        HasValidator,
         HasRevalidator,
-        HasRequired,
-        HasIgnore,
-        HasIgnoreInit,
+        HasRequiredError,
         HasIgnoreUpdate,
         HasDelete,
         HasFailure,
@@ -183,18 +146,15 @@ impl<
         CtxOptions,
         ErrorTool: IvoErrorTool,
     > BuildableFieldConfig<I, O, CtxOptions, ErrorTool>
-    for LaxFieldBuilder<
+    for RequiredFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
         ErrorTool,
-        HasDefault,
-        HasValidator,
+        Yes,
         HasRevalidator,
-        HasRequired,
-        HasIgnore,
-        HasIgnoreInit,
+        HasRequiredError,
         HasIgnoreUpdate,
         HasDelete,
         HasFailure,
@@ -203,13 +163,10 @@ impl<
 {
     fn build(self) -> InternalFieldConfig<I, O, CtxOptions, ErrorTool> {
         FieldConfig {
-            field_type: FieldType::Lax,
-            default: self.default,
+            field_type: FieldType::Required,
+            required_error: self.required_error,
             validator: self.validator,
             re_validator: self.re_validator,
-            required_fn: self.required_fn,
-            ignore: self.should_ignore,
-            ignore_init: self.ignore_init,
             ignore_update: self.ignore_update,
             on_delete_fns: self.on_delete_fns,
             on_failure_fns: self.on_failure_fns,
@@ -219,264 +176,148 @@ impl<
     }
 }
 
-impl<T: IvoFieldValue, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool>
-    LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool>
+impl<
+        HasValidator,
+        HasRevalidator,
+        T: IvoFieldValue,
+        I: IvoStruct,
+        O: IvoStruct,
+        CtxOptions,
+        ErrorTool: IvoErrorTool,
+    > RequiredFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasValidator, HasRevalidator>
 {
-    pub fn default(self, value: T) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes> {
-        LaxFieldBuilder {
-            default: Some(ValueResolverWithMiniContext::Static(erase_value(value))),
+    pub fn required_error(
+        self,
+        error: &'static str,
+    ) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasValidator, HasRevalidator, Yes>
+    {
+        RequiredFieldBuilder {
+            validator: self.validator,
+            re_validator: self.re_validator,
+            required_error: Some(ComputableRequiredError::Static(error)),
             ..Default::default()
         }
     }
 
-    pub fn default_fn<F>(
+    pub fn required_error_fn<R>(
         self,
-        default_fn: F,
-    ) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, YesComputed>
+        resolver: R,
+    ) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasValidator, HasRevalidator, Yes>
     where
-        F: IntoValueResolverWithMiniContext<T, I, CtxOptions>,
+        R: IntoRequiredErrorResolver<I, O, CtxOptions>,
     {
-        LaxFieldBuilder {
-            default: Some(ValueResolverWithMiniContext::Func(
-                default_fn.into_uniform(),
-            )),
+        RequiredFieldBuilder {
+            validator: self.validator,
+            re_validator: self.re_validator,
+            required_error: Some(ComputableRequiredError::Func(resolver.into_resolver())),
             ..Default::default()
         }
     }
 }
 
 impl<
-        HasDefault: IsProvided,
+        HasRequiredError,
         T: IvoFieldValue,
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
-    > LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasDefault>
+    > RequiredFieldBuilder<T, I, O, CtxOptions, ErrorTool, No, No, HasRequiredError>
 {
     pub fn validate<F>(
         self,
         validator: F,
-    ) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasDefault, Yes>
+    ) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, No, HasRequiredError>
     where
         F: IntoFieldValidator<T, I, O, CtxOptions, ErrorTool>,
     {
-        LaxFieldBuilder {
-            default: self.default,
+        RequiredFieldBuilder {
             validator: Some(validator.into_uniform()),
+            required_error: self.required_error,
             ..Default::default()
         }
     }
 }
 
 impl<
-        HasDefault: IsProvided,
+        HasRequiredError,
         T: IvoFieldValue,
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
-    > LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasDefault, Yes>
+    > RequiredFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, No, HasRequiredError>
 {
     pub fn re_validate<F>(
         self,
         re_validator: F,
-    ) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasDefault, Yes>
+    ) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, Yes, HasRequiredError>
     where
         F: IntoFieldValidator<T, I, O, CtxOptions, ErrorTool>,
     {
-        LaxFieldBuilder {
-            default: self.default,
+        RequiredFieldBuilder {
             validator: self.validator,
             re_validator: Some(re_validator.into_uniform()),
+            required_error: self.required_error,
             ..Default::default()
         }
     }
 }
 
 impl<
-        HasDefault: IsProvided,
         HasRevalidator,
+        HasRequiredError,
         T: IvoFieldValue,
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
-    > LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasDefault, Yes, HasRevalidator>
+    > RequiredFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, HasRevalidator, HasRequiredError>
 {
-    pub fn required<R>(
+    pub fn readonly(
         self,
-        resolver: R,
-    ) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasDefault, Yes, HasRevalidator, Yes>
-    where
-        R: IntoRequiredResolver<I, O, CtxOptions>,
-    {
-        LaxFieldBuilder {
-            default: self.default,
+    ) -> RequiredFieldBuilder<
+        T,
+        I,
+        O,
+        CtxOptions,
+        ErrorTool,
+        Yes,
+        HasRevalidator,
+        HasRequiredError,
+        Yes,
+    > {
+        RequiredFieldBuilder {
             validator: self.validator,
             re_validator: self.re_validator,
-            required_fn: Some(resolver.into_resolver()),
+            required_error: self.required_error,
+            ignore_update: Some(IsFieldProvisionEnabled::Readonly),
             ..Default::default()
         }
     }
-}
 
-impl<
-        HasDefault: IsProvided,
-        HasValidator,
-        HasRevalidator,
-        HasRequired,
-        T: IvoFieldValue,
-        I: IvoStruct,
-        O: IvoStruct,
-        CtxOptions,
-        ErrorTool: IvoErrorTool,
-    >
-    LaxFieldBuilder<
-        T,
-        I,
-        O,
-        CtxOptions,
-        ErrorTool,
-        HasDefault,
-        HasValidator,
-        HasRevalidator,
-        HasRequired,
-    >
-{
-    pub fn ignore<R>(
+    pub fn ignore_update<R>(
         self,
         resolver: R,
-    ) -> LaxFieldBuilder<
+    ) -> RequiredFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
         ErrorTool,
-        HasDefault,
-        HasValidator,
+        Yes,
         HasRevalidator,
-        HasRequired,
+        HasRequiredError,
         Yes,
     >
     where
         R: IntoResolver<bool, I, O, CtxOptions>,
     {
-        LaxFieldBuilder {
-            default: self.default,
+        RequiredFieldBuilder {
             validator: self.validator,
             re_validator: self.re_validator,
-            required_fn: self.required_fn,
-            should_ignore: Some(resolver.into_resolver()),
-            ..Default::default()
-        }
-    }
-
-    pub fn ignore_init(
-        self,
-    ) -> LaxFieldBuilder<
-        T,
-        I,
-        O,
-        CtxOptions,
-        ErrorTool,
-        HasDefault,
-        HasValidator,
-        HasRevalidator,
-        HasRequired,
-        No,
-        Yes,
-    > {
-        LaxFieldBuilder {
-            default: self.default,
-            validator: self.validator,
-            re_validator: self.re_validator,
-            required_fn: self.required_fn,
-            ignore_init: Some(IsFieldProvisionEnabled::False),
-            ..Default::default()
-        }
-    }
-
-    pub fn ignore_update(
-        self,
-    ) -> LaxFieldBuilder<
-        T,
-        I,
-        O,
-        CtxOptions,
-        ErrorTool,
-        HasDefault,
-        HasValidator,
-        HasRevalidator,
-        HasRequired,
-        No,
-        No,
-        Yes,
-    > {
-        LaxFieldBuilder {
-            default: self.default,
-            validator: self.validator,
-            re_validator: self.re_validator,
-            required_fn: self.required_fn,
-            ignore_update: Some(IsFieldProvisionEnabled::False),
-            ..Default::default()
-        }
-    }
-}
-
-impl<
-        HasDefault: IsProvidedButNotComputed,
-        HasValidator,
-        HasRevalidator,
-        HasRequired,
-        HasIgnore,
-        HasIgnoreInit,
-        T: IvoFieldValue,
-        I: IvoStruct,
-        O: IvoStruct,
-        CtxOptions,
-        ErrorTool: IvoErrorTool,
-    >
-    LaxFieldBuilder<
-        T,
-        I,
-        O,
-        CtxOptions,
-        ErrorTool,
-        HasDefault,
-        HasValidator,
-        HasRevalidator,
-        HasRequired,
-        HasIgnore,
-        HasIgnoreInit,
-    >
-{
-    /// During updates, the current value of the field is compared with it's
-    /// default value. If both values are equal, updates will be allowed.
-    pub fn readonly(
-        self,
-    ) -> LaxFieldBuilder<
-        T,
-        I,
-        O,
-        CtxOptions,
-        ErrorTool,
-        HasDefault,
-        HasValidator,
-        HasRevalidator,
-        HasRequired,
-        HasIgnore,
-        HasIgnoreInit,
-        Yes,
-    > {
-        LaxFieldBuilder {
-            default: self.default,
-            validator: self.validator,
-            re_validator: self.re_validator,
-            required_fn: self.required_fn,
-            should_ignore: self.should_ignore,
-            ignore_init: self.ignore_init,
-            ignore_update: Some(IsFieldProvisionEnabled::Readonly),
+            required_error: self.required_error,
+            ignore_update: Some(IsFieldProvisionEnabled::Func(resolver.into_resolver())),
             ..Default::default()
         }
     }
@@ -484,13 +325,10 @@ impl<
 
 // ON_DELETE is only available if HasDelete is 'No'
 impl<
-        HasDefault: IsProvided,
-        HasValidator,
         HasRevalidator,
-        HasRequired,
-        HasIgnore,
-        HasIgnoreInit,
+        HasRequiredError,
         HasIgnoreUpdate,
+        HasDelete,
         HasFailure,
         HasSuccess,
         T: IvoFieldValue,
@@ -499,20 +337,17 @@ impl<
         CtxOptions,
         ErrorTool: IvoErrorTool,
     >
-    LaxFieldBuilder<
+    RequiredFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
         ErrorTool,
-        HasDefault,
-        HasValidator,
+        Yes,
         HasRevalidator,
-        HasRequired,
-        HasIgnore,
-        HasIgnoreInit,
+        HasRequiredError,
         HasIgnoreUpdate,
-        No,
+        HasDelete,
         HasFailure,
         HasSuccess,
     >
@@ -520,18 +355,15 @@ impl<
     pub fn on_delete<H>(
         self,
         handler: H,
-    ) -> LaxFieldBuilder<
+    ) -> RequiredFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
         ErrorTool,
-        HasDefault,
-        HasValidator,
+        Yes,
         HasRevalidator,
-        HasRequired,
-        HasIgnore,
-        HasIgnoreInit,
+        HasRequiredError,
         HasIgnoreUpdate,
         Yes,
         HasFailure,
@@ -542,13 +374,10 @@ impl<
     {
         let h = handler.into_handler();
 
-        LaxFieldBuilder {
-            default: self.default,
+        RequiredFieldBuilder {
             validator: self.validator,
             re_validator: self.re_validator,
-            required_fn: self.required_fn,
-            should_ignore: self.should_ignore,
-            ignore_init: self.ignore_init,
+            required_error: self.required_error,
             ignore_update: self.ignore_update,
             on_delete_fns: Some(match self.on_delete_fns {
                 Some(hs) => {
@@ -569,11 +398,8 @@ impl<
 
 // ON_FAILURE is only available if HasFailure is 'No'
 impl<
-        HasDefault: IsProvided,
         HasRevalidator,
-        HasRequired,
-        HasIgnore,
-        HasIgnoreInit,
+        HasRequiredError,
         HasIgnoreUpdate,
         HasDelete,
         HasFailure,
@@ -584,18 +410,15 @@ impl<
         CtxOptions,
         ErrorTool: IvoErrorTool,
     >
-    LaxFieldBuilder<
+    RequiredFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
         ErrorTool,
-        HasDefault,
         Yes,
         HasRevalidator,
-        HasRequired,
-        HasIgnore,
-        HasIgnoreInit,
+        HasRequiredError,
         HasIgnoreUpdate,
         HasDelete,
         HasFailure,
@@ -605,18 +428,15 @@ impl<
     pub fn on_failure<H>(
         self,
         handler: H,
-    ) -> LaxFieldBuilder<
+    ) -> RequiredFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
         ErrorTool,
-        HasDefault,
         Yes,
         HasRevalidator,
-        HasRequired,
-        HasIgnore,
-        HasIgnoreInit,
+        HasRequiredError,
         HasIgnoreUpdate,
         HasDelete,
         Yes,
@@ -626,13 +446,11 @@ impl<
         H: IntoFailureHandler<I, O, CtxOptions>,
     {
         let h = handler.into_handler();
-        LaxFieldBuilder {
-            default: self.default,
+
+        RequiredFieldBuilder {
             validator: self.validator,
             re_validator: self.re_validator,
-            required_fn: self.required_fn,
-            should_ignore: self.should_ignore,
-            ignore_init: self.ignore_init,
+            required_error: self.required_error,
             ignore_update: self.ignore_update,
             on_delete_fns: self.on_delete_fns,
             on_failure_fns: Some(match self.on_failure_fns {
@@ -653,12 +471,8 @@ impl<
 
 // ON_SUCCESS is only available if HasSuccess is 'No'
 impl<
-        HasDefault: IsProvided,
-        HasValidator,
         HasRevalidator,
-        HasRequired,
-        HasIgnore,
-        HasIgnoreInit,
+        HasRequiredError,
         HasIgnoreUpdate,
         HasDelete,
         HasFailure,
@@ -669,18 +483,15 @@ impl<
         CtxOptions,
         ErrorTool: IvoErrorTool,
     >
-    LaxFieldBuilder<
+    RequiredFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
         ErrorTool,
-        HasDefault,
-        HasValidator,
+        Yes,
         HasRevalidator,
-        HasRequired,
-        HasIgnore,
-        HasIgnoreInit,
+        HasRequiredError,
         HasIgnoreUpdate,
         HasDelete,
         HasFailure,
@@ -690,18 +501,15 @@ impl<
     pub fn on_success<H>(
         self,
         handler: H,
-    ) -> LaxFieldBuilder<
+    ) -> RequiredFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
         ErrorTool,
-        HasDefault,
-        HasValidator,
+        Yes,
         HasRevalidator,
-        HasRequired,
-        HasIgnore,
-        HasIgnoreInit,
+        HasRequiredError,
         HasIgnoreUpdate,
         HasDelete,
         HasFailure,
@@ -712,13 +520,10 @@ impl<
     {
         let h = handler.into_handler();
 
-        LaxFieldBuilder {
-            default: self.default,
+        RequiredFieldBuilder {
             validator: self.validator,
             re_validator: self.re_validator,
-            required_fn: self.required_fn,
-            should_ignore: self.should_ignore,
-            ignore_init: self.ignore_init,
+            required_error: self.required_error,
             ignore_update: self.ignore_update,
             on_delete_fns: self.on_delete_fns,
             on_failure_fns: self.on_failure_fns,

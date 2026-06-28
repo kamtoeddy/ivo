@@ -1,14 +1,11 @@
-use ivo::{
-    UpdateError,
-    types::{IvoStructMethods, erase_value, parse_or_panic},
-};
-use std::{collections::HashMap, mem, sync::LazyLock, time::Instant};
+use ivo::{IvoStruct, UpdateError};
+use std::{sync::LazyLock, time::Instant};
 
 mod domain;
 
 use crate::{
     users::domain::{PartialUserInput, USER_MODEL, User, UserCtxOptions, UserRole},
-    utils::{format_bytes, styled_text::Stylable},
+    utils::styled_text::Stylable,
 };
 
 pub async fn run_users_demo() {
@@ -29,8 +26,6 @@ pub async fn run_users_demo() {
 
     // println!("runner2\n\n");
     let r = USER_MODEL.create(&input, UserCtxOptions::new()).await;
-
-    println!("size:  {}", format_bytes(&mem::size_of_val(&r)));
 
     match r {
         Ok((data, handle_success)) => {
@@ -91,10 +86,7 @@ pub async fn run_users_demo() {
     match r {
         Ok((data, handle_success)) => {
             println!("updates: {:?}\n", data);
-            println!(
-                "old + updates: {:?}\n",
-                user.ivo_internal_clone_with_ref(&data)
-            );
+            println!("old + updates: {:?}\n", user.clone_with_updates(&data));
 
             handle_success().await;
         }
@@ -124,12 +116,4 @@ pub async fn run_users_demo() {
         "\nDelete triggers:".font_bold(),
         format!("{:?}", timer.elapsed()).colored_blue()
     );
-
-    let mut map = HashMap::new();
-    map.insert("k", Some(erase_value(1)));
-
-    // let l = map.get("k") ;
-    if let Some(Some(v)) = map.get("k") {
-        println!("k = {}", parse_or_panic::<i32>(v, Some("k")))
-    }
 }

@@ -19,6 +19,7 @@ validators = ["dep:ivo-validators"]
 futures = "0.3"
 futures-locks = "0.7"
 ivo-derive = { path = "../ivo-derive", version = "0.0.2" }
+ivo-types = { path = "../ivo-types", version = "0.0.2" }
 ivo-validators = { path = "../ivo-validators", version = "0.0.2", optional = true}
 
 [dev-dependencies]

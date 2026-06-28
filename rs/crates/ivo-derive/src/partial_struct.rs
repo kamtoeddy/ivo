@@ -5,9 +5,9 @@ use syn::{punctuated::Punctuated, token::Comma, Attribute, Field, Ident, Meta, V
 pub fn generate_partial_struct<T: ToTokens>(
     crate_root: &T,
     partial_struct_name: &Ident,
-    vis: &Visibility,
     fields: &Punctuated<Field, Comma>,
     attrs: &[Attribute],
+    vis: &Visibility,
 ) -> TokenStream {
     // Transform fields into Option<T>
     let partial_fields = fields.iter().map(|field| {
@@ -133,9 +133,9 @@ pub fn generate_partial_struct<T: ToTokens>(
 
         #( #construct_builder_methods )*
 
-        impl #crate_root::types::IvoPartialStructMethods for #partial_struct_name {
-            fn ivo_internal_enumerate(&self) -> Vec<(String, #crate_root::types::ErasedValue)> {
-                use #crate_root::types::erase_value;
+        impl #crate_root::__private_types::types::IvoPartialStructMethods for #partial_struct_name {
+            fn ivo_internal_enumerate(&self) -> Vec<(String, #crate_root::__private_types::types::ErasedValue)> {
+                use #crate_root::__private_types::types::erase_value;
 
                 let mut tuples = Vec::new();
 
@@ -153,8 +153,8 @@ pub fn generate_partial_struct<T: ToTokens>(
                 fields_provided
             }
 
-            fn ivo_internal_get_erased_value(&self, field_name: &str)-> #crate_root::types::ErasedValue {
-                use #crate_root::types::erase_value;
+            fn ivo_internal_get_erased_value(&self, field_name: &str)-> #crate_root::__private_types::types::ErasedValue {
+                use #crate_root::__private_types::types::erase_value;
 
                 match field_name {
                     #( #get_erased_value_match_arms ),*
@@ -165,9 +165,9 @@ pub fn generate_partial_struct<T: ToTokens>(
             fn ivo_internal_is_value_equal(
                 &self,
                 field_name: &str,
-                value: &#crate_root::types::ErasedValue,
+                value: &#crate_root::__private_types::types::ErasedValue,
             ) -> bool {
-                use #crate_root::types::parse_or_panic;
+                use #crate_root::__private_types::types::parse_or_panic;
 
                 match field_name {
                     #( #is_value_equal_match_arms ),*
@@ -178,9 +178,9 @@ pub fn generate_partial_struct<T: ToTokens>(
             fn ivo_internal_set(
                 &mut self,
                 field_name: &str,
-                value: &#crate_root::types::ErasedValue,
+                value: &#crate_root::__private_types::types::ErasedValue,
             ) {
-                use #crate_root::types::parse_or_panic;
+                use #crate_root::__private_types::types::parse_or_panic;
 
                 match field_name {
                     #( #set_value_match_arms ),*

@@ -3,8 +3,6 @@ mod on_success;
 mod post_validate;
 pub(crate) mod types;
 
-pub use types::PostValidatorResponse;
-
 use crate::{
     schema::{fields::types::IntoDeleteHandler, Yes},
     IvoErrorTool, IvoStruct,

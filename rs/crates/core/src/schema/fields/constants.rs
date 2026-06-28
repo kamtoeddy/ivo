@@ -1,8 +1,12 @@
 use std::marker::PhantomData;
 
+use ivo_types::{
+    types::{erase_value, ErasedValue},
+    IvoErrorTool,
+};
+
 use crate::{
     schema::{
-        error_tool::IvoErrorTool,
         fields::{
             base::{BuildableFieldConfig, FieldConfig, FieldType, InternalFieldConfig},
             types::{
@@ -12,7 +16,6 @@ use crate::{
         },
         types::{DeleteHandler, IvoFieldValue, No, SuccessHandler, Yes},
     },
-    types::{erase_value, ErasedValue},
     IvoStruct,
 };
 

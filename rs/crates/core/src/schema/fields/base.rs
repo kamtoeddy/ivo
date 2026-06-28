@@ -1,8 +1,9 @@
 use std::{marker::PhantomData, sync::Mutex};
 
+use ivo_types::{types::ErasedValue, IvoErrorTool};
+
 use crate::{
     schema::{
-        error_tool::IvoErrorTool,
         fields::types::{
             BooleanResolver, ComputableRequiredError, IsFieldProvisionEnabled, RequiredResolver,
             Resolver, TimestampResolver, UniformValidator, ValueResolverWithMiniContext,
@@ -10,7 +11,6 @@ use crate::{
         },
         types::{DeleteHandler, FailureHandler, IvoFieldValue, No, SuccessHandler, Yes},
     },
-    types::ErasedValue,
     IvoStruct,
 };
 

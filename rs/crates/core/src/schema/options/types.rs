@@ -1,13 +1,9 @@
-#![expect(type_alias_bounds)]
-
-use std::{collections::HashMap, future::Future};
+use std::future::Future;
 
 use futures::future::BoxFuture;
+use ivo_types::{IvoErrorTool, PostValidatorResponse};
 
-use crate::{
-    schema::{error_tool::IvoErrorTool, types::SuccessHandler},
-    DefaultFieldErrorMetadata, IvoStruct, SharedIvoContext, SharedRwCtxOptions, ValidatorError,
-};
+use crate::{schema::types::SuccessHandler, IvoStruct, SharedIvoContext, SharedRwCtxOptions};
 
 pub struct OnSuccessConfig<I: IvoStruct, O: IvoStruct, CtxOptions> {
     pub fields: Vec<&'static str>,
@@ -37,12 +33,6 @@ where
         Box::new(move |ctx, o| Box::pin(self(ctx, o)))
     }
 }
-
-pub type PostValidatorError<FieldErrorMetadata = DefaultFieldErrorMetadata> =
-    HashMap<String, ValidatorError<FieldErrorMetadata>>;
-
-pub type PostValidatorResponse<I: IvoStruct, FieldErrorMetadata = DefaultFieldErrorMetadata> =
-    Result<Option<I::Partial>, PostValidatorError<FieldErrorMetadata>>;
 
 pub type PostValidator<I, O, CtxOptions, FieldErrorMetadata> = Box<
     dyn Fn(

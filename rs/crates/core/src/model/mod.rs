@@ -7,20 +7,20 @@ use std::fmt::Debug;
 use std::future::ready;
 use std::sync::Arc;
 
+use ivo_types::{types::erase_value, IvoPartialStructMethods, IvoStruct, RwLock};
+
 use crate::model::internal::{FieldInfo, FieldInfoCollection};
-use crate::schema::error_tool::{DefaultErrorTool, FieldError, IvoErrorTool, UpdateError};
 use crate::schema::fields::base::{FieldType, InternalFieldConfig};
 use crate::schema::fields::types::{
     ComputableRequiredError, IsFieldProvisionEnabled, ValueResolverWithMiniContext,
 };
 use crate::schema::fields::TimestampConfig;
 use crate::schema::Schema;
+use ivo_types::{DefaultErrorTool, FieldError, IvoErrorTool, UpdateError};
 
 use crate::schema::options::types::{OnSuccessConfig, PostValidationConfig};
 
 use crate::{IvoContext, SharedCtxOptions, SharedIvoContext, SharedRwCtxOptions};
-
-use crate::types::{erase_value, IvoPartialStructMethods, IvoStruct, RwLock};
 
 type AsyncHandlerTrigger<'a> = Box<dyn Fn() -> BoxFuture<'a, ()> + Send + Sync + 'a>;
 

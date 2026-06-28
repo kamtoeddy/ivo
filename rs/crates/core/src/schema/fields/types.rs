@@ -1,12 +1,12 @@
 #![expect(type_alias_bounds)]
 
 use futures::future::{BoxFuture, FutureExt};
+use ivo_types::types::{erase_value, parse_or_panic, ErasedValue};
 
 use std::future::Future;
 
 use crate::{
     schema::types::{DeleteHandler, FailureHandler, IvoFieldValue, SuccessHandler},
-    types::{erase_value, parse_or_panic, ErasedValue},
     IvoErrorTool, IvoStruct, SharedData, SharedIvoContext, SharedIvoInput, SharedRwCtxOptions,
     ValidatorResponse,
 };

@@ -2,9 +2,10 @@
 
 use std::marker::PhantomData;
 
+use ivo_types::{types::ErasedValue, IvoErrorTool};
+
 use crate::{
     schema::{
-        error_tool::IvoErrorTool,
         fields::{
             base::{BuildableFieldConfig, FieldConfig, FieldType, InternalFieldConfig},
             types::{
@@ -15,7 +16,6 @@ use crate::{
         },
         types::{FailureHandler, IvoFieldValue, No, SuccessHandler, Yes, YesComputed},
     },
-    types::ErasedValue,
     IvoStruct,
 };
 

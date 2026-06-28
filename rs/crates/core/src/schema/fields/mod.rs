@@ -10,7 +10,6 @@ use std::marker::PhantomData;
 
 use crate::{
     schema::{
-        error_tool::IvoErrorTool,
         fields::{
             constants::ConstantFieldBuilder, dependents::DependentFieldBuilder,
             lax::LaxFieldBuilder, required::RequiredFieldBuilder, virtuals::VirtualFieldBuilder,
@@ -21,6 +20,7 @@ use crate::{
 };
 
 pub use base::TimestampConfig;
+use ivo_types::IvoErrorTool;
 
 pub struct IvoField<
     T: IvoFieldValue,

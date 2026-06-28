@@ -2,15 +2,13 @@
 
 use std::marker::PhantomData;
 
-use crate::{
-    schema::{
-        error_tool::IvoErrorTool,
-        fields::types::BooleanResolver,
-        options::types::{OnSuccessConfig, PostValidationConfig},
-        types::DeleteHandler,
-        No,
-    },
-    types::IvoStruct,
+use ivo_types::{IvoErrorTool, IvoStruct};
+
+use crate::schema::{
+    fields::types::BooleanResolver,
+    options::types::{OnSuccessConfig, PostValidationConfig},
+    types::DeleteHandler,
+    No,
 };
 
 pub struct SchemaOptions<I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool> {
