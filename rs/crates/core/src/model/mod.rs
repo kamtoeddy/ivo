@@ -1341,9 +1341,10 @@ impl<
                 handlers: h_vec,
             } in configs
             {
-                if fields
-                    .iter()
-                    .any(|f| fields_updated.contains(&f.to_string()))
+                if fields.len() == 0
+                    || fields
+                        .iter()
+                        .any(|f| fields_updated.contains(&f.to_string()))
                 {
                     handlers.extend(h_vec);
                 }

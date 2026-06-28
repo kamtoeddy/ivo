@@ -1,53 +1,7 @@
 use ivo::{DefaultErrorTool, IvoField, IvoStruct, Schema};
 use std::{future::ready, panic};
 
-#[test]
-#[should_panic(expected = "[options.on_success]: grouped on_success should have at least 2 fields")]
-fn should_reject_if_fields_array_is_empty() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        lax: i32,
-        lax_1: i32,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
-    }
-
-    let _: Schema<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Schema::new(
-        |f| {
-            f.set("lax", IvoField::LAX.default(1234))
-                .set("lax_1", IvoField::LAX.default(5678))
-        },
-        |o| o.on_success([], |s| s.handle(|_, _| ready(()))),
-    );
-}
-
-#[test]
-#[should_panic(expected = "[options.on_success]: grouped on_success should have at least 2 fields")]
-fn should_reject_if_fields_array_has_just_one_field() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        lax: i32,
-        lax_1: i32,
-    }
-
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct DataInput {
-        lax: i32,
-        lax_1: i32,
-    }
-
-    let _: Schema<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Schema::new(
-        |f| {
-            f.set("lax", IvoField::LAX.default(1234))
-                .set("lax_1", IvoField::LAX.default(5678))
-        },
-        |o| o.on_success(["lax"], |s| s.handle(|_, _| ready(()))),
-    );
-}
+use crate::async_test_matrix;
 
 #[test]
 #[should_panic(
@@ -270,3 +224,134 @@ fn should_reject_if_updated_at_timestamp_with_custom_name_is_provided_to_the_fie
         },
     );
 }
+
+async fn should_trigger_success_handlers_with_empty_fields_array_each_time_creation_is_successful()
+{
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        lax: i32,
+        lax_1: i32,
+    }
+
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct DataInput {
+        lax: i32,
+        lax_1: i32,
+    }
+
+    let default_lax = 1234;
+    let default_lax_1 = 5678;
+
+    let schema: Schema<DataInput, Data> = Schema::new(
+        |f| {
+            f.set("lax", IvoField::LAX.default(default_lax))
+                .set("lax_1", IvoField::LAX.default(default_lax_1))
+        },
+        |o| {
+            o.on_success([], |s| {
+                s.handle(|_, _| {
+                    if true {
+                        panic!("[options.on_success]: on_success triggered at creation despite empty field array")
+                    }
+
+                    ready(())
+                })
+            })
+        },
+    );
+
+    let model = schema.get_model();
+
+    let (data, handle_success) = model
+        .create(&PartialDataInput::new(), None)
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        data,
+        Data {
+            lax: default_lax,
+            lax_1: default_lax_1
+        }
+    );
+
+    handle_success().await;
+}
+
+async_test_matrix!(
+    "[options.on_success]: on_success triggered at creation despite empty field array",
+    should_trigger_success_handlers_with_empty_fields_array_each_time_creation_is_successful
+);
+
+async fn should_trigger_success_handlers_with_empty_fields_array_each_time_update_is_successful() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        lax: i32,
+        lax_1: i32,
+    }
+
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct DataInput {
+        lax: i32,
+        lax_1: i32,
+    }
+
+    let default_lax = 1234;
+    let default_lax_1 = 5678;
+
+    let schema: Schema<DataInput, Data> = Schema::new(
+        |f| {
+            f.set("lax", IvoField::LAX.default(default_lax))
+                .set("lax_1", IvoField::LAX.default(default_lax_1))
+        },
+        |o| {
+            o.on_success([], |s| {
+                s.handle(|_, _| {
+                    if true {
+                        panic!("[options.on_success]: on_success triggered during updates despite empty field array")
+                    }
+
+                    ready(())
+                })
+            })
+        },
+    );
+
+    let model = schema.get_model();
+
+    let data = Data {
+        lax: default_lax,
+        lax_1: default_lax_1,
+    };
+
+    let updated_lax_1 = data.lax_1 + 1;
+
+    let (updates, handle_success) = model
+        .update(
+            &data,
+            &PartialDataInput {
+                lax: None,
+                lax_1: Some(updated_lax_1),
+            },
+            None,
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updates,
+        PartialData {
+            lax: None,
+            lax_1: Some(updated_lax_1)
+        }
+    );
+
+    handle_success().await;
+}
+
+async_test_matrix!(
+    "[options.on_success]: on_success triggered during updates despite empty field array",
+    should_trigger_success_handlers_with_empty_fields_array_each_time_update_is_successful
+);

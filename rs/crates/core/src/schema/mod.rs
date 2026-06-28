@@ -419,12 +419,6 @@ impl<
             let mut field_names = HashSet::new();
 
             for OnSuccessConfig { fields, .. } in configs {
-                if fields.len() < 2 {
-                    panic!(
-                        "\n{COLOR_RED}[{option_name}]: grouped on_success should have at least 2 fields {STYLE_RESET}\n"
-                    );
-                }
-
                 for field_name in fields {
                     if field_names.contains(field_name) {
                         panic!(
