@@ -3,7 +3,7 @@ mod on_success;
 mod post_validate;
 pub(crate) mod types;
 
-pub use types::{IvoValues, PostValidatorResponse};
+pub use types::PostValidatorResponse;
 
 use crate::{
     schema::{fields::types::IntoDeleteHandler, Yes},

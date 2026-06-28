@@ -7,7 +7,7 @@ use std::{
 };
 
 use ivo::{
-    IvoField, IvoStruct, IvoValues, Model, Schema, SharedCtxOptions, SharedData, SharedIvoContext,
+    IvoField, IvoStruct, Model, Schema, SharedCtxOptions, SharedData, SharedIvoContext,
     SharedRwCtxOptions, validate_email,
 };
 use serde::Serialize;
@@ -313,13 +313,14 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
                     if options.find_user_by_slug_id(&slug_id).await.is_none() {
                         options.update_slug_id(&slug_id);
 
-                        // let mut validated = IvoValues::new();
+                        // let mut validated = PartialUserInput::new();
 
-                        // validated
-                        //     .set("slug_id".into(), slug_id.value())
-                        //     .set("username".into(), "validated-username");
+                        //     validated.set_slug_id(slug_id.into())
+                        //     .set_username("validated-username".into());
 
-                        return Ok(IvoValues::new());
+                        // return Ok(Some(validated));
+
+                        return Ok(None);
                     }
 
                     let err = (

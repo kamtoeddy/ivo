@@ -53,7 +53,7 @@ pub trait IvoPartialStructMethods: Clone {
 
     fn ivo_internal_set(&mut self, field_name: &str, value: &ErasedValue);
 
-    fn ivo_internal_remove_value(&mut self, field_name: &str);
+    fn ivo_internal_unset(&mut self, field_name: &str);
 }
 
 pub type SharedData<T> = Arc<T>;

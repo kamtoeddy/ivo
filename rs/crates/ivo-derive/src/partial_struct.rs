@@ -1,5 +1,5 @@
 use proc_macro2::TokenStream;
-use quote::{quote, ToTokens};
+use quote::{format_ident, quote, ToTokens};
 use syn::{punctuated::Punctuated, token::Comma, Attribute, Field, Ident, Meta, Visibility};
 
 pub fn generate_partial_struct<T: ToTokens>(
@@ -50,12 +50,11 @@ pub fn generate_partial_struct<T: ToTokens>(
 
     let remove_value_match_arms = fields.iter().map(|field| {
         let field_name = &field.ident; // e.g., 'id'
-        let field_type = &field.ty; // e.g., 'String'
         let field_name_str = field_name.as_ref().unwrap().to_string();
 
         quote! {
             #field_name_str => {
-                self.#field_name = None::<#field_type>;
+                self.#field_name = None;
             }
         }
     });
@@ -92,6 +91,31 @@ pub fn generate_partial_struct<T: ToTokens>(
         }
     });
 
+    let construct_builder_methods = fields.iter().map(|field| {
+        let field_name = &field.ident;
+        let field_type = &field.ty; // e.g., 'String'
+        let field_name_str = field_name.as_ref().unwrap().to_string();
+        let add_method_name = format_ident!("set_{field_name_str}");
+        let remove_method_name = format_ident!("unset_{field_name_str}");
+
+        quote! {
+            impl #partial_struct_name {
+                #[inline(always)]
+                #vis fn #add_method_name(&mut self, value: #field_type) -> &mut Self {
+                    self.#field_name = Some(value);
+
+                    self
+                }
+
+                #vis fn #remove_method_name(&mut self) -> &mut Self {
+                    self.#field_name = None;
+
+                    self
+                }
+            }
+        }
+    });
+
     let derive_attrs_provided = extract_derive_attrs_provided(attrs);
 
     quote! {
@@ -100,6 +124,14 @@ pub fn generate_partial_struct<T: ToTokens>(
         #vis struct #partial_struct_name {
             #( #partial_fields )*
         }
+
+        impl #partial_struct_name {
+            #vis fn new() -> Self {
+                Self::default()
+            }
+        }
+
+        #( #construct_builder_methods )*
 
         impl #crate_root::types::IvoPartialStructMethods for #partial_struct_name {
             fn ivo_internal_enumerate(&self) -> Vec<(String, #crate_root::types::ErasedValue)> {
@@ -156,7 +188,7 @@ pub fn generate_partial_struct<T: ToTokens>(
                 };
             }
 
-            fn ivo_internal_remove_value(&mut self, field_name: &str) {
+            fn ivo_internal_unset(&mut self, field_name: &str) {
                 match field_name {
                     #( #remove_value_match_arms ),*
                     _ => (),

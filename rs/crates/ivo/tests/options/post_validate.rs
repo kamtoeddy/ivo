@@ -1,4 +1,4 @@
-use ivo::{DefaultErrorTool, IvoField, IvoStruct, IvoValues, Schema};
+use ivo::{DefaultErrorTool, IvoField, IvoStruct, Schema};
 use std::{future::ready, panic};
 
 #[test]
@@ -21,6 +21,22 @@ fn should_reject_if_fields_array_is_empty() {
             f.set("lax", IvoField::LAX.default(1234))
                 .set("lax_1", IvoField::LAX.default(5678))
         },
-        |o| o.post_validate([], |v| v.validate(|_, _| ready(Ok(IvoValues::new())))),
+        |o| {
+            o.post_validate([], |v| {
+                v.validate(|_, _| {
+                    // let mut validated = PartialDataInput::new();
+                    // validated.set_lax(1);
+                    // // validated.unset_lax();
+
+                    // if true {
+                    //     validated.set_lax_1(34);
+
+                    //     return ready(Ok(Some(validated)));
+                    // }
+
+                    ready(Ok(None))
+                })
+            })
+        },
     );
 }

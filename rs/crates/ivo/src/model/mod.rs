@@ -18,7 +18,7 @@ use crate::schema::Schema;
 
 use crate::schema::options::types::{OnSuccessConfig, PostValidationConfig};
 
-use crate::{IvoContext, IvoValues, SharedCtxOptions, SharedIvoContext, SharedRwCtxOptions};
+use crate::{IvoContext, SharedCtxOptions, SharedIvoContext, SharedRwCtxOptions};
 
 use crate::types::{erase_value, IvoPartialStructMethods, IvoStruct, RwLock};
 
@@ -722,9 +722,13 @@ impl<
                             }
                         }
                     }
-                    Ok(IvoValues { data }) => {
-                        for (field_name, value) in data {
+                    Ok(Some(updates)) => {
+                        for (field_name, value) in updates.ivo_internal_enumerate() {
                             if let Some(field_info) = fields_provided.get(&field_name) {
+                                if !fields.contains(&field_info.config_name.as_str()) {
+                                    continue;
+                                }
+
                                 has_updates = true;
 
                                 if field_info.is_input {
@@ -737,6 +741,7 @@ impl<
                             }
                         }
                     }
+                    _ => (),
                 }
             }
         }
@@ -779,9 +784,13 @@ impl<
                         }
                     }
                 }
-                Ok(IvoValues { data }) => {
-                    for (field_name, value) in data {
+                Ok(Some(updates)) => {
+                    for (field_name, value) in updates.ivo_internal_enumerate() {
                         if let Some(field_info) = fields_provided.get(&field_name) {
+                            if !fields.contains(&field_info.config_name.as_str()) {
+                                continue;
+                            }
+
                             has_updates = true;
 
                             if field_info.is_input {
@@ -794,6 +803,7 @@ impl<
                         }
                     }
                 }
+                _ => (),
             }
         }
 
@@ -1074,7 +1084,7 @@ impl<
 
                     match source {
                         Some(IsFieldProvisionEnabled::False) => {
-                            input.ivo_internal_remove_value(&field_info.name);
+                            input.ivo_internal_unset(&field_info.name);
                         }
                         Some(IsFieldProvisionEnabled::Func(resolver)) => {
                             resolvers.push((field_info, resolver));
@@ -1132,7 +1142,7 @@ impl<
 
         for (field_info, ignore) in join_all(tasks).await {
             if ignore {
-                input.ivo_internal_remove_value(&field_info.name);
+                input.ivo_internal_unset(&field_info.name);
 
                 continue;
             }

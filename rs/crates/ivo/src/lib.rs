@@ -16,7 +16,7 @@ pub use schema::{
         UpdateError,
     },
     fields::IvoField,
-    options::{IvoValues, PostValidatorResponse},
+    options::PostValidatorResponse,
     Schema,
 };
 
