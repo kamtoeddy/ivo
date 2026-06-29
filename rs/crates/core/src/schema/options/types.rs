@@ -1,36 +1,29 @@
-#![expect(type_alias_bounds)]
-
 use std::future::Future;
 
 use futures::future::BoxFuture;
 use ivo_types::{IvoErrorTool, PostValidatorResponse};
 
-use crate::{schema::types::SuccessHandler, IvoStruct, SharedIvoContext, SharedRwCtxOptions};
-
-pub type ShouldUpdateResolverData<I: IvoStruct, O: IvoStruct> = (I::Partial, O);
+use crate::{
+    schema::types::SuccessHandler, IvoStruct, SharedIvoContext, SharedRwCtxOptions,
+    UpdateResolverData,
+};
 
 pub type ShouldUpdateOptionResolver<I, O, CtxOptions> = Box<
-    dyn Fn(
-            ShouldUpdateResolverData<I, O>,
-            SharedRwCtxOptions<CtxOptions>,
-        ) -> BoxFuture<'static, bool>
+    dyn Fn(UpdateResolverData<I, O>, SharedRwCtxOptions<CtxOptions>) -> BoxFuture<'static, bool>
         + Send
         + Sync
         + 'static,
 >;
 
-pub trait IntoShouldUpdateResolver<I: IvoStruct, O: IvoStruct, CtxOptions> {
+pub trait IntoShouldUpdateOptionResolver<I: IvoStruct, O: IvoStruct, CtxOptions> {
     fn into_resolver(self) -> ShouldUpdateOptionResolver<I, O, CtxOptions>;
 }
 
-impl<F, Fut, I, O, CtxOptions> IntoShouldUpdateResolver<I, O, CtxOptions> for F
+impl<F, Fut, I, O, CtxOptions> IntoShouldUpdateOptionResolver<I, O, CtxOptions> for F
 where
     I: IvoStruct,
     O: IvoStruct,
-    F: Fn(ShouldUpdateResolverData<I, O>, SharedRwCtxOptions<CtxOptions>) -> Fut
-        + Send
-        + Sync
-        + 'static,
+    F: Fn(UpdateResolverData<I, O>, SharedRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = bool> + Send + Sync + 'static,
 {
     fn into_resolver(self) -> ShouldUpdateOptionResolver<I, O, CtxOptions> {

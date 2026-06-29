@@ -10,7 +10,7 @@ use crate::{
             base::{BuildableFieldConfig, FieldConfig, FieldType, InternalFieldConfig},
             types::{
                 BooleanResolver, IntoBooleanResolver, IntoFailureHandler, IntoFieldValidator,
-                IntoRequiredResolver, IntoResolver, IntoSuccessHandler, IntoVirtualSanitizer,
+                IntoRequiredResolver, IntoSuccessHandler, IntoVirtualSanitizer,
                 IsFieldProvisionEnabled, RequiredResolver, UniformValidator, VirtualSanitizer,
             },
         },
@@ -416,7 +416,7 @@ impl<
         Yes,
     >
     where
-        R: IntoResolver<bool, I, O, CtxOptions>,
+        R: IntoBooleanResolver<I, O, CtxOptions>,
     {
         VirtualFieldBuilder {
             alias: self.alias,
@@ -591,7 +591,7 @@ impl<
         YesComputed,
     >
     where
-        R: IntoResolver<bool, I, O, CtxOptions>,
+        R: IntoBooleanResolver<I, O, CtxOptions>,
     {
         VirtualFieldBuilder {
             alias: self.alias,

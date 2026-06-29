@@ -12,8 +12,8 @@ use crate::{
         fields::{
             base::{BuildableFieldConfig, FieldConfig, FieldType, InternalFieldConfig},
             types::{
-                BooleanResolver, IntoDeleteHandler, IntoFailureHandler, IntoFieldValidator,
-                IntoRequiredResolver, IntoResolver, IntoSuccessHandler,
+                BooleanResolver, IntoBooleanResolver, IntoDeleteHandler, IntoFailureHandler,
+                IntoFieldValidator, IntoRequiredResolver, IntoSuccessHandler,
                 IntoValueResolverWithMiniContext, IsFieldProvisionEnabled, RequiredResolver,
                 UniformValidator, ValueResolverWithMiniContext,
             },
@@ -363,7 +363,7 @@ impl<
         Yes,
     >
     where
-        R: IntoResolver<bool, I, O, CtxOptions>,
+        R: IntoBooleanResolver<I, O, CtxOptions>,
     {
         LaxFieldBuilder {
             default: self.default,

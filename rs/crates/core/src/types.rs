@@ -9,6 +9,7 @@ pub type SharedCtxOptions<CtxOptions> = SharedIvoData<CtxOptions>;
 pub type SharedRwCtxOptions<CtxOptions> = SharedIvoData<RwLock<CtxOptions>>;
 pub type SharedIvoContext<I: IvoStruct, O: IvoStruct> = SharedIvoData<IvoContext<I, O>>;
 pub type SharedIvoInput<I: IvoStruct> = SharedIvoData<I::Partial>;
+pub type UpdateResolverData<I: IvoStruct, O: IvoStruct> = (I::Partial, O);
 
 #[derive(Clone, Copy)]
 pub enum IvoContext<I: IvoStruct, O: IvoStruct> {

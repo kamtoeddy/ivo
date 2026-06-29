@@ -4,7 +4,9 @@ mod post_validate;
 pub(crate) mod types;
 
 use crate::{
-    schema::{fields::types::IntoDeleteHandler, options::types::IntoShouldUpdateResolver, Yes},
+    schema::{
+        fields::types::IntoDeleteHandler, options::types::IntoShouldUpdateOptionResolver, Yes,
+    },
     IvoErrorTool, IvoStruct,
 };
 use base::{SchemaOptions, SchemaOptionsBuilder};
@@ -183,7 +185,7 @@ impl<
         Yes,
     >
     where
-        R: IntoShouldUpdateResolver<I, O, CtxOptions>,
+        R: IntoShouldUpdateOptionResolver<I, O, CtxOptions>,
     {
         SchemaOptionsBuilder::from(
             self.on_delete_fns,

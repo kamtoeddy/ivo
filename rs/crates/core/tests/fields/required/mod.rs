@@ -9,8 +9,8 @@ mod on_failure;
 mod on_success;
 
 // TODO:
-// [ ] ignore_update
-// [ ] readonly
+// [x] ignore_update
+// [x] readonly
 // [ ] required_error
 // [ ] validate
 // [ ] re_validate

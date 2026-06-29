@@ -8,7 +8,7 @@ use std::future::Future;
 use crate::{
     schema::types::{DeleteHandler, FailureHandler, IvoFieldValue, SuccessHandler},
     IvoErrorTool, IvoStruct, SharedIvoContext, SharedIvoData, SharedIvoInput, SharedRwCtxOptions,
-    ValidatorResponse,
+    UpdateResolverData, ValidatorResponse,
 };
 
 pub type TimestampResolver<T: IvoFieldValue> = Box<dyn Fn() -> T + Send + Sync + 'static>;
@@ -132,20 +132,20 @@ where
     }
 }
 
-pub trait IntoResolver<T, I: IvoStruct, O: IvoStruct, CtxOptions> {
-    fn into_resolver(self) -> Resolver<T, I, O, CtxOptions>;
-}
+// pub trait IntoResolver<T, I: IvoStruct, O: IvoStruct, CtxOptions> {
+//     fn into_resolver(self) -> Resolver<T, I, O, CtxOptions>;
+// }
 
-impl<F, Fut, T, I: IvoStruct, O: IvoStruct, CtxOptions> IntoResolver<T, I, O, CtxOptions> for F
-where
-    T: 'static,
-    F: Fn(SharedIvoContext<I, O>, SharedRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
-    Fut: Future<Output = T> + Send + 'static,
-{
-    fn into_resolver(self) -> Resolver<T, I, O, CtxOptions> {
-        Box::new(move |ctx, o| Box::pin(self(ctx, o)))
-    }
-}
+// impl<F, Fut, T, I: IvoStruct, O: IvoStruct, CtxOptions> IntoResolver<T, I, O, CtxOptions> for F
+// where
+//     T: 'static,
+//     F: Fn(SharedIvoContext<I, O>, SharedRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
+//     Fut: Future<Output = T> + Send + 'static,
+// {
+//     fn into_resolver(self) -> Resolver<T, I, O, CtxOptions> {
+//         Box::new(move |ctx, o| Box::pin(self(ctx, o)))
+//     }
+// }
 
 pub trait IntoUniformResolver<T, I: IvoStruct, O: IvoStruct, CtxOptions> {
     fn into_uniform(self) -> UniformResolver<I, O, CtxOptions>;
@@ -190,6 +190,21 @@ where
 {
     fn into_resolver(self) -> BooleanResolver<I, O, CtxOptions> {
         Box::new(move |ctx, o| Box::pin(self(ctx, o)))
+    }
+}
+
+pub trait IntoIgnoreUpdateResolver<I: IvoStruct, O: IvoStruct, CtxOptions> {
+    fn into_resolver(self) -> BooleanResolver<I, O, CtxOptions>;
+}
+
+impl<F, Fut, I: IvoStruct, O: IvoStruct, CtxOptions> IntoIgnoreUpdateResolver<I, O, CtxOptions>
+    for F
+where
+    F: Fn(UpdateResolverData<I, O>, SharedRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
+    Fut: Future<Output = bool> + Send + 'static,
+{
+    fn into_resolver(self) -> BooleanResolver<I, O, CtxOptions> {
+        Box::new(move |ctx, o| Box::pin(self((ctx.input(), ctx.full_values().unwrap()), o)))
     }
 }
 

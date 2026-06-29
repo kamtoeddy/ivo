@@ -8,7 +8,7 @@ use crate::{
             base::{BuildableFieldConfig, FieldConfig, FieldType, InternalFieldConfig},
             types::{
                 ComputableRequiredError, IntoDeleteHandler, IntoFailureHandler, IntoFieldValidator,
-                IntoRequiredErrorResolver, IntoResolver, IntoSuccessHandler,
+                IntoIgnoreUpdateResolver, IntoRequiredErrorResolver, IntoSuccessHandler,
                 IsFieldProvisionEnabled, UniformValidator,
             },
         },
@@ -311,7 +311,7 @@ impl<
         Yes,
     >
     where
-        R: IntoResolver<bool, I, O, CtxOptions>,
+        R: IntoIgnoreUpdateResolver<I, O, CtxOptions>,
     {
         RequiredFieldBuilder {
             validator: self.validator,
