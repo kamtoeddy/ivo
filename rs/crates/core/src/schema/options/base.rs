@@ -2,13 +2,12 @@
 
 use std::marker::PhantomData;
 
-use ivo_types::{IvoErrorTool, IvoStruct};
-
 use crate::schema::{
     options::types::{OnSuccessConfig, PostValidationConfig, ShouldUpdateOptionResolver},
     types::DeleteHandler,
     No,
 };
+use crate::types::internal::{IvoErrorTool, IvoStruct};
 
 pub struct SchemaOptions<I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool> {
     pub ignore_update: Option<ShouldUpdateOptionResolver<I, O, CtxOptions>>,

@@ -1,7 +1,6 @@
 use std::marker::PhantomData;
 
-use ivo_types::IvoErrorTool;
-
+use crate::types::internal::IvoErrorTool;
 use crate::{
     schema::{
         options::types::{IntoPostValidator, PostValidationConfig, PostValidator},

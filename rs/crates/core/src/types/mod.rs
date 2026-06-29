@@ -1,8 +1,10 @@
 #![expect(type_alias_bounds)]
 
+pub mod internal;
+
 use std::sync::Arc;
 
-use ivo_types::{IvoStruct, RwLock};
+use internal::{IvoStruct, RwLock};
 
 pub type SharedIvoData<T> = Arc<T>;
 pub type SharedCtxOptions<CtxOptions> = SharedIvoData<CtxOptions>;

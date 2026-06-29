@@ -16,11 +16,11 @@ use crate::{
         },
         types::IvoFieldValue,
     },
+    types::internal::IvoErrorTool,
     IvoStruct,
 };
 
 pub use base::TimestampConfig;
-use ivo_types::IvoErrorTool;
 
 pub struct IvoField<
     T: IvoFieldValue,

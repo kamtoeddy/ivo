@@ -1,7 +1,6 @@
 use std::marker::PhantomData;
 
-use ivo_types::{types::ErasedValue, IvoErrorTool};
-
+use crate::types::internal::{types::ErasedValue, IvoErrorTool};
 use crate::{
     schema::{
         fields::types::{

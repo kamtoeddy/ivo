@@ -15,9 +15,9 @@ pub use schema::{fields::IvoField, Schema};
 pub use model::Model;
 
 #[doc(hidden)]
-pub extern crate ivo_types as __private_types;
+pub use types::internal as __private_types;
 
-pub use ivo_types::{
+pub use types::internal::{
     DefaultErrorPayload, DefaultErrorTool, DefaultFieldErrorMetadata, FieldError, IvoErrorTool,
     IvoFieldValue, IvoStruct, Partial, PostValidatorError, PostValidatorResponse, RwLock,
     UpdateError, ValidatorError, ValidatorResponse,

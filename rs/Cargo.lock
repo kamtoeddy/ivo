@@ -454,7 +454,6 @@ dependencies = [
  "futures",
  "futures-locks",
  "ivo-derive",
- "ivo-types",
  "ivo-validators",
  "paste",
  "seahash",
@@ -466,18 +465,10 @@ dependencies = [
 name = "ivo-derive"
 version = "0.0.2"
 dependencies = [
- "ivo-types",
  "proc-macro-crate",
  "proc-macro2",
  "quote",
  "syn 2.0.118",
-]
-
-[[package]]
-name = "ivo-types"
-version = "0.0.2"
-dependencies = [
- "futures-locks",
 ]
 
 [[package]]

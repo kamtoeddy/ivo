@@ -1,12 +1,11 @@
 use std::future::Future;
 
-use futures::future::BoxFuture;
-use ivo_types::{IvoErrorTool, PostValidatorResponse};
-
+use crate::types::internal::{IvoErrorTool, PostValidatorResponse};
 use crate::{
     schema::types::SuccessHandler, IvoStruct, SharedIvoContext, SharedRwCtxOptions,
     UpdateResolverData,
 };
+use futures::future::BoxFuture;
 
 pub type ShouldUpdateOptionResolver<I, O, CtxOptions> = Box<
     dyn Fn(UpdateResolverData<I, O>, SharedRwCtxOptions<CtxOptions>) -> BoxFuture<'static, bool>

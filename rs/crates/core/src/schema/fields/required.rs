@@ -1,7 +1,5 @@
 use std::marker::PhantomData;
 
-use ivo_types::IvoErrorTool;
-
 use crate::{
     schema::{
         fields::{
@@ -14,6 +12,7 @@ use crate::{
         },
         types::{DeleteHandler, FailureHandler, IvoFieldValue, No, SuccessHandler, Yes},
     },
+    types::internal::IvoErrorTool,
     IvoStruct,
 };
 

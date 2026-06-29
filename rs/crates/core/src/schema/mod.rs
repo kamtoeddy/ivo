@@ -2,7 +2,7 @@ pub mod fields;
 pub mod options;
 mod types;
 
-use ivo_types::{DefaultErrorTool, IvoErrorTool, IvoStruct};
+use crate::types::internal::{DefaultErrorTool, IvoErrorTool, IvoStruct};
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 use std::marker::PhantomData;
