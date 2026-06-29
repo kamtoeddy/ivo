@@ -86,6 +86,63 @@ async fn should_properly_resolve_default_values_of_missing_fields_at_creation() 
 
 async_test_matrix!(should_properly_resolve_default_values_of_missing_fields_at_creation);
 
+async fn should_properly_use_lax_input_values_as_output_values_if_no_validator_is_provided() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        lax: i32,
+    }
+
+    #[derive(Debug, Clone, IvoStruct)]
+    struct DataInput {
+        lax: i32,
+    }
+
+    const DEFAULT_VALUE: i32 = 1_000;
+
+    let schema: Schema<DataInput, Data> = Schema::new(
+        |f| f.set("lax", IvoField::LAX.default_fn(|_, _| ready(DEFAULT_VALUE))),
+        |o| o,
+    );
+
+    let model = schema.get_model();
+
+    let lax = 34;
+
+    let (data, _) = model
+        .create(&PartialDataInput { lax: Some(lax) }, None)
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(data, Data { lax });
+
+    let lax_update = 30;
+
+    let r = model
+        .update(
+            &data,
+            &PartialDataInput {
+                lax: Some(lax_update),
+            },
+            None,
+        )
+        .await;
+
+    match r {
+        Ok((updates, _)) => assert_eq!(
+            updates,
+            PartialData {
+                lax: Some(lax_update)
+            }
+        ),
+        _ => unreachable!(),
+    }
+}
+
+async_test_matrix!(
+    should_properly_use_lax_input_values_as_output_values_if_no_validator_is_provided
+);
+
 // required
 
 async fn should_respect_the_required_rule() {
