@@ -6,7 +6,6 @@ use ivo::{IvoField, IvoStruct, Schema, UpdateError, UpdateResolverData};
 mod post_validate;
 
 // TODO:
-// [ ] ctx options
 // [x] ignore_update
 // [x] on_delete
 // [x] on_success
@@ -115,6 +114,39 @@ async fn should_properly_trigger_on_delete_handlers() {
 async_test_matrix!(
     "[options.on_delete]: handler triggered",
     should_properly_trigger_on_delete_handlers
+);
+
+async fn should_properly_trigger_all_on_delete_handlers() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        lax: i32,
+        lax_1: i32,
+    }
+
+    let schema: Schema<Data> = Schema::new(
+        |f| {
+            f.set("lax", IvoField::LAX.default(1234))
+                .set("lax_1", IvoField::LAX.default(5678))
+        },
+        |o| {
+            o.on_delete(|_, _| ready(())).on_delete(|_, _| {
+                if true {
+                    panic!("[options.on_delete]: second handler triggered");
+                }
+
+                ready(())
+            })
+        },
+    );
+
+    let model = schema.get_model();
+
+    model.delete(Data { lax: 2, lax_1: 3 }, None).await
+}
+
+async_test_matrix!(
+    "[options.on_delete]: second handler triggered",
+    should_properly_trigger_all_on_delete_handlers
 );
 
 // on_success

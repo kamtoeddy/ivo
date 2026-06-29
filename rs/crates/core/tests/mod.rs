@@ -5,6 +5,8 @@ mod options;
 mod utils;
 
 // TODO:
-// [ ] fields
-// [ ] schema options
 // [ ] ctx options
+// [x] ivo_derive
+// [ ] fields
+// [x] field_configs
+// [x] schema options
