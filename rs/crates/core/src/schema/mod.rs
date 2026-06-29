@@ -696,7 +696,7 @@ impl<
         ErrorTool: IvoErrorTool,
     > FieldBuilder<I, O, CtxOptions, Timestamp, ErrorTool>
 {
-    pub fn set_timestamps<BuildableConfig, R>(
+    pub fn timestamps<BuildableConfig, R>(
         self,
         t: R,
     ) -> FieldBuilder<I, O, CtxOptions, Timestamp, ErrorTool, Yes>

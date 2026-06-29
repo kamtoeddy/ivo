@@ -64,7 +64,7 @@ fn should_reject_if_field_name_is_same_created_at_if_enabled_with_default_name()
                         .default("value".into())
                         .validate(|v: String, _, _| ready(Ok(Some(v)))),
                 )
-                .set_timestamps(|t| t.date_fn(|| "Date.now()").created_at(None))
+                .timestamps(|t| t.resolve(|| "Date.now()").created_at(None))
         },
         |o| o,
     );
@@ -94,8 +94,8 @@ fn should_reject_if_field_name_is_same_created_at_if_enabled_with_custom_name() 
                     .default("value".into())
                     .validate(|v: String, _, _| ready(Ok(Some(v)))),
             )
-            .set_timestamps(|t| {
-                t.date_fn(|| "Date.now()")
+            .timestamps(|t| {
+                t.resolve(|| "Date.now()")
                     .created_at(Some("custom_created_at"))
             })
         },
@@ -126,7 +126,7 @@ fn should_reject_if_field_name_is_same_updated_at_if_enabled_with_default_name()
                         .default("value".into())
                         .validate(|v: String, _, _| ready(Ok(Some(v)))),
                 )
-                .set_timestamps(|t| t.date_fn(|| "Date.now()").optional_updated_at(None))
+                .timestamps(|t| t.resolve(|| "Date.now()").optional_updated_at(None))
         },
         |o| o,
     );
@@ -156,8 +156,8 @@ fn should_reject_if_field_name_is_same_updated_at_if_enabled_with_custom_name() 
                     .default("value".into())
                     .validate(|v: String, _, _| ready(Ok(Some(v)))),
             )
-            .set_timestamps(|t| {
-                t.date_fn(|| "Date.now()")
+            .timestamps(|t| {
+                t.resolve(|| "Date.now()")
                     .optional_updated_at(Some("custom_updated_at"))
             })
         },

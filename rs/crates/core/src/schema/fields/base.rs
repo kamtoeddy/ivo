@@ -150,7 +150,7 @@ impl<HasDateFn, HasCreatedAt, HasUpdatedAt, T: IvoFieldValue> Default
 }
 
 impl<T: IvoFieldValue> TimestampConfigBuilder<T> {
-    pub fn date_fn<R>(self, resolver: R) -> TimestampConfigBuilder<T, Yes>
+    pub fn resolve<R>(self, resolver: R) -> TimestampConfigBuilder<T, Yes>
     where
         R: Fn() -> T + Send + Sync + 'static,
     {

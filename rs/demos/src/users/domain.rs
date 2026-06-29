@@ -281,8 +281,8 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
                             ready(())
                         }),
                 )
-                .set_timestamps(|t| {
-                    t.date_fn(|| time::UNIX_EPOCH.elapsed().unwrap().as_micros().to_string())
+                .timestamps(|t| {
+                    t.resolve(|| time::UNIX_EPOCH.elapsed().unwrap().as_micros().to_string())
                         .created_at(None)
                         .updated_at(Some("updated_on"))
                 })
