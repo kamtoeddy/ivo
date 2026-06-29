@@ -580,7 +580,16 @@ impl<
                         validated_outputs.ivo_internal_set(&field_name, &value);
                     }
                 }
-                _ => {}
+                Ok(None) => {
+                    if field_info.is_output {
+                        has_updates = true;
+
+                        validated_outputs.ivo_internal_set(
+                            &field_name,
+                            &validated_outputs.ivo_internal_get_erased_value(&field_name),
+                        );
+                    }
+                }
             }
         }
 

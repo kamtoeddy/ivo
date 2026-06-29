@@ -367,7 +367,7 @@ async fn should_not_update_if_primary_validation_fails() {
                             return ready(Err((LAX_OUT_OF_RANGE_ERROR.into(), None)));
                         }
 
-                        ready(Ok(Some(v)))
+                        ready(Ok(None))
                     }),
                 )
         },
@@ -469,7 +469,7 @@ async fn should_not_create_if_re_validation_fails() {
                             return ready(Err((MIN_REVALIDATION_LENGTH_ERROR.into(), None)));
                         }
 
-                        ready(Ok(Some(v)))
+                        ready(Ok(Some(validated.into())))
                     }),
             )
         },
@@ -560,7 +560,7 @@ async fn should_not_update_if_re_validation_fails() {
                                 return ready(Err((LAX_OUT_OF_RANGE_ERROR.into(), None)));
                             }
 
-                            ready(Ok(Some(v)))
+                            ready(Ok(None))
                         })
                         .re_validate(|v: i32, _, _| {
                             if !REVALIDATED_LAX_VALUE_RANGE.contains(&v) {
@@ -570,7 +570,7 @@ async fn should_not_update_if_re_validation_fails() {
                                 )));
                             }
 
-                            ready(Ok(Some(v)))
+                            ready(Ok(None))
                         }),
                 )
         },
