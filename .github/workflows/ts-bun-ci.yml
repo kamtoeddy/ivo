@@ -1,9 +1,11 @@
-name: TS BUN CI
+name: TS Bun CI
 
 on:
   pull_request:
   push:
     branches: ["main"]
+    paths:
+      - "./ts/*"
 
 jobs:
   build-and-test:

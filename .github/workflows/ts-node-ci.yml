@@ -1,9 +1,11 @@
-name: TS NODE CI
+name: TS Node CI
 
 on:
   pull_request:
   push:
     branches: ["main"]
+    paths:
+      - "./ts/*"
 
 jobs:
   build-and-test:

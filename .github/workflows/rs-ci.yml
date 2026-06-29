@@ -1,9 +1,11 @@
 name: Rust CI
 
 on:
+  pull_request:
   push:
     branches: ["main", "rust"]
-  pull_request:
+    paths:
+      - "./rs/*"
 
 jobs:
   test:
