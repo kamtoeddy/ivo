@@ -4,7 +4,7 @@ edition = "2024"
 publish = false
 
 [dependencies]
-ivo = { path = "../crates/core", features = ["validators"] }
+ivo = { path = "../rs/crates/core", features = ["validators"] }
 regex = "1.10"
 reqwest = { version = "0.13.4", features = ["json"] }
 serde = {version = "1.0.228", features = ["derive"] }
