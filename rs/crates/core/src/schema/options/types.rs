@@ -5,15 +5,22 @@ use std::future::Future;
 use futures::future::BoxFuture;
 use ivo_types::{IvoErrorTool, PostValidatorResponse};
 
-use crate::{
-    schema::{fields::types::BooleanResolver, types::SuccessHandler},
-    IvoStruct, SharedIvoContext, SharedRwCtxOptions,
-};
+use crate::{schema::types::SuccessHandler, IvoStruct, SharedIvoContext, SharedRwCtxOptions};
 
 pub type ShouldUpdateResolverData<I: IvoStruct, O: IvoStruct> = (I::Partial, O);
 
+pub type ShouldUpdateOptionResolver<I, O, CtxOptions> = Box<
+    dyn Fn(
+            ShouldUpdateResolverData<I, O>,
+            SharedRwCtxOptions<CtxOptions>,
+        ) -> BoxFuture<'static, bool>
+        + Send
+        + Sync
+        + 'static,
+>;
+
 pub trait IntoShouldUpdateResolver<I: IvoStruct, O: IvoStruct, CtxOptions> {
-    fn into_resolver(self) -> BooleanResolver<I, O, CtxOptions>;
+    fn into_resolver(self) -> ShouldUpdateOptionResolver<I, O, CtxOptions>;
 }
 
 impl<F, Fut, I, O, CtxOptions> IntoShouldUpdateResolver<I, O, CtxOptions> for F
@@ -26,8 +33,8 @@ where
         + 'static,
     Fut: Future<Output = bool> + Send + Sync + 'static,
 {
-    fn into_resolver(self) -> BooleanResolver<I, O, CtxOptions> {
-        Box::new(move |ctx, o| Box::pin(self((ctx.input(), ctx.full_values().unwrap()), o)))
+    fn into_resolver(self) -> ShouldUpdateOptionResolver<I, O, CtxOptions> {
+        Box::new(move |data, o| Box::pin(self(data, o)))
     }
 }
 

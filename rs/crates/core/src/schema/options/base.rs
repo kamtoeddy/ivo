@@ -5,8 +5,7 @@ use std::marker::PhantomData;
 use ivo_types::{IvoErrorTool, IvoStruct};
 
 use crate::schema::{
-    fields::types::BooleanResolver,
-    options::types::{OnSuccessConfig, PostValidationConfig},
+    options::types::{OnSuccessConfig, PostValidationConfig, ShouldUpdateOptionResolver},
     types::DeleteHandler,
     No,
 };
@@ -18,7 +17,7 @@ pub struct SchemaOptions<I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoE
 
     pub post_validate: Option<Vec<PostValidationConfig<I, O, CtxOptions, ErrorTool>>>,
 
-    pub ignore_update: Option<BooleanResolver<I, O, CtxOptions>>,
+    pub ignore_update: Option<ShouldUpdateOptionResolver<I, O, CtxOptions>>,
 }
 
 impl<I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool> Default
@@ -60,7 +59,7 @@ pub struct SchemaOptionsBuilder<
     pub(crate) on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
     pub(crate) on_success_fns: Option<Vec<OnSuccessConfig<I, O, CtxOptions>>>,
     pub(crate) post_validate: Option<Vec<PostValidationConfig<I, O, CtxOptions, ErrorTool>>>,
-    pub(crate) ignore_update: Option<BooleanResolver<I, O, CtxOptions>>,
+    pub(crate) ignore_update: Option<ShouldUpdateOptionResolver<I, O, CtxOptions>>,
 }
 
 impl<
@@ -101,7 +100,7 @@ impl<
         on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
         on_success_fns: Option<Vec<OnSuccessConfig<I, O, CtxOptions>>>,
         post_validate: Option<Vec<PostValidationConfig<I, O, CtxOptions, ErrorTool>>>,
-        ignore_update: Option<BooleanResolver<I, O, CtxOptions>>,
+        ignore_update: Option<ShouldUpdateOptionResolver<I, O, CtxOptions>>,
     ) -> Self {
         Self {
             on_delete_fns,

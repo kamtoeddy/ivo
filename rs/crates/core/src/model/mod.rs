@@ -1033,8 +1033,15 @@ impl<
         let mut field_info_vec = vec![];
 
         if is_update {
-            if let Some(ref ignore_update) = self.schema.options.ignore_update {
-                resolvers.push((None, ignore_update));
+            if let Some(ref resolver) = self.schema.options.ignore_update {
+                if resolver(
+                    (ctx.input(), ctx.full_values().unwrap()),
+                    Arc::clone(&options),
+                )
+                .await
+                {
+                    return (input, output, fields_provided.clone(), fields_provided);
+                }
             }
 
             for (field_name, value) in input_values.ivo_internal_enumerate() {
@@ -1069,7 +1076,7 @@ impl<
             }) = self.schema.field_configs.get(&field_info.config_name)
             {
                 if let Some(resolver) = ignore {
-                    resolvers.push((Some(field_info), resolver));
+                    resolvers.push((field_info, resolver));
 
                     continue;
                 }
@@ -1085,7 +1092,7 @@ impl<
                         input.ivo_internal_unset(&field_info.name);
                     }
                     Some(IsFieldProvisionEnabled::Func(resolver)) => {
-                        resolvers.push((Some(field_info), resolver));
+                        resolvers.push((field_info, resolver));
                     }
                     Some(IsFieldProvisionEnabled::Readonly) if is_update => {
                         if let Some(ValueResolverWithMiniContext::Static(value)) = default {
@@ -1136,34 +1143,22 @@ impl<
         });
 
         for (field_info, ignore) in join_all(tasks).await {
-            if let Some(field_info) = field_info {
-                if ignore {
-                    input.ivo_internal_unset(&field_info.name);
-
-                    continue;
-                }
-
-                final_field_info_vec.push(field_info.to_owned());
-
-                if field_info.is_output {
-                    output.ivo_internal_set(
-                        &field_info.name,
-                        &input.ivo_internal_get_erased_value(&field_info.name),
-                    );
-                }
+            if ignore {
+                input.ivo_internal_unset(&field_info.name);
 
                 continue;
             }
 
-            // else schema.options.ignore_update
-            if ignore {
-                return (
-                    input,
-                    output,
-                    FieldInfoCollection::new(self.schema),
-                    fields_provided,
+            final_field_info_vec.push(field_info.to_owned());
+
+            if field_info.is_output {
+                output.ivo_internal_set(
+                    &field_info.name,
+                    &input.ivo_internal_get_erased_value(&field_info.name),
                 );
             }
+
+            continue;
         }
 
         relevant_fields_provided.set_fields(final_field_info_vec);
