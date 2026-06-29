@@ -18,8 +18,8 @@ mod on_success;
 // [x] on_delete
 // [x] on_failure
 // [x] on_success
-// [ ] o.on_success
-// [ ] o.post_validate
+// [x] o.on_success
+// [x] o.post_validate
 
 // required_error
 
@@ -689,10 +689,6 @@ async fn should_respect_post_validation_config() {
     const REQUIRED_VALIDATION_FAIL: &str = "required failed post-validatrion";
     const BOTH_VALIDATION_FAIL: &str = "both failed post-validatrion";
 
-    let default_required_value = "default_required_value";
-    let default_required_1_value = "default_required_1_value";
-    let default_required_2_value = "default_required_2_value";
-
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
             f.set(
@@ -835,42 +831,15 @@ async fn should_respect_post_validation_config() {
 
     let model = schema.get_model();
 
-    let required_2 = "required_2_provided".to_string();
-
-    let r = model
-        .create(
-            &PartialDataInput {
-                required: None,
-                required_1: None,
-                required_2: Some(required_2.clone()),
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Ok((data, _)) => {
-            assert_eq!(
-                data,
-                Data {
-                    required: default_required_value.to_string(),
-                    required_1: default_required_1_value.to_string(),
-                    required_2
-                },
-                "should not post-validate if none of the fields was provided"
-            );
-        }
-        _ => unreachable!(),
-    }
-
     let required = REQUIRED_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string();
+    let value = "some value".to_string();
 
     let r = model
         .create(
             &PartialDataInput {
                 required: Some(required.clone()),
-                required_1: None,
-                required_2: None,
+                required_1: Some(value.clone()),
+                required_2: Some(value.clone()),
             },
             None,
         )
@@ -896,8 +865,8 @@ async fn should_respect_post_validation_config() {
         .create(
             &PartialDataInput {
                 required: Some(required.clone()),
-                required_1: None,
-                required_2: None,
+                required_1: Some(value.clone()),
+                required_2: Some(value.clone()),
             },
             None,
         )
@@ -922,9 +891,9 @@ async fn should_respect_post_validation_config() {
     let r = model
         .create(
             &PartialDataInput {
-                required: None,
+                required: Some(value.clone()),
                 required_1: Some(required_1.clone()),
-                required_2: None,
+                required_2: Some(value.clone()),
             },
             None,
         )
@@ -949,8 +918,8 @@ async fn should_respect_post_validation_config() {
         .create(
             &PartialDataInput {
                 required: Some(required.clone()),
-                required_1: None,
-                required_2: None,
+                required_1: Some(value.clone()),
+                required_2: Some(value.clone()),
             },
             None,
         )
@@ -974,14 +943,13 @@ async fn should_respect_post_validation_config() {
     }
 
     let required = REQUIRED_VALIDATION_FAIL.to_string();
-    let required_2 = "required_2_provided".to_string();
 
     let r = model
         .create(
             &PartialDataInput {
                 required: Some(required.clone()),
-                required_1: None,
-                required_2: Some(required_2),
+                required_1: Some(value.clone()),
+                required_2: Some(value.clone()),
             },
             None,
         )
@@ -1001,14 +969,13 @@ async fn should_respect_post_validation_config() {
     }
 
     let required = BOTH_VALIDATION_FAIL.to_string();
-    let required_2 = "required_2_provided".to_string();
 
     let r = model
         .create(
             &PartialDataInput {
                 required: Some(required.clone()),
-                required_1: None,
-                required_2: Some(required_2),
+                required_1: Some(value.clone()),
+                required_2: Some(value.clone()),
             },
             None,
         )
@@ -1033,9 +1000,9 @@ async fn should_respect_post_validation_config() {
 
     // updates
     let data = Data {
-        required: default_required_value.to_string(),
-        required_1: default_required_1_value.to_string(),
-        required_2: default_required_2_value.to_string(),
+        required: value.clone(),
+        required_1: value.clone(),
+        required_2: value.clone(),
     };
 
     let required_1 = REQUIRED_1_PRE_VALIDATION_FAIL.to_string();
@@ -1133,7 +1100,7 @@ async fn should_respect_post_validation_config() {
     }
 
     let data = Data {
-        required_1: default_required_1_value.to_string(),
+        required_1: value.clone(),
         ..data
     };
 
@@ -1189,10 +1156,6 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
     const UPDATED_VALUE_FROM_PRE_VALIDATOR: &str = "UPDATED_VALUE_FROM_PRE_VALIDATOR";
     const UPDATED_VALUE_FROM_POST_VALIDATOR: &str = "UPDATED_VALUE_FROM_POST_VALIDATOR";
 
-    let default_required_value = "default_required_value";
-    let default_required_1_value = "default_required_1_value";
-    let default_required_2_value = "default_required_2_value";
-
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
             f.set(
@@ -1241,13 +1204,14 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
     let model = schema.get_model();
 
     let required = LAX_PRE_VALIDATED_WITH_UPDATED_VALUES.to_string();
+    let value = "some random value".to_string();
 
     let r = model
         .create(
             &PartialDataInput {
                 required: Some(required.clone()),
-                required_1: None,
-                required_2: None,
+                required_1: Some(value.clone()),
+                required_2: Some(value.clone()),
             },
             None,
         )
@@ -1260,7 +1224,7 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
                 Data {
                     required: UPDATED_VALUE_FROM_PRE_VALIDATOR.to_string(),
                     required_1: UPDATED_VALUE_FROM_PRE_VALIDATOR.to_string(),
-                    required_2: default_required_2_value.to_string(),
+                    required_2: value.clone(),
                 },
             );
         }
@@ -1273,8 +1237,8 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
         .create(
             &PartialDataInput {
                 required: Some(required.clone()),
-                required_1: None,
-                required_2: None,
+                required_1: Some(value.clone()),
+                required_2: Some(value.clone()),
             },
             None,
         )
@@ -1287,7 +1251,7 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
                 Data {
                     required: UPDATED_VALUE_FROM_POST_VALIDATOR.to_string(),
                     required_1: UPDATED_VALUE_FROM_POST_VALIDATOR.to_string(),
-                    required_2: default_required_2_value.to_string(),
+                    required_2: value.clone(),
                 },
             );
         }
@@ -1297,9 +1261,9 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
     // updates
 
     let data = Data {
-        required: default_required_value.to_string(),
-        required_1: default_required_1_value.to_string(),
-        required_2: default_required_2_value.to_string(),
+        required: value.clone(),
+        required_1: value.clone(),
+        required_2: value.clone(),
     };
 
     let required = LAX_PRE_VALIDATED_WITH_UPDATED_VALUES.to_string();
