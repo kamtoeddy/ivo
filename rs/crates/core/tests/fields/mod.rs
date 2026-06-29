@@ -7,6 +7,6 @@ mod timestamps;
 // [x] constants
 // [ ] dependents
 // [x] lax
-// [ ] required
+// [x] required
 // [x] timestamps
 // [ ] virtuals

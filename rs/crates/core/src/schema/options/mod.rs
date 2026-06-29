@@ -89,10 +89,10 @@ impl<
         on_delete_fns.push(handler.into_handler());
 
         SchemaOptionsBuilder::from(
+            self.ignore_update,
             Some(on_delete_fns),
             self.on_success_fns,
             self.post_validate,
-            self.ignore_update,
         )
     }
 
@@ -120,10 +120,10 @@ impl<
         on_success_fns.push(config);
 
         SchemaOptionsBuilder::from(
+            self.ignore_update,
             self.on_delete_fns,
             Some(on_success_fns),
             self.post_validate,
-            self.ignore_update,
         )
     }
 
@@ -153,10 +153,10 @@ impl<
         post_validate.push(config);
 
         SchemaOptionsBuilder::from(
+            self.ignore_update,
             self.on_delete_fns,
             self.on_success_fns,
             Some(post_validate),
-            self.ignore_update,
         )
     }
 }
@@ -188,10 +188,10 @@ impl<
         R: IntoShouldUpdateOptionResolver<I, O, CtxOptions>,
     {
         SchemaOptionsBuilder::from(
+            Some(handler.into_resolver()),
             self.on_delete_fns,
             self.on_success_fns,
             self.post_validate,
-            Some(handler.into_resolver()),
         )
     }
 }
