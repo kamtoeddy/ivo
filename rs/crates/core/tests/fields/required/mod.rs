@@ -13,8 +13,8 @@ mod on_success;
 // [x] readonly
 // [x] required_error
 // [x] required_error_fn
-// [ ] validate
-// [ ] re_validate
+// [x] validate
+// [x] re_validate
 // [x] on_delete
 // [x] on_failure
 // [x] on_success
@@ -382,6 +382,77 @@ async fn should_not_update_if_primary_validation_fails() {
 
 async_test_matrix!(should_not_update_if_primary_validation_fails);
 
+async fn should_properly_use_lax_input_values_as_output_values_if_validator_does_not_return_a_validated_value(
+) {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        required: i32,
+    }
+
+    #[derive(Debug, Clone, IvoStruct)]
+    struct DataInput {
+        required: i32,
+    }
+
+    let schema: Schema<DataInput, Data> = Schema::new(
+        |f| {
+            f.set(
+                "required",
+                IvoField::REQUIRED.validate(|_: i32, _, _| ready(Ok(None))),
+            )
+        },
+        |o| o,
+    );
+
+    let model = schema.get_model();
+
+    let required = 1;
+
+    let r = model
+        .create(
+            &PartialDataInput {
+                required: Some(required),
+            },
+            None,
+        )
+        .await;
+
+    match r {
+        Ok((data, _)) => {
+            assert_eq!(data, Data { required });
+        }
+        _ => unreachable!("expected successful creation"),
+    }
+
+    let required = 2;
+
+    let r = model
+        .update(
+            &Data {
+                required: required - 1,
+            },
+            &PartialDataInput {
+                required: Some(required),
+            },
+            None,
+        )
+        .await;
+
+    match r {
+        Ok((updates, _)) => {
+            assert_eq!(
+                updates,
+                PartialData {
+                    required: Some(required)
+                }
+            );
+        }
+        _ => unreachable!("expected successful update"),
+    }
+}
+
+async_test_matrix!(should_properly_use_lax_input_values_as_output_values_if_validator_does_not_return_a_validated_value);
+
 // re-validators
 
 async fn should_not_create_if_re_validation_fails() {
@@ -414,13 +485,11 @@ async fn should_not_create_if_re_validation_fails() {
                         ready(Ok(Some(validated.into())))
                     })
                     .re_validate(|v: String, _, _| {
-                        let validated = v.trim();
-
-                        if validated.len() < 4 {
+                        if v.len() < 4 {
                             return ready(Err((MIN_REVALIDATION_LENGTH_ERROR.into(), None)));
                         }
 
-                        ready(Ok(Some(validated.into())))
+                        ready(Ok(None))
                     }),
             )
         },
