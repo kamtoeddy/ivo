@@ -1,5 +1,5 @@
 use ivo::{IvoField, IvoStruct, Schema, SharedIvoContext, UpdateError};
-use std::{future::ready, ops::RangeInclusive, panic};
+use std::{collections::HashMap, future::ready, ops::RangeInclusive, panic};
 
 use crate::async_test_matrix;
 
@@ -22,7 +22,7 @@ mod on_success;
 // [x] on_failure
 // [x] on_success
 // [x] o.on_success
-// [ ] o.post_validate
+// [x] o.post_validate
 
 // default values & fns
 
@@ -591,3 +591,690 @@ async fn should_not_update_if_re_validation_fails() {
 }
 
 async_test_matrix!(should_not_update_if_re_validation_fails);
+
+// post-validation
+
+async fn should_respect_post_validation_config() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        lax: String,
+        lax_1: String,
+        lax_2: String,
+    }
+
+    #[derive(Debug, Clone, IvoStruct)]
+    struct DataInput {
+        lax: String,
+        lax_1: String,
+        lax_2: String,
+    }
+
+    const LAX_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS: &str =
+        "lax failed pre-validation with unrelated errors";
+    const LAX_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS: &str =
+        "lax failed post-validation with unrelated errors";
+
+    const LAX_1_PRE_VALIDATION_FAIL: &str = "lax 1 failed pre-validation";
+    const BOTH_PRE_VALIDATION_FAIL: &str = "both failed pre-validation";
+
+    const UNKNOWN_FIELD: &str = "unknown_field";
+
+    const LAX_VALIDATION_FAIL: &str = "lax failed post-validatrion";
+    const BOTH_VALIDATION_FAIL: &str = "both failed post-validatrion";
+
+    let default_lax_value = "default_lax_value";
+    let default_lax_1_value = "default_lax_1_value";
+    let default_lax_2_value = "default_lax_2_value";
+
+    let schema: Schema<DataInput, Data> = Schema::new(
+        |f| {
+            f.set("lax", IvoField::LAX.default(default_lax_value.to_string()))
+                .set(
+                    "lax_1",
+                    IvoField::LAX.default(default_lax_1_value.to_string()),
+                )
+                .set(
+                    "lax_2",
+                    IvoField::LAX.default(default_lax_2_value.to_string()),
+                )
+        },
+        |o| {
+            o.post_validate(["lax", "lax_1"], |v| {
+                v.pre_validate(|ctx: SharedIvoContext<DataInput, Data>, _| {
+                    let mut errors = HashMap::new();
+
+                    if let Some(lax) = ctx.input().lax {
+                        if lax == LAX_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS {
+                            errors.insert(
+                                "lax".into(),
+                                (
+                                    LAX_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string(),
+                                    None,
+                                ),
+                            );
+
+                            errors.insert(
+                                "lax_2".into(),
+                                (
+                                    LAX_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string(),
+                                    None,
+                                ),
+                            );
+
+                            errors.insert(
+                                UNKNOWN_FIELD.into(),
+                                (
+                                    LAX_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string(),
+                                    None,
+                                ),
+                            );
+
+                            return ready(Err(errors));
+                        }
+
+                        if lax == BOTH_PRE_VALIDATION_FAIL {
+                            errors
+                                .insert("lax".into(), (BOTH_PRE_VALIDATION_FAIL.to_string(), None));
+
+                            errors.insert(
+                                "lax_1".into(),
+                                (BOTH_PRE_VALIDATION_FAIL.to_string(), None),
+                            );
+                        }
+                    }
+
+                    if let Some(lax_1) = ctx.values().lax_1 {
+                        if errors.is_empty() && lax_1 == LAX_1_PRE_VALIDATION_FAIL {
+                            errors.insert(
+                                "lax_1".into(),
+                                (LAX_1_PRE_VALIDATION_FAIL.to_string(), None),
+                            );
+                        }
+                    }
+
+                    let result = if errors.is_empty() {
+                        Ok(None)
+                    } else {
+                        Err(errors)
+                    };
+
+                    ready(result)
+                })
+                .validate(|ctx: SharedIvoContext<DataInput, Data>, _| {
+                    let mut errors = HashMap::new();
+
+                    if let Some(lax) = ctx.input().lax {
+                        if lax == LAX_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS {
+                            errors.insert(
+                                "lax".into(),
+                                (
+                                    LAX_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string(),
+                                    None,
+                                ),
+                            );
+
+                            errors.insert(
+                                "lax_2".into(),
+                                (
+                                    LAX_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string(),
+                                    None,
+                                ),
+                            );
+
+                            errors.insert(
+                                UNKNOWN_FIELD.into(),
+                                (
+                                    LAX_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string(),
+                                    None,
+                                ),
+                            );
+
+                            return ready(Err(errors));
+                        }
+
+                        if lax == LAX_VALIDATION_FAIL {
+                            errors.insert("lax".into(), (LAX_VALIDATION_FAIL.to_string(), None));
+                        } else if lax == BOTH_VALIDATION_FAIL {
+                            errors.insert("lax".into(), (BOTH_VALIDATION_FAIL.to_string(), None));
+                            errors.insert("lax_1".into(), (BOTH_VALIDATION_FAIL.to_string(), None));
+                        }
+                    }
+
+                    let result = if errors.is_empty() {
+                        Ok(None)
+                    } else {
+                        Err(errors)
+                    };
+
+                    ready(result)
+                })
+            })
+        },
+    );
+
+    let model = schema.get_model();
+
+    let lax_2 = "lax_2_provided".to_string();
+
+    let r = model
+        .create(
+            &PartialDataInput {
+                lax: None,
+                lax_1: None,
+                lax_2: Some(lax_2.clone()),
+            },
+            None,
+        )
+        .await;
+
+    match r {
+        Ok((data, _)) => {
+            assert_eq!(
+                data,
+                Data {
+                    lax: default_lax_value.to_string(),
+                    lax_1: default_lax_1_value.to_string(),
+                    lax_2
+                },
+                "should not post-validate if none of the fields was provided"
+            );
+        }
+        _ => unreachable!(),
+    }
+
+    let lax = LAX_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string();
+
+    let r = model
+        .create(
+            &PartialDataInput {
+                lax: Some(lax.clone()),
+                lax_1: None,
+                lax_2: None,
+            },
+            None,
+        )
+        .await;
+
+    match r {
+        Err((p, _)) => {
+            assert!(p.get("lax_1").is_none());
+            assert!(p.get("lax_2").is_none());
+            assert!(p.get(UNKNOWN_FIELD).is_none());
+            assert_eq!(
+                p.get("lax").unwrap()[0].reason,
+                lax,
+                "should ignore unrelated errors returned from pre-validator in post-validation"
+            );
+        }
+        _ => unreachable!(),
+    }
+
+    let lax = LAX_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string();
+
+    let r = model
+        .create(
+            &PartialDataInput {
+                lax: Some(lax.clone()),
+                lax_1: None,
+                lax_2: None,
+            },
+            None,
+        )
+        .await;
+
+    match r {
+        Err((p, _)) => {
+            assert!(p.get("lax_1").is_none());
+            assert!(p.get("lax_2").is_none());
+            assert!(p.get(UNKNOWN_FIELD).is_none());
+            assert_eq!(
+                p.get("lax").unwrap()[0].reason,
+                lax,
+                "should ignore unrelated errors returned from post-validator"
+            );
+        }
+        _ => unreachable!(),
+    }
+
+    let lax_1 = LAX_1_PRE_VALIDATION_FAIL.to_string();
+
+    let r = model
+        .create(
+            &PartialDataInput {
+                lax: None,
+                lax_1: Some(lax_1.clone()),
+                lax_2: None,
+            },
+            None,
+        )
+        .await;
+
+    match r {
+        Err((p, _)) => {
+            assert!(p.get("lax").is_none());
+            assert!(p.get("lax_2").is_none());
+            assert_eq!(
+                p.get("lax_1").unwrap()[0].reason,
+                lax_1,
+                "should not create if one field has an error after pre-validator in post-validation"
+            );
+        }
+        _ => unreachable!(),
+    }
+
+    let lax = BOTH_PRE_VALIDATION_FAIL.to_string();
+
+    let r = model
+        .create(
+            &PartialDataInput {
+                lax: Some(lax.clone()),
+                lax_1: None,
+                lax_2: None,
+            },
+            None,
+        )
+        .await;
+
+    match r {
+        Err((p, _)) => {
+            assert!(p.get("lax_2").is_none());
+            assert_eq!(
+                p.get("lax").unwrap()[0].reason,
+                lax,
+                "should not create if any field has an error after pre-validator in post-validation"
+            );
+            assert_eq!(
+                p.get("lax_1").unwrap()[0].reason,
+                lax,
+                "should not create if any field has an error after pre-validator in post-validation"
+            );
+        }
+        _ => unreachable!(),
+    }
+
+    let lax = LAX_VALIDATION_FAIL.to_string();
+    let lax_2 = "lax_2_provided".to_string();
+
+    let r = model
+        .create(
+            &PartialDataInput {
+                lax: Some(lax.clone()),
+                lax_1: None,
+                lax_2: Some(lax_2),
+            },
+            None,
+        )
+        .await;
+
+    match r {
+        Err((p, _)) => {
+            assert!(p.get("lax_1").is_none());
+            assert!(p.get("lax_2").is_none());
+            assert_eq!(
+                p.get("lax").unwrap()[0].reason,
+                lax,
+                "should not create if one field has an error after post-validation"
+            );
+        }
+        _ => unreachable!(),
+    }
+
+    let lax = BOTH_VALIDATION_FAIL.to_string();
+    let lax_2 = "lax_2_provided".to_string();
+
+    let r = model
+        .create(
+            &PartialDataInput {
+                lax: Some(lax.clone()),
+                lax_1: None,
+                lax_2: Some(lax_2),
+            },
+            None,
+        )
+        .await;
+
+    match r {
+        Err((p, _)) => {
+            assert!(p.get("lax_2").is_none());
+            assert_eq!(
+                p.get("lax").unwrap()[0].reason,
+                lax,
+                "should not create if any field has an error after post-validation"
+            );
+            assert_eq!(
+                p.get("lax_1").unwrap()[0].reason,
+                lax,
+                "should not create if any field has an error after post-validation"
+            );
+        }
+        _ => unreachable!(),
+    }
+
+    // updates
+    let data = Data {
+        lax: default_lax_value.to_string(),
+        lax_1: default_lax_1_value.to_string(),
+        lax_2: default_lax_2_value.to_string(),
+    };
+
+    let lax_1 = LAX_1_PRE_VALIDATION_FAIL.to_string();
+
+    let data = Data {
+        lax_1: lax_1.clone(),
+        ..data
+    };
+
+    let r = model
+        .update(
+            &data,
+            &PartialDataInput {
+                lax: Some("lol".into()),
+                lax_1: None,
+                lax_2: None,
+            },
+            None,
+        )
+        .await;
+
+    match r {
+        Err((UpdateError::ValidationError(p), _)) => {
+            assert!(p.get("lax").is_none());
+            assert!(p.get("lax_2").is_none());
+            assert_eq!(
+                p.get("lax_1").unwrap()[0].reason,
+                lax_1,
+                "should not update if one field has an error after pre-validator in post-validation"
+            );
+        }
+        Err((UpdateError::NothingToUpdate, _)) => {
+            unreachable!("did not expected nothing to update")
+        }
+        _ => unreachable!("did not expect successful update"),
+    }
+
+    let lax = BOTH_PRE_VALIDATION_FAIL.to_string();
+
+    let r = model
+        .update(
+            &data,
+            &PartialDataInput {
+                lax: Some(lax.clone()),
+                lax_1: None,
+                lax_2: None,
+            },
+            None,
+        )
+        .await;
+
+    match r {
+        Err((UpdateError::ValidationError(p), _)) => {
+            assert!(p.get("lax_2").is_none());
+            assert_eq!(
+                p.get("lax").unwrap()[0].reason,
+                lax,
+                "should not create if any field has an error after pre-validator in post-validation"
+            );
+            assert_eq!(
+                p.get("lax_1").unwrap()[0].reason,
+                lax,
+                "should not create if any field has an error after pre-validator in post-validation"
+            );
+        }
+        _ => unreachable!(),
+    }
+
+    let lax = LAX_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string();
+
+    let r = model
+        .update(
+            &data,
+            &PartialDataInput {
+                lax: Some(lax.clone()),
+                lax_1: None,
+                lax_2: None,
+            },
+            None,
+        )
+        .await;
+
+    match r {
+        Err((UpdateError::ValidationError(p), _)) => {
+            assert!(p.get("lax_1").is_none());
+            assert!(p.get("lax_2").is_none());
+            assert!(p.get(UNKNOWN_FIELD).is_none());
+            assert_eq!(
+                p.get("lax").unwrap()[0].reason,
+                lax,
+                "should ignore unrelated errors returned from pre-validator in post-validation"
+            );
+        }
+        _ => unreachable!(),
+    }
+
+    let data = Data {
+        lax_1: default_lax_1_value.to_string(),
+        ..data
+    };
+
+    let lax = LAX_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string();
+
+    let r = model
+        .update(
+            &data,
+            &PartialDataInput {
+                lax: Some(lax.clone()),
+                lax_1: None,
+                lax_2: None,
+            },
+            None,
+        )
+        .await;
+
+    match r {
+        Err((UpdateError::ValidationError(p), _)) => {
+            assert!(p.get("lax_1").is_none());
+            assert!(p.get("lax_2").is_none());
+            assert!(p.get(UNKNOWN_FIELD).is_none());
+            assert_eq!(
+                p.get("lax").unwrap()[0].reason,
+                lax,
+                "should ignore unrelated errors returned from post-validator"
+            );
+        }
+        _ => unreachable!(),
+    }
+}
+
+async_test_matrix!(should_respect_post_validation_config);
+
+async fn should_respect_updated_values_returned_from_pre_validator_in_post_validation_config() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        lax: String,
+        lax_1: String,
+        lax_2: String,
+    }
+
+    #[derive(Debug, Clone, IvoStruct)]
+    struct DataInput {
+        lax: String,
+        lax_1: String,
+        lax_2: String,
+    }
+
+    const LAX_PRE_VALIDATED_WITH_UPDATED_VALUES: &str = "LAX_PRE_VALIDATED_WITH_UPDATED_VALUES";
+    const LAX_POST_VALIDATED_WITH_UPDATED_VALUES: &str = "LAX_POST_VALIDATED_WITH_UPDATED_VALUES";
+
+    const UPDATED_VALUE_FROM_PRE_VALIDATOR: &str = "UPDATED_VALUE_FROM_PRE_VALIDATOR";
+    const UPDATED_VALUE_FROM_POST_VALIDATOR: &str = "UPDATED_VALUE_FROM_POST_VALIDATOR";
+
+    let default_lax_value = "default_lax_value";
+    let default_lax_1_value = "default_lax_1_value";
+    let default_lax_2_value = "default_lax_2_value";
+
+    let schema: Schema<DataInput, Data> = Schema::new(
+        |f| {
+            f.set("lax", IvoField::LAX.default(default_lax_value.to_string()))
+                .set(
+                    "lax_1",
+                    IvoField::LAX.default(default_lax_1_value.to_string()),
+                )
+                .set(
+                    "lax_2",
+                    IvoField::LAX.default(default_lax_2_value.to_string()),
+                )
+        },
+        |o| {
+            o.post_validate(["lax", "lax_1"], |v| {
+                v.pre_validate(|ctx: SharedIvoContext<DataInput, Data>, _| {
+                    let mut updates = PartialDataInput::new();
+
+                    if let Some(lax) = ctx.input().lax {
+                        if lax == LAX_PRE_VALIDATED_WITH_UPDATED_VALUES {
+                            updates.set_lax(UPDATED_VALUE_FROM_PRE_VALIDATOR.into());
+                            updates.set_lax_1(UPDATED_VALUE_FROM_PRE_VALIDATOR.into());
+                        }
+                    }
+
+                    ready(Ok(updates.as_option()))
+                })
+                .validate(|ctx: SharedIvoContext<DataInput, Data>, _| {
+                    let mut updates = PartialDataInput::new();
+
+                    if let Some(lax) = ctx.input().lax {
+                        if lax == LAX_POST_VALIDATED_WITH_UPDATED_VALUES {
+                            updates.set_lax(UPDATED_VALUE_FROM_POST_VALIDATOR.into());
+                            updates.set_lax_1(UPDATED_VALUE_FROM_POST_VALIDATOR.into());
+                        }
+                    }
+
+                    ready(Ok(updates.as_option()))
+                })
+            })
+        },
+    );
+
+    let model = schema.get_model();
+
+    let lax = LAX_PRE_VALIDATED_WITH_UPDATED_VALUES.to_string();
+
+    let r = model
+        .create(
+            &PartialDataInput {
+                lax: Some(lax.clone()),
+                lax_1: None,
+                lax_2: None,
+            },
+            None,
+        )
+        .await;
+
+    match r {
+        Ok((data, _)) => {
+            assert_eq!(
+                data,
+                Data {
+                    lax: UPDATED_VALUE_FROM_PRE_VALIDATOR.to_string(),
+                    lax_1: UPDATED_VALUE_FROM_PRE_VALIDATOR.to_string(),
+                    lax_2: default_lax_2_value.to_string(),
+                },
+            );
+        }
+        _ => unreachable!(),
+    }
+
+    let lax = LAX_POST_VALIDATED_WITH_UPDATED_VALUES.to_string();
+
+    let r = model
+        .create(
+            &PartialDataInput {
+                lax: Some(lax.clone()),
+                lax_1: None,
+                lax_2: None,
+            },
+            None,
+        )
+        .await;
+
+    match r {
+        Ok((data, _)) => {
+            assert_eq!(
+                data,
+                Data {
+                    lax: UPDATED_VALUE_FROM_POST_VALIDATOR.to_string(),
+                    lax_1: UPDATED_VALUE_FROM_POST_VALIDATOR.to_string(),
+                    lax_2: default_lax_2_value.to_string(),
+                },
+            );
+        }
+        _ => unreachable!(),
+    }
+
+    // updates
+
+    let data = Data {
+        lax: default_lax_value.to_string(),
+        lax_1: default_lax_1_value.to_string(),
+        lax_2: default_lax_2_value.to_string(),
+    };
+
+    let lax = LAX_PRE_VALIDATED_WITH_UPDATED_VALUES.to_string();
+
+    let r = model
+        .update(
+            &data,
+            &PartialDataInput {
+                lax: Some(lax.clone()),
+                lax_1: None,
+                lax_2: None,
+            },
+            None,
+        )
+        .await;
+
+    match r {
+        Ok((updates, _)) => {
+            assert_eq!(
+                updates,
+                PartialData {
+                    lax: Some(UPDATED_VALUE_FROM_PRE_VALIDATOR.to_string()),
+                    lax_1: Some(UPDATED_VALUE_FROM_PRE_VALIDATOR.to_string()),
+                    lax_2: None,
+                },
+            );
+        }
+        _ => unreachable!(),
+    }
+
+    let lax = LAX_POST_VALIDATED_WITH_UPDATED_VALUES.to_string();
+
+    let r = model
+        .update(
+            &data,
+            &PartialDataInput {
+                lax: Some(lax.clone()),
+                lax_1: None,
+                lax_2: None,
+            },
+            None,
+        )
+        .await;
+
+    match r {
+        Ok((updates, _)) => {
+            assert_eq!(
+                updates,
+                PartialData {
+                    lax: Some(UPDATED_VALUE_FROM_POST_VALIDATOR.to_string()),
+                    lax_1: Some(UPDATED_VALUE_FROM_POST_VALIDATOR.to_string()),
+                    lax_2: None,
+                },
+            );
+        }
+        _ => unreachable!(),
+    }
+}
+
+async_test_matrix!(
+    should_respect_updated_values_returned_from_pre_validator_in_post_validation_config
+);

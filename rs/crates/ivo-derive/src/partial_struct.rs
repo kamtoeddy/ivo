@@ -81,6 +81,16 @@ pub fn generate_partial_struct<T: ToTokens>(
         }
     });
 
+    let construct_is_empty = fields.iter().map(|field| {
+        let field_name = &field.ident; // e.g., 'id'
+
+        quote! {
+            if self.#field_name.is_some() {
+                is_empty = false;
+            }
+        }
+    });
+
     let construct_enumerated_tuples = fields.iter().map(|field| {
         let field_name = &field.ident;
 
@@ -107,6 +117,7 @@ pub fn generate_partial_struct<T: ToTokens>(
                     self
                 }
 
+                #[inline(always)]
                 #vis fn #remove_method_name(&mut self) -> &mut Self {
                     self.#field_name = None;
 
@@ -128,6 +139,30 @@ pub fn generate_partial_struct<T: ToTokens>(
         impl #partial_struct_name {
             #vis fn new() -> Self {
                 Self::default()
+            }
+
+            #[inline(always)]
+            /// This is a utility method used to wrap the partial struct into an option.
+            ///
+            /// If every field has as value None, None is return, otherwise Some(self) is returned
+            #vis fn as_option(self) -> std::option::Option<Self> {
+                if self.is_empty() {
+                    None
+                } else {
+                    Some(self)
+                }
+            }
+
+            /// This is a utility method used to evaluate whether some
+            /// fields are not None.
+            ///
+            /// i.e: returns true if every field has as value None and false otherwise.
+            #vis fn is_empty(&self) -> bool {
+                let mut is_empty = true;
+
+                #( #construct_is_empty )*
+
+                is_empty
             }
         }
 

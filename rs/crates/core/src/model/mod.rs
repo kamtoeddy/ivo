@@ -510,29 +510,49 @@ impl<
         ctx: SharedIvoContext<I, O>,
         options: SharedRwCtxOptions<CtxOptions>,
     ) -> Result<Option<(I::Partial, O::Partial)>, ErrorTool::ErrorPayload> {
+        let raw_inputs = ctx.raw_input();
         let mut validators = Vec::with_capacity(fields_provided.fields.len());
+        let mut validated_inputs = ctx.input();
+        let mut validated_outputs = if ctx.is_update() {
+            ctx.changes()
+        } else {
+            ctx.values()
+        };
+        let mut has_updates = false;
 
         for field_info in fields_provided.fields.iter() {
             if let Some(InternalFieldConfig {
-                validator: Some(validator),
+                field_type,
+                validator,
                 ..
             }) = self.schema.field_configs.get(&field_info.config_name)
             {
-                validators.push((field_info, validator));
+                if let Some(validator) = validator {
+                    validators.push((field_info, validator));
+                } else if matches!(field_type, FieldType::Lax) {
+                    let field_name = &field_info.name;
+                    let value = raw_inputs.ivo_internal_get_erased_value(field_name);
+
+                    validated_inputs.ivo_internal_set(field_name, &value);
+                    validated_outputs.ivo_internal_set(field_name, &value);
+                    has_updates = true
+                }
             }
         }
 
         if validators.is_empty() {
+            if has_updates {
+                return Ok(Some((validated_inputs, validated_outputs)));
+            }
+
             return Ok(None);
         }
-
-        let mut validated_inputs = ctx.input();
 
         let tasks = validators.into_iter().map(async |(f, validator)| {
             (
                 f,
                 validator(
-                    validated_inputs.ivo_internal_get_erased_value(&f.name),
+                    raw_inputs.ivo_internal_get_erased_value(&f.name),
                     Arc::clone(&ctx),
                     Arc::clone(&options),
                 )
@@ -541,12 +561,6 @@ impl<
         });
 
         let mut error_tool = ErrorTool::new();
-        let mut validated_outputs = if ctx.is_update() {
-            ctx.changes()
-        } else {
-            ctx.values()
-        };
-        let mut has_updates = false;
 
         for (field_info, result) in join_all(tasks).await {
             let field_name = field_info.name.clone();
