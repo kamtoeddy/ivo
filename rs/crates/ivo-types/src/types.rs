@@ -13,10 +13,12 @@ use crate::DefaultFieldErrorMetadata;
 pub trait IvoStruct:
     Send + Sync + Sized + 'static + IvoWithPartialStruct + IvoStructMethods + Into<Self::Partial>
 {
+    #[inline(always)]
     fn append_updates(&mut self, updates: &Self::Partial) {
         self.ivo_internal_update_with(updates)
     }
 
+    #[inline(always)]
     fn clone_with_updates(&self, updates: &Self::Partial) -> Self {
         self.ivo_internal_clone_with_ref(updates)
     }
@@ -34,6 +36,7 @@ pub trait IvoStructMethods: IvoWithPartialStruct + Clone {
         updates: &Self::Partial,
     ) -> Option<Self::Partial>;
 
+    #[inline(always)]
     fn ivo_internal_clone_with(&self, updates: Self::Partial) -> Self {
         self.ivo_internal_clone_with_ref(&updates)
     }
@@ -104,10 +107,12 @@ impl Clone for Box<dyn CloneableAny> {
 
 pub type ErasedValue = Box<dyn CloneableAny>;
 
+#[inline(always)]
 pub fn erase_value<T: IvoFieldValue>(value: T) -> Box<dyn CloneableAny> {
     Box::new(value)
 }
 
+#[inline(always)]
 pub fn parse_value<T: IvoFieldValue>(e: &Box<dyn CloneableAny>) -> Option<T> {
     e.as_any().downcast_ref::<T>().cloned()
 }
