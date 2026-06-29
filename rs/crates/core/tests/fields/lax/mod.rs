@@ -247,13 +247,10 @@ async fn should_respect_the_required_rule() {
         .await;
 
     match r {
-        Err((e, _)) => match e {
-            UpdateError::ValidationError(payload) => assert_eq!(
-                payload.get("lax").unwrap()[0].reason,
-                "lax is required for this update"
-            ),
-            _ => unreachable!(),
-        },
+        Err((UpdateError::ValidationError(payload), _)) => assert_eq!(
+            payload.get("lax").unwrap()[0].reason,
+            "lax is required for this update"
+        ),
         _ => unreachable!(),
     }
 }
@@ -395,12 +392,9 @@ async fn should_not_update_if_primary_validation_fails() {
             .await;
 
         match r {
-            Err((e, _)) => match e {
-                UpdateError::ValidationError(p) => {
-                    assert_eq!(p.get("lax").unwrap()[0].reason, LAX_OUT_OF_RANGE_ERROR);
-                }
-                _ => unreachable!(),
-            },
+            Err((UpdateError::ValidationError(p), _)) => {
+                assert_eq!(p.get("lax").unwrap()[0].reason, LAX_OUT_OF_RANGE_ERROR)
+            }
             _ => unreachable!(),
         }
     }
@@ -604,15 +598,12 @@ async fn should_not_update_if_re_validation_fails() {
             .await;
 
         match r {
-            Err((e, _)) => match e {
-                UpdateError::ValidationError(p) => {
-                    assert_eq!(
-                        p.get("lax").unwrap()[0].reason,
-                        REVALIDATED_LAX_OUT_OF_RANGE_ERROR
-                    );
-                }
-                _ => unreachable!(),
-            },
+            Err((UpdateError::ValidationError(p), _)) => {
+                assert_eq!(
+                    p.get("lax").unwrap()[0].reason,
+                    REVALIDATED_LAX_OUT_OF_RANGE_ERROR
+                );
+            }
             _ => unreachable!(),
         }
     }
