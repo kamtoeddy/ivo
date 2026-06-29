@@ -1,4 +1,4 @@
-name: RS CI
+name: Rust CI
 
 on:
   push:
@@ -11,11 +11,11 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
-      - run: cd ./rs && cargo test -r
+      - run: cd ./rs && cargo test
 
   test-nightly:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@nightly
-      - run: cd ./rs && cargo test -r
+      - run: cd ./rs && cargo test
