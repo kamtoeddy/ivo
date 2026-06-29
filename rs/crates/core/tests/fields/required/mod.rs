@@ -11,7 +11,8 @@ mod on_success;
 // TODO:
 // [x] ignore_update
 // [x] readonly
-// [ ] required_error
+// [x] required_error
+// [x] required_error_fn
 // [ ] validate
 // [ ] re_validate
 // [x] on_delete
@@ -19,6 +20,195 @@ mod on_success;
 // [x] on_success
 // [ ] o.on_success
 // [ ] o.post_validate
+
+// required_error
+
+async fn should_respect_the_default_required_error_if_field_is_missing() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        required: i32,
+    }
+
+    #[derive(Debug, Clone, IvoStruct)]
+    struct DataInput {
+        required: i32,
+    }
+
+    let schema: Schema<DataInput, Data> = Schema::new(
+        |f| {
+            f.set(
+                "required",
+                IvoField::REQUIRED.validate(|_: i32, _, _| ready(Ok(None))),
+            )
+        },
+        |o| o,
+    );
+
+    let model = schema.get_model();
+
+    let required_error = "\"required\" is required!";
+
+    let r = model
+        .create(&PartialDataInput { required: None }, None)
+        .await;
+
+    match r {
+        Err((p, _)) => assert_eq!(p.get("required").unwrap()[0].reason, required_error),
+        _ => unreachable!("expected nothig to update error"),
+    }
+
+    let required = 2;
+
+    let r = model
+        .update(
+            &Data {
+                required: required - 1,
+            },
+            &PartialDataInput {
+                required: Some(required),
+            },
+            None,
+        )
+        .await;
+
+    match r {
+        Ok((data, _)) => assert_eq!(
+            data,
+            PartialData {
+                required: Some(required)
+            }
+        ),
+        _ => unreachable!("expected update to be successful"),
+    }
+}
+
+async_test_matrix!(should_respect_the_default_required_error_if_field_is_missing);
+
+async fn should_respect_custom_static_required_error_if_field_is_missing() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        required: i32,
+    }
+
+    #[derive(Debug, Clone, IvoStruct)]
+    struct DataInput {
+        required: i32,
+    }
+
+    let required_error = "Yooo! you did not provide: \"required\"";
+
+    let schema: Schema<DataInput, Data> = Schema::new(
+        |f| {
+            f.set(
+                "required",
+                IvoField::REQUIRED
+                    .required_error(required_error)
+                    .validate(|_: i32, _, _| ready(Ok(None))),
+            )
+        },
+        |o| o,
+    );
+
+    let model = schema.get_model();
+
+    let r = model
+        .create(&PartialDataInput { required: None }, None)
+        .await;
+
+    match r {
+        Err((p, _)) => assert_eq!(p.get("required").unwrap()[0].reason, required_error),
+        _ => unreachable!("expected nothig to update error"),
+    }
+
+    let required = 2;
+
+    let r = model
+        .update(
+            &Data {
+                required: required - 1,
+            },
+            &PartialDataInput {
+                required: Some(required),
+            },
+            None,
+        )
+        .await;
+
+    match r {
+        Ok((data, _)) => assert_eq!(
+            data,
+            PartialData {
+                required: Some(required)
+            }
+        ),
+        _ => unreachable!("expected update to be successful"),
+    }
+}
+
+async_test_matrix!(should_respect_custom_static_required_error_if_field_is_missing);
+
+async fn should_respect_custom_dynamic_required_error_if_field_is_missing() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        required: i32,
+    }
+
+    #[derive(Debug, Clone, IvoStruct)]
+    struct DataInput {
+        required: i32,
+    }
+
+    const REQUIRED_ERROR: &str = "Yooo! you did not provide: \"required\"";
+
+    let schema: Schema<DataInput, Data> = Schema::new(
+        |f| {
+            f.set(
+                "required",
+                IvoField::REQUIRED
+                    .required_error_fn(|_, _| REQUIRED_ERROR.to_string())
+                    .validate(|_: i32, _, _| ready(Ok(None))),
+            )
+        },
+        |o| o,
+    );
+
+    let model = schema.get_model();
+
+    let r = model
+        .create(&PartialDataInput { required: None }, None)
+        .await;
+
+    match r {
+        Err((p, _)) => assert_eq!(p.get("required").unwrap()[0].reason, REQUIRED_ERROR),
+        _ => unreachable!("expected nothig to update error"),
+    }
+
+    let required = 2;
+
+    let r = model
+        .update(
+            &Data {
+                required: required - 1,
+            },
+            &PartialDataInput {
+                required: Some(required),
+            },
+            None,
+        )
+        .await;
+
+    match r {
+        Ok((data, _)) => assert_eq!(
+            data,
+            PartialData {
+                required: Some(required)
+            }
+        ),
+        _ => unreachable!("expected update to be successful"),
+    }
+}
+
+async_test_matrix!(should_respect_custom_dynamic_required_error_if_field_is_missing);
 
 // validators
 

@@ -3,7 +3,7 @@
 use futures::future::{BoxFuture, FutureExt};
 use ivo_types::types::{erase_value, parse_or_panic, ErasedValue};
 
-use std::future::Future;
+use std::future::{ready, Future};
 
 use crate::{
     schema::types::{DeleteHandler, FailureHandler, IvoFieldValue, SuccessHandler},
@@ -107,14 +107,12 @@ pub trait IntoRequiredErrorResolver<I: IvoStruct, O: IvoStruct, CtxOptions> {
     fn into_resolver(self) -> RequiredResolver<I, O, CtxOptions>;
 }
 
-impl<F, Fut, I: IvoStruct, O: IvoStruct, CtxOptions> IntoRequiredErrorResolver<I, O, CtxOptions>
-    for F
+impl<F, I: IvoStruct, O: IvoStruct, CtxOptions> IntoRequiredErrorResolver<I, O, CtxOptions> for F
 where
-    F: Fn(SharedIvoContext<I, O>, SharedRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
-    Fut: Future<Output = String> + Send + 'static,
+    F: Fn(SharedIvoContext<I, O>, SharedRwCtxOptions<CtxOptions>) -> String + Send + Sync + 'static,
 {
     fn into_resolver(self) -> RequiredResolver<I, O, CtxOptions> {
-        Box::new(move |ctx, o| Box::pin(self(ctx, o).map(Some)))
+        Box::new(move |ctx, o| Box::pin(ready(Some(self(ctx, o)))))
     }
 }
 
