@@ -207,6 +207,8 @@ impl<
                     alias,
                     ..
                 } => {
+                    let field_name_str = field_name.as_str();
+
                     if let Some(alias) = alias {
                         if field_name == alias {
                             panic!("\n{COLOR_RED}[{field_name}]: virtual alias name must be different from field name{STYLE_RESET}\n");
@@ -239,8 +241,6 @@ impl<
                                 );
                             }
                         }
-
-                        let field_name_str = field_name.as_str();
 
                         for (name, config) in config_tuples.iter() {
                             if name != alias {
@@ -276,6 +276,24 @@ impl<
                     if !input_field_names.contains(field_name) {
                         panic!(
                                 "\n{COLOR_RED}[{field_name}]: is an input field. It must be present on {input_struct_name}{STYLE_RESET}\n");
+                    }
+
+                    let mut has_sufficent_dependencies = false;
+
+                    for (_, config) in config_tuples.iter() {
+                        if let Some(ref depends_on) = config.depends_on {
+                            if depends_on.iter().any(|parent| parent == &field_name_str) {
+                                has_sufficent_dependencies = true;
+
+                                break;
+                            }
+
+                            continue;
+                        }
+                    }
+
+                    if !has_sufficent_dependencies {
+                        panic!("\n{COLOR_RED}[{field_name}]: virtual fields are expected to have at least one dependency, but found none{STYLE_RESET}\n");
                     }
 
                     continue;

@@ -2,6 +2,44 @@ use ivo::{DefaultErrorTool, IvoField, IvoStruct, Schema};
 use std::{future::ready, panic};
 
 #[test]
+#[should_panic(
+    expected = "[virtual_field]: virtual fields are expected to have at least one dependency, but found none"
+)]
+fn should_reject_if_virtual_field_does_not_have_any_dependency() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        id: i32,
+        dependent: i32,
+        lax: String,
+    }
+
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct DataInput {
+        lax: String,
+        virtual_field: String,
+    }
+
+    let _: Schema<DataInput, Data> = Schema::new(
+        |f| {
+            f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
+                .set("lax", IvoField::LAX.default(1))
+                .set(
+                    "dependent",
+                    IvoField::DEPENDENT
+                        .default(1)
+                        .depends_on(["lax"])
+                        .resolve(|_, _| ready(2)),
+                )
+                .set(
+                    "virtual_field",
+                    IvoField::VIRTUAL.validate(|_: String, _, _| ready(Ok(None))),
+                )
+        },
+        |o| o,
+    );
+}
+
+#[test]
 #[should_panic(expected = "[virtual_field]: virtual alias name must be different from field name")]
 fn should_reject_with_same_alias_name() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
@@ -414,7 +452,7 @@ fn should_allow_virtuals_with_alias_as_direct_dependent_field() {
                     )
                     .set(
                         "virtual_field1",
-                        IvoField::VIRTUAL.validate(|v: String, _, _| ready(Ok(Some(v)))),
+                        IvoField::VIRTUAL.validate(|_: String, _, _| ready(Ok(None))),
                     )
             },
             |o| o,
@@ -495,7 +533,7 @@ fn should_reject_if_no_alias_is_provided_and_field_name_does_not_exist_on_input_
                 )
                 .set(
                     "virtual_field",
-                    IvoField::VIRTUAL.validate(|v: String, _, _| ready(Ok(Some(v)))),
+                    IvoField::VIRTUAL.validate(|_: String, _, _| ready(Ok(None))),
                 )
         },
         |o| o,
@@ -531,7 +569,7 @@ fn should_allow_if_no_alias_is_provided_but_field_name_exists_on_input_struct() 
                     )
                     .set(
                         "virtual_field",
-                        IvoField::VIRTUAL.validate(|v: String, _, _| ready(Ok(Some(v)))),
+                        IvoField::VIRTUAL.validate(|_: String, _, _| ready(Ok(None))),
                     )
             },
             |o| o,
