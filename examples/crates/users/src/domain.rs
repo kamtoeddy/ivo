@@ -12,7 +12,7 @@ use ivo::{
 };
 use serde::Serialize;
 
-use crate::utils::{
+use shared::{
     slugify::{SlugifiedString, slugify},
     styled_text::Stylable,
 };

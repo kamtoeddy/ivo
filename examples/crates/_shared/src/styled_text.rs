@@ -2,8 +2,8 @@ use std::fmt;
 
 pub enum TextStyle {
     ColorBlue,
-    // ColorGreen,
-    // ColorYellow,
+    ColorGreen,
+    ColorYellow,
     ColorRed,
     // ColorInversed,
     FontBold = 5,
@@ -15,8 +15,8 @@ impl TextStyle {
     pub fn to_ansi(&self) -> &'static str {
         match self {
             Self::ColorRed => "\x1b[31m",
-            // Self::ColorGreen => "\x1b[32m",
-            // Self::ColorYellow => "\x1b[33m",
+            Self::ColorGreen => "\x1b[32m",
+            Self::ColorYellow => "\x1b[33m",
             Self::ColorBlue => "\x1b[34m",
             Self::FontBold => "\x1b[1m",
             // Self::FontUnderlined => "\x1b[4m",
@@ -55,13 +55,13 @@ pub trait Stylable: fmt::Display + Sized {
         self.colored(TextStyle::ColorBlue)
     }
 
-    // fn colored_green(&self) -> Styled<'_, Self> {
-    //     self.colored(TextStyle::ColorGreen)
-    // }
+    fn colored_green(&self) -> Styled<'_, Self> {
+        self.colored(TextStyle::ColorGreen)
+    }
 
-    // fn colored_yellow(&self) -> Styled<'_, Self> {
-    //     self.colored(TextStyle::ColorYellow)
-    // }
+    fn colored_yellow(&self) -> Styled<'_, Self> {
+        self.colored(TextStyle::ColorYellow)
+    }
 
     fn colored_red(&self) -> Styled<'_, Self> {
         self.colored(TextStyle::ColorRed)

@@ -349,21 +349,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d0a5c400df2834b80a4c3327b3aad3a4c4cd4de0629063962b03235697506a28"
 
 [[package]]
-name = "demos"
-version = "0.0.0"
-dependencies = [
- "async-std",
- "ivo",
- "regex",
- "reqwest",
- "serde",
- "serde_json",
- "smol",
- "tokio",
- "unicode-normalization",
-]
-
-[[package]]
 name = "displaydoc"
 version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1082,6 +1067,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "places"
+version = "0.0.0"
+dependencies = [
+ "async-std",
+ "ivo",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "shared",
+ "smol",
+ "tokio",
+]
+
+[[package]]
 name = "polling"
 version = "3.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1514,6 +1513,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "shared"
+version = "0.0.0"
+dependencies = [
+ "regex",
+ "serde",
+ "unicode-normalization",
+]
+
+[[package]]
 name = "shlex"
 version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1884,6 +1892,19 @@ dependencies = [
  "idna",
  "percent-encoding",
  "serde",
+]
+
+[[package]]
+name = "users"
+version = "0.0.0"
+dependencies = [
+ "async-std",
+ "ivo",
+ "serde",
+ "serde_json",
+ "shared",
+ "smol",
+ "tokio",
 ]
 
 [[package]]

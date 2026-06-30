@@ -1,14 +1,28 @@
 use ivo::{IvoStruct, UpdateError};
+use shared::styled_text::Stylable;
 use std::time::Instant;
 
 mod domain;
 
-use crate::{
-    places::domain::{Coodinates, PLACE_MODEL, PartialPlaceInput, Place, PlacesCtxOptions},
-    utils::styled_text::Stylable,
-};
+use crate::domain::{Coodinates, PLACE_MODEL, PartialPlaceInput, Place, PlacesCtxOptions};
 
-pub async fn run_places_demo() {
+// #[tokio::main]
+#[async_std::main]
+async fn main() {
+    run_example().await;
+}
+
+// use smol::io;
+
+// fn main() -> io::Result<()> {
+//     smol::block_on(async {
+//         run_example().await;
+
+//         Ok(())
+//     })
+// }
+
+async fn run_example() {
     let timer = Instant::now();
 
     let input = PartialPlaceInput {

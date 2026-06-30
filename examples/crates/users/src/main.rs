@@ -1,14 +1,28 @@
 use ivo::{IvoStruct, UpdateError};
+use shared::styled_text::Stylable;
 use std::{sync::LazyLock, time::Instant};
 
 mod domain;
 
-use crate::{
-    users::domain::{PartialUserInput, USER_MODEL, User, UserCtxOptions, UserRole},
-    utils::styled_text::Stylable,
-};
+use crate::domain::{PartialUserInput, USER_MODEL, User, UserCtxOptions, UserRole};
 
-pub async fn run_users_demo() {
+// #[tokio::main]
+#[async_std::main]
+async fn main() {
+    run_example().await;
+}
+
+// use smol::io;
+
+// fn main() -> io::Result<()> {
+//     smol::block_on(async {
+//         run_example().await;
+
+//         Ok(())
+//     })
+// }
+
+async fn run_example() {
     // println!("runner\n\n");
     LazyLock::force(&USER_MODEL);
 
