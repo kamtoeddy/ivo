@@ -8,7 +8,7 @@ use std::{future::ready, panic};
 fn should_reject_if_parent_array_is_empty() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
-        dependent: String,
+        dependent: i32,
         lax: String,
         required: String,
         updated_at: String,
@@ -49,7 +49,7 @@ fn should_reject_dependency_of_created_at_field_with_default_name() {
     struct Data {
         id: i32,
         created_at: String,
-        dependent: String,
+        dependent: i32,
         lax: String,
         required: String,
         updated_at: String,
@@ -95,7 +95,7 @@ fn should_reject_dependency_of_created_at_field_with_custom_name() {
     struct Data {
         id: i32,
         custom_created_at: String,
-        dependent: String,
+        dependent: i32,
         lax: String,
         required: String,
         updated_at: String,
@@ -141,7 +141,7 @@ fn should_reject_dependency_of_updated_at_field_with_default_name() {
     struct Data {
         id: i32,
         created_at: String,
-        dependent: String,
+        dependent: i32,
         lax: String,
         required: String,
         updated_at: String,
@@ -183,7 +183,7 @@ fn should_reject_dependency_of_updated_at_field_with_custom_name() {
     struct Data {
         id: i32,
         created_at: String,
-        dependent: String,
+        dependent: i32,
         lax: String,
         required: String,
         custom_updated_at: String,
@@ -227,7 +227,7 @@ fn should_reject_dependency_of_updated_at_field_with_custom_name() {
 fn should_reject_if_any_parent_field_provided_does_not_belong_on_schema() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
-        dependent: String,
+        dependent: i32,
         lax: String,
         required: String,
         updated_at: String,
@@ -264,7 +264,7 @@ fn should_reject_if_any_parent_field_provided_does_not_belong_on_schema() {
 fn should_reject_if_any_parent_field_name_is_same_as_dependent_field_name() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
-        dependent: String,
+        dependent: i32,
         lax: String,
         required: String,
         updated_at: String,
@@ -303,7 +303,7 @@ fn should_reject_if_any_parent_field_name_is_same_as_dependent_field_name() {
 fn should_reject_if_duplicate_parent_fields_are_provided() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
-        dependent: String,
+        dependent: i32,
         lax: String,
         required: String,
         updated_at: String,
@@ -341,7 +341,7 @@ fn should_reject_dependency_of_constant_fields() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
         id: i32,
-        dependent: String,
+        dependent: i32,
         lax: String,
         required: String,
         updated_at: String,
@@ -555,7 +555,7 @@ fn should_reject_any_deeply_circular_dependencies() {
 fn should_allow_dependency_on_normal_lax_or_required_fields() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
-        dependent: String,
+        dependent: i32,
         lax: String,
         required: String,
         updated_at: String,
@@ -641,8 +641,8 @@ fn should_allow_dependency_on_normal_lax_or_required_fields() {
 fn should_allow_dependency_on_other_dependent_fields() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
-        dependent: String,
-        dependent1: String,
+        dependent: i32,
+        dependent1: i32,
         lax: String,
         required: String,
         updated_at: String,
@@ -719,8 +719,8 @@ fn should_allow_dependency_on_other_dependent_fields() {
 fn should_allow_dependency_on_virtual_fields() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
-        dependent: String,
-        dependent1: String,
+        dependent: i32,
+        dependent1: i32,
         lax: String,
         required: String,
         updated_at: String,
@@ -875,7 +875,7 @@ fn should_allow_dependency_on_virtual_fields_with_aliases() {
     let result = panic::catch_unwind(|| {
         #[derive(Debug, Clone, PartialEq, IvoStruct)]
         struct Data {
-            dependent: String,
+            dependent: i32,
             lax: String,
             required: String,
             updated_at: String,
@@ -919,7 +919,7 @@ fn should_allow_dependency_on_virtual_fields_with_aliases() {
     let result = panic::catch_unwind(|| {
         #[derive(Debug, Clone, PartialEq, IvoStruct)]
         struct Data {
-            dependent: String,
+            dependent: i32,
             lax: String,
             required: String,
             updated_at: String,

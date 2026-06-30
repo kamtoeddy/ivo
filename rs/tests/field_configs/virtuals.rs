@@ -45,7 +45,7 @@ fn should_reject_with_same_alias_name() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
         id: i32,
-        dependent: String,
+        dependent: i32,
     }
 
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
@@ -82,7 +82,7 @@ fn should_reject_with_alias_as_non_dependent_field() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
         id: i32,
-        dependent: String,
+        dependent: i32,
         lax: String,
     }
 
@@ -122,8 +122,8 @@ fn should_reject_with_alias_as_unrelated_dependent_field() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
         id: i32,
-        dependent: String,
-        dependent1: String,
+        dependent: i32,
+        dependent1: i32,
         lax: String,
     }
 
@@ -298,7 +298,7 @@ fn should_reject_if_alias_already_used() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
         id: i32,
-        dependent: String,
+        dependent: i32,
         lax: String,
     }
 
@@ -344,7 +344,7 @@ fn should_reject_if_alias_does_not_exist_on_input_struct() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
         id: i32,
-        dependent: String,
+        dependent: i32,
         lax: String,
     }
 
@@ -383,7 +383,7 @@ fn should_reject_if_both_alias_and_field_name_exist_on_input_struct() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
         id: i32,
-        dependent: String,
+        dependent: i32,
         lax: String,
     }
 
@@ -421,7 +421,7 @@ fn should_allow_virtuals_with_alias_as_direct_dependent_field() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
         id: i32,
-        dependent: String,
+        dependent: i32,
         lax: String,
     }
 
@@ -467,7 +467,7 @@ fn should_allow_virtuals_with_alias_as_non_field_name() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
         id: i32,
-        dependent: String,
+        dependent: i32,
         lax: String,
     }
 
@@ -511,7 +511,7 @@ fn should_reject_if_no_alias_is_provided_and_field_name_does_not_exist_on_input_
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
         id: i32,
-        dependent: String,
+        dependent: i32,
         lax: String,
     }
 
@@ -545,7 +545,7 @@ fn should_allow_if_no_alias_is_provided_but_field_name_exists_on_input_struct() 
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
         id: i32,
-        dependent: String,
+        dependent: i32,
         lax: String,
     }
 
