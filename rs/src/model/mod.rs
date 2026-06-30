@@ -906,22 +906,8 @@ impl<
             match config {
                 InternalFieldConfig {
                     field_type: FieldType::Dependent,
-                    default: Some(ValueResolverWithMiniContext::Static(default_value)),
-                    ignore_update: Some(IsFieldProvisionEnabled::Readonly),
-                    ..
-                } => {
-                    // readonly means: don't update if value has changed
-                    // i.e: prev_value != default_value
-                    if is_update
-                        && !previous_values.ivo_internal_is_value_equal(field_name, default_value)
-                    {
-                        continue;
-                    }
-                }
-                InternalFieldConfig {
-                    field_type: FieldType::Dependent,
                     depends_on,
-                    resolver,
+                    resolver: Some(ref resolver),
                     ..
                 } if depends_on
                     .as_ref()
@@ -929,7 +915,30 @@ impl<
                     .iter()
                     .any(|parent| fields_changed.contains(&parent.to_string())) =>
                 {
-                    resolvers.push((field_name, resolver.as_ref().unwrap()));
+                    if !is_update {
+                        resolvers.push((field_name, resolver));
+
+                        continue;
+                    }
+
+                    // handle readonly during updates
+                    if let InternalFieldConfig {
+                        field_type: FieldType::Dependent,
+                        default: Some(ValueResolverWithMiniContext::Static(default_value)),
+                        ignore_update: Some(IsFieldProvisionEnabled::Readonly),
+                        ..
+                    } = config
+                    {
+                        // readonly means: don't update if value has changed
+                        // i.e: only update if prev_value == default_value
+                        if previous_values.ivo_internal_is_value_equal(field_name, default_value) {
+                            resolvers.push((field_name, resolver));
+                        }
+
+                        continue;
+                    }
+
+                    resolvers.push((field_name, resolver));
                 }
                 _ => {}
             }

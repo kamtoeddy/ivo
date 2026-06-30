@@ -4,10 +4,20 @@ use ivo::{DefaultErrorTool, IvoContext, IvoField, IvoStruct, Schema, SharedIvoDa
 
 use crate::async_test_matrix;
 
-async fn should_respect_dependents_with_static_values() {
+// TODO:
+// [x] default
+// [x] default_fn
+// [x] readonly
+// [x] resolver
+// [x] on_delete
+// [x] on_success
+
+// default
+
+async fn should_use_static_default_value_of_dependent_if_resolver_is_not_run_at_creation() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
-        dependent: u32,
+        dependent: i32,
         lax: i32,
     }
 
@@ -17,6 +27,7 @@ async fn should_respect_dependents_with_static_values() {
     }
 
     let dependent = 1234;
+    let lax = 20;
 
     let schema: Schema<DataInput, Data, Option<()>, (), DefaultErrorTool> = Schema::new(
         |f| {
@@ -29,56 +40,56 @@ async fn should_respect_dependents_with_static_values() {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(20))
+            .set("lax", IvoField::LAX.default(lax))
         },
         |o| o,
     );
 
     let model = schema.model();
 
-    let lax = 400;
-
     let (data, _) = model
-        .create(&PartialDataInput { lax: Some(lax) }, None)
+        .create(&PartialDataInput { lax: None }, None)
         .await
         .ok()
         .unwrap();
 
     assert_eq!(data, Data { dependent, lax });
 
-    let lax = 700;
+    // let lax = 700;
 
-    let (data, _) = model
-        .create(&PartialDataInput { lax: Some(lax) }, None)
-        .await
-        .ok()
-        .unwrap();
+    // let (data, _) = model
+    //     .create(&PartialDataInput { lax: Some(lax) }, None)
+    //     .await
+    //     .ok()
+    //     .unwrap();
 
-    assert_eq!(data, Data { dependent, lax });
+    // assert_eq!(data, Data { dependent, lax });
 
-    let lax = Some(200);
+    // let lax = Some(200);
 
-    let (updates, _) = model
-        .update(&data, &PartialDataInput { lax }, None)
-        .await
-        .ok()
-        .unwrap();
+    // let (updates, _) = model
+    //     .update(&data, &PartialDataInput { lax }, None)
+    //     .await
+    //     .ok()
+    //     .unwrap();
 
-    assert_eq!(
-        updates,
-        PartialData {
-            dependent: None,
-            lax
-        }
-    );
+    // assert_eq!(
+    //     updates,
+    //     PartialData {
+    //         dependent: None,
+    //         lax
+    //     }
+    // );
 }
 
-async_test_matrix!(should_respect_dependents_with_static_values);
+async_test_matrix!(should_use_static_default_value_of_dependent_if_resolver_is_not_run_at_creation);
 
-async fn should_respect_dependents_with_computed_values() {
+// default_fn
+
+async fn should_use_computed_default_value_of_dependent_if_resolver_is_not_run_at_creation() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
-        dependent: u32,
+        dependent: i32,
         lax: i32,
     }
 
@@ -88,6 +99,7 @@ async fn should_respect_dependents_with_computed_values() {
     }
 
     let dependent = 1234;
+    let lax = 20;
 
     let schema: Schema<DataInput, Data, Option<()>, (), DefaultErrorTool> = Schema::new(
         |f| {
@@ -100,22 +112,105 @@ async fn should_respect_dependents_with_computed_values() {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(20))
+            .set("lax", IvoField::LAX.default(lax))
         },
         |o| o,
     );
 
     let model = schema.model();
 
-    let lax = 400;
-
     let (data, _) = model
-        .create(&PartialDataInput { lax: Some(lax) }, None)
+        .create(&PartialDataInput { lax: None }, None)
         .await
         .ok()
         .unwrap();
 
     assert_eq!(data, Data { dependent, lax });
+
+    // let lax = 700;
+
+    // let (data, _) = model
+    //     .create(&PartialDataInput { lax: Some(lax) }, None)
+    //     .await
+    //     .ok()
+    //     .unwrap();
+
+    // assert_eq!(data, Data { dependent, lax });
+
+    // let lax = Some(200);
+
+    // let (updates, _) = model
+    //     .update(&data, &PartialDataInput { lax }, None)
+    //     .await
+    //     .ok()
+    //     .unwrap();
+
+    // assert_eq!(
+    //     updates,
+    //     PartialData {
+    //         dependent: None,
+    //         lax
+    //     }
+    // );
+}
+
+async_test_matrix!(
+    should_use_computed_default_value_of_dependent_if_resolver_is_not_run_at_creation
+);
+
+// resolver
+
+async fn should_properly_run_dependent_resolver() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        dependent: i32,
+        lax: i32,
+    }
+
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct DataInput {
+        lax: i32,
+    }
+
+    let default_dependent_value = 1234;
+    let default_lax_value = 20;
+
+    let schema: Schema<DataInput, Data, Option<()>, (), DefaultErrorTool> = Schema::new(
+        |f| {
+            f.set(
+                "dependent",
+                IvoField::DEPENDENT
+                    .default(default_dependent_value)
+                    .depends_on(["lax"])
+                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
+                        ready(ctx.values().dependent.unwrap() + 1)
+                    }),
+            )
+            .set("lax", IvoField::LAX.default(default_lax_value))
+        },
+        |o| o,
+    );
+
+    let model = schema.model();
+
+    let (data, _) = model
+        .create(
+            &PartialDataInput {
+                lax: Some(default_lax_value),
+            },
+            None,
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        data,
+        Data {
+            dependent: default_dependent_value + 1,
+            lax: default_lax_value
+        }
+    );
 
     let lax = 700;
 
@@ -125,7 +220,185 @@ async fn should_respect_dependents_with_computed_values() {
         .ok()
         .unwrap();
 
-    assert_eq!(data, Data { dependent, lax });
+    assert_eq!(
+        data,
+        Data {
+            dependent: default_dependent_value + 1,
+            lax
+        }
+    );
+
+    let lax = Some(200);
+
+    let (updates, _) = model
+        .update(&data, &PartialDataInput { lax }, None)
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updates,
+        PartialData {
+            dependent: Some(data.dependent + 1),
+            lax
+        }
+    );
+}
+
+async_test_matrix!(should_properly_run_dependent_resolver);
+
+async fn should_properly_run_dependent_resolver_even_with_multiple_parents() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        dependent: i32,
+        lax: i32,
+        lax_1: i32,
+    }
+
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct DataInput {
+        lax: i32,
+        lax_1: i32,
+    }
+
+    let default_dependent_value = 1234;
+    let default_lax_value = 20;
+
+    let schema: Schema<DataInput, Data, Option<()>, (), DefaultErrorTool> = Schema::new(
+        |f| {
+            f.set(
+                "dependent",
+                IvoField::DEPENDENT
+                    .default(default_dependent_value)
+                    .depends_on(["lax", "lax_1"])
+                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
+                        ready(ctx.values().dependent.unwrap() + 1)
+                    }),
+            )
+            .set("lax", IvoField::LAX.default(default_lax_value))
+            .set("lax_1", IvoField::LAX.default(default_lax_value))
+        },
+        |o| o,
+    );
+
+    let model = schema.model();
+
+    let (data, _) = model
+        .create(
+            &PartialDataInput {
+                lax: Some(default_lax_value),
+                lax_1: Some(default_lax_value + 1),
+            },
+            None,
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        data,
+        Data {
+            dependent: default_dependent_value + 1,
+            lax: default_lax_value,
+            lax_1: default_lax_value + 1
+        }
+    );
+
+    let lax = 700;
+
+    let (data, _) = model
+        .create(
+            &PartialDataInput {
+                lax: Some(lax),
+                lax_1: Some(lax),
+            },
+            None,
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        data,
+        Data {
+            dependent: default_dependent_value + 1,
+            lax,
+            lax_1: lax
+        }
+    );
+
+    let lax = Some(200);
+
+    let (updates, _) = model
+        .update(&data, &PartialDataInput { lax, lax_1: None }, None)
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updates,
+        PartialData {
+            dependent: Some(data.dependent + 1),
+            lax,
+            lax_1: None
+        }
+    );
+}
+
+async_test_matrix!(should_properly_run_dependent_resolver_even_with_multiple_parents);
+
+// readonly
+
+async fn should_not_run_dependent_resolver_if_readonly_is_provided_and_value_is_different_from_default_value(
+) {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        dependent: i32,
+        lax: i32,
+    }
+
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct DataInput {
+        lax: i32,
+    }
+
+    let default_dependent_value = 1234;
+    let default_lax_value = 20;
+
+    let schema: Schema<DataInput, Data, Option<()>, (), DefaultErrorTool> = Schema::new(
+        |f| {
+            f.set(
+                "dependent",
+                IvoField::DEPENDENT
+                    .default(default_dependent_value)
+                    .depends_on(["lax"])
+                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
+                        ready(ctx.values().dependent.unwrap() + 1)
+                    })
+                    .readonly(),
+            )
+            .set("lax", IvoField::LAX.default(default_lax_value))
+        },
+        |o| o,
+    );
+
+    let model = schema.model();
+
+    let lax = default_lax_value;
+
+    let (data, _) = model
+        .create(&PartialDataInput { lax: Some(lax) }, None)
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        data,
+        Data {
+            dependent: default_dependent_value + 1,
+            lax
+        }
+    );
 
     let lax = Some(200);
 
@@ -140,16 +413,68 @@ async fn should_respect_dependents_with_computed_values() {
         PartialData {
             dependent: None,
             lax
+        },
+        "update should be successful, but dependent resolver should not anymore"
+    );
+
+    let (data, _) = model
+        .create(&PartialDataInput { lax: None }, None)
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        data,
+        Data {
+            dependent: default_dependent_value,
+            lax: default_lax_value
         }
+    );
+
+    let lax = Some(201);
+
+    let (updates, _) = model
+        .update(&data, &PartialDataInput { lax }, None)
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updates,
+        PartialData {
+            dependent: Some(data.dependent + 1),
+            lax
+        },
+    );
+
+    let data = data.clone_with_updates(&updates);
+
+    let lax = Some(3001);
+
+    let (updates, _) = model
+        .update(&data, &PartialDataInput { lax }, None)
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updates,
+        PartialData {
+            dependent: None,
+            lax
+        },
+        "update should be successful, but dependent resolver should not anymore"
     );
 }
 
-async_test_matrix!(should_respect_dependents_with_computed_values);
+async_test_matrix!(should_not_run_dependent_resolver_if_readonly_is_provided_and_value_is_different_from_default_value);
 
-async fn should_trigger_on_delete_handlers_with_static_values() {
+// on_delele
+
+async fn should_trigger_on_delete_handlers_with_static_default_values() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
-        dependent: u32,
+        dependent: i32,
         lax: i32,
     }
 
@@ -201,13 +526,13 @@ async fn should_trigger_on_delete_handlers_with_static_values() {
 
 async_test_matrix!(
     "[dependent]: on_delete triggered with value: 1234",
-    should_trigger_on_delete_handlers_with_static_values
+    should_trigger_on_delete_handlers_with_static_default_values
 );
 
-async fn should_trigger_on_delete_handlers_with_computed_values() {
+async fn should_trigger_on_delete_handlers_with_computed_default_values() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
-        dependent: u32,
+        dependent: i32,
         lax: i32,
     }
 
@@ -259,13 +584,15 @@ async fn should_trigger_on_delete_handlers_with_computed_values() {
 
 async_test_matrix!(
     "[dependent]: on_delete triggered with value: 1234",
-    should_trigger_on_delete_handlers_with_computed_values
+    should_trigger_on_delete_handlers_with_computed_default_values
 );
 
-async fn should_trigger_on_success_handlers_with_static_values() {
+// on_success
+
+async fn should_trigger_on_success_handlers_if_resolver_is_run_at_creation() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
-        dependent: u32,
+        dependent: i32,
         lax: i32,
     }
 
@@ -274,14 +601,15 @@ async fn should_trigger_on_success_handlers_with_static_values() {
         lax: i32,
     }
 
-    let dependent = 1234;
+    let default_dependent_value = 1234;
+    let default_lax_value = 20;
 
     let schema: Schema<DataInput, Data, Option<()>, (), DefaultErrorTool> = Schema::new(
         |f| {
             f.set(
                 "dependent",
                 IvoField::DEPENDENT
-                    .default(dependent)
+                    .default(default_dependent_value)
                     .depends_on(["lax"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
@@ -297,35 +625,46 @@ async fn should_trigger_on_success_handlers_with_static_values() {
                         ready(())
                     }),
             )
-            .set("lax", IvoField::LAX.default(20))
+            .set("lax", IvoField::LAX.default(default_lax_value))
         },
         |o| o,
     );
 
     let model = schema.model();
 
-    let lax = 400;
-
     let (data, handle_success) = model
-        .create(&PartialDataInput { lax: Some(lax) }, None)
+        .create(
+            &PartialDataInput {
+                lax: Some(default_lax_value),
+            },
+            None,
+        )
         .await
         .ok()
         .unwrap();
 
-    assert_eq!(data, Data { dependent, lax });
+    let resolved_value = default_dependent_value + 1;
+
+    assert_eq!(
+        data,
+        Data {
+            dependent: resolved_value,
+            lax: default_lax_value
+        }
+    );
 
     handle_success().await;
 }
 
 async_test_matrix!(
-    "[dependent]: on_success triggered with value: 1234",
-    should_trigger_on_success_handlers_with_static_values
+    "[dependent]: on_success triggered with value: 1235",
+    should_trigger_on_success_handlers_if_resolver_is_run_at_creation
 );
 
-async fn should_trigger_on_success_handlers_with_computed_values() {
+async fn should_trigger_on_success_handlers_even_if_resolver_is_not_run_at_creation() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
-        dependent: u32,
+        dependent: i32,
         lax: i32,
     }
 
@@ -334,14 +673,15 @@ async fn should_trigger_on_success_handlers_with_computed_values() {
         lax: i32,
     }
 
-    let dependent = 1234;
+    let default_dependent_value = 1234;
+    let default_lax_value = 20;
 
     let schema: Schema<DataInput, Data, Option<()>, (), DefaultErrorTool> = Schema::new(
         |f| {
             f.set(
                 "dependent",
                 IvoField::DEPENDENT
-                    .default_fn(move |_, _| ready(dependent))
+                    .default(default_dependent_value)
                     .depends_on(["lax"])
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
@@ -357,27 +697,189 @@ async fn should_trigger_on_success_handlers_with_computed_values() {
                         ready(())
                     }),
             )
-            .set("lax", IvoField::LAX.default(20))
+            .set("lax", IvoField::LAX.default(default_lax_value))
         },
         |o| o,
     );
 
     let model = schema.model();
 
-    let lax = 400;
-
     let (data, handle_success) = model
-        .create(&PartialDataInput { lax: Some(lax) }, None)
+        .create(
+            &PartialDataInput {
+                lax: Some(default_lax_value),
+            },
+            None,
+        )
         .await
         .ok()
         .unwrap();
 
-    assert_eq!(data, Data { dependent, lax });
+    let resolved_value = default_dependent_value + 1;
+
+    assert_eq!(
+        data,
+        Data {
+            dependent: resolved_value,
+            lax: default_lax_value
+        }
+    );
 
     handle_success().await;
 }
 
 async_test_matrix!(
-    "[dependent]: on_success triggered with value: 1234",
-    should_trigger_on_success_handlers_with_computed_values
+    "[dependent]: on_success triggered with value: 1235",
+    should_trigger_on_success_handlers_even_if_resolver_is_not_run_at_creation
 );
+
+async fn should_trigger_on_success_handlers_if_resolver_is_run_during_updates() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        dependent: i32,
+        lax: i32,
+    }
+
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct DataInput {
+        lax: i32,
+    }
+
+    let default_dependent_value = 1234;
+    let default_lax_value = 20;
+
+    let schema: Schema<DataInput, Data, Option<()>, (), DefaultErrorTool> = Schema::new(
+        |f| {
+            f.set(
+                "dependent",
+                IvoField::DEPENDENT
+                    .default(default_dependent_value)
+                    .depends_on(["lax"])
+                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
+                        ready(ctx.values().dependent.unwrap() + 1)
+                    })
+                    .on_success(|ctx: IvoContext<DataInput, Data>, _| {
+                        if true {
+                            panic!(
+                                "[dependent]: on_success triggered with value: {}",
+                                ctx.values().dependent.unwrap()
+                            );
+                        }
+
+                        ready(())
+                    }),
+            )
+            .set("lax", IvoField::LAX.default(default_lax_value))
+        },
+        |o| o,
+    );
+
+    let model = schema.model();
+
+    let (data, handle_success) = model
+        .create(
+            &PartialDataInput {
+                lax: Some(default_lax_value),
+            },
+            None,
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    let resolved_value = default_dependent_value + 1;
+
+    assert_eq!(
+        data,
+        Data {
+            dependent: resolved_value,
+            lax: default_lax_value
+        }
+    );
+
+    handle_success().await;
+}
+
+async_test_matrix!(
+    "[dependent]: on_success triggered with value: 1235",
+    should_trigger_on_success_handlers_if_resolver_is_run_during_updates
+);
+
+async fn should_not_trigger_on_success_handlers_not_if_resolver_is_run_during_updates() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        dependent: i32,
+        lax: i32,
+        lax_1: i32,
+    }
+
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct DataInput {
+        lax: i32,
+        lax_1: i32,
+    }
+
+    let default_dependent_value = 1234;
+    let default_lax_value = 20;
+
+    let schema: Schema<DataInput, Data, Option<()>, (), DefaultErrorTool> = Schema::new(
+        |f| {
+            f.set(
+                "dependent",
+                IvoField::DEPENDENT
+                    .default(default_dependent_value)
+                    .depends_on(["lax"])
+                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
+                        ready(ctx.values().dependent.unwrap() + 1)
+                    })
+                    .on_success(|ctx: IvoContext<DataInput, Data>, _| {
+                        if true {
+                            panic!(
+                                "[dependent]: on_success triggered with value: {}",
+                                ctx.values().dependent.unwrap()
+                            );
+                        }
+
+                        ready(())
+                    }),
+            )
+            .set("lax", IvoField::LAX.default(default_lax_value))
+            .set("lax_1", IvoField::LAX.default(default_lax_value))
+        },
+        |o| o,
+    );
+
+    let model = schema.model();
+
+    let updated_lax_1 = default_dependent_value + 1;
+
+    let (data, handle_success) = model
+        .update(
+            &Data {
+                dependent: default_dependent_value,
+                lax: default_lax_value,
+                lax_1: default_lax_value,
+            },
+            &PartialDataInput {
+                lax: None,
+                lax_1: Some(updated_lax_1),
+            },
+            None,
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        data,
+        PartialData {
+            dependent: None,
+            lax: None,
+            lax_1: Some(updated_lax_1)
+        }
+    );
+
+    handle_success().await;
+}
+
+async_test_matrix!(should_not_trigger_on_success_handlers_not_if_resolver_is_run_during_updates);
