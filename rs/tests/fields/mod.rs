@@ -3,6 +3,7 @@ mod dependents;
 mod lax;
 mod required;
 mod timestamps;
+mod virtuals;
 
 // TODO:
 // [x] constants
