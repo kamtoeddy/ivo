@@ -1184,7 +1184,7 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
                         }
                     }
 
-                    ready(Ok(updates.as_option()))
+                    ready(Ok(updates.into_option()))
                 })
                 .validate(|ctx: SharedIvoContext<DataInput, Data>, _| {
                     let mut updates = PartialDataInput::new();
@@ -1196,7 +1196,7 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
                         }
                     }
 
-                    ready(Ok(updates.as_option()))
+                    ready(Ok(updates.into_option()))
                 })
             })
         },

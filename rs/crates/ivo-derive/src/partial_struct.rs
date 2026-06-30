@@ -145,7 +145,7 @@ pub fn generate_partial_struct<T: ToTokens>(
             /// This is a utility method used to wrap the partial struct into an option.
             ///
             /// If every field has as value None, None is return, otherwise Some(self) is returned
-            #vis fn as_option(self) -> std::option::Option<Self> {
+            #vis fn into_option(self) -> std::option::Option<Self> {
                 if self.is_empty() {
                     None
                 } else {
