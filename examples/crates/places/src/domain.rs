@@ -152,7 +152,7 @@ pub static PLACE_SCHEMA: LazyLock<
                             }
                         }
 
-                        Some(ctx.values().name.unwrap().unwrap())
+                        ctx.values().name.unwrap()
                     })
                     .on_success(|_, _| {
                         println!("[name]: on success",);
@@ -188,11 +188,11 @@ impl IvoErrorTool for PlacesErrorTool {
     fn add(&mut self, field_name: &str, error: FieldError<Self::FieldMetadata>) -> &mut Self {
         self.errors
             .entry(field_name.to_owned())
-            .and_modify(|e| append_error(e, error.clone()))
+            .and_modify(|e| append_error(e, &error))
             .or_insert_with(|| {
                 let mut errors = vec![];
 
-                append_error(&mut errors, error);
+                append_error(&mut errors, &error);
 
                 errors
             });
@@ -215,12 +215,12 @@ impl IvoErrorTool for PlacesErrorTool {
     }
 }
 
-fn append_error(errors: &mut Vec<String>, error: FieldError<PlacesErrorToolFieldMetadata>) {
+fn append_error(errors: &mut Vec<String>, error: &FieldError<PlacesErrorToolFieldMetadata>) {
     errors.push(error.reason.clone());
 
-    if let Some(metadata) = error.metadata {
+    if let Some(ref metadata) = error.metadata {
         for err in metadata {
-            errors.push(err);
+            errors.push(err.clone());
         }
     }
 }
