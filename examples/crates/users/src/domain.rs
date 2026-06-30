@@ -8,7 +8,7 @@ use std::{
 
 use ivo::{
     IvoField, IvoStruct, Model, Schema, SharedCtxOptions, SharedIvoContext, SharedIvoData,
-    SharedRwCtxOptions, validate_email,
+    SharedRwCtxOptions, UpdateResolverData, validate_email,
 };
 use serde::Serialize;
 
@@ -124,13 +124,11 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
 
                             ready(())
                         }),
-                    // .required_error_fn(|_, _| ready("Please provide an email address".into())),
                 )
                 .set(
                     "role",
                     IvoField::LAX
                         .default(UserRole::User)
-                        // .default_fn(|_, _| ready(UserRole::User))
                         .validate(|_, _, _| ready(Ok(None)))
                         // .readonly()
                         // .ignore_init()
@@ -174,11 +172,11 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
 
                             Ok(Some(format!("revalidated-'{}'", uname)))
                         })
-                        // .ignore_update(|ctx: Ctx, _| {
-                        //     ready(is_username_or_slug_id_updatable(
-                        //         ctx.values().username_last_updated_at.unwrap(),
-                        //     ))
-                        // })
+                        .ignore_update(|(_, values): UpdateResolverData<UserInput, User>, _| {
+                            ready(!is_username_or_slug_id_updatable(
+                                values.username_last_updated_at,
+                            ))
+                        })
                         .on_delete(|_, _| {
                             println!("[username]: on delete 1 handled");
 
@@ -263,11 +261,11 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
                             ready(Ok(Some(validated.into())))
                         })
                         .sanitize(|v, _, _| ready(format!("sanitized-'{v}'")))
-                        // .ignore(|ctx: Ctx, _| {
-                        //     ready(is_username_or_slug_id_updatable(
-                        //         ctx.values().username_last_updated_at.unwrap(),
-                        //     ))
-                        // })
+                        .ignore(|ctx: Ctx, _| {
+                            ready(!is_username_or_slug_id_updatable(
+                                ctx.values().username_last_updated_at.unwrap_or(None),
+                            ))
+                        })
                         .on_success(|ctx: Ctx, o: CtxOptions| {
                             println!(
                                 "[v_slug_as_slug_id]: on success with ctx.input().slug_id: {:?}",
@@ -369,12 +367,12 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
         schema
     });
 
-// fn is_username_or_slug_id_updatable(username_last_updated_at: Option<String>) -> bool {
-//     match username_last_updated_at {
-//         Some(v) => v.as_str() == "yesterday",
-//         _ => true,
-//     }
-// }
+fn is_username_or_slug_id_updatable(username_last_updated_at: Option<String>) -> bool {
+    match username_last_updated_at {
+        Some(v) => v.as_str() == "yesterday",
+        _ => true,
+    }
+}
 
 pub static USERS_LIST: LazyLock<[User; 3]> = LazyLock::new(|| {
     array::from_fn(|i| {

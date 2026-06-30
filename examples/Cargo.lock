@@ -1070,13 +1070,11 @@ dependencies = [
 name = "places"
 version = "0.0.0"
 dependencies = [
- "async-std",
  "ivo",
  "reqwest",
  "serde",
  "serde_json",
  "shared",
- "smol",
  "tokio",
 ]
 

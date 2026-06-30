@@ -6,21 +6,10 @@ mod domain;
 
 use crate::domain::{Coodinates, PLACE_MODEL, PartialPlaceInput, Place, PlacesCtxOptions};
 
-// #[tokio::main]
-#[async_std::main]
+#[tokio::main]
 async fn main() {
     run_example().await;
 }
-
-// use smol::io;
-
-// fn main() -> io::Result<()> {
-//     smol::block_on(async {
-//         run_example().await;
-
-//         Ok(())
-//     })
-// }
 
 async fn run_example() {
     let timer = Instant::now();
