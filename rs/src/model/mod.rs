@@ -1220,11 +1220,7 @@ impl<
                     field_type: FieldType::Required,
                     required_error,
                     ..
-                } => {
-                    if is_update {
-                        continue;
-                    }
-
+                } if !is_update => {
                     match required_error {
                         Some(ComputableRequiredError::Static(msg)) => {
                             error_tool.add(
@@ -1252,10 +1248,16 @@ impl<
                     continue;
                 }
                 InternalFieldConfig {
-                    field_type: FieldType::Lax | FieldType::Virtual,
+                    field_type: FieldType::Lax,
                     required_fn: Some(resolver),
                     ..
                 } => resolvers.push((field_name, resolver)),
+                InternalFieldConfig {
+                    field_type: FieldType::Virtual,
+                    alias,
+                    required_fn: Some(resolver),
+                    ..
+                } => resolvers.push((alias.as_ref().unwrap_or(field_name), resolver)),
                 _ => (),
             }
         }
