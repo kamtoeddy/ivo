@@ -9,9 +9,10 @@ mod on_failure;
 mod on_success;
 
 // TODO:
-// [ ] ignore
-// [ ] ignore_init
-// [ ] ignore_update
+// [ ] alias
+// [x] ignore
+// [x] ignore_init
+// [x] ignore_update
 // [ ] required_fn
 // [ ] validate
 // [ ] re_validate

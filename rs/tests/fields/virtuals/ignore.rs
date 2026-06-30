@@ -1,43 +1,313 @@
 use std::future::ready;
 
-use ivo::{IvoField, IvoStruct, Schema, UpdateError, IvoUpdateData};
+use ivo::{IvoContext, IvoField, IvoStruct, Schema, UpdateError};
 
 use crate::async_test_matrix;
 
-// ignore
+async fn should_respect_the_ignore_rule() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        dependent: i32,
+        lax: i32,
+    }
+
+    #[derive(Debug, Clone, IvoStruct)]
+    struct DataInput {
+        lax: i32,
+        virtual_field: String,
+    }
+
+    let default_dependent_value = 1;
+    let default_lax_value = 10;
+
+    let schema: Schema<DataInput, Data> = Schema::new(
+        |f| {
+            f.set(
+                "dependent",
+                IvoField::DEPENDENT
+                    .default(default_dependent_value)
+                    .depends_on(["virtual_field"])
+                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
+                        ready(ctx.values().dependent.unwrap() + 1)
+                    }),
+            )
+            .set("lax", IvoField::LAX.default(default_lax_value))
+            .set(
+                "virtual_field",
+                IvoField::VIRTUAL
+                    .validate(|v: String, _, _| {
+                        if v == "fail_validation" {
+                            return ready(Err(("validation failed".into(), None)));
+                        }
+
+                        ready(Ok(None))
+                    })
+                    .ignore(|_, _| ready(true)),
+            )
+        },
+        |o| o,
+    );
+
+    let model = schema.model();
+
+    let (data, _) = model
+        .create(
+            &PartialDataInput {
+                lax: None,
+                virtual_field: Some("virtual_value".into()),
+            },
+            None,
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        data,
+        Data {
+            dependent: default_dependent_value,
+            lax: default_lax_value
+        }
+    );
+
+    let lax = default_lax_value + 10;
+
+    let (data, _) = model
+        .create(
+            &PartialDataInput {
+                lax: Some(lax),
+                virtual_field: Some("virtual_value".into()),
+            },
+            None,
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        data,
+        Data {
+            dependent: default_dependent_value,
+            lax
+        }
+    );
+
+    let lax = Some(data.lax + 10);
+
+    let (updates, _) = model
+        .update(
+            &data,
+            &PartialDataInput {
+                lax,
+                virtual_field: Some("virtual_value".into()),
+            },
+            None,
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updates,
+        PartialData {
+            dependent: None,
+            lax
+        }
+    );
+
+    let r = model
+        .update(
+            &data,
+            &PartialDataInput {
+                lax: None,
+                virtual_field: Some("virtual_value".into()),
+            },
+            None,
+        )
+        .await;
+
+    match r {
+        Err((error, _)) => assert!(matches!(error, UpdateError::NothingToUpdate)),
+        _ => unreachable!("expected nothing to update"),
+    }
+}
+
+async_test_matrix!(should_respect_the_ignore_rule);
+
+async fn should_respect_the_ignore_init_rule() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        dependent: i32,
+        lax: i32,
+    }
+
+    #[derive(Debug, Clone, IvoStruct)]
+    struct DataInput {
+        lax: i32,
+        virtual_field: String,
+    }
+
+    let default_dependent_value = 1;
+    let default_lax_value = 10;
+
+    let schema: Schema<DataInput, Data> = Schema::new(
+        |f| {
+            f.set(
+                "dependent",
+                IvoField::DEPENDENT
+                    .default(default_dependent_value)
+                    .depends_on(["virtual_field"])
+                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
+                        ready(ctx.values().dependent.unwrap() + 1)
+                    }),
+            )
+            .set("lax", IvoField::LAX.default(default_lax_value))
+            .set(
+                "virtual_field",
+                IvoField::VIRTUAL
+                    .validate(|v: String, _, _| {
+                        if v == "fail_validation" {
+                            return ready(Err(("validation failed".into(), None)));
+                        }
+
+                        ready(Ok(None))
+                    })
+                    .ignore_init(),
+            )
+        },
+        |o| o,
+    );
+
+    let model = schema.model();
+
+    let (data, _) = model
+        .create(
+            &PartialDataInput {
+                lax: None,
+                virtual_field: Some("virtual_value".into()),
+            },
+            None,
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        data,
+        Data {
+            dependent: default_dependent_value,
+            lax: default_lax_value
+        }
+    );
+
+    let lax = default_lax_value + 10;
+
+    let (data, _) = model
+        .create(
+            &PartialDataInput {
+                lax: Some(lax),
+                virtual_field: Some("virtual_value".into()),
+            },
+            None,
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        data,
+        Data {
+            dependent: default_dependent_value,
+            lax
+        }
+    );
+
+    let lax = Some(data.lax + 10);
+
+    let (updates, _) = model
+        .update(
+            &data,
+            &PartialDataInput {
+                lax,
+                virtual_field: Some("virtual_value".into()),
+            },
+            None,
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updates,
+        PartialData {
+            dependent: Some(data.dependent + 1),
+            lax
+        }
+    );
+
+    let (updates, _) = model
+        .update(
+            &data,
+            &PartialDataInput {
+                lax: None,
+                virtual_field: Some("virtual_value".into()),
+            },
+            None,
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updates,
+        PartialData {
+            dependent: Some(data.dependent + 1),
+            lax: None
+        }
+    );
+}
+
+async_test_matrix!(should_respect_the_ignore_init_rule);
 
 async fn should_respect_the_ignore_update_rule() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
-        lax: String,
-        required: i32,
+        dependent: i32,
+        lax: i32,
     }
 
     #[derive(Debug, Clone, IvoStruct)]
     struct DataInput {
-        lax: String,
-        required: i32,
+        lax: i32,
+        virtual_field: String,
     }
 
-    const IGNORE_REQUIRED_FOR_UPDATE: &str = "ignore_required_for_update";
+    let default_dependent_value = 1;
+    let default_lax_value = 10;
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
             f.set(
-                "required",
-                IvoField::REQUIRED
-                    .validate(|_: i32, _, _| ready(Ok(None)))
-                    .ignore_update(|(_, values): IvoUpdateData<DataInput, Data>, _| {
-                        if IGNORE_REQUIRED_FOR_UPDATE == values.lax {
-                            return ready(true);
-                        }
-
-                        ready(false)
+                "dependent",
+                IvoField::DEPENDENT
+                    .default(default_dependent_value)
+                    .depends_on(["virtual_field"])
+                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
+                        ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
+            .set("lax", IvoField::LAX.default(default_lax_value))
             .set(
-                "lax",
-                IvoField::LAX.default("default_lax_value".to_string()),
+                "virtual_field",
+                IvoField::VIRTUAL
+                    .validate(|v: String, _, _| {
+                        if v == "fail_validation" {
+                            return ready(Err(("validation failed".into(), None)));
+                        }
+
+                        ready(Ok(None))
+                    })
+                    .ignore_update(),
             )
         },
         |o| o,
@@ -45,14 +315,13 @@ async fn should_respect_the_ignore_update_rule() {
 
     let model = schema.model();
 
-    let lax = IGNORE_REQUIRED_FOR_UPDATE.to_string();
-    let required = 1;
+    let lax = default_lax_value + 10;
 
     let (data, _) = model
         .create(
             &PartialDataInput {
-                lax: Some(lax.clone()),
-                required: Some(required),
+                lax: Some(lax),
+                virtual_field: Some("virtual_value".into()),
             },
             None,
         )
@@ -62,152 +331,92 @@ async fn should_respect_the_ignore_update_rule() {
 
     assert_eq!(
         data,
-        Data { lax, required },
-        "should not evaluate the ignore_update rule of required fields at creation"
+        Data {
+            dependent: default_dependent_value + 1,
+            lax
+        }
     );
 
-    let required = required + 2;
-
-    let r = model
-        .update(
-            &data,
+    let (data, _) = model
+        .create(
             &PartialDataInput {
                 lax: None,
-                required: Some(required),
+                virtual_field: Some("virtual_value".into()),
             },
             None,
         )
-        .await;
+        .await
+        .ok()
+        .unwrap();
 
-    match r {
-        Err((UpdateError::NothingToUpdate, _)) => {}
-        _ => unreachable!("expected nothig to update error"),
-    }
-
-    let data = Data {
-        lax: "normal_lax_value".into(),
-        ..data
-    };
-
-    let r = model
-        .update(
-            &data,
-            &PartialDataInput {
-                lax: None,
-                required: Some(required),
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Ok((updates, _)) => {
-            assert_eq!(
-                updates,
-                PartialData {
-                    lax: None,
-                    required: Some(required)
-                }
-            );
+    assert_eq!(
+        data,
+        Data {
+            dependent: default_dependent_value + 1,
+            lax: default_lax_value
         }
-        _ => unreachable!("expected update to be successful"),
+    );
+
+    let lax = default_lax_value + 10;
+
+    let (data, _) = model
+        .create(
+            &PartialDataInput {
+                lax: Some(lax),
+                virtual_field: Some("virtual_value".into()),
+            },
+            None,
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        data,
+        Data {
+            dependent: default_dependent_value + 1,
+            lax
+        }
+    );
+
+    let lax = Some(data.lax + 10);
+
+    let (updates, _) = model
+        .update(
+            &data,
+            &PartialDataInput {
+                lax,
+                virtual_field: Some("virtual_value".into()),
+            },
+            None,
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updates,
+        PartialData {
+            dependent: None,
+            lax
+        }
+    );
+
+    let r = model
+        .update(
+            &data,
+            &PartialDataInput {
+                lax: None,
+                virtual_field: Some("virtual_value".into()),
+            },
+            None,
+        )
+        .await;
+
+    match r {
+        Err((error, _)) => assert!(matches!(error, UpdateError::NothingToUpdate)),
+        _ => unreachable!("expected nothing to update"),
     }
 }
 
 async_test_matrix!(should_respect_the_ignore_update_rule);
-
-async fn should_respect_the_readonly_rule() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        lax: String,
-        required: i32,
-    }
-
-    #[derive(Debug, Clone, IvoStruct)]
-    struct DataInput {
-        lax: String,
-        required: i32,
-    }
-
-    const IGNORE_REQUIRED_FOR_UPDATE: &str = "ignore_required_for_update";
-
-    let schema: Schema<DataInput, Data> = Schema::new(
-        |f| {
-            f.set(
-                "required",
-                IvoField::REQUIRED
-                    .validate(|_: i32, _, _| ready(Ok(None)))
-                    .readonly(),
-            )
-            .set(
-                "lax",
-                IvoField::LAX.default("default_lax_value".to_string()),
-            )
-        },
-        |o| o,
-    );
-
-    let model = schema.model();
-
-    let lax = IGNORE_REQUIRED_FOR_UPDATE.to_string();
-    let required = 1;
-
-    let (data, _) = model
-        .create(
-            &PartialDataInput {
-                lax: Some(lax.clone()),
-                required: Some(required),
-            },
-            None,
-        )
-        .await
-        .ok()
-        .unwrap();
-
-    assert_eq!(
-        data,
-        Data { lax, required },
-        "should not evaluate the ignore_update rule of required fields at creation"
-    );
-
-    let required = required + 2;
-
-    let r = model
-        .update(
-            &data,
-            &PartialDataInput {
-                lax: None,
-                required: Some(required),
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Err((UpdateError::NothingToUpdate, _)) => {}
-        _ => unreachable!("expected nothig to update error"),
-    }
-
-    let data = Data {
-        lax: "normal_lax_value".into(),
-        ..data
-    };
-
-    let r = model
-        .update(
-            &data,
-            &PartialDataInput {
-                lax: None,
-                required: Some(required),
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Err((UpdateError::NothingToUpdate, _)) => {}
-        _ => unreachable!("expected nothig to update error"),
-    }
-}
-
-async_test_matrix!(should_respect_the_readonly_rule);
