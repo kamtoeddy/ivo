@@ -137,7 +137,7 @@ where
 // impl<F, Fut, T, I: IvoStruct, O: IvoStruct, CtxOptions> IntoResolver<T, I, O, CtxOptions> for F
 // where
 //     T: 'static,
-//     F: Fn(SharedIvoContext<I, O>, SharedRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
+//     F: Fn(IvoContext<I, O>, IvoRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
 //     Fut: Future<Output = T> + Send + 'static,
 // {
 //     fn into_resolver(self) -> Resolver<T, I, O, CtxOptions> {

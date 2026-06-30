@@ -1,6 +1,6 @@
 use std::{collections::HashMap, future::ready, sync::LazyLock};
 
-use ivo::{FieldError, IvoErrorTool, IvoField, IvoStruct, Model, Schema, SharedIvoContext};
+use ivo::{FieldError, IvoContext, IvoErrorTool, IvoField, IvoStruct, Model, Schema};
 use serde::Deserialize;
 
 const LOCATION_SERVICE_URL: &str = "https://misc-api.kamtoeddy.com/geo/details-with-tz";
@@ -11,14 +11,14 @@ pub struct Coodinates {
     pub lon: f64,
 }
 
-#[derive(Debug, Clone, PartialEq, IvoStruct)]
+#[derive(Debug, Clone, IvoStruct)]
 pub struct Place {
     pub id: i32,
     pub coordinates: Coodinates,
     pub name: Option<String>,
 }
 
-#[derive(Clone, Debug, PartialEq, IvoStruct)]
+#[derive(Clone, Debug, IvoStruct)]
 pub struct PlaceInput {
     pub coordinates: Coodinates,
 }
@@ -30,18 +30,9 @@ impl PlacesCtxOptions {
     pub fn new() -> Self {
         Self
     }
-
-    // fn find_user_by_coordinates(
-    //     &self,
-    //     _coordinates: &String,
-    // ) -> impl Future<Output = Option<Place>> + use<'a> {
-    //     ready(None)
-    // }
 }
 
-type Ctx = SharedIvoContext<PlaceInput, Place>;
-// type CtxOptions = SharedCtxOptions<PlacesCtxOptions>;
-// type RwCtxOptions = SharedRwCtxOptions<PlacesCtxOptions>;
+type Ctx = IvoContext<PlaceInput, Place>;
 
 #[derive(Debug, Deserialize)]
 struct LocationDetails {
@@ -168,8 +159,6 @@ pub static PLACE_SCHEMA: LazyLock<
                         ready(())
                     }),
             )
-            // .created_at(|| "Date.now()", None)
-            // .updated_at(|| "Date.now()", Some("updated_on"), true)
         },
         |o| {
             o.on_delete(|_, _| {
@@ -229,8 +218,8 @@ impl IvoErrorTool for PlacesErrorTool {
 fn append_error(errors: &mut Vec<String>, error: FieldError<PlacesErrorToolFieldMetadata>) {
     errors.push(error.reason.clone());
 
-    if error.metadata.is_some() {
-        for err in error.metadata.clone().unwrap() {
+    if let Some(metadata) = error.metadata {
+        for err in metadata {
             errors.push(err);
         }
     }
