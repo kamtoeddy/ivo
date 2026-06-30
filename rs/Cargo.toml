@@ -1,3 +1,16 @@
+[package]
+name = "ivo"
+publish = true
+description = "The rust implementation of the ivo schema valitator"
+categories.workspace = true
+edition.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+license-file.workspace = true
+version.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
 [workspace]
 members = ["crates/*"]
 resolver = "2"
@@ -6,12 +19,28 @@ resolver = "2"
 version = "0.0.2"
 edition = "2021"
 authors = ["kamtoeddy <lollipopkalog@gmail.com>"]
+categories = ["data-structures", "development-tools"]
 license-file = "../LICENSE"
 repository = "https://github.com/kamtoeddy/ivo/rs"
 homepage = "https://github.com/kamtoeddy/ivo/rs"
-keywords = ["schema", "validation"]
-categories = ["encoding", "parsing"]
+keywords = ["schema", "validation", "data-modelling"]
 rust-version = "1.80.0"
 
 [workspace.dependencies]
 futures-locks = "0.7"
+
+[features]
+validators = ["dep:ivo-validators"]
+
+[dependencies]
+futures = "0.3"
+futures-locks.workspace = true
+ivo-derive = { path = "./crates/derive", version = "0.0.2" }
+ivo-validators = { path = "./crates/validators", version = "0.0.2", optional = true}
+
+[dev-dependencies]
+async-std = { version= "1.13.2", features = ["attributes"] }
+smol = "2.0.2"
+tokio = { version = "1.0", features = ["rt", "macros"] }
+paste = "1.0.15"
+seahash = "4.1.0"
