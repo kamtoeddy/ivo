@@ -7,14 +7,14 @@ use std::sync::Arc;
 use internal::{IvoStruct, RwLock};
 
 pub type SharedIvoData<T> = Arc<T>;
-pub type SharedCtxOptions<CtxOptions> = SharedIvoData<CtxOptions>;
-pub type SharedRwCtxOptions<CtxOptions> = SharedIvoData<RwLock<CtxOptions>>;
-pub type SharedIvoContext<I: IvoStruct, O: IvoStruct> = SharedIvoData<IvoContext<I, O>>;
-pub type SharedIvoInput<I: IvoStruct> = SharedIvoData<I::Partial>;
-pub type UpdateResolverData<I: IvoStruct, O: IvoStruct> = (I::Partial, O);
+pub type IvoCtxOptions<CtxOptions> = SharedIvoData<CtxOptions>;
+pub type IvoRwCtxOptions<CtxOptions> = SharedIvoData<RwLock<CtxOptions>>;
+pub type IvoContext<I: IvoStruct, O: IvoStruct = I> = SharedIvoData<InternalIvoContext<I, O>>;
+pub type IvoInput<I: IvoStruct> = SharedIvoData<I::Partial>;
+pub type IvoUpdateData<I: IvoStruct, O: IvoStruct = I> = (I::Partial, O);
 
 #[derive(Clone, Copy)]
-pub enum IvoContext<I: IvoStruct, O: IvoStruct> {
+pub enum InternalIvoContext<I: IvoStruct, O: IvoStruct> {
     Create {
         input: I::Partial,
         raw_input: I::Partial,
@@ -29,7 +29,7 @@ pub enum IvoContext<I: IvoStruct, O: IvoStruct> {
     },
 }
 
-impl<I: IvoStruct, O: IvoStruct> IvoContext<I, O> {
+impl<I: IvoStruct, O: IvoStruct> InternalIvoContext<I, O> {
     #[inline]
     pub(crate) fn new_create_ctx(
         input: I::Partial,
@@ -63,10 +63,10 @@ impl<I: IvoStruct, O: IvoStruct> IvoContext<I, O> {
     #[inline(always)]
     pub(crate) fn set_changes(&mut self, changes: O::Partial) -> &mut Self {
         match self {
-            IvoContext::Create { values, .. } => {
+            InternalIvoContext::Create { values, .. } => {
                 *values = changes;
             }
-            IvoContext::Update {
+            InternalIvoContext::Update {
                 changes: prev_changes,
                 ..
             } => {
@@ -79,7 +79,7 @@ impl<I: IvoStruct, O: IvoStruct> IvoContext<I, O> {
 
     #[inline(always)]
     pub(crate) fn set_full_values(&mut self, values: O) -> &mut Self {
-        if let IvoContext::Update {
+        if let InternalIvoContext::Update {
             values: prev_values,
             ..
         } = self
@@ -93,12 +93,12 @@ impl<I: IvoStruct, O: IvoStruct> IvoContext<I, O> {
     #[inline(always)]
     pub(crate) fn set_input(&mut self, input: I::Partial) -> &mut Self {
         match self {
-            IvoContext::Create {
+            InternalIvoContext::Create {
                 input: prev_input, ..
             } => {
                 *prev_input = input;
             }
-            IvoContext::Update {
+            InternalIvoContext::Update {
                 input: prev_input, ..
             } => {
                 *prev_input = input;
@@ -112,23 +112,23 @@ impl<I: IvoStruct, O: IvoStruct> IvoContext<I, O> {
     #[inline(always)]
     pub fn changes(&self) -> O::Partial {
         match &self {
-            IvoContext::Create { values, .. } => values,
-            IvoContext::Update { changes, .. } => changes,
+            InternalIvoContext::Create { values, .. } => values,
+            InternalIvoContext::Update { changes, .. } => changes,
         }
         .clone()
     }
 
     #[inline(always)]
     pub fn is_update(&self) -> bool {
-        matches!(self, IvoContext::Update { .. })
+        matches!(self, InternalIvoContext::Update { .. })
     }
 
     /// contains validated and up to date version of input_values
     #[inline(always)]
     pub fn input(&self) -> I::Partial {
         match &self {
-            IvoContext::Create { input, .. } => input,
-            IvoContext::Update { input, .. } => input,
+            InternalIvoContext::Create { input, .. } => input,
+            InternalIvoContext::Update { input, .. } => input,
         }
         .clone()
     }
@@ -137,8 +137,8 @@ impl<I: IvoStruct, O: IvoStruct> IvoContext<I, O> {
     #[inline(always)]
     pub fn raw_input(&self) -> I::Partial {
         match &self {
-            IvoContext::Create { raw_input, .. } => raw_input,
-            IvoContext::Update { raw_input, .. } => raw_input,
+            InternalIvoContext::Create { raw_input, .. } => raw_input,
+            InternalIvoContext::Update { raw_input, .. } => raw_input,
         }
         .clone()
     }
@@ -147,15 +147,15 @@ impl<I: IvoStruct, O: IvoStruct> IvoContext<I, O> {
     #[inline(always)]
     pub fn values(&self) -> O::Partial {
         match &self {
-            IvoContext::Create { values, .. } => values.clone(),
-            IvoContext::Update { values, .. } => values.clone().into(),
+            InternalIvoContext::Create { values, .. } => values.clone(),
+            InternalIvoContext::Update { values, .. } => values.clone().into(),
         }
     }
 
     #[inline(always)]
     pub fn full_values(&self) -> Option<O> {
         match &self {
-            IvoContext::Update { values, .. } => Some(values.clone()),
+            InternalIvoContext::Update { values, .. } => Some(values.clone()),
             _ => None,
         }
     }
@@ -163,7 +163,7 @@ impl<I: IvoStruct, O: IvoStruct> IvoContext<I, O> {
     #[inline(always)]
     pub fn previous_values(&self) -> Option<O> {
         match &self {
-            IvoContext::Update {
+            InternalIvoContext::Update {
                 previous_values, ..
             } => Some(previous_values.clone()),
             _ => None,

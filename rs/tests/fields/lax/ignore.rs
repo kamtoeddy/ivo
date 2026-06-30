@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoField, IvoStruct, Schema, SharedIvoContext, UpdateError};
+use ivo::{IvoField, IvoStruct, Schema, IvoContext, UpdateError};
 
 use crate::async_test_matrix;
 
@@ -34,7 +34,7 @@ async fn should_respect_the_ignore_rule() {
                 IvoField::LAX
                     .default(default_lax_value.to_string())
                     .validate(|_, _, _| ready(Ok(None)))
-                    .ignore(|ctx: SharedIvoContext<DataInput, Data>, _| {
+                    .ignore(|ctx: IvoContext<DataInput, Data>, _| {
                         if ctx.is_update() {
                             if "ignore_lax_for_update" == ctx.previous_values().unwrap().other {
                                 return ready(true);

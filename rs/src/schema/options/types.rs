@@ -2,13 +2,12 @@ use std::future::Future;
 
 use crate::types::internal::{IvoErrorTool, PostValidatorResponse};
 use crate::{
-    schema::types::SuccessHandler, IvoStruct, SharedIvoContext, SharedRwCtxOptions,
-    UpdateResolverData,
+    schema::types::SuccessHandler, IvoContext, IvoRwCtxOptions, IvoStruct, IvoUpdateData,
 };
 use futures::future::BoxFuture;
 
 pub type ShouldUpdateOptionResolver<I, O, CtxOptions> = Box<
-    dyn Fn(UpdateResolverData<I, O>, SharedRwCtxOptions<CtxOptions>) -> BoxFuture<'static, bool>
+    dyn Fn(IvoUpdateData<I, O>, IvoRwCtxOptions<CtxOptions>) -> BoxFuture<'static, bool>
         + Send
         + Sync
         + 'static,
@@ -22,7 +21,7 @@ impl<F, Fut, I, O, CtxOptions> IntoShouldUpdateOptionResolver<I, O, CtxOptions> 
 where
     I: IvoStruct,
     O: IvoStruct,
-    F: Fn(UpdateResolverData<I, O>, SharedRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
+    F: Fn(IvoUpdateData<I, O>, IvoRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = bool> + Send + Sync + 'static,
 {
     fn into_resolver(self) -> ShouldUpdateOptionResolver<I, O, CtxOptions> {
@@ -50,7 +49,7 @@ impl<F, Fut, I, O, CtxOptions, ErrorTool: IvoErrorTool>
 where
     I: IvoStruct,
     O: IvoStruct,
-    F: Fn(SharedIvoContext<I, O>, SharedRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
+    F: Fn(IvoContext<I, O>, IvoRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut:
         Future<Output = PostValidatorResponse<I, ErrorTool::FieldMetadata>> + Send + Sync + 'static,
 {
@@ -61,8 +60,8 @@ where
 
 pub type PostValidator<I, O, CtxOptions, FieldErrorMetadata> = Box<
     dyn Fn(
-            SharedIvoContext<I, O>,
-            SharedRwCtxOptions<CtxOptions>,
+            IvoContext<I, O>,
+            IvoRwCtxOptions<CtxOptions>,
         ) -> BoxFuture<'static, PostValidatorResponse<I, FieldErrorMetadata>>
         + Send
         + Sync

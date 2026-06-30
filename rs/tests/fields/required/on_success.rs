@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoField, IvoStruct, Schema, SharedIvoContext};
+use ivo::{IvoField, IvoStruct, Schema, IvoContext};
 
 use crate::async_test_matrix;
 
@@ -29,7 +29,7 @@ async fn should_trigger_on_success_handlers_at_creation() {
 
                         ready(Ok(None))
                     })
-                    .on_success(|ctx: SharedIvoContext<DataInput, Data>, _| {
+                    .on_success(|ctx: IvoContext<DataInput, Data>, _| {
                         if true {
                             panic!(
                                 "[required]: on_success triggered with value: {}",
@@ -110,7 +110,7 @@ async fn should_trigger_on_success_handlers_during_updates_if_provided() {
 
                         ready(Ok(None))
                     })
-                    .on_success(|ctx: SharedIvoContext<DataInput, Data>, _| {
+                    .on_success(|ctx: IvoContext<DataInput, Data>, _| {
                         if true {
                             panic!(
                                 "[required]: on_success triggered with value: {}",
@@ -201,7 +201,7 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_not_provided()
 
                         ready(Ok(None))
                     })
-                    .on_success(|ctx: SharedIvoContext<DataInput, Data>, _| {
+                    .on_success(|ctx: IvoContext<DataInput, Data>, _| {
                         if true {
                             panic!(
                                 "[required]: on_success triggered with value: {}",
@@ -290,7 +290,7 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_i
                         ready(Ok(None))
                     })
                     .ignore_update(|_, _| ready(true))
-                    .on_success(|ctx: SharedIvoContext<DataInput, Data>, _| {
+                    .on_success(|ctx: IvoContext<DataInput, Data>, _| {
                         if true {
                             panic!(
                                 "[required]: on_success triggered with value: {}",
@@ -381,7 +381,7 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_i
                         ready(Ok(None))
                     })
                     .readonly()
-                    .on_success(|ctx: SharedIvoContext<DataInput, Data>, _| {
+                    .on_success(|ctx: IvoContext<DataInput, Data>, _| {
                         if true {
                             panic!(
                                 "[required]: on_success triggered with value: {}",

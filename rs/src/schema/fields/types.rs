@@ -7,8 +7,8 @@ use std::future::{ready, Future};
 use crate::{
     schema::types::{DeleteHandler, FailureHandler, IvoFieldValue, SuccessHandler},
     types::internal::types::{erase_value, parse_or_panic, ErasedValue},
-    IvoErrorTool, IvoStruct, SharedIvoContext, SharedIvoData, SharedIvoInput, SharedRwCtxOptions,
-    UpdateResolverData, ValidatorResponse,
+    IvoContext, IvoErrorTool, IvoInput, IvoRwCtxOptions, IvoStruct, IvoUpdateData, SharedIvoData,
+    ValidatorResponse,
 };
 
 pub type TimestampResolver<T: IvoFieldValue> = Box<dyn Fn() -> T + Send + Sync + 'static>;
@@ -36,7 +36,7 @@ impl<F, Fut, I, O, CtxOptions> IntoFailureHandler<I, O, CtxOptions> for F
 where
     I: IvoStruct,
     O: IvoStruct,
-    F: Fn(SharedIvoContext<I, O>, SharedIvoData<CtxOptions>) -> Fut + Send + Sync + 'static,
+    F: Fn(IvoContext<I, O>, SharedIvoData<CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = ()> + Send + Sync + 'static,
 {
     fn into_handler(self) -> FailureHandler<I, O, CtxOptions> {
@@ -52,7 +52,7 @@ impl<F, Fut, I, O, CtxOptions> IntoSuccessHandler<I, O, CtxOptions> for F
 where
     I: IvoStruct,
     O: IvoStruct,
-    F: Fn(SharedIvoContext<I, O>, SharedIvoData<CtxOptions>) -> Fut + Send + Sync + 'static,
+    F: Fn(IvoContext<I, O>, SharedIvoData<CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = ()> + Send + Sync + 'static,
 {
     fn into_handler(self) -> SuccessHandler<I, O, CtxOptions> {
@@ -71,7 +71,7 @@ where
     O: IvoStruct,
     ErrorTool: IvoErrorTool,
     T: IvoFieldValue,
-    F: Fn(T, SharedIvoContext<I, O>, SharedRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
+    F: Fn(T, IvoContext<I, O>, IvoRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = ValidatorResponse<T, ErrorTool::FieldMetadata>> + Send + Sync + 'static,
 {
     fn into_uniform(self) -> UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata> {
@@ -93,7 +93,7 @@ where
     I: IvoStruct,
     O: IvoStruct,
     T: IvoFieldValue,
-    F: Fn(T, SharedIvoContext<I, O>, SharedRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
+    F: Fn(T, IvoContext<I, O>, IvoRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = T> + Send + Sync + 'static,
 {
     fn into_uniform(self) -> UniformVirtualSanitizer<I, O, CtxOptions> {
@@ -109,7 +109,7 @@ pub trait IntoRequiredErrorResolver<I: IvoStruct, O: IvoStruct, CtxOptions> {
 
 impl<F, I: IvoStruct, O: IvoStruct, CtxOptions> IntoRequiredErrorResolver<I, O, CtxOptions> for F
 where
-    F: Fn(SharedIvoContext<I, O>, SharedRwCtxOptions<CtxOptions>) -> String + Send + Sync + 'static,
+    F: Fn(IvoContext<I, O>, IvoRwCtxOptions<CtxOptions>) -> String + Send + Sync + 'static,
 {
     fn into_resolver(self) -> RequiredResolver<I, O, CtxOptions> {
         Box::new(move |ctx, o| Box::pin(ready(Some(self(ctx, o)))))
@@ -122,7 +122,7 @@ pub trait IntoRequiredResolver<I: IvoStruct, O: IvoStruct, CtxOptions> {
 
 impl<F, Fut, I: IvoStruct, O: IvoStruct, CtxOptions> IntoRequiredResolver<I, O, CtxOptions> for F
 where
-    F: Fn(SharedIvoContext<I, O>, SharedRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
+    F: Fn(IvoContext<I, O>, IvoRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = RequiredError> + Send + 'static,
 {
     fn into_resolver(self) -> RequiredResolver<I, O, CtxOptions> {
@@ -154,7 +154,7 @@ where
     I: IvoStruct,
     O: IvoStruct,
     T: IvoFieldValue,
-    F: Fn(SharedIvoContext<I, O>, SharedRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
+    F: Fn(IvoContext<I, O>, IvoRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = T> + Send + 'static,
 {
     fn into_uniform(self) -> UniformResolver<I, O, CtxOptions> {
@@ -169,7 +169,7 @@ pub trait IntoValueResolverWithMiniContext<T, I: IvoStruct, CtxOptions> {
 impl<F, Fut, T, I: IvoStruct, CtxOptions> IntoValueResolverWithMiniContext<T, I, CtxOptions> for F
 where
     T: IvoFieldValue,
-    F: Fn(SharedIvoInput<I>, SharedRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
+    F: Fn(IvoInput<I>, IvoRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = T> + Send + 'static,
 {
     fn into_uniform(self) -> UniformValueResolverWithMiniContext<I, CtxOptions> {
@@ -183,7 +183,7 @@ pub trait IntoBooleanResolver<I: IvoStruct, O: IvoStruct, CtxOptions> {
 
 impl<F, Fut, I: IvoStruct, O: IvoStruct, CtxOptions> IntoBooleanResolver<I, O, CtxOptions> for F
 where
-    F: Fn(SharedIvoContext<I, O>, SharedRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
+    F: Fn(IvoContext<I, O>, IvoRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = bool> + Send + 'static,
 {
     fn into_resolver(self) -> BooleanResolver<I, O, CtxOptions> {
@@ -198,7 +198,7 @@ pub trait IntoIgnoreUpdateResolver<I: IvoStruct, O: IvoStruct, CtxOptions> {
 impl<F, Fut, I: IvoStruct, O: IvoStruct, CtxOptions> IntoIgnoreUpdateResolver<I, O, CtxOptions>
     for F
 where
-    F: Fn(UpdateResolverData<I, O>, SharedRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
+    F: Fn(IvoUpdateData<I, O>, IvoRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = bool> + Send + 'static,
 {
     fn into_resolver(self) -> BooleanResolver<I, O, CtxOptions> {
@@ -209,8 +209,8 @@ where
 pub type UniformValidator<I, O, CtxOptions, FieldMetadata> = Box<
     dyn Fn(
             ErasedValue,
-            SharedIvoContext<I, O>,
-            SharedRwCtxOptions<CtxOptions>,
+            IvoContext<I, O>,
+            IvoRwCtxOptions<CtxOptions>,
         ) -> BoxFuture<'static, ValidatorResponse<ErasedValue, FieldMetadata>>
         + Send
         + Sync
@@ -220,8 +220,8 @@ pub type UniformValidator<I, O, CtxOptions, FieldMetadata> = Box<
 pub type UniformVirtualSanitizer<I, O, CtxOptions> = Box<
     dyn Fn(
             ErasedValue,
-            SharedIvoContext<I, O>,
-            SharedRwCtxOptions<CtxOptions>,
+            IvoContext<I, O>,
+            IvoRwCtxOptions<CtxOptions>,
         ) -> BoxFuture<'static, ErasedValue>
         + Send
         + Sync
@@ -229,17 +229,14 @@ pub type UniformVirtualSanitizer<I, O, CtxOptions> = Box<
 >;
 
 pub type UniformResolver<I, O, CtxOptions> = Box<
-    dyn Fn(
-            SharedIvoContext<I, O>,
-            SharedRwCtxOptions<CtxOptions>,
-        ) -> BoxFuture<'static, ErasedValue>
+    dyn Fn(IvoContext<I, O>, IvoRwCtxOptions<CtxOptions>) -> BoxFuture<'static, ErasedValue>
         + Send
         + Sync
         + 'static,
 >;
 
 pub type UniformValueResolverWithMiniContext<I, CtxOptions> = Box<
-    dyn Fn(SharedIvoInput<I>, SharedRwCtxOptions<CtxOptions>) -> BoxFuture<'static, ErasedValue>
+    dyn Fn(IvoInput<I>, IvoRwCtxOptions<CtxOptions>) -> BoxFuture<'static, ErasedValue>
         + Send
         + Sync
         + 'static,
@@ -264,17 +261,14 @@ pub enum ComputableRequiredError<I: IvoStruct, O: IvoStruct, CtxOptions> {
 pub type RequiredError = Option<String>;
 
 pub type RequiredResolver<I, O, CtxOptions> = Box<
-    dyn Fn(
-            SharedIvoContext<I, O>,
-            SharedRwCtxOptions<CtxOptions>,
-        ) -> BoxFuture<'static, RequiredError>
+    dyn Fn(IvoContext<I, O>, IvoRwCtxOptions<CtxOptions>) -> BoxFuture<'static, RequiredError>
         + Send
         + Sync
         + 'static,
 >;
 
 pub type Resolver<T, I, O, CtxOptions> = Box<
-    dyn Fn(SharedIvoContext<I, O>, SharedRwCtxOptions<CtxOptions>) -> BoxFuture<'static, T>
+    dyn Fn(IvoContext<I, O>, IvoRwCtxOptions<CtxOptions>) -> BoxFuture<'static, T>
         + Send
         + Sync
         + 'static,
@@ -283,7 +277,7 @@ pub type Resolver<T, I, O, CtxOptions> = Box<
 pub type BooleanResolver<I, O, CtxOptions> = Resolver<bool, I, O, CtxOptions>;
 
 pub type VirtualSanitizer<T, I, O, CtxOptions> = Box<
-    dyn Fn(T, SharedIvoContext<I, O>, SharedRwCtxOptions<CtxOptions>) -> BoxFuture<'static, T>
+    dyn Fn(T, IvoContext<I, O>, IvoRwCtxOptions<CtxOptions>) -> BoxFuture<'static, T>
         + Send
         + Sync
         + 'static,

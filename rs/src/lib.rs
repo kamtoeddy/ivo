@@ -24,6 +24,5 @@ pub use types::internal::{
 };
 
 pub use types::{
-    IvoContext, SharedCtxOptions, SharedIvoContext, SharedIvoData, SharedIvoInput,
-    SharedRwCtxOptions, UpdateResolverData,
+    IvoContext, IvoCtxOptions, IvoInput, IvoRwCtxOptions, IvoUpdateData, SharedIvoData,
 };

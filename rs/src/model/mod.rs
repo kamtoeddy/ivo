@@ -20,10 +20,11 @@ use crate::types::internal::{
     types::erase_value, DefaultErrorTool, FieldError, IvoErrorTool, IvoPartialStructMethods,
     IvoStruct, RwLock, UpdateError,
 };
+use crate::types::InternalIvoContext;
 
 use crate::schema::options::types::{OnSuccessConfig, PostValidationConfig};
 
-use crate::{IvoContext, SharedCtxOptions, SharedIvoContext, SharedRwCtxOptions};
+use crate::{IvoContext, IvoCtxOptions, IvoRwCtxOptions};
 
 type AsyncHandlerTrigger<'a> = Box<dyn Fn() -> BoxFuture<'a, ()> + Send + Sync + 'a>;
 
@@ -69,7 +70,7 @@ impl<
         (ErrorTool::ErrorPayload, AsyncHandlerTrigger<'schema>),
     > {
         let shared_rw_options = Arc::new(RwLock::new(options));
-        let mut ctx = Arc::new(IvoContext::<I, O>::new_create_ctx(
+        let mut ctx = Arc::new(InternalIvoContext::<I, O>::new_create_ctx(
             input.clone(),
             input.clone(),
             O::Partial::default(),
@@ -253,7 +254,7 @@ impl<
     > {
         let old_partial_values: O::Partial = data.clone().into();
 
-        let mut ctx = Arc::new(IvoContext::<I, O>::new_update_ctx(
+        let mut ctx = Arc::new(InternalIvoContext::<I, O>::new_update_ctx(
             O::Partial::default(),
             updates.clone(),
             updates.clone(),
@@ -510,8 +511,8 @@ impl<
     async fn validate<'a>(
         &self,
         fields_provided: &'a FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
-        ctx: SharedIvoContext<I, O>,
-        options: SharedRwCtxOptions<CtxOptions>,
+        ctx: IvoContext<I, O>,
+        options: IvoRwCtxOptions<CtxOptions>,
     ) -> Result<Option<(I::Partial, O::Partial)>, ErrorTool::ErrorPayload> {
         let raw_inputs = ctx.raw_input();
         let mut validators = Vec::with_capacity(fields_provided.fields.len());
@@ -610,8 +611,8 @@ impl<
     async fn re_validate<'a>(
         &self,
         fields_provided: &'a FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
-        ctx: SharedIvoContext<I, O>,
-        options: SharedRwCtxOptions<CtxOptions>,
+        ctx: IvoContext<I, O>,
+        options: IvoRwCtxOptions<CtxOptions>,
     ) -> Result<Option<(I::Partial, O::Partial)>, ErrorTool::ErrorPayload> {
         let mut re_validators = Vec::with_capacity(fields_provided.fields.len());
 
@@ -687,8 +688,8 @@ impl<
     async fn post_validate<'a>(
         &self,
         fields_provided: &'a FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
-        ctx: SharedIvoContext<I, O>,
-        options: SharedRwCtxOptions<CtxOptions>,
+        ctx: IvoContext<I, O>,
+        options: IvoRwCtxOptions<CtxOptions>,
     ) -> Result<Option<(I::Partial, O::Partial)>, ErrorTool::ErrorPayload> {
         let mut pre_validators = vec![];
         let mut post_validators = vec![];
@@ -847,8 +848,8 @@ impl<
     async fn sanitize_virtuals<'a>(
         &self,
         fields_provided: &'a FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
-        ctx: SharedIvoContext<I, O>,
-        options: SharedRwCtxOptions<CtxOptions>,
+        ctx: IvoContext<I, O>,
+        options: IvoRwCtxOptions<CtxOptions>,
     ) -> Option<I::Partial> {
         let mut sanitizers = Vec::with_capacity(fields_provided.fields.len());
 
@@ -893,8 +894,8 @@ impl<
     async fn resolve_dependent_values<'a>(
         &self,
         fields_changed: &'a FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
-        ctx: SharedIvoContext<I, O>,
-        options: SharedRwCtxOptions<CtxOptions>,
+        ctx: IvoContext<I, O>,
+        options: IvoRwCtxOptions<CtxOptions>,
     ) -> Option<(O::Partial, Vec<FieldInfo>)> {
         let mut resolvers = vec![];
         let previous_values: Option<O::Partial> = ctx.previous_values().map(|v| v.into());
@@ -974,7 +975,7 @@ impl<
         &self,
         mut output: O::Partial,
         input: &I::Partial,
-        options: SharedRwCtxOptions<CtxOptions>,
+        options: IvoRwCtxOptions<CtxOptions>,
     ) -> O::Partial {
         let mut resolvers = vec![];
         let fields_provided = input.ivo_internal_fields_provided();
@@ -1041,8 +1042,8 @@ impl<
         &'a self,
         previous_values: Option<&O::Partial>,
         input_values: &I::Partial,
-        ctx: SharedIvoContext<I, O>,
-        options: SharedRwCtxOptions<CtxOptions>,
+        ctx: IvoContext<I, O>,
+        options: IvoRwCtxOptions<CtxOptions>,
     ) -> (
         I::Partial,
         O::Partial,
@@ -1195,8 +1196,8 @@ impl<
     async fn evaluate_missing_required_fields<'a>(
         &self,
         fields_provided: &'a FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
-        ctx: SharedIvoContext<I, O>,
-        options: SharedRwCtxOptions<CtxOptions>,
+        ctx: IvoContext<I, O>,
+        options: IvoRwCtxOptions<CtxOptions>,
     ) -> Result<(), ErrorTool::ErrorPayload> {
         let mut error_tool = ErrorTool::new();
         let mut resolvers = vec![];
@@ -1289,8 +1290,8 @@ impl<
     fn prepare_failure_handlers(
         &self,
         fields_provided: Vec<FieldInfo>,
-        ctx: SharedIvoContext<I, O>,
-        options: SharedCtxOptions<CtxOptions>,
+        ctx: IvoContext<I, O>,
+        options: IvoCtxOptions<CtxOptions>,
     ) -> AsyncHandlerTrigger<'schema> {
         if fields_provided.is_empty() {
             return Box::new(|| Box::pin(ready(())));
@@ -1325,8 +1326,8 @@ impl<
     fn prepare_success_handlers<'a>(
         &self,
         fields_updated: FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
-        ctx: SharedIvoContext<I, O>,
-        options: SharedCtxOptions<CtxOptions>,
+        ctx: IvoContext<I, O>,
+        options: IvoCtxOptions<CtxOptions>,
     ) -> AsyncHandlerTrigger<'schema> {
         let mut field_names = HashSet::new();
 

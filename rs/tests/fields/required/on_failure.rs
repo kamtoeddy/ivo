@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoField, IvoStruct, Schema, SharedIvoContext, UpdateError};
+use ivo::{IvoField, IvoStruct, Schema, IvoContext, UpdateError};
 
 use crate::async_test_matrix;
 
@@ -27,7 +27,7 @@ async fn should_trigger_on_failure_handlers_at_creation() {
 
                         ready(Ok(None))
                     })
-                    .on_failure(|ctx: SharedIvoContext<DataInput, Data>, _| {
+                    .on_failure(|ctx: IvoContext<DataInput, Data>, _| {
                         if true {
                             panic!(
                                 "[required]: on_failure triggered with value: {}",
@@ -90,7 +90,7 @@ async fn should_trigger_on_failure_handlers_during_updates() {
 
                         ready(Ok(None))
                     })
-                    .on_failure(|ctx: SharedIvoContext<DataInput, Data>, _| {
+                    .on_failure(|ctx: IvoContext<DataInput, Data>, _| {
                         if true {
                             panic!(
                                 "[required]: on_failure triggered with value: {}",
@@ -158,7 +158,7 @@ async fn should_trigger_on_failure_handlers_during_updates_with_unchanged_values
 
                         ready(Ok(None))
                     })
-                    .on_failure(|ctx: SharedIvoContext<DataInput, Data>, _| {
+                    .on_failure(|ctx: IvoContext<DataInput, Data>, _| {
                         if true {
                             panic!(
                                 "[required]: on_failure triggered with value: {}",
@@ -233,7 +233,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                         ready(Ok(None))
                     })
                     .ignore_update(|_, _| ready(true))
-                    .on_failure(|ctx: SharedIvoContext<DataInput, Data>, _| {
+                    .on_failure(|ctx: IvoContext<DataInput, Data>, _| {
                         if true {
                             panic!(
                                 "[required]: on_failure triggered with value: {}",
@@ -319,7 +319,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                         ready(Ok(None))
                     })
                     .readonly()
-                    .on_failure(|ctx: SharedIvoContext<DataInput, Data>, _| {
+                    .on_failure(|ctx: IvoContext<DataInput, Data>, _| {
                         if true {
                             panic!(
                                 "[required]: on_failure triggered with value: {} as readonly",

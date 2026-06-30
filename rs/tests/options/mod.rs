@@ -1,7 +1,7 @@
 use std::future::ready;
 
 use crate::async_test_matrix;
-use ivo::{IvoField, IvoStruct, Schema, UpdateError, UpdateResolverData};
+use ivo::{IvoField, IvoStruct, Schema, UpdateError, IvoUpdateData};
 
 mod post_validate;
 
@@ -28,7 +28,7 @@ async fn should_respect_option_to_ignore_updates() {
     let schema = Schema::<DataInput, Data>::new(
         |f| f.set("lax", IvoField::LAX.default(default_value.to_string())),
         |o| {
-            o.ignore_update(|(input, _): UpdateResolverData<DataInput, Data>, _| {
+            o.ignore_update(|(input, _): IvoUpdateData<DataInput, Data>, _| {
                 ready(input.lax.map(|v| v == "should_ignore").unwrap_or(false))
             })
         },

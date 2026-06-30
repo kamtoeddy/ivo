@@ -3,7 +3,7 @@
 use futures::future::BoxFuture;
 use std::{fmt::Debug, sync::Arc};
 
-use crate::{IvoContext, IvoStruct};
+use crate::{types::InternalIvoContext, IvoStruct};
 
 pub trait IvoFieldValue: Clone + Debug + Send + Sync + 'static {}
 
@@ -24,14 +24,14 @@ pub type DeleteHandler<O: IvoStruct, CtxOptions> =
     Box<dyn Fn(Arc<O>, Arc<CtxOptions>) -> BoxFuture<'static, ()> + Send + Sync + 'static>;
 
 pub type FailureHandler<I: IvoStruct, O: IvoStruct, CtxOptions> = Box<
-    dyn Fn(Arc<IvoContext<I, O>>, Arc<CtxOptions>) -> BoxFuture<'static, ()>
+    dyn Fn(Arc<InternalIvoContext<I, O>>, Arc<CtxOptions>) -> BoxFuture<'static, ()>
         + Send
         + Sync
         + 'static,
 >;
 
 pub type SuccessHandler<I: IvoStruct, O: IvoStruct, CtxOptions> = Box<
-    dyn Fn(Arc<IvoContext<I, O>>, Arc<CtxOptions>) -> BoxFuture<'static, ()>
+    dyn Fn(Arc<InternalIvoContext<I, O>>, Arc<CtxOptions>) -> BoxFuture<'static, ()>
         + Send
         + Sync
         + 'static,

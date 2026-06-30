@@ -1,4 +1,4 @@
-use ivo::{IvoField, IvoStruct, Schema, SharedIvoContext, UpdateError};
+use ivo::{IvoField, IvoStruct, Schema, IvoContext, UpdateError};
 use std::{collections::HashMap, future::ready, ops::RangeInclusive, panic};
 
 use crate::async_test_matrix;
@@ -706,7 +706,7 @@ async fn should_respect_post_validation_config() {
         },
         |o| {
             o.post_validate(["required", "required_1"], |v| {
-                v.pre_validate(|ctx: SharedIvoContext<DataInput, Data>, _| {
+                v.pre_validate(|ctx: IvoContext<DataInput, Data>, _| {
                     let mut errors = HashMap::new();
 
                     if let Some(required) = ctx.input().required {
@@ -768,7 +768,7 @@ async fn should_respect_post_validation_config() {
 
                     ready(result)
                 })
-                .validate(|ctx: SharedIvoContext<DataInput, Data>, _| {
+                .validate(|ctx: IvoContext<DataInput, Data>, _| {
                     let mut errors = HashMap::new();
 
                     if let Some(required) = ctx.input().required {
@@ -1173,7 +1173,7 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
         },
         |o| {
             o.post_validate(["required", "required_1"], |v| {
-                v.pre_validate(|ctx: SharedIvoContext<DataInput, Data>, _| {
+                v.pre_validate(|ctx: IvoContext<DataInput, Data>, _| {
                     let mut updates = PartialDataInput::new();
 
                     if let Some(required) = ctx.input().required {
@@ -1185,7 +1185,7 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
 
                     ready(Ok(updates.into_option()))
                 })
-                .validate(|ctx: SharedIvoContext<DataInput, Data>, _| {
+                .validate(|ctx: IvoContext<DataInput, Data>, _| {
                     let mut updates = PartialDataInput::new();
 
                     if let Some(required) = ctx.input().required {
