@@ -44,7 +44,7 @@ async fn should_properly_use_default_value_of_missing_fields_at_creation() {
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let r = model.create(&PartialDataInput { lax: None }, None).await;
 
@@ -74,7 +74,7 @@ async fn should_properly_resolve_default_values_of_missing_fields_at_creation() 
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let r = model.create(&PartialDataInput { lax: None }, None).await;
 
@@ -104,7 +104,7 @@ async fn should_properly_use_lax_input_values_as_output_values_if_no_validator_i
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let lax = 34;
 
@@ -193,7 +193,7 @@ async fn should_respect_the_required_rule() {
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let r = model
         .create(
@@ -292,7 +292,7 @@ async fn should_not_create_if_primary_validation_fails() {
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let lax_values = [
         String::from(" "),
@@ -374,7 +374,7 @@ async fn should_not_update_if_primary_validation_fails() {
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let data = Data { id: 1, lax: 2 };
 
@@ -476,7 +476,7 @@ async fn should_not_create_if_re_validation_fails() {
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let lax_values = [
         String::from(" 111"),
@@ -577,7 +577,7 @@ async fn should_not_update_if_re_validation_fails() {
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let data = Data { id: 1, lax: 20 };
 
@@ -800,7 +800,7 @@ async fn should_respect_post_validation_config() {
         },
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let lax_2 = "lax_2_provided".to_string();
 
@@ -1202,7 +1202,7 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
         },
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let lax = LAX_PRE_VALIDATED_WITH_UPDATED_VALUES.to_string();
 

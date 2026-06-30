@@ -54,7 +54,7 @@ async fn should_trigger_on_success_handlers_at_creation() {
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let data = Data {
         required2: "required2".into(),
@@ -135,7 +135,7 @@ async fn should_trigger_on_success_handlers_during_updates_if_provided() {
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let required2 = "required2".to_string();
 
@@ -226,7 +226,7 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_not_provided()
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let required2 = "required2".to_string();
 
@@ -315,7 +315,7 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_i
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let required2 = "required2".to_string();
 
@@ -406,7 +406,7 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_i
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let required2 = "required2".to_string();
 
@@ -486,7 +486,7 @@ async fn should_trigger_success_handlers_with_empty_fields_array_each_time_creat
         },
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let (data, handle_success) = model
         .create(
@@ -556,7 +556,7 @@ async fn should_trigger_success_handlers_with_empty_fields_array_each_time_updat
         },
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let data = Data {
         required: required_value,

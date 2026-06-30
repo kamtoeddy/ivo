@@ -58,7 +58,7 @@ async fn should_trigger_on_success_handlers_at_creation_if_provided() {
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let data = Data {
         lax2: "lax2".into(),
@@ -143,7 +143,7 @@ async fn should_trigger_on_success_handlers_at_creation_even_if_not_provided() {
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let lax2 = "lax2".to_string();
 
@@ -231,7 +231,7 @@ async fn should_trigger_on_success_handlers_at_creation_even_if_provided_and_ign
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let lax_value = "lax_value".to_string();
     let lax2_value = "lax2_value".to_string();
@@ -319,7 +319,7 @@ async fn should_trigger_on_success_handlers_during_updates_if_provided() {
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let lax2 = "lax2".to_string();
 
@@ -413,7 +413,7 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_not_provided()
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let lax2 = "lax2".to_string();
 
@@ -505,7 +505,7 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_i
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let lax2 = "lax2".to_string();
 
@@ -577,7 +577,7 @@ async fn should_trigger_success_handlers_with_empty_fields_array_each_time_creat
         },
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let (data, handle_success) = model
         .create(&PartialDataInput::new(), None)
@@ -635,7 +635,7 @@ async fn should_trigger_success_handlers_with_empty_fields_array_each_time_updat
         },
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let data = Data {
         lax: default_lax,

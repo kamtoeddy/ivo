@@ -93,7 +93,7 @@ type CtxOptions = SharedCtxOptions<UserCtxOptions>;
 type RwCtxOptions = SharedRwCtxOptions<UserCtxOptions>;
 
 pub static USER_MODEL: LazyLock<Model<UserInput, User, UserCtxOptions, Timestamp>> =
-    LazyLock::new(|| USER_SCHEMA.get_model());
+    LazyLock::new(|| USER_SCHEMA.model());
 
 pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timestamp>> =
     LazyLock::new(|| {

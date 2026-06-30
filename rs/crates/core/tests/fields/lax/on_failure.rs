@@ -43,7 +43,7 @@ async fn should_trigger_on_failure_handlers_at_creation() {
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let input = PartialDataInput {
         lax: Some("fail_validation".into()),
@@ -122,7 +122,7 @@ async fn should_trigger_on_failure_handlers_at_creation_even_if_provided_and_ign
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let input = PartialDataInput {
         lax: Some("to be ignored".into()),
@@ -189,7 +189,7 @@ async fn should_trigger_on_failure_handlers_during_updates() {
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let data = Data {
         lax: "some value".into(),
@@ -258,7 +258,7 @@ async fn should_trigger_on_failure_handlers_during_updates_with_unchanged_values
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let lax_value = "some_value".to_string();
 
@@ -346,7 +346,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let data = Data {
         lax: "lax1".into(),

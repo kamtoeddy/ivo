@@ -37,7 +37,7 @@ async fn should_trigger_on_delete_handlers() {
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     model
         .delete(

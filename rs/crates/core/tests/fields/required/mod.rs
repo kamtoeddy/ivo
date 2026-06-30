@@ -44,7 +44,7 @@ async fn should_respect_the_default_required_error_if_field_is_missing() {
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let required_error = "\"required\" is required!";
 
@@ -109,7 +109,7 @@ async fn should_respect_custom_static_required_error_if_field_is_missing() {
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let r = model
         .create(&PartialDataInput { required: None }, None)
@@ -172,7 +172,7 @@ async fn should_respect_custom_dynamic_required_error_if_field_is_missing() {
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let r = model
         .create(&PartialDataInput { required: None }, None)
@@ -243,7 +243,7 @@ async fn should_not_create_if_primary_validation_fails() {
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let required_values = [
         String::from(" "),
@@ -325,7 +325,7 @@ async fn should_not_update_if_primary_validation_fails() {
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let data = Data { id: 1, required: 2 };
 
@@ -404,7 +404,7 @@ async fn should_properly_use_lax_input_values_as_output_values_if_validator_does
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let required = 1;
 
@@ -496,7 +496,7 @@ async fn should_not_create_if_re_validation_fails() {
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let required_values = [
         String::from(" 111"),
@@ -593,7 +593,7 @@ async fn should_not_update_if_re_validation_fails() {
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let data = Data {
         id: 1,
@@ -829,7 +829,7 @@ async fn should_respect_post_validation_config() {
         },
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let required = REQUIRED_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string();
     let value = "some value".to_string();
@@ -1201,7 +1201,7 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
         },
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let required = LAX_PRE_VALIDATED_WITH_UPDATED_VALUES.to_string();
     let value = "some random value".to_string();

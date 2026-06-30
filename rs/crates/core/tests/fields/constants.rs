@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{DefaultErrorTool, IvoField, IvoStruct, Schema, SharedIvoData, SharedIvoContext};
+use ivo::{DefaultErrorTool, IvoField, IvoStruct, Schema, SharedIvoContext, SharedIvoData};
 
 use crate::async_test_matrix;
 
@@ -26,7 +26,7 @@ async fn should_respect_constants_with_static_values() {
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let lax = 400;
 
@@ -92,7 +92,7 @@ async fn should_respect_constants_with_computed_values() {
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let lax = 400;
 
@@ -169,7 +169,7 @@ async fn should_trigger_on_delete_handlers_with_static_values() {
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     model.delete(Data { constant, lax: 400 }, None).await;
 }
@@ -215,7 +215,7 @@ async fn should_trigger_on_delete_handlers_with_computed_values() {
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     model.delete(Data { constant, lax: 400 }, None).await;
 }
@@ -261,7 +261,7 @@ async fn should_trigger_on_success_handlers_with_static_values() {
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let lax = 400;
 
@@ -317,7 +317,7 @@ async fn should_trigger_on_success_handlers_with_computed_values() {
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let lax = 400;
 

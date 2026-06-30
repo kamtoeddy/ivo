@@ -34,7 +34,7 @@ async fn should_respect_option_to_ignore_updates() {
         },
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let lax = "lax_value".to_string();
 
@@ -106,7 +106,7 @@ async fn should_properly_trigger_on_delete_handlers() {
         },
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     model.delete(Data { lax: 2, lax_1: 3 }, None).await
 }
@@ -139,7 +139,7 @@ async fn should_properly_trigger_all_on_delete_handlers() {
         },
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     model.delete(Data { lax: 2, lax_1: 3 }, None).await
 }

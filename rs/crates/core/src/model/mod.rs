@@ -35,7 +35,7 @@ impl<
         ErrorTool: IvoErrorTool,
     > Schema<I, O, CtxOptions, Timestamp, ErrorTool>
 {
-    pub fn get_model(&self) -> Model<'_, I, O, CtxOptions, Timestamp, ErrorTool> {
+    pub fn model(&self) -> Model<'_, I, O, CtxOptions, Timestamp, ErrorTool> {
         Model { schema: self }
     }
 }

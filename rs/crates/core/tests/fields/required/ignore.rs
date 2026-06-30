@@ -43,7 +43,7 @@ async fn should_respect_the_ignore_update_rule() {
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let lax = IGNORE_REQUIRED_FOR_UPDATE.to_string();
     let required = 1;
@@ -147,7 +147,7 @@ async fn should_respect_the_readonly_rule() {
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let lax = IGNORE_REQUIRED_FOR_UPDATE.to_string();
     let required = 1;

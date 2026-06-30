@@ -30,7 +30,7 @@ async fn should_respect_created_at_timestamp_with_default_name() {
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let lax = 400;
 
@@ -89,7 +89,7 @@ async fn should_respect_created_at_timestamp_with_custom_name() {
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let lax = 400;
 
@@ -148,7 +148,7 @@ async fn should_respect_updated_at_timestamp_with_default_name() {
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let lax = 400;
 
@@ -206,7 +206,7 @@ async fn should_respect_updated_at_timestamp_with_custom_name() {
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let lax = 400;
 
@@ -265,7 +265,7 @@ async fn should_respect_optional_updated_at_timestamp_with_default_name() {
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let lax = 400;
 
@@ -329,7 +329,7 @@ async fn should_respect_optional_updated_at_timestamp_with_custom_name() {
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let lax = 400;
 

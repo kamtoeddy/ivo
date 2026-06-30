@@ -54,7 +54,7 @@ async fn should_respect_the_ignore_rule() {
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let other_value = "ignore_lax_for_init".to_string();
 
@@ -164,7 +164,7 @@ async fn should_respect_the_ignore_init_rule() {
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let other_value = "some other value".to_string();
 
@@ -249,7 +249,7 @@ async fn should_respect_the_ignore_update_rule() {
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let lax_value = "lax value".to_string();
     let other_value = "other value".to_string();
@@ -322,7 +322,7 @@ async fn should_ignore_updates_on_readonly_fields_if_values_are_different_from_d
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let lax_value = 40;
 
@@ -380,7 +380,7 @@ async fn should_ignore_updates_on_readonly_fields_if_values_are_different_from_d
         |o| o,
     );
 
-    let model = schema.get_model();
+    let model = schema.model();
 
     let (data, _) = model
         .create(&PartialDataInput { lax: None }, None)

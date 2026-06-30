@@ -63,7 +63,7 @@ struct ResolvedLocationResults {
 }
 
 pub static PLACE_MODEL: LazyLock<Model<PlaceInput, Place, PlacesCtxOptions, (), PlacesErrorTool>> =
-    LazyLock::new(|| PLACE_SCHEMA.get_model());
+    LazyLock::new(|| PLACE_SCHEMA.model());
 
 pub static PLACE_SCHEMA: LazyLock<
     Schema<PlaceInput, Place, PlacesCtxOptions, (), PlacesErrorTool>,
