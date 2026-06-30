@@ -1344,23 +1344,23 @@ impl<
             field_names.insert(field_info.config_name.clone());
         }
 
-        if ctx.is_update() {
-            for field_name in ctx.changes().ivo_internal_fields_provided() {
-                field_names.insert(field_name);
-            }
+        let candidate_field_names = if ctx.is_update() {
+            ctx.changes().ivo_internal_fields_provided()
         } else {
-            for field_name in ctx.values().ivo_internal_fields_provided() {
-                field_names.insert(field_name);
-            }
+            ctx.values().ivo_internal_fields_provided()
+        };
+
+        for field_name in candidate_field_names {
+            field_names.insert(field_name);
         }
 
         let mut handlers = vec![];
 
-        for field_name in field_names {
+        for field_name in field_names.iter() {
             if let Some(InternalFieldConfig {
                 on_success_fns: Some(h_vec),
                 ..
-            }) = self.schema.field_configs.get(&field_name)
+            }) = self.schema.field_configs.get(field_name)
             {
                 handlers.extend(h_vec)
             }
@@ -1372,10 +1372,7 @@ impl<
                 handlers: h_vec,
             } in configs
             {
-                if fields.is_empty()
-                    || fields
-                        .iter()
-                        .any(|f| fields_updated.contains(&f.to_string()))
+                if fields.is_empty() || fields.iter().any(|f| field_names.contains(&f.to_string()))
                 {
                     handlers.extend(h_vec);
                 }

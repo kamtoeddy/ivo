@@ -11,6 +11,7 @@ use crate::async_test_matrix;
 // [x] resolver
 // [x] on_delete
 // [x] on_success
+// [x] o.on_success
 
 // default
 
@@ -54,32 +55,6 @@ async fn should_use_static_default_value_of_dependent_if_resolver_is_not_run_at_
         .unwrap();
 
     assert_eq!(data, Data { dependent, lax });
-
-    // let lax = 700;
-
-    // let (data, _) = model
-    //     .create(&PartialDataInput { lax: Some(lax) }, None)
-    //     .await
-    //     .ok()
-    //     .unwrap();
-
-    // assert_eq!(data, Data { dependent, lax });
-
-    // let lax = Some(200);
-
-    // let (updates, _) = model
-    //     .update(&data, &PartialDataInput { lax }, None)
-    //     .await
-    //     .ok()
-    //     .unwrap();
-
-    // assert_eq!(
-    //     updates,
-    //     PartialData {
-    //         dependent: None,
-    //         lax
-    //     }
-    // );
 }
 
 async_test_matrix!(should_use_static_default_value_of_dependent_if_resolver_is_not_run_at_creation);
@@ -883,3 +858,369 @@ async fn should_not_trigger_on_success_handlers_not_if_resolver_is_run_during_up
 }
 
 async_test_matrix!(should_not_trigger_on_success_handlers_not_if_resolver_is_run_during_updates);
+
+async fn should_trigger_grouped_on_success_with_at_creation_if_resolved() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        dependent: i32,
+        lax: i32,
+    }
+
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct DataInput {
+        lax: i32,
+    }
+
+    let default_dependent_value = 1234;
+    let default_lax_value = 20;
+
+    let schema: Schema<DataInput, Data, Option<()>, (), DefaultErrorTool> = Schema::new(
+        |f| {
+            f.set(
+                "dependent",
+                IvoField::DEPENDENT
+                    .default(default_dependent_value)
+                    .depends_on(["lax"])
+                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
+                        ready(ctx.values().dependent.unwrap() + 1)
+                    }),
+            )
+            .set("lax", IvoField::LAX.default(default_lax_value))
+        },
+        |o| {
+            o.on_success(["dependent"], |s| {
+                s.handle(|_, _| {
+                    if true {
+                        panic!("[options.on_success]: on_success triggered for dependent")
+                    }
+
+                    ready(())
+                })
+            })
+        },
+    );
+
+    let model = schema.model();
+
+    let (data, handle_success) = model
+        .create(
+            &PartialDataInput {
+                lax: Some(default_lax_value),
+            },
+            None,
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    let resolved_value = default_dependent_value + 1;
+
+    assert_eq!(
+        data,
+        Data {
+            dependent: resolved_value,
+            lax: default_lax_value
+        }
+    );
+
+    handle_success().await;
+}
+
+async_test_matrix!(
+    "[options.on_success]: on_success triggered for dependent",
+    should_trigger_grouped_on_success_with_at_creation_if_resolved
+);
+
+async fn should_trigger_grouped_on_success_with_at_creation_even_if_not_resolved() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        dependent: i32,
+        lax: i32,
+    }
+
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct DataInput {
+        lax: i32,
+    }
+
+    let default_dependent_value = 1234;
+    let default_lax_value = 20;
+
+    let schema: Schema<DataInput, Data, Option<()>, (), DefaultErrorTool> = Schema::new(
+        |f| {
+            f.set(
+                "dependent",
+                IvoField::DEPENDENT
+                    .default(default_dependent_value)
+                    .depends_on(["lax"])
+                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
+                        ready(ctx.values().dependent.unwrap() + 1)
+                    }),
+            )
+            .set("lax", IvoField::LAX.default(default_lax_value))
+        },
+        |o| {
+            o.on_success(["dependent"], |s| {
+                s.handle(|_, _| {
+                    if true {
+                        panic!("[options.on_success]: on_success triggered for dependent")
+                    }
+
+                    ready(())
+                })
+            })
+        },
+    );
+
+    let model = schema.model();
+
+    let (data, handle_success) = model
+        .create(&PartialDataInput { lax: None }, None)
+        .await
+        .ok()
+        .unwrap();
+
+    let resolved_value = default_dependent_value;
+
+    assert_eq!(
+        data,
+        Data {
+            dependent: resolved_value,
+            lax: default_lax_value
+        }
+    );
+
+    handle_success().await;
+}
+
+async_test_matrix!(
+    "[options.on_success]: on_success triggered for dependent",
+    should_trigger_grouped_on_success_with_at_creation_even_if_not_resolved
+);
+
+async fn should_trigger_grouped_on_success_during_updates_if_resolved() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        dependent: i32,
+        lax: i32,
+    }
+
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct DataInput {
+        lax: i32,
+    }
+
+    let default_dependent_value = 1234;
+    let default_lax_value = 20;
+
+    let schema: Schema<DataInput, Data, Option<()>, (), DefaultErrorTool> = Schema::new(
+        |f| {
+            f.set(
+                "dependent",
+                IvoField::DEPENDENT
+                    .default(default_dependent_value)
+                    .depends_on(["lax"])
+                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
+                        ready(ctx.values().dependent.unwrap() + 1)
+                    }),
+            )
+            .set("lax", IvoField::LAX.default(default_lax_value))
+        },
+        |o| {
+            o.on_success(["dependent"], |s| {
+                s.handle(|_, _| {
+                    if true {
+                        panic!("[options.on_success]: on_success triggered for dependent")
+                    }
+
+                    ready(())
+                })
+            })
+        },
+    );
+
+    let model = schema.model();
+
+    let lax = Some(default_lax_value + 1);
+
+    let (data, handle_success) = model
+        .update(
+            &Data {
+                dependent: default_dependent_value,
+                lax: default_lax_value,
+            },
+            &PartialDataInput { lax },
+            None,
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    let resolved_value = default_dependent_value + 1;
+
+    assert_eq!(
+        data,
+        PartialData {
+            dependent: Some(resolved_value),
+            lax
+        }
+    );
+
+    handle_success().await;
+}
+
+async_test_matrix!(
+    "[options.on_success]: on_success triggered for dependent",
+    should_trigger_grouped_on_success_during_updates_if_resolved
+);
+
+async fn should_not_trigger_grouped_on_success_during_updates_if_not_resolved_because_it_is_readonly(
+) {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        dependent: i32,
+        lax: i32,
+    }
+
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct DataInput {
+        lax: i32,
+    }
+
+    let default_dependent_value = 1234;
+    let default_lax_value = 20;
+
+    let schema: Schema<DataInput, Data, Option<()>, (), DefaultErrorTool> = Schema::new(
+        |f| {
+            f.set(
+                "dependent",
+                IvoField::DEPENDENT
+                    .default(default_dependent_value)
+                    .depends_on(["lax"])
+                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
+                        ready(ctx.values().dependent.unwrap() + 1)
+                    })
+                    .readonly(),
+            )
+            .set("lax", IvoField::LAX.default(default_lax_value))
+        },
+        |o| {
+            o.on_success(["dependent"], |s| {
+                s.handle(|_, _| {
+                    if true {
+                        panic!("[options.on_success]: on_success triggered for dependent")
+                    }
+
+                    ready(())
+                })
+            })
+        },
+    );
+
+    let model = schema.model();
+
+    let lax = Some(default_lax_value + 1);
+
+    let (data, handle_success) = model
+        .update(
+            &Data {
+                dependent: default_dependent_value + 1,
+                lax: default_lax_value,
+            },
+            &PartialDataInput { lax },
+            None,
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        data,
+        PartialData {
+            dependent: None,
+            lax
+        }
+    );
+
+    handle_success().await;
+}
+
+async_test_matrix!(
+    should_not_trigger_grouped_on_success_during_updates_if_not_resolved_because_it_is_readonly
+);
+
+async fn should_not_trigger_grouped_on_success_during_updates_if_not_resolved() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        dependent: i32,
+        lax: i32,
+        lax_1: i32,
+    }
+
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct DataInput {
+        lax: i32,
+        lax_1: i32,
+    }
+
+    let default_dependent_value = 1234;
+    let default_lax_value = 20;
+
+    let schema: Schema<DataInput, Data, Option<()>, (), DefaultErrorTool> = Schema::new(
+        |f| {
+            f.set(
+                "dependent",
+                IvoField::DEPENDENT
+                    .default(default_dependent_value)
+                    .depends_on(["lax"])
+                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
+                        ready(ctx.values().dependent.unwrap() + 1)
+                    }),
+            )
+            .set("lax", IvoField::LAX.default(default_lax_value))
+            .set("lax_1", IvoField::LAX.default(default_lax_value))
+        },
+        |o| {
+            o.on_success(["dependent"], |s| {
+                s.handle(|_, _| {
+                    if true {
+                        panic!("[options.on_success]: on_success triggered for dependent")
+                    }
+
+                    ready(())
+                })
+            })
+        },
+    );
+
+    let model = schema.model();
+
+    let lax_1 = Some(default_lax_value + 1);
+
+    let (data, handle_success) = model
+        .update(
+            &Data {
+                dependent: default_dependent_value + 1,
+                lax: default_lax_value,
+                lax_1: default_lax_value,
+            },
+            &PartialDataInput { lax: None, lax_1 },
+            None,
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        data,
+        PartialData {
+            dependent: None,
+            lax: None,
+            lax_1
+        }
+    );
+
+    handle_success().await;
+}
+
+async_test_matrix!(should_not_trigger_grouped_on_success_during_updates_if_not_resolved);
