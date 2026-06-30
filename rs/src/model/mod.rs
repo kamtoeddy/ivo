@@ -1370,8 +1370,7 @@ impl<
                 handlers: h_vec,
             } in configs
             {
-                if fields.is_empty() || fields.iter().any(|f| field_names.contains(&f.to_string()))
-                {
+                if fields.is_empty() || fields.iter().any(|f| field_names.contains(*f)) {
                     handlers.extend(h_vec);
                 }
             }

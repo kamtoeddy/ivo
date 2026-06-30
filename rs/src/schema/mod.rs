@@ -568,8 +568,7 @@ impl<
         dependent_field_to_parent_fields: &HashMap<&String, &Vec<&'r str>>,
         depth: i32,
     ) -> Option<(&'r str, i32)> {
-        if let Some(ref parent_deps) = dependent_field_to_parent_fields.get(&field_name.to_string())
-        {
+        if let Some(parent_deps) = dependent_field_to_parent_fields.get(&field_name.to_string()) {
             if parent_deps.contains(&parent_name) {
                 return Some((parent_name, depth));
             }
@@ -631,9 +630,7 @@ impl<
         dependent_field_to_parent_fields: &HashMap<&String, &Vec<&'c str>>,
         mut visited_nodes: Vec<&'c str>,
     ) -> Option<Vec<&'c str>> {
-        if let Some(ref parent_deps) =
-            dependent_field_to_parent_fields.get(&parent_name.to_string())
-        {
+        if let Some(parent_deps) = dependent_field_to_parent_fields.get(&parent_name.to_string()) {
             visited_nodes.push(parent_name);
 
             if parent_deps.contains(&dependent_field_name) {
