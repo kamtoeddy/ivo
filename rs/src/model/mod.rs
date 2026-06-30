@@ -1253,8 +1253,8 @@ impl<
                     ..
                 } => resolvers.push((field_name, resolver)),
                 InternalFieldConfig {
-                    field_type: FieldType::Virtual,
                     alias,
+                    field_type: FieldType::Virtual,
                     required_fn: Some(resolver),
                     ..
                 } => resolvers.push((alias.as_ref().unwrap_or(field_name), resolver)),
