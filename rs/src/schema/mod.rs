@@ -247,7 +247,7 @@ impl<
                                 continue;
                             }
 
-                            if let Some(depends_on) = config.depends_on.as_ref() {
+                            if let Some(ref depends_on) = config.depends_on {
                                 if !depends_on.iter().any(|parent| parent == &field_name_str) {
                                     panic!("\n{COLOR_RED}[{field_name}]: \"{alias}\" is not a valid alias for field because \"{alias}\" does not depend on \"{field_name}\"{STYLE_RESET}\n");
                                 }
@@ -432,7 +432,7 @@ impl<
         input_field_names: &HashSet<String>,
         output_field_names: &HashSet<String>,
     ) -> SchemaOptions<I, O, CtxOptions, ErrorTool> {
-        if let Some(configs) = options.on_success_fns.as_ref() {
+        if let Some(ref configs) = options.on_success_fns {
             let option_name = "options.on_success";
             let mut field_names = HashSet::new();
 
@@ -477,7 +477,7 @@ impl<
             }
         }
 
-        if let Some(configs) = options.post_validate.as_ref() {
+        if let Some(ref configs) = options.post_validate {
             let option_name = "options.post_validate";
             let mut field_names = HashSet::new();
 
@@ -568,9 +568,7 @@ impl<
         dependent_field_to_parent_fields: &HashMap<&String, &Vec<&'r str>>,
         depth: i32,
     ) -> Option<(&'r str, i32)> {
-        if let Some(parent_deps) = dependent_field_to_parent_fields
-            .get(&field_name.to_string())
-            .as_ref()
+        if let Some(ref parent_deps) = dependent_field_to_parent_fields.get(&field_name.to_string())
         {
             if parent_deps.contains(&parent_name) {
                 return Some((parent_name, depth));
@@ -633,9 +631,8 @@ impl<
         dependent_field_to_parent_fields: &HashMap<&String, &Vec<&'c str>>,
         mut visited_nodes: Vec<&'c str>,
     ) -> Option<Vec<&'c str>> {
-        if let Some(parent_deps) = dependent_field_to_parent_fields
-            .get(&parent_name.to_string())
-            .as_ref()
+        if let Some(ref parent_deps) =
+            dependent_field_to_parent_fields.get(&parent_name.to_string())
         {
             visited_nodes.push(parent_name);
 

@@ -705,7 +705,7 @@ impl<
                     .iter()
                     .any(|f| fields_provided.contains(&f.to_string()))
                 {
-                    if let Some(pre_validator) = pre_validator.as_ref() {
+                    if let Some(ref pre_validator) = pre_validator {
                         pre_validators.push((fields, pre_validator));
                     }
 
@@ -906,12 +906,10 @@ impl<
             match config {
                 InternalFieldConfig {
                     field_type: FieldType::Dependent,
-                    depends_on,
+                    depends_on: Some(ref depends_on),
                     resolver: Some(ref resolver),
                     ..
                 } if depends_on
-                    .as_ref()
-                    .unwrap()
                     .iter()
                     .any(|parent| fields_changed.contains(&parent.to_string())) =>
                 {
