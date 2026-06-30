@@ -4,7 +4,6 @@ use std::{collections::HashMap, future::ready, ops::RangeInclusive, panic};
 use crate::async_test_matrix;
 
 mod ignore;
-mod on_delete;
 mod on_failure;
 mod on_success;
 
@@ -13,99 +12,76 @@ mod on_success;
 // [x] ignore
 // [x] ignore_init
 // [x] ignore_update
-// [ ] required_fn
+// [x] required
 // [ ] validate
 // [ ] re_validate
 // [ ] sanitizer
-// [ ] on_delete
 // [ ] on_failure
 // [x] on_success
 // [x] o.on_success
 // [ ] o.post_validate
 
-// required_error
+// required
 
-async fn should_respect_the_default_required_error_if_field_is_missing() {
+async fn should_respect_the_required_rule() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
-        required: i32,
+        dependent: i32,
+        lax: String,
     }
 
     #[derive(Debug, Clone, IvoStruct)]
     struct DataInput {
-        required: i32,
+        lax: String,
+        virtual_field: String,
     }
+
+    let default_dependent_value = 1;
+    let default_lax_value = "default_lax_value".to_string();
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
             f.set(
-                "required",
-                IvoField::REQUIRED.validate(|_: i32, _, _| ready(Ok(None))),
+                "dependent",
+                IvoField::DEPENDENT
+                    .default(default_dependent_value)
+                    .depends_on(["virtual_field"])
+                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
+                        ready(ctx.values().dependent.unwrap() + 1)
+                    }),
             )
-        },
-        |o| o,
-    );
+            .set("lax", IvoField::LAX.default(default_lax_value.clone()))
+            .set(
+                "virtual_field",
+                IvoField::VIRTUAL
+                    .validate(|v: String, _, _| {
+                        if v == "fail_validation" {
+                            return ready(Err(("validation failed".into(), None)));
+                        }
 
-    let model = schema.model();
+                        ready(Ok(None))
+                    })
+                    .required(|ctx: IvoContext<DataInput, Data>, _| {
+                        if ctx.is_update() {
+                            if "require_virtual_field_for_update"
+                                == ctx.previous_values().unwrap().lax
+                            {
+                                return ready(Some(
+                                    "virtual_field is required for this update".into(),
+                                ));
+                            }
 
-    let required_error = "\"required\" is required!";
+                            return ready(None);
+                        }
 
-    let r = model
-        .create(&PartialDataInput { required: None }, None)
-        .await;
+                        if Some("required_virtual_field_for_init".into()) == ctx.input().lax {
+                            return ready(Some(
+                                "virtual_field is required to create at this time".into(),
+                            ));
+                        }
 
-    match r {
-        Err((p, _)) => assert_eq!(p.get("required").unwrap()[0].reason, required_error),
-        _ => unreachable!("expected nothig to update error"),
-    }
-
-    let required = 2;
-
-    let r = model
-        .update(
-            &Data {
-                required: required - 1,
-            },
-            &PartialDataInput {
-                required: Some(required),
-            },
-            None,
-        )
-        .await;
-
-    match r {
-        Ok((data, _)) => assert_eq!(
-            data,
-            PartialData {
-                required: Some(required)
-            }
-        ),
-        _ => unreachable!("expected update to be successful"),
-    }
-}
-
-async_test_matrix!(should_respect_the_default_required_error_if_field_is_missing);
-
-async fn should_respect_custom_static_required_error_if_field_is_missing() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        required: i32,
-    }
-
-    #[derive(Debug, Clone, IvoStruct)]
-    struct DataInput {
-        required: i32,
-    }
-
-    let required_error = "Yooo! you did not provide: \"required\"";
-
-    let schema: Schema<DataInput, Data> = Schema::new(
-        |f| {
-            f.set(
-                "required",
-                IvoField::REQUIRED
-                    .required_error(required_error)
-                    .validate(|_: i32, _, _| ready(Ok(None))),
+                        ready(None)
+                    }),
             )
         },
         |o| o,
@@ -114,103 +90,66 @@ async fn should_respect_custom_static_required_error_if_field_is_missing() {
     let model = schema.model();
 
     let r = model
-        .create(&PartialDataInput { required: None }, None)
-        .await;
-
-    match r {
-        Err((p, _)) => assert_eq!(p.get("required").unwrap()[0].reason, required_error),
-        _ => unreachable!("expected nothig to update error"),
-    }
-
-    let required = 2;
-
-    let r = model
-        .update(
-            &Data {
-                required: required - 1,
-            },
+        .create(
             &PartialDataInput {
-                required: Some(required),
+                lax: Some("required_virtual_field_for_init".into()),
+                virtual_field: None,
             },
             None,
         )
         .await;
 
     match r {
-        Ok((data, _)) => assert_eq!(
-            data,
-            PartialData {
-                required: Some(required)
-            }
+        Err((payload, _)) => assert_eq!(
+            payload.get("virtual_field").unwrap()[0].reason,
+            "virtual_field is required to create at this time"
         ),
-        _ => unreachable!("expected update to be successful"),
-    }
-}
-
-async_test_matrix!(should_respect_custom_static_required_error_if_field_is_missing);
-
-async fn should_respect_custom_dynamic_required_error_if_field_is_missing() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        required: i32,
+        _ => unreachable!("expected a validation error"),
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
-    struct DataInput {
-        required: i32,
-    }
+    let lax = "require_virtual_field_for_update".to_string();
 
-    const REQUIRED_ERROR: &str = "Yooo! you did not provide: \"required\"";
+    let (data, _) = model
+        .create(
+            &PartialDataInput {
+                lax: Some(lax.clone()),
+                virtual_field: None,
+            },
+            None,
+        )
+        .await
+        .ok()
+        .unwrap();
 
-    let schema: Schema<DataInput, Data> = Schema::new(
-        |f| {
-            f.set(
-                "required",
-                IvoField::REQUIRED
-                    .required_error_fn(|_, _| REQUIRED_ERROR.to_string())
-                    .validate(|_: i32, _, _| ready(Ok(None))),
-            )
-        },
-        |o| o,
+    assert_eq!(
+        data,
+        Data {
+            dependent: default_dependent_value,
+            lax,
+        }
     );
 
-    let model = schema.model();
-
-    let r = model
-        .create(&PartialDataInput { required: None }, None)
-        .await;
-
-    match r {
-        Err((p, _)) => assert_eq!(p.get("required").unwrap()[0].reason, REQUIRED_ERROR),
-        _ => unreachable!("expected nothig to update error"),
-    }
-
-    let required = 2;
-
     let r = model
         .update(
-            &Data {
-                required: required - 1,
-            },
+            &data,
             &PartialDataInput {
-                required: Some(required),
+                virtual_field: None,
+                lax: Some("some update".into()),
             },
             None,
         )
         .await;
 
     match r {
-        Ok((data, _)) => assert_eq!(
-            data,
-            PartialData {
-                required: Some(required)
-            }
+        Err((UpdateError::ValidationError(payload), _)) => assert_eq!(
+            payload.get("virtual_field").unwrap()[0].reason,
+            "virtual_field is required for this update"
         ),
-        _ => unreachable!("expected update to be successful"),
+        _ => unreachable!("expected a validation error"),
     }
 }
 
-async_test_matrix!(should_respect_custom_dynamic_required_error_if_field_is_missing);
+async_test_matrix!(should_respect_the_required_rule);
 
 // validators
 
