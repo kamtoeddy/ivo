@@ -458,11 +458,7 @@ impl<
                         continue;
                     };
 
-                    if let Some(InternalFieldConfig {
-                        field_type: FieldType::Virtual,
-                        ..
-                    }) = field_configs.get(&owned_field_name)
-                    {
+                    if field_configs.get(&owned_field_name).is_some() {
                         field_names.insert(field_name);
 
                         continue;

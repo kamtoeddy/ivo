@@ -1,7 +1,7 @@
 use std::future::ready;
 
 use crate::async_test_matrix;
-use ivo::{IvoField, IvoStruct, Schema, UpdateError, IvoUpdateData};
+use ivo::{IvoContext, IvoField, IvoStruct, IvoUpdateData, Schema, UpdateError};
 
 mod post_validate;
 
@@ -367,5 +367,36 @@ fn should_reject_if_updated_at_timestamp_with_custom_name_is_provided_to_the_fie
                 s.handle(|_, _| ready(()))
             })
         },
+    );
+}
+
+#[test]
+fn should_allow_constant_and_dependents_in_fields_array() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        id: i32,
+        dependent: i32,
+        lax: i32,
+    }
+
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct DataInput {
+        lax: i32,
+    }
+
+    let _: Schema<DataInput, Data, Option<()>, i32> = Schema::new(
+        |f| {
+            f.set("id", IvoField::CONSTANT.value(1234))
+                .set(
+                    "dependent",
+                    IvoField::DEPENDENT.default(1).depends_on(["lax"]).resolve(
+                        |ctx: IvoContext<DataInput, Data>, _| {
+                            ready(ctx.values().dependent.unwrap() + 1)
+                        },
+                    ),
+                )
+                .set("lax", IvoField::LAX.default(5678))
+        },
+        |o| o.on_success(["id", "dependent"], |s| s.handle(|_, _| ready(()))),
     );
 }
