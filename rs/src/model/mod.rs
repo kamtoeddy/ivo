@@ -742,10 +742,11 @@ impl<
                 match pre_validation {
                     Err(payload) => {
                         for (field_name, (reason, metadata)) in payload {
-                            let field_name = field_name.as_str();
-
-                            if fields.contains(&field_name) {
-                                error_tool.add(field_name, FieldError { reason, metadata });
+                            if let Some(field_info) = fields_provided.get(&field_name) {
+                                if fields.contains(&field_info.config_name.as_str()) {
+                                    error_tool
+                                        .add(&field_info.name, FieldError { reason, metadata });
+                                }
                             }
                         }
                     }
@@ -804,10 +805,10 @@ impl<
             match validation {
                 Err(payload) => {
                     for (field_name, (reason, metadata)) in payload {
-                        let field_name = field_name.as_str();
-
-                        if fields.contains(&field_name) {
-                            error_tool.add(field_name, FieldError { reason, metadata });
+                        if let Some(field_info) = fields_provided.get(&field_name) {
+                            if fields.contains(&field_info.config_name.as_str()) {
+                                error_tool.add(&field_info.name, FieldError { reason, metadata });
+                            }
                         }
                     }
                 }

@@ -134,7 +134,7 @@ impl<
                             config_name: parent_name.to_string(),
                             is_input: true,
                             is_output: false,
-                            name: field_name.clone(),
+                            name: field_name.to_owned(),
                         });
                     }
                     _ => {}
@@ -142,7 +142,20 @@ impl<
             }
         }
 
-        None
+        for (virtual_name, InternalFieldConfig { alias, .. }) in schema.field_configs.iter() {
+            if let Some(alias) = alias {
+                if alias == field_name {
+                    return Some(FieldInfo {
+                        config_name: virtual_name.to_owned(),
+                        is_input: true,
+                        is_output: false,
+                        name: field_name.to_owned(),
+                    });
+                }
+            }
+        }
+
+        return None;
     }
 }
 
