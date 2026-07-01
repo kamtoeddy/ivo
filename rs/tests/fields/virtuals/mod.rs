@@ -13,8 +13,8 @@ mod on_success;
 // [x] ignore_init
 // [x] ignore_update
 // [x] required
-// [ ] validate
-// [ ] re_validate
+// [x] validate
+// [x] re_validate
 // [ ] sanitizer
 // [x] on_failure
 // [x] on_success
@@ -156,21 +156,32 @@ async_test_matrix!(should_respect_the_required_rule);
 async fn should_not_create_if_primary_validation_fails() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
-        required: String,
+        dependent: i32,
     }
 
     #[derive(Debug, Clone, IvoStruct)]
     struct DataInput {
-        required: String,
+        virtual_field: String,
     }
+
+    let default_dependent_value = 1;
 
     const MIN_LENGTH_ERROR: &str = "expected required to be at least 2 characters long";
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
             f.set(
-                "required",
-                IvoField::REQUIRED.validate(|v: String, _, _| {
+                "dependent",
+                IvoField::DEPENDENT
+                    .default(default_dependent_value)
+                    .depends_on(["virtual_field"])
+                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
+                        ready(ctx.values().dependent.unwrap() + 1)
+                    }),
+            )
+            .set(
+                "virtual_field",
+                IvoField::VIRTUAL.validate(|v: String, _, _| {
                     let validated = v.trim();
 
                     if validated.len() < 2 {
@@ -186,18 +197,18 @@ async fn should_not_create_if_primary_validation_fails() {
 
     let model = schema.model();
 
-    let required_values = [
+    let values = [
         String::from(" "),
         String::from(" 1"),
         String::from("1"),
         String::from(" 1   "),
     ];
 
-    for required_value in required_values {
+    for value in values {
         let r = model
             .create(
                 &PartialDataInput {
-                    required: Some(required_value),
+                    virtual_field: Some(value),
                 },
                 None,
             )
@@ -205,19 +216,19 @@ async fn should_not_create_if_primary_validation_fails() {
 
         match r {
             Err((p, _)) => {
-                assert_eq!(p.get("required").unwrap()[0].reason, MIN_LENGTH_ERROR);
+                assert_eq!(p.get("virtual_field").unwrap()[0].reason, MIN_LENGTH_ERROR);
             }
             _ => unreachable!(),
         }
     }
 
-    let required_values = [String::from("1".repeat(2)), String::from("1".repeat(3))];
+    let values = [String::from("1".repeat(2)), String::from("1".repeat(3))];
 
-    for required_value in required_values {
+    for value in values {
         let r = model
             .create(
                 &PartialDataInput {
-                    required: Some(required_value.clone()),
+                    virtual_field: Some(value.clone()),
                 },
                 None,
             )
@@ -225,9 +236,9 @@ async fn should_not_create_if_primary_validation_fails() {
 
         match r {
             Ok((data, _)) => {
-                assert_eq!(data.required, required_value);
+                assert_eq!(data.dependent, default_dependent_value + 1);
             }
-            _ => unreachable!(),
+            _ => unreachable!("expected successful creation"),
         }
     }
 }
@@ -237,47 +248,58 @@ async_test_matrix!(should_not_create_if_primary_validation_fails);
 async fn should_not_update_if_primary_validation_fails() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
-        id: i32,
-        required: i32,
+        dependent: i32,
     }
 
     #[derive(Debug, Clone, IvoStruct)]
     struct DataInput {
-        required: i32,
+        virtual_field: i32,
     }
 
-    const OUT_OF_RANGE_ERROR: &str = "required must be between 1 & 5 inclussive";
+    let default_dependent_value = 1;
+
+    const OUT_OF_RANGE_ERROR: &str = "virtual_field must be between 1 & 5 inclussive";
     const REQUIRED_VALUE_RANGE: RangeInclusive<i32> = 1..=5;
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1)))
-                .set(
-                    "required",
-                    IvoField::REQUIRED.validate(|v: i32, _, _| {
-                        if !REQUIRED_VALUE_RANGE.contains(&v) {
-                            return ready(Err((OUT_OF_RANGE_ERROR.into(), None)));
-                        }
-
-                        ready(Ok(None))
+            f.set(
+                "dependent",
+                IvoField::DEPENDENT
+                    .default(default_dependent_value)
+                    .depends_on(["virtual_field"])
+                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
+                        ready(ctx.input().virtual_field.unwrap())
                     }),
-                )
+            )
+            .set(
+                "virtual_field",
+                IvoField::VIRTUAL.validate(|v: i32, _, _| {
+                    if !REQUIRED_VALUE_RANGE.contains(&v) {
+                        return ready(Err((OUT_OF_RANGE_ERROR.into(), None)));
+                    }
+
+                    ready(Ok(None))
+                }),
+            )
         },
         |o| o,
     );
 
     let model = schema.model();
 
-    let data = Data { id: 1, required: 2 };
+    let data = Data {
+        dependent: default_dependent_value,
+    };
 
-    let required_values = [-1, 0, REQUIRED_VALUE_RANGE.max().unwrap() + 1];
+    let values = [-1, 0, REQUIRED_VALUE_RANGE.max().unwrap() + 1];
 
-    for required_value in required_values {
+    for value in values {
         let r = model
             .update(
                 &data,
                 &PartialDataInput {
-                    required: Some(required_value),
+                    virtual_field: Some(value),
                 },
                 None,
             )
@@ -285,14 +307,17 @@ async fn should_not_update_if_primary_validation_fails() {
 
         match r {
             Err((UpdateError::ValidationError(p), _)) => {
-                assert_eq!(p.get("required").unwrap()[0].reason, OUT_OF_RANGE_ERROR)
+                assert_eq!(
+                    p.get("virtual_field").unwrap()[0].reason,
+                    OUT_OF_RANGE_ERROR
+                )
             }
             _ => unreachable!(),
         }
     }
 
     for updated_value in REQUIRED_VALUE_RANGE.clone() {
-        if updated_value == data.required {
+        if updated_value == data.dependent {
             continue;
         }
 
@@ -300,7 +325,7 @@ async fn should_not_update_if_primary_validation_fails() {
             .update(
                 &data,
                 &PartialDataInput {
-                    required: Some(updated_value),
+                    virtual_field: Some(updated_value),
                 },
                 None,
             )
@@ -311,35 +336,45 @@ async fn should_not_update_if_primary_validation_fails() {
                 assert_eq!(
                     d,
                     PartialData {
-                        id: None,
-                        required: Some(updated_value),
+                        dependent: Some(updated_value),
                     }
                 )
             }
-            _ => unreachable!(),
+            _ => unreachable!("expected successful update"),
         }
     }
 }
 
 async_test_matrix!(should_not_update_if_primary_validation_fails);
 
-async fn should_properly_use_lax_input_values_as_output_values_if_validator_does_not_return_a_validated_value(
+async fn should_properly_use_input_values_as_output_values_if_validator_does_not_return_a_validated_value(
 ) {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
-        required: i32,
+        dependent: i32,
     }
 
     #[derive(Debug, Clone, IvoStruct)]
     struct DataInput {
-        required: i32,
+        virtual_field: i32,
     }
+
+    let default_dependent_value = 1;
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
             f.set(
-                "required",
-                IvoField::REQUIRED.validate(|_: i32, _, _| ready(Ok(None))),
+                "dependent",
+                IvoField::DEPENDENT
+                    .default(default_dependent_value)
+                    .depends_on(["virtual_field"])
+                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
+                        ready(ctx.input().virtual_field.unwrap())
+                    }),
+            )
+            .set(
+                "virtual_field",
+                IvoField::VIRTUAL.validate(|_: i32, _, _| ready(Ok(None))),
             )
         },
         |o| o,
@@ -347,12 +382,12 @@ async fn should_properly_use_lax_input_values_as_output_values_if_validator_does
 
     let model = schema.model();
 
-    let required = 1;
+    let value = 1;
 
     let r = model
         .create(
             &PartialDataInput {
-                required: Some(required),
+                virtual_field: Some(value),
             },
             None,
         )
@@ -360,20 +395,20 @@ async fn should_properly_use_lax_input_values_as_output_values_if_validator_does
 
     match r {
         Ok((data, _)) => {
-            assert_eq!(data, Data { required });
+            assert_eq!(data, Data { dependent: value });
         }
         _ => unreachable!("expected successful creation"),
     }
 
-    let required = 2;
+    let value = 2;
 
     let r = model
         .update(
             &Data {
-                required: required - 1,
+                dependent: value - 1,
             },
             &PartialDataInput {
-                required: Some(required),
+                virtual_field: Some(value),
             },
             None,
         )
@@ -384,7 +419,7 @@ async fn should_properly_use_lax_input_values_as_output_values_if_validator_does
             assert_eq!(
                 updates,
                 PartialData {
-                    required: Some(required)
+                    dependent: Some(value)
                 }
             );
         }
@@ -392,20 +427,22 @@ async fn should_properly_use_lax_input_values_as_output_values_if_validator_does
     }
 }
 
-async_test_matrix!(should_properly_use_lax_input_values_as_output_values_if_validator_does_not_return_a_validated_value);
+async_test_matrix!(should_properly_use_input_values_as_output_values_if_validator_does_not_return_a_validated_value);
 
 // re-validators
 
 async fn should_not_create_if_re_validation_fails() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
-        required: String,
+        dependent: i32,
     }
 
     #[derive(Debug, Clone, IvoStruct)]
     struct DataInput {
-        required: String,
+        virtual_field: String,
     }
+
+    let default_dependent_value = 1;
 
     const MIN_LENGTH_ERROR: &str = "expected required to be at least 2 characters long";
     const MIN_REVALIDATION_LENGTH_ERROR: &str =
@@ -414,8 +451,17 @@ async fn should_not_create_if_re_validation_fails() {
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
             f.set(
-                "required",
-                IvoField::REQUIRED
+                "dependent",
+                IvoField::DEPENDENT
+                    .default(default_dependent_value)
+                    .depends_on(["virtual_field"])
+                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
+                        ready(ctx.values().dependent.unwrap() + 1)
+                    }),
+            )
+            .set(
+                "virtual_field",
+                IvoField::VIRTUAL
                     .validate(|v: String, _, _| {
                         let validated = v.trim();
 
@@ -439,18 +485,18 @@ async fn should_not_create_if_re_validation_fails() {
 
     let model = schema.model();
 
-    let required_values = [
+    let values = [
         String::from(" 111"),
         String::from(" 11 "),
         String::from("11"),
         String::from(" 112   "),
     ];
 
-    for required_value in required_values {
+    for value in values {
         let r = model
             .create(
                 &PartialDataInput {
-                    required: Some(required_value),
+                    virtual_field: Some(value),
                 },
                 None,
             )
@@ -459,7 +505,7 @@ async fn should_not_create_if_re_validation_fails() {
         match r {
             Err((p, _)) => {
                 assert_eq!(
-                    p.get("required").unwrap()[0].reason,
+                    p.get("virtual_field").unwrap()[0].reason,
                     MIN_REVALIDATION_LENGTH_ERROR
                 );
             }
@@ -467,13 +513,13 @@ async fn should_not_create_if_re_validation_fails() {
         }
     }
 
-    let required_values = [String::from("1".repeat(4)), String::from("1".repeat(5))];
+    let values = [String::from("1".repeat(4)), String::from("1".repeat(5))];
 
-    for required_value in required_values {
+    for value in values {
         let r = model
             .create(
                 &PartialDataInput {
-                    required: Some(required_value.clone()),
+                    virtual_field: Some(value.clone()),
                 },
                 None,
             )
@@ -481,9 +527,9 @@ async fn should_not_create_if_re_validation_fails() {
 
         match r {
             Ok((data, _)) => {
-                assert_eq!(data.required, required_value);
+                assert_eq!(data.dependent, default_dependent_value + 1);
             }
-            _ => unreachable!(),
+            _ => unreachable!("expected creation to be successful"),
         }
     }
 }
@@ -493,14 +539,15 @@ async_test_matrix!(should_not_create_if_re_validation_fails);
 async fn should_not_update_if_re_validation_fails() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
-        id: i32,
-        required: i32,
+        dependent: i32,
     }
 
     #[derive(Debug, Clone, IvoStruct)]
     struct DataInput {
-        required: i32,
+        virtual_field: i32,
     }
+
+    let default_dependent_value = 1;
 
     const OUT_OF_RANGE_ERROR: &str = "required must be between 1 & 50 inclussive";
     const REQUIRED_VALUE_RANGE: RangeInclusive<i32> = 1..=50;
@@ -511,25 +558,33 @@ async fn should_not_update_if_re_validation_fails() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1)))
-                .set(
-                    "required",
-                    IvoField::REQUIRED
-                        .validate(|v: i32, _, _| {
-                            if !REQUIRED_VALUE_RANGE.contains(&v) {
-                                return ready(Err((OUT_OF_RANGE_ERROR.into(), None)));
-                            }
+            f.set(
+                "dependent",
+                IvoField::DEPENDENT
+                    .default(default_dependent_value)
+                    .depends_on(["virtual_field"])
+                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
+                        ready(ctx.input().virtual_field.unwrap())
+                    }),
+            )
+            .set(
+                "virtual_field",
+                IvoField::VIRTUAL
+                    .validate(|v: i32, _, _| {
+                        if REQUIRED_VALUE_RANGE.contains(&v) {
+                            return ready(Ok(None));
+                        }
 
-                            ready(Ok(None))
-                        })
-                        .re_validate(|v: i32, _, _| {
-                            if !REVALIDATED_REQUIRED_VALUE_RANGE.contains(&v) {
-                                return ready(Err((REVALIDATED_OUT_OF_RANGE_ERROR.into(), None)));
-                            }
+                        ready(Err((OUT_OF_RANGE_ERROR.into(), None)))
+                    })
+                    .re_validate(|v: i32, _, _| {
+                        if REVALIDATED_REQUIRED_VALUE_RANGE.contains(&v) {
+                            return ready(Ok(None));
+                        }
 
-                            ready(Ok(None))
-                        }),
-                )
+                        ready(Err((REVALIDATED_OUT_OF_RANGE_ERROR.into(), None)))
+                    }),
+            )
         },
         |o| o,
     );
@@ -537,21 +592,20 @@ async fn should_not_update_if_re_validation_fails() {
     let model = schema.model();
 
     let data = Data {
-        id: 1,
-        required: 20,
+        dependent: default_dependent_value,
     };
 
-    let required_values = [
+    let values = [
         REVALIDATED_REQUIRED_VALUE_RANGE.min().unwrap() - 1,
         REVALIDATED_REQUIRED_VALUE_RANGE.max().unwrap() + 1,
     ];
 
-    for required_value in required_values {
+    for value in values {
         let r = model
             .update(
                 &data,
                 &PartialDataInput {
-                    required: Some(required_value),
+                    virtual_field: Some(value),
                 },
                 None,
             )
@@ -560,16 +614,16 @@ async fn should_not_update_if_re_validation_fails() {
         match r {
             Err((UpdateError::ValidationError(p), _)) => {
                 assert_eq!(
-                    p.get("required").unwrap()[0].reason,
+                    p.get("virtual_field").unwrap()[0].reason,
                     REVALIDATED_OUT_OF_RANGE_ERROR
                 );
             }
-            _ => unreachable!(),
+            _ => unreachable!("expected a validation error"),
         }
     }
 
     for updated_value in REVALIDATED_REQUIRED_VALUE_RANGE.clone() {
-        if updated_value == data.required {
+        if updated_value == data.dependent {
             continue;
         }
 
@@ -577,7 +631,7 @@ async fn should_not_update_if_re_validation_fails() {
             .update(
                 &data,
                 &PartialDataInput {
-                    required: Some(updated_value),
+                    virtual_field: Some(updated_value),
                 },
                 None,
             )
@@ -588,12 +642,11 @@ async fn should_not_update_if_re_validation_fails() {
                 assert_eq!(
                     d,
                     PartialData {
-                        id: None,
-                        required: Some(updated_value),
+                        dependent: Some(updated_value),
                     }
                 )
             }
-            _ => unreachable!(),
+            _ => unreachable!("expected update to be successful"),
         }
     }
 }
@@ -605,16 +658,16 @@ async_test_matrix!(should_not_update_if_re_validation_fails);
 async fn should_respect_post_validation_config() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
-        required: String,
-        required_1: String,
-        required_2: String,
+        virtual_field: String,
+        virtual_field_1: String,
+        virtual_field_2: String,
     }
 
     #[derive(Debug, Clone, IvoStruct)]
     struct DataInput {
-        required: String,
-        required_1: String,
-        required_2: String,
+        virtual_field: String,
+        virtual_field_1: String,
+        virtual_field_2: String,
     }
 
     const REQUIRED_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS: &str =
@@ -622,7 +675,7 @@ async fn should_respect_post_validation_config() {
     const REQUIRED_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS: &str =
         "required failed post-validation with unrelated errors";
 
-    const REQUIRED_1_PRE_VALIDATION_FAIL: &str = "required 1 failed pre-validation";
+    const VIRTUAL_FIELD_1_PRE_VALIDATION_FAIL: &str = "required 1 failed pre-validation";
     const BOTH_PRE_VALIDATION_FAIL: &str = "both failed pre-validation";
 
     const UNKNOWN_FIELD: &str = "unknown_field";
@@ -633,27 +686,27 @@ async fn should_respect_post_validation_config() {
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
             f.set(
-                "required",
+                "virtual_field",
                 IvoField::REQUIRED.validate(|_: String, _, _| ready(Ok(None))),
             )
             .set(
-                "required_1",
+                "virtual_field_1",
                 IvoField::REQUIRED.validate(|_: String, _, _| ready(Ok(None))),
             )
             .set(
-                "required_2",
+                "virtual_field_2",
                 IvoField::REQUIRED.validate(|_: String, _, _| ready(Ok(None))),
             )
         },
         |o| {
-            o.post_validate(["required", "required_1"], |v| {
+            o.post_validate(["virtual_field", "virtual_field_1"], |v| {
                 v.pre_validate(|ctx: IvoContext<DataInput, Data>, _| {
                     let mut errors = HashMap::new();
 
-                    if let Some(required) = ctx.input().required {
-                        if required == REQUIRED_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS {
+                    if let Some(virtual_field) = ctx.input().virtual_field {
+                        if virtual_field == REQUIRED_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS {
                             errors.insert(
-                                "required".into(),
+                                "virtual_field".into(),
                                 (
                                     REQUIRED_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string(),
                                     None,
@@ -661,7 +714,7 @@ async fn should_respect_post_validation_config() {
                             );
 
                             errors.insert(
-                                "required_2".into(),
+                                "virtual_field_2".into(),
                                 (
                                     REQUIRED_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string(),
                                     None,
@@ -679,24 +732,26 @@ async fn should_respect_post_validation_config() {
                             return ready(Err(errors));
                         }
 
-                        if required == BOTH_PRE_VALIDATION_FAIL {
+                        if virtual_field == BOTH_PRE_VALIDATION_FAIL {
                             errors.insert(
-                                "required".into(),
+                                "virtual_field".into(),
                                 (BOTH_PRE_VALIDATION_FAIL.to_string(), None),
                             );
 
                             errors.insert(
-                                "required_1".into(),
+                                "virtual_field_1".into(),
                                 (BOTH_PRE_VALIDATION_FAIL.to_string(), None),
                             );
                         }
                     }
 
-                    if let Some(required_1) = ctx.values().required_1 {
-                        if errors.is_empty() && required_1 == REQUIRED_1_PRE_VALIDATION_FAIL {
+                    if let Some(virtual_field_1) = ctx.values().virtual_field_1 {
+                        if errors.is_empty()
+                            && virtual_field_1 == VIRTUAL_FIELD_1_PRE_VALIDATION_FAIL
+                        {
                             errors.insert(
-                                "required_1".into(),
-                                (REQUIRED_1_PRE_VALIDATION_FAIL.to_string(), None),
+                                "virtual_field_1".into(),
+                                (VIRTUAL_FIELD_1_PRE_VALIDATION_FAIL.to_string(), None),
                             );
                         }
                     }
@@ -712,10 +767,10 @@ async fn should_respect_post_validation_config() {
                 .validate(|ctx: IvoContext<DataInput, Data>, _| {
                     let mut errors = HashMap::new();
 
-                    if let Some(required) = ctx.input().required {
-                        if required == REQUIRED_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS {
+                    if let Some(virtual_field) = ctx.input().virtual_field {
+                        if virtual_field == REQUIRED_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS {
                             errors.insert(
-                                "required".into(),
+                                "virtual_field".into(),
                                 (
                                     REQUIRED_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string(),
                                     None,
@@ -723,7 +778,7 @@ async fn should_respect_post_validation_config() {
                             );
 
                             errors.insert(
-                                "required_2".into(),
+                                "virtual_field_2".into(),
                                 (
                                     REQUIRED_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string(),
                                     None,
@@ -741,18 +796,18 @@ async fn should_respect_post_validation_config() {
                             return ready(Err(errors));
                         }
 
-                        if required == REQUIRED_VALIDATION_FAIL {
+                        if virtual_field == REQUIRED_VALIDATION_FAIL {
                             errors.insert(
-                                "required".into(),
+                                "virtual_field".into(),
                                 (REQUIRED_VALIDATION_FAIL.to_string(), None),
                             );
-                        } else if required == BOTH_VALIDATION_FAIL {
+                        } else if virtual_field == BOTH_VALIDATION_FAIL {
                             errors.insert(
-                                "required".into(),
+                                "virtual_field".into(),
                                 (BOTH_VALIDATION_FAIL.to_string(), None),
                             );
                             errors.insert(
-                                "required_1".into(),
+                                "virtual_field_1".into(),
                                 (BOTH_VALIDATION_FAIL.to_string(), None),
                             );
                         }
@@ -778,9 +833,9 @@ async fn should_respect_post_validation_config() {
     let r = model
         .create(
             &PartialDataInput {
-                required: Some(required.clone()),
-                required_1: Some(value.clone()),
-                required_2: Some(value.clone()),
+                virtual_field: Some(required.clone()),
+                virtual_field_1: Some(value.clone()),
+                virtual_field_2: Some(value.clone()),
             },
             None,
         )
@@ -788,11 +843,11 @@ async fn should_respect_post_validation_config() {
 
     match r {
         Err((p, _)) => {
-            assert!(p.get("required_1").is_none());
-            assert!(p.get("required_2").is_none());
+            assert!(p.get("virtual_field_1").is_none());
+            assert!(p.get("virtual_field_2").is_none());
             assert!(p.get(UNKNOWN_FIELD).is_none());
             assert_eq!(
-                p.get("required").unwrap()[0].reason,
+                p.get("virtual_field").unwrap()[0].reason,
                 required,
                 "should ignore unrelated errors returned from pre-validator in post-validation"
             );
@@ -805,9 +860,9 @@ async fn should_respect_post_validation_config() {
     let r = model
         .create(
             &PartialDataInput {
-                required: Some(required.clone()),
-                required_1: Some(value.clone()),
-                required_2: Some(value.clone()),
+                virtual_field: Some(required.clone()),
+                virtual_field_1: Some(value.clone()),
+                virtual_field_2: Some(value.clone()),
             },
             None,
         )
@@ -815,11 +870,11 @@ async fn should_respect_post_validation_config() {
 
     match r {
         Err((p, _)) => {
-            assert!(p.get("required_1").is_none());
-            assert!(p.get("required_2").is_none());
+            assert!(p.get("virtual_field_1").is_none());
+            assert!(p.get("virtual_field_2").is_none());
             assert!(p.get(UNKNOWN_FIELD).is_none());
             assert_eq!(
-                p.get("required").unwrap()[0].reason,
+                p.get("virtual_field").unwrap()[0].reason,
                 required,
                 "should ignore unrelated errors returned from post-validator"
             );
@@ -827,14 +882,14 @@ async fn should_respect_post_validation_config() {
         _ => unreachable!(),
     }
 
-    let required_1 = REQUIRED_1_PRE_VALIDATION_FAIL.to_string();
+    let virtual_field_1 = VIRTUAL_FIELD_1_PRE_VALIDATION_FAIL.to_string();
 
     let r = model
         .create(
             &PartialDataInput {
-                required: Some(value.clone()),
-                required_1: Some(required_1.clone()),
-                required_2: Some(value.clone()),
+                virtual_field: Some(value.clone()),
+                virtual_field_1: Some(virtual_field_1.clone()),
+                virtual_field_2: Some(value.clone()),
             },
             None,
         )
@@ -842,11 +897,11 @@ async fn should_respect_post_validation_config() {
 
     match r {
         Err((p, _)) => {
-            assert!(p.get("required").is_none());
-            assert!(p.get("required_2").is_none());
+            assert!(p.get("virtual_field").is_none());
+            assert!(p.get("virtual_field_2").is_none());
             assert_eq!(
-                p.get("required_1").unwrap()[0].reason,
-                required_1,
+                p.get("virtual_field_1").unwrap()[0].reason,
+                virtual_field_1,
                 "should not create if one field has an error after pre-validator in post-validation"
             );
         }
@@ -858,9 +913,9 @@ async fn should_respect_post_validation_config() {
     let r = model
         .create(
             &PartialDataInput {
-                required: Some(required.clone()),
-                required_1: Some(value.clone()),
-                required_2: Some(value.clone()),
+                virtual_field: Some(required.clone()),
+                virtual_field_1: Some(value.clone()),
+                virtual_field_2: Some(value.clone()),
             },
             None,
         )
@@ -868,14 +923,14 @@ async fn should_respect_post_validation_config() {
 
     match r {
         Err((p, _)) => {
-            assert!(p.get("required_2").is_none());
+            assert!(p.get("virtual_field_2").is_none());
             assert_eq!(
-                p.get("required").unwrap()[0].reason,
+                p.get("virtual_field").unwrap()[0].reason,
                 required,
                 "should not create if any field has an error after pre-validator in post-validation"
             );
             assert_eq!(
-                p.get("required_1").unwrap()[0].reason,
+                p.get("virtual_field_1").unwrap()[0].reason,
                 required,
                 "should not create if any field has an error after pre-validator in post-validation"
             );
@@ -888,9 +943,9 @@ async fn should_respect_post_validation_config() {
     let r = model
         .create(
             &PartialDataInput {
-                required: Some(required.clone()),
-                required_1: Some(value.clone()),
-                required_2: Some(value.clone()),
+                virtual_field: Some(required.clone()),
+                virtual_field_1: Some(value.clone()),
+                virtual_field_2: Some(value.clone()),
             },
             None,
         )
@@ -898,10 +953,10 @@ async fn should_respect_post_validation_config() {
 
     match r {
         Err((p, _)) => {
-            assert!(p.get("required_1").is_none());
-            assert!(p.get("required_2").is_none());
+            assert!(p.get("virtual_field_1").is_none());
+            assert!(p.get("virtual_field_2").is_none());
             assert_eq!(
-                p.get("required").unwrap()[0].reason,
+                p.get("virtual_field").unwrap()[0].reason,
                 required,
                 "should not create if one field has an error after post-validation"
             );
@@ -914,9 +969,9 @@ async fn should_respect_post_validation_config() {
     let r = model
         .create(
             &PartialDataInput {
-                required: Some(required.clone()),
-                required_1: Some(value.clone()),
-                required_2: Some(value.clone()),
+                virtual_field: Some(required.clone()),
+                virtual_field_1: Some(value.clone()),
+                virtual_field_2: Some(value.clone()),
             },
             None,
         )
@@ -924,14 +979,14 @@ async fn should_respect_post_validation_config() {
 
     match r {
         Err((p, _)) => {
-            assert!(p.get("required_2").is_none());
+            assert!(p.get("virtual_field_2").is_none());
             assert_eq!(
-                p.get("required").unwrap()[0].reason,
+                p.get("virtual_field").unwrap()[0].reason,
                 required,
                 "should not create if any field has an error after post-validation"
             );
             assert_eq!(
-                p.get("required_1").unwrap()[0].reason,
+                p.get("virtual_field_1").unwrap()[0].reason,
                 required,
                 "should not create if any field has an error after post-validation"
             );
@@ -941,15 +996,15 @@ async fn should_respect_post_validation_config() {
 
     // updates
     let data = Data {
-        required: value.clone(),
-        required_1: value.clone(),
-        required_2: value.clone(),
+        virtual_field: value.clone(),
+        virtual_field_1: value.clone(),
+        virtual_field_2: value.clone(),
     };
 
-    let required_1 = REQUIRED_1_PRE_VALIDATION_FAIL.to_string();
+    let virtual_field_1 = VIRTUAL_FIELD_1_PRE_VALIDATION_FAIL.to_string();
 
     let data = Data {
-        required_1: required_1.clone(),
+        virtual_field_1: virtual_field_1.clone(),
         ..data
     };
 
@@ -957,9 +1012,9 @@ async fn should_respect_post_validation_config() {
         .update(
             &data,
             &PartialDataInput {
-                required: Some("lol".into()),
-                required_1: None,
-                required_2: None,
+                virtual_field: Some("lol".into()),
+                virtual_field_1: None,
+                virtual_field_2: None,
             },
             None,
         )
@@ -967,11 +1022,11 @@ async fn should_respect_post_validation_config() {
 
     match r {
         Err((UpdateError::ValidationError(p), _)) => {
-            assert!(p.get("required").is_none());
-            assert!(p.get("required_2").is_none());
+            assert!(p.get("virtual_field").is_none());
+            assert!(p.get("virtual_field_2").is_none());
             assert_eq!(
-                p.get("required_1").unwrap()[0].reason,
-                required_1,
+                p.get("virtual_field_1").unwrap()[0].reason,
+                virtual_field_1,
                 "should not update if one field has an error after pre-validator in post-validation"
             );
         }
@@ -987,9 +1042,9 @@ async fn should_respect_post_validation_config() {
         .update(
             &data,
             &PartialDataInput {
-                required: Some(required.clone()),
-                required_1: None,
-                required_2: None,
+                virtual_field: Some(required.clone()),
+                virtual_field_1: None,
+                virtual_field_2: None,
             },
             None,
         )
@@ -997,14 +1052,14 @@ async fn should_respect_post_validation_config() {
 
     match r {
         Err((UpdateError::ValidationError(p), _)) => {
-            assert!(p.get("required_2").is_none());
+            assert!(p.get("virtual_field_2").is_none());
             assert_eq!(
-                p.get("required").unwrap()[0].reason,
+                p.get("virtual_field").unwrap()[0].reason,
                 required,
                 "should not create if any field has an error after pre-validator in post-validation"
             );
             assert_eq!(
-                p.get("required_1").unwrap()[0].reason,
+                p.get("virtual_field_1").unwrap()[0].reason,
                 required,
                 "should not create if any field has an error after pre-validator in post-validation"
             );
@@ -1018,9 +1073,9 @@ async fn should_respect_post_validation_config() {
         .update(
             &data,
             &PartialDataInput {
-                required: Some(required.clone()),
-                required_1: None,
-                required_2: None,
+                virtual_field: Some(required.clone()),
+                virtual_field_1: None,
+                virtual_field_2: None,
             },
             None,
         )
@@ -1028,11 +1083,11 @@ async fn should_respect_post_validation_config() {
 
     match r {
         Err((UpdateError::ValidationError(p), _)) => {
-            assert!(p.get("required_1").is_none());
-            assert!(p.get("required_2").is_none());
+            assert!(p.get("virtual_field_1").is_none());
+            assert!(p.get("virtual_field_2").is_none());
             assert!(p.get(UNKNOWN_FIELD).is_none());
             assert_eq!(
-                p.get("required").unwrap()[0].reason,
+                p.get("virtual_field").unwrap()[0].reason,
                 required,
                 "should ignore unrelated errors returned from pre-validator in post-validation"
             );
@@ -1041,7 +1096,7 @@ async fn should_respect_post_validation_config() {
     }
 
     let data = Data {
-        required_1: value.clone(),
+        virtual_field_1: value.clone(),
         ..data
     };
 
@@ -1051,9 +1106,9 @@ async fn should_respect_post_validation_config() {
         .update(
             &data,
             &PartialDataInput {
-                required: Some(required.clone()),
-                required_1: None,
-                required_2: None,
+                virtual_field: Some(required.clone()),
+                virtual_field_1: None,
+                virtual_field_2: None,
             },
             None,
         )
@@ -1061,11 +1116,11 @@ async fn should_respect_post_validation_config() {
 
     match r {
         Err((UpdateError::ValidationError(p), _)) => {
-            assert!(p.get("required_1").is_none());
-            assert!(p.get("required_2").is_none());
+            assert!(p.get("virtual_field_1").is_none());
+            assert!(p.get("virtual_field_2").is_none());
             assert!(p.get(UNKNOWN_FIELD).is_none());
             assert_eq!(
-                p.get("required").unwrap()[0].reason,
+                p.get("virtual_field").unwrap()[0].reason,
                 required,
                 "should ignore unrelated errors returned from post-validator"
             );
@@ -1079,16 +1134,16 @@ async_test_matrix!(should_respect_post_validation_config);
 async fn should_respect_updated_values_returned_from_pre_validator_in_post_validation_config() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
-        required: String,
-        required_1: String,
-        required_2: String,
+        virtual_field: String,
+        virtual_field_1: String,
+        virtual_field_2: String,
     }
 
     #[derive(Debug, Clone, IvoStruct)]
     struct DataInput {
-        required: String,
-        required_1: String,
-        required_2: String,
+        virtual_field: String,
+        virtual_field_1: String,
+        virtual_field_2: String,
     }
 
     const LAX_PRE_VALIDATED_WITH_UPDATED_VALUES: &str = "LAX_PRE_VALIDATED_WITH_UPDATED_VALUES";
@@ -1100,27 +1155,27 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
             f.set(
-                "required",
+                "virtual_field",
                 IvoField::REQUIRED.validate(|_: String, _, _| ready(Ok(None))),
             )
             .set(
-                "required_1",
+                "virtual_field_1",
                 IvoField::REQUIRED.validate(|_: String, _, _| ready(Ok(None))),
             )
             .set(
-                "required_2",
+                "virtual_field_2",
                 IvoField::REQUIRED.validate(|_: String, _, _| ready(Ok(None))),
             )
         },
         |o| {
-            o.post_validate(["required", "required_1"], |v| {
+            o.post_validate(["virtual_field", "virtual_field_1"], |v| {
                 v.pre_validate(|ctx: IvoContext<DataInput, Data>, _| {
                     let mut updates = PartialDataInput::new();
 
-                    if let Some(required) = ctx.input().required {
-                        if required == LAX_PRE_VALIDATED_WITH_UPDATED_VALUES {
-                            updates.set_required(UPDATED_VALUE_FROM_PRE_VALIDATOR.into());
-                            updates.set_required_1(UPDATED_VALUE_FROM_PRE_VALIDATOR.into());
+                    if let Some(virtual_field) = ctx.input().virtual_field {
+                        if virtual_field == LAX_PRE_VALIDATED_WITH_UPDATED_VALUES {
+                            updates.set_virtual_field(UPDATED_VALUE_FROM_PRE_VALIDATOR.into());
+                            updates.set_virtual_field_1(UPDATED_VALUE_FROM_PRE_VALIDATOR.into());
                         }
                     }
 
@@ -1129,10 +1184,10 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
                 .validate(|ctx: IvoContext<DataInput, Data>, _| {
                     let mut updates = PartialDataInput::new();
 
-                    if let Some(required) = ctx.input().required {
-                        if required == LAX_POST_VALIDATED_WITH_UPDATED_VALUES {
-                            updates.set_required(UPDATED_VALUE_FROM_POST_VALIDATOR.into());
-                            updates.set_required_1(UPDATED_VALUE_FROM_POST_VALIDATOR.into());
+                    if let Some(virtual_field) = ctx.input().virtual_field {
+                        if virtual_field == LAX_POST_VALIDATED_WITH_UPDATED_VALUES {
+                            updates.set_virtual_field(UPDATED_VALUE_FROM_POST_VALIDATOR.into());
+                            updates.set_virtual_field_1(UPDATED_VALUE_FROM_POST_VALIDATOR.into());
                         }
                     }
 
@@ -1150,9 +1205,9 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
     let r = model
         .create(
             &PartialDataInput {
-                required: Some(required.clone()),
-                required_1: Some(value.clone()),
-                required_2: Some(value.clone()),
+                virtual_field: Some(required.clone()),
+                virtual_field_1: Some(value.clone()),
+                virtual_field_2: Some(value.clone()),
             },
             None,
         )
@@ -1163,9 +1218,9 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
             assert_eq!(
                 data,
                 Data {
-                    required: UPDATED_VALUE_FROM_PRE_VALIDATOR.to_string(),
-                    required_1: UPDATED_VALUE_FROM_PRE_VALIDATOR.to_string(),
-                    required_2: value.clone(),
+                    virtual_field: UPDATED_VALUE_FROM_PRE_VALIDATOR.to_string(),
+                    virtual_field_1: UPDATED_VALUE_FROM_PRE_VALIDATOR.to_string(),
+                    virtual_field_2: value.clone(),
                 },
             );
         }
@@ -1177,9 +1232,9 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
     let r = model
         .create(
             &PartialDataInput {
-                required: Some(required.clone()),
-                required_1: Some(value.clone()),
-                required_2: Some(value.clone()),
+                virtual_field: Some(required.clone()),
+                virtual_field_1: Some(value.clone()),
+                virtual_field_2: Some(value.clone()),
             },
             None,
         )
@@ -1190,9 +1245,9 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
             assert_eq!(
                 data,
                 Data {
-                    required: UPDATED_VALUE_FROM_POST_VALIDATOR.to_string(),
-                    required_1: UPDATED_VALUE_FROM_POST_VALIDATOR.to_string(),
-                    required_2: value.clone(),
+                    virtual_field: UPDATED_VALUE_FROM_POST_VALIDATOR.to_string(),
+                    virtual_field_1: UPDATED_VALUE_FROM_POST_VALIDATOR.to_string(),
+                    virtual_field_2: value.clone(),
                 },
             );
         }
@@ -1202,9 +1257,9 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
     // updates
 
     let data = Data {
-        required: value.clone(),
-        required_1: value.clone(),
-        required_2: value.clone(),
+        virtual_field: value.clone(),
+        virtual_field_1: value.clone(),
+        virtual_field_2: value.clone(),
     };
 
     let required = LAX_PRE_VALIDATED_WITH_UPDATED_VALUES.to_string();
@@ -1213,9 +1268,9 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
         .update(
             &data,
             &PartialDataInput {
-                required: Some(required.clone()),
-                required_1: None,
-                required_2: None,
+                virtual_field: Some(required.clone()),
+                virtual_field_1: None,
+                virtual_field_2: None,
             },
             None,
         )
@@ -1226,9 +1281,9 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
             assert_eq!(
                 updates,
                 PartialData {
-                    required: Some(UPDATED_VALUE_FROM_PRE_VALIDATOR.to_string()),
-                    required_1: Some(UPDATED_VALUE_FROM_PRE_VALIDATOR.to_string()),
-                    required_2: None,
+                    virtual_field: Some(UPDATED_VALUE_FROM_PRE_VALIDATOR.to_string()),
+                    virtual_field_1: Some(UPDATED_VALUE_FROM_PRE_VALIDATOR.to_string()),
+                    virtual_field_2: None,
                 },
             );
         }
@@ -1241,9 +1296,9 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
         .update(
             &data,
             &PartialDataInput {
-                required: Some(required.clone()),
-                required_1: None,
-                required_2: None,
+                virtual_field: Some(required.clone()),
+                virtual_field_1: None,
+                virtual_field_2: None,
             },
             None,
         )
@@ -1254,9 +1309,9 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
             assert_eq!(
                 updates,
                 PartialData {
-                    required: Some(UPDATED_VALUE_FROM_POST_VALIDATOR.to_string()),
-                    required_1: Some(UPDATED_VALUE_FROM_POST_VALIDATOR.to_string()),
-                    required_2: None,
+                    virtual_field: Some(UPDATED_VALUE_FROM_POST_VALIDATOR.to_string()),
+                    virtual_field_1: Some(UPDATED_VALUE_FROM_POST_VALIDATOR.to_string()),
+                    virtual_field_2: None,
                 },
             );
         }
