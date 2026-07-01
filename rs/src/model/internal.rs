@@ -155,7 +155,7 @@ impl<
             }
         }
 
-        return None;
+        None
     }
 }
 
