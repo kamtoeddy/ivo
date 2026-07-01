@@ -15,7 +15,7 @@ mod on_success;
 // [x] required
 // [x] validate
 // [x] re_validate
-// [ ] sanitizer
+// [x] sanitizer
 // [x] on_failure
 // [x] on_success
 // [x] o.on_success
@@ -1316,3 +1316,107 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
 async_test_matrix!(
     should_respect_updated_values_returned_from_pre_validator_in_post_validation_config
 );
+
+async fn should_respect_sanitizers_if_provided() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        dependent: String,
+    }
+
+    #[derive(Debug, Clone, IvoStruct)]
+    struct DataInput {
+        virtual_field: String,
+    }
+
+    let default_dependent_value = "default_dependent_value";
+
+    fn sanitize(value: &str) -> String {
+        format!("sanitized-{value}")
+    }
+
+    let schema: Schema<DataInput, Data> = Schema::new(
+        |f| {
+            f.set(
+                "dependent",
+                IvoField::DEPENDENT
+                    .default(default_dependent_value.into())
+                    .depends_on(["virtual_field"])
+                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
+                        ready(ctx.input().virtual_field.unwrap())
+                    }),
+            )
+            .set(
+                "virtual_field",
+                IvoField::VIRTUAL
+                    .validate(|_: String, _, _| ready(Ok(None)))
+                    .sanitize(|value: String, _, _| ready(sanitize(&value))),
+            )
+        },
+        |o| o,
+    );
+
+    let model = schema.model();
+
+    let virtual_value = "virtual_value".to_string();
+
+    let (data, _) = model
+        .create(
+            &PartialDataInput {
+                virtual_field: Some(virtual_value.clone()),
+            },
+            None,
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        data,
+        Data {
+            dependent: sanitize(&virtual_value)
+        },
+    );
+
+    assert_ne!(
+        data,
+        Data {
+            dependent: virtual_value
+        }
+    );
+
+    // updates
+
+    let data = Data {
+        dependent: default_dependent_value.into(),
+    };
+
+    let updated_virtual_value = "updated_virtual_value".to_string();
+
+    let (updates, _) = model
+        .update(
+            &data,
+            &PartialDataInput {
+                virtual_field: Some(updated_virtual_value.clone()),
+            },
+            None,
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updates,
+        PartialData {
+            dependent: Some(sanitize(&updated_virtual_value))
+        },
+    );
+
+    assert_ne!(
+        updates,
+        PartialData {
+            dependent: Some(updated_virtual_value)
+        },
+    );
+}
+
+async_test_matrix!(should_respect_sanitizers_if_provided);
