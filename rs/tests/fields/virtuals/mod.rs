@@ -19,7 +19,7 @@ mod on_success;
 // [x] on_failure
 // [x] on_success
 // [x] o.on_success
-// [ ] o.post_validate
+// [x] o.post_validate
 
 // required
 
@@ -658,9 +658,7 @@ async_test_matrix!(should_not_update_if_re_validation_fails);
 async fn should_respect_post_validation_config() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
-        virtual_field: String,
-        virtual_field_1: String,
-        virtual_field_2: String,
+        dependent: i32,
     }
 
     #[derive(Debug, Clone, IvoStruct)]
@@ -670,32 +668,43 @@ async fn should_respect_post_validation_config() {
         virtual_field_2: String,
     }
 
-    const REQUIRED_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS: &str =
-        "required failed pre-validation with unrelated errors";
-    const REQUIRED_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS: &str =
-        "required failed post-validation with unrelated errors";
+    let default_dependent_value = 1;
+
+    const VIRTUAL_FIELD_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS: &str =
+        "virtual_field failed pre-validation with unrelated errors";
+    const VIRTUAL_FIELD_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS: &str =
+        "virtual_field failed post-validation with unrelated errors";
 
     const VIRTUAL_FIELD_1_PRE_VALIDATION_FAIL: &str = "required 1 failed pre-validation";
     const BOTH_PRE_VALIDATION_FAIL: &str = "both failed pre-validation";
 
     const UNKNOWN_FIELD: &str = "unknown_field";
 
-    const REQUIRED_VALIDATION_FAIL: &str = "required failed post-validatrion";
+    const VIRTUAL_FIELD_VALIDATION_FAIL: &str = "virtual_field failed post-validatrion";
     const BOTH_VALIDATION_FAIL: &str = "both failed post-validatrion";
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
             f.set(
+                "dependent",
+                IvoField::DEPENDENT
+                    .default(default_dependent_value)
+                    .depends_on(["virtual_field", "virtual_field_1", "virtual_field_2"])
+                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
+                        ready(ctx.values().dependent.unwrap() + 1)
+                    }),
+            )
+            .set(
                 "virtual_field",
-                IvoField::REQUIRED.validate(|_: String, _, _| ready(Ok(None))),
+                IvoField::VIRTUAL.validate(|_: String, _, _| ready(Ok(None))),
             )
             .set(
                 "virtual_field_1",
-                IvoField::REQUIRED.validate(|_: String, _, _| ready(Ok(None))),
+                IvoField::VIRTUAL.validate(|_: String, _, _| ready(Ok(None))),
             )
             .set(
                 "virtual_field_2",
-                IvoField::REQUIRED.validate(|_: String, _, _| ready(Ok(None))),
+                IvoField::VIRTUAL.validate(|_: String, _, _| ready(Ok(None))),
             )
         },
         |o| {
@@ -704,11 +713,13 @@ async fn should_respect_post_validation_config() {
                     let mut errors = HashMap::new();
 
                     if let Some(virtual_field) = ctx.input().virtual_field {
-                        if virtual_field == REQUIRED_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS {
+                        if virtual_field == VIRTUAL_FIELD_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS
+                        {
                             errors.insert(
                                 "virtual_field".into(),
                                 (
-                                    REQUIRED_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string(),
+                                    VIRTUAL_FIELD_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS
+                                        .to_string(),
                                     None,
                                 ),
                             );
@@ -716,7 +727,8 @@ async fn should_respect_post_validation_config() {
                             errors.insert(
                                 "virtual_field_2".into(),
                                 (
-                                    REQUIRED_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string(),
+                                    VIRTUAL_FIELD_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS
+                                        .to_string(),
                                     None,
                                 ),
                             );
@@ -724,7 +736,8 @@ async fn should_respect_post_validation_config() {
                             errors.insert(
                                 UNKNOWN_FIELD.into(),
                                 (
-                                    REQUIRED_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string(),
+                                    VIRTUAL_FIELD_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS
+                                        .to_string(),
                                     None,
                                 ),
                             );
@@ -745,7 +758,7 @@ async fn should_respect_post_validation_config() {
                         }
                     }
 
-                    if let Some(virtual_field_1) = ctx.values().virtual_field_1 {
+                    if let Some(virtual_field_1) = ctx.input().virtual_field_1 {
                         if errors.is_empty()
                             && virtual_field_1 == VIRTUAL_FIELD_1_PRE_VALIDATION_FAIL
                         {
@@ -768,11 +781,13 @@ async fn should_respect_post_validation_config() {
                     let mut errors = HashMap::new();
 
                     if let Some(virtual_field) = ctx.input().virtual_field {
-                        if virtual_field == REQUIRED_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS {
+                        if virtual_field == VIRTUAL_FIELD_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS
+                        {
                             errors.insert(
                                 "virtual_field".into(),
                                 (
-                                    REQUIRED_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string(),
+                                    VIRTUAL_FIELD_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS
+                                        .to_string(),
                                     None,
                                 ),
                             );
@@ -780,7 +795,8 @@ async fn should_respect_post_validation_config() {
                             errors.insert(
                                 "virtual_field_2".into(),
                                 (
-                                    REQUIRED_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string(),
+                                    VIRTUAL_FIELD_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS
+                                        .to_string(),
                                     None,
                                 ),
                             );
@@ -788,7 +804,8 @@ async fn should_respect_post_validation_config() {
                             errors.insert(
                                 UNKNOWN_FIELD.into(),
                                 (
-                                    REQUIRED_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string(),
+                                    VIRTUAL_FIELD_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS
+                                        .to_string(),
                                     None,
                                 ),
                             );
@@ -796,10 +813,10 @@ async fn should_respect_post_validation_config() {
                             return ready(Err(errors));
                         }
 
-                        if virtual_field == REQUIRED_VALIDATION_FAIL {
+                        if virtual_field == VIRTUAL_FIELD_VALIDATION_FAIL {
                             errors.insert(
                                 "virtual_field".into(),
-                                (REQUIRED_VALIDATION_FAIL.to_string(), None),
+                                (VIRTUAL_FIELD_VALIDATION_FAIL.to_string(), None),
                             );
                         } else if virtual_field == BOTH_VALIDATION_FAIL {
                             errors.insert(
@@ -827,15 +844,15 @@ async fn should_respect_post_validation_config() {
 
     let model = schema.model();
 
-    let required = REQUIRED_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string();
-    let value = "some value".to_string();
+    let virtual_value = VIRTUAL_FIELD_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string();
+    let some_value = "some value".to_string();
 
     let r = model
         .create(
             &PartialDataInput {
-                virtual_field: Some(required.clone()),
-                virtual_field_1: Some(value.clone()),
-                virtual_field_2: Some(value.clone()),
+                virtual_field: Some(virtual_value.clone()),
+                virtual_field_1: Some(some_value.clone()),
+                virtual_field_2: Some(some_value.clone()),
             },
             None,
         )
@@ -848,21 +865,21 @@ async fn should_respect_post_validation_config() {
             assert!(p.get(UNKNOWN_FIELD).is_none());
             assert_eq!(
                 p.get("virtual_field").unwrap()[0].reason,
-                required,
+                virtual_value,
                 "should ignore unrelated errors returned from pre-validator in post-validation"
             );
         }
         _ => unreachable!(),
     }
 
-    let required = REQUIRED_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string();
+    let required = VIRTUAL_FIELD_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string();
 
     let r = model
         .create(
             &PartialDataInput {
                 virtual_field: Some(required.clone()),
-                virtual_field_1: Some(value.clone()),
-                virtual_field_2: Some(value.clone()),
+                virtual_field_1: Some(some_value.clone()),
+                virtual_field_2: Some(some_value.clone()),
             },
             None,
         )
@@ -887,9 +904,9 @@ async fn should_respect_post_validation_config() {
     let r = model
         .create(
             &PartialDataInput {
-                virtual_field: Some(value.clone()),
+                virtual_field: Some(some_value.clone()),
                 virtual_field_1: Some(virtual_field_1.clone()),
-                virtual_field_2: Some(value.clone()),
+                virtual_field_2: Some(some_value.clone()),
             },
             None,
         )
@@ -908,14 +925,14 @@ async fn should_respect_post_validation_config() {
         _ => unreachable!(),
     }
 
-    let required = BOTH_PRE_VALIDATION_FAIL.to_string();
+    let virtual_value = BOTH_PRE_VALIDATION_FAIL.to_string();
 
     let r = model
         .create(
             &PartialDataInput {
-                virtual_field: Some(required.clone()),
-                virtual_field_1: Some(value.clone()),
-                virtual_field_2: Some(value.clone()),
+                virtual_field: Some(virtual_value.clone()),
+                virtual_field_1: Some(some_value.clone()),
+                virtual_field_2: Some(some_value.clone()),
             },
             None,
         )
@@ -926,26 +943,26 @@ async fn should_respect_post_validation_config() {
             assert!(p.get("virtual_field_2").is_none());
             assert_eq!(
                 p.get("virtual_field").unwrap()[0].reason,
-                required,
+                virtual_value,
                 "should not create if any field has an error after pre-validator in post-validation"
             );
             assert_eq!(
                 p.get("virtual_field_1").unwrap()[0].reason,
-                required,
+                virtual_value,
                 "should not create if any field has an error after pre-validator in post-validation"
             );
         }
         _ => unreachable!(),
     }
 
-    let required = REQUIRED_VALIDATION_FAIL.to_string();
+    let virtual_value = VIRTUAL_FIELD_VALIDATION_FAIL.to_string();
 
     let r = model
         .create(
             &PartialDataInput {
-                virtual_field: Some(required.clone()),
-                virtual_field_1: Some(value.clone()),
-                virtual_field_2: Some(value.clone()),
+                virtual_field: Some(virtual_value.clone()),
+                virtual_field_1: Some(some_value.clone()),
+                virtual_field_2: Some(some_value.clone()),
             },
             None,
         )
@@ -957,21 +974,21 @@ async fn should_respect_post_validation_config() {
             assert!(p.get("virtual_field_2").is_none());
             assert_eq!(
                 p.get("virtual_field").unwrap()[0].reason,
-                required,
+                virtual_value,
                 "should not create if one field has an error after post-validation"
             );
         }
         _ => unreachable!(),
     }
 
-    let required = BOTH_VALIDATION_FAIL.to_string();
+    let virtual_value = BOTH_VALIDATION_FAIL.to_string();
 
     let r = model
         .create(
             &PartialDataInput {
-                virtual_field: Some(required.clone()),
-                virtual_field_1: Some(value.clone()),
-                virtual_field_2: Some(value.clone()),
+                virtual_field: Some(virtual_value.clone()),
+                virtual_field_1: Some(some_value.clone()),
+                virtual_field_2: Some(some_value.clone()),
             },
             None,
         )
@@ -982,12 +999,12 @@ async fn should_respect_post_validation_config() {
             assert!(p.get("virtual_field_2").is_none());
             assert_eq!(
                 p.get("virtual_field").unwrap()[0].reason,
-                required,
+                virtual_value,
                 "should not create if any field has an error after post-validation"
             );
             assert_eq!(
                 p.get("virtual_field_1").unwrap()[0].reason,
-                required,
+                virtual_value,
                 "should not create if any field has an error after post-validation"
             );
         }
@@ -996,24 +1013,17 @@ async fn should_respect_post_validation_config() {
 
     // updates
     let data = Data {
-        virtual_field: value.clone(),
-        virtual_field_1: value.clone(),
-        virtual_field_2: value.clone(),
+        dependent: default_dependent_value,
     };
 
     let virtual_field_1 = VIRTUAL_FIELD_1_PRE_VALIDATION_FAIL.to_string();
-
-    let data = Data {
-        virtual_field_1: virtual_field_1.clone(),
-        ..data
-    };
 
     let r = model
         .update(
             &data,
             &PartialDataInput {
                 virtual_field: Some("lol".into()),
-                virtual_field_1: None,
+                virtual_field_1: Some(virtual_field_1.clone()),
                 virtual_field_2: None,
             },
             None,
@@ -1036,13 +1046,13 @@ async fn should_respect_post_validation_config() {
         _ => unreachable!("did not expect successful update"),
     }
 
-    let required = BOTH_PRE_VALIDATION_FAIL.to_string();
+    let virtual_value = BOTH_PRE_VALIDATION_FAIL.to_string();
 
     let r = model
         .update(
             &data,
             &PartialDataInput {
-                virtual_field: Some(required.clone()),
+                virtual_field: Some(virtual_value.clone()),
                 virtual_field_1: None,
                 virtual_field_2: None,
             },
@@ -1055,25 +1065,25 @@ async fn should_respect_post_validation_config() {
             assert!(p.get("virtual_field_2").is_none());
             assert_eq!(
                 p.get("virtual_field").unwrap()[0].reason,
-                required,
+                virtual_value,
                 "should not create if any field has an error after pre-validator in post-validation"
             );
             assert_eq!(
                 p.get("virtual_field_1").unwrap()[0].reason,
-                required,
+                virtual_value,
                 "should not create if any field has an error after pre-validator in post-validation"
             );
         }
-        _ => unreachable!(),
+        _ => unreachable!("expected a validation error"),
     }
 
-    let required = REQUIRED_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string();
+    let virtual_value = VIRTUAL_FIELD_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string();
 
     let r = model
         .update(
             &data,
             &PartialDataInput {
-                virtual_field: Some(required.clone()),
+                virtual_field: Some(virtual_value.clone()),
                 virtual_field_1: None,
                 virtual_field_2: None,
             },
@@ -1088,25 +1098,20 @@ async fn should_respect_post_validation_config() {
             assert!(p.get(UNKNOWN_FIELD).is_none());
             assert_eq!(
                 p.get("virtual_field").unwrap()[0].reason,
-                required,
+                virtual_value,
                 "should ignore unrelated errors returned from pre-validator in post-validation"
             );
         }
-        _ => unreachable!(),
+        _ => unreachable!("expected a validation error"),
     }
 
-    let data = Data {
-        virtual_field_1: value.clone(),
-        ..data
-    };
-
-    let required = REQUIRED_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string();
+    let virtual_value = VIRTUAL_FIELD_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string();
 
     let r = model
         .update(
             &data,
             &PartialDataInput {
-                virtual_field: Some(required.clone()),
+                virtual_field: Some(virtual_value.clone()),
                 virtual_field_1: None,
                 virtual_field_2: None,
             },
@@ -1121,11 +1126,11 @@ async fn should_respect_post_validation_config() {
             assert!(p.get(UNKNOWN_FIELD).is_none());
             assert_eq!(
                 p.get("virtual_field").unwrap()[0].reason,
-                required,
+                virtual_value,
                 "should ignore unrelated errors returned from post-validator"
             );
         }
-        _ => unreachable!(),
+        _ => unreachable!("expected a validation error"),
     }
 }
 
@@ -1134,20 +1139,21 @@ async_test_matrix!(should_respect_post_validation_config);
 async fn should_respect_updated_values_returned_from_pre_validator_in_post_validation_config() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
-        virtual_field: String,
-        virtual_field_1: String,
-        virtual_field_2: String,
+        dependent: String,
     }
 
     #[derive(Debug, Clone, IvoStruct)]
     struct DataInput {
         virtual_field: String,
         virtual_field_1: String,
-        virtual_field_2: String,
     }
 
-    const LAX_PRE_VALIDATED_WITH_UPDATED_VALUES: &str = "LAX_PRE_VALIDATED_WITH_UPDATED_VALUES";
-    const LAX_POST_VALIDATED_WITH_UPDATED_VALUES: &str = "LAX_POST_VALIDATED_WITH_UPDATED_VALUES";
+    let default_dependent_value = "default_dependent_value";
+
+    const VIRTUAL_FIELD_PRE_VALIDATED_WITH_UPDATED_VALUES: &str =
+        "VIRTUAL_FIELD_PRE_VALIDATED_WITH_UPDATED_VALUES";
+    const VIRTUAL_FIELD_POST_VALIDATED_WITH_UPDATED_VALUES: &str =
+        "VIRTUAL_FIELD_POST_VALIDATED_WITH_UPDATED_VALUES";
 
     const UPDATED_VALUE_FROM_PRE_VALIDATOR: &str = "UPDATED_VALUE_FROM_PRE_VALIDATOR";
     const UPDATED_VALUE_FROM_POST_VALIDATOR: &str = "UPDATED_VALUE_FROM_POST_VALIDATOR";
@@ -1155,16 +1161,21 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
             f.set(
+                "dependent",
+                IvoField::DEPENDENT
+                    .default(default_dependent_value.into())
+                    .depends_on(["virtual_field", "virtual_field_1"])
+                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
+                        ready(ctx.input().virtual_field.unwrap())
+                    }),
+            )
+            .set(
                 "virtual_field",
-                IvoField::REQUIRED.validate(|_: String, _, _| ready(Ok(None))),
+                IvoField::VIRTUAL.validate(|_: String, _, _| ready(Ok(None))),
             )
             .set(
                 "virtual_field_1",
-                IvoField::REQUIRED.validate(|_: String, _, _| ready(Ok(None))),
-            )
-            .set(
-                "virtual_field_2",
-                IvoField::REQUIRED.validate(|_: String, _, _| ready(Ok(None))),
+                IvoField::VIRTUAL.validate(|_: String, _, _| ready(Ok(None))),
             )
         },
         |o| {
@@ -1173,9 +1184,8 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
                     let mut updates = PartialDataInput::new();
 
                     if let Some(virtual_field) = ctx.input().virtual_field {
-                        if virtual_field == LAX_PRE_VALIDATED_WITH_UPDATED_VALUES {
+                        if virtual_field == VIRTUAL_FIELD_PRE_VALIDATED_WITH_UPDATED_VALUES {
                             updates.set_virtual_field(UPDATED_VALUE_FROM_PRE_VALIDATOR.into());
-                            updates.set_virtual_field_1(UPDATED_VALUE_FROM_PRE_VALIDATOR.into());
                         }
                     }
 
@@ -1185,9 +1195,8 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
                     let mut updates = PartialDataInput::new();
 
                     if let Some(virtual_field) = ctx.input().virtual_field {
-                        if virtual_field == LAX_POST_VALIDATED_WITH_UPDATED_VALUES {
+                        if virtual_field == VIRTUAL_FIELD_POST_VALIDATED_WITH_UPDATED_VALUES {
                             updates.set_virtual_field(UPDATED_VALUE_FROM_POST_VALIDATOR.into());
-                            updates.set_virtual_field_1(UPDATED_VALUE_FROM_POST_VALIDATOR.into());
                         }
                     }
 
@@ -1199,15 +1208,13 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
 
     let model = schema.model();
 
-    let required = LAX_PRE_VALIDATED_WITH_UPDATED_VALUES.to_string();
-    let value = "some random value".to_string();
+    let virtual_value = VIRTUAL_FIELD_PRE_VALIDATED_WITH_UPDATED_VALUES.to_string();
 
     let r = model
         .create(
             &PartialDataInput {
-                virtual_field: Some(required.clone()),
-                virtual_field_1: Some(value.clone()),
-                virtual_field_2: Some(value.clone()),
+                virtual_field: Some(virtual_value.clone()),
+                virtual_field_1: None,
             },
             None,
         )
@@ -1218,23 +1225,20 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
             assert_eq!(
                 data,
                 Data {
-                    virtual_field: UPDATED_VALUE_FROM_PRE_VALIDATOR.to_string(),
-                    virtual_field_1: UPDATED_VALUE_FROM_PRE_VALIDATOR.to_string(),
-                    virtual_field_2: value.clone(),
+                    dependent: UPDATED_VALUE_FROM_PRE_VALIDATOR.into()
                 },
             );
         }
-        _ => unreachable!(),
+        _ => unreachable!("expected creation to be successful"),
     }
 
-    let required = LAX_POST_VALIDATED_WITH_UPDATED_VALUES.to_string();
+    let virtual_value = VIRTUAL_FIELD_POST_VALIDATED_WITH_UPDATED_VALUES.to_string();
 
     let r = model
         .create(
             &PartialDataInput {
-                virtual_field: Some(required.clone()),
-                virtual_field_1: Some(value.clone()),
-                virtual_field_2: Some(value.clone()),
+                virtual_field: Some(virtual_value.clone()),
+                virtual_field_1: None,
             },
             None,
         )
@@ -1245,32 +1249,27 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
             assert_eq!(
                 data,
                 Data {
-                    virtual_field: UPDATED_VALUE_FROM_POST_VALIDATOR.to_string(),
-                    virtual_field_1: UPDATED_VALUE_FROM_POST_VALIDATOR.to_string(),
-                    virtual_field_2: value.clone(),
+                    dependent: UPDATED_VALUE_FROM_POST_VALIDATOR.into()
                 },
             );
         }
-        _ => unreachable!(),
+        _ => unreachable!("expected creation to be successful"),
     }
 
     // updates
 
     let data = Data {
-        virtual_field: value.clone(),
-        virtual_field_1: value.clone(),
-        virtual_field_2: value.clone(),
+        dependent: default_dependent_value.into(),
     };
 
-    let required = LAX_PRE_VALIDATED_WITH_UPDATED_VALUES.to_string();
+    let virtual_value = VIRTUAL_FIELD_PRE_VALIDATED_WITH_UPDATED_VALUES.to_string();
 
     let r = model
         .update(
             &data,
             &PartialDataInput {
-                virtual_field: Some(required.clone()),
+                virtual_field: Some(virtual_value.clone()),
                 virtual_field_1: None,
-                virtual_field_2: None,
             },
             None,
         )
@@ -1281,24 +1280,21 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
             assert_eq!(
                 updates,
                 PartialData {
-                    virtual_field: Some(UPDATED_VALUE_FROM_PRE_VALIDATOR.to_string()),
-                    virtual_field_1: Some(UPDATED_VALUE_FROM_PRE_VALIDATOR.to_string()),
-                    virtual_field_2: None,
+                    dependent: Some(UPDATED_VALUE_FROM_PRE_VALIDATOR.into())
                 },
             );
         }
-        _ => unreachable!(),
+        _ => unreachable!("expected update to be successful"),
     }
 
-    let required = LAX_POST_VALIDATED_WITH_UPDATED_VALUES.to_string();
+    let virtual_value = VIRTUAL_FIELD_POST_VALIDATED_WITH_UPDATED_VALUES.to_string();
 
     let r = model
         .update(
             &data,
             &PartialDataInput {
-                virtual_field: Some(required.clone()),
+                virtual_field: Some(virtual_value.clone()),
                 virtual_field_1: None,
-                virtual_field_2: None,
             },
             None,
         )
@@ -1309,13 +1305,11 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
             assert_eq!(
                 updates,
                 PartialData {
-                    virtual_field: Some(UPDATED_VALUE_FROM_POST_VALIDATOR.to_string()),
-                    virtual_field_1: Some(UPDATED_VALUE_FROM_POST_VALIDATOR.to_string()),
-                    virtual_field_2: None,
+                    dependent: Some(UPDATED_VALUE_FROM_POST_VALIDATOR.into())
                 },
             );
         }
-        _ => unreachable!(),
+        _ => unreachable!("expected update to be successful"),
     }
 }
 
