@@ -9,6 +9,7 @@ use crate::async_test_matrix;
 // [x] default_fn
 // [x] readonly
 // [x] resolver
+// [x] dependent depending on other dependents
 // [x] on_delete
 // [x] on_success
 // [x] o.on_success
@@ -321,6 +322,128 @@ async fn should_properly_run_dependent_resolver_even_with_multiple_parents() {
 }
 
 async_test_matrix!(should_properly_run_dependent_resolver_even_with_multiple_parents);
+
+async fn should_properly_run_dependent_resolver_even_with_dependency_on_other_dependents() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        dependent: i32,
+        dependent_1: i32,
+        lax: i32,
+        lax_1: i32,
+    }
+
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct DataInput {
+        lax: i32,
+        lax_1: i32,
+    }
+
+    let default_dependent_value = 1234;
+    let default_lax_value = 20;
+
+    let schema: Schema<DataInput, Data, Option<()>, (), DefaultErrorTool> = Schema::new(
+        |f| {
+            f.set(
+                "dependent",
+                IvoField::DEPENDENT
+                    .default(default_dependent_value)
+                    .depends_on(["lax", "lax_1"])
+                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
+                        ready(ctx.values().dependent.unwrap() + 1)
+                    }),
+            )
+            .set(
+                "dependent_1",
+                IvoField::DEPENDENT
+                    .default(default_dependent_value)
+                    .depends_on(["dependent"])
+                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
+                        ready(ctx.values().dependent.unwrap() + 10)
+                    }),
+            )
+            .set("lax", IvoField::LAX.default(default_lax_value))
+            .set("lax_1", IvoField::LAX.default(default_lax_value))
+        },
+        |o| o,
+    );
+
+    let model = schema.model();
+
+    let (data, _) = model
+        .create(
+            &PartialDataInput {
+                lax: Some(default_lax_value),
+                lax_1: Some(default_lax_value + 1),
+            },
+            None,
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    let dependent = default_dependent_value + 1;
+    let dependent_1 = dependent + 10;
+
+    assert_eq!(
+        data,
+        Data {
+            dependent,
+            dependent_1,
+            lax: default_lax_value,
+            lax_1: default_lax_value + 1
+        }
+    );
+
+    let lax = 700;
+
+    let (data, _) = model
+        .create(
+            &PartialDataInput {
+                lax: Some(lax),
+                lax_1: Some(lax),
+            },
+            None,
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    let dependent = default_dependent_value + 1;
+    let dependent_1 = dependent + 10;
+
+    assert_eq!(
+        data,
+        Data {
+            dependent,
+            dependent_1,
+            lax,
+            lax_1: lax
+        }
+    );
+
+    let lax = Some(200);
+
+    let (updates, _) = model
+        .update(&data, &PartialDataInput { lax, lax_1: None }, None)
+        .await
+        .ok()
+        .unwrap();
+
+    let dependent = data.dependent + 1;
+    let dependent_1 = dependent + 10;
+
+    assert_eq!(
+        updates,
+        PartialData {
+            dependent: Some(dependent),
+            dependent_1: Some(dependent_1),
+            lax,
+            lax_1: None
+        }
+    );
+}
+
+async_test_matrix!(should_properly_run_dependent_resolver_even_with_dependency_on_other_dependents);
 
 // readonly
 

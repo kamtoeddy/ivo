@@ -6,6 +6,7 @@ mod utils;
 
 // TODO:
 // [ ] ctx options
+// [ ] custom error_tool
 // [x] ivo_derive
 // [x] fields
 // [x] field_configs
