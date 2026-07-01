@@ -16,7 +16,7 @@ mod on_success;
 // [ ] validate
 // [ ] re_validate
 // [ ] sanitizer
-// [ ] on_failure
+// [x] on_failure
 // [x] on_success
 // [x] o.on_success
 // [ ] o.post_validate
