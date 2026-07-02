@@ -1,4 +1,4 @@
-use ivo::{IvoField, IvoStruct, Schema, IvoContext, UpdateError};
+use ivo::{IvoContext, IvoField, IvoStruct, Schema, UpdateError};
 use std::{collections::HashMap, future::ready, ops::RangeInclusive, panic};
 
 use crate::async_test_matrix;
@@ -382,7 +382,7 @@ async fn should_not_update_if_primary_validation_fails() {
 
 async_test_matrix!(should_not_update_if_primary_validation_fails);
 
-async fn should_properly_use_lax_input_values_as_output_values_if_validator_does_not_return_a_validated_value(
+async fn should_properly_use_input_values_as_output_values_if_validator_does_not_return_a_validated_value(
 ) {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
@@ -451,7 +451,7 @@ async fn should_properly_use_lax_input_values_as_output_values_if_validator_does
     }
 }
 
-async_test_matrix!(should_properly_use_lax_input_values_as_output_values_if_validator_does_not_return_a_validated_value);
+async_test_matrix!(should_properly_use_input_values_as_output_values_if_validator_does_not_return_a_validated_value);
 
 // re-validators
 
@@ -658,6 +658,161 @@ async fn should_not_update_if_re_validation_fails() {
 }
 
 async_test_matrix!(should_not_update_if_re_validation_fails);
+
+async fn should_properly_use_re_validated_values() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        required: i32,
+    }
+
+    #[derive(Debug, Clone, IvoStruct)]
+    struct DataInput {
+        required: i32,
+    }
+
+    let schema: Schema<DataInput, Data> = Schema::new(
+        |f| {
+            f.set(
+                "required",
+                IvoField::REQUIRED
+                    .validate(|_: i32, _, _| ready(Ok(None)))
+                    .re_validate(|v: i32, _, _| ready(Ok(Some(v + 1)))),
+            )
+        },
+        |o| o,
+    );
+
+    let model = schema.model();
+
+    let value = 1;
+
+    let r = model
+        .create(
+            &PartialDataInput {
+                required: Some(value),
+            },
+            None,
+        )
+        .await;
+
+    match r {
+        Ok((data, _)) => {
+            assert_eq!(
+                data,
+                Data {
+                    required: value + 1
+                }
+            );
+        }
+        _ => unreachable!("expected successful creation"),
+    }
+
+    let value = 2;
+
+    let r = model
+        .update(
+            &Data {
+                required: value - 1,
+            },
+            &PartialDataInput {
+                required: Some(value),
+            },
+            None,
+        )
+        .await;
+
+    match r {
+        Ok((updates, _)) => {
+            assert_eq!(
+                updates,
+                PartialData {
+                    required: Some(value + 1)
+                }
+            );
+        }
+        _ => unreachable!("expected successful update"),
+    }
+}
+
+async_test_matrix!(should_properly_use_re_validated_values);
+
+async fn should_properly_use_input_values_as_output_values_if_re_validator_does_not_return_a_validated_value(
+) {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        required: i32,
+    }
+
+    #[derive(Debug, Clone, IvoStruct)]
+    struct DataInput {
+        required: i32,
+    }
+
+    let schema: Schema<DataInput, Data> = Schema::new(
+        |f| {
+            f.set(
+                "required",
+                IvoField::REQUIRED
+                    .validate(|v: i32, _, _| ready(Ok(Some(v + 1))))
+                    .re_validate(|_: i32, _, _| ready(Ok(None))),
+            )
+        },
+        |o| o,
+    );
+
+    let model = schema.model();
+
+    let value = 1;
+
+    let r = model
+        .create(
+            &PartialDataInput {
+                required: Some(value),
+            },
+            None,
+        )
+        .await;
+
+    match r {
+        Ok((data, _)) => {
+            assert_eq!(
+                data,
+                Data {
+                    required: value + 1
+                }
+            );
+        }
+        _ => unreachable!("expected successful creation"),
+    }
+
+    let value = 2;
+
+    let r = model
+        .update(
+            &Data {
+                required: value - 1,
+            },
+            &PartialDataInput {
+                required: Some(value),
+            },
+            None,
+        )
+        .await;
+
+    match r {
+        Ok((updates, _)) => {
+            assert_eq!(
+                updates,
+                PartialData {
+                    required: Some(value + 1)
+                }
+            );
+        }
+        _ => unreachable!("expected successful update"),
+    }
+}
+
+async_test_matrix!(should_properly_use_input_values_as_output_values_if_re_validator_does_not_return_a_validated_value);
 
 // post-validation
 
