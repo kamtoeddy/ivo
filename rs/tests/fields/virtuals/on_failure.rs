@@ -125,7 +125,8 @@ async fn should_trigger_on_failure_handlers_at_creation_with_alias() {
                         }
 
                         ready(())
-                    }),
+                    })
+                    .on_failure(|_, _| ready(())),
             )
         },
         |o| o,

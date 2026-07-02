@@ -24,6 +24,45 @@ mod on_success;
 // [x] o.on_success
 // [x] o.post_validate
 
+// nothing to update
+
+async fn should_reject_updates_if_no_value_has_changed() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        lax: i32,
+    }
+
+    #[derive(Debug, Clone, IvoStruct)]
+    struct DataInput {
+        lax: i32,
+    }
+
+    let default_value = 1;
+
+    let schema: Schema<DataInput, Data> = Schema::new(
+        |f| f.set("lax", IvoField::LAX.default(default_value)),
+        |o| o,
+    );
+
+    let model = schema.model();
+
+    let value = 24;
+
+    let (err, _) = model
+        .update(
+            &Data { lax: value },
+            &PartialDataInput { lax: Some(value) },
+            None,
+        )
+        .await
+        .err()
+        .unwrap();
+
+    assert!(matches!(err, UpdateError::NothingToUpdate))
+}
+
+async_test_matrix!(should_reject_updates_if_no_value_has_changed);
+
 // default values & fns
 
 async fn should_properly_use_default_value_of_missing_fields_at_creation() {

@@ -21,6 +21,50 @@ mod on_success;
 // [x] o.on_success
 // [x] o.post_validate
 
+// nothing to update
+
+async fn should_reject_updates_if_no_value_has_changed() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        required: i32,
+    }
+
+    #[derive(Debug, Clone, IvoStruct)]
+    struct DataInput {
+        required: i32,
+    }
+
+    let schema: Schema<DataInput, Data> = Schema::new(
+        |f| {
+            f.set(
+                "required",
+                IvoField::REQUIRED.validate(|_, _, _| ready(Ok(None::<i32>))),
+            )
+        },
+        |o| o,
+    );
+
+    let model = schema.model();
+
+    let value = 24;
+
+    let (err, _) = model
+        .update(
+            &Data { required: value },
+            &PartialDataInput {
+                required: Some(value),
+            },
+            None,
+        )
+        .await
+        .err()
+        .unwrap();
+
+    assert!(matches!(err, UpdateError::NothingToUpdate))
+}
+
+async_test_matrix!(should_reject_updates_if_no_value_has_changed);
+
 // required_error
 
 async fn should_respect_the_default_required_error_if_field_is_missing() {

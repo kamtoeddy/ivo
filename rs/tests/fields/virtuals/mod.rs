@@ -21,6 +21,165 @@ mod on_success;
 // [x] o.on_success
 // [x] o.post_validate
 
+// nothing to update
+
+async fn should_reject_updates_if_no_value_has_changed() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        dependent: i32,
+    }
+
+    #[derive(Debug, Clone, IvoStruct)]
+    struct DataInput {
+        virtual_field: i32,
+    }
+
+    let schema: Schema<DataInput, Data> = Schema::new(
+        |f| {
+            f.set(
+                "dependent",
+                IvoField::DEPENDENT
+                    .default(1)
+                    .depends_on(["virtual_field"])
+                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
+                        ready(ctx.input().virtual_field.unwrap())
+                    }),
+            )
+            .set(
+                "virtual_field",
+                IvoField::VIRTUAL.validate(|_, _, _| ready(Ok(None::<i32>))),
+            )
+        },
+        |o| o,
+    );
+
+    let model = schema.model();
+
+    let value = 24;
+
+    let (err, _) = model
+        .update(
+            &Data { dependent: value },
+            &PartialDataInput {
+                virtual_field: Some(value),
+            },
+            None,
+        )
+        .await
+        .err()
+        .unwrap();
+
+    assert!(matches!(err, UpdateError::NothingToUpdate))
+}
+
+async_test_matrix!(should_reject_updates_if_no_value_has_changed);
+
+async fn should_reject_updates_if_no_value_has_changed_with_alias() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        dependent: i32,
+    }
+
+    #[derive(Debug, Clone, IvoStruct)]
+    struct DataInput {
+        virtual_alias: i32,
+    }
+
+    let schema: Schema<DataInput, Data> = Schema::new(
+        |f| {
+            f.set(
+                "dependent",
+                IvoField::DEPENDENT
+                    .default(1)
+                    .depends_on(["virtual_field"])
+                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
+                        ready(ctx.input().virtual_alias.unwrap())
+                    }),
+            )
+            .set(
+                "virtual_field",
+                IvoField::VIRTUAL
+                    .alias("virtual_alias")
+                    .validate(|_, _, _| ready(Ok(None::<i32>))),
+            )
+        },
+        |o| o,
+    );
+
+    let model = schema.model();
+
+    let value = 24;
+
+    let (err, _) = model
+        .update(
+            &Data { dependent: value },
+            &PartialDataInput {
+                virtual_alias: Some(value),
+            },
+            None,
+        )
+        .await
+        .err()
+        .unwrap();
+
+    assert!(matches!(err, UpdateError::NothingToUpdate))
+}
+
+async_test_matrix!(should_reject_updates_if_no_value_has_changed_with_alias);
+
+async fn should_reject_updates_if_no_value_has_changed_with_alias_same_as_dependent() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        dependent: i32,
+    }
+
+    #[derive(Debug, Clone, IvoStruct)]
+    struct DataInput {
+        dependent: i32,
+    }
+
+    let schema: Schema<DataInput, Data> = Schema::new(
+        |f| {
+            f.set(
+                "dependent",
+                IvoField::DEPENDENT
+                    .default(1)
+                    .depends_on(["virtual_field"])
+                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
+                        ready(ctx.input().dependent.unwrap())
+                    }),
+            )
+            .set(
+                "virtual_field",
+                IvoField::VIRTUAL
+                    .alias("dependent")
+                    .validate(|_, _, _| ready(Ok(None::<i32>))),
+            )
+        },
+        |o| o,
+    );
+
+    let model = schema.model();
+
+    let value = 24;
+
+    let (err, _) = model
+        .update(
+            &Data { dependent: value },
+            &PartialDataInput {
+                dependent: Some(value),
+            },
+            None,
+        )
+        .await
+        .err()
+        .unwrap();
+
+    assert!(matches!(err, UpdateError::NothingToUpdate))
+}
+
+async_test_matrix!(should_reject_updates_if_no_value_has_changed_with_alias_same_as_dependent);
+
 // required
 
 async fn should_respect_the_required_rule() {

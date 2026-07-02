@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoField, IvoStruct, Schema, IvoContext, UpdateError};
+use ivo::{IvoContext, IvoField, IvoStruct, Schema, UpdateError};
 
 use crate::async_test_matrix;
 
@@ -167,7 +167,8 @@ async fn should_trigger_on_failure_handlers_during_updates_with_unchanged_values
                         }
 
                         ready(())
-                    }),
+                    })
+                    .on_failure(|_, _| ready(())),
             )
         },
         |o| o,

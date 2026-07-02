@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoField, IvoStruct, Schema, IvoContext};
+use ivo::{IvoContext, IvoField, IvoStruct, Schema};
 
 use crate::async_test_matrix;
 
