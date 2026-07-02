@@ -116,6 +116,7 @@ async fn should_trigger_on_success_handlers_at_creation_even_if_not_provided() {
                         ready(Ok(Some(v)))
                     })
                     .ignore_update()
+                    .on_success(async |_, _| ())
                     .on_success(|ctx: IvoContext<DataInput, Data>, _| {
                         if true {
                             panic!(

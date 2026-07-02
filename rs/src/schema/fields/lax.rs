@@ -493,6 +493,7 @@ impl<
         HasIgnore,
         HasIgnoreInit,
         HasIgnoreUpdate,
+        HasDelete,
         HasFailure,
         HasSuccess,
         T: IvoFieldValue,
@@ -514,7 +515,7 @@ impl<
         HasIgnore,
         HasIgnoreInit,
         HasIgnoreUpdate,
-        No,
+        HasDelete,
         HasFailure,
         HasSuccess,
     >

@@ -390,7 +390,8 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_i
                         }
 
                         ready(())
-                    }),
+                    })
+                    .on_success(async |_, _| ()),
             )
             .set(
                 "required2",

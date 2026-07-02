@@ -135,7 +135,8 @@ async fn should_trigger_on_success_handlers_if_virtual_is_provided_at_creation_w
                         }
 
                         ready(())
-                    }),
+                    })
+                    .on_success(async |_, _| ()),
             )
         },
         |o| o,

@@ -311,7 +311,8 @@ async fn should_trigger_on_success_handlers_with_computed_values() {
                         }
 
                         ready(())
-                    }),
+                    })
+                    .on_success(async |_, _| ()),
             )
             .set("lax", IvoField::LAX.default(20))
         },

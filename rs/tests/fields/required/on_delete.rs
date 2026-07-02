@@ -30,7 +30,8 @@ async fn should_trigger_on_delete_handlers() {
                         }
 
                         ready(())
-                    }),
+                    })
+                    .on_delete(async |_, _| ()),
             )
         },
         |o| o,

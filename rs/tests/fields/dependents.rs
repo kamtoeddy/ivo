@@ -660,7 +660,8 @@ async fn should_trigger_on_delete_handlers_with_computed_default_values() {
                         }
 
                         ready(())
-                    }),
+                    })
+                    .on_delete(async |_, _| ()),
             )
             .set("lax", IvoField::LAX.default(20))
         },
@@ -793,7 +794,8 @@ async fn should_trigger_on_success_handlers_even_if_resolver_is_not_run_at_creat
                         }
 
                         ready(())
-                    }),
+                    })
+                    .on_success(async |_, _| ()),
             )
             .set("lax", IvoField::LAX.default(default_lax_value))
         },
