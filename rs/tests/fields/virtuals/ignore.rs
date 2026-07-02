@@ -50,7 +50,7 @@ async fn should_respect_the_ignore_rule() {
 
     let model = schema.model();
 
-    let (data, _) = model
+    let (data, _, _) = model
         .create(
             &PartialDataInput {
                 lax: None,
@@ -72,7 +72,7 @@ async fn should_respect_the_ignore_rule() {
 
     let lax = default_lax_value + 10;
 
-    let (data, _) = model
+    let (data, _, _) = model
         .create(
             &PartialDataInput {
                 lax: Some(lax),
@@ -94,7 +94,7 @@ async fn should_respect_the_ignore_rule() {
 
     let lax = Some(data.lax + 10);
 
-    let (updates, _) = model
+    let (updates, _, _) = model
         .update(
             &data,
             &PartialDataInput {
@@ -127,7 +127,7 @@ async fn should_respect_the_ignore_rule() {
         .await;
 
     match r {
-        Err((error, _)) => assert!(matches!(error, UpdateError::NothingToUpdate)),
+        Err((error, _, _)) => assert!(matches!(error, UpdateError::NothingToUpdate)),
         _ => unreachable!("expected nothing to update"),
     }
 }
@@ -181,7 +181,7 @@ async fn should_respect_the_ignore_rule_with_alias() {
 
     let model = schema.model();
 
-    let (data, _) = model
+    let (data, _, _) = model
         .create(
             &PartialDataInput {
                 lax: None,
@@ -203,7 +203,7 @@ async fn should_respect_the_ignore_rule_with_alias() {
 
     let lax = default_lax_value + 10;
 
-    let (data, _) = model
+    let (data, _, _) = model
         .create(
             &PartialDataInput {
                 lax: Some(lax),
@@ -225,7 +225,7 @@ async fn should_respect_the_ignore_rule_with_alias() {
 
     let lax = Some(data.lax + 10);
 
-    let (updates, _) = model
+    let (updates, _, _) = model
         .update(
             &data,
             &PartialDataInput {
@@ -258,7 +258,7 @@ async fn should_respect_the_ignore_rule_with_alias() {
         .await;
 
     match r {
-        Err((error, _)) => assert!(matches!(error, UpdateError::NothingToUpdate)),
+        Err((error, _, _)) => assert!(matches!(error, UpdateError::NothingToUpdate)),
         _ => unreachable!("expected nothing to update"),
     }
 }
@@ -312,7 +312,7 @@ async fn should_respect_the_ignore_rule_with_alias_same_as_dependent() {
 
     let model = schema.model();
 
-    let (data, _) = model
+    let (data, _, _) = model
         .create(
             &PartialDataInput {
                 lax: None,
@@ -334,7 +334,7 @@ async fn should_respect_the_ignore_rule_with_alias_same_as_dependent() {
 
     let lax = default_lax_value + 10;
 
-    let (data, _) = model
+    let (data, _, _) = model
         .create(
             &PartialDataInput {
                 lax: Some(lax),
@@ -356,7 +356,7 @@ async fn should_respect_the_ignore_rule_with_alias_same_as_dependent() {
 
     let lax = Some(data.lax + 10);
 
-    let (updates, _) = model
+    let (updates, _, _) = model
         .update(
             &data,
             &PartialDataInput {
@@ -389,7 +389,7 @@ async fn should_respect_the_ignore_rule_with_alias_same_as_dependent() {
         .await;
 
     match r {
-        Err((error, _)) => assert!(matches!(error, UpdateError::NothingToUpdate)),
+        Err((error, _, _)) => assert!(matches!(error, UpdateError::NothingToUpdate)),
         _ => unreachable!("expected nothing to update"),
     }
 }
@@ -442,7 +442,7 @@ async fn should_respect_the_ignore_init_rule() {
 
     let model = schema.model();
 
-    let (data, _) = model
+    let (data, _, _) = model
         .create(
             &PartialDataInput {
                 lax: None,
@@ -464,7 +464,7 @@ async fn should_respect_the_ignore_init_rule() {
 
     let lax = default_lax_value + 10;
 
-    let (data, _) = model
+    let (data, _, _) = model
         .create(
             &PartialDataInput {
                 lax: Some(lax),
@@ -486,7 +486,7 @@ async fn should_respect_the_ignore_init_rule() {
 
     let lax = Some(data.lax + 10);
 
-    let (updates, _) = model
+    let (updates, _, _) = model
         .update(
             &data,
             &PartialDataInput {
@@ -507,7 +507,7 @@ async fn should_respect_the_ignore_init_rule() {
         }
     );
 
-    let (updates, _) = model
+    let (updates, _, _) = model
         .update(
             &data,
             &PartialDataInput {
@@ -578,7 +578,7 @@ async fn should_respect_the_ignore_init_rule_with_alias() {
 
     let model = schema.model();
 
-    let (data, _) = model
+    let (data, _, _) = model
         .create(
             &PartialDataInput {
                 lax: None,
@@ -600,7 +600,7 @@ async fn should_respect_the_ignore_init_rule_with_alias() {
 
     let lax = default_lax_value + 10;
 
-    let (data, _) = model
+    let (data, _, _) = model
         .create(
             &PartialDataInput {
                 lax: Some(lax),
@@ -622,7 +622,7 @@ async fn should_respect_the_ignore_init_rule_with_alias() {
 
     let lax = Some(data.lax + 10);
 
-    let (updates, _) = model
+    let (updates, _, _) = model
         .update(
             &data,
             &PartialDataInput {
@@ -643,7 +643,7 @@ async fn should_respect_the_ignore_init_rule_with_alias() {
         }
     );
 
-    let (updates, _) = model
+    let (updates, _, _) = model
         .update(
             &data,
             &PartialDataInput {
@@ -714,7 +714,7 @@ async fn should_respect_the_ignore_init_rule_with_alias_same_as_dependent() {
 
     let model = schema.model();
 
-    let (data, _) = model
+    let (data, _, _) = model
         .create(
             &PartialDataInput {
                 lax: None,
@@ -736,7 +736,7 @@ async fn should_respect_the_ignore_init_rule_with_alias_same_as_dependent() {
 
     let lax = default_lax_value + 10;
 
-    let (data, _) = model
+    let (data, _, _) = model
         .create(
             &PartialDataInput {
                 lax: Some(lax),
@@ -758,7 +758,7 @@ async fn should_respect_the_ignore_init_rule_with_alias_same_as_dependent() {
 
     let lax = Some(data.lax + 10);
 
-    let (updates, _) = model
+    let (updates, _, _) = model
         .update(
             &data,
             &PartialDataInput {
@@ -779,7 +779,7 @@ async fn should_respect_the_ignore_init_rule_with_alias_same_as_dependent() {
         }
     );
 
-    let (updates, _) = model
+    let (updates, _, _) = model
         .update(
             &data,
             &PartialDataInput {
@@ -851,7 +851,7 @@ async fn should_respect_the_ignore_update_rule() {
 
     let lax = default_lax_value + 10;
 
-    let (data, _) = model
+    let (data, _, _) = model
         .create(
             &PartialDataInput {
                 lax: Some(lax),
@@ -871,7 +871,7 @@ async fn should_respect_the_ignore_update_rule() {
         }
     );
 
-    let (data, _) = model
+    let (data, _, _) = model
         .create(
             &PartialDataInput {
                 lax: None,
@@ -893,7 +893,7 @@ async fn should_respect_the_ignore_update_rule() {
 
     let lax = default_lax_value + 10;
 
-    let (data, _) = model
+    let (data, _, _) = model
         .create(
             &PartialDataInput {
                 lax: Some(lax),
@@ -915,7 +915,7 @@ async fn should_respect_the_ignore_update_rule() {
 
     let lax = Some(data.lax + 10);
 
-    let (updates, _) = model
+    let (updates, _, _) = model
         .update(
             &data,
             &PartialDataInput {
@@ -948,7 +948,7 @@ async fn should_respect_the_ignore_update_rule() {
         .await;
 
     match r {
-        Err((error, _)) => assert!(matches!(error, UpdateError::NothingToUpdate)),
+        Err((error, _, _)) => assert!(matches!(error, UpdateError::NothingToUpdate)),
         _ => unreachable!("expected nothing to update"),
     }
 }
@@ -1004,7 +1004,7 @@ async fn should_respect_the_ignore_update_rule_with_alias() {
 
     let lax = default_lax_value + 10;
 
-    let (data, _) = model
+    let (data, _, _) = model
         .create(
             &PartialDataInput {
                 lax: Some(lax),
@@ -1024,7 +1024,7 @@ async fn should_respect_the_ignore_update_rule_with_alias() {
         }
     );
 
-    let (data, _) = model
+    let (data, _, _) = model
         .create(
             &PartialDataInput {
                 lax: None,
@@ -1046,7 +1046,7 @@ async fn should_respect_the_ignore_update_rule_with_alias() {
 
     let lax = default_lax_value + 10;
 
-    let (data, _) = model
+    let (data, _, _) = model
         .create(
             &PartialDataInput {
                 lax: Some(lax),
@@ -1068,7 +1068,7 @@ async fn should_respect_the_ignore_update_rule_with_alias() {
 
     let lax = Some(data.lax + 10);
 
-    let (updates, _) = model
+    let (updates, _, _) = model
         .update(
             &data,
             &PartialDataInput {
@@ -1101,7 +1101,7 @@ async fn should_respect_the_ignore_update_rule_with_alias() {
         .await;
 
     match r {
-        Err((error, _)) => assert!(matches!(error, UpdateError::NothingToUpdate)),
+        Err((error, _, _)) => assert!(matches!(error, UpdateError::NothingToUpdate)),
         _ => unreachable!("expected nothing to update"),
     }
 }
@@ -1157,7 +1157,7 @@ async fn should_respect_the_ignore_update_rule_with_alias_same_as_dependent() {
 
     let lax = default_lax_value + 10;
 
-    let (data, _) = model
+    let (data, _, _) = model
         .create(
             &PartialDataInput {
                 lax: Some(lax),
@@ -1177,7 +1177,7 @@ async fn should_respect_the_ignore_update_rule_with_alias_same_as_dependent() {
         }
     );
 
-    let (data, _) = model
+    let (data, _, _) = model
         .create(
             &PartialDataInput {
                 lax: None,
@@ -1199,7 +1199,7 @@ async fn should_respect_the_ignore_update_rule_with_alias_same_as_dependent() {
 
     let lax = default_lax_value + 10;
 
-    let (data, _) = model
+    let (data, _, _) = model
         .create(
             &PartialDataInput {
                 lax: Some(lax),
@@ -1221,7 +1221,7 @@ async fn should_respect_the_ignore_update_rule_with_alias_same_as_dependent() {
 
     let lax = Some(data.lax + 10);
 
-    let (updates, _) = model
+    let (updates, _, _) = model
         .update(
             &data,
             &PartialDataInput {
@@ -1254,7 +1254,7 @@ async fn should_respect_the_ignore_update_rule_with_alias_same_as_dependent() {
         .await;
 
     match r {
-        Err((error, _)) => assert!(matches!(error, UpdateError::NothingToUpdate)),
+        Err((error, _, _)) => assert!(matches!(error, UpdateError::NothingToUpdate)),
         _ => unreachable!("expected nothing to update"),
     }
 }

@@ -31,7 +31,7 @@ type AsyncHandlerTrigger<'a> = Box<dyn Fn() -> BoxFuture<'a, ()> + Send + Sync +
 impl<
         I: IvoStruct,
         O: IvoStruct,
-        CtxOptions: Sync + Send,
+        CtxOptions: Clone + Sync + Send,
         Timestamp: Clone + Debug + Send + Sync + 'static,
         ErrorTool: IvoErrorTool,
     > Schema<I, O, CtxOptions, Timestamp, ErrorTool>
@@ -46,7 +46,7 @@ pub struct Model<
     'schema,
     I: IvoStruct,
     O: IvoStruct = I,
-    CtxOptions: Sync + Send = HashMap<String, ()>,
+    CtxOptions: Clone + Sync + Send = HashMap<String, ()>,
     Timestamp: Clone + Debug + Send + Sync + 'static = (),
     ErrorTool: IvoErrorTool = DefaultErrorTool,
 > {
@@ -57,7 +57,7 @@ impl<
         'schema,
         I: IvoStruct,
         O: IvoStruct,
-        CtxOptions: Sync + Send,
+        CtxOptions: Clone + Sync + Send,
         Timestamp: Clone + Debug + Send + Sync + 'static,
         ErrorTool: IvoErrorTool,
     > Model<'schema, I, O, CtxOptions, Timestamp, ErrorTool>
@@ -67,8 +67,12 @@ impl<
         input: &I::Partial,
         options: CtxOptions,
     ) -> Result<
-        (O, AsyncHandlerTrigger<'schema>),
-        (ErrorTool::ErrorPayload, AsyncHandlerTrigger<'schema>),
+        (O, CtxOptions, AsyncHandlerTrigger<'schema>),
+        (
+            ErrorTool::ErrorPayload,
+            CtxOptions,
+            AsyncHandlerTrigger<'schema>,
+        ),
     > {
         let shared_rw_options = Arc::new(RwLock::new(options));
         let mut ctx = Arc::new(InternalIvoContext::<I, O>::new_create_ctx(
@@ -104,12 +108,15 @@ impl<
             )
             .await
         {
+            let final_ctx_options = unwrap_async_lock(shared_rw_options);
+
             return Err((
                 payload,
+                final_ctx_options.clone(),
                 self.prepare_failure_handlers(
                     fields_provided.fields,
                     ctx,
-                    Arc::new(unwrap_async_lock(shared_rw_options)),
+                    Arc::new(final_ctx_options),
                 ),
             ));
         }
@@ -129,12 +136,15 @@ impl<
                     .set_changes(validated_outputs);
             }
             Err(payload) => {
+                let final_ctx_options = unwrap_async_lock(shared_rw_options);
+
                 return Err((
                     payload,
+                    final_ctx_options.clone(),
                     self.prepare_failure_handlers(
                         fields_provided.fields,
                         ctx,
-                        Arc::new(unwrap_async_lock(shared_rw_options)),
+                        Arc::new(final_ctx_options),
                     ),
                 ));
             }
@@ -156,12 +166,15 @@ impl<
                     .set_changes(validated_outputs);
             }
             Err(payload) => {
+                let final_ctx_options = unwrap_async_lock(shared_rw_options);
+
                 return Err((
                     payload,
+                    final_ctx_options.clone(),
                     self.prepare_failure_handlers(
                         fields_provided.fields,
                         ctx,
-                        Arc::new(unwrap_async_lock(shared_rw_options)),
+                        Arc::new(final_ctx_options),
                     ),
                 ));
             }
@@ -183,12 +196,15 @@ impl<
                     .set_changes(validated_outputs);
             }
             Err(payload) => {
+                let final_ctx_options = unwrap_async_lock(shared_rw_options);
+
                 return Err((
                     payload,
+                    final_ctx_options.clone(),
                     self.prepare_failure_handlers(
                         fields_provided.fields,
                         ctx,
-                        Arc::new(unwrap_async_lock(shared_rw_options)),
+                        Arc::new(final_ctx_options),
                     ),
                 ));
             }
@@ -234,12 +250,15 @@ impl<
             Arc::make_mut(&mut ctx).set_changes(values.clone());
         }
 
+        let final_ctx_options = unwrap_async_lock(shared_rw_options);
+
         Ok((
             O::ivo_internal_dangerously_get_values_from_partial(values),
+            final_ctx_options.clone(),
             self.prepare_success_handlers(
                 relevant_fields_provided,
                 ctx,
-                Arc::new(unwrap_async_lock(shared_rw_options)),
+                Arc::new(final_ctx_options),
             ),
         ))
     }
@@ -250,8 +269,12 @@ impl<
         updates: &I::Partial,
         options: CtxOptions,
     ) -> Result<
-        (O::Partial, AsyncHandlerTrigger<'schema>),
-        (UpdateError<ErrorTool>, AsyncHandlerTrigger<'schema>),
+        (O::Partial, CtxOptions, AsyncHandlerTrigger<'schema>),
+        (
+            UpdateError<ErrorTool>,
+            CtxOptions,
+            AsyncHandlerTrigger<'schema>,
+        ),
     > {
         let old_partial_values: O::Partial = data.clone().into();
 
@@ -278,12 +301,15 @@ impl<
 
         // if the updates provided are all none, the nothing to update
         if relevant_fields_provided.fields.is_empty() {
+            let final_ctx_options = unwrap_async_lock(shared_rw_options);
+
             return Err((
                 UpdateError::NothingToUpdate,
+                final_ctx_options.clone(),
                 self.prepare_failure_handlers(
                     fields_provided.fields,
                     ctx,
-                    Arc::new(unwrap_async_lock(shared_rw_options)),
+                    Arc::new(final_ctx_options),
                 ),
             ));
         }
@@ -297,12 +323,15 @@ impl<
             )
             .await
         {
+            let final_ctx_options = unwrap_async_lock(shared_rw_options);
+
             return Err((
                 UpdateError::ValidationError(payload),
+                final_ctx_options.clone(),
                 self.prepare_failure_handlers(
                     fields_provided.fields,
                     ctx,
-                    Arc::new(unwrap_async_lock(shared_rw_options)),
+                    Arc::new(final_ctx_options),
                 ),
             ));
         }
@@ -323,14 +352,17 @@ impl<
                     .set_full_values(data.ivo_internal_clone_with(validated_outputs));
             }
             Err(payload) => {
+                let final_ctx_options = unwrap_async_lock(shared_rw_options);
+
                 return Err((
                     UpdateError::ValidationError(payload),
+                    final_ctx_options.clone(),
                     self.prepare_failure_handlers(
                         fields_provided.fields,
                         ctx,
-                        Arc::new(unwrap_async_lock(shared_rw_options)),
+                        Arc::new(final_ctx_options),
                     ),
-                ))
+                ));
             }
             _ => (),
         };
@@ -351,14 +383,17 @@ impl<
                     .set_full_values(data.ivo_internal_clone_with(validated_outputs));
             }
             Err(payload) => {
+                let final_ctx_options = unwrap_async_lock(shared_rw_options);
+
                 return Err((
                     UpdateError::ValidationError(payload),
+                    final_ctx_options.clone(),
                     self.prepare_failure_handlers(
                         fields_provided.fields,
                         ctx,
-                        Arc::new(unwrap_async_lock(shared_rw_options)),
+                        Arc::new(final_ctx_options),
                     ),
-                ))
+                ));
             }
             _ => (),
         };
@@ -379,14 +414,17 @@ impl<
                     .set_full_values(data.ivo_internal_clone_with(validated_outputs));
             }
             Err(payload) => {
+                let final_ctx_options = unwrap_async_lock(shared_rw_options);
+
                 return Err((
                     UpdateError::ValidationError(payload),
+                    final_ctx_options.clone(),
                     self.prepare_failure_handlers(
                         fields_provided.fields,
                         ctx,
-                        Arc::new(unwrap_async_lock(shared_rw_options)),
+                        Arc::new(final_ctx_options),
                     ),
-                ))
+                ));
             }
             _ => (),
         };
@@ -454,12 +492,15 @@ impl<
 
         let Some(updated_values) = data.ivo_internal_get_updates_from_partial(&ctx.changes())
         else {
+            let final_ctx_options = unwrap_async_lock(shared_rw_options);
+
             return Err((
                 UpdateError::NothingToUpdate,
+                final_ctx_options.clone(),
                 self.prepare_failure_handlers(
                     fields_provided.fields,
                     ctx,
-                    Arc::new(unwrap_async_lock(shared_rw_options)),
+                    Arc::new(final_ctx_options),
                 ),
             ));
         };
@@ -473,13 +514,12 @@ impl<
                 .set_full_values(data.ivo_internal_clone_with(updated_values.clone()));
         }
 
+        let final_ctx_options = unwrap_async_lock(shared_rw_options);
+
         Ok((
             updated_values,
-            self.prepare_success_handlers(
-                fields_updated,
-                ctx,
-                Arc::new(unwrap_async_lock(shared_rw_options)),
-            ),
+            final_ctx_options.clone(),
+            self.prepare_success_handlers(fields_updated, ctx, Arc::new(final_ctx_options)),
         ))
     }
 

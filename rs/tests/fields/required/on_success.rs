@@ -69,7 +69,7 @@ async fn should_trigger_on_success_handlers_at_creation() {
     let r = model.create(&input, None).await;
 
     match r {
-        Ok((created, handle_success)) => {
+        Ok((created, _, handle_success)) => {
             assert_eq!(created, data);
 
             handle_success().await;
@@ -154,7 +154,7 @@ async fn should_trigger_on_success_handlers_during_updates_if_provided() {
     let r = model.update(&data, &input, None).await;
 
     match r {
-        Ok((updated, handle_success)) => {
+        Ok((updated, _, handle_success)) => {
             assert_eq!(
                 updated,
                 PartialData {
@@ -245,7 +245,7 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_not_provided()
     let r = model.update(&data, &input, None).await;
 
     match r {
-        Ok((updated, handle_success)) => {
+        Ok((updated, _, handle_success)) => {
             assert_eq!(
                 updated,
                 PartialData {
@@ -335,7 +335,7 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_i
     let r = model.update(&data, &input, None).await;
 
     match r {
-        Ok((updated, handle_success)) => {
+        Ok((updated, _, handle_success)) => {
             assert_eq!(
                 updated,
                 PartialData {
@@ -427,7 +427,7 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_i
     let r = model.update(&data, &input, None).await;
 
     match r {
-        Ok((updated, handle_success)) => {
+        Ok((updated, _, handle_success)) => {
             assert_eq!(
                 updated,
                 PartialData {
@@ -489,7 +489,7 @@ async fn should_trigger_success_handlers_with_empty_fields_array_each_time_creat
 
     let model = schema.model();
 
-    let (data, handle_success) = model
+    let (data, _, handle_success) = model
         .create(
             &PartialDataInput {
                 required: Some(required_value),
@@ -566,7 +566,7 @@ async fn should_trigger_success_handlers_with_empty_fields_array_each_time_updat
 
     let updated_required_1 = data.required_1 + 1;
 
-    let (updates, handle_success) = model
+    let (updates, _, handle_success) = model
         .update(
             &data,
             &PartialDataInput {

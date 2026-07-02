@@ -17,7 +17,7 @@ async fn should_respect_custom_error_tool() {
         .await;
 
     match r {
-        Err((p, _)) => {
+        Err((p, _, _)) => {
             let errors = p.get("coordinates").unwrap();
 
             assert_eq!(errors.len(), 1);
@@ -39,7 +39,7 @@ async fn should_respect_custom_error_tool() {
         .await;
 
     match r {
-        Err((p, _)) => {
+        Err((p, _, _)) => {
             let errors = p.get("coordinates").unwrap();
 
             assert_eq!(errors.len(), 3);
@@ -71,7 +71,7 @@ async fn should_respect_custom_error_tool() {
         .await;
 
     match r {
-        Err((UpdateError::ValidationError(p), _)) => {
+        Err((UpdateError::ValidationError(p), _, _)) => {
             let errors = p.get("coordinates").unwrap();
 
             assert_eq!(errors.len(), 1);
@@ -94,7 +94,7 @@ async fn should_respect_custom_error_tool() {
         .await;
 
     match r {
-        Err((UpdateError::ValidationError(p), _)) => {
+        Err((UpdateError::ValidationError(p), _, _)) => {
             let errors = p.get("coordinates").unwrap();
 
             assert_eq!(errors.len(), 3);
@@ -110,7 +110,7 @@ async fn should_respect_custom_error_tool() {
         lon: data.coordinates.lon,
     };
 
-    let (updates, _) = PLACE_MODEL
+    let (updates, _, _) = PLACE_MODEL
         .update(
             &data,
             &PartialPlace {
@@ -131,7 +131,7 @@ async fn should_respect_custom_error_tool() {
 
     let data = data.clone_with_updates(&updates);
 
-    let (err, _) = PLACE_MODEL
+    let (err, _, _) = PLACE_MODEL
         .update(
             &data,
             &PartialPlace {

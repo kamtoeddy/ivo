@@ -52,7 +52,7 @@ async fn should_respect_option_to_ignore_updates() {
         .await;
 
     match r {
-        Err((e, _)) => assert!(matches!(e, UpdateError::NothingToUpdate)),
+        Err((e, _, _)) => assert!(matches!(e, UpdateError::NothingToUpdate)),
         _ => unreachable!(),
     }
 
@@ -69,7 +69,7 @@ async fn should_respect_option_to_ignore_updates() {
         .await;
 
     match r {
-        Ok((updates, _)) => assert_eq!(
+        Ok((updates, _, _)) => assert_eq!(
             updates,
             PartialData {
                 lax: Some(lax_update)

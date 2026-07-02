@@ -48,7 +48,7 @@ async fn should_reject_updates_if_no_value_has_changed() {
 
     let value = 24;
 
-    let (err, _) = model
+    let (err, _, _) = model
         .update(
             &Data { required: value },
             &PartialDataInput {
@@ -97,7 +97,7 @@ async fn should_respect_the_default_required_error_if_field_is_missing() {
         .await;
 
     match r {
-        Err((p, _)) => assert_eq!(p.get("required").unwrap()[0].reason, required_error),
+        Err((p, _, _)) => assert_eq!(p.get("required").unwrap()[0].reason, required_error),
         _ => unreachable!("expected nothig to update error"),
     }
 
@@ -116,7 +116,7 @@ async fn should_respect_the_default_required_error_if_field_is_missing() {
         .await;
 
     match r {
-        Ok((data, _)) => assert_eq!(
+        Ok((data, _, _)) => assert_eq!(
             data,
             PartialData {
                 required: Some(required)
@@ -160,7 +160,7 @@ async fn should_respect_custom_static_required_error_if_field_is_missing() {
         .await;
 
     match r {
-        Err((p, _)) => assert_eq!(p.get("required").unwrap()[0].reason, required_error),
+        Err((p, _, _)) => assert_eq!(p.get("required").unwrap()[0].reason, required_error),
         _ => unreachable!("expected nothig to update error"),
     }
 
@@ -179,7 +179,7 @@ async fn should_respect_custom_static_required_error_if_field_is_missing() {
         .await;
 
     match r {
-        Ok((data, _)) => assert_eq!(
+        Ok((data, _, _)) => assert_eq!(
             data,
             PartialData {
                 required: Some(required)
@@ -223,7 +223,7 @@ async fn should_respect_custom_dynamic_required_error_if_field_is_missing() {
         .await;
 
     match r {
-        Err((p, _)) => assert_eq!(p.get("required").unwrap()[0].reason, REQUIRED_ERROR),
+        Err((p, _, _)) => assert_eq!(p.get("required").unwrap()[0].reason, REQUIRED_ERROR),
         _ => unreachable!("expected nothig to update error"),
     }
 
@@ -242,7 +242,7 @@ async fn should_respect_custom_dynamic_required_error_if_field_is_missing() {
         .await;
 
     match r {
-        Ok((data, _)) => assert_eq!(
+        Ok((data, _, _)) => assert_eq!(
             data,
             PartialData {
                 required: Some(required)
@@ -307,7 +307,7 @@ async fn should_not_create_if_primary_validation_fails() {
             .await;
 
         match r {
-            Err((p, _)) => {
+            Err((p, _, _)) => {
                 assert_eq!(p.get("required").unwrap()[0].reason, MIN_LENGTH_ERROR);
             }
             _ => unreachable!(),
@@ -327,7 +327,7 @@ async fn should_not_create_if_primary_validation_fails() {
             .await;
 
         match r {
-            Ok((data, _)) => {
+            Ok((data, _, _)) => {
                 assert_eq!(data.required, required_value);
             }
             _ => unreachable!(),
@@ -387,7 +387,7 @@ async fn should_not_update_if_primary_validation_fails() {
             .await;
 
         match r {
-            Err((UpdateError::ValidationError(p), _)) => {
+            Err((UpdateError::ValidationError(p), _, _)) => {
                 assert_eq!(p.get("required").unwrap()[0].reason, OUT_OF_RANGE_ERROR)
             }
             _ => unreachable!(),
@@ -410,7 +410,7 @@ async fn should_not_update_if_primary_validation_fails() {
             .await;
 
         match r {
-            Ok((d, _)) => {
+            Ok((d, _, _)) => {
                 assert_eq!(
                     d,
                     PartialData {
@@ -462,7 +462,7 @@ async fn should_properly_use_input_values_as_output_values_if_validator_does_not
         .await;
 
     match r {
-        Ok((data, _)) => {
+        Ok((data, _, _)) => {
             assert_eq!(data, Data { required });
         }
         _ => unreachable!("expected successful creation"),
@@ -483,7 +483,7 @@ async fn should_properly_use_input_values_as_output_values_if_validator_does_not
         .await;
 
     match r {
-        Ok((updates, _)) => {
+        Ok((updates, _, _)) => {
             assert_eq!(
                 updates,
                 PartialData {
@@ -560,7 +560,7 @@ async fn should_not_create_if_re_validation_fails() {
             .await;
 
         match r {
-            Err((p, _)) => {
+            Err((p, _, _)) => {
                 assert_eq!(
                     p.get("required").unwrap()[0].reason,
                     MIN_REVALIDATION_LENGTH_ERROR
@@ -583,7 +583,7 @@ async fn should_not_create_if_re_validation_fails() {
             .await;
 
         match r {
-            Ok((data, _)) => {
+            Ok((data, _, _)) => {
                 assert_eq!(data.required, required_value);
             }
             _ => unreachable!(),
@@ -661,7 +661,7 @@ async fn should_not_update_if_re_validation_fails() {
             .await;
 
         match r {
-            Err((UpdateError::ValidationError(p), _)) => {
+            Err((UpdateError::ValidationError(p), _, _)) => {
                 assert_eq!(
                     p.get("required").unwrap()[0].reason,
                     REVALIDATED_OUT_OF_RANGE_ERROR
@@ -687,7 +687,7 @@ async fn should_not_update_if_re_validation_fails() {
             .await;
 
         match r {
-            Ok((d, _)) => {
+            Ok((d, _, _)) => {
                 assert_eq!(
                     d,
                     PartialData {
@@ -740,7 +740,7 @@ async fn should_properly_use_re_validated_values() {
         .await;
 
     match r {
-        Ok((data, _)) => {
+        Ok((data, _, _)) => {
             assert_eq!(
                 data,
                 Data {
@@ -766,7 +766,7 @@ async fn should_properly_use_re_validated_values() {
         .await;
 
     match r {
-        Ok((updates, _)) => {
+        Ok((updates, _, _)) => {
             assert_eq!(
                 updates,
                 PartialData {
@@ -818,7 +818,7 @@ async fn should_properly_use_input_values_as_output_values_if_re_validator_does_
         .await;
 
     match r {
-        Ok((data, _)) => {
+        Ok((data, _, _)) => {
             assert_eq!(
                 data,
                 Data {
@@ -844,7 +844,7 @@ async fn should_properly_use_input_values_as_output_values_if_re_validator_does_
         .await;
 
     match r {
-        Ok((updates, _)) => {
+        Ok((updates, _, _)) => {
             assert_eq!(
                 updates,
                 PartialData {
@@ -1045,7 +1045,7 @@ async fn should_respect_post_validation_config() {
         .await;
 
     match r {
-        Err((p, _)) => {
+        Err((p, _, _)) => {
             assert!(p.get("required_1").is_none());
             assert!(p.get("required_2").is_none());
             assert!(p.get(UNKNOWN_FIELD).is_none());
@@ -1072,7 +1072,7 @@ async fn should_respect_post_validation_config() {
         .await;
 
     match r {
-        Err((p, _)) => {
+        Err((p, _, _)) => {
             assert!(p.get("required_1").is_none());
             assert!(p.get("required_2").is_none());
             assert!(p.get(UNKNOWN_FIELD).is_none());
@@ -1099,7 +1099,7 @@ async fn should_respect_post_validation_config() {
         .await;
 
     match r {
-        Err((p, _)) => {
+        Err((p, _, _)) => {
             assert!(p.get("required").is_none());
             assert!(p.get("required_2").is_none());
             assert_eq!(
@@ -1125,7 +1125,7 @@ async fn should_respect_post_validation_config() {
         .await;
 
     match r {
-        Err((p, _)) => {
+        Err((p, _, _)) => {
             assert!(p.get("required_2").is_none());
             assert_eq!(
                 p.get("required").unwrap()[0].reason,
@@ -1155,7 +1155,7 @@ async fn should_respect_post_validation_config() {
         .await;
 
     match r {
-        Err((p, _)) => {
+        Err((p, _, _)) => {
             assert!(p.get("required_1").is_none());
             assert!(p.get("required_2").is_none());
             assert_eq!(
@@ -1181,7 +1181,7 @@ async fn should_respect_post_validation_config() {
         .await;
 
     match r {
-        Err((p, _)) => {
+        Err((p, _, _)) => {
             assert!(p.get("required_2").is_none());
             assert_eq!(
                 p.get("required").unwrap()[0].reason,
@@ -1224,7 +1224,7 @@ async fn should_respect_post_validation_config() {
         .await;
 
     match r {
-        Err((UpdateError::ValidationError(p), _)) => {
+        Err((UpdateError::ValidationError(p), _, _)) => {
             assert!(p.get("required").is_none());
             assert!(p.get("required_2").is_none());
             assert_eq!(
@@ -1233,7 +1233,7 @@ async fn should_respect_post_validation_config() {
                 "should not update if one field has an error after pre-validator in post-validation"
             );
         }
-        Err((UpdateError::NothingToUpdate, _)) => {
+        Err((UpdateError::NothingToUpdate, _, _)) => {
             unreachable!("did not expected nothing to update")
         }
         _ => unreachable!("did not expect successful update"),
@@ -1254,7 +1254,7 @@ async fn should_respect_post_validation_config() {
         .await;
 
     match r {
-        Err((UpdateError::ValidationError(p), _)) => {
+        Err((UpdateError::ValidationError(p), _, _)) => {
             assert!(p.get("required_2").is_none());
             assert_eq!(
                 p.get("required").unwrap()[0].reason,
@@ -1285,7 +1285,7 @@ async fn should_respect_post_validation_config() {
         .await;
 
     match r {
-        Err((UpdateError::ValidationError(p), _)) => {
+        Err((UpdateError::ValidationError(p), _, _)) => {
             assert!(p.get("required_1").is_none());
             assert!(p.get("required_2").is_none());
             assert!(p.get(UNKNOWN_FIELD).is_none());
@@ -1318,7 +1318,7 @@ async fn should_respect_post_validation_config() {
         .await;
 
     match r {
-        Err((UpdateError::ValidationError(p), _)) => {
+        Err((UpdateError::ValidationError(p), _, _)) => {
             assert!(p.get("required_1").is_none());
             assert!(p.get("required_2").is_none());
             assert!(p.get(UNKNOWN_FIELD).is_none());
@@ -1417,7 +1417,7 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
         .await;
 
     match r {
-        Ok((data, _)) => {
+        Ok((data, _, _)) => {
             assert_eq!(
                 data,
                 Data {
@@ -1444,7 +1444,7 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
         .await;
 
     match r {
-        Ok((data, _)) => {
+        Ok((data, _, _)) => {
             assert_eq!(
                 data,
                 Data {
@@ -1480,7 +1480,7 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
         .await;
 
     match r {
-        Ok((updates, _)) => {
+        Ok((updates, _, _)) => {
             assert_eq!(
                 updates,
                 PartialData {
@@ -1508,7 +1508,7 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
         .await;
 
     match r {
-        Ok((updates, _)) => {
+        Ok((updates, _, _)) => {
             assert_eq!(
                 updates,
                 PartialData {

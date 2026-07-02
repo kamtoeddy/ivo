@@ -9,7 +9,7 @@ pub(super) struct FieldInfoCollection<
     'a,
     I: IvoStruct,
     O: IvoStruct,
-    CtxOptions,
+    CtxOptions: Clone,
     Timestamp: Clone + Debug + Send + Sync + 'static,
     ErrorTool: IvoErrorTool,
 > {
@@ -24,7 +24,7 @@ impl<
         'a,
         I: IvoStruct,
         O: IvoStruct,
-        CtxOptions,
+        CtxOptions: Clone,
         Timestamp: Clone + Debug + Send + Sync + 'static,
         ErrorTool: IvoErrorTool,
     > FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>
@@ -163,7 +163,7 @@ impl<
         'a,
         I: IvoStruct,
         O: IvoStruct,
-        CtxOptions,
+        CtxOptions: Clone,
         ErrorTool: IvoErrorTool,
         Timestamp: Clone + Debug + Send + Sync + 'static,
     > Clone for FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>

@@ -28,7 +28,7 @@ const FONT_BOLD: &str = "\x1b[1m";
 pub struct Schema<
     I: IvoStruct,
     O: IvoStruct = I,
-    CtxOptions = Option<()>,
+    CtxOptions: Clone = Option<()>,
     Timestamp: Clone + Debug + Send + Sync + 'static = (),
     ErrorTool: IvoErrorTool = DefaultErrorTool,
 > {
@@ -40,7 +40,7 @@ pub struct Schema<
 impl<
         I: IvoStruct,
         O: IvoStruct,
-        CtxOptions,
+        CtxOptions: Clone,
         Timestamp: Clone + Debug + Send + Sync + 'static,
         ErrorTool: IvoErrorTool,
     > Schema<I, O, CtxOptions, Timestamp, ErrorTool>

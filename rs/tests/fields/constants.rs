@@ -30,7 +30,7 @@ async fn should_respect_constants_with_static_values() {
 
     let lax = 400;
 
-    let (data, _) = model
+    let (data, _, _) = model
         .create(&PartialDataInput { lax: Some(lax) }, None)
         .await
         .ok()
@@ -40,7 +40,7 @@ async fn should_respect_constants_with_static_values() {
 
     let lax = 700;
 
-    let (data, _) = model
+    let (data, _, _) = model
         .create(&PartialDataInput { lax: Some(lax) }, None)
         .await
         .ok()
@@ -50,7 +50,7 @@ async fn should_respect_constants_with_static_values() {
 
     let lax = Some(200);
 
-    let (updates, _) = model
+    let (updates, _, _) = model
         .update(&data, &PartialDataInput { lax }, None)
         .await
         .ok()
@@ -96,7 +96,7 @@ async fn should_respect_constants_with_computed_values() {
 
     let lax = 400;
 
-    let (data, _) = model
+    let (data, _, _) = model
         .create(&PartialDataInput { lax: Some(lax) }, None)
         .await
         .ok()
@@ -106,7 +106,7 @@ async fn should_respect_constants_with_computed_values() {
 
     let lax = 700;
 
-    let (data, _) = model
+    let (data, _, _) = model
         .create(&PartialDataInput { lax: Some(lax) }, None)
         .await
         .ok()
@@ -116,7 +116,7 @@ async fn should_respect_constants_with_computed_values() {
 
     let lax = Some(200);
 
-    let (updates, _) = model
+    let (updates, _, _) = model
         .update(&data, &PartialDataInput { lax }, None)
         .await
         .ok()
@@ -266,7 +266,7 @@ async fn should_trigger_on_success_handlers_with_static_values() {
 
     let lax = 400;
 
-    let (data, handle_success) = model
+    let (data, _, handle_success) = model
         .create(&PartialDataInput { lax: Some(lax) }, None)
         .await
         .ok()
@@ -323,7 +323,7 @@ async fn should_trigger_on_success_handlers_with_computed_values() {
 
     let lax = 400;
 
-    let (data, handle_success) = model
+    let (data, _, handle_success) = model
         .create(&PartialDataInput { lax: Some(lax) }, None)
         .await
         .ok()

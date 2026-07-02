@@ -42,12 +42,12 @@ async fn run_example() {
     let r = USER_MODEL.create(&input, UserCtxOptions::new()).await;
 
     match r {
-        Ok((data, handle_success)) => {
+        Ok((data, _, handle_success)) => {
             println!("{:?}\n", data);
 
             handle_success().await;
         }
-        Err((payload, handle_failure)) => {
+        Err((payload, _, handle_failure)) => {
             println!("\nFailed to create: {:?}\n", payload);
 
             handle_failure().await;
@@ -98,13 +98,13 @@ async fn run_example() {
         .await;
 
     match r {
-        Ok((data, handle_success)) => {
+        Ok((data, _, handle_success)) => {
             println!("updates: {:?}\n", data);
             println!("old + updates: {:?}\n", user.clone_with_updates(&data));
 
             handle_success().await;
         }
-        Err((error, handle_failure)) => {
+        Err((error, _, handle_failure)) => {
             match error {
                 UpdateError::NothingToUpdate => println!("Nothing to update\n"),
                 UpdateError::ValidationError(payload) => {

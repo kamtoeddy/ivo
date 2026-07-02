@@ -34,7 +34,7 @@ async fn should_respect_created_at_timestamp_with_default_name() {
 
     let lax = 400;
 
-    let (data, _) = model
+    let (data, _, _) = model
         .create(&PartialDataInput { lax: Some(lax) }, None)
         .await
         .ok()
@@ -45,7 +45,7 @@ async fn should_respect_created_at_timestamp_with_default_name() {
 
     let lax_update = 200;
 
-    let (updates, _) = model
+    let (updates, _, _) = model
         .update(
             &data,
             &PartialDataInput {
@@ -93,7 +93,7 @@ async fn should_respect_created_at_timestamp_with_custom_name() {
 
     let lax = 400;
 
-    let (data, _) = model
+    let (data, _, _) = model
         .create(&PartialDataInput { lax: Some(lax) }, None)
         .await
         .ok()
@@ -104,7 +104,7 @@ async fn should_respect_created_at_timestamp_with_custom_name() {
 
     let lax_update = 200;
 
-    let (updates, _) = model
+    let (updates, _, _) = model
         .update(
             &data,
             &PartialDataInput {
@@ -152,7 +152,7 @@ async fn should_respect_updated_at_timestamp_with_default_name() {
 
     let lax = 400;
 
-    let (data, _) = model
+    let (data, _, _) = model
         .create(&PartialDataInput { lax: Some(lax) }, None)
         .await
         .ok()
@@ -163,7 +163,7 @@ async fn should_respect_updated_at_timestamp_with_default_name() {
 
     let lax_update = 200;
 
-    let (updates, _) = model
+    let (updates, _, _) = model
         .update(
             &data,
             &PartialDataInput {
@@ -210,7 +210,7 @@ async fn should_respect_updated_at_timestamp_with_custom_name() {
 
     let lax = 400;
 
-    let (data, _) = model
+    let (data, _, _) = model
         .create(&PartialDataInput { lax: Some(lax) }, None)
         .await
         .ok()
@@ -221,7 +221,7 @@ async fn should_respect_updated_at_timestamp_with_custom_name() {
 
     let lax_update = 200;
 
-    let (updates, _) = model
+    let (updates, _, _) = model
         .update(
             &data,
             &PartialDataInput {
@@ -269,7 +269,7 @@ async fn should_respect_optional_updated_at_timestamp_with_default_name() {
 
     let lax = 400;
 
-    let (data, _) = model
+    let (data, _, _) = model
         .create(&PartialDataInput { lax: Some(lax) }, None)
         .await
         .ok()
@@ -280,7 +280,7 @@ async fn should_respect_optional_updated_at_timestamp_with_default_name() {
 
     let lax_update = 200;
 
-    let (updates, _) = model
+    let (updates, _, _) = model
         .update(
             &data,
             &PartialDataInput {
@@ -333,7 +333,7 @@ async fn should_respect_optional_updated_at_timestamp_with_custom_name() {
 
     let lax = 400;
 
-    let (data, _) = model
+    let (data, _, _) = model
         .create(&PartialDataInput { lax: Some(lax) }, None)
         .await
         .ok()
@@ -344,7 +344,7 @@ async fn should_respect_optional_updated_at_timestamp_with_custom_name() {
 
     let lax_update = 200;
 
-    let (updates, _) = model
+    let (updates, _, _) = model
         .update(
             &data,
             &PartialDataInput {

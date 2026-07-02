@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoField, IvoStruct, Schema, UpdateError, IvoUpdateData};
+use ivo::{IvoField, IvoStruct, IvoUpdateData, Schema, UpdateError};
 
 use crate::async_test_matrix;
 
@@ -48,7 +48,7 @@ async fn should_respect_the_ignore_update_rule() {
     let lax = IGNORE_REQUIRED_FOR_UPDATE.to_string();
     let required = 1;
 
-    let (data, _) = model
+    let (data, _, _) = model
         .create(
             &PartialDataInput {
                 lax: Some(lax.clone()),
@@ -80,7 +80,7 @@ async fn should_respect_the_ignore_update_rule() {
         .await;
 
     match r {
-        Err((UpdateError::NothingToUpdate, _)) => {}
+        Err((UpdateError::NothingToUpdate, _, _)) => {}
         _ => unreachable!("expected nothig to update error"),
     }
 
@@ -101,7 +101,7 @@ async fn should_respect_the_ignore_update_rule() {
         .await;
 
     match r {
-        Ok((updates, _)) => {
+        Ok((updates, _, _)) => {
             assert_eq!(
                 updates,
                 PartialData {
@@ -152,7 +152,7 @@ async fn should_respect_the_readonly_rule() {
     let lax = IGNORE_REQUIRED_FOR_UPDATE.to_string();
     let required = 1;
 
-    let (data, _) = model
+    let (data, _, _) = model
         .create(
             &PartialDataInput {
                 lax: Some(lax.clone()),
@@ -184,7 +184,7 @@ async fn should_respect_the_readonly_rule() {
         .await;
 
     match r {
-        Err((UpdateError::NothingToUpdate, _)) => {}
+        Err((UpdateError::NothingToUpdate, _, _)) => {}
         _ => unreachable!("expected nothig to update error"),
     }
 
@@ -205,7 +205,7 @@ async fn should_respect_the_readonly_rule() {
         .await;
 
     match r {
-        Err((UpdateError::NothingToUpdate, _)) => {}
+        Err((UpdateError::NothingToUpdate, _, _)) => {}
         _ => unreachable!("expected nothig to update error"),
     }
 }
