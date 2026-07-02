@@ -36,6 +36,7 @@ impl<
         ErrorTool: IvoErrorTool,
     > Schema<I, O, CtxOptions, Timestamp, ErrorTool>
 {
+    #[inline(always)]
     pub fn model(&self) -> Model<'_, I, O, CtxOptions, Timestamp, ErrorTool> {
         Model { schema: self }
     }
@@ -409,7 +410,7 @@ impl<
             .fields
             .iter()
             .filter_map(|f| {
-                if f.is_input && !f.is_output {
+                if !f.is_output {
                     return Some(f.clone());
                 }
 

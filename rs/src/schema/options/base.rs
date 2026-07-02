@@ -16,19 +16,6 @@ pub struct SchemaOptions<I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoE
     pub post_validate: Option<Vec<PostValidationConfig<I, O, CtxOptions, ErrorTool>>>,
 }
 
-impl<I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool> Default
-    for SchemaOptions<I, O, CtxOptions, ErrorTool>
-{
-    fn default() -> Self {
-        Self {
-            ignore_update: None,
-            on_delete_fns: None,
-            on_success_fns: None,
-            post_validate: None,
-        }
-    }
-}
-
 impl<I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool>
     SchemaOptions<I, O, CtxOptions, ErrorTool>
 {
