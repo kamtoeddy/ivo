@@ -185,6 +185,27 @@ fn should_reject_if_constant_field_does_not_exist_on_output_struct() {
 }
 
 #[test]
+#[should_panic(
+    expected = "[id]: is a purely output field. It should not be present on \u{1b}[1mDataInput"
+)]
+fn should_reject_if_constant_field_exists_on_input_struct() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        id: i32,
+    }
+
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct DataInput {
+        id: i32,
+    }
+
+    let _: Schema<DataInput, Data> = Schema::new(
+        |f| f.set("id", IvoField::CONSTANT.computed(|_, _| ready(12))),
+        |o| o,
+    );
+}
+
+#[test]
 #[should_panic(expected = "[dependent]: is an output field. It must be present on \u{1b}[1mData")]
 fn should_reject_if_dependent_field_does_not_exist_on_output_struct() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
