@@ -3,10 +3,12 @@ mod fields;
 mod ivo_derive;
 mod options;
 mod utils;
+mod value_erasal;
 
 // TODO:
 // [ ] ctx options
 // [ ] custom error_tool
+// [ ] value_erasal
 // [x] ivo_derive
 // [x] fields
 // [x] field_configs
