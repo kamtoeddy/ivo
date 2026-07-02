@@ -26,3 +26,57 @@ fn should_properly_attach_derive_attributes_on_partial_structs() {
 
     assert_eq!(final_hash_code, 16_923_051_323_992_505_563)
 }
+
+#[test]
+fn should_properly_append_partial_values_to_ivo_structs() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        int_value: i32,
+        string_value: String,
+    }
+
+    let mut data = Data {
+        int_value: 20,
+        string_value: "secure_str".to_string(),
+    };
+
+    let data_clone = data.clone();
+
+    data.append_updates(&PartialData {
+        int_value: None,
+        string_value: None,
+    });
+
+    assert_eq!(data, data_clone);
+
+    let updated_string_value = "updated_string_value".to_string();
+
+    data.append_updates(&PartialData {
+        int_value: None,
+        string_value: Some(updated_string_value.clone()),
+    });
+
+    assert_eq!(
+        data,
+        Data {
+            int_value: data.int_value,
+            string_value: updated_string_value,
+        }
+    );
+
+    let updated_int_value = data.int_value + 100;
+    let updated_string_value = "re_updated_string_value".to_string();
+
+    data.append_updates(&PartialData {
+        int_value: Some(updated_int_value),
+        string_value: Some(updated_string_value.clone()),
+    });
+
+    assert_eq!(
+        data,
+        Data {
+            int_value: updated_int_value,
+            string_value: updated_string_value,
+        }
+    )
+}
