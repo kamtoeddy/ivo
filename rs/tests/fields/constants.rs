@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{DefaultErrorTool, IvoField, IvoStruct, Schema, IvoContext, SharedIvoData};
+use ivo::{DefaultErrorTool, IvoContext, IvoField, IvoStruct, Schema, SharedIvoData};
 
 use crate::async_test_matrix;
 
@@ -208,7 +208,8 @@ async fn should_trigger_on_delete_handlers_with_computed_values() {
                         }
 
                         ready(())
-                    }),
+                    })
+                    .on_delete(|_, _| ready(())),
             )
             .set("lax", IvoField::LAX.default(20))
         },
