@@ -1,3 +1,4 @@
+mod extras;
 mod field_configs;
 mod fields;
 mod ivo_derive;
@@ -8,7 +9,7 @@ mod value_erasal;
 // TODO:
 // [ ] ctx options
 // [ ] custom error_tool
-// [ ] value_erasal
+// [x] value_erasal
 // [x] ivo_derive
 // [x] fields
 // [x] field_configs
