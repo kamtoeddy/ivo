@@ -9,18 +9,13 @@ mod constants;
 mod dependents;
 mod lax;
 mod required;
+mod virtuals;
 
 // [x] constants
 // [x] dependents
 // [x] lax
 // [x] required
-// [ ] virtuals
-//
-// [ ] validator
-// [ ] revalidator
-// [ ] sanitizer
-// [ ] dependent_resolver
-// [ ] post_validator
+// [x] virtuals
 
 async fn should_properly_update_ctx_options() {
     let supplier_num = 2;

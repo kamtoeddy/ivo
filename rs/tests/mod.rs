@@ -7,7 +7,7 @@ mod utils;
 mod value_erasal;
 
 // TODO:
-// [ ] ctx options
+// [x] ctx options
 // [x] custom error_tool
 // [x] value_erasal
 // [x] ivo_derive
