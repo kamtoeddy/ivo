@@ -1,10 +1,25 @@
 #![expect(dead_code)]
 
+use ivo::{IvoField, IvoRwCtxOptions, IvoStruct, Model, Schema};
 use std::{array, collections::HashMap, future::ready, sync::LazyLock};
 
-use ivo::{IvoField, IvoRwCtxOptions, IvoStruct, Model, Schema};
-
 use crate::async_test_matrix;
+
+mod constants;
+mod dependents;
+mod lax;
+
+// [x] constants
+// [x] dependents
+// [x] lax
+// [ ] required
+// [ ] virtuals
+//
+// [ ] validator
+// [ ] revalidator
+// [ ] sanitizer
+// [ ] dependent_resolver
+// [ ] post_validator
 
 async fn should_properly_update_ctx_options() {
     let supplier_num = 2;
