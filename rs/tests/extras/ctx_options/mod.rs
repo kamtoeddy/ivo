@@ -8,11 +8,12 @@ use crate::async_test_matrix;
 mod constants;
 mod dependents;
 mod lax;
+mod required;
 
 // [x] constants
 // [x] dependents
 // [x] lax
-// [ ] required
+// [x] required
 // [ ] virtuals
 //
 // [ ] validator
