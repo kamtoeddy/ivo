@@ -65,6 +65,203 @@ async fn should_reject_updates_if_no_value_has_changed() {
 
 async_test_matrix!(should_reject_updates_if_no_value_has_changed);
 
+async fn should_reject_updates_if_no_value_has_changed_after_validation() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        required: i32,
+    }
+
+    #[derive(Debug, Clone, IvoStruct)]
+    struct DataInput {
+        required: i32,
+    }
+
+    const DEFAULT_VALUE: i32 = 1;
+
+    let schema: Schema<DataInput, Data> = Schema::new(
+        |f| {
+            f.set(
+                "required",
+                IvoField::LAX
+                    .default(DEFAULT_VALUE)
+                    .validate(|_, _, _| ready(Ok(Some(DEFAULT_VALUE)))),
+            )
+        },
+        |o| o,
+    );
+
+    let model = schema.model();
+
+    let (err, _, _) = model
+        .update(
+            &Data {
+                required: DEFAULT_VALUE,
+            },
+            &PartialDataInput { required: Some(24) },
+            None,
+        )
+        .await
+        .err()
+        .unwrap();
+
+    assert!(matches!(err, UpdateError::NothingToUpdate))
+}
+
+async_test_matrix!(should_reject_updates_if_no_value_has_changed_after_validation);
+
+async fn should_reject_updates_if_no_value_has_changed_after_re_validation() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        required: i32,
+    }
+
+    #[derive(Debug, Clone, IvoStruct)]
+    struct DataInput {
+        required: i32,
+    }
+
+    const DEFAULT_VALUE: i32 = 1;
+
+    let schema: Schema<DataInput, Data> = Schema::new(
+        |f| {
+            f.set(
+                "required",
+                IvoField::LAX
+                    .default(DEFAULT_VALUE)
+                    .validate(|_, _, _| ready(Ok(None)))
+                    .re_validate(|_, _, _| ready(Ok(Some(DEFAULT_VALUE)))),
+            )
+        },
+        |o| o,
+    );
+
+    let model = schema.model();
+
+    let (err, _, _) = model
+        .update(
+            &Data {
+                required: DEFAULT_VALUE,
+            },
+            &PartialDataInput { required: Some(24) },
+            None,
+        )
+        .await
+        .err()
+        .unwrap();
+
+    assert!(matches!(err, UpdateError::NothingToUpdate))
+}
+
+async_test_matrix!(should_reject_updates_if_no_value_has_changed_after_re_validation);
+
+async fn should_reject_updates_if_no_value_has_changed_after_post_validation() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        required: String,
+        lax_1: String,
+    }
+
+    #[derive(Debug, Clone, IvoStruct)]
+    struct DataInput {
+        required: String,
+        lax_1: String,
+    }
+
+    const DEFAULT_VALUE: &str = "default_value";
+    const RESET_TO_PREV_VALUE_IN_PRE_VALIDATOR: &str = "RESET_TO_PREV_VALUE_IN_PRE_VALIDATOR";
+    const RESET_TO_PREV_VALUE_IN_POST_VALIDATOR: &str = "RESET_TO_PREV_VALUE_IN_POST_VALIDATOR";
+
+    let schema: Schema<DataInput, Data> = Schema::new(
+        |f| {
+            f.set(
+                "required",
+                IvoField::REQUIRED
+                    .validate(|_: String, _, _| ready(Ok(None)))
+                    .re_validate(|_, _, _| ready(Ok(Some(DEFAULT_VALUE.into())))),
+            )
+            .set("lax_1", IvoField::LAX.default(DEFAULT_VALUE.to_string()))
+        },
+        |o| {
+            o.post_validate(["required", "lax_1"], |v| {
+                v.pre_validate(|ctx: IvoContext<DataInput, Data>, _| {
+                    let res = ready(Ok(None));
+
+                    if !ctx.is_update() {
+                        return res;
+                    }
+
+                    if ctx.input().required == Some(RESET_TO_PREV_VALUE_IN_PRE_VALIDATOR.into()) {
+                        let mut updates = PartialDataInput::new();
+
+                        updates.set_required(ctx.previous_values().unwrap().required);
+
+                        return ready(Ok(Some(updates)));
+                    }
+
+                    res
+                })
+                .validate(|ctx: IvoContext<DataInput, Data>, _| {
+                    let res = ready(Ok(None));
+
+                    if !ctx.is_update() {
+                        return res;
+                    }
+
+                    if ctx.input().required == Some(RESET_TO_PREV_VALUE_IN_POST_VALIDATOR.into()) {
+                        let mut updates = PartialDataInput::new();
+
+                        updates.set_required(ctx.previous_values().unwrap().required);
+
+                        return ready(Ok(Some(updates)));
+                    }
+
+                    res
+                })
+            })
+        },
+    );
+
+    let model = schema.model();
+
+    let (err, _, _) = model
+        .update(
+            &Data {
+                required: DEFAULT_VALUE.into(),
+                lax_1: DEFAULT_VALUE.into(),
+            },
+            &PartialDataInput {
+                required: Some(RESET_TO_PREV_VALUE_IN_PRE_VALIDATOR.into()),
+                lax_1: None,
+            },
+            None,
+        )
+        .await
+        .err()
+        .unwrap();
+
+    assert!(matches!(err, UpdateError::NothingToUpdate));
+
+    let (err, _, _) = model
+        .update(
+            &Data {
+                required: DEFAULT_VALUE.into(),
+                lax_1: DEFAULT_VALUE.into(),
+            },
+            &PartialDataInput {
+                required: Some(RESET_TO_PREV_VALUE_IN_POST_VALIDATOR.into()),
+                lax_1: None,
+            },
+            None,
+        )
+        .await
+        .err()
+        .unwrap();
+
+    assert!(matches!(err, UpdateError::NothingToUpdate))
+}
+
+async_test_matrix!(should_reject_updates_if_no_value_has_changed_after_post_validation);
+
 // required_error
 
 async fn should_respect_the_default_required_error_if_field_is_missing() {
