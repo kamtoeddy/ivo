@@ -785,29 +785,29 @@ impl<
                 match pre_validation {
                     Err(errors) => {
                         for (field_name, (reason, metadata)) in errors.ivo_internal_enumerate() {
-                            if let Some(field_info) = input_fields.get_and_add(&field_name) {
-                                if fields.contains(&field_info.config_name.as_str()) {
-                                    error_tool.add(&field_name, FieldError { reason, metadata });
-                                }
+                            let field_info = input_fields.get_and_add(&field_name).unwrap();
+
+                            if fields.contains(&field_info.config_name.as_str()) {
+                                error_tool.add(&field_name, FieldError { reason, metadata });
                             }
                         }
                     }
                     Ok(Some(updates)) => {
                         for (field_name, value) in updates.ivo_internal_enumerate() {
-                            if let Some(field_info) = input_fields.get_and_add(&field_name) {
-                                if !fields.contains(&field_info.config_name.as_str()) {
-                                    continue;
-                                }
+                            let field_info = input_fields.get_and_add(&field_name).unwrap();
 
-                                has_updates = true;
+                            if !fields.contains(&field_info.config_name.as_str()) {
+                                continue;
+                            }
 
-                                if field_info.is_input {
-                                    validated_inputs.ivo_internal_set(&field_info.name, &value);
-                                }
+                            has_updates = true;
 
-                                if field_info.is_output {
-                                    validated_outputs.ivo_internal_set(&field_info.name, &value);
-                                }
+                            if field_info.is_input {
+                                validated_inputs.ivo_internal_set(&field_info.name, &value);
+                            }
+
+                            if field_info.is_output {
+                                validated_outputs.ivo_internal_set(&field_info.name, &value);
                             }
                         }
                     }
@@ -847,29 +847,29 @@ impl<
             match validation {
                 Err(errors) => {
                     for (field_name, (reason, metadata)) in errors.ivo_internal_enumerate() {
-                        if let Some(field_info) = input_fields.get_and_add(&field_name) {
-                            if fields.contains(&field_info.config_name.as_str()) {
-                                error_tool.add(&field_name, FieldError { reason, metadata });
-                            }
+                        let field_info = input_fields.get_and_add(&field_name).unwrap();
+
+                        if fields.contains(&field_info.config_name.as_str()) {
+                            error_tool.add(&field_name, FieldError { reason, metadata });
                         }
                     }
                 }
                 Ok(Some(updates)) => {
                     for (field_name, value) in updates.ivo_internal_enumerate() {
-                        if let Some(field_info) = input_fields.get_and_add(&field_name) {
-                            if !fields.contains(&field_info.config_name.as_str()) {
-                                continue;
-                            }
+                        let field_info = input_fields.get_and_add(&field_name).unwrap();
 
-                            has_updates = true;
+                        if !fields.contains(&field_info.config_name.as_str()) {
+                            continue;
+                        }
 
-                            if field_info.is_input {
-                                validated_inputs.ivo_internal_set(&field_info.name, &value);
-                            }
+                        has_updates = true;
 
-                            if field_info.is_output {
-                                validated_outputs.ivo_internal_set(&field_info.name, &value);
-                            }
+                        if field_info.is_input {
+                            validated_inputs.ivo_internal_set(&field_info.name, &value);
+                        }
+
+                        if field_info.is_output {
+                            validated_outputs.ivo_internal_set(&field_info.name, &value);
                         }
                     }
                 }

@@ -1547,6 +1547,7 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
                         if lax == LAX_PRE_VALIDATED_WITH_UPDATED_VALUES {
                             updates.set_lax(UPDATED_VALUE_FROM_PRE_VALIDATOR.into());
                             updates.set_lax_1(UPDATED_VALUE_FROM_PRE_VALIDATOR.into());
+                            updates.set_lax_2(UPDATED_VALUE_FROM_PRE_VALIDATOR.into());
                         }
                     }
 
@@ -1559,6 +1560,7 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
                         if lax == LAX_POST_VALIDATED_WITH_UPDATED_VALUES {
                             updates.set_lax(UPDATED_VALUE_FROM_POST_VALIDATOR.into());
                             updates.set_lax_1(UPDATED_VALUE_FROM_POST_VALIDATOR.into());
+                            updates.set_lax_2(UPDATED_VALUE_FROM_POST_VALIDATOR.into());
                         }
                     }
 

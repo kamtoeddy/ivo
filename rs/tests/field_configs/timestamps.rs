@@ -132,7 +132,7 @@ fn should_allow_if_created_at_is_enabled_with_default_name_and_is_on_output_stru
 }
 
 #[test]
-fn should_allow_if_created_at_is_enabled_with_custom_name_band_is_on_output_struct() {
+fn should_allow_if_created_at_is_enabled_with_custom_name_and_is_on_output_struct() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
         id: i32,

@@ -466,9 +466,11 @@ fn should_allow_virtuals_with_alias_as_direct_dependent_field() {
 fn should_allow_virtuals_with_alias_as_non_field_name() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
+        created_at: String,
         id: i32,
         dependent: i32,
         lax: String,
+        updated_at: String,
     }
 
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
@@ -478,7 +480,7 @@ fn should_allow_virtuals_with_alias_as_non_field_name() {
     }
 
     let result = panic::catch_unwind(|| {
-        let _: Schema<DataInput, Data> = Schema::new(
+        let _: Schema<DataInput, Data, Option<()>, String> = Schema::new(
             |f| {
                 f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
                     .set("lax", IvoField::LAX.default(1))
@@ -495,6 +497,11 @@ fn should_allow_virtuals_with_alias_as_non_field_name() {
                             .alias("alias_name")
                             .validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
+                    .timestamps(|t| {
+                        t.resolve(|| "Date.now()".into())
+                            .created_at(None)
+                            .updated_at(None)
+                    })
             },
             |o| o,
         );
