@@ -1,10 +1,11 @@
 use seahash::SeaHasher;
+use serde::{Deserialize, Serialize};
 use std::hash::{Hash, Hasher};
 
 use ivo::IvoStruct;
 
 #[test]
-fn should_properly_attach_derive_attributes_on_partial_structs() {
+fn should_properly_attach_attributes_on_partial_structs() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     #[ivo(derive(Hash))]
     struct Data {
@@ -25,6 +26,78 @@ fn should_properly_attach_derive_attributes_on_partial_structs() {
     let final_hash_code = hasher.finish();
 
     assert_eq!(final_hash_code, 16_923_051_323_992_505_563)
+}
+
+#[test]
+fn should_properly_attach_attributes_on_partial_structs_fields() {
+    fn default_partial_post_id() -> Option<u64> {
+        None
+    }
+
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[ivo(derive(Deserialize, Serialize))]
+    struct Post {
+        #[ivo(serde(default = "default_partial_post_id"))]
+        id: u64,
+
+        title: String,
+
+        #[ivo(serde(skip_serializing_if = "Option::is_none"))]
+        tags: Option<Vec<String>>,
+    }
+
+    let id = Some(400);
+
+    let data = PartialPost {
+        id,
+        title: None,
+        tags: None,
+    };
+
+    let data_str = serde_json::to_string(&data).unwrap();
+
+    assert!(data_str.contains("id"));
+    assert!(data_str.contains("title"));
+    assert!(!data_str.contains("tags"));
+
+    let data = PartialPost {
+        id,
+        title: data.title,
+        tags: Some(None),
+    };
+
+    let data_str = serde_json::to_string(&data).unwrap();
+
+    assert!(data_str.contains("id"));
+    assert!(data_str.contains("title"));
+    assert!(data_str.contains("tags"));
+
+    let parsed_data = serde_json::from_str::<PartialPost>(&data_str).unwrap();
+
+    assert_eq!(
+        parsed_data,
+        PartialPost {
+            id,
+            title: data.title,
+            tags: None
+        }
+    );
+
+    let parsed_data =
+        serde_json::from_str::<PartialPost>("{\"title\":\"Post Title\", \"tags\":[]}").unwrap();
+
+    assert_eq!(
+        parsed_data,
+        PartialPost {
+            id: default_partial_post_id(),
+            title: Some("Post Title".into()),
+            tags: Some(Some(Vec::new()))
+        }
+    );
+
+    let parsed_data = serde_json::from_str::<PartialPost>("").unwrap_or_default();
+
+    assert_eq!(parsed_data, PartialPost::default());
 }
 
 #[test]

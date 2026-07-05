@@ -1,6 +1,9 @@
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
-use syn::{punctuated::Punctuated, token::Comma, Attribute, Field, Ident, Meta, Visibility};
+use syn::{
+    punctuated::Punctuated, spanned::Spanned, token::Comma, Attribute, Error, Field, Ident, Meta,
+    Visibility,
+};
 
 pub fn generate_partial_struct<T: ToTokens>(
     crate_root: &T,
@@ -15,8 +18,10 @@ pub fn generate_partial_struct<T: ToTokens>(
         let field_name = &field.ident;
         let field_type = &field.ty;
         let field_vis = &field.vis;
+        let field_attrs = extract_attrs_provided(&field.attrs);
 
         quote! {
+            #field_attrs
             #field_vis #field_name: std::option::Option<#field_type>,
         }
     });
@@ -182,7 +187,7 @@ pub fn generate_partial_struct<T: ToTokens>(
         }
     });
 
-    let derive_attrs_provided = extract_derive_attrs_provided(attrs);
+    let derive_attrs_provided = extract_attrs_provided(attrs);
 
     quote! {
         #derive_attrs_provided
@@ -337,48 +342,41 @@ pub fn generate_partial_struct<T: ToTokens>(
     }
 }
 
-fn extract_derive_attrs_provided(attrs: &[Attribute]) -> TokenStream {
-    let mut has_derive_attr = false;
-    let mut traits_to_derive = vec![];
+fn extract_attrs_provided(attrs: &[Attribute]) -> TokenStream {
+    let mut attrs_to_attach = vec![];
+    let mut err = None;
 
-    // 1. Loop through all attributes attached to the struct
     for attr in attrs.iter() {
         // Look for `#[ivo(...)]`
         if attr.path().is_ident("ivo") {
-            let meta_list = match &attr.meta {
-                Meta::List(list) => list,
-                _ => panic!("Expected \"#[ivo(...)]\" format"),
+            let Meta::List(meta_list) = &attr.meta else {
+                err = Some(Error::new(attr.span(), "Expected \"#[ivo(...)]\" format"));
+
+                break;
             };
 
-            let _ = meta_list.parse_nested_meta(|meta| {
-                // #[ivo(derive(A, B, C))]
-                if meta.path.is_ident("derive") {
-                    has_derive_attr = true;
+            let nested_result = meta_list.parse_args_with(
+                syn::punctuated::Punctuated::<Meta, syn::Token![,]>::parse_terminated,
+            );
 
-                    let _ = meta.parse_nested_meta(|nested| {
-                        if let Some(ident) = nested.path.get_ident().cloned() {
-                            traits_to_derive.push(ident);
-                        }
-
-                        Ok(())
-                    });
-
-                    return Ok(());
+            if let Ok(nested_metas) = nested_result {
+                for meta in nested_metas {
+                    attrs_to_attach.push(meta);
                 }
-
-                Ok(())
-            });
+            }
 
             break;
         }
     }
 
-    // 2. Wrap them back up into a standard macro block if found
-    if !traits_to_derive.is_empty() {
-        quote! { #[derive(#( #traits_to_derive ),*)] }
-    } else if has_derive_attr {
-        panic!("Expected \"#[ivo(derive(...))]\" to contain at least 1 valid identifier")
-    } else {
-        quote! {}
+    if let Some(e) = err {
+        return e.to_compile_error();
     }
+
+    let quotes = attrs_to_attach
+        .iter()
+        .map(|meta| quote! { #[#meta] })
+        .collect::<Vec<_>>();
+
+    quote! { #(#quotes)* }
 }
