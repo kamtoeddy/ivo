@@ -2,22 +2,35 @@
 
 use std::marker::PhantomData;
 
-use crate::schema::{
-    options::types::{OnSuccessConfig, PostValidationConfig, ShouldUpdateOptionResolver},
-    types::DeleteHandler,
-    No,
+use crate::types::internal::IvoStruct;
+use crate::{
+    __private_types::types::IvoWithPartialErrorsStruct,
+    schema::{
+        options::types::{OnSuccessConfig, PostValidationConfig, ShouldUpdateOptionResolver},
+        types::DeleteHandler,
+        No,
+    },
+    IvoErrorTool,
 };
-use crate::types::internal::{IvoErrorTool, IvoStruct};
 
-pub struct SchemaOptions<I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool> {
+pub struct SchemaOptions<
+    I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
+    O: IvoStruct,
+    CtxOptions,
+    ErrorTool: IvoErrorTool,
+> {
     pub ignore_update: Option<ShouldUpdateOptionResolver<I, O, CtxOptions>>,
     pub on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
     pub on_success_fns: Option<Vec<OnSuccessConfig<I, O, CtxOptions>>>,
     pub post_validate: Option<Vec<PostValidationConfig<I, O, CtxOptions, ErrorTool>>>,
 }
 
-impl<I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool>
-    SchemaOptions<I, O, CtxOptions, ErrorTool>
+impl<
+        I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
+        O: IvoStruct,
+        CtxOptions,
+        ErrorTool: IvoErrorTool,
+    > SchemaOptions<I, O, CtxOptions, ErrorTool>
 {
     pub const fn new() -> SchemaOptionsBuilder<I, O, CtxOptions, ErrorTool> {
         SchemaOptionsBuilder::new()
@@ -25,7 +38,7 @@ impl<I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool>
 }
 
 pub struct SchemaOptionsBuilder<
-    I: IvoStruct,
+    I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
     O: IvoStruct,
     CtxOptions,
     ErrorTool: IvoErrorTool,
@@ -50,7 +63,7 @@ impl<
         HasDelete,
         HasSuccess,
         HasIgnoreUpdate,
-        I: IvoStruct,
+        I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
         O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
@@ -100,7 +113,7 @@ impl<
         HasDelete,
         HasSuccess,
         HasIgnoreUpdate,
-        I: IvoStruct,
+        I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
         O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,

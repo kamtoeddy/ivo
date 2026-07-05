@@ -1,5 +1,5 @@
 use ivo::{IvoContext, IvoField, IvoStruct, Schema, UpdateError};
-use std::{collections::HashMap, future::ready, ops::RangeInclusive, panic};
+use std::{future::ready, ops::RangeInclusive, panic};
 
 use crate::async_test_matrix;
 
@@ -883,8 +883,6 @@ async fn should_respect_post_validation_config() {
     const REQUIRED_1_PRE_VALIDATION_FAIL: &str = "required 1 failed pre-validation";
     const BOTH_PRE_VALIDATION_FAIL: &str = "both failed pre-validation";
 
-    const UNKNOWN_FIELD: &str = "unknown_field";
-
     const REQUIRED_VALIDATION_FAIL: &str = "required failed post-validatrion";
     const BOTH_VALIDATION_FAIL: &str = "both failed post-validatrion";
 
@@ -906,56 +904,33 @@ async fn should_respect_post_validation_config() {
         |o| {
             o.post_validate(["required", "required_1"], |v| {
                 v.pre_validate(|ctx: IvoContext<DataInput, Data>, _| {
-                    let mut errors = HashMap::new();
+                    let mut errors = PartialDataInputErrors::new();
 
                     if let Some(required) = ctx.input().required {
                         if required == REQUIRED_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS {
-                            errors.insert(
-                                "required".into(),
-                                (
-                                    REQUIRED_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string(),
-                                    None,
-                                ),
+                            errors.set_required(
+                                REQUIRED_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS,
+                                None,
                             );
 
-                            errors.insert(
-                                "required_2".into(),
-                                (
-                                    REQUIRED_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string(),
-                                    None,
-                                ),
-                            );
-
-                            errors.insert(
-                                UNKNOWN_FIELD.into(),
-                                (
-                                    REQUIRED_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string(),
-                                    None,
-                                ),
+                            errors.set_required_2(
+                                REQUIRED_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS,
+                                None,
                             );
 
                             return ready(Err(errors));
                         }
 
                         if required == BOTH_PRE_VALIDATION_FAIL {
-                            errors.insert(
-                                "required".into(),
-                                (BOTH_PRE_VALIDATION_FAIL.to_string(), None),
-                            );
+                            errors.set_required(BOTH_PRE_VALIDATION_FAIL, None);
 
-                            errors.insert(
-                                "required_1".into(),
-                                (BOTH_PRE_VALIDATION_FAIL.to_string(), None),
-                            );
+                            errors.set_required_1(BOTH_PRE_VALIDATION_FAIL, None);
                         }
                     }
 
                     if let Some(required_1) = ctx.values().required_1 {
                         if errors.is_empty() && required_1 == REQUIRED_1_PRE_VALIDATION_FAIL {
-                            errors.insert(
-                                "required_1".into(),
-                                (REQUIRED_1_PRE_VALIDATION_FAIL.to_string(), None),
-                            );
+                            errors.set_required_1(REQUIRED_1_PRE_VALIDATION_FAIL, None);
                         }
                     }
 
@@ -968,51 +943,28 @@ async fn should_respect_post_validation_config() {
                     ready(result)
                 })
                 .validate(|ctx: IvoContext<DataInput, Data>, _| {
-                    let mut errors = HashMap::new();
+                    let mut errors = PartialDataInputErrors::new();
 
                     if let Some(required) = ctx.input().required {
                         if required == REQUIRED_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS {
-                            errors.insert(
-                                "required".into(),
-                                (
-                                    REQUIRED_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string(),
-                                    None,
-                                ),
+                            errors.set_required(
+                                REQUIRED_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS,
+                                None,
                             );
 
-                            errors.insert(
-                                "required_2".into(),
-                                (
-                                    REQUIRED_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string(),
-                                    None,
-                                ),
-                            );
-
-                            errors.insert(
-                                UNKNOWN_FIELD.into(),
-                                (
-                                    REQUIRED_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string(),
-                                    None,
-                                ),
+                            errors.set_required_2(
+                                REQUIRED_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS,
+                                None,
                             );
 
                             return ready(Err(errors));
                         }
 
                         if required == REQUIRED_VALIDATION_FAIL {
-                            errors.insert(
-                                "required".into(),
-                                (REQUIRED_VALIDATION_FAIL.to_string(), None),
-                            );
+                            errors.set_required(REQUIRED_VALIDATION_FAIL, None);
                         } else if required == BOTH_VALIDATION_FAIL {
-                            errors.insert(
-                                "required".into(),
-                                (BOTH_VALIDATION_FAIL.to_string(), None),
-                            );
-                            errors.insert(
-                                "required_1".into(),
-                                (BOTH_VALIDATION_FAIL.to_string(), None),
-                            );
+                            errors.set_required(BOTH_VALIDATION_FAIL, None);
+                            errors.set_required_1(BOTH_VALIDATION_FAIL, None);
                         }
                     }
 
@@ -1048,7 +1000,6 @@ async fn should_respect_post_validation_config() {
         Err((p, _, _)) => {
             assert!(p.get("required_1").is_none());
             assert!(p.get("required_2").is_none());
-            assert!(p.get(UNKNOWN_FIELD).is_none());
             assert_eq!(
                 p.get("required").unwrap()[0].reason,
                 required,
@@ -1075,7 +1026,6 @@ async fn should_respect_post_validation_config() {
         Err((p, _, _)) => {
             assert!(p.get("required_1").is_none());
             assert!(p.get("required_2").is_none());
-            assert!(p.get(UNKNOWN_FIELD).is_none());
             assert_eq!(
                 p.get("required").unwrap()[0].reason,
                 required,
@@ -1288,7 +1238,6 @@ async fn should_respect_post_validation_config() {
         Err((UpdateError::ValidationError(p), _, _)) => {
             assert!(p.get("required_1").is_none());
             assert!(p.get("required_2").is_none());
-            assert!(p.get(UNKNOWN_FIELD).is_none());
             assert_eq!(
                 p.get("required").unwrap()[0].reason,
                 required,
@@ -1321,7 +1270,6 @@ async fn should_respect_post_validation_config() {
         Err((UpdateError::ValidationError(p), _, _)) => {
             assert!(p.get("required_1").is_none());
             assert!(p.get("required_2").is_none());
-            assert!(p.get(UNKNOWN_FIELD).is_none());
             assert_eq!(
                 p.get("required").unwrap()[0].reason,
                 required,

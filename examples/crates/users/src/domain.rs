@@ -307,27 +307,21 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
                     if options.find_user_by_slug_id(&slug_id).await.is_none() {
                         options.update_slug_id(&slug_id);
 
-                        // let mut validated = PartialUserInput::new();
-
-                        //     validated.set_slug_id(slug_id.into())
-                        //     .set_username("validated-username".into());
-
-                        // return Ok(Some(validated));
 
                         return Ok(None);
                     }
 
-                    let err = (
-                        format!("A user with a slug id: \"{slug_id}\" already exists"),
+                    let (reason, metadata) = (
+                        &format!("A user with a slug id: \"{slug_id}\" already exists"),
                         None,
                     );
 
-                    let mut errors = HashMap::new();
+                    let mut errors = PartialUserInputErrors::new();
 
                     if input.slug_id.is_some() {
-                        errors.insert("v_slug".into(), err);
+                        errors.set_slug_id(reason, metadata);
                     } else if input.username.is_some() {
-                        errors.insert("username".into(), err);
+                        errors.set_username(reason, metadata);
                     }
 
                     Err(errors)

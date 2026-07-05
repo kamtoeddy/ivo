@@ -17,7 +17,7 @@ pub struct FieldError<FieldMetadata = DefaultFieldErrorMetadata> {
 
 // ErrorTool trait
 pub trait IvoErrorTool {
-    type FieldMetadata;
+    type FieldMetadata: Send + Sync;
     type ErrorPayload;
 
     fn new() -> Self;

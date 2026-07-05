@@ -1,16 +1,16 @@
 use std::marker::PhantomData;
 
-use crate::types::internal::IvoErrorTool;
 use crate::{
+    __private_types::types::IvoWithPartialErrorsStruct,
     schema::{
         options::types::{IntoPostValidator, PostValidationConfig, PostValidator},
         No, Yes,
     },
-    IvoStruct,
+    IvoErrorTool, IvoStruct,
 };
 
 pub struct PostValidateOptionBuilder<
-    I: IvoStruct,
+    I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
     O: IvoStruct,
     CtxOptions,
     ErrorTool: IvoErrorTool,
@@ -23,15 +23,15 @@ pub struct PostValidateOptionBuilder<
     _validator: PhantomData<HasValidator>,
     // actual data...
     fields: Vec<&'static str>,
-    pre_validator: Option<PostValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
-    validators: Vec<PostValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
+    pre_validator: Option<PostValidator<I, O, CtxOptions, ErrorTool>>,
+    validators: Vec<PostValidator<I, O, CtxOptions, ErrorTool>>,
 }
 
 impl<
         IvoFieldNames,
         HasPreValidator,
         HasValidator,
-        I: IvoStruct,
+        I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
         O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
@@ -58,12 +58,23 @@ impl<
     }
 }
 
-pub trait BuildablePostValidator<I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool> {
+pub trait BuildablePostValidator<
+    I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
+    O: IvoStruct,
+    CtxOptions,
+    ErrorTool: IvoErrorTool,
+>
+{
     fn build(self) -> PostValidationConfig<I, O, CtxOptions, ErrorTool>;
 }
 
-impl<HasPreValidator, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool>
-    BuildablePostValidator<I, O, CtxOptions, ErrorTool>
+impl<
+        HasPreValidator,
+        I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
+        O: IvoStruct,
+        CtxOptions,
+        ErrorTool: IvoErrorTool,
+    > BuildablePostValidator<I, O, CtxOptions, ErrorTool>
     for PostValidateOptionBuilder<I, O, CtxOptions, ErrorTool, Yes, Yes, HasPreValidator>
 {
     fn build(self) -> PostValidationConfig<I, O, CtxOptions, ErrorTool> {
@@ -75,8 +86,12 @@ impl<HasPreValidator, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErro
     }
 }
 
-impl<I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool>
-    PostValidateOptionBuilder<I, O, CtxOptions, ErrorTool>
+impl<
+        I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
+        O: IvoStruct,
+        CtxOptions,
+        ErrorTool: IvoErrorTool,
+    > PostValidateOptionBuilder<I, O, CtxOptions, ErrorTool>
 {
     pub fn fields<const N: usize>(
         fields: [&'static str; N],
@@ -91,7 +106,7 @@ impl<I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool>
 impl<
         HasValidator,
         HasPreValidator,
-        I: IvoStruct,
+        I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
         O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
@@ -116,8 +131,13 @@ impl<
     }
 }
 
-impl<HasValidator, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool>
-    PostValidateOptionBuilder<I, O, CtxOptions, ErrorTool, Yes, HasValidator, No>
+impl<
+        HasValidator,
+        I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
+        O: IvoStruct,
+        CtxOptions,
+        ErrorTool: IvoErrorTool,
+    > PostValidateOptionBuilder<I, O, CtxOptions, ErrorTool, Yes, HasValidator, No>
 {
     pub fn pre_validate<F>(
         self,

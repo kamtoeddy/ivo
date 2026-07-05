@@ -4,6 +4,7 @@ mod post_validate;
 pub(crate) mod types;
 
 use crate::{
+    __private_types::types::IvoWithPartialErrorsStruct,
     schema::{
         fields::types::IntoDeleteHandler, options::types::IntoShouldUpdateOptionResolver, Yes,
     },
@@ -13,7 +14,13 @@ use base::{SchemaOptions, SchemaOptionsBuilder};
 use on_success::{BuildableOnSuccess, OnSuccessOptionBuilder};
 use post_validate::{BuildablePostValidator, PostValidateOptionBuilder};
 
-pub trait BuildableSchemaOptions<I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool> {
+pub trait BuildableSchemaOptions<
+    I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
+    O: IvoStruct,
+    CtxOptions,
+    ErrorTool: IvoErrorTool,
+>
+{
     fn build(self) -> SchemaOptions<I, O, CtxOptions, ErrorTool>;
 }
 
@@ -22,7 +29,7 @@ impl<
         HasDelete,
         HasSuccess,
         HasIgnoreUpdate,
-        I: IvoStruct,
+        I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
         O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
@@ -53,7 +60,7 @@ impl<
         HasDelete,
         HasSuccess,
         HasIgnoreUpdate,
-        I: IvoStruct,
+        I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
         O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
@@ -165,7 +172,7 @@ impl<
         HasPostValidate,
         HasDelete,
         HasSuccess,
-        I: IvoStruct,
+        I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
         O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,

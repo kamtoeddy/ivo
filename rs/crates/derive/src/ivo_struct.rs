@@ -6,6 +6,7 @@ pub fn generate_ivo_struct_impls<T: ToTokens>(
     crate_root: &T,
     struct_name: &Ident,
     partial_struct_name: &Ident,
+    partial_errors_struct_name: &Ident,
     fields: &Punctuated<Field, Comma>,
     field_names: &T,
 ) -> TokenStream {
@@ -62,6 +63,10 @@ pub fn generate_ivo_struct_impls<T: ToTokens>(
 
             impl #crate_root::__private_types::types::IvoWithPartialStruct for #struct_name {
                 type Partial = #partial_struct_name;
+            }
+
+            impl<FieldErrorMetadata: Send + Sync> #crate_root::__private_types::types::IvoWithPartialErrorsStruct<FieldErrorMetadata> for #struct_name {
+                type PartialErrors = #partial_errors_struct_name<FieldErrorMetadata>;
             }
 
             impl #crate_root::__private_types::types::IvoStructMethods for #struct_name {

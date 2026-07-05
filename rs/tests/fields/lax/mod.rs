@@ -1,5 +1,5 @@
 use ivo::{IvoContext, IvoField, IvoStruct, Schema, UpdateError};
-use std::{collections::HashMap, future::ready, ops::RangeInclusive, panic};
+use std::{future::ready, ops::RangeInclusive, panic};
 
 use crate::async_test_matrix;
 
@@ -891,8 +891,6 @@ async fn should_respect_post_validation_config() {
     const LAX_1_PRE_VALIDATION_FAIL: &str = "lax 1 failed pre-validation";
     const BOTH_PRE_VALIDATION_FAIL: &str = "both failed pre-validation";
 
-    const UNKNOWN_FIELD: &str = "unknown_field";
-
     const LAX_VALIDATION_FAIL: &str = "lax failed post-validatrion";
     const BOTH_VALIDATION_FAIL: &str = "both failed post-validatrion";
 
@@ -915,54 +913,27 @@ async fn should_respect_post_validation_config() {
         |o| {
             o.post_validate(["lax", "lax_1"], |v| {
                 v.pre_validate(|ctx: IvoContext<DataInput, Data>, _| {
-                    let mut errors = HashMap::new();
+                    let mut errors = PartialDataInputErrors::new();
 
                     if let Some(lax) = ctx.input().lax {
                         if lax == LAX_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS {
-                            errors.insert(
-                                "lax".into(),
-                                (
-                                    LAX_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string(),
-                                    None,
-                                ),
-                            );
+                            errors.set_lax(LAX_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS, None);
 
-                            errors.insert(
-                                "lax_2".into(),
-                                (
-                                    LAX_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string(),
-                                    None,
-                                ),
-                            );
-
-                            errors.insert(
-                                UNKNOWN_FIELD.into(),
-                                (
-                                    LAX_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string(),
-                                    None,
-                                ),
-                            );
+                            errors.set_lax_2(LAX_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS, None);
 
                             return ready(Err(errors));
                         }
 
                         if lax == BOTH_PRE_VALIDATION_FAIL {
-                            errors
-                                .insert("lax".into(), (BOTH_PRE_VALIDATION_FAIL.to_string(), None));
+                            errors.set_lax(BOTH_PRE_VALIDATION_FAIL, None);
 
-                            errors.insert(
-                                "lax_1".into(),
-                                (BOTH_PRE_VALIDATION_FAIL.to_string(), None),
-                            );
+                            errors.set_lax_1(BOTH_PRE_VALIDATION_FAIL, None);
                         }
                     }
 
                     if let Some(lax_1) = ctx.values().lax_1 {
                         if errors.is_empty() && lax_1 == LAX_1_PRE_VALIDATION_FAIL {
-                            errors.insert(
-                                "lax_1".into(),
-                                (LAX_1_PRE_VALIDATION_FAIL.to_string(), None),
-                            );
+                            errors.set_lax_1(LAX_1_PRE_VALIDATION_FAIL, None);
                         }
                     }
 
@@ -975,42 +946,21 @@ async fn should_respect_post_validation_config() {
                     ready(result)
                 })
                 .validate(|ctx: IvoContext<DataInput, Data>, _| {
-                    let mut errors = HashMap::new();
+                    let mut errors = PartialDataInputErrors::new();
 
                     if let Some(lax) = ctx.input().lax {
                         if lax == LAX_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS {
-                            errors.insert(
-                                "lax".into(),
-                                (
-                                    LAX_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string(),
-                                    None,
-                                ),
-                            );
-
-                            errors.insert(
-                                "lax_2".into(),
-                                (
-                                    LAX_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string(),
-                                    None,
-                                ),
-                            );
-
-                            errors.insert(
-                                UNKNOWN_FIELD.into(),
-                                (
-                                    LAX_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string(),
-                                    None,
-                                ),
-                            );
+                            errors.set_lax(LAX_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS, None);
+                            errors.set_lax_2(LAX_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS, None);
 
                             return ready(Err(errors));
                         }
 
                         if lax == LAX_VALIDATION_FAIL {
-                            errors.insert("lax".into(), (LAX_VALIDATION_FAIL.to_string(), None));
+                            errors.set_lax(LAX_VALIDATION_FAIL, None);
                         } else if lax == BOTH_VALIDATION_FAIL {
-                            errors.insert("lax".into(), (BOTH_VALIDATION_FAIL.to_string(), None));
-                            errors.insert("lax_1".into(), (BOTH_VALIDATION_FAIL.to_string(), None));
+                            errors.set_lax(BOTH_VALIDATION_FAIL, None);
+                            errors.set_lax_1(BOTH_VALIDATION_FAIL, None);
                         }
                     }
 
@@ -1073,7 +1023,6 @@ async fn should_respect_post_validation_config() {
         Err((p, _, _)) => {
             assert!(p.get("lax_1").is_none());
             assert!(p.get("lax_2").is_none());
-            assert!(p.get(UNKNOWN_FIELD).is_none());
             assert_eq!(
                 p.get("lax").unwrap()[0].reason,
                 lax,
@@ -1100,7 +1049,6 @@ async fn should_respect_post_validation_config() {
         Err((p, _, _)) => {
             assert!(p.get("lax_1").is_none());
             assert!(p.get("lax_2").is_none());
-            assert!(p.get(UNKNOWN_FIELD).is_none());
             assert_eq!(
                 p.get("lax").unwrap()[0].reason,
                 lax,
@@ -1315,7 +1263,6 @@ async fn should_respect_post_validation_config() {
         Err((UpdateError::ValidationError(p), _, _)) => {
             assert!(p.get("lax_1").is_none());
             assert!(p.get("lax_2").is_none());
-            assert!(p.get(UNKNOWN_FIELD).is_none());
             assert_eq!(
                 p.get("lax").unwrap()[0].reason,
                 lax,
@@ -1348,7 +1295,6 @@ async fn should_respect_post_validation_config() {
         Err((UpdateError::ValidationError(p), _, _)) => {
             assert!(p.get("lax_1").is_none());
             assert!(p.get("lax_2").is_none());
-            assert!(p.get(UNKNOWN_FIELD).is_none());
             assert_eq!(
                 p.get("lax").unwrap()[0].reason,
                 lax,

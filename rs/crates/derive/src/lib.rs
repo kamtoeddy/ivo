@@ -14,6 +14,7 @@ pub fn derive_ivo_struct(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let struct_name = input.ident;
     let partial_struct_name = format_ident!("Partial{}", struct_name);
+    let partial_errors_struct_name = format_ident!("{}Errors", partial_struct_name);
     let vis = input.vis;
 
     // Extract fields from the struct
@@ -44,6 +45,7 @@ pub fn derive_ivo_struct(input: TokenStream) -> TokenStream {
         &crate_root,
         &struct_name,
         &partial_struct_name,
+        &partial_errors_struct_name,
         fields,
         &field_names,
     );
@@ -51,6 +53,7 @@ pub fn derive_ivo_struct(input: TokenStream) -> TokenStream {
     let partial_struct_tokens = generate_partial_struct(
         &crate_root,
         &partial_struct_name,
+        &partial_errors_struct_name,
         fields,
         &input.attrs,
         &vis,

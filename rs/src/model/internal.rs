@@ -1,13 +1,14 @@
 use std::{collections::HashSet, fmt::Debug};
 
 use crate::{
+    __private_types::types::IvoWithPartialErrorsStruct,
     schema::fields::base::{FieldType, InternalFieldConfig},
     IvoErrorTool, IvoStruct, Schema,
 };
 
 pub(super) struct FieldInfoCollection<
     'a,
-    I: IvoStruct,
+    I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
     O: IvoStruct,
     CtxOptions: Clone,
     Timestamp: Clone + Debug + Send + Sync + 'static,
@@ -22,7 +23,7 @@ pub(super) struct FieldInfoCollection<
 
 impl<
         'a,
-        I: IvoStruct,
+        I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
         O: IvoStruct,
         CtxOptions: Clone,
         Timestamp: Clone + Debug + Send + Sync + 'static,
@@ -85,22 +86,23 @@ impl<
     }
 
     #[inline(always)]
-    fn _find(&self, field_name: &String) -> Option<FieldInfo> {
+    fn find(&self, field_name: &String) -> Option<FieldInfo> {
         self.fields.iter().find(|f| f.name == *field_name).cloned()
     }
 
-    pub fn get(&self, field_name: &String) -> Option<FieldInfo> {
-        self._find(field_name).or_else(|| {
-            Self::get_field_info(
+    pub fn get_and_add(&mut self, field_name: &String) -> Option<FieldInfo> {
+        self.find(field_name).or_else(|| {
+            Self::get(
                 field_name,
                 self.schema,
                 &self.schema_input_fields,
                 &self.schema_output_fields,
             )
+            .inspect(|f| self.add(f.clone()))
         })
     }
 
-    fn get_field_info(
+    fn get(
         field_name: &String,
         schema: &Schema<I, O, CtxOptions, Timestamp, ErrorTool>,
         schema_input_fields: &HashSet<String>,
@@ -123,13 +125,13 @@ impl<
             // the current config depends on
 
             for parent_name in depends_on.as_ref().unwrap() {
-                match schema.field_configs.get(*parent_name) {
-                    Some(InternalFieldConfig {
-                        alias: Some(alias),
-                        field_type: FieldType::Virtual,
-                        validator: Some(validator),
-                        ..
-                    }) if alias == field_name => {
+                if let Some(InternalFieldConfig {
+                    alias: Some(alias),
+                    field_type: FieldType::Virtual,
+                    ..
+                }) = schema.field_configs.get(*parent_name)
+                {
+                    if alias == field_name {
                         return Some(FieldInfo {
                             config_name: parent_name.to_string(),
                             is_input: true,
@@ -137,7 +139,6 @@ impl<
                             name: field_name.to_owned(),
                         });
                     }
-                    _ => {}
                 }
             }
         }
@@ -161,7 +162,7 @@ impl<
 
 impl<
         'a,
-        I: IvoStruct,
+        I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
         O: IvoStruct,
         CtxOptions: Clone,
         ErrorTool: IvoErrorTool,

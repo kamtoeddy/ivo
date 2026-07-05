@@ -1,5 +1,5 @@
 use ivo::{IvoContext, IvoField, IvoStruct, Schema, UpdateError};
-use std::{collections::HashMap, future::ready, ops::RangeInclusive, panic};
+use std::{future::ready, ops::RangeInclusive, panic};
 
 use crate::async_test_matrix;
 
@@ -2639,8 +2639,6 @@ async fn should_respect_post_validation_config() {
     const VIRTUAL_FIELD_1_PRE_VALIDATION_FAIL: &str = "required 1 failed pre-validation";
     const BOTH_PRE_VALIDATION_FAIL: &str = "both failed pre-validation";
 
-    const UNKNOWN_FIELD: &str = "unknown_field";
-
     const VIRTUAL_FIELD_VALIDATION_FAIL: &str = "virtual_field failed post-validatrion";
     const BOTH_VALIDATION_FAIL: &str = "both failed post-validatrion";
 
@@ -2671,51 +2669,28 @@ async fn should_respect_post_validation_config() {
         |o| {
             o.post_validate(["virtual_field", "virtual_field_1"], |v| {
                 v.pre_validate(|ctx: IvoContext<DataInput, Data>, _| {
-                    let mut errors = HashMap::new();
+                    let mut errors = PartialDataInputErrors::new();
 
                     if let Some(virtual_field) = ctx.input().virtual_field {
                         if virtual_field == VIRTUAL_FIELD_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS
                         {
-                            errors.insert(
-                                "virtual_field".into(),
-                                (
-                                    VIRTUAL_FIELD_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS
-                                        .to_string(),
-                                    None,
-                                ),
+                            errors.set_virtual_field(
+                                VIRTUAL_FIELD_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS,
+                                None,
                             );
 
-                            errors.insert(
-                                "virtual_field_2".into(),
-                                (
-                                    VIRTUAL_FIELD_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS
-                                        .to_string(),
-                                    None,
-                                ),
-                            );
-
-                            errors.insert(
-                                UNKNOWN_FIELD.into(),
-                                (
-                                    VIRTUAL_FIELD_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS
-                                        .to_string(),
-                                    None,
-                                ),
+                            errors.set_virtual_field_2(
+                                VIRTUAL_FIELD_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS,
+                                None,
                             );
 
                             return ready(Err(errors));
                         }
 
                         if virtual_field == BOTH_PRE_VALIDATION_FAIL {
-                            errors.insert(
-                                "virtual_field".into(),
-                                (BOTH_PRE_VALIDATION_FAIL.to_string(), None),
-                            );
+                            errors.set_virtual_field(BOTH_PRE_VALIDATION_FAIL, None);
 
-                            errors.insert(
-                                "virtual_field_1".into(),
-                                (BOTH_PRE_VALIDATION_FAIL.to_string(), None),
-                            );
+                            errors.set_virtual_field_1(BOTH_PRE_VALIDATION_FAIL, None);
                         }
                     }
 
@@ -2723,10 +2698,7 @@ async fn should_respect_post_validation_config() {
                         if errors.is_empty()
                             && virtual_field_1 == VIRTUAL_FIELD_1_PRE_VALIDATION_FAIL
                         {
-                            errors.insert(
-                                "virtual_field_1".into(),
-                                (VIRTUAL_FIELD_1_PRE_VALIDATION_FAIL.to_string(), None),
-                            );
+                            errors.set_virtual_field_1(VIRTUAL_FIELD_1_PRE_VALIDATION_FAIL, None);
                         }
                     }
 
@@ -2739,55 +2711,29 @@ async fn should_respect_post_validation_config() {
                     ready(result)
                 })
                 .validate(|ctx: IvoContext<DataInput, Data>, _| {
-                    let mut errors = HashMap::new();
+                    let mut errors = PartialDataInputErrors::new();
 
                     if let Some(virtual_field) = ctx.input().virtual_field {
                         if virtual_field == VIRTUAL_FIELD_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS
                         {
-                            errors.insert(
-                                "virtual_field".into(),
-                                (
-                                    VIRTUAL_FIELD_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS
-                                        .to_string(),
-                                    None,
-                                ),
+                            errors.set_virtual_field(
+                                VIRTUAL_FIELD_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS,
+                                None,
                             );
 
-                            errors.insert(
-                                "virtual_field_2".into(),
-                                (
-                                    VIRTUAL_FIELD_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS
-                                        .to_string(),
-                                    None,
-                                ),
-                            );
-
-                            errors.insert(
-                                UNKNOWN_FIELD.into(),
-                                (
-                                    VIRTUAL_FIELD_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS
-                                        .to_string(),
-                                    None,
-                                ),
+                            errors.set_virtual_field_2(
+                                VIRTUAL_FIELD_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS,
+                                None,
                             );
 
                             return ready(Err(errors));
                         }
 
                         if virtual_field == VIRTUAL_FIELD_VALIDATION_FAIL {
-                            errors.insert(
-                                "virtual_field".into(),
-                                (VIRTUAL_FIELD_VALIDATION_FAIL.to_string(), None),
-                            );
+                            errors.set_virtual_field(VIRTUAL_FIELD_VALIDATION_FAIL, None);
                         } else if virtual_field == BOTH_VALIDATION_FAIL {
-                            errors.insert(
-                                "virtual_field".into(),
-                                (BOTH_VALIDATION_FAIL.to_string(), None),
-                            );
-                            errors.insert(
-                                "virtual_field_1".into(),
-                                (BOTH_VALIDATION_FAIL.to_string(), None),
-                            );
+                            errors.set_virtual_field(BOTH_VALIDATION_FAIL, None);
+                            errors.set_virtual_field_1(BOTH_VALIDATION_FAIL, None);
                         }
                     }
 
@@ -2823,7 +2769,6 @@ async fn should_respect_post_validation_config() {
         Err((p, _, _)) => {
             assert!(p.get("virtual_field_1").is_none());
             assert!(p.get("virtual_field_2").is_none());
-            assert!(p.get(UNKNOWN_FIELD).is_none());
             assert_eq!(
                 p.get("virtual_field").unwrap()[0].reason,
                 virtual_value,
@@ -2850,7 +2795,6 @@ async fn should_respect_post_validation_config() {
         Err((p, _, _)) => {
             assert!(p.get("virtual_field_1").is_none());
             assert!(p.get("virtual_field_2").is_none());
-            assert!(p.get(UNKNOWN_FIELD).is_none());
             assert_eq!(
                 p.get("virtual_field").unwrap()[0].reason,
                 required,
@@ -3056,7 +3000,6 @@ async fn should_respect_post_validation_config() {
         Err((UpdateError::ValidationError(p), _, _)) => {
             assert!(p.get("virtual_field_1").is_none());
             assert!(p.get("virtual_field_2").is_none());
-            assert!(p.get(UNKNOWN_FIELD).is_none());
             assert_eq!(
                 p.get("virtual_field").unwrap()[0].reason,
                 virtual_value,
@@ -3084,7 +3027,6 @@ async fn should_respect_post_validation_config() {
         Err((UpdateError::ValidationError(p), _, _)) => {
             assert!(p.get("virtual_field_1").is_none());
             assert!(p.get("virtual_field_2").is_none());
-            assert!(p.get(UNKNOWN_FIELD).is_none());
             assert_eq!(
                 p.get("virtual_field").unwrap()[0].reason,
                 virtual_value,
@@ -3120,8 +3062,6 @@ async fn should_respect_post_validation_config_with_alias() {
     const VIRTUAL_FIELD_1_PRE_VALIDATION_FAIL: &str = "required 1 failed pre-validation";
     const BOTH_PRE_VALIDATION_FAIL: &str = "both failed pre-validation";
 
-    const UNKNOWN_FIELD: &str = "unknown_field";
-
     const VIRTUAL_FIELD_VALIDATION_FAIL: &str = "virtual_field failed post-validatrion";
     const BOTH_VALIDATION_FAIL: &str = "both failed post-validatrion";
 
@@ -3154,51 +3094,28 @@ async fn should_respect_post_validation_config_with_alias() {
         |o| {
             o.post_validate(["virtual_field", "virtual_field_1"], |v| {
                 v.pre_validate(|ctx: IvoContext<DataInput, Data>, _| {
-                    let mut errors = HashMap::new();
+                    let mut errors = PartialDataInputErrors::new();
 
                     if let Some(virtual_alias) = ctx.input().virtual_alias {
                         if virtual_alias == VIRTUAL_FIELD_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS
                         {
-                            errors.insert(
-                                "virtual_alias".into(),
-                                (
-                                    VIRTUAL_FIELD_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS
-                                        .to_string(),
-                                    None,
-                                ),
+                            errors.set_virtual_alias(
+                                VIRTUAL_FIELD_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS,
+                                None,
                             );
 
-                            errors.insert(
-                                "virtual_field_2".into(),
-                                (
-                                    VIRTUAL_FIELD_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS
-                                        .to_string(),
-                                    None,
-                                ),
-                            );
-
-                            errors.insert(
-                                UNKNOWN_FIELD.into(),
-                                (
-                                    VIRTUAL_FIELD_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS
-                                        .to_string(),
-                                    None,
-                                ),
+                            errors.set_virtual_field_2(
+                                VIRTUAL_FIELD_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS,
+                                None,
                             );
 
                             return ready(Err(errors));
                         }
 
                         if virtual_alias == BOTH_PRE_VALIDATION_FAIL {
-                            errors.insert(
-                                "virtual_alias".into(),
-                                (BOTH_PRE_VALIDATION_FAIL.to_string(), None),
-                            );
+                            errors.set_virtual_alias(BOTH_PRE_VALIDATION_FAIL, None);
 
-                            errors.insert(
-                                "virtual_field_1".into(),
-                                (BOTH_PRE_VALIDATION_FAIL.to_string(), None),
-                            );
+                            errors.set_virtual_field_1(BOTH_PRE_VALIDATION_FAIL, None);
                         }
                     }
 
@@ -3206,10 +3123,7 @@ async fn should_respect_post_validation_config_with_alias() {
                         if errors.is_empty()
                             && virtual_field_1 == VIRTUAL_FIELD_1_PRE_VALIDATION_FAIL
                         {
-                            errors.insert(
-                                "virtual_field_1".into(),
-                                (VIRTUAL_FIELD_1_PRE_VALIDATION_FAIL.to_string(), None),
-                            );
+                            errors.set_virtual_field_1(VIRTUAL_FIELD_1_PRE_VALIDATION_FAIL, None);
                         }
                     }
 
@@ -3222,55 +3136,29 @@ async fn should_respect_post_validation_config_with_alias() {
                     ready(result)
                 })
                 .validate(|ctx: IvoContext<DataInput, Data>, _| {
-                    let mut errors = HashMap::new();
+                    let mut errors = PartialDataInputErrors::new();
 
                     if let Some(virtual_alias) = ctx.input().virtual_alias {
                         if virtual_alias == VIRTUAL_FIELD_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS
                         {
-                            errors.insert(
-                                "virtual_alias".into(),
-                                (
-                                    VIRTUAL_FIELD_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS
-                                        .to_string(),
-                                    None,
-                                ),
+                            errors.set_virtual_alias(
+                                VIRTUAL_FIELD_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS,
+                                None,
                             );
 
-                            errors.insert(
-                                "virtual_field_2".into(),
-                                (
-                                    VIRTUAL_FIELD_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS
-                                        .to_string(),
-                                    None,
-                                ),
-                            );
-
-                            errors.insert(
-                                UNKNOWN_FIELD.into(),
-                                (
-                                    VIRTUAL_FIELD_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS
-                                        .to_string(),
-                                    None,
-                                ),
+                            errors.set_virtual_field_2(
+                                VIRTUAL_FIELD_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS,
+                                None,
                             );
 
                             return ready(Err(errors));
                         }
 
                         if virtual_alias == VIRTUAL_FIELD_VALIDATION_FAIL {
-                            errors.insert(
-                                "virtual_alias".into(),
-                                (VIRTUAL_FIELD_VALIDATION_FAIL.to_string(), None),
-                            );
+                            errors.set_virtual_alias(VIRTUAL_FIELD_VALIDATION_FAIL, None);
                         } else if virtual_alias == BOTH_VALIDATION_FAIL {
-                            errors.insert(
-                                "virtual_alias".into(),
-                                (BOTH_VALIDATION_FAIL.to_string(), None),
-                            );
-                            errors.insert(
-                                "virtual_field_1".into(),
-                                (BOTH_VALIDATION_FAIL.to_string(), None),
-                            );
+                            errors.set_virtual_alias(BOTH_VALIDATION_FAIL, None);
+                            errors.set_virtual_field_1(BOTH_VALIDATION_FAIL, None);
                         }
                     }
 
@@ -3306,7 +3194,6 @@ async fn should_respect_post_validation_config_with_alias() {
         Err((p, _, _)) => {
             assert!(p.get("virtual_field_1").is_none());
             assert!(p.get("virtual_field_2").is_none());
-            assert!(p.get(UNKNOWN_FIELD).is_none());
             assert_eq!(
                 p.get("virtual_alias").unwrap()[0].reason,
                 virtual_value,
@@ -3333,7 +3220,6 @@ async fn should_respect_post_validation_config_with_alias() {
         Err((p, _, _)) => {
             assert!(p.get("virtual_field_1").is_none());
             assert!(p.get("virtual_field_2").is_none());
-            assert!(p.get(UNKNOWN_FIELD).is_none());
             assert_eq!(
                 p.get("virtual_alias").unwrap()[0].reason,
                 required,
@@ -3539,7 +3425,6 @@ async fn should_respect_post_validation_config_with_alias() {
         Err((UpdateError::ValidationError(p), _, _)) => {
             assert!(p.get("virtual_field_1").is_none());
             assert!(p.get("virtual_field_2").is_none());
-            assert!(p.get(UNKNOWN_FIELD).is_none());
             assert_eq!(
                 p.get("virtual_alias").unwrap()[0].reason,
                 virtual_value,
@@ -3567,7 +3452,6 @@ async fn should_respect_post_validation_config_with_alias() {
         Err((UpdateError::ValidationError(p), _, _)) => {
             assert!(p.get("virtual_field_1").is_none());
             assert!(p.get("virtual_field_2").is_none());
-            assert!(p.get(UNKNOWN_FIELD).is_none());
             assert_eq!(
                 p.get("virtual_alias").unwrap()[0].reason,
                 virtual_value,
@@ -3603,8 +3487,6 @@ async fn should_respect_post_validation_config_with_alias_same_as_dependent() {
     const VIRTUAL_FIELD_1_PRE_VALIDATION_FAIL: &str = "required 1 failed pre-validation";
     const BOTH_PRE_VALIDATION_FAIL: &str = "both failed pre-validation";
 
-    const UNKNOWN_FIELD: &str = "unknown_field";
-
     const VIRTUAL_FIELD_VALIDATION_FAIL: &str = "virtual_field failed post-validatrion";
     const BOTH_VALIDATION_FAIL: &str = "both failed post-validatrion";
 
@@ -3637,50 +3519,27 @@ async fn should_respect_post_validation_config_with_alias_same_as_dependent() {
         |o| {
             o.post_validate(["virtual_field", "virtual_field_1"], |v| {
                 v.pre_validate(|ctx: IvoContext<DataInput, Data>, _| {
-                    let mut errors = HashMap::new();
+                    let mut errors = PartialDataInputErrors::new();
 
                     if let Some(dependent) = ctx.input().dependent {
                         if dependent == VIRTUAL_FIELD_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS {
-                            errors.insert(
-                                "dependent".into(),
-                                (
-                                    VIRTUAL_FIELD_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS
-                                        .to_string(),
-                                    None,
-                                ),
+                            errors.set_dependent(
+                                VIRTUAL_FIELD_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS,
+                                None,
                             );
 
-                            errors.insert(
-                                "virtual_field_2".into(),
-                                (
-                                    VIRTUAL_FIELD_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS
-                                        .to_string(),
-                                    None,
-                                ),
-                            );
-
-                            errors.insert(
-                                UNKNOWN_FIELD.into(),
-                                (
-                                    VIRTUAL_FIELD_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS
-                                        .to_string(),
-                                    None,
-                                ),
+                            errors.set_virtual_field_2(
+                                VIRTUAL_FIELD_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS,
+                                None,
                             );
 
                             return ready(Err(errors));
                         }
 
                         if dependent == BOTH_PRE_VALIDATION_FAIL {
-                            errors.insert(
-                                "dependent".into(),
-                                (BOTH_PRE_VALIDATION_FAIL.to_string(), None),
-                            );
+                            errors.set_dependent(BOTH_PRE_VALIDATION_FAIL, None);
 
-                            errors.insert(
-                                "virtual_field_1".into(),
-                                (BOTH_PRE_VALIDATION_FAIL.to_string(), None),
-                            );
+                            errors.set_virtual_field_1(BOTH_PRE_VALIDATION_FAIL, None);
                         }
                     }
 
@@ -3688,10 +3547,7 @@ async fn should_respect_post_validation_config_with_alias_same_as_dependent() {
                         if errors.is_empty()
                             && virtual_field_1 == VIRTUAL_FIELD_1_PRE_VALIDATION_FAIL
                         {
-                            errors.insert(
-                                "virtual_field_1".into(),
-                                (VIRTUAL_FIELD_1_PRE_VALIDATION_FAIL.to_string(), None),
-                            );
+                            errors.set_virtual_field_1(VIRTUAL_FIELD_1_PRE_VALIDATION_FAIL, None);
                         }
                     }
 
@@ -3704,54 +3560,28 @@ async fn should_respect_post_validation_config_with_alias_same_as_dependent() {
                     ready(result)
                 })
                 .validate(|ctx: IvoContext<DataInput, Data>, _| {
-                    let mut errors = HashMap::new();
+                    let mut errors = PartialDataInputErrors::new();
 
                     if let Some(dependent) = ctx.input().dependent {
                         if dependent == VIRTUAL_FIELD_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS {
-                            errors.insert(
-                                "dependent".into(),
-                                (
-                                    VIRTUAL_FIELD_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS
-                                        .to_string(),
-                                    None,
-                                ),
+                            errors.set_dependent(
+                                VIRTUAL_FIELD_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS,
+                                None,
                             );
 
-                            errors.insert(
-                                "virtual_field_2".into(),
-                                (
-                                    VIRTUAL_FIELD_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS
-                                        .to_string(),
-                                    None,
-                                ),
-                            );
-
-                            errors.insert(
-                                UNKNOWN_FIELD.into(),
-                                (
-                                    VIRTUAL_FIELD_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS
-                                        .to_string(),
-                                    None,
-                                ),
+                            errors.set_virtual_field_2(
+                                VIRTUAL_FIELD_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS,
+                                None,
                             );
 
                             return ready(Err(errors));
                         }
 
                         if dependent == VIRTUAL_FIELD_VALIDATION_FAIL {
-                            errors.insert(
-                                "dependent".into(),
-                                (VIRTUAL_FIELD_VALIDATION_FAIL.to_string(), None),
-                            );
+                            errors.set_dependent(VIRTUAL_FIELD_VALIDATION_FAIL, None);
                         } else if dependent == BOTH_VALIDATION_FAIL {
-                            errors.insert(
-                                "dependent".into(),
-                                (BOTH_VALIDATION_FAIL.to_string(), None),
-                            );
-                            errors.insert(
-                                "virtual_field_1".into(),
-                                (BOTH_VALIDATION_FAIL.to_string(), None),
-                            );
+                            errors.set_dependent(BOTH_VALIDATION_FAIL, None);
+                            errors.set_virtual_field_1(BOTH_VALIDATION_FAIL, None);
                         }
                     }
 
@@ -3787,7 +3617,6 @@ async fn should_respect_post_validation_config_with_alias_same_as_dependent() {
         Err((p, _, _)) => {
             assert!(p.get("virtual_field_1").is_none());
             assert!(p.get("virtual_field_2").is_none());
-            assert!(p.get(UNKNOWN_FIELD).is_none());
             assert_eq!(
                 p.get("dependent").unwrap()[0].reason,
                 virtual_value,
@@ -3814,7 +3643,6 @@ async fn should_respect_post_validation_config_with_alias_same_as_dependent() {
         Err((p, _, _)) => {
             assert!(p.get("virtual_field_1").is_none());
             assert!(p.get("virtual_field_2").is_none());
-            assert!(p.get(UNKNOWN_FIELD).is_none());
             assert_eq!(
                 p.get("dependent").unwrap()[0].reason,
                 required,
@@ -4020,7 +3848,6 @@ async fn should_respect_post_validation_config_with_alias_same_as_dependent() {
         Err((UpdateError::ValidationError(p), _, _)) => {
             assert!(p.get("virtual_field_1").is_none());
             assert!(p.get("virtual_field_2").is_none());
-            assert!(p.get(UNKNOWN_FIELD).is_none());
             assert_eq!(
                 p.get("dependent").unwrap()[0].reason,
                 virtual_value,
@@ -4048,7 +3875,6 @@ async fn should_respect_post_validation_config_with_alias_same_as_dependent() {
         Err((UpdateError::ValidationError(p), _, _)) => {
             assert!(p.get("virtual_field_1").is_none());
             assert!(p.get("virtual_field_2").is_none());
-            assert!(p.get(UNKNOWN_FIELD).is_none());
             assert_eq!(
                 p.get("dependent").unwrap()[0].reason,
                 virtual_value,

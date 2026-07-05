@@ -7,6 +7,7 @@ use std::fmt::Debug;
 use std::future::ready;
 use std::sync::Arc;
 
+use crate::__private_types::types::{IvoPartialErrorsStructMethods, IvoWithPartialErrorsStruct};
 use crate::model::internal::{FieldInfo, FieldInfoCollection};
 use crate::schema::{
     fields::{
@@ -29,7 +30,7 @@ use crate::{IvoContext, IvoCtxOptions, IvoRwCtxOptions};
 type AsyncHandlerTrigger<'a> = Box<dyn Fn() -> BoxFuture<'a, ()> + Send + Sync + 'a>;
 
 impl<
-        I: IvoStruct,
+        I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
         O: IvoStruct,
         CtxOptions: Clone + Sync + Send,
         Timestamp: Clone + Debug + Send + Sync + 'static,
@@ -44,7 +45,7 @@ impl<
 
 pub struct Model<
     'schema,
-    I: IvoStruct,
+    I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
     O: IvoStruct = I,
     CtxOptions: Clone + Sync + Send = HashMap<String, ()>,
     Timestamp: Clone + Debug + Send + Sync + 'static = (),
@@ -55,7 +56,7 @@ pub struct Model<
 
 impl<
         'schema,
-        I: IvoStruct,
+        I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
         O: IvoStruct,
         CtxOptions: Clone + Sync + Send,
         Timestamp: Clone + Debug + Send + Sync + 'static,
@@ -734,6 +735,7 @@ impl<
     ) -> Result<Option<(I::Partial, O::Partial)>, ErrorTool::ErrorPayload> {
         let mut pre_validators = vec![];
         let mut post_validators = vec![];
+        let mut input_fields = fields_provided.clone();
 
         if let Some(configs) = &self.schema.options.post_validate {
             for PostValidationConfig {
@@ -781,19 +783,18 @@ impl<
 
             for (fields, pre_validation) in join_all(tasks).await {
                 match pre_validation {
-                    Err(payload) => {
-                        for (field_name, (reason, metadata)) in payload {
-                            if let Some(field_info) = fields_provided.get(&field_name) {
+                    Err(errors) => {
+                        for (field_name, (reason, metadata)) in errors.ivo_internal_enumerate() {
+                            if let Some(field_info) = input_fields.get_and_add(&field_name) {
                                 if fields.contains(&field_info.config_name.as_str()) {
-                                    error_tool
-                                        .add(&field_info.name, FieldError { reason, metadata });
+                                    error_tool.add(&field_name, FieldError { reason, metadata });
                                 }
                             }
                         }
                     }
                     Ok(Some(updates)) => {
                         for (field_name, value) in updates.ivo_internal_enumerate() {
-                            if let Some(field_info) = fields_provided.get(&field_name) {
+                            if let Some(field_info) = input_fields.get_and_add(&field_name) {
                                 if !fields.contains(&field_info.config_name.as_str()) {
                                     continue;
                                 }
@@ -844,18 +845,18 @@ impl<
 
         for (fields, validation) in join_all(tasks).await {
             match validation {
-                Err(payload) => {
-                    for (field_name, (reason, metadata)) in payload {
-                        if let Some(field_info) = fields_provided.get(&field_name) {
+                Err(errors) => {
+                    for (field_name, (reason, metadata)) in errors.ivo_internal_enumerate() {
+                        if let Some(field_info) = input_fields.get_and_add(&field_name) {
                             if fields.contains(&field_info.config_name.as_str()) {
-                                error_tool.add(&field_info.name, FieldError { reason, metadata });
+                                error_tool.add(&field_name, FieldError { reason, metadata });
                             }
                         }
                     }
                 }
                 Ok(Some(updates)) => {
                     for (field_name, value) in updates.ivo_internal_enumerate() {
-                        if let Some(field_info) = fields_provided.get(&field_name) {
+                        if let Some(field_info) = input_fields.get_and_add(&field_name) {
                             if !fields.contains(&field_info.config_name.as_str()) {
                                 continue;
                             }
@@ -1121,8 +1122,7 @@ impl<
             }
 
             for (field_name, value) in input_values.ivo_internal_enumerate() {
-                let field_info = fields_provided.get(&field_name).unwrap();
-                fields_provided.add(field_info.clone());
+                let field_info = fields_provided.get_and_add(&field_name).unwrap();
 
                 if (field_info.is_input && !field_info.is_output)
                     || !previous_values.ivo_internal_is_value_equal(&field_name, &value)
@@ -1132,8 +1132,7 @@ impl<
             }
         } else {
             for field_name in input_values.ivo_internal_fields_provided() {
-                let field_info = fields_provided.get(&field_name).unwrap();
-                fields_provided.add(field_info.clone());
+                let field_info = fields_provided.get_and_add(&field_name).unwrap();
 
                 field_info_vec.push(field_info);
             }

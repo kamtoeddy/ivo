@@ -8,7 +8,7 @@ use std::{
     fmt::Debug,
 };
 
-use crate::DefaultFieldErrorMetadata;
+use crate::{DefaultFieldErrorMetadata, IvoErrorTool};
 
 pub trait IvoStruct:
     Send + Sync + Sized + 'static + IvoWithPartialStruct + IvoStructMethods + Into<Self::Partial>
@@ -26,6 +26,10 @@ pub trait IvoStruct:
 
 pub trait IvoWithPartialStruct {
     type Partial: PartialEq + Debug + Default + Send + Sync + Clone + IvoPartialStructMethods;
+}
+
+pub trait IvoWithPartialErrorsStruct<FieldErrorMetadata: Send + Sync> {
+    type PartialErrors: Send + Sync + IvoPartialErrorsStructMethods<FieldErrorMetadata>;
 }
 
 pub trait IvoStructMethods: IvoWithPartialStruct + Clone {
@@ -68,6 +72,10 @@ pub trait IvoPartialStructMethods: Clone {
     fn ivo_internal_set(&mut self, field_name: &str, value: &ErasedValue);
 
     fn ivo_internal_unset(&mut self, field_name: &str);
+}
+
+pub trait IvoPartialErrorsStructMethods<FieldErrorMetadata: Send + Sync> {
+    fn ivo_internal_enumerate(self) -> Vec<(String, (String, Option<FieldErrorMetadata>))>;
 }
 
 pub type Partial<T> = <T as IvoWithPartialStruct>::Partial;
@@ -146,5 +154,7 @@ pub type ValidatorError<FieldErrorMetadata> = (String, Option<FieldErrorMetadata
 pub type PostValidatorError<FieldErrorMetadata = DefaultFieldErrorMetadata> =
     HashMap<String, ValidatorError<FieldErrorMetadata>>;
 
-pub type PostValidatorResponse<I: IvoStruct, FieldErrorMetadata = DefaultFieldErrorMetadata> =
-    Result<Option<I::Partial>, PostValidatorError<FieldErrorMetadata>>;
+pub type PostValidatorResponse<
+    I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
+    ErrorTool: IvoErrorTool,
+> = Result<Option<I::Partial>, I::PartialErrors>;
