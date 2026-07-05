@@ -14,12 +14,13 @@
     "test:watch": "bun run build && bun test --watch",
     "typecheck": "clear; tsc --noEmit -p ./tsconfig.json"
   },
-  "license": "MIT",
-  "homepage": "https://github.com/kamtoeddy/ivo#readme",
+  "license": "../LICENSE",
+  "homepage": "https://github.com/kamtoeddy/ivo/ts/#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kamtoeddy/ivo.git"
   },
+  "readme": "./README.md",
   "bugs": {
     "url": "https://github.com/kamtoeddy/ivo/issues"
   },

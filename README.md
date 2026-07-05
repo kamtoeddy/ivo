@@ -1,34 +1,65 @@
-# Foreword
+# ivo
 
-ivo is a user story focused event-driven schema validator which provides an interface for you to clearly define the behaviour of your entities at creation and during updates
+ivo is a user-story-focused, event-driven data validation framework. It provides a structured rule engine to coordinate and enforce creation, update, and deletion operations on domain entities.
 
-# Installation
+# Intro
 
-```bash
-$ npm i ivo
-```
+In modern applications, Data Transfer Objects (DTOs) and domain entities are usually modelled using structs to define the shape of incoming and internal data.
 
-# Importing
+While typical struct validators only check isolated field constraints, ivo allows you to enforce complex, multi-field validation invariants that prevent an entity from ever entering an invalid state. Furthermore, it integrates a native event ecosystem, enabling you to subscribe to creation, update, and deletion lifecycles at both the entity and individual field levels.
 
-```js
-// CJS
-const { Schema } = require("ivo");
+# Quick links
 
-// ESM
-import { Schema } from "ivo";
-```
+|            | Docs                                             | Examples            |
+| ---------- | ------------------------------------------------ | ------------------- |
+| Rust       | [link](./rs/README.md#rust-implementation)       | [link](./examples/) |
+| TypeScript | [link](./ts/README.md#typescript-implementation) | [link]()            |
 
-# Defining a schema
+# Definition of terms
+
+## 1. Input structs & fields
+
+### 1.1 Input struct:
+
+An input struct represents externally provided (usually incomplete) values. e.g: values submitted by a user via a form, or an HTTP request.
+
+### 1.2 Input field:
+
+An input field is a field that exists on an input struct.
+
+### 1.3 Purely Input field:
+
+A purely input field is one that only (soley) exists on an input struct.
+
+## 2. Output structs & fields
+
+### 2.1 Output struct:
+
+An output struct represents the complete shape/structure of a domain entity.
+
+### 2.2 Output field:
+
+An output field is one that exists on an output struct.
+
+### 2.3 Purely Output field:
+
+A purely output field is one that only (soley) exists on an output struct.
+
+## 2. Schema
+
+A schema is a generic term used in this documentation to refer to the validation configuration (default values/resolvers, fields, validators, event listeners/hooks, etc.) of a domain entity.
+
+#### **TypeScript Example:**
 
 ```ts
-import { Schema, type IvoSummary } from "ivo";
-
+// the input struct
 type UserInput = {
   email: string | null;
   phoneNumber: string | null;
   username: string;
 };
 
+// the output struct
 type User = {
   id: string;
   createdAt: Date;
@@ -38,157 +69,177 @@ type User = {
   username: string;
   usernameLastUpdatedAt: Date | null;
 };
+```
 
+#### **Rust Example:**
+
+```rs
+use chrono::{DateTime, Utc};
+
+// the input struct
+struct UserInput {
+  email: Option<String>,
+  phone_number: Option<String>,
+  username: String,
+}
+
+type Timestamp = DateTime<Utc>;
+
+// the output struct
+struct User {
+  id: String,
+  created_at: Timestamp,
+  email: Option<String>,
+  phone_number: Option<String>,
+  updated_at: Option<Timestamp>,
+  username: String,
+  username_last_updated_at: Option<Timestamp>,
+}
+```
+
+The concept is simple; a user's details are submitted via a form with a `username` and an `email` or a `phone number`.
+These values are enough for your application to create a **User**. As you can see, we do not want users to provide fields like `id`, `created_at`, `updated_at` and `username_last_updated_at`.
+
+Now, let us look at the nature of each field
+
+## 3. Fields
+
+A domain entity may comprise of one or more fields belonging to one of the following types:
+
+### 3.1 Constant
+
+A constant is a [purely output field](#23-purely-output-field) whose value should never change after creation; e.g: `id`.
+
+- it **must** have either a `static value` or a [`resolver`](#resolver).
+- it may have [`on delete`](#on-delete) and [`on success`](#on-success) event handlers.
+
+### 3.2 Dependent
+
+A dependent field is a [purely output field](#23-purely-output-field) whose value changes whenever at least one other field it depends on is provided. e.g: `username_last_updated_at`'s value should only and always be updated every time `username` changes.
+
+- it **must** have either a default `static value` or a [`resolver`](#resolver) for the default value.
+- it **must** depend on at least one other field which can be a [`lax`](#33-lax), [`required`](#34-required), [`virtual`](#36-virtual) or another `dependent` field (provided no circular dependency is identified).
+- it **must** have a [`resolver`](#resolver) to generate new values whenever any of its parent fields is provided and is valid for that operation.
+- it may leverage the [`readonly provision rule`](#readonly) to prevent further updates once its current value is different from its **default static value** irrespective of new updates made to values of its parent fields.
+- it may have [`on delete`](#on-delete) and [`on success`](#on-success) event handlers.
+- it may also be used in [`grouped on success`](#on-success-grouped) event handlers.
+
+### 3.3 Lax
+
+A lax field is both an [input field](#12-input-field) and an [output field](#22-output-field) whose value may or may not be provided at creation. Based on [this schema](#typescript-example), `email` and `phone_number` are great examples of lax fields.
+
+- it **must** have either a default `static value` or a [`resolver`](#resolver) for the default value.
+- it may a [`validator`](#validator).
+- it may also have [`re-validator`](#re-validator).
+- it may also be used in [`post/multi-field validation`](#post-validation).
+- it may leverage the [`ignore`](#ignore), [`ignore init`](#ignore-init) and [`ignore update`](#ignore-update) provision rules.
+- it may leverage the [`readonly`](#readonly) provision rule if default value is static.
+- it may have [`on delete`](#on-delete) and [`on success`](#on-success) event handlers.
+- it may have [`on failure`](#on-failure) event handlers if a validator is provided.
+- it may also be used in [`grouped on success`](#on-success-grouped) event handlers.
+
+### 3.4 Required
+
+A required field is both an [input field](#12-input-field) and an [output field](#22-output-field) whose value must be provided at creation. Based on [this schema](#typescript-example), `username` is a good candidate to be a required field, but could also be configured differently using [this special combo of virtual + alias + dependent](#virtual-alias-dependent-combo).
+
+- it **must** have a [`validator`](#validator).
+- it may also have [`re-validator`](#re-validator).
+- it may also be used in [`post/multi-field validation`](#post-validation).
+- it may leverage the [`ignore update`](#ignore-update) and [`readonly`](#readonly) provision rules to prevent further updates.
+- it may have [`on delete`](#on-delete) and [`on success`](#on-success) event handlers.
+- it may have [`on failure`](#on-failure) event handlers if a validator is provided.
+- it may also be used in [`grouped on success`](#on-success-grouped) event handlers.
+
+### 3.5 Virtual
+
+A virtual field is a [purely input field](#13-purely-input-field) whose value may or may not be provided at creation. This type of field is used to trigger a change in one or more fields that dependend on it. Based on [this schema](#typescript-example), `username` could simultaneously be a virtual and a dependent field if [this special combo of virtual + alias + dependent](#virtual-alias-dependent-combo) is used, **but MUST NOT always be used like this**.
+
+- it **must** have one or more [`dependent fields`](#32-dependent) depending on it.
+- it **must** have a [`validator`](#validator).
+- it may also have [`re-validator`](#re-validator).
+- it may have an **`alias`**, which is a different field name found on the input struct to be used in place of the actual field name. This field could also exist on the output struct as explained [here](#virtual-alias-dependent-combo)
+- it may have [`sanitizer`](#sanitizer).
+- it may leverage the [`ignore`](#ignore), [`ignore init`](#ignore-init) and [`ignore update`](#ignore-update) provision rules.
+- it may also be used in [`post/multi-field validation`](#post-validation).
+- it may have [`on failure`](#on-failure) event handlers.
+- it may have [`on success`](#on-success) event handlers.
+- it may also be used in [`grouped on success`](#on-success-grouped) event handlers.
+
+#### Virtual-Alias-Dependent Combo
+
+The alias name of a virtual field can only be found on an output struct if the corresponding field on the output struct is a dependent field which directly depends on this virtual field.
+
+**Example**
+
+```ts
 const userSchema = new Schema<UserInput, User>(
   {
-    id: { constant: true, value: generateUserID },
-    email: {
-      default: null,
-      required: isEmailOrPhoneRequired,
-      validator: [validateEmail, makeSureEmailIsUnique],
-    },
-    phoneNumber: {
-      default: null,
-      required: isEmailOrPhoneRequired,
-      validator: validatePhoneNumber,
-    },
+    ...,
     username: {
-      required: true,
-      validator: [validateUsername, makeSureUsernameIsUnique],
-      shouldUpdate({ usernameLastUpdatedAt }) {
-        if (!usernameLastUpdatedAt) return true;
+      default: "",
+      dependsOn: ["virtual_field"],
+      //          ^^^^^^^^^^^^^^
+      //                        dependency on "virtual_field"
+      resolve(summary) {
+        let value = /* do computation here */;
 
-        const timeDifferenceInMillisecs =
-          new Date().getTime() - usernameLastUpdatedAt.getTime();
-        const thirtyDaysInMillisecs = 2_592_000_000;
-
-        return timeDifferenceInMillisecs >= thirtyDaysInMillisecs;
+        return value
       },
     },
-    usernameLastUpdatedAt: {
-      default: null,
-      dependsOn: "username",
-      resolver: ({ isUpdate }) => (isUpdate ? new Date() : null),
-    },
+    virtual_field: { alias: "username", validator: validatePhoneNumber },
+    //               ^^^^^^^^^^^^^^^^^
+    //                                this is allowed because "username" directly depends on "virtual_field"
+    ...
   },
   { timestamps: true },
 );
-
-function isEmailOrPhoneRequired({
-  ctx: { email, phoneNumber },
-}: IvoSummary<UserInput, User>) {
-  return [!email && !phoneNumber, 'Provide "email" or "phone" number'] as const;
-}
-
-async function makeSureEmailIsUnique(email: string) {
-  const userWithEmail = await usersDb.findByEmail(email);
-
-  return userWithEmail ? { valid: false, reason: "Email already taken" } : true;
-}
-
-async function makeSureUsernameIsUnique(username: string) {
-  const userWithUsername = await usersDb.findByUsername(username);
-
-  return userWithUsername
-    ? { valid: false, reason: "Username already taken" }
-    : true;
-}
-
-// get the model
-const UserModel = userSchema.getModel();
 ```
 
-# Creating an entity
+### 3.6 Timestamp
 
-```ts
-const { data, error } = await UserModel.create({
-  email: "john.doe@mail.com",
-  id: 5, // will be ignored because it is a constant property
-  name: "John Doe", // will be ignored because it is not on schema
-  username: "john_doe",
-  updatedAt: new Date(), // will be ignored because it is a timestamp
-  usernameLastUpdatedAt: new Date(), // will be ignored because it is a dependent property
-});
+Timestamp fields are often used to log the date (and sometimes the time) at which state transitions occurred.
 
-if (error) return handleError(error);
+- ivo provides synchronization of created_at and updated_at timestamps during the respective operations.
+- ivo allows for custom names and optional updated_at timestamp if needed.
+- the TypeScript implementation uses `new Date()` to set the values.
+- the Rust implementation requires you to define the datatype of the timestamp and a resolver function.
 
-console.log(data);
-// {
-//   createdAt: new Date(),
-//   email: 'john.doe@mail.com',
-//   id: 101,
-//   phoneNumber: null,
-//   updatedAt: null,
-//   username: 'john_doe',
-//   usernameLastUpdatedAt: null
-// }
+## Post validation
 
-// data is safe to dump in db
-await usersDb.insertOne(data);
-```
+## Provision Rules
 
-# Updating an entity
+### Ignore
 
-```ts
-const user = await usersDb.findByID(101);
+### Ignore init
 
-if (!user) return handleError({ message: "User not found" });
+### Ignore update
 
-const { data, error } = await UserModel.update(user, {
-  usernameLastUpdatedAt: add(new Date(), { days: 31 }), // dependent property -> will be ignored
-  id: 75, // constant property -> will be ignored
-  age: 34, // not on schema -> will be ignored
-  username: "johndoe",
-});
+### Readonly
 
-if (error) return handleError(error);
+### Required (contiditionally)
 
-console.log(data);
-// {
-//   updatedAt: new Date(),
-//   username: 'johndoe',
-//   usernameLastUpdatedAt: new Date() // value returned from resolver -> current date
-// }
+## Lifecycle Events
 
-await usersDb.updateByID(user.id, data);
-```
+### On Delete
 
-```ts
-// any further attempt to update 'username' will be ignored until
-// the 'shouldUpdate' rule returns true
+### On Failure
 
-const { error } = await UserModel.update(user, { username: "john-doe" });
+### On Success
 
-console.log(error);
-// {
-//   message: 'NOTHING_TO_UPDATE',
-//   payload: {}
-// }
-```
+### On Success (Grouped)
 
-## Docs
+## Resolvers
 
-- [Defining a schema](./ts/docs/v1.9.0/index.md#defining-a-schema)
+### Resolver
 
-  - [allowed values](./ts/docs/v1.9.0/definitions/allowed-values.md#allowed-values)
-  - [constant properties](./ts/docs/v1.9.0/definitions/constants.md#constant-properties)
-  - [default values](./ts/docs/v1.9.0/definitions/defaults.md#default-values)
-  - [dependent properties](./ts/docs/v1.9.0/definitions/dependents.md#dependent-properties)
-  - [readonly properties](./ts/docs/v1.9.0/definitions/readonly.md#readonly-properties)
-  - [required properties](./ts/docs/v1.9.0/definitions/required.md#required-properties)
-  - [virtual properties](./ts/docs/v1.9.0/definitions/virtuals.md#virtual-properties)
-  - [validators](./ts/docs/v1.9.0/validators.md#validators)
-  - [Extending Schemas](./ts/docs/v1.9.0/definitions/extend-schemas.md#extending-schemas)
-  - [The Operation ctx](./ts/docs/v1.9.0/life-cycles.md#the-operation-ctxt)
-  - [The Operation Summary](./ts/docs/v1.9.0/life-cycles.md#the-operation-summary)
-  - [Life Cycles & Handlers](./ts/docs/v1.9.0/life-cycles.md#life-cycle-listeners)
+A resolver is simply a function that returns a value.
 
-  - [onDelete](./ts/docs/v1.9.0/life-cycles.md#ondelete)
-  - [onFailure](./ts/docs/v1.9.0/life-cycles.md#onfailure)
-  - [onSuccess](./ts/docs/v1.9.0/life-cycles.md#onsuccess)
+### Validator
 
-  - [Options](./ts/docs/v1.9.0/index.md#options)
-  - [Custom validation errors](./ts/docs/v1.9.0/index.md#errortool)
-  - [Extra features](./ts/docs/v1.9.0/life-cycles.md#ctx-options)
+### Re-Validator
 
-- [Changelog](./ts/docs/CHANGELOG.md#changelog)
+### Post-Validator
+
+### Required Resolver
+
+### Sanitizer
