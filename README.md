@@ -111,7 +111,7 @@ A domain entity may comprise of one or more fields belonging to one of the follo
 A constant is a [purely output field](#23-purely-output-field) whose value should never change after creation; e.g: `id`.
 
 - it **must** have either a `static value` or a [`resolver`](#resolver).
-- it may have [`on delete`](#on-delete) and [`on success`](#on-success) event handlers.
+- it may have [delete](#on-delete) and [success](#on-success) event handlers.
 
 ### 3.2 Dependent
 
@@ -121,49 +121,49 @@ A dependent field is a [purely output field](#23-purely-output-field) whose valu
 - it **must** depend on at least one other field which can be a [`lax`](#33-lax), [`required`](#34-required), [`virtual`](#36-virtual) or another `dependent` field (provided no circular dependency is identified).
 - it **must** have a [`resolver`](#resolver) to generate new values whenever any of its parent fields is provided and is valid for that operation.
 - it may leverage the [`readonly provision rule`](#readonly) to prevent further updates once its current value is different from its **default static value** irrespective of new updates made to values of its parent fields.
-- it may have [`on delete`](#on-delete) and [`on success`](#on-success) event handlers.
-- it may also be used in [`grouped on success`](#on-success-grouped) event handlers.
+- it may have [delete](#on-delete) and [success](#on-success) event handlers.
+- it may also be used in [grouped success](#on-success-grouped) event handlers.
 
 ### 3.3 Lax
 
 A lax field is both an [input field](#12-input-field) and an [output field](#22-output-field) whose value may or may not be provided at creation. Based on [this schema](#typescript-example), `email` and `phone_number` are great examples of lax fields.
 
 - it **must** have either a default `static value` or a [`resolver`](#resolver) for the default value.
-- it may a [`validator`](#validator).
-- it may also have [`re-validator`](#re-validator).
-- it may also be used in [`post/multi-field validation`](#post-validation).
-- it may leverage the [`ignore`](#ignore), [`ignore init`](#ignore-init) and [`ignore update`](#ignore-update) provision rules.
-- it may leverage the [`readonly`](#readonly) provision rule if default value is static.
-- it may have [`on delete`](#on-delete) and [`on success`](#on-success) event handlers.
-- it may have [`on failure`](#on-failure) event handlers if a validator is provided.
-- it may also be used in [`grouped on success`](#on-success-grouped) event handlers.
+- it may a [validator](#validator).
+- it may also have [re-validator](#re-validator).
+- it may also be used in [post/multi-field validation](#post-validation).
+- it may leverage the [ignore](#ignore), [ignore init](#ignore-init) and [ignore update](#ignore-update) provision rules.
+- it may leverage the [readonly](#readonly) provision rule if default value is static.
+- it may have [delete](#on-delete) and [success](#on-success) event handlers.
+- it may have [failure](#on-failure) event handlers if a validator is provided.
+- it may also be used in [grouped success](#on-success-grouped) event handlers.
 
 ### 3.4 Required
 
 A required field is both an [input field](#12-input-field) and an [output field](#22-output-field) whose value must be provided at creation. Based on [this schema](#typescript-example), `username` is a good candidate to be a required field, but could also be configured differently using [this special combo of virtual + alias + dependent](#virtual-alias-dependent-combo).
 
-- it **must** have a [`validator`](#validator).
-- it may also have [`re-validator`](#re-validator).
-- it may also be used in [`post/multi-field validation`](#post-validation).
-- it may leverage the [`ignore update`](#ignore-update) and [`readonly`](#readonly) provision rules to prevent further updates.
-- it may have [`on delete`](#on-delete) and [`on success`](#on-success) event handlers.
-- it may have [`on failure`](#on-failure) event handlers if a validator is provided.
-- it may also be used in [`grouped on success`](#on-success-grouped) event handlers.
+- it **must** have a [validator](#validator).
+- it may also have [re-validator](#re-validator).
+- it may also be used in [post/multi-field validation](#post-validation).
+- it may leverage the [ignore update](#ignore-update) and [readonly](#readonly) provision rules to prevent further updates.
+- it may have [delete](#on-delete) and [success](#on-success) event handlers.
+- it may have [failure](#on-failure) event handlers if a validator is provided.
+- it may also be used in [grouped success](#on-success-grouped) event handlers.
 
 ### 3.5 Virtual
 
 A virtual field is a [purely input field](#13-purely-input-field) whose value may or may not be provided at creation. This type of field is used to trigger a change in one or more fields that dependend on it. Based on [this schema](#typescript-example), `username` could simultaneously be a virtual and a dependent field if [this special combo of virtual + alias + dependent](#virtual-alias-dependent-combo) is used, **but MUST NOT always be used like this**.
 
-- it **must** have one or more [`dependent fields`](#32-dependent) depending on it.
-- it **must** have a [`validator`](#validator).
-- it may also have [`re-validator`](#re-validator).
+- it **must** have one or more [dependent fields](#32-dependent) depending on it.
+- it **must** have a [validator](#validator).
+- it may also have [re-validator](#re-validator).
 - it may have an **`alias`**, which is a different field name found on the input struct to be used in place of the actual field name. This field could also exist on the output struct as explained [here](#virtual-alias-dependent-combo)
-- it may have [`sanitizer`](#sanitizer).
-- it may leverage the [`ignore`](#ignore), [`ignore init`](#ignore-init) and [`ignore update`](#ignore-update) provision rules.
-- it may also be used in [`post/multi-field validation`](#post-validation).
-- it may have [`on failure`](#on-failure) event handlers.
-- it may have [`on success`](#on-success) event handlers.
-- it may also be used in [`grouped on success`](#on-success-grouped) event handlers.
+- it may have [sanitizer](#sanitizer).
+- it may leverage the [ignore](#ignore), [ignore init](#ignore-init) and [ignore update](#ignore-update) provision rules.
+- it may also be used in [post/multi-field validation](#post-validation).
+- it may have [failure](#on-failure) event handlers.
+- it may have [success](#on-success) event handlers.
+- it may also be used in [grouped success](#on-success-grouped) event handlers.
 
 #### Virtual-Alias-Dependent Combo
 
@@ -172,7 +172,7 @@ The alias name of a virtual field can only be found on an output struct if the c
 **Example**
 
 ```ts
-const userSchema = new Schema<UserInput, User>(
+const userSchema = new Schema<InputStruct, OutputStruct>(
   {
     ...,
     username: {
@@ -191,7 +191,7 @@ const userSchema = new Schema<UserInput, User>(
     //                                this is allowed because "username" directly depends on "virtual_field"
     ...
   },
-  { timestamps: true },
+  ...
 );
 ```
 
@@ -220,7 +220,7 @@ Timestamp fields are often used to log the date (and sometimes the time) at whic
 
 ## Lifecycle Events
 
-### On Delete
+### Delete
 
 ### On Failure
 
