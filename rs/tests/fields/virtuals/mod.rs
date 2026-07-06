@@ -1,4 +1,4 @@
-use ivo::{IvoContext, IvoField, IvoStruct, Schema, UpdateError};
+use ivo::{IvoContext, IvoField, IvoStruct, IvoUpdateError, Schema};
 use std::{future::ready, ops::RangeInclusive, panic};
 
 use crate::async_test_matrix;
@@ -69,7 +69,7 @@ async fn should_reject_updates_if_no_value_has_changed() {
         .err()
         .unwrap();
 
-    assert!(matches!(err, UpdateError::NothingToUpdate))
+    assert!(matches!(err, IvoUpdateError::NothingToUpdate))
 }
 
 async_test_matrix!(should_reject_updates_if_no_value_has_changed);
@@ -122,7 +122,7 @@ async fn should_reject_updates_if_no_value_has_changed_with_alias() {
         .err()
         .unwrap();
 
-    assert!(matches!(err, UpdateError::NothingToUpdate))
+    assert!(matches!(err, IvoUpdateError::NothingToUpdate))
 }
 
 async_test_matrix!(should_reject_updates_if_no_value_has_changed_with_alias);
@@ -175,7 +175,7 @@ async fn should_reject_updates_if_no_value_has_changed_with_alias_same_as_depend
         .err()
         .unwrap();
 
-    assert!(matches!(err, UpdateError::NothingToUpdate))
+    assert!(matches!(err, IvoUpdateError::NothingToUpdate))
 }
 
 async_test_matrix!(should_reject_updates_if_no_value_has_changed_with_alias_same_as_dependent);
@@ -300,7 +300,7 @@ async fn should_respect_the_required_rule() {
         .await;
 
     match r {
-        Err((UpdateError::ValidationError(payload), _, _)) => assert_eq!(
+        Err((IvoUpdateError::ValidationError(payload), _, _)) => assert_eq!(
             payload.get("virtual_field").unwrap()[0].reason,
             "virtual_field is required for this update"
         ),
@@ -429,7 +429,7 @@ async fn should_respect_the_required_rule_with_alias() {
         .await;
 
     match r {
-        Err((UpdateError::ValidationError(payload), _, _)) => assert_eq!(
+        Err((IvoUpdateError::ValidationError(payload), _, _)) => assert_eq!(
             payload.get("virtual_alias").unwrap()[0].reason,
             "virtual_field is required for this update"
         ),
@@ -558,7 +558,7 @@ async fn should_respect_the_required_rule_with_alias_same_as_dependent() {
         .await;
 
     match r {
-        Err((UpdateError::ValidationError(payload), _, _)) => assert_eq!(
+        Err((IvoUpdateError::ValidationError(payload), _, _)) => assert_eq!(
             payload.get("dependent").unwrap()[0].reason,
             "virtual_field is required for this update"
         ),
@@ -911,7 +911,7 @@ async fn should_not_update_if_primary_validation_fails() {
             .await;
 
         match r {
-            Err((UpdateError::ValidationError(p), _, _)) => {
+            Err((IvoUpdateError::ValidationError(p), _, _)) => {
                 assert_eq!(
                     p.get("virtual_field").unwrap()[0].reason,
                     OUT_OF_RANGE_ERROR
@@ -1015,7 +1015,7 @@ async fn should_not_update_if_primary_validation_fails_with_alias() {
             .await;
 
         match r {
-            Err((UpdateError::ValidationError(p), _, _)) => {
+            Err((IvoUpdateError::ValidationError(p), _, _)) => {
                 assert_eq!(
                     p.get("virtual_alias").unwrap()[0].reason,
                     OUT_OF_RANGE_ERROR
@@ -1119,7 +1119,7 @@ async fn should_not_update_if_primary_validation_fails_with_alias_same_as_depend
             .await;
 
         match r {
-            Err((UpdateError::ValidationError(p), _, _)) => {
+            Err((IvoUpdateError::ValidationError(p), _, _)) => {
                 assert_eq!(p.get("dependent").unwrap()[0].reason, OUT_OF_RANGE_ERROR)
             }
             _ => unreachable!("expected a validation error"),
@@ -1802,7 +1802,7 @@ async fn should_not_update_if_re_validation_fails() {
             .await;
 
         match r {
-            Err((UpdateError::ValidationError(p), _, _)) => {
+            Err((IvoUpdateError::ValidationError(p), _, _)) => {
                 assert_eq!(
                     p.get("virtual_field").unwrap()[0].reason,
                     REVALIDATED_OUT_OF_RANGE_ERROR
@@ -1920,7 +1920,7 @@ async fn should_not_update_if_re_validation_fails_with_alias() {
             .await;
 
         match r {
-            Err((UpdateError::ValidationError(p), _, _)) => {
+            Err((IvoUpdateError::ValidationError(p), _, _)) => {
                 assert_eq!(
                     p.get("virtual_alias").unwrap()[0].reason,
                     REVALIDATED_OUT_OF_RANGE_ERROR
@@ -2038,7 +2038,7 @@ async fn should_not_update_if_re_validation_fails_with_alias_same_as_dependent()
             .await;
 
         match r {
-            Err((UpdateError::ValidationError(p), _, _)) => {
+            Err((IvoUpdateError::ValidationError(p), _, _)) => {
                 assert_eq!(
                     p.get("dependent").unwrap()[0].reason,
                     REVALIDATED_OUT_OF_RANGE_ERROR
@@ -2936,7 +2936,7 @@ async fn should_respect_post_validation_config() {
         .await;
 
     match r {
-        Err((UpdateError::ValidationError(p), _, _)) => {
+        Err((IvoUpdateError::ValidationError(p), _, _)) => {
             assert!(p.get("virtual_field").is_none());
             assert!(p.get("virtual_field_2").is_none());
             assert_eq!(
@@ -2945,7 +2945,7 @@ async fn should_respect_post_validation_config() {
                 "should not update if one field has an error after pre-validator in post-validation"
             );
         }
-        Err((UpdateError::NothingToUpdate, _, _)) => {
+        Err((IvoUpdateError::NothingToUpdate, _, _)) => {
             unreachable!("did not expected nothing to update")
         }
         _ => unreachable!("did not expect successful update"),
@@ -2966,7 +2966,7 @@ async fn should_respect_post_validation_config() {
         .await;
 
     match r {
-        Err((UpdateError::ValidationError(p), _, _)) => {
+        Err((IvoUpdateError::ValidationError(p), _, _)) => {
             assert!(p.get("virtual_field_2").is_none());
             assert_eq!(
                 p.get("virtual_field").unwrap()[0].reason,
@@ -2997,7 +2997,7 @@ async fn should_respect_post_validation_config() {
         .await;
 
     match r {
-        Err((UpdateError::ValidationError(p), _, _)) => {
+        Err((IvoUpdateError::ValidationError(p), _, _)) => {
             assert!(p.get("virtual_field_1").is_none());
             assert!(p.get("virtual_field_2").is_none());
             assert_eq!(
@@ -3024,7 +3024,7 @@ async fn should_respect_post_validation_config() {
         .await;
 
     match r {
-        Err((UpdateError::ValidationError(p), _, _)) => {
+        Err((IvoUpdateError::ValidationError(p), _, _)) => {
             assert!(p.get("virtual_field_1").is_none());
             assert!(p.get("virtual_field_2").is_none());
             assert_eq!(
@@ -3361,7 +3361,7 @@ async fn should_respect_post_validation_config_with_alias() {
         .await;
 
     match r {
-        Err((UpdateError::ValidationError(p), _, _)) => {
+        Err((IvoUpdateError::ValidationError(p), _, _)) => {
             assert!(p.get("virtual_alias").is_none());
             assert!(p.get("virtual_field_2").is_none());
             assert_eq!(
@@ -3370,7 +3370,7 @@ async fn should_respect_post_validation_config_with_alias() {
                 "should not update if one field has an error after pre-validator in post-validation"
             );
         }
-        Err((UpdateError::NothingToUpdate, _, _)) => {
+        Err((IvoUpdateError::NothingToUpdate, _, _)) => {
             unreachable!("did not expected nothing to update")
         }
         _ => unreachable!("did not expect successful update"),
@@ -3391,7 +3391,7 @@ async fn should_respect_post_validation_config_with_alias() {
         .await;
 
     match r {
-        Err((UpdateError::ValidationError(p), _, _)) => {
+        Err((IvoUpdateError::ValidationError(p), _, _)) => {
             assert!(p.get("virtual_field_2").is_none());
             assert_eq!(
                 p.get("virtual_alias").unwrap()[0].reason,
@@ -3422,7 +3422,7 @@ async fn should_respect_post_validation_config_with_alias() {
         .await;
 
     match r {
-        Err((UpdateError::ValidationError(p), _, _)) => {
+        Err((IvoUpdateError::ValidationError(p), _, _)) => {
             assert!(p.get("virtual_field_1").is_none());
             assert!(p.get("virtual_field_2").is_none());
             assert_eq!(
@@ -3449,7 +3449,7 @@ async fn should_respect_post_validation_config_with_alias() {
         .await;
 
     match r {
-        Err((UpdateError::ValidationError(p), _, _)) => {
+        Err((IvoUpdateError::ValidationError(p), _, _)) => {
             assert!(p.get("virtual_field_1").is_none());
             assert!(p.get("virtual_field_2").is_none());
             assert_eq!(
@@ -3784,7 +3784,7 @@ async fn should_respect_post_validation_config_with_alias_same_as_dependent() {
         .await;
 
     match r {
-        Err((UpdateError::ValidationError(p), _, _)) => {
+        Err((IvoUpdateError::ValidationError(p), _, _)) => {
             assert!(p.get("dependent").is_none());
             assert!(p.get("virtual_field_2").is_none());
             assert_eq!(
@@ -3793,7 +3793,7 @@ async fn should_respect_post_validation_config_with_alias_same_as_dependent() {
                 "should not update if one field has an error after pre-validator in post-validation"
             );
         }
-        Err((UpdateError::NothingToUpdate, _, _)) => {
+        Err((IvoUpdateError::NothingToUpdate, _, _)) => {
             unreachable!("did not expected nothing to update")
         }
         _ => unreachable!("did not expect successful update"),
@@ -3814,7 +3814,7 @@ async fn should_respect_post_validation_config_with_alias_same_as_dependent() {
         .await;
 
     match r {
-        Err((UpdateError::ValidationError(p), _, _)) => {
+        Err((IvoUpdateError::ValidationError(p), _, _)) => {
             assert!(p.get("virtual_field_2").is_none());
             assert_eq!(
                 p.get("dependent").unwrap()[0].reason,
@@ -3845,7 +3845,7 @@ async fn should_respect_post_validation_config_with_alias_same_as_dependent() {
         .await;
 
     match r {
-        Err((UpdateError::ValidationError(p), _, _)) => {
+        Err((IvoUpdateError::ValidationError(p), _, _)) => {
             assert!(p.get("virtual_field_1").is_none());
             assert!(p.get("virtual_field_2").is_none());
             assert_eq!(
@@ -3872,7 +3872,7 @@ async fn should_respect_post_validation_config_with_alias_same_as_dependent() {
         .await;
 
     match r {
-        Err((UpdateError::ValidationError(p), _, _)) => {
+        Err((IvoUpdateError::ValidationError(p), _, _)) => {
             assert!(p.get("virtual_field_1").is_none());
             assert!(p.get("virtual_field_2").is_none());
             assert_eq!(

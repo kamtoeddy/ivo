@@ -1,4 +1,4 @@
-use ivo::{IvoContext, IvoField, IvoStruct, Schema, UpdateError};
+use ivo::{IvoContext, IvoField, IvoStruct, IvoUpdateError, Schema};
 use std::{future::ready, ops::RangeInclusive, panic};
 
 use crate::async_test_matrix;
@@ -58,7 +58,7 @@ async fn should_reject_updates_if_no_value_has_changed() {
         .err()
         .unwrap();
 
-    assert!(matches!(err, UpdateError::NothingToUpdate))
+    assert!(matches!(err, IvoUpdateError::NothingToUpdate))
 }
 
 async_test_matrix!(should_reject_updates_if_no_value_has_changed);
@@ -100,7 +100,7 @@ async fn should_reject_updates_if_no_value_has_changed_after_validation() {
         .err()
         .unwrap();
 
-    assert!(matches!(err, UpdateError::NothingToUpdate))
+    assert!(matches!(err, IvoUpdateError::NothingToUpdate))
 }
 
 async_test_matrix!(should_reject_updates_if_no_value_has_changed_after_validation);
@@ -143,7 +143,7 @@ async fn should_reject_updates_if_no_value_has_changed_after_re_validation() {
         .err()
         .unwrap();
 
-    assert!(matches!(err, UpdateError::NothingToUpdate))
+    assert!(matches!(err, IvoUpdateError::NothingToUpdate))
 }
 
 async_test_matrix!(should_reject_updates_if_no_value_has_changed_after_re_validation);
@@ -234,7 +234,7 @@ async fn should_reject_updates_if_no_value_has_changed_after_post_validation() {
         .err()
         .unwrap();
 
-    assert!(matches!(err, UpdateError::NothingToUpdate));
+    assert!(matches!(err, IvoUpdateError::NothingToUpdate));
 
     let (err, _, _) = model
         .update(
@@ -252,7 +252,7 @@ async fn should_reject_updates_if_no_value_has_changed_after_post_validation() {
         .err()
         .unwrap();
 
-    assert!(matches!(err, UpdateError::NothingToUpdate))
+    assert!(matches!(err, IvoUpdateError::NothingToUpdate))
 }
 
 async_test_matrix!(should_reject_updates_if_no_value_has_changed_after_post_validation);
@@ -480,7 +480,7 @@ async fn should_respect_the_required_rule() {
         .await;
 
     match r {
-        Err((UpdateError::ValidationError(payload), _, _)) => assert_eq!(
+        Err((IvoUpdateError::ValidationError(payload), _, _)) => assert_eq!(
             payload.get("lax").unwrap()[0].reason,
             "lax is required for this update"
         ),
@@ -625,7 +625,7 @@ async fn should_not_update_if_primary_validation_fails() {
             .await;
 
         match r {
-            Err((UpdateError::ValidationError(p), _, _)) => {
+            Err((IvoUpdateError::ValidationError(p), _, _)) => {
                 assert_eq!(p.get("lax").unwrap()[0].reason, LAX_OUT_OF_RANGE_ERROR)
             }
             _ => unreachable!(),
@@ -890,7 +890,7 @@ async fn should_not_update_if_re_validation_fails() {
             .await;
 
         match r {
-            Err((UpdateError::ValidationError(p), _, _)) => {
+            Err((IvoUpdateError::ValidationError(p), _, _)) => {
                 assert_eq!(
                     p.get("lax").unwrap()[0].reason,
                     REVALIDATED_LAX_OUT_OF_RANGE_ERROR
@@ -1393,7 +1393,7 @@ async fn should_respect_post_validation_config() {
         .await;
 
     match r {
-        Err((UpdateError::ValidationError(p), _, _)) => {
+        Err((IvoUpdateError::ValidationError(p), _, _)) => {
             assert!(p.get("lax").is_none());
             assert!(p.get("lax_2").is_none());
             assert_eq!(
@@ -1402,7 +1402,7 @@ async fn should_respect_post_validation_config() {
                 "should not update if one field has an error after pre-validator in post-validation"
             );
         }
-        Err((UpdateError::NothingToUpdate, _, _)) => {
+        Err((IvoUpdateError::NothingToUpdate, _, _)) => {
             unreachable!("did not expected nothing to update")
         }
         _ => unreachable!("did not expect successful update"),
@@ -1423,7 +1423,7 @@ async fn should_respect_post_validation_config() {
         .await;
 
     match r {
-        Err((UpdateError::ValidationError(p), _, _)) => {
+        Err((IvoUpdateError::ValidationError(p), _, _)) => {
             assert!(p.get("lax_2").is_none());
             assert_eq!(
                 p.get("lax").unwrap()[0].reason,
@@ -1454,7 +1454,7 @@ async fn should_respect_post_validation_config() {
         .await;
 
     match r {
-        Err((UpdateError::ValidationError(p), _, _)) => {
+        Err((IvoUpdateError::ValidationError(p), _, _)) => {
             assert!(p.get("lax_1").is_none());
             assert!(p.get("lax_2").is_none());
             assert_eq!(
@@ -1486,7 +1486,7 @@ async fn should_respect_post_validation_config() {
         .await;
 
     match r {
-        Err((UpdateError::ValidationError(p), _, _)) => {
+        Err((IvoUpdateError::ValidationError(p), _, _)) => {
             assert!(p.get("lax_1").is_none());
             assert!(p.get("lax_2").is_none());
             assert_eq!(

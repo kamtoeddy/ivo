@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoField, IvoStruct, IvoUpdateData, Schema, UpdateError};
+use ivo::{IvoField, IvoStruct, IvoUpdateError, IvoUpdateParams, Schema};
 
 use crate::async_test_matrix;
 
@@ -27,7 +27,7 @@ async fn should_respect_the_ignore_update_rule() {
                 "required",
                 IvoField::REQUIRED
                     .validate(|_: i32, _, _| ready(Ok(None)))
-                    .ignore_update(|(_, values): IvoUpdateData<DataInput, Data>, _| {
+                    .ignore_update(|(_, values): IvoUpdateParams<DataInput, Data>, _| {
                         if IGNORE_REQUIRED_FOR_UPDATE == values.lax {
                             return ready(true);
                         }
@@ -80,7 +80,7 @@ async fn should_respect_the_ignore_update_rule() {
         .await;
 
     match r {
-        Err((UpdateError::NothingToUpdate, _, _)) => {}
+        Err((IvoUpdateError::NothingToUpdate, _, _)) => {}
         _ => unreachable!("expected nothig to update error"),
     }
 
@@ -184,7 +184,7 @@ async fn should_respect_the_readonly_rule() {
         .await;
 
     match r {
-        Err((UpdateError::NothingToUpdate, _, _)) => {}
+        Err((IvoUpdateError::NothingToUpdate, _, _)) => {}
         _ => unreachable!("expected nothig to update error"),
     }
 
@@ -205,7 +205,7 @@ async fn should_respect_the_readonly_rule() {
         .await;
 
     match r {
-        Err((UpdateError::NothingToUpdate, _, _)) => {}
+        Err((IvoUpdateError::NothingToUpdate, _, _)) => {}
         _ => unreachable!("expected nothig to update error"),
     }
 }

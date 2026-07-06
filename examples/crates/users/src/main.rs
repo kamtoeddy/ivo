@@ -1,4 +1,4 @@
-use ivo::{IvoStruct, UpdateError};
+use ivo::{IvoStruct, IvoUpdateError};
 use shared::styled_text::Stylable;
 use std::{sync::LazyLock, time::Instant};
 
@@ -106,8 +106,8 @@ async fn run_example() {
         }
         Err((error, _, handle_failure)) => {
             match error {
-                UpdateError::NothingToUpdate => println!("Nothing to update\n"),
-                UpdateError::ValidationError(payload) => {
+                IvoUpdateError::NothingToUpdate => println!("Nothing to update\n"),
+                IvoUpdateError::ValidationError(payload) => {
                     println!("Failed to update: {:?}\n", payload)
                 }
             };

@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{DefaultErrorTool, IvoContext, IvoField, IvoStruct, Schema, SharedIvoData};
+use ivo::{IvoContext, IvoDefaultErrorTool, IvoField, IvoShared, IvoStruct, Schema};
 
 use crate::async_test_matrix;
 
@@ -31,7 +31,7 @@ async fn should_use_static_default_value_of_dependent_if_resolver_is_not_run_at_
     let dependent = 1234;
     let lax = 20;
 
-    let schema: Schema<DataInput, Data, Option<()>, (), DefaultErrorTool> = Schema::new(
+    let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
         |f| {
             f.set(
                 "dependent",
@@ -77,7 +77,7 @@ async fn should_use_computed_default_value_of_dependent_if_resolver_is_not_run_a
     let dependent = 1234;
     let lax = 20;
 
-    let schema: Schema<DataInput, Data, Option<()>, (), DefaultErrorTool> = Schema::new(
+    let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
         |f| {
             f.set(
                 "dependent",
@@ -151,7 +151,7 @@ async fn should_properly_run_dependent_resolver() {
     let default_dependent_value = 1234;
     let default_lax_value = 20;
 
-    let schema: Schema<DataInput, Data, Option<()>, (), DefaultErrorTool> = Schema::new(
+    let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
         |f| {
             f.set(
                 "dependent",
@@ -240,7 +240,7 @@ async fn should_properly_run_dependent_resolver_even_with_multiple_parents() {
     let default_dependent_value = 1234;
     let default_lax_value = 20;
 
-    let schema: Schema<DataInput, Data, Option<()>, (), DefaultErrorTool> = Schema::new(
+    let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
         |f| {
             f.set(
                 "dependent",
@@ -341,7 +341,7 @@ async fn should_properly_run_dependent_resolver_even_with_dependency_on_other_de
     let default_dependent_value = 1234;
     let default_lax_value = 20;
 
-    let schema: Schema<DataInput, Data, Option<()>, (), DefaultErrorTool> = Schema::new(
+    let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
         |f| {
             f.set(
                 "dependent",
@@ -463,7 +463,7 @@ async fn should_not_run_dependent_resolver_if_readonly_is_provided_and_value_is_
     let default_dependent_value = 1234;
     let default_lax_value = 20;
 
-    let schema: Schema<DataInput, Data, Option<()>, (), DefaultErrorTool> = Schema::new(
+    let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
         |f| {
             f.set(
                 "dependent",
@@ -583,7 +583,7 @@ async fn should_trigger_on_delete_handlers_with_static_default_values() {
 
     let dependent = 1234;
 
-    let schema: Schema<DataInput, Data, Option<()>, (), DefaultErrorTool> = Schema::new(
+    let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
         |f| {
             f.set(
                 "dependent",
@@ -593,7 +593,7 @@ async fn should_trigger_on_delete_handlers_with_static_default_values() {
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     })
-                    .on_delete(|data: SharedIvoData<Data>, _| {
+                    .on_delete(|data: IvoShared<Data>, _| {
                         if true {
                             panic!(
                                 "[dependent]: on_delete triggered with value: {}",
@@ -641,7 +641,7 @@ async fn should_trigger_on_delete_handlers_with_computed_default_values() {
 
     let dependent = 1234;
 
-    let schema: Schema<DataInput, Data, Option<()>, (), DefaultErrorTool> = Schema::new(
+    let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
         |f| {
             f.set(
                 "dependent",
@@ -651,7 +651,7 @@ async fn should_trigger_on_delete_handlers_with_computed_default_values() {
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     })
-                    .on_delete(|data: SharedIvoData<Data>, _| {
+                    .on_delete(|data: IvoShared<Data>, _| {
                         if true {
                             panic!(
                                 "[dependent]: on_delete triggered with value: {}",
@@ -703,7 +703,7 @@ async fn should_trigger_on_success_handlers_if_resolver_is_run_at_creation() {
     let default_dependent_value = 1234;
     let default_lax_value = 20;
 
-    let schema: Schema<DataInput, Data, Option<()>, (), DefaultErrorTool> = Schema::new(
+    let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
         |f| {
             f.set(
                 "dependent",
@@ -775,7 +775,7 @@ async fn should_trigger_on_success_handlers_even_if_resolver_is_not_run_at_creat
     let default_dependent_value = 1234;
     let default_lax_value = 20;
 
-    let schema: Schema<DataInput, Data, Option<()>, (), DefaultErrorTool> = Schema::new(
+    let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
         |f| {
             f.set(
                 "dependent",
@@ -848,7 +848,7 @@ async fn should_trigger_on_success_handlers_if_resolver_is_run_during_updates() 
     let default_dependent_value = 1234;
     let default_lax_value = 20;
 
-    let schema: Schema<DataInput, Data, Option<()>, (), DefaultErrorTool> = Schema::new(
+    let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
         |f| {
             f.set(
                 "dependent",
@@ -922,7 +922,7 @@ async fn should_not_trigger_on_success_handlers_not_if_resolver_is_run_during_up
     let default_dependent_value = 1234;
     let default_lax_value = 20;
 
-    let schema: Schema<DataInput, Data, Option<()>, (), DefaultErrorTool> = Schema::new(
+    let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
         |f| {
             f.set(
                 "dependent",
@@ -999,7 +999,7 @@ async fn should_trigger_grouped_on_success_with_at_creation_if_resolved() {
     let default_dependent_value = 1234;
     let default_lax_value = 20;
 
-    let schema: Schema<DataInput, Data, Option<()>, (), DefaultErrorTool> = Schema::new(
+    let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
         |f| {
             f.set(
                 "dependent",
@@ -1071,7 +1071,7 @@ async fn should_trigger_grouped_on_success_with_at_creation_even_if_not_resolved
     let default_dependent_value = 1234;
     let default_lax_value = 20;
 
-    let schema: Schema<DataInput, Data, Option<()>, (), DefaultErrorTool> = Schema::new(
+    let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
         |f| {
             f.set(
                 "dependent",
@@ -1138,7 +1138,7 @@ async fn should_trigger_grouped_on_success_during_updates_if_resolved() {
     let default_dependent_value = 1234;
     let default_lax_value = 20;
 
-    let schema: Schema<DataInput, Data, Option<()>, (), DefaultErrorTool> = Schema::new(
+    let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
         |f| {
             f.set(
                 "dependent",
@@ -1215,7 +1215,7 @@ async fn should_not_trigger_grouped_on_success_during_updates_if_not_resolved_be
     let default_dependent_value = 1234;
     let default_lax_value = 20;
 
-    let schema: Schema<DataInput, Data, Option<()>, (), DefaultErrorTool> = Schema::new(
+    let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
         |f| {
             f.set(
                 "dependent",
@@ -1291,7 +1291,7 @@ async fn should_not_trigger_grouped_on_success_during_updates_if_not_resolved() 
     let default_dependent_value = 1234;
     let default_lax_value = 20;
 
-    let schema: Schema<DataInput, Data, Option<()>, (), DefaultErrorTool> = Schema::new(
+    let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
         |f| {
             f.set(
                 "dependent",

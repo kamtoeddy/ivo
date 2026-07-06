@@ -7,8 +7,8 @@ use std::{
 };
 
 use ivo::{
-    IvoContext, IvoCtxOptions, IvoField, IvoRwCtxOptions, IvoStruct, IvoUpdateData, Model, Schema,
-    SharedIvoData, validate_email,
+    IvoContext, IvoField, IvoRwCtxOptions, IvoShared, IvoSharedCtxOptions, IvoStruct,
+    IvoUpdateParams, Model, Schema, validate_email,
 };
 use serde::Serialize;
 
@@ -89,7 +89,7 @@ impl<'a> UserCtxOptions {
 }
 
 type Ctx = IvoContext<UserInput, User>;
-type CtxOptions = IvoCtxOptions<UserCtxOptions>;
+type CtxOptions = IvoSharedCtxOptions<UserCtxOptions>;
 type RwCtxOptions = IvoRwCtxOptions<UserCtxOptions>;
 
 pub static USER_MODEL: LazyLock<Model<UserInput, User, UserCtxOptions, Timestamp>> =
@@ -172,7 +172,7 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
 
                             Ok(Some(format!("revalidated-'{}'", uname)))
                         })
-                        .ignore_update(|(_, values): IvoUpdateData<UserInput, User>, _| {
+                        .ignore_update(|(_, values): IvoUpdateParams<UserInput, User>, _| {
                             ready(!is_username_or_slug_id_updatable(
                                 values.username_last_updated_at,
                             ))
@@ -236,7 +236,7 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
 
                             ready(())
                         })
-                        .on_delete(|data: SharedIvoData<User>, _| {
+                        .on_delete(|data: IvoShared<User>, _| {
                             println!("[dependent_slug_id]: on delete: {:?}", data.slug_id);
 
                             ready(())

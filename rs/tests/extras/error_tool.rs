@@ -1,7 +1,7 @@
 use std::{collections::HashMap, future::ready, sync::LazyLock};
 
 use crate::async_test_matrix;
-use ivo::{FieldError, IvoErrorTool, IvoField, IvoStruct, Model, Schema, UpdateError};
+use ivo::{IvoErrorTool, IvoField, IvoFieldError, IvoStruct, IvoUpdateError, Model, Schema};
 
 async fn should_respect_custom_error_tool() {
     let r = PLACE_MODEL
@@ -71,7 +71,7 @@ async fn should_respect_custom_error_tool() {
         .await;
 
     match r {
-        Err((UpdateError::ValidationError(p), _, _)) => {
+        Err((IvoUpdateError::ValidationError(p), _, _)) => {
             let errors = p.get("coordinates").unwrap();
 
             assert_eq!(errors.len(), 1);
@@ -94,7 +94,7 @@ async fn should_respect_custom_error_tool() {
         .await;
 
     match r {
-        Err((UpdateError::ValidationError(p), _, _)) => {
+        Err((IvoUpdateError::ValidationError(p), _, _)) => {
             let errors = p.get("coordinates").unwrap();
 
             assert_eq!(errors.len(), 3);
@@ -143,7 +143,7 @@ async fn should_respect_custom_error_tool() {
         .err()
         .unwrap();
 
-    assert!(matches!(err, UpdateError::NothingToUpdate));
+    assert!(matches!(err, IvoUpdateError::NothingToUpdate));
 }
 
 async_test_matrix!(should_respect_custom_error_tool);
@@ -210,7 +210,7 @@ impl IvoErrorTool for PlacesErrorTool {
     type FieldMetadata = PlacesErrorToolFieldMetadata;
     type ErrorPayload = HashMap<String, Vec<String>>;
 
-    fn add(&mut self, field_name: &str, error: FieldError<Self::FieldMetadata>) -> &mut Self {
+    fn add(&mut self, field_name: &str, error: IvoFieldError<Self::FieldMetadata>) -> &mut Self {
         self.errors
             .entry(field_name.to_owned())
             .and_modify(|e| append_error(e, &error))
@@ -240,7 +240,7 @@ impl IvoErrorTool for PlacesErrorTool {
     }
 }
 
-fn append_error(errors: &mut Vec<String>, error: &FieldError<PlacesErrorToolFieldMetadata>) {
+fn append_error(errors: &mut Vec<String>, error: &IvoFieldError<PlacesErrorToolFieldMetadata>) {
     errors.push(customized_string(&error.reason));
 
     if let Some(ref metadata) = error.metadata {

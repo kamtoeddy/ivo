@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoField, IvoStruct, Schema, SharedIvoData};
+use ivo::{IvoField, IvoShared, IvoStruct, Schema};
 
 use crate::async_test_matrix;
 
@@ -21,7 +21,7 @@ async fn should_trigger_on_delete_handlers() {
                 "required",
                 IvoField::REQUIRED
                     .validate(|_: String, _, _| ready(Ok(None)))
-                    .on_delete(|data: SharedIvoData<Data>, _| {
+                    .on_delete(|data: IvoShared<Data>, _| {
                         if true {
                             panic!(
                                 "[required]: on_delete triggered with value: {}",

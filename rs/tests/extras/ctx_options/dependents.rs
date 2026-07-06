@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoContext, IvoCtxOptions, IvoField, IvoRwCtxOptions, IvoStruct, Schema};
+use ivo::{IvoContext, IvoField, IvoRwCtxOptions, IvoSharedCtxOptions, IvoStruct, Schema};
 
 use crate::async_test_matrix;
 
@@ -58,7 +58,7 @@ async fn should_properly_update_ctx_options_in_default_resolver_and_provide_thos
                     .resolve(|ctx: IvoContext<DataInput, Data>, _| {
                         ready(ctx.values().dependent.unwrap() + 1)
                     })
-                    .on_success(|_, o: IvoCtxOptions<CtxOptions>| {
+                    .on_success(|_, o: IvoSharedCtxOptions<CtxOptions>| {
                         if true {
                             panic!("[on_success]: {}", o.messages[0])
                         }
@@ -137,7 +137,7 @@ async fn should_properly_update_ctx_options_in_value_resolver_and_provide_those_
                             ctx.values().dependent.unwrap() + 1
                         },
                     )
-                    .on_success(|_, o: IvoCtxOptions<CtxOptions>| {
+                    .on_success(|_, o: IvoSharedCtxOptions<CtxOptions>| {
                         if true {
                             panic!("[on_success]: {}", o.messages[0])
                         }
@@ -216,7 +216,7 @@ async fn should_properly_update_ctx_options_in_value_resolver_and_provide_those_
                             ctx.values().dependent.unwrap() + 1
                         },
                     )
-                    .on_success(|_, o: IvoCtxOptions<CtxOptions>| {
+                    .on_success(|_, o: IvoSharedCtxOptions<CtxOptions>| {
                         if true {
                             panic!("[on_success]: {}", o.messages[0])
                         }

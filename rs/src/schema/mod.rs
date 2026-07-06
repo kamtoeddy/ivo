@@ -3,7 +3,7 @@ pub mod options;
 mod types;
 
 use crate::__private_types::types::IvoWithPartialErrorsStruct;
-use crate::types::internal::{DefaultErrorTool, IvoErrorTool, IvoStruct};
+use crate::types::internal::{IvoDefaultErrorTool, IvoErrorTool, IvoStruct};
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 use std::marker::PhantomData;
@@ -31,7 +31,7 @@ pub struct Schema<
     O: IvoStruct = I,
     CtxOptions: Clone = Option<()>,
     Timestamp: Clone + Debug + Send + Sync + 'static = (),
-    ErrorTool: IvoErrorTool = DefaultErrorTool,
+    ErrorTool: IvoErrorTool = IvoDefaultErrorTool,
 > {
     pub(crate) field_configs: InternalFieldConfigs<I, O, CtxOptions, ErrorTool>,
     pub(crate) options: SchemaOptions<I, O, CtxOptions, ErrorTool>,

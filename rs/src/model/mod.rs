@@ -18,14 +18,14 @@ use crate::schema::{
     Schema,
 };
 use crate::types::internal::{
-    types::erase_value, DefaultErrorTool, FieldError, IvoErrorTool, IvoPartialStructMethods,
-    IvoStruct, RwLock, UpdateError,
+    types::erase_value, IvoDefaultErrorTool, IvoErrorTool, IvoFieldError, IvoPartialStructMethods,
+    IvoRwLock, IvoStruct, IvoUpdateError,
 };
 use crate::types::InternalIvoContext;
 
 use crate::schema::options::types::{OnSuccessConfig, PostValidationConfig};
 
-use crate::{IvoContext, IvoCtxOptions, IvoRwCtxOptions};
+use crate::{IvoContext, IvoRwCtxOptions, IvoSharedCtxOptions};
 
 type AsyncHandlerTrigger<'a> = Box<dyn Fn() -> BoxFuture<'a, ()> + Send + Sync + 'a>;
 
@@ -49,7 +49,7 @@ pub struct Model<
     O: IvoStruct = I,
     CtxOptions: Clone + Sync + Send = HashMap<String, ()>,
     Timestamp: Clone + Debug + Send + Sync + 'static = (),
-    ErrorTool: IvoErrorTool = DefaultErrorTool,
+    ErrorTool: IvoErrorTool = IvoDefaultErrorTool,
 > {
     schema: &'schema Schema<I, O, CtxOptions, Timestamp, ErrorTool>,
 }
@@ -75,7 +75,7 @@ impl<
             AsyncHandlerTrigger<'schema>,
         ),
     > {
-        let shared_rw_options = Arc::new(RwLock::new(options));
+        let shared_rw_options = Arc::new(IvoRwLock::new(options));
         let mut ctx = Arc::new(InternalIvoContext::<I, O>::new_create_ctx(
             input.clone(),
             input.clone(),
@@ -272,7 +272,7 @@ impl<
     ) -> Result<
         (O::Partial, CtxOptions, AsyncHandlerTrigger<'schema>),
         (
-            UpdateError<ErrorTool>,
+            IvoUpdateError<ErrorTool>,
             CtxOptions,
             AsyncHandlerTrigger<'schema>,
         ),
@@ -287,7 +287,7 @@ impl<
             data.clone(),
         ));
 
-        let shared_rw_options = Arc::new(RwLock::new(options));
+        let shared_rw_options = Arc::new(IvoRwLock::new(options));
 
         let (input, output, relevant_fields_provided, fields_provided) = self
             .filter_input_fields_allowed(
@@ -305,7 +305,7 @@ impl<
             let final_ctx_options = unwrap_async_lock(shared_rw_options);
 
             return Err((
-                UpdateError::NothingToUpdate,
+                IvoUpdateError::NothingToUpdate,
                 final_ctx_options.clone(),
                 self.prepare_failure_handlers(
                     fields_provided.fields,
@@ -327,7 +327,7 @@ impl<
             let final_ctx_options = unwrap_async_lock(shared_rw_options);
 
             return Err((
-                UpdateError::ValidationError(payload),
+                IvoUpdateError::ValidationError(payload),
                 final_ctx_options.clone(),
                 self.prepare_failure_handlers(
                     fields_provided.fields,
@@ -356,7 +356,7 @@ impl<
                 let final_ctx_options = unwrap_async_lock(shared_rw_options);
 
                 return Err((
-                    UpdateError::ValidationError(payload),
+                    IvoUpdateError::ValidationError(payload),
                     final_ctx_options.clone(),
                     self.prepare_failure_handlers(
                         fields_provided.fields,
@@ -387,7 +387,7 @@ impl<
                 let final_ctx_options = unwrap_async_lock(shared_rw_options);
 
                 return Err((
-                    UpdateError::ValidationError(payload),
+                    IvoUpdateError::ValidationError(payload),
                     final_ctx_options.clone(),
                     self.prepare_failure_handlers(
                         fields_provided.fields,
@@ -418,7 +418,7 @@ impl<
                 let final_ctx_options = unwrap_async_lock(shared_rw_options);
 
                 return Err((
-                    UpdateError::ValidationError(payload),
+                    IvoUpdateError::ValidationError(payload),
                     final_ctx_options.clone(),
                     self.prepare_failure_handlers(
                         fields_provided.fields,
@@ -496,7 +496,7 @@ impl<
             let final_ctx_options = unwrap_async_lock(shared_rw_options);
 
             return Err((
-                UpdateError::NothingToUpdate,
+                IvoUpdateError::NothingToUpdate,
                 final_ctx_options.clone(),
                 self.prepare_failure_handlers(
                     fields_provided.fields,
@@ -613,7 +613,7 @@ impl<
 
             match result {
                 Err((reason, metadata)) => {
-                    error_tool.add(field_name.as_str(), FieldError { reason, metadata });
+                    error_tool.add(field_name.as_str(), IvoFieldError { reason, metadata });
                 }
                 Ok(Some(value)) => {
                     has_updates = true;
@@ -699,7 +699,7 @@ impl<
 
             match result {
                 Err((reason, metadata)) => {
-                    error_tool.add(field_name.as_str(), FieldError { reason, metadata });
+                    error_tool.add(field_name.as_str(), IvoFieldError { reason, metadata });
                 }
                 Ok(Some(value)) => {
                     has_updates = true;
@@ -788,7 +788,7 @@ impl<
                             let field_info = input_fields.get_and_add(&field_name).unwrap();
 
                             if fields.contains(&field_info.config_name.as_str()) {
-                                error_tool.add(&field_name, FieldError { reason, metadata });
+                                error_tool.add(&field_name, IvoFieldError { reason, metadata });
                             }
                         }
                     }
@@ -850,7 +850,7 @@ impl<
                         let field_info = input_fields.get_and_add(&field_name).unwrap();
 
                         if fields.contains(&field_info.config_name.as_str()) {
-                            error_tool.add(&field_name, FieldError { reason, metadata });
+                            error_tool.add(&field_name, IvoFieldError { reason, metadata });
                         }
                     }
                 }
@@ -1266,7 +1266,7 @@ impl<
                         Some(ComputableRequiredError::Static(msg)) => {
                             error_tool.add(
                                 field_name,
-                                FieldError {
+                                IvoFieldError {
                                     reason: msg.to_string(),
                                     metadata: None,
                                 },
@@ -1278,7 +1278,7 @@ impl<
                         _ => {
                             error_tool.add(
                                 field_name,
-                                FieldError {
+                                IvoFieldError {
                                     reason: format!("\"{field_name}\" is required!"),
                                     metadata: None,
                                 },
@@ -1322,7 +1322,7 @@ impl<
             if let Some(reason) = required {
                 error_tool.add(
                     field_name,
-                    FieldError {
+                    IvoFieldError {
                         reason,
                         metadata: None,
                     },
@@ -1341,7 +1341,7 @@ impl<
         &self,
         fields_provided: Vec<FieldInfo>,
         ctx: IvoContext<I, O>,
-        options: IvoCtxOptions<CtxOptions>,
+        options: IvoSharedCtxOptions<CtxOptions>,
     ) -> AsyncHandlerTrigger<'schema> {
         if fields_provided.is_empty() {
             return Box::new(|| Box::pin(ready(())));
@@ -1377,7 +1377,7 @@ impl<
         &self,
         fields_updated: FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
         ctx: IvoContext<I, O>,
-        options: IvoCtxOptions<CtxOptions>,
+        options: IvoSharedCtxOptions<CtxOptions>,
     ) -> AsyncHandlerTrigger<'schema> {
         let mut field_names = HashSet::new();
 
@@ -1486,9 +1486,9 @@ impl<
 }
 
 /// this is a sync alternative to: shared_rw_options.read().await.clone()
-fn unwrap_async_lock<T>(lock: Arc<RwLock<T>>) -> T {
+fn unwrap_async_lock<T>(lock: Arc<IvoRwLock<T>>) -> T {
     match Arc::into_inner(lock).unwrap().try_unwrap() {
         Ok(raw_data) => raw_data,
-        _ => panic!("error unwrapping shared RwLock"),
+        _ => panic!("error unwrapping shared IvoRwLock"),
     }
 }

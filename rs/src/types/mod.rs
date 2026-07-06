@@ -4,14 +4,14 @@ pub mod internal;
 
 use std::sync::Arc;
 
-use internal::{IvoStruct, RwLock};
+use internal::{IvoRwLock, IvoStruct};
 
-pub type SharedIvoData<T> = Arc<T>;
-pub type IvoCtxOptions<CtxOptions> = SharedIvoData<CtxOptions>;
-pub type IvoRwCtxOptions<CtxOptions> = SharedIvoData<RwLock<CtxOptions>>;
-pub type IvoContext<I: IvoStruct, O: IvoStruct = I> = SharedIvoData<InternalIvoContext<I, O>>;
-pub type IvoInput<I: IvoStruct> = SharedIvoData<I::Partial>;
-pub type IvoUpdateData<I: IvoStruct, O: IvoStruct = I> = (I::Partial, O);
+pub type IvoShared<T> = Arc<T>;
+pub type IvoSharedCtxOptions<CtxOptions> = IvoShared<CtxOptions>;
+pub type IvoRwCtxOptions<CtxOptions> = IvoShared<IvoRwLock<CtxOptions>>;
+pub type IvoContext<I: IvoStruct, O: IvoStruct = I> = IvoShared<InternalIvoContext<I, O>>;
+pub type IvoSharedInput<I: IvoStruct> = IvoShared<I::Partial>;
+pub type IvoUpdateParams<I: IvoStruct, O: IvoStruct = I> = (I::Partial, O);
 
 #[derive(Clone, Copy)]
 pub enum InternalIvoContext<I: IvoStruct, O: IvoStruct> {

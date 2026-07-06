@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoContext, IvoField, IvoStruct, Schema, UpdateError};
+use ivo::{IvoContext, IvoField, IvoStruct, IvoUpdateError, Schema};
 
 use crate::async_test_matrix;
 
@@ -127,7 +127,7 @@ async fn should_respect_the_ignore_rule() {
         .await;
 
     match r {
-        Err((error, _, _)) => assert!(matches!(error, UpdateError::NothingToUpdate)),
+        Err((error, _, _)) => assert!(matches!(error, IvoUpdateError::NothingToUpdate)),
         _ => unreachable!("expected nothing to update"),
     }
 }
@@ -258,7 +258,7 @@ async fn should_respect_the_ignore_rule_with_alias() {
         .await;
 
     match r {
-        Err((error, _, _)) => assert!(matches!(error, UpdateError::NothingToUpdate)),
+        Err((error, _, _)) => assert!(matches!(error, IvoUpdateError::NothingToUpdate)),
         _ => unreachable!("expected nothing to update"),
     }
 }
@@ -389,7 +389,7 @@ async fn should_respect_the_ignore_rule_with_alias_same_as_dependent() {
         .await;
 
     match r {
-        Err((error, _, _)) => assert!(matches!(error, UpdateError::NothingToUpdate)),
+        Err((error, _, _)) => assert!(matches!(error, IvoUpdateError::NothingToUpdate)),
         _ => unreachable!("expected nothing to update"),
     }
 }
@@ -948,7 +948,7 @@ async fn should_respect_the_ignore_update_rule() {
         .await;
 
     match r {
-        Err((error, _, _)) => assert!(matches!(error, UpdateError::NothingToUpdate)),
+        Err((error, _, _)) => assert!(matches!(error, IvoUpdateError::NothingToUpdate)),
         _ => unreachable!("expected nothing to update"),
     }
 }
@@ -1101,7 +1101,7 @@ async fn should_respect_the_ignore_update_rule_with_alias() {
         .await;
 
     match r {
-        Err((error, _, _)) => assert!(matches!(error, UpdateError::NothingToUpdate)),
+        Err((error, _, _)) => assert!(matches!(error, IvoUpdateError::NothingToUpdate)),
         _ => unreachable!("expected nothing to update"),
     }
 }
@@ -1254,7 +1254,7 @@ async fn should_respect_the_ignore_update_rule_with_alias_same_as_dependent() {
         .await;
 
     match r {
-        Err((error, _, _)) => assert!(matches!(error, UpdateError::NothingToUpdate)),
+        Err((error, _, _)) => assert!(matches!(error, IvoUpdateError::NothingToUpdate)),
         _ => unreachable!("expected nothing to update"),
     }
 }

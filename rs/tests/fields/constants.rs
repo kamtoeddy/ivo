@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{DefaultErrorTool, IvoContext, IvoField, IvoStruct, Schema, SharedIvoData};
+use ivo::{IvoContext, IvoDefaultErrorTool, IvoField, IvoShared, IvoStruct, Schema};
 
 use crate::async_test_matrix;
 
@@ -18,7 +18,7 @@ async fn should_respect_constants_with_static_values() {
 
     let constant = 1234;
 
-    let schema: Schema<DataInput, Data, Option<()>, (), DefaultErrorTool> = Schema::new(
+    let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
         |f| {
             f.set("constant", IvoField::CONSTANT.value(constant))
                 .set("lax", IvoField::LAX.default(20))
@@ -81,7 +81,7 @@ async fn should_respect_constants_with_computed_values() {
 
     let constant = 1234;
 
-    let schema: Schema<DataInput, Data, Option<()>, (), DefaultErrorTool> = Schema::new(
+    let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
         |f| {
             f.set(
                 "constant",
@@ -147,13 +147,13 @@ async fn should_trigger_on_delete_handlers_with_static_values() {
 
     let constant = 1234;
 
-    let schema: Schema<DataInput, Data, Option<()>, (), DefaultErrorTool> = Schema::new(
+    let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
         |f| {
             f.set(
                 "constant",
                 IvoField::CONSTANT
                     .value(constant)
-                    .on_delete(|data: SharedIvoData<Data>, _| {
+                    .on_delete(|data: IvoShared<Data>, _| {
                         if true {
                             panic!(
                                 "[constant]: on_delete triggered with value: {}",
@@ -193,13 +193,13 @@ async fn should_trigger_on_delete_handlers_with_computed_values() {
 
     let constant = 1234;
 
-    let schema: Schema<DataInput, Data, Option<()>, (), DefaultErrorTool> = Schema::new(
+    let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
         |f| {
             f.set(
                 "constant",
                 IvoField::CONSTANT
                     .computed(move |_, _| ready(constant))
-                    .on_delete(|data: SharedIvoData<Data>, _| {
+                    .on_delete(|data: IvoShared<Data>, _| {
                         if true {
                             panic!(
                                 "[constant]: on_delete triggered with value: {}",
@@ -240,7 +240,7 @@ async fn should_trigger_on_success_handlers_with_static_values() {
 
     let constant = 1234;
 
-    let schema: Schema<DataInput, Data, Option<()>, (), DefaultErrorTool> = Schema::new(
+    let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
         |f| {
             f.set(
                 "constant",
@@ -296,7 +296,7 @@ async fn should_trigger_on_success_handlers_with_computed_values() {
 
     let constant = 1234;
 
-    let schema: Schema<DataInput, Data, Option<()>, (), DefaultErrorTool> = Schema::new(
+    let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
         |f| {
             f.set(
                 "constant",

@@ -3,11 +3,13 @@ use std::future::Future;
 use crate::__private_types::types::IvoWithPartialErrorsStruct;
 use crate::types::internal::PostValidatorResponse;
 use crate::IvoErrorTool;
-use crate::{schema::types::SuccessHandler, IvoContext, IvoRwCtxOptions, IvoStruct, IvoUpdateData};
+use crate::{
+    schema::types::SuccessHandler, IvoContext, IvoRwCtxOptions, IvoStruct, IvoUpdateParams,
+};
 use futures::future::BoxFuture;
 
 pub type ShouldUpdateOptionResolver<I, O, CtxOptions> = Box<
-    dyn Fn(IvoUpdateData<I, O>, IvoRwCtxOptions<CtxOptions>) -> BoxFuture<'static, bool>
+    dyn Fn(IvoUpdateParams<I, O>, IvoRwCtxOptions<CtxOptions>) -> BoxFuture<'static, bool>
         + Send
         + Sync
         + 'static,
@@ -21,7 +23,7 @@ impl<F, Fut, I, O, CtxOptions> IntoShouldUpdateOptionResolver<I, O, CtxOptions> 
 where
     I: IvoStruct,
     O: IvoStruct,
-    F: Fn(IvoUpdateData<I, O>, IvoRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
+    F: Fn(IvoUpdateParams<I, O>, IvoRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = bool> + Send + Sync + 'static,
 {
     fn into_resolver(self) -> ShouldUpdateOptionResolver<I, O, CtxOptions> {

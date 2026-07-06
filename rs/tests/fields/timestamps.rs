@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use ivo::{DefaultErrorTool, IvoField, IvoStruct, Schema};
+use ivo::{IvoDefaultErrorTool, IvoField, IvoStruct, Schema};
 
 use crate::async_test_matrix;
 
@@ -20,7 +20,7 @@ async fn should_respect_created_at_timestamp_with_default_name() {
 
     let timer = Instant::now();
 
-    let schema: Schema<DataInput, Data, Option<()>, Timestamp, DefaultErrorTool> = Schema::new(
+    let schema: Schema<DataInput, Data, Option<()>, Timestamp, IvoDefaultErrorTool> = Schema::new(
         |f| {
             f.set("lax", IvoField::LAX.default(1234)).timestamps(|t| {
                 t.resolve(move || timer.elapsed().as_micros())
@@ -79,7 +79,7 @@ async fn should_respect_created_at_timestamp_with_custom_name() {
 
     let timer = Instant::now();
 
-    let schema: Schema<DataInput, Data, Option<()>, Timestamp, DefaultErrorTool> = Schema::new(
+    let schema: Schema<DataInput, Data, Option<()>, Timestamp, IvoDefaultErrorTool> = Schema::new(
         |f| {
             f.set("lax", IvoField::LAX.default(1234)).timestamps(|t| {
                 t.resolve(move || timer.elapsed().as_micros())
@@ -138,7 +138,7 @@ async fn should_respect_updated_at_timestamp_with_default_name() {
 
     let timer = Instant::now();
 
-    let schema: Schema<DataInput, Data, Option<()>, Timestamp, DefaultErrorTool> = Schema::new(
+    let schema: Schema<DataInput, Data, Option<()>, Timestamp, IvoDefaultErrorTool> = Schema::new(
         |f| {
             f.set("lax", IvoField::LAX.default(1234)).timestamps(|t| {
                 t.resolve(move || timer.elapsed().as_micros())
@@ -196,7 +196,7 @@ async fn should_respect_updated_at_timestamp_with_custom_name() {
     }
     let timer = Instant::now();
 
-    let schema: Schema<DataInput, Data, Option<()>, Timestamp, DefaultErrorTool> = Schema::new(
+    let schema: Schema<DataInput, Data, Option<()>, Timestamp, IvoDefaultErrorTool> = Schema::new(
         |f| {
             f.set("lax", IvoField::LAX.default(1234)).timestamps(|t| {
                 t.resolve(move || timer.elapsed().as_micros())
@@ -255,7 +255,7 @@ async fn should_respect_optional_updated_at_timestamp_with_default_name() {
 
     let timer = Instant::now();
 
-    let schema: Schema<DataInput, Data, Option<()>, Timestamp, DefaultErrorTool> = Schema::new(
+    let schema: Schema<DataInput, Data, Option<()>, Timestamp, IvoDefaultErrorTool> = Schema::new(
         |f| {
             f.set("lax", IvoField::LAX.default(1234)).timestamps(|t| {
                 t.resolve(move || timer.elapsed().as_micros())
@@ -319,7 +319,7 @@ async fn should_respect_optional_updated_at_timestamp_with_custom_name() {
 
     let timer = Instant::now();
 
-    let schema: Schema<DataInput, Data, Option<()>, Timestamp, DefaultErrorTool> = Schema::new(
+    let schema: Schema<DataInput, Data, Option<()>, Timestamp, IvoDefaultErrorTool> = Schema::new(
         |f| {
             f.set("lax", IvoField::LAX.default(1234)).timestamps(|t| {
                 t.resolve(move || timer.elapsed().as_micros())

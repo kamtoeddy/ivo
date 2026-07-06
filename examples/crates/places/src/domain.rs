@@ -1,6 +1,6 @@
 use std::{collections::HashMap, future::ready, sync::LazyLock};
 
-use ivo::{FieldError, IvoContext, IvoErrorTool, IvoField, IvoStruct, Model, Schema};
+use ivo::{IvoContext, IvoErrorTool, IvoField, IvoFieldError, IvoStruct, Model, Schema};
 use serde::Deserialize;
 
 const LOCATION_SERVICE_URL: &str = "https://misc-api.kamtoeddy.com/geo/details-with-tz";
@@ -185,7 +185,7 @@ impl IvoErrorTool for PlacesErrorTool {
     type FieldMetadata = PlacesErrorToolFieldMetadata;
     type ErrorPayload = HashMap<String, Vec<String>>;
 
-    fn add(&mut self, field_name: &str, error: FieldError<Self::FieldMetadata>) -> &mut Self {
+    fn add(&mut self, field_name: &str, error: IvoFieldError<Self::FieldMetadata>) -> &mut Self {
         self.errors
             .entry(field_name.to_owned())
             .and_modify(|e| append_error(e, &error))
@@ -215,7 +215,7 @@ impl IvoErrorTool for PlacesErrorTool {
     }
 }
 
-fn append_error(errors: &mut Vec<String>, error: &FieldError<PlacesErrorToolFieldMetadata>) {
+fn append_error(errors: &mut Vec<String>, error: &IvoFieldError<PlacesErrorToolFieldMetadata>) {
     errors.push(error.reason.clone());
 
     if let Some(ref metadata) = error.metadata {

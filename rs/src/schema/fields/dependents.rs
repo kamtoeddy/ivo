@@ -17,7 +17,7 @@ use crate::{
     },
     types::internal::{
         types::{erase_value, ErasedValue},
-        DefaultErrorTool, IvoErrorTool,
+        IvoDefaultErrorTool, IvoErrorTool,
     },
     IvoStruct,
 };
@@ -27,7 +27,7 @@ pub struct DependentFieldBuilder<
     I: IvoStruct,
     O: IvoStruct,
     CtxOptions,
-    ErrorTool: IvoErrorTool = DefaultErrorTool,
+    ErrorTool: IvoErrorTool = IvoDefaultErrorTool,
     HasDefault = No,
     HasParents = No,
     HasResolver = No,

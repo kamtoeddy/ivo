@@ -1,14 +1,14 @@
 #![expect(type_alias_bounds)]
 #![expect(clippy::borrowed_box)]
 
-pub use futures_locks::RwLock;
+pub use futures_locks::RwLock as IvoRwLock;
 use std::{
     any::Any,
     collections::{HashMap, HashSet},
     fmt::Debug,
 };
 
-use crate::{DefaultFieldErrorMetadata, IvoErrorTool};
+use crate::{__private_types::DefaultFieldErrorMetadata, IvoErrorTool};
 
 pub trait IvoStruct:
     Send + Sync + Sized + 'static + IvoWithPartialStruct + IvoStructMethods + Into<Self::Partial>
