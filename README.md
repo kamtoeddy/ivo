@@ -228,8 +228,8 @@ const userSchema = new Schema<InputStruct, OutputStruct>(
     ...,
     username: {
       default: "",
-      dependsOn: ["virtual_field"],
-      //          ^^^^^^^^^^^^^^
+      dependsOn: "virtual_field",
+      //         ^^^^^^^^^^^^^^^
       //                        dependency on "virtual_field"
       resolve(summary) {
         let value = /* do computation here */;
@@ -255,7 +255,58 @@ Timestamp fields are often used to log the date (and sometimes the time) at whic
 - the TypeScript implementation uses `new Date()` to set the values.
 - the Rust implementation requires you to define the datatype of the timestamp and a resolver function.
 
-## Post validation
+## Context Values
+
+## Context Options
+
+## Validation Steps
+
+In order to create or update a domain entity, the partial input struct provided goes through multiple validation and sanitization steps. The output data (partial inputs, partial outputs, [context values](#context-values), and [context options](#context-options)) of each step becomes the input of the next.
+
+Here is what happens at creation and during updates.
+
+### At Creation
+
+1. The [ignore](#ignore) and [ignore init](#ignore-init) provision rules are used to filter input fields that should be considered as valid inputs for creation. If a field is ignored here, its default value is going to be used.
+1. The values of constant fields and default values of dependent fields and lax fields not provided and accepted are generated.
+1. Required fields together with lax and virtual fields (whose conditional required resolvers return a required error) are collected, their respective required errors are generated and returned.
+1. Primary validators of fields with any are run.
+   - If any validator fails, the validation errors are returned.
+   - If any validator returns updated values, context values are updated.
+1. Secondary validators of fields with any are run.
+   - If any validator fails, the validation errors are returned.
+   - If any validator returns updated values, context values are updated.
+1. Post validation:
+   If any input field provided and accepted belongs has any post-validation logic, pre-validators (if provided) and validators are executed just like primary & secondary validators with the only difference being that these validators can return multiple updated values.
+   > Note that while post-validator can return multiple updated input values, only the values of fields in the post-validation configuration will be updated in context values.
+1. Sanitization of virtual fields: if any virtual field provided and accepted has a [sanitizer](#sanitizer), this function is executed and its return value is updated in context values.
+1. The values dependent fields with at least one parent provided and accepted are generated and updated in context values.
+1. If timestamps are configured, they are generated and updated in context values.
+1. The final output struct of the domain entity is complete and returned together with the final state of [context options](#context-options) and a function to manually trigger relevant on success handlers.
+
+### During Updates
+
+1. The [ignore](#ignore) and [ignore init](#ignore-init) provision rules and previous values are used to filter input fields that should be considered as valid inputs to be updated. Context values and input data are filtered to only track fields with updated values; if none is left, this results in a `Nothing to update error`.
+   > Unless a virtual field is ignored by its provision rules, it will always be considered a valid update.
+1. Lax and virtual fields whose conditional required resolvers return a required error are collected, their respective required errors are generated and returned.
+1. Primary validators of fields with any are run.
+   - If any validator fails, the validation errors are returned.
+   - If any validator returns updated values, context values are updated.
+1. Secondary validators of fields with any are run.
+   - If any validator fails, the validation errors are returned.
+   - If any validator returns updated values, context values are updated.
+1. Post validation:
+   If any input field provided and accepted belongs has any post-validation logic, pre-validators (if provided) and validators are executed just like primary & secondary validators with the only difference being that these validators can return multiple updated values.
+   > Note that while post-validator can return multiple updated input values, only the values of fields in the post-validation configuration will be updated in context values.
+1. Sanitization of virtual fields: if any virtual field provided and accepted has a [sanitizer](#sanitizer), this function is executed and its return value is updated in context values.
+1. Context values are again filtered to only track fields with updated values or virtuals; if none is left, this results in a `Nothing to update error`.
+1. If at least one parent (of a dependent field) is provided and accepted and the dependent field is not ignored by the [readonly](#readonly) rule, its value is generated and updated in context values.
+1. If timestamps are configured, they are generated and updated in context values.
+1. The final partial output struct (partial because we only return updated fields) of the domain entity is complete and returned together with the final state of [context options](#context-options) and a function to manually trigger relevant on success handlers.
+
+> Note: the function to trigger on success handlers triggers handlers of all output fields at creation and those of virtual fields provided, but only triggers the handlers of fields updated and virtuals provided and accepted.
+
+> Note: the function to trigger on failure handlers only triggers the handlers of fields provided.
 
 ## Provision Rules
 
