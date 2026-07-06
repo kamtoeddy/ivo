@@ -5,7 +5,6 @@ use ivo::{IvoContext, IvoField, IvoStruct, IvoUpdateData, Schema, UpdateError};
 
 mod post_validate;
 
-// TODO:
 // [x] ignore_update
 // [x] on_delete
 // [x] on_success
@@ -58,7 +57,7 @@ async fn should_respect_option_to_ignore_updates() {
 
     let lax_update = "should_not_ignore".to_string();
 
-    let r = model
+    let (updates, _, _) = model
         .update(
             &data,
             &PartialDataInput {
@@ -66,17 +65,16 @@ async fn should_respect_option_to_ignore_updates() {
             },
             None,
         )
-        .await;
+        .await
+        .ok()
+        .unwrap();
 
-    match r {
-        Ok((updates, _, _)) => assert_eq!(
-            updates,
-            PartialData {
-                lax: Some(lax_update)
-            }
-        ),
-        _ => unreachable!(),
-    }
+    assert_eq!(
+        updates,
+        PartialData {
+            lax: Some(lax_update)
+        }
+    );
 }
 
 async_test_matrix!(should_respect_option_to_ignore_updates);
