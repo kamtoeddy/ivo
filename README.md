@@ -161,7 +161,7 @@ A dependent field is a purely output field whose value changes whenever at least
 - it **must** have either a default `static value` or a [`resolver`](#resolver) for the default value.
 - it **must** depend on at least one other field which can be a [`lax`](#33-lax), [`required`](#34-required), [`virtual`](#36-virtual) or another `dependent` field (provided no circular dependency is identified).
 - it **must** have a [`resolver`](#resolver) to generate new values whenever any of its parent fields is provided and accepted for that operation.
-- it may leverage the [`readonly provision rule`](#readonly) to prevent further updates once its current value is different from its **default static value** irrespective of new updates made to values of its parent fields.
+- it may leverage the [`readonly`](#readonly) provision rule to prevent further updates once its current value is different from its **default static value** irrespective of new updates made to values of its parent fields.
 - it may have [delete](#on-delete) and [success](#on-success) event handlers.
 - it may also be used in [grouped success](#on-success-grouped) event handlers.
 
@@ -242,12 +242,32 @@ Timestamp fields are often used to log the date (and sometimes the time) at whic
 
 - ivo provides synchronization of created_at and updated_at timestamps during the respective operations.
 - ivo allows for custom names and optional updated_at timestamp if needed.
-- the TypeScript implementation uses `new Date()` to set the values.
-- the Rust implementation requires you to define the datatype of the timestamp and a resolver function.
+- ivo-ts uses `new Date()` to set the values.
+- ivo-rs requires you to define the data type of the timestamp and a resolver function.
 
 ## Context Values
 
+Context values is a data structure used to provide a up to date data for a specific operation in order to help with dynamic data processing in various resolvers and event handlers.
+
+It contains:
+
+- information on whether the current operation is a creation or update (usually a boolean flag).
+- **At creation**:
+  - `raw input`: the partial input struct provided for validation (does not change during validation).
+  - `input`: a partial input struct with up to date input values (gets updated as validation proceeds).
+  - `values`: a partial output struct containing validated output values (gets updated as validation proceeds).
+- **During updates**:
+  - `previous values`: an output struct representing the existing values being updated (does not change during validation).
+  - `raw input`: the partial input struct provided for validation (does not change during validation).
+  - `input`: a partial input struct with up to date input values (gets updated as validation proceeds).
+  - `changes`: a partial output struct containing updated output values (gets updated as validation proceeds).
+  - `values`: an output struct containing previous values + validated changes (gets updated as validation proceeds)
+
 ## Context Options
+
+This is an optional customizable data structure that can be used to provide extra information to create, update and delete operations on a domain entity. Unlike context values, you have total control over context options and can even mutate its values at most validation steps. The final version of these values are also passed to the various event handlers triggered for that operation.
+
+Some good usecases for this would be Dependency Injection and caching of unrelated but useful values during various validation steps.
 
 ## Validation Steps
 
@@ -300,25 +320,64 @@ Here is what happens at creation and during updates.
 
 ## Provision Rules
 
+There are certain situations where we want to ignore some fields or the complete update on an entity. The following rules can be used to filter out fields that should be considered for a validation cycle.
+
 ### Ignore
+
+A function that allows for dynamic evaluation of whether or not a field should be allowed at creation or during updates. If true is returned, the value will be ignored and vice versa.
 
 ### Ignore init
 
+This rule is static and if applied, the field will always be ignored from the partial input struct if provided at creation.
+
 ### Ignore update
+
+This rule can be static or dynamic (on schema options and on some the fields) and if applied, the field will always be ignored from the partial input struct if provided at during updates.
 
 ### Readonly
 
+This rule is static and if applied, the field will always be ignored from the partial input struct if provided at during updates.
+
+When applied to dependent and lax fields with static default values, updates are ignored once the field's value is different from its default value.
+
 ### Required (conditionally)
+
+Some times, a field may or may not be required to have been provided either at creation or during updates. This rule allows us to dynamically evaluate the conditional required of fields on which it is applied **only if this field is ommitted from the input struct**.
 
 ## Lifecycle Events
 
-### Delete
+Being able to react to changes happening on a domain entity or its individual fields can always be useful.
+
+### On Delete
+
+This event is manually triggered by invoking the `Model.delete` method of a said schema.
+
+Subscription to this event could be for the entire domain entity via schema options or for individual output fields (every field except virtuals).
 
 ### On Failure
 
+This event is manually triggered by invoking the `handle failure` function returned from an unsuccessful create or update operation.
+
+Subscription to this event is done on individual input fields with at least one primary validator.
+
+> When this event is fired, only the event handlers of fields that were provided get triggered.
+
 ### On Success
 
+This event is manually triggered by invoking the `handle success` function returned from a successful create or update operation.
+
+Subscription to this event can be done on any individual field or for [a group of fields via schema options](#on-success-grouped).
+
+> When this event is fired at creation, the event handlers of all output fields and those of virtuals that were provided get triggered.
+
+> When this event is fired during updates, only the event handlers of output fields that have changes and those of virtuals that were provided get triggered.
+
 ### On Success (Grouped)
+
+The rules of [on success](#on-success) apply here but some times, we want to react to changes made to an entire domain entity or to changes made to a group fields on an entity.
+
+- to handle changes on the entire entity, an empty fields array is used.
+- to handle changes some fields, the field names have to be passed in the fields array. Constants and built-in timestamp fields (created_at & updated_at) are the only fields that cannot be passed to this array.
 
 ## Resolvers
 

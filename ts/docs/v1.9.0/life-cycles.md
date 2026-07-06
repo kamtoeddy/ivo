@@ -10,7 +10,7 @@ type Ctx = Context<Input, Output>;
 
 ## Context Options
 
-This is a way of providing extra information (releted or not related to you schema) to operations like creation, updates and deletion. Some good usecases would be **dependency injection (DI)** and **internationalization (i18n)**
+This is a way of providing extra information (related or not related to your schema) to operations like creation, updates and deletion. Some good usecases would be **dependency injection (DI)** and **internationalization (i18n)**
 
 How to use:
 
@@ -70,10 +70,7 @@ Model.delete(entity, { lang: 'en', userRepo });
 // 3) access the context options as below
 
 // in a validator
-function validateName(
-  value,
-  summary: IvoSummary<UserInput, User, CtxOptions>,
-) {
+function validateName(value, summary: IvoSummary<UserInput, User, CtxOptions>) {
   const { options, updateOptions } = summary;
   const { lang } = options;
 
@@ -119,9 +116,9 @@ type S =
       options: Readonly<CtxOptions>;
       updateOptions: (updates: Partial<CtxOptions>) => void;
     }>;
-  
+
 type ReadonlySummary = ReadonlyIvoSummary<Input, Output, CtxOptions>;
-  
+
 // 👇 Rs represents is what `ReadonlySummary` looks like
 type Rs =
   | Readonly<{
@@ -145,7 +142,10 @@ type Rs =
 
 const Model = new Schema<Input, Output>(definitions).getModel();
 
-type FailureHandler = (ctx: IContext, options: CtxOptions) => void | Promise<void>;
+type FailureHandler = (
+  ctx: IContext,
+  options: CtxOptions,
+) => void | Promise<void>;
 
 type HandlerWithSummary = (summary: ReadonlySummary) => void | Promise<void>;
 ```
@@ -167,7 +167,6 @@ function onDelete(data: Output, options: CtxOptions) {
 
 // how to trigger after deleting an entity
 Model.delete(entity, { lang: 'en' });
-
 ```
 
 ### onFailure
