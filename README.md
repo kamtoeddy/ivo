@@ -247,11 +247,11 @@ Timestamp fields are often used to log the date (and sometimes the time) at whic
 
 ## Context Values
 
-Context values is a data structure used to provide a up to date data for a specific operation in order to help with dynamic data processing in various resolvers and event handlers.
+Context values is a primitive used to provide up to date information about input and output values being processed during an operation in order to help with dynamic data processing in various resolvers and event handlers.
 
 It contains:
 
-- information on whether the current operation is a creation or update (usually a boolean flag).
+- information on whether the current operation is a creation or an update (usually a boolean flag).
 - **At creation**:
   - `raw input`: the partial input struct provided for validation (does not change during validation).
   - `input`: a partial input struct with up to date input values (gets updated as validation proceeds).
