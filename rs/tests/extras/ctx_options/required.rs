@@ -51,7 +51,7 @@ async fn should_properly_update_ctx_options_in_ignore_update_resolver_and_provid
                 "required",
                 IvoField::REQUIRED
                     .validate(|_: i32, _, _| ready(Ok(None)))
-                    .ignore_update(async |_, o: IvoRwCtxOptions<CtxOptions>| {
+                    .ignore_update(async |_, _, o: IvoRwCtxOptions<CtxOptions>| {
                         let mut ctx_options = o.write().await;
 
                         ctx_options.add_message(MESSAGE);

@@ -7,8 +7,8 @@ use std::{
 };
 
 use ivo::{
-    IvoContext, IvoField, IvoRwCtxOptions, IvoShared, IvoSharedCtxOptions, IvoStruct,
-    IvoUpdateParams, Model, Schema, validate_email,
+    IvoContext, IvoField, IvoRwCtxOptions, IvoShared, IvoSharedCtxOptions, IvoStruct, Model,
+    Schema, validate_email,
 };
 use serde::Serialize;
 
@@ -172,7 +172,7 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
 
                             Ok(Some(format!("revalidated-'{}'", uname)))
                         })
-                        .ignore_update(|(_, values): IvoUpdateParams<UserInput, User>, _| {
+                        .ignore_update(|_, values: User, _| {
                             ready(!is_username_or_slug_id_updatable(
                                 values.username_last_updated_at,
                             ))

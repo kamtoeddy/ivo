@@ -9,7 +9,6 @@ use crate::{
     schema::types::{DeleteHandler, FailureHandler, IvoFieldValue, SuccessHandler},
     types::internal::types::{erase_value, parse_or_panic, ErasedValue},
     IvoContext, IvoErrorTool, IvoRwCtxOptions, IvoShared, IvoSharedInput, IvoStruct,
-    IvoUpdateParams,
 };
 
 pub type TimestampResolver<T: IvoFieldValue> = Box<dyn Fn() -> T + Send + Sync + 'static>;
@@ -199,11 +198,11 @@ pub trait IntoIgnoreUpdateResolver<I: IvoStruct, O: IvoStruct, CtxOptions> {
 impl<F, Fut, I: IvoStruct, O: IvoStruct, CtxOptions> IntoIgnoreUpdateResolver<I, O, CtxOptions>
     for F
 where
-    F: Fn(IvoUpdateParams<I, O>, IvoRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
+    F: Fn(I::Partial, O, IvoRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = bool> + Send + 'static,
 {
     fn into_resolver(self) -> BooleanResolver<I, O, CtxOptions> {
-        Box::new(move |ctx, o| Box::pin(self((ctx.input(), ctx.full_values().unwrap()), o)))
+        Box::new(move |ctx, o| Box::pin(self(ctx.input(), ctx.full_values().unwrap(), o)))
     }
 }
 

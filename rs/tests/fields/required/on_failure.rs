@@ -233,7 +233,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
 
                         ready(Ok(None))
                     })
-                    .ignore_update(|_, _| ready(true))
+                    .ignore_update(|_, _, _| ready(true))
                     .on_failure(|ctx: IvoContext<DataInput, Data>, _| {
                         if true {
                             panic!(

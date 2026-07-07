@@ -1112,7 +1112,8 @@ impl<
         if is_update {
             if let Some(ref resolver) = self.schema.options.ignore_update {
                 if resolver(
-                    (ctx.input(), ctx.full_values().unwrap()),
+                    ctx.input(),
+                    ctx.full_values().unwrap(),
                     Arc::clone(&options),
                 )
                 .await

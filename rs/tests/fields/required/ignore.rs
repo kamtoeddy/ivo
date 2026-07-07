@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoField, IvoStruct, IvoUpdateError, IvoUpdateParams, Schema};
+use ivo::{IvoField, IvoStruct, IvoUpdateError, Schema};
 
 use crate::async_test_matrix;
 
@@ -27,7 +27,7 @@ async fn should_respect_the_ignore_update_rule() {
                 "required",
                 IvoField::REQUIRED
                     .validate(|_: i32, _, _| ready(Ok(None)))
-                    .ignore_update(|(_, values): IvoUpdateParams<DataInput, Data>, _| {
+                    .ignore_update(|_, values: Data, _| {
                         if IGNORE_REQUIRED_FOR_UPDATE == values.lax {
                             return ready(true);
                         }

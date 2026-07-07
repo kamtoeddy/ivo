@@ -289,7 +289,7 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_i
 
                         ready(Ok(None))
                     })
-                    .ignore_update(|_, _| ready(true))
+                    .ignore_update(|_, _, _| ready(true))
                     .on_success(|ctx: IvoContext<DataInput, Data>, _| {
                         if true {
                             panic!(

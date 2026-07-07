@@ -1,15 +1,15 @@
+#![expect(type_alias_bounds)]
+
 use std::future::Future;
 
 use crate::__private_types::types::IvoWithPartialErrorsStruct;
 use crate::types::internal::PostValidatorResponse;
 use crate::IvoErrorTool;
-use crate::{
-    schema::types::SuccessHandler, IvoContext, IvoRwCtxOptions, IvoStruct, IvoUpdateParams,
-};
+use crate::{schema::types::SuccessHandler, IvoContext, IvoRwCtxOptions, IvoStruct};
 use futures::future::BoxFuture;
 
-pub type ShouldUpdateOptionResolver<I, O, CtxOptions> = Box<
-    dyn Fn(IvoUpdateParams<I, O>, IvoRwCtxOptions<CtxOptions>) -> BoxFuture<'static, bool>
+pub type ShouldUpdateOptionResolver<I: IvoStruct, O: IvoStruct, CtxOptions> = Box<
+    dyn Fn(I::Partial, O, IvoRwCtxOptions<CtxOptions>) -> BoxFuture<'static, bool>
         + Send
         + Sync
         + 'static,
@@ -23,11 +23,11 @@ impl<F, Fut, I, O, CtxOptions> IntoShouldUpdateOptionResolver<I, O, CtxOptions> 
 where
     I: IvoStruct,
     O: IvoStruct,
-    F: Fn(IvoUpdateParams<I, O>, IvoRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
+    F: Fn(I::Partial, O, IvoRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = bool> + Send + Sync + 'static,
 {
     fn into_resolver(self) -> ShouldUpdateOptionResolver<I, O, CtxOptions> {
-        Box::new(move |data, o| Box::pin(self(data, o)))
+        Box::new(move |partial_input, output, o| Box::pin(self(partial_input, output, o)))
     }
 }
 
