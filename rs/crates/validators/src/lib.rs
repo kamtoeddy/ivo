@@ -1,108 +1,21 @@
-use std::{collections::HashSet, sync::LazyLock};
+use std::sync::LazyLock;
 
 use regex::Regex;
 
-type ValidatorResponse<T, E = ()> = Result<T, E>;
+static EMAIL_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r#"(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])"#).unwrap()
+});
 
-type Validator<T, E = ()> = Box<dyn Fn(T) -> ValidatorResponse<T, E>>;
+type ValidatorResult<T, E = ()> = Result<T, E>;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum StringValidatorOptions<const N: usize> {
-    MinMax {
-        max: Option<usize>,
-        min: Option<usize>,
-        trim: Option<bool>,
-    },
-    Values([&'static str; N]),
-}
+pub fn validate_credit_card(value: &str) -> ValidatorResult<String, String> {
+    let validated = value.trim();
+    let error = "Invalid card number".into();
 
-type StringValidatorError<const N: usize> = (String, Option<StringValidatorOptions<N>>);
-
-pub fn make_string_validator<const N: usize>(
-    options: StringValidatorOptions<N>,
-) -> Validator<String, StringValidatorError<N>> {
-    validate_string_validator_options(&options);
-
-    Box::new(move |value: String| {
-        let options = options.clone();
-
-        let s = match &options {
-            StringValidatorOptions::MinMax {
-                trim: Some(should_trim),
-                ..
-            } => {
-                let mut v = value.as_str();
-
-                if *should_trim {
-                    v = v.trim();
-                }
-
-                v.to_owned()
-            }
-            _ => value,
-        };
-
-        match &options {
-            StringValidatorOptions::MinMax { max, min, .. } => {
-                let str_length = s.len();
-
-                if let Some(max_length) = max {
-                    if str_length > *max_length {
-                        return Err(("too_long".into(), Some(options)));
-                    }
-                }
-
-                if let Some(min_length) = min {
-                    if str_length < *min_length {
-                        return Err(("too_short".into(), Some(options)));
-                    }
-                }
-
-                Ok(s)
-            }
-            StringValidatorOptions::Values(values) => {
-                if !values.contains(&s.as_str()) {
-                    return Err(("Invalid option selected".into(), Some(options)));
-                }
-
-                Ok(s)
-            }
-        }
-    })
-}
-
-fn validate_string_validator_options<const N: usize>(options: &StringValidatorOptions<N>) {
-    match &options {
-        StringValidatorOptions::MinMax { max, min, .. } => {
-            match (max, min) {
-                (Some(max_value), Some(min_value)) if min_value >= max_value => {
-                    panic!("String validator: min({min_value}) must be < max({max_value})")
-                }
-                (None, None) => panic!("String validator: min and max cannot both be None"),
-                _ => {}
-            };
-        }
-        StringValidatorOptions::Values(values) => {
-            let unique = values.iter().cloned().collect::<HashSet<&'static str>>();
-
-            if unique.len() != values.len() {
-                panic!("String validator: expected unique values but got {values:?}")
-            }
-        }
-    };
-}
-
-pub fn validate_credit_card(value: String) -> ValidatorResponse<String, String> {
-    let s = value.trim().to_string();
-
-    if s.len() != 16 {
-        return Err("Invalid card number".into());
-    }
-
-    let digits: Vec<u32> = s.chars().filter_map(|c| c.to_digit(10)).collect();
+    let digits: Vec<u32> = validated.chars().filter_map(|c| c.to_digit(10)).collect();
 
     if digits.len() != 16 {
-        return Err("Invalid card number".into());
+        return Err(error);
     }
 
     let check = digits[15];
@@ -116,19 +29,17 @@ pub fn validate_credit_card(value: String) -> ValidatorResponse<String, String> 
     let sum: u32 = to_check.iter().sum();
 
     if (10 - (sum % 10)) != check {
-        return Err("Invalid card number".into());
+        return Err(error);
     }
 
-    Ok(s)
+    Ok(digits.iter().map(|n| n.to_string()).collect::<String>())
 }
 
-static EMAIL_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r#"(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])"#).unwrap()
-});
+pub fn validate_email(value: &str) -> ValidatorResult<String, String> {
+    let validated = value.trim();
 
-pub fn validate_email(value: String) -> ValidatorResponse<String, String> {
-    if EMAIL_RE.is_match(&value) {
-        return Ok(value);
+    if EMAIL_RE.is_match(&validated) {
+        return Ok(validated.to_string());
     }
 
     Err("Invalid email".into())

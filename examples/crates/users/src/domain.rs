@@ -116,8 +116,8 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
                     "email",
                     IvoField::REQUIRED
                         .required_error("\"email\" was not provided!")
-                        .validate(|email, _, _| {
-                            ready(validate_email(email).map(Some).map_err(|e| (e, None)))
+                        .validate(|email: String, _, _| {
+                            ready(validate_email(&email).map(Some).map_err(|e| (e, None)))
                         })
                         .on_failure(|_, _| {
                             println!("[email]: on failure handled");
