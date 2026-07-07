@@ -10,14 +10,14 @@ While typical struct validators only check isolated field constraints, ivo allow
 
 # Quick links
 
-|            | Docs                                             | Examples            |
-| ---------- | ------------------------------------------------ | ------------------- |
-| Rust       | [link](./rs/README.md#rust-implementation)       | [link](./examples/) |
-| TypeScript | [link](./ts/README.md#typescript-implementation) | [link]()            |
+| Language   | Docs                                             | Examples                          |
+| ---------- | ------------------------------------------------ | --------------------------------- |
+| Rust       | [link](./rs/README.md#rust-implementation)       | [link](./rs/examples/)            |
+| TypeScript | [link](./ts/README.md#typescript-implementation) | [link](./ts/docs/v1.9.0/index.md) |
 
 # Definition of terms
 
-## 1. Structs & Fields
+## Structs & Fields
 
 - **Input Structs**:
   An input struct represents externally provided (usually incomplete) values. e.g: values submitted by a user via a form, or an HTTP request.
@@ -88,7 +88,7 @@ While typical struct validators only check isolated field constraints, ivo allow
   - At creation, a partial input is provided to produce the complete entity (output struct).
   - During updates, a partial input is provided to produce a partial output (only relevant fields/data updated) or nothing.
 
-## 2. Schema
+## Schema
 
 A schema is a generic term used in this documentation to refer to the validation configuration (default values/resolvers, fields, validators, event listeners/hooks, etc.) of a domain entity.
 
@@ -143,18 +143,18 @@ struct User {
 The concept is simple; a user's details are submitted via a form with a `username` and an `email` or a `phone number`.
 These values are enough for your application to create a **User**. As you can see, we do not want users to provide fields like `id`, `created_at`, `updated_at` and `username_last_updated_at`.
 
-## 3. Fields
+## Fields
 
 A domain entity may comprise of one or more fields belonging to one of the following types:
 
-### 3.1 Constant
+### Constant Fields
 
 A constant is a purely output field whose value should never change after creation; e.g: `id`.
 
 - it **must** have either a `static value` or a [`resolver`](#resolver).
 - it may have [delete](#on-delete) and [success](#on-success) event handlers.
 
-### 3.2 Dependent
+### Dependent Fields
 
 A dependent field is a purely output field whose value changes whenever at least one other field it depends on is provided and accepted. e.g: `username_last_updated_at`'s value should only and always be updated every time `username` changes.
 
@@ -165,7 +165,7 @@ A dependent field is a purely output field whose value changes whenever at least
 - it may have [delete](#on-delete) and [success](#on-success) event handlers.
 - it may also be used in [grouped success](#on-success-grouped) event handlers.
 
-### 3.3 Lax
+### Lax Fields
 
 A lax field is both an input and output field whose value may or may not be provided at creation. Based on [this schema](#typescript-example), `email` and `phone_number` are great examples of lax fields.
 
@@ -179,7 +179,7 @@ A lax field is both an input and output field whose value may or may not be prov
 - it may have [failure](#on-failure) event handlers if a validator is provided.
 - it may also be used in [grouped success](#on-success-grouped) event handlers.
 
-### 3.4 Required
+### Required Fields
 
 A required field is both an input field and an output field whose value must be provided at creation. Based on [this schema](#typescript-example), `username` is a good candidate to be a required field, but could also be configured differently using [this special combo of virtual + alias + dependent](#virtual-alias-dependent-combo).
 
@@ -191,7 +191,7 @@ A required field is both an input field and an output field whose value must be 
 - it may have [failure](#on-failure) event handlers if a validator is provided.
 - it may also be used in [grouped success](#on-success-grouped) event handlers.
 
-### 3.5 Virtual
+### Virtual Fields
 
 A virtual field is a purely input field whose value may or may not be provided at creation. This type of field is used to trigger a change in one or more fields that dependend on it. Based on [this schema](#typescript-example), `username` could simultaneously be a virtual and a dependent field if [this special combo of virtual + alias + dependent](#virtual-alias-dependent-combo) is used, **but MUST NOT always be used like this**.
 
@@ -236,7 +236,7 @@ const userSchema = new Schema<InputStruct, OutputStruct>(
 );
 ```
 
-### 3.6 Timestamp
+### Timestamp
 
 Timestamp fields are often used to log the date (and sometimes the time) at which state transitions occurred.
 

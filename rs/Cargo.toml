@@ -7,8 +7,9 @@ edition.workspace = true
 homepage.workspace = true
 keywords.workspace = true
 license-file.workspace = true
-version.workspace = true
+readme.workspace = true
 repository.workspace = true
+version.workspace = true
 rust-version.workspace = true
 
 [workspace]
@@ -21,16 +22,17 @@ edition = "2021"
 authors = ["kamtoeddy <lollipopkalog@gmail.com>"]
 categories = ["data-structures", "development-tools"]
 license-file = "../LICENSE"
+readme = "../README.md"
 repository = "https://github.com/kamtoeddy/ivo/rs"
 homepage = "https://github.com/kamtoeddy/ivo/rs"
-keywords = ["schema", "validation", "data-modelling"]
+keywords = ["ivo", "schema", "validation", "data-modelling"]
 rust-version = "1.80.0"
 
 [workspace.dependencies]
-# core
+# core deps
 futures-locks = "0.7"
 
-# examples & tests
+# examples & tests deps
 async-std = { version= "1.13.2", features = ["attributes"] }
 regex = "1.10"
 unicode-normalization = "0.1"
