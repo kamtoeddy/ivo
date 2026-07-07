@@ -3,7 +3,7 @@ use std::{
     collections::HashMap,
     future::{ready, Future},
     sync::LazyLock,
-    time::{self, Instant},
+    time::{self},
 };
 
 use ivo::{
@@ -84,10 +84,7 @@ pub static USER_MODEL: LazyLock<Model<UserInput, User, UserCtxOptions, Timestamp
 
 pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timestamp>> =
     LazyLock::new(|| {
-        let timer = Instant::now();
-
-        println!("\nstart schema creation");
-        let schema = Schema::new(
+        Schema::new(
             |f| {
                 f.set(
                     "id",
@@ -147,7 +144,7 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
                                 )));
                             }
 
-                            ready(Ok(Some(v)))
+                            ready(Ok(None))
                         })
                         .re_validate(async |uname: String, _, o: RwCtxOptions| {
                             if o.read().await.find_user_by_username(&uname).await.is_some() {
@@ -337,14 +334,7 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
                     ready(())
                 })
             },
-        );
-        println!(
-            "{} {}\n",
-            "\nUser schema created:".font_bold(),
-            format!("{:?}", timer.elapsed()).colored_red()
-        );
-
-        schema
+        )
     });
 
 fn is_username_or_slug_id_updatable(username_last_updated_at: Option<String>) -> bool {
