@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoField, IvoRwCtxOptions, IvoSharedCtxOptions, IvoStruct, Schema};
+use ivo::{IvoCtxOptions, IvoField, IvoRwCtxOptions, IvoStruct, Schema};
 
 use crate::async_test_matrix;
 
@@ -47,7 +47,7 @@ async fn should_properly_update_ctx_options_in_constant_value_resolver_and_provi
 
                         CONSTANT_VALUE
                     })
-                    .on_success(|_, o: IvoSharedCtxOptions<CtxOptions>| {
+                    .on_success(|_, o: IvoCtxOptions<CtxOptions>| {
                         if true {
                             panic!("[on_success]: {}", o.messages[0])
                         }

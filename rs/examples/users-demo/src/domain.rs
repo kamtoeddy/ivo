@@ -7,8 +7,8 @@ use std::{
 };
 
 use ivo::{
-    validate_email, FutureExt, IvoContext, IvoField, IvoRwCtxOptions, IvoShared,
-    IvoSharedCtxOptions, IvoStruct, Model, Schema,
+    validate_email, FutureExt, IvoContext, IvoCtxOptions, IvoField, IvoRwCtxOptions, IvoShared,
+    IvoStruct, Model, Schema,
 };
 
 use crate::slugify::{slugify, SlugifiedString};
@@ -31,7 +31,7 @@ pub struct User {
     pub slug_id: SlugifiedString,
     pub role: UserRole,
     pub username_last_updated_at: Option<String>,
-    pub updated_on: Timestamp,
+    pub updated_at: Timestamp,
 }
 
 #[derive(Clone, Debug, PartialEq, IvoStruct)]
@@ -72,7 +72,7 @@ impl<'a> UserCtxOptions {
 }
 
 type Ctx = IvoContext<UserInput, User>;
-type CtxOptions = IvoSharedCtxOptions<UserCtxOptions>;
+type CtxOptions = IvoCtxOptions<UserCtxOptions>;
 type RwCtxOptions = IvoRwCtxOptions<UserCtxOptions>;
 
 pub static USER_MODEL: LazyLock<Model<UserInput, User, UserCtxOptions, Timestamp>> =
@@ -249,7 +249,7 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
                 .timestamps(|t| {
                     t.resolve(|| time::UNIX_EPOCH.elapsed().unwrap().as_micros().to_string())
                         .created_at(None)
-                        .updated_at(Some("updated_on"))
+                        .updated_at(Some("updated_at"))
                 })
             },
             |o| {
@@ -340,8 +340,8 @@ pub static USERS_LIST: LazyLock<[User; 3]> = LazyLock::new(|| {
             slug_id: SlugifiedString::from(username.as_str()),
             username,
             username_last_updated_at: None,
-            updated_on: "updated now".into(),
-            // updated_on: None,
+            updated_at: "updated now".into(),
+            // updated_at: None,
         }
     })
 });

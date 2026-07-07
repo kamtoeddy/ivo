@@ -21,4 +21,4 @@ pub use types::internal::{
     IvoDefaultErrorTool, IvoErrorTool, IvoFieldError, IvoStruct, IvoUpdateError,
 };
 
-pub use types::{IvoContext, IvoRwCtxOptions, IvoShared, IvoSharedCtxOptions, IvoSharedInput};
+pub use types::{IvoContext, IvoCtxOptions, IvoRwCtxOptions, IvoShared, IvoSharedInput};

@@ -62,7 +62,7 @@ async fn run_example() {
         username_last_updated_at: None,
         slug_id,
         role: UserRole::Admin,
-        updated_on: "1 day ago".into(),
+        updated_at: "1 day ago".into(),
         // updated_on: None,
     };
 

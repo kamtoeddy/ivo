@@ -1,7 +1,7 @@
 use std::future::ready;
 
 use ivo::{
-    IvoContext, IvoField, IvoRwCtxOptions, IvoSharedCtxOptions, IvoStruct, IvoUpdateError, Schema,
+    IvoContext, IvoCtxOptions, IvoField, IvoRwCtxOptions, IvoStruct, IvoUpdateError, Schema,
 };
 
 use crate::async_test_matrix;
@@ -226,7 +226,7 @@ async fn should_properly_update_ctx_options_in_ignore_update_resolver_and_provid
 
                         false
                     })
-                    .on_success(|_, o: IvoSharedCtxOptions<CtxOptions>| {
+                    .on_success(|_, o: IvoCtxOptions<CtxOptions>| {
                         if true {
                             panic!("[on_success]: {}", o.messages[0])
                         }
@@ -321,7 +321,7 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
 
                         Ok(Some(validated.into()))
                     })
-                    .on_failure(|_, o: IvoSharedCtxOptions<CtxOptions>| {
+                    .on_failure(|_, o: IvoCtxOptions<CtxOptions>| {
                         if true {
                             panic!("[on_failure]: {}", o.messages[0])
                         }
@@ -405,7 +405,7 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
 
                         Ok(Some(validated.into()))
                     })
-                    .on_failure(|_, o: IvoSharedCtxOptions<CtxOptions>| {
+                    .on_failure(|_, o: IvoCtxOptions<CtxOptions>| {
                         if true {
                             panic!("[on_failure]: {}", o.messages[0])
                         }
@@ -501,7 +501,7 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
 
                         Ok(Some(validated.into()))
                     })
-                    .on_failure(|_, o: IvoSharedCtxOptions<CtxOptions>| {
+                    .on_failure(|_, o: IvoCtxOptions<CtxOptions>| {
                         if true {
                             panic!("[on_failure]: {}", o.messages[0])
                         }
@@ -586,7 +586,7 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
 
                         Ok(Some(validated.into()))
                     })
-                    .on_failure(|_, o: IvoSharedCtxOptions<CtxOptions>| {
+                    .on_failure(|_, o: IvoCtxOptions<CtxOptions>| {
                         if true {
                             panic!("[on_failure]: {}", o.messages[0])
                         }
@@ -677,7 +677,7 @@ async fn should_properly_update_ctx_options_in_sanitizers_and_provide_those_upda
 
                         sanitize(&value)
                     })
-                    .on_success(|_, o: IvoSharedCtxOptions<CtxOptions>| {
+                    .on_success(|_, o: IvoCtxOptions<CtxOptions>| {
                         if true {
                             panic!("[on_success]: {}", o.messages[0])
                         }
@@ -769,7 +769,7 @@ async fn should_properly_update_ctx_options_in_sanitizers_and_provide_those_upda
 
                         sanitize(&value)
                     })
-                    .on_success(|_, o: IvoSharedCtxOptions<CtxOptions>| {
+                    .on_success(|_, o: IvoCtxOptions<CtxOptions>| {
                         if true {
                             panic!("[on_success]: {}", o.messages[0])
                         }
@@ -877,7 +877,7 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
                 })
             })
             .on_success([], |s| {
-                s.handle(|_, o: IvoSharedCtxOptions<CtxOptions>| {
+                s.handle(|_, o: IvoCtxOptions<CtxOptions>| {
                     if true {
                         panic!("[grouped_on_success]: {}", o.messages[0])
                     }
@@ -965,7 +965,7 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
                 })
             })
             .on_success(["virtual_field", "virtual_field_1"], |s| {
-                s.handle(|_, o: IvoSharedCtxOptions<CtxOptions>| {
+                s.handle(|_, o: IvoCtxOptions<CtxOptions>| {
                     if true {
                         panic!("[grouped_on_success]: {}", o.messages[0])
                     }

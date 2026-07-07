@@ -25,7 +25,7 @@ use crate::types::InternalIvoContext;
 
 use crate::schema::options::types::{OnSuccessConfig, PostValidationConfig};
 
-use crate::{IvoContext, IvoRwCtxOptions, IvoSharedCtxOptions};
+use crate::{IvoContext, IvoCtxOptions, IvoRwCtxOptions};
 
 type AsyncHandlerTrigger<'a> = Box<dyn Fn() -> BoxFuture<'a, ()> + Send + Sync + 'a>;
 
@@ -1342,7 +1342,7 @@ impl<
         &self,
         fields_provided: Vec<FieldInfo>,
         ctx: IvoContext<I, O>,
-        options: IvoSharedCtxOptions<CtxOptions>,
+        options: IvoCtxOptions<CtxOptions>,
     ) -> AsyncHandlerTrigger<'schema> {
         if fields_provided.is_empty() {
             return Box::new(|| Box::pin(ready(())));
@@ -1378,7 +1378,7 @@ impl<
         &self,
         fields_updated: FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
         ctx: IvoContext<I, O>,
-        options: IvoSharedCtxOptions<CtxOptions>,
+        options: IvoCtxOptions<CtxOptions>,
     ) -> AsyncHandlerTrigger<'schema> {
         let mut field_names = HashSet::new();
 

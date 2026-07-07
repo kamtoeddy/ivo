@@ -7,7 +7,7 @@ use std::sync::Arc;
 use internal::{IvoRwLock, IvoStruct};
 
 pub type IvoShared<T> = Arc<T>;
-pub type IvoSharedCtxOptions<CtxOptions> = IvoShared<CtxOptions>;
+pub type IvoCtxOptions<CtxOptions> = IvoShared<CtxOptions>;
 pub type IvoRwCtxOptions<CtxOptions> = IvoShared<IvoRwLock<CtxOptions>>;
 pub type IvoContext<I: IvoStruct, O: IvoStruct = I> = IvoShared<InternalIvoContext<I, O>>;
 pub type IvoSharedInput<I: IvoStruct> = IvoShared<I::Partial>;
