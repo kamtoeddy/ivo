@@ -14,3 +14,5 @@ rust-version.workspace = true
 [dependencies]
 ivo = { path = "../..", version = "0.0.2" , features = ["validators"] }
 async-std.workspace = true
+regex.workspace = true
+unicode-normalization.workspace = true

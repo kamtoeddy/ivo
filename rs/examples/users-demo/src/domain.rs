@@ -7,8 +7,8 @@ use std::{
 };
 
 use ivo::{
-    validate_email, IvoContext, IvoField, IvoRwCtxOptions, IvoShared, IvoSharedCtxOptions,
-    IvoStruct, Model, Schema,
+    validate_email, FutureExt, IvoContext, IvoField, IvoRwCtxOptions, IvoShared,
+    IvoSharedCtxOptions, IvoStruct, Model, Schema,
 };
 
 use crate::slugify::{slugify, SlugifiedString};
@@ -45,15 +45,11 @@ pub struct UserInput {
 #[derive(Clone)]
 pub struct UserCtxOptions {
     pub slug_id: Option<SlugifiedString>,
-    pub slug_id_resolver_run_count: i8,
 }
 
 impl<'a> UserCtxOptions {
     pub fn new() -> Self {
-        Self {
-            slug_id: None,
-            slug_id_resolver_run_count: 0,
-        }
+        Self { slug_id: None }
     }
 
     fn find_user_by_username(
@@ -194,15 +190,7 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
                     IvoField::DEPENDENT
                         .default(SlugifiedString::from(""))
                         .depends_on(["username", "v_slug"])
-                        .resolve(async |_, o: RwCtxOptions| {
-                            let mut guard = o.write().await;
-
-                            let slug_id = guard.slug_id.clone().unwrap();
-
-                            guard.slug_id_resolver_run_count += 1;
-
-                            slug_id
-                        })
+                        .resolve(|_, o: RwCtxOptions| o.read().map(|g| g.slug_id.clone().unwrap()))
                         .on_success(|ctx: Ctx, o: CtxOptions| {
                             println!(
                                 "[dependent_slug_id]: on success: {:?}",
@@ -211,11 +199,6 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
                             println!(
                                 "[_________________]: on success with ctx_options.slug_id: {:?}",
                                 o.slug_id,
-                            );
-
-                            assert_eq!(
-                                o.slug_id_resolver_run_count, 1,
-                                "this resolver should have run only once"
                             );
 
                             ready(())

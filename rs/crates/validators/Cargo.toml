@@ -13,4 +13,4 @@ edition.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-regex = "1.10"
+regex.workspace = true
