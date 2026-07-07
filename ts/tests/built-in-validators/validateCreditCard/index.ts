@@ -6,23 +6,7 @@ export const validateCreditCardTest = ({
   validateCreditCard: Function;
 }) => {
   describe('validateCreditCard', () => {
-    const truthyValues = [
-      [5420596721435293, 5420596721435293],
-      ['5420596721435293', '5420596721435293'],
-      ['5420596721435293 ', '5420596721435293'],
-      ['5420596721435293 ', '5420596721435293'],
-    ];
-
-    it('should tell whether a character is a valid credit card number', () => {
-      for (const [value, validated] of truthyValues) {
-        const res = validateCreditCard(value);
-
-        expect(res).toEqual({ valid: true, validated });
-
-        expect(res.reason).toBeUndefined();
-      }
-
-      // falsy tests
+    it('should reject invalid credit card numbers', () => {
       const falsyValues = [
         -1000,
         0,
@@ -44,6 +28,23 @@ export const validateCreditCardTest = ({
 
         expect(res.validated).toBeUndefined();
       });
+    });
+
+    const truthyValues = [
+      [5420596721435293, 5420596721435293],
+      ['5420596721435293', '5420596721435293'],
+      ['5420596721435293 ', '5420596721435293'],
+      ['5420596721435293 ', '5420596721435293'],
+    ];
+
+    it('should accept valid credit card numbers', () => {
+      for (const [value, validated] of truthyValues) {
+        const res = validateCreditCard(value);
+
+        expect(res).toEqual({ valid: true, validated });
+
+        expect(res.reason).toBeUndefined();
+      }
     });
 
     it('should validated value should be of same type as input value', () => {

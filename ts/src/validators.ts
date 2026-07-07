@@ -157,8 +157,8 @@ function _isEven(num: number) {
   return num % 2 === 0;
 }
 
-function _getSingleDigits(value: number | string) {
-  return String(value)
+function _getSingleDigits(value: string) {
+  return value
     .split('')
     .filter((v) => !isNaN(Number.parseInt(v, 10)))
     .map(Number);
