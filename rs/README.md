@@ -8,8 +8,5 @@ This is the documentation of the Rust implementation of ivo.
 $ cargo add ivo
 ```
 
-# Importing
-
-```rs
-use ivo::{ Schema };
-```
+# How to use
+ivo-rs is best learned by looking at [these examples](./examples)

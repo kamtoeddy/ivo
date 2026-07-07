@@ -34,6 +34,7 @@ futures-locks = "0.7"
 
 # examples & tests deps
 async-std = { version= "1.13.2", features = ["attributes"] }
+chrono = "0.4.45"
 regex = "1.10"
 unicode-normalization = "0.1"
 
@@ -47,6 +48,7 @@ ivo-derive = { path = "./crates/derive", version = "0.0.2" }
 ivo-validators = { path = "./crates/validators", version = "0.0.2", optional = true}
 
 [dev-dependencies]
+chrono.workspace = true
 regex.workspace = true
 unicode-normalization.workspace = true
 

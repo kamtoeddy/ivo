@@ -1,5 +1,6 @@
+use chrono::{Days, Utc};
 use ivo::{IvoStruct, IvoUpdateError};
-use std::time::Instant;
+use std::{sync::LazyLock, time::Instant};
 
 mod domain;
 mod slugify;
@@ -12,7 +13,7 @@ async fn main() {
 }
 
 async fn run_example() {
-    let timer = Instant::now();
+    LazyLock::force(&USER_MODEL);
 
     let input = PartialUserInput {
         // email: None,
@@ -20,33 +21,28 @@ async fn run_example() {
         username: Some("user-10".into()),
         // role: None,
         role: Some(UserRole::Moderator),
-        // slug_id: None,
-        slug_id: Some("sloppy-slug-id".into()),
+        slug_id: None,
+        // slug_id: Some("sloppy-slug-id".into()),
     };
 
-    // println!("runner2\n\n");
+    let timer = Instant::now();
+
     let r = USER_MODEL.create(&input, UserCtxOptions::new()).await;
+
+    println!("\nCreate duration: {}", format!("{:?}", timer.elapsed()));
 
     match r {
         Ok((data, _, handle_success)) => {
-            println!("{:?}\n", data);
+            println!("\n{:?}\n", data);
 
             handle_success().await;
         }
         Err((payload, _, handle_failure)) => {
-            println!("\nFailed to create: {:?}\n", payload);
+            println!("\nFailed to create: {:?}", payload);
 
             handle_failure().await;
         }
     };
-
-    println!(
-        "{} {}\n",
-        "\nCreate duration:",
-        format!("{:?}", timer.elapsed())
-    );
-
-    let timer = Instant::now();
 
     let (username, slug_id) = {
         let username = "John Doe";
@@ -54,19 +50,20 @@ async fn run_example() {
         (username.into(), username.into())
     };
 
+    let two_days_ago = Utc::now().checked_sub_days(Days::new(2)).unwrap();
+
     let user = User {
-        created_at: "2 days ago".into(),
+        created_at: two_days_ago,
         email: "1@1.com".into(),
         id: 1,
         username,
         username_last_updated_at: None,
         slug_id,
         role: UserRole::Admin,
-        updated_at: "1 day ago".into(),
-        // updated_on: None,
+        updated_at: two_days_ago,
     };
 
-    println!("{:?}\n", user);
+    println!("\n{:?}", user);
 
     let updates = PartialUserInput {
         // email: None,
@@ -79,22 +76,32 @@ async fn run_example() {
         // slug_id: None,
     };
 
+    let timer = Instant::now();
+
     let r = USER_MODEL
         .update(&user, &updates, UserCtxOptions::new())
         .await;
 
+    println!("\nUpdate duration: {}", format!("{:?}", timer.elapsed()));
+
+    let mut updated_user = None;
+
     match r {
         Ok((data, _, handle_success)) => {
-            println!("updates: {:?}\n", data);
-            println!("old + updates: {:?}\n", user.clone_with_updates(&data));
+            let merged_data = user.clone_with_updates(&data);
+
+            println!("\nupdates: {:?}", data);
+            println!("\nold + updates: {:?}\n", merged_data);
+
+            updated_user = Some(merged_data);
 
             handle_success().await;
         }
         Err((error, _, handle_failure)) => {
             match error {
-                IvoUpdateError::NothingToUpdate => println!("Nothing to update\n"),
+                IvoUpdateError::NothingToUpdate => println!("\nNothing to update"),
                 IvoUpdateError::ValidationError(payload) => {
-                    println!("Failed to update: {:?}\n", payload)
+                    println!("\nFailed to update: {:?}", payload)
                 }
             };
 
@@ -102,18 +109,50 @@ async fn run_example() {
         }
     };
 
-    println!(
-        "{} {}\n",
-        "\nUpdate duration:",
-        format!("{:?}", timer.elapsed())
-    );
+    let Some(user) = updated_user else {
+        return;
+    };
+
+    let updates = PartialUserInput {
+        // email: None,
+        email: Some(user.email.clone()),
+        // role: None,
+        role: Some(user.role.clone()),
+        // username: None,
+        username: Some(user.username.clone()),
+        slug_id: Some("newly-updated-slug-id: Lol".into()),
+        // slug_id: None,
+    };
+
+    let timer = Instant::now();
+
+    let r = USER_MODEL
+        .update(&user, &updates, UserCtxOptions::new())
+        .await;
+
+    println!("\nUpdate duration: {}", format!("{:?}", timer.elapsed()));
+
+    match r {
+        Ok((data, _, handle_success)) => {
+            println!("\nupdates: {:?}", data);
+            println!("\nold + updates: {:?}\n", user.clone_with_updates(&data));
+
+            handle_success().await;
+        }
+        Err((error, _, handle_failure)) => {
+            match error {
+                IvoUpdateError::NothingToUpdate => println!("\nNothing to update\n"),
+                IvoUpdateError::ValidationError(payload) => {
+                    println!("\nFailed to update: {:?}\n", payload)
+                }
+            };
+
+            handle_failure().await;
+        }
+    };
 
     let timer = Instant::now();
     USER_MODEL.delete(user.clone(), UserCtxOptions::new()).await;
 
-    println!(
-        "{} {}\n",
-        "\nDelete triggers:",
-        format!("{:?}", timer.elapsed())
-    );
+    println!("\nDelete triggers: {}", format!("{:?}", timer.elapsed()));
 }
