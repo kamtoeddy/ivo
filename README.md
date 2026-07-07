@@ -236,7 +236,7 @@ const userSchema = new Schema<InputStruct, OutputStruct>(
 );
 ```
 
-### Timestamp
+### Timestamps
 
 Timestamp fields are often used to log the date (and sometimes the time) at which state transitions occurred.
 

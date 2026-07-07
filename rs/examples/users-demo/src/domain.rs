@@ -13,20 +13,13 @@ use ivo::{
 
 use crate::slugify::{slugify, SlugifiedString};
 
-#[derive(Debug, PartialEq, Clone)]
-pub enum UserRole {
-    Admin,
-    User,
-    Moderator,
-}
-
 type Timestamp = DateTime<Utc>;
 
 #[derive(Clone, Debug, PartialEq, IvoStruct)]
 pub struct UserInput {
-    pub email: String,
+    pub email: Option<String>,
+    pub phone_number: Option<String>,
     pub username: String,
-    pub role: UserRole,
     pub slug_id: String, // alias for v_slug
 }
 
@@ -34,10 +27,10 @@ pub struct UserInput {
 pub struct User {
     pub created_at: Timestamp,
     pub id: i32,
-    pub email: String,
-    pub username: String,
+    pub email: Option<String>,
+    pub phone_number: Option<String>,
     pub slug_id: SlugifiedString,
-    pub role: UserRole,
+    pub username: String,
     pub username_last_updated_at: Option<Timestamp>,
     pub updated_at: Timestamp,
 }
@@ -85,28 +78,46 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
                 f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
                     .set(
                         "email",
-                        IvoField::REQUIRED
-                            .required_error("\"email\" was not provided!")
-                            .validate(|email: String, _, _| {
-                                ready(validate_email(&email).map(Some).map_err(|e| (e, None)))
+                        IvoField::LAX
+                            .default(None)
+                            .validate(|v: Option<String>, _, _| {
+                                if let Some(email) = v {
+                                    let r = validate_email(&email)
+                                        .map(|v| Some(Some(v)))
+                                        .map_err(|e| (e, None));
+
+                                    return ready(r);
+                                }
+
+                                ready(Ok(None))
+                            })
+                            .required(|ctx: Ctx, _| {
+                                let input = ctx.input();
+
+                                ready(is_email_or_phone_number_required(
+                                    input.email.unwrap_or_default(),
+                                    input.phone_number.unwrap_or_default(),
+                                ))
                             }),
                     )
                     .set(
-                        "role",
+                        "phone_number",
                         IvoField::LAX
-                            .default(UserRole::User)
+                            .default(None::<String>)
                             .validate(|_, _, _| ready(Ok(None)))
-                            .ignore(|_, _| ready(true))
-                            .on_delete(|_, _| {
-                                println!("[role]: on delete handled");
+                            .required(|ctx: Ctx, _| {
+                                let input = ctx.input();
 
-                                ready(())
+                                ready(is_email_or_phone_number_required(
+                                    input.email.unwrap_or_default(),
+                                    input.phone_number.unwrap_or_default(),
+                                ))
                             }),
                     )
                     .set(
                         "username",
                         IvoField::REQUIRED
-                            .required_error("Please provide a username")
+                            .required_error("\"username\" was not provided!")
                             .validate(|v: String, _, _| {
                                 const MIN_LEN: usize = 4;
 
@@ -273,6 +284,17 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
         )
     });
 
+fn is_email_or_phone_number_required(
+    email: Option<String>,
+    phone_number: Option<String>,
+) -> Option<String> {
+    if email.is_some() || phone_number.is_some() {
+        return None;
+    }
+
+    return Some("provide either an \"email\" or a \"phone number\" to proceed".into());
+}
+
 fn is_username_or_slug_id_updatable(username_last_updated_at: Option<Timestamp>) -> bool {
     match username_last_updated_at {
         Some(dt) => (Utc::now() - dt).num_days() >= 30,
@@ -289,9 +311,9 @@ pub static USERS_LIST: LazyLock<[User; 3]> = LazyLock::new(|| {
 
         User {
             created_at: now,
-            email: format!("user-{id}@mail.com"),
+            email: Some(format!("user-{id}@mail.com")),
             id,
-            role: UserRole::Moderator,
+            phone_number: None,
             slug_id: SlugifiedString::from(username.as_str()),
             username,
             username_last_updated_at: None,

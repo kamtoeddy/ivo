@@ -5,7 +5,7 @@ use std::{sync::LazyLock, time::Instant};
 mod domain;
 mod slugify;
 
-use crate::domain::{PartialUserInput, User, UserCtxOptions, UserRole, USER_MODEL};
+use crate::domain::{PartialUserInput, User, UserCtxOptions, USER_MODEL};
 
 #[async_std::main]
 async fn main() {
@@ -17,10 +17,10 @@ async fn run_example() {
 
     let input = PartialUserInput {
         // email: None,
-        email: Some("1@1.com".into()),
+        email: Some(Some("1@1.com".into())),
         username: Some("user-10".into()),
-        // role: None,
-        role: Some(UserRole::Moderator),
+        phone_number: None,
+        // phone_number: Some(Some("123 4567 8910".into())),
         slug_id: None,
         // slug_id: Some("sloppy-slug-id".into()),
     };
@@ -54,12 +54,12 @@ async fn run_example() {
 
     let user = User {
         created_at: two_days_ago,
-        email: "1@1.com".into(),
+        email: Some("1@1.com".into()),
         id: 1,
         username,
         username_last_updated_at: None,
         slug_id,
-        role: UserRole::Admin,
+        phone_number: Some("123 4567 8910".into()),
         updated_at: two_days_ago,
     };
 
@@ -68,8 +68,8 @@ async fn run_example() {
     let updates = PartialUserInput {
         // email: None,
         email: Some(user.email.clone()),
-        // role: None,
-        role: Some(UserRole::Moderator),
+        // phone_number: None,
+        phone_number: Some(Some("123 4567 8910".into())),
         // username: None,
         username: Some("new_username".into()),
         slug_id: Some("updated-slug-id: Lol".into()),
@@ -116,8 +116,8 @@ async fn run_example() {
     let updates = PartialUserInput {
         // email: None,
         email: Some(user.email.clone()),
-        // role: None,
-        role: Some(user.role.clone()),
+        // phone_number: None,
+        phone_number: Some(user.phone_number.clone()),
         // username: None,
         username: Some(user.username.clone()),
         slug_id: Some("newly-updated-slug-id: Lol".into()),
