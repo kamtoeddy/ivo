@@ -1,9 +1,0 @@
-[package]
-name = "shared"
-edition = "2024"
-publish = false
-
-[dependencies]
-regex.workspace = true
-unicode-normalization.workspace = true
-serde.workspace = true

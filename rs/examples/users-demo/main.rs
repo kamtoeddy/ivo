@@ -1,26 +1,15 @@
 use ivo::{IvoStruct, IvoUpdateError};
-use shared::styled_text::Stylable;
 use std::{sync::LazyLock, time::Instant};
 
 mod domain;
+mod slugify;
 
-use crate::domain::{PartialUserInput, USER_MODEL, User, UserCtxOptions, UserRole};
+use crate::domain::{PartialUserInput, User, UserCtxOptions, UserRole, USER_MODEL};
 
-// #[tokio::main]
 #[async_std::main]
 async fn main() {
     run_example().await;
 }
-
-// use smol::io;
-
-// fn main() -> io::Result<()> {
-//     smol::block_on(async {
-//         run_example().await;
-
-//         Ok(())
-//     })
-// }
 
 async fn run_example() {
     // println!("runner\n\n");
@@ -57,7 +46,7 @@ async fn run_example() {
     println!(
         "{} {}\n",
         "\nCreate duration:".font_bold(),
-        format!("{:?}", timer.elapsed()).colored_blue()
+        format!("{:?}", timer.elapsed())
     );
 
     let timer = Instant::now();
@@ -119,7 +108,7 @@ async fn run_example() {
     println!(
         "{} {}\n",
         "\nUpdate duration:".font_bold(),
-        format!("{:?}", timer.elapsed()).colored_blue()
+        format!("{:?}", timer.elapsed())
     );
 
     let timer = Instant::now();
@@ -128,6 +117,6 @@ async fn run_example() {
     println!(
         "{} {}\n",
         "\nDelete triggers:".font_bold(),
-        format!("{:?}", timer.elapsed()).colored_blue()
+        format!("{:?}", timer.elapsed())
     );
 }

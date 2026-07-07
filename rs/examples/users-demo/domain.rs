@@ -1,23 +1,19 @@
 use std::{
     array,
     collections::HashMap,
-    future::ready,
+    future::{ready, Future},
     sync::LazyLock,
     time::{self, Instant},
 };
 
 use ivo::{
-    IvoContext, IvoField, IvoRwCtxOptions, IvoShared, IvoSharedCtxOptions, IvoStruct, Model,
-    Schema, validate_email,
-};
-use serde::Serialize;
-
-use shared::{
-    slugify::{SlugifiedString, slugify},
-    styled_text::Stylable,
+    validate_email, IvoContext, IvoField, IvoRwCtxOptions, IvoShared, IvoSharedCtxOptions,
+    IvoStruct, Model, Schema,
 };
 
-#[derive(Debug, PartialEq, Clone, Serialize)]
+use crate::slugify::{slugify, SlugifiedString};
+
+#[derive(Debug, PartialEq, Clone)]
 pub enum UserRole {
     Admin,
     User,
@@ -27,7 +23,6 @@ pub enum UserRole {
 type Timestamp = String;
 
 #[derive(Debug, Clone, PartialEq, IvoStruct)]
-#[ivo(derive(Serialize))]
 pub struct User {
     pub created_at: Timestamp,
     pub id: i32,
@@ -37,11 +32,9 @@ pub struct User {
     pub role: UserRole,
     pub username_last_updated_at: Option<String>,
     pub updated_on: Timestamp,
-    // pub updated_on: Option<Timestamp>,
 }
 
 #[derive(Clone, Debug, PartialEq, IvoStruct)]
-#[ivo(derive(Serialize))]
 pub struct UserInput {
     pub email: String,
     pub username: String,
@@ -53,7 +46,6 @@ pub struct UserInput {
 pub struct UserCtxOptions {
     pub slug_id: Option<SlugifiedString>,
     pub slug_id_resolver_run_count: i8,
-    // pub locale: &'static str, // fr, en, de, etc
 }
 
 impl<'a> UserCtxOptions {
@@ -80,11 +72,6 @@ impl<'a> UserCtxOptions {
 
     fn update_slug_id(&mut self, slug_id: &SlugifiedString) {
         self.slug_id = Some(slug_id.clone());
-    }
-
-    fn _to_json(&self) {
-        let _ = serde_json::to_string(&PartialUser::default());
-        let _ = serde_json::to_string(&PartialUserInput::default());
     }
 }
 
@@ -288,44 +275,43 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
             |o| {
                 o.post_validate(["username", "v_slug"], |b| {
                     b.validate(async |ctx: Ctx, o: RwCtxOptions| {
-                    let input = ctx.input();
+                        let input = ctx.input();
 
-                    let slug_string = match &input.slug_id {
-                        Some(v) => v.clone(),
-                        _ => input.username.as_ref().unwrap().clone(),
-                    };
+                        let slug_string = match &input.slug_id {
+                            Some(v) => v.clone(),
+                            _ => input.username.as_ref().unwrap().clone(),
+                        };
 
-                    let slug_id = slugify(&slug_string);
+                        let slug_id = slugify(&slug_string);
 
-                    println!(
+                        println!(
                         "post validating username & v_slug: [slug_string = {}] & [slug_id = {}]\n",
                         slug_string, slug_id
                     );
 
-                    let mut options = o.write().await;
+                        let mut options = o.write().await;
 
-                    if options.find_user_by_slug_id(&slug_id).await.is_none() {
-                        options.update_slug_id(&slug_id);
+                        if options.find_user_by_slug_id(&slug_id).await.is_none() {
+                            options.update_slug_id(&slug_id);
 
+                            return Ok(None);
+                        }
 
-                        return Ok(None);
-                    }
+                        let (reason, metadata) = (
+                            &format!("A user with a slug id: \"{slug_id}\" already exists"),
+                            None,
+                        );
 
-                    let (reason, metadata) = (
-                        &format!("A user with a slug id: \"{slug_id}\" already exists"),
-                        None,
-                    );
+                        let mut errors = PartialUserInputErrors::new();
 
-                    let mut errors = PartialUserInputErrors::new();
+                        if input.slug_id.is_some() {
+                            errors.set_slug_id(reason, metadata);
+                        } else if input.username.is_some() {
+                            errors.set_username(reason, metadata);
+                        }
 
-                    if input.slug_id.is_some() {
-                        errors.set_slug_id(reason, metadata);
-                    } else if input.username.is_some() {
-                        errors.set_username(reason, metadata);
-                    }
-
-                    Err(errors)
-                })
+                        Err(errors)
+                    })
                 })
                 .on_success(["email"], |b| {
                     b.handle(|_, _| {

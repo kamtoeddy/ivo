@@ -242,7 +242,7 @@ Timestamp fields are often used to log the date (and sometimes the time) at whic
 
 - ivo provides synchronization of created_at and updated_at timestamps during the respective operations.
 - ivo allows for custom names and optional updated_at timestamp if needed.
-- ivo-ts uses `new Date()` to set the values.
+- ivo-ts uses `new Date()` for timestamp values.
 - ivo-rs requires you to define the data type of the timestamp and a resolver function.
 
 ## Context Values
@@ -387,12 +387,35 @@ A resolver is simply a function that returns a value.
 
 ### Validator
 
+Sometimes also called primary validators, these functions are responsible for making sure a field's value is in the desired state.
+
+- If a validated value is returned from this function, it will be updated in context values.
+- This validator can update values in context options.
+
 ### Re-Validator
+
+This is useful for validation that does everything a primary validator does, but goes beyond the structural integrity of a field's value. For example: a database call is needed for further verifications.
 
 ### Post-Validator
 
+This is useful for validating multiple input fields whenever any member of its fields array is provided and accepted.
+
+- Validated values returned from this function will be updated in context values only if they belong to its fields array.
+- This validator can update values in context options.
+
 ### Required Resolver
+
+This is a function used to evaluate whether or not a field should be required at runtime. It is only run if the field is not provided in the operation's partial input struct.
+
+- This validator can update values in context options.
 
 ### Sanitizer
 
-## Error tool
+This function can be used to further sanitize virtual fields just before dependent fields are resolved.
+
+- The sanitized value returned from this function will be updated in context values.
+- This function can also update values in context options.
+
+## ErrorTool
+
+Custom errors are a key aspect of schema validation. This trait/interface is what makes custom validation error payloads returned from unsuccessful create or update operations on domain entities.
