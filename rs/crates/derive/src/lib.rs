@@ -1,5 +1,4 @@
 use proc_macro::TokenStream;
-use proc_macro_crate::{crate_name, FoundCrate};
 use quote::{format_ident, quote};
 use syn::{parse_macro_input, Data, DeriveInput, Fields};
 
@@ -31,18 +30,7 @@ pub fn derive_ivo_struct(input: TokenStream) -> TokenStream {
         _ => panic!("IvoStruct only supports structs"),
     };
 
-    let found_crate = crate_name("ivo").expect("ivo is not present in Cargo.toml");
-
-    let crate_root = match found_crate {
-        FoundCrate::Itself => quote!(crate), // If macro is used inside the same crate
-        FoundCrate::Name(name) => {
-            let ident = format_ident!("{}", name);
-            quote!(::#ident) // If used by an external user
-        }
-    };
-
     let struct_tokens = generate_ivo_struct_impls(
-        &crate_root,
         &struct_name,
         &partial_struct_name,
         &partial_errors_struct_name,
@@ -51,7 +39,6 @@ pub fn derive_ivo_struct(input: TokenStream) -> TokenStream {
     );
 
     let partial_struct_tokens = generate_partial_struct(
-        &crate_root,
         &partial_struct_name,
         &partial_errors_struct_name,
         fields,

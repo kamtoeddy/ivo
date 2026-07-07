@@ -1,12 +1,11 @@
 use proc_macro2::TokenStream;
-use quote::{format_ident, quote, ToTokens};
+use quote::{format_ident, quote};
 use syn::{
     punctuated::Punctuated, spanned::Spanned, token::Comma, Attribute, Error, Field, Ident, Meta,
     Visibility,
 };
 
-pub fn generate_partial_struct<T: ToTokens>(
-    crate_root: &T,
+pub fn generate_partial_struct(
     partial_struct_name: &Ident,
     partial_errors_struct_name: &Ident,
     fields: &Punctuated<Field, Comma>,
@@ -228,9 +227,9 @@ pub fn generate_partial_struct<T: ToTokens>(
             }
         }
 
-        impl #crate_root::__private_types::types::IvoPartialStructMethods for #partial_struct_name {
-            fn ivo_internal_enumerate(&self) -> Vec<(String, #crate_root::__private_types::types::ErasedValue)> {
-                use #crate_root::__private_types::types::erase_value;
+        impl ::ivo::__private_types::types::IvoPartialStructMethods for #partial_struct_name {
+            fn ivo_internal_enumerate(&self) -> Vec<(String, ::ivo::__private_types::types::ErasedValue)> {
+                use ::ivo::__private_types::types::erase_value;
 
                 let mut tuples = Vec::new();
 
@@ -248,8 +247,8 @@ pub fn generate_partial_struct<T: ToTokens>(
                 fields_provided
             }
 
-            fn ivo_internal_get_erased_value(&self, field_name: &str)-> #crate_root::__private_types::types::ErasedValue {
-                use #crate_root::__private_types::types::erase_value;
+            fn ivo_internal_get_erased_value(&self, field_name: &str)-> ::ivo::__private_types::types::ErasedValue {
+                use ::ivo::__private_types::types::erase_value;
 
                 match field_name {
                     #( #get_erased_value_match_arms ),*
@@ -260,9 +259,9 @@ pub fn generate_partial_struct<T: ToTokens>(
             fn ivo_internal_is_value_equal(
                 &self,
                 field_name: &str,
-                value: &#crate_root::__private_types::types::ErasedValue,
+                value: &::ivo::__private_types::types::ErasedValue,
             ) -> bool {
-                use #crate_root::__private_types::types::parse_or_panic;
+                use ::ivo::__private_types::types::parse_or_panic;
 
                 match field_name {
                     #( #is_value_equal_match_arms ),*
@@ -273,9 +272,9 @@ pub fn generate_partial_struct<T: ToTokens>(
             fn ivo_internal_set(
                 &mut self,
                 field_name: &str,
-                value: &#crate_root::__private_types::types::ErasedValue,
+                value: &::ivo::__private_types::types::ErasedValue,
             ) {
-                use #crate_root::__private_types::types::parse_or_panic;
+                use ::ivo::__private_types::types::parse_or_panic;
 
                 match field_name {
                     #( #set_value_match_arms ),*
@@ -318,7 +317,7 @@ pub fn generate_partial_struct<T: ToTokens>(
             }
         }
 
-        impl <FieldErrorMetadata: Send + Sync> #crate_root::__private_types::types::IvoPartialErrorsStructMethods<FieldErrorMetadata> for #partial_errors_struct_name<FieldErrorMetadata> {
+        impl <FieldErrorMetadata: Send + Sync> ::ivo::__private_types::types::IvoPartialErrorsStructMethods<FieldErrorMetadata> for #partial_errors_struct_name<FieldErrorMetadata> {
             fn ivo_internal_enumerate(self) -> Vec<(String, (String, std::option::Option<FieldErrorMetadata>))> {
                 let mut tuples = Vec::new();
 

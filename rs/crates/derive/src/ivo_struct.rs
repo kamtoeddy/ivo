@@ -3,7 +3,6 @@ use quote::{quote, ToTokens};
 use syn::{punctuated::Punctuated, token::Comma, Field, Ident};
 
 pub fn generate_ivo_struct_impls<T: ToTokens>(
-    crate_root: &T,
     struct_name: &Ident,
     partial_struct_name: &Ident,
     partial_errors_struct_name: &Ident,
@@ -59,17 +58,17 @@ pub fn generate_ivo_struct_impls<T: ToTokens>(
                 }
             }
 
-            impl #crate_root::__private_types::IvoStruct for #struct_name { }
+            impl ::ivo::__private_types::IvoStruct for #struct_name { }
 
-            impl #crate_root::__private_types::types::IvoWithPartialStruct for #struct_name {
+            impl ::ivo::__private_types::types::IvoWithPartialStruct for #struct_name {
                 type Partial = #partial_struct_name;
             }
 
-            impl<FieldErrorMetadata: Send + Sync> #crate_root::__private_types::types::IvoWithPartialErrorsStruct<FieldErrorMetadata> for #struct_name {
+            impl<FieldErrorMetadata: Send + Sync> ::ivo::__private_types::types::IvoWithPartialErrorsStruct<FieldErrorMetadata> for #struct_name {
                 type PartialErrors = #partial_errors_struct_name<FieldErrorMetadata>;
             }
 
-            impl #crate_root::__private_types::types::IvoStructMethods for #struct_name {
+            impl ::ivo::__private_types::types::IvoStructMethods for #struct_name {
                 #[inline(always)]
                 fn ivo_internal_dangerously_get_values_from_partial(values: Self::Partial) -> Self {
                     Self {
