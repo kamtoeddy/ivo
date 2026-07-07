@@ -1,5 +1,5 @@
 use ivo::{IvoStruct, IvoUpdateError};
-use std::{sync::LazyLock, time::Instant};
+use std::time::Instant;
 
 mod domain;
 mod slugify;
@@ -12,9 +12,6 @@ async fn main() {
 }
 
 async fn run_example() {
-    // println!("runner\n\n");
-    LazyLock::force(&USER_MODEL);
-
     let timer = Instant::now();
 
     let input = PartialUserInput {
@@ -45,7 +42,7 @@ async fn run_example() {
 
     println!(
         "{} {}\n",
-        "\nCreate duration:".font_bold(),
+        "\nCreate duration:",
         format!("{:?}", timer.elapsed())
     );
 
@@ -107,7 +104,7 @@ async fn run_example() {
 
     println!(
         "{} {}\n",
-        "\nUpdate duration:".font_bold(),
+        "\nUpdate duration:",
         format!("{:?}", timer.elapsed())
     );
 
@@ -116,7 +113,7 @@ async fn run_example() {
 
     println!(
         "{} {}\n",
-        "\nDelete triggers:".font_bold(),
+        "\nDelete triggers:",
         format!("{:?}", timer.elapsed())
     );
 }
