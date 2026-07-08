@@ -119,7 +119,7 @@ impl<
                     config_name: field_name.clone(),
                     is_input: schema_input_fields.contains(&field_name),
                     is_output: schema_output_fields.contains(&field_name),
-                    name: alias.clone().unwrap_or_else(|| field_name),
+                    name: alias.clone().unwrap_or(field_name),
                 });
             }
 
@@ -152,7 +152,7 @@ impl<
                         config_name: virtual_name.to_owned(),
                         is_input: true,
                         is_output: false,
-                        name: field_name.to_owned(),
+                        name: field_name.to_string(),
                     });
                 }
             }
