@@ -23,7 +23,7 @@ mod on_success;
 // [x] on_success
 // [x] o.on_success
 // [x] o.post_validate
-// [ ] o.requied
+// [x] o.requied
 
 // nothing to update
 
@@ -490,6 +490,173 @@ async fn should_respect_the_required_rule() {
 }
 
 async_test_matrix!(should_respect_the_required_rule);
+
+async fn should_properly_handle_grouped_required_errors() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        lax: String,
+        lax_1: String,
+        lax_2: String,
+    }
+
+    #[derive(Debug, Clone, IvoStruct)]
+    struct DataInput {
+        lax: String,
+        lax_1: String,
+        lax_2: String,
+    }
+
+    const IGNORE_WITH_DIFFERENT_ERRORS: &str = "IGNORE_WITH_DIFFERENT_ERRORS";
+    const IGNORE_WITH_SAME_ERROR: &str = "IGNORE_WITH_SAME_ERROR";
+    const EXPECTED_LAX_OR_LAX_1: &str = "EXPECTED_LAX_OR_LAX_1";
+    const LAX_IS_MISSING: &str = "LAX_IS_MISSING";
+    const LAX_1_IS_MISSING: &str = "LAX_1_IS_MISSING";
+
+    let default_lax_value = "default_lax_value";
+    let default_lax_1_value = "default_lax_1_value";
+    let default_lax_2_value = "default_lax_2_value";
+
+    let schema: Schema<DataInput, Data> = Schema::new(
+        |f| {
+            f.set("lax", IvoField::LAX.default(default_lax_value.to_string()))
+                .set(
+                    "lax_1",
+                    IvoField::LAX.default(default_lax_1_value.to_string()),
+                )
+                .set(
+                    "lax_2",
+                    IvoField::LAX.default(default_lax_2_value.to_string()),
+                )
+        },
+        |o| {
+            o.required(["lax", "lax_1"], |ctx: IvoContext<DataInput, Data>, _| {
+                let mut errors = PartialDataInputErrors::new();
+
+                if let Some(lax) = ctx.input().lax_2 {
+                    if lax == IGNORE_WITH_SAME_ERROR {
+                        errors
+                            .set_lax(EXPECTED_LAX_OR_LAX_1, None)
+                            .set_lax_1(EXPECTED_LAX_OR_LAX_1, None);
+
+                        return ready(Some(errors));
+                    }
+
+                    errors
+                        .set_lax(LAX_IS_MISSING, None)
+                        .set_lax_1(LAX_1_IS_MISSING, None);
+                }
+
+                ready(errors.into_option())
+            })
+        },
+    );
+
+    let model = schema.model();
+
+    let lax = IGNORE_WITH_SAME_ERROR.to_string();
+
+    let (payload, _, _) = model
+        .create(
+            &PartialDataInput {
+                lax: None,
+                lax_1: None,
+                lax_2: Some(lax.clone()),
+            },
+            None,
+        )
+        .await
+        .err()
+        .unwrap();
+
+    assert!(payload.get("lax_2").is_none());
+    assert_eq!(payload.get("lax").unwrap()[0].reason, EXPECTED_LAX_OR_LAX_1);
+    assert_eq!(
+        payload.get("lax_1").unwrap()[0].reason,
+        EXPECTED_LAX_OR_LAX_1
+    );
+
+    let lax = IGNORE_WITH_DIFFERENT_ERRORS.to_string();
+
+    let (payload, _, _) = model
+        .create(
+            &PartialDataInput {
+                lax: None,
+                lax_1: None,
+                lax_2: Some(lax.clone()),
+            },
+            None,
+        )
+        .await
+        .err()
+        .unwrap();
+
+    assert!(payload.get("lax_2").is_none());
+    assert_eq!(payload.get("lax").unwrap()[0].reason, LAX_IS_MISSING);
+    assert_eq!(payload.get("lax_1").unwrap()[0].reason, LAX_1_IS_MISSING);
+
+    // updates
+
+    let data = Data {
+        lax: default_lax_value.to_string(),
+        lax_1: default_lax_1_value.to_string(),
+        lax_2: default_lax_2_value.to_string(),
+    };
+
+    let lax = IGNORE_WITH_SAME_ERROR.to_string();
+
+    let (error, _, _) = model
+        .update(
+            &data,
+            &PartialDataInput {
+                lax: None,
+                lax_1: None,
+                lax_2: Some(lax.clone()),
+            },
+            None,
+        )
+        .await
+        .err()
+        .unwrap();
+
+    match error {
+        IvoUpdateError::ValidationError(payload) => {
+            assert!(payload.get("lax_2").is_none());
+            assert_eq!(payload.get("lax").unwrap()[0].reason, EXPECTED_LAX_OR_LAX_1);
+            assert_eq!(
+                payload.get("lax_1").unwrap()[0].reason,
+                EXPECTED_LAX_OR_LAX_1
+            );
+        }
+        _ => unreachable!("expected a validation error"),
+    }
+
+    let lax = IGNORE_WITH_DIFFERENT_ERRORS.to_string();
+
+    let (error, _, _) = model
+        .update(
+            &data,
+            &PartialDataInput {
+                lax: None,
+                lax_1: None,
+                lax_2: Some(lax.clone()),
+            },
+            None,
+        )
+        .await
+        .err()
+        .unwrap();
+
+    match error {
+        IvoUpdateError::ValidationError(payload) => {
+            assert!(payload.get("lax_2").is_none());
+            assert_eq!(payload.get("lax").unwrap()[0].reason, LAX_IS_MISSING);
+            assert_eq!(payload.get("lax_1").unwrap()[0].reason, LAX_1_IS_MISSING);
+        }
+        _ => unreachable!("expected a validation error"),
+    }
+}
+
+async_test_matrix!(should_properly_handle_grouped_required_errors);
 
 // validators
 
