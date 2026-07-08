@@ -304,6 +304,18 @@ pub fn generate_partial_struct(
                 }
             }
 
+            #[inline(always)]
+            /// This is a utility method used to wrap the partial struct into an option.
+            ///
+            /// If every field has as value None, None is return, otherwise Some(self) is returned
+            #vis fn into_option(self) -> std::option::Option<Self> {
+                if self.is_empty() {
+                    None
+                } else {
+                    Some(self)
+                }
+            }
+
             /// This is a utility method used to evaluate whether some
             /// fields are not None.
             ///

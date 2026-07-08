@@ -16,11 +16,11 @@ async fn run_example() {
     LazyLock::force(&USER_MODEL);
 
     let input = PartialUserInput {
-        // email: None,
-        email: Some(Some("1@1.com".into())),
+        email: None,
+        // email: Some(Some("1@1.com".into())),
         username: Some("user-10".into()),
-        // phone_number: None,
-        phone_number: Some(Some("123 4567 8910".into())),
+        phone_number: None,
+        // phone_number: Some(Some("123 4567 8910".into())),
         slug_id: None,
         // slug_id: Some("sloppy-slug-id".into()),
     };
@@ -33,12 +33,12 @@ async fn run_example() {
 
     match r {
         Ok((data, _, handle_success)) => {
-            println!("\n{:?}\n", data);
+            println!("\n{:#?}\n", data);
 
             handle_success().await;
         }
         Err((payload, _, handle_failure)) => {
-            println!("\nFailed to create: {:?}", payload);
+            println!("\nFailed to create: {:#?}", payload);
 
             handle_failure().await;
         }
@@ -63,7 +63,7 @@ async fn run_example() {
         updated_at: two_days_ago,
     };
 
-    println!("\n{:?}", user);
+    println!("\n{:#?}", user);
 
     let updates = PartialUserInput {
         // email: None,
@@ -90,8 +90,8 @@ async fn run_example() {
         Ok((data, _, handle_success)) => {
             let merged_data = user.clone_with_updates(&data);
 
-            println!("\nupdates: {:?}", data);
-            println!("\nold + updates: {:?}\n", merged_data);
+            println!("\nupdates: {:#?}", data);
+            println!("\nold + updates: {:#?}\n", merged_data);
 
             updated_user = Some(merged_data);
 
@@ -101,7 +101,7 @@ async fn run_example() {
             match error {
                 IvoUpdateError::NothingToUpdate => println!("\nNothing to update"),
                 IvoUpdateError::ValidationError(payload) => {
-                    println!("\nFailed to update: {:?}", payload)
+                    println!("\nFailed to update: {:#?}", payload)
                 }
             };
 
@@ -134,8 +134,8 @@ async fn run_example() {
 
     match r {
         Ok((data, _, handle_success)) => {
-            println!("\nupdates: {:?}", data);
-            println!("\nold + updates: {:?}\n", user.clone_with_updates(&data));
+            println!("\nupdates: {:#?}", data);
+            println!("\nold + updates: {:#?}\n", user.clone_with_updates(&data));
 
             handle_success().await;
         }
@@ -143,7 +143,7 @@ async fn run_example() {
             match error {
                 IvoUpdateError::NothingToUpdate => println!("\nNothing to update\n"),
                 IvoUpdateError::ValidationError(payload) => {
-                    println!("\nFailed to update: {:?}\n", payload)
+                    println!("\nFailed to update: {:#?}\n", payload)
                 }
             };
 
