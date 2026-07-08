@@ -4,11 +4,13 @@ use crate::async_test_matrix;
 use ivo::{IvoContext, IvoField, IvoStruct, IvoUpdateError, Schema};
 
 mod post_validate;
+mod required;
 
 // [x] ignore_update
 // [x] on_delete
 // [x] on_success
 // [x] post_validate
+// [x] required
 
 // ignore_update
 async fn should_respect_option_to_ignore_updates() {
