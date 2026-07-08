@@ -1,4 +1,4 @@
 [alias]
 ci = "t --workspace"
-cl = "clippy"
+cl = "clippy --workspace"
 tcov = "llvm-cov --html"

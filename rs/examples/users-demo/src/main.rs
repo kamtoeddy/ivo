@@ -29,7 +29,7 @@ async fn run_example() {
 
     let r = USER_MODEL.create(&input, UserCtxOptions::new()).await;
 
-    println!("\nCreate duration: {}", format!("{:?}", timer.elapsed()));
+    println!("\nCreate duration: {:?}", timer.elapsed());
 
     match r {
         Ok((data, _, handle_success)) => {
@@ -82,7 +82,7 @@ async fn run_example() {
         .update(&user, &updates, UserCtxOptions::new())
         .await;
 
-    println!("\nUpdate duration: {}", format!("{:?}", timer.elapsed()));
+    println!("\nUpdate duration: {:?}", timer.elapsed());
 
     let mut updated_user = None;
 
@@ -130,7 +130,7 @@ async fn run_example() {
         .update(&user, &updates, UserCtxOptions::new())
         .await;
 
-    println!("\nUpdate duration: {}", format!("{:?}", timer.elapsed()));
+    println!("\nUpdate duration: {:?}", timer.elapsed());
 
     match r {
         Ok((data, _, handle_success)) => {
@@ -154,5 +154,5 @@ async fn run_example() {
     let timer = Instant::now();
     USER_MODEL.delete(user.clone(), UserCtxOptions::new()).await;
 
-    println!("\nDelete triggers: {}", format!("{:?}", timer.elapsed()));
+    println!("\nDelete triggers: {:?}", timer.elapsed());
 }

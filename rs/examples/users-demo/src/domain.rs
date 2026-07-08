@@ -195,7 +195,7 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
                             }),
                     )
                     .timestamps(|t| {
-                        t.resolve(|| Utc::now())
+                        t.resolve(Utc::now)
                             .created_at(None)
                             .updated_at(Some("updated_at"))
                     })

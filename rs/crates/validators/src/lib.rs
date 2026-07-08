@@ -9,7 +9,7 @@ static EMAIL_RE: LazyLock<Regex> = LazyLock::new(|| {
 pub fn validate_email(value: &str) -> ValidatorResult<String, String> {
     let validated = value.trim();
 
-    if EMAIL_RE.is_match(&validated) {
+    if EMAIL_RE.is_match(validated) {
         return Ok(validated.to_string());
     }
 
