@@ -1,7 +1,7 @@
 use std::{collections::HashSet, fmt::Debug};
 
 use crate::{
-    __private_types::types::IvoWithPartialErrorsStruct,
+    __private_types::{types::IvoWithPartialErrorsStruct, FieldInfo},
     schema::fields::base::{FieldType, InternalFieldConfig},
     IvoErrorTool, IvoStruct, Schema,
 };
@@ -81,18 +81,18 @@ impl<
     }
 
     #[inline(always)]
-    pub fn contains(&self, field_name: &String) -> bool {
+    pub fn contains(&self, field_name: &str) -> bool {
         self.config_names.contains(field_name)
     }
 
     #[inline(always)]
-    fn find(&self, field_name: &String) -> Option<FieldInfo> {
+    fn find(&self, field_name: &str) -> Option<FieldInfo> {
         self.fields.iter().find(|f| f.name == *field_name).cloned()
     }
 
-    pub fn get_and_add(&mut self, field_name: &String) -> Option<FieldInfo> {
+    pub fn get(&mut self, field_name: &str) -> Option<FieldInfo> {
         self.find(field_name).or_else(|| {
-            Self::get(
+            Self::get_info(
                 field_name,
                 self.schema,
                 &self.schema_input_fields,
@@ -102,8 +102,8 @@ impl<
         })
     }
 
-    fn get(
-        field_name: &String,
+    fn get_info(
+        field_name: &str,
         schema: &Schema<I, O, CtxOptions, Timestamp, ErrorTool>,
         schema_input_fields: &HashSet<String>,
         schema_output_fields: &HashSet<String>,
@@ -113,11 +113,13 @@ impl<
         }) = schema.field_configs.get(field_name)
         {
             if depends_on.is_none() {
+                let field_name = field_name.to_string();
+
                 return Some(FieldInfo {
                     config_name: field_name.clone(),
-                    is_input: schema_input_fields.contains(field_name),
-                    is_output: schema_output_fields.contains(field_name),
-                    name: alias.clone().unwrap_or_else(|| field_name.clone()),
+                    is_input: schema_input_fields.contains(&field_name),
+                    is_output: schema_output_fields.contains(&field_name),
+                    name: alias.clone().unwrap_or_else(|| field_name),
                 });
             }
 
@@ -178,12 +180,4 @@ impl<
             schema_output_fields: self.schema_output_fields.clone(),
         }
     }
-}
-
-#[derive(Clone, Debug)]
-pub(super) struct FieldInfo {
-    pub name: String,
-    pub config_name: String,
-    pub is_input: bool,
-    pub is_output: bool,
 }

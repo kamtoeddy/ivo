@@ -162,17 +162,17 @@ where
     }
 }
 
-pub trait IntoValueResolverWithMiniContext<T, I: IvoStruct, CtxOptions> {
-    fn into_uniform(self) -> UniformValueResolverWithMiniContext<I, CtxOptions>;
+pub trait IntoValueResolverWithSharedInput<T, I: IvoStruct, CtxOptions> {
+    fn into_uniform(self) -> UniformValueResolverWithSharedInput<I, CtxOptions>;
 }
 
-impl<F, Fut, T, I: IvoStruct, CtxOptions> IntoValueResolverWithMiniContext<T, I, CtxOptions> for F
+impl<F, Fut, T, I: IvoStruct, CtxOptions> IntoValueResolverWithSharedInput<T, I, CtxOptions> for F
 where
     T: IvoFieldValue,
     F: Fn(IvoSharedInput<I>, IvoRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = T> + Send + 'static,
 {
-    fn into_uniform(self) -> UniformValueResolverWithMiniContext<I, CtxOptions> {
+    fn into_uniform(self) -> UniformValueResolverWithSharedInput<I, CtxOptions> {
         Box::new(move |ctx, o| Box::pin(self(ctx, o).map(|v| erase_value(v))))
     }
 }
@@ -235,16 +235,16 @@ pub type UniformResolver<I, O, CtxOptions> = Box<
         + 'static,
 >;
 
-pub type UniformValueResolverWithMiniContext<I, CtxOptions> = Box<
+pub type UniformValueResolverWithSharedInput<I, CtxOptions> = Box<
     dyn Fn(IvoSharedInput<I>, IvoRwCtxOptions<CtxOptions>) -> BoxFuture<'static, ErasedValue>
         + Send
         + Sync
         + 'static,
 >;
 
-pub enum ValueResolverWithMiniContext<T, I: IvoStruct, CtxOptions> {
+pub enum ValueResolverWithSharedInput<T, I: IvoStruct, CtxOptions> {
     Static(T),
-    Func(UniformValueResolverWithMiniContext<I, CtxOptions>),
+    Func(UniformValueResolverWithSharedInput<I, CtxOptions>),
 }
 
 pub enum IsFieldProvisionEnabled<I: IvoStruct, O: IvoStruct, CtxOptions> {
@@ -260,7 +260,7 @@ pub enum ComputableRequiredError<I: IvoStruct, O: IvoStruct, CtxOptions> {
 
 pub type RequiredError = Option<String>;
 
-pub type RequiredResolver<I, O, CtxOptions> = Box<
+pub type RequiredResolver<I: IvoStruct, O: IvoStruct, CtxOptions> = Box<
     dyn Fn(IvoContext<I, O>, IvoRwCtxOptions<CtxOptions>) -> BoxFuture<'static, RequiredError>
         + Send
         + Sync

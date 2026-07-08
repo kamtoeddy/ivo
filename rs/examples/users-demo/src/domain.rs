@@ -90,29 +90,13 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
                                 }
 
                                 ready(Ok(None))
-                            })
-                            .required(|ctx: Ctx, _| {
-                                let input = ctx.input();
-
-                                ready(is_email_or_phone_number_required(
-                                    input.email.unwrap_or_default(),
-                                    input.phone_number.unwrap_or_default(),
-                                ))
                             }),
                     )
                     .set(
                         "phone_number",
                         IvoField::LAX
                             .default(None::<String>)
-                            .validate(|_, _, _| ready(Ok(None)))
-                            .required(|ctx: Ctx, _| {
-                                let input = ctx.input();
-
-                                ready(is_email_or_phone_number_required(
-                                    input.email.unwrap_or_default(),
-                                    input.phone_number.unwrap_or_default(),
-                                ))
-                            }),
+                            .validate(|_, _, _| ready(Ok(None))),
                     )
                     .set(
                         "username",
@@ -217,7 +201,20 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
                     })
             },
             |o| {
-                o.post_validate(["username", "v_slug"], |b| {
+                o.required(["email", "phone_number"], |ctx: Ctx, _| {
+                    if ctx.is_update() {
+                        return ready(None);
+                    }
+
+                    let error = "provide either an \"email\" or a \"phone number\" to proceed";
+
+                    let mut errors = PartialUserInputErrors::new();
+
+                    errors.set_email(error, None).set_phone_number(error, None);
+
+                    ready(Some(errors))
+                })
+                .post_validate(["username", "v_slug"], |b| {
                     b.validate(async |ctx: Ctx, o: RwCtxOptions| {
                         let input = ctx.input();
 
@@ -283,17 +280,6 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
             },
         )
     });
-
-fn is_email_or_phone_number_required(
-    email: Option<String>,
-    phone_number: Option<String>,
-) -> Option<String> {
-    if email.is_some() || phone_number.is_some() {
-        return None;
-    }
-
-    return Some("provide either an \"email\" or a \"phone number\" to proceed".into());
-}
 
 fn is_username_or_slug_id_updatable(username_last_updated_at: Option<Timestamp>) -> bool {
     match username_last_updated_at {

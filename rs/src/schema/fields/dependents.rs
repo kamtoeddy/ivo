@@ -6,8 +6,8 @@ use crate::{
             base::{BuildableFieldConfig, FieldConfig, FieldType, InternalFieldConfig},
             types::{
                 IntoDeleteHandler, IntoSuccessHandler, IntoUniformResolver,
-                IntoValueResolverWithMiniContext, IsFieldProvisionEnabled, Resolver,
-                ValueResolverWithMiniContext,
+                IntoValueResolverWithSharedInput, IsFieldProvisionEnabled, Resolver,
+                ValueResolverWithSharedInput,
             },
         },
         types::{
@@ -44,7 +44,7 @@ pub struct DependentFieldBuilder<
     _readonly: PhantomData<HasReadonly>,
     _success_handlers: PhantomData<HasSuccess>,
     // actual data...
-    default: Option<ValueResolverWithMiniContext<ErasedValue, I, CtxOptions>>,
+    default: Option<ValueResolverWithSharedInput<ErasedValue, I, CtxOptions>>,
     depends_on: Option<Vec<&'static str>>,
     resolver: Option<Resolver<ErasedValue, I, O, CtxOptions>>,
     ignore_update: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
@@ -175,7 +175,7 @@ impl<T: IvoFieldValue, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErr
 {
     pub fn default(self, value: T) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes> {
         DependentFieldBuilder {
-            default: Some(ValueResolverWithMiniContext::Static(erase_value(value))),
+            default: Some(ValueResolverWithSharedInput::Static(erase_value(value))),
             ..Default::default()
         }
     }
@@ -185,10 +185,10 @@ impl<T: IvoFieldValue, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErr
         default_fn: F,
     ) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool, YesComputed>
     where
-        F: IntoValueResolverWithMiniContext<T, I, CtxOptions>,
+        F: IntoValueResolverWithSharedInput<T, I, CtxOptions>,
     {
         DependentFieldBuilder {
-            default: Some(ValueResolverWithMiniContext::Func(
+            default: Some(ValueResolverWithSharedInput::Func(
                 default_fn.into_uniform(),
             )),
             ..Default::default()

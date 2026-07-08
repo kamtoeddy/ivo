@@ -2,11 +2,12 @@
 
 use std::marker::PhantomData;
 
+use crate::schema::options::types::RequiredOptionConfig;
 use crate::types::internal::IvoStruct;
 use crate::{
     __private_types::types::IvoWithPartialErrorsStruct,
     schema::{
-        options::types::{OnSuccessConfig, PostValidationConfig, ShouldUpdateOptionResolver},
+        options::types::{IgnoreUpdateOptionResolver, OnSuccessConfig, PostValidationConfig},
         types::DeleteHandler,
         No,
     },
@@ -19,10 +20,11 @@ pub struct SchemaOptions<
     CtxOptions,
     ErrorTool: IvoErrorTool,
 > {
-    pub ignore_update: Option<ShouldUpdateOptionResolver<I, O, CtxOptions>>,
+    pub ignore_update: Option<IgnoreUpdateOptionResolver<I, O, CtxOptions>>,
     pub on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
     pub on_success_fns: Option<Vec<OnSuccessConfig<I, O, CtxOptions>>>,
     pub post_validate: Option<Vec<PostValidationConfig<I, O, CtxOptions, ErrorTool>>>,
+    pub required: Option<Vec<RequiredOptionConfig<I, O, CtxOptions, ErrorTool>>>,
 }
 
 impl<
@@ -46,16 +48,19 @@ pub struct SchemaOptionsBuilder<
     HasDelete = No,
     HasSuccess = No,
     HasIgnoreUpdate = No,
+    HasRequired = No,
 > {
     _on_delete_fns: PhantomData<HasDelete>,
     _on_success_fns: PhantomData<HasSuccess>,
     _post_validate: PhantomData<HasPostValidate>,
     _ignore_update: PhantomData<HasIgnoreUpdate>,
+    _required: PhantomData<HasRequired>,
     //
-    pub(crate) ignore_update: Option<ShouldUpdateOptionResolver<I, O, CtxOptions>>,
+    pub(crate) ignore_update: Option<IgnoreUpdateOptionResolver<I, O, CtxOptions>>,
     pub(crate) on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
     pub(crate) on_success_fns: Option<Vec<OnSuccessConfig<I, O, CtxOptions>>>,
     pub(crate) post_validate: Option<Vec<PostValidationConfig<I, O, CtxOptions, ErrorTool>>>,
+    pub(crate) required: Option<Vec<RequiredOptionConfig<I, O, CtxOptions, ErrorTool>>>,
 }
 
 impl<
@@ -63,6 +68,7 @@ impl<
         HasDelete,
         HasSuccess,
         HasIgnoreUpdate,
+        HasRequired,
         I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
         O: IvoStruct,
         CtxOptions,
@@ -77,6 +83,7 @@ impl<
         HasDelete,
         HasSuccess,
         HasIgnoreUpdate,
+        HasRequired,
     >
 {
     pub const fn new() -> Self {
@@ -85,24 +92,28 @@ impl<
             on_delete_fns: None,
             on_success_fns: None,
             post_validate: None,
+            required: None,
             _on_delete_fns: PhantomData,
             _on_success_fns: PhantomData,
             _post_validate: PhantomData,
             _ignore_update: PhantomData,
+            _required: PhantomData,
         }
     }
 
     pub fn from(
-        ignore_update: Option<ShouldUpdateOptionResolver<I, O, CtxOptions>>,
+        ignore_update: Option<IgnoreUpdateOptionResolver<I, O, CtxOptions>>,
         on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
         on_success_fns: Option<Vec<OnSuccessConfig<I, O, CtxOptions>>>,
         post_validate: Option<Vec<PostValidationConfig<I, O, CtxOptions, ErrorTool>>>,
+        required: Option<Vec<RequiredOptionConfig<I, O, CtxOptions, ErrorTool>>>,
     ) -> Self {
         Self {
             ignore_update,
             on_delete_fns,
             on_success_fns,
             post_validate,
+            required,
             ..Default::default()
         }
     }
@@ -113,6 +124,7 @@ impl<
         HasDelete,
         HasSuccess,
         HasIgnoreUpdate,
+        HasRequired,
         I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
         O: IvoStruct,
         CtxOptions,
@@ -127,6 +139,7 @@ impl<
         HasDelete,
         HasSuccess,
         HasIgnoreUpdate,
+        HasRequired,
     >
 {
     fn default() -> Self {

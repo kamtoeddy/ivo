@@ -9,8 +9,8 @@ use crate::{
             types::{
                 BooleanResolver, IntoBooleanResolver, IntoDeleteHandler, IntoFailureHandler,
                 IntoFieldValidator, IntoRequiredResolver, IntoSuccessHandler,
-                IntoValueResolverWithMiniContext, IsFieldProvisionEnabled, RequiredResolver,
-                UniformValidator, ValueResolverWithMiniContext,
+                IntoValueResolverWithSharedInput, IsFieldProvisionEnabled, RequiredResolver,
+                UniformValidator, ValueResolverWithSharedInput,
             },
         },
         types::{
@@ -54,7 +54,7 @@ pub struct LaxFieldBuilder<
     _on_failure_fns: PhantomData<HasFailure>,
     _on_success_fns: PhantomData<HasSuccess>,
     // actual data...
-    default: Option<ValueResolverWithMiniContext<ErasedValue, I, CtxOptions>>,
+    default: Option<ValueResolverWithSharedInput<ErasedValue, I, CtxOptions>>,
     validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
     re_validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
     required_fn: Option<RequiredResolver<I, O, CtxOptions>>,
@@ -226,7 +226,7 @@ impl<T: IvoFieldValue, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErr
 {
     pub fn default(self, value: T) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes> {
         LaxFieldBuilder {
-            default: Some(ValueResolverWithMiniContext::Static(erase_value(value))),
+            default: Some(ValueResolverWithSharedInput::Static(erase_value(value))),
             ..Default::default()
         }
     }
@@ -236,10 +236,10 @@ impl<T: IvoFieldValue, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErr
         default_fn: F,
     ) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, YesComputed>
     where
-        F: IntoValueResolverWithMiniContext<T, I, CtxOptions>,
+        F: IntoValueResolverWithSharedInput<T, I, CtxOptions>,
     {
         LaxFieldBuilder {
-            default: Some(ValueResolverWithMiniContext::Func(
+            default: Some(ValueResolverWithSharedInput::Func(
                 default_fn.into_uniform(),
             )),
             ..Default::default()

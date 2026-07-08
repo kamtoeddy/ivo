@@ -19,8 +19,8 @@ async fn run_example() {
         // email: None,
         email: Some(Some("1@1.com".into())),
         username: Some("user-10".into()),
-        phone_number: None,
-        // phone_number: Some(Some("123 4567 8910".into())),
+        // phone_number: None,
+        phone_number: Some(Some("123 4567 8910".into())),
         slug_id: None,
         // slug_id: Some("sloppy-slug-id".into()),
     };

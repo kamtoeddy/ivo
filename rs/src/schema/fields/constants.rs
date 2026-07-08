@@ -5,8 +5,8 @@ use crate::{
         fields::{
             base::{BuildableFieldConfig, FieldConfig, FieldType, InternalFieldConfig},
             types::{
-                IntoDeleteHandler, IntoSuccessHandler, IntoValueResolverWithMiniContext,
-                ValueResolverWithMiniContext,
+                IntoDeleteHandler, IntoSuccessHandler, IntoValueResolverWithSharedInput,
+                ValueResolverWithSharedInput,
             },
         },
         types::{DeleteHandler, IvoFieldValue, No, SuccessHandler, Yes},
@@ -34,7 +34,7 @@ pub struct ConstantFieldBuilder<
     _del_handlers: PhantomData<HasDelete>,
     _success_handlers: PhantomData<HasSuccess>,
     // actual data...
-    value: Option<ValueResolverWithMiniContext<ErasedValue, I, CtxOptions>>,
+    value: Option<ValueResolverWithSharedInput<ErasedValue, I, CtxOptions>>,
     on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
     on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
 }
@@ -108,7 +108,7 @@ impl<I: IvoStruct, O: IvoStruct, T: IvoFieldValue, CtxOptions, ErrorTool: IvoErr
 {
     pub fn value(self, value: T) -> ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes> {
         ConstantFieldBuilder {
-            value: Some(ValueResolverWithMiniContext::Static(erase_value(value))),
+            value: Some(ValueResolverWithSharedInput::Static(erase_value(value))),
             on_delete_fns: None,
             on_success_fns: None,
             ..Default::default()
@@ -120,10 +120,10 @@ impl<I: IvoStruct, O: IvoStruct, T: IvoFieldValue, CtxOptions, ErrorTool: IvoErr
         resolver: F,
     ) -> ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes>
     where
-        F: IntoValueResolverWithMiniContext<T, I, CtxOptions>,
+        F: IntoValueResolverWithSharedInput<T, I, CtxOptions>,
     {
         ConstantFieldBuilder {
-            value: Some(ValueResolverWithMiniContext::Func(resolver.into_uniform())),
+            value: Some(ValueResolverWithSharedInput::Func(resolver.into_uniform())),
             on_delete_fns: None,
             on_success_fns: None,
             ..Default::default()

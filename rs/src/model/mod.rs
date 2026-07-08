@@ -8,11 +8,13 @@ use std::future::ready;
 use std::sync::Arc;
 
 use crate::__private_types::types::{IvoPartialErrorsStructMethods, IvoWithPartialErrorsStruct};
-use crate::model::internal::{FieldInfo, FieldInfoCollection};
+use crate::__private_types::FieldInfo;
+use crate::model::internal::FieldInfoCollection;
+use crate::schema::fields::types::RequiredResolver;
 use crate::schema::{
     fields::{
         base::{FieldType, InternalFieldConfig},
-        types::{ComputableRequiredError, IsFieldProvisionEnabled, ValueResolverWithMiniContext},
+        types::{ComputableRequiredError, IsFieldProvisionEnabled, ValueResolverWithSharedInput},
         TimestampConfig,
     },
     Schema,
@@ -23,7 +25,9 @@ use crate::types::internal::{
 };
 use crate::types::InternalIvoContext;
 
-use crate::schema::options::types::{OnSuccessConfig, PostValidationConfig};
+use crate::schema::options::types::{
+    OnSuccessConfig, PostValidationConfig, RequiredOptionConfig, UniformRequiredResolver,
+};
 
 use crate::{IvoContext, IvoCtxOptions, IvoRwCtxOptions};
 
@@ -744,10 +748,7 @@ impl<
                 validators,
             } in configs
             {
-                if fields
-                    .iter()
-                    .any(|f| fields_provided.contains(&f.to_string()))
-                {
+                if fields.iter().any(|f| fields_provided.contains(f)) {
                     if let Some(ref pre_validator) = pre_validator {
                         pre_validators.push((fields, pre_validator));
                     }
@@ -785,7 +786,7 @@ impl<
                 match pre_validation {
                     Err(errors) => {
                         for (field_name, (reason, metadata)) in errors.ivo_internal_enumerate() {
-                            let field_info = input_fields.get_and_add(&field_name).unwrap();
+                            let field_info = input_fields.get(&field_name).unwrap();
 
                             if fields.contains(&field_info.config_name.as_str()) {
                                 error_tool.add(&field_name, IvoFieldError { reason, metadata });
@@ -794,7 +795,7 @@ impl<
                     }
                     Ok(Some(updates)) => {
                         for (field_name, value) in updates.ivo_internal_enumerate() {
-                            let field_info = input_fields.get_and_add(&field_name).unwrap();
+                            let field_info = input_fields.get(&field_name).unwrap();
 
                             if !fields.contains(&field_info.config_name.as_str()) {
                                 continue;
@@ -847,7 +848,7 @@ impl<
             match validation {
                 Err(errors) => {
                     for (field_name, (reason, metadata)) in errors.ivo_internal_enumerate() {
-                        let field_info = input_fields.get_and_add(&field_name).unwrap();
+                        let field_info = input_fields.get(&field_name).unwrap();
 
                         if fields.contains(&field_info.config_name.as_str()) {
                             error_tool.add(&field_name, IvoFieldError { reason, metadata });
@@ -856,7 +857,7 @@ impl<
                 }
                 Ok(Some(updates)) => {
                     for (field_name, value) in updates.ivo_internal_enumerate() {
-                        let field_info = input_fields.get_and_add(&field_name).unwrap();
+                        let field_info = input_fields.get(&field_name).unwrap();
 
                         if !fields.contains(&field_info.config_name.as_str()) {
                             continue;
@@ -954,7 +955,7 @@ impl<
                     ..
                 } if depends_on
                     .iter()
-                    .any(|parent| fields_changed.contains(&parent.to_string())) =>
+                    .any(|parent| fields_changed.contains(parent)) =>
                 {
                     if !is_update {
                         resolvers.push((field_name, resolver));
@@ -965,7 +966,7 @@ impl<
                     // handle readonly during updates
                     if let InternalFieldConfig {
                         field_type: FieldType::Dependent,
-                        default: Some(ValueResolverWithMiniContext::Static(default_value)),
+                        default: Some(ValueResolverWithSharedInput::Static(default_value)),
                         ignore_update: Some(IsFieldProvisionEnabled::Readonly),
                         ..
                     } = config
@@ -1041,12 +1042,12 @@ impl<
                     value,
                     ..
                 } => match value {
-                    Some(ValueResolverWithMiniContext::Static(value)) => {
+                    Some(ValueResolverWithSharedInput::Static(value)) => {
                         output.ivo_internal_set(field_name, value);
 
                         continue;
                     }
-                    Some(ValueResolverWithMiniContext::Func(resolver)) => {
+                    Some(ValueResolverWithSharedInput::Func(resolver)) => {
                         resolvers.push((field_name.to_string(), resolver));
                         continue;
                     }
@@ -1057,10 +1058,10 @@ impl<
                     default: Some(default),
                     ..
                 } => match default {
-                    ValueResolverWithMiniContext::Static(value) => {
+                    ValueResolverWithSharedInput::Static(value) => {
                         output.ivo_internal_set(field_name, value);
                     }
-                    ValueResolverWithMiniContext::Func(resolver) => {
+                    ValueResolverWithSharedInput::Func(resolver) => {
                         resolvers.push((field_name.to_string(), resolver));
                     }
                 },
@@ -1123,7 +1124,7 @@ impl<
             }
 
             for (field_name, value) in input_values.ivo_internal_enumerate() {
-                let field_info = fields_provided.get_and_add(&field_name).unwrap();
+                let field_info = fields_provided.get(&field_name).unwrap();
 
                 if (field_info.is_input && !field_info.is_output)
                     || !previous_values.ivo_internal_is_value_equal(&field_name, &value)
@@ -1133,7 +1134,7 @@ impl<
             }
         } else {
             for field_name in input_values.ivo_internal_fields_provided() {
-                let field_info = fields_provided.get_and_add(&field_name).unwrap();
+                let field_info = fields_provided.get(&field_name).unwrap();
 
                 field_info_vec.push(field_info);
             }
@@ -1171,7 +1172,7 @@ impl<
                         resolvers.push((field_info, resolver));
                     }
                     Some(IsFieldProvisionEnabled::Readonly) if is_update => {
-                        if let Some(ValueResolverWithMiniContext::Static(value)) = default {
+                        if let Some(ValueResolverWithSharedInput::Static(value)) = default {
                             // readonly means: only allow update if value prev_value == default_value
 
                             if previous_values.ivo_internal_is_value_equal(&field_info.name, value)
@@ -1251,6 +1252,7 @@ impl<
         let mut error_tool = ErrorTool::new();
         let mut resolvers = vec![];
         let is_update = ctx.is_update();
+        let mut input_fields = fields_provided.clone();
 
         for (field_name, config) in self.schema.field_configs.iter() {
             if fields_provided.contains(field_name) {
@@ -1304,7 +1306,60 @@ impl<
             }
         }
 
-        if resolvers.is_empty() {
+        let mut tasks = resolvers
+            .iter()
+            .map(|(field_name, resolver)| {
+                let field_info = input_fields.get(field_name).unwrap();
+
+                let r = <RequiredResolver<I, O, CtxOptions> as UniformRequiredResolver<
+                    I,
+                    O,
+                    CtxOptions,
+                    ErrorTool,
+                >>::resolve(
+                    resolver,
+                    vec![field_info],
+                    Arc::clone(&ctx),
+                    Arc::clone(&options),
+                );
+
+                r
+            })
+            .collect::<Vec<_>>();
+
+        if let Some(ref configs) = self.schema.options.required {
+            for config in configs {
+                if config
+                    .fields
+                    .iter()
+                    .any(|field_name| fields_provided.contains(field_name))
+                {
+                    continue;
+                }
+
+                let field_info_vec = config
+                    .fields
+                    .iter()
+                    .map(|field_name| input_fields.get(field_name).unwrap())
+                    .collect::<Vec<_>>();
+
+                let r = <RequiredOptionConfig<I, O, CtxOptions, ErrorTool> as UniformRequiredResolver<
+                    I,
+                    O,
+                    CtxOptions,
+                    ErrorTool,
+                >>::resolve(
+                    config,
+                    field_info_vec,
+                    Arc::clone(&ctx),
+                    Arc::clone(&options),
+                );
+
+                tasks.push(r);
+            }
+        }
+
+        if tasks.is_empty() {
             if error_tool.has_errors() {
                 return Err(error_tool.payload());
             }
@@ -1312,22 +1367,9 @@ impl<
             return Ok(());
         }
 
-        let tasks = resolvers.into_iter().map(async |(field_name, resolver)| {
-            (
-                field_name,
-                resolver(Arc::clone(&ctx), Arc::clone(&options)).await,
-            )
-        });
-
-        for (field_name, required) in join_all(tasks).await {
-            if let Some(reason) = required {
-                error_tool.add(
-                    field_name,
-                    IvoFieldError {
-                        reason,
-                        metadata: None,
-                    },
-                );
+        for values in join_all(tasks).await {
+            for (field_name, error) in values.unwrap_or_default() {
+                error_tool.add(&field_name, error);
             }
         }
 

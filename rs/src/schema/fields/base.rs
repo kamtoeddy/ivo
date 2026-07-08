@@ -5,7 +5,7 @@ use crate::{
     schema::{
         fields::types::{
             BooleanResolver, ComputableRequiredError, IsFieldProvisionEnabled, RequiredResolver,
-            Resolver, TimestampResolver, UniformValidator, ValueResolverWithMiniContext,
+            Resolver, TimestampResolver, UniformValidator, ValueResolverWithSharedInput,
             VirtualSanitizer,
         },
         types::{DeleteHandler, FailureHandler, IvoFieldValue, No, SuccessHandler, Yes},
@@ -31,9 +31,9 @@ pub enum FieldType {
 pub struct FieldConfig<T, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool> {
     pub field_type: FieldType,
     pub alias: Option<String>,
-    pub default: Option<ValueResolverWithMiniContext<T, I, CtxOptions>>,
+    pub default: Option<ValueResolverWithSharedInput<T, I, CtxOptions>>,
     pub depends_on: Option<Vec<&'static str>>,
-    pub value: Option<ValueResolverWithMiniContext<T, I, CtxOptions>>,
+    pub value: Option<ValueResolverWithSharedInput<T, I, CtxOptions>>,
     pub required_fn: Option<RequiredResolver<I, O, CtxOptions>>,
     pub required_error: Option<ComputableRequiredError<I, O, CtxOptions>>,
     pub resolver: Option<Resolver<T, I, O, CtxOptions>>,

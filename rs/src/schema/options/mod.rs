@@ -6,7 +6,12 @@ pub(crate) mod types;
 use crate::{
     __private_types::types::IvoWithPartialErrorsStruct,
     schema::{
-        fields::types::IntoDeleteHandler, options::types::IntoShouldUpdateOptionResolver, Yes,
+        fields::types::IntoDeleteHandler,
+        options::types::{
+            IntoRequiredOptionsResolver, IntoShouldUpdateOptionResolver, RequiredOptionConfig,
+        },
+        types::No,
+        Yes,
     },
     IvoErrorTool, IvoStruct,
 };
@@ -29,6 +34,7 @@ impl<
         HasDelete,
         HasSuccess,
         HasIgnoreUpdate,
+        HasRequired,
         I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
         O: IvoStruct,
         CtxOptions,
@@ -43,6 +49,7 @@ impl<
         HasDelete,
         HasSuccess,
         HasIgnoreUpdate,
+        HasRequired,
     >
 {
     fn build(self) -> SchemaOptions<I, O, CtxOptions, ErrorTool> {
@@ -51,6 +58,7 @@ impl<
             on_success_fns: self.on_success_fns,
             post_validate: self.post_validate,
             ignore_update: self.ignore_update,
+            required: self.required,
         }
     }
 }
@@ -60,6 +68,7 @@ impl<
         HasDelete,
         HasSuccess,
         HasIgnoreUpdate,
+        HasRequired,
         I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
         O: IvoStruct,
         CtxOptions,
@@ -74,6 +83,7 @@ impl<
         HasDelete,
         HasSuccess,
         HasIgnoreUpdate,
+        HasRequired,
     >
 {
     pub fn on_delete<H>(
@@ -88,6 +98,7 @@ impl<
         Yes,
         HasSuccess,
         HasIgnoreUpdate,
+        HasRequired,
     >
     where
         H: IntoDeleteHandler<O, CtxOptions>,
@@ -100,6 +111,7 @@ impl<
             Some(on_delete_fns),
             self.on_success_fns,
             self.post_validate,
+            self.required,
         )
     }
 
@@ -116,6 +128,7 @@ impl<
         HasDelete,
         Yes,
         HasIgnoreUpdate,
+        HasRequired,
     >
     where
         Builder: Fn(OnSuccessOptionBuilder<I, O, CtxOptions, Yes>) -> Buildable,
@@ -131,6 +144,7 @@ impl<
             self.on_delete_fns,
             Some(on_success_fns),
             self.post_validate,
+            self.required,
         )
     }
 
@@ -147,6 +161,7 @@ impl<
         HasDelete,
         HasSuccess,
         HasIgnoreUpdate,
+        HasRequired,
     >
     where
         Builder: Fn(PostValidateOptionBuilder<I, O, CtxOptions, ErrorTool, Yes>) -> Buildable,
@@ -164,6 +179,40 @@ impl<
             self.on_delete_fns,
             self.on_success_fns,
             Some(post_validate),
+            self.required,
+        )
+    }
+
+    pub fn required<const N: usize, F>(
+        self,
+        fields: [&'static str; N],
+        resolver: F,
+    ) -> SchemaOptionsBuilder<
+        I,
+        O,
+        CtxOptions,
+        ErrorTool,
+        Yes,
+        HasDelete,
+        HasSuccess,
+        HasIgnoreUpdate,
+        Yes,
+    >
+    where
+        F: IntoRequiredOptionsResolver<I, O, CtxOptions, ErrorTool>,
+    {
+        let mut required = self.required.unwrap_or_default();
+        required.push(RequiredOptionConfig {
+            fields: fields.into(),
+            resolver: resolver.into_resolver(),
+        });
+
+        SchemaOptionsBuilder::from(
+            self.ignore_update,
+            self.on_delete_fns,
+            self.on_success_fns,
+            self.post_validate,
+            Some(required),
         )
     }
 }
@@ -172,11 +221,23 @@ impl<
         HasPostValidate,
         HasDelete,
         HasSuccess,
+        HasRequired,
         I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
         O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
-    > SchemaOptionsBuilder<I, O, CtxOptions, ErrorTool, HasPostValidate, HasDelete, HasSuccess>
+    >
+    SchemaOptionsBuilder<
+        I,
+        O,
+        CtxOptions,
+        ErrorTool,
+        HasPostValidate,
+        HasDelete,
+        HasSuccess,
+        No,
+        HasRequired,
+    >
 {
     pub fn ignore_update<R>(
         self,
@@ -190,6 +251,7 @@ impl<
         HasDelete,
         HasSuccess,
         Yes,
+        HasRequired,
     >
     where
         R: IntoShouldUpdateOptionResolver<I, O, CtxOptions>,
@@ -199,6 +261,7 @@ impl<
             self.on_delete_fns,
             self.on_success_fns,
             self.post_validate,
+            self.required,
         )
     }
 }
