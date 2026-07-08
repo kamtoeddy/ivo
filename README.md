@@ -342,7 +342,9 @@ When applied to dependent and lax fields with static default values, updates are
 
 ### Required (conditionally)
 
-Some times, a field may or may not be required to have been provided either at creation or during updates. This rule allows us to dynamically evaluate the conditional required of fields on which it is applied **only if this field is ommitted from the input struct**.
+Some times, a field may or may not be required to have been provided either at creation or during updates. This rule allows us to dynamically evaluate the conditional required of fields on which it is applied **only if this field is not provided in the partial input struct**.
+
+- lax and virtual fields can also leverage the grouped required rule (via schema) to avoid repetitions and unnecessary computations.
 
 ## Lifecycle Events
 
