@@ -5,9 +5,9 @@ use std::{fmt::Debug, sync::Arc};
 
 use crate::{types::InternalIvoContext, IvoStruct};
 
-pub trait IvoFieldValue: Clone + Debug + Send + Sync + 'static {}
+pub trait FieldValue: Clone + Debug + Send + Sync + 'static {}
 
-impl<T> IvoFieldValue for T where T: Clone + Debug + Send + Sync + 'static {}
+impl<T> FieldValue for T where T: Clone + Debug + Send + Sync + 'static {}
 
 // Marker Types
 pub struct Yes;

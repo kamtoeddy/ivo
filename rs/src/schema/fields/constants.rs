@@ -9,7 +9,7 @@ use crate::{
                 ValueResolverWithSharedInput,
             },
         },
-        types::{DeleteHandler, IvoFieldValue, No, SuccessHandler, Yes},
+        types::{DeleteHandler, FieldValue, No, SuccessHandler, Yes},
     },
     types::internal::{
         types::{erase_value, ErasedValue},
@@ -19,7 +19,7 @@ use crate::{
 };
 
 pub struct ConstantFieldBuilder<
-    T: IvoFieldValue,
+    T: FieldValue,
     I: IvoStruct,
     O: IvoStruct,
     CtxOptions,
@@ -45,7 +45,7 @@ impl<
         HasSuccess,
         I: IvoStruct,
         O: IvoStruct,
-        T: IvoFieldValue,
+        T: FieldValue,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     > ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasDefault, HasDelete, HasSuccess>
@@ -70,7 +70,7 @@ impl<
         HasSuccess,
         I: IvoStruct,
         O: IvoStruct,
-        T: IvoFieldValue,
+        T: FieldValue,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     > Default
@@ -86,7 +86,7 @@ impl<
         HasSuccess,
         I: IvoStruct,
         O: IvoStruct,
-        T: IvoFieldValue,
+        T: FieldValue,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     > BuildableFieldConfig<I, O, CtxOptions, ErrorTool>
@@ -103,7 +103,7 @@ impl<
     }
 }
 
-impl<I: IvoStruct, O: IvoStruct, T: IvoFieldValue, CtxOptions, ErrorTool: IvoErrorTool>
+impl<I: IvoStruct, O: IvoStruct, T: FieldValue, CtxOptions, ErrorTool: IvoErrorTool>
     ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool>
 {
     pub fn value(self, value: T) -> ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes> {
@@ -137,7 +137,7 @@ impl<
         HasSuccess,
         I: IvoStruct,
         O: IvoStruct,
-        T: IvoFieldValue,
+        T: FieldValue,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     > ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, HasDelete, HasSuccess>
@@ -175,7 +175,7 @@ impl<
         HasSuccess,
         I: IvoStruct,
         O: IvoStruct,
-        T: IvoFieldValue,
+        T: FieldValue,
         CtxOptions,
         ErrorTool: IvoErrorTool,
     > ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, HasDelete, HasSuccess>

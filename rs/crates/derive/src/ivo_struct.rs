@@ -59,7 +59,7 @@ pub fn generate_ivo_struct_impls<T: ToTokens>(
 
         impl ::ivo::__private_types::IvoStruct for #struct_name { }
 
-        impl ::ivo::__private_types::types::IvoWithPartialStruct for #struct_name {
+        impl ::ivo::__private_types::types::WithPartialStruct for #struct_name {
             type Partial = #partial_struct_name;
         }
 
@@ -215,7 +215,7 @@ pub fn generate_ivo_input_struct_impls(
             }
         }
 
-        impl <FieldErrorMetadata: Send + Sync> ::ivo::__private_types::types::IvoPartialErrorsStructMethods<FieldErrorMetadata> for #partial_errors_struct_name<FieldErrorMetadata> {
+        impl <FieldErrorMetadata: Send + Sync> ::ivo::__private_types::types::PartialErrorsMethods<FieldErrorMetadata> for #partial_errors_struct_name<FieldErrorMetadata> {
             fn ivo_internal_enumerate(self) -> Vec<(String, (String, Option<FieldErrorMetadata>))> {
                 let mut tuples = Vec::new();
 
@@ -227,7 +227,7 @@ pub fn generate_ivo_input_struct_impls(
 
         impl<ErrorTool: ::ivo::__private_types::IvoErrorTool> ::ivo::__private_types::IvoInputStruct<ErrorTool> for #struct_name { }
 
-        impl<FieldErrorMetadata: Send + Sync> ::ivo::__private_types::types::IvoWithPartialErrorsStruct<FieldErrorMetadata> for #struct_name {
+        impl<FieldErrorMetadata: Send + Sync> ::ivo::__private_types::types::WithPartialErrors<FieldErrorMetadata> for #struct_name {
             type PartialErrors = #partial_errors_struct_name<FieldErrorMetadata>;
         }
     }

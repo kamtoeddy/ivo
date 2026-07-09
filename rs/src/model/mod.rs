@@ -7,7 +7,7 @@ use std::fmt::Debug;
 use std::future::ready;
 use std::sync::Arc;
 
-use crate::__private_types::types::IvoPartialErrorsStructMethods;
+use crate::__private_types::types::PartialErrorsMethods;
 use crate::__private_types::{FieldInfo, IvoInputStruct};
 use crate::model::internal::FieldInfoCollection;
 use crate::schema::fields::types::RequiredResolver;
@@ -20,8 +20,8 @@ use crate::schema::{
     Schema,
 };
 use crate::types::internal::{
-    types::erase_value, IvoDefaultErrorTool, IvoErrorTool, IvoFieldError, IvoPartialStructMethods,
-    IvoRwLock, IvoStruct, IvoUpdateError,
+    types::erase_value, IvoDefaultErrorTool, IvoErrorTool, IvoFieldError, IvoRwLock, IvoStruct,
+    IvoUpdateError, PartialStructMethods,
 };
 use crate::types::InternalIvoContext;
 

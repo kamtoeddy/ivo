@@ -6,12 +6,12 @@ use std::future::{ready, Future};
 
 use crate::{
     __private_types::ValidatorResponse,
-    schema::types::{DeleteHandler, FailureHandler, IvoFieldValue, SuccessHandler},
+    schema::types::{DeleteHandler, FailureHandler, FieldValue, SuccessHandler},
     types::internal::types::{erase_value, parse_or_panic, ErasedValue},
     IvoContext, IvoErrorTool, IvoRwCtxOptions, IvoShared, IvoSharedInput, IvoStruct,
 };
 
-pub type TimestampResolver<T: IvoFieldValue> = Box<dyn Fn() -> T + Send + Sync + 'static>;
+pub type TimestampResolver<T: FieldValue> = Box<dyn Fn() -> T + Send + Sync + 'static>;
 
 pub trait IntoDeleteHandler<O: IvoStruct, CtxOptions> {
     fn into_handler(self) -> DeleteHandler<O, CtxOptions>;
@@ -70,7 +70,7 @@ where
     I: IvoStruct,
     O: IvoStruct,
     ErrorTool: IvoErrorTool,
-    T: IvoFieldValue,
+    T: FieldValue,
     F: Fn(T, IvoContext<I, O>, IvoRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = ValidatorResponse<T, ErrorTool::FieldMetadata>> + Send + Sync + 'static,
 {
@@ -92,7 +92,7 @@ impl<F, Fut, T, I, O, CtxOptions> IntoVirtualSanitizer<T, I, O, CtxOptions> for 
 where
     I: IvoStruct,
     O: IvoStruct,
-    T: IvoFieldValue,
+    T: FieldValue,
     F: Fn(T, IvoContext<I, O>, IvoRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = T> + Send + Sync + 'static,
 {
@@ -153,7 +153,7 @@ impl<F, Fut, T, I, O, CtxOptions> IntoUniformResolver<T, I, O, CtxOptions> for F
 where
     I: IvoStruct,
     O: IvoStruct,
-    T: IvoFieldValue,
+    T: FieldValue,
     F: Fn(IvoContext<I, O>, IvoRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = T> + Send + 'static,
 {
@@ -168,7 +168,7 @@ pub trait IntoValueResolverWithSharedInput<T, I: IvoStruct, CtxOptions> {
 
 impl<F, Fut, T, I: IvoStruct, CtxOptions> IntoValueResolverWithSharedInput<T, I, CtxOptions> for F
 where
-    T: IvoFieldValue,
+    T: FieldValue,
     F: Fn(IvoSharedInput<I>, IvoRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = T> + Send + 'static,
 {

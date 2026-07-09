@@ -7,7 +7,7 @@ use crate::types::internal::{IvoDefaultErrorTool, IvoErrorTool, IvoStruct};
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 use std::marker::PhantomData;
-pub use types::IvoFieldValue;
+pub use types::FieldValue;
 use types::{No, Yes};
 
 use crate::schema::fields::base::{
@@ -719,7 +719,7 @@ pub struct FieldBuilder<
     I: IvoStruct,
     O: IvoStruct,
     CtxOptions,
-    T: IvoFieldValue,
+    T: FieldValue,
     ErrorTool: IvoErrorTool,
     WithTimestamps = No,
 > {

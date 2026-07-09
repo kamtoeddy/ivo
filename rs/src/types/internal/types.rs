@@ -11,7 +11,7 @@ use std::{
 use crate::{__private_types::DefaultFieldErrorMetadata, IvoErrorTool};
 
 pub trait IvoStruct:
-    Send + Sync + Sized + 'static + IvoWithPartialStruct + IvoStructMethods + Into<Self::Partial>
+    Send + Sync + Sized + 'static + WithPartialStruct + IvoStructMethods + Into<Self::Partial>
 {
     #[inline(always)]
     fn append_updates(&mut self, updates: &Self::Partial) {
@@ -25,19 +25,19 @@ pub trait IvoStruct:
 }
 
 pub trait IvoInputStruct<ErrorTool: IvoErrorTool>:
-    IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>
+    IvoStruct + WithPartialErrors<ErrorTool::FieldMetadata>
 {
 }
 
-pub trait IvoWithPartialStruct {
-    type Partial: PartialEq + Debug + Default + Send + Sync + Clone + IvoPartialStructMethods;
+pub trait WithPartialStruct {
+    type Partial: PartialEq + Debug + Default + Send + Sync + Clone + PartialStructMethods;
 }
 
-pub trait IvoWithPartialErrorsStruct<FieldErrorMetadata: Send + Sync> {
-    type PartialErrors: Send + Sync + IvoPartialErrorsStructMethods<FieldErrorMetadata>;
+pub trait WithPartialErrors<FieldErrorMetadata: Send + Sync> {
+    type PartialErrors: Send + Sync + PartialErrorsMethods<FieldErrorMetadata>;
 }
 
-pub trait IvoStructMethods: IvoWithPartialStruct + Clone {
+pub trait IvoStructMethods: WithPartialStruct + Clone {
     fn ivo_internal_dangerously_get_values_from_partial(partial_values: Self::Partial) -> Self;
 
     fn ivo_internal_get_updates_from_partial(
@@ -65,7 +65,7 @@ pub trait IvoStructMethods: IvoWithPartialStruct + Clone {
     fn ivo_internal_name() -> String;
 }
 
-pub trait IvoPartialStructMethods: Clone {
+pub trait PartialStructMethods: Clone {
     fn ivo_internal_enumerate(&self) -> Vec<(String, ErasedValue)>;
 
     fn ivo_internal_fields_provided(&self) -> Vec<String>;
@@ -79,15 +79,15 @@ pub trait IvoPartialStructMethods: Clone {
     fn ivo_internal_unset(&mut self, field_name: &str);
 }
 
-pub trait IvoPartialErrorsStructMethods<FieldErrorMetadata: Send + Sync> {
+pub trait PartialErrorsMethods<FieldErrorMetadata: Send + Sync> {
     fn ivo_internal_enumerate(self) -> Vec<(String, (String, Option<FieldErrorMetadata>))>;
 }
 
-pub type Partial<T> = <T as IvoWithPartialStruct>::Partial;
+pub type Partial<T> = <T as WithPartialStruct>::Partial;
 
-pub trait IvoFieldValue: Clone + Debug + Send + Sync + 'static {}
+pub trait FieldValue: Clone + Debug + Send + Sync + 'static {}
 
-impl<T> IvoFieldValue for T where T: Clone + Debug + Send + Sync + 'static {}
+impl<T> FieldValue for T where T: Clone + Debug + Send + Sync + 'static {}
 
 pub trait CloneableAny: Any + Send + Sync {
     fn clone_box(&self) -> Box<dyn CloneableAny>;
@@ -97,7 +97,7 @@ pub trait CloneableAny: Any + Send + Sync {
 
 impl<T> CloneableAny for T
 where
-    T: IvoFieldValue,
+    T: FieldValue,
 {
     fn clone_box(&self) -> Box<dyn CloneableAny> {
         Box::new(T::clone(self)) // This triggers the concrete type's clone method!
@@ -121,16 +121,16 @@ impl Clone for Box<dyn CloneableAny> {
 pub type ErasedValue = Box<dyn CloneableAny>;
 
 #[inline(always)]
-pub fn erase_value<T: IvoFieldValue>(value: T) -> Box<dyn CloneableAny> {
+pub fn erase_value<T: FieldValue>(value: T) -> Box<dyn CloneableAny> {
     Box::new(value)
 }
 
 #[inline(always)]
-pub fn parse_value<T: IvoFieldValue>(e: &Box<dyn CloneableAny>) -> Option<T> {
+pub fn parse_value<T: FieldValue>(e: &Box<dyn CloneableAny>) -> Option<T> {
     e.as_any().downcast_ref::<T>().cloned()
 }
 
-pub fn parse_or_panic<T: IvoFieldValue>(
+pub fn parse_or_panic<T: FieldValue>(
     erased_value: &Box<dyn CloneableAny>,
     field_name: Option<&str>,
 ) -> T {
@@ -151,7 +151,7 @@ pub fn parse_or_panic<T: IvoFieldValue>(
     )
 }
 
-pub type ValidatorResponse<T: IvoFieldValue, ErrorMetadata = DefaultFieldErrorMetadata> =
+pub type ValidatorResponse<T: FieldValue, ErrorMetadata = DefaultFieldErrorMetadata> =
     Result<Option<T>, ValidatorError<ErrorMetadata>>;
 
 pub type ValidatorError<FieldErrorMetadata> = (String, Option<FieldErrorMetadata>);

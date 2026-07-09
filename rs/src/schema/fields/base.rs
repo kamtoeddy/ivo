@@ -8,7 +8,7 @@ use crate::{
             Resolver, TimestampResolver, UniformValidator, ValueResolverWithSharedInput,
             VirtualSanitizer,
         },
-        types::{DeleteHandler, FailureHandler, IvoFieldValue, No, SuccessHandler, Yes},
+        types::{DeleteHandler, FailureHandler, FieldValue, No, SuccessHandler, Yes},
     },
     IvoStruct,
 };
@@ -76,19 +76,19 @@ impl<T, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool> Default
     }
 }
 
-pub struct TimestampConfig<T: IvoFieldValue> {
+pub struct TimestampConfig<T: FieldValue> {
     pub created_at: Option<&'static str>,
     pub updated_at: Option<&'static str>,
     pub resolver: TimestampResolver<T>,
     pub with_optional_updated_at: bool,
 }
 
-pub trait BuildableTimestampConfig<T: IvoFieldValue> {
+pub trait BuildableTimestampConfig<T: FieldValue> {
     fn build(self) -> TimestampConfig<T>;
 }
 
 pub struct TimestampConfigBuilder<
-    T: IvoFieldValue,
+    T: FieldValue,
     HasDateFn = No,
     HasCreatedAt = No,
     HasUpdatedAt = No,
@@ -102,7 +102,7 @@ pub struct TimestampConfigBuilder<
     _u: PhantomData<HasUpdatedAt>,
 }
 
-impl<T: IvoFieldValue> BuildableTimestampConfig<T> for TimestampConfigBuilder<T, Yes, Yes> {
+impl<T: FieldValue> BuildableTimestampConfig<T> for TimestampConfigBuilder<T, Yes, Yes> {
     fn build(self) -> TimestampConfig<T> {
         TimestampConfig {
             created_at: self.created_at,
@@ -113,7 +113,7 @@ impl<T: IvoFieldValue> BuildableTimestampConfig<T> for TimestampConfigBuilder<T,
     }
 }
 
-impl<HasCreatedAt, T: IvoFieldValue> BuildableTimestampConfig<T>
+impl<HasCreatedAt, T: FieldValue> BuildableTimestampConfig<T>
     for TimestampConfigBuilder<T, Yes, HasCreatedAt, Yes>
 {
     fn build(self) -> TimestampConfig<T> {
@@ -126,13 +126,13 @@ impl<HasCreatedAt, T: IvoFieldValue> BuildableTimestampConfig<T>
     }
 }
 
-impl<T: IvoFieldValue> TimestampConfigBuilder<T> {
+impl<T: FieldValue> TimestampConfigBuilder<T> {
     pub fn new() -> Self {
         Self::default()
     }
 }
 
-impl<HasDateFn, HasCreatedAt, HasUpdatedAt, T: IvoFieldValue> Default
+impl<HasDateFn, HasCreatedAt, HasUpdatedAt, T: FieldValue> Default
     for TimestampConfigBuilder<T, HasDateFn, HasCreatedAt, HasUpdatedAt>
 {
     fn default() -> Self {
@@ -148,7 +148,7 @@ impl<HasDateFn, HasCreatedAt, HasUpdatedAt, T: IvoFieldValue> Default
     }
 }
 
-impl<T: IvoFieldValue> TimestampConfigBuilder<T> {
+impl<T: FieldValue> TimestampConfigBuilder<T> {
     pub fn resolve<R>(self, resolver: R) -> TimestampConfigBuilder<T, Yes>
     where
         R: Fn() -> T + Send + Sync + 'static,
@@ -160,7 +160,7 @@ impl<T: IvoFieldValue> TimestampConfigBuilder<T> {
     }
 }
 
-impl<HasUpdatedAt, T: IvoFieldValue> TimestampConfigBuilder<T, Yes, No, HasUpdatedAt> {
+impl<HasUpdatedAt, T: FieldValue> TimestampConfigBuilder<T, Yes, No, HasUpdatedAt> {
     pub fn created_at(
         self,
         custom_name: Option<&'static str>,
@@ -175,7 +175,7 @@ impl<HasUpdatedAt, T: IvoFieldValue> TimestampConfigBuilder<T, Yes, No, HasUpdat
     }
 }
 
-impl<HasCreatedAt, T: IvoFieldValue> TimestampConfigBuilder<T, Yes, HasCreatedAt, No> {
+impl<HasCreatedAt, T: FieldValue> TimestampConfigBuilder<T, Yes, HasCreatedAt, No> {
     pub fn updated_at(
         self,
         custom_name: Option<&'static str>,

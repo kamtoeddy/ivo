@@ -11,7 +11,7 @@ use crate::{
             },
         },
         types::{
-            DeleteHandler, IsProvided, IsProvidedButNotComputed, IvoFieldValue, No, SuccessHandler,
+            DeleteHandler, FieldValue, IsProvided, IsProvidedButNotComputed, No, SuccessHandler,
             Yes, YesComputed,
         },
     },
@@ -23,7 +23,7 @@ use crate::{
 };
 
 pub struct DependentFieldBuilder<
-    T: IvoFieldValue,
+    T: FieldValue,
     I: IvoStruct,
     O: IvoStruct,
     CtxOptions,
@@ -59,7 +59,7 @@ impl<
         HasReadonly,
         HasDelete,
         HasSuccess,
-        T: IvoFieldValue,
+        T: FieldValue,
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
@@ -106,7 +106,7 @@ impl<
         HasReadonly,
         HasDelete,
         HasSuccess,
-        T: IvoFieldValue,
+        T: FieldValue,
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
@@ -136,7 +136,7 @@ impl<
         HasReadonly,
         HasDelete,
         HasSuccess,
-        T: IvoFieldValue,
+        T: FieldValue,
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
@@ -170,7 +170,7 @@ impl<
     }
 }
 
-impl<T: IvoFieldValue, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool>
+impl<T: FieldValue, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool>
     DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool>
 {
     pub fn default(self, value: T) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes> {
@@ -198,7 +198,7 @@ impl<T: IvoFieldValue, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErr
 
 impl<
         HasDefault: IsProvided,
-        T: IvoFieldValue,
+        T: FieldValue,
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
@@ -219,7 +219,7 @@ impl<
 
 impl<
         HasDefault: IsProvided,
-        T: IvoFieldValue,
+        T: FieldValue,
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
@@ -246,7 +246,7 @@ impl<
         HasDefault: IsProvidedButNotComputed,
         HasDelete,
         HasSuccess,
-        T: IvoFieldValue,
+        T: FieldValue,
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
@@ -301,7 +301,7 @@ impl<
         HasReadonly,
         HasDelete,
         HasSuccess,
-        T: IvoFieldValue,
+        T: FieldValue,
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
@@ -369,7 +369,7 @@ impl<
         HasReadonly,
         HasDelete,
         HasSuccess,
-        T: IvoFieldValue,
+        T: FieldValue,
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,

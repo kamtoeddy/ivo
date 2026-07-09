@@ -14,7 +14,7 @@ use crate::{
             },
         },
         types::{
-            DeleteHandler, FailureHandler, IsProvided, IsProvidedButNotComputed, IvoFieldValue, No,
+            DeleteHandler, FailureHandler, FieldValue, IsProvided, IsProvidedButNotComputed, No,
             SuccessHandler, Yes, YesComputed,
         },
     },
@@ -26,7 +26,7 @@ use crate::{
 };
 
 pub struct LaxFieldBuilder<
-    T: IvoFieldValue,
+    T: FieldValue,
     I: IvoStruct,
     O: IvoStruct,
     CtxOptions,
@@ -77,7 +77,7 @@ impl<
         HasDelete,
         HasFailure,
         HasSuccess,
-        T: IvoFieldValue,
+        T: FieldValue,
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
@@ -139,7 +139,7 @@ impl<
         HasDelete,
         HasFailure,
         HasSuccess,
-        T: IvoFieldValue,
+        T: FieldValue,
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
@@ -179,7 +179,7 @@ impl<
         HasDelete,
         HasFailure,
         HasSuccess,
-        T: IvoFieldValue,
+        T: FieldValue,
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
@@ -221,7 +221,7 @@ impl<
     }
 }
 
-impl<T: IvoFieldValue, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool>
+impl<T: FieldValue, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool>
     LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool>
 {
     pub fn default(self, value: T) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes> {
@@ -249,7 +249,7 @@ impl<T: IvoFieldValue, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErr
 
 impl<
         HasDefault: IsProvided,
-        T: IvoFieldValue,
+        T: FieldValue,
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
@@ -273,7 +273,7 @@ impl<
 
 impl<
         HasDefault: IsProvided,
-        T: IvoFieldValue,
+        T: FieldValue,
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
@@ -299,7 +299,7 @@ impl<
 impl<
         HasDefault: IsProvided,
         HasRevalidator,
-        T: IvoFieldValue,
+        T: FieldValue,
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
@@ -328,7 +328,7 @@ impl<
         HasValidator,
         HasRevalidator,
         HasRequired,
-        T: IvoFieldValue,
+        T: FieldValue,
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
@@ -433,7 +433,7 @@ impl<
         HasRequired,
         HasIgnore,
         HasIgnoreInit,
-        T: IvoFieldValue,
+        T: FieldValue,
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
@@ -496,7 +496,7 @@ impl<
         HasDelete,
         HasFailure,
         HasSuccess,
-        T: IvoFieldValue,
+        T: FieldValue,
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
@@ -581,7 +581,7 @@ impl<
         HasDelete,
         HasFailure,
         HasSuccess,
-        T: IvoFieldValue,
+        T: FieldValue,
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
@@ -667,7 +667,7 @@ impl<
         HasDelete,
         HasFailure,
         HasSuccess,
-        T: IvoFieldValue,
+        T: FieldValue,
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,

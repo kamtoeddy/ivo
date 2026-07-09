@@ -179,7 +179,7 @@ pub fn generate_partial_struct(
            }
        }
 
-       impl ::ivo::__private_types::types::IvoPartialStructMethods for #partial_struct_name {
+       impl ::ivo::__private_types::types::PartialStructMethods for #partial_struct_name {
            fn ivo_internal_enumerate(&self) -> Vec<(String, ::ivo::__private_types::types::ErasedValue)> {
                use ::ivo::__private_types::types::erase_value;
 

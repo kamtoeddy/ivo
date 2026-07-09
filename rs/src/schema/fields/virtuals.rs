@@ -12,14 +12,14 @@ use crate::{
                 IsFieldProvisionEnabled, RequiredResolver, UniformValidator, VirtualSanitizer,
             },
         },
-        types::{FailureHandler, IvoFieldValue, No, SuccessHandler, Yes},
+        types::{FailureHandler, FieldValue, No, SuccessHandler, Yes},
     },
     types::internal::{types::ErasedValue, IvoErrorTool},
     IvoStruct,
 };
 
 pub struct VirtualFieldBuilder<
-    T: IvoFieldValue,
+    T: FieldValue,
     I: IvoStruct,
     O: IvoStruct,
     CtxOptions,
@@ -70,7 +70,7 @@ impl<
         HasIgnoreUpdate,
         HasFailure,
         HasSuccess,
-        T: IvoFieldValue,
+        T: FieldValue,
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
@@ -132,7 +132,7 @@ impl<
         HasIgnoreUpdate,
         HasFailure,
         HasSuccess,
-        T: IvoFieldValue,
+        T: FieldValue,
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
@@ -171,7 +171,7 @@ impl<
         HasIgnoreUpdate,
         HasFailure,
         HasSuccess,
-        T: IvoFieldValue,
+        T: FieldValue,
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
@@ -216,7 +216,7 @@ impl<
 impl<
         HasValidator,
         HasRevalidator,
-        T: IvoFieldValue,
+        T: FieldValue,
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
@@ -246,14 +246,8 @@ impl<
     }
 }
 
-impl<
-        HasAlias,
-        T: IvoFieldValue,
-        I: IvoStruct,
-        O: IvoStruct,
-        CtxOptions,
-        ErrorTool: IvoErrorTool,
-    > VirtualFieldBuilder<T, I, O, CtxOptions, ErrorTool, No, HasAlias>
+impl<HasAlias, T: FieldValue, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool>
+    VirtualFieldBuilder<T, I, O, CtxOptions, ErrorTool, No, HasAlias>
 {
     pub fn validate<F>(
         self,
@@ -270,14 +264,8 @@ impl<
     }
 }
 
-impl<
-        HasAlias,
-        T: IvoFieldValue,
-        I: IvoStruct,
-        O: IvoStruct,
-        CtxOptions,
-        ErrorTool: IvoErrorTool,
-    > VirtualFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, HasAlias>
+impl<HasAlias, T: FieldValue, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool>
+    VirtualFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, HasAlias>
 {
     pub fn re_validate<F>(
         self,
@@ -298,7 +286,7 @@ impl<
 impl<
         HasAlias,
         HasRevalidator,
-        T: IvoFieldValue,
+        T: FieldValue,
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
@@ -326,7 +314,7 @@ impl<
         HasAlias,
         HasRevalidator,
         HasRequired,
-        T: IvoFieldValue,
+        T: FieldValue,
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
@@ -379,7 +367,7 @@ impl<
         HasRevalidator,
         HasSanitizer,
         HasRequired,
-        T: IvoFieldValue,
+        T: FieldValue,
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
@@ -495,7 +483,7 @@ impl<
         HasIgnoreUpdate,
         HasFailure,
         HasSuccess,
-        T: IvoFieldValue,
+        T: FieldValue,
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
@@ -580,7 +568,7 @@ impl<
         HasIgnoreUpdate,
         HasFailure,
         HasSuccess,
-        T: IvoFieldValue,
+        T: FieldValue,
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,

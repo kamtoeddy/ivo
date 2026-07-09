@@ -2,7 +2,7 @@
 
 use std::future::Future;
 
-use crate::__private_types::types::IvoPartialErrorsStructMethods;
+use crate::__private_types::types::PartialErrorsMethods;
 use crate::__private_types::{FieldInfo, IvoInputStruct};
 
 use crate::schema::fields::types::RequiredResolver;

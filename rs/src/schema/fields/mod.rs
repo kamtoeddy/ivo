@@ -14,7 +14,7 @@ use crate::{
             constants::ConstantFieldBuilder, dependents::DependentFieldBuilder,
             lax::LaxFieldBuilder, required::RequiredFieldBuilder, virtuals::VirtualFieldBuilder,
         },
-        types::IvoFieldValue,
+        types::FieldValue,
     },
     types::internal::IvoErrorTool,
     IvoStruct,
@@ -22,13 +22,8 @@ use crate::{
 
 pub use base::TimestampConfig;
 
-pub struct IvoField<
-    T: IvoFieldValue,
-    I: IvoStruct,
-    O: IvoStruct,
-    CtxOptions,
-    ErrorTool: IvoErrorTool,
-> {
+pub struct IvoField<T: FieldValue, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool>
+{
     _t: PhantomData<T>,
     _i: PhantomData<I>,
     _o: PhantomData<O>,
@@ -36,7 +31,7 @@ pub struct IvoField<
     _err: PhantomData<ErrorTool>,
 }
 
-impl<T: IvoFieldValue, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool>
+impl<T: FieldValue, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool>
     IvoField<T, I, O, CtxOptions, ErrorTool>
 {
     /// A constant field is one whose value never changes after an entity is created.

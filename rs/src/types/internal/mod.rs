@@ -7,9 +7,9 @@ pub use error_tool::{
 };
 
 pub use types::{
-    IvoFieldValue, IvoInputStruct, IvoPartialStructMethods, IvoRwLock, IvoStruct, IvoStructMethods,
-    IvoWithPartialStruct, Partial, PostValidatorError, PostValidatorResponse, ValidatorError,
-    ValidatorResponse,
+    FieldValue, IvoInputStruct, IvoRwLock, IvoStruct, IvoStructMethods, Partial,
+    PartialStructMethods, PostValidatorError, PostValidatorResponse, ValidatorError,
+    ValidatorResponse, WithPartialStruct,
 };
 
 #[derive(Clone, Debug)]
