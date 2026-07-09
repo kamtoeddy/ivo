@@ -1,7 +1,7 @@
 use std::{collections::HashMap, future::ready, sync::LazyLock};
 
 use crate::async_test_matrix;
-use ivo::{IvoErrorTool, IvoField, IvoFieldError, IvoInputStruct, IvoStruct, Model, Schema};
+use ivo::{IvoErrorTool, IvoField, FieldError, IvoInputStruct, IvoStruct, Model, Schema};
 
 async fn should_respect_custom_error_tool() {
     let r = PLACE_MODEL
@@ -210,7 +210,7 @@ impl IvoErrorTool for PlacesErrorTool {
     type FieldMetadata = PlacesErrorToolFieldMetadata;
     type ErrorPayload = HashMap<String, Vec<String>>;
 
-    fn add(&mut self, field_name: &str, error: IvoFieldError<Self::FieldMetadata>) -> &mut Self {
+    fn add(&mut self, field_name: &str, error: FieldError<Self::FieldMetadata>) -> &mut Self {
         self.errors
             .entry(field_name.to_owned())
             .and_modify(|e| append_error(e, &error))
@@ -240,7 +240,7 @@ impl IvoErrorTool for PlacesErrorTool {
     }
 }
 
-fn append_error(errors: &mut Vec<String>, error: &IvoFieldError<PlacesErrorToolFieldMetadata>) {
+fn append_error(errors: &mut Vec<String>, error: &FieldError<PlacesErrorToolFieldMetadata>) {
     errors.push(customized_string(&error.reason));
 
     if let Some(ref metadata) = error.metadata {

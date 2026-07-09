@@ -20,7 +20,7 @@ use crate::schema::{
     Schema,
 };
 use crate::types::internal::{
-    types::erase_value, IvoDefaultErrorTool, IvoErrorTool, IvoFieldError, IvoRwLock, IvoStruct,
+    types::erase_value, DefaultErrorTool, IvoErrorTool, FieldError, IvoRwLock, IvoStruct,
     PartialStructMethods,
 };
 use crate::types::InternalIvoContext;
@@ -53,7 +53,7 @@ pub struct Model<
     O: IvoStruct = I,
     CtxOptions: Clone + Sync + Send = HashMap<String, ()>,
     Timestamp: Clone + Debug + Send + Sync + 'static = (),
-    ErrorTool: IvoErrorTool = IvoDefaultErrorTool,
+    ErrorTool: IvoErrorTool = DefaultErrorTool,
 > {
     schema: &'schema Schema<I, O, CtxOptions, Timestamp, ErrorTool>,
 }
@@ -617,7 +617,7 @@ impl<
 
             match result {
                 Err((reason, metadata)) => {
-                    error_tool.add(field_name.as_str(), IvoFieldError { reason, metadata });
+                    error_tool.add(field_name.as_str(), FieldError { reason, metadata });
                 }
                 Ok(Some(value)) => {
                     has_updates = true;
@@ -703,7 +703,7 @@ impl<
 
             match result {
                 Err((reason, metadata)) => {
-                    error_tool.add(field_name.as_str(), IvoFieldError { reason, metadata });
+                    error_tool.add(field_name.as_str(), FieldError { reason, metadata });
                 }
                 Ok(Some(value)) => {
                     has_updates = true;
@@ -789,7 +789,7 @@ impl<
                             let field_info = input_fields.get(&field_name).unwrap();
 
                             if fields.contains(&field_info.config_name.as_str()) {
-                                error_tool.add(&field_name, IvoFieldError { reason, metadata });
+                                error_tool.add(&field_name, FieldError { reason, metadata });
                             }
                         }
                     }
@@ -851,7 +851,7 @@ impl<
                         let field_info = input_fields.get(&field_name).unwrap();
 
                         if fields.contains(&field_info.config_name.as_str()) {
-                            error_tool.add(&field_name, IvoFieldError { reason, metadata });
+                            error_tool.add(&field_name, FieldError { reason, metadata });
                         }
                     }
                 }
@@ -1269,7 +1269,7 @@ impl<
                         Some(ComputableRequiredError::Static(msg)) => {
                             error_tool.add(
                                 field_name,
-                                IvoFieldError {
+                                FieldError {
                                     reason: msg.to_string(),
                                     metadata: None,
                                 },
@@ -1281,7 +1281,7 @@ impl<
                         _ => {
                             error_tool.add(
                                 field_name,
-                                IvoFieldError {
+                                FieldError {
                                     reason: format!("\"{field_name}\" is required!"),
                                     metadata: None,
                                 },

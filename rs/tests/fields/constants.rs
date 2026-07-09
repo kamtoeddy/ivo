@@ -1,7 +1,7 @@
 use std::future::ready;
 
 use ivo::{
-    IvoContext, IvoDefaultErrorTool, IvoField, IvoInputStruct, IvoShared, IvoStruct, Schema,
+    IvoContext, DefaultErrorTool, IvoField, IvoInputStruct, IvoShared, IvoStruct, Schema,
 };
 
 use crate::async_test_matrix;
@@ -20,7 +20,7 @@ async fn should_respect_constants_with_static_values() {
 
     let constant = 1234;
 
-    let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
+    let schema: Schema<DataInput, Data, Option<()>, (), DefaultErrorTool> = Schema::new(
         |f| {
             f.field("constant", IvoField::CONSTANT.value(constant))
                 .field("lax", IvoField::LAX.default(20))
@@ -83,7 +83,7 @@ async fn should_respect_constants_with_computed_values() {
 
     let constant = 1234;
 
-    let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
+    let schema: Schema<DataInput, Data, Option<()>, (), DefaultErrorTool> = Schema::new(
         |f| {
             f.field(
                 "constant",
@@ -149,7 +149,7 @@ async fn should_trigger_on_delete_handlers_with_static_values() {
 
     let constant = 1234;
 
-    let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
+    let schema: Schema<DataInput, Data, Option<()>, (), DefaultErrorTool> = Schema::new(
         |f| {
             f.field(
                 "constant",
@@ -195,7 +195,7 @@ async fn should_trigger_on_delete_handlers_with_computed_values() {
 
     let constant = 1234;
 
-    let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
+    let schema: Schema<DataInput, Data, Option<()>, (), DefaultErrorTool> = Schema::new(
         |f| {
             f.field(
                 "constant",
@@ -242,7 +242,7 @@ async fn should_trigger_on_success_handlers_with_static_values() {
 
     let constant = 1234;
 
-    let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
+    let schema: Schema<DataInput, Data, Option<()>, (), DefaultErrorTool> = Schema::new(
         |f| {
             f.field(
                 "constant",
@@ -298,7 +298,7 @@ async fn should_trigger_on_success_handlers_with_computed_values() {
 
     let constant = 1234;
 
-    let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
+    let schema: Schema<DataInput, Data, Option<()>, (), DefaultErrorTool> = Schema::new(
         |f| {
             f.field(
                 "constant",

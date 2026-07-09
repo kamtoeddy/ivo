@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
 pub type DefaultFieldErrorMetadata = ();
-pub type DefaultErrorPayload = HashMap<String, Vec<IvoFieldError>>;
+pub type DefaultErrorPayload = HashMap<String, Vec<FieldError>>;
 
 #[derive(Debug, Clone)]
-pub struct IvoFieldError<FieldMetadata = DefaultFieldErrorMetadata> {
+pub struct FieldError<FieldMetadata = DefaultFieldErrorMetadata> {
     pub reason: String,
     pub metadata: Option<FieldMetadata>,
 }
@@ -16,7 +16,7 @@ pub trait IvoErrorTool {
 
     fn new() -> Self;
 
-    fn add(&mut self, field_name: &str, error: IvoFieldError<Self::FieldMetadata>) -> &mut Self;
+    fn add(&mut self, field_name: &str, error: FieldError<Self::FieldMetadata>) -> &mut Self;
 
     fn has_errors(&self) -> bool;
 
@@ -24,11 +24,11 @@ pub trait IvoErrorTool {
 }
 
 #[derive(Debug)]
-pub struct IvoDefaultErrorTool {
+pub struct DefaultErrorTool {
     payload: DefaultErrorPayload,
 }
 
-impl IvoErrorTool for IvoDefaultErrorTool {
+impl IvoErrorTool for DefaultErrorTool {
     type FieldMetadata = DefaultFieldErrorMetadata;
     type ErrorPayload = DefaultErrorPayload;
 
@@ -40,7 +40,7 @@ impl IvoErrorTool for IvoDefaultErrorTool {
     }
 
     #[inline]
-    fn add(&mut self, field_name: &str, value: IvoFieldError) -> &mut Self {
+    fn add(&mut self, field_name: &str, value: FieldError) -> &mut Self {
         self.payload
             .entry(field_name.to_string())
             .and_modify(|e| e.push(value.clone()))

@@ -1,4 +1,4 @@
-use ivo::{IvoDefaultErrorTool, IvoField, IvoInputStruct, IvoStruct, Schema};
+use ivo::{DefaultErrorTool, IvoField, IvoInputStruct, IvoStruct, Schema};
 use std::{future::ready, panic};
 
 #[test]
@@ -20,7 +20,7 @@ fn should_reject_if_parent_array_is_empty() {
         required: String,
     }
 
-    let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
+    let _: Schema<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Schema::new(
         |f| {
             f.field("lax", IvoField::LAX.default(1))
                 .field(
@@ -61,7 +61,7 @@ fn should_reject_dependency_of_created_at_field_with_default_name() {
         required: String,
     }
 
-    let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
+    let _: Schema<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Schema::new(
         |f| {
             f.field("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
                 .field("lax", IvoField::LAX.default(1))
@@ -107,7 +107,7 @@ fn should_reject_dependency_of_created_at_field_with_custom_name() {
         required: String,
     }
 
-    let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
+    let _: Schema<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Schema::new(
         |f| {
             f.field("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
                 .field("lax", IvoField::LAX.default(1))
@@ -153,7 +153,7 @@ fn should_reject_dependency_of_updated_at_field_with_default_name() {
         required: String,
     }
 
-    let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
+    let _: Schema<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Schema::new(
         |f| {
             f.field("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
                 .field("lax", IvoField::LAX.default(1))
@@ -195,7 +195,7 @@ fn should_reject_dependency_of_updated_at_field_with_custom_name() {
         required: String,
     }
 
-    let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
+    let _: Schema<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Schema::new(
         |f| {
             f.field("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
                 .field("lax", IvoField::LAX.default(1))
@@ -239,7 +239,7 @@ fn should_reject_if_any_parent_field_provided_does_not_belong_on_schema() {
         required: String,
     }
 
-    let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
+    let _: Schema<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Schema::new(
         |f| {
             f.field("lax", IvoField::LAX.default(1))
                 .field(
@@ -276,7 +276,7 @@ fn should_reject_if_any_parent_field_name_is_same_as_dependent_field_name() {
         required: String,
     }
 
-    let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
+    let _: Schema<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Schema::new(
         |f| {
             f.field("lax", IvoField::LAX.default(1))
                 .field(
@@ -315,7 +315,7 @@ fn should_reject_if_duplicate_parent_fields_are_provided() {
         required: String,
     }
 
-    let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
+    let _: Schema<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Schema::new(
         |f| {
             f.field("lax", IvoField::LAX.default(1))
                 .field(
@@ -353,7 +353,7 @@ fn should_reject_dependency_of_constant_fields() {
         required: String,
     }
 
-    let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
+    let _: Schema<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Schema::new(
         |f| {
             f.field("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
                 .field("lax", IvoField::LAX.default(1))
@@ -568,7 +568,7 @@ fn should_allow_dependency_on_normal_lax_or_required_fields() {
     }
 
     let result = panic::catch_unwind(|| {
-        let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
+        let _: Schema<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Schema::new(
             |f| {
                 f.field("lax", IvoField::LAX.default(1))
                     .field(
@@ -591,7 +591,7 @@ fn should_allow_dependency_on_normal_lax_or_required_fields() {
     assert!(result.is_ok());
 
     let result = panic::catch_unwind(|| {
-        let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
+        let _: Schema<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Schema::new(
             |f| {
                 f.field("lax", IvoField::LAX.default(1))
                     .field(
@@ -614,7 +614,7 @@ fn should_allow_dependency_on_normal_lax_or_required_fields() {
     assert!(result.is_ok());
 
     let result = panic::catch_unwind(|| {
-        let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
+        let _: Schema<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Schema::new(
             |f| {
                 f.field("lax", IvoField::LAX.default(1))
                     .field(
@@ -655,7 +655,7 @@ fn should_allow_dependency_on_other_dependent_fields() {
     }
 
     let result = panic::catch_unwind(|| {
-        let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
+        let _: Schema<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Schema::new(
             |f| {
                 f.field("lax", IvoField::LAX.default(1))
                     .field(
@@ -685,7 +685,7 @@ fn should_allow_dependency_on_other_dependent_fields() {
     assert!(result.is_ok());
 
     let result = panic::catch_unwind(|| {
-        let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
+        let _: Schema<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Schema::new(
             |f| {
                 f.field("lax", IvoField::LAX.default(1))
                     .field(
@@ -734,7 +734,7 @@ fn should_allow_dependency_on_virtual_fields() {
     }
 
     let result = panic::catch_unwind(|| {
-        let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
+        let _: Schema<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Schema::new(
             |f| {
                 f.field("lax", IvoField::LAX.default(1))
                     .field(
@@ -768,7 +768,7 @@ fn should_allow_dependency_on_virtual_fields() {
     assert!(result.is_ok());
 
     let result = panic::catch_unwind(|| {
-        let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
+        let _: Schema<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Schema::new(
             |f| {
                 f.field("lax", IvoField::LAX.default(1))
                     .field(
@@ -802,7 +802,7 @@ fn should_allow_dependency_on_virtual_fields() {
     assert!(result.is_ok());
 
     let result = panic::catch_unwind(|| {
-        let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
+        let _: Schema<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Schema::new(
             |f| {
                 f.field("lax", IvoField::LAX.default(1))
                     .field(
@@ -836,7 +836,7 @@ fn should_allow_dependency_on_virtual_fields() {
     assert!(result.is_ok());
 
     let result = panic::catch_unwind(|| {
-        let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
+        let _: Schema<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Schema::new(
             |f| {
                 f.field("lax", IvoField::LAX.default(1))
                     .field(
@@ -888,7 +888,7 @@ fn should_allow_dependency_on_virtual_fields_with_aliases() {
             alias_name: String,
         }
 
-        let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
+        let _: Schema<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Schema::new(
             |f| {
                 f.field("lax", IvoField::LAX.default(1))
                     .field(
@@ -932,7 +932,7 @@ fn should_allow_dependency_on_virtual_fields_with_aliases() {
             required: String,
         }
 
-        let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
+        let _: Schema<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Schema::new(
             |f| {
                 f.field("lax", IvoField::LAX.default(1))
                     .field(

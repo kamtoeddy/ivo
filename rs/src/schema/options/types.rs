@@ -8,7 +8,7 @@ use crate::__private_types::{FieldInfo, IvoInputStruct};
 use crate::schema::fields::types::RequiredResolver;
 use crate::types::internal::PostValidatorResponse;
 use crate::{schema::types::SuccessHandler, IvoContext, IvoRwCtxOptions, IvoStruct};
-use crate::{IvoErrorTool, IvoFieldError};
+use crate::{FieldError, IvoErrorTool};
 use futures::future::BoxFuture;
 
 pub type IgnoreUpdateOptionResolver<I: IvoStruct, O: IvoStruct, CtxOptions> = Box<
@@ -133,7 +133,7 @@ pub type RequiredOptionResolver<
 >;
 
 type UniformRequiredResponse<'a, ErrorTool: IvoErrorTool> =
-    BoxFuture<'a, Option<Vec<(String, IvoFieldError<ErrorTool::FieldMetadata>)>>>;
+    BoxFuture<'a, Option<Vec<(String, FieldError<ErrorTool::FieldMetadata>)>>>;
 
 pub trait UniformRequiredResolver<
     I: IvoInputStruct<ErrorTool>,
@@ -167,7 +167,7 @@ where
             self(ctx, o).await.map(|reason| {
                 vec![(
                     fields[0].name.clone(),
-                    IvoFieldError {
+                    FieldError {
                         metadata: None::<ErrorTool::FieldMetadata>,
                         reason,
                     },
@@ -199,7 +199,7 @@ where
 
             for (field_name, (reason, metadata)) in errors.ivo_internal_enumerate() {
                 if fields.iter().find(|info| info.name == field_name).is_some() {
-                    results.push((field_name, IvoFieldError { metadata, reason }));
+                    results.push((field_name, FieldError { metadata, reason }));
                 }
             }
 

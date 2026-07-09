@@ -1,4 +1,4 @@
-use ivo::{IvoDefaultErrorTool, IvoField, IvoInputStruct, IvoStruct, Schema};
+use ivo::{DefaultErrorTool, IvoField, IvoInputStruct, IvoStruct, Schema};
 use std::{future::ready, panic};
 
 #[test]
@@ -178,7 +178,7 @@ fn should_reject_if_alias_is_same_created_at_if_enabled_with_default_name() {
         virtual_field: String,
     }
 
-    let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
+    let _: Schema<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Schema::new(
         |f| {
             f.field("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
                 .field(
@@ -209,7 +209,7 @@ fn should_reject_if_alias_is_same_created_at_if_enabled_with_custom_name() {
         virtual_field: String,
     }
 
-    let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
+    let _: Schema<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Schema::new(
         |f| {
             f.field(
                 "virtual_field",
@@ -242,7 +242,7 @@ fn should_reject_if_alias_is_same_updated_at_if_enabled_with_default_name() {
         virtual_field: String,
     }
 
-    let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
+    let _: Schema<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Schema::new(
         |f| {
             f.field("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
                 .field(
@@ -273,7 +273,7 @@ fn should_reject_if_alias_is_same_updated_at_if_enabled_with_custom_name() {
         virtual_field: String,
     }
 
-    let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
+    let _: Schema<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Schema::new(
         |f| {
             f.field(
                 "virtual_field",
