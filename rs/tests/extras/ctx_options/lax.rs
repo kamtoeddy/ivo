@@ -50,7 +50,7 @@ async fn should_properly_update_ctx_options_in_default_resolver_and_provide_thos
 
     let schema = Schema::<DataInput, Data, CtxOptions>::new(
         |f| {
-            f.set(
+            f.field(
                 "lax",
                 IvoField::LAX
                     .default_fn(async |_, o: IvoRwCtxOptions<CtxOptions>| {
@@ -112,7 +112,7 @@ async fn should_properly_update_ctx_options_in_ignore_resolver_and_provide_those
 
     let schema = Schema::<DataInput, Data, CtxOptions>::new(
         |f| {
-            f.set(
+            f.field(
                 "lax",
                 IvoField::LAX
                     .default(DEFAULT_VALUE)
@@ -175,7 +175,7 @@ async fn should_properly_update_ctx_options_in_ignore_resolver_and_provide_those
 
     let schema = Schema::<DataInput, Data, CtxOptions>::new(
         |f| {
-            f.set(
+            f.field(
                 "lax",
                 IvoField::LAX
                     .default(DEFAULT_VALUE)
@@ -242,7 +242,7 @@ async fn should_properly_update_ctx_options_in_required_resolver_and_provide_tho
 
     let schema = Schema::<DataInput, Data, CtxOptions>::new(
         |f| {
-            f.set(
+            f.field(
                 "lax",
                 IvoField::LAX
                     .default(DEFAULT_VALUE)
@@ -295,7 +295,7 @@ async fn should_properly_update_ctx_options_in_required_resolver_and_provide_tho
 
     let schema = Schema::<DataInput, Data, CtxOptions>::new(
         |f| {
-            f.set(
+            f.field(
                 "lax",
                 IvoField::LAX
                     .default(DEFAULT_VALUE)
@@ -308,7 +308,7 @@ async fn should_properly_update_ctx_options_in_required_resolver_and_provide_tho
                         Some(REQUIRED_ERROR.into())
                     }),
             )
-            .set(
+            .field(
                 "lax_1",
                 IvoField::LAX
                     .default(DEFAULT_VALUE)
@@ -372,7 +372,7 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
 
     let schema: Schema<DataInput, Data, CtxOptions> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "lax",
                 IvoField::LAX
                     .default(DEFAULT_VALUE.into())
@@ -445,7 +445,7 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
 
     let schema: Schema<DataInput, Data, CtxOptions> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "lax",
                 IvoField::LAX
                     .default(DEFAULT_VALUE.into())
@@ -529,7 +529,7 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
 
     let schema: Schema<DataInput, Data, CtxOptions> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "lax",
                 IvoField::LAX
                     .default(DEFAULT_VALUE.into())
@@ -603,7 +603,7 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
 
     let schema: Schema<DataInput, Data, CtxOptions> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "lax",
                 IvoField::LAX
                     .default(DEFAULT_VALUE.into())
@@ -690,13 +690,13 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
 
     let schema: Schema<DataInput, Data, CtxOptions> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "lax",
                 IvoField::LAX
                     .default(DEFAULT_VALUE)
                     .validate(|_, _, _| ready(Ok(None))),
             )
-            .set(
+            .field(
                 "lax_1",
                 IvoField::LAX
                     .default(DEFAULT_VALUE)
@@ -780,13 +780,13 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
 
     let schema: Schema<DataInput, Data, CtxOptions> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "lax",
                 IvoField::LAX
                     .default(DEFAULT_VALUE)
                     .validate(|_, _, _| ready(Ok(None))),
             )
-            .set(
+            .field(
                 "lax_1",
                 IvoField::LAX
                     .default(DEFAULT_VALUE)

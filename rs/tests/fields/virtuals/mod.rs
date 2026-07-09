@@ -37,7 +37,7 @@ async fn should_reject_updates_if_no_value_has_changed() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(1)
@@ -46,7 +46,7 @@ async fn should_reject_updates_if_no_value_has_changed() {
                         ready(ctx.input().virtual_field.unwrap())
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL.validate(|_, _, _| ready(Ok(None::<i32>))),
             )
@@ -88,7 +88,7 @@ async fn should_reject_updates_if_no_value_has_changed_with_alias() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(1)
@@ -97,7 +97,7 @@ async fn should_reject_updates_if_no_value_has_changed_with_alias() {
                         ready(ctx.input().virtual_alias.unwrap())
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("virtual_alias")
@@ -141,7 +141,7 @@ async fn should_reject_updates_if_no_value_has_changed_with_alias_same_as_depend
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(1)
@@ -150,7 +150,7 @@ async fn should_reject_updates_if_no_value_has_changed_with_alias_same_as_depend
                         ready(ctx.input().dependent.unwrap())
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("dependent")
@@ -201,7 +201,7 @@ async fn should_respect_the_required_rule() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -210,8 +210,8 @@ async fn should_respect_the_required_rule() {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value.clone()))
-            .set(
+            .field("lax", IvoField::LAX.default(default_lax_value.clone()))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .validate(|v: String, _, _| {
@@ -329,7 +329,7 @@ async fn should_respect_the_required_rule_with_alias() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -338,8 +338,8 @@ async fn should_respect_the_required_rule_with_alias() {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value.clone()))
-            .set(
+            .field("lax", IvoField::LAX.default(default_lax_value.clone()))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("virtual_alias")
@@ -458,7 +458,7 @@ async fn should_respect_the_required_rule_with_alias_same_as_dependent() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -467,8 +467,8 @@ async fn should_respect_the_required_rule_with_alias_same_as_dependent() {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value.clone()))
-            .set(
+            .field("lax", IvoField::LAX.default(default_lax_value.clone()))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("dependent")
@@ -588,7 +588,7 @@ async fn should_not_create_if_primary_validation_fails() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -597,7 +597,7 @@ async fn should_not_create_if_primary_validation_fails() {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL.validate(|v: String, _, _| {
                     let validated = v.trim();
@@ -680,7 +680,7 @@ async fn should_not_create_if_primary_validation_fails_with_alias() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -689,7 +689,7 @@ async fn should_not_create_if_primary_validation_fails_with_alias() {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .validate(|v: String, _, _| {
@@ -774,7 +774,7 @@ async fn should_not_create_if_primary_validation_fails_with_alias_same_as_depend
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -783,7 +783,7 @@ async fn should_not_create_if_primary_validation_fails_with_alias_same_as_depend
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .validate(|v: String, _, _| {
@@ -869,7 +869,7 @@ async fn should_not_update_if_primary_validation_fails() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -878,7 +878,7 @@ async fn should_not_update_if_primary_validation_fails() {
                         ready(ctx.input().virtual_field.unwrap())
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL.validate(|v: i32, _, _| {
                     if !REQUIRED_VALUE_RANGE.contains(&v) {
@@ -971,7 +971,7 @@ async fn should_not_update_if_primary_validation_fails_with_alias() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -980,7 +980,7 @@ async fn should_not_update_if_primary_validation_fails_with_alias() {
                         ready(ctx.input().virtual_alias.unwrap())
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("virtual_alias")
@@ -1075,7 +1075,7 @@ async fn should_not_update_if_primary_validation_fails_with_alias_same_as_depend
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -1084,7 +1084,7 @@ async fn should_not_update_if_primary_validation_fails_with_alias_same_as_depend
                         ready(ctx.input().dependent.unwrap())
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("dependent")
@@ -1174,7 +1174,7 @@ async fn should_properly_use_input_values_as_output_values_if_validator_does_not
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -1183,7 +1183,7 @@ async fn should_properly_use_input_values_as_output_values_if_validator_does_not
                         ready(ctx.input().virtual_field.unwrap())
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL.validate(|_: i32, _, _| ready(Ok(None))),
             )
@@ -1256,7 +1256,7 @@ async fn should_properly_use_input_values_as_output_values_if_validator_does_not
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -1265,7 +1265,7 @@ async fn should_properly_use_input_values_as_output_values_if_validator_does_not
                         ready(ctx.input().virtual_alias.unwrap())
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("virtual_alias")
@@ -1340,7 +1340,7 @@ async fn should_properly_use_input_values_as_output_values_if_validator_does_not
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -1349,7 +1349,7 @@ async fn should_properly_use_input_values_as_output_values_if_validator_does_not
                         ready(ctx.input().dependent.unwrap())
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("dependent")
@@ -1435,7 +1435,7 @@ async fn should_properly_handle_grouped_required_errors() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value.to_string())
@@ -1444,15 +1444,15 @@ async fn should_properly_handle_grouped_required_errors() {
                         ready(ctx.input().virtual_field.unwrap())
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL.validate(|_: String, _, _| ready(Ok(None))),
             )
-            .set(
+            .field(
                 "lax_1",
                 IvoField::LAX.default(default_lax_1_value.to_string()),
             )
-            .set(
+            .field(
                 "lax_2",
                 IvoField::LAX.default(default_lax_2_value.to_string()),
             )
@@ -1629,7 +1629,7 @@ async fn should_properly_handle_grouped_required_errors_with_alias() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value.to_string())
@@ -1638,17 +1638,17 @@ async fn should_properly_handle_grouped_required_errors_with_alias() {
                         ready(ctx.input().virtual_alias.unwrap())
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("virtual_alias")
                     .validate(|_: String, _, _| ready(Ok(None))),
             )
-            .set(
+            .field(
                 "lax_1",
                 IvoField::LAX.default(default_lax_1_value.to_string()),
             )
-            .set(
+            .field(
                 "lax_2",
                 IvoField::LAX.default(default_lax_2_value.to_string()),
             )
@@ -1825,7 +1825,7 @@ async fn should_properly_handle_grouped_required_errors_with_alias_same_as_depen
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value.to_string())
@@ -1834,17 +1834,17 @@ async fn should_properly_handle_grouped_required_errors_with_alias_same_as_depen
                         ready(ctx.input().dependent.unwrap())
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("dependent")
                     .validate(|_: String, _, _| ready(Ok(None))),
             )
-            .set(
+            .field(
                 "lax_1",
                 IvoField::LAX.default(default_lax_1_value.to_string()),
             )
-            .set(
+            .field(
                 "lax_2",
                 IvoField::LAX.default(default_lax_2_value.to_string()),
             )
@@ -2015,7 +2015,7 @@ async fn should_not_create_if_re_validation_fails() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -2024,7 +2024,7 @@ async fn should_not_create_if_re_validation_fails() {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .validate(|v: String, _, _| {
@@ -2120,7 +2120,7 @@ async fn should_not_create_if_re_validation_fails_with_alias() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -2129,7 +2129,7 @@ async fn should_not_create_if_re_validation_fails_with_alias() {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("virtual_alias")
@@ -2226,7 +2226,7 @@ async fn should_not_create_if_re_validation_fails_with_alias_same_as_dependent()
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -2235,7 +2235,7 @@ async fn should_not_create_if_re_validation_fails_with_alias_same_as_dependent()
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("dependent")
@@ -2335,7 +2335,7 @@ async fn should_not_update_if_re_validation_fails() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -2344,7 +2344,7 @@ async fn should_not_update_if_re_validation_fails() {
                         ready(ctx.input().virtual_field.unwrap())
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .validate(|v: i32, _, _| {
@@ -2452,7 +2452,7 @@ async fn should_not_update_if_re_validation_fails_with_alias() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -2461,7 +2461,7 @@ async fn should_not_update_if_re_validation_fails_with_alias() {
                         ready(ctx.input().virtual_alias.unwrap())
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("virtual_alias")
@@ -2570,7 +2570,7 @@ async fn should_not_update_if_re_validation_fails_with_alias_same_as_dependent()
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -2579,7 +2579,7 @@ async fn should_not_update_if_re_validation_fails_with_alias_same_as_dependent()
                         ready(ctx.input().dependent.unwrap())
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("dependent")
@@ -2681,7 +2681,7 @@ async fn should_properly_use_re_validated_values() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -2690,7 +2690,7 @@ async fn should_properly_use_re_validated_values() {
                         ready(ctx.input().virtual_field.unwrap())
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .validate(|_: i32, _, _| ready(Ok(None)))
@@ -2769,7 +2769,7 @@ async fn should_properly_use_re_validated_values_with_alias() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -2778,7 +2778,7 @@ async fn should_properly_use_re_validated_values_with_alias() {
                         ready(ctx.input().virtual_alias.unwrap())
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("virtual_alias")
@@ -2858,7 +2858,7 @@ async fn should_properly_use_re_validated_values_with_alias_same_as_dependent() 
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -2867,7 +2867,7 @@ async fn should_properly_use_re_validated_values_with_alias_same_as_dependent() 
                         ready(ctx.input().dependent.unwrap())
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("dependent")
@@ -2948,7 +2948,7 @@ async fn should_properly_use_input_values_as_output_values_if_re_validator_does_
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -2957,7 +2957,7 @@ async fn should_properly_use_input_values_as_output_values_if_re_validator_does_
                         ready(ctx.input().virtual_field.unwrap())
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .validate(|v: i32, _, _| ready(Ok(Some(v + 1))))
@@ -3037,7 +3037,7 @@ async fn should_properly_use_input_values_as_output_values_if_re_validator_does_
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -3046,7 +3046,7 @@ async fn should_properly_use_input_values_as_output_values_if_re_validator_does_
                         ready(ctx.input().virtual_alias.unwrap())
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("virtual_alias")
@@ -3127,7 +3127,7 @@ async fn should_properly_use_input_values_as_output_values_if_re_validator_does_
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -3136,7 +3136,7 @@ async fn should_properly_use_input_values_as_output_values_if_re_validator_does_
                         ready(ctx.input().dependent.unwrap())
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("dependent")
@@ -3231,7 +3231,7 @@ async fn should_respect_post_validation_config() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -3240,15 +3240,15 @@ async fn should_respect_post_validation_config() {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL.validate(|_: String, _, _| ready(Ok(None))),
             )
-            .set(
+            .field(
                 "virtual_field_1",
                 IvoField::VIRTUAL.validate(|_: String, _, _| ready(Ok(None))),
             )
-            .set(
+            .field(
                 "virtual_field_2",
                 IvoField::VIRTUAL.validate(|_: String, _, _| ready(Ok(None))),
             )
@@ -3654,7 +3654,7 @@ async fn should_respect_post_validation_config_with_alias() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -3663,17 +3663,17 @@ async fn should_respect_post_validation_config_with_alias() {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("virtual_alias")
                     .validate(|_: String, _, _| ready(Ok(None))),
             )
-            .set(
+            .field(
                 "virtual_field_1",
                 IvoField::VIRTUAL.validate(|_: String, _, _| ready(Ok(None))),
             )
-            .set(
+            .field(
                 "virtual_field_2",
                 IvoField::VIRTUAL.validate(|_: String, _, _| ready(Ok(None))),
             )
@@ -4079,7 +4079,7 @@ async fn should_respect_post_validation_config_with_alias_same_as_dependent() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -4088,17 +4088,17 @@ async fn should_respect_post_validation_config_with_alias_same_as_dependent() {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("dependent")
                     .validate(|_: String, _, _| ready(Ok(None))),
             )
-            .set(
+            .field(
                 "virtual_field_1",
                 IvoField::VIRTUAL.validate(|_: String, _, _| ready(Ok(None))),
             )
-            .set(
+            .field(
                 "virtual_field_2",
                 IvoField::VIRTUAL.validate(|_: String, _, _| ready(Ok(None))),
             )
@@ -4498,7 +4498,7 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value.into())
@@ -4507,11 +4507,11 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
                         ready(ctx.input().virtual_field.unwrap())
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL.validate(|_: String, _, _| ready(Ok(None))),
             )
-            .set(
+            .field(
                 "virtual_field_1",
                 IvoField::VIRTUAL.validate(|_: String, _, _| ready(Ok(None))),
             )
@@ -4680,7 +4680,7 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value.into())
@@ -4689,13 +4689,13 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
                         ready(ctx.input().virtual_alias.unwrap())
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .validate(|_: String, _, _| ready(Ok(None)))
                     .alias("virtual_alias"),
             )
-            .set(
+            .field(
                 "virtual_field_1",
                 IvoField::VIRTUAL.validate(|_: String, _, _| ready(Ok(None))),
             )
@@ -4864,7 +4864,7 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value.into())
@@ -4873,13 +4873,13 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
                         ready(ctx.input().dependent.unwrap())
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .validate(|_: String, _, _| ready(Ok(None)))
                     .alias("dependent"),
             )
-            .set(
+            .field(
                 "virtual_field_1",
                 IvoField::VIRTUAL.validate(|_: String, _, _| ready(Ok(None))),
             )
@@ -5042,7 +5042,7 @@ async fn should_respect_sanitizers_if_provided() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value.into())
@@ -5051,7 +5051,7 @@ async fn should_respect_sanitizers_if_provided() {
                         ready(ctx.input().virtual_field.unwrap())
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .validate(|_: String, _, _| ready(Ok(None)))
@@ -5146,7 +5146,7 @@ async fn should_respect_sanitizers_if_provided_with_alias() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value.into())
@@ -5155,7 +5155,7 @@ async fn should_respect_sanitizers_if_provided_with_alias() {
                         ready(ctx.input().virtual_alias.unwrap())
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("virtual_alias")
@@ -5251,7 +5251,7 @@ async fn should_respect_sanitizers_if_provided_with_alias_same_as_dependent() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value.into())
@@ -5260,7 +5260,7 @@ async fn should_respect_sanitizers_if_provided_with_alias_same_as_dependent() {
                         ready(ctx.input().dependent.unwrap())
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("dependent")

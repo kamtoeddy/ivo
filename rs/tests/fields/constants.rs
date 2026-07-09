@@ -22,8 +22,8 @@ async fn should_respect_constants_with_static_values() {
 
     let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
         |f| {
-            f.set("constant", IvoField::CONSTANT.value(constant))
-                .set("lax", IvoField::LAX.default(20))
+            f.field("constant", IvoField::CONSTANT.value(constant))
+                .field("lax", IvoField::LAX.default(20))
         },
         |o| o,
     );
@@ -85,11 +85,11 @@ async fn should_respect_constants_with_computed_values() {
 
     let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "constant",
                 IvoField::CONSTANT.computed(move |_, _| ready(constant)),
             )
-            .set("lax", IvoField::LAX.default(20))
+            .field("lax", IvoField::LAX.default(20))
         },
         |o| o,
     );
@@ -151,7 +151,7 @@ async fn should_trigger_on_delete_handlers_with_static_values() {
 
     let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "constant",
                 IvoField::CONSTANT
                     .value(constant)
@@ -166,7 +166,7 @@ async fn should_trigger_on_delete_handlers_with_static_values() {
                         ready(())
                     }),
             )
-            .set("lax", IvoField::LAX.default(20))
+            .field("lax", IvoField::LAX.default(20))
         },
         |o| o,
     );
@@ -197,7 +197,7 @@ async fn should_trigger_on_delete_handlers_with_computed_values() {
 
     let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "constant",
                 IvoField::CONSTANT
                     .computed(move |_, _| ready(constant))
@@ -213,7 +213,7 @@ async fn should_trigger_on_delete_handlers_with_computed_values() {
                     })
                     .on_delete(|_, _| ready(())),
             )
-            .set("lax", IvoField::LAX.default(20))
+            .field("lax", IvoField::LAX.default(20))
         },
         |o| o,
     );
@@ -244,7 +244,7 @@ async fn should_trigger_on_success_handlers_with_static_values() {
 
     let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "constant",
                 IvoField::CONSTANT.value(constant).on_success(
                     |ctx: IvoContext<DataInput, Data>, _| {
@@ -259,7 +259,7 @@ async fn should_trigger_on_success_handlers_with_static_values() {
                     },
                 ),
             )
-            .set("lax", IvoField::LAX.default(20))
+            .field("lax", IvoField::LAX.default(20))
         },
         |o| o,
     );
@@ -300,7 +300,7 @@ async fn should_trigger_on_success_handlers_with_computed_values() {
 
     let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "constant",
                 IvoField::CONSTANT
                     .computed(move |_, _| ready(constant))
@@ -316,7 +316,7 @@ async fn should_trigger_on_success_handlers_with_computed_values() {
                     })
                     .on_success(async |_, _| ()),
             )
-            .set("lax", IvoField::LAX.default(20))
+            .field("lax", IvoField::LAX.default(20))
         },
         |o| o,
     );

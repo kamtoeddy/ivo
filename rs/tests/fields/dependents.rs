@@ -35,7 +35,7 @@ async fn should_use_static_default_value_of_dependent_if_resolver_is_not_run_at_
 
     let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(dependent)
@@ -44,7 +44,7 @@ async fn should_use_static_default_value_of_dependent_if_resolver_is_not_run_at_
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(lax))
+            .field("lax", IvoField::LAX.default(lax))
         },
         |o| o,
     );
@@ -81,7 +81,7 @@ async fn should_use_computed_default_value_of_dependent_if_resolver_is_not_run_a
 
     let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default_fn(move |_, _| ready(dependent))
@@ -90,7 +90,7 @@ async fn should_use_computed_default_value_of_dependent_if_resolver_is_not_run_a
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(lax))
+            .field("lax", IvoField::LAX.default(lax))
         },
         |o| o,
     );
@@ -155,7 +155,7 @@ async fn should_properly_run_dependent_resolver() {
 
     let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -164,7 +164,7 @@ async fn should_properly_run_dependent_resolver() {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
+            .field("lax", IvoField::LAX.default(default_lax_value))
         },
         |o| o,
     );
@@ -244,7 +244,7 @@ async fn should_properly_run_dependent_resolver_even_with_multiple_parents() {
 
     let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -253,8 +253,8 @@ async fn should_properly_run_dependent_resolver_even_with_multiple_parents() {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set("lax_1", IvoField::LAX.default(default_lax_value))
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field("lax_1", IvoField::LAX.default(default_lax_value))
         },
         |o| o,
     );
@@ -345,7 +345,7 @@ async fn should_properly_run_dependent_resolver_even_with_dependency_on_other_de
 
     let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -354,7 +354,7 @@ async fn should_properly_run_dependent_resolver_even_with_dependency_on_other_de
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set(
+            .field(
                 "dependent_1",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -363,8 +363,8 @@ async fn should_properly_run_dependent_resolver_even_with_dependency_on_other_de
                         ready(ctx.values().dependent.unwrap() + 10)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set("lax_1", IvoField::LAX.default(default_lax_value))
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field("lax_1", IvoField::LAX.default(default_lax_value))
         },
         |o| o,
     );
@@ -467,7 +467,7 @@ async fn should_not_run_dependent_resolver_if_readonly_is_provided_and_value_is_
 
     let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -477,7 +477,7 @@ async fn should_not_run_dependent_resolver_if_readonly_is_provided_and_value_is_
                     })
                     .readonly(),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
+            .field("lax", IvoField::LAX.default(default_lax_value))
         },
         |o| o,
     );
@@ -587,7 +587,7 @@ async fn should_trigger_on_delete_handlers_with_static_default_values() {
 
     let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(dependent)
@@ -606,7 +606,7 @@ async fn should_trigger_on_delete_handlers_with_static_default_values() {
                         ready(())
                     }),
             )
-            .set("lax", IvoField::LAX.default(20))
+            .field("lax", IvoField::LAX.default(20))
         },
         |o| o,
     );
@@ -645,7 +645,7 @@ async fn should_trigger_on_delete_handlers_with_computed_default_values() {
 
     let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(dependent)
@@ -665,7 +665,7 @@ async fn should_trigger_on_delete_handlers_with_computed_default_values() {
                     })
                     .on_delete(async |_, _| ()),
             )
-            .set("lax", IvoField::LAX.default(20))
+            .field("lax", IvoField::LAX.default(20))
         },
         |o| o,
     );
@@ -707,7 +707,7 @@ async fn should_trigger_on_success_handlers_if_resolver_is_run_at_creation() {
 
     let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -726,7 +726,7 @@ async fn should_trigger_on_success_handlers_if_resolver_is_run_at_creation() {
                         ready(())
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
+            .field("lax", IvoField::LAX.default(default_lax_value))
         },
         |o| o,
     );
@@ -779,7 +779,7 @@ async fn should_trigger_on_success_handlers_even_if_resolver_is_not_run_at_creat
 
     let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -799,7 +799,7 @@ async fn should_trigger_on_success_handlers_even_if_resolver_is_not_run_at_creat
                     })
                     .on_success(async |_, _| ()),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
+            .field("lax", IvoField::LAX.default(default_lax_value))
         },
         |o| o,
     );
@@ -852,7 +852,7 @@ async fn should_trigger_on_success_handlers_if_resolver_is_run_during_updates() 
 
     let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -871,7 +871,7 @@ async fn should_trigger_on_success_handlers_if_resolver_is_run_during_updates() 
                         ready(())
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
+            .field("lax", IvoField::LAX.default(default_lax_value))
         },
         |o| o,
     );
@@ -926,7 +926,7 @@ async fn should_not_trigger_on_success_handlers_not_if_resolver_is_run_during_up
 
     let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -945,8 +945,8 @@ async fn should_not_trigger_on_success_handlers_not_if_resolver_is_run_during_up
                         ready(())
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set("lax_1", IvoField::LAX.default(default_lax_value))
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field("lax_1", IvoField::LAX.default(default_lax_value))
         },
         |o| o,
     );
@@ -1003,7 +1003,7 @@ async fn should_trigger_grouped_on_success_with_at_creation_if_resolved() {
 
     let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -1012,7 +1012,7 @@ async fn should_trigger_grouped_on_success_with_at_creation_if_resolved() {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
+            .field("lax", IvoField::LAX.default(default_lax_value))
         },
         |o| {
             o.on_success(["dependent"], |s| {
@@ -1075,7 +1075,7 @@ async fn should_trigger_grouped_on_success_with_at_creation_even_if_not_resolved
 
     let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -1084,7 +1084,7 @@ async fn should_trigger_grouped_on_success_with_at_creation_even_if_not_resolved
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
+            .field("lax", IvoField::LAX.default(default_lax_value))
         },
         |o| {
             o.on_success(["dependent"], |s| {
@@ -1142,7 +1142,7 @@ async fn should_trigger_grouped_on_success_during_updates_if_resolved() {
 
     let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -1151,7 +1151,7 @@ async fn should_trigger_grouped_on_success_during_updates_if_resolved() {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
+            .field("lax", IvoField::LAX.default(default_lax_value))
         },
         |o| {
             o.on_success(["dependent"], |s| {
@@ -1219,7 +1219,7 @@ async fn should_not_trigger_grouped_on_success_during_updates_if_not_resolved_be
 
     let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -1229,7 +1229,7 @@ async fn should_not_trigger_grouped_on_success_during_updates_if_not_resolved_be
                     })
                     .readonly(),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
+            .field("lax", IvoField::LAX.default(default_lax_value))
         },
         |o| {
             o.on_success(["dependent"], |s| {
@@ -1295,7 +1295,7 @@ async fn should_not_trigger_grouped_on_success_during_updates_if_not_resolved() 
 
     let schema: Schema<DataInput, Data, Option<()>, (), IvoDefaultErrorTool> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -1304,8 +1304,8 @@ async fn should_not_trigger_grouped_on_success_during_updates_if_not_resolved() 
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set("lax_1", IvoField::LAX.default(default_lax_value))
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field("lax_1", IvoField::LAX.default(default_lax_value))
         },
         |o| {
             o.on_success(["dependent"], |s| {

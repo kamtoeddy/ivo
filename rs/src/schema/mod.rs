@@ -744,7 +744,7 @@ impl<
         }
     }
 
-    pub fn set<Config>(mut self, name: &str, config: Config) -> Self
+    pub fn field<Config>(mut self, name: &str, config: Config) -> Self
     where
         Config: BuildableFieldConfig<I, O, CtxOptions, ErrorTool>,
     {

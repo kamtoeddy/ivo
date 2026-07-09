@@ -129,20 +129,20 @@ static PRODUCT_SCHEMA: LazyLock<Schema<ProductInput, Product, ProductCtxOptions>
     LazyLock::new(|| {
         Schema::new(
             |f| {
-                f.set("id", IvoField::CONSTANT.value(ProductID(1)))
-                    .set(
+                f.field("id", IvoField::CONSTANT.value(ProductID(1)))
+                    .field(
                         "name",
                         IvoField::REQUIRED.validate(|_: String, _, _| ready(Ok(None))),
                     )
-                    .set(
+                    .field(
                         "sku",
                         IvoField::REQUIRED.validate(|_: String, _, _| ready(Ok(None))),
                     )
-                    .set(
+                    .field(
                         "price",
                         IvoField::REQUIRED.validate(|_: u32, _, _| ready(Ok(None))),
                     )
-                    .set(
+                    .field(
                         "supplier",
                         IvoField::REQUIRED
                             .validate(|_: SupplierID, _, _| ready(Ok(None)))

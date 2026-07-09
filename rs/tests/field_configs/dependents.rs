@@ -22,15 +22,15 @@ fn should_reject_if_parent_array_is_empty() {
 
     let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
         |f| {
-            f.set("lax", IvoField::LAX.default(1))
-                .set(
+            f.field("lax", IvoField::LAX.default(1))
+                .field(
                     "dependent",
                     IvoField::DEPENDENT
                         .default(2)
                         .depends_on([])
                         .resolve(|_, _| ready(4)),
                 )
-                .set(
+                .field(
                     "required",
                     IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
                 )
@@ -63,16 +63,16 @@ fn should_reject_dependency_of_created_at_field_with_default_name() {
 
     let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
         |f| {
-            f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
-                .set("lax", IvoField::LAX.default(1))
-                .set(
+            f.field("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
+                .field("lax", IvoField::LAX.default(1))
+                .field(
                     "dependent",
                     IvoField::DEPENDENT
                         .default(2)
                         .depends_on(["lax", "required", "created_at"])
                         .resolve(|_, _| ready(4)),
                 )
-                .set(
+                .field(
                     "required",
                     IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
                 )
@@ -109,16 +109,16 @@ fn should_reject_dependency_of_created_at_field_with_custom_name() {
 
     let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
         |f| {
-            f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
-                .set("lax", IvoField::LAX.default(1))
-                .set(
+            f.field("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
+                .field("lax", IvoField::LAX.default(1))
+                .field(
                     "dependent",
                     IvoField::DEPENDENT
                         .default(2)
                         .depends_on(["lax", "required", "custom_created_at"])
                         .resolve(|_, _| ready(4)),
                 )
-                .set(
+                .field(
                     "required",
                     IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
                 )
@@ -155,16 +155,16 @@ fn should_reject_dependency_of_updated_at_field_with_default_name() {
 
     let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
         |f| {
-            f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
-                .set("lax", IvoField::LAX.default(1))
-                .set(
+            f.field("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
+                .field("lax", IvoField::LAX.default(1))
+                .field(
                     "dependent",
                     IvoField::DEPENDENT
                         .default(2)
                         .depends_on(["lax", "required", "updated_at"])
                         .resolve(|_, _| ready(4)),
                 )
-                .set(
+                .field(
                     "required",
                     IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
                 )
@@ -197,16 +197,16 @@ fn should_reject_dependency_of_updated_at_field_with_custom_name() {
 
     let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
         |f| {
-            f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
-                .set("lax", IvoField::LAX.default(1))
-                .set(
+            f.field("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
+                .field("lax", IvoField::LAX.default(1))
+                .field(
                     "dependent",
                     IvoField::DEPENDENT
                         .default(2)
                         .depends_on(["lax", "required", "custom_updated_at"])
                         .resolve(|_, _| ready(4)),
                 )
-                .set(
+                .field(
                     "required",
                     IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
                 )
@@ -241,15 +241,15 @@ fn should_reject_if_any_parent_field_provided_does_not_belong_on_schema() {
 
     let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
         |f| {
-            f.set("lax", IvoField::LAX.default(1))
-                .set(
+            f.field("lax", IvoField::LAX.default(1))
+                .field(
                     "dependent",
                     IvoField::DEPENDENT
                         .default(2)
                         .depends_on(["lax", "required", "lol"])
                         .resolve(|_, _| ready(4)),
                 )
-                .set(
+                .field(
                     "required",
                     IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
                 )
@@ -278,15 +278,15 @@ fn should_reject_if_any_parent_field_name_is_same_as_dependent_field_name() {
 
     let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
         |f| {
-            f.set("lax", IvoField::LAX.default(1))
-                .set(
+            f.field("lax", IvoField::LAX.default(1))
+                .field(
                     "dependent",
                     IvoField::DEPENDENT
                         .default(2)
                         .depends_on(["lax", "required", "dependent"])
                         .resolve(|_, _| ready(4)),
                 )
-                .set(
+                .field(
                     "required",
                     IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
                 )
@@ -317,15 +317,15 @@ fn should_reject_if_duplicate_parent_fields_are_provided() {
 
     let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
         |f| {
-            f.set("lax", IvoField::LAX.default(1))
-                .set(
+            f.field("lax", IvoField::LAX.default(1))
+                .field(
                     "dependent",
                     IvoField::DEPENDENT
                         .default(2)
                         .depends_on(["lax", "required", "lax"])
                         .resolve(|_, _| ready(4)),
                 )
-                .set(
+                .field(
                     "required",
                     IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
                 )
@@ -355,16 +355,16 @@ fn should_reject_dependency_of_constant_fields() {
 
     let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
         |f| {
-            f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
-                .set("lax", IvoField::LAX.default(1))
-                .set(
+            f.field("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
+                .field("lax", IvoField::LAX.default(1))
+                .field(
                     "dependent",
                     IvoField::DEPENDENT
                         .default(2)
                         .depends_on(["lax", "required", "id"])
                         .resolve(|_, _| ready(4)),
                 )
-                .set(
+                .field(
                     "required",
                     IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
                 )
@@ -395,22 +395,22 @@ fn should_reject_any_redundant_dependencies() {
 
     let _: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set("c", IvoField::LAX.default(1))
-                .set(
+            f.field("c", IvoField::LAX.default(1))
+                .field(
                     "b",
                     IvoField::DEPENDENT
                         .default(2)
                         .depends_on(["c"])
                         .resolve(|_, _| ready(4)),
                 )
-                .set(
+                .field(
                     "a",
                     IvoField::DEPENDENT
                         .default(2)
                         .depends_on(["c", "d", "b"])
                         .resolve(|_, _| ready(4)),
                 )
-                .set(
+                .field(
                     "d",
                     IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
                 )
@@ -439,28 +439,28 @@ fn should_reject_any_deeply_redundant_dependencies() {
 
     let _: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "c",
                 IvoField::DEPENDENT
                     .default(2)
                     .depends_on(["d"])
                     .resolve(|_, _| ready(4)),
             )
-            .set(
+            .field(
                 "b",
                 IvoField::DEPENDENT
                     .default(2)
                     .depends_on(["c"])
                     .resolve(|_, _| ready(4)),
             )
-            .set(
+            .field(
                 "a",
                 IvoField::DEPENDENT
                     .default(2)
                     .depends_on(["b", "d"])
                     .resolve(|_, _| ready(4)),
             )
-            .set(
+            .field(
                 "d",
                 IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
             )
@@ -486,15 +486,15 @@ fn should_reject_any_circular_dependencies() {
 
     let _: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set("c", IvoField::LAX.default(1))
-                .set(
+            f.field("c", IvoField::LAX.default(1))
+                .field(
                     "a",
                     IvoField::DEPENDENT
                         .default(2)
                         .depends_on(["b"])
                         .resolve(|_, _| ready(4)),
                 )
-                .set(
+                .field(
                     "b",
                     IvoField::DEPENDENT
                         .default(2)
@@ -524,28 +524,28 @@ fn should_reject_any_deeply_circular_dependencies() {
 
     let _: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "a",
                 IvoField::DEPENDENT
                     .default(2)
                     .depends_on(["b"])
                     .resolve(|_, _| ready(4)),
             )
-            .set(
+            .field(
                 "b",
                 IvoField::DEPENDENT
                     .default(2)
                     .depends_on(["c"])
                     .resolve(|_, _| ready(4)),
             )
-            .set(
+            .field(
                 "c",
                 IvoField::DEPENDENT
                     .default(2)
                     .depends_on(["a", "d"])
                     .resolve(|_, _| ready(4)),
             )
-            .set("d", IvoField::LAX.default(1))
+            .field("d", IvoField::LAX.default(1))
         },
         |o| o,
     );
@@ -570,15 +570,15 @@ fn should_allow_dependency_on_normal_lax_or_required_fields() {
     let result = panic::catch_unwind(|| {
         let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
             |f| {
-                f.set("lax", IvoField::LAX.default(1))
-                    .set(
+                f.field("lax", IvoField::LAX.default(1))
+                    .field(
                         "dependent",
                         IvoField::DEPENDENT
                             .default(2)
                             .depends_on(["lax"])
                             .resolve(|_, _| ready(4)),
                     )
-                    .set(
+                    .field(
                         "required",
                         IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
@@ -593,15 +593,15 @@ fn should_allow_dependency_on_normal_lax_or_required_fields() {
     let result = panic::catch_unwind(|| {
         let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
             |f| {
-                f.set("lax", IvoField::LAX.default(1))
-                    .set(
+                f.field("lax", IvoField::LAX.default(1))
+                    .field(
                         "dependent",
                         IvoField::DEPENDENT
                             .default(2)
                             .depends_on(["required"])
                             .resolve(|_, _| ready(4)),
                     )
-                    .set(
+                    .field(
                         "required",
                         IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
@@ -616,15 +616,15 @@ fn should_allow_dependency_on_normal_lax_or_required_fields() {
     let result = panic::catch_unwind(|| {
         let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
             |f| {
-                f.set("lax", IvoField::LAX.default(1))
-                    .set(
+                f.field("lax", IvoField::LAX.default(1))
+                    .field(
                         "dependent",
                         IvoField::DEPENDENT
                             .default(2)
                             .depends_on(["lax", "required"])
                             .resolve(|_, _| ready(4)),
                     )
-                    .set(
+                    .field(
                         "required",
                         IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
@@ -657,22 +657,22 @@ fn should_allow_dependency_on_other_dependent_fields() {
     let result = panic::catch_unwind(|| {
         let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
             |f| {
-                f.set("lax", IvoField::LAX.default(1))
-                    .set(
+                f.field("lax", IvoField::LAX.default(1))
+                    .field(
                         "dependent",
                         IvoField::DEPENDENT
                             .default(2)
                             .depends_on(["dependent1"])
                             .resolve(|_, _| ready(4)),
                     )
-                    .set(
+                    .field(
                         "dependent1",
                         IvoField::DEPENDENT
                             .default(2)
                             .depends_on(["lax"])
                             .resolve(|_, _| ready(4)),
                     )
-                    .set(
+                    .field(
                         "required",
                         IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
@@ -687,22 +687,22 @@ fn should_allow_dependency_on_other_dependent_fields() {
     let result = panic::catch_unwind(|| {
         let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
             |f| {
-                f.set("lax", IvoField::LAX.default(1))
-                    .set(
+                f.field("lax", IvoField::LAX.default(1))
+                    .field(
                         "dependent",
                         IvoField::DEPENDENT
                             .default(2)
                             .depends_on(["dependent1", "required"])
                             .resolve(|_, _| ready(4)),
                     )
-                    .set(
+                    .field(
                         "dependent1",
                         IvoField::DEPENDENT
                             .default(2)
                             .depends_on(["lax"])
                             .resolve(|_, _| ready(4)),
                     )
-                    .set(
+                    .field(
                         "required",
                         IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
@@ -736,26 +736,26 @@ fn should_allow_dependency_on_virtual_fields() {
     let result = panic::catch_unwind(|| {
         let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
             |f| {
-                f.set("lax", IvoField::LAX.default(1))
-                    .set(
+                f.field("lax", IvoField::LAX.default(1))
+                    .field(
                         "dependent",
                         IvoField::DEPENDENT
                             .default(2)
                             .depends_on(["virtual_field"])
                             .resolve(|_, _| ready(4)),
                     )
-                    .set(
+                    .field(
                         "dependent1",
                         IvoField::DEPENDENT
                             .default(2)
                             .depends_on(["lax"])
                             .resolve(|_, _| ready(4)),
                     )
-                    .set(
+                    .field(
                         "required",
                         IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
-                    .set(
+                    .field(
                         "virtual_field",
                         IvoField::VIRTUAL.validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
@@ -770,26 +770,26 @@ fn should_allow_dependency_on_virtual_fields() {
     let result = panic::catch_unwind(|| {
         let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
             |f| {
-                f.set("lax", IvoField::LAX.default(1))
-                    .set(
+                f.field("lax", IvoField::LAX.default(1))
+                    .field(
                         "dependent",
                         IvoField::DEPENDENT
                             .default(2)
                             .depends_on(["required", "virtual_field"])
                             .resolve(|_, _| ready(4)),
                     )
-                    .set(
+                    .field(
                         "dependent1",
                         IvoField::DEPENDENT
                             .default(2)
                             .depends_on(["lax"])
                             .resolve(|_, _| ready(4)),
                     )
-                    .set(
+                    .field(
                         "required",
                         IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
-                    .set(
+                    .field(
                         "virtual_field",
                         IvoField::VIRTUAL.validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
@@ -804,26 +804,26 @@ fn should_allow_dependency_on_virtual_fields() {
     let result = panic::catch_unwind(|| {
         let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
             |f| {
-                f.set("lax", IvoField::LAX.default(1))
-                    .set(
+                f.field("lax", IvoField::LAX.default(1))
+                    .field(
                         "dependent",
                         IvoField::DEPENDENT
                             .default(2)
                             .depends_on(["dependent1", "virtual_field"])
                             .resolve(|_, _| ready(4)),
                     )
-                    .set(
+                    .field(
                         "dependent1",
                         IvoField::DEPENDENT
                             .default(2)
                             .depends_on(["lax"])
                             .resolve(|_, _| ready(4)),
                     )
-                    .set(
+                    .field(
                         "required",
                         IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
-                    .set(
+                    .field(
                         "virtual_field",
                         IvoField::VIRTUAL.validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
@@ -838,26 +838,26 @@ fn should_allow_dependency_on_virtual_fields() {
     let result = panic::catch_unwind(|| {
         let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
             |f| {
-                f.set("lax", IvoField::LAX.default(1))
-                    .set(
+                f.field("lax", IvoField::LAX.default(1))
+                    .field(
                         "dependent",
                         IvoField::DEPENDENT
                             .default(2)
                             .depends_on(["virtual_field"])
                             .resolve(|_, _| ready(4)),
                     )
-                    .set(
+                    .field(
                         "dependent1",
                         IvoField::DEPENDENT
                             .default(2)
                             .depends_on(["lax", "virtual_field"])
                             .resolve(|_, _| ready(4)),
                     )
-                    .set(
+                    .field(
                         "required",
                         IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
-                    .set(
+                    .field(
                         "virtual_field",
                         IvoField::VIRTUAL.validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
@@ -890,19 +890,19 @@ fn should_allow_dependency_on_virtual_fields_with_aliases() {
 
         let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
             |f| {
-                f.set("lax", IvoField::LAX.default(1))
-                    .set(
+                f.field("lax", IvoField::LAX.default(1))
+                    .field(
                         "dependent",
                         IvoField::DEPENDENT
                             .default(2)
                             .depends_on(["virtual_field"])
                             .resolve(|_, _| ready(4)),
                     )
-                    .set(
+                    .field(
                         "required",
                         IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
-                    .set(
+                    .field(
                         "virtual_field",
                         IvoField::VIRTUAL
                             .alias("alias_name")
@@ -934,19 +934,19 @@ fn should_allow_dependency_on_virtual_fields_with_aliases() {
 
         let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
             |f| {
-                f.set("lax", IvoField::LAX.default(1))
-                    .set(
+                f.field("lax", IvoField::LAX.default(1))
+                    .field(
                         "dependent",
                         IvoField::DEPENDENT
                             .default(2)
                             .depends_on(["virtual_field"])
                             .resolve(|_, _| ready(4)),
                     )
-                    .set(
+                    .field(
                         "required",
                         IvoField::REQUIRED.validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
-                    .set(
+                    .field(
                         "virtual_field",
                         IvoField::VIRTUAL
                             .alias("dependent")

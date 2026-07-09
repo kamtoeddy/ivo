@@ -46,7 +46,7 @@ async fn should_properly_update_ctx_options_in_default_resolver_and_provide_thos
 
     let schema = Schema::<DataInput, Data, CtxOptions>::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default_fn(async |_, o: IvoRwCtxOptions<CtxOptions>| {
@@ -68,7 +68,7 @@ async fn should_properly_update_ctx_options_in_default_resolver_and_provide_thos
                         ready(())
                     }),
             )
-            .set(
+            .field(
                 "lax",
                 IvoField::LAX
                     .default(DEFAULT_LAX_VALUE)
@@ -125,7 +125,7 @@ async fn should_properly_update_ctx_options_in_value_resolver_and_provide_those_
 
     let schema = Schema::<DataInput, Data, CtxOptions>::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default_fn(async |_, _| DEFAULT_DEPENDENT_VALUE)
@@ -147,7 +147,7 @@ async fn should_properly_update_ctx_options_in_value_resolver_and_provide_those_
                         ready(())
                     }),
             )
-            .set(
+            .field(
                 "lax",
                 IvoField::LAX
                     .default(DEFAULT_LAX_VALUE)
@@ -204,7 +204,7 @@ async fn should_properly_update_ctx_options_in_value_resolver_and_provide_those_
 
     let schema = Schema::<DataInput, Data, CtxOptions>::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default_fn(async |_, _| DEFAULT_DEPENDENT_VALUE)
@@ -226,7 +226,7 @@ async fn should_properly_update_ctx_options_in_value_resolver_and_provide_those_
                         ready(())
                     }),
             )
-            .set(
+            .field(
                 "lax",
                 IvoField::LAX
                     .default(DEFAULT_LAX_VALUE)

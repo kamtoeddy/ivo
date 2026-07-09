@@ -21,16 +21,16 @@ fn should_reject_if_virtual_field_does_not_have_any_dependency() {
 
     let _: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
-                .set("lax", IvoField::LAX.default(1))
-                .set(
+            f.field("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
+                .field("lax", IvoField::LAX.default(1))
+                .field(
                     "dependent",
                     IvoField::DEPENDENT
                         .default(1)
                         .depends_on(["lax"])
                         .resolve(|_, _| ready(2)),
                 )
-                .set(
+                .field(
                     "virtual_field",
                     IvoField::VIRTUAL.validate(|_: String, _, _| ready(Ok(None))),
                 )
@@ -55,15 +55,15 @@ fn should_reject_with_same_alias_name() {
 
     let _: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
-                .set(
+            f.field("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
+                .field(
                     "dependent",
                     IvoField::DEPENDENT
                         .default(1)
                         .depends_on(["virtual_field"])
                         .resolve(|_, _| ready(2)),
                 )
-                .set(
+                .field(
                     "virtual_field",
                     IvoField::VIRTUAL
                         .alias("virtual_field")
@@ -94,16 +94,16 @@ fn should_reject_with_alias_as_non_dependent_field() {
 
     let _: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
-                .set("lax", IvoField::LAX.default(1))
-                .set(
+            f.field("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
+                .field("lax", IvoField::LAX.default(1))
+                .field(
                     "dependent",
                     IvoField::DEPENDENT
                         .default(1)
                         .depends_on(["virtual_field"])
                         .resolve(|_, _| ready(2)),
                 )
-                .set(
+                .field(
                     "virtual_field",
                     IvoField::VIRTUAL
                         .alias("lax")
@@ -135,23 +135,23 @@ fn should_reject_with_alias_as_unrelated_dependent_field() {
 
     let _: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
-                .set("lax", IvoField::LAX.default(1))
-                .set(
+            f.field("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
+                .field("lax", IvoField::LAX.default(1))
+                .field(
                     "dependent1",
                     IvoField::DEPENDENT
                         .default(1)
                         .depends_on(["lax"])
                         .resolve(|_, _| ready(2)),
                 )
-                .set(
+                .field(
                     "dependent",
                     IvoField::DEPENDENT
                         .default(1)
                         .depends_on(["virtual_field"])
                         .resolve(|_, _| ready(2)),
                 )
-                .set(
+                .field(
                     "virtual_field",
                     IvoField::VIRTUAL
                         .alias("dependent1")
@@ -180,8 +180,8 @@ fn should_reject_if_alias_is_same_created_at_if_enabled_with_default_name() {
 
     let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
         |f| {
-            f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
-                .set(
+            f.field("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
+                .field(
                     "virtual_field",
                     IvoField::VIRTUAL
                         .alias("created_at")
@@ -211,7 +211,7 @@ fn should_reject_if_alias_is_same_created_at_if_enabled_with_custom_name() {
 
     let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("custom_created_at")
@@ -244,8 +244,8 @@ fn should_reject_if_alias_is_same_updated_at_if_enabled_with_default_name() {
 
     let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
         |f| {
-            f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
-                .set(
+            f.field("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
+                .field(
                     "virtual_field",
                     IvoField::VIRTUAL
                         .alias("updated_at")
@@ -275,7 +275,7 @@ fn should_reject_if_alias_is_same_updated_at_if_enabled_with_custom_name() {
 
     let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("custom_updated_at")
@@ -310,22 +310,22 @@ fn should_reject_if_alias_already_used() {
 
     let _: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
-                .set("lax", IvoField::LAX.default(1))
-                .set(
+            f.field("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
+                .field("lax", IvoField::LAX.default(1))
+                .field(
                     "dependent",
                     IvoField::DEPENDENT
                         .default(1)
                         .depends_on(["lax", "virtual_field", "virtual_field1"])
                         .resolve(|_, _| ready(2)),
                 )
-                .set(
+                .field(
                     "virtual_field1",
                     IvoField::VIRTUAL
                         .alias("dependent")
                         .validate(|v: String, _, _| ready(Ok(Some(v)))),
                 )
-                .set(
+                .field(
                     "virtual_field",
                     IvoField::VIRTUAL
                         .alias("dependent")
@@ -355,16 +355,16 @@ fn should_reject_if_alias_does_not_exist_on_input_struct() {
 
     let _: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
-                .set("lax", IvoField::LAX.default(1))
-                .set(
+            f.field("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
+                .field("lax", IvoField::LAX.default(1))
+                .field(
                     "dependent",
                     IvoField::DEPENDENT
                         .default(1)
                         .depends_on(["lax", "virtual_field"])
                         .resolve(|_, _| ready(2)),
                 )
-                .set(
+                .field(
                     "virtual_field",
                     IvoField::VIRTUAL
                         .alias("alias_name")
@@ -396,16 +396,16 @@ fn should_reject_if_both_alias_and_field_name_exist_on_input_struct() {
 
     let _: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
-                .set("lax", IvoField::LAX.default(1))
-                .set(
+            f.field("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
+                .field("lax", IvoField::LAX.default(1))
+                .field(
                     "dependent",
                     IvoField::DEPENDENT
                         .default(1)
                         .depends_on(["lax", "virtual_field"])
                         .resolve(|_, _| ready(2)),
                 )
-                .set(
+                .field(
                     "virtual_field",
                     IvoField::VIRTUAL
                         .alias("alias_name")
@@ -435,22 +435,22 @@ fn should_allow_virtuals_with_alias_as_direct_dependent_field() {
     let result = panic::catch_unwind(|| {
         let _: Schema<DataInput, Data> = Schema::new(
             |f| {
-                f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
-                    .set("lax", IvoField::LAX.default(1))
-                    .set(
+                f.field("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
+                    .field("lax", IvoField::LAX.default(1))
+                    .field(
                         "dependent",
                         IvoField::DEPENDENT
                             .default(1)
                             .depends_on(["lax", "virtual_field", "virtual_field1"])
                             .resolve(|_, _| ready(2)),
                     )
-                    .set(
+                    .field(
                         "virtual_field",
                         IvoField::VIRTUAL
                             .alias("dependent")
                             .validate(|v: String, _, _| ready(Ok(Some(v)))),
                     )
-                    .set(
+                    .field(
                         "virtual_field1",
                         IvoField::VIRTUAL.validate(|_: String, _, _| ready(Ok(None))),
                     )
@@ -482,16 +482,16 @@ fn should_allow_virtuals_with_alias_as_non_field_name() {
     let result = panic::catch_unwind(|| {
         let _: Schema<DataInput, Data, Option<()>, String> = Schema::new(
             |f| {
-                f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
-                    .set("lax", IvoField::LAX.default(1))
-                    .set(
+                f.field("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
+                    .field("lax", IvoField::LAX.default(1))
+                    .field(
                         "dependent",
                         IvoField::DEPENDENT
                             .default(1)
                             .depends_on(["lax", "virtual_field"])
                             .resolve(|_, _| ready(2)),
                     )
-                    .set(
+                    .field(
                         "virtual_field",
                         IvoField::VIRTUAL
                             .alias("alias_name")
@@ -529,16 +529,16 @@ fn should_reject_if_no_alias_is_provided_and_field_name_does_not_exist_on_input_
 
     let _: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
-                .set("lax", IvoField::LAX.default(1))
-                .set(
+            f.field("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
+                .field("lax", IvoField::LAX.default(1))
+                .field(
                     "dependent",
                     IvoField::DEPENDENT
                         .default(1)
                         .depends_on(["lax", "virtual_field"])
                         .resolve(|_, _| ready(2)),
                 )
-                .set(
+                .field(
                     "virtual_field",
                     IvoField::VIRTUAL.validate(|_: String, _, _| ready(Ok(None))),
                 )
@@ -565,16 +565,16 @@ fn should_allow_if_no_alias_is_provided_but_field_name_exists_on_input_struct() 
     let result = panic::catch_unwind(|| {
         let _: Schema<DataInput, Data> = Schema::new(
             |f| {
-                f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
-                    .set("lax", IvoField::LAX.default(1))
-                    .set(
+                f.field("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
+                    .field("lax", IvoField::LAX.default(1))
+                    .field(
                         "dependent",
                         IvoField::DEPENDENT
                             .default(1)
                             .depends_on(["lax", "virtual_field"])
                             .resolve(|_, _| ready(2)),
                     )
-                    .set(
+                    .field(
                         "virtual_field",
                         IvoField::VIRTUAL.validate(|_: String, _, _| ready(Ok(None))),
                     )

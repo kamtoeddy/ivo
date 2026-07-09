@@ -23,13 +23,13 @@ async fn should_respect_the_ignore_rule() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "other",
                 IvoField::LAX
                     .default(String::from("default_other_value"))
                     .validate(|_, _, _| ready(Ok(None))),
             )
-            .set(
+            .field(
                 "lax",
                 IvoField::LAX
                     .default(default_lax_value.to_string())
@@ -147,13 +147,13 @@ async fn should_respect_the_ignore_init_rule() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "other",
                 IvoField::LAX
                     .default(String::from("default_other_value"))
                     .validate(|_, _, _| ready(Ok(None))),
             )
-            .set(
+            .field(
                 "lax",
                 IvoField::LAX
                     .default(default_lax_value.to_string())
@@ -232,13 +232,13 @@ async fn should_respect_the_ignore_update_rule() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "other",
                 IvoField::LAX
                     .default(String::from("default_other_value"))
                     .validate(|_, _, _| ready(Ok(None))),
             )
-            .set(
+            .field(
                 "lax",
                 IvoField::LAX
                     .default(default_lax_value.to_string())
@@ -318,7 +318,7 @@ async fn should_ignore_updates_on_readonly_fields_if_values_are_different_from_d
     let default_value = 1;
 
     let schema: Schema<DataInput, Data> = Schema::new(
-        |f| f.set("lax", IvoField::LAX.default(default_value).readonly()),
+        |f| f.field("lax", IvoField::LAX.default(default_value).readonly()),
         |o| o,
     );
 
@@ -376,7 +376,7 @@ async fn should_ignore_updates_on_readonly_fields_if_values_are_different_from_d
     const DEFAULT_VALUE: i32 = 1;
 
     let schema: Schema<DataInput, Data> = Schema::new(
-        |f| f.set("lax", IvoField::LAX.default(DEFAULT_VALUE).readonly()),
+        |f| f.field("lax", IvoField::LAX.default(DEFAULT_VALUE).readonly()),
         |o| o,
     );
 

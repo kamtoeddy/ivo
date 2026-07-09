@@ -22,7 +22,7 @@ async fn should_respect_the_ignore_rule() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -31,8 +31,8 @@ async fn should_respect_the_ignore_rule() {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set(
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .validate(|v: String, _, _| {
@@ -152,7 +152,7 @@ async fn should_respect_the_ignore_rule_with_alias() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -161,8 +161,8 @@ async fn should_respect_the_ignore_rule_with_alias() {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set(
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("virtual_alias")
@@ -283,7 +283,7 @@ async fn should_respect_the_ignore_rule_with_alias_same_as_dependent() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -292,8 +292,8 @@ async fn should_respect_the_ignore_rule_with_alias_same_as_dependent() {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set(
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("dependent")
@@ -414,7 +414,7 @@ async fn should_respect_the_ignore_init_rule() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -423,8 +423,8 @@ async fn should_respect_the_ignore_init_rule() {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set(
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .validate(|v: String, _, _| {
@@ -549,7 +549,7 @@ async fn should_respect_the_ignore_init_rule_with_alias() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -558,8 +558,8 @@ async fn should_respect_the_ignore_init_rule_with_alias() {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set(
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("virtual_alias")
@@ -685,7 +685,7 @@ async fn should_respect_the_ignore_init_rule_with_alias_same_as_dependent() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -694,8 +694,8 @@ async fn should_respect_the_ignore_init_rule_with_alias_same_as_dependent() {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set(
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("dependent")
@@ -821,7 +821,7 @@ async fn should_respect_the_ignore_update_rule() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -830,8 +830,8 @@ async fn should_respect_the_ignore_update_rule() {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set(
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .validate(|v: String, _, _| {
@@ -973,7 +973,7 @@ async fn should_respect_the_ignore_update_rule_with_alias() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -982,8 +982,8 @@ async fn should_respect_the_ignore_update_rule_with_alias() {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set(
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("virtual_alias")
@@ -1126,7 +1126,7 @@ async fn should_respect_the_ignore_update_rule_with_alias_same_as_dependent() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -1135,8 +1135,8 @@ async fn should_respect_the_ignore_update_rule_with_alias_same_as_dependent() {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set(
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("dependent")

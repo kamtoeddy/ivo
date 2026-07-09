@@ -19,7 +19,7 @@ async fn should_trigger_on_failure_handlers_at_creation() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -28,7 +28,7 @@ async fn should_trigger_on_failure_handlers_at_creation() {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .validate(|v: String, _, _| {
@@ -96,7 +96,7 @@ async fn should_trigger_on_failure_handlers_at_creation_with_alias() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -105,7 +105,7 @@ async fn should_trigger_on_failure_handlers_at_creation_with_alias() {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("virtual_alias")
@@ -175,7 +175,7 @@ async fn should_trigger_on_failure_handlers_at_creation_with_alias_same_as_depen
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -184,7 +184,7 @@ async fn should_trigger_on_failure_handlers_at_creation_with_alias_same_as_depen
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("dependent")
@@ -253,7 +253,7 @@ async fn should_trigger_on_failure_handlers_during_updates() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -262,7 +262,7 @@ async fn should_trigger_on_failure_handlers_during_updates() {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .validate(|v: String, _, _| {
@@ -334,7 +334,7 @@ async fn should_trigger_on_failure_handlers_during_updates_with_alias() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -343,7 +343,7 @@ async fn should_trigger_on_failure_handlers_during_updates_with_alias() {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("virtual_alias")
@@ -416,7 +416,7 @@ async fn should_trigger_on_failure_handlers_during_updates_with_alias_same_as_de
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -425,7 +425,7 @@ async fn should_trigger_on_failure_handlers_during_updates_with_alias_same_as_de
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("dependent")
@@ -500,7 +500,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -509,7 +509,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .validate(|v: String, _, _| {
@@ -531,7 +531,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                         ready(())
                     }),
             )
-            .set(
+            .field(
                 "virtual_field2",
                 IvoField::VIRTUAL.validate(|v: String, _, _| {
                     if v == "fail_validation" {
@@ -594,7 +594,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -603,7 +603,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("virtual_alias")
@@ -626,7 +626,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                         ready(())
                     }),
             )
-            .set(
+            .field(
                 "virtual_field2",
                 IvoField::VIRTUAL.validate(|v: String, _, _| {
                     if v == "fail_validation" {
@@ -689,7 +689,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -698,7 +698,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("dependent")
@@ -721,7 +721,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                         ready(())
                     }),
             )
-            .set(
+            .field(
                 "virtual_field2",
                 IvoField::VIRTUAL.validate(|v: String, _, _| {
                     if v == "fail_validation" {
@@ -784,7 +784,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -793,7 +793,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .validate(|v: String, _, _| {
@@ -815,7 +815,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                         ready(())
                     }),
             )
-            .set(
+            .field(
                 "virtual_field2",
                 IvoField::VIRTUAL.validate(|v: String, _, _| {
                     if v == "fail_validation" {
@@ -881,7 +881,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -890,7 +890,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("virtual_alias")
@@ -913,7 +913,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                         ready(())
                     }),
             )
-            .set(
+            .field(
                 "virtual_field2",
                 IvoField::VIRTUAL.validate(|v: String, _, _| {
                     if v == "fail_validation" {
@@ -979,7 +979,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -988,7 +988,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("dependent")
@@ -1011,7 +1011,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                         ready(())
                     }),
             )
-            .set(
+            .field(
                 "virtual_field2",
                 IvoField::VIRTUAL.validate(|v: String, _, _| {
                     if v == "fail_validation" {
@@ -1077,7 +1077,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -1086,7 +1086,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .validate(|v: String, _, _| {
@@ -1108,7 +1108,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                         ready(())
                     }),
             )
-            .set(
+            .field(
                 "virtual_field2",
                 IvoField::VIRTUAL.validate(|v: String, _, _| {
                     if v == "fail_validation" {
@@ -1171,7 +1171,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -1180,7 +1180,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("virtual_alias")
@@ -1203,7 +1203,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                         ready(())
                     }),
             )
-            .set(
+            .field(
                 "virtual_field2",
                 IvoField::VIRTUAL.validate(|v: String, _, _| {
                     if v == "fail_validation" {
@@ -1266,7 +1266,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -1275,7 +1275,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("dependent")
@@ -1298,7 +1298,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                         ready(())
                     }),
             )
-            .set(
+            .field(
                 "virtual_field2",
                 IvoField::VIRTUAL.validate(|v: String, _, _| {
                     if v == "fail_validation" {
@@ -1361,7 +1361,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -1370,7 +1370,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .validate(|v: String, _, _| {
@@ -1392,7 +1392,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                         ready(())
                     }),
             )
-            .set(
+            .field(
                 "virtual_field2",
                 IvoField::VIRTUAL.validate(|v: String, _, _| {
                     if v == "fail_validation" {
@@ -1460,7 +1460,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -1469,7 +1469,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("virtual_alias")
@@ -1492,7 +1492,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                         ready(())
                     }),
             )
-            .set(
+            .field(
                 "virtual_field2",
                 IvoField::VIRTUAL.validate(|v: String, _, _| {
                     if v == "fail_validation" {
@@ -1560,7 +1560,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -1569,7 +1569,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("dependent")
@@ -1592,7 +1592,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                         ready(())
                     }),
             )
-            .set(
+            .field(
                 "virtual_field2",
                 IvoField::VIRTUAL.validate(|v: String, _, _| {
                     if v == "fail_validation" {

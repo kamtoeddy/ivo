@@ -37,7 +37,7 @@ async fn should_properly_update_ctx_options_in_constant_value_resolver_and_provi
 
     let schema = Schema::<DataInput, Data, CtxOptions>::new(
         |f| {
-            f.set(
+            f.field(
                 "id",
                 IvoField::CONSTANT
                     .computed(async |_, o: IvoRwCtxOptions<CtxOptions>| {
@@ -55,7 +55,7 @@ async fn should_properly_update_ctx_options_in_constant_value_resolver_and_provi
                         ready(())
                     }),
             )
-            .set(
+            .field(
                 "lax",
                 IvoField::LAX
                     .default(2)

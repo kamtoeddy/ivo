@@ -27,7 +27,7 @@ async fn should_respect_option_to_ignore_updates() {
     let default_value = "default_lax_value";
 
     let schema = Schema::<DataInput, Data>::new(
-        |f| f.set("lax", IvoField::LAX.default(default_value.to_string())),
+        |f| f.field("lax", IvoField::LAX.default(default_value.to_string())),
         |o| {
             o.ignore_update(|input: PartialDataInput, _, _| {
                 ready(input.lax.map(|v| v == "should_ignore").unwrap_or(false))
@@ -92,8 +92,8 @@ async fn should_properly_trigger_on_delete_handlers() {
 
     let schema: Schema<Data> = Schema::new(
         |f| {
-            f.set("lax", IvoField::LAX.default(1234))
-                .set("lax_1", IvoField::LAX.default(5678))
+            f.field("lax", IvoField::LAX.default(1234))
+                .field("lax_1", IvoField::LAX.default(5678))
         },
         |o| {
             o.on_delete(|_, _| {
@@ -125,8 +125,8 @@ async fn should_properly_trigger_all_on_delete_handlers() {
 
     let schema: Schema<Data> = Schema::new(
         |f| {
-            f.set("lax", IvoField::LAX.default(1234))
-                .set("lax_1", IvoField::LAX.default(5678))
+            f.field("lax", IvoField::LAX.default(1234))
+                .field("lax_1", IvoField::LAX.default(5678))
         },
         |o| {
             o.on_delete(|_, _| ready(())).on_delete(|_, _| {
@@ -170,8 +170,8 @@ fn should_reject_if_the_fields_array_contains_any_duplicates() {
 
     let _: Schema<DataInput, Data, Option<()>, &'static str> = Schema::new(
         |f| {
-            f.set("lax", IvoField::LAX.default(1234))
-                .set("lax_1", IvoField::LAX.default(5678))
+            f.field("lax", IvoField::LAX.default(1234))
+                .field("lax_1", IvoField::LAX.default(5678))
         },
         |o| o.on_success(["lax", "lax"], |s| s.handle(|_, _| ready(()))),
     );
@@ -194,8 +194,8 @@ fn should_reject_if_the_fields_array_contains_any_string_that_is_not_a_field_on_
 
     let _: Schema<DataInput, Data, Option<()>, &'static str> = Schema::new(
         |f| {
-            f.set("lax", IvoField::LAX.default(1234))
-                .set("lax_1", IvoField::LAX.default(5678))
+            f.field("lax", IvoField::LAX.default(1234))
+                .field("lax_1", IvoField::LAX.default(5678))
         },
         |o| o.on_success(["lax", "invalid_field"], |s| s.handle(|_, _| ready(()))),
     );
@@ -222,16 +222,16 @@ fn should_reject_if_an_alias_with_foreign_name_is_provided_to_the_fields_array()
 
     let _: Schema<DataInput, Data, Option<()>, &'static str> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(1)
                     .depends_on(["lax", "virtual_field"])
                     .resolve(|_, _| ready(2)),
             )
-            .set("lax", IvoField::LAX.default(1234))
-            .set("lax_1", IvoField::LAX.default(5678))
-            .set(
+            .field("lax", IvoField::LAX.default(1234))
+            .field("lax_1", IvoField::LAX.default(5678))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("alias")
@@ -262,8 +262,8 @@ fn should_reject_if_created_at_timestamp_with_default_name_is_provided_to_the_fi
 
     let _: Schema<DataInput, Data, Option<()>, i32> = Schema::new(
         |f| {
-            f.set("lax", IvoField::LAX.default(1234))
-                .set("lax_1", IvoField::LAX.default(5678))
+            f.field("lax", IvoField::LAX.default(1234))
+                .field("lax_1", IvoField::LAX.default(5678))
                 .timestamps(|t| t.resolve(|| 1234).created_at(None))
         },
         |o| {
@@ -294,8 +294,8 @@ fn should_reject_if_created_at_timestamp_with_custom_name_is_provided_to_the_fie
 
     let _: Schema<DataInput, Data, Option<()>, i32> = Schema::new(
         |f| {
-            f.set("lax", IvoField::LAX.default(1234))
-                .set("lax_1", IvoField::LAX.default(5678))
+            f.field("lax", IvoField::LAX.default(1234))
+                .field("lax_1", IvoField::LAX.default(5678))
                 .timestamps(|t| t.resolve(|| 1234).created_at(Some("custom_created_at")))
         },
         |o| {
@@ -326,8 +326,8 @@ fn should_reject_if_updated_at_timestamp_with_default_name_is_provided_to_the_fi
 
     let _: Schema<DataInput, Data, Option<()>, i32> = Schema::new(
         |f| {
-            f.set("lax", IvoField::LAX.default(1234))
-                .set("lax_1", IvoField::LAX.default(5678))
+            f.field("lax", IvoField::LAX.default(1234))
+                .field("lax_1", IvoField::LAX.default(5678))
                 .timestamps(|t| t.resolve(|| 1234).updated_at(None))
         },
         |o| {
@@ -358,8 +358,8 @@ fn should_reject_if_updated_at_timestamp_with_custom_name_is_provided_to_the_fie
 
     let _: Schema<DataInput, Data, Option<()>, i32> = Schema::new(
         |f| {
-            f.set("lax", IvoField::LAX.default(1234))
-                .set("lax_1", IvoField::LAX.default(5678))
+            f.field("lax", IvoField::LAX.default(1234))
+                .field("lax_1", IvoField::LAX.default(5678))
                 .timestamps(|t| t.resolve(|| 1234).updated_at(Some("custom_updated_at")))
         },
         |o| {
@@ -386,8 +386,8 @@ fn should_allow_constant_and_dependents_in_fields_array() {
 
     let _: Schema<DataInput, Data, Option<()>, i32> = Schema::new(
         |f| {
-            f.set("id", IvoField::CONSTANT.value(1234))
-                .set(
+            f.field("id", IvoField::CONSTANT.value(1234))
+                .field(
                     "dependent",
                     IvoField::DEPENDENT.default(1).depends_on(["lax"]).resolve(
                         |ctx: IvoContext<DataInput, Data>, _| {
@@ -395,7 +395,7 @@ fn should_allow_constant_and_dependents_in_fields_array() {
                         },
                     ),
                 )
-                .set("lax", IvoField::LAX.default(5678))
+                .field("lax", IvoField::LAX.default(5678))
         },
         |o| o.on_success(["id", "dependent"], |s| s.handle(|_, _| ready(()))),
     );

@@ -173,7 +173,7 @@ static PLACE_SCHEMA: LazyLock<
 > = LazyLock::new(|| {
     Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "coordinates",
                 IvoField::REQUIRED.validate(|c: Coodinates, _, _| {
                     if c.lat.is_nan() || c.lon.is_nan() {

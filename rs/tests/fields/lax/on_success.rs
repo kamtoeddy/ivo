@@ -19,7 +19,7 @@ async fn should_trigger_on_success_handlers_at_creation_if_provided() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "lax",
                 IvoField::LAX
                     .default("default_value".into())
@@ -42,7 +42,7 @@ async fn should_trigger_on_success_handlers_at_creation_if_provided() {
                         ready(())
                     }),
             )
-            .set(
+            .field(
                 "lax2",
                 IvoField::LAX
                     .default("default_value".into())
@@ -104,7 +104,7 @@ async fn should_trigger_on_success_handlers_at_creation_even_if_not_provided() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "lax",
                 IvoField::LAX
                     .default(default_lax_value.clone())
@@ -128,7 +128,7 @@ async fn should_trigger_on_success_handlers_at_creation_even_if_not_provided() {
                         ready(())
                     }),
             )
-            .set(
+            .field(
                 "lax2",
                 IvoField::LAX
                     .default("default_lax2_value".into())
@@ -193,7 +193,7 @@ async fn should_trigger_on_success_handlers_at_creation_even_if_provided_and_ign
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "lax",
                 IvoField::LAX
                     .default(default_lax_value.clone())
@@ -216,7 +216,7 @@ async fn should_trigger_on_success_handlers_at_creation_even_if_provided_and_ign
                         ready(())
                     }),
             )
-            .set(
+            .field(
                 "lax2",
                 IvoField::LAX
                     .default("default_lax2_value".into())
@@ -282,7 +282,7 @@ async fn should_trigger_on_success_handlers_during_updates_if_provided() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "lax",
                 IvoField::LAX
                     .default(default_lax_value.clone())
@@ -304,7 +304,7 @@ async fn should_trigger_on_success_handlers_during_updates_if_provided() {
                         ready(())
                     }),
             )
-            .set(
+            .field(
                 "lax2",
                 IvoField::LAX
                     .default("default_lax2_value".into())
@@ -376,7 +376,7 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_not_provided()
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "lax",
                 IvoField::LAX
                     .default(default_lax_value.clone())
@@ -398,7 +398,7 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_not_provided()
                         ready(())
                     }),
             )
-            .set(
+            .field(
                 "lax2",
                 IvoField::LAX
                     .default("default_lax2_value".into())
@@ -467,7 +467,7 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_i
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "lax",
                 IvoField::LAX
                     .default(default_lax_value.clone())
@@ -490,7 +490,7 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_i
                         ready(())
                     }),
             )
-            .set(
+            .field(
                 "lax2",
                 IvoField::LAX
                     .default("default_lax2_value".into())
@@ -562,8 +562,8 @@ async fn should_trigger_success_handlers_with_empty_fields_array_each_time_creat
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set("lax", IvoField::LAX.default(default_lax))
-                .set("lax_1", IvoField::LAX.default(default_lax_1))
+            f.field("lax", IvoField::LAX.default(default_lax))
+                .field("lax_1", IvoField::LAX.default(default_lax_1))
         },
         |o| {
             o.on_success([], |s| {
@@ -620,8 +620,8 @@ async fn should_trigger_success_handlers_with_empty_fields_array_each_time_updat
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set("lax", IvoField::LAX.default(default_lax))
-                .set("lax_1", IvoField::LAX.default(default_lax_1))
+            f.field("lax", IvoField::LAX.default(default_lax))
+                .field("lax_1", IvoField::LAX.default(default_lax_1))
         },
         |o| {
             o.on_success([], |s| {

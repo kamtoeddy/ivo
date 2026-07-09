@@ -17,7 +17,7 @@ async fn should_trigger_on_delete_handlers() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "required",
                 IvoField::REQUIRED
                     .validate(|_: String, _, _| ready(Ok(None)))

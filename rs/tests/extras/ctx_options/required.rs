@@ -49,7 +49,7 @@ async fn should_properly_update_ctx_options_in_ignore_update_resolver_and_provid
 
     let schema = Schema::<DataInput, Data, CtxOptions>::new(
         |f| {
-            f.set(
+            f.field(
                 "required",
                 IvoField::REQUIRED
                     .validate(|_: i32, _, _| ready(Ok(None)))
@@ -119,7 +119,7 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
 
     let schema: Schema<DataInput, Data, CtxOptions> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "required",
                 IvoField::REQUIRED
                     .validate(async |v: String, _, o: IvoRwCtxOptions<CtxOptions>| {
@@ -191,7 +191,7 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
 
     let schema: Schema<DataInput, Data, CtxOptions> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "required",
                 IvoField::REQUIRED
                     .validate(async |v: String, _, o: IvoRwCtxOptions<CtxOptions>| {
@@ -274,7 +274,7 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
 
     let schema: Schema<DataInput, Data, CtxOptions> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "required",
                 IvoField::REQUIRED
                     .validate(|_, _, _| ready(Ok(None)))
@@ -347,7 +347,7 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
 
     let schema: Schema<DataInput, Data, CtxOptions> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "required",
                 IvoField::REQUIRED
                     .validate(|_, _, _| ready(Ok(None)))
@@ -433,11 +433,11 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
 
     let schema: Schema<DataInput, Data, CtxOptions> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "required",
                 IvoField::REQUIRED.validate(|_: i32, _, _| ready(Ok(None))),
             )
-            .set(
+            .field(
                 "required_1",
                 IvoField::REQUIRED.validate(|_: i32, _, _| ready(Ok(None))),
             )
@@ -519,11 +519,11 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
 
     let schema: Schema<DataInput, Data, CtxOptions> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "required",
                 IvoField::REQUIRED.validate(|_: i32, _, _| ready(Ok(None))),
             )
-            .set(
+            .field(
                 "required_1",
                 IvoField::REQUIRED.validate(|_: i32, _, _| ready(Ok(None))),
             )

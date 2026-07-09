@@ -22,7 +22,7 @@ async fn should_trigger_on_success_handlers_if_virtual_is_provided_at_creation()
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -31,8 +31,8 @@ async fn should_trigger_on_success_handlers_if_virtual_is_provided_at_creation()
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set(
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .validate(|v: String, _, _| {
@@ -105,7 +105,7 @@ async fn should_trigger_on_success_handlers_if_virtual_is_provided_at_creation_w
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -114,8 +114,8 @@ async fn should_trigger_on_success_handlers_if_virtual_is_provided_at_creation_w
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set(
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("virtual_alias")
@@ -191,7 +191,7 @@ async fn should_trigger_on_success_handlers_if_virtual_is_provided_at_creation_w
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -200,8 +200,8 @@ async fn should_trigger_on_success_handlers_if_virtual_is_provided_at_creation_w
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set(
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("dependent")
@@ -275,7 +275,7 @@ async fn should_trigger_on_success_handlers_if_virtual_is_provided_during_update
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -284,8 +284,8 @@ async fn should_trigger_on_success_handlers_if_virtual_is_provided_during_update
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set(
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .validate(|v: String, _, _| {
@@ -364,7 +364,7 @@ async fn should_trigger_on_success_handlers_if_virtual_is_provided_during_update
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -373,8 +373,8 @@ async fn should_trigger_on_success_handlers_if_virtual_is_provided_during_update
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set(
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("virtual_alias")
@@ -455,7 +455,7 @@ async fn should_trigger_on_success_handlers_if_virtual_is_provided_during_update
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -464,8 +464,8 @@ async fn should_trigger_on_success_handlers_if_virtual_is_provided_during_update
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set(
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("dependent")
@@ -545,7 +545,7 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_not_provided() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -554,8 +554,8 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_not_provided() {
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set(
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .validate(|v: String, _, _| {
@@ -674,7 +674,7 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_not_provided_with_
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -683,8 +683,8 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_not_provided_with_
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set(
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("virtual_alias")
@@ -805,7 +805,7 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_not_provided_with_
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -814,8 +814,8 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_not_provided_with_
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set(
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("dependent")
@@ -937,7 +937,7 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -946,8 +946,8 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set(
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .validate(|v: String, _, _| {
@@ -1070,7 +1070,7 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -1079,8 +1079,8 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set(
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("virtual_alias")
@@ -1204,7 +1204,7 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -1213,8 +1213,8 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set(
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("dependent")
@@ -1338,7 +1338,7 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -1347,8 +1347,8 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set(
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .validate(|v: String, _, _| {
@@ -1446,7 +1446,7 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -1455,8 +1455,8 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set(
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("virtual_alias")
@@ -1555,7 +1555,7 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -1564,8 +1564,8 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set(
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("dependent")
@@ -1664,7 +1664,7 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -1673,8 +1673,8 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set(
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .validate(|v: String, _, _| {
@@ -1754,7 +1754,7 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -1763,8 +1763,8 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set(
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("virtual_alias")
@@ -1845,7 +1845,7 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -1854,8 +1854,8 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set(
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("dependent")
@@ -1937,7 +1937,7 @@ async fn should_trigger_grouped_on_success_handlers_if_virtual_is_provided_at_cr
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -1946,8 +1946,8 @@ async fn should_trigger_grouped_on_success_handlers_if_virtual_is_provided_at_cr
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set(
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL.validate(|v: String, _, _| {
                     if v == "fail_validation" {
@@ -2020,7 +2020,7 @@ async fn should_trigger_grouped_on_success_handlers_if_virtual_is_provided_at_cr
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -2029,8 +2029,8 @@ async fn should_trigger_grouped_on_success_handlers_if_virtual_is_provided_at_cr
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set(
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("virtual_alias")
@@ -2105,7 +2105,7 @@ async fn should_trigger_grouped_on_success_handlers_if_virtual_is_provided_at_cr
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -2114,8 +2114,8 @@ async fn should_trigger_grouped_on_success_handlers_if_virtual_is_provided_at_cr
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set(
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("dependent")
@@ -2189,7 +2189,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_not_provid
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -2198,8 +2198,8 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_not_provid
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set(
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL.validate(|v: String, _, _| {
                     if v == "fail_validation" {
@@ -2295,7 +2295,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_not_provid
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -2304,8 +2304,8 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_not_provid
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set(
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("virtual_alias")
@@ -2403,7 +2403,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_not_provid
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -2412,8 +2412,8 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_not_provid
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set(
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("dependent")
@@ -2511,7 +2511,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -2520,8 +2520,8 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set(
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .validate(|v: String, _, _| {
@@ -2620,7 +2620,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -2629,8 +2629,8 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set(
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("virtual_alias")
@@ -2730,7 +2730,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -2739,8 +2739,8 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set(
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("dependent")
@@ -2840,7 +2840,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -2849,8 +2849,8 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set(
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .validate(|v: String, _, _| {
@@ -2924,7 +2924,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -2933,8 +2933,8 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set(
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("virtual_alias")
@@ -3009,7 +3009,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -3018,8 +3018,8 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set(
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("dependent")
@@ -3093,7 +3093,7 @@ async fn should_trigger_grouped_on_success_handlers_if_virtual_is_provided_durin
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -3102,8 +3102,8 @@ async fn should_trigger_grouped_on_success_handlers_if_virtual_is_provided_durin
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set(
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL.validate(|v: String, _, _| {
                     if v == "fail_validation" {
@@ -3180,7 +3180,7 @@ async fn should_trigger_grouped_on_success_handlers_if_virtual_is_provided_durin
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -3189,8 +3189,8 @@ async fn should_trigger_grouped_on_success_handlers_if_virtual_is_provided_durin
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set(
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("virtual_alias")
@@ -3269,7 +3269,7 @@ async fn should_trigger_grouped_on_success_handlers_if_virtual_is_provided_durin
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -3278,8 +3278,8 @@ async fn should_trigger_grouped_on_success_handlers_if_virtual_is_provided_durin
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set(
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("dependent")
@@ -3358,7 +3358,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_not_provid
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -3367,8 +3367,8 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_not_provid
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set(
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL.validate(|v: String, _, _| {
                     if v == "fail_validation" {
@@ -3446,7 +3446,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_not_provid
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -3455,8 +3455,8 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_not_provid
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set(
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("virtual_alias")
@@ -3536,7 +3536,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_not_provid
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -3545,8 +3545,8 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_not_provid
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set(
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("dependent")
@@ -3626,7 +3626,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -3635,8 +3635,8 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set(
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .validate(|v: String, _, _| {
@@ -3716,7 +3716,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -3725,8 +3725,8 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set(
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("virtual_alias")
@@ -3807,7 +3807,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(default_dependent_value)
@@ -3816,8 +3816,8 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
                         ready(ctx.values().dependent.unwrap() + 1)
                     }),
             )
-            .set("lax", IvoField::LAX.default(default_lax_value))
-            .set(
+            .field("lax", IvoField::LAX.default(default_lax_value))
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL
                     .alias("dependent")

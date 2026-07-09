@@ -36,7 +36,7 @@ async fn should_reject_updates_if_no_value_has_changed() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "required",
                 IvoField::REQUIRED.validate(|_, _, _| ready(Ok(None::<i32>))),
             )
@@ -80,7 +80,7 @@ async fn should_reject_updates_if_no_value_has_changed_after_validation() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "required",
                 IvoField::LAX
                     .default(DEFAULT_VALUE)
@@ -124,7 +124,7 @@ async fn should_reject_updates_if_no_value_has_changed_after_re_validation() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "required",
                 IvoField::LAX
                     .default(DEFAULT_VALUE)
@@ -173,13 +173,13 @@ async fn should_reject_updates_if_no_value_has_changed_after_post_validation() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "required",
                 IvoField::REQUIRED
                     .validate(|_: String, _, _| ready(Ok(None)))
                     .re_validate(|_, _, _| ready(Ok(Some(DEFAULT_VALUE.into())))),
             )
-            .set("lax_1", IvoField::LAX.default(DEFAULT_VALUE.to_string()))
+            .field("lax_1", IvoField::LAX.default(DEFAULT_VALUE.to_string()))
         },
         |o| {
             o.post_validate(["required", "lax_1"], |v| {
@@ -277,7 +277,7 @@ async fn should_respect_the_default_required_error_if_field_is_missing() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "required",
                 IvoField::REQUIRED.validate(|_: i32, _, _| ready(Ok(None))),
             )
@@ -340,7 +340,7 @@ async fn should_respect_custom_static_required_error_if_field_is_missing() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "required",
                 IvoField::REQUIRED
                     .required_error(required_error)
@@ -403,7 +403,7 @@ async fn should_respect_custom_dynamic_required_error_if_field_is_missing() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "required",
                 IvoField::REQUIRED
                     .required_error_fn(|_, _| REQUIRED_ERROR.to_string())
@@ -468,7 +468,7 @@ async fn should_not_create_if_primary_validation_fails() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "required",
                 IvoField::REQUIRED.validate(|v: String, _, _| {
                     let validated = v.trim();
@@ -551,8 +551,8 @@ async fn should_not_update_if_primary_validation_fails() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1)))
-                .set(
+            f.field("id", IvoField::CONSTANT.computed(|_, _| ready(1)))
+                .field(
                     "required",
                     IvoField::REQUIRED.validate(|v: i32, _, _| {
                         if !REQUIRED_VALUE_RANGE.contains(&v) {
@@ -637,7 +637,7 @@ async fn should_properly_use_input_values_as_output_values_if_validator_does_not
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "required",
                 IvoField::REQUIRED.validate(|_: i32, _, _| ready(Ok(None))),
             )
@@ -713,7 +713,7 @@ async fn should_not_create_if_re_validation_fails() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "required",
                 IvoField::REQUIRED
                     .validate(|v: String, _, _| {
@@ -811,8 +811,8 @@ async fn should_not_update_if_re_validation_fails() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1)))
-                .set(
+            f.field("id", IvoField::CONSTANT.computed(|_, _| ready(1)))
+                .field(
                     "required",
                     IvoField::REQUIRED
                         .validate(|v: i32, _, _| {
@@ -913,7 +913,7 @@ async fn should_properly_use_re_validated_values() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "required",
                 IvoField::REQUIRED
                     .validate(|_: i32, _, _| ready(Ok(None)))
@@ -991,7 +991,7 @@ async fn should_properly_use_input_values_as_output_values_if_re_validator_does_
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "required",
                 IvoField::REQUIRED
                     .validate(|v: i32, _, _| ready(Ok(Some(v + 1))))
@@ -1085,15 +1085,15 @@ async fn should_respect_post_validation_config() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "required",
                 IvoField::REQUIRED.validate(|_: String, _, _| ready(Ok(None))),
             )
-            .set(
+            .field(
                 "required_1",
                 IvoField::REQUIRED.validate(|_: String, _, _| ready(Ok(None))),
             )
-            .set(
+            .field(
                 "required_2",
                 IvoField::REQUIRED.validate(|_: String, _, _| ready(Ok(None))),
             )
@@ -1502,15 +1502,15 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "required",
                 IvoField::REQUIRED.validate(|_: String, _, _| ready(Ok(None))),
             )
-            .set(
+            .field(
                 "required_1",
                 IvoField::REQUIRED.validate(|_: String, _, _| ready(Ok(None))),
             )
-            .set(
+            .field(
                 "required_2",
                 IvoField::REQUIRED.validate(|_: String, _, _| ready(Ok(None))),
             )

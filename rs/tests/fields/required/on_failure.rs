@@ -17,7 +17,7 @@ async fn should_trigger_on_failure_handlers_at_creation() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "required",
                 IvoField::REQUIRED
                     .validate(|v: String, _, _| {
@@ -80,7 +80,7 @@ async fn should_trigger_on_failure_handlers_during_updates() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "required",
                 IvoField::REQUIRED
                     .validate(|v: String, _, _| {
@@ -148,7 +148,7 @@ async fn should_trigger_on_failure_handlers_during_updates_with_unchanged_values
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "required",
                 IvoField::REQUIRED
                     .validate(|v: String, _, _| {
@@ -223,7 +223,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "required",
                 IvoField::REQUIRED
                     .validate(|v: String, _, _| {
@@ -245,7 +245,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                         ready(())
                     }),
             )
-            .set(
+            .field(
                 "required2",
                 IvoField::REQUIRED.validate(|v: String, _, _| {
                     if v == "fail_validation" {
@@ -309,7 +309,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "required",
                 IvoField::REQUIRED
                     .validate(|v: String, _, _| {
@@ -331,7 +331,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
                         ready(())
                     }),
             )
-            .set(
+            .field(
                 "required2",
                 IvoField::REQUIRED.validate(|v: String, _, _| {
                     if v == "fail_validation" {

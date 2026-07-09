@@ -41,7 +41,7 @@ async fn should_reject_updates_if_no_value_has_changed() {
     let default_value = 1;
 
     let schema: Schema<DataInput, Data> = Schema::new(
-        |f| f.set("lax", IvoField::LAX.default(default_value)),
+        |f| f.field("lax", IvoField::LAX.default(default_value)),
         |o| o,
     );
 
@@ -79,7 +79,7 @@ async fn should_reject_updates_if_no_value_has_changed_after_validation() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "lax",
                 IvoField::LAX
                     .default(DEFAULT_VALUE)
@@ -121,7 +121,7 @@ async fn should_reject_updates_if_no_value_has_changed_after_re_validation() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "lax",
                 IvoField::LAX
                     .default(DEFAULT_VALUE)
@@ -168,14 +168,14 @@ async fn should_reject_updates_if_no_value_has_changed_after_post_validation() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "lax",
                 IvoField::LAX
                     .default(DEFAULT_VALUE.to_string())
                     .validate(|_, _, _| ready(Ok(None)))
                     .re_validate(|_, _, _| ready(Ok(Some(DEFAULT_VALUE.into())))),
             )
-            .set("lax_1", IvoField::LAX.default(DEFAULT_VALUE.to_string()))
+            .field("lax_1", IvoField::LAX.default(DEFAULT_VALUE.to_string()))
         },
         |o| {
             o.post_validate(["lax", "lax_1"], |v| {
@@ -274,7 +274,7 @@ async fn should_properly_use_default_value_of_missing_fields_at_creation() {
     let default_value = 1;
 
     let schema: Schema<DataInput, Data> = Schema::new(
-        |f| f.set("lax", IvoField::LAX.default(default_value)),
+        |f| f.field("lax", IvoField::LAX.default(default_value)),
         |o| o,
     );
 
@@ -304,7 +304,7 @@ async fn should_properly_resolve_default_values_of_missing_fields_at_creation() 
     const DEFAULT_VALUE: i32 = 1_000;
 
     let schema: Schema<DataInput, Data> = Schema::new(
-        |f| f.set("lax", IvoField::LAX.default_fn(|_, _| ready(DEFAULT_VALUE))),
+        |f| f.field("lax", IvoField::LAX.default_fn(|_, _| ready(DEFAULT_VALUE))),
         |o| o,
     );
 
@@ -334,7 +334,7 @@ async fn should_properly_use_lax_input_values_as_output_values_if_no_validator_i
     const DEFAULT_VALUE: i32 = 1_000;
 
     let schema: Schema<DataInput, Data> = Schema::new(
-        |f| f.set("lax", IvoField::LAX.default_fn(|_, _| ready(DEFAULT_VALUE))),
+        |f| f.field("lax", IvoField::LAX.default_fn(|_, _| ready(DEFAULT_VALUE))),
         |o| o,
     );
 
@@ -396,13 +396,13 @@ async fn should_respect_the_required_rule() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "other",
                 IvoField::LAX
                     .default(String::from("default_other_value"))
                     .validate(|_, _, _| ready(Ok(None))),
             )
-            .set(
+            .field(
                 "lax",
                 IvoField::LAX
                     .default(default_lax_value.to_string())
@@ -518,12 +518,12 @@ async fn should_properly_handle_grouped_required_errors() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set("lax", IvoField::LAX.default(default_lax_value.to_string()))
-                .set(
+            f.field("lax", IvoField::LAX.default(default_lax_value.to_string()))
+                .field(
                     "lax_1",
                     IvoField::LAX.default(default_lax_1_value.to_string()),
                 )
-                .set(
+                .field(
                     "lax_2",
                     IvoField::LAX.default(default_lax_2_value.to_string()),
                 )
@@ -675,7 +675,7 @@ async fn should_not_create_if_primary_validation_fails() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "lax",
                 IvoField::LAX
                     .default("default_value".into())
@@ -760,8 +760,8 @@ async fn should_not_update_if_primary_validation_fails() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1)))
-                .set(
+            f.field("id", IvoField::CONSTANT.computed(|_, _| ready(1)))
+                .field(
                     "lax",
                     IvoField::LAX.default(1).validate(|v: i32, _, _| {
                         if !LAX_VALUE_RANGE.contains(&v) {
@@ -846,7 +846,7 @@ async fn should_properly_use_input_values_as_output_values_if_validator_does_not
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "lax",
                 IvoField::LAX
                     .default(1)
@@ -909,7 +909,7 @@ async fn should_not_create_if_re_validation_fails() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "lax",
                 IvoField::LAX
                     .default("default_value".into())
@@ -1010,8 +1010,8 @@ async fn should_not_update_if_re_validation_fails() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1)))
-                .set(
+            f.field("id", IvoField::CONSTANT.computed(|_, _| ready(1)))
+                .field(
                     "lax",
                     IvoField::LAX
                         .default(1)
@@ -1113,7 +1113,7 @@ async fn should_properly_use_re_validated_values() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "lax",
                 IvoField::REQUIRED
                     .validate(|_: i32, _, _| ready(Ok(None)))
@@ -1177,7 +1177,7 @@ async fn should_properly_use_input_values_as_output_values_if_re_validator_does_
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "lax",
                 IvoField::LAX
                     .default(1)
@@ -1262,12 +1262,12 @@ async fn should_respect_post_validation_config() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set("lax", IvoField::LAX.default(default_lax_value.to_string()))
-                .set(
+            f.field("lax", IvoField::LAX.default(default_lax_value.to_string()))
+                .field(
                     "lax_1",
                     IvoField::LAX.default(default_lax_1_value.to_string()),
                 )
-                .set(
+                .field(
                     "lax_2",
                     IvoField::LAX.default(default_lax_2_value.to_string()),
                 )
@@ -1696,12 +1696,12 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set("lax", IvoField::LAX.default(default_lax_value.to_string()))
-                .set(
+            f.field("lax", IvoField::LAX.default(default_lax_value.to_string()))
+                .field(
                     "lax_1",
                     IvoField::LAX.default(default_lax_1_value.to_string()),
                 )
-                .set(
+                .field(
                     "lax_2",
                     IvoField::LAX.default(default_lax_2_value.to_string()),
                 )

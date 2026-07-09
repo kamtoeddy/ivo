@@ -75,8 +75,8 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
     LazyLock::new(|| {
         Schema::new(
             |f| {
-                f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
-                    .set(
+                f.field("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
+                    .field(
                         "email",
                         IvoField::LAX
                             .default(None)
@@ -92,13 +92,13 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
                                 ready(Ok(None))
                             }),
                     )
-                    .set(
+                    .field(
                         "phone_number",
                         IvoField::LAX
                             .default(None::<String>)
                             .validate(|_, _, _| ready(Ok(None))),
                     )
-                    .set(
+                    .field(
                         "username",
                         IvoField::REQUIRED
                             .required_error("\"username\" was not provided!")
@@ -142,7 +142,7 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
                                 ready(())
                             }),
                     )
-                    .set(
+                    .field(
                         "username_last_updated_at",
                         IvoField::DEPENDENT
                             .default(None)
@@ -157,7 +157,7 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
                                 ready(value)
                             }),
                     )
-                    .set(
+                    .field(
                         "slug_id",
                         IvoField::DEPENDENT
                             .default(SlugifiedString::from(""))
@@ -171,7 +171,7 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
                                 ready(())
                             }),
                     )
-                    .set(
+                    .field(
                         "v_slug",
                         IvoField::VIRTUAL
                             .alias("slug_id")

@@ -21,14 +21,14 @@ fn should_reject_if_field_name_is_already_set() {
 
     let _: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
-                .set(
+            f.field("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
+                .field(
                     "lax",
                     IvoField::LAX
                         .default("value".into())
                         .validate(|v: String, _, _| ready(Ok(Some(v)))),
                 )
-                .set(
+                .field(
                     "lax",
                     IvoField::LAX
                         .default(true)
@@ -57,8 +57,8 @@ fn should_reject_if_field_name_is_same_created_at_if_enabled_with_default_name()
 
     let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
         |f| {
-            f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
-                .set(
+            f.field("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
+                .field(
                     "created_at",
                     IvoField::LAX
                         .default("value".into())
@@ -88,7 +88,7 @@ fn should_reject_if_field_name_is_same_created_at_if_enabled_with_custom_name() 
 
     let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "custom_created_at",
                 IvoField::LAX
                     .default("value".into())
@@ -119,8 +119,8 @@ fn should_reject_if_field_name_is_same_updated_at_if_enabled_with_default_name()
 
     let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
         |f| {
-            f.set("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
-                .set(
+            f.field("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
+                .field(
                     "updated_at",
                     IvoField::LAX
                         .default("value".into())
@@ -150,7 +150,7 @@ fn should_reject_if_field_name_is_same_updated_at_if_enabled_with_custom_name() 
 
     let _: Schema<DataInput, Data, Option<()>, &'static str, IvoDefaultErrorTool> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "custom_updated_at",
                 IvoField::LAX
                     .default("value".into())
@@ -179,7 +179,7 @@ fn should_reject_if_constant_field_does_not_exist_on_output_struct() {
     }
 
     let _: Schema<DataInput, Data> = Schema::new(
-        |f| f.set("id", IvoField::CONSTANT.computed(|_, _| ready(12))),
+        |f| f.field("id", IvoField::CONSTANT.computed(|_, _| ready(12))),
         |o| o,
     );
 }
@@ -200,7 +200,7 @@ fn should_reject_if_constant_field_exists_on_input_struct() {
     }
 
     let _: Schema<DataInput, Data> = Schema::new(
-        |f| f.set("id", IvoField::CONSTANT.computed(|_, _| ready(12))),
+        |f| f.field("id", IvoField::CONSTANT.computed(|_, _| ready(12))),
         |o| o,
     );
 }
@@ -221,20 +221,20 @@ fn should_reject_if_dependent_field_does_not_exist_on_output_struct() {
 
     let _: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "dependent",
                 IvoField::DEPENDENT
                     .default(1)
                     .depends_on(["lax"])
                     .resolve(|_, _| ready(12)),
             )
-            .set(
+            .field(
                 "lax",
                 IvoField::LAX
                     .default("default".into())
                     .validate(|v: String, _, _| ready(Ok(Some(v)))),
             )
-            .set(
+            .field(
                 "virtual_field",
                 IvoField::VIRTUAL.validate(|v: String, _, _| ready(Ok(Some(v)))),
             )
@@ -258,7 +258,7 @@ fn should_reject_if_lax_field_does_not_exist_on_input_struct() {
 
     let _: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "lax",
                 IvoField::LAX
                     .default(12)
@@ -284,7 +284,7 @@ fn should_reject_if_lax_field_does_not_exist_on_output_struct() {
 
     let _: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "lax",
                 IvoField::LAX
                     .default(12)
@@ -312,7 +312,7 @@ fn should_reject_if_required_field_does_not_exist_on_input_struct() {
 
     let _: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "required",
                 IvoField::REQUIRED.validate(|v: i32, _, _| ready(Ok(Some(v)))),
             )
@@ -336,7 +336,7 @@ fn should_reject_if_required_field_does_not_exist_on_output_struct() {
 
     let _: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "required",
                 IvoField::REQUIRED.validate(|v: i32, _, _| ready(Ok(Some(v)))),
             )

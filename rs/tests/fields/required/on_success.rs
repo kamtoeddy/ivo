@@ -19,7 +19,7 @@ async fn should_trigger_on_success_handlers_at_creation() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "required",
                 IvoField::REQUIRED
                     .validate(|v: String, _, _| {
@@ -40,7 +40,7 @@ async fn should_trigger_on_success_handlers_at_creation() {
                         ready(())
                     }),
             )
-            .set(
+            .field(
                 "required2",
                 IvoField::REQUIRED.validate(|v: String, _, _| {
                     if v == "fail_validation" {
@@ -100,7 +100,7 @@ async fn should_trigger_on_success_handlers_during_updates_if_provided() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "required",
                 IvoField::REQUIRED
                     .validate(|v: String, _, _| {
@@ -121,7 +121,7 @@ async fn should_trigger_on_success_handlers_during_updates_if_provided() {
                         ready(())
                     }),
             )
-            .set(
+            .field(
                 "required2",
                 IvoField::REQUIRED.validate(|v: String, _, _| {
                     if v == "fail_validation" {
@@ -191,7 +191,7 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_not_provided()
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "required",
                 IvoField::REQUIRED
                     .validate(|v: String, _, _| {
@@ -212,7 +212,7 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_not_provided()
                         ready(())
                     }),
             )
-            .set(
+            .field(
                 "required2",
                 IvoField::REQUIRED.validate(|v: String, _, _| {
                     if v == "fail_validation" {
@@ -279,7 +279,7 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_i
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "required",
                 IvoField::REQUIRED
                     .validate(|v: String, _, _| {
@@ -301,7 +301,7 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_i
                         ready(())
                     }),
             )
-            .set(
+            .field(
                 "required2",
                 IvoField::REQUIRED.validate(|v: String, _, _| {
                     if v == "fail_validation" {
@@ -370,7 +370,7 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_i
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "required",
                 IvoField::REQUIRED
                     .validate(|v: String, _, _| {
@@ -393,7 +393,7 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_i
                     })
                     .on_success(async |_, _| ()),
             )
-            .set(
+            .field(
                 "required2",
                 IvoField::REQUIRED.validate(|v: String, _, _| {
                     if v == "fail_validation" {
@@ -465,11 +465,11 @@ async fn should_trigger_success_handlers_with_empty_fields_array_each_time_creat
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "required",
                 IvoField::REQUIRED.validate(|_: i32, _, _| ready(Ok(None))),
             )
-            .set(
+            .field(
                 "required_1",
                 IvoField::REQUIRED.validate(|_: i32, _, _| ready(Ok(None))),
             )
@@ -535,11 +535,11 @@ async fn should_trigger_success_handlers_with_empty_fields_array_each_time_updat
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "required",
                 IvoField::REQUIRED.validate(|_: i32, _, _| ready(Ok(None))),
             )
-            .set(
+            .field(
                 "required_1",
                 IvoField::REQUIRED.validate(|_: i32, _, _| ready(Ok(None))),
             )

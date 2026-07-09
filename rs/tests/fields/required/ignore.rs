@@ -23,7 +23,7 @@ async fn should_respect_the_ignore_update_rule() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "required",
                 IvoField::REQUIRED
                     .validate(|_: i32, _, _| ready(Ok(None)))
@@ -35,7 +35,7 @@ async fn should_respect_the_ignore_update_rule() {
                         ready(false)
                     }),
             )
-            .set(
+            .field(
                 "lax",
                 IvoField::LAX.default("default_lax_value".to_string()),
             )
@@ -133,13 +133,13 @@ async fn should_respect_the_readonly_rule() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.set(
+            f.field(
                 "required",
                 IvoField::REQUIRED
                     .validate(|_: i32, _, _| ready(Ok(None)))
                     .readonly(),
             )
-            .set(
+            .field(
                 "lax",
                 IvoField::LAX.default("default_lax_value".to_string()),
             )
