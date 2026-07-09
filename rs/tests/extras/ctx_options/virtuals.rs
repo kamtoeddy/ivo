@@ -1,8 +1,7 @@
 use std::future::ready;
 
 use ivo::{
-    IvoContext, IvoCtxOptions, IvoField, IvoInputStruct, IvoRwCtxOptions, IvoStruct,
-    IvoUpdateError, Schema,
+    IvoContext, IvoCtxOptions, IvoField, IvoInputStruct, IvoRwCtxOptions, IvoStruct, Schema,
 };
 
 use crate::async_test_matrix;
@@ -172,7 +171,7 @@ async fn should_properly_update_ctx_options_in_required_resolver_and_provide_tho
         .unwrap();
 
     match err {
-        IvoUpdateError::ValidationError(payload) => {
+        Some(payload) => {
             assert_eq!(
                 payload.get("virtual_field").unwrap()[0].reason,
                 REQUIRED_ERROR
@@ -435,7 +434,7 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
         .unwrap();
 
     match err {
-        IvoUpdateError::ValidationError(payload) => {
+        Some(payload) => {
             assert_eq!(
                 payload.get("virtual_field").unwrap()[0].reason,
                 MIN_LENGTH_ERROR
@@ -616,7 +615,7 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
         .unwrap();
 
     match err {
-        IvoUpdateError::ValidationError(payload) => {
+        Some(payload) => {
             assert_eq!(
                 payload.get("virtual_field").unwrap()[0].reason,
                 MIN_LENGTH_ERROR

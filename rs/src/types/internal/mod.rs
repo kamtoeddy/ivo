@@ -3,7 +3,7 @@ pub mod types;
 
 pub use error_tool::{
     DefaultErrorPayload, DefaultFieldErrorMetadata, IvoDefaultErrorTool, IvoErrorTool,
-    IvoFieldError, IvoUpdateError,
+    IvoFieldError,
 };
 
 pub use types::{

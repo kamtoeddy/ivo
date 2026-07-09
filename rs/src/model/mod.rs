@@ -21,7 +21,7 @@ use crate::schema::{
 };
 use crate::types::internal::{
     types::erase_value, IvoDefaultErrorTool, IvoErrorTool, IvoFieldError, IvoRwLock, IvoStruct,
-    IvoUpdateError, PartialStructMethods,
+    PartialStructMethods,
 };
 use crate::types::InternalIvoContext;
 
@@ -276,7 +276,7 @@ impl<
     ) -> Result<
         (O::Partial, CtxOptions, AsyncHandlerTrigger<'schema>),
         (
-            IvoUpdateError<ErrorTool>,
+            Option<ErrorTool::ErrorPayload>,
             CtxOptions,
             AsyncHandlerTrigger<'schema>,
         ),
@@ -309,7 +309,7 @@ impl<
             let final_ctx_options = unwrap_async_lock(shared_rw_options);
 
             return Err((
-                IvoUpdateError::NothingToUpdate,
+                None,
                 final_ctx_options.clone(),
                 self.prepare_failure_handlers(
                     fields_provided.fields,
@@ -331,7 +331,7 @@ impl<
             let final_ctx_options = unwrap_async_lock(shared_rw_options);
 
             return Err((
-                IvoUpdateError::ValidationError(payload),
+                Some(payload),
                 final_ctx_options.clone(),
                 self.prepare_failure_handlers(
                     fields_provided.fields,
@@ -360,7 +360,7 @@ impl<
                 let final_ctx_options = unwrap_async_lock(shared_rw_options);
 
                 return Err((
-                    IvoUpdateError::ValidationError(payload),
+                    Some(payload),
                     final_ctx_options.clone(),
                     self.prepare_failure_handlers(
                         fields_provided.fields,
@@ -391,7 +391,7 @@ impl<
                 let final_ctx_options = unwrap_async_lock(shared_rw_options);
 
                 return Err((
-                    IvoUpdateError::ValidationError(payload),
+                    Some(payload),
                     final_ctx_options.clone(),
                     self.prepare_failure_handlers(
                         fields_provided.fields,
@@ -422,7 +422,7 @@ impl<
                 let final_ctx_options = unwrap_async_lock(shared_rw_options);
 
                 return Err((
-                    IvoUpdateError::ValidationError(payload),
+                    Some(payload),
                     final_ctx_options.clone(),
                     self.prepare_failure_handlers(
                         fields_provided.fields,
@@ -500,7 +500,7 @@ impl<
             let final_ctx_options = unwrap_async_lock(shared_rw_options);
 
             return Err((
-                IvoUpdateError::NothingToUpdate,
+                None,
                 final_ctx_options.clone(),
                 self.prepare_failure_handlers(
                     fields_provided.fields,

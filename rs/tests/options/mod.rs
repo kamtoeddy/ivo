@@ -1,7 +1,7 @@
 use std::future::ready;
 
 use crate::async_test_matrix;
-use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, IvoUpdateError, Schema};
+use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, Schema};
 
 mod post_validate;
 mod required;
@@ -53,7 +53,7 @@ async fn should_respect_option_to_ignore_updates() {
         .await;
 
     match r {
-        Err((e, _, _)) => assert!(matches!(e, IvoUpdateError::NothingToUpdate)),
+        Err((e, _, _)) => assert!(e.is_none()),
         _ => unreachable!(),
     }
 

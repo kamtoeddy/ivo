@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, IvoUpdateError, Schema};
+use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, Schema};
 
 use crate::async_test_matrix;
 
@@ -302,7 +302,7 @@ async fn should_trigger_on_failure_handlers_during_updates() {
         .await;
 
     match r {
-        Err((IvoUpdateError::ValidationError(payload), _, handle_failure)) => {
+        Err((Some(payload), _, handle_failure)) => {
             assert_eq!(
                 payload.get("virtual_field").unwrap()[0].reason,
                 "validation failed".to_string()
@@ -384,7 +384,7 @@ async fn should_trigger_on_failure_handlers_during_updates_with_alias() {
         .await;
 
     match r {
-        Err((IvoUpdateError::ValidationError(payload), _, handle_failure)) => {
+        Err((Some(payload), _, handle_failure)) => {
             assert_eq!(
                 payload.get("virtual_alias").unwrap()[0].reason,
                 "validation failed".to_string()
@@ -466,7 +466,7 @@ async fn should_trigger_on_failure_handlers_during_updates_with_alias_same_as_de
         .await;
 
     match r {
-        Err((IvoUpdateError::ValidationError(payload), _, handle_failure)) => {
+        Err((Some(payload), _, handle_failure)) => {
             assert_eq!(
                 payload.get("dependent").unwrap()[0].reason,
                 "validation failed".to_string()
@@ -845,7 +845,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
         .await;
 
     match r {
-        Err((IvoUpdateError::ValidationError(payload), _, handle_failure)) => {
+        Err((Some(payload), _, handle_failure)) => {
             assert!(payload.get("virtual_field").is_none());
 
             assert_eq!(
@@ -943,7 +943,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
         .await;
 
     match r {
-        Err((IvoUpdateError::ValidationError(payload), _, handle_failure)) => {
+        Err((Some(payload), _, handle_failure)) => {
             assert!(payload.get("virtual_alias").is_none());
 
             assert_eq!(
@@ -1041,7 +1041,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
         .await;
 
     match r {
-        Err((IvoUpdateError::ValidationError(payload), _, handle_failure)) => {
+        Err((Some(payload), _, handle_failure)) => {
             assert!(payload.get("dependent").is_none());
 
             assert_eq!(
@@ -1424,7 +1424,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
         .await;
 
     match r {
-        Err((IvoUpdateError::ValidationError(payload), _, handle_failure)) => {
+        Err((Some(payload), _, handle_failure)) => {
             assert!(payload.get("virtual_field").is_none());
 
             assert_eq!(
@@ -1524,7 +1524,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
         .await;
 
     match r {
-        Err((IvoUpdateError::ValidationError(payload), _, handle_failure)) => {
+        Err((Some(payload), _, handle_failure)) => {
             assert!(payload.get("virtual_alias").is_none());
 
             assert_eq!(
@@ -1624,7 +1624,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
         .await;
 
     match r {
-        Err((IvoUpdateError::ValidationError(payload), _, handle_failure)) => {
+        Err((Some(payload), _, handle_failure)) => {
             assert!(payload.get("dependent").is_none());
 
             assert_eq!(

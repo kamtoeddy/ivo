@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, IvoUpdateError, Schema};
+use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, Schema};
 
 use crate::async_test_matrix;
 
@@ -352,7 +352,7 @@ async fn should_ignore_updates_on_readonly_fields_if_values_are_different_from_d
         .await;
 
     match r {
-        Err((e, _, _)) => assert!(matches!(e, IvoUpdateError::NothingToUpdate)),
+        Err((err, _, _)) => assert!(err.is_none()),
         _ => unreachable!(),
     }
 }
@@ -428,7 +428,7 @@ async fn should_ignore_updates_on_readonly_fields_if_values_are_different_from_d
         .await;
 
     match r {
-        Err((e, _, _)) => assert!(matches!(e, IvoUpdateError::NothingToUpdate)),
+        Err((err, _, _)) => assert!(err.is_none()),
         _ => unreachable!(),
     }
 }

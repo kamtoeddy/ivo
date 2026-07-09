@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoField, IvoInputStruct, IvoStruct, IvoUpdateError, Schema};
+use ivo::{IvoField, IvoInputStruct, IvoStruct, Schema};
 
 use crate::async_test_matrix;
 
@@ -80,7 +80,7 @@ async fn should_respect_the_ignore_update_rule() {
         .await;
 
     match r {
-        Err((IvoUpdateError::NothingToUpdate, _, _)) => {}
+        Err((None, _, _)) => {}
         _ => unreachable!("expected nothig to update error"),
     }
 
@@ -184,7 +184,7 @@ async fn should_respect_the_readonly_rule() {
         .await;
 
     match r {
-        Err((IvoUpdateError::NothingToUpdate, _, _)) => {}
+        Err((None, _, _)) => {}
         _ => unreachable!("expected nothig to update error"),
     }
 
@@ -205,7 +205,7 @@ async fn should_respect_the_readonly_rule() {
         .await;
 
     match r {
-        Err((IvoUpdateError::NothingToUpdate, _, _)) => {}
+        Err((None, _, _)) => {}
         _ => unreachable!("expected nothig to update error"),
     }
 }

@@ -1,9 +1,7 @@
 use std::{collections::HashMap, future::ready, sync::LazyLock};
 
 use crate::async_test_matrix;
-use ivo::{
-    IvoErrorTool, IvoField, IvoFieldError, IvoInputStruct, IvoStruct, IvoUpdateError, Model, Schema,
-};
+use ivo::{IvoErrorTool, IvoField, IvoFieldError, IvoInputStruct, IvoStruct, Model, Schema};
 
 async fn should_respect_custom_error_tool() {
     let r = PLACE_MODEL
@@ -73,8 +71,8 @@ async fn should_respect_custom_error_tool() {
         .await;
 
     match r {
-        Err((IvoUpdateError::ValidationError(p), _, _)) => {
-            let errors = p.get("coordinates").unwrap();
+        Err((Some(payload), _, _)) => {
+            let errors = payload.get("coordinates").unwrap();
 
             assert_eq!(errors.len(), 1);
             assert!(errors.contains(&customized_string("InvalidNumber")));
@@ -96,8 +94,8 @@ async fn should_respect_custom_error_tool() {
         .await;
 
     match r {
-        Err((IvoUpdateError::ValidationError(p), _, _)) => {
-            let errors = p.get("coordinates").unwrap();
+        Err((Some(payload), _, _)) => {
+            let errors = payload.get("coordinates").unwrap();
 
             assert_eq!(errors.len(), 3);
             assert!(errors.contains(&customized_string("Out of range error")));
@@ -145,7 +143,7 @@ async fn should_respect_custom_error_tool() {
         .err()
         .unwrap();
 
-    assert!(matches!(err, IvoUpdateError::NothingToUpdate));
+    assert!(err.is_none());
 }
 
 async_test_matrix!(should_respect_custom_error_tool);

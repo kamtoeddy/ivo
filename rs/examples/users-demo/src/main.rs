@@ -1,5 +1,5 @@
 use chrono::{Days, Utc};
-use ivo::{IvoStruct, IvoUpdateError};
+use ivo::IvoStruct;
 use std::{sync::LazyLock, time::Instant};
 
 mod domain;
@@ -99,10 +99,10 @@ async fn run_example() {
         }
         Err((error, _, handle_failure)) => {
             match error {
-                IvoUpdateError::NothingToUpdate => println!("\nNothing to update"),
-                IvoUpdateError::ValidationError(payload) => {
+                Some(payload) => {
                     println!("\nFailed to update: {:#?}", payload)
                 }
+                _ => println!("\nNothing to update"),
             };
 
             handle_failure().await;
@@ -141,10 +141,10 @@ async fn run_example() {
         }
         Err((error, _, handle_failure)) => {
             match error {
-                IvoUpdateError::NothingToUpdate => println!("\nNothing to update\n"),
-                IvoUpdateError::ValidationError(payload) => {
+                Some(payload) => {
                     println!("\nFailed to update: {:#?}\n", payload)
                 }
+                _ => println!("\nNothing to update\n"),
             };
 
             handle_failure().await;

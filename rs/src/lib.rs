@@ -18,7 +18,7 @@ pub use model::Model;
 pub use types::internal as __private_types;
 
 pub use types::internal::{
-    IvoDefaultErrorTool, IvoErrorTool, IvoFieldError, IvoInputStruct, IvoStruct, IvoUpdateError,
+    IvoDefaultErrorTool, IvoErrorTool, IvoFieldError, IvoInputStruct, IvoStruct,
 };
 
 pub use types::{IvoContext, IvoCtxOptions, IvoRwCtxOptions, IvoShared, IvoSharedInput};

@@ -1,11 +1,5 @@
 use std::collections::HashMap;
 
-#[derive(Debug, Clone)]
-pub enum IvoUpdateError<E: IvoErrorTool> {
-    NothingToUpdate,
-    ValidationError(E::ErrorPayload),
-}
-
 pub type DefaultFieldErrorMetadata = ();
 pub type DefaultErrorPayload = HashMap<String, Vec<IvoFieldError>>;
 
