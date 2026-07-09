@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoContext, IvoField, IvoStruct, IvoUpdateError, Schema};
+use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, IvoUpdateError, Schema};
 
 use crate::async_test_matrix;
 
@@ -13,7 +13,7 @@ async fn should_respect_the_ignore_rule() {
         other: String,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: String,
         other: String,
@@ -137,7 +137,7 @@ async fn should_respect_the_ignore_init_rule() {
         other: String,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: String,
         other: String,
@@ -222,7 +222,7 @@ async fn should_respect_the_ignore_update_rule() {
         other: String,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: String,
         other: String,
@@ -310,7 +310,7 @@ async fn should_ignore_updates_on_readonly_fields_if_values_are_different_from_d
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
     }
@@ -368,7 +368,7 @@ async fn should_ignore_updates_on_readonly_fields_if_values_are_different_from_d
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
     }

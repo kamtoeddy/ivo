@@ -1,7 +1,7 @@
 use std::future::ready;
 
 use crate::async_test_matrix;
-use ivo::{IvoContext, IvoField, IvoStruct, IvoUpdateError, Schema};
+use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, IvoUpdateError, Schema};
 
 mod post_validate;
 mod required;
@@ -19,7 +19,7 @@ async fn should_respect_option_to_ignore_updates() {
         lax: String,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: String,
     }
@@ -84,7 +84,7 @@ async_test_matrix!(should_respect_option_to_ignore_updates);
 // on_delete
 
 async fn should_properly_trigger_on_delete_handlers() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct Data {
         lax: i32,
         lax_1: i32,
@@ -117,7 +117,7 @@ async_test_matrix!(
 );
 
 async fn should_properly_trigger_all_on_delete_handlers() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct Data {
         lax: i32,
         lax_1: i32,
@@ -162,7 +162,7 @@ fn should_reject_if_the_fields_array_contains_any_duplicates() {
         lax_1: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         lax_1: i32,
@@ -186,7 +186,7 @@ fn should_reject_if_the_fields_array_contains_any_string_that_is_not_a_field_on_
         lax_1: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         lax_1: i32,
@@ -213,7 +213,7 @@ fn should_reject_if_an_alias_with_foreign_name_is_provided_to_the_fields_array()
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         lax_1: i32,
@@ -254,7 +254,7 @@ fn should_reject_if_created_at_timestamp_with_default_name_is_provided_to_the_fi
         lax_1: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         lax_1: i32,
@@ -286,7 +286,7 @@ fn should_reject_if_created_at_timestamp_with_custom_name_is_provided_to_the_fie
         lax_1: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         lax_1: i32,
@@ -318,7 +318,7 @@ fn should_reject_if_updated_at_timestamp_with_default_name_is_provided_to_the_fi
         lax_1: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         lax_1: i32,
@@ -350,7 +350,7 @@ fn should_reject_if_updated_at_timestamp_with_custom_name_is_provided_to_the_fie
         lax_1: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         lax_1: i32,
@@ -379,7 +379,7 @@ fn should_allow_constant_and_dependents_in_fields_array() {
         lax: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: i32,
     }

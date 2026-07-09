@@ -4,7 +4,7 @@ mod types;
 
 pub use futures::FutureExt;
 
-pub use ivo_derive::IvoStruct;
+pub use ivo_derive::{IvoInputStruct, IvoStruct};
 
 #[cfg(feature = "validators")]
 #[doc(inline)]
@@ -18,7 +18,7 @@ pub use model::Model;
 pub use types::internal as __private_types;
 
 pub use types::internal::{
-    IvoDefaultErrorTool, IvoErrorTool, IvoFieldError, IvoStruct, IvoUpdateError,
+    IvoDefaultErrorTool, IvoErrorTool, IvoFieldError, IvoInputStruct, IvoStruct, IvoUpdateError,
 };
 
 pub use types::{IvoContext, IvoCtxOptions, IvoRwCtxOptions, IvoShared, IvoSharedInput};

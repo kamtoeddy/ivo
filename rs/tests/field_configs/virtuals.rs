@@ -1,4 +1,4 @@
-use ivo::{IvoDefaultErrorTool, IvoField, IvoStruct, Schema};
+use ivo::{IvoDefaultErrorTool, IvoField, IvoInputStruct, IvoStruct, Schema};
 use std::{future::ready, panic};
 
 #[test]
@@ -13,7 +13,7 @@ fn should_reject_if_virtual_field_does_not_have_any_dependency() {
         lax: String,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: String,
         virtual_field: String,
@@ -48,7 +48,7 @@ fn should_reject_with_same_alias_name() {
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         virtual_field: i32,
     }
@@ -86,7 +86,7 @@ fn should_reject_with_alias_as_non_dependent_field() {
         lax: String,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: String,
         virtual_field: i32,
@@ -127,7 +127,7 @@ fn should_reject_with_alias_as_unrelated_dependent_field() {
         lax: String,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: String,
         virtual_field: i32,
@@ -173,7 +173,7 @@ fn should_reject_if_alias_is_same_created_at_if_enabled_with_default_name() {
         created_at: String,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         virtual_field: String,
     }
@@ -204,7 +204,7 @@ fn should_reject_if_alias_is_same_created_at_if_enabled_with_custom_name() {
         custom_created_at: String,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         virtual_field: String,
     }
@@ -237,7 +237,7 @@ fn should_reject_if_alias_is_same_updated_at_if_enabled_with_default_name() {
         updated_at: String,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         virtual_field: String,
     }
@@ -268,7 +268,7 @@ fn should_reject_if_alias_is_same_updated_at_if_enabled_with_custom_name() {
         custom_updated_at: String,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         virtual_field: String,
     }
@@ -302,7 +302,7 @@ fn should_reject_if_alias_already_used() {
         lax: String,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         dependent: i32,
         lax: String,
@@ -348,7 +348,7 @@ fn should_reject_if_alias_does_not_exist_on_input_struct() {
         lax: String,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: String,
     }
@@ -387,7 +387,7 @@ fn should_reject_if_both_alias_and_field_name_exist_on_input_struct() {
         lax: String,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         alias_name: String,
         lax: String,
@@ -425,7 +425,7 @@ fn should_allow_virtuals_with_alias_as_direct_dependent_field() {
         lax: String,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: String,
         dependent: i32,
@@ -473,7 +473,7 @@ fn should_allow_virtuals_with_alias_as_non_field_name() {
         updated_at: String,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         alias_name: i32,
         lax: String,
@@ -522,7 +522,7 @@ fn should_reject_if_no_alias_is_provided_and_field_name_does_not_exist_on_input_
         lax: String,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: String,
     }
@@ -556,7 +556,7 @@ fn should_allow_if_no_alias_is_provided_but_field_name_exists_on_input_struct() 
         lax: String,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: String,
         virtual_field: String,

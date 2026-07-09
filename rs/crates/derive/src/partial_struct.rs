@@ -7,7 +7,6 @@ use syn::{
 
 pub fn generate_partial_struct(
     partial_struct_name: &Ident,
-    partial_errors_struct_name: &Ident,
     fields: &Punctuated<Field, Comma>,
     attrs: &[Attribute],
     vis: &Visibility,
@@ -22,23 +21,6 @@ pub fn generate_partial_struct(
         quote! {
             #field_attrs
             #field_vis #field_name: std::option::Option<#field_type>,
-        }
-    });
-
-    let partial_errors_fields = fields.iter().map(|field| {
-        let field_name = &field.ident;
-        let field_vis = &field.vis;
-
-        quote! {
-            #field_vis #field_name: std::option::Option<(String, std::option::Option<FieldErrorMetadata>)>,
-        }
-    });
-
-    let partial_errors_fields_default_values = fields.iter().map(|field| {
-        let field_name = &field.ident;
-
-        quote! {
-            #field_name: None,
         }
     });
 
@@ -113,24 +95,12 @@ pub fn generate_partial_struct(
         }
     });
 
-    let construct_errors_is_empty = construct_is_empty.clone();
-
     let construct_enumerated_tuples = fields.iter().map(|field| {
         let field_name = &field.ident;
 
         quote! {
             if let Some(value) = self.#field_name.clone() {
                 tuples.push((stringify!(#field_name).to_string(), erase_value(value)));
-            }
-        }
-    });
-
-    let construct_enumerated_errors_tuples = fields.iter().map(|field| {
-        let field_name = &field.ident;
-
-        quote! {
-            if let Some(value) = self.#field_name {
-                tuples.push((stringify!(#field_name).to_string(), value));
             }
         }
     });
@@ -161,183 +131,109 @@ pub fn generate_partial_struct(
         }
     });
 
-    let construct_builder_methods_of_partial_errors_struct = fields.iter().map(|field| {
-        let field_name = &field.ident;
-        let field_name_str = field_name.as_ref().unwrap().to_string();
-        let add_method_name = format_ident!("set_{field_name_str}");
-        let remove_method_name = format_ident!("unset_{field_name_str}");
-
-        quote! {
-            impl <FieldErrorMetadata: Send + Sync> #partial_errors_struct_name<FieldErrorMetadata> {
-                #[inline(always)]
-                #vis fn #add_method_name(&mut self, reason: &str, metadata: std::option::Option<FieldErrorMetadata>) -> &mut Self {
-                    self.#field_name = Some((reason.to_string(), metadata));
-
-                    self
-                }
-
-                #[inline(always)]
-                #vis fn #remove_method_name(&mut self) -> &mut Self {
-                    self.#field_name = None;
-
-                    self
-                }
-            }
-        }
-    });
-
     let derive_attrs_provided = extract_attrs_provided(attrs);
 
     quote! {
-        #derive_attrs_provided
-        #[derive(Clone, Debug, Default, PartialEq)]
-        #vis struct #partial_struct_name {
-            #( #partial_fields )*
-        }
+       #derive_attrs_provided
+       #[derive(Clone, Debug, Default, PartialEq)]
+       #vis struct #partial_struct_name {
+           #( #partial_fields )*
+       }
 
-        #( #construct_builder_methods_of_partial_struct )*
+       #( #construct_builder_methods_of_partial_struct )*
 
-        impl #partial_struct_name {
-            #vis fn new() -> Self {
-                Self::default()
-            }
+       impl #partial_struct_name {
+           #vis fn new() -> Self {
+               Self::default()
+           }
 
-            #[inline(always)]
-            /// This is a utility method used to wrap the partial struct into an option.
-            ///
-            /// If every field has as value None, None is return, otherwise Some(self) is returned
-            #vis fn into_option(self) -> std::option::Option<Self> {
-                if self.is_empty() {
-                    None
-                } else {
-                    Some(self)
-                }
-            }
+           #[inline(always)]
+           /// This is a utility method used to wrap the partial struct into an option.
+           ///
+           /// If every field has as value None, None is return, otherwise Some(self) is returned
+           #vis fn into_option(self) -> std::option::Option<Self> {
+               if self.is_empty() {
+                   None
+               } else {
+                   Some(self)
+               }
+           }
 
-            /// This is a utility method used to evaluate whether some
-            /// fields are not None.
-            ///
-            /// i.e: returns true if every field has as value None and false otherwise.
-            #vis fn is_empty(&self) -> bool {
-                let mut is_empty = true;
+           /// This is a utility method used to evaluate whether some
+           /// fields are not None.
+           ///
+           /// i.e: returns true if every field has as value None and false otherwise.
+           #vis fn is_empty(&self) -> bool {
+               let mut is_empty = true;
 
-                #( #construct_is_empty )*
+               #( #construct_is_empty )*
 
-                is_empty
-            }
-        }
+               is_empty
+           }
+       }
 
-        impl ::ivo::__private_types::types::IvoPartialStructMethods for #partial_struct_name {
-            fn ivo_internal_enumerate(&self) -> Vec<(String, ::ivo::__private_types::types::ErasedValue)> {
-                use ::ivo::__private_types::types::erase_value;
+       impl ::ivo::__private_types::types::IvoPartialStructMethods for #partial_struct_name {
+           fn ivo_internal_enumerate(&self) -> Vec<(String, ::ivo::__private_types::types::ErasedValue)> {
+               use ::ivo::__private_types::types::erase_value;
 
-                let mut tuples = Vec::new();
+               let mut tuples = Vec::new();
 
-                #( #construct_enumerated_tuples )*
+               #( #construct_enumerated_tuples )*
 
-                tuples
-            }
+               tuples
+           }
 
-            #[inline]
-            fn ivo_internal_fields_provided(&self) -> Vec<String> {
-                let mut fields_provided = vec![];
+           #[inline]
+           fn ivo_internal_fields_provided(&self) -> Vec<String> {
+               let mut fields_provided = vec![];
 
-                #( #contruct_fields_provided )*
+               #( #contruct_fields_provided )*
 
-                fields_provided
-            }
+               fields_provided
+           }
 
-            fn ivo_internal_get_erased_value(&self, field_name: &str)-> ::ivo::__private_types::types::ErasedValue {
-                use ::ivo::__private_types::types::erase_value;
+           fn ivo_internal_get_erased_value(&self, field_name: &str)-> ::ivo::__private_types::types::ErasedValue {
+               use ::ivo::__private_types::types::erase_value;
 
-                match field_name {
-                    #( #get_erased_value_match_arms ),*
-                    _ => panic!("\"{field_name}\" does not exist on your struct"),
-                }
-            }
+               match field_name {
+                   #( #get_erased_value_match_arms ),*
+                   _ => panic!("\"{field_name}\" does not exist on your struct"),
+               }
+           }
 
-            fn ivo_internal_is_value_equal(
-                &self,
-                field_name: &str,
-                value: &::ivo::__private_types::types::ErasedValue,
-            ) -> bool {
-                use ::ivo::__private_types::types::parse_or_panic;
+           fn ivo_internal_is_value_equal(
+               &self,
+               field_name: &str,
+               value: &::ivo::__private_types::types::ErasedValue,
+           ) -> bool {
+               use ::ivo::__private_types::types::parse_or_panic;
 
-                match field_name {
-                    #( #is_value_equal_match_arms ),*
-                    _ => false,
-                }
-            }
+               match field_name {
+                   #( #is_value_equal_match_arms ),*
+                   _ => false,
+               }
+           }
 
-            fn ivo_internal_set(
-                &mut self,
-                field_name: &str,
-                value: &::ivo::__private_types::types::ErasedValue,
-            ) {
-                use ::ivo::__private_types::types::parse_or_panic;
+           fn ivo_internal_set(
+               &mut self,
+               field_name: &str,
+               value: &::ivo::__private_types::types::ErasedValue,
+           ) {
+               use ::ivo::__private_types::types::parse_or_panic;
 
-                match field_name {
-                    #( #set_value_match_arms ),*
-                    _ => (),
-                };
-            }
+               match field_name {
+                   #( #set_value_match_arms ),*
+                   _ => (),
+               };
+           }
 
-            fn ivo_internal_unset(&mut self, field_name: &str) {
-                match field_name {
-                    #( #remove_value_match_arms ),*
-                    _ => (),
-                };
-            }
-        }
-
-
-        #vis struct #partial_errors_struct_name<FieldErrorMetadata: Send + Sync> {
-            #( #partial_errors_fields )*
-        }
-
-        #( #construct_builder_methods_of_partial_errors_struct )*
-
-        impl <FieldErrorMetadata: Send + Sync> #partial_errors_struct_name<FieldErrorMetadata> {
-            #vis fn new() -> Self {
-                Self {
-                    #( #partial_errors_fields_default_values )*
-                }
-            }
-
-            #[inline(always)]
-            /// This is a utility method used to wrap the partial struct into an option.
-            ///
-            /// If every field has as value None, None is return, otherwise Some(self) is returned
-            #vis fn into_option(self) -> std::option::Option<Self> {
-                if self.is_empty() {
-                    None
-                } else {
-                    Some(self)
-                }
-            }
-
-            /// This is a utility method used to evaluate whether some
-            /// fields are not None.
-            ///
-            /// i.e: returns true if every field has as value None and false otherwise.
-            #vis fn is_empty(&self) -> bool {
-                let mut is_empty = true;
-
-                #( #construct_errors_is_empty )*
-
-                is_empty
-            }
-        }
-
-        impl <FieldErrorMetadata: Send + Sync> ::ivo::__private_types::types::IvoPartialErrorsStructMethods<FieldErrorMetadata> for #partial_errors_struct_name<FieldErrorMetadata> {
-            fn ivo_internal_enumerate(self) -> Vec<(String, (String, std::option::Option<FieldErrorMetadata>))> {
-                let mut tuples = Vec::new();
-
-                #( #construct_enumerated_errors_tuples )*
-
-                tuples
-            }
-        }
+           fn ivo_internal_unset(&mut self, field_name: &str) {
+               match field_name {
+                   #( #remove_value_match_arms ),*
+                   _ => (),
+               };
+           }
+       }
     }
 }
 

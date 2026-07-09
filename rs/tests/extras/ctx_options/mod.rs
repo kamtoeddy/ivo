@@ -1,6 +1,6 @@
 #![expect(dead_code)]
 
-use ivo::{IvoField, IvoRwCtxOptions, IvoStruct, Model, Schema};
+use ivo::{IvoField, IvoInputStruct, IvoRwCtxOptions, IvoStruct, Model, Schema};
 use std::{array, collections::HashMap, future::ready, sync::LazyLock};
 
 use crate::async_test_matrix;
@@ -98,7 +98,7 @@ pub struct Product {
     supplier: SupplierID,
 }
 
-#[derive(Debug, Clone, PartialEq, IvoStruct)]
+#[derive(Debug, Clone, PartialEq, IvoInputStruct)]
 pub struct ProductInput {
     name: String,
     sku: String,

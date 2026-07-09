@@ -1,6 +1,8 @@
 use std::future::ready;
 
-use ivo::{IvoCtxOptions, IvoField, IvoRwCtxOptions, IvoStruct, IvoUpdateError, Schema};
+use ivo::{
+    IvoCtxOptions, IvoField, IvoInputStruct, IvoRwCtxOptions, IvoStruct, IvoUpdateError, Schema,
+};
 
 use crate::async_test_matrix;
 
@@ -37,7 +39,7 @@ async fn should_properly_update_ctx_options_in_ignore_update_resolver_and_provid
         required: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         required: i32,
     }
@@ -104,7 +106,7 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
         required: String,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         required: String,
     }
@@ -176,7 +178,7 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
         required: String,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         required: String,
     }
@@ -259,7 +261,7 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
         required: String,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         required: String,
     }
@@ -332,7 +334,7 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
         required: String,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         required: String,
     }
@@ -417,7 +419,7 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
         required_1: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         required: i32,
         required_1: i32,
@@ -503,7 +505,7 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
         required_1: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         required: i32,
         required_1: i32,

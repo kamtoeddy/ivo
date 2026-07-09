@@ -7,8 +7,8 @@ use std::fmt::Debug;
 use std::future::ready;
 use std::sync::Arc;
 
-use crate::__private_types::types::{IvoPartialErrorsStructMethods, IvoWithPartialErrorsStruct};
-use crate::__private_types::FieldInfo;
+use crate::__private_types::types::IvoPartialErrorsStructMethods;
+use crate::__private_types::{FieldInfo, IvoInputStruct};
 use crate::model::internal::FieldInfoCollection;
 use crate::schema::fields::types::RequiredResolver;
 use crate::schema::{
@@ -34,7 +34,7 @@ use crate::{IvoContext, IvoCtxOptions, IvoRwCtxOptions};
 type AsyncHandlerTrigger<'a> = Box<dyn Fn() -> BoxFuture<'a, ()> + Send + Sync + 'a>;
 
 impl<
-        I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
+        I: IvoInputStruct<ErrorTool>,
         O: IvoStruct,
         CtxOptions: Clone + Sync + Send,
         Timestamp: Clone + Debug + Send + Sync + 'static,
@@ -49,7 +49,7 @@ impl<
 
 pub struct Model<
     'schema,
-    I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
+    I: IvoInputStruct<ErrorTool>,
     O: IvoStruct = I,
     CtxOptions: Clone + Sync + Send = HashMap<String, ()>,
     Timestamp: Clone + Debug + Send + Sync + 'static = (),
@@ -60,7 +60,7 @@ pub struct Model<
 
 impl<
         'schema,
-        I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
+        I: IvoInputStruct<ErrorTool>,
         O: IvoStruct,
         CtxOptions: Clone + Sync + Send,
         Timestamp: Clone + Debug + Send + Sync + 'static,

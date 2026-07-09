@@ -2,8 +2,8 @@
 
 use std::future::Future;
 
-use crate::__private_types::types::{IvoPartialErrorsStructMethods, IvoWithPartialErrorsStruct};
-use crate::__private_types::FieldInfo;
+use crate::__private_types::types::IvoPartialErrorsStructMethods;
+use crate::__private_types::{FieldInfo, IvoInputStruct};
 
 use crate::schema::fields::types::RequiredResolver;
 use crate::types::internal::PostValidatorResponse;
@@ -40,7 +40,7 @@ pub struct OnSuccessConfig<I: IvoStruct, O: IvoStruct, CtxOptions> {
 }
 
 pub struct PostValidationConfig<
-    I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
+    I: IvoInputStruct<ErrorTool>,
     O: IvoStruct,
     CtxOptions,
     ErrorTool: IvoErrorTool,
@@ -51,7 +51,7 @@ pub struct PostValidationConfig<
 }
 
 pub trait IntoPostValidator<
-    I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
+    I: IvoInputStruct<ErrorTool>,
     O: IvoStruct,
     CtxOptions,
     ErrorTool: IvoErrorTool,
@@ -62,7 +62,7 @@ pub trait IntoPostValidator<
 
 impl<F, Fut, I, O, CtxOptions, ErrorTool> IntoPostValidator<I, O, CtxOptions, ErrorTool> for F
 where
-    I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
+    I: IvoInputStruct<ErrorTool>,
     O: IvoStruct,
     ErrorTool: IvoErrorTool,
     F: Fn(IvoContext<I, O>, IvoRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
@@ -84,7 +84,7 @@ pub type PostValidator<I, O, CtxOptions, ErrorTool> = Box<
 >;
 
 pub struct RequiredOptionConfig<
-    I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
+    I: IvoInputStruct<ErrorTool>,
     O: IvoStruct,
     CtxOptions,
     ErrorTool: IvoErrorTool,
@@ -94,7 +94,7 @@ pub struct RequiredOptionConfig<
 }
 
 pub trait IntoRequiredOptionsResolver<
-    I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
+    I: IvoInputStruct<ErrorTool>,
     O: IvoStruct,
     CtxOptions,
     ErrorTool: IvoErrorTool,
@@ -106,7 +106,7 @@ pub trait IntoRequiredOptionsResolver<
 impl<F, Fut, I, O, CtxOptions, ErrorTool> IntoRequiredOptionsResolver<I, O, CtxOptions, ErrorTool>
     for F
 where
-    I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
+    I: IvoInputStruct<ErrorTool>,
     O: IvoStruct,
     ErrorTool: IvoErrorTool,
     F: Fn(IvoContext<I, O>, IvoRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
@@ -118,7 +118,7 @@ where
 }
 
 pub type RequiredOptionResolver<
-    I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
+    I: IvoInputStruct<ErrorTool>,
     O: IvoStruct,
     CtxOptions,
     ErrorTool: IvoErrorTool,
@@ -136,7 +136,7 @@ type UniformRequiredResponse<'a, ErrorTool: IvoErrorTool> =
     BoxFuture<'a, Option<Vec<(String, IvoFieldError<ErrorTool::FieldMetadata>)>>>;
 
 pub trait UniformRequiredResolver<
-    I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
+    I: IvoInputStruct<ErrorTool>,
     O: IvoStruct,
     CtxOptions: Send + Sync,
     ErrorTool: IvoErrorTool,
@@ -153,7 +153,7 @@ pub trait UniformRequiredResolver<
 impl<I, O, CtxOptions: Send + Sync, ErrorTool> UniformRequiredResolver<I, O, CtxOptions, ErrorTool>
     for RequiredResolver<I, O, CtxOptions>
 where
-    I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
+    I: IvoInputStruct<ErrorTool>,
     O: IvoStruct,
     ErrorTool: IvoErrorTool,
 {
@@ -180,7 +180,7 @@ where
 impl<I, O, CtxOptions: Send + Sync, ErrorTool> UniformRequiredResolver<I, O, CtxOptions, ErrorTool>
     for RequiredOptionConfig<I, O, CtxOptions, ErrorTool>
 where
-    I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
+    I: IvoInputStruct<ErrorTool>,
     O: IvoStruct,
     ErrorTool: IvoErrorTool,
 {

@@ -7,15 +7,15 @@ use std::{
 
 use chrono::{DateTime, Utc};
 use ivo::{
-    validate_email, FutureExt, IvoContext, IvoField, IvoRwCtxOptions, IvoShared, IvoStruct, Model,
-    Schema,
+    validate_email, FutureExt, IvoContext, IvoField, IvoInputStruct, IvoRwCtxOptions, IvoShared,
+    IvoStruct, Model, Schema,
 };
 
 use crate::slugify::{slugify, SlugifiedString};
 
 type Timestamp = DateTime<Utc>;
 
-#[derive(Clone, Debug, PartialEq, IvoStruct)]
+#[derive(Clone, Debug, PartialEq, IvoInputStruct)]
 pub struct UserInput {
     pub email: Option<String>,
     pub phone_number: Option<String>,
@@ -208,7 +208,7 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
 
                     let error = "provide either an \"email\" or a \"phone number\" to proceed";
 
-                    let mut errors = PartialUserInputErrors::new();
+                    let mut errors = UserInputErrors::new();
 
                     errors.set_email(error, None).set_phone_number(error, None);
 
@@ -243,7 +243,7 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
                             None,
                         );
 
-                        let mut errors = PartialUserInputErrors::new();
+                        let mut errors = UserInputErrors::new();
 
                         if input.slug_id.is_some() {
                             errors.set_slug_id(reason, metadata);

@@ -1,4 +1,4 @@
-use ivo::{IvoDefaultErrorTool, IvoField, IvoStruct, Schema};
+use ivo::{IvoDefaultErrorTool, IvoField, IvoInputStruct, IvoStruct, Schema};
 use std::{future::ready, panic};
 
 #[test]
@@ -10,7 +10,7 @@ fn should_reject_if_fields_array_is_empty() {
         lax_1: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         lax_1: i32,
@@ -34,7 +34,7 @@ fn should_reject_if_fields_array_has_just_one_field() {
         lax_1: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         lax_1: i32,
@@ -60,7 +60,7 @@ fn should_reject_if_the_fields_array_contains_any_duplicates() {
         lax_1: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         lax_1: i32,
@@ -86,7 +86,7 @@ fn should_reject_if_the_fields_array_contains_any_string_that_is_not_a_field_on_
         lax_1: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         lax_1: i32,
@@ -115,7 +115,7 @@ fn should_reject_if_a_constant_is_provided_to_the_fields_array() {
         lax_1: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         lax_1: i32,
@@ -141,7 +141,7 @@ fn should_reject_if_a_dependent_field_is_provided_to_the_fields_array() {
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         lax_1: i32,
@@ -179,7 +179,7 @@ fn should_reject_if_an_alias_similar_to_a_dependent_field_is_provided_to_the_fie
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         lax_1: i32,
@@ -224,7 +224,7 @@ fn should_reject_if_an_alias_with_foreign_name_is_provided_to_the_fields_array()
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         lax_1: i32,
@@ -267,7 +267,7 @@ fn should_reject_if_created_at_timestamp_with_default_name_is_provided_to_the_fi
         lax_1: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         lax_1: i32,
@@ -299,7 +299,7 @@ fn should_reject_if_created_at_timestamp_with_custom_name_is_provided_to_the_fie
         lax_1: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         lax_1: i32,
@@ -329,7 +329,7 @@ fn should_reject_if_updated_at_timestamp_with_default_name_is_provided_to_the_fi
         lax_1: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         lax_1: i32,
@@ -361,7 +361,7 @@ fn should_reject_if_updated_at_timestamp_with_custom_name_is_provided_to_the_fie
         lax_1: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         lax_1: i32,

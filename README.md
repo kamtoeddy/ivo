@@ -65,9 +65,9 @@ While typical struct validators only check isolated field constraints, ivo allow
   In Rust, this is achieved by deriving the `IvoStruct` proc-macro provided from [ivo-rs](https://crates.io/crates/ivo). IvoStruct expects a struct that implements the `Clone` and `PartialEq` traits.
 
   ```rs
-  use ivo::{IvoStruct};
+  use ivo::{IvoInputStruct, IvoStruct};
 
-  #[derive(Clone, PartailEq, IvoStruct)]
+  #[derive(Clone, PartailEq, IvoInputStruct)]
   struct UserInput {
     email: Option<String>,
     phone_number: Option<String>,
@@ -82,7 +82,8 @@ While typical struct validators only check isolated field constraints, ivo allow
   }
   ```
 
-  Deriving `IvoStruct` on **UserInput** generates 2 other structs: **`PartialUserInput`** and **`PartialUserInputErrors`** and some helper methods for UserInput, PartialUserInput and PartialUserInputErrors. More on PartialErrors can be found [here]().
+  - Deriving `IvoStruct` on **UserInput** generates **`PartialUserInput`** together some helper methods for UserInput and PartialUserInput.
+  - Deriving `IvoInputStruct` on **UserInput** generates **`UserInputErrors`** which is used to return errors from [validators](#post-validator) and [grouped required resolvers](#required-conditionally).
 
   ivo uses partial structs to encourage the provision of just enough and relevant data to create and update a domain entity because it is not always required to provide every field to create a entity and it is also pointless to require every field for updates.
   - At creation, a partial input is provided to produce the complete entity (output struct).
@@ -118,8 +119,9 @@ type User = {
 
 ```rs
 use chrono::{DateTime, Utc};
+use ivo::{IvoInputStruct, IvoStruct};
 
-// the input struct
+#[derive(Clone, PartailEq, IvoInputStruct)]
 struct UserInput {
   email: Option<String>,
   phone_number: Option<String>,
@@ -128,7 +130,7 @@ struct UserInput {
 
 type Timestamp = DateTime<Utc>;
 
-// the output struct
+#[derive(Clone, PartailEq, IvoStruct)]
 struct User {
   id: String,
   created_at: Timestamp,

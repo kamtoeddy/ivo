@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
 use crate::{
-    __private_types::types::IvoWithPartialErrorsStruct,
+    __private_types::IvoInputStruct,
     schema::{
         options::types::{IntoPostValidator, PostValidationConfig, PostValidator},
         No, Yes,
@@ -10,7 +10,7 @@ use crate::{
 };
 
 pub struct PostValidateOptionBuilder<
-    I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
+    I: IvoInputStruct<ErrorTool>,
     O: IvoStruct,
     CtxOptions,
     ErrorTool: IvoErrorTool,
@@ -31,7 +31,7 @@ impl<
         IvoFieldNames,
         HasPreValidator,
         HasValidator,
-        I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
+        I: IvoInputStruct<ErrorTool>,
         O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
@@ -59,7 +59,7 @@ impl<
 }
 
 pub trait BuildablePostValidator<
-    I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
+    I: IvoInputStruct<ErrorTool>,
     O: IvoStruct,
     CtxOptions,
     ErrorTool: IvoErrorTool,
@@ -70,7 +70,7 @@ pub trait BuildablePostValidator<
 
 impl<
         HasPreValidator,
-        I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
+        I: IvoInputStruct<ErrorTool>,
         O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
@@ -86,12 +86,8 @@ impl<
     }
 }
 
-impl<
-        I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
-        O: IvoStruct,
-        CtxOptions,
-        ErrorTool: IvoErrorTool,
-    > PostValidateOptionBuilder<I, O, CtxOptions, ErrorTool>
+impl<I: IvoInputStruct<ErrorTool>, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool>
+    PostValidateOptionBuilder<I, O, CtxOptions, ErrorTool>
 {
     pub fn fields<const N: usize>(
         fields: [&'static str; N],
@@ -106,7 +102,7 @@ impl<
 impl<
         HasValidator,
         HasPreValidator,
-        I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
+        I: IvoInputStruct<ErrorTool>,
         O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
@@ -133,7 +129,7 @@ impl<
 
 impl<
         HasValidator,
-        I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
+        I: IvoInputStruct<ErrorTool>,
         O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,

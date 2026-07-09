@@ -1,4 +1,4 @@
-use ivo::{IvoContext, IvoField, IvoStruct, IvoUpdateError, Schema};
+use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, IvoUpdateError, Schema};
 use std::{future::ready, ops::RangeInclusive, panic};
 
 use crate::async_test_matrix;
@@ -33,7 +33,7 @@ async fn should_reject_updates_if_no_value_has_changed() {
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
     }
@@ -70,7 +70,7 @@ async fn should_reject_updates_if_no_value_has_changed_after_validation() {
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
     }
@@ -112,7 +112,7 @@ async fn should_reject_updates_if_no_value_has_changed_after_re_validation() {
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
     }
@@ -156,7 +156,7 @@ async fn should_reject_updates_if_no_value_has_changed_after_post_validation() {
         lax_1: String,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: String,
         lax_1: String,
@@ -266,7 +266,7 @@ async fn should_properly_use_default_value_of_missing_fields_at_creation() {
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
     }
@@ -296,7 +296,7 @@ async fn should_properly_resolve_default_values_of_missing_fields_at_creation() 
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
     }
@@ -326,7 +326,7 @@ async fn should_properly_use_lax_input_values_as_output_values_if_no_validator_i
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
     }
@@ -386,7 +386,7 @@ async fn should_respect_the_required_rule() {
         other: String,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: String,
         other: String,
@@ -499,7 +499,7 @@ async fn should_properly_handle_grouped_required_errors() {
         lax_2: String,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: String,
         lax_1: String,
@@ -530,7 +530,7 @@ async fn should_properly_handle_grouped_required_errors() {
         },
         |o| {
             o.required(["lax", "lax_1"], |ctx: IvoContext<DataInput, Data>, _| {
-                let mut errors = PartialDataInputErrors::new();
+                let mut errors = DataInputErrors::new();
 
                 if let Some(lax) = ctx.input().lax_2 {
                     if lax == IGNORE_WITH_SAME_ERROR {
@@ -666,7 +666,7 @@ async fn should_not_create_if_primary_validation_fails() {
         lax: String,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: String,
     }
@@ -750,7 +750,7 @@ async fn should_not_update_if_primary_validation_fails() {
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
     }
@@ -839,7 +839,7 @@ async fn should_properly_use_input_values_as_output_values_if_validator_does_not
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
     }
@@ -899,7 +899,7 @@ async fn should_not_create_if_re_validation_fails() {
         lax: String,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: String,
     }
@@ -996,7 +996,7 @@ async fn should_not_update_if_re_validation_fails() {
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
     }
@@ -1106,7 +1106,7 @@ async fn should_properly_use_re_validated_values() {
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
     }
@@ -1170,7 +1170,7 @@ async fn should_properly_use_input_values_as_output_values_if_re_validator_does_
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
     }
@@ -1238,7 +1238,7 @@ async fn should_respect_post_validation_config() {
         lax_2: String,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: String,
         lax_1: String,
@@ -1275,7 +1275,7 @@ async fn should_respect_post_validation_config() {
         |o| {
             o.post_validate(["lax", "lax_1"], |v| {
                 v.pre_validate(|ctx: IvoContext<DataInput, Data>, _| {
-                    let mut errors = PartialDataInputErrors::new();
+                    let mut errors = DataInputErrors::new();
 
                     if let Some(lax) = ctx.input().lax {
                         if lax == LAX_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS {
@@ -1308,7 +1308,7 @@ async fn should_respect_post_validation_config() {
                     ready(result)
                 })
                 .validate(|ctx: IvoContext<DataInput, Data>, _| {
-                    let mut errors = PartialDataInputErrors::new();
+                    let mut errors = DataInputErrors::new();
 
                     if let Some(lax) = ctx.input().lax {
                         if lax == LAX_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS {
@@ -1677,7 +1677,7 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
         lax_2: String,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: String,
         lax_1: String,

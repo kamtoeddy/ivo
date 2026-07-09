@@ -1,6 +1,8 @@
 use std::future::ready;
 
-use ivo::{IvoContext, IvoDefaultErrorTool, IvoField, IvoShared, IvoStruct, Schema};
+use ivo::{
+    IvoContext, IvoDefaultErrorTool, IvoField, IvoInputStruct, IvoShared, IvoStruct, Schema,
+};
 
 use crate::async_test_matrix;
 
@@ -23,7 +25,7 @@ async fn should_use_static_default_value_of_dependent_if_resolver_is_not_run_at_
         lax: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: i32,
     }
@@ -69,7 +71,7 @@ async fn should_use_computed_default_value_of_dependent_if_resolver_is_not_run_a
         lax: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: i32,
     }
@@ -143,7 +145,7 @@ async fn should_properly_run_dependent_resolver() {
         lax: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: i32,
     }
@@ -231,7 +233,7 @@ async fn should_properly_run_dependent_resolver_even_with_multiple_parents() {
         lax_1: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         lax_1: i32,
@@ -332,7 +334,7 @@ async fn should_properly_run_dependent_resolver_even_with_dependency_on_other_de
         lax_1: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         lax_1: i32,
@@ -455,7 +457,7 @@ async fn should_not_run_dependent_resolver_if_readonly_is_provided_and_value_is_
         lax: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: i32,
     }
@@ -576,7 +578,7 @@ async fn should_trigger_on_delete_handlers_with_static_default_values() {
         lax: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: i32,
     }
@@ -634,7 +636,7 @@ async fn should_trigger_on_delete_handlers_with_computed_default_values() {
         lax: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: i32,
     }
@@ -695,7 +697,7 @@ async fn should_trigger_on_success_handlers_if_resolver_is_run_at_creation() {
         lax: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: i32,
     }
@@ -767,7 +769,7 @@ async fn should_trigger_on_success_handlers_even_if_resolver_is_not_run_at_creat
         lax: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: i32,
     }
@@ -840,7 +842,7 @@ async fn should_trigger_on_success_handlers_if_resolver_is_run_during_updates() 
         lax: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: i32,
     }
@@ -913,7 +915,7 @@ async fn should_not_trigger_on_success_handlers_not_if_resolver_is_run_during_up
         lax_1: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         lax_1: i32,
@@ -991,7 +993,7 @@ async fn should_trigger_grouped_on_success_with_at_creation_if_resolved() {
         lax: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: i32,
     }
@@ -1063,7 +1065,7 @@ async fn should_trigger_grouped_on_success_with_at_creation_even_if_not_resolved
         lax: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: i32,
     }
@@ -1130,7 +1132,7 @@ async fn should_trigger_grouped_on_success_during_updates_if_resolved() {
         lax: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: i32,
     }
@@ -1207,7 +1209,7 @@ async fn should_not_trigger_grouped_on_success_during_updates_if_not_resolved_be
         lax: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: i32,
     }
@@ -1282,7 +1284,7 @@ async fn should_not_trigger_grouped_on_success_during_updates_if_not_resolved() 
         lax_1: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         lax_1: i32,

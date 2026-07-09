@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoContext, IvoField, IvoStruct, Schema};
+use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, Schema};
 
 use crate::async_test_matrix;
 
@@ -11,7 +11,7 @@ async fn should_trigger_on_success_handlers_at_creation_if_provided() {
         lax2: String,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: String,
         lax2: String,
@@ -94,7 +94,7 @@ async fn should_trigger_on_success_handlers_at_creation_even_if_not_provided() {
         lax2: String,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: String,
         lax2: String,
@@ -183,7 +183,7 @@ async fn should_trigger_on_success_handlers_at_creation_even_if_provided_and_ign
         lax2: String,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: String,
         lax2: String,
@@ -272,7 +272,7 @@ async fn should_trigger_on_success_handlers_during_updates_if_provided() {
         lax2: String,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: String,
         lax2: String,
@@ -366,7 +366,7 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_not_provided()
         lax2: String,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: String,
         lax2: String,
@@ -457,7 +457,7 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_i
         lax2: String,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: String,
         lax2: String,
@@ -551,7 +551,7 @@ async fn should_trigger_success_handlers_with_empty_fields_array_each_time_creat
         lax_1: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         lax_1: i32,
@@ -609,7 +609,7 @@ async fn should_trigger_success_handlers_with_empty_fields_array_each_time_updat
         lax_1: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         lax_1: i32,

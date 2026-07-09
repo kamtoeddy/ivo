@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoField, IvoStruct, IvoUpdateError, Schema};
+use ivo::{IvoField, IvoInputStruct, IvoStruct, IvoUpdateError, Schema};
 
 use crate::async_test_matrix;
 
@@ -13,7 +13,7 @@ async fn should_respect_the_ignore_update_rule() {
         required: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: String,
         required: i32,
@@ -123,7 +123,7 @@ async fn should_respect_the_readonly_rule() {
         required: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: String,
         required: i32,

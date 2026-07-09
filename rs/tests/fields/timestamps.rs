@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use ivo::{IvoDefaultErrorTool, IvoField, IvoStruct, Schema};
+use ivo::{IvoDefaultErrorTool, IvoField, IvoInputStruct, IvoStruct, Schema};
 
 use crate::async_test_matrix;
 
@@ -13,7 +13,7 @@ async fn should_respect_created_at_timestamp_with_default_name() {
         lax: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: i32,
     }
@@ -72,7 +72,7 @@ async fn should_respect_created_at_timestamp_with_custom_name() {
         lax: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: i32,
     }
@@ -131,7 +131,7 @@ async fn should_respect_updated_at_timestamp_with_default_name() {
         updated_at: Timestamp,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: i32,
     }
@@ -190,7 +190,7 @@ async fn should_respect_updated_at_timestamp_with_custom_name() {
         custom_updated_at: Timestamp,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: i32,
     }
@@ -248,7 +248,7 @@ async fn should_respect_optional_updated_at_timestamp_with_default_name() {
         updated_at: Option<Timestamp>,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: i32,
     }
@@ -312,7 +312,7 @@ async fn should_respect_optional_updated_at_timestamp_with_custom_name() {
         custom_updated_at: Option<Timestamp>,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: i32,
     }

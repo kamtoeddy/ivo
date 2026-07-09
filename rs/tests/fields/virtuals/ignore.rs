@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoContext, IvoField, IvoStruct, IvoUpdateError, Schema};
+use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, IvoUpdateError, Schema};
 
 use crate::async_test_matrix;
 
@@ -11,7 +11,7 @@ async fn should_respect_the_ignore_rule() {
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         virtual_field: String,
@@ -141,7 +141,7 @@ async fn should_respect_the_ignore_rule_with_alias() {
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         virtual_alias: String,
@@ -272,7 +272,7 @@ async fn should_respect_the_ignore_rule_with_alias_same_as_dependent() {
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         dependent: String,
         lax: i32,
@@ -403,7 +403,7 @@ async fn should_respect_the_ignore_init_rule() {
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         virtual_field: String,
@@ -538,7 +538,7 @@ async fn should_respect_the_ignore_init_rule_with_alias() {
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         virtual_alias: String,
@@ -674,7 +674,7 @@ async fn should_respect_the_ignore_init_rule_with_alias_same_as_dependent() {
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         dependent: String,
@@ -810,7 +810,7 @@ async fn should_respect_the_ignore_update_rule() {
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         virtual_field: String,
@@ -962,7 +962,7 @@ async fn should_respect_the_ignore_update_rule_with_alias() {
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         virtual_alias: String,
@@ -1115,7 +1115,7 @@ async fn should_respect_the_ignore_update_rule_with_alias_same_as_dependent() {
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         dependent: String,

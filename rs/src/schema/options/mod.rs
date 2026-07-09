@@ -4,7 +4,6 @@ mod post_validate;
 pub(crate) mod types;
 
 use crate::{
-    __private_types::types::IvoWithPartialErrorsStruct,
     schema::{
         fields::types::IntoDeleteHandler,
         options::types::{
@@ -13,14 +12,14 @@ use crate::{
         types::No,
         Yes,
     },
-    IvoErrorTool, IvoStruct,
+    IvoErrorTool, IvoInputStruct, IvoStruct,
 };
 use base::{SchemaOptions, SchemaOptionsBuilder};
 use on_success::{BuildableOnSuccess, OnSuccessOptionBuilder};
 use post_validate::{BuildablePostValidator, PostValidateOptionBuilder};
 
 pub trait BuildableSchemaOptions<
-    I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
+    I: IvoInputStruct<ErrorTool>,
     O: IvoStruct,
     CtxOptions,
     ErrorTool: IvoErrorTool,
@@ -35,7 +34,7 @@ impl<
         HasSuccess,
         HasIgnoreUpdate,
         HasRequired,
-        I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
+        I: IvoInputStruct<ErrorTool>,
         O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
@@ -69,7 +68,7 @@ impl<
         HasSuccess,
         HasIgnoreUpdate,
         HasRequired,
-        I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
+        I: IvoInputStruct<ErrorTool>,
         O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
@@ -222,7 +221,7 @@ impl<
         HasDelete,
         HasSuccess,
         HasRequired,
-        I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
+        I: IvoInputStruct<ErrorTool>,
         O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,

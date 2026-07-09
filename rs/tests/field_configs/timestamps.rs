@@ -1,4 +1,4 @@
-use ivo::{IvoDefaultErrorTool, IvoField, IvoStruct, Schema};
+use ivo::{IvoDefaultErrorTool, IvoField, IvoInputStruct, IvoStruct, Schema};
 use std::{future::ready, panic};
 
 #[test]
@@ -11,7 +11,7 @@ fn should_reject_if_created_at_is_enabled_with_default_name_but_missing_from_out
         id: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         _c: String,
     }
@@ -35,7 +35,7 @@ fn should_reject_if_created_at_is_enabled_with_custom_name_but_missing_from_outp
         id: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         _c: String,
     }
@@ -63,7 +63,7 @@ fn should_reject_if_created_at_is_enabled_with_default_name_and_is_provided_on_i
         created_at: String,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         created_at: String,
     }
@@ -88,7 +88,7 @@ fn should_reject_if_created_at_is_enabled_with_custom_name_and_is_provided_on_in
         custom_created_at: String,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         custom_created_at: String,
     }
@@ -113,7 +113,7 @@ fn should_allow_if_created_at_is_enabled_with_default_name_and_is_on_output_stru
         created_at: String,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         _c: String,
     }
@@ -139,7 +139,7 @@ fn should_allow_if_created_at_is_enabled_with_custom_name_and_is_on_output_struc
         custom_created_at: String,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         _c: String,
     }
@@ -170,7 +170,7 @@ fn should_reject_if_updated_at_is_enabled_with_default_name_but_missing_from_out
         id: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         _c: String,
     }
@@ -194,7 +194,7 @@ fn should_reject_if_updated_at_is_enabled_with_custom_name_but_missing_from_outp
         id: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         _c: String,
     }
@@ -222,7 +222,7 @@ fn should_reject_if_updated_at_is_enabled_with_default_name_and_is_provided_on_i
         updated_at: String,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         updated_at: String,
     }
@@ -247,7 +247,7 @@ fn should_reject_if_updated_at_is_enabled_with_custom_name_and_is_provided_on_in
         custom_updated_at: String,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         custom_updated_at: String,
     }
@@ -276,7 +276,7 @@ fn should_reject_if_optional_updated_at_is_enabled_with_default_name_and_is_prov
         updated_at: String,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         updated_at: String,
     }
@@ -302,7 +302,7 @@ fn should_reject_if_optional_updated_at_is_enabled_with_custom_name_and_is_provi
         custom_updated_at: String,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         custom_updated_at: String,
     }
@@ -327,7 +327,7 @@ fn should_allow_if_updated_at_is_enabled_with_default_name_and_is_on_output_stru
         updated_at: String,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         _c: String,
     }
@@ -353,7 +353,7 @@ fn should_allow_if_updated_at_is_enabled_with_custom_name_and_is_on_output_struc
         custom_updated_at: String,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         _c: String,
     }

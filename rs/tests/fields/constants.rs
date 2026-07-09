@@ -1,6 +1,8 @@
 use std::future::ready;
 
-use ivo::{IvoContext, IvoDefaultErrorTool, IvoField, IvoShared, IvoStruct, Schema};
+use ivo::{
+    IvoContext, IvoDefaultErrorTool, IvoField, IvoInputStruct, IvoShared, IvoStruct, Schema,
+};
 
 use crate::async_test_matrix;
 
@@ -11,7 +13,7 @@ async fn should_respect_constants_with_static_values() {
         lax: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: i32,
     }
@@ -74,7 +76,7 @@ async fn should_respect_constants_with_computed_values() {
         lax: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: i32,
     }
@@ -140,7 +142,7 @@ async fn should_trigger_on_delete_handlers_with_static_values() {
         lax: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: i32,
     }
@@ -186,7 +188,7 @@ async fn should_trigger_on_delete_handlers_with_computed_values() {
         lax: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: i32,
     }
@@ -233,7 +235,7 @@ async fn should_trigger_on_success_handlers_with_static_values() {
         lax: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: i32,
     }
@@ -289,7 +291,7 @@ async fn should_trigger_on_success_handlers_with_computed_values() {
         lax: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: i32,
     }

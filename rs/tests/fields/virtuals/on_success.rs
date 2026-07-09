@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoContext, IvoField, IvoStruct, Schema};
+use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, Schema};
 
 use crate::async_test_matrix;
 
@@ -11,7 +11,7 @@ async fn should_trigger_on_success_handlers_if_virtual_is_provided_at_creation()
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         virtual_field: String,
@@ -94,7 +94,7 @@ async fn should_trigger_on_success_handlers_if_virtual_is_provided_at_creation_w
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         virtual_alias: String,
@@ -180,7 +180,7 @@ async fn should_trigger_on_success_handlers_if_virtual_is_provided_at_creation_w
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         dependent: String,
@@ -264,7 +264,7 @@ async fn should_trigger_on_success_handlers_if_virtual_is_provided_during_update
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         virtual_field: String,
@@ -353,7 +353,7 @@ async fn should_trigger_on_success_handlers_if_virtual_is_provided_during_update
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         virtual_alias: String,
@@ -444,7 +444,7 @@ async fn should_trigger_on_success_handlers_if_virtual_is_provided_during_update
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         dependent: String,
@@ -534,7 +534,7 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_not_provided() {
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         virtual_field: String,
@@ -663,7 +663,7 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_not_provided_with_
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         virtual_alias: String,
@@ -794,7 +794,7 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_not_provided_with_
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         dependent: String,
         lax: i32,
@@ -926,7 +926,7 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         virtual_field: String,
@@ -1059,7 +1059,7 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         virtual_alias: String,
@@ -1193,7 +1193,7 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         dependent: String,
         lax: i32,
@@ -1327,7 +1327,7 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         virtual_field: String,
@@ -1435,7 +1435,7 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         virtual_alias: String,
@@ -1544,7 +1544,7 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         dependent: String,
         lax: i32,
@@ -1653,7 +1653,7 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         virtual_field: String,
@@ -1743,7 +1743,7 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         virtual_alias: String,
@@ -1834,7 +1834,7 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         dependent: String,
         lax: i32,
@@ -1926,7 +1926,7 @@ async fn should_trigger_grouped_on_success_handlers_if_virtual_is_provided_at_cr
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         virtual_field: String,
@@ -2009,7 +2009,7 @@ async fn should_trigger_grouped_on_success_handlers_if_virtual_is_provided_at_cr
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         virtual_alias: String,
@@ -2094,7 +2094,7 @@ async fn should_trigger_grouped_on_success_handlers_if_virtual_is_provided_at_cr
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         dependent: String,
         lax: i32,
@@ -2178,7 +2178,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_not_provid
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         virtual_field: String,
@@ -2284,7 +2284,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_not_provid
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         virtual_alias: String,
@@ -2392,7 +2392,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_not_provid
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         dependent: String,
         lax: i32,
@@ -2500,7 +2500,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         virtual_field: String,
@@ -2609,7 +2609,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         virtual_alias: String,
@@ -2719,7 +2719,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         dependent: String,
@@ -2829,7 +2829,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         virtual_field: String,
@@ -2913,7 +2913,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         virtual_alias: String,
@@ -2998,7 +2998,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         dependent: String,
         lax: i32,
@@ -3082,7 +3082,7 @@ async fn should_trigger_grouped_on_success_handlers_if_virtual_is_provided_durin
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         virtual_field: String,
@@ -3169,7 +3169,7 @@ async fn should_trigger_grouped_on_success_handlers_if_virtual_is_provided_durin
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         virtual_alias: String,
@@ -3258,7 +3258,7 @@ async fn should_trigger_grouped_on_success_handlers_if_virtual_is_provided_durin
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         dependent: String,
@@ -3347,7 +3347,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_not_provid
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         virtual_field: String,
@@ -3435,7 +3435,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_not_provid
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         virtual_alias: String,
@@ -3525,7 +3525,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_not_provid
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         dependent: String,
         lax: i32,
@@ -3615,7 +3615,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         virtual_field: String,
@@ -3705,7 +3705,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
         virtual_alias: String,
@@ -3796,7 +3796,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         dependent: String,
         lax: i32,

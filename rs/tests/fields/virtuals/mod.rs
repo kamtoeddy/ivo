@@ -1,4 +1,4 @@
-use ivo::{IvoContext, IvoField, IvoStruct, IvoUpdateError, Schema};
+use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, IvoUpdateError, Schema};
 use std::{future::ready, ops::RangeInclusive, panic};
 
 use crate::async_test_matrix;
@@ -30,7 +30,7 @@ async fn should_reject_updates_if_no_value_has_changed() {
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         virtual_field: i32,
     }
@@ -81,7 +81,7 @@ async fn should_reject_updates_if_no_value_has_changed_with_alias() {
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         virtual_alias: i32,
     }
@@ -134,7 +134,7 @@ async fn should_reject_updates_if_no_value_has_changed_with_alias_same_as_depend
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         dependent: i32,
     }
@@ -190,7 +190,7 @@ async fn should_respect_the_required_rule() {
         lax: String,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: String,
         virtual_field: String,
@@ -318,7 +318,7 @@ async fn should_respect_the_required_rule_with_alias() {
         lax: String,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: String,
         virtual_alias: String,
@@ -447,7 +447,7 @@ async fn should_respect_the_required_rule_with_alias_same_as_dependent() {
         lax: String,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         dependent: String,
         lax: String,
@@ -577,7 +577,7 @@ async fn should_not_create_if_primary_validation_fails() {
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         virtual_field: String,
     }
@@ -669,7 +669,7 @@ async fn should_not_create_if_primary_validation_fails_with_alias() {
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         virtual_alias: String,
     }
@@ -763,7 +763,7 @@ async fn should_not_create_if_primary_validation_fails_with_alias_same_as_depend
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         dependent: String,
     }
@@ -857,7 +857,7 @@ async fn should_not_update_if_primary_validation_fails() {
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         virtual_field: i32,
     }
@@ -959,7 +959,7 @@ async fn should_not_update_if_primary_validation_fails_with_alias() {
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         virtual_alias: i32,
     }
@@ -1063,7 +1063,7 @@ async fn should_not_update_if_primary_validation_fails_with_alias_same_as_depend
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         dependent: i32,
     }
@@ -1165,7 +1165,7 @@ async fn should_properly_use_input_values_as_output_values_if_validator_does_not
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         virtual_field: i32,
     }
@@ -1247,7 +1247,7 @@ async fn should_properly_use_input_values_as_output_values_if_validator_does_not
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         virtual_alias: i32,
     }
@@ -1331,7 +1331,7 @@ async fn should_properly_use_input_values_as_output_values_if_validator_does_not
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         dependent: i32,
     }
@@ -1416,7 +1416,7 @@ async fn should_properly_handle_grouped_required_errors() {
         lax_2: String,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         virtual_field: String,
         lax_1: String,
@@ -1461,7 +1461,7 @@ async fn should_properly_handle_grouped_required_errors() {
             o.required(
                 ["virtual_field", "lax_1"],
                 |ctx: IvoContext<DataInput, Data>, _| {
-                    let mut errors = PartialDataInputErrors::new();
+                    let mut errors = DataInputErrors::new();
 
                     if let Some(lax) = ctx.input().lax_2 {
                         if lax == IGNORE_WITH_SAME_ERROR {
@@ -1610,7 +1610,7 @@ async fn should_properly_handle_grouped_required_errors_with_alias() {
         lax_2: String,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         virtual_alias: String,
         lax_1: String,
@@ -1657,7 +1657,7 @@ async fn should_properly_handle_grouped_required_errors_with_alias() {
             o.required(
                 ["virtual_field", "lax_1"],
                 |ctx: IvoContext<DataInput, Data>, _| {
-                    let mut errors = PartialDataInputErrors::new();
+                    let mut errors = DataInputErrors::new();
 
                     if let Some(lax) = ctx.input().lax_2 {
                         if lax == IGNORE_WITH_SAME_ERROR {
@@ -1806,7 +1806,7 @@ async fn should_properly_handle_grouped_required_errors_with_alias_same_as_depen
         lax_2: String,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         dependent: String,
         lax_1: String,
@@ -1853,7 +1853,7 @@ async fn should_properly_handle_grouped_required_errors_with_alias_same_as_depen
             o.required(
                 ["virtual_field", "lax_1"],
                 |ctx: IvoContext<DataInput, Data>, _| {
-                    let mut errors = PartialDataInputErrors::new();
+                    let mut errors = DataInputErrors::new();
 
                     if let Some(lax) = ctx.input().lax_2 {
                         if lax == IGNORE_WITH_SAME_ERROR {
@@ -2002,7 +2002,7 @@ async fn should_not_create_if_re_validation_fails() {
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         virtual_field: String,
     }
@@ -2107,7 +2107,7 @@ async fn should_not_create_if_re_validation_fails_with_alias() {
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         virtual_alias: String,
     }
@@ -2213,7 +2213,7 @@ async fn should_not_create_if_re_validation_fails_with_alias_same_as_dependent()
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         dependent: String,
     }
@@ -2319,7 +2319,7 @@ async fn should_not_update_if_re_validation_fails() {
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         virtual_field: i32,
     }
@@ -2436,7 +2436,7 @@ async fn should_not_update_if_re_validation_fails_with_alias() {
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         virtual_alias: i32,
     }
@@ -2554,7 +2554,7 @@ async fn should_not_update_if_re_validation_fails_with_alias_same_as_dependent()
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         dependent: i32,
     }
@@ -2672,7 +2672,7 @@ async fn should_properly_use_re_validated_values() {
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         virtual_field: i32,
     }
@@ -2760,7 +2760,7 @@ async fn should_properly_use_re_validated_values_with_alias() {
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         virtual_alias: i32,
     }
@@ -2849,7 +2849,7 @@ async fn should_properly_use_re_validated_values_with_alias_same_as_dependent() 
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         dependent: i32,
     }
@@ -2939,7 +2939,7 @@ async fn should_properly_use_input_values_as_output_values_if_re_validator_does_
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         virtual_field: i32,
     }
@@ -3028,7 +3028,7 @@ async fn should_properly_use_input_values_as_output_values_if_re_validator_does_
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         virtual_alias: i32,
     }
@@ -3118,7 +3118,7 @@ async fn should_properly_use_input_values_as_output_values_if_re_validator_does_
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         dependent: i32,
     }
@@ -3209,7 +3209,7 @@ async fn should_respect_post_validation_config() {
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         virtual_field: String,
         virtual_field_1: String,
@@ -3256,7 +3256,7 @@ async fn should_respect_post_validation_config() {
         |o| {
             o.post_validate(["virtual_field", "virtual_field_1"], |v| {
                 v.pre_validate(|ctx: IvoContext<DataInput, Data>, _| {
-                    let mut errors = PartialDataInputErrors::new();
+                    let mut errors = DataInputErrors::new();
 
                     if let Some(virtual_field) = ctx.input().virtual_field {
                         if virtual_field == VIRTUAL_FIELD_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS
@@ -3298,7 +3298,7 @@ async fn should_respect_post_validation_config() {
                     ready(result)
                 })
                 .validate(|ctx: IvoContext<DataInput, Data>, _| {
-                    let mut errors = PartialDataInputErrors::new();
+                    let mut errors = DataInputErrors::new();
 
                     if let Some(virtual_field) = ctx.input().virtual_field {
                         if virtual_field == VIRTUAL_FIELD_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS
@@ -3632,7 +3632,7 @@ async fn should_respect_post_validation_config_with_alias() {
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         virtual_alias: String,
         virtual_field_1: String,
@@ -3681,7 +3681,7 @@ async fn should_respect_post_validation_config_with_alias() {
         |o| {
             o.post_validate(["virtual_field", "virtual_field_1"], |v| {
                 v.pre_validate(|ctx: IvoContext<DataInput, Data>, _| {
-                    let mut errors = PartialDataInputErrors::new();
+                    let mut errors = DataInputErrors::new();
 
                     if let Some(virtual_alias) = ctx.input().virtual_alias {
                         if virtual_alias == VIRTUAL_FIELD_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS
@@ -3723,7 +3723,7 @@ async fn should_respect_post_validation_config_with_alias() {
                     ready(result)
                 })
                 .validate(|ctx: IvoContext<DataInput, Data>, _| {
-                    let mut errors = PartialDataInputErrors::new();
+                    let mut errors = DataInputErrors::new();
 
                     if let Some(virtual_alias) = ctx.input().virtual_alias {
                         if virtual_alias == VIRTUAL_FIELD_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS
@@ -4057,7 +4057,7 @@ async fn should_respect_post_validation_config_with_alias_same_as_dependent() {
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         dependent: String,
         virtual_field_1: String,
@@ -4106,7 +4106,7 @@ async fn should_respect_post_validation_config_with_alias_same_as_dependent() {
         |o| {
             o.post_validate(["virtual_field", "virtual_field_1"], |v| {
                 v.pre_validate(|ctx: IvoContext<DataInput, Data>, _| {
-                    let mut errors = PartialDataInputErrors::new();
+                    let mut errors = DataInputErrors::new();
 
                     if let Some(dependent) = ctx.input().dependent {
                         if dependent == VIRTUAL_FIELD_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS {
@@ -4147,7 +4147,7 @@ async fn should_respect_post_validation_config_with_alias_same_as_dependent() {
                     ready(result)
                 })
                 .validate(|ctx: IvoContext<DataInput, Data>, _| {
-                    let mut errors = PartialDataInputErrors::new();
+                    let mut errors = DataInputErrors::new();
 
                     if let Some(dependent) = ctx.input().dependent {
                         if dependent == VIRTUAL_FIELD_POST_VALIDATION_FAIL_WITH_UNRELATED_ERRORS {
@@ -4480,7 +4480,7 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
         dependent: String,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         virtual_field: String,
         virtual_field_1: String,
@@ -4662,7 +4662,7 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
         dependent: String,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         virtual_alias: String,
         virtual_field_1: String,
@@ -4846,7 +4846,7 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
         dependent: String,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         dependent: String,
         virtual_field_1: String,
@@ -5029,7 +5029,7 @@ async fn should_respect_sanitizers_if_provided() {
         dependent: String,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         virtual_field: String,
     }
@@ -5133,7 +5133,7 @@ async fn should_respect_sanitizers_if_provided_with_alias() {
         dependent: String,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         virtual_alias: String,
     }
@@ -5238,7 +5238,7 @@ async fn should_respect_sanitizers_if_provided_with_alias_same_as_dependent() {
         dependent: String,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         dependent: String,
     }

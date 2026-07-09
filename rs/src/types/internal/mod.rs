@@ -7,7 +7,7 @@ pub use error_tool::{
 };
 
 pub use types::{
-    IvoFieldValue, IvoPartialStructMethods, IvoRwLock, IvoStruct, IvoStructMethods,
+    IvoFieldValue, IvoInputStruct, IvoPartialStructMethods, IvoRwLock, IvoStruct, IvoStructMethods,
     IvoWithPartialStruct, Partial, PostValidatorError, PostValidatorResponse, ValidatorError,
     ValidatorResponse,
 };

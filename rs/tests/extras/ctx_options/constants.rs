@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoCtxOptions, IvoField, IvoRwCtxOptions, IvoStruct, Schema};
+use ivo::{IvoCtxOptions, IvoField, IvoInputStruct, IvoRwCtxOptions, IvoStruct, Schema};
 
 use crate::async_test_matrix;
 
@@ -27,7 +27,7 @@ async fn should_properly_update_ctx_options_in_constant_value_resolver_and_provi
         lax: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: i32,
     }

@@ -1,4 +1,4 @@
-use ivo::{IvoDefaultErrorTool, IvoField, IvoStruct, Schema};
+use ivo::{IvoDefaultErrorTool, IvoField, IvoInputStruct, IvoStruct, Schema};
 use std::{future::ready, panic};
 
 #[test]
@@ -14,7 +14,7 @@ fn should_reject_if_parent_array_is_empty() {
         updated_at: String,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: String,
         required: String,
@@ -55,7 +55,7 @@ fn should_reject_dependency_of_created_at_field_with_default_name() {
         updated_at: String,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: String,
         required: String,
@@ -101,7 +101,7 @@ fn should_reject_dependency_of_created_at_field_with_custom_name() {
         updated_at: String,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: String,
         required: String,
@@ -147,7 +147,7 @@ fn should_reject_dependency_of_updated_at_field_with_default_name() {
         updated_at: String,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: String,
         required: String,
@@ -189,7 +189,7 @@ fn should_reject_dependency_of_updated_at_field_with_custom_name() {
         custom_updated_at: String,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: String,
         required: String,
@@ -233,7 +233,7 @@ fn should_reject_if_any_parent_field_provided_does_not_belong_on_schema() {
         updated_at: String,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: String,
         required: String,
@@ -270,7 +270,7 @@ fn should_reject_if_any_parent_field_name_is_same_as_dependent_field_name() {
         updated_at: String,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: String,
         required: String,
@@ -309,7 +309,7 @@ fn should_reject_if_duplicate_parent_fields_are_provided() {
         updated_at: String,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: String,
         required: String,
@@ -347,7 +347,7 @@ fn should_reject_dependency_of_constant_fields() {
         updated_at: String,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: String,
         required: String,
@@ -387,7 +387,7 @@ fn should_reject_any_redundant_dependencies() {
         d: String,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         c: String,
         d: String,
@@ -432,7 +432,7 @@ fn should_reject_any_deeply_redundant_dependencies() {
         d: String,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         d: String,
     }
@@ -479,7 +479,7 @@ fn should_reject_any_circular_dependencies() {
         c: String,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         c: String,
     }
@@ -517,7 +517,7 @@ fn should_reject_any_deeply_circular_dependencies() {
         d: String,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         d: String,
     }
@@ -561,7 +561,7 @@ fn should_allow_dependency_on_normal_lax_or_required_fields() {
         updated_at: String,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: String,
         required: String,
@@ -648,7 +648,7 @@ fn should_allow_dependency_on_other_dependent_fields() {
         updated_at: String,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: String,
         required: String,
@@ -726,7 +726,7 @@ fn should_allow_dependency_on_virtual_fields() {
         updated_at: String,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         lax: String,
         required: String,
@@ -881,7 +881,7 @@ fn should_allow_dependency_on_virtual_fields_with_aliases() {
             updated_at: String,
         }
 
-        #[derive(Debug, Clone, PartialEq, IvoStruct)]
+        #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
         struct DataInput {
             lax: String,
             required: String,
@@ -925,7 +925,7 @@ fn should_allow_dependency_on_virtual_fields_with_aliases() {
             updated_at: String,
         }
 
-        #[derive(Debug, Clone, PartialEq, IvoStruct)]
+        #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
         struct DataInput {
             lax: String,
             dependent: String,

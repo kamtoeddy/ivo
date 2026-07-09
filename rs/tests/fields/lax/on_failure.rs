@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoContext, IvoField, IvoStruct, IvoUpdateError, Schema};
+use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, IvoUpdateError, Schema};
 
 use crate::async_test_matrix;
 
@@ -10,7 +10,7 @@ async fn should_trigger_on_failure_handlers_at_creation() {
         lax: String,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: String,
     }
@@ -75,7 +75,7 @@ async fn should_trigger_on_failure_handlers_at_creation_even_if_provided_and_ign
         lax2: String,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: String,
         lax2: String,
@@ -157,7 +157,7 @@ async fn should_trigger_on_failure_handlers_during_updates() {
         lax: String,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: String,
     }
@@ -226,7 +226,7 @@ async fn should_trigger_on_failure_handlers_during_updates_with_unchanged_values
         lax: String,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: String,
     }
@@ -300,7 +300,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
         lax2: String,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: String,
         lax2: String,

@@ -1,14 +1,14 @@
 use std::{collections::HashSet, fmt::Debug};
 
 use crate::{
-    __private_types::{types::IvoWithPartialErrorsStruct, FieldInfo},
+    __private_types::{FieldInfo, IvoInputStruct},
     schema::fields::base::{FieldType, InternalFieldConfig},
     IvoErrorTool, IvoStruct, Schema,
 };
 
 pub(super) struct FieldInfoCollection<
     'a,
-    I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
+    I: IvoInputStruct<ErrorTool>,
     O: IvoStruct,
     CtxOptions: Clone,
     Timestamp: Clone + Debug + Send + Sync + 'static,
@@ -23,7 +23,7 @@ pub(super) struct FieldInfoCollection<
 
 impl<
         'a,
-        I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
+        I: IvoInputStruct<ErrorTool>,
         O: IvoStruct,
         CtxOptions: Clone,
         Timestamp: Clone + Debug + Send + Sync + 'static,
@@ -164,7 +164,7 @@ impl<
 
 impl<
         'a,
-        I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
+        I: IvoInputStruct<ErrorTool>,
         O: IvoStruct,
         CtxOptions: Clone,
         ErrorTool: IvoErrorTool,

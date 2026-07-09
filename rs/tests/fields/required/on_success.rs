@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoContext, IvoField, IvoStruct, Schema};
+use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, Schema};
 
 use crate::async_test_matrix;
 
@@ -11,7 +11,7 @@ async fn should_trigger_on_success_handlers_at_creation() {
         required2: String,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         required: String,
         required2: String,
@@ -90,7 +90,7 @@ async fn should_trigger_on_success_handlers_during_updates_if_provided() {
         required2: String,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         required: String,
         required2: String,
@@ -181,7 +181,7 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_not_provided()
         required2: String,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         required: String,
         required2: String,
@@ -269,7 +269,7 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_i
         required2: String,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         required: String,
         required2: String,
@@ -360,7 +360,7 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_i
         required2: String,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         required: String,
         required2: String,
@@ -454,7 +454,7 @@ async fn should_trigger_success_handlers_with_empty_fields_array_each_time_creat
         required_1: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         required: i32,
         required_1: i32,
@@ -524,7 +524,7 @@ async fn should_trigger_success_handlers_with_empty_fields_array_each_time_updat
         required_1: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    #[derive(Debug, Clone, PartialEq, IvoInputStruct)]
     struct DataInput {
         required: i32,
         required_1: i32,

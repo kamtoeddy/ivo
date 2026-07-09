@@ -2,7 +2,7 @@ pub mod fields;
 pub mod options;
 mod types;
 
-use crate::__private_types::types::IvoWithPartialErrorsStruct;
+use crate::__private_types::IvoInputStruct;
 use crate::types::internal::{IvoDefaultErrorTool, IvoErrorTool, IvoStruct};
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
@@ -27,7 +27,7 @@ const STYLE_RESET: &str = "\x1b[0m";
 const FONT_BOLD: &str = "\x1b[1m";
 
 pub struct Schema<
-    I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
+    I: IvoInputStruct<ErrorTool>,
     O: IvoStruct = I,
     CtxOptions: Clone = Option<()>,
     Timestamp: Clone + Debug + Send + Sync + 'static = (),
@@ -39,7 +39,7 @@ pub struct Schema<
 }
 
 impl<
-        I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
+        I: IvoInputStruct<ErrorTool>,
         O: IvoStruct,
         CtxOptions: Clone,
         Timestamp: Clone + Debug + Send + Sync + 'static,

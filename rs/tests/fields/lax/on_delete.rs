@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoField, IvoShared, IvoStruct, Schema};
+use ivo::{IvoField, IvoInputStruct, IvoShared, IvoStruct, Schema};
 
 use crate::async_test_matrix;
 
@@ -10,7 +10,7 @@ async fn should_trigger_on_delete_handlers() {
         lax: String,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: String,
     }

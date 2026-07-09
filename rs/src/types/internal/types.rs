@@ -24,6 +24,11 @@ pub trait IvoStruct:
     }
 }
 
+pub trait IvoInputStruct<ErrorTool: IvoErrorTool>:
+    IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>
+{
+}
+
 pub trait IvoWithPartialStruct {
     type Partial: PartialEq + Debug + Default + Send + Sync + Clone + IvoPartialStructMethods;
 }
@@ -154,7 +159,5 @@ pub type ValidatorError<FieldErrorMetadata> = (String, Option<FieldErrorMetadata
 pub type PostValidatorError<FieldErrorMetadata = DefaultFieldErrorMetadata> =
     HashMap<String, ValidatorError<FieldErrorMetadata>>;
 
-pub type PostValidatorResponse<
-    I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
-    ErrorTool: IvoErrorTool,
-> = Result<Option<I::Partial>, I::PartialErrors>;
+pub type PostValidatorResponse<I: IvoInputStruct<ErrorTool>, ErrorTool: IvoErrorTool> =
+    Result<Option<I::Partial>, I::PartialErrors>;

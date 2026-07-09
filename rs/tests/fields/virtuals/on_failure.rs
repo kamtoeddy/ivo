@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoContext, IvoField, IvoStruct, IvoUpdateError, Schema};
+use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, IvoUpdateError, Schema};
 
 use crate::async_test_matrix;
 
@@ -10,7 +10,7 @@ async fn should_trigger_on_failure_handlers_at_creation() {
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         virtual_field: String,
     }
@@ -87,7 +87,7 @@ async fn should_trigger_on_failure_handlers_at_creation_with_alias() {
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         virtual_alias: String,
     }
@@ -166,7 +166,7 @@ async fn should_trigger_on_failure_handlers_at_creation_with_alias_same_as_depen
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         dependent: String,
     }
@@ -244,7 +244,7 @@ async fn should_trigger_on_failure_handlers_during_updates() {
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         virtual_field: String,
     }
@@ -325,7 +325,7 @@ async fn should_trigger_on_failure_handlers_during_updates_with_alias() {
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         virtual_alias: String,
     }
@@ -407,7 +407,7 @@ async fn should_trigger_on_failure_handlers_during_updates_with_alias_same_as_de
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         dependent: String,
     }
@@ -490,7 +490,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         virtual_field: String,
         virtual_field2: String,
@@ -584,7 +584,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         virtual_alias: String,
         virtual_field2: String,
@@ -679,7 +679,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         dependent: String,
         virtual_field2: String,
@@ -774,7 +774,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         virtual_field: String,
         virtual_field2: String,
@@ -871,7 +871,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         virtual_alias: String,
         virtual_field2: String,
@@ -969,7 +969,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         dependent: String,
         virtual_field2: String,
@@ -1067,7 +1067,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         virtual_field: String,
         virtual_field2: String,
@@ -1161,7 +1161,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         virtual_alias: String,
         virtual_field2: String,
@@ -1256,7 +1256,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         dependent: String,
         virtual_field2: String,
@@ -1351,7 +1351,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         virtual_field: String,
         virtual_field2: String,
@@ -1450,7 +1450,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         virtual_alias: String,
         virtual_field2: String,
@@ -1550,7 +1550,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         dependent: String,
         virtual_field2: String,

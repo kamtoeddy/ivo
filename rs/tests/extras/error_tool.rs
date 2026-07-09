@@ -1,7 +1,9 @@
 use std::{collections::HashMap, future::ready, sync::LazyLock};
 
 use crate::async_test_matrix;
-use ivo::{IvoErrorTool, IvoField, IvoFieldError, IvoStruct, IvoUpdateError, Model, Schema};
+use ivo::{
+    IvoErrorTool, IvoField, IvoFieldError, IvoInputStruct, IvoStruct, IvoUpdateError, Model, Schema,
+};
 
 async fn should_respect_custom_error_tool() {
     let r = PLACE_MODEL
@@ -154,7 +156,7 @@ struct Coodinates {
     lon: f64,
 }
 
-#[derive(Debug, Clone, IvoStruct)]
+#[derive(Debug, Clone, IvoInputStruct)]
 struct Place {
     coordinates: Coodinates,
 }

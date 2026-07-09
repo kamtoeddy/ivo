@@ -1,7 +1,8 @@
 use std::future::ready;
 
 use ivo::{
-    IvoContext, IvoCtxOptions, IvoField, IvoRwCtxOptions, IvoStruct, IvoUpdateError, Schema,
+    IvoContext, IvoCtxOptions, IvoField, IvoInputStruct, IvoRwCtxOptions, IvoStruct,
+    IvoUpdateError, Schema,
 };
 
 use crate::async_test_matrix;
@@ -42,7 +43,7 @@ async fn should_properly_update_ctx_options_in_required_resolver_and_provide_tho
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         virtual_field: i32,
         virtual_field_1: i32,
@@ -112,7 +113,7 @@ async fn should_properly_update_ctx_options_in_required_resolver_and_provide_tho
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         virtual_field: i32,
         virtual_field_1: i32,
@@ -196,7 +197,7 @@ async fn should_properly_update_ctx_options_in_ignore_update_resolver_and_provid
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         virtual_field: i32,
     }
@@ -283,7 +284,7 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
         dependent: String,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         virtual_field: String,
     }
@@ -367,7 +368,7 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
         dependent: String,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         virtual_field: String,
     }
@@ -462,7 +463,7 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
         dependent: String,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         virtual_field: String,
     }
@@ -547,7 +548,7 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
         dependent: String,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         virtual_field: String,
     }
@@ -643,7 +644,7 @@ async fn should_properly_update_ctx_options_in_sanitizers_and_provide_those_upda
         dependent: String,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         virtual_field: String,
     }
@@ -735,7 +736,7 @@ async fn should_properly_update_ctx_options_in_sanitizers_and_provide_those_upda
         dependent: String,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         virtual_field: String,
     }
@@ -834,7 +835,7 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         virtual_field: i32,
         virtual_field_1: i32,
@@ -922,7 +923,7 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
         dependent: i32,
     }
 
-    #[derive(Debug, Clone, IvoStruct)]
+    #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         virtual_field: i32,
         virtual_field_1: i32,

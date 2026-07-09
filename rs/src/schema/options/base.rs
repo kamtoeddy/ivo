@@ -2,10 +2,10 @@
 
 use std::marker::PhantomData;
 
+use crate::__private_types::IvoInputStruct;
 use crate::schema::options::types::RequiredOptionConfig;
 use crate::types::internal::IvoStruct;
 use crate::{
-    __private_types::types::IvoWithPartialErrorsStruct,
     schema::{
         options::types::{IgnoreUpdateOptionResolver, OnSuccessConfig, PostValidationConfig},
         types::DeleteHandler,
@@ -15,7 +15,7 @@ use crate::{
 };
 
 pub struct SchemaOptions<
-    I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
+    I: IvoInputStruct<ErrorTool>,
     O: IvoStruct,
     CtxOptions,
     ErrorTool: IvoErrorTool,
@@ -27,12 +27,8 @@ pub struct SchemaOptions<
     pub required: Option<Vec<RequiredOptionConfig<I, O, CtxOptions, ErrorTool>>>,
 }
 
-impl<
-        I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
-        O: IvoStruct,
-        CtxOptions,
-        ErrorTool: IvoErrorTool,
-    > SchemaOptions<I, O, CtxOptions, ErrorTool>
+impl<I: IvoInputStruct<ErrorTool>, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool>
+    SchemaOptions<I, O, CtxOptions, ErrorTool>
 {
     pub const fn new() -> SchemaOptionsBuilder<I, O, CtxOptions, ErrorTool> {
         SchemaOptionsBuilder::new()
@@ -40,7 +36,7 @@ impl<
 }
 
 pub struct SchemaOptionsBuilder<
-    I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
+    I: IvoInputStruct<ErrorTool>,
     O: IvoStruct,
     CtxOptions,
     ErrorTool: IvoErrorTool,
@@ -69,7 +65,7 @@ impl<
         HasSuccess,
         HasIgnoreUpdate,
         HasRequired,
-        I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
+        I: IvoInputStruct<ErrorTool>,
         O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
@@ -125,7 +121,7 @@ impl<
         HasSuccess,
         HasIgnoreUpdate,
         HasRequired,
-        I: IvoStruct + IvoWithPartialErrorsStruct<ErrorTool::FieldMetadata>,
+        I: IvoInputStruct<ErrorTool>,
         O: IvoStruct,
         CtxOptions,
         ErrorTool: IvoErrorTool,
