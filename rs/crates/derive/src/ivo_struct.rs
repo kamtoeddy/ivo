@@ -71,7 +71,7 @@ pub fn generate_ivo_struct_impls<T: ToTokens>(
                 }
             }
 
-            fn ivo_internal_get_updates_from_partial(&self, updates: &Self::Partial) -> std::option::Option<Self::Partial> {
+            fn ivo_internal_get_updates_from_partial(&self, updates: &Self::Partial) -> Option<Self::Partial> {
                 let mut partial_output = Self::Partial::default();
                 let mut has_updated_fields = false;
 
@@ -112,7 +112,7 @@ pub fn generate_ivo_input_struct_impls(
         let field_vis = &field.vis;
 
         quote! {
-            #field_vis #field_name: std::option::Option<(String, std::option::Option<FieldErrorMetadata>)>,
+            #field_vis #field_name: Option<(String, Option<FieldErrorMetadata>)>,
         }
     });
 
@@ -147,20 +147,27 @@ pub fn generate_ivo_input_struct_impls(
     let construct_builder_methods_of_partial_errors_struct = fields.iter().map(|field| {
         let field_name = &field.ident;
         let field_name_str = field_name.as_ref().unwrap().to_string();
-        let add_method_name = format_ident!("set_{field_name_str}");
-        let remove_method_name = format_ident!("unset_{field_name_str}");
+        let set_method_name = format_ident!("set_{field_name_str}");
+        let unset_method_name = format_ident!("unset_{field_name_str}");
 
         quote! {
             impl <FieldErrorMetadata: Send + Sync> #partial_errors_struct_name<FieldErrorMetadata> {
                 #[inline(always)]
-                #vis fn #add_method_name(&mut self, reason: &str, metadata: std::option::Option<FieldErrorMetadata>) -> &mut Self {
+                #vis fn #field_name(mut self, reason: &str, metadata: Option<FieldErrorMetadata>) -> Self {
                     self.#field_name = Some((reason.to_string(), metadata));
 
                     self
                 }
 
                 #[inline(always)]
-                #vis fn #remove_method_name(&mut self) -> &mut Self {
+                #vis fn #set_method_name(&mut self, reason: &str, metadata: Option<FieldErrorMetadata>) -> &mut Self {
+                    self.#field_name = Some((reason.to_string(), metadata));
+
+                    self
+                }
+
+                #[inline(always)]
+                #vis fn #unset_method_name(&mut self) -> &mut Self {
                     self.#field_name = None;
 
                     self
@@ -187,7 +194,7 @@ pub fn generate_ivo_input_struct_impls(
             /// This is a utility method used to wrap the partial struct into an option.
             ///
             /// If every field has as value None, None is return, otherwise Some(self) is returned
-            #vis fn into_option(self) -> std::option::Option<Self> {
+            #vis fn into_option(self) -> Option<Self> {
                 if self.is_empty() {
                     None
                 } else {
@@ -209,7 +216,7 @@ pub fn generate_ivo_input_struct_impls(
         }
 
         impl <FieldErrorMetadata: Send + Sync> ::ivo::__private_types::types::IvoPartialErrorsStructMethods<FieldErrorMetadata> for #partial_errors_struct_name<FieldErrorMetadata> {
-            fn ivo_internal_enumerate(self) -> Vec<(String, (String, std::option::Option<FieldErrorMetadata>))> {
+            fn ivo_internal_enumerate(self) -> Vec<(String, (String, Option<FieldErrorMetadata>))> {
                 let mut tuples = Vec::new();
 
                 #( #construct_enumerated_errors_tuples )*

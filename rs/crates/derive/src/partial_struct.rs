@@ -20,7 +20,7 @@ pub fn generate_partial_struct(
 
         quote! {
             #field_attrs
-            #field_vis #field_name: std::option::Option<#field_type>,
+            #field_vis #field_name: Option<#field_type>,
         }
     });
 
@@ -109,20 +109,27 @@ pub fn generate_partial_struct(
         let field_name = &field.ident;
         let field_type = &field.ty; // e.g., 'String'
         let field_name_str = field_name.as_ref().unwrap().to_string();
-        let add_method_name = format_ident!("set_{field_name_str}");
-        let remove_method_name = format_ident!("unset_{field_name_str}");
+        let set_method_name = format_ident!("set_{field_name_str}");
+        let unset_method_name = format_ident!("unset_{field_name_str}");
 
         quote! {
             impl #partial_struct_name {
                 #[inline(always)]
-                #vis fn #add_method_name(&mut self, value: #field_type) -> &mut Self {
+                #vis fn #field_name(mut self, value: #field_type) -> Self {
                     self.#field_name = Some(value);
 
                     self
                 }
 
                 #[inline(always)]
-                #vis fn #remove_method_name(&mut self) -> &mut Self {
+                #vis fn #set_method_name(&mut self, value: #field_type) -> &mut Self {
+                    self.#field_name = Some(value);
+
+                    self
+                }
+
+                #[inline(always)]
+                #vis fn #unset_method_name(&mut self) -> &mut Self {
                     self.#field_name = None;
 
                     self
@@ -151,7 +158,7 @@ pub fn generate_partial_struct(
            /// This is a utility method used to wrap the partial struct into an option.
            ///
            /// If every field has as value None, None is return, otherwise Some(self) is returned
-           #vis fn into_option(self) -> std::option::Option<Self> {
+           #vis fn into_option(self) -> Option<Self> {
                if self.is_empty() {
                    None
                } else {

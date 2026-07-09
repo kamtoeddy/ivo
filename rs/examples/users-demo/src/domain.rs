@@ -208,11 +208,11 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
 
                     let error = "provide either an \"email\" or a \"phone number\" to proceed";
 
-                    let mut errors = UserInputErrors::new();
-
-                    errors.set_email(error, None).set_phone_number(error, None);
-
-                    ready(Some(errors))
+                    ready(Some(
+                        UserInputErrors::new()
+                            .email(error, None)
+                            .phone_number(error, None),
+                    ))
                 })
                 .post_validate(["username", "v_slug"], |b| {
                     b.validate(async |ctx: Ctx, o: RwCtxOptions| {
