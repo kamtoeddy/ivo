@@ -2,12 +2,12 @@ mod internal;
 
 use futures::future::{join_all, BoxFuture};
 use futures::FutureExt;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::fmt::Debug;
 use std::future::ready;
 use std::sync::Arc;
 
-use crate::__private_types::types::PartialErrorsMethods;
+use crate::__private_types::types::{DefaultCtxOptions, PartialErrorsMethods};
 use crate::__private_types::{FieldInfo, IvoInputStruct};
 use crate::model::internal::FieldInfoCollection;
 use crate::schema::fields::types::RequiredResolver;
@@ -51,7 +51,7 @@ pub struct Model<
     'schema,
     I: IvoInputStruct<ErrorTool>,
     O: IvoStruct = I,
-    CtxOptions: Clone + Sync + Send = HashMap<String, ()>,
+    CtxOptions: Clone + Sync + Send = DefaultCtxOptions,
     Timestamp: Clone + Debug + Send + Sync + 'static = (),
     ErrorTool: IvoErrorTool = DefaultErrorTool,
 > {

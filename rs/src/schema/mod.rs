@@ -2,6 +2,7 @@ pub mod fields;
 pub mod options;
 mod types;
 
+use crate::__private_types::types::DefaultCtxOptions;
 use crate::__private_types::IvoInputStruct;
 use crate::types::internal::{DefaultErrorTool, IvoErrorTool, IvoStruct};
 use std::collections::{HashMap, HashSet};
@@ -29,7 +30,7 @@ const FONT_BOLD: &str = "\x1b[1m";
 pub struct Schema<
     I: IvoInputStruct<ErrorTool>,
     O: IvoStruct = I,
-    CtxOptions: Clone = Option<()>,
+    CtxOptions: Clone = DefaultCtxOptions,
     Timestamp: Clone + Debug + Send + Sync + 'static = (),
     ErrorTool: IvoErrorTool = DefaultErrorTool,
 > {
