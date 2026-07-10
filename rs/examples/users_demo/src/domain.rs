@@ -210,8 +210,8 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
 
                     ready(Some(
                         UserInputErrors::new()
-                            .email(error, None)
-                            .phone_number(error, None),
+                            .with_email(error, None)
+                            .with_phone_number(error, None),
                     ))
                 })
                 .post_validate(["username", "v_slug"], |b| {

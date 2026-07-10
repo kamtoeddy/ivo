@@ -148,19 +148,21 @@ pub fn generate_ivo_input_struct_impls(
         let field_name = &field.ident;
         let field_name_str = field_name.as_ref().unwrap().to_string();
         let set_method_name = format_ident!("set_{field_name_str}");
+        let set_owned_method_name = format_ident!("with_{field_name_str}");
         let unset_method_name = format_ident!("unset_{field_name_str}");
 
         quote! {
             impl <FieldErrorMetadata: Send + Sync> #partial_errors_struct_name<FieldErrorMetadata> {
+
                 #[inline(always)]
-                #vis fn #field_name(mut self, reason: &str, metadata: Option<FieldErrorMetadata>) -> Self {
+                #vis fn #set_method_name(&mut self, reason: &str, metadata: Option<FieldErrorMetadata>) -> &mut Self {
                     self.#field_name = Some((reason.to_string(), metadata));
 
                     self
                 }
 
                 #[inline(always)]
-                #vis fn #set_method_name(&mut self, reason: &str, metadata: Option<FieldErrorMetadata>) -> &mut Self {
+                #vis fn #set_owned_method_name(mut self, reason: &str, metadata: Option<FieldErrorMetadata>) -> Self {
                     self.#field_name = Some((reason.to_string(), metadata));
 
                     self

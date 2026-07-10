@@ -74,13 +74,16 @@ Deriving `IvoStruct` on **User** generates a struct called **`PartialUser`** tog
     fn new() -> Self;
 
     // you also get two types of builder methods for each field
-    fn id(mut self, value: String) -> Self;
     fn set_id(&mut self, value: String) -> &mut Self;
+    fn with_id(mut self, value: String) -> Self;
 
     // ... more builder methods for the other fields
 
-    fn username_last_updated_at(mut self, value: Option<Timestamp>) -> Self;
     fn set_username_last_updated_at(&mut self, value: Option<Timestamp>) -> &mut Self;
+    fn with_username_last_updated_at(mut self, value: Option<Timestamp>) -> Self;
+    
+    // you also get a method to unset (or set value to None) for each field
+    fn unset_id(&mut self) -> &mut Self;
 
     // converts PartialUser to Some(Self) if at least one field is_some, otherwise none
     fn into_option(self) -> Option<Self>
@@ -129,9 +132,12 @@ Deriving `IvoInputStruct` on **UserInput** automatically implements `IvoStruct` 
     fn new() -> Self;
 
     // you also get two types of builder methods for each field
-    fn email(mut self, reason: &str, metadata: Option<IvoErrorTool::FieldMetadata>) -> Self;
     fn set_email(&mut self, reason: &str, metadata: Option<IvoErrorTool::FieldMetadata>) -> &mut Self;
+    fn with_email(mut self, reason: &str, metadata: Option<IvoErrorTool::FieldMetadata>) -> Self;
     // ... more builder methods for the other fields
+  
+    // you also get a method to unset (or set value to None) for each field
+    fn unset_email(&mut self) -> &mut Self;
 
     // converts UserInputErrors to Some(Self) if at least one field is_some, otherwise none
     fn into_option(self) -> Option<Self>

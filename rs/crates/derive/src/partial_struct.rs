@@ -26,7 +26,7 @@ pub fn generate_partial_struct(
 
     let is_value_equal_match_arms = fields.iter().map(|field| {
         let field_name = &field.ident; // e.g., 'id'
-        let field_type = &field.ty; // e.g., 'String'
+        let field_type = &field.ty;
         let field_name_str = field_name.as_ref().unwrap().to_string();
 
         quote! {
@@ -42,7 +42,7 @@ pub fn generate_partial_struct(
 
     let set_value_match_arms = fields.iter().map(|field| {
         let field_name = &field.ident; // e.g., 'id'
-        let field_type = &field.ty; // e.g., 'String'
+        let field_type = &field.ty;
         let field_name_str = field_name.as_ref().unwrap().to_string();
 
         quote! {
@@ -65,7 +65,7 @@ pub fn generate_partial_struct(
 
     let get_erased_value_match_arms = fields.iter().map(|field| {
         let field_name = &field.ident; // e.g., 'id'
-        let field_type = &field.ty; // e.g., 'String'
+        let field_type = &field.ty;
         let field_name_str = field_name.as_ref().unwrap().to_string();
 
         quote! {
@@ -107,22 +107,23 @@ pub fn generate_partial_struct(
 
     let construct_builder_methods_of_partial_struct = fields.iter().map(|field| {
         let field_name = &field.ident;
-        let field_type = &field.ty; // e.g., 'String'
+        let field_type = &field.ty;
         let field_name_str = field_name.as_ref().unwrap().to_string();
         let set_method_name = format_ident!("set_{field_name_str}");
+        let set_owned_method_name = format_ident!("with_{field_name_str}");
         let unset_method_name = format_ident!("unset_{field_name_str}");
 
         quote! {
             impl #partial_struct_name {
                 #[inline(always)]
-                #vis fn #field_name(mut self, value: #field_type) -> Self {
+                #[inline(always)]
+                #vis fn #set_method_name(&mut self, value: #field_type) -> &mut Self {
                     self.#field_name = Some(value);
 
                     self
                 }
 
-                #[inline(always)]
-                #vis fn #set_method_name(&mut self, value: #field_type) -> &mut Self {
+                #vis fn #set_owned_method_name(mut self, value: #field_type) -> Self {
                     self.#field_name = Some(value);
 
                     self
