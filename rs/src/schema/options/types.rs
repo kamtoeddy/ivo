@@ -197,7 +197,7 @@ where
 
             let mut results = vec![];
 
-            for (field_name, (reason, metadata)) in errors.ivo_internal_enumerate() {
+            for (field_name, (reason, metadata)) in errors.entries() {
                 if fields.iter().find(|info| info.name == field_name).is_some() {
                     results.push((field_name, FieldError { metadata, reason }));
                 }

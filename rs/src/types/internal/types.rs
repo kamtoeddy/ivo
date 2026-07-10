@@ -80,7 +80,7 @@ pub trait PartialStructMethods: Clone {
 }
 
 pub trait PartialErrorsMethods<FieldErrorMetadata: Send + Sync> {
-    fn ivo_internal_enumerate(self) -> Vec<(String, (String, Option<FieldErrorMetadata>))>;
+    fn entries(self) -> Vec<(String, (String, Option<FieldErrorMetadata>))>;
 }
 
 pub type Partial<T> = <T as WithPartialStruct>::Partial;

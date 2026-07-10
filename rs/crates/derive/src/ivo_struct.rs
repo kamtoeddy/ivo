@@ -216,7 +216,7 @@ pub fn generate_ivo_input_struct_impls(
         }
 
         impl <FieldErrorMetadata: Send + Sync> ::ivo::__private_types::types::PartialErrorsMethods<FieldErrorMetadata> for #partial_errors_struct_name<FieldErrorMetadata> {
-            fn ivo_internal_enumerate(self) -> Vec<(String, (String, Option<FieldErrorMetadata>))> {
+            fn entries(self) -> Vec<(String, (String, Option<FieldErrorMetadata>))> {
                 let mut tuples = Vec::new();
 
                 #( #construct_enumerated_errors_tuples )*

@@ -20,7 +20,7 @@ use crate::schema::{
     Schema,
 };
 use crate::types::internal::{
-    types::erase_value, DefaultErrorTool, IvoErrorTool, FieldError, IvoRwLock, IvoStruct,
+    types::erase_value, DefaultErrorTool, FieldError, IvoErrorTool, IvoRwLock, IvoStruct,
     PartialStructMethods,
 };
 use crate::types::InternalIvoContext;
@@ -785,7 +785,7 @@ impl<
             for (fields, pre_validation) in join_all(tasks).await {
                 match pre_validation {
                     Err(errors) => {
-                        for (field_name, (reason, metadata)) in errors.ivo_internal_enumerate() {
+                        for (field_name, (reason, metadata)) in errors.entries() {
                             let field_info = input_fields.get(&field_name).unwrap();
 
                             if fields.contains(&field_info.config_name.as_str()) {
@@ -847,7 +847,7 @@ impl<
         for (fields, validation) in join_all(tasks).await {
             match validation {
                 Err(errors) => {
-                    for (field_name, (reason, metadata)) in errors.ivo_internal_enumerate() {
+                    for (field_name, (reason, metadata)) in errors.entries() {
                         let field_info = input_fields.get(&field_name).unwrap();
 
                         if fields.contains(&field_info.config_name.as_str()) {
