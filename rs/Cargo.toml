@@ -61,6 +61,70 @@ serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0"
 
 [[example]]
-name = "users-demo"
-path = "examples/users-demo/src/main.rs"
+name = "users_demo"
+path = "examples/users_demo/src/main.rs"
 required-features = ["validators"]
+
+[[example]]
+name = "constant_computed"
+path = "examples/constant_with_computed_value.rs"
+
+[[example]]
+name = "constant_static"
+path = "examples/constant_with_static_value.rs"
+
+[[example]]
+name = "dependent_with_dynamic_default"
+path = "examples/dependent_with_dynamic_default.rs"
+
+[[example]]
+name = "dependent_with_static_default"
+path = "examples/dependent_with_static_default.rs"
+
+[[example]]
+name = "dependent_with_readonly"
+path = "examples/dependent_with_readonly.rs"
+
+[[example]]
+name = "lax_with_dynamic_default"
+path = "examples/lax_with_dynamic_default.rs"
+
+[[example]]
+name = "lax_with_static_default"
+path = "examples/lax_with_static_default.rs"
+
+[[example]]
+name = "lax_with_validators"
+path = "examples/lax_with_validators.rs"
+
+[[example]]
+name = "required"
+path = "examples/required.rs"
+
+[[example]]
+name = "required_error"
+path = "examples/required_error.rs"
+
+[[example]]
+name = "required_ignore_update"
+path = "examples/required_ignore_update.rs"
+
+[[example]]
+name = "required_re_validate"
+path = "examples/required_re_validate.rs"
+
+[[example]]
+name = "timestamps_with_custom_names"
+path = "examples/timestamps_with_custom_names.rs"
+
+[[example]]
+name = "timestamps_with_custom_names_and_optional_updated_at"
+path = "examples/timestamps_with_custom_names_and_optional_updated_at.rs"
+
+[[example]]
+name = "timestamps_with_default_names"
+path = "examples/timestamps_with_default_names.rs"
+
+[[example]]
+name = "timestamps_with_default_names_and_optional_updated_at"
+path = "examples/timestamps_with_default_names_and_optional_updated_at.rs"

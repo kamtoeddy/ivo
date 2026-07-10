@@ -41,6 +41,10 @@ While typical struct validators only check isolated field constraints, ivo allow
   A partial struct is a struct with every field made optional.
   In TypeScript, the built-in `Partial` utility type is used:
 
+  ivo uses partial structs to encourage the provision of just enough and relevant data to create and update a domain entity because it is not always required to provide every field to create a entity and it is also pointless to require every field for updates.
+  - At creation, a partial input is provided to produce the complete entity (output struct).
+  - During updates, a partial input is provided to produce a partial output (only relevant fields/data updated) or nothing.
+
   ```ts
   type UserInput = {
     email: string | null;
@@ -62,7 +66,7 @@ While typical struct validators only check isolated field constraints, ivo allow
   // };
   ```
 
-  In Rust, this is achieved by deriving the `IvoStruct` proc-macro provided from [ivo-rs](https://crates.io/crates/ivo). IvoStruct expects a struct that implements the `Clone` and `PartialEq` traits.
+  In Rust, this is achieved by deriving the `IvoInputStruct` or `IvoStruct` proc-macro. IvoStruct expects a struct that implements the `Clone` and `PartialEq` traits. More on this [here](./rs/README.md#how-to-use).
 
   ```rs
   use ivo::{IvoInputStruct, IvoStruct};
@@ -81,13 +85,6 @@ While typical struct validators only check isolated field constraints, ivo allow
     username: Option<String>,
   }
   ```
-
-  - Deriving `IvoStruct` on **UserInput** generates **`PartialUserInput`** together some helper methods for UserInput and PartialUserInput.
-  - Deriving `IvoInputStruct` on **UserInput** generates **`UserInputErrors`** which is used to return errors from [validators](#post-validator) and [grouped required resolvers](#required-conditionally).
-
-  ivo uses partial structs to encourage the provision of just enough and relevant data to create and update a domain entity because it is not always required to provide every field to create a entity and it is also pointless to require every field for updates.
-  - At creation, a partial input is provided to produce the complete entity (output struct).
-  - During updates, a partial input is provided to produce a partial output (only relevant fields/data updated) or nothing.
 
 ## Schema
 
@@ -142,7 +139,7 @@ struct User {
 }
 ```
 
-The concept is simple; a user's details are submitted via a form with a `username` and an `email` or a `phone number`.
+The concept is simple; a user's details are submitted via a form with a `username` and an `email` or a `phone_number`.
 These values are enough for your application to create a **User**. As you can see, we do not want users to provide fields like `id`, `created_at`, `updated_at` and `username_last_updated_at`.
 
 ## Fields
@@ -161,7 +158,7 @@ A constant is a purely output field whose value should never change after creati
 A dependent field is a purely output field whose value changes whenever at least one other field it depends on is provided and accepted. e.g: `username_last_updated_at`'s value should only and always be updated every time `username` changes.
 
 - it **must** have either a default `static value` or a [`resolver`](#resolver) for the default value.
-- it **must** depend on at least one other field which can be a [`lax`](#33-lax), [`required`](#34-required), [`virtual`](#36-virtual) or another `dependent` field (provided no circular dependency is identified).
+- it **must** depend on at least one other field which can be a [`lax`](#lax-fields), [`required`](#required-fields), [`virtual`](#virtual-fields) or another `dependent` field (provided no circular dependency is identified).
 - it **must** have a [`resolver`](#resolver) to generate new values whenever any of its parent fields is provided and accepted for that operation.
 - it may leverage the [`readonly`](#readonly) provision rule to prevent further updates once its current value is different from its **default static value** irrespective of new updates made to values of its parent fields.
 - it may have [delete](#on-delete) and [success](#on-success) event handlers.
@@ -197,7 +194,7 @@ A required field is both an input field and an output field whose value must be 
 
 A virtual field is a purely input field whose value may or may not be provided at creation. This type of field is used to trigger a change in one or more fields that dependend on it. Based on [this schema](#typescript-example), `username` could simultaneously be a virtual and a dependent field if [this special combo of virtual + alias + dependent](#virtual-alias-dependent-combo) is used, **but MUST NOT always be used like this**.
 
-- it **must** have one or more [dependent fields](#32-dependent) depending on it.
+- it **must** have one or more [dependent fields](#dependent-fields) depending on it.
 - it **must** have a [validator](#validator).
 - it may also have [re-validator](#re-validator).
 - it may have an **`alias`**, which is a different field name found on the input struct to be used in place of the actual field name. This field could also exist on the output struct as explained [here](#virtual-alias-dependent-combo)
