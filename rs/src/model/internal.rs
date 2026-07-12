@@ -86,8 +86,13 @@ impl<
     }
 
     #[inline(always)]
+    pub fn find_ref(&'a self, field_name: &str) -> Option<&'a FieldInfo> {
+        self.fields.iter().find(|f| f.name == *field_name)
+    }
+
+    #[inline(always)]
     fn find(&self, field_name: &str) -> Option<FieldInfo> {
-        self.fields.iter().find(|f| f.name == *field_name).cloned()
+        self.find_ref(field_name).cloned()
     }
 
     pub fn get(&mut self, field_name: &str) -> Option<FieldInfo> {

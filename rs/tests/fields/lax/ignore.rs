@@ -301,6 +301,153 @@ async fn should_respect_the_ignore_update_rule() {
 
 async_test_matrix!(should_respect_the_ignore_update_rule);
 
+// grouped ignore
+
+async fn should_properly_handle_grouped_ignore_rule() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        lax: String,
+        lax_1: String,
+        lax_2: String,
+    }
+
+    #[derive(Debug, Clone, IvoInputStruct)]
+    struct DataInput {
+        lax: String,
+        lax_1: String,
+        lax_2: String,
+    }
+
+    const IGNORE: &str = "IGNORE";
+
+    let default_lax_value = "default_lax_value";
+    let default_lax_1_value = "default_lax_1_value";
+    let default_lax_2_value = "default_lax_2_value";
+
+    let schema: Schema<DataInput, Data> = Schema::new(
+        |f| {
+            f.field("lax", IvoField::LAX.default(default_lax_value.to_string()))
+                .field(
+                    "lax_1",
+                    IvoField::LAX.default(default_lax_1_value.to_string()),
+                )
+                .field(
+                    "lax_2",
+                    IvoField::LAX.default(default_lax_2_value.to_string()),
+                )
+        },
+        |o| {
+            o.ignore(["lax", "lax_1"], |ctx: IvoContext<DataInput, Data>, _| {
+                ready(ctx.input().lax == Some(IGNORE.into()))
+            })
+        },
+    );
+
+    let model = schema.model();
+
+    let lax = IGNORE.to_string();
+    let lax_1 = "lax_1".to_string();
+    let lax_2 = "lax_2".to_string();
+
+    let (data, _, _) = model
+        .create(
+            &PartialDataInput {
+                lax: Some(lax.clone()),
+                lax_1: Some(lax_1.clone()),
+                lax_2: Some(lax_2.clone()),
+            },
+            None,
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        data,
+        Data {
+            lax: default_lax_value.to_string(),
+            lax_1: default_lax_1_value.to_string(),
+            lax_2
+        }
+    );
+
+    let lax = "some lax value".to_string();
+    let lax_1 = "lax_1".to_string();
+    let lax_2 = "lax_2".to_string();
+
+    let (data, _, _) = model
+        .create(
+            &PartialDataInput {
+                lax: Some(lax.clone()),
+                lax_1: Some(lax_1.clone()),
+                lax_2: Some(lax_2.clone()),
+            },
+            None,
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(data, Data { lax, lax_1, lax_2 });
+
+    // updates
+
+    let data = Data {
+        lax: default_lax_value.to_string(),
+        lax_1: default_lax_1_value.to_string(),
+        lax_2: default_lax_2_value.to_string(),
+    };
+
+    let lax = Some(IGNORE.to_string());
+    let lax_1 = Some("lax_1".to_string());
+    let lax_2 = Some("lax_2".to_string());
+
+    let (updates, _, _) = model
+        .update(
+            &data,
+            &PartialDataInput {
+                lax: lax.clone(),
+                lax_1: lax_1.clone(),
+                lax_2: lax_2.clone(),
+            },
+            None,
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updates,
+        PartialData {
+            lax: None,
+            lax_1: None,
+            lax_2
+        }
+    );
+
+    let lax = Some("some lax value".to_string());
+    let lax_1 = Some("lax_1".to_string());
+    let lax_2 = Some("lax_2".to_string());
+
+    let (updates, _, _) = model
+        .update(
+            &data,
+            &PartialDataInput {
+                lax: lax.clone(),
+                lax_1: lax_1.clone(),
+                lax_2: lax_2.clone(),
+            },
+            None,
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(updates, PartialData { lax, lax_1, lax_2 });
+}
+
+async_test_matrix!(should_properly_handle_grouped_ignore_rule);
+
 // readonly
 
 async fn should_ignore_updates_on_readonly_fields_if_values_are_different_from_default_after_creation(

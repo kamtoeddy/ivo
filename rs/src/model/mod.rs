@@ -2,7 +2,7 @@ mod internal;
 
 use futures::future::{join_all, BoxFuture};
 use futures::FutureExt;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 use std::future::ready;
 use std::sync::Arc;
@@ -12,6 +12,7 @@ use crate::__private_types::{
     FieldInfo, IvoInputStruct,
 };
 use crate::model::internal::FieldInfoCollection;
+use crate::schema::options::types::IgnoreConfig;
 use crate::schema::{
     fields::{
         base::{FieldType, InternalFieldConfig},
@@ -1138,13 +1139,13 @@ impl<
             }
         } else {
             for field_name in input_values.ivo_internal_fields_provided() {
-                let field_info = fields_provided.get(&field_name).unwrap();
-
-                field_info_vec.push(field_info);
+                field_info_vec.push(fields_provided.get(&field_name).unwrap());
             }
         }
 
-        let mut final_field_info_vec = vec![];
+        let fields_provided = fields_provided;
+
+        let mut final_field_info_map = HashMap::new();
 
         for field_info in field_info_vec.iter() {
             if let Some(InternalFieldConfig {
@@ -1157,7 +1158,7 @@ impl<
             }) = self.schema.field_configs.get(&field_info.config_name)
             {
                 if let Some(resolver) = ignore {
-                    resolvers.push((field_info, resolver));
+                    resolvers.push((vec![field_info], resolver));
 
                     continue;
                 }
@@ -1173,7 +1174,7 @@ impl<
                         input.ivo_internal_unset(&field_info.name);
                     }
                     Some(IsFieldProvisionEnabled::Func(resolver)) => {
-                        resolvers.push((field_info, resolver));
+                        resolvers.push((vec![field_info], resolver));
                     }
                     Some(IsFieldProvisionEnabled::Readonly) if is_update => {
                         if let Some(ValueResolverWithSharedInput::Static(value)) = default {
@@ -1181,7 +1182,7 @@ impl<
 
                             if previous_values.ivo_internal_is_value_equal(&field_info.name, value)
                             {
-                                final_field_info_vec.push(field_info.to_owned());
+                                final_field_info_map.insert(&field_info.name, field_info);
 
                                 if field_info.is_output {
                                     output.ivo_internal_set(
@@ -1195,7 +1196,7 @@ impl<
                         }
                     }
                     _ => {
-                        final_field_info_vec.push(field_info.to_owned());
+                        final_field_info_map.insert(&field_info.name, field_info);
 
                         if field_info.is_output {
                             output.ivo_internal_set(
@@ -1208,41 +1209,73 @@ impl<
             }
         }
 
+        if let Some(ref configs) = self.schema.options.ignore {
+            for IgnoreConfig { fields, resolver } in configs {
+                if fields.iter().any(|f| fields_provided.contains(f)) {
+                    resolvers.push((
+                        fields
+                            .iter()
+                            .filter_map(|f| fields_provided.find_ref(f))
+                            .collect(),
+                        resolver,
+                    ));
+                }
+            }
+        }
+
         let mut relevant_fields_provided = FieldInfoCollection::new(self.schema);
 
         if resolvers.is_empty() {
-            relevant_fields_provided.set_fields(final_field_info_vec);
+            relevant_fields_provided.set_fields(
+                final_field_info_map
+                    .values()
+                    .into_iter()
+                    .map(|&i| i.to_owned())
+                    .collect(),
+            );
 
             return (input, output, relevant_fields_provided, fields_provided);
         }
 
-        let tasks = resolvers.into_iter().map(async |(field_info, resolver)| {
+        let tasks = resolvers.into_iter().map(async |(field_infos, resolver)| {
             (
-                field_info,
+                field_infos,
                 resolver(Arc::clone(&ctx), Arc::clone(&options)).await,
             )
         });
 
-        for (field_info, ignore) in join_all(tasks).await {
-            if ignore {
-                input.ivo_internal_unset(&field_info.name);
+        for (field_infos, ignore) in join_all(tasks).await {
+            for field_info in field_infos {
+                if ignore {
+                    input.ivo_internal_unset(&field_info.name);
 
-                continue;
+                    if field_info.is_output {
+                        output.ivo_internal_unset(&field_info.name);
+                    }
+
+                    final_field_info_map.remove(&field_info.name);
+
+                    continue;
+                }
+
+                final_field_info_map.insert(&field_info.name, field_info);
+
+                if field_info.is_output {
+                    output.ivo_internal_set(
+                        &field_info.name,
+                        &input.ivo_internal_get_erased_value(&field_info.name),
+                    );
+                }
             }
-
-            final_field_info_vec.push(field_info.to_owned());
-
-            if field_info.is_output {
-                output.ivo_internal_set(
-                    &field_info.name,
-                    &input.ivo_internal_get_erased_value(&field_info.name),
-                );
-            }
-
-            continue;
         }
 
-        relevant_fields_provided.set_fields(final_field_info_vec);
+        relevant_fields_provided.set_fields(
+            final_field_info_map
+                .values()
+                .into_iter()
+                .map(|&i| i.to_owned())
+                .collect(),
+        );
 
         (input, output, relevant_fields_provided, fields_provided)
     }

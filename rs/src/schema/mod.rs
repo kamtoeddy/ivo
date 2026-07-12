@@ -322,7 +322,7 @@ impl<
                 } => {
                     dependent_configs.push((field_name, config));
                     dependent_field_to_parent_fields
-                        .insert(field_name, depends_on.as_ref().unwrap());
+                        .insert(field_name.as_str(), depends_on.as_ref().unwrap());
                 }
                 InternalFieldConfig {
                     field_type: FieldType::Lax | FieldType::Required,
@@ -662,7 +662,7 @@ impl<
     /// => a -> \[b\] is the only valid config for a
     fn get_redundant_dependency<'r>(
         parent_fields: &Vec<&'r str>,
-        dependent_field_to_parent_fields: &HashMap<&String, &Vec<&'r str>>,
+        dependent_field_to_parent_fields: &HashMap<&str, &Vec<&'r str>>,
     ) -> Option<(&'r str, &'r str, i32)> {
         for parent_name in parent_fields.iter() {
             for field_name in parent_fields.iter() {
@@ -689,10 +689,10 @@ impl<
     fn is_field_redundantly_dependent_on_parent<'r>(
         field_name: &'r str,
         parent_name: &'r str,
-        dependent_field_to_parent_fields: &HashMap<&String, &Vec<&'r str>>,
+        dependent_field_to_parent_fields: &HashMap<&str, &Vec<&'r str>>,
         depth: i32,
     ) -> Option<(&'r str, i32)> {
-        if let Some(parent_deps) = dependent_field_to_parent_fields.get(&field_name.to_string()) {
+        if let Some(parent_deps) = dependent_field_to_parent_fields.get(field_name) {
             if parent_deps.contains(&parent_name) {
                 return Some((parent_name, depth));
             }
@@ -732,7 +732,7 @@ impl<
     fn get_circular_dependency_chain<'c>(
         dependent_field_name: &'c str,
         parent_fields: &Vec<&'c str>,
-        dependent_field_to_parent_fields: &HashMap<&String, &Vec<&'c str>>,
+        dependent_field_to_parent_fields: &HashMap<&str, &Vec<&'c str>>,
     ) -> Option<Vec<&'c str>> {
         for parent_name in parent_fields.iter() {
             if let Some(chain) = Self::is_field_circularly_dependent_on_parent(
@@ -749,12 +749,12 @@ impl<
     }
 
     fn is_field_circularly_dependent_on_parent<'c>(
-        dependent_field_name: &'c str,
+        dependent_field_name: &str,
         parent_name: &'c str,
-        dependent_field_to_parent_fields: &HashMap<&String, &Vec<&'c str>>,
+        dependent_field_to_parent_fields: &HashMap<&str, &Vec<&'c str>>,
         mut visited_nodes: Vec<&'c str>,
     ) -> Option<Vec<&'c str>> {
-        if let Some(parent_deps) = dependent_field_to_parent_fields.get(&parent_name.to_string()) {
+        if let Some(parent_deps) = dependent_field_to_parent_fields.get(parent_name) {
             visited_nodes.push(parent_name);
 
             if parent_deps.contains(&dependent_field_name) {

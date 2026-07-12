@@ -47,7 +47,7 @@ impl<'a> UserCtxOptions {
 
     fn find_user_by_username(
         &self,
-        username: &String,
+        username: &str,
     ) -> impl Future<Output = Option<User>> + use<'a> {
         ready(USERS_BY_USERNAME.get(username).cloned())
     }
