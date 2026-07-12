@@ -3,14 +3,15 @@
 use std::marker::PhantomData;
 
 use crate::{
+    __private_types::types::BooleanResolver,
     schema::{
         fields::{
             base::{BuildableFieldConfig, FieldConfig, FieldType, InternalFieldConfig},
             types::{
-                BooleanResolver, IntoBooleanResolver, IntoDeleteHandler, IntoFailureHandler,
-                IntoFieldValidator, IntoRequiredResolver, IntoSuccessHandler,
-                IntoValueResolverWithSharedInput, IsFieldProvisionEnabled, RequiredResolver,
-                UniformValidator, ValueResolverWithSharedInput,
+                IntoBooleanResolver, IntoDeleteHandler, IntoFailureHandler, IntoFieldValidator,
+                IntoRequiredResolver, IntoSuccessHandler, IntoValueResolverWithSharedInput,
+                IsFieldProvisionEnabled, RequiredResolver, UniformValidator,
+                ValueResolverWithSharedInput,
             },
         },
         types::{

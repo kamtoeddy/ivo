@@ -1,14 +1,18 @@
 #![expect(type_alias_bounds)]
 #![expect(clippy::borrowed_box)]
 
+use futures::future::BoxFuture;
 pub use futures_locks::RwLock as IvoRwLock;
 use std::{
     any::Any,
     collections::{HashMap, HashSet},
     fmt::Debug,
+    future::Future,
 };
 
-use crate::{__private_types::DefaultFieldErrorMetadata, IvoErrorTool};
+use crate::{
+    __private_types::DefaultFieldErrorMetadata, IvoContext, IvoErrorTool, IvoRwCtxOptions,
+};
 
 pub trait IvoStruct:
     Send + Sync + Sized + 'static + WithPartialStruct + IvoStructMethods + Into<Self::Partial>
@@ -163,3 +167,27 @@ pub type PostValidatorError<FieldErrorMetadata = DefaultFieldErrorMetadata> =
 
 pub type PostValidatorResponse<I: IvoInputStruct<ErrorTool>, ErrorTool: IvoErrorTool> =
     Result<Option<I::Partial>, I::PartialErrors>;
+
+pub type Resolver<T, I: IvoStruct, O: IvoStruct, CtxOptions> = Box<
+    dyn Fn(IvoContext<I, O>, IvoRwCtxOptions<CtxOptions>) -> BoxFuture<'static, T>
+        + Send
+        + Sync
+        + 'static,
+>;
+
+pub type BooleanResolver<I, O, CtxOptions> = Resolver<bool, I, O, CtxOptions>;
+
+pub trait IntoIgnoreUpdateResolver<I: IvoStruct, O: IvoStruct, CtxOptions> {
+    fn into_resolver(self) -> BooleanResolver<I, O, CtxOptions>;
+}
+
+impl<F, Fut, I: IvoStruct, O: IvoStruct, CtxOptions> IntoIgnoreUpdateResolver<I, O, CtxOptions>
+    for F
+where
+    F: Fn(I::Partial, O, IvoRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
+    Fut: Future<Output = bool> + Send + 'static,
+{
+    fn into_resolver(self) -> BooleanResolver<I, O, CtxOptions> {
+        Box::new(move |ctx, o| Box::pin(self(ctx.input(), ctx.full_values().unwrap(), o)))
+    }
+}

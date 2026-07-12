@@ -2,7 +2,7 @@
 
 use std::future::Future;
 
-use crate::__private_types::types::PartialErrorsMethods;
+use crate::__private_types::types::{BooleanResolver, PartialErrorsMethods};
 use crate::__private_types::{FieldInfo, IvoInputStruct};
 
 use crate::schema::fields::types::RequiredResolver;
@@ -32,6 +32,11 @@ where
     fn into_resolver(self) -> IgnoreUpdateOptionResolver<I, O, CtxOptions> {
         Box::new(move |partial_input, output, o| Box::pin(self(partial_input, output, o)))
     }
+}
+
+pub struct IgnoreConfig<I: IvoStruct, O: IvoStruct, CtxOptions> {
+    pub fields: Vec<&'static str>,
+    pub resolver: BooleanResolver<I, O, CtxOptions>,
 }
 
 pub struct OnSuccessConfig<I: IvoStruct, O: IvoStruct, CtxOptions> {

@@ -4,6 +4,7 @@ mod types;
 
 use crate::__private_types::types::DefaultCtxOptions;
 use crate::__private_types::IvoInputStruct;
+use crate::schema::options::types::IgnoreConfig;
 use crate::schema::{
     fields::{
         base::{
@@ -441,6 +442,63 @@ impl<
         input_field_names: &HashSet<String>,
         output_field_names: &HashSet<String>,
     ) -> SchemaOptions<I, O, CtxOptions, ErrorTool> {
+        if let Some(ref configs) = options.ignore {
+            let option_name = "options.ignore";
+            let mut field_names = HashSet::new();
+
+            for IgnoreConfig { fields, .. } in configs {
+                if fields.len() < 2 {
+                    panic!(
+                    "\n{STYLE_COLOR_RED}[{option_name}]: grouped ignore expects at least 2 fields {STYLE_RESET}\n"
+                );
+                }
+
+                for field_name in fields {
+                    if field_names.contains(field_name) {
+                        panic!(
+                        "\n{STYLE_COLOR_RED}[{option_name}]: remove duplicates of \"{field_name}\" in your grouped ignore config{STYLE_RESET}\n"
+                    );
+                    }
+
+                    let owned_field_name = field_name.to_string();
+
+                    if let Some(virtual_field) = alias_to_virtual_map.get(&owned_field_name) {
+                        panic!(
+                        "\n{STYLE_COLOR_RED}[{option_name}]: \"{field_name}\" is an alias; use \"{virtual_field}\" instead{STYLE_RESET}\n"
+                    );
+                    };
+
+                    if input_field_names.contains(&owned_field_name) {
+                        if matches!(
+                            field_configs.get(&owned_field_name),
+                            Some(FieldConfig {
+                                field_type: FieldType::Required,
+                                ..
+                            })
+                        ) {
+                            panic!(
+                        "\n{STYLE_COLOR_RED}[{option_name}]: \"{field_name}\" cannot belong to group ignored{STYLE_RESET}\n"
+                    );
+                        }
+
+                        field_names.insert(field_name);
+
+                        continue;
+                    };
+
+                    if output_field_names.contains(&owned_field_name) {
+                        panic!(
+                    "\n{STYLE_COLOR_RED}[{option_name}]: \"{field_name}\" cannot belong to group ignored{STYLE_RESET}\n"
+                );
+                    } else if !field_configs.contains_key(&owned_field_name) {
+                        panic!(
+                        "\n{STYLE_COLOR_RED}[{option_name}]: \"{field_name}\" does not exist on your schema{STYLE_RESET}\n"
+                    );
+                    };
+                }
+            }
+        }
+
         if let Some(ref configs) = options.on_success_fns {
             let option_name = "options.on_success";
             let mut field_names = HashSet::new();

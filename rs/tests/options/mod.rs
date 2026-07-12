@@ -3,9 +3,11 @@ use std::future::ready;
 use crate::async_test_matrix;
 use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, Schema};
 
+mod ignore;
 mod post_validate;
 mod required;
 
+// [x] ignore
 // [x] ignore_update
 // [x] on_delete
 // [x] on_success

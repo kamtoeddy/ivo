@@ -5,9 +5,10 @@ pub(crate) mod types;
 
 use crate::{
     schema::{
-        fields::types::IntoDeleteHandler,
+        fields::types::{IntoBooleanResolver, IntoDeleteHandler},
         options::types::{
-            IntoRequiredOptionsResolver, IntoShouldUpdateOptionResolver, RequiredOptionConfig,
+            IgnoreConfig, IntoRequiredOptionsResolver, IntoShouldUpdateOptionResolver,
+            RequiredOptionConfig,
         },
         types::No,
         Yes,
@@ -32,6 +33,7 @@ impl<
         HasPostValidate,
         HasDelete,
         HasSuccess,
+        HasIgnore,
         HasIgnoreUpdate,
         HasRequired,
         I: IvoInputStruct<ErrorTool>,
@@ -47,6 +49,7 @@ impl<
         HasPostValidate,
         HasDelete,
         HasSuccess,
+        HasIgnore,
         HasIgnoreUpdate,
         HasRequired,
     >
@@ -56,6 +59,7 @@ impl<
             on_delete_fns: self.on_delete_fns,
             on_success_fns: self.on_success_fns,
             post_validate: self.post_validate,
+            ignore: self.ignore,
             ignore_update: self.ignore_update,
             required: self.required,
         }
@@ -66,6 +70,7 @@ impl<
         HasPostValidate,
         HasDelete,
         HasSuccess,
+        HasIgnore,
         HasIgnoreUpdate,
         HasRequired,
         I: IvoInputStruct<ErrorTool>,
@@ -81,10 +86,47 @@ impl<
         HasPostValidate,
         HasDelete,
         HasSuccess,
+        HasIgnore,
         HasIgnoreUpdate,
         HasRequired,
     >
 {
+    pub fn ignore<const N: usize, R>(
+        self,
+        fields: [&'static str; N],
+        r: R,
+    ) -> SchemaOptionsBuilder<
+        I,
+        O,
+        CtxOptions,
+        ErrorTool,
+        HasPostValidate,
+        HasDelete,
+        HasSuccess,
+        Yes,
+        HasIgnoreUpdate,
+        HasRequired,
+    >
+    where
+        R: IntoBooleanResolver<I, O, CtxOptions>,
+    {
+        let mut ignore_configs = self.ignore.unwrap_or_default();
+
+        ignore_configs.push(IgnoreConfig {
+            fields: fields.into(),
+            resolver: r.into_resolver(),
+        });
+
+        SchemaOptionsBuilder::from(
+            Some(ignore_configs),
+            self.ignore_update,
+            self.on_delete_fns,
+            self.on_success_fns,
+            self.post_validate,
+            self.required,
+        )
+    }
+
     pub fn on_delete<H>(
         self,
         handler: H,
@@ -96,6 +138,7 @@ impl<
         HasPostValidate,
         Yes,
         HasSuccess,
+        HasIgnore,
         HasIgnoreUpdate,
         HasRequired,
     >
@@ -106,6 +149,7 @@ impl<
         on_delete_fns.push(handler.into_handler());
 
         SchemaOptionsBuilder::from(
+            self.ignore,
             self.ignore_update,
             Some(on_delete_fns),
             self.on_success_fns,
@@ -126,6 +170,7 @@ impl<
         HasPostValidate,
         HasDelete,
         Yes,
+        HasIgnore,
         HasIgnoreUpdate,
         HasRequired,
     >
@@ -139,6 +184,7 @@ impl<
         on_success_fns.push(config);
 
         SchemaOptionsBuilder::from(
+            self.ignore,
             self.ignore_update,
             self.on_delete_fns,
             Some(on_success_fns),
@@ -159,6 +205,7 @@ impl<
         Yes,
         HasDelete,
         HasSuccess,
+        HasIgnore,
         HasIgnoreUpdate,
         HasRequired,
     >
@@ -174,6 +221,7 @@ impl<
         post_validate.push(config);
 
         SchemaOptionsBuilder::from(
+            self.ignore,
             self.ignore_update,
             self.on_delete_fns,
             self.on_success_fns,
@@ -194,6 +242,7 @@ impl<
         Yes,
         HasDelete,
         HasSuccess,
+        HasIgnore,
         HasIgnoreUpdate,
         Yes,
     >
@@ -207,6 +256,7 @@ impl<
         });
 
         SchemaOptionsBuilder::from(
+            self.ignore,
             self.ignore_update,
             self.on_delete_fns,
             self.on_success_fns,
@@ -220,6 +270,7 @@ impl<
         HasPostValidate,
         HasDelete,
         HasSuccess,
+        HasIgnore,
         HasRequired,
         I: IvoInputStruct<ErrorTool>,
         O: IvoStruct,
@@ -234,6 +285,7 @@ impl<
         HasPostValidate,
         HasDelete,
         HasSuccess,
+        HasIgnore,
         No,
         HasRequired,
     >
@@ -249,6 +301,7 @@ impl<
         HasPostValidate,
         HasDelete,
         HasSuccess,
+        HasIgnore,
         Yes,
         HasRequired,
     >
@@ -256,6 +309,7 @@ impl<
         R: IntoShouldUpdateOptionResolver<I, O, CtxOptions>,
     {
         SchemaOptionsBuilder::from(
+            self.ignore,
             Some(handler.into_resolver()),
             self.on_delete_fns,
             self.on_success_fns,

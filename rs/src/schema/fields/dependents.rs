@@ -1,12 +1,13 @@
 use std::marker::PhantomData;
 
 use crate::{
+    __private_types::types::Resolver,
     schema::{
         fields::{
             base::{BuildableFieldConfig, FieldConfig, FieldType, InternalFieldConfig},
             types::{
                 IntoDeleteHandler, IntoSuccessHandler, IntoUniformResolver,
-                IntoValueResolverWithSharedInput, IsFieldProvisionEnabled, Resolver,
+                IntoValueResolverWithSharedInput, IsFieldProvisionEnabled,
                 ValueResolverWithSharedInput,
             },
         },

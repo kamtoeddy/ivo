@@ -1,13 +1,14 @@
 use std::marker::PhantomData;
 
 use crate::{
+    __private_types::types::IntoIgnoreUpdateResolver,
     schema::{
         fields::{
             base::{BuildableFieldConfig, FieldConfig, FieldType, InternalFieldConfig},
             types::{
                 ComputableRequiredError, IntoDeleteHandler, IntoFailureHandler, IntoFieldValidator,
-                IntoIgnoreUpdateResolver, IntoRequiredErrorResolver, IntoSuccessHandler,
-                IsFieldProvisionEnabled, UniformValidator,
+                IntoRequiredErrorResolver, IntoSuccessHandler, IsFieldProvisionEnabled,
+                UniformValidator,
             },
         },
         types::{DeleteHandler, FailureHandler, FieldValue, No, SuccessHandler, Yes},

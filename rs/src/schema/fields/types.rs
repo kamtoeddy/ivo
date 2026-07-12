@@ -5,7 +5,7 @@ use futures::future::{BoxFuture, FutureExt};
 use std::future::{ready, Future};
 
 use crate::{
-    __private_types::ValidatorResponse,
+    __private_types::{types::BooleanResolver, ValidatorResponse},
     schema::types::{DeleteHandler, FailureHandler, FieldValue, SuccessHandler},
     types::internal::types::{erase_value, parse_or_panic, ErasedValue},
     IvoContext, IvoErrorTool, IvoRwCtxOptions, IvoShared, IvoSharedInput, IvoStruct,
@@ -130,21 +130,6 @@ where
     }
 }
 
-// pub trait IntoResolver<T, I: IvoStruct, O: IvoStruct, CtxOptions> {
-//     fn into_resolver(self) -> Resolver<T, I, O, CtxOptions>;
-// }
-
-// impl<F, Fut, T, I: IvoStruct, O: IvoStruct, CtxOptions> IntoResolver<T, I, O, CtxOptions> for F
-// where
-//     T: 'static,
-//     F: Fn(IvoContext<I, O>, IvoRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
-//     Fut: Future<Output = T> + Send + 'static,
-// {
-//     fn into_resolver(self) -> Resolver<T, I, O, CtxOptions> {
-//         Box::new(move |ctx, o| Box::pin(self(ctx, o)))
-//     }
-// }
-
 pub trait IntoUniformResolver<T, I: IvoStruct, O: IvoStruct, CtxOptions> {
     fn into_uniform(self) -> UniformResolver<I, O, CtxOptions>;
 }
@@ -188,21 +173,6 @@ where
 {
     fn into_resolver(self) -> BooleanResolver<I, O, CtxOptions> {
         Box::new(move |ctx, o| Box::pin(self(ctx, o)))
-    }
-}
-
-pub trait IntoIgnoreUpdateResolver<I: IvoStruct, O: IvoStruct, CtxOptions> {
-    fn into_resolver(self) -> BooleanResolver<I, O, CtxOptions>;
-}
-
-impl<F, Fut, I: IvoStruct, O: IvoStruct, CtxOptions> IntoIgnoreUpdateResolver<I, O, CtxOptions>
-    for F
-where
-    F: Fn(I::Partial, O, IvoRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
-    Fut: Future<Output = bool> + Send + 'static,
-{
-    fn into_resolver(self) -> BooleanResolver<I, O, CtxOptions> {
-        Box::new(move |ctx, o| Box::pin(self(ctx.input(), ctx.full_values().unwrap(), o)))
     }
 }
 
@@ -266,15 +236,6 @@ pub type RequiredResolver<I: IvoStruct, O: IvoStruct, CtxOptions> = Box<
         + Sync
         + 'static,
 >;
-
-pub type Resolver<T, I, O, CtxOptions> = Box<
-    dyn Fn(IvoContext<I, O>, IvoRwCtxOptions<CtxOptions>) -> BoxFuture<'static, T>
-        + Send
-        + Sync
-        + 'static,
->;
-
-pub type BooleanResolver<I, O, CtxOptions> = Resolver<bool, I, O, CtxOptions>;
 
 pub type VirtualSanitizer<T, I, O, CtxOptions> = Box<
     dyn Fn(T, IvoContext<I, O>, IvoRwCtxOptions<CtxOptions>) -> BoxFuture<'static, T>

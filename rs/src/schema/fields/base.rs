@@ -1,12 +1,12 @@
 use std::marker::PhantomData;
 
+use crate::__private_types::types::{BooleanResolver, Resolver};
 use crate::types::internal::{types::ErasedValue, IvoErrorTool};
 use crate::{
     schema::{
         fields::types::{
-            BooleanResolver, ComputableRequiredError, IsFieldProvisionEnabled, RequiredResolver,
-            Resolver, TimestampResolver, UniformValidator, ValueResolverWithSharedInput,
-            VirtualSanitizer,
+            ComputableRequiredError, IsFieldProvisionEnabled, RequiredResolver, TimestampResolver,
+            UniformValidator, ValueResolverWithSharedInput, VirtualSanitizer,
         },
         types::{DeleteHandler, FailureHandler, FieldValue, No, SuccessHandler, Yes},
     },
