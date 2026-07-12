@@ -9,10 +9,6 @@ use crate::domain::{PartialUserInput, User, UserCtxOptions, USER_MODEL};
 
 #[async_std::main]
 async fn main() {
-    run_example().await;
-}
-
-async fn run_example() {
     LazyLock::force(&USER_MODEL);
 
     let input = PartialUserInput {

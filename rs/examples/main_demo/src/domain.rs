@@ -65,7 +65,6 @@ impl<'a> UserCtxOptions {
 }
 
 type Ctx = IvoContext<UserInput, User>;
-// type CtxOptions = IvoCtxOptions<UserCtxOptions>;
 type RwCtxOptions = IvoRwCtxOptions<UserCtxOptions>;
 
 pub static USER_MODEL: LazyLock<Model<UserInput, User, UserCtxOptions, Timestamp>> =
@@ -221,11 +220,7 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
 
                         let slug_string = input_slug_id
                             .clone()
-                            .unwrap_or_else(|| input.username.as_ref().unwrap().clone());
-                        // match &input.slug_id {
-                        //     Some(v) => v.clone(),
-                        //     _ => input.username.as_ref().unwrap().clone(),
-                        // };
+                            .unwrap_or_else(|| input.username.clone().unwrap());
 
                         let slug_id = slugify(&slug_string);
 
@@ -241,6 +236,8 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
 
                             return Ok(None);
                         }
+
+                        drop(options);
 
                         let (reason, metadata) = (
                             &format!("A user with a slug id: \"{slug_id}\" already exists"),
