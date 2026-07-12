@@ -1229,7 +1229,6 @@ impl<
             relevant_fields_provided.set_fields(
                 final_field_info_map
                     .values()
-                    .into_iter()
                     .map(|&i| i.to_owned())
                     .collect(),
             );
@@ -1272,7 +1271,6 @@ impl<
         relevant_fields_provided.set_fields(
             final_field_info_map
                 .values()
-                .into_iter()
                 .map(|&i| i.to_owned())
                 .collect(),
         );
