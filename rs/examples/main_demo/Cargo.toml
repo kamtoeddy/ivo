@@ -1,5 +1,5 @@
 [package]
-name = "users-demo"
+name = "main_demo"
 publish =  false
 version.workspace = true
 edition.workspace = true

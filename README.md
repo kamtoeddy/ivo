@@ -10,10 +10,10 @@ While typical struct validators only check isolated field constraints, ivo allow
 
 # Quick links
 
-| Language   | Docs                                             | Examples                          |
-| ---------- | ------------------------------------------------ | --------------------------------- |
-| Rust       | [link](./rs/README.md#rust-implementation)       | [link](./rs/examples/)            |
-| TypeScript | [link](./ts/README.md#typescript-implementation) | [link](./ts/docs/v1.9.0/index.md) |
+| Language   | Docs                                             | Main demo                                   | Examples                          |
+| ---------- | ------------------------------------------------ | ------------------------------------------- | --------------------------------- |
+| Rust       | [link](./rs/README.md#rust-implementation)       | [link](./rs/examples/main_demo/src/main.rs) | [link](./rs/examples/)            |
+| TypeScript | [link](./ts/README.md#typescript-implementation) | [link](./ts/examples/main_demo/index.ts)    | [link](./ts/docs/v1.9.0/index.md) |
 
 # Definition of terms
 

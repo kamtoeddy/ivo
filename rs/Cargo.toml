@@ -61,37 +61,25 @@ serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0"
 
 [[example]]
-name = "users_demo"
-path = "examples/users_demo/src/main.rs"
+name = "main_demo"
+path = "examples/main_demo/src/main.rs"
 required-features = ["validators"]
 
 [[example]]
-name = "constant_computed"
-path = "examples/constant_with_computed_value.rs"
+name = "constants"
+path = "examples/constants.rs"
 
 [[example]]
-name = "constant_static"
-path = "examples/constant_with_static_value.rs"
-
-[[example]]
-name = "dependent_with_dynamic_default"
-path = "examples/dependent_with_dynamic_default.rs"
-
-[[example]]
-name = "dependent_with_static_default"
-path = "examples/dependent_with_static_default.rs"
+name = "dependent_defaults"
+path = "examples/dependent_defaults.rs"
 
 [[example]]
 name = "dependent_with_readonly"
 path = "examples/dependent_with_readonly.rs"
 
 [[example]]
-name = "lax_with_dynamic_default"
-path = "examples/lax_with_dynamic_default.rs"
-
-[[example]]
-name = "lax_with_static_default"
-path = "examples/lax_with_static_default.rs"
+name = "lax_defaults"
+path = "examples/lax_defaults.rs"
 
 [[example]]
 name = "lax_with_validators"
@@ -106,25 +94,21 @@ name = "required_error"
 path = "examples/required_error.rs"
 
 [[example]]
-name = "required_ignore_update"
-path = "examples/required_ignore_update.rs"
+name = "required_with_ignore_update"
+path = "examples/required_with_ignore_update.rs"
 
 [[example]]
-name = "required_re_validate"
-path = "examples/required_re_validate.rs"
+name = "required_with_re_validate"
+path = "examples/required_with_re_validate.rs"
+
+[[example]]
+name = "required_with_readonly"
+path = "examples/required_with_readonly.rs"
 
 [[example]]
 name = "timestamps_with_custom_names"
 path = "examples/timestamps_with_custom_names.rs"
 
 [[example]]
-name = "timestamps_with_custom_names_and_optional_updated_at"
-path = "examples/timestamps_with_custom_names_and_optional_updated_at.rs"
-
-[[example]]
 name = "timestamps_with_default_names"
 path = "examples/timestamps_with_default_names.rs"
-
-[[example]]
-name = "timestamps_with_default_names_and_optional_updated_at"
-path = "examples/timestamps_with_default_names_and_optional_updated_at.rs"

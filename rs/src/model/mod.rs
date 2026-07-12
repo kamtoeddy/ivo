@@ -7,28 +7,32 @@ use std::fmt::Debug;
 use std::future::ready;
 use std::sync::Arc;
 
-use crate::__private_types::types::{DefaultCtxOptions, PartialErrorsMethods};
-use crate::__private_types::{FieldInfo, IvoInputStruct};
+use crate::__private_types::{
+    types::{DefaultCtxOptions, PartialErrorsMethods},
+    FieldInfo, IvoInputStruct,
+};
 use crate::model::internal::FieldInfoCollection;
-use crate::schema::fields::types::RequiredResolver;
 use crate::schema::{
     fields::{
         base::{FieldType, InternalFieldConfig},
-        types::{ComputableRequiredError, IsFieldProvisionEnabled, ValueResolverWithSharedInput},
+        types::{
+            ComputableRequiredError, IsFieldProvisionEnabled, RequiredResolver,
+            ValueResolverWithSharedInput,
+        },
         TimestampConfig,
+    },
+    options::types::{
+        OnSuccessConfig, PostValidationConfig, RequiredOptionConfig, UniformRequiredResolver,
     },
     Schema,
 };
-use crate::types::internal::{
-    types::erase_value, DefaultErrorTool, FieldError, IvoErrorTool, IvoRwLock, IvoStruct,
-    PartialStructMethods,
+use crate::types::{
+    internal::{
+        types::erase_value, DefaultErrorTool, FieldError, IvoErrorTool, IvoRwLock, IvoStruct,
+        PartialStructMethods,
+    },
+    InternalIvoContext,
 };
-use crate::types::InternalIvoContext;
-
-use crate::schema::options::types::{
-    OnSuccessConfig, PostValidationConfig, RequiredOptionConfig, UniformRequiredResolver,
-};
-
 use crate::{IvoContext, IvoCtxOptions, IvoRwCtxOptions};
 
 type AsyncHandlerTrigger<'a> = Box<dyn Fn() -> BoxFuture<'a, ()> + Send + Sync + 'a>;
@@ -533,7 +537,7 @@ impl<
         let options = Arc::new(options);
         let mut handlers = vec![];
 
-        for (_, config) in self.schema.field_configs.iter() {
+        for config in self.schema.field_configs.values() {
             if let Some(h_vec) = &config.on_delete_fns {
                 handlers.extend(h_vec);
 

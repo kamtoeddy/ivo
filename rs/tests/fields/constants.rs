@@ -1,8 +1,6 @@
 use std::future::ready;
 
-use ivo::{
-    IvoContext, DefaultErrorTool, IvoField, IvoInputStruct, IvoShared, IvoStruct, Schema,
-};
+use ivo::{DefaultErrorTool, IvoContext, IvoField, IvoInputStruct, IvoShared, IvoStruct, Schema};
 
 use crate::async_test_matrix;
 
@@ -87,7 +85,7 @@ async fn should_respect_constants_with_computed_values() {
         |f| {
             f.field(
                 "constant",
-                IvoField::CONSTANT.computed(move |_, _| ready(constant)),
+                IvoField::CONSTANT.value_fn(move |_, _| ready(constant)),
             )
             .field("lax", IvoField::LAX.default(20))
         },
@@ -200,7 +198,7 @@ async fn should_trigger_on_delete_handlers_with_computed_values() {
             f.field(
                 "constant",
                 IvoField::CONSTANT
-                    .computed(move |_, _| ready(constant))
+                    .value_fn(move |_, _| ready(constant))
                     .on_delete(|data: IvoShared<Data>, _| {
                         if true {
                             panic!(
@@ -303,7 +301,7 @@ async fn should_trigger_on_success_handlers_with_computed_values() {
             f.field(
                 "constant",
                 IvoField::CONSTANT
-                    .computed(move |_, _| ready(constant))
+                    .value_fn(move |_, _| ready(constant))
                     .on_success(|ctx: IvoContext<DataInput, Data>, _| {
                         if true {
                             panic!(

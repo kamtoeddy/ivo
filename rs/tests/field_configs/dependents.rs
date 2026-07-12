@@ -63,7 +63,7 @@ fn should_reject_dependency_of_created_at_field_with_default_name() {
 
     let _: Schema<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Schema::new(
         |f| {
-            f.field("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
+            f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
                 .field("lax", IvoField::LAX.default(1))
                 .field(
                     "dependent",
@@ -109,7 +109,7 @@ fn should_reject_dependency_of_created_at_field_with_custom_name() {
 
     let _: Schema<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Schema::new(
         |f| {
-            f.field("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
+            f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
                 .field("lax", IvoField::LAX.default(1))
                 .field(
                     "dependent",
@@ -155,7 +155,7 @@ fn should_reject_dependency_of_updated_at_field_with_default_name() {
 
     let _: Schema<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Schema::new(
         |f| {
-            f.field("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
+            f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
                 .field("lax", IvoField::LAX.default(1))
                 .field(
                     "dependent",
@@ -197,7 +197,7 @@ fn should_reject_dependency_of_updated_at_field_with_custom_name() {
 
     let _: Schema<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Schema::new(
         |f| {
-            f.field("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
+            f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
                 .field("lax", IvoField::LAX.default(1))
                 .field(
                     "dependent",
@@ -355,7 +355,7 @@ fn should_reject_dependency_of_constant_fields() {
 
     let _: Schema<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Schema::new(
         |f| {
-            f.field("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
+            f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
                 .field("lax", IvoField::LAX.default(1))
                 .field(
                     "dependent",

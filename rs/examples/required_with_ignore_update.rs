@@ -2,57 +2,30 @@ use std::{future::ready, sync::LazyLock};
 
 use ivo::{IvoContext, IvoField, IvoInputStruct, IvoShared, IvoStruct, Model, Schema};
 
-const MIN_USERNAME_LEN: usize = 4;
-
 #[async_std::main]
 async fn main() {
-    let username = "john-doe".to_string();
-    // let username_input_value = Some(username.clone());
-    let username_input_value = None;
+    let (payload, _, handle_failure) = DATA_MODEL
+        .create(&PartialDataInput { username: None }, None)
+        .await
+        .err()
+        .unwrap();
 
-    let result = DATA_MODEL
-        .create(
-            &PartialDataInput {
-                username: username_input_value,
-            },
-            None,
-        )
-        .await;
+    println!("\nfailed to create: {:#?}", payload);
 
-    match result {
-        Ok((data, _, handle_success)) => {
-            println!("\ncreated: {:#?}", data);
+    assert_eq!(
+        payload.get("username").unwrap()[0].reason,
+        "\"username\" was not provided!"
+    );
 
-            assert_eq!(
-                data,
-                Data {
-                    username: username.clone()
-                }
-            );
-
-            handle_success().await;
-        }
-        Err((payload, _, handle_failure)) => {
-            println!("\nfailed to create: {:#?}", payload);
-
-            assert_eq!(
-                payload.get("username").unwrap()[0].reason,
-                "\"username\" was not provided!"
-            );
-
-            handle_failure().await;
-        }
-    }
+    handle_failure().await;
 
     let data = Data {
-        username: username.clone(),
+        username: "john-doe".to_string(),
     };
 
     let updated_username = Some("ignore-update".to_string());
-    // let updated_username = Some("jane-doe".to_string());
-    // let updated_username = Some(username);
 
-    let result = DATA_MODEL
+    let (error, _, handle_failure) = DATA_MODEL
         .update(
             &data,
             &PartialDataInput {
@@ -60,37 +33,40 @@ async fn main() {
             },
             None,
         )
-        .await;
+        .await
+        .err()
+        .unwrap();
 
-    match result {
-        Ok((updates, _, handle_success)) => {
-            println!("\nupdates: {:#?}", updates);
+    assert!(error.is_none());
 
-            assert_eq!(
-                updates,
-                PartialData {
-                    username: updated_username
-                }
-            );
+    println!("\nNothing to update");
 
-            handle_success().await;
+    handle_failure().await;
+
+    let updated_username = Some("james-doe".to_string());
+
+    let (updates, _, handle_success) = DATA_MODEL
+        .update(
+            &Data {
+                username: "john-doe".to_string(),
+            },
+            &PartialDataInput {
+                username: updated_username.clone(),
+            },
+            None,
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updates,
+        PartialData {
+            username: updated_username
         }
-        Err((error, _, handle_failure)) => {
-            match error {
-                Some(payload) => {
-                    println!("\nfailed to update: {:#?}", payload);
+    );
 
-                    assert_eq!(
-                        payload.get("username").unwrap()[0].reason,
-                        format!("\"username\" must be at least {MIN_USERNAME_LEN} characters long")
-                    );
-                }
-                _ => println!("\nNothing to update"),
-            };
-
-            handle_failure().await;
-        }
-    }
+    handle_success().await;
 }
 
 #[derive(Clone, Debug, PartialEq, IvoInputStruct)]
@@ -112,16 +88,7 @@ pub static DATA_SCHEMA: LazyLock<Schema<DataInput, Data>> = LazyLock::new(|| {
                 "username",
                 IvoField::REQUIRED
                     .required_error("\"username\" was not provided!")
-                    .validate(|v: String, _, _| {
-                        if v.len() < MIN_USERNAME_LEN {
-                            return ready(Err((
-                                format!("\"username\" must be at least {MIN_USERNAME_LEN} characters long"),
-                                None,
-                            )));
-                        }
-
-                        ready(Ok(None))
-                    })
+                    .validate(|_, _, _| ready(Ok(None::<String>)))
                     .ignore_update(|raw_input: PartialDataInput, data: Data, _| {
                         let username = raw_input.username.unwrap();
 

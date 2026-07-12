@@ -115,7 +115,7 @@ impl<I: IvoStruct, O: IvoStruct, T: FieldValue, CtxOptions, ErrorTool: IvoErrorT
         }
     }
 
-    pub fn computed<F>(
+    pub fn value_fn<F>(
         self,
         resolver: F,
     ) -> ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes>

@@ -576,6 +576,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "main_demo"
+version = "0.0.2"
+dependencies = [
+ "async-std",
+ "chrono",
+ "ivo",
+ "regex",
+ "unicode-normalization",
+]
+
+[[package]]
 name = "memchr"
 version = "2.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -870,17 +881,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5fd4f6878c9cb28d874b009da9e8d183b5abc80117c40bbd187a1fde336be6e8"
 dependencies = [
  "tinyvec",
-]
-
-[[package]]
-name = "users-demo"
-version = "0.0.2"
-dependencies = [
- "async-std",
- "chrono",
- "ivo",
- "regex",
- "unicode-normalization",
 ]
 
 [[package]]

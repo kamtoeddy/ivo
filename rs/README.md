@@ -86,10 +86,10 @@ Deriving `IvoStruct` on **User** generates a struct called **`PartialUser`** tog
     fn unset_id(&mut self) -> &mut Self;
 
     // converts PartialUser to Some(Self) if at least one field is_some, otherwise none
-    fn into_option(self) -> Option<Self>
+    fn into_option(self) -> Option<Self>;
 
     // returns true if every field in PartialUser is_none, otherwise false
-    fn is_empty(&self) -> bool
+    fn is_empty(&self) -> bool;
   }
   ```
 
@@ -140,10 +140,10 @@ Deriving `IvoInputStruct` on **UserInput** automatically implements `IvoStruct` 
     fn unset_email(&mut self) -> &mut Self;
 
     // converts UserInputErrors to Some(Self) if at least one field is_some, otherwise none
-    fn into_option(self) -> Option<Self>
+    fn into_option(self) -> Option<Self>;
 
     // returns true if every field in UserInputErrors is_none, otherwise false
-    fn is_empty(&self) -> bool
+    fn is_empty(&self) -> bool;
   }
   ```
 
@@ -152,30 +152,26 @@ Deriving `IvoInputStruct` on **UserInput** automatically implements `IvoStruct` 
 Below are links to examples on how to properly configure schema fields.
 
 ### Constant Fields
-  - [With computed value](./examples/constant_with_computed_value.rs)
-  - [With static value](./examples/constant_with_static_value.rs)
+  - [Static & Dynamic values](./examples/constants.rs)
 
 ### Dependent Fields
-  - [With dynamic default values](./examples/dependent_with_dynamic_default.rs)
-  - [With static default values](./examples/dependent_with_static_default.rs)
+  - [Default values](./examples/dependent_defaults.rs)
   - [Readonly](./examples/dependent_with_readonly.rs)
 
 ### Lax Fields
-  - [With dynamic default values](./examples/lax_with_dynamic_default.rs)
-  - [With static default values](./examples/lax_with_static_default.rs)
-  - [Validators & Revalidators](./examples/lax_with_validators.rs)
+  - [Default values](./examples/lax_defaults.rs)
+  - [Validators & re-validators](./examples/lax_with_validators.rs)
 
 ### Required Fields
   - [Required](./examples/required.rs)
   - [Custom required error](./examples/required_error.rs)
-  - [Validators & Revalidators](./examples/required_re_validate.rs)
-  - [Ignore update](./examples/required-ignore_update.rs)
+  - [Re-validators](./examples/required_with_re_validate.rs)
+  - [Readonly](./examples/required_with_readonly.rs)
+  - [Ignore update](./examples/required_with_ignore_update.rs)
 
 ### Virtual Fields
   - [Virtual Fields](./examples/)
 
 ### Timestamps
-  - [With default names](./examples/timestamps_with_default_names.rs)
-  - [With default names and optional updated at](./examples/timestamps_with_default_names_and_optional_updated_at.rs)
-  - [With custom names](./examples/timestamps_with_custom_names.rs)
-  - [With custom names and optional updated at](./examples/timestamps_with_custom_names_and_optional_updated_at.rs)
+  - [Default names](./examples/timestamps_with_default_names.rs)
+  - [Custom names](./examples/timestamps_with_custom_names.rs)

@@ -75,7 +75,7 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
     LazyLock::new(|| {
         Schema::new(
             |f| {
-                f.field("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
+                f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
                     .field(
                         "email",
                         IvoField::LAX
@@ -217,11 +217,15 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
                 .post_validate(["username", "v_slug"], |b| {
                     b.validate(async |ctx: Ctx, o: RwCtxOptions| {
                         let input = ctx.input();
+                        let input_slug_id = ctx.input().slug_id.clone();
 
-                        let slug_string = match &input.slug_id {
-                            Some(v) => v.clone(),
-                            _ => input.username.as_ref().unwrap().clone(),
-                        };
+                        let slug_string = input_slug_id
+                            .clone()
+                            .unwrap_or_else(|| input.username.as_ref().unwrap().clone());
+                        // match &input.slug_id {
+                        //     Some(v) => v.clone(),
+                        //     _ => input.username.as_ref().unwrap().clone(),
+                        // };
 
                         let slug_id = slugify(&slug_string);
 
@@ -245,7 +249,7 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
 
                         let mut errors = UserInputErrors::new();
 
-                        if input.slug_id.is_some() {
+                        if input_slug_id.is_some() {
                             errors.set_slug_id(reason, metadata);
                         } else if input.username.is_some() {
                             errors.set_username(reason, metadata);

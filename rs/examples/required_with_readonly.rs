@@ -2,20 +2,10 @@ use std::{future::ready, sync::LazyLock};
 
 use ivo::{IvoContext, IvoField, IvoInputStruct, IvoShared, IvoStruct, Model, Schema};
 
-const MIN_USERNAME_LEN: usize = 4;
-
 #[async_std::main]
 async fn main() {
-    let username = "n".repeat(MIN_USERNAME_LEN - 1);
-    let username_input_value = Some(username.clone());
-
     let (payload, _, handle_failure) = DATA_MODEL
-        .create(
-            &PartialDataInput {
-                username: username_input_value,
-            },
-            None,
-        )
+        .create(&PartialDataInput { username: None }, None)
         .await
         .err()
         .unwrap();
@@ -24,17 +14,17 @@ async fn main() {
 
     assert_eq!(
         payload.get("username").unwrap()[0].reason,
-        format!("\"username\" must be at least {MIN_USERNAME_LEN} characters long")
+        "\"username\" was not provided!"
     );
 
     handle_failure().await;
 
-    let updated_username = Some("j".repeat(MIN_USERNAME_LEN - 1));
+    let updated_username = Some("james-doe".to_string());
 
     let (error, _, handle_failure) = DATA_MODEL
         .update(
             &Data {
-                username: username.clone(),
+                username: "john-doe".to_string(),
             },
             &PartialDataInput {
                 username: updated_username.clone(),
@@ -45,18 +35,9 @@ async fn main() {
         .err()
         .unwrap();
 
-    let Some(payload) = error else {
-        println!("\nNothing to update");
+    assert!(error.is_none());
 
-        return;
-    };
-
-    println!("\nfailed to update: {:#?}", payload);
-
-    assert_eq!(
-        payload.get("username").unwrap()[0].reason,
-        format!("\"username\" must be at least {MIN_USERNAME_LEN} characters long")
-    );
+    println!("\nNothing to update");
 
     handle_failure().await;
 }
@@ -78,17 +59,10 @@ pub static DATA_SCHEMA: LazyLock<Schema<DataInput, Data>> = LazyLock::new(|| {
         |f| {
             f.field(
                 "username",
-                IvoField::LAX
-                    .default("default-username".to_string())
-                    .validate(|v: String, _, _| {
-                        if v.len() < MIN_USERNAME_LEN {
-                            return ready(Err((
-                                format!("\"username\" must be at least {MIN_USERNAME_LEN} characters long"),
-                                None,
-                            )));
-                        }
-                        ready(Ok(None))
-                    })
+                IvoField::REQUIRED
+                    .required_error("\"username\" was not provided!")
+                    .validate(|_, _, _| ready(Ok(None::<String>)))
+                    .readonly()
                     .on_success(|ctx: IvoContext<DataInput, Data>, _| {
                         println!(
                             "\n[on_success]: username = {}",
@@ -107,10 +81,10 @@ pub static DATA_SCHEMA: LazyLock<Schema<DataInput, Data>> = LazyLock::new(|| {
                             "\n[on_failure]: raw username = {}",
                             ctx.raw_input().username.unwrap()
                         );
-                        println!(
-                            "\n[on_failure]: validated username = {}",
-                            ctx.input().username.unwrap()
-                        );
+
+                        if let Some(name) = ctx.input().username {
+                            println!("\n[on_failure]: validated username = {}", name);
+                        }
 
                         ready(())
                     }),

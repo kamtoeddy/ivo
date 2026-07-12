@@ -4,6 +4,20 @@ mod types;
 
 use crate::__private_types::types::DefaultCtxOptions;
 use crate::__private_types::IvoInputStruct;
+use crate::schema::{
+    fields::{
+        base::{
+            BuildableFieldConfig, BuildableTimestampConfig, FieldConfig, FieldType,
+            InternalFieldConfig, TimestampConfigBuilder,
+        },
+        TimestampConfig,
+    },
+    options::{
+        base::{SchemaOptions, SchemaOptionsBuilder},
+        types::{OnSuccessConfig, PostValidationConfig, RequiredOptionConfig},
+        BuildableSchemaOptions,
+    },
+};
 use crate::types::internal::{DefaultErrorTool, IvoErrorTool, IvoStruct};
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
@@ -11,21 +25,12 @@ use std::marker::PhantomData;
 pub use types::FieldValue;
 use types::{No, Yes};
 
-use crate::schema::fields::base::{
-    BuildableFieldConfig, BuildableTimestampConfig, FieldConfig, FieldType, InternalFieldConfig,
-    TimestampConfigBuilder,
-};
-use crate::schema::fields::TimestampConfig;
-use crate::schema::options::base::{SchemaOptions, SchemaOptionsBuilder};
-use crate::schema::options::types::{OnSuccessConfig, PostValidationConfig, RequiredOptionConfig};
-use crate::schema::options::BuildableSchemaOptions;
-
 type InternalFieldConfigs<I, O, CtxOptions, ErrorTool> =
     HashMap<String, InternalFieldConfig<I, O, CtxOptions, ErrorTool>>;
 
-const COLOR_RED: &str = "\x1b[31m";
+const STYLE_COLOR_RED: &str = "\x1b[31m";
+const STYLE_FONT_BOLD: &str = "\x1b[1m";
 const STYLE_RESET: &str = "\x1b[0m";
-const FONT_BOLD: &str = "\x1b[1m";
 
 pub struct Schema<
     I: IvoInputStruct<ErrorTool>,
@@ -98,11 +103,11 @@ impl<
         HashMap<String, String>,
     ) {
         let input_struct_name = format!(
-            "{FONT_BOLD}{}{STYLE_RESET}{COLOR_RED}",
+            "{STYLE_FONT_BOLD}{}{STYLE_RESET}{STYLE_COLOR_RED}",
             I::ivo_internal_name()
         );
         let output_struct_name = format!(
-            "{FONT_BOLD}{}{STYLE_RESET}{COLOR_RED}",
+            "{STYLE_FONT_BOLD}{}{STYLE_RESET}{STYLE_COLOR_RED}",
             O::ivo_internal_name()
         );
 
@@ -115,13 +120,13 @@ impl<
 
             if !output_field_names.contains(&name_owned) {
                 panic!(
-                    "\n{COLOR_RED}[{name}]: is a purely output field. It must be present on {output_struct_name}{STYLE_RESET}\n"
+                    "\n{STYLE_COLOR_RED}[{name}]: is a purely output field. It must be present on {output_struct_name}{STYLE_RESET}\n"
                 );
             }
 
             if input_field_names.contains(&name_owned) {
                 panic!(
-                    "\n{COLOR_RED}[{name}]: is a purely output field. It should not be present on {input_struct_name}{STYLE_RESET}\n"
+                    "\n{STYLE_COLOR_RED}[{name}]: is a purely output field. It should not be present on {input_struct_name}{STYLE_RESET}\n"
                 );
             }
         }
@@ -135,13 +140,13 @@ impl<
 
             if !output_field_names.contains(&name_owned) {
                 panic!(
-                    "\n{COLOR_RED}[{name}]: is a purely output field. It must be present on {output_struct_name}{STYLE_RESET}\n"
+                    "\n{STYLE_COLOR_RED}[{name}]: is a purely output field. It must be present on {output_struct_name}{STYLE_RESET}\n"
                 );
             }
 
             if input_field_names.contains(&name_owned) {
                 panic!(
-                    "\n{COLOR_RED}[{name}]: is a purely output field. It should not be present on {input_struct_name}{STYLE_RESET}\n"
+                    "\n{STYLE_COLOR_RED}[{name}]: is a purely output field. It should not be present on {input_struct_name}{STYLE_RESET}\n"
                 );
             }
         }
@@ -154,7 +159,7 @@ impl<
 
         for (field_name, config) in config_tuples.iter() {
             if field_names.contains(field_name) {
-                panic!("\n{COLOR_RED}[{field_name}]: occurs more than once, please remove duplicates{STYLE_RESET}\n");
+                panic!("\n{STYLE_COLOR_RED}[{field_name}]: occurs more than once, please remove duplicates{STYLE_RESET}\n");
             }
 
             if let Some(TimestampConfig {
@@ -164,7 +169,7 @@ impl<
             {
                 if field_name == name {
                     panic!(
-                        "\n{COLOR_RED}[{field_name}]: is not a valid field name. It is the creation timestamp on {output_struct_name}{STYLE_RESET}\n"
+                        "\n{STYLE_COLOR_RED}[{field_name}]: is not a valid field name. It is the creation timestamp on {output_struct_name}{STYLE_RESET}\n"
                     );
                 }
             }
@@ -176,7 +181,7 @@ impl<
             {
                 if field_name == name {
                     panic!(
-                        "\n{COLOR_RED}[{field_name}]: is not a valid field name. It is the update timestamp on {output_struct_name}{STYLE_RESET}\n"
+                        "\n{STYLE_COLOR_RED}[{field_name}]: is not a valid field name. It is the update timestamp on {output_struct_name}{STYLE_RESET}\n"
                     );
                 }
             }
@@ -190,13 +195,13 @@ impl<
                 } => {
                     if !output_field_names.contains(field_name) {
                         panic!(
-                            "\n{COLOR_RED}[{field_name}]: is a purely output field. It must be present on {output_struct_name}{STYLE_RESET}\n"
+                            "\n{STYLE_COLOR_RED}[{field_name}]: is a purely output field. It must be present on {output_struct_name}{STYLE_RESET}\n"
                         );
                     }
 
                     if input_field_names.contains(field_name) {
                         panic!(
-                            "\n{COLOR_RED}[{field_name}]: is a purely output field. It should not be present on {input_struct_name}{STYLE_RESET}\n"
+                            "\n{STYLE_COLOR_RED}[{field_name}]: is a purely output field. It should not be present on {input_struct_name}{STYLE_RESET}\n"
                         );
                     }
 
@@ -213,11 +218,11 @@ impl<
 
                     if let Some(alias) = alias {
                         if field_name == alias {
-                            panic!("\n{COLOR_RED}[{field_name}]: virtual alias name must be different from field name{STYLE_RESET}\n");
+                            panic!("\n{STYLE_COLOR_RED}[{field_name}]: virtual alias name must be different from field name{STYLE_RESET}\n");
                         }
 
                         if let Some(other_field) = alias_to_virtual.get(alias) {
-                            panic!("\n{COLOR_RED}[{field_name}]: \"{alias}\" is already the alias of \"{other_field}\"{STYLE_RESET}\n");
+                            panic!("\n{STYLE_COLOR_RED}[{field_name}]: \"{alias}\" is already the alias of \"{other_field}\"{STYLE_RESET}\n");
                         }
 
                         if let Some(TimestampConfig {
@@ -227,7 +232,7 @@ impl<
                         {
                             if alias == name {
                                 panic!(
-                                    "\n{COLOR_RED}[{field_name}]: \"{alias}\" is not a valid alias. It is the creation timestamp on {output_struct_name}{STYLE_RESET}\n"
+                                    "\n{STYLE_COLOR_RED}[{field_name}]: \"{alias}\" is not a valid alias. It is the creation timestamp on {output_struct_name}{STYLE_RESET}\n"
                                 );
                             }
                         }
@@ -239,7 +244,7 @@ impl<
                         {
                             if alias == name {
                                 panic!(
-                                    "\n{COLOR_RED}[{field_name}]: \"{alias}\" is not a valid alias. It is the update timestamp on {output_struct_name}{STYLE_RESET}\n"
+                                    "\n{STYLE_COLOR_RED}[{field_name}]: \"{alias}\" is not a valid alias. It is the update timestamp on {output_struct_name}{STYLE_RESET}\n"
                                 );
                             }
                         }
@@ -251,23 +256,23 @@ impl<
 
                             if let Some(ref depends_on) = config.depends_on {
                                 if !depends_on.iter().any(|parent| parent == &field_name_str) {
-                                    panic!("\n{COLOR_RED}[{field_name}]: \"{alias}\" is not a valid alias for field because \"{alias}\" does not depend on \"{field_name}\"{STYLE_RESET}\n");
+                                    panic!("\n{STYLE_COLOR_RED}[{field_name}]: \"{alias}\" is not a valid alias for field because \"{alias}\" does not depend on \"{field_name}\"{STYLE_RESET}\n");
                                 }
 
                                 continue;
                             }
 
-                            panic!("\n{COLOR_RED}[{field_name}]: \"{alias}\" is not a valid alias for field because it is not a dependent field{STYLE_RESET}\n");
+                            panic!("\n{STYLE_COLOR_RED}[{field_name}]: \"{alias}\" is not a valid alias for field because it is not a dependent field{STYLE_RESET}\n");
                         }
 
                         if !input_field_names.contains(alias) {
                             panic!(
-                                "\n{COLOR_RED}[{field_name}]: is an input field. Hence, \"{alias}\" must be present on {input_struct_name}{STYLE_RESET}\n");
+                                "\n{STYLE_COLOR_RED}[{field_name}]: is an input field. Hence, \"{alias}\" must be present on {input_struct_name}{STYLE_RESET}\n");
                         }
 
                         if input_field_names.contains(field_name) {
                             panic!(
-                                "\n{COLOR_RED}[{field_name}]: has an alias. Only its alias must be present on {input_struct_name}{STYLE_RESET}\n");
+                                "\n{STYLE_COLOR_RED}[{field_name}]: has an alias. Only its alias must be present on {input_struct_name}{STYLE_RESET}\n");
                         }
 
                         alias_to_virtual.insert(alias.clone(), field_name.clone());
@@ -277,7 +282,7 @@ impl<
 
                     if !input_field_names.contains(field_name) {
                         panic!(
-                                "\n{COLOR_RED}[{field_name}]: is an input field. It must be present on {input_struct_name}{STYLE_RESET}\n");
+                                "\n{STYLE_COLOR_RED}[{field_name}]: is an input field. It must be present on {input_struct_name}{STYLE_RESET}\n");
                     }
 
                     let mut has_sufficent_dependencies = false;
@@ -295,7 +300,7 @@ impl<
                     }
 
                     if !has_sufficent_dependencies {
-                        panic!("\n{COLOR_RED}[{field_name}]: virtual fields are expected to have at least one dependency, but found none{STYLE_RESET}\n");
+                        panic!("\n{STYLE_COLOR_RED}[{field_name}]: virtual fields are expected to have at least one dependency, but found none{STYLE_RESET}\n");
                     }
 
                     continue;
@@ -305,7 +310,7 @@ impl<
 
             if !output_field_names.contains(field_name) {
                 panic!(
-                    "\n{COLOR_RED}[{field_name}]: is an output field. It must be present on {output_struct_name}{STYLE_RESET}\n");
+                    "\n{STYLE_COLOR_RED}[{field_name}]: is an output field. It must be present on {output_struct_name}{STYLE_RESET}\n");
             }
 
             match config {
@@ -323,7 +328,7 @@ impl<
                     ..
                 } if !input_field_names.contains(field_name) => {
                     panic!(
-                        "\n{COLOR_RED}[{field_name}]: is an input field. It must be present on {input_struct_name}{STYLE_RESET}\n");
+                        "\n{STYLE_COLOR_RED}[{field_name}]: is an input field. It must be present on {input_struct_name}{STYLE_RESET}\n");
                 }
                 _ => (),
             }
@@ -333,7 +338,7 @@ impl<
             let parent_fields = depends_on.as_ref().unwrap();
 
             if parent_fields.is_empty() {
-                panic!("\n{COLOR_RED}[{field_name}]: must depend on at least one lax, required, virtual or other dependent field on your schema{STYLE_RESET}\n");
+                panic!("\n{STYLE_COLOR_RED}[{field_name}]: must depend on at least one lax, required, virtual or other dependent field on your schema{STYLE_RESET}\n");
             }
 
             let mut parent_fields_provided = HashSet::new();
@@ -348,7 +353,7 @@ impl<
                 {
                     if parent_field == name {
                         panic!(
-                                    "\n{COLOR_RED}[{field_name}]: cannot depend on \"{parent_field}\" because it is the creation timestamp on {output_struct_name}{STYLE_RESET}\n"
+                                    "\n{STYLE_COLOR_RED}[{field_name}]: cannot depend on \"{parent_field}\" because it is the creation timestamp on {output_struct_name}{STYLE_RESET}\n"
                                 );
                     }
                 }
@@ -360,30 +365,32 @@ impl<
                 {
                     if parent_field == name {
                         panic!(
-                                    "\n{COLOR_RED}[{field_name}]: cannot depend on \"{parent_field}\" because it is the update timestamp on {output_struct_name}{STYLE_RESET}\n"
+                                    "\n{STYLE_COLOR_RED}[{field_name}]: cannot depend on \"{parent_field}\" because it is the update timestamp on {output_struct_name}{STYLE_RESET}\n"
                                 );
                     }
                 }
 
                 if !field_names.contains(&parent_field_string) {
                     panic!(
-                                "\n{COLOR_RED}[{field_name}]: cannot depend on \"{parent_field}\" because it is not a field on your schema{STYLE_RESET}\n"
+                                "\n{STYLE_COLOR_RED}[{field_name}]: cannot depend on \"{parent_field}\" because it is not a field on your schema{STYLE_RESET}\n"
                             );
                 }
 
                 if parent_field == field_name {
-                    panic!("\n{COLOR_RED}[{field_name}]: cannot depend on itself{STYLE_RESET}\n");
+                    panic!(
+                        "\n{STYLE_COLOR_RED}[{field_name}]: cannot depend on itself{STYLE_RESET}\n"
+                    );
                 }
 
                 if parent_fields_provided.contains(parent_field) {
                     panic!(
-                                "\n{COLOR_RED}[{field_name}]: \"{parent_field}\" has been provided as a parent field multiple times. remove all duplicates to proceed{STYLE_RESET}\n"
+                                "\n{STYLE_COLOR_RED}[{field_name}]: \"{parent_field}\" has been provided as a parent field multiple times. remove all duplicates to proceed{STYLE_RESET}\n"
                             );
                 }
 
                 if constant_field_names.contains(&parent_field_string) {
                     panic!(
-                                "\n{COLOR_RED}[{field_name}]: cannot depend on \"{parent_field}\" because it is a constant{STYLE_RESET}\n"
+                                "\n{STYLE_COLOR_RED}[{field_name}]: cannot depend on \"{parent_field}\" because it is a constant{STYLE_RESET}\n"
                             );
                 }
 
@@ -395,12 +402,12 @@ impl<
             {
                 if depth == 0 {
                     panic!(
-                            "\n{COLOR_RED}[{field_name}]: should not depend on \"{parent_field}\" and \"{redundant_field}\" because \"{parent_field}\" depends on \"{redundant_field}\"{STYLE_RESET}\n"
+                            "\n{STYLE_COLOR_RED}[{field_name}]: should not depend on \"{parent_field}\" and \"{redundant_field}\" because \"{parent_field}\" depends on \"{redundant_field}\"{STYLE_RESET}\n"
                );
                 }
 
                 panic!(
-                           "\n{COLOR_RED}[{field_name}]: should not depend on \"{parent_field}\" and \"{redundant_field}\" because \"{parent_field}\" indirectly depends on \"{redundant_field}\"{STYLE_RESET}\n"
+                           "\n{STYLE_COLOR_RED}[{field_name}]: should not depend on \"{parent_field}\" and \"{redundant_field}\" because \"{parent_field}\" indirectly depends on \"{redundant_field}\"{STYLE_RESET}\n"
                        );
             }
 
@@ -412,7 +419,7 @@ impl<
                 let chain = chain.join(" <-> ");
 
                 panic!(
-                           "\n{COLOR_RED}[{field_name}]: circular dependency identified between \"{chain}\"{STYLE_RESET}\n"
+                           "\n{STYLE_COLOR_RED}[{field_name}]: circular dependency identified between \"{chain}\"{STYLE_RESET}\n"
                        );
             }
         }
@@ -442,7 +449,7 @@ impl<
                 for field_name in fields {
                     if field_names.contains(field_name) {
                         panic!(
-                            "\n{COLOR_RED}[{option_name}]: remove duplicates of \"{field_name}\" in grouped on_success config{STYLE_RESET}\n"
+                            "\n{STYLE_COLOR_RED}[{option_name}]: remove duplicates of \"{field_name}\" in grouped on_success config{STYLE_RESET}\n"
                         );
                     }
 
@@ -450,7 +457,7 @@ impl<
 
                     if let Some(virtual_field) = alias_to_virtual_map.get(&owned_field_name) {
                         panic!(
-                            "\n{COLOR_RED}[{option_name}]: \"{field_name}\" is an alias; use \"{virtual_field}\" instead{STYLE_RESET}\n"
+                            "\n{STYLE_COLOR_RED}[{option_name}]: \"{field_name}\" is an alias; use \"{virtual_field}\" instead{STYLE_RESET}\n"
                         );
                     };
 
@@ -468,12 +475,12 @@ impl<
 
                     if output_field_names.contains(&owned_field_name) {
                         panic!(
-                        "\n{COLOR_RED}[{option_name}]: timestamps are not allowed in on_success. remove \"{field_name}\"{STYLE_RESET}\n"
+                        "\n{STYLE_COLOR_RED}[{option_name}]: timestamps are not allowed in on_success. remove \"{field_name}\"{STYLE_RESET}\n"
                     );
                     }
 
                     panic!(
-                            "\n{COLOR_RED}[{option_name}]: \"{field_name}\" does not exist on your schema{STYLE_RESET}\n"
+                            "\n{STYLE_COLOR_RED}[{option_name}]: \"{field_name}\" does not exist on your schema{STYLE_RESET}\n"
                         );
                 }
             }
@@ -486,14 +493,14 @@ impl<
             for PostValidationConfig { fields, .. } in configs {
                 if fields.len() < 2 {
                     panic!(
-                        "\n{COLOR_RED}[{option_name}]: post-validation expects at least 2 fields {STYLE_RESET}\n"
+                        "\n{STYLE_COLOR_RED}[{option_name}]: post-validation expects at least 2 fields {STYLE_RESET}\n"
                     );
                 }
 
                 for field_name in fields {
                     if field_names.contains(field_name) {
                         panic!(
-                            "\n{COLOR_RED}[{option_name}]: remove duplicates of \"{field_name}\" in your post-validation config{STYLE_RESET}\n"
+                            "\n{STYLE_COLOR_RED}[{option_name}]: remove duplicates of \"{field_name}\" in your post-validation config{STYLE_RESET}\n"
                         );
                     }
 
@@ -501,7 +508,7 @@ impl<
 
                     if let Some(virtual_field) = alias_to_virtual_map.get(&owned_field_name) {
                         panic!(
-                            "\n{COLOR_RED}[{option_name}]: \"{field_name}\" is an alias; use \"{virtual_field}\" instead{STYLE_RESET}\n"
+                            "\n{STYLE_COLOR_RED}[{option_name}]: \"{field_name}\" is an alias; use \"{virtual_field}\" instead{STYLE_RESET}\n"
                         );
                     };
 
@@ -513,11 +520,11 @@ impl<
 
                     if output_field_names.contains(&owned_field_name) {
                         panic!(
-                        "\n{COLOR_RED}[{option_name}]: \"{field_name}\" cannot be post_validated{STYLE_RESET}\n"
+                        "\n{STYLE_COLOR_RED}[{option_name}]: \"{field_name}\" cannot be post_validated{STYLE_RESET}\n"
                     );
                     } else if !field_configs.contains_key(&owned_field_name) {
                         panic!(
-                            "\n{COLOR_RED}[{option_name}]: \"{field_name}\" does not exist on your schema{STYLE_RESET}\n"
+                            "\n{STYLE_COLOR_RED}[{option_name}]: \"{field_name}\" does not exist on your schema{STYLE_RESET}\n"
                         );
                     };
                 }
@@ -531,14 +538,14 @@ impl<
             for RequiredOptionConfig { fields, .. } in configs {
                 if fields.len() < 2 {
                     panic!(
-                        "\n{COLOR_RED}[{option_name}]: grouped required expects at least 2 fields {STYLE_RESET}\n"
+                        "\n{STYLE_COLOR_RED}[{option_name}]: grouped required expects at least 2 fields {STYLE_RESET}\n"
                     );
                 }
 
                 for field_name in fields {
                     if field_names.contains(field_name) {
                         panic!(
-                            "\n{COLOR_RED}[{option_name}]: remove duplicates of \"{field_name}\" in your grouped required config{STYLE_RESET}\n"
+                            "\n{STYLE_COLOR_RED}[{option_name}]: remove duplicates of \"{field_name}\" in your grouped required config{STYLE_RESET}\n"
                         );
                     }
 
@@ -546,7 +553,7 @@ impl<
 
                     if let Some(virtual_field) = alias_to_virtual_map.get(&owned_field_name) {
                         panic!(
-                            "\n{COLOR_RED}[{option_name}]: \"{field_name}\" is an alias; use \"{virtual_field}\" instead{STYLE_RESET}\n"
+                            "\n{STYLE_COLOR_RED}[{option_name}]: \"{field_name}\" is an alias; use \"{virtual_field}\" instead{STYLE_RESET}\n"
                         );
                     };
 
@@ -559,7 +566,7 @@ impl<
                             })
                         ) {
                             panic!(
-                            "\n{COLOR_RED}[{option_name}]: \"{field_name}\" is already a required field. Remove it from your grouped required config{STYLE_RESET}\n"
+                            "\n{STYLE_COLOR_RED}[{option_name}]: \"{field_name}\" is already a required field. Remove it from your grouped required config{STYLE_RESET}\n"
                         );
                         }
 
@@ -570,11 +577,11 @@ impl<
 
                     if output_field_names.contains(&owned_field_name) {
                         panic!(
-                        "\n{COLOR_RED}[{option_name}]: \"{field_name}\" cannot be required{STYLE_RESET}\n"
+                        "\n{STYLE_COLOR_RED}[{option_name}]: \"{field_name}\" cannot be required{STYLE_RESET}\n"
                     );
                     } else if !field_configs.contains_key(&owned_field_name) {
                         panic!(
-                            "\n{COLOR_RED}[{option_name}]: \"{field_name}\" does not exist on your schema{STYLE_RESET}\n"
+                            "\n{STYLE_COLOR_RED}[{option_name}]: \"{field_name}\" does not exist on your schema{STYLE_RESET}\n"
                         );
                     };
                 }

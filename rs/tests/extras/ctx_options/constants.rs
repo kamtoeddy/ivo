@@ -40,7 +40,7 @@ async fn should_properly_update_ctx_options_in_constant_value_resolver_and_provi
             f.field(
                 "id",
                 IvoField::CONSTANT
-                    .computed(async |_, o: IvoRwCtxOptions<CtxOptions>| {
+                    .value_fn(async |_, o: IvoRwCtxOptions<CtxOptions>| {
                         let mut ctx_options = o.write().await;
 
                         ctx_options.add_message(MESSAGE);

@@ -31,8 +31,8 @@ async fn should_not_update_if_resolver_was_run_at_creation() {
     assert_eq!(
         data,
         Data {
-            dependent: 2,
-            username: username.clone()
+            dependent: DEFAULT_DEPENDENT + 1,
+            username
         }
     );
 

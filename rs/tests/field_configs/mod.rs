@@ -21,7 +21,7 @@ fn should_reject_if_field_name_is_already_set() {
 
     let _: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.field("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
+            f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
                 .field(
                     "lax",
                     IvoField::LAX
@@ -57,7 +57,7 @@ fn should_reject_if_field_name_is_same_created_at_if_enabled_with_default_name()
 
     let _: Schema<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Schema::new(
         |f| {
-            f.field("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
+            f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
                 .field(
                     "created_at",
                     IvoField::LAX
@@ -119,7 +119,7 @@ fn should_reject_if_field_name_is_same_updated_at_if_enabled_with_default_name()
 
     let _: Schema<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Schema::new(
         |f| {
-            f.field("id", IvoField::CONSTANT.computed(|_, _| ready(1234)))
+            f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
                 .field(
                     "updated_at",
                     IvoField::LAX
@@ -179,7 +179,7 @@ fn should_reject_if_constant_field_does_not_exist_on_output_struct() {
     }
 
     let _: Schema<DataInput, Data> = Schema::new(
-        |f| f.field("id", IvoField::CONSTANT.computed(|_, _| ready(12))),
+        |f| f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(12))),
         |o| o,
     );
 }
@@ -200,7 +200,7 @@ fn should_reject_if_constant_field_exists_on_input_struct() {
     }
 
     let _: Schema<DataInput, Data> = Schema::new(
-        |f| f.field("id", IvoField::CONSTANT.computed(|_, _| ready(12))),
+        |f| f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(12))),
         |o| o,
     );
 }

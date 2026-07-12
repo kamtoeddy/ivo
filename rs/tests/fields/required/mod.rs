@@ -551,7 +551,7 @@ async fn should_not_update_if_primary_validation_fails() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.field("id", IvoField::CONSTANT.computed(|_, _| ready(1)))
+            f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1)))
                 .field(
                     "required",
                     IvoField::REQUIRED.validate(|v: i32, _, _| {
@@ -814,7 +814,7 @@ async fn should_not_update_if_re_validation_fails() {
 
     let schema: Schema<DataInput, Data> = Schema::new(
         |f| {
-            f.field("id", IvoField::CONSTANT.computed(|_, _| ready(1)))
+            f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1)))
                 .field(
                     "required",
                     IvoField::REQUIRED
