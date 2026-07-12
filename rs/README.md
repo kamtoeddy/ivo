@@ -190,15 +190,17 @@ Below are links to examples on how to properly configure schema fields.
 
 ## Schema options
 
-### Post-validate
+### Ignore (Grouped)
 
 ### Ignore update
 
-### Grouped required
+### Required (Grouped)
 
-### Grouped on success
+### On success (Grouped)
 
 ### On delete
+
+### Post-validate
 
 ## Custom Context Options
 

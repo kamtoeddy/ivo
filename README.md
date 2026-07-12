@@ -323,7 +323,9 @@ There are certain situations where we want to ignore some fields or the complete
 
 ### Ignore
 
-A function that allows for dynamic evaluation of whether or not a field should be allowed at creation or during updates. If true is returned, the value will be ignored and vice versa.
+A function that allows for dynamic evaluation of whether or not some fields should be allowed at creation or during updates. If true is returned, the value will be ignored and vice versa.
+
+- lax and virtual fields can also leverage the grouped ignore rule (via schema options) to avoid repetitions and unnecessary computations on individual fields.
 
 ### Ignore init
 
@@ -331,7 +333,7 @@ This rule is static and if applied, the field will always be ignored from the pa
 
 ### Ignore update
 
-This rule can be static or dynamic (on schema options and on some the fields) and if applied, the field will always be ignored from the partial input struct if provided at during updates.
+This rule is a way (static or dynamic, depending on the field) of specifing whether or not some fields should be ignored from the partial input struct if provided at during updates.
 
 ### Readonly
 
@@ -343,7 +345,7 @@ When applied to dependent and lax fields with static default values, updates are
 
 Some times, a field may or may not be required to have been provided either at creation or during updates. This rule allows us to dynamically evaluate the conditional required of fields on which it is applied **only if this field is not provided in the partial input struct**.
 
-- lax and virtual fields can also leverage the grouped required rule (via schema) to avoid repetitions and unnecessary computations.
+- lax and virtual fields can also leverage the grouped required rule (via schema options) to avoid repetitions and unnecessary computations on individual fields.
 
 ## Lifecycle Events
 
