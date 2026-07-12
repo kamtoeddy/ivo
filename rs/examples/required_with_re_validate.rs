@@ -49,6 +49,10 @@ async fn main() {
     );
 
     handle_success().await;
+
+    let data = data.clone_with_updates(&updates);
+
+    DATA_MODEL.delete(&data, None).await;
 }
 
 #[derive(Clone, Debug, PartialEq, IvoInputStruct)]

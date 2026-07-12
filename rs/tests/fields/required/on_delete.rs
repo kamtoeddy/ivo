@@ -41,7 +41,7 @@ async fn should_trigger_on_delete_handlers() {
 
     model
         .delete(
-            Data {
+            &Data {
                 required: String::from("required_string_value"),
             },
             None,

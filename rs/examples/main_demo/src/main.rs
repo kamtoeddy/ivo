@@ -152,7 +152,7 @@ async fn run_example() {
     };
 
     let timer = Instant::now();
-    USER_MODEL.delete(user.clone(), UserCtxOptions::new()).await;
+    USER_MODEL.delete(&user, UserCtxOptions::new()).await;
 
     println!("\nDelete triggers: {:?}", timer.elapsed());
 }

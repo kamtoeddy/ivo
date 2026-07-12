@@ -171,7 +171,7 @@ async fn should_trigger_on_delete_handlers_with_static_values() {
 
     let model = schema.model();
 
-    model.delete(Data { constant, lax: 400 }, None).await;
+    model.delete(&Data { constant, lax: 400 }, None).await;
 }
 
 async_test_matrix!(
@@ -218,7 +218,7 @@ async fn should_trigger_on_delete_handlers_with_computed_values() {
 
     let model = schema.model();
 
-    model.delete(Data { constant, lax: 400 }, None).await;
+    model.delete(&Data { constant, lax: 400 }, None).await;
 }
 
 async_test_matrix!(

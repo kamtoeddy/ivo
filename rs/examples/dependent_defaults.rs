@@ -61,6 +61,8 @@ async fn should_properly_resolve_values_of_dependent_fields_at_creation(data_mod
 
     handle_success().await;
 
+    data_model.delete(&data, None).await;
+
     let unrelated_lax = DEFAULT_LAX_VALUE + 1;
 
     let (data, _, handle_success) = data_model
@@ -89,6 +91,8 @@ async fn should_properly_resolve_values_of_dependent_fields_at_creation(data_mod
     );
 
     handle_success().await;
+
+    data_model.delete(&data, None).await;
 
     let lax = DEFAULT_LAX_VALUE + 1;
 
@@ -119,6 +123,8 @@ async fn should_properly_resolve_values_of_dependent_fields_at_creation(data_mod
 
     handle_success().await;
 
+    data_model.delete(&data, None).await;
+
     let username = "john-doe".to_string();
 
     let (data, _, handle_success) = data_model
@@ -147,6 +153,8 @@ async fn should_properly_resolve_values_of_dependent_fields_at_creation(data_mod
     );
 
     handle_success().await;
+
+    data_model.delete(&data, None).await;
 
     let lax = DEFAULT_LAX_VALUE + 1;
     let unrelated_lax = DEFAULT_LAX_VALUE + 100;
@@ -178,6 +186,8 @@ async fn should_properly_resolve_values_of_dependent_fields_at_creation(data_mod
     );
 
     handle_success().await;
+
+    data_model.delete(&data, None).await;
 }
 
 async fn should_properly_resolve_values_of_dependent_fields_during_updates(data_model: &DataModel) {
@@ -217,6 +227,10 @@ async fn should_properly_resolve_values_of_dependent_fields_during_updates(data_
     );
 
     handle_success().await;
+
+    let data = data.clone_with_updates(&updates);
+
+    data_model.delete(&data, None).await;
 }
 
 #[derive(Clone, Debug, PartialEq, IvoInputStruct)]

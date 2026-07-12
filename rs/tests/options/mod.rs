@@ -108,7 +108,7 @@ async fn should_properly_trigger_on_delete_handlers() {
 
     let model = schema.model();
 
-    model.delete(Data { lax: 2, lax_1: 3 }, None).await
+    model.delete(&Data { lax: 2, lax_1: 3 }, None).await
 }
 
 async_test_matrix!(
@@ -141,7 +141,7 @@ async fn should_properly_trigger_all_on_delete_handlers() {
 
     let model = schema.model();
 
-    model.delete(Data { lax: 2, lax_1: 3 }, None).await
+    model.delete(&Data { lax: 2, lax_1: 3 }, None).await
 }
 
 async_test_matrix!(

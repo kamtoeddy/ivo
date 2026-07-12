@@ -10,7 +10,7 @@ $ cargo add ivo
 
 # How to use
 
-ivo expects you to define your data model with a struct that implements `IvoInputStruct` and/or `IvoStruct` and this can be done via their respective derive macros as shown below.
+ivo expects you to define your data model with structs that implement `IvoInputStruct` (required for input structs) and `IvoStruct` and this can be done via their respective derive macros as shown below.
 
 ```rs
 use chrono::{DateTime, Utc};
@@ -81,7 +81,7 @@ Deriving `IvoStruct` on **User** generates a struct called **`PartialUser`** tog
 
     fn set_username_last_updated_at(&mut self, value: Option<Timestamp>) -> &mut Self;
     fn with_username_last_updated_at(mut self, value: Option<Timestamp>) -> Self;
-    
+
     // you also get a method to unset (or set value to None) for each field
     fn unset_id(&mut self) -> &mut Self;
 
@@ -135,7 +135,7 @@ Deriving `IvoInputStruct` on **UserInput** automatically implements `IvoStruct` 
     fn set_email(&mut self, reason: &str, metadata: Option<IvoErrorTool::FieldMetadata>) -> &mut Self;
     fn with_email(mut self, reason: &str, metadata: Option<IvoErrorTool::FieldMetadata>) -> Self;
     // ... more builder methods for the other fields
-  
+
     // you also get a method to unset (or set value to None) for each field
     fn unset_email(&mut self) -> &mut Self;
 
@@ -152,26 +152,56 @@ Deriving `IvoInputStruct` on **UserInput** automatically implements `IvoStruct` 
 Below are links to examples on how to properly configure schema fields.
 
 ### Constant Fields
-  - [Static & Dynamic values](./examples/constants.rs)
+
+- [Static & Dynamic values](./examples/constants.rs)
 
 ### Dependent Fields
-  - [Default values](./examples/dependent_defaults.rs)
-  - [Readonly](./examples/dependent_with_readonly.rs)
+
+- [Default values](./examples/dependent_defaults.rs)
+- [Dependent on dependent](./examples/dependent_on_dependent.rs)
+- [Readonly](./examples/dependent_readonly.rs)
 
 ### Lax Fields
-  - [Default values](./examples/lax_defaults.rs)
-  - [Validators & re-validators](./examples/lax_with_validators.rs)
+
+- [Default values](./examples/lax_defaults.rs)
+- [Validators & re-validators](./examples/lax_with_validators.rs)
 
 ### Required Fields
-  - [Required](./examples/required.rs)
-  - [Custom required error](./examples/required_error.rs)
-  - [Re-validators](./examples/required_with_re_validate.rs)
-  - [Readonly](./examples/required_with_readonly.rs)
-  - [Ignore update](./examples/required_with_ignore_update.rs)
+
+- [Required](./examples/required.rs)
+- [Custom required error](./examples/required_error.rs)
+- [Re-validators](./examples/required_with_re_validate.rs)
+- [Readonly](./examples/required_readonly.rs)
+- [Ignore update](./examples/required_with_ignore_update.rs)
 
 ### Virtual Fields
-  - [Virtual Fields](./examples/)
+
+- [Validators & re-validators](./examples/virtuals_with_validators.rs)
+- [Alias](./examples/virtuals_with_alias.rs)
+- [Required](./examples/virtuals_with_required.rs)
+- [Ignore](./examples/virtuals_with_ignore.rs)
+- [Ignore init](./examples/virtuals_with_ignore_init.rs)
+- [Ignore update](./examples/virtuals_with_ignore_update.rs)
 
 ### Timestamps
-  - [Default names](./examples/timestamps_with_default_names.rs)
-  - [Custom names](./examples/timestamps_with_custom_names.rs)
+
+- [Default names](./examples/timestamps_with_default_names.rs)
+- [Custom names](./examples/timestamps_with_custom_names.rs)
+
+## Schema options
+
+### Post-validate
+
+### Ignore update
+
+### Grouped required
+
+### Grouped on success
+
+### On delete
+
+## Custom Context Options
+
+- [Demo](./examples/main_demo/src/domain.rs)
+
+## Custom ErrorTool

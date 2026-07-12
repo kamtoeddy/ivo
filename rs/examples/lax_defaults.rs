@@ -34,6 +34,8 @@ async fn should_properly_create_and_update(data_model: &DataModel) {
 
     handle_success().await;
 
+    data_model.delete(&data, None).await;
+
     let data = Data {
         username: "john-doe".to_string(),
     };
@@ -62,6 +64,10 @@ async fn should_properly_create_and_update(data_model: &DataModel) {
     );
 
     handle_success().await;
+
+    let data = data.clone_with_updates(&updates);
+
+    data_model.delete(&data, None).await;
 }
 
 #[derive(Clone, Debug, PartialEq, IvoInputStruct)]

@@ -42,7 +42,7 @@ async fn should_trigger_on_delete_handlers() {
 
     model
         .delete(
-            Data {
+            &Data {
                 lax: String::from("lax_string_value"),
             },
             None,

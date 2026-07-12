@@ -35,7 +35,7 @@ use crate::types::{
 };
 use crate::{IvoContext, IvoCtxOptions, IvoRwCtxOptions};
 
-type AsyncHandlerTrigger<'a> = Box<dyn Fn() -> BoxFuture<'a, ()> + Send + Sync + 'a>;
+type AsyncHandlerTrigger<'a> = Box<dyn FnOnce() -> BoxFuture<'a, ()> + Send + Sync + 'a>;
 
 impl<
         I: IvoInputStruct<ErrorTool>,
@@ -532,8 +532,8 @@ impl<
         ))
     }
 
-    pub async fn delete(&self, data: O, options: CtxOptions) {
-        let data = Arc::new(data);
+    pub async fn delete(&self, data: &O, options: CtxOptions) {
+        let data = Arc::new(data.clone());
         let options = Arc::new(options);
         let mut handlers = vec![];
 

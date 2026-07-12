@@ -74,8 +74,12 @@ name = "dependent_defaults"
 path = "examples/dependent_defaults.rs"
 
 [[example]]
-name = "dependent_with_readonly"
-path = "examples/dependent_with_readonly.rs"
+name = "dependent_on_dependent"
+path = "examples/dependent_on_dependent.rs"
+
+[[example]]
+name = "dependent_readonly"
+path = "examples/dependent_readonly.rs"
 
 [[example]]
 name = "lax_defaults"
@@ -102,8 +106,8 @@ name = "required_with_re_validate"
 path = "examples/required_with_re_validate.rs"
 
 [[example]]
-name = "required_with_readonly"
-path = "examples/required_with_readonly.rs"
+name = "required_readonly"
+path = "examples/required_readonly.rs"
 
 [[example]]
 name = "timestamps_with_custom_names"

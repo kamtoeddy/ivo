@@ -38,6 +38,8 @@ async fn should_not_update_if_resolver_was_run_at_creation() {
 
     handle_success().await;
 
+    DATA_MODEL.delete(&data, None).await;
+
     let updated_username = Some("tom-doe".to_string());
 
     let (updates, _, handle_success) = DATA_MODEL
@@ -61,6 +63,10 @@ async fn should_not_update_if_resolver_was_run_at_creation() {
     );
 
     handle_success().await;
+
+    let data = data.clone_with_updates(&updates);
+
+    DATA_MODEL.delete(&data, None).await;
 }
 
 async fn should_reject_update_if_resolver_was_run_during_prior_update() {
@@ -81,6 +87,8 @@ async fn should_reject_update_if_resolver_was_run_during_prior_update() {
     );
 
     handle_success().await;
+
+    DATA_MODEL.delete(&data, None).await;
 
     let updated_username = Some("jane-doe".to_string());
 
@@ -108,6 +116,8 @@ async fn should_reject_update_if_resolver_was_run_during_prior_update() {
 
     let data = data.clone_with_updates(&updates);
 
+    DATA_MODEL.delete(&data, None).await;
+
     let updated_username = Some("tom-doe".to_string());
 
     let (updates, _, handle_success) = DATA_MODEL
@@ -131,6 +141,10 @@ async fn should_reject_update_if_resolver_was_run_during_prior_update() {
     );
 
     handle_success().await;
+
+    let data = data.clone_with_updates(&updates);
+
+    DATA_MODEL.delete(&data, None).await;
 }
 
 #[derive(Clone, Debug, PartialEq, IvoInputStruct)]

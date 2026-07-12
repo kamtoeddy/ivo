@@ -19,13 +19,15 @@ async fn main() {
 
     handle_failure().await;
 
+    let data = Data {
+        username: "john-doe".to_string(),
+    };
+
     let updated_username = Some("jane-doe".to_string());
 
     let (updates, _, handle_success) = DATA_MODEL
         .update(
-            &Data {
-                username: "john-doe".to_string(),
-            },
+            &data,
             &PartialDataInput {
                 username: updated_username.clone(),
             },
@@ -45,6 +47,10 @@ async fn main() {
     );
 
     handle_success().await;
+
+    let data = data.clone_with_updates(&updates);
+
+    DATA_MODEL.delete(&data, None).await;
 }
 
 #[derive(Clone, Debug, PartialEq, IvoInputStruct)]

@@ -36,6 +36,8 @@ async fn should_properly_create_and_update(data_model: &DataModel) {
 
     assert_eq!(data, Data { id: 1234, username });
 
+    data_model.delete(&data, None).await;
+
     let username = "jane-doe".to_string();
 
     let (updates, _, _) = data_model
@@ -58,7 +60,11 @@ async fn should_properly_create_and_update(data_model: &DataModel) {
             id: None,
             username: Some(username)
         }
-    )
+    );
+
+    let data = data.clone_with_updates(&updates);
+
+    data_model.delete(&data, None).await;
 }
 
 #[derive(Clone, Debug, PartialEq, IvoInputStruct)]
