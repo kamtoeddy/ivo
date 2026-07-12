@@ -4,7 +4,7 @@ use ivo::{IvoContext, IvoField, IvoInputStruct, IvoShared, IvoStruct, Model, Sch
 
 #[async_std::main]
 async fn main() {
-    let (payload, _, handle_failure) = DATA_MODEL
+    let (payload, handle_failure, _) = DATA_MODEL
         .create(&PartialDataInput { username: None }, None)
         .await
         .err()
@@ -21,7 +21,7 @@ async fn main() {
 
     let updated_username = Some("james-doe".to_string());
 
-    let (error, _, handle_failure) = DATA_MODEL
+    let (error, handle_failure, _) = DATA_MODEL
         .update(
             &Data {
                 username: "john-doe".to_string(),

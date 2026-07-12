@@ -17,7 +17,7 @@ async fn main() {
 }
 
 async fn should_properly_create_and_update(data_model: &DataModel) {
-    let (data, _, handle_success) = data_model
+    let (data, handle_success, _) = data_model
         .create(&PartialDataInput { username: None }, None)
         .await
         .ok()
@@ -42,7 +42,7 @@ async fn should_properly_create_and_update(data_model: &DataModel) {
 
     let updated_username = Some("jane-doe".to_string());
 
-    let (updates, _, handle_success) = data_model
+    let (updates, handle_success, _) = data_model
         .update(
             &data,
             &PartialDataInput {

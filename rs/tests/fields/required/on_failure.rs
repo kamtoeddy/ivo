@@ -51,7 +51,7 @@ async fn should_trigger_on_failure_handlers_at_creation() {
     let r = model.create(&input, None).await;
 
     match r {
-        Err((payload, _, handle_failure)) => {
+        Err((payload, handle_failure, _)) => {
             assert_eq!(
                 payload.get("required").unwrap()[0].reason,
                 "validation failed".to_string()
@@ -118,7 +118,7 @@ async fn should_trigger_on_failure_handlers_during_updates() {
     let r = model.update(&data, &input, None).await;
 
     match r {
-        Err((Some(payload), _, handle_failure)) => {
+        Err((Some(payload), handle_failure, _)) => {
             assert_eq!(
                 payload.get("required").unwrap()[0].reason,
                 "validation failed".to_string()
@@ -189,7 +189,7 @@ async fn should_trigger_on_failure_handlers_during_updates_with_unchanged_values
     let r = model.update(&data, &input, None).await;
 
     match r {
-        Err((e, _, handle_failure)) => {
+        Err((e, handle_failure, _)) => {
             match e {
                 None => {
                     assert!(!false)
@@ -274,7 +274,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
     let r = model.update(&data, &input, None).await;
 
     match r {
-        Err((Some(payload), _, handle_failure)) => {
+        Err((Some(payload), handle_failure, _)) => {
             assert!(payload.get("required").is_none());
 
             assert_eq!(
@@ -360,7 +360,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
     let r = model.update(&data, &input, None).await;
 
     match r {
-        Err((Some(payload), _, handle_failure)) => {
+        Err((Some(payload), handle_failure, _)) => {
             assert!(payload.get("required").is_none());
 
             assert_eq!(

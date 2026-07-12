@@ -9,7 +9,7 @@ async fn main() {
     let username = "n".repeat(MIN_USERNAME_LEN - 1);
     let username_input_value = Some(username.clone());
 
-    let (payload, _, handle_failure) = DATA_MODEL
+    let (payload, handle_failure, _) = DATA_MODEL
         .create(
             &PartialDataInput {
                 username: username_input_value,
@@ -31,7 +31,7 @@ async fn main() {
 
     let updated_username = Some("j".repeat(MIN_USERNAME_LEN - 1));
 
-    let (error, _, handle_failure) = DATA_MODEL
+    let (error, handle_failure, _) = DATA_MODEL
         .update(
             &Data {
                 username: username.clone(),

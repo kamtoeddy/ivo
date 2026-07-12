@@ -69,7 +69,7 @@ async fn should_properly_update_ctx_options_in_constant_value_resolver_and_provi
 
     let value = 2;
 
-    let (data, ctx_options, handle_success) = model
+    let (data, handle_success, ctx_options) = model
         .create(&PartialDataInput { lax: Some(value) }, CtxOptions::new())
         .await
         .ok()

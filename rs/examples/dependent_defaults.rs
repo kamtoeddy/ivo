@@ -34,7 +34,7 @@ async fn main() {
 }
 
 async fn should_properly_resolve_values_of_dependent_fields_at_creation(data_model: &DataModel) {
-    let (data, _, handle_success) = data_model
+    let (data, handle_success, _) = data_model
         .create(
             &PartialDataInput {
                 lax: None,
@@ -65,7 +65,7 @@ async fn should_properly_resolve_values_of_dependent_fields_at_creation(data_mod
 
     let unrelated_lax = DEFAULT_LAX_VALUE + 1;
 
-    let (data, _, handle_success) = data_model
+    let (data, handle_success, _) = data_model
         .create(
             &PartialDataInput {
                 lax: None,
@@ -96,7 +96,7 @@ async fn should_properly_resolve_values_of_dependent_fields_at_creation(data_mod
 
     let lax = DEFAULT_LAX_VALUE + 1;
 
-    let (data, _, handle_success) = data_model
+    let (data, handle_success, _) = data_model
         .create(
             &PartialDataInput {
                 lax: Some(lax),
@@ -127,7 +127,7 @@ async fn should_properly_resolve_values_of_dependent_fields_at_creation(data_mod
 
     let username = "john-doe".to_string();
 
-    let (data, _, handle_success) = data_model
+    let (data, handle_success, _) = data_model
         .create(
             &PartialDataInput {
                 lax: None,
@@ -160,7 +160,7 @@ async fn should_properly_resolve_values_of_dependent_fields_at_creation(data_mod
     let unrelated_lax = DEFAULT_LAX_VALUE + 100;
     let username = "john-doe".to_string();
 
-    let (data, _, handle_success) = data_model
+    let (data, handle_success, _) = data_model
         .create(
             &PartialDataInput {
                 lax: Some(lax),
@@ -200,7 +200,7 @@ async fn should_properly_resolve_values_of_dependent_fields_during_updates(data_
 
     let updated_username = Some("jane-doe".to_string());
 
-    let (updates, _, handle_success) = data_model
+    let (updates, handle_success, _) = data_model
         .update(
             &data,
             &PartialDataInput {

@@ -20,7 +20,7 @@ mod virtuals;
 async fn should_properly_update_ctx_options() {
     let supplier_num = 2;
 
-    let (data, ctx_options, _) = PRODUCT_MODEL
+    let (data, _, ctx_options) = PRODUCT_MODEL
         .create(
             &PartialProductInput {
                 name: Some("product_name".into()),
@@ -41,7 +41,7 @@ async fn should_properly_update_ctx_options() {
 
     let supplier_num = 3;
 
-    let (_, ctx_options, _) = PRODUCT_MODEL
+    let (_, _, ctx_options) = PRODUCT_MODEL
         .update(
             &data,
             &PartialProductInput {

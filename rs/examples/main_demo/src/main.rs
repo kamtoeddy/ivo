@@ -28,12 +28,12 @@ async fn main() {
     println!("\nCreate duration: {:?}", timer.elapsed());
 
     match r {
-        Ok((data, _, handle_success)) => {
+        Ok((data, handle_success, _)) => {
             println!("\n{:#?}\n", data);
 
             handle_success().await;
         }
-        Err((payload, _, handle_failure)) => {
+        Err((payload, handle_failure, _)) => {
             println!("\nFailed to create: {:#?}", payload);
 
             handle_failure().await;
@@ -83,7 +83,7 @@ async fn main() {
     let mut updated_user = None;
 
     match r {
-        Ok((data, _, handle_success)) => {
+        Ok((data, handle_success, _)) => {
             let merged_data = user.clone_with_updates(&data);
 
             println!("\nupdates: {:#?}", data);
@@ -93,7 +93,7 @@ async fn main() {
 
             handle_success().await;
         }
-        Err((error, _, handle_failure)) => {
+        Err((error, handle_failure, _)) => {
             match error {
                 Some(payload) => {
                     println!("\nFailed to update: {:#?}", payload)
@@ -129,13 +129,13 @@ async fn main() {
     println!("\nUpdate duration: {:?}", timer.elapsed());
 
     match r {
-        Ok((data, _, handle_success)) => {
+        Ok((data, handle_success, _)) => {
             println!("\nupdates: {:#?}", data);
             println!("\nold + updates: {:#?}\n", user.clone_with_updates(&data));
 
             handle_success().await;
         }
-        Err((error, _, handle_failure)) => {
+        Err((error, handle_failure, _)) => {
             match error {
                 Some(payload) => {
                     println!("\nFailed to update: {:#?}\n", payload)

@@ -85,7 +85,7 @@ async fn should_properly_update_ctx_options_in_required_resolver_and_provide_tho
 
     let model = schema.model();
 
-    let (err, ctx_options, _) = model
+    let (err, _, ctx_options) = model
         .create(
             &PartialDataInput {
                 virtual_field: None,
@@ -155,7 +155,7 @@ async fn should_properly_update_ctx_options_in_required_resolver_and_provide_tho
 
     let model = schema.model();
 
-    let (err, ctx_options, _) = model
+    let (err, _, ctx_options) = model
         .update(
             &Data {
                 dependent: DEFAULT_VALUE,
@@ -246,7 +246,7 @@ async fn should_properly_update_ctx_options_in_ignore_update_resolver_and_provid
 
     let value = Some(data.dependent + 1);
 
-    let (data, ctx_options, handle_success) = model
+    let (data, handle_success, ctx_options) = model
         .update(
             &data,
             &PartialDataInput {
@@ -335,7 +335,7 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
 
     let model = schema.model();
 
-    let (err, ctx_options, handle_failure) = model
+    let (err, handle_failure, ctx_options) = model
         .create(
             &PartialDataInput {
                 virtual_field: Some(String::from(" ")),
@@ -419,7 +419,7 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
 
     let model = schema.model();
 
-    let (err, ctx_options, handle_failure) = model
+    let (err, handle_failure, ctx_options) = model
         .update(
             &Data {
                 dependent: DEFAULT_VALUE.into(),
@@ -515,7 +515,7 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
 
     let model = schema.model();
 
-    let (err, ctx_options, handle_failure) = model
+    let (err, handle_failure, ctx_options) = model
         .create(
             &PartialDataInput {
                 virtual_field: Some(String::from(" ")),
@@ -600,7 +600,7 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
 
     let model = schema.model();
 
-    let (err, ctx_options, handle_failure) = model
+    let (err, handle_failure, ctx_options) = model
         .update(
             &Data {
                 dependent: DEFAULT_VALUE.into(),
@@ -693,7 +693,7 @@ async fn should_properly_update_ctx_options_in_sanitizers_and_provide_those_upda
 
     let virtual_value = "virtual_value".to_string();
 
-    let (data, ctx_options, handle_success) = model
+    let (data, handle_success, ctx_options) = model
         .create(
             &PartialDataInput {
                 virtual_field: Some(virtual_value.clone()),
@@ -789,7 +789,7 @@ async fn should_properly_update_ctx_options_in_sanitizers_and_provide_those_upda
 
     let updated_virtual_value = "updated_virtual_value".to_string();
 
-    let (updates, ctx_options, handle_success) = model
+    let (updates, handle_success, ctx_options) = model
         .update(
             &data,
             &PartialDataInput {
@@ -892,7 +892,7 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
 
     let value = DEFAULT_VALUE + 1;
 
-    let (data, ctx_options, handle_success) = model
+    let (data, handle_success, ctx_options) = model
         .create(
             &PartialDataInput {
                 virtual_field: Some(value),
@@ -984,7 +984,7 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
 
     let value = Some(data.dependent + 1);
 
-    let (updates, ctx_options, handle_success) = model
+    let (updates, handle_success, ctx_options) = model
         .update(
             &data,
             &PartialDataInput {

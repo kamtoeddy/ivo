@@ -78,7 +78,7 @@ async fn should_properly_update_ctx_options_in_ignore_update_resolver_and_provid
 
     let required = Some(data.required + 1);
 
-    let (data, ctx_options, handle_success) = model
+    let (data, handle_success, ctx_options) = model
         .update(&data, &PartialDataInput { required }, CtxOptions::new())
         .await
         .ok()
@@ -147,7 +147,7 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
 
     let model = schema.model();
 
-    let (err, ctx_options, handle_failure) = model
+    let (err, handle_failure, ctx_options) = model
         .create(
             &PartialDataInput {
                 required: Some(String::from(" ")),
@@ -219,7 +219,7 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
 
     let model = schema.model();
 
-    let (err, ctx_options, handle_failure) = model
+    let (err, handle_failure, ctx_options) = model
         .update(
             &Data {
                 required: DEFAULT_VALUE.into(),
@@ -303,7 +303,7 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
 
     let model = schema.model();
 
-    let (err, ctx_options, handle_failure) = model
+    let (err, handle_failure, ctx_options) = model
         .create(
             &PartialDataInput {
                 required: Some(String::from(" ")),
@@ -376,7 +376,7 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
 
     let model = schema.model();
 
-    let (err, ctx_options, handle_failure) = model
+    let (err, handle_failure, ctx_options) = model
         .update(
             &Data {
                 required: DEFAULT_VALUE.into(),
@@ -466,7 +466,7 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
 
     let required = DEFAULT_VALUE + 1;
 
-    let (data, ctx_options, handle_success) = model
+    let (data, handle_success, ctx_options) = model
         .create(
             &PartialDataInput {
                 required: Some(required),
@@ -557,7 +557,7 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
 
     let required = Some(data.required + 1);
 
-    let (updates, ctx_options, handle_success) = model
+    let (updates, handle_success, ctx_options) = model
         .update(
             &data,
             &PartialDataInput {

@@ -80,7 +80,7 @@ async fn should_properly_update_ctx_options_in_default_resolver_and_provide_thos
 
     let model = schema.model();
 
-    let (data, ctx_options, handle_success) = model
+    let (data, handle_success, ctx_options) = model
         .create(&PartialDataInput { lax: None }, CtxOptions::new())
         .await
         .ok()
@@ -161,7 +161,7 @@ async fn should_properly_update_ctx_options_in_value_resolver_and_provide_those_
 
     let value = DEFAULT_LAX_VALUE + 1;
 
-    let (data, ctx_options, handle_success) = model
+    let (data, handle_success, ctx_options) = model
         .create(&PartialDataInput { lax: Some(value) }, CtxOptions::new())
         .await
         .ok()
@@ -245,7 +245,7 @@ async fn should_properly_update_ctx_options_in_value_resolver_and_provide_those_
 
     let lax = Some(data.lax + 1);
 
-    let (updates, ctx_options, handle_success) = model
+    let (updates, handle_success, ctx_options) = model
         .update(&data, &PartialDataInput { lax }, CtxOptions::new())
         .await
         .ok()

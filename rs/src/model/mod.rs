@@ -77,11 +77,11 @@ impl<
         input: &I::Partial,
         options: CtxOptions,
     ) -> Result<
-        (O, CtxOptions, AsyncHandlerTrigger<'schema>),
+        (O, AsyncHandlerTrigger<'schema>, CtxOptions),
         (
             ErrorTool::ErrorPayload,
-            CtxOptions,
             AsyncHandlerTrigger<'schema>,
+            CtxOptions,
         ),
     > {
         let shared_rw_options = Arc::new(IvoRwLock::new(options));
@@ -122,12 +122,12 @@ impl<
 
             return Err((
                 payload,
-                final_ctx_options.clone(),
                 self.prepare_failure_handlers(
                     fields_provided.fields,
                     ctx,
-                    Arc::new(final_ctx_options),
+                    Arc::new(final_ctx_options.clone()),
                 ),
+                final_ctx_options,
             ));
         }
 
@@ -150,12 +150,12 @@ impl<
 
                 return Err((
                     payload,
-                    final_ctx_options.clone(),
                     self.prepare_failure_handlers(
                         fields_provided.fields,
                         ctx,
-                        Arc::new(final_ctx_options),
+                        Arc::new(final_ctx_options.clone()),
                     ),
+                    final_ctx_options,
                 ));
             }
             _ => (),
@@ -180,12 +180,12 @@ impl<
 
                 return Err((
                     payload,
-                    final_ctx_options.clone(),
                     self.prepare_failure_handlers(
                         fields_provided.fields,
                         ctx,
-                        Arc::new(final_ctx_options),
+                        Arc::new(final_ctx_options.clone()),
                     ),
+                    final_ctx_options,
                 ));
             }
             _ => (),
@@ -210,12 +210,12 @@ impl<
 
                 return Err((
                     payload,
-                    final_ctx_options.clone(),
                     self.prepare_failure_handlers(
                         fields_provided.fields,
                         ctx,
-                        Arc::new(final_ctx_options),
+                        Arc::new(final_ctx_options.clone()),
                     ),
+                    final_ctx_options,
                 ));
             }
             _ => (),
@@ -264,12 +264,12 @@ impl<
 
         Ok((
             O::ivo_internal_dangerously_get_values_from_partial(values),
-            final_ctx_options.clone(),
             self.prepare_success_handlers(
                 relevant_fields_provided,
                 ctx,
-                Arc::new(final_ctx_options),
+                Arc::new(final_ctx_options.clone()),
             ),
+            final_ctx_options,
         ))
     }
 
@@ -279,11 +279,11 @@ impl<
         updates: &I::Partial,
         options: CtxOptions,
     ) -> Result<
-        (O::Partial, CtxOptions, AsyncHandlerTrigger<'schema>),
+        (O::Partial, AsyncHandlerTrigger<'schema>, CtxOptions),
         (
             Option<ErrorTool::ErrorPayload>,
-            CtxOptions,
             AsyncHandlerTrigger<'schema>,
+            CtxOptions,
         ),
     > {
         let old_partial_values: O::Partial = data.clone().into();
@@ -315,12 +315,12 @@ impl<
 
             return Err((
                 None,
-                final_ctx_options.clone(),
                 self.prepare_failure_handlers(
                     fields_provided.fields,
                     ctx,
-                    Arc::new(final_ctx_options),
+                    Arc::new(final_ctx_options.clone()),
                 ),
+                final_ctx_options,
             ));
         }
 
@@ -337,12 +337,12 @@ impl<
 
             return Err((
                 Some(payload),
-                final_ctx_options.clone(),
                 self.prepare_failure_handlers(
                     fields_provided.fields,
                     ctx,
-                    Arc::new(final_ctx_options),
+                    Arc::new(final_ctx_options.clone()),
                 ),
+                final_ctx_options,
             ));
         }
 
@@ -366,12 +366,12 @@ impl<
 
                 return Err((
                     Some(payload),
-                    final_ctx_options.clone(),
                     self.prepare_failure_handlers(
                         fields_provided.fields,
                         ctx,
-                        Arc::new(final_ctx_options),
+                        Arc::new(final_ctx_options.clone()),
                     ),
+                    final_ctx_options,
                 ));
             }
             _ => (),
@@ -397,12 +397,12 @@ impl<
 
                 return Err((
                     Some(payload),
-                    final_ctx_options.clone(),
                     self.prepare_failure_handlers(
                         fields_provided.fields,
                         ctx,
-                        Arc::new(final_ctx_options),
+                        Arc::new(final_ctx_options.clone()),
                     ),
+                    final_ctx_options,
                 ));
             }
             _ => (),
@@ -428,12 +428,12 @@ impl<
 
                 return Err((
                     Some(payload),
-                    final_ctx_options.clone(),
                     self.prepare_failure_handlers(
                         fields_provided.fields,
                         ctx,
-                        Arc::new(final_ctx_options),
+                        Arc::new(final_ctx_options.clone()),
                     ),
+                    final_ctx_options,
                 ));
             }
             _ => (),
@@ -506,12 +506,12 @@ impl<
 
             return Err((
                 None,
-                final_ctx_options.clone(),
                 self.prepare_failure_handlers(
                     fields_provided.fields,
                     ctx,
-                    Arc::new(final_ctx_options),
+                    Arc::new(final_ctx_options.clone()),
                 ),
+                final_ctx_options,
             ));
         };
 
@@ -528,8 +528,8 @@ impl<
 
         Ok((
             updated_values,
-            final_ctx_options.clone(),
-            self.prepare_success_handlers(fields_updated, ctx, Arc::new(final_ctx_options)),
+            self.prepare_success_handlers(fields_updated, ctx, Arc::new(final_ctx_options.clone())),
+            final_ctx_options,
         ))
     }
 

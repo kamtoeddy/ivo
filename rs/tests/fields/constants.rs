@@ -266,7 +266,7 @@ async fn should_trigger_on_success_handlers_with_static_values() {
 
     let lax = 400;
 
-    let (data, _, handle_success) = model
+    let (data, handle_success, _) = model
         .create(&PartialDataInput { lax: Some(lax) }, None)
         .await
         .ok()
@@ -323,7 +323,7 @@ async fn should_trigger_on_success_handlers_with_computed_values() {
 
     let lax = 400;
 
-    let (data, _, handle_success) = model
+    let (data, handle_success, _) = model
         .create(&PartialDataInput { lax: Some(lax) }, None)
         .await
         .ok()

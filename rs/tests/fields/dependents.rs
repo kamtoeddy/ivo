@@ -731,7 +731,7 @@ async fn should_trigger_on_success_handlers_if_resolver_is_run_at_creation() {
 
     let model = schema.model();
 
-    let (data, _, handle_success) = model
+    let (data, handle_success, _) = model
         .create(
             &PartialDataInput {
                 lax: Some(default_lax_value),
@@ -804,7 +804,7 @@ async fn should_trigger_on_success_handlers_even_if_resolver_is_not_run_at_creat
 
     let model = schema.model();
 
-    let (data, _, handle_success) = model
+    let (data, handle_success, _) = model
         .create(
             &PartialDataInput {
                 lax: Some(default_lax_value),
@@ -876,7 +876,7 @@ async fn should_trigger_on_success_handlers_if_resolver_is_run_during_updates() 
 
     let model = schema.model();
 
-    let (data, _, handle_success) = model
+    let (data, handle_success, _) = model
         .create(
             &PartialDataInput {
                 lax: Some(default_lax_value),
@@ -953,7 +953,7 @@ async fn should_not_trigger_on_success_handlers_not_if_resolver_is_run_during_up
 
     let updated_lax_1 = default_dependent_value + 1;
 
-    let (data, _, handle_success) = model
+    let (data, handle_success, _) = model
         .update(
             &Data {
                 dependent: default_dependent_value,
@@ -1027,7 +1027,7 @@ async fn should_trigger_grouped_on_success_with_at_creation_if_resolved() {
 
     let model = schema.model();
 
-    let (data, _, handle_success) = model
+    let (data, handle_success, _) = model
         .create(
             &PartialDataInput {
                 lax: Some(default_lax_value),
@@ -1099,7 +1099,7 @@ async fn should_trigger_grouped_on_success_with_at_creation_even_if_not_resolved
 
     let model = schema.model();
 
-    let (data, _, handle_success) = model
+    let (data, handle_success, _) = model
         .create(&PartialDataInput { lax: None }, None)
         .await
         .ok()
@@ -1168,7 +1168,7 @@ async fn should_trigger_grouped_on_success_during_updates_if_resolved() {
 
     let lax = Some(default_lax_value + 1);
 
-    let (data, _, handle_success) = model
+    let (data, handle_success, _) = model
         .update(
             &Data {
                 dependent: default_dependent_value,
@@ -1246,7 +1246,7 @@ async fn should_not_trigger_grouped_on_success_during_updates_if_not_resolved_be
 
     let lax = Some(default_lax_value + 1);
 
-    let (data, _, handle_success) = model
+    let (data, handle_success, _) = model
         .update(
             &Data {
                 dependent: default_dependent_value + 1,
@@ -1322,7 +1322,7 @@ async fn should_not_trigger_grouped_on_success_during_updates_if_not_resolved() 
 
     let lax_1 = Some(default_lax_value + 1);
 
-    let (data, _, handle_success) = model
+    let (data, handle_success, _) = model
         .update(
             &Data {
                 dependent: default_dependent_value + 1,

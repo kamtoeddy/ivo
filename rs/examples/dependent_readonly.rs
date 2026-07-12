@@ -15,7 +15,7 @@ async fn should_not_update_if_resolver_was_run_at_creation() {
     let username = "john-doe".to_string();
     let username_input_value = Some(username.clone());
 
-    let (data, _, handle_success) = DATA_MODEL
+    let (data, handle_success, _) = DATA_MODEL
         .create(
             &PartialDataInput {
                 username: username_input_value,
@@ -42,7 +42,7 @@ async fn should_not_update_if_resolver_was_run_at_creation() {
 
     let updated_username = Some("tom-doe".to_string());
 
-    let (updates, _, handle_success) = DATA_MODEL
+    let (updates, handle_success, _) = DATA_MODEL
         .update(
             &data,
             &PartialDataInput {
@@ -70,7 +70,7 @@ async fn should_not_update_if_resolver_was_run_at_creation() {
 }
 
 async fn should_reject_update_if_resolver_was_run_during_prior_update() {
-    let (data, _, handle_success) = DATA_MODEL
+    let (data, handle_success, _) = DATA_MODEL
         .create(&PartialDataInput { username: None }, None)
         .await
         .ok()
@@ -92,7 +92,7 @@ async fn should_reject_update_if_resolver_was_run_during_prior_update() {
 
     let updated_username = Some("jane-doe".to_string());
 
-    let (updates, _, handle_success) = DATA_MODEL
+    let (updates, handle_success, _) = DATA_MODEL
         .update(
             &data,
             &PartialDataInput {
@@ -120,7 +120,7 @@ async fn should_reject_update_if_resolver_was_run_during_prior_update() {
 
     let updated_username = Some("tom-doe".to_string());
 
-    let (updates, _, handle_success) = DATA_MODEL
+    let (updates, handle_success, _) = DATA_MODEL
         .update(
             &data,
             &PartialDataInput {

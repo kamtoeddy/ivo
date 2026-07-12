@@ -73,7 +73,7 @@ async fn should_properly_update_ctx_options_in_default_resolver_and_provide_thos
 
     let model = schema.model();
 
-    let (data, ctx_options, handle_success) = model
+    let (data, handle_success, ctx_options) = model
         .create(&PartialDataInput { lax: None }, CtxOptions::new())
         .await
         .ok()
@@ -138,7 +138,7 @@ async fn should_properly_update_ctx_options_in_ignore_resolver_and_provide_those
 
     let lax = DEFAULT_VALUE + 1;
 
-    let (data, ctx_options, handle_success) = model
+    let (data, handle_success, ctx_options) = model
         .create(&PartialDataInput { lax: Some(lax) }, CtxOptions::new())
         .await
         .ok()
@@ -203,7 +203,7 @@ async fn should_properly_update_ctx_options_in_ignore_resolver_and_provide_those
 
     let lax = Some(data.lax + 1);
 
-    let (data, ctx_options, handle_success) = model
+    let (data, handle_success, ctx_options) = model
         .update(&data, &PartialDataInput { lax }, CtxOptions::new())
         .await
         .ok()
@@ -259,7 +259,7 @@ async fn should_properly_update_ctx_options_in_required_resolver_and_provide_tho
 
     let model = schema.model();
 
-    let (err, ctx_options, _) = model
+    let (err, _, ctx_options) = model
         .create(&PartialDataInput { lax: None }, CtxOptions::new())
         .await
         .err()
@@ -318,7 +318,7 @@ async fn should_properly_update_ctx_options_in_required_resolver_and_provide_tho
 
     let model = schema.model();
 
-    let (err, ctx_options, _) = model
+    let (err, _, ctx_options) = model
         .update(
             &Data {
                 lax: DEFAULT_VALUE,
@@ -401,7 +401,7 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
 
     let model = schema.model();
 
-    let (err, ctx_options, handle_failure) = model
+    let (err, handle_failure, ctx_options) = model
         .create(
             &PartialDataInput {
                 lax: Some(String::from(" ")),
@@ -474,7 +474,7 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
 
     let model = schema.model();
 
-    let (err, ctx_options, handle_failure) = model
+    let (err, handle_failure, ctx_options) = model
         .update(
             &Data {
                 lax: DEFAULT_VALUE.into(),
@@ -559,7 +559,7 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
 
     let model = schema.model();
 
-    let (err, ctx_options, handle_failure) = model
+    let (err, handle_failure, ctx_options) = model
         .create(
             &PartialDataInput {
                 lax: Some(String::from(" ")),
@@ -633,7 +633,7 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
 
     let model = schema.model();
 
-    let (err, ctx_options, handle_failure) = model
+    let (err, handle_failure, ctx_options) = model
         .update(
             &Data {
                 lax: DEFAULT_VALUE.into(),
@@ -727,7 +727,7 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
 
     let lax = DEFAULT_VALUE + 1;
 
-    let (data, ctx_options, handle_success) = model
+    let (data, handle_success, ctx_options) = model
         .create(
             &PartialDataInput {
                 lax: Some(lax),
@@ -822,7 +822,7 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
 
     let lax = Some(data.lax + 1);
 
-    let (updates, ctx_options, handle_success) = model
+    let (updates, handle_success, ctx_options) = model
         .update(
             &data,
             &PartialDataInput { lax, lax_1: None },
