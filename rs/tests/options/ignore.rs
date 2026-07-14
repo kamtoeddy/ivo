@@ -158,7 +158,9 @@ fn should_reject_if_a_dependent_field_is_provided_to_the_fields_array() {
 }
 
 #[test]
-#[should_panic(expected = "[options.ignore]: \"required\" cannot belong to group ignored")]
+#[should_panic(
+    expected = "[options.ignore]: \"required\" cannot belong to group ignored, but can belong to group ignore update"
+)]
 fn should_reject_if_a_required_field_is_provided_to_the_fields_array() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
