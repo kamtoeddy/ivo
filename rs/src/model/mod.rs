@@ -1263,7 +1263,7 @@ impl<
         }
 
         if let Some(ref configs) = self.schema.options.ignore {
-            let config_names_of_fields_provided = relevant_fields_provided
+            let relevant_config_names = relevant_fields_provided
                 .iter()
                 .map(|field_name| fields_collection.get(field_name).config_name)
                 .collect::<HashSet<_>>();
@@ -1271,7 +1271,7 @@ impl<
             for IgnoreConfig { fields, resolver } in configs {
                 if fields
                     .iter()
-                    .any(|name| config_names_of_fields_provided.contains(name))
+                    .any(|name| relevant_config_names.contains(name))
                 {
                     resolvers.push((fields.clone(), resolver));
                 }
@@ -1286,16 +1286,17 @@ impl<
             );
         }
 
-        let tasks = resolvers.into_iter().map(async |(field_names, resolver)| {
+        let tasks = resolvers.into_iter().map(async |(config_names, resolver)| {
             (
-                field_names,
+                config_names,
                 resolver(Arc::clone(&ctx), Arc::clone(&options)).await,
             )
         });
 
         for (field_names, ignore) in join_all(tasks).await {
-            for field_name in field_names {
-                let field_info = fields_collection.get(field_name);
+            for config_name in field_names {
+                let field_info = fields_collection.get(config_name);
+                let field_name = field_info.name;
 
                 if ignore {
                     input.ivo_internal_unset(field_name);

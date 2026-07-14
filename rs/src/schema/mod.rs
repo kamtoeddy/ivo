@@ -476,7 +476,7 @@ impl<
                             })
                         ) {
                             panic!(
-                        "\n{STYLE_COLOR_RED}[{option_name}]: \"{field_name}\" cannot belong to group ignored, but can belong to group ignore update{STYLE_RESET}\n"
+                        "\n{STYLE_COLOR_RED}[{option_name}]: required field \"{field_name}\" cannot belong to group ignored, but can belong to group ignore update{STYLE_RESET}\n"
                     );
                         }
 
