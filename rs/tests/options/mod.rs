@@ -27,12 +27,13 @@ async fn should_respect_option_to_ignore_updates() {
     }
 
     let default_value = "default_lax_value";
+    const IGNORE_VALUE: &str = "ignore_value";
 
     let schema = Schema::<DataInput, Data>::new(
         |f| f.field("lax", IvoField::LAX.default(default_value.to_string())),
         |o| {
             o.ignore_update(|input: PartialDataInput, _, _| {
-                ready(input.lax.map(|v| v == "should_ignore").unwrap_or(false))
+                ready(input.lax.map(|v| v == IGNORE_VALUE).unwrap_or(false))
             })
         },
     );
@@ -42,7 +43,7 @@ async fn should_respect_option_to_ignore_updates() {
     let lax = "lax_value".to_string();
 
     let data = Data { lax };
-    let lax_update = "should_ignore".to_string();
+    let lax_update = IGNORE_VALUE.to_string();
 
     let r = model
         .update(

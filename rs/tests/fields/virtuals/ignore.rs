@@ -669,7 +669,6 @@ async fn should_respect_the_ignore_init_rule_with_alias() {
 
 async_test_matrix!(should_respect_the_ignore_init_rule_with_alias);
 
-#[async_std::test]
 async fn should_respect_the_ignore_init_rule_with_alias_same_as_dependent() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
@@ -804,7 +803,7 @@ async fn should_respect_the_ignore_init_rule_with_alias_same_as_dependent() {
     );
 }
 
-// async_test_matrix!(should_respect_the_ignore_init_rule_with_alias_same_as_dependent);
+async_test_matrix!(should_respect_the_ignore_init_rule_with_alias_same_as_dependent);
 
 async fn should_respect_the_ignore_update_rule() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]

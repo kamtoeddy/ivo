@@ -84,7 +84,6 @@ impl<
             CtxOptions,
         ),
     > {
-        println!("\nraw_input: {:#?}", input);
         let shared_rw_options = Arc::new(IvoRwLock::new(options));
         let mut ctx = Arc::new(InternalIvoContext::<I, O>::new_create_ctx(
             input.clone(),
@@ -101,8 +100,6 @@ impl<
                 Arc::clone(&shared_rw_options),
             )
             .await;
-
-        println!("\ninput: {:#?}\noutput: {:#?}", input, output);
 
         // Resolve constants & defaults
         let output = self
@@ -241,20 +238,6 @@ impl<
 
         // Resolve values of dependent fields
         let mut dependent_fields_col = fields_collection.cloned_from_relevant_dependent_fields();
-        let mut fields_collection = fields_collection;
-
-        println!(
-            "\nfields_provided: {:#?}",
-            fields_collection.fields_provided()
-        );
-        println!(
-            "\nrelevant_fields_provided: {:#?}",
-            fields_collection.relevant_fields_provided()
-        );
-        println!(
-            "\nconfig_names: {:#?}",
-            fields_collection.relevant_config_names
-        );
 
         while let Some((validated_outputs, fields_changed)) = self
             .resolve_dependent_values(
@@ -267,25 +250,8 @@ impl<
             dependent_fields_col =
                 dependent_fields_col.new_with_dependent_fields_changed(fields_changed.clone());
 
-            fields_collection =
-                fields_collection.new_with_appended_output_fields_changed(fields_changed);
-
             Arc::make_mut(&mut ctx).set_changes(validated_outputs);
         }
-
-        println!("\nvalues: {:#?}", ctx.values());
-        println!(
-            "\nfields_provided: {:#?}",
-            fields_collection.fields_provided()
-        );
-        println!(
-            "\nrelevant_fields_provided: {:#?}",
-            fields_collection.relevant_fields_provided()
-        );
-        println!(
-            "\nconfig_names: {:#?}",
-            fields_collection.relevant_config_names
-        );
 
         // Generate and set timestamps
         let (values, should_update_ctx) = self.attach_timestamps(ctx.values(), false);
@@ -320,7 +286,6 @@ impl<
             CtxOptions,
         ),
     > {
-        println!("\nraw_input: {:#?}", updates);
         let old_partial_values: O::Partial = data.clone().into();
 
         let mut ctx = Arc::new(InternalIvoContext::<I, O>::new_update_ctx(
@@ -383,19 +348,6 @@ impl<
                 ));
             }
         };
-
-        println!(
-            "\nfields_provided: {:#?}",
-            fields_collection.fields_provided()
-        );
-        println!(
-            "\nrelevant_fields_provided: {:#?}",
-            fields_collection.relevant_fields_provided()
-        );
-        println!(
-            "\nconfig_names: {:#?}",
-            fields_collection.relevant_config_names
-        );
 
         // Run validators
         match self
@@ -536,7 +488,7 @@ impl<
             .set_changes(changes.clone())
             .set_full_values(data.ivo_internal_clone_with(changes));
 
-        let mut fields_collection =
+        let fields_collection =
             fields_collection.new_with_relevant_fields_provided(relevant_fields_provided);
 
         let mut dependent_fields_col = fields_collection.cloned_from_relevant_dependent_fields();
@@ -549,22 +501,8 @@ impl<
             )
             .await
         {
-            println!("\nfields_changed: {:#?}", fields_changed);
-            println!(
-                "\ndependent_fields_col: {:#?}",
-                dependent_fields_col.relevant_dependent_config_names
-            );
-
             dependent_fields_col =
                 dependent_fields_col.new_with_dependent_fields_changed(fields_changed.clone());
-
-            println!(
-                "\ndependent_fields_col after: {:#?}",
-                dependent_fields_col.relevant_dependent_config_names
-            );
-
-            fields_collection =
-                fields_collection.new_with_appended_output_fields_changed(fields_changed);
 
             Arc::make_mut(&mut ctx)
                 .set_changes(validated_outputs.clone())
@@ -1241,10 +1179,6 @@ impl<
             }
         }
 
-        let fields_collection = fields_collection
-            .new_with_fields_provided(fields_provided)
-            .new_with_relevant_fields_provided(relevant_fields_provided.clone());
-
         if let Some(resolver) = entity_resolver {
             if resolver(
                 ctx.input(),
@@ -1256,6 +1190,10 @@ impl<
                 return (input, output, fields_collection);
             }
         }
+
+        let fields_collection = fields_collection
+            .new_with_fields_provided(fields_provided)
+            .new_with_relevant_fields_provided(relevant_fields_provided.clone());
 
         for field_name in fields_collection.relevant_fields_provided() {
             let field_info = fields_collection.get(&field_name);

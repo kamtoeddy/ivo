@@ -19,10 +19,9 @@ pub(super) struct FieldInfoCollection<
 > {
     fields: HashMap<&'a str, FieldInfo<'a>>,
     fields_provided: HashSet<String>,
-    output_fields_changed: HashSet<String>,
     relevant_fields_provided: HashSet<String>,
-    pub relevant_dependent_config_names: HashSet<String>,
-    pub relevant_config_names: HashSet<String>,
+    relevant_dependent_config_names: HashSet<String>,
+    relevant_config_names: HashSet<String>,
     schema: &'a Schema<I, O, CtxOptions, Timestamp, ErrorTool>,
 }
 
@@ -39,10 +38,9 @@ impl<
     pub fn new(schema: &'a Schema<I, O, CtxOptions, Timestamp, ErrorTool>) -> Self {
         Self {
             schema,
-            relevant_config_names: HashSet::new(),
             fields: Self::parse_fields(schema),
+            relevant_config_names: HashSet::new(),
             fields_provided: HashSet::new(),
-            output_fields_changed: HashSet::new(),
             relevant_fields_provided: HashSet::new(),
             relevant_dependent_config_names: HashSet::new(),
         }
@@ -60,13 +58,11 @@ impl<
     ) -> Self {
         let mut config_names = HashSet::new();
         let mut output_fields_changed = HashSet::new();
-        // let mut relevant_dependent_config_names = HashSet::new();
 
         for field_name in relevant_fields_provided.iter() {
             let info = self.get(field_name);
 
             config_names.insert(info.config_name.to_string());
-            // relevant_dependent_config_names.insert(info.config_name.to_string());
 
             if info.is_output {
                 output_fields_changed.insert(field_name.clone());
@@ -74,9 +70,7 @@ impl<
         }
 
         self.relevant_config_names = config_names;
-        self.output_fields_changed = output_fields_changed;
         self.relevant_fields_provided = relevant_fields_provided;
-        // self.relevant_dependent_config_names = relevant_dependent_config_names;
 
         self
     }
@@ -97,44 +91,9 @@ impl<
     }
 
     pub fn new_with_dependent_fields_changed(mut self, field_names: HashSet<String>) -> Self {
-        // let mut relevant_dependent_config_names = HashSet::new();
-
-        // for field_name in field_names {
-        //     relevant_dependent_config_names.insert(
-        //         self.get_optional(&field_name)
-        //             .map(|info| info.config_name.to_string())
-        //             .unwrap_or(field_name),
-        //     );
-        // }
-
         self.relevant_dependent_config_names = field_names;
 
         self
-    }
-
-    pub fn new_with_appended_output_fields_changed(mut self, field_names: HashSet<String>) -> Self {
-        for field_name in field_names {
-            self.output_fields_changed.insert(field_name);
-        }
-
-        self
-    }
-
-    pub fn new_with_config_names(mut self, config_names: HashSet<String>) -> Self {
-        self.relevant_config_names = config_names;
-
-        self
-    }
-
-    pub fn success_fields(&'a self) -> Vec<&'a FieldInfo<'a>> {
-        let mut fields = self.relevant_fields_provided.clone();
-
-        fields.extend(self.output_fields_changed.clone());
-
-        fields
-            .into_iter()
-            .map(|field_name| self.get(&field_name))
-            .collect()
     }
 
     pub fn fields_provided(&'a self) -> &'a HashSet<String> {
@@ -197,7 +156,17 @@ impl<
                                 name,
                             },
                         );
-                    } else {
+
+                        // necessary for group validations and resolvers
+                        fields.insert(
+                            *config_name,
+                            FieldInfo {
+                                config_name,
+                                is_input: true,
+                                is_output: false,
+                                name,
+                            },
+                        );
                     }
                 }
                 InternalFieldConfig {
@@ -235,13 +204,12 @@ impl<
 {
     fn clone(&self) -> Self {
         Self {
-            relevant_config_names: self.relevant_config_names.clone(),
+            schema: self.schema,
             fields: self.fields.clone(),
-            output_fields_changed: self.output_fields_changed.clone(),
             fields_provided: self.fields_provided.clone(),
+            relevant_config_names: self.relevant_config_names.clone(),
             relevant_fields_provided: self.relevant_fields_provided.clone(),
             relevant_dependent_config_names: self.relevant_dependent_config_names.clone(),
-            schema: self.schema,
         }
     }
 }
