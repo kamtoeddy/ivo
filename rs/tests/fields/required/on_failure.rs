@@ -161,8 +161,9 @@ async fn should_trigger_on_failure_handlers_during_updates_with_unchanged_values
                     .on_failure(|ctx: IvoContext<DataInput, Data>, _| {
                         if true {
                             panic!(
-                                "[required]: on_failure triggered with value: {}",
-                                ctx.input().required.unwrap().as_str()
+                                "[required]: on_failure triggered with value: ({}, {:?})",
+                                ctx.raw_input().required.unwrap().as_str(),
+                                ctx.input().required
                             );
                         }
 
@@ -204,7 +205,7 @@ async fn should_trigger_on_failure_handlers_during_updates_with_unchanged_values
 }
 
 async_test_matrix!(
-    "[required]: on_failure triggered with value: some_value",
+    "[required]: on_failure triggered with value: (some_value, None)",
     should_trigger_on_failure_handlers_during_updates_with_unchanged_values
 );
 

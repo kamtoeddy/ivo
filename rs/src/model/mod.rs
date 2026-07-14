@@ -320,6 +320,7 @@ impl<
             CtxOptions,
         ),
     > {
+        println!("\nraw_input: {:#?}", updates);
         let old_partial_values: O::Partial = data.clone().into();
 
         let mut ctx = Arc::new(InternalIvoContext::<I, O>::new_update_ctx(
@@ -502,6 +503,8 @@ impl<
         }
 
         // Resolve values of dependent fields
+        let mut input = ctx.input();
+        let mut changes = ctx.changes();
         let updated_values = ctx.values();
 
         let mut relevant_fields_provided = HashSet::new();
@@ -520,8 +523,18 @@ impl<
                 &updated_values.ivo_internal_get_erased_value(&field_info.name),
             ) {
                 relevant_fields_provided.insert(field_name.clone());
+
+                continue;
             }
+
+            input.ivo_internal_unset(field_name);
+            changes.ivo_internal_unset(field_name);
         }
+
+        Arc::make_mut(&mut ctx)
+            .set_input(input)
+            .set_changes(changes.clone())
+            .set_full_values(data.ivo_internal_clone_with(changes));
 
         let mut fields_collection =
             fields_collection.new_with_relevant_fields_provided(relevant_fields_provided);
@@ -1199,12 +1212,30 @@ impl<
                     || !previous_values.ivo_internal_is_value_equal(&field_name, &value)
                 {
                     relevant_fields_provided.insert(field_name.clone());
+
+                    if field_info.is_output {
+                        output.ivo_internal_set(
+                            &field_name,
+                            &input.ivo_internal_get_erased_value(&field_name),
+                        );
+                    }
+                } else {
+                    input.ivo_internal_unset(&field_name);
                 }
 
                 fields_provided.insert(field_name);
             }
         } else {
             for field_name in input_values.ivo_internal_fields_available() {
+                let field_info = fields_collection.get(&field_name);
+
+                if field_info.is_output {
+                    output.ivo_internal_set(
+                        &field_name,
+                        &input.ivo_internal_get_erased_value(&field_name),
+                    );
+                }
+
                 fields_provided.insert(field_name.clone());
                 relevant_fields_provided.insert(field_name);
             }
@@ -1252,39 +1283,43 @@ impl<
 
                 match source {
                     Some(IsFieldProvisionEnabled::False) => {
-                        input.ivo_internal_unset(&field_info.name);
-                        relevant_fields_provided.remove(field_info.name);
+                        input.ivo_internal_unset(field_name);
+                        relevant_fields_provided.remove(field_name);
+
+                        if field_info.is_output {
+                            output.ivo_internal_unset(field_name);
+                        }
                     }
                     Some(IsFieldProvisionEnabled::Func(resolver)) => {
                         resolvers.push((vec![field_info.name], resolver));
                     }
                     Some(IsFieldProvisionEnabled::Readonly) if is_update => {
-                        relevant_fields_provided.remove(field_info.name);
-
-                        if let Some(ValueResolverWithSharedInput::Static(value)) = default {
+                        if let Some(ValueResolverWithSharedInput::Static(default_value)) = default {
                             // readonly means: only allow update if value prev_value == default_value
 
-                            if previous_values.ivo_internal_is_value_equal(&field_info.name, value)
+                            if !previous_values
+                                .ivo_internal_is_value_equal(field_name, default_value)
                             {
-                                relevant_fields_provided.insert(field_info.name.to_string());
+                                input.ivo_internal_unset(field_name);
+                                relevant_fields_provided.remove(field_name);
 
                                 if field_info.is_output {
-                                    output.ivo_internal_set(
-                                        &field_info.name,
-                                        &input.ivo_internal_get_erased_value(&field_info.name),
-                                    );
+                                    output.ivo_internal_unset(field_name);
                                 }
                             }
+
+                            continue;
                         }
-                    }
-                    _ => {
+
+                        // readonly for required fields
+                        input.ivo_internal_unset(field_name);
+                        relevant_fields_provided.remove(field_name);
+
                         if field_info.is_output {
-                            output.ivo_internal_set(
-                                &field_info.name,
-                                &input.ivo_internal_get_erased_value(&field_info.name),
-                            );
+                            output.ivo_internal_unset(field_name);
                         }
                     }
+                    _ => {}
                 };
             }
         }
@@ -1313,9 +1348,9 @@ impl<
             );
         }
 
-        let tasks = resolvers.into_iter().map(async |(field_infos, resolver)| {
+        let tasks = resolvers.into_iter().map(async |(field_names, resolver)| {
             (
-                field_infos,
+                field_names,
                 resolver(Arc::clone(&ctx), Arc::clone(&options)).await,
             )
         });
@@ -1325,8 +1360,8 @@ impl<
                 let field_info = fields_collection.get(field_name);
 
                 if ignore {
-                    relevant_fields_provided.remove(field_name);
                     input.ivo_internal_unset(field_name);
+                    relevant_fields_provided.remove(field_name);
 
                     if field_info.is_output {
                         output.ivo_internal_unset(field_name);
@@ -1336,13 +1371,6 @@ impl<
                 }
 
                 relevant_fields_provided.insert(field_name.to_string());
-
-                if field_info.is_output {
-                    output.ivo_internal_set(
-                        field_name,
-                        &input.ivo_internal_get_erased_value(field_name),
-                    );
-                }
             }
         }
 
@@ -1541,10 +1569,6 @@ impl<
             // some relevant fields may be virtual aliases
             .map(|name| fields_collection.get(name).config_name.to_string())
             .collect::<HashSet<_>>();
-
-        // for field_info in fields_collection.success_fields() {
-        //     field_names.insert(field_info.config_name.to_string());
-        // }
 
         let candidate_field_names = if ctx.is_update() {
             ctx.changes().ivo_internal_fields_available()

@@ -97,19 +97,17 @@ impl<
     }
 
     pub fn new_with_dependent_fields_changed(mut self, field_names: HashSet<String>) -> Self {
-        // self.output_fields_changed = field_names.clone();
+        // let mut relevant_dependent_config_names = HashSet::new();
 
-        let mut relevant_dependent_config_names = HashSet::new();
+        // for field_name in field_names {
+        //     relevant_dependent_config_names.insert(
+        //         self.get_optional(&field_name)
+        //             .map(|info| info.config_name.to_string())
+        //             .unwrap_or(field_name),
+        //     );
+        // }
 
-        for field_name in field_names {
-            relevant_dependent_config_names.insert(
-                self.get_optional(&field_name)
-                    .map(|info| info.config_name.to_string())
-                    .unwrap_or(field_name),
-            );
-        }
-
-        self.relevant_dependent_config_names = relevant_dependent_config_names;
+        self.relevant_dependent_config_names = field_names;
 
         self
     }
