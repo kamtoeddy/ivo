@@ -1,4 +1,7 @@
-use std::{collections::HashSet, fmt::Debug};
+use std::{
+    collections::{HashMap, HashSet},
+    fmt::Debug,
+};
 
 use crate::{
     __private_types::{FieldInfo, IvoInputStruct},
@@ -14,11 +17,13 @@ pub(super) struct FieldInfoCollection<
     Timestamp: Clone + Debug + Send + Sync + 'static,
     ErrorTool: IvoErrorTool,
 > {
-    config_names: HashSet<String>,
+    fields: HashMap<&'a str, FieldInfo<'a>>,
+    fields_provided: HashSet<String>,
+    output_fields_changed: HashSet<String>,
+    relevant_fields_provided: HashSet<String>,
+    pub relevant_dependent_config_names: HashSet<String>,
+    pub relevant_config_names: HashSet<String>,
     schema: &'a Schema<I, O, CtxOptions, Timestamp, ErrorTool>,
-    pub fields: Vec<FieldInfo>,
-    pub schema_input_fields: HashSet<String>,
-    pub schema_output_fields: HashSet<String>,
 }
 
 impl<
@@ -34,136 +39,190 @@ impl<
     pub fn new(schema: &'a Schema<I, O, CtxOptions, Timestamp, ErrorTool>) -> Self {
         Self {
             schema,
-            schema_input_fields: I::ivo_internal_field_names(),
-            schema_output_fields: O::ivo_internal_field_names(),
-            config_names: HashSet::new(),
-            fields: Vec::new(),
+            relevant_config_names: HashSet::new(),
+            fields: Self::parse_fields(schema),
+            fields_provided: HashSet::new(),
+            output_fields_changed: HashSet::new(),
+            relevant_fields_provided: HashSet::new(),
+            relevant_dependent_config_names: HashSet::new(),
         }
     }
 
-    #[inline]
-    pub fn add(&mut self, field_info: FieldInfo) {
-        if self.config_names.insert(field_info.config_name.clone()) {
-            self.fields.push(field_info);
-        }
+    pub fn new_with_fields_provided(mut self, fields_provided: HashSet<String>) -> Self {
+        self.fields_provided = fields_provided;
+
+        self
     }
 
-    pub fn set_fields(&mut self, fields: Vec<FieldInfo>) {
-        let mut config_names = HashSet::new();
-
-        for field_info in fields.iter() {
-            config_names.insert(field_info.config_name.clone());
-        }
-
-        self.config_names = config_names;
-        self.fields = fields;
-    }
-
-    pub fn from_fields(
-        schema: &'a Schema<I, O, CtxOptions, Timestamp, ErrorTool>,
-        fields: Vec<FieldInfo>,
-        schema_input_fields: &HashSet<String>,
-        schema_output_fields: &HashSet<String>,
+    pub fn new_with_relevant_fields_provided(
+        mut self,
+        relevant_fields_provided: HashSet<String>,
     ) -> Self {
         let mut config_names = HashSet::new();
+        let mut output_fields_changed = HashSet::new();
+        // let mut relevant_dependent_config_names = HashSet::new();
 
-        for field_info in fields.iter() {
-            config_names.insert(field_info.config_name.clone());
-        }
+        for field_name in relevant_fields_provided.iter() {
+            let info = self.get(field_name);
 
-        Self {
-            schema,
-            schema_input_fields: schema_input_fields.clone(),
-            schema_output_fields: schema_output_fields.clone(),
-            config_names,
-            fields,
-        }
-    }
+            config_names.insert(info.config_name.to_string());
+            // relevant_dependent_config_names.insert(info.config_name.to_string());
 
-    #[inline(always)]
-    pub fn contains(&self, field_name: &str) -> bool {
-        self.config_names.contains(field_name)
-    }
-
-    #[inline(always)]
-    pub fn find_ref(&'a self, field_name: &str) -> Option<&'a FieldInfo> {
-        self.fields.iter().find(|f| f.name == *field_name)
-    }
-
-    #[inline(always)]
-    fn find(&self, field_name: &str) -> Option<FieldInfo> {
-        self.find_ref(field_name).cloned()
-    }
-
-    pub fn get(&mut self, field_name: &str) -> Option<FieldInfo> {
-        self.find(field_name).or_else(|| {
-            Self::get_info(
-                field_name,
-                self.schema,
-                &self.schema_input_fields,
-                &self.schema_output_fields,
-            )
-            .inspect(|f| self.add(f.clone()))
-        })
-    }
-
-    fn get_info(
-        field_name: &str,
-        schema: &Schema<I, O, CtxOptions, Timestamp, ErrorTool>,
-        schema_input_fields: &HashSet<String>,
-        schema_output_fields: &HashSet<String>,
-    ) -> Option<FieldInfo> {
-        if let Some(InternalFieldConfig {
-            alias, depends_on, ..
-        }) = schema.field_configs.get(field_name)
-        {
-            if depends_on.is_none() {
-                let field_name = field_name.to_string();
-
-                return Some(FieldInfo {
-                    config_name: field_name.clone(),
-                    is_input: schema_input_fields.contains(&field_name),
-                    is_output: schema_output_fields.contains(&field_name),
-                    name: alias.clone().unwrap_or(field_name),
-                });
+            if info.is_output {
+                output_fields_changed.insert(field_name.clone());
             }
+        }
 
-            // otherwise, field_name is an alias for a virtual field
-            // the current config depends on
+        self.relevant_config_names = config_names;
+        self.output_fields_changed = output_fields_changed;
+        self.relevant_fields_provided = relevant_fields_provided;
+        // self.relevant_dependent_config_names = relevant_dependent_config_names;
 
-            for parent_name in depends_on.as_ref().unwrap() {
-                if let Some(InternalFieldConfig {
-                    alias: Some(alias),
+        self
+    }
+
+    pub fn cloned_from_relevant_dependent_fields(&self) -> Self {
+        let mut col = self.clone();
+        let mut relevant_dependent_config_names = HashSet::new();
+
+        for field_name in col.relevant_fields_provided.iter() {
+            let info = self.get(field_name);
+
+            relevant_dependent_config_names.insert(info.config_name.to_string());
+        }
+
+        col.relevant_dependent_config_names = relevant_dependent_config_names;
+
+        col
+    }
+
+    pub fn new_with_dependent_fields_changed(mut self, field_names: HashSet<String>) -> Self {
+        // self.output_fields_changed = field_names.clone();
+
+        let mut relevant_dependent_config_names = HashSet::new();
+
+        for field_name in field_names {
+            relevant_dependent_config_names.insert(
+                self.get_optional(&field_name)
+                    .map(|info| info.config_name.to_string())
+                    .unwrap_or(field_name),
+            );
+        }
+
+        self.relevant_dependent_config_names = relevant_dependent_config_names;
+
+        self
+    }
+
+    pub fn new_with_appended_output_fields_changed(mut self, field_names: HashSet<String>) -> Self {
+        for field_name in field_names {
+            self.output_fields_changed.insert(field_name);
+        }
+
+        self
+    }
+
+    pub fn new_with_config_names(mut self, config_names: HashSet<String>) -> Self {
+        self.relevant_config_names = config_names;
+
+        self
+    }
+
+    pub fn success_fields(&'a self) -> Vec<&'a FieldInfo<'a>> {
+        let mut fields = self.relevant_fields_provided.clone();
+
+        fields.extend(self.output_fields_changed.clone());
+
+        fields
+            .into_iter()
+            .map(|field_name| self.get(&field_name))
+            .collect()
+    }
+
+    pub fn fields_provided(&'a self) -> &'a HashSet<String> {
+        &self.fields_provided
+    }
+
+    pub fn relevant_fields_provided(&'a self) -> &'a HashSet<String> {
+        &self.relevant_fields_provided
+    }
+
+    #[inline(always)]
+    pub fn is_relevant_config_name(&self, config_name: &str) -> bool {
+        self.relevant_config_names.contains(config_name)
+    }
+
+    #[inline(always)]
+    pub fn is_relevant_dependent_config_name(&self, config_name: &str) -> bool {
+        self.relevant_dependent_config_names.contains(config_name)
+    }
+
+    #[inline(always)]
+    pub fn get(&'a self, field_name: &str) -> &'a FieldInfo<'a> {
+        self.get_optional(field_name).unwrap()
+    }
+
+    #[inline(always)]
+    fn get_optional(&'a self, field_name: &str) -> Option<&'a FieldInfo<'a>> {
+        self.fields.get(field_name)
+    }
+
+    fn parse_fields(
+        schema: &'a Schema<I, O, CtxOptions, Timestamp, ErrorTool>,
+    ) -> HashMap<&'a str, FieldInfo<'a>> {
+        let mut fields = HashMap::new();
+
+        for (config_name, config) in schema.field_configs.iter() {
+            match config {
+                InternalFieldConfig {
+                    alias,
                     field_type: FieldType::Virtual,
                     ..
-                }) = schema.field_configs.get(*parent_name)
-                {
-                    if alias == field_name {
-                        return Some(FieldInfo {
-                            config_name: parent_name.to_string(),
+                } => {
+                    fields.insert(
+                        *config_name,
+                        FieldInfo {
+                            config_name,
                             is_input: true,
                             is_output: false,
-                            name: field_name.to_owned(),
-                        });
+                            name: config_name,
+                        },
+                    );
+
+                    if let Some(name) = alias {
+                        fields.insert(
+                            *name,
+                            FieldInfo {
+                                config_name,
+                                is_input: true,
+                                is_output: false,
+                                name,
+                            },
+                        );
+                    } else {
                     }
                 }
-            }
-        }
-
-        for (virtual_name, InternalFieldConfig { alias, .. }) in schema.field_configs.iter() {
-            if let Some(alias) = alias {
-                if alias == field_name {
-                    return Some(FieldInfo {
-                        config_name: virtual_name.to_owned(),
-                        is_input: true,
-                        is_output: false,
-                        name: field_name.to_string(),
-                    });
+                InternalFieldConfig {
+                    field_type: FieldType::Lax | FieldType::Required,
+                    ..
+                } => {
+                    fields.insert(
+                        *config_name,
+                        FieldInfo {
+                            config_name,
+                            is_input: true,
+                            is_output: true,
+                            name: config_name,
+                        },
+                    );
                 }
-            }
+                _ => {
+                    continue;
+                }
+            };
         }
 
-        None
+        fields
     }
 }
 
@@ -178,11 +237,13 @@ impl<
 {
     fn clone(&self) -> Self {
         Self {
-            config_names: self.config_names.clone(),
+            relevant_config_names: self.relevant_config_names.clone(),
             fields: self.fields.clone(),
+            output_fields_changed: self.output_fields_changed.clone(),
+            fields_provided: self.fields_provided.clone(),
+            relevant_fields_provided: self.relevant_fields_provided.clone(),
+            relevant_dependent_config_names: self.relevant_dependent_config_names.clone(),
             schema: self.schema,
-            schema_input_fields: self.schema_input_fields.clone(),
-            schema_output_fields: self.schema_output_fields.clone(),
         }
     }
 }

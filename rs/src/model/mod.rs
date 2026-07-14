@@ -2,14 +2,14 @@ mod internal;
 
 use futures::future::{join_all, BoxFuture};
 use futures::FutureExt;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::fmt::Debug;
 use std::future::ready;
 use std::sync::Arc;
 
 use crate::__private_types::{
     types::{DefaultCtxOptions, PartialErrorsMethods},
-    FieldInfo, IvoInputStruct,
+    IvoInputStruct,
 };
 use crate::model::internal::FieldInfoCollection;
 use crate::schema::options::types::IgnoreConfig;
@@ -84,6 +84,7 @@ impl<
             CtxOptions,
         ),
     > {
+        println!("\nraw_input: {:#?}", input);
         let shared_rw_options = Arc::new(IvoRwLock::new(options));
         let mut ctx = Arc::new(InternalIvoContext::<I, O>::new_create_ctx(
             input.clone(),
@@ -92,7 +93,7 @@ impl<
         ));
 
         // filter out ignored fields
-        let (input, output, relevant_fields_provided, fields_provided) = self
+        let (input, output, fields_collection) = self
             .filter_input_fields_allowed(
                 None,
                 input,
@@ -100,6 +101,8 @@ impl<
                 Arc::clone(&shared_rw_options),
             )
             .await;
+
+        println!("\ninput: {:#?}\noutput: {:#?}", input, output);
 
         // Resolve constants & defaults
         let output = self
@@ -110,31 +113,34 @@ impl<
             .set_input(input.clone())
             .set_changes(output);
 
-        if let Err(payload) = self
+        match self
             .evaluate_missing_required_fields(
-                &relevant_fields_provided,
+                &fields_collection,
                 Arc::clone(&ctx),
                 Arc::clone(&shared_rw_options),
             )
             .await
         {
-            let final_ctx_options = unwrap_async_lock(shared_rw_options);
+            Ok(col) => col,
+            Err(payload) => {
+                let final_ctx_options = unwrap_async_lock(shared_rw_options);
 
-            return Err((
-                payload,
-                self.prepare_failure_handlers(
-                    fields_provided.fields,
-                    ctx,
-                    Arc::new(final_ctx_options.clone()),
-                ),
-                final_ctx_options,
-            ));
-        }
+                return Err((
+                    payload,
+                    self.prepare_failure_handlers(
+                        fields_collection,
+                        ctx,
+                        Arc::new(final_ctx_options.clone()),
+                    ),
+                    final_ctx_options,
+                ));
+            }
+        };
 
         // Run validators
         match self
             .validate(
-                &relevant_fields_provided,
+                &fields_collection,
                 Arc::clone(&ctx),
                 Arc::clone(&shared_rw_options),
             )
@@ -151,7 +157,7 @@ impl<
                 return Err((
                     payload,
                     self.prepare_failure_handlers(
-                        fields_provided.fields,
+                        fields_collection,
                         ctx,
                         Arc::new(final_ctx_options.clone()),
                     ),
@@ -164,7 +170,7 @@ impl<
         // Run re_validators
         match self
             .re_validate(
-                &relevant_fields_provided,
+                &fields_collection,
                 Arc::clone(&ctx),
                 Arc::clone(&shared_rw_options),
             )
@@ -181,7 +187,7 @@ impl<
                 return Err((
                     payload,
                     self.prepare_failure_handlers(
-                        fields_provided.fields,
+                        fields_collection,
                         ctx,
                         Arc::new(final_ctx_options.clone()),
                     ),
@@ -194,7 +200,7 @@ impl<
         // Run post-validators
         match self
             .post_validate(
-                &relevant_fields_provided,
+                &fields_collection,
                 Arc::clone(&ctx),
                 Arc::clone(&shared_rw_options),
             )
@@ -211,7 +217,7 @@ impl<
                 return Err((
                     payload,
                     self.prepare_failure_handlers(
-                        fields_provided.fields,
+                        fields_collection.clone(),
                         ctx,
                         Arc::new(final_ctx_options.clone()),
                     ),
@@ -224,7 +230,7 @@ impl<
         // Sanitize virtuals
         if let Some(sanitized_inputs) = self
             .sanitize_virtuals(
-                &relevant_fields_provided,
+                &fields_collection,
                 Arc::clone(&ctx),
                 Arc::clone(&shared_rw_options),
             )
@@ -234,14 +240,23 @@ impl<
         }
 
         // Resolve values of dependent fields
-        let mut dependent_fields_col = FieldInfoCollection::from_fields(
-            self.schema,
-            relevant_fields_provided.fields.clone(),
-            &relevant_fields_provided.schema_input_fields,
-            &relevant_fields_provided.schema_output_fields,
+        let mut dependent_fields_col = fields_collection.cloned_from_relevant_dependent_fields();
+        let mut fields_collection = fields_collection;
+
+        println!(
+            "\nfields_provided: {:#?}",
+            fields_collection.fields_provided()
+        );
+        println!(
+            "\nrelevant_fields_provided: {:#?}",
+            fields_collection.relevant_fields_provided()
+        );
+        println!(
+            "\nconfig_names: {:#?}",
+            fields_collection.relevant_config_names
         );
 
-        while let Some((validated_outputs, dependent_fields_resolved)) = self
+        while let Some((validated_outputs, fields_changed)) = self
             .resolve_dependent_values(
                 &dependent_fields_col,
                 Arc::clone(&ctx),
@@ -249,9 +264,28 @@ impl<
             )
             .await
         {
+            dependent_fields_col =
+                dependent_fields_col.new_with_dependent_fields_changed(fields_changed.clone());
+
+            fields_collection =
+                fields_collection.new_with_appended_output_fields_changed(fields_changed);
+
             Arc::make_mut(&mut ctx).set_changes(validated_outputs);
-            dependent_fields_col.set_fields(dependent_fields_resolved);
         }
+
+        println!("\nvalues: {:#?}", ctx.values());
+        println!(
+            "\nfields_provided: {:#?}",
+            fields_collection.fields_provided()
+        );
+        println!(
+            "\nrelevant_fields_provided: {:#?}",
+            fields_collection.relevant_fields_provided()
+        );
+        println!(
+            "\nconfig_names: {:#?}",
+            fields_collection.relevant_config_names
+        );
 
         // Generate and set timestamps
         let (values, should_update_ctx) = self.attach_timestamps(ctx.values(), false);
@@ -265,7 +299,7 @@ impl<
         Ok((
             O::ivo_internal_dangerously_get_values_from_partial(values),
             self.prepare_success_handlers(
-                relevant_fields_provided,
+                fields_collection,
                 ctx,
                 Arc::new(final_ctx_options.clone()),
             ),
@@ -298,7 +332,7 @@ impl<
 
         let shared_rw_options = Arc::new(IvoRwLock::new(options));
 
-        let (input, output, relevant_fields_provided, fields_provided) = self
+        let (input, output, fields_collection) = self
             .filter_input_fields_allowed(
                 Some(&old_partial_values),
                 updates,
@@ -310,13 +344,13 @@ impl<
         Arc::make_mut(&mut ctx).set_input(input).set_changes(output);
 
         // if the updates provided are all none, the nothing to update
-        if relevant_fields_provided.fields.is_empty() {
+        if fields_collection.relevant_fields_provided().is_empty() {
             let final_ctx_options = unwrap_async_lock(shared_rw_options);
 
             return Err((
                 None,
                 self.prepare_failure_handlers(
-                    fields_provided.fields,
+                    fields_collection,
                     ctx,
                     Arc::new(final_ctx_options.clone()),
                 ),
@@ -325,31 +359,47 @@ impl<
         }
 
         // Evaluate missing required fields
-        if let Err(payload) = self
+        match self
             .evaluate_missing_required_fields(
-                &relevant_fields_provided,
+                &fields_collection,
                 Arc::clone(&ctx),
                 Arc::clone(&shared_rw_options),
             )
             .await
         {
-            let final_ctx_options = unwrap_async_lock(shared_rw_options);
+            Ok(col) => col,
+            Err(payload) => {
+                let final_ctx_options = unwrap_async_lock(shared_rw_options);
 
-            return Err((
-                Some(payload),
-                self.prepare_failure_handlers(
-                    fields_provided.fields,
-                    ctx,
-                    Arc::new(final_ctx_options.clone()),
-                ),
-                final_ctx_options,
-            ));
-        }
+                return Err((
+                    Some(payload),
+                    self.prepare_failure_handlers(
+                        fields_collection,
+                        ctx,
+                        Arc::new(final_ctx_options.clone()),
+                    ),
+                    final_ctx_options,
+                ));
+            }
+        };
+
+        println!(
+            "\nfields_provided: {:#?}",
+            fields_collection.fields_provided()
+        );
+        println!(
+            "\nrelevant_fields_provided: {:#?}",
+            fields_collection.relevant_fields_provided()
+        );
+        println!(
+            "\nconfig_names: {:#?}",
+            fields_collection.relevant_config_names
+        );
 
         // Run validators
         match self
             .validate(
-                &relevant_fields_provided,
+                &fields_collection,
                 Arc::clone(&ctx),
                 Arc::clone(&shared_rw_options),
             )
@@ -367,7 +417,7 @@ impl<
                 return Err((
                     Some(payload),
                     self.prepare_failure_handlers(
-                        fields_provided.fields,
+                        fields_collection,
                         ctx,
                         Arc::new(final_ctx_options.clone()),
                     ),
@@ -380,7 +430,7 @@ impl<
         // Run re_validators
         match self
             .re_validate(
-                &relevant_fields_provided,
+                &fields_collection,
                 Arc::clone(&ctx),
                 Arc::clone(&shared_rw_options),
             )
@@ -398,7 +448,7 @@ impl<
                 return Err((
                     Some(payload),
                     self.prepare_failure_handlers(
-                        fields_provided.fields,
+                        fields_collection,
                         ctx,
                         Arc::new(final_ctx_options.clone()),
                     ),
@@ -411,7 +461,7 @@ impl<
         // Run post-validators
         match self
             .post_validate(
-                &relevant_fields_provided,
+                &fields_collection,
                 Arc::clone(&ctx),
                 Arc::clone(&shared_rw_options),
             )
@@ -429,7 +479,7 @@ impl<
                 return Err((
                     Some(payload),
                     self.prepare_failure_handlers(
-                        fields_provided.fields,
+                        fields_collection,
                         ctx,
                         Arc::new(final_ctx_options.clone()),
                     ),
@@ -442,7 +492,7 @@ impl<
         // Sanitize virtuals
         if let Some(sanitized_inputs) = self
             .sanitize_virtuals(
-                &relevant_fields_provided,
+                &fields_collection,
                 Arc::clone(&ctx),
                 Arc::clone(&shared_rw_options),
             )
@@ -454,35 +504,31 @@ impl<
         // Resolve values of dependent fields
         let updated_values = ctx.values();
 
-        let fields_updated_vec = relevant_fields_provided
-            .fields
-            .iter()
-            .filter_map(|f| {
-                if !f.is_output {
-                    return Some(f.clone());
-                }
+        let mut relevant_fields_provided = HashSet::new();
 
-                if !old_partial_values.ivo_internal_is_value_equal(
-                    &f.name,
-                    &updated_values.ivo_internal_get_erased_value(&f.name),
-                ) {
-                    return Some(f.clone());
-                }
+        for field_name in fields_collection.relevant_fields_provided() {
+            let field_info = fields_collection.get(field_name);
 
-                None
-            })
-            .collect();
+            if !field_info.is_output {
+                relevant_fields_provided.insert(field_name.clone());
 
-        let mut fields_updated = FieldInfoCollection::from_fields(
-            self.schema,
-            fields_updated_vec,
-            &relevant_fields_provided.schema_input_fields,
-            &relevant_fields_provided.schema_output_fields,
-        );
+                continue;
+            }
 
-        let mut dependent_fields_col = fields_updated.clone();
+            if !old_partial_values.ivo_internal_is_value_equal(
+                &field_info.name,
+                &updated_values.ivo_internal_get_erased_value(&field_info.name),
+            ) {
+                relevant_fields_provided.insert(field_name.clone());
+            }
+        }
 
-        while let Some((validated_outputs, dependent_fields_resolved)) = self
+        let mut fields_collection =
+            fields_collection.new_with_relevant_fields_provided(relevant_fields_provided);
+
+        let mut dependent_fields_col = fields_collection.cloned_from_relevant_dependent_fields();
+
+        while let Some((validated_outputs, fields_changed)) = self
             .resolve_dependent_values(
                 &dependent_fields_col,
                 Arc::clone(&ctx),
@@ -490,11 +536,23 @@ impl<
             )
             .await
         {
-            for field_info in dependent_fields_resolved.iter() {
-                fields_updated.add(field_info.clone());
-            }
+            println!("\nfields_changed: {:#?}", fields_changed);
+            println!(
+                "\ndependent_fields_col: {:#?}",
+                dependent_fields_col.relevant_dependent_config_names
+            );
 
-            dependent_fields_col.set_fields(dependent_fields_resolved);
+            dependent_fields_col =
+                dependent_fields_col.new_with_dependent_fields_changed(fields_changed.clone());
+
+            println!(
+                "\ndependent_fields_col after: {:#?}",
+                dependent_fields_col.relevant_dependent_config_names
+            );
+
+            fields_collection =
+                fields_collection.new_with_appended_output_fields_changed(fields_changed);
+
             Arc::make_mut(&mut ctx)
                 .set_changes(validated_outputs.clone())
                 .set_full_values(data.ivo_internal_clone_with(validated_outputs));
@@ -507,7 +565,7 @@ impl<
             return Err((
                 None,
                 self.prepare_failure_handlers(
-                    fields_provided.fields,
+                    fields_collection,
                     ctx,
                     Arc::new(final_ctx_options.clone()),
                 ),
@@ -528,7 +586,11 @@ impl<
 
         Ok((
             updated_values,
-            self.prepare_success_handlers(fields_updated, ctx, Arc::new(final_ctx_options.clone())),
+            self.prepare_success_handlers(
+                fields_collection,
+                ctx,
+                Arc::new(final_ctx_options.clone()),
+            ),
             final_ctx_options,
         ))
     }
@@ -561,12 +623,13 @@ impl<
 
     async fn validate<'a>(
         &self,
-        fields_provided: &'a FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
+        fields_collection: &FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
         ctx: IvoContext<I, O>,
         options: IvoRwCtxOptions<CtxOptions>,
     ) -> Result<Option<(I::Partial, O::Partial)>, ErrorTool::ErrorPayload> {
+        let relevant_fields_provided = fields_collection.relevant_fields_provided();
         let raw_inputs = ctx.raw_input();
-        let mut validators = Vec::with_capacity(fields_provided.fields.len());
+        let mut validators = Vec::with_capacity(relevant_fields_provided.len());
         let mut validated_inputs = ctx.input();
         let mut validated_outputs = if ctx.is_update() {
             ctx.changes()
@@ -575,7 +638,9 @@ impl<
         };
         let mut has_updates = false;
 
-        for field_info in fields_provided.fields.iter() {
+        for field_name in relevant_fields_provided.iter() {
+            let field_info = fields_collection.get(field_name);
+
             if let Some(InternalFieldConfig {
                 field_type,
                 validator,
@@ -618,11 +683,11 @@ impl<
         let mut error_tool = ErrorTool::new();
 
         for (field_info, result) in join_all(tasks).await {
-            let field_name = field_info.name.clone();
+            let field_name = field_info.name;
 
             match result {
                 Err((reason, metadata)) => {
-                    error_tool.add(field_name.as_str(), FieldError { reason, metadata });
+                    error_tool.add(field_name, FieldError { reason, metadata });
                 }
                 Ok(Some(value)) => {
                     has_updates = true;
@@ -640,8 +705,8 @@ impl<
                         has_updates = true;
 
                         validated_outputs.ivo_internal_set(
-                            &field_name,
-                            &validated_outputs.ivo_internal_get_erased_value(&field_name),
+                            field_name,
+                            &validated_outputs.ivo_internal_get_erased_value(field_name),
                         );
                     }
                 }
@@ -661,13 +726,16 @@ impl<
 
     async fn re_validate<'a>(
         &self,
-        fields_provided: &'a FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
+        fields_collection: &FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
         ctx: IvoContext<I, O>,
         options: IvoRwCtxOptions<CtxOptions>,
     ) -> Result<Option<(I::Partial, O::Partial)>, ErrorTool::ErrorPayload> {
-        let mut re_validators = Vec::with_capacity(fields_provided.fields.len());
+        let relevant_fields_provided = fields_collection.relevant_fields_provided();
+        let mut re_validators = Vec::with_capacity(relevant_fields_provided.len());
 
-        for field_info in fields_provided.fields.iter() {
+        for field_name in relevant_fields_provided.iter() {
+            let field_info = fields_collection.get(field_name);
+
             if let Some(InternalFieldConfig {
                 re_validator: Some(re_validator),
                 ..
@@ -704,11 +772,11 @@ impl<
         let mut has_updates = false;
 
         for (field_info, result) in join_all(tasks).await {
-            let field_name = field_info.name.clone();
+            let field_name = field_info.name;
 
             match result {
                 Err((reason, metadata)) => {
-                    error_tool.add(field_name.as_str(), FieldError { reason, metadata });
+                    error_tool.add(field_name, FieldError { reason, metadata });
                 }
                 Ok(Some(value)) => {
                     has_updates = true;
@@ -738,13 +806,12 @@ impl<
 
     async fn post_validate<'a>(
         &self,
-        fields_provided: &'a FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
+        fields_collection: &FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
         ctx: IvoContext<I, O>,
         options: IvoRwCtxOptions<CtxOptions>,
     ) -> Result<Option<(I::Partial, O::Partial)>, ErrorTool::ErrorPayload> {
         let mut pre_validators = vec![];
         let mut post_validators = vec![];
-        let mut input_fields = fields_provided.clone();
 
         if let Some(configs) = &self.schema.options.post_validate {
             for PostValidationConfig {
@@ -753,7 +820,10 @@ impl<
                 validators,
             } in configs
             {
-                if fields.iter().any(|f| fields_provided.contains(f)) {
+                if fields
+                    .iter()
+                    .any(|f| fields_collection.is_relevant_config_name(f))
+                {
                     if let Some(ref pre_validator) = pre_validator {
                         pre_validators.push((fields, pre_validator));
                     }
@@ -791,18 +861,19 @@ impl<
                 match pre_validation {
                     Err(errors) => {
                         for (field_name, (reason, metadata)) in errors.entries() {
-                            let field_info = input_fields.get(&field_name).unwrap();
+                            let field_info = fields_collection.get(&field_name);
 
-                            if fields.contains(&field_info.config_name.as_str()) {
+                            if fields.contains(&field_info.config_name) {
                                 error_tool.add(&field_name, FieldError { reason, metadata });
                             }
                         }
                     }
                     Ok(Some(updates)) => {
-                        for (field_name, value) in updates.ivo_internal_enumerate() {
-                            let field_info = input_fields.get(&field_name).unwrap();
+                        for (field_name, value) in updates.ivo_internal_enumerate_fields_available()
+                        {
+                            let field_info = fields_collection.get(&field_name);
 
-                            if !fields.contains(&field_info.config_name.as_str()) {
+                            if !fields.contains(&field_info.config_name) {
                                 continue;
                             }
 
@@ -853,18 +924,18 @@ impl<
             match validation {
                 Err(errors) => {
                     for (field_name, (reason, metadata)) in errors.entries() {
-                        let field_info = input_fields.get(&field_name).unwrap();
+                        let field_info = fields_collection.get(&field_name);
 
-                        if fields.contains(&field_info.config_name.as_str()) {
+                        if fields.contains(&field_info.config_name) {
                             error_tool.add(&field_name, FieldError { reason, metadata });
                         }
                     }
                 }
                 Ok(Some(updates)) => {
-                    for (field_name, value) in updates.ivo_internal_enumerate() {
-                        let field_info = input_fields.get(&field_name).unwrap();
+                    for (field_name, value) in updates.ivo_internal_enumerate_fields_available() {
+                        let field_info = fields_collection.get(&field_name);
 
-                        if !fields.contains(&field_info.config_name.as_str()) {
+                        if !fields.contains(&field_info.config_name) {
                             continue;
                         }
 
@@ -896,13 +967,16 @@ impl<
 
     async fn sanitize_virtuals<'a>(
         &self,
-        fields_provided: &'a FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
+        fields_collection: &FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
         ctx: IvoContext<I, O>,
         options: IvoRwCtxOptions<CtxOptions>,
     ) -> Option<I::Partial> {
-        let mut sanitizers = Vec::with_capacity(fields_provided.fields.len());
+        let relevant_fields_provided = fields_collection.relevant_fields_provided();
+        let mut sanitizers = Vec::with_capacity(relevant_fields_provided.len());
 
-        for field_info in fields_provided.fields.iter() {
+        for field_name in relevant_fields_provided.iter() {
+            let field_info = fields_collection.get(field_name);
+
             if let Some(InternalFieldConfig {
                 field_type: FieldType::Virtual,
                 sanitizer: Some(sanitizer),
@@ -942,10 +1016,10 @@ impl<
 
     async fn resolve_dependent_values<'a>(
         &self,
-        fields_changed: &'a FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
+        fields_collection: &FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
         ctx: IvoContext<I, O>,
         options: IvoRwCtxOptions<CtxOptions>,
-    ) -> Option<(O::Partial, Vec<FieldInfo>)> {
+    ) -> Option<(O::Partial, HashSet<String>)> {
         let mut resolvers = vec![];
         let previous_values: Option<O::Partial> = ctx.previous_values().map(|v| v.into());
         let is_update = previous_values.as_ref().is_some();
@@ -960,7 +1034,7 @@ impl<
                     ..
                 } if depends_on
                     .iter()
-                    .any(|parent| fields_changed.contains(parent)) =>
+                    .any(|parent| fields_collection.is_relevant_dependent_config_name(parent)) =>
                 {
                     if !is_update {
                         resolvers.push((field_name, resolver));
@@ -995,36 +1069,31 @@ impl<
             return None;
         }
 
-        let tasks = resolvers.into_iter().map(async |(field_info, resolver)| {
+        let tasks = resolvers.into_iter().map(async |(field_name, resolver)| {
             (
-                field_info,
+                field_name,
                 resolver(Arc::clone(&ctx), Arc::clone(&options)).await,
             )
         });
 
         let values = ctx.values();
         let mut updated_values = values.clone();
-        let mut fields_updated = vec![];
+        let mut fields_changed = HashSet::new();
 
         for (field_name, value) in join_all(tasks).await {
             // only keep fields that have been updated
             if !values.ivo_internal_is_value_equal(field_name, &value) {
                 updated_values.ivo_internal_set(field_name, &value);
 
-                fields_updated.push(FieldInfo {
-                    config_name: field_name.clone(),
-                    is_input: false,
-                    is_output: true,
-                    name: field_name.clone(),
-                });
+                fields_changed.insert(field_name.to_string());
             }
         }
 
-        if fields_updated.is_empty() {
+        if fields_changed.is_empty() {
             return None;
         }
 
-        Some((updated_values, fields_updated))
+        Some((updated_values, fields_changed))
     }
 
     async fn attach_constants_and_defaults(
@@ -1034,10 +1103,12 @@ impl<
         options: IvoRwCtxOptions<CtxOptions>,
     ) -> O::Partial {
         let mut resolvers = vec![];
-        let fields_provided = input.ivo_internal_fields_provided();
+        let fields_provided = input.ivo_internal_fields_available();
 
         for (field_name, config) in self.schema.field_configs.iter() {
-            if matches!(config.field_type, FieldType::Lax) && fields_provided.contains(field_name) {
+            if matches!(config.field_type, FieldType::Lax)
+                && fields_provided.contains(&field_name.to_string())
+            {
                 continue;
             }
 
@@ -1104,7 +1175,6 @@ impl<
         I::Partial,
         O::Partial,
         FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
-        FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
     ) {
         let is_update = previous_values.is_some();
         let previous_values = previous_values.cloned().unwrap_or_default();
@@ -1112,42 +1182,53 @@ impl<
         let mut resolvers = vec![];
         let mut input = input_values.clone();
         let mut output = O::Partial::default();
-        let mut fields_provided = FieldInfoCollection::new(self.schema);
-        let mut field_info_vec = vec![];
+        let mut entity_resolver = None;
+        let mut fields_provided = HashSet::new();
+        let mut relevant_fields_provided = HashSet::new();
+        let fields_collection = FieldInfoCollection::new(self.schema);
 
         if is_update {
             if let Some(ref resolver) = self.schema.options.ignore_update {
-                if resolver(
-                    ctx.input(),
-                    ctx.full_values().unwrap(),
-                    Arc::clone(&options),
-                )
-                .await
-                {
-                    return (input, output, fields_provided.clone(), fields_provided);
-                }
+                entity_resolver = Some(resolver);
             }
 
-            for (field_name, value) in input_values.ivo_internal_enumerate() {
-                let field_info = fields_provided.get(&field_name).unwrap();
+            for (field_name, value) in input_values.ivo_internal_enumerate_fields_available() {
+                let field_info = fields_collection.get(&field_name);
 
                 if (field_info.is_input && !field_info.is_output)
                     || !previous_values.ivo_internal_is_value_equal(&field_name, &value)
                 {
-                    field_info_vec.push(field_info);
+                    relevant_fields_provided.insert(field_name.clone());
                 }
+
+                fields_provided.insert(field_name);
             }
         } else {
-            for field_name in input_values.ivo_internal_fields_provided() {
-                field_info_vec.push(fields_provided.get(&field_name).unwrap());
+            for field_name in input_values.ivo_internal_fields_available() {
+                fields_provided.insert(field_name.clone());
+                relevant_fields_provided.insert(field_name);
             }
         }
 
-        let fields_provided = fields_provided;
+        let fields_collection = fields_collection
+            .new_with_fields_provided(fields_provided)
+            .new_with_relevant_fields_provided(relevant_fields_provided.clone());
 
-        let mut final_field_info_map = HashMap::new();
+        if let Some(resolver) = entity_resolver {
+            if resolver(
+                ctx.input(),
+                ctx.full_values().unwrap(),
+                Arc::clone(&options),
+            )
+            .await
+            {
+                return (input, output, fields_collection);
+            }
+        }
 
-        for field_info in field_info_vec.iter() {
+        for field_name in fields_collection.relevant_fields_provided() {
+            let field_info = fields_collection.get(&field_name);
+
             if let Some(InternalFieldConfig {
                 field_type: FieldType::Lax | FieldType::Required | FieldType::Virtual,
                 default,
@@ -1158,7 +1239,7 @@ impl<
             }) = self.schema.field_configs.get(&field_info.config_name)
             {
                 if let Some(resolver) = ignore {
-                    resolvers.push((vec![field_info], resolver));
+                    resolvers.push((vec![field_info.name], resolver));
 
                     continue;
                 }
@@ -1172,17 +1253,20 @@ impl<
                 match source {
                     Some(IsFieldProvisionEnabled::False) => {
                         input.ivo_internal_unset(&field_info.name);
+                        relevant_fields_provided.remove(field_info.name);
                     }
                     Some(IsFieldProvisionEnabled::Func(resolver)) => {
-                        resolvers.push((vec![field_info], resolver));
+                        resolvers.push((vec![field_info.name], resolver));
                     }
                     Some(IsFieldProvisionEnabled::Readonly) if is_update => {
+                        relevant_fields_provided.remove(field_info.name);
+
                         if let Some(ValueResolverWithSharedInput::Static(value)) = default {
                             // readonly means: only allow update if value prev_value == default_value
 
                             if previous_values.ivo_internal_is_value_equal(&field_info.name, value)
                             {
-                                final_field_info_map.insert(&field_info.name, field_info);
+                                relevant_fields_provided.insert(field_info.name.to_string());
 
                                 if field_info.is_output {
                                     output.ivo_internal_set(
@@ -1190,14 +1274,10 @@ impl<
                                         &input.ivo_internal_get_erased_value(&field_info.name),
                                     );
                                 }
-
-                                continue;
                             }
                         }
                     }
                     _ => {
-                        final_field_info_map.insert(&field_info.name, field_info);
-
                         if field_info.is_output {
                             output.ivo_internal_set(
                                 &field_info.name,
@@ -1210,30 +1290,27 @@ impl<
         }
 
         if let Some(ref configs) = self.schema.options.ignore {
+            let config_names_of_fields_provided = relevant_fields_provided
+                .iter()
+                .map(|field_name| fields_collection.get(field_name).config_name)
+                .collect::<HashSet<_>>();
+
             for IgnoreConfig { fields, resolver } in configs {
-                if fields.iter().any(|f| fields_provided.contains(f)) {
-                    resolvers.push((
-                        fields
-                            .iter()
-                            .filter_map(|f| fields_provided.find_ref(f))
-                            .collect(),
-                        resolver,
-                    ));
+                if fields
+                    .iter()
+                    .any(|name| config_names_of_fields_provided.contains(name))
+                {
+                    resolvers.push((fields.clone(), resolver));
                 }
             }
         }
 
-        let mut relevant_fields_provided = FieldInfoCollection::new(self.schema);
-
         if resolvers.is_empty() {
-            relevant_fields_provided.set_fields(
-                final_field_info_map
-                    .values()
-                    .map(|&i| i.to_owned())
-                    .collect(),
+            return (
+                input,
+                output,
+                fields_collection.new_with_relevant_fields_provided(relevant_fields_provided),
             );
-
-            return (input, output, relevant_fields_provided, fields_provided);
         }
 
         let tasks = resolvers.into_iter().map(async |(field_infos, resolver)| {
@@ -1243,54 +1320,51 @@ impl<
             )
         });
 
-        for (field_infos, ignore) in join_all(tasks).await {
-            for field_info in field_infos {
+        for (field_names, ignore) in join_all(tasks).await {
+            for field_name in field_names {
+                let field_info = fields_collection.get(field_name);
+
                 if ignore {
-                    input.ivo_internal_unset(&field_info.name);
+                    relevant_fields_provided.remove(field_name);
+                    input.ivo_internal_unset(field_name);
 
                     if field_info.is_output {
-                        output.ivo_internal_unset(&field_info.name);
+                        output.ivo_internal_unset(field_name);
                     }
-
-                    final_field_info_map.remove(&field_info.name);
 
                     continue;
                 }
 
-                final_field_info_map.insert(&field_info.name, field_info);
+                relevant_fields_provided.insert(field_name.to_string());
 
                 if field_info.is_output {
                     output.ivo_internal_set(
-                        &field_info.name,
-                        &input.ivo_internal_get_erased_value(&field_info.name),
+                        field_name,
+                        &input.ivo_internal_get_erased_value(field_name),
                     );
                 }
             }
         }
 
-        relevant_fields_provided.set_fields(
-            final_field_info_map
-                .values()
-                .map(|&i| i.to_owned())
-                .collect(),
-        );
-
-        (input, output, relevant_fields_provided, fields_provided)
+        (
+            input,
+            output,
+            fields_collection.new_with_relevant_fields_provided(relevant_fields_provided),
+        )
     }
 
     async fn evaluate_missing_required_fields<'a>(
         &self,
-        fields_provided: &'a FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
+        fields_collection: &FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
         ctx: IvoContext<I, O>,
         options: IvoRwCtxOptions<CtxOptions>,
     ) -> Result<(), ErrorTool::ErrorPayload> {
         let mut error_tool = ErrorTool::new();
         let mut resolvers = vec![];
         let is_update = ctx.is_update();
-        let mut input_fields = fields_provided.clone();
 
         for (field_name, config) in self.schema.field_configs.iter() {
-            if fields_provided.contains(field_name) {
+            if fields_collection.is_relevant_config_name(field_name) {
                 continue;
             }
 
@@ -1344,7 +1418,7 @@ impl<
         let mut tasks = resolvers
             .iter()
             .map(|(field_name, resolver)| {
-                let field_info = input_fields.get(field_name).unwrap();
+                let field_info = fields_collection.get(field_name);
 
                 let r = <RequiredResolver<I, O, CtxOptions> as UniformRequiredResolver<
                     I,
@@ -1353,7 +1427,7 @@ impl<
                     ErrorTool,
                 >>::resolve(
                     resolver,
-                    vec![field_info],
+                    vec![field_info.clone()],
                     Arc::clone(&ctx),
                     Arc::clone(&options),
                 );
@@ -1367,7 +1441,7 @@ impl<
                 if config
                     .fields
                     .iter()
-                    .any(|field_name| fields_provided.contains(field_name))
+                    .any(|field_name| fields_collection.is_relevant_config_name(field_name))
                 {
                     continue;
                 }
@@ -1375,7 +1449,7 @@ impl<
                 let field_info_vec = config
                     .fields
                     .iter()
-                    .map(|field_name| input_fields.get(field_name).unwrap())
+                    .map(|field_name| fields_collection.get(field_name).clone())
                     .collect::<Vec<_>>();
 
                 let r = <RequiredOptionConfig<I, O, CtxOptions, ErrorTool> as UniformRequiredResolver<
@@ -1415,23 +1489,27 @@ impl<
         Ok(())
     }
 
-    fn prepare_failure_handlers(
+    fn prepare_failure_handlers<'a>(
         &self,
-        fields_provided: Vec<FieldInfo>,
+        fields_collection: FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
         ctx: IvoContext<I, O>,
         options: IvoCtxOptions<CtxOptions>,
     ) -> AsyncHandlerTrigger<'schema> {
+        let fields_provided = fields_collection.fields_provided();
+
         if fields_provided.is_empty() {
             return Box::new(|| Box::pin(ready(())));
         }
 
         let mut handlers = Vec::with_capacity(fields_provided.len());
 
-        for field_info in fields_provided.iter() {
+        for field_name in fields_provided {
+            let field_info = fields_collection.get(field_name);
+
             if let Some(InternalFieldConfig {
                 on_failure_fns: Some(h_vec),
                 ..
-            }) = self.schema.field_configs.get(&field_info.config_name)
+            }) = self.schema.field_configs.get(field_info.config_name)
             {
                 handlers.extend(h_vec)
             }
@@ -1453,33 +1531,38 @@ impl<
 
     fn prepare_success_handlers<'a>(
         &self,
-        fields_updated: FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
+        fields_collection: FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
         ctx: IvoContext<I, O>,
         options: IvoCtxOptions<CtxOptions>,
     ) -> AsyncHandlerTrigger<'schema> {
-        let mut field_names = HashSet::new();
+        let mut relevant_success_fields = fields_collection
+            .relevant_fields_provided()
+            .iter()
+            // some relevant fields may be virtual aliases
+            .map(|name| fields_collection.get(name).config_name.to_string())
+            .collect::<HashSet<_>>();
 
-        for field_info in fields_updated.fields.iter() {
-            field_names.insert(field_info.config_name.clone());
-        }
+        // for field_info in fields_collection.success_fields() {
+        //     field_names.insert(field_info.config_name.to_string());
+        // }
 
         let candidate_field_names = if ctx.is_update() {
-            ctx.changes().ivo_internal_fields_provided()
+            ctx.changes().ivo_internal_fields_available()
         } else {
-            ctx.values().ivo_internal_fields_provided()
+            ctx.values().ivo_internal_fields_available()
         };
 
         for field_name in candidate_field_names {
-            field_names.insert(field_name);
+            relevant_success_fields.insert(field_name);
         }
 
         let mut handlers = vec![];
 
-        for field_name in field_names.iter() {
+        for field_name in relevant_success_fields.iter() {
             if let Some(InternalFieldConfig {
                 on_success_fns: Some(h_vec),
                 ..
-            }) = self.schema.field_configs.get(field_name)
+            }) = self.schema.field_configs.get(field_name.as_str())
             {
                 handlers.extend(h_vec)
             }
@@ -1491,7 +1574,8 @@ impl<
                 handlers: h_vec,
             } in configs
             {
-                if fields.is_empty() || fields.iter().any(|f| field_names.contains(*f)) {
+                if fields.is_empty() || fields.iter().any(|f| relevant_success_fields.contains(*f))
+                {
                     handlers.extend(h_vec);
                 }
             }

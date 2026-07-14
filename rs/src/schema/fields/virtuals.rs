@@ -48,7 +48,7 @@ pub struct VirtualFieldBuilder<
     _on_failure_fns: PhantomData<HasFailure>,
     _on_success_fns: PhantomData<HasSuccess>,
     // actual data...
-    alias: Option<String>,
+    alias: Option<&'static str>,
     validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
     re_validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
     required_fn: Option<RequiredResolver<I, O, CtxOptions>>,
@@ -229,10 +229,10 @@ impl<
     /// i.e: I cannot have both the virtual field name and it alias
     pub fn alias(
         self,
-        name: &str,
+        name: &'static str,
     ) -> VirtualFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasValidator, Yes> {
         VirtualFieldBuilder {
-            alias: Some(name.to_string()),
+            alias: Some(name),
             validator: self.validator,
             re_validator: self.re_validator,
             sanitizer: self.sanitizer,

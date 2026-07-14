@@ -149,7 +149,7 @@ pub trait UniformRequiredResolver<
 {
     fn resolve<'a>(
         &'a self,
-        fields: Vec<FieldInfo>,
+        fields: Vec<FieldInfo<'a>>,
         ctx: IvoContext<I, O>,
         o: IvoRwCtxOptions<CtxOptions>,
     ) -> UniformRequiredResponse<'a, ErrorTool>;
@@ -164,14 +164,14 @@ where
 {
     fn resolve<'a>(
         &'a self,
-        fields: Vec<FieldInfo>,
+        fields: Vec<FieldInfo<'a>>,
         ctx: IvoContext<I, O>,
         o: IvoRwCtxOptions<CtxOptions>,
     ) -> UniformRequiredResponse<'a, ErrorTool> {
         Box::pin(async move {
             self(ctx, o).await.map(|reason| {
                 vec![(
-                    fields[0].name.clone(),
+                    fields[0].name.to_string(),
                     FieldError {
                         metadata: None::<ErrorTool::FieldMetadata>,
                         reason,
@@ -191,7 +191,7 @@ where
 {
     fn resolve<'a>(
         &'a self,
-        fields: Vec<FieldInfo>,
+        fields: Vec<FieldInfo<'a>>,
         ctx: IvoContext<I, O>,
         o: IvoRwCtxOptions<CtxOptions>,
     ) -> UniformRequiredResponse<'a, ErrorTool> {
@@ -204,7 +204,7 @@ where
 
             for (field_name, (reason, metadata)) in errors.entries() {
                 if fields.iter().find(|info| info.name == field_name).is_some() {
-                    results.push((field_name, FieldError { metadata, reason }));
+                    results.push((field_name.to_owned(), FieldError { metadata, reason }));
                 }
             }
 

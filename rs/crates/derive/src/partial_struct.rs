@@ -181,7 +181,7 @@ pub fn generate_partial_struct(
        }
 
        impl ::ivo::__private_types::types::PartialStructMethods for #partial_struct_name {
-           fn ivo_internal_enumerate(&self) -> Vec<(String, ::ivo::__private_types::types::ErasedValue)> {
+           fn ivo_internal_enumerate_fields_available(&self) -> Vec<(String, ::ivo::__private_types::types::ErasedValue)> {
                use ::ivo::__private_types::types::erase_value;
 
                let mut tuples = Vec::new();
@@ -192,7 +192,7 @@ pub fn generate_partial_struct(
            }
 
            #[inline]
-           fn ivo_internal_fields_provided(&self) -> Vec<String> {
+           fn ivo_internal_fields_available(&self) -> Vec<String> {
                let mut fields_provided = vec![];
 
                #( #contruct_fields_provided )*

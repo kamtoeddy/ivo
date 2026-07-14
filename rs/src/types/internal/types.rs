@@ -70,9 +70,9 @@ pub trait IvoStructMethods: WithPartialStruct + Clone {
 }
 
 pub trait PartialStructMethods: Clone {
-    fn ivo_internal_enumerate(&self) -> Vec<(String, ErasedValue)>;
+    fn ivo_internal_enumerate_fields_available(&self) -> Vec<(String, ErasedValue)>;
 
-    fn ivo_internal_fields_provided(&self) -> Vec<String>;
+    fn ivo_internal_fields_available(&self) -> Vec<String>;
 
     fn ivo_internal_get_erased_value(&self, field_name: &str) -> ErasedValue;
 

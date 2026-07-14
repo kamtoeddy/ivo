@@ -125,11 +125,6 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
 
                                 Ok(Some(format!("revalidated-'{}'", uname)))
                             })
-                            .ignore_update(|_, values: User, _| {
-                                ready(!is_username_or_slug_id_updatable(
-                                    values.username_last_updated_at,
-                                ))
-                            })
                             .on_delete(|_, _| {
                                 println!("[username]: on delete 1 handled");
 
@@ -186,12 +181,7 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
 
                                 ready(Ok(Some(validated.into())))
                             })
-                            .sanitize(|v, _, _| ready(format!("sanitized-'{v}'")))
-                            .ignore(|ctx: Ctx, _| {
-                                ready(!is_username_or_slug_id_updatable(
-                                    ctx.values().username_last_updated_at.unwrap_or(None),
-                                ))
-                            }),
+                            .sanitize(|v, _, _| ready(format!("sanitized-'{v}'"))),
                     )
                     .timestamps(|t| {
                         t.resolve(Utc::now)
@@ -200,7 +190,14 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
                     })
             },
             |o| {
-                o.required(["email", "phone_number"], |ctx: Ctx, _| {
+                o.ignore(["username", "v_slug"], |ctx: Ctx, _| {
+                    // o.ignore_update(["username", "v_slug"], |ctx: Ctx, _| {
+                    ready(match ctx.values().username_last_updated_at {
+                        Some(Some(dt)) => (Utc::now() - dt).num_days() < 30,
+                        _ => false,
+                    })
+                })
+                .required(["email", "phone_number"], |ctx: Ctx, _| {
                     if ctx.is_update() {
                         return ready(None);
                     }
@@ -225,9 +222,9 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
                         let slug_id = slugify(&slug_string);
 
                         println!(
-                        "\npost validating username & v_slug: [slug_string = {}] & [slug_id = {}]",
-                        slug_string, slug_id
-                    );
+                            "\npost validating username & v_slug: [slug_string = {}] & [slug_id = {}]",
+                            slug_string, slug_id
+                        );
 
                         let mut options = o.write().await;
 
@@ -281,13 +278,6 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
             },
         )
     });
-
-fn is_username_or_slug_id_updatable(username_last_updated_at: Option<Timestamp>) -> bool {
-    match username_last_updated_at {
-        Some(dt) => (Utc::now() - dt).num_days() >= 30,
-        _ => true,
-    }
-}
 
 pub static USERS_LIST: LazyLock<[User; 3]> = LazyLock::new(|| {
     array::from_fn(|i| {

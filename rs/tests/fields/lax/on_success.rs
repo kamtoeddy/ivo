@@ -8,13 +8,13 @@ async fn should_trigger_on_success_handlers_at_creation_if_provided() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
         lax: String,
-        lax2: String,
+        lax_1: String,
     }
 
     #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: String,
-        lax2: String,
+        lax_1: String,
     }
 
     let schema: Schema<DataInput, Data> = Schema::new(
@@ -43,7 +43,7 @@ async fn should_trigger_on_success_handlers_at_creation_if_provided() {
                     }),
             )
             .field(
-                "lax2",
+                "lax_1",
                 IvoField::LAX
                     .default("default_value".into())
                     .validate(|v: String, _, _| {
@@ -61,13 +61,13 @@ async fn should_trigger_on_success_handlers_at_creation_if_provided() {
     let model = schema.model();
 
     let data = Data {
-        lax2: "lax2".into(),
+        lax_1: "lax_1".into(),
         lax: "lax1".into(),
     };
 
     let input = PartialDataInput {
         lax: Some(data.lax.clone()),
-        lax2: Some(data.lax2.clone()),
+        lax_1: Some(data.lax_1.clone()),
     };
 
     let r = model.create(&input, None).await;
@@ -91,13 +91,13 @@ async fn should_trigger_on_success_handlers_at_creation_even_if_not_provided() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
         lax: String,
-        lax2: String,
+        lax_1: String,
     }
 
     #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: String,
-        lax2: String,
+        lax_1: String,
     }
 
     let default_lax_value = "default_lax_value".to_string();
@@ -129,9 +129,9 @@ async fn should_trigger_on_success_handlers_at_creation_even_if_not_provided() {
                     }),
             )
             .field(
-                "lax2",
+                "lax_1",
                 IvoField::LAX
-                    .default("default_lax2_value".into())
+                    .default("default_lax_1_value".into())
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
                             return ready(Err(("validation failed".into(), None)));
@@ -146,11 +146,11 @@ async fn should_trigger_on_success_handlers_at_creation_even_if_not_provided() {
 
     let model = schema.model();
 
-    let lax2 = "lax2".to_string();
+    let lax_1 = "lax_1".to_string();
 
     let input = PartialDataInput {
         lax: None,
-        lax2: Some(lax2.clone()),
+        lax_1: Some(lax_1.clone()),
     };
 
     let r = model.create(&input, None).await;
@@ -160,8 +160,8 @@ async fn should_trigger_on_success_handlers_at_creation_even_if_not_provided() {
             assert_eq!(
                 created,
                 Data {
-                    lax2,
                     lax: default_lax_value,
+                    lax_1,
                 }
             );
 
@@ -180,13 +180,13 @@ async fn should_trigger_on_success_handlers_at_creation_even_if_provided_and_ign
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
         lax: String,
-        lax2: String,
+        lax_1: String,
     }
 
     #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: String,
-        lax2: String,
+        lax_1: String,
     }
 
     let default_lax_value = "default_lax_value".to_string();
@@ -217,9 +217,9 @@ async fn should_trigger_on_success_handlers_at_creation_even_if_provided_and_ign
                     }),
             )
             .field(
-                "lax2",
+                "lax_1",
                 IvoField::LAX
-                    .default("default_lax2_value".into())
+                    .default("default_lax_1_value".into())
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
                             return ready(Err(("validation failed".into(), None)));
@@ -235,11 +235,11 @@ async fn should_trigger_on_success_handlers_at_creation_even_if_provided_and_ign
     let model = schema.model();
 
     let lax_value = "lax_value".to_string();
-    let lax2_value = "lax2_value".to_string();
+    let lax_1_value = "lax_1_value".to_string();
 
     let input = PartialDataInput {
-        lax2: Some(lax2_value.clone()),
         lax: Some(lax_value),
+        lax_1: Some(lax_1_value.clone()),
     };
 
     let r = model.create(&input, None).await;
@@ -249,8 +249,8 @@ async fn should_trigger_on_success_handlers_at_creation_even_if_provided_and_ign
             assert_eq!(
                 created,
                 Data {
-                    lax2: lax2_value,
                     lax: default_lax_value,
+                    lax_1: lax_1_value,
                 }
             );
 
@@ -269,13 +269,13 @@ async fn should_trigger_on_success_handlers_during_updates_if_provided() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
         lax: String,
-        lax2: String,
+        lax_1: String,
     }
 
     #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: String,
-        lax2: String,
+        lax_1: String,
     }
 
     let default_lax_value = "default_lax_value".to_string();
@@ -305,9 +305,9 @@ async fn should_trigger_on_success_handlers_during_updates_if_provided() {
                     }),
             )
             .field(
-                "lax2",
+                "lax_1",
                 IvoField::LAX
-                    .default("default_lax2_value".into())
+                    .default("default_lax_1_value".into())
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
                             return ready(Err(("validation failed".into(), None)));
@@ -322,18 +322,18 @@ async fn should_trigger_on_success_handlers_during_updates_if_provided() {
 
     let model = schema.model();
 
-    let lax2 = "lax2".to_string();
+    let lax_1 = "lax_1".to_string();
 
     let data = Data {
-        lax2: lax2.clone(),
         lax: default_lax_value,
+        lax_1: lax_1.clone(),
     };
 
     let updated_lax_value = "updated_lax_value".to_string();
 
     let input = PartialDataInput {
         lax: Some(updated_lax_value.clone()),
-        lax2: Some(lax2),
+        lax_1: Some(lax_1),
     };
 
     let r = model.update(&data, &input, None).await;
@@ -343,8 +343,8 @@ async fn should_trigger_on_success_handlers_during_updates_if_provided() {
             assert_eq!(
                 updated,
                 PartialData {
-                    lax2: None,
                     lax: Some(updated_lax_value),
+                    lax_1: None,
                 }
             );
 
@@ -363,13 +363,13 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_not_provided()
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
         lax: String,
-        lax2: String,
+        lax_1: String,
     }
 
     #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: String,
-        lax2: String,
+        lax_1: String,
     }
 
     let default_lax_value = "default_lax_value".to_string();
@@ -399,9 +399,9 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_not_provided()
                     }),
             )
             .field(
-                "lax2",
+                "lax_1",
                 IvoField::LAX
-                    .default("default_lax2_value".into())
+                    .default("default_lax_1_value".into())
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
                             return ready(Err(("validation failed".into(), None)));
@@ -416,18 +416,18 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_not_provided()
 
     let model = schema.model();
 
-    let lax2 = "lax2".to_string();
+    let lax_1 = "lax_1".to_string();
 
     let data = Data {
-        lax2: lax2.clone(),
         lax: default_lax_value,
+        lax_1: lax_1.clone(),
     };
 
-    let updated_lax2_value = "updated_lax2_value".to_string();
+    let updated_lax_1_value = "updated_lax_1_value".to_string();
 
     let input = PartialDataInput {
-        lax2: Some(updated_lax2_value.clone()),
         lax: None,
+        lax_1: Some(updated_lax_1_value.clone()),
     };
 
     let r = model.update(&data, &input, None).await;
@@ -437,7 +437,7 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_not_provided()
             assert_eq!(
                 updated,
                 PartialData {
-                    lax2: Some(updated_lax2_value),
+                    lax_1: Some(updated_lax_1_value),
                     lax: None,
                 }
             );
@@ -454,13 +454,13 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_i
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
         lax: String,
-        lax2: String,
+        lax_1: String,
     }
 
     #[derive(Debug, Clone, IvoInputStruct)]
     struct DataInput {
         lax: String,
-        lax2: String,
+        lax_1: String,
     }
 
     let default_lax_value = "default_lax_value".to_string();
@@ -491,9 +491,9 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_i
                     }),
             )
             .field(
-                "lax2",
+                "lax_1",
                 IvoField::LAX
-                    .default("default_lax2_value".into())
+                    .default("default_lax_1_value".into())
                     .validate(|v: String, _, _| {
                         if v == "fail_validation" {
                             return ready(Err(("validation failed".into(), None)));
@@ -508,19 +508,19 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_i
 
     let model = schema.model();
 
-    let lax2 = "lax2".to_string();
+    let lax_1 = "lax_1".to_string();
 
     let data = Data {
-        lax2: lax2.clone(),
         lax: default_lax_value,
+        lax_1: lax_1.clone(),
     };
 
     let updated_lax_value = "updated_lax_value".to_string();
-    let updated_lax2_value = "updated_lax2_value".to_string();
+    let updated_lax_1_value = "updated_lax_1_value".to_string();
 
     let input = PartialDataInput {
-        lax2: Some(updated_lax2_value.clone()),
         lax: Some(updated_lax_value),
+        lax_1: Some(updated_lax_1_value.clone()),
     };
 
     let r = model.update(&data, &input, None).await;
@@ -530,8 +530,8 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_i
             assert_eq!(
                 updated,
                 PartialData {
-                    lax2: Some(updated_lax2_value),
                     lax: None,
+                    lax_1: Some(updated_lax_1_value),
                 }
             );
 

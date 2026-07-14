@@ -27,7 +27,7 @@ pub use types::FieldValue;
 use types::{No, Yes};
 
 type InternalFieldConfigs<I, O, CtxOptions, ErrorTool> =
-    HashMap<String, InternalFieldConfig<I, O, CtxOptions, ErrorTool>>;
+    HashMap<&'static str, InternalFieldConfig<I, O, CtxOptions, ErrorTool>>;
 
 const STYLE_COLOR_RED: &str = "\x1b[31m";
 const STYLE_FONT_BOLD: &str = "\x1b[1m";
@@ -95,13 +95,16 @@ impl<
 
     #[track_caller]
     fn make_field_configs(
-        config_tuples: Vec<(String, InternalFieldConfig<I, O, CtxOptions, ErrorTool>)>,
+        config_tuples: Vec<(
+            &'static str,
+            InternalFieldConfig<I, O, CtxOptions, ErrorTool>,
+        )>,
         timestamp_configs: &Option<TimestampConfig<Timestamp>>,
         input_field_names: &HashSet<String>,
         output_field_names: &HashSet<String>,
     ) -> (
         InternalFieldConfigs<I, O, CtxOptions, ErrorTool>,
-        HashMap<String, String>,
+        HashMap<&'static str, &'static str>,
     ) {
         let input_struct_name = format!(
             "{STYLE_FONT_BOLD}{}{STYLE_RESET}{STYLE_COLOR_RED}",
@@ -194,13 +197,13 @@ impl<
                     field_type: FieldType::Constant,
                     ..
                 } => {
-                    if !output_field_names.contains(field_name) {
+                    if !output_field_names.contains(*field_name) {
                         panic!(
                             "\n{STYLE_COLOR_RED}[{field_name}]: is a purely output field. It must be present on {output_struct_name}{STYLE_RESET}\n"
                         );
                     }
 
-                    if input_field_names.contains(field_name) {
+                    if input_field_names.contains(*field_name) {
                         panic!(
                             "\n{STYLE_COLOR_RED}[{field_name}]: is a purely output field. It should not be present on {input_struct_name}{STYLE_RESET}\n"
                         );
@@ -215,8 +218,6 @@ impl<
                     alias,
                     ..
                 } => {
-                    let field_name_str = field_name.as_str();
-
                     if let Some(alias) = alias {
                         if field_name == alias {
                             panic!("\n{STYLE_COLOR_RED}[{field_name}]: virtual alias name must be different from field name{STYLE_RESET}\n");
@@ -256,7 +257,7 @@ impl<
                             }
 
                             if let Some(ref depends_on) = config.depends_on {
-                                if !depends_on.iter().any(|parent| parent == &field_name_str) {
+                                if !depends_on.iter().any(|parent| parent == field_name) {
                                     panic!("\n{STYLE_COLOR_RED}[{field_name}]: \"{alias}\" is not a valid alias for field because \"{alias}\" does not depend on \"{field_name}\"{STYLE_RESET}\n");
                                 }
 
@@ -266,22 +267,22 @@ impl<
                             panic!("\n{STYLE_COLOR_RED}[{field_name}]: \"{alias}\" is not a valid alias for field because it is not a dependent field{STYLE_RESET}\n");
                         }
 
-                        if !input_field_names.contains(alias) {
+                        if !input_field_names.contains(&alias.to_string()) {
                             panic!(
                                 "\n{STYLE_COLOR_RED}[{field_name}]: is an input field. Hence, \"{alias}\" must be present on {input_struct_name}{STYLE_RESET}\n");
                         }
 
-                        if input_field_names.contains(field_name) {
+                        if input_field_names.contains(*field_name) {
                             panic!(
                                 "\n{STYLE_COLOR_RED}[{field_name}]: has an alias. Only its alias must be present on {input_struct_name}{STYLE_RESET}\n");
                         }
 
-                        alias_to_virtual.insert(alias.clone(), field_name.clone());
+                        alias_to_virtual.insert(*alias, *field_name);
 
                         continue;
                     }
 
-                    if !input_field_names.contains(field_name) {
+                    if !input_field_names.contains(*field_name) {
                         panic!(
                                 "\n{STYLE_COLOR_RED}[{field_name}]: is an input field. It must be present on {input_struct_name}{STYLE_RESET}\n");
                     }
@@ -290,7 +291,7 @@ impl<
 
                     for (_, config) in config_tuples.iter() {
                         if let Some(ref depends_on) = config.depends_on {
-                            if depends_on.iter().any(|parent| parent == &field_name_str) {
+                            if depends_on.iter().any(|parent| parent == field_name) {
                                 has_sufficent_dependencies = true;
 
                                 break;
@@ -309,7 +310,7 @@ impl<
                 _ => (),
             }
 
-            if !output_field_names.contains(field_name) {
+            if !output_field_names.contains(*field_name) {
                 panic!(
                     "\n{STYLE_COLOR_RED}[{field_name}]: is an output field. It must be present on {output_struct_name}{STYLE_RESET}\n");
             }
@@ -322,12 +323,12 @@ impl<
                 } => {
                     dependent_configs.push((field_name, config));
                     dependent_field_to_parent_fields
-                        .insert(field_name.as_str(), depends_on.as_ref().unwrap());
+                        .insert(*field_name, depends_on.as_ref().unwrap());
                 }
                 InternalFieldConfig {
                     field_type: FieldType::Lax | FieldType::Required,
                     ..
-                } if !input_field_names.contains(field_name) => {
+                } if !input_field_names.contains(*field_name) => {
                     panic!(
                         "\n{STYLE_COLOR_RED}[{field_name}]: is an input field. It must be present on {input_struct_name}{STYLE_RESET}\n");
                 }
@@ -345,8 +346,6 @@ impl<
             let mut parent_fields_provided = HashSet::new();
 
             for parent_field in parent_fields {
-                let parent_field_string = parent_field.to_string();
-
                 if let Some(TimestampConfig {
                     created_at: Some(name),
                     ..
@@ -371,7 +370,7 @@ impl<
                     }
                 }
 
-                if !field_names.contains(&parent_field_string) {
+                if !field_names.contains(&parent_field) {
                     panic!(
                                 "\n{STYLE_COLOR_RED}[{field_name}]: cannot depend on \"{parent_field}\" because it is not a field on your schema{STYLE_RESET}\n"
                             );
@@ -389,7 +388,7 @@ impl<
                             );
                 }
 
-                if constant_field_names.contains(&parent_field_string) {
+                if constant_field_names.contains(&parent_field) {
                     panic!(
                                 "\n{STYLE_COLOR_RED}[{field_name}]: cannot depend on \"{parent_field}\" because it is a constant{STYLE_RESET}\n"
                             );
@@ -438,7 +437,7 @@ impl<
     fn make_options(
         options: SchemaOptions<I, O, CtxOptions, ErrorTool>,
         field_configs: &InternalFieldConfigs<I, O, CtxOptions, ErrorTool>,
-        alias_to_virtual_map: &HashMap<String, String>,
+        alias_to_virtual_map: &HashMap<&'static str, &'static str>,
         input_field_names: &HashSet<String>,
         output_field_names: &HashSet<String>,
     ) -> SchemaOptions<I, O, CtxOptions, ErrorTool> {
@@ -460,17 +459,17 @@ impl<
                     );
                     }
 
-                    let owned_field_name = field_name.to_string();
-
-                    if let Some(virtual_field) = alias_to_virtual_map.get(&owned_field_name) {
+                    if let Some(virtual_field) = alias_to_virtual_map.get(field_name) {
                         panic!(
                         "\n{STYLE_COLOR_RED}[{option_name}]: \"{field_name}\" is an alias; use \"{virtual_field}\" instead{STYLE_RESET}\n"
-                    );
+                        );
                     };
+
+                    let owned_field_name = field_name.to_string();
 
                     if input_field_names.contains(&owned_field_name) {
                         if matches!(
-                            field_configs.get(&owned_field_name),
+                            field_configs.get(field_name),
                             Some(FieldConfig {
                                 field_type: FieldType::Required,
                                 ..
@@ -490,7 +489,7 @@ impl<
                         panic!(
                     "\n{STYLE_COLOR_RED}[{option_name}]: \"{field_name}\" cannot belong to group ignored{STYLE_RESET}\n"
                 );
-                    } else if !field_configs.contains_key(&owned_field_name) {
+                    } else if !field_configs.contains_key(field_name) {
                         panic!(
                         "\n{STYLE_COLOR_RED}[{option_name}]: \"{field_name}\" does not exist on your schema{STYLE_RESET}\n"
                     );
@@ -511,13 +510,13 @@ impl<
                         );
                     }
 
-                    let owned_field_name = field_name.to_string();
-
-                    if let Some(virtual_field) = alias_to_virtual_map.get(&owned_field_name) {
+                    if let Some(virtual_field) = alias_to_virtual_map.get(field_name) {
                         panic!(
                             "\n{STYLE_COLOR_RED}[{option_name}]: \"{field_name}\" is an alias; use \"{virtual_field}\" instead{STYLE_RESET}\n"
                         );
                     };
+
+                    let owned_field_name = field_name.to_string();
 
                     if input_field_names.contains(&owned_field_name) {
                         field_names.insert(field_name);
@@ -525,7 +524,7 @@ impl<
                         continue;
                     };
 
-                    if field_configs.get(&owned_field_name).is_some() {
+                    if field_configs.get(field_name).is_some() {
                         field_names.insert(field_name);
 
                         continue;
@@ -562,13 +561,13 @@ impl<
                         );
                     }
 
-                    let owned_field_name = field_name.to_string();
-
-                    if let Some(virtual_field) = alias_to_virtual_map.get(&owned_field_name) {
+                    if let Some(virtual_field) = alias_to_virtual_map.get(field_name) {
                         panic!(
                             "\n{STYLE_COLOR_RED}[{option_name}]: \"{field_name}\" is an alias; use \"{virtual_field}\" instead{STYLE_RESET}\n"
                         );
                     };
+
+                    let owned_field_name = field_name.to_string();
 
                     if input_field_names.contains(&owned_field_name) {
                         field_names.insert(field_name);
@@ -580,7 +579,7 @@ impl<
                         panic!(
                         "\n{STYLE_COLOR_RED}[{option_name}]: \"{field_name}\" cannot be post_validated{STYLE_RESET}\n"
                     );
-                    } else if !field_configs.contains_key(&owned_field_name) {
+                    } else if !field_configs.contains_key(field_name) {
                         panic!(
                             "\n{STYLE_COLOR_RED}[{option_name}]: \"{field_name}\" does not exist on your schema{STYLE_RESET}\n"
                         );
@@ -607,17 +606,17 @@ impl<
                         );
                     }
 
-                    let owned_field_name = field_name.to_string();
-
-                    if let Some(virtual_field) = alias_to_virtual_map.get(&owned_field_name) {
+                    if let Some(virtual_field) = alias_to_virtual_map.get(field_name) {
                         panic!(
                             "\n{STYLE_COLOR_RED}[{option_name}]: \"{field_name}\" is an alias; use \"{virtual_field}\" instead{STYLE_RESET}\n"
                         );
                     };
 
+                    let owned_field_name = field_name.to_string();
+
                     if input_field_names.contains(&owned_field_name) {
                         if matches!(
-                            field_configs.get(&owned_field_name),
+                            field_configs.get(field_name),
                             Some(FieldConfig {
                                 field_type: FieldType::Required,
                                 ..
@@ -637,7 +636,7 @@ impl<
                         panic!(
                         "\n{STYLE_COLOR_RED}[{option_name}]: \"{field_name}\" cannot be required{STYLE_RESET}\n"
                     );
-                    } else if !field_configs.contains_key(&owned_field_name) {
+                    } else if !field_configs.contains_key(field_name) {
                         panic!(
                             "\n{STYLE_COLOR_RED}[{option_name}]: \"{field_name}\" does not exist on your schema{STYLE_RESET}\n"
                         );
@@ -790,7 +789,10 @@ pub struct FieldBuilder<
     WithTimestamps = No,
 > {
     _t: PhantomData<WithTimestamps>,
-    configs: Vec<(String, InternalFieldConfig<I, O, CtxOptions, ErrorTool>)>,
+    configs: Vec<(
+        &'static str,
+        InternalFieldConfig<I, O, CtxOptions, ErrorTool>,
+    )>,
     timestamp_config: Option<TimestampConfig<T>>,
 }
 
@@ -810,11 +812,11 @@ impl<
         }
     }
 
-    pub fn field<Config>(mut self, name: &str, config: Config) -> Self
+    pub fn field<Config>(mut self, name: &'static str, config: Config) -> Self
     where
         Config: BuildableFieldConfig<I, O, CtxOptions, ErrorTool>,
     {
-        self.configs.push((name.to_owned(), config.build()));
+        self.configs.push((name, config.build()));
 
         self
     }

@@ -30,7 +30,7 @@ pub enum FieldType {
 
 pub struct FieldConfig<T, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool> {
     pub field_type: FieldType,
-    pub alias: Option<String>,
+    pub alias: Option<&'static str>,
     pub default: Option<ValueResolverWithSharedInput<T, I, CtxOptions>>,
     pub depends_on: Option<Vec<&'static str>>,
     pub value: Option<ValueResolverWithSharedInput<T, I, CtxOptions>>,

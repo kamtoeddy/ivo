@@ -2,8 +2,7 @@ mod error_tool;
 pub mod types;
 
 pub use error_tool::{
-    DefaultErrorPayload, DefaultFieldErrorMetadata, DefaultErrorTool, IvoErrorTool,
-    FieldError,
+    DefaultErrorPayload, DefaultErrorTool, DefaultFieldErrorMetadata, FieldError, IvoErrorTool,
 };
 
 pub use types::{
@@ -13,9 +12,9 @@ pub use types::{
 };
 
 #[derive(Clone, Debug)]
-pub(crate) struct FieldInfo {
-    pub name: String,
-    pub config_name: String,
+pub(crate) struct FieldInfo<'a> {
+    pub name: &'a str,
+    pub config_name: &'a str,
     pub is_input: bool,
     pub is_output: bool,
 }
