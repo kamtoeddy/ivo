@@ -1324,13 +1324,14 @@ impl<
             }
         }
 
-        if let Some(ref configs) = self.schema.options.ignore_update {
-            for IgnoreUpdateOptionConfig { fields, resolver } in configs {
-                if fields
-                    .iter()
-                    .any(|name| relevant_config_names.contains(name))
-                {
-                    tasks.push((
+        if is_update {
+            if let Some(ref configs) = self.schema.options.ignore_update {
+                for IgnoreUpdateOptionConfig { fields, resolver } in configs {
+                    if fields
+                        .iter()
+                        .any(|name| relevant_config_names.contains(name))
+                    {
+                        tasks.push((
                         fields.clone(),
                         <IgnoreUpdateOptionResolver<I, O, CtxOptions> as UniformIgnoreResolver<
                             I,
@@ -1341,6 +1342,7 @@ impl<
                             resolver, Arc::clone(&ctx), Arc::clone(&options)
                         ),
                     ));
+                    }
                 }
             }
         }
