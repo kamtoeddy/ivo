@@ -211,3 +211,163 @@ async fn should_respect_the_readonly_rule() {
 }
 
 async_test_matrix!(should_respect_the_readonly_rule);
+
+// grouped ignore_update
+
+async fn should_properly_handle_grouped_ignore_update_rule() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        lax: String,
+        lax_1: String,
+        required: String,
+    }
+
+    #[derive(Debug, Clone, IvoInputStruct)]
+    struct DataInput {
+        lax: String,
+        lax_1: String,
+        required: String,
+    }
+
+    const IGNORE: &str = "IGNORE";
+
+    let default_lax_value = "default_lax_value";
+    let default_lax_1_value = "default_lax_1_value";
+
+    let schema: Schema<DataInput, Data> = Schema::new(
+        |f| {
+            f.field("lax", IvoField::LAX.default(default_lax_value.to_string()))
+                .field(
+                    "lax_1",
+                    IvoField::LAX.default(default_lax_1_value.to_string()),
+                )
+                .field(
+                    "required",
+                    IvoField::REQUIRED.validate(|_, _, _| ready(Ok(None::<String>))),
+                )
+        },
+        |o| {
+            o.ignore_update(["lax", "required"], |raw_input: PartialDataInput, _, _| {
+                ready(raw_input.lax == Some(IGNORE.into()))
+            })
+        },
+    );
+
+    let model = schema.model();
+
+    let lax = IGNORE.to_string();
+    let lax_1 = "lax_1".to_string();
+    let required = "some value".to_string();
+
+    let (data, _, _) = model
+        .create(
+            &PartialDataInput {
+                lax: Some(lax.clone()),
+                lax_1: Some(lax_1.clone()),
+                required: Some(required.clone()),
+            },
+            None,
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        data,
+        Data {
+            lax,
+            required,
+            lax_1
+        }
+    );
+
+    let lax = "some lax value".to_string();
+    let lax_1 = "lax_1".to_string();
+    let required = "some value".to_string();
+
+    let (data, _, _) = model
+        .create(
+            &PartialDataInput {
+                lax: Some(lax.clone()),
+                lax_1: Some(lax_1.clone()),
+                required: Some(required.clone()),
+            },
+            None,
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        data,
+        Data {
+            lax,
+            lax_1,
+            required
+        }
+    );
+
+    // updates
+
+    let data = Data {
+        lax: default_lax_value.to_string(),
+        lax_1: default_lax_1_value.to_string(),
+        required: "some value".to_string(),
+    };
+
+    let lax = Some(IGNORE.to_string());
+    let lax_1 = Some("lax_1".to_string());
+    let required = Some("updated value".to_string());
+
+    let (updates, _, _) = model
+        .update(
+            &data,
+            &PartialDataInput {
+                lax,
+                lax_1: lax_1.clone(),
+                required,
+            },
+            None,
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updates,
+        PartialData {
+            lax: None,
+            lax_1,
+            required: None,
+        }
+    );
+
+    let lax = Some("some lax value".to_string());
+    let lax_1 = Some("lax_1".to_string());
+    let required = Some("updated value".to_string());
+
+    let (updates, _, _) = model
+        .update(
+            &data,
+            &PartialDataInput {
+                lax: lax.clone(),
+                lax_1: lax_1.clone(),
+                required: required.clone(),
+            },
+            None,
+        )
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        updates,
+        PartialData {
+            lax,
+            lax_1,
+            required,
+        }
+    );
+}
+
+async_test_matrix!(should_properly_handle_grouped_ignore_update_rule);
