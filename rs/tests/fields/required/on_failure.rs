@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, Schema};
+use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, Model};
 
 use crate::async_test_matrix;
 
@@ -15,7 +15,7 @@ async fn should_trigger_on_failure_handlers_at_creation() {
         required: String,
     }
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "required",
@@ -41,8 +41,6 @@ async fn should_trigger_on_failure_handlers_at_creation() {
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let input = PartialDataInput {
         required: Some("fail_validation".into()),
@@ -78,7 +76,7 @@ async fn should_trigger_on_failure_handlers_during_updates() {
         required: String,
     }
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "required",
@@ -104,8 +102,6 @@ async fn should_trigger_on_failure_handlers_during_updates() {
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let data = Data {
         required: "some value".into(),
@@ -146,7 +142,7 @@ async fn should_trigger_on_failure_handlers_during_updates_with_unchanged_values
         required: String,
     }
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "required",
@@ -174,8 +170,6 @@ async fn should_trigger_on_failure_handlers_during_updates_with_unchanged_values
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let required_value = "some_value".to_string();
 
@@ -222,7 +216,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
         required2: String,
     }
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "required",
@@ -259,8 +253,6 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let data = Data {
         required: "required1".into(),
@@ -308,7 +300,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
         required2: String,
     }
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "required",
@@ -345,8 +337,6 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let data = Data {
         required: "required1".into(),

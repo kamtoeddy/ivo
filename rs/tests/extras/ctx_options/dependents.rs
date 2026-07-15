@@ -1,8 +1,6 @@
 use std::future::ready;
 
-use ivo::{
-    IvoContext, IvoCtxOptions, IvoField, IvoInputStruct, IvoRwCtxOptions, IvoStruct, Schema,
-};
+use ivo::{IvoContext, IvoCtxOptions, IvoField, IvoInputStruct, IvoRwCtxOptions, IvoStruct, Model};
 
 use crate::async_test_matrix;
 
@@ -44,7 +42,7 @@ async fn should_properly_update_ctx_options_in_default_resolver_and_provide_thos
     const DEFAULT_LAX_VALUE: i32 = 1;
     const MESSAGE: &str = "ctx_options updated in default value resolver";
 
-    let schema = Schema::<DataInput, Data, CtxOptions>::new(
+    let model = Model::<DataInput, Data, CtxOptions>::new(
         |f| {
             f.field(
                 "dependent",
@@ -77,8 +75,6 @@ async fn should_properly_update_ctx_options_in_default_resolver_and_provide_thos
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let (data, handle_success, ctx_options) = model
         .create(&PartialDataInput { lax: None }, CtxOptions::new())
@@ -123,7 +119,7 @@ async fn should_properly_update_ctx_options_in_value_resolver_and_provide_those_
     const DEFAULT_LAX_VALUE: i32 = 1;
     const MESSAGE: &str = "ctx_options updated in value resolver";
 
-    let schema = Schema::<DataInput, Data, CtxOptions>::new(
+    let model = Model::<DataInput, Data, CtxOptions>::new(
         |f| {
             f.field(
                 "dependent",
@@ -156,8 +152,6 @@ async fn should_properly_update_ctx_options_in_value_resolver_and_provide_those_
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let value = DEFAULT_LAX_VALUE + 1;
 
@@ -202,7 +196,7 @@ async fn should_properly_update_ctx_options_in_value_resolver_and_provide_those_
     const DEFAULT_LAX_VALUE: i32 = 1;
     const MESSAGE: &str = "ctx_options updated in value resolver";
 
-    let schema = Schema::<DataInput, Data, CtxOptions>::new(
+    let model = Model::<DataInput, Data, CtxOptions>::new(
         |f| {
             f.field(
                 "dependent",
@@ -235,8 +229,6 @@ async fn should_properly_update_ctx_options_in_value_resolver_and_provide_those_
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let data = Data {
         dependent: DEFAULT_DEPENDENT_VALUE,

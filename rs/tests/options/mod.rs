@@ -1,7 +1,7 @@
 use std::future::ready;
 
 use crate::async_test_matrix;
-use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, Schema};
+use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, Model};
 
 mod ignore;
 mod ignore_update;
@@ -30,7 +30,7 @@ async fn should_respect_option_to_ignore_updates_with_empty_fields_array() {
     let default_value = "default_lax_value";
     const IGNORE_VALUE: &str = "ignore_value";
 
-    let schema = Schema::<DataInput, Data>::new(
+    let model = Model::<DataInput, Data>::new(
         |f| f.field("lax", IvoField::LAX.default(default_value.to_string())),
         |o| {
             o.ignore_update([], |input: PartialDataInput, _, _| {
@@ -38,8 +38,6 @@ async fn should_respect_option_to_ignore_updates_with_empty_fields_array() {
             })
         },
     );
-
-    let model = schema.model();
 
     let lax = "lax_value".to_string();
 
@@ -94,7 +92,7 @@ async fn should_properly_trigger_on_delete_handlers() {
         lax_1: i32,
     }
 
-    let schema: Schema<Data> = Schema::new(
+    let model: Model<Data> = Model::new(
         |f| {
             f.field("lax", IvoField::LAX.default(1234))
                 .field("lax_1", IvoField::LAX.default(5678))
@@ -109,8 +107,6 @@ async fn should_properly_trigger_on_delete_handlers() {
             })
         },
     );
-
-    let model = schema.model();
 
     model.delete(&Data { lax: 2, lax_1: 3 }, None).await
 }
@@ -127,7 +123,7 @@ async fn should_properly_trigger_all_on_delete_handlers() {
         lax_1: i32,
     }
 
-    let schema: Schema<Data> = Schema::new(
+    let model: Model<Data> = Model::new(
         |f| {
             f.field("lax", IvoField::LAX.default(1234))
                 .field("lax_1", IvoField::LAX.default(5678))
@@ -142,8 +138,6 @@ async fn should_properly_trigger_all_on_delete_handlers() {
             })
         },
     );
-
-    let model = schema.model();
 
     model.delete(&Data { lax: 2, lax_1: 3 }, None).await
 }
@@ -172,7 +166,7 @@ fn should_reject_if_the_fields_array_contains_any_duplicates() {
         lax_1: i32,
     }
 
-    let _: Schema<DataInput, Data, Option<()>, &'static str> = Schema::new(
+    let _: Model<DataInput, Data, Option<()>, &'static str> = Model::new(
         |f| {
             f.field("lax", IvoField::LAX.default(1234))
                 .field("lax_1", IvoField::LAX.default(5678))
@@ -196,7 +190,7 @@ fn should_reject_if_the_fields_array_contains_any_string_that_is_not_a_field_on_
         lax_1: i32,
     }
 
-    let _: Schema<DataInput, Data, Option<()>, &'static str> = Schema::new(
+    let _: Model<DataInput, Data, Option<()>, &'static str> = Model::new(
         |f| {
             f.field("lax", IvoField::LAX.default(1234))
                 .field("lax_1", IvoField::LAX.default(5678))
@@ -224,7 +218,7 @@ fn should_reject_if_an_alias_with_foreign_name_is_provided_to_the_fields_array()
         alias: i32,
     }
 
-    let _: Schema<DataInput, Data, Option<()>, &'static str> = Schema::new(
+    let _: Model<DataInput, Data, Option<()>, &'static str> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -264,7 +258,7 @@ fn should_reject_if_created_at_timestamp_with_default_name_is_provided_to_the_fi
         lax_1: i32,
     }
 
-    let _: Schema<DataInput, Data, Option<()>, i32> = Schema::new(
+    let _: Model<DataInput, Data, Option<()>, i32> = Model::new(
         |f| {
             f.field("lax", IvoField::LAX.default(1234))
                 .field("lax_1", IvoField::LAX.default(5678))
@@ -296,7 +290,7 @@ fn should_reject_if_created_at_timestamp_with_custom_name_is_provided_to_the_fie
         lax_1: i32,
     }
 
-    let _: Schema<DataInput, Data, Option<()>, i32> = Schema::new(
+    let _: Model<DataInput, Data, Option<()>, i32> = Model::new(
         |f| {
             f.field("lax", IvoField::LAX.default(1234))
                 .field("lax_1", IvoField::LAX.default(5678))
@@ -328,7 +322,7 @@ fn should_reject_if_updated_at_timestamp_with_default_name_is_provided_to_the_fi
         lax_1: i32,
     }
 
-    let _: Schema<DataInput, Data, Option<()>, i32> = Schema::new(
+    let _: Model<DataInput, Data, Option<()>, i32> = Model::new(
         |f| {
             f.field("lax", IvoField::LAX.default(1234))
                 .field("lax_1", IvoField::LAX.default(5678))
@@ -360,7 +354,7 @@ fn should_reject_if_updated_at_timestamp_with_custom_name_is_provided_to_the_fie
         lax_1: i32,
     }
 
-    let _: Schema<DataInput, Data, Option<()>, i32> = Schema::new(
+    let _: Model<DataInput, Data, Option<()>, i32> = Model::new(
         |f| {
             f.field("lax", IvoField::LAX.default(1234))
                 .field("lax_1", IvoField::LAX.default(5678))
@@ -388,7 +382,7 @@ fn should_allow_constant_and_dependents_in_fields_array() {
         lax: i32,
     }
 
-    let _: Schema<DataInput, Data, Option<()>, i32> = Schema::new(
+    let _: Model<DataInput, Data, Option<()>, i32> = Model::new(
         |f| {
             f.field("id", IvoField::CONSTANT.value(1234))
                 .field(

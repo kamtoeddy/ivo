@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoField, IvoInputStruct, IvoShared, IvoStruct, Schema};
+use ivo::{IvoField, IvoInputStruct, IvoShared, IvoStruct, Model};
 
 use crate::async_test_matrix;
 
@@ -15,7 +15,7 @@ async fn should_trigger_on_delete_handlers() {
         required: String,
     }
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "required",
@@ -36,8 +36,6 @@ async fn should_trigger_on_delete_handlers() {
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     model
         .delete(

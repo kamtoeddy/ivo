@@ -2,7 +2,6 @@ pub mod fields;
 pub mod options;
 mod types;
 
-use crate::__private_types::types::DefaultCtxOptions;
 use crate::__private_types::IvoInputStruct;
 use crate::schema::options::types::{IgnoreOptionConfig, IgnoreUpdateOptionConfig};
 use crate::schema::{
@@ -19,7 +18,8 @@ use crate::schema::{
         BuildableSchemaOptions,
     },
 };
-use crate::types::internal::{DefaultErrorTool, IvoErrorTool, IvoStruct};
+use crate::types::internal::{IvoErrorTool, IvoStruct};
+use crate::Model;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 use std::marker::PhantomData;
@@ -33,25 +33,13 @@ const STYLE_COLOR_RED: &str = "\x1b[31m";
 const STYLE_FONT_BOLD: &str = "\x1b[1m";
 const STYLE_RESET: &str = "\x1b[0m";
 
-pub struct Schema<
-    I: IvoInputStruct<ErrorTool>,
-    O: IvoStruct = I,
-    CtxOptions: Clone = DefaultCtxOptions,
-    Timestamp: Clone + Debug + Send + Sync + 'static = (),
-    ErrorTool: IvoErrorTool = DefaultErrorTool,
-> {
-    pub(crate) field_configs: InternalFieldConfigs<I, O, CtxOptions, ErrorTool>,
-    pub(crate) options: SchemaOptions<I, O, CtxOptions, ErrorTool>,
-    pub(crate) timestamp_configs: Option<TimestampConfig<Timestamp>>,
-}
-
 impl<
         I: IvoInputStruct<ErrorTool>,
         O: IvoStruct,
-        CtxOptions: Clone,
+        CtxOptions: Clone + Sync + Send,
         Timestamp: Clone + Debug + Send + Sync + 'static,
         ErrorTool: IvoErrorTool,
-    > Schema<I, O, CtxOptions, Timestamp, ErrorTool>
+    > Model<I, O, CtxOptions, Timestamp, ErrorTool>
 {
     #[track_caller]
     pub fn new<FieldMaker, OptionsMaker, BuildableOptions, WithTimestamps>(

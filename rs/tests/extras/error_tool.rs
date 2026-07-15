@@ -1,7 +1,7 @@
 use std::{collections::HashMap, future::ready, sync::LazyLock};
 
 use crate::async_test_matrix;
-use ivo::{FieldError, IvoErrorTool, IvoField, IvoInputStruct, IvoStruct, Model, Schema};
+use ivo::{FieldError, IvoErrorTool, IvoField, IvoInputStruct, IvoStruct, Model};
 
 async fn should_respect_custom_error_tool() {
     let r = PLACE_MODEL
@@ -164,12 +164,8 @@ type PlacesTimestamp = ();
 
 static PLACE_MODEL: LazyLock<
     Model<Place, Place, PlacesCtxOptions, PlacesTimestamp, PlacesErrorTool>,
-> = LazyLock::new(|| PLACE_SCHEMA.model());
-
-static PLACE_SCHEMA: LazyLock<
-    Schema<Place, Place, PlacesCtxOptions, PlacesTimestamp, PlacesErrorTool>,
 > = LazyLock::new(|| {
-    Schema::new(
+    Model::new(
         |f| {
             f.field(
                 "coordinates",

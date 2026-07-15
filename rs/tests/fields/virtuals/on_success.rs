@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, Schema};
+use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, Model};
 
 use crate::async_test_matrix;
 
@@ -20,7 +20,7 @@ async fn should_trigger_on_success_handlers_if_virtual_is_provided_at_creation()
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -56,8 +56,6 @@ async fn should_trigger_on_success_handlers_if_virtual_is_provided_at_creation()
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let (data, handle_success, _) = model
         .create(
@@ -103,7 +101,7 @@ async fn should_trigger_on_success_handlers_if_virtual_is_provided_at_creation_w
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -141,8 +139,6 @@ async fn should_trigger_on_success_handlers_if_virtual_is_provided_at_creation_w
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let (data, handle_success, _) = model
         .create(
@@ -189,7 +185,7 @@ async fn should_trigger_on_success_handlers_if_virtual_is_provided_at_creation_w
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -226,8 +222,6 @@ async fn should_trigger_on_success_handlers_if_virtual_is_provided_at_creation_w
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let (data, handle_success, _) = model
         .create(
@@ -273,7 +267,7 @@ async fn should_trigger_on_success_handlers_if_virtual_is_provided_during_update
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -309,8 +303,6 @@ async fn should_trigger_on_success_handlers_if_virtual_is_provided_during_update
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let data = Data {
         dependent: default_dependent_value,
@@ -362,7 +354,7 @@ async fn should_trigger_on_success_handlers_if_virtual_is_provided_during_update
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -399,8 +391,6 @@ async fn should_trigger_on_success_handlers_if_virtual_is_provided_during_update
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let data = Data {
         dependent: default_dependent_value,
@@ -453,7 +443,7 @@ async fn should_trigger_on_success_handlers_if_virtual_is_provided_during_update
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -490,8 +480,6 @@ async fn should_trigger_on_success_handlers_if_virtual_is_provided_during_update
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let data = Data {
         dependent: default_dependent_value,
@@ -543,7 +531,7 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_not_provided() {
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -579,8 +567,6 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_not_provided() {
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let (data, handle_success, _) = model
         .create(
@@ -672,7 +658,7 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_not_provided_with_
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -709,8 +695,6 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_not_provided_with_
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let (data, handle_success, _) = model
         .create(
@@ -803,7 +787,7 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_not_provided_with_
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -840,8 +824,6 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_not_provided_with_
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let (data, handle_success, _) = model
         .create(
@@ -935,7 +917,7 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -972,8 +954,6 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let (data, handle_success, _) = model
         .create(
@@ -1068,7 +1048,7 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -1106,8 +1086,6 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let (data, handle_success, _) = model
         .create(
@@ -1202,7 +1180,7 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -1240,8 +1218,6 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let (data, handle_success, _) = model
         .create(
@@ -1336,7 +1312,7 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -1373,8 +1349,6 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let (data, handle_success, _) = model
         .create(
@@ -1444,7 +1418,7 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -1482,8 +1456,6 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let (data, handle_success, _) = model
         .create(
@@ -1553,7 +1525,7 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -1591,8 +1563,6 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let (data, handle_success, _) = model
         .create(
@@ -1662,7 +1632,7 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -1699,8 +1669,6 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let lax = Some(default_lax_value + 10);
 
@@ -1752,7 +1720,7 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -1790,8 +1758,6 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let lax = Some(default_lax_value + 10);
 
@@ -1843,7 +1809,7 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -1881,8 +1847,6 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let lax = Some(default_lax_value + 10);
 
@@ -1935,7 +1899,7 @@ async fn should_trigger_grouped_on_success_handlers_if_virtual_is_provided_at_cr
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -1970,8 +1934,6 @@ async fn should_trigger_grouped_on_success_handlers_if_virtual_is_provided_at_cr
             })
         },
     );
-
-    let model = schema.model();
 
     let (data, handle_success, _) = model
         .create(
@@ -2018,7 +1980,7 @@ async fn should_trigger_grouped_on_success_handlers_if_virtual_is_provided_at_cr
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -2055,8 +2017,6 @@ async fn should_trigger_grouped_on_success_handlers_if_virtual_is_provided_at_cr
             })
         },
     );
-
-    let model = schema.model();
 
     let (data, handle_success, _) = model
         .create(
@@ -2103,7 +2063,7 @@ async fn should_trigger_grouped_on_success_handlers_if_virtual_is_provided_at_cr
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -2140,8 +2100,6 @@ async fn should_trigger_grouped_on_success_handlers_if_virtual_is_provided_at_cr
             })
         },
     );
-
-    let model = schema.model();
 
     let (data, handle_success, _) = model
         .create(
@@ -2187,7 +2145,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_not_provid
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -2222,8 +2180,6 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_not_provid
             })
         },
     );
-
-    let model = schema.model();
 
     let (data, handle_success, _) = model
         .create(
@@ -2293,7 +2249,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_not_provid
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -2330,8 +2286,6 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_not_provid
             })
         },
     );
-
-    let model = schema.model();
 
     let (data, handle_success, _) = model
         .create(
@@ -2401,7 +2355,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_not_provid
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -2438,8 +2392,6 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_not_provid
             })
         },
     );
-
-    let model = schema.model();
 
     let (data, handle_success, _) = model
         .create(
@@ -2509,7 +2461,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -2546,8 +2498,6 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
             })
         },
     );
-
-    let model = schema.model();
 
     let (data, handle_success, _) = model
         .create(
@@ -2618,7 +2568,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -2656,8 +2606,6 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
             })
         },
     );
-
-    let model = schema.model();
 
     let (data, handle_success, _) = model
         .create(
@@ -2728,7 +2676,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -2766,8 +2714,6 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
             })
         },
     );
-
-    let model = schema.model();
 
     let (data, handle_success, _) = model
         .create(
@@ -2838,7 +2784,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -2875,8 +2821,6 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
             })
         },
     );
-
-    let model = schema.model();
 
     let (data, handle_success, _) = model
         .create(
@@ -2922,7 +2866,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -2960,8 +2904,6 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
             })
         },
     );
-
-    let model = schema.model();
 
     let (data, handle_success, _) = model
         .create(
@@ -3007,7 +2949,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -3045,8 +2987,6 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
             })
         },
     );
-
-    let model = schema.model();
 
     let (data, handle_success, _) = model
         .create(
@@ -3091,7 +3031,7 @@ async fn should_trigger_grouped_on_success_handlers_if_virtual_is_provided_durin
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -3126,8 +3066,6 @@ async fn should_trigger_grouped_on_success_handlers_if_virtual_is_provided_durin
             })
         },
     );
-
-    let model = schema.model();
 
     let (updates, handle_success, _) = model
         .update(
@@ -3178,7 +3116,7 @@ async fn should_trigger_grouped_on_success_handlers_if_virtual_is_provided_durin
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -3215,8 +3153,6 @@ async fn should_trigger_grouped_on_success_handlers_if_virtual_is_provided_durin
             })
         },
     );
-
-    let model = schema.model();
 
     let (updates, handle_success, _) = model
         .update(
@@ -3267,7 +3203,7 @@ async fn should_trigger_grouped_on_success_handlers_if_virtual_is_provided_durin
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -3304,8 +3240,6 @@ async fn should_trigger_grouped_on_success_handlers_if_virtual_is_provided_durin
             })
         },
     );
-
-    let model = schema.model();
 
     let (updates, handle_success, _) = model
         .update(
@@ -3356,7 +3290,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_not_provid
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -3391,8 +3325,6 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_not_provid
             })
         },
     );
-
-    let model = schema.model();
 
     let lax = default_lax_value + 10;
 
@@ -3444,7 +3376,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_not_provid
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -3481,8 +3413,6 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_not_provid
             })
         },
     );
-
-    let model = schema.model();
 
     let lax = default_lax_value + 10;
 
@@ -3534,7 +3464,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_not_provid
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -3571,8 +3501,6 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_not_provid
             })
         },
     );
-
-    let model = schema.model();
 
     let lax = default_lax_value + 10;
 
@@ -3624,7 +3552,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -3661,8 +3589,6 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
             })
         },
     );
-
-    let model = schema.model();
 
     let lax = default_lax_value + 10;
 
@@ -3714,7 +3640,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -3752,8 +3678,6 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
             })
         },
     );
-
-    let model = schema.model();
 
     let lax = default_lax_value + 10;
 
@@ -3805,7 +3729,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -3843,8 +3767,6 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
             })
         },
     );
-
-    let model = schema.model();
 
     let lax = default_lax_value + 10;
 

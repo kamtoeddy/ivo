@@ -1,8 +1,6 @@
 use std::future::ready;
 
-use ivo::{
-    IvoContext, IvoCtxOptions, IvoField, IvoInputStruct, IvoRwCtxOptions, IvoStruct, Schema,
-};
+use ivo::{IvoContext, IvoCtxOptions, IvoField, IvoInputStruct, IvoRwCtxOptions, IvoStruct, Model};
 
 use crate::async_test_matrix;
 
@@ -52,7 +50,7 @@ async fn should_properly_update_ctx_options_in_required_resolver_and_provide_tho
     const MESSAGE: &str = "ctx_options updated in ignore resolver";
     const REQUIRED_ERROR: &str = "virtual_field is missing!";
 
-    let schema = Schema::<DataInput, Data, CtxOptions>::new(
+    let model = Model::<DataInput, Data, CtxOptions>::new(
         |f| {
             f.field(
                 "dependent",
@@ -82,8 +80,6 @@ async fn should_properly_update_ctx_options_in_required_resolver_and_provide_tho
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let (err, _, ctx_options) = model
         .create(
@@ -122,7 +118,7 @@ async fn should_properly_update_ctx_options_in_required_resolver_and_provide_tho
     const MESSAGE: &str = "ctx_options updated in ignore resolver";
     const REQUIRED_ERROR: &str = "virtual_field is missing!";
 
-    let schema = Schema::<DataInput, Data, CtxOptions>::new(
+    let model = Model::<DataInput, Data, CtxOptions>::new(
         |f| {
             f.field(
                 "dependent",
@@ -152,8 +148,6 @@ async fn should_properly_update_ctx_options_in_required_resolver_and_provide_tho
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let (err, _, ctx_options) = model
         .update(
@@ -204,7 +198,7 @@ async fn should_properly_update_ctx_options_in_ignore_update_resolver_and_provid
     const DEFAULT_VALUE: i32 = 1;
     const MESSAGE: &str = "ctx_options updated in ignore_update resolver";
 
-    let schema = Schema::<DataInput, Data, CtxOptions>::new(
+    let model = Model::<DataInput, Data, CtxOptions>::new(
         |f| {
             f.field(
                 "dependent",
@@ -237,8 +231,6 @@ async fn should_properly_update_ctx_options_in_ignore_update_resolver_and_provid
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let data = Data {
         dependent: DEFAULT_VALUE,
@@ -294,7 +286,7 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
 
     const MIN_LENGTH_ERROR: &str = "expected virtual_field to be at least 2 characters long";
 
-    let schema: Schema<DataInput, Data, CtxOptions> = Schema::new(
+    let model: Model<DataInput, Data, CtxOptions> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -332,8 +324,6 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let (err, handle_failure, ctx_options) = model
         .create(
@@ -378,7 +368,7 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
 
     const MIN_LENGTH_ERROR: &str = "expected virtual_field to be at least 2 characters long";
 
-    let schema: Schema<DataInput, Data, CtxOptions> = Schema::new(
+    let model: Model<DataInput, Data, CtxOptions> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -416,8 +406,6 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let (err, handle_failure, ctx_options) = model
         .update(
@@ -473,7 +461,7 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
 
     const MIN_LENGTH_ERROR: &str = "expected virtual_field to be at least 2 characters long";
 
-    let schema: Schema<DataInput, Data, CtxOptions> = Schema::new(
+    let model: Model<DataInput, Data, CtxOptions> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -512,8 +500,6 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let (err, handle_failure, ctx_options) = model
         .create(
@@ -558,7 +544,7 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
 
     const MIN_LENGTH_ERROR: &str = "expected virtual_field to be at least 2 characters long";
 
-    let schema: Schema<DataInput, Data, CtxOptions> = Schema::new(
+    let model: Model<DataInput, Data, CtxOptions> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -597,8 +583,6 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let (err, handle_failure, ctx_options) = model
         .update(
@@ -655,7 +639,7 @@ async fn should_properly_update_ctx_options_in_sanitizers_and_provide_those_upda
         format!("sanitized-{value}")
     }
 
-    let schema: Schema<DataInput, Data, CtxOptions> = Schema::new(
+    let model: Model<DataInput, Data, CtxOptions> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -688,8 +672,6 @@ async fn should_properly_update_ctx_options_in_sanitizers_and_provide_those_upda
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let virtual_value = "virtual_value".to_string();
 
@@ -747,7 +729,7 @@ async fn should_properly_update_ctx_options_in_sanitizers_and_provide_those_upda
         format!("sanitized-{value}")
     }
 
-    let schema: Schema<DataInput, Data, CtxOptions> = Schema::new(
+    let model: Model<DataInput, Data, CtxOptions> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -780,8 +762,6 @@ async fn should_properly_update_ctx_options_in_sanitizers_and_provide_those_upda
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let data = Data {
         dependent: default_dependent_value.into(),
@@ -846,7 +826,7 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
 
     const MIN_LENGTH_ERROR: &str = "expected virtual_field to be at least 2 characters long";
 
-    let schema: Schema<DataInput, Data, CtxOptions> = Schema::new(
+    let model: Model<DataInput, Data, CtxOptions> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -887,8 +867,6 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
             })
         },
     );
-
-    let model = schema.model();
 
     let value = DEFAULT_VALUE + 1;
 
@@ -934,7 +912,7 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
 
     const MIN_LENGTH_ERROR: &str = "expected virtual_field to be at least 2 characters long";
 
-    let schema: Schema<DataInput, Data, CtxOptions> = Schema::new(
+    let model: Model<DataInput, Data, CtxOptions> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -975,8 +953,6 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
             })
         },
     );
-
-    let model = schema.model();
 
     let data = Data {
         dependent: DEFAULT_VALUE,

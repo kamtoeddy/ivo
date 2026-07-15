@@ -1,8 +1,8 @@
 use std::{future::ready, sync::LazyLock};
 
-use ivo::{IvoContext, IvoField, IvoInputStruct, IvoShared, IvoStruct, Model, Schema};
+use ivo::{IvoContext, IvoField, IvoInputStruct, IvoShared, IvoStruct, Model};
 
-type DataModel = Model<'static, DataInput, Data>;
+type DataModel = Model<DataInput, Data>;
 
 const CONSTANT_VALUE: i32 = 1234;
 const DEFAULT_USERNAME: &str = "default-username";
@@ -78,68 +78,60 @@ pub struct Data {
     pub username: String,
 }
 
-pub static DATA_MODEL_WITH_STATIC_VALUE: LazyLock<DataModel> =
-    LazyLock::new(|| DATA_SCHEMA_WITH_STATIC_DEFAULT.model());
+pub static DATA_MODEL_WITH_STATIC_VALUE: LazyLock<DataModel> = LazyLock::new(|| {
+    Model::new(
+        |f| {
+            f.field(
+                "id",
+                IvoField::CONSTANT
+                    .value(CONSTANT_VALUE)
+                    .on_success(|ctx: IvoContext<DataInput, Data>, _| {
+                        println!("\n[on_success]: id = {}", ctx.values().id.unwrap());
 
-pub static DATA_SCHEMA_WITH_STATIC_DEFAULT: LazyLock<Schema<DataInput, Data>> =
-    LazyLock::new(|| {
-        Schema::new(
-            |f| {
-                f.field(
-                    "id",
-                    IvoField::CONSTANT
-                        .value(CONSTANT_VALUE)
-                        .on_success(|ctx: IvoContext<DataInput, Data>, _| {
-                            println!("\n[on_success]: id = {}", ctx.values().id.unwrap());
+                        ready(())
+                    })
+                    .on_delete(|data: IvoShared<Data>, _| {
+                        println!("\n[on_delete]: id = {}", data.id);
 
-                            ready(())
-                        })
-                        .on_delete(|data: IvoShared<Data>, _| {
-                            println!("\n[on_delete]: id = {}", data.id);
+                        ready(())
+                    }),
+            )
+            .field(
+                "username",
+                IvoField::LAX
+                    .default(DEFAULT_USERNAME.into())
+                    .validate(|_, _, _| ready(Ok(None::<String>))),
+            )
+        },
+        |o| o,
+    )
+});
 
-                            ready(())
-                        }),
-                )
-                .field(
-                    "username",
-                    IvoField::LAX
-                        .default(DEFAULT_USERNAME.into())
-                        .validate(|_, _, _| ready(Ok(None::<String>))),
-                )
-            },
-            |o| o,
-        )
-    });
+pub static DATA_MODEL_WITH_DYNAMIC_VALUE: LazyLock<DataModel> = LazyLock::new(|| {
+    Model::new(
+        |f| {
+            f.field(
+                "id",
+                IvoField::CONSTANT
+                    .value_fn(|_, _| ready(CONSTANT_VALUE))
+                    .on_success(|ctx: IvoContext<DataInput, Data>, _| {
+                        println!("\n[on_success]: id = {}", ctx.values().id.unwrap());
 
-pub static DATA_MODEL_WITH_DYNAMIC_VALUE: LazyLock<DataModel> =
-    LazyLock::new(|| DATA_SCHEMA_WITH_DYNAMIC_DEFAULT.model());
+                        ready(())
+                    })
+                    .on_delete(|data: IvoShared<Data>, _| {
+                        println!("\n[on_delete]: id = {}", data.id);
 
-pub static DATA_SCHEMA_WITH_DYNAMIC_DEFAULT: LazyLock<Schema<DataInput, Data>> =
-    LazyLock::new(|| {
-        Schema::new(
-            |f| {
-                f.field(
-                    "id",
-                    IvoField::CONSTANT
-                        .value_fn(|_, _| ready(CONSTANT_VALUE))
-                        .on_success(|ctx: IvoContext<DataInput, Data>, _| {
-                            println!("\n[on_success]: id = {}", ctx.values().id.unwrap());
-
-                            ready(())
-                        })
-                        .on_delete(|data: IvoShared<Data>, _| {
-                            println!("\n[on_delete]: id = {}", data.id);
-
-                            ready(())
-                        }),
-                )
-                .field(
-                    "username",
-                    IvoField::LAX
-                        .default(DEFAULT_USERNAME.into())
-                        .validate(|_, _, _| ready(Ok(None::<String>))),
-                )
-            },
-            |o| o,
-        )
-    });
+                        ready(())
+                    }),
+            )
+            .field(
+                "username",
+                IvoField::LAX
+                    .default(DEFAULT_USERNAME.into())
+                    .validate(|_, _, _| ready(Ok(None::<String>))),
+            )
+        },
+        |o| o,
+    )
+});

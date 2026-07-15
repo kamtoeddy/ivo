@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, Schema};
+use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, Model};
 
 use crate::async_test_matrix;
 
@@ -21,7 +21,7 @@ async fn should_respect_the_ignore_rule() {
 
     let default_lax_value = "default_lax_value";
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "other",
@@ -53,8 +53,6 @@ async fn should_respect_the_ignore_rule() {
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let other_value = "ignore_lax_for_init".to_string();
 
@@ -145,7 +143,7 @@ async fn should_respect_the_ignore_init_rule() {
 
     let default_lax_value = "default_lax_value";
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "other",
@@ -163,8 +161,6 @@ async fn should_respect_the_ignore_init_rule() {
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let other_value = "some other value".to_string();
 
@@ -230,7 +226,7 @@ async fn should_respect_the_ignore_update_rule() {
 
     let default_lax_value = "default_lax_value";
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "other",
@@ -248,8 +244,6 @@ async fn should_respect_the_ignore_update_rule() {
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let lax_value = "lax value".to_string();
     let other_value = "other value".to_string();
@@ -324,7 +318,7 @@ async fn should_properly_handle_grouped_ignore_rule() {
     let default_lax_1_value = "default_lax_1_value";
     let default_lax_2_value = "default_lax_2_value";
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field("lax", IvoField::LAX.default(default_lax_value.to_string()))
                 .field(
@@ -342,8 +336,6 @@ async fn should_properly_handle_grouped_ignore_rule() {
             })
         },
     );
-
-    let model = schema.model();
 
     let lax = IGNORE.to_string();
     let lax_1 = "lax_1".to_string();
@@ -471,7 +463,7 @@ async fn should_properly_handle_grouped_ignore_update_rule() {
     let default_lax_1_value = "default_lax_1_value";
     let default_lax_2_value = "default_lax_2_value";
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field("lax", IvoField::LAX.default(default_lax_value.to_string()))
                 .field(
@@ -489,8 +481,6 @@ async fn should_properly_handle_grouped_ignore_update_rule() {
             })
         },
     );
-
-    let model = schema.model();
 
     let lax = IGNORE.to_string();
     let lax_1 = "lax_1".to_string();
@@ -604,12 +594,10 @@ async fn should_ignore_updates_on_readonly_fields_if_values_are_different_from_d
 
     let default_value = 1;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| f.field("lax", IvoField::LAX.default(default_value).readonly()),
         |o| o,
     );
-
-    let model = schema.model();
 
     let lax_value = 40;
 
@@ -662,12 +650,10 @@ async fn should_ignore_updates_on_readonly_fields_if_values_are_different_from_d
 
     const DEFAULT_VALUE: i32 = 1;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| f.field("lax", IvoField::LAX.default(DEFAULT_VALUE).readonly()),
         |o| o,
     );
-
-    let model = schema.model();
 
     let (data, _, _) = model
         .create(&PartialDataInput { lax: None }, None)

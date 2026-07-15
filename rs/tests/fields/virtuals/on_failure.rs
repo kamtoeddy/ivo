@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, Schema};
+use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, Model};
 
 use crate::async_test_matrix;
 
@@ -17,7 +17,7 @@ async fn should_trigger_on_failure_handlers_at_creation() {
 
     let default_dependent_value = 1;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -52,8 +52,6 @@ async fn should_trigger_on_failure_handlers_at_creation() {
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let r = model
         .create(
@@ -94,7 +92,7 @@ async fn should_trigger_on_failure_handlers_at_creation_with_alias() {
 
     let default_dependent_value = 1;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -131,8 +129,6 @@ async fn should_trigger_on_failure_handlers_at_creation_with_alias() {
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let r = model
         .create(
@@ -173,7 +169,7 @@ async fn should_trigger_on_failure_handlers_at_creation_with_alias_same_as_depen
 
     let default_dependent_value = 1;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -209,8 +205,6 @@ async fn should_trigger_on_failure_handlers_at_creation_with_alias_same_as_depen
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let r = model
         .create(
@@ -251,7 +245,7 @@ async fn should_trigger_on_failure_handlers_during_updates() {
 
     let default_dependent_value = 1;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -286,8 +280,6 @@ async fn should_trigger_on_failure_handlers_during_updates() {
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let r = model
         .update(
@@ -332,7 +324,7 @@ async fn should_trigger_on_failure_handlers_during_updates_with_alias() {
 
     let default_dependent_value = 1;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -368,8 +360,6 @@ async fn should_trigger_on_failure_handlers_during_updates_with_alias() {
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let r = model
         .update(
@@ -414,7 +404,7 @@ async fn should_trigger_on_failure_handlers_during_updates_with_alias_same_as_de
 
     let default_dependent_value = 1;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -450,8 +440,6 @@ async fn should_trigger_on_failure_handlers_during_updates_with_alias_same_as_de
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let r = model
         .update(
@@ -498,7 +486,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
 
     let default_dependent_value = 1;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -545,8 +533,6 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
         |o| o,
     );
 
-    let model = schema.model();
-
     let r = model
         .create(
             &PartialDataInput {
@@ -592,7 +578,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
 
     let default_dependent_value = 1;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -640,8 +626,6 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
         |o| o,
     );
 
-    let model = schema.model();
-
     let r = model
         .create(
             &PartialDataInput {
@@ -687,7 +671,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
 
     let default_dependent_value = 1;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -735,8 +719,6 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
         |o| o,
     );
 
-    let model = schema.model();
-
     let r = model
         .create(
             &PartialDataInput {
@@ -782,7 +764,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
 
     let default_dependent_value = 1;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -828,8 +810,6 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let r = model
         .update(
@@ -879,7 +859,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
 
     let default_dependent_value = 1;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -926,8 +906,6 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let r = model
         .update(
@@ -977,7 +955,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
 
     let default_dependent_value = 1;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -1024,8 +1002,6 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let r = model
         .update(
@@ -1075,7 +1051,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
 
     let default_dependent_value = 1;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -1122,8 +1098,6 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
         |o| o,
     );
 
-    let model = schema.model();
-
     let r = model
         .create(
             &PartialDataInput {
@@ -1169,7 +1143,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
 
     let default_dependent_value = 1;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -1217,8 +1191,6 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
         |o| o,
     );
 
-    let model = schema.model();
-
     let r = model
         .create(
             &PartialDataInput {
@@ -1264,7 +1236,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
 
     let default_dependent_value = 1;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -1312,8 +1284,6 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
         |o| o,
     );
 
-    let model = schema.model();
-
     let r = model
         .create(
             &PartialDataInput {
@@ -1359,7 +1329,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
 
     let default_dependent_value = 1;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -1405,8 +1375,6 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let input = PartialDataInput {
         virtual_field: Some("update to be ignored".into()),
@@ -1458,7 +1426,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
 
     let default_dependent_value = 1;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -1505,8 +1473,6 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let input = PartialDataInput {
         virtual_alias: Some("update to be ignored".into()),
@@ -1558,7 +1524,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
 
     let default_dependent_value = 1;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -1605,8 +1571,6 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let input = PartialDataInput {
         dependent: Some("update to be ignored".into()),

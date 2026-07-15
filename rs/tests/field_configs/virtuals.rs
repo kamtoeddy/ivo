@@ -1,4 +1,4 @@
-use ivo::{DefaultErrorTool, IvoField, IvoInputStruct, IvoStruct, Schema};
+use ivo::{DefaultErrorTool, IvoField, IvoInputStruct, IvoStruct, Model};
 use std::{future::ready, panic};
 
 #[test]
@@ -19,7 +19,7 @@ fn should_reject_if_virtual_field_does_not_have_any_dependency() {
         virtual_field: String,
     }
 
-    let _: Schema<DataInput, Data> = Schema::new(
+    let _: Model<DataInput, Data> = Model::new(
         |f| {
             f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
                 .field("lax", IvoField::LAX.default(1))
@@ -53,7 +53,7 @@ fn should_reject_with_same_alias_name() {
         virtual_field: i32,
     }
 
-    let _: Schema<DataInput, Data> = Schema::new(
+    let _: Model<DataInput, Data> = Model::new(
         |f| {
             f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
                 .field(
@@ -92,7 +92,7 @@ fn should_reject_with_alias_as_non_dependent_field() {
         virtual_field: i32,
     }
 
-    let _: Schema<DataInput, Data> = Schema::new(
+    let _: Model<DataInput, Data> = Model::new(
         |f| {
             f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
                 .field("lax", IvoField::LAX.default(1))
@@ -133,7 +133,7 @@ fn should_reject_with_alias_as_unrelated_dependent_field() {
         virtual_field: i32,
     }
 
-    let _: Schema<DataInput, Data> = Schema::new(
+    let _: Model<DataInput, Data> = Model::new(
         |f| {
             f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
                 .field("lax", IvoField::LAX.default(1))
@@ -178,7 +178,7 @@ fn should_reject_if_alias_is_same_created_at_if_enabled_with_default_name() {
         virtual_field: String,
     }
 
-    let _: Schema<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Schema::new(
+    let _: Model<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Model::new(
         |f| {
             f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
                 .field(
@@ -209,7 +209,7 @@ fn should_reject_if_alias_is_same_created_at_if_enabled_with_custom_name() {
         virtual_field: String,
     }
 
-    let _: Schema<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Schema::new(
+    let _: Model<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Model::new(
         |f| {
             f.field(
                 "virtual_field",
@@ -242,7 +242,7 @@ fn should_reject_if_alias_is_same_updated_at_if_enabled_with_default_name() {
         virtual_field: String,
     }
 
-    let _: Schema<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Schema::new(
+    let _: Model<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Model::new(
         |f| {
             f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
                 .field(
@@ -273,7 +273,7 @@ fn should_reject_if_alias_is_same_updated_at_if_enabled_with_custom_name() {
         virtual_field: String,
     }
 
-    let _: Schema<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Schema::new(
+    let _: Model<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Model::new(
         |f| {
             f.field(
                 "virtual_field",
@@ -308,7 +308,7 @@ fn should_reject_if_alias_already_used() {
         lax: String,
     }
 
-    let _: Schema<DataInput, Data> = Schema::new(
+    let _: Model<DataInput, Data> = Model::new(
         |f| {
             f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
                 .field("lax", IvoField::LAX.default(1))
@@ -353,7 +353,7 @@ fn should_reject_if_alias_does_not_exist_on_input_struct() {
         lax: String,
     }
 
-    let _: Schema<DataInput, Data> = Schema::new(
+    let _: Model<DataInput, Data> = Model::new(
         |f| {
             f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
                 .field("lax", IvoField::LAX.default(1))
@@ -394,7 +394,7 @@ fn should_reject_if_both_alias_and_field_name_exist_on_input_struct() {
         virtual_field: String,
     }
 
-    let _: Schema<DataInput, Data> = Schema::new(
+    let _: Model<DataInput, Data> = Model::new(
         |f| {
             f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
                 .field("lax", IvoField::LAX.default(1))
@@ -433,7 +433,7 @@ fn should_allow_virtuals_with_alias_as_direct_dependent_field() {
     }
 
     let result = panic::catch_unwind(|| {
-        let _: Schema<DataInput, Data> = Schema::new(
+        let _: Model<DataInput, Data> = Model::new(
             |f| {
                 f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
                     .field("lax", IvoField::LAX.default(1))
@@ -480,7 +480,7 @@ fn should_allow_virtuals_with_alias_as_non_field_name() {
     }
 
     let result = panic::catch_unwind(|| {
-        let _: Schema<DataInput, Data, Option<()>, String> = Schema::new(
+        let _: Model<DataInput, Data, Option<()>, String> = Model::new(
             |f| {
                 f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
                     .field("lax", IvoField::LAX.default(1))
@@ -527,7 +527,7 @@ fn should_reject_if_no_alias_is_provided_and_field_name_does_not_exist_on_input_
         lax: String,
     }
 
-    let _: Schema<DataInput, Data> = Schema::new(
+    let _: Model<DataInput, Data> = Model::new(
         |f| {
             f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
                 .field("lax", IvoField::LAX.default(1))
@@ -563,7 +563,7 @@ fn should_allow_if_no_alias_is_provided_but_field_name_exists_on_input_struct() 
     }
 
     let result = panic::catch_unwind(|| {
-        let _: Schema<DataInput, Data> = Schema::new(
+        let _: Model<DataInput, Data> = Model::new(
             |f| {
                 f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
                     .field("lax", IvoField::LAX.default(1))

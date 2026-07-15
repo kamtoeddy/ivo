@@ -1,6 +1,6 @@
 #![expect(dead_code)]
 
-use ivo::{IvoField, IvoInputStruct, IvoRwCtxOptions, IvoStruct, Model, Schema};
+use ivo::{IvoField, IvoInputStruct, IvoRwCtxOptions, IvoStruct, Model};
 use std::{array, collections::HashMap, future::ready, sync::LazyLock};
 
 use crate::async_test_matrix;
@@ -123,11 +123,8 @@ pub struct Supplier {
 }
 
 static PRODUCT_MODEL: LazyLock<Model<ProductInput, Product, ProductCtxOptions>> =
-    LazyLock::new(|| PRODUCT_SCHEMA.model());
-
-static PRODUCT_SCHEMA: LazyLock<Schema<ProductInput, Product, ProductCtxOptions>> =
     LazyLock::new(|| {
-        Schema::new(
+        Model::new(
             |f| {
                 f.field("id", IvoField::CONSTANT.value(ProductID(1)))
                     .field(

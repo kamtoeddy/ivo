@@ -1,8 +1,8 @@
 use std::{future::ready, sync::LazyLock};
 
-use ivo::{IvoContext, IvoField, IvoInputStruct, IvoShared, IvoStruct, Model, Schema};
+use ivo::{IvoContext, IvoField, IvoInputStruct, IvoShared, IvoStruct, Model};
 
-type DataModel = Model<'static, DataInput, Data>;
+type DataModel = Model<DataInput, Data>;
 const DEFAULT_USERNAME: &str = "default-username";
 
 #[async_std::main]
@@ -80,62 +80,54 @@ pub struct Data {
     pub username: String,
 }
 
-pub static DATA_MODEL_WITH_STATIC_DEFAULT: LazyLock<DataModel> =
-    LazyLock::new(|| DATA_SCHEMA_WITH_STATIC_DEFAULT.model());
+pub static DATA_MODEL_WITH_STATIC_DEFAULT: LazyLock<DataModel> = LazyLock::new(|| {
+    Model::new(
+        |f| {
+            f.field(
+                "username",
+                IvoField::LAX
+                    .default(DEFAULT_USERNAME.to_string())
+                    .on_success(|ctx: IvoContext<DataInput, Data>, _| {
+                        println!(
+                            "\n[on_success]: username = {}",
+                            ctx.values().username.unwrap()
+                        );
 
-pub static DATA_SCHEMA_WITH_STATIC_DEFAULT: LazyLock<Schema<DataInput, Data>> =
-    LazyLock::new(|| {
-        Schema::new(
-            |f| {
-                f.field(
-                    "username",
-                    IvoField::LAX
-                        .default(DEFAULT_USERNAME.to_string())
-                        .on_success(|ctx: IvoContext<DataInput, Data>, _| {
-                            println!(
-                                "\n[on_success]: username = {}",
-                                ctx.values().username.unwrap()
-                            );
+                        ready(())
+                    })
+                    .on_delete(|data: IvoShared<Data>, _| {
+                        println!("\n[on_delete]: username = {}", data.username);
 
-                            ready(())
-                        })
-                        .on_delete(|data: IvoShared<Data>, _| {
-                            println!("\n[on_delete]: username = {}", data.username);
+                        ready(())
+                    }),
+            )
+        },
+        |o| o,
+    )
+});
 
-                            ready(())
-                        }),
-                )
-            },
-            |o| o,
-        )
-    });
+pub static DATA_MODEL_WITH_DYNAMIC_DEFAULT: LazyLock<DataModel> = LazyLock::new(|| {
+    Model::new(
+        |f| {
+            f.field(
+                "username",
+                IvoField::LAX
+                    .default_fn(|_, _| ready(DEFAULT_USERNAME.to_string()))
+                    .on_success(|ctx: IvoContext<DataInput, Data>, _| {
+                        println!(
+                            "\n[on_success]: username = {}",
+                            ctx.values().username.unwrap()
+                        );
 
-pub static DATA_MODEL_WITH_DYNAMIC_DEFAULT: LazyLock<DataModel> =
-    LazyLock::new(|| DATA_SCHEMA_WITH_DYNAMIC_DEFAULT.model());
+                        ready(())
+                    })
+                    .on_delete(|data: IvoShared<Data>, _| {
+                        println!("\n[on_delete]: username = {}", data.username);
 
-pub static DATA_SCHEMA_WITH_DYNAMIC_DEFAULT: LazyLock<Schema<DataInput, Data>> =
-    LazyLock::new(|| {
-        Schema::new(
-            |f| {
-                f.field(
-                    "username",
-                    IvoField::LAX
-                        .default_fn(|_, _| ready(DEFAULT_USERNAME.to_string()))
-                        .on_success(|ctx: IvoContext<DataInput, Data>, _| {
-                            println!(
-                                "\n[on_success]: username = {}",
-                                ctx.values().username.unwrap()
-                            );
-
-                            ready(())
-                        })
-                        .on_delete(|data: IvoShared<Data>, _| {
-                            println!("\n[on_delete]: username = {}", data.username);
-
-                            ready(())
-                        }),
-                )
-            },
-            |o| o,
-        )
-    });
+                        ready(())
+                    }),
+            )
+        },
+        |o| o,
+    )
+});

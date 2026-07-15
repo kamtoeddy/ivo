@@ -1,6 +1,6 @@
 use std::{future::ready, sync::LazyLock};
 
-use ivo::{IvoContext, IvoField, IvoInputStruct, IvoShared, IvoStruct, Model, Schema};
+use ivo::{IvoContext, IvoField, IvoInputStruct, IvoShared, IvoStruct, Model};
 
 const DEFAULT_DEPENDENT: i32 = 1;
 const DEFAULT_USERNAME: &str = "default-username";
@@ -160,10 +160,8 @@ pub struct Data {
 
 type Ctx = IvoContext<DataInput, Data>;
 
-pub static DATA_MODEL: LazyLock<Model<DataInput, Data>> = LazyLock::new(|| DATA_SCHEMA.model());
-
-pub static DATA_SCHEMA: LazyLock<Schema<DataInput, Data>> = LazyLock::new(|| {
-    Schema::new(
+pub static DATA_MODEL: LazyLock<Model<DataInput, Data>> = LazyLock::new(|| {
+    Model::new(
         |f| {
             f.field(
                 "dependent",

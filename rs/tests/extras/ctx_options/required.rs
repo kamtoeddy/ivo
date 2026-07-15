@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoCtxOptions, IvoField, IvoInputStruct, IvoRwCtxOptions, IvoStruct, Schema};
+use ivo::{IvoCtxOptions, IvoField, IvoInputStruct, IvoRwCtxOptions, IvoStruct, Model};
 
 use crate::async_test_matrix;
 
@@ -45,7 +45,7 @@ async fn should_properly_update_ctx_options_in_ignore_update_resolver_and_provid
     const DEFAULT_VALUE: i32 = 1;
     const MESSAGE: &str = "ctx_options updated in ignore_update resolver";
 
-    let schema = Schema::<DataInput, Data, CtxOptions>::new(
+    let model = Model::<DataInput, Data, CtxOptions>::new(
         |f| {
             f.field(
                 "required",
@@ -69,8 +69,6 @@ async fn should_properly_update_ctx_options_in_ignore_update_resolver_and_provid
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let data = Data {
         required: DEFAULT_VALUE,
@@ -115,7 +113,7 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
 
     const MIN_LENGTH_ERROR: &str = "expected required to be at least 2 characters long";
 
-    let schema: Schema<DataInput, Data, CtxOptions> = Schema::new(
+    let model: Model<DataInput, Data, CtxOptions> = Model::new(
         |f| {
             f.field(
                 "required",
@@ -144,8 +142,6 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let (err, handle_failure, ctx_options) = model
         .create(
@@ -187,7 +183,7 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
 
     const MIN_LENGTH_ERROR: &str = "expected required to be at least 2 characters long";
 
-    let schema: Schema<DataInput, Data, CtxOptions> = Schema::new(
+    let model: Model<DataInput, Data, CtxOptions> = Model::new(
         |f| {
             f.field(
                 "required",
@@ -216,8 +212,6 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let (err, handle_failure, ctx_options) = model
         .update(
@@ -270,7 +264,7 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
 
     const MIN_LENGTH_ERROR: &str = "expected required to be at least 2 characters long";
 
-    let schema: Schema<DataInput, Data, CtxOptions> = Schema::new(
+    let model: Model<DataInput, Data, CtxOptions> = Model::new(
         |f| {
             f.field(
                 "required",
@@ -300,8 +294,6 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let (err, handle_failure, ctx_options) = model
         .create(
@@ -343,7 +335,7 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
 
     const MIN_LENGTH_ERROR: &str = "expected required to be at least 2 characters long";
 
-    let schema: Schema<DataInput, Data, CtxOptions> = Schema::new(
+    let model: Model<DataInput, Data, CtxOptions> = Model::new(
         |f| {
             f.field(
                 "required",
@@ -373,8 +365,6 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let (err, handle_failure, ctx_options) = model
         .update(
@@ -429,7 +419,7 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
 
     const MIN_LENGTH_ERROR: &str = "expected required to be at least 2 characters long";
 
-    let schema: Schema<DataInput, Data, CtxOptions> = Schema::new(
+    let model: Model<DataInput, Data, CtxOptions> = Model::new(
         |f| {
             f.field(
                 "required",
@@ -461,8 +451,6 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
             })
         },
     );
-
-    let model = schema.model();
 
     let required = DEFAULT_VALUE + 1;
 
@@ -515,7 +503,7 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
 
     const MIN_LENGTH_ERROR: &str = "expected required to be at least 2 characters long";
 
-    let schema: Schema<DataInput, Data, CtxOptions> = Schema::new(
+    let model: Model<DataInput, Data, CtxOptions> = Model::new(
         |f| {
             f.field(
                 "required",
@@ -547,8 +535,6 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
             })
         },
     );
-
-    let model = schema.model();
 
     let data = Data {
         required: DEFAULT_VALUE,

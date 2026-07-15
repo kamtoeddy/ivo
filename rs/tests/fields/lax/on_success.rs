@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, Schema};
+use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, Model};
 
 use crate::async_test_matrix;
 
@@ -17,7 +17,7 @@ async fn should_trigger_on_success_handlers_at_creation_if_provided() {
         lax_1: String,
     }
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "lax",
@@ -57,8 +57,6 @@ async fn should_trigger_on_success_handlers_at_creation_if_provided() {
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let data = Data {
         lax_1: "lax_1".into(),
@@ -102,7 +100,7 @@ async fn should_trigger_on_success_handlers_at_creation_even_if_not_provided() {
 
     let default_lax_value = "default_lax_value".to_string();
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "lax",
@@ -143,8 +141,6 @@ async fn should_trigger_on_success_handlers_at_creation_even_if_not_provided() {
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let lax_1 = "lax_1".to_string();
 
@@ -191,7 +187,7 @@ async fn should_trigger_on_success_handlers_at_creation_even_if_provided_and_ign
 
     let default_lax_value = "default_lax_value".to_string();
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "lax",
@@ -231,8 +227,6 @@ async fn should_trigger_on_success_handlers_at_creation_even_if_provided_and_ign
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let lax_value = "lax_value".to_string();
     let lax_1_value = "lax_1_value".to_string();
@@ -280,7 +274,7 @@ async fn should_trigger_on_success_handlers_during_updates_if_provided() {
 
     let default_lax_value = "default_lax_value".to_string();
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "lax",
@@ -319,8 +313,6 @@ async fn should_trigger_on_success_handlers_during_updates_if_provided() {
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let lax_1 = "lax_1".to_string();
 
@@ -374,7 +366,7 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_not_provided()
 
     let default_lax_value = "default_lax_value".to_string();
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "lax",
@@ -413,8 +405,6 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_not_provided()
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let lax_1 = "lax_1".to_string();
 
@@ -465,7 +455,7 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_i
 
     let default_lax_value = "default_lax_value".to_string();
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "lax",
@@ -505,8 +495,6 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_i
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let lax_1 = "lax_1".to_string();
 
@@ -560,7 +548,7 @@ async fn should_trigger_success_handlers_with_empty_fields_array_each_time_creat
     let default_lax = 1234;
     let default_lax_1 = 5678;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field("lax", IvoField::LAX.default(default_lax))
                 .field("lax_1", IvoField::LAX.default(default_lax_1))
@@ -577,8 +565,6 @@ async fn should_trigger_success_handlers_with_empty_fields_array_each_time_creat
             })
         },
     );
-
-    let model = schema.model();
 
     let (data, handle_success, _) = model
         .create(&PartialDataInput::new(), None)
@@ -618,7 +604,7 @@ async fn should_trigger_success_handlers_with_empty_fields_array_each_time_updat
     let default_lax = 1234;
     let default_lax_1 = 5678;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field("lax", IvoField::LAX.default(default_lax))
                 .field("lax_1", IvoField::LAX.default(default_lax_1))
@@ -635,8 +621,6 @@ async fn should_trigger_success_handlers_with_empty_fields_array_each_time_updat
             })
         },
     );
-
-    let model = schema.model();
 
     let data = Data {
         lax: default_lax,

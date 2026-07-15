@@ -6,7 +6,8 @@ use std::{
 use crate::{
     __private_types::IvoInputStruct,
     schema::fields::base::{FieldType, InternalFieldConfig},
-    IvoErrorTool, IvoStruct, Schema,
+    types::InternalFieldConfigs,
+    IvoErrorTool, IvoStruct,
 };
 
 pub(super) struct FieldInfoCollection<
@@ -14,7 +15,6 @@ pub(super) struct FieldInfoCollection<
     I: IvoInputStruct<ErrorTool>,
     O: IvoStruct,
     CtxOptions: Clone,
-    Timestamp: Clone + Debug + Send + Sync + 'static,
     ErrorTool: IvoErrorTool,
 > {
     fields: HashMap<&'a str, FieldInfo<'a>>,
@@ -22,7 +22,7 @@ pub(super) struct FieldInfoCollection<
     relevant_fields_provided: HashSet<String>,
     relevant_dependent_config_names: HashSet<String>,
     relevant_config_names: HashSet<String>,
-    schema: &'a Schema<I, O, CtxOptions, Timestamp, ErrorTool>,
+    field_configs: &'a InternalFieldConfigs<I, O, CtxOptions, ErrorTool>,
 }
 
 impl<
@@ -30,15 +30,14 @@ impl<
         I: IvoInputStruct<ErrorTool>,
         O: IvoStruct,
         CtxOptions: Clone,
-        Timestamp: Clone + Debug + Send + Sync + 'static,
         ErrorTool: IvoErrorTool,
-    > FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>
+    > FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool>
 {
     #[inline]
-    pub fn new(schema: &'a Schema<I, O, CtxOptions, Timestamp, ErrorTool>) -> Self {
+    pub fn new(field_configs: &'a InternalFieldConfigs<I, O, CtxOptions, ErrorTool>) -> Self {
         Self {
-            schema,
-            fields: Self::parse_fields(schema),
+            field_configs,
+            fields: Self::parse_fields(field_configs),
             relevant_config_names: HashSet::new(),
             fields_provided: HashSet::new(),
             relevant_fields_provided: HashSet::new(),
@@ -125,11 +124,11 @@ impl<
     }
 
     fn parse_fields(
-        schema: &'a Schema<I, O, CtxOptions, Timestamp, ErrorTool>,
+        field_configs: &'a InternalFieldConfigs<I, O, CtxOptions, ErrorTool>,
     ) -> HashMap<&'a str, FieldInfo<'a>> {
         let mut fields = HashMap::new();
 
-        for (config_name, config) in schema.field_configs.iter() {
+        for (config_name, config) in field_configs.iter() {
             match config {
                 InternalFieldConfig {
                     alias,
@@ -199,12 +198,11 @@ impl<
         O: IvoStruct,
         CtxOptions: Clone,
         ErrorTool: IvoErrorTool,
-        Timestamp: Clone + Debug + Send + Sync + 'static,
-    > Clone for FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>
+    > Clone for FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool>
 {
     fn clone(&self) -> Self {
         Self {
-            schema: self.schema,
+            field_configs: self.field_configs,
             fields: self.fields.clone(),
             fields_provided: self.fields_provided.clone(),
             relevant_config_names: self.relevant_config_names.clone(),

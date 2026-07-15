@@ -2,15 +2,39 @@
 
 pub mod internal;
 
-use std::sync::Arc;
+use std::{collections::HashMap, fmt::Debug, sync::Arc};
 
 use internal::{IvoRwLock, IvoStruct};
+
+use crate::{
+    __private_types::types::DefaultCtxOptions,
+    schema::{
+        fields::{base::InternalFieldConfig, TimestampConfig},
+        options::base::SchemaOptions,
+    },
+    DefaultErrorTool, IvoErrorTool, IvoInputStruct,
+};
 
 pub type IvoShared<T> = Arc<T>;
 pub type IvoCtxOptions<CtxOptions> = IvoShared<CtxOptions>;
 pub type IvoRwCtxOptions<CtxOptions> = IvoShared<IvoRwLock<CtxOptions>>;
 pub type IvoContext<I: IvoStruct, O: IvoStruct = I> = IvoShared<InternalIvoContext<I, O>>;
 pub type IvoSharedInput<I: IvoStruct> = IvoShared<I::Partial>;
+
+pub type InternalFieldConfigs<I, O, CtxOptions, ErrorTool> =
+    HashMap<&'static str, InternalFieldConfig<I, O, CtxOptions, ErrorTool>>;
+
+pub struct Model<
+    I: IvoInputStruct<ErrorTool>,
+    O: IvoStruct = I,
+    CtxOptions: Clone + Sync + Send = DefaultCtxOptions,
+    Timestamp: Clone + Debug + Send + Sync + 'static = (),
+    ErrorTool: IvoErrorTool = DefaultErrorTool,
+> {
+    pub(crate) field_configs: InternalFieldConfigs<I, O, CtxOptions, ErrorTool>,
+    pub(crate) options: SchemaOptions<I, O, CtxOptions, ErrorTool>,
+    pub(crate) timestamp_configs: Option<TimestampConfig<Timestamp>>,
+}
 
 #[derive(Clone, Copy)]
 pub enum InternalIvoContext<I: IvoStruct, O: IvoStruct> {

@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoCtxOptions, IvoField, IvoInputStruct, IvoRwCtxOptions, IvoStruct, Schema};
+use ivo::{IvoCtxOptions, IvoField, IvoInputStruct, IvoRwCtxOptions, IvoStruct, Model};
 
 use crate::async_test_matrix;
 
@@ -46,7 +46,7 @@ async fn should_properly_update_ctx_options_in_default_resolver_and_provide_thos
     const DEFAULT_VALUE: i32 = 1;
     const MESSAGE: &str = "ctx_options updated in default value resolver";
 
-    let schema = Schema::<DataInput, Data, CtxOptions>::new(
+    let model = Model::<DataInput, Data, CtxOptions>::new(
         |f| {
             f.field(
                 "lax",
@@ -70,8 +70,6 @@ async fn should_properly_update_ctx_options_in_default_resolver_and_provide_thos
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let (data, handle_success, ctx_options) = model
         .create(&PartialDataInput { lax: None }, CtxOptions::new())
@@ -108,7 +106,7 @@ async fn should_properly_update_ctx_options_in_ignore_resolver_and_provide_those
     const DEFAULT_VALUE: i32 = 1;
     const MESSAGE: &str = "ctx_options updated in ignore resolver";
 
-    let schema = Schema::<DataInput, Data, CtxOptions>::new(
+    let model = Model::<DataInput, Data, CtxOptions>::new(
         |f| {
             f.field(
                 "lax",
@@ -133,8 +131,6 @@ async fn should_properly_update_ctx_options_in_ignore_resolver_and_provide_those
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let lax = DEFAULT_VALUE + 1;
 
@@ -171,7 +167,7 @@ async fn should_properly_update_ctx_options_in_ignore_resolver_and_provide_those
     const DEFAULT_VALUE: i32 = 1;
     const MESSAGE: &str = "ctx_options updated in ignore resolver";
 
-    let schema = Schema::<DataInput, Data, CtxOptions>::new(
+    let model = Model::<DataInput, Data, CtxOptions>::new(
         |f| {
             f.field(
                 "lax",
@@ -196,8 +192,6 @@ async fn should_properly_update_ctx_options_in_ignore_resolver_and_provide_those
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let data = Data { lax: DEFAULT_VALUE };
 
@@ -238,7 +232,7 @@ async fn should_properly_update_ctx_options_in_required_resolver_and_provide_tho
     const MESSAGE: &str = "ctx_options updated in ignore resolver";
     const REQUIRED_ERROR: &str = "lax is missing!";
 
-    let schema = Schema::<DataInput, Data, CtxOptions>::new(
+    let model = Model::<DataInput, Data, CtxOptions>::new(
         |f| {
             f.field(
                 "lax",
@@ -256,8 +250,6 @@ async fn should_properly_update_ctx_options_in_required_resolver_and_provide_tho
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let (err, _, ctx_options) = model
         .create(&PartialDataInput { lax: None }, CtxOptions::new())
@@ -291,7 +283,7 @@ async fn should_properly_update_ctx_options_in_required_resolver_and_provide_tho
     const MESSAGE: &str = "ctx_options updated in ignore resolver";
     const REQUIRED_ERROR: &str = "lax is missing!";
 
-    let schema = Schema::<DataInput, Data, CtxOptions>::new(
+    let model = Model::<DataInput, Data, CtxOptions>::new(
         |f| {
             f.field(
                 "lax",
@@ -315,8 +307,6 @@ async fn should_properly_update_ctx_options_in_required_resolver_and_provide_tho
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let (err, _, ctx_options) = model
         .update(
@@ -368,7 +358,7 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
 
     const MIN_LENGTH_ERROR: &str = "expected lax to be at least 2 characters long";
 
-    let schema: Schema<DataInput, Data, CtxOptions> = Schema::new(
+    let model: Model<DataInput, Data, CtxOptions> = Model::new(
         |f| {
             f.field(
                 "lax",
@@ -398,8 +388,6 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let (err, handle_failure, ctx_options) = model
         .create(
@@ -441,7 +429,7 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
 
     const MIN_LENGTH_ERROR: &str = "expected lax to be at least 2 characters long";
 
-    let schema: Schema<DataInput, Data, CtxOptions> = Schema::new(
+    let model: Model<DataInput, Data, CtxOptions> = Model::new(
         |f| {
             f.field(
                 "lax",
@@ -471,8 +459,6 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let (err, handle_failure, ctx_options) = model
         .update(
@@ -525,7 +511,7 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
 
     const MIN_LENGTH_ERROR: &str = "expected lax to be at least 2 characters long";
 
-    let schema: Schema<DataInput, Data, CtxOptions> = Schema::new(
+    let model: Model<DataInput, Data, CtxOptions> = Model::new(
         |f| {
             f.field(
                 "lax",
@@ -556,8 +542,6 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let (err, handle_failure, ctx_options) = model
         .create(
@@ -599,7 +583,7 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
 
     const MIN_LENGTH_ERROR: &str = "expected lax to be at least 2 characters long";
 
-    let schema: Schema<DataInput, Data, CtxOptions> = Schema::new(
+    let model: Model<DataInput, Data, CtxOptions> = Model::new(
         |f| {
             f.field(
                 "lax",
@@ -630,8 +614,6 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let (err, handle_failure, ctx_options) = model
         .update(
@@ -686,7 +668,7 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
 
     const MIN_LENGTH_ERROR: &str = "expected lax to be at least 2 characters long";
 
-    let schema: Schema<DataInput, Data, CtxOptions> = Schema::new(
+    let model: Model<DataInput, Data, CtxOptions> = Model::new(
         |f| {
             f.field(
                 "lax",
@@ -722,8 +704,6 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
             })
         },
     );
-
-    let model = schema.model();
 
     let lax = DEFAULT_VALUE + 1;
 
@@ -776,7 +756,7 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
 
     const MIN_LENGTH_ERROR: &str = "expected lax to be at least 2 characters long";
 
-    let schema: Schema<DataInput, Data, CtxOptions> = Schema::new(
+    let model: Model<DataInput, Data, CtxOptions> = Model::new(
         |f| {
             f.field(
                 "lax",
@@ -812,8 +792,6 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
             })
         },
     );
-
-    let model = schema.model();
 
     let data = Data {
         lax: DEFAULT_VALUE,

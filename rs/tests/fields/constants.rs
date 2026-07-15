@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{DefaultErrorTool, IvoContext, IvoField, IvoInputStruct, IvoShared, IvoStruct, Schema};
+use ivo::{DefaultErrorTool, IvoContext, IvoField, IvoInputStruct, IvoShared, IvoStruct, Model};
 
 use crate::async_test_matrix;
 
@@ -18,15 +18,13 @@ async fn should_respect_constants_with_static_values() {
 
     let constant = 1234;
 
-    let schema: Schema<DataInput, Data, Option<()>, (), DefaultErrorTool> = Schema::new(
+    let model: Model<DataInput, Data, Option<()>, (), DefaultErrorTool> = Model::new(
         |f| {
             f.field("constant", IvoField::CONSTANT.value(constant))
                 .field("lax", IvoField::LAX.default(20))
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let lax = 400;
 
@@ -81,7 +79,7 @@ async fn should_respect_constants_with_computed_values() {
 
     let constant = 1234;
 
-    let schema: Schema<DataInput, Data, Option<()>, (), DefaultErrorTool> = Schema::new(
+    let model: Model<DataInput, Data, Option<()>, (), DefaultErrorTool> = Model::new(
         |f| {
             f.field(
                 "constant",
@@ -91,8 +89,6 @@ async fn should_respect_constants_with_computed_values() {
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let lax = 400;
 
@@ -147,7 +143,7 @@ async fn should_trigger_on_delete_handlers_with_static_values() {
 
     let constant = 1234;
 
-    let schema: Schema<DataInput, Data, Option<()>, (), DefaultErrorTool> = Schema::new(
+    let model: Model<DataInput, Data, Option<()>, (), DefaultErrorTool> = Model::new(
         |f| {
             f.field(
                 "constant",
@@ -168,8 +164,6 @@ async fn should_trigger_on_delete_handlers_with_static_values() {
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     model.delete(&Data { constant, lax: 400 }, None).await;
 }
@@ -193,7 +187,7 @@ async fn should_trigger_on_delete_handlers_with_computed_values() {
 
     let constant = 1234;
 
-    let schema: Schema<DataInput, Data, Option<()>, (), DefaultErrorTool> = Schema::new(
+    let model: Model<DataInput, Data, Option<()>, (), DefaultErrorTool> = Model::new(
         |f| {
             f.field(
                 "constant",
@@ -215,8 +209,6 @@ async fn should_trigger_on_delete_handlers_with_computed_values() {
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     model.delete(&Data { constant, lax: 400 }, None).await;
 }
@@ -240,7 +232,7 @@ async fn should_trigger_on_success_handlers_with_static_values() {
 
     let constant = 1234;
 
-    let schema: Schema<DataInput, Data, Option<()>, (), DefaultErrorTool> = Schema::new(
+    let model: Model<DataInput, Data, Option<()>, (), DefaultErrorTool> = Model::new(
         |f| {
             f.field(
                 "constant",
@@ -261,8 +253,6 @@ async fn should_trigger_on_success_handlers_with_static_values() {
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let lax = 400;
 
@@ -296,7 +286,7 @@ async fn should_trigger_on_success_handlers_with_computed_values() {
 
     let constant = 1234;
 
-    let schema: Schema<DataInput, Data, Option<()>, (), DefaultErrorTool> = Schema::new(
+    let model: Model<DataInput, Data, Option<()>, (), DefaultErrorTool> = Model::new(
         |f| {
             f.field(
                 "constant",
@@ -318,8 +308,6 @@ async fn should_trigger_on_success_handlers_with_computed_values() {
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let lax = 400;
 

@@ -1,4 +1,4 @@
-use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, Schema};
+use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, Model};
 use std::{future::ready, ops::RangeInclusive, panic};
 
 use crate::async_test_matrix;
@@ -40,12 +40,10 @@ async fn should_reject_updates_if_no_value_has_changed() {
 
     let default_value = 1;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| f.field("lax", IvoField::LAX.default(default_value)),
         |o| o,
     );
-
-    let model = schema.model();
 
     let value = 24;
 
@@ -77,7 +75,7 @@ async fn should_reject_updates_if_no_value_has_changed_after_validation() {
 
     const DEFAULT_VALUE: i32 = 1;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "lax",
@@ -88,8 +86,6 @@ async fn should_reject_updates_if_no_value_has_changed_after_validation() {
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let (err, _, _) = model
         .update(
@@ -119,7 +115,7 @@ async fn should_reject_updates_if_no_value_has_changed_after_re_validation() {
 
     const DEFAULT_VALUE: i32 = 1;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "lax",
@@ -131,8 +127,6 @@ async fn should_reject_updates_if_no_value_has_changed_after_re_validation() {
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let (err, _, _) = model
         .update(
@@ -166,7 +160,7 @@ async fn should_reject_updates_if_no_value_has_changed_after_post_validation() {
     const RESET_TO_PREV_VALUE_IN_PRE_VALIDATOR: &str = "RESET_TO_PREV_VALUE_IN_PRE_VALIDATOR";
     const RESET_TO_PREV_VALUE_IN_POST_VALIDATOR: &str = "RESET_TO_PREV_VALUE_IN_POST_VALIDATOR";
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "lax",
@@ -216,8 +210,6 @@ async fn should_reject_updates_if_no_value_has_changed_after_post_validation() {
             })
         },
     );
-
-    let model = schema.model();
 
     let (err, _, _) = model
         .update(
@@ -273,12 +265,10 @@ async fn should_properly_use_default_value_of_missing_fields_at_creation() {
 
     let default_value = 1;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| f.field("lax", IvoField::LAX.default(default_value)),
         |o| o,
     );
-
-    let model = schema.model();
 
     let r = model.create(&PartialDataInput { lax: None }, None).await;
 
@@ -303,12 +293,10 @@ async fn should_properly_resolve_default_values_of_missing_fields_at_creation() 
 
     const DEFAULT_VALUE: i32 = 1_000;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| f.field("lax", IvoField::LAX.default_fn(|_, _| ready(DEFAULT_VALUE))),
         |o| o,
     );
-
-    let model = schema.model();
 
     let r = model.create(&PartialDataInput { lax: None }, None).await;
 
@@ -333,12 +321,10 @@ async fn should_properly_use_lax_input_values_as_output_values_if_no_validator_i
 
     const DEFAULT_VALUE: i32 = 1_000;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| f.field("lax", IvoField::LAX.default_fn(|_, _| ready(DEFAULT_VALUE))),
         |o| o,
     );
-
-    let model = schema.model();
 
     let lax = 34;
 
@@ -394,7 +380,7 @@ async fn should_respect_the_required_rule() {
 
     let default_lax_value = "default_lax_value";
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "other",
@@ -426,8 +412,6 @@ async fn should_respect_the_required_rule() {
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let r = model
         .create(
@@ -516,7 +500,7 @@ async fn should_properly_handle_grouped_required_errors() {
     let default_lax_1_value = "default_lax_1_value";
     let default_lax_2_value = "default_lax_2_value";
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field("lax", IvoField::LAX.default(default_lax_value.to_string()))
                 .field(
@@ -550,8 +534,6 @@ async fn should_properly_handle_grouped_required_errors() {
             })
         },
     );
-
-    let model = schema.model();
 
     let lax = IGNORE_WITH_SAME_ERROR.to_string();
 
@@ -673,7 +655,7 @@ async fn should_not_create_if_primary_validation_fails() {
 
     const MIN_LENGTH_ERROR: &str = "expected lax to be at least 2 characters long";
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "lax",
@@ -692,8 +674,6 @@ async fn should_not_create_if_primary_validation_fails() {
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let lax_values = [
         String::from(" "),
@@ -758,7 +738,7 @@ async fn should_not_update_if_primary_validation_fails() {
     const LAX_OUT_OF_RANGE_ERROR: &str = "lax must be between 1 & 5 inclussive";
     const LAX_VALUE_RANGE: RangeInclusive<i32> = 1..=5;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1)))
                 .field(
@@ -774,8 +754,6 @@ async fn should_not_update_if_primary_validation_fails() {
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let data = Data { id: 1, lax: 2 };
 
@@ -847,7 +825,7 @@ async fn should_properly_use_input_values_as_output_values_if_validator_does_not
         lax: i32,
     }
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "lax",
@@ -858,8 +836,6 @@ async fn should_properly_use_input_values_as_output_values_if_validator_does_not
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let value = 1;
 
@@ -910,7 +886,7 @@ async fn should_not_create_if_re_validation_fails() {
     const MIN_LENGTH_ERROR: &str = "expected lax to be at least 2 characters long";
     const MIN_REVALIDATION_LENGTH_ERROR: &str = "expected lax to be at least 4 characters long";
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "lax",
@@ -938,8 +914,6 @@ async fn should_not_create_if_re_validation_fails() {
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let lax_values = [
         String::from(" 111"),
@@ -1011,7 +985,7 @@ async fn should_not_update_if_re_validation_fails() {
         "revalidated lax must be between 10 & 5 inclussive";
     const REVALIDATED_LAX_VALUE_RANGE: RangeInclusive<i32> = 10..=35;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1)))
                 .field(
@@ -1039,8 +1013,6 @@ async fn should_not_update_if_re_validation_fails() {
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let data = Data { id: 1, lax: 20 };
 
@@ -1114,7 +1086,7 @@ async fn should_properly_use_re_validated_values() {
         lax: i32,
     }
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "lax",
@@ -1125,8 +1097,6 @@ async fn should_properly_use_re_validated_values() {
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let value = 1;
 
@@ -1178,7 +1148,7 @@ async fn should_properly_use_input_values_as_output_values_if_re_validator_does_
         lax: i32,
     }
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "lax",
@@ -1190,8 +1160,6 @@ async fn should_properly_use_input_values_as_output_values_if_re_validator_does_
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let value = 1;
 
@@ -1263,7 +1231,7 @@ async fn should_respect_post_validation_config() {
     let default_lax_1_value = "default_lax_1_value";
     let default_lax_2_value = "default_lax_2_value";
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field("lax", IvoField::LAX.default(default_lax_value.to_string()))
                 .field(
@@ -1340,8 +1308,6 @@ async fn should_respect_post_validation_config() {
             })
         },
     );
-
-    let model = schema.model();
 
     let lax_2 = "lax_2_provided".to_string();
 
@@ -1697,7 +1663,7 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
     let default_lax_1_value = "default_lax_1_value";
     let default_lax_2_value = "default_lax_2_value";
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field("lax", IvoField::LAX.default(default_lax_value.to_string()))
                 .field(
@@ -1740,8 +1706,6 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
             })
         },
     );
-
-    let model = schema.model();
 
     let lax = LAX_PRE_VALIDATED_WITH_UPDATED_VALUES.to_string();
 

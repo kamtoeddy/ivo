@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, Schema};
+use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, Model};
 
 use crate::async_test_matrix;
 
@@ -15,7 +15,7 @@ async fn should_trigger_on_failure_handlers_at_creation() {
         lax: String,
     }
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "lax",
@@ -42,8 +42,6 @@ async fn should_trigger_on_failure_handlers_at_creation() {
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let input = PartialDataInput {
         lax: Some("fail_validation".into()),
@@ -81,7 +79,7 @@ async fn should_trigger_on_failure_handlers_at_creation_even_if_provided_and_ign
         lax2: String,
     }
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "lax",
@@ -123,8 +121,6 @@ async fn should_trigger_on_failure_handlers_at_creation_even_if_provided_and_ign
         |o| o,
     );
 
-    let model = schema.model();
-
     let input = PartialDataInput {
         lax: Some("to be ignored".into()),
         lax2: Some("fail_validation".into()),
@@ -162,7 +158,7 @@ async fn should_trigger_on_failure_handlers_during_updates() {
         lax: String,
     }
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "lax",
@@ -189,8 +185,6 @@ async fn should_trigger_on_failure_handlers_during_updates() {
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let data = Data {
         lax: "some value".into(),
@@ -231,7 +225,7 @@ async fn should_trigger_on_failure_handlers_during_updates_with_unchanged_values
         lax: String,
     }
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "lax",
@@ -259,8 +253,6 @@ async fn should_trigger_on_failure_handlers_during_updates_with_unchanged_values
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let lax_value = "some_value".to_string();
 
@@ -307,7 +299,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
         lax2: String,
     }
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "lax",
@@ -347,8 +339,6 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let data = Data {
         lax: "lax1".into(),

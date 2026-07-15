@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, Schema};
+use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, Model};
 
 use crate::async_test_matrix;
 
@@ -17,7 +17,7 @@ async fn should_trigger_on_success_handlers_at_creation() {
         required2: String,
     }
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "required",
@@ -53,8 +53,6 @@ async fn should_trigger_on_success_handlers_at_creation() {
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let data = Data {
         required2: "required2".into(),
@@ -98,7 +96,7 @@ async fn should_trigger_on_success_handlers_during_updates_if_provided() {
 
     let required_value_value = "required_value_value".to_string();
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "required",
@@ -134,8 +132,6 @@ async fn should_trigger_on_success_handlers_during_updates_if_provided() {
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let required2 = "required2".to_string();
 
@@ -189,7 +185,7 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_not_provided()
 
     let required_value_value = "required_value_value".to_string();
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "required",
@@ -225,8 +221,6 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_not_provided()
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let required2 = "required2".to_string();
 
@@ -277,7 +271,7 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_i
 
     let required_value_value = "required_value_value".to_string();
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "required",
@@ -314,8 +308,6 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_i
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let required2 = "required2".to_string();
 
@@ -368,7 +360,7 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_i
 
     let required_value_value = "required_value_value".to_string();
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "required",
@@ -406,8 +398,6 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_i
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let required2 = "required2".to_string();
 
@@ -463,7 +453,7 @@ async fn should_trigger_success_handlers_with_empty_fields_array_each_time_creat
     let required_value = 1234;
     let required_1_value = 5678;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "required",
@@ -486,8 +476,6 @@ async fn should_trigger_success_handlers_with_empty_fields_array_each_time_creat
             })
         },
     );
-
-    let model = schema.model();
 
     let (data, handle_success, _) = model
         .create(
@@ -533,7 +521,7 @@ async fn should_trigger_success_handlers_with_empty_fields_array_each_time_updat
     let required_value = 1234;
     let required_1_value = 5678;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "required",
@@ -556,8 +544,6 @@ async fn should_trigger_success_handlers_with_empty_fields_array_each_time_updat
             })
         },
     );
-
-    let model = schema.model();
 
     let data = Data {
         required: required_value,

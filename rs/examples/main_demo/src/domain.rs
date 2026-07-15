@@ -8,7 +8,7 @@ use std::{
 use chrono::{DateTime, Utc};
 use ivo::{
     validate_email, FutureExt, IvoContext, IvoField, IvoInputStruct, IvoRwCtxOptions, IvoShared,
-    IvoStruct, Model, Schema,
+    IvoStruct, Model,
 };
 
 use crate::slugify::{slugify, SlugifiedString};
@@ -67,12 +67,9 @@ impl<'a> UserCtxOptions {
 type Ctx = IvoContext<UserInput, User>;
 type RwCtxOptions = IvoRwCtxOptions<UserCtxOptions>;
 
-pub static USER_MODEL: LazyLock<Model<UserInput, User, UserCtxOptions, Timestamp>> =
-    LazyLock::new(|| USER_SCHEMA.model());
-
-pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timestamp>> =
-    LazyLock::new(|| {
-        Schema::new(
+pub static USER_MODEL: LazyLock<Model<UserInput, User, UserCtxOptions, Timestamp>> = LazyLock::new(
+    || {
+        Model::new(
             |f| {
                 f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
                     .field(
@@ -276,7 +273,8 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
                     })
             },
         )
-    });
+    },
+);
 
 pub static USERS_LIST: LazyLock<[User; 3]> = LazyLock::new(|| {
     array::from_fn(|i| {

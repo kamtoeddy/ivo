@@ -1,12 +1,12 @@
 use std::{future::ready, sync::LazyLock};
 
-use ivo::{IvoContext, IvoField, IvoInputStruct, IvoShared, IvoStruct, Model, Schema};
+use ivo::{IvoContext, IvoField, IvoInputStruct, IvoShared, IvoStruct, Model};
 
 const DEFAULT_DEPENDENT: i32 = 1;
 const DEFAULT_LAX_VALUE: i32 = 100;
 const DEFAULT_USERNAME: &str = "default-username";
 
-type DataModel = Model<'static, DataInput, Data>;
+type DataModel = Model<DataInput, Data>;
 
 #[async_std::main]
 async fn main() {
@@ -250,148 +250,140 @@ pub struct Data {
 
 type Ctx = IvoContext<DataInput, Data>;
 
-pub static DATA_MODEL_WITH_DYNAMIC_DEFAULT: LazyLock<DataModel> =
-    LazyLock::new(|| DATA_SCHEMA_WITH_STATIC_DEFAULT.model());
+pub static DATA_MODEL_WITH_DYNAMIC_DEFAULT: LazyLock<DataModel> = LazyLock::new(|| {
+    Model::new(
+        |f| {
+            f.field(
+                "dependent",
+                IvoField::DEPENDENT
+                    .default_fn(|_, _| ready(DEFAULT_DEPENDENT))
+                    .depends_on(["lax", "username"])
+                    .resolve(|ctx: Ctx, _| ready(ctx.values().dependent.unwrap() + 1))
+                    .on_success(|ctx: Ctx, _| {
+                        println!(
+                            "\n[on_success]: dependent = {}",
+                            ctx.values().dependent.unwrap()
+                        );
 
-pub static DATA_SCHEMA_WITH_DYNAMIC_DEFAULT: LazyLock<Schema<DataInput, Data>> =
-    LazyLock::new(|| {
-        Schema::new(
-            |f| {
-                f.field(
-                    "dependent",
-                    IvoField::DEPENDENT
-                        .default_fn(|_, _| ready(DEFAULT_DEPENDENT))
-                        .depends_on(["lax", "username"])
-                        .resolve(|ctx: Ctx, _| ready(ctx.values().dependent.unwrap() + 1))
-                        .on_success(|ctx: Ctx, _| {
-                            println!(
-                                "\n[on_success]: dependent = {}",
-                                ctx.values().dependent.unwrap()
-                            );
+                        ready(())
+                    })
+                    .on_delete(|data: IvoShared<Data>, _| {
+                        println!("\n[on_delete]: dependent = {}", data.dependent);
 
-                            ready(())
-                        })
-                        .on_delete(|data: IvoShared<Data>, _| {
-                            println!("\n[on_delete]: dependent = {}", data.dependent);
+                        ready(())
+                    }),
+            )
+            .field(
+                "username",
+                IvoField::LAX
+                    .default_fn(|_, _| ready(DEFAULT_USERNAME.to_string()))
+                    .on_success(|ctx: Ctx, _| {
+                        println!(
+                            "\n[on_success]: username = {}",
+                            ctx.values().username.unwrap()
+                        );
 
-                            ready(())
-                        }),
-                )
-                .field(
-                    "username",
-                    IvoField::LAX
-                        .default_fn(|_, _| ready(DEFAULT_USERNAME.to_string()))
-                        .on_success(|ctx: Ctx, _| {
-                            println!(
-                                "\n[on_success]: username = {}",
-                                ctx.values().username.unwrap()
-                            );
+                        ready(())
+                    })
+                    .on_delete(|data: IvoShared<Data>, _| {
+                        println!("\n[on_delete]: username = {}", data.username);
 
-                            ready(())
-                        })
-                        .on_delete(|data: IvoShared<Data>, _| {
-                            println!("\n[on_delete]: username = {}", data.username);
+                        ready(())
+                    }),
+            )
+            .field(
+                "lax",
+                IvoField::LAX
+                    .default(DEFAULT_LAX_VALUE)
+                    .on_success(|ctx: Ctx, _| {
+                        println!("\n[on_success]: lax = {}", ctx.values().lax.unwrap());
 
-                            ready(())
-                        }),
-                )
-                .field(
-                    "lax",
-                    IvoField::LAX
-                        .default(DEFAULT_LAX_VALUE)
-                        .on_success(|ctx: Ctx, _| {
-                            println!("\n[on_success]: lax = {}", ctx.values().lax.unwrap());
+                        ready(())
+                    }),
+            )
+            .field(
+                "unrelated_lax",
+                IvoField::LAX
+                    .default(DEFAULT_LAX_VALUE)
+                    .on_success(|ctx: Ctx, _| {
+                        println!(
+                            "\n[on_success]: unrelated_lax = {}",
+                            ctx.values().unrelated_lax.unwrap()
+                        );
 
-                            ready(())
-                        }),
-                )
-                .field(
-                    "unrelated_lax",
-                    IvoField::LAX
-                        .default(DEFAULT_LAX_VALUE)
-                        .on_success(|ctx: Ctx, _| {
-                            println!(
-                                "\n[on_success]: unrelated_lax = {}",
-                                ctx.values().unrelated_lax.unwrap()
-                            );
+                        ready(())
+                    }),
+            )
+        },
+        |o| o,
+    )
+});
 
-                            ready(())
-                        }),
-                )
-            },
-            |o| o,
-        )
-    });
+pub static DATA_MODEL_WITH_STATIC_DEFAULT: LazyLock<DataModel> = LazyLock::new(|| {
+    Model::new(
+        |f| {
+            f.field(
+                "dependent",
+                IvoField::DEPENDENT
+                    .default(DEFAULT_DEPENDENT)
+                    .depends_on(["lax", "username"])
+                    .resolve(|ctx: Ctx, _| ready(ctx.values().dependent.unwrap() + 1))
+                    .on_success(|ctx: Ctx, _| {
+                        println!(
+                            "\n[on_success]: dependent = {}",
+                            ctx.values().dependent.unwrap()
+                        );
 
-pub static DATA_MODEL_WITH_STATIC_DEFAULT: LazyLock<DataModel> =
-    LazyLock::new(|| DATA_SCHEMA_WITH_STATIC_DEFAULT.model());
+                        ready(())
+                    })
+                    .on_delete(|data: IvoShared<Data>, _| {
+                        println!("\n[on_delete]: dependent = {}", data.dependent);
 
-pub static DATA_SCHEMA_WITH_STATIC_DEFAULT: LazyLock<Schema<DataInput, Data>> =
-    LazyLock::new(|| {
-        Schema::new(
-            |f| {
-                f.field(
-                    "dependent",
-                    IvoField::DEPENDENT
-                        .default(DEFAULT_DEPENDENT)
-                        .depends_on(["lax", "username"])
-                        .resolve(|ctx: Ctx, _| ready(ctx.values().dependent.unwrap() + 1))
-                        .on_success(|ctx: Ctx, _| {
-                            println!(
-                                "\n[on_success]: dependent = {}",
-                                ctx.values().dependent.unwrap()
-                            );
+                        ready(())
+                    }),
+            )
+            .field(
+                "username",
+                IvoField::LAX
+                    .default_fn(|_, _| ready(DEFAULT_USERNAME.to_string()))
+                    .on_success(|ctx: Ctx, _| {
+                        println!(
+                            "\n[on_success]: username = {}",
+                            ctx.values().username.unwrap()
+                        );
 
-                            ready(())
-                        })
-                        .on_delete(|data: IvoShared<Data>, _| {
-                            println!("\n[on_delete]: dependent = {}", data.dependent);
+                        ready(())
+                    })
+                    .on_delete(|data: IvoShared<Data>, _| {
+                        println!("\n[on_delete]: username = {}", data.username);
 
-                            ready(())
-                        }),
-                )
-                .field(
-                    "username",
-                    IvoField::LAX
-                        .default_fn(|_, _| ready(DEFAULT_USERNAME.to_string()))
-                        .on_success(|ctx: Ctx, _| {
-                            println!(
-                                "\n[on_success]: username = {}",
-                                ctx.values().username.unwrap()
-                            );
+                        ready(())
+                    }),
+            )
+            .field(
+                "lax",
+                IvoField::LAX
+                    .default(DEFAULT_LAX_VALUE)
+                    .on_success(|ctx: Ctx, _| {
+                        println!("\n[on_success]: lax = {}", ctx.values().lax.unwrap());
 
-                            ready(())
-                        })
-                        .on_delete(|data: IvoShared<Data>, _| {
-                            println!("\n[on_delete]: username = {}", data.username);
+                        ready(())
+                    }),
+            )
+            .field(
+                "unrelated_lax",
+                IvoField::LAX
+                    .default(DEFAULT_LAX_VALUE)
+                    .on_success(|ctx: Ctx, _| {
+                        println!(
+                            "\n[on_success]: unrelated_lax = {}",
+                            ctx.values().unrelated_lax.unwrap()
+                        );
 
-                            ready(())
-                        }),
-                )
-                .field(
-                    "lax",
-                    IvoField::LAX
-                        .default(DEFAULT_LAX_VALUE)
-                        .on_success(|ctx: Ctx, _| {
-                            println!("\n[on_success]: lax = {}", ctx.values().lax.unwrap());
-
-                            ready(())
-                        }),
-                )
-                .field(
-                    "unrelated_lax",
-                    IvoField::LAX
-                        .default(DEFAULT_LAX_VALUE)
-                        .on_success(|ctx: Ctx, _| {
-                            println!(
-                                "\n[on_success]: unrelated_lax = {}",
-                                ctx.values().unrelated_lax.unwrap()
-                            );
-
-                            ready(())
-                        }),
-                )
-            },
-            |o| o,
-        )
-    });
+                        ready(())
+                    }),
+            )
+        },
+        |o| o,
+    )
+});

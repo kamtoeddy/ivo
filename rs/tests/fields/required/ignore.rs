@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoField, IvoInputStruct, IvoStruct, Schema};
+use ivo::{IvoField, IvoInputStruct, IvoStruct, Model};
 
 use crate::async_test_matrix;
 
@@ -21,7 +21,7 @@ async fn should_respect_the_ignore_update_rule() {
 
     const IGNORE_REQUIRED_FOR_UPDATE: &str = "ignore_required_for_update";
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "required",
@@ -42,8 +42,6 @@ async fn should_respect_the_ignore_update_rule() {
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let lax = IGNORE_REQUIRED_FOR_UPDATE.to_string();
     let required = 1;
@@ -131,7 +129,7 @@ async fn should_respect_the_readonly_rule() {
 
     const IGNORE_REQUIRED_FOR_UPDATE: &str = "ignore_required_for_update";
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "required",
@@ -146,8 +144,6 @@ async fn should_respect_the_readonly_rule() {
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let lax = IGNORE_REQUIRED_FOR_UPDATE.to_string();
     let required = 1;
@@ -234,7 +230,7 @@ async fn should_properly_handle_grouped_ignore_update_rule() {
     let default_lax_value = "default_lax_value";
     let default_lax_1_value = "default_lax_1_value";
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field("lax", IvoField::LAX.default(default_lax_value.to_string()))
                 .field(
@@ -252,8 +248,6 @@ async fn should_properly_handle_grouped_ignore_update_rule() {
             })
         },
     );
-
-    let model = schema.model();
 
     let lax = IGNORE.to_string();
     let lax_1 = "lax_1".to_string();

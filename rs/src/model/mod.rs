@@ -8,10 +8,7 @@ use std::future::ready;
 use std::sync::Arc;
 
 use crate::__private_types::types::{BooleanResolver, IgnoreUpdateOptionResolver};
-use crate::__private_types::{
-    types::{DefaultCtxOptions, PartialErrorsMethods},
-    IvoInputStruct,
-};
+use crate::__private_types::{types::PartialErrorsMethods, IvoInputStruct};
 use crate::model::internal::FieldInfoCollection;
 use crate::schema::options::types::{
     IgnoreOptionConfig, IgnoreUpdateOptionConfig, UniformIgnoreResolver,
@@ -28,16 +25,14 @@ use crate::schema::{
     options::types::{
         OnSuccessConfig, PostValidationConfig, RequiredOptionConfig, UniformRequiredResolver,
     },
-    Schema,
 };
 use crate::types::{
     internal::{
-        types::erase_value, DefaultErrorTool, FieldError, IvoErrorTool, IvoRwLock, IvoStruct,
-        PartialStructMethods,
+        types::erase_value, FieldError, IvoErrorTool, IvoRwLock, IvoStruct, PartialStructMethods,
     },
     InternalIvoContext,
 };
-use crate::{IvoContext, IvoCtxOptions, IvoRwCtxOptions};
+use crate::{IvoContext, IvoCtxOptions, IvoRwCtxOptions, Model};
 
 type AsyncHandlerTrigger<'a> = Box<dyn FnOnce() -> BoxFuture<'a, ()> + Send + Sync + 'a>;
 
@@ -47,45 +42,15 @@ impl<
         CtxOptions: Clone + Sync + Send,
         Timestamp: Clone + Debug + Send + Sync + 'static,
         ErrorTool: IvoErrorTool,
-    > Schema<I, O, CtxOptions, Timestamp, ErrorTool>
-{
-    #[inline(always)]
-    pub fn model(&self) -> Model<'_, I, O, CtxOptions, Timestamp, ErrorTool> {
-        Model { schema: self }
-    }
-}
-
-pub struct Model<
-    'schema,
-    I: IvoInputStruct<ErrorTool>,
-    O: IvoStruct = I,
-    CtxOptions: Clone + Sync + Send = DefaultCtxOptions,
-    Timestamp: Clone + Debug + Send + Sync + 'static = (),
-    ErrorTool: IvoErrorTool = DefaultErrorTool,
-> {
-    schema: &'schema Schema<I, O, CtxOptions, Timestamp, ErrorTool>,
-}
-
-impl<
-        'schema,
-        I: IvoInputStruct<ErrorTool>,
-        O: IvoStruct,
-        CtxOptions: Clone + Sync + Send,
-        Timestamp: Clone + Debug + Send + Sync + 'static,
-        ErrorTool: IvoErrorTool,
-    > Model<'schema, I, O, CtxOptions, Timestamp, ErrorTool>
+    > Model<I, O, CtxOptions, Timestamp, ErrorTool>
 {
     pub async fn create(
         &self,
         input: &I::Partial,
         options: CtxOptions,
     ) -> Result<
-        (O, AsyncHandlerTrigger<'schema>, CtxOptions),
-        (
-            ErrorTool::ErrorPayload,
-            AsyncHandlerTrigger<'schema>,
-            CtxOptions,
-        ),
+        (O, AsyncHandlerTrigger<'_>, CtxOptions),
+        (ErrorTool::ErrorPayload, AsyncHandlerTrigger<'_>, CtxOptions),
     > {
         let shared_rw_options = Arc::new(IvoRwLock::new(options));
         let mut ctx = Arc::new(InternalIvoContext::<I, O>::new_create_ctx(
@@ -99,7 +64,7 @@ impl<
             .filter_input_fields_allowed(
                 None,
                 input,
-                FieldInfoCollection::new(self.schema),
+                FieldInfoCollection::new(&self.field_configs),
                 Arc::clone(&ctx),
                 Arc::clone(&shared_rw_options),
             )
@@ -283,10 +248,10 @@ impl<
         updates: &I::Partial,
         options: CtxOptions,
     ) -> Result<
-        (O::Partial, AsyncHandlerTrigger<'schema>, CtxOptions),
+        (O::Partial, AsyncHandlerTrigger<'_>, CtxOptions),
         (
             Option<ErrorTool::ErrorPayload>,
-            AsyncHandlerTrigger<'schema>,
+            AsyncHandlerTrigger<'_>,
             CtxOptions,
         ),
     > {
@@ -306,7 +271,7 @@ impl<
             .filter_input_fields_allowed(
                 Some(&old_partial_values),
                 updates,
-                FieldInfoCollection::new(self.schema),
+                FieldInfoCollection::new(&self.field_configs),
                 Arc::clone(&ctx),
                 Arc::clone(&shared_rw_options),
             )
@@ -556,7 +521,7 @@ impl<
         let options = Arc::new(options);
         let mut handlers = vec![];
 
-        for config in self.schema.field_configs.values() {
+        for config in self.field_configs.values() {
             if let Some(h_vec) = &config.on_delete_fns {
                 handlers.extend(h_vec);
 
@@ -564,7 +529,7 @@ impl<
             }
         }
 
-        if let Some(h_vec) = &self.schema.options.on_delete_fns {
+        if let Some(h_vec) = &self.options.on_delete_fns {
             handlers.extend(h_vec);
         }
 
@@ -579,7 +544,7 @@ impl<
 
     async fn validate<'a>(
         &self,
-        fields_collection: &FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
+        fields_collection: &FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool>,
         ctx: IvoContext<I, O>,
         options: IvoRwCtxOptions<CtxOptions>,
     ) -> Result<Option<(I::Partial, O::Partial)>, ErrorTool::ErrorPayload> {
@@ -601,7 +566,7 @@ impl<
                 field_type,
                 validator,
                 ..
-            }) = self.schema.field_configs.get(&field_info.config_name)
+            }) = self.field_configs.get(&field_info.config_name)
             {
                 if let Some(validator) = validator {
                     validators.push((field_info, validator));
@@ -682,7 +647,7 @@ impl<
 
     async fn re_validate<'a>(
         &self,
-        fields_collection: &FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
+        fields_collection: &FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool>,
         ctx: IvoContext<I, O>,
         options: IvoRwCtxOptions<CtxOptions>,
     ) -> Result<Option<(I::Partial, O::Partial)>, ErrorTool::ErrorPayload> {
@@ -695,7 +660,7 @@ impl<
             if let Some(InternalFieldConfig {
                 re_validator: Some(re_validator),
                 ..
-            }) = self.schema.field_configs.get(&field_info.config_name)
+            }) = self.field_configs.get(&field_info.config_name)
             {
                 re_validators.push((field_info, re_validator));
             }
@@ -762,14 +727,14 @@ impl<
 
     async fn post_validate<'a>(
         &self,
-        fields_collection: &FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
+        fields_collection: &FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool>,
         ctx: IvoContext<I, O>,
         options: IvoRwCtxOptions<CtxOptions>,
     ) -> Result<Option<(I::Partial, O::Partial)>, ErrorTool::ErrorPayload> {
         let mut pre_validators = vec![];
         let mut post_validators = vec![];
 
-        if let Some(configs) = &self.schema.options.post_validate {
+        if let Some(configs) = &self.options.post_validate {
             for PostValidationConfig {
                 fields,
                 pre_validator,
@@ -923,7 +888,7 @@ impl<
 
     async fn sanitize_virtuals<'a>(
         &self,
-        fields_collection: &FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
+        fields_collection: &FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool>,
         ctx: IvoContext<I, O>,
         options: IvoRwCtxOptions<CtxOptions>,
     ) -> Option<I::Partial> {
@@ -937,7 +902,7 @@ impl<
                 field_type: FieldType::Virtual,
                 sanitizer: Some(sanitizer),
                 ..
-            }) = self.schema.field_configs.get(&field_info.config_name)
+            }) = self.field_configs.get(&field_info.config_name)
             {
                 sanitizers.push((field_info, sanitizer));
             }
@@ -972,7 +937,7 @@ impl<
 
     async fn resolve_dependent_values<'a>(
         &self,
-        fields_collection: &FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
+        fields_collection: &FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool>,
         ctx: IvoContext<I, O>,
         options: IvoRwCtxOptions<CtxOptions>,
     ) -> Option<(O::Partial, HashSet<String>)> {
@@ -981,7 +946,7 @@ impl<
         let is_update = previous_values.as_ref().is_some();
         let previous_values = previous_values.unwrap_or_default();
 
-        for (field_name, config) in self.schema.field_configs.iter() {
+        for (field_name, config) in self.field_configs.iter() {
             match config {
                 InternalFieldConfig {
                     field_type: FieldType::Dependent,
@@ -1061,7 +1026,7 @@ impl<
         let mut resolvers = vec![];
         let fields_provided = input.ivo_internal_fields_available();
 
-        for (field_name, config) in self.schema.field_configs.iter() {
+        for (field_name, config) in self.field_configs.iter() {
             if matches!(config.field_type, FieldType::Lax)
                 && fields_provided.contains(&field_name.to_string())
             {
@@ -1125,13 +1090,13 @@ impl<
         &'a self,
         previous_values: Option<&O::Partial>,
         input_values: &I::Partial,
-        mut fields_collection: FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
+        mut fields_collection: FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool>,
         ctx: IvoContext<I, O>,
         options: IvoRwCtxOptions<CtxOptions>,
     ) -> (
         I::Partial,
         O::Partial,
-        FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
+        FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool>,
     ) {
         let is_update = previous_values.is_some();
         let previous_values = previous_values.cloned().unwrap_or_default();
@@ -1144,7 +1109,7 @@ impl<
         let mut relevant_fields_provided = HashSet::new();
 
         if is_update {
-            if let Some(ref configs) = self.schema.options.ignore_update {
+            if let Some(ref configs) = self.options.ignore_update {
                 for config in configs.iter() {
                     if config.fields.is_empty() {
                         entity_resolvers.push(config.resolver.as_ref());
@@ -1221,7 +1186,7 @@ impl<
                 ignore_init,
                 ignore_update,
                 ..
-            }) = self.schema.field_configs.get(&field_info.config_name)
+            }) = self.field_configs.get(&field_info.config_name)
             {
                 if let Some(resolver) = ignore {
                     tasks.push((
@@ -1303,7 +1268,7 @@ impl<
             .map(|field_name| fields_collection.get(field_name).config_name)
             .collect::<HashSet<_>>();
 
-        if let Some(ref configs) = self.schema.options.ignore {
+        if let Some(ref configs) = self.options.ignore {
             for IgnoreOptionConfig { fields, resolver } in configs {
                 if fields
                     .iter()
@@ -1325,7 +1290,7 @@ impl<
         }
 
         if is_update {
-            if let Some(ref configs) = self.schema.options.ignore_update {
+            if let Some(ref configs) = self.options.ignore_update {
                 for IgnoreUpdateOptionConfig { fields, resolver } in configs {
                     if fields
                         .iter()
@@ -1390,7 +1355,7 @@ impl<
 
     async fn evaluate_missing_required_fields<'a>(
         &self,
-        fields_collection: &FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
+        fields_collection: &FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool>,
         ctx: IvoContext<I, O>,
         options: IvoRwCtxOptions<CtxOptions>,
     ) -> Result<(), ErrorTool::ErrorPayload> {
@@ -1398,7 +1363,7 @@ impl<
         let mut resolvers = vec![];
         let is_update = ctx.is_update();
 
-        for (field_name, config) in self.schema.field_configs.iter() {
+        for (field_name, config) in self.field_configs.iter() {
             if fields_collection.is_relevant_config_name(field_name) {
                 continue;
             }
@@ -1471,7 +1436,7 @@ impl<
             })
             .collect::<Vec<_>>();
 
-        if let Some(ref configs) = self.schema.options.required {
+        if let Some(ref configs) = self.options.required {
             for config in configs {
                 if config
                     .fields
@@ -1526,10 +1491,10 @@ impl<
 
     fn prepare_failure_handlers<'a>(
         &self,
-        fields_collection: FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
+        fields_collection: FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool>,
         ctx: IvoContext<I, O>,
         options: IvoCtxOptions<CtxOptions>,
-    ) -> AsyncHandlerTrigger<'schema> {
+    ) -> AsyncHandlerTrigger<'_> {
         let fields_provided = fields_collection.fields_provided();
 
         if fields_provided.is_empty() {
@@ -1544,7 +1509,7 @@ impl<
             if let Some(InternalFieldConfig {
                 on_failure_fns: Some(h_vec),
                 ..
-            }) = self.schema.field_configs.get(field_info.config_name)
+            }) = self.field_configs.get(field_info.config_name)
             {
                 handlers.extend(h_vec)
             }
@@ -1566,10 +1531,10 @@ impl<
 
     fn prepare_success_handlers<'a>(
         &self,
-        fields_collection: FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
+        fields_collection: FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool>,
         ctx: IvoContext<I, O>,
         options: IvoCtxOptions<CtxOptions>,
-    ) -> AsyncHandlerTrigger<'schema> {
+    ) -> AsyncHandlerTrigger<'_> {
         let mut relevant_success_fields = fields_collection
             .relevant_fields_provided()
             .iter()
@@ -1593,13 +1558,13 @@ impl<
             if let Some(InternalFieldConfig {
                 on_success_fns: Some(h_vec),
                 ..
-            }) = self.schema.field_configs.get(field_name.as_str())
+            }) = self.field_configs.get(field_name.as_str())
             {
                 handlers.extend(h_vec)
             }
         }
 
-        if let Some(configs) = &self.schema.options.on_success_fns {
+        if let Some(configs) = &self.options.on_success_fns {
             for OnSuccessConfig {
                 fields,
                 handlers: h_vec,
@@ -1634,7 +1599,7 @@ impl<
             resolver,
             updated_at,
             with_optional_updated_at,
-        }) = self.schema.timestamp_configs.as_ref()
+        }) = self.timestamp_configs.as_ref()
         {
             let mut now = None;
 

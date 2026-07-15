@@ -1,4 +1,4 @@
-use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, Schema};
+use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, Model};
 use std::{future::ready, ops::RangeInclusive, panic};
 
 use crate::async_test_matrix;
@@ -35,7 +35,7 @@ async fn should_reject_updates_if_no_value_has_changed() {
         virtual_field: i32,
     }
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -53,8 +53,6 @@ async fn should_reject_updates_if_no_value_has_changed() {
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let value = 24;
 
@@ -86,7 +84,7 @@ async fn should_reject_updates_if_no_value_has_changed_with_alias() {
         virtual_alias: i32,
     }
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -106,8 +104,6 @@ async fn should_reject_updates_if_no_value_has_changed_with_alias() {
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let value = 24;
 
@@ -139,7 +135,7 @@ async fn should_reject_updates_if_no_value_has_changed_with_alias_same_as_depend
         dependent: i32,
     }
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -159,8 +155,6 @@ async fn should_reject_updates_if_no_value_has_changed_with_alias_same_as_depend
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let value = 24;
 
@@ -199,7 +193,7 @@ async fn should_respect_the_required_rule() {
     let default_dependent_value = 1;
     let default_lax_value = "default_lax_value".to_string();
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -246,8 +240,6 @@ async fn should_respect_the_required_rule() {
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let r = model
         .create(
@@ -327,7 +319,7 @@ async fn should_respect_the_required_rule_with_alias() {
     let default_dependent_value = 1;
     let default_lax_value = "default_lax_value".to_string();
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -375,8 +367,6 @@ async fn should_respect_the_required_rule_with_alias() {
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let r = model
         .create(
@@ -456,7 +446,7 @@ async fn should_respect_the_required_rule_with_alias_same_as_dependent() {
     let default_dependent_value = 1;
     let default_lax_value = "default_lax_value".to_string();
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -504,8 +494,6 @@ async fn should_respect_the_required_rule_with_alias_same_as_dependent() {
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let r = model
         .create(
@@ -586,7 +574,7 @@ async fn should_not_create_if_primary_validation_fails() {
 
     const MIN_LENGTH_ERROR: &str = "expected required to be at least 2 characters long";
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -612,8 +600,6 @@ async fn should_not_create_if_primary_validation_fails() {
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let values = [
         String::from(" "),
@@ -678,7 +664,7 @@ async fn should_not_create_if_primary_validation_fails_with_alias() {
 
     const MIN_LENGTH_ERROR: &str = "expected required to be at least 2 characters long";
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -706,8 +692,6 @@ async fn should_not_create_if_primary_validation_fails_with_alias() {
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let values = [
         String::from(" "),
@@ -772,7 +756,7 @@ async fn should_not_create_if_primary_validation_fails_with_alias_same_as_depend
 
     const MIN_LENGTH_ERROR: &str = "expected required to be at least 2 characters long";
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -800,8 +784,6 @@ async fn should_not_create_if_primary_validation_fails_with_alias_same_as_depend
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let values = [
         String::from(" "),
@@ -867,7 +849,7 @@ async fn should_not_update_if_primary_validation_fails() {
     const OUT_OF_RANGE_ERROR: &str = "virtual_field must be between 1 & 5 inclussive";
     const REQUIRED_VALUE_RANGE: RangeInclusive<i32> = 1..=5;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -891,8 +873,6 @@ async fn should_not_update_if_primary_validation_fails() {
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let data = Data {
         dependent: default_dependent_value,
@@ -969,7 +949,7 @@ async fn should_not_update_if_primary_validation_fails_with_alias() {
     const OUT_OF_RANGE_ERROR: &str = "virtual_field must be between 1 & 5 inclussive";
     const REQUIRED_VALUE_RANGE: RangeInclusive<i32> = 1..=5;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -995,8 +975,6 @@ async fn should_not_update_if_primary_validation_fails_with_alias() {
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let data = Data {
         dependent: default_dependent_value,
@@ -1073,7 +1051,7 @@ async fn should_not_update_if_primary_validation_fails_with_alias_same_as_depend
     const OUT_OF_RANGE_ERROR: &str = "virtual_field must be between 1 & 5 inclussive";
     const REQUIRED_VALUE_RANGE: RangeInclusive<i32> = 1..=5;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -1099,8 +1077,6 @@ async fn should_not_update_if_primary_validation_fails_with_alias_same_as_depend
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let data = Data {
         dependent: default_dependent_value,
@@ -1175,7 +1151,7 @@ async fn should_properly_use_input_values_as_output_values_if_validator_does_not
 
     let default_dependent_value = 1;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -1193,8 +1169,6 @@ async fn should_properly_use_input_values_as_output_values_if_validator_does_not
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let value = 1;
 
@@ -1257,7 +1231,7 @@ async fn should_properly_use_input_values_as_output_values_if_validator_does_not
 
     let default_dependent_value = 1;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -1277,8 +1251,6 @@ async fn should_properly_use_input_values_as_output_values_if_validator_does_not
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let value = 1;
 
@@ -1341,7 +1313,7 @@ async fn should_properly_use_input_values_as_output_values_if_validator_does_not
 
     let default_dependent_value = 1;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -1361,8 +1333,6 @@ async fn should_properly_use_input_values_as_output_values_if_validator_does_not
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let value = 1;
 
@@ -1436,7 +1406,7 @@ async fn should_properly_handle_grouped_required_errors() {
     let default_lax_1_value = "default_lax_1_value";
     let default_lax_2_value = "default_lax_2_value";
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -1485,8 +1455,6 @@ async fn should_properly_handle_grouped_required_errors() {
             )
         },
     );
-
-    let model = schema.model();
 
     let lax = IGNORE_WITH_SAME_ERROR.to_string();
 
@@ -1630,7 +1598,7 @@ async fn should_properly_handle_grouped_required_errors_with_alias() {
     let default_lax_1_value = "default_lax_1_value";
     let default_lax_2_value = "default_lax_2_value";
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -1681,8 +1649,6 @@ async fn should_properly_handle_grouped_required_errors_with_alias() {
             )
         },
     );
-
-    let model = schema.model();
 
     let lax = IGNORE_WITH_SAME_ERROR.to_string();
 
@@ -1826,7 +1792,7 @@ async fn should_properly_handle_grouped_required_errors_with_alias_same_as_depen
     let default_lax_1_value = "default_lax_1_value";
     let default_lax_2_value = "default_lax_2_value";
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -1877,8 +1843,6 @@ async fn should_properly_handle_grouped_required_errors_with_alias_same_as_depen
             )
         },
     );
-
-    let model = schema.model();
 
     let lax = IGNORE_WITH_SAME_ERROR.to_string();
 
@@ -2016,7 +1980,7 @@ async fn should_not_create_if_re_validation_fails() {
     const MIN_REVALIDATION_LENGTH_ERROR: &str =
         "expected required to be at least 4 characters long";
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -2050,8 +2014,6 @@ async fn should_not_create_if_re_validation_fails() {
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let values = [
         String::from(" 111"),
@@ -2121,7 +2083,7 @@ async fn should_not_create_if_re_validation_fails_with_alias() {
     const MIN_REVALIDATION_LENGTH_ERROR: &str =
         "expected required to be at least 4 characters long";
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -2156,8 +2118,6 @@ async fn should_not_create_if_re_validation_fails_with_alias() {
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let values = [
         String::from(" 111"),
@@ -2227,7 +2187,7 @@ async fn should_not_create_if_re_validation_fails_with_alias_same_as_dependent()
     const MIN_REVALIDATION_LENGTH_ERROR: &str =
         "expected required to be at least 4 characters long";
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -2262,8 +2222,6 @@ async fn should_not_create_if_re_validation_fails_with_alias_same_as_dependent()
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let values = [
         String::from(" 111"),
@@ -2336,7 +2294,7 @@ async fn should_not_update_if_re_validation_fails() {
         "revalidated required must be between 10 & 5 inclussive";
     const REVALIDATED_REQUIRED_VALUE_RANGE: RangeInclusive<i32> = 10..=35;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -2368,8 +2326,6 @@ async fn should_not_update_if_re_validation_fails() {
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let data = Data {
         dependent: default_dependent_value,
@@ -2453,7 +2409,7 @@ async fn should_not_update_if_re_validation_fails_with_alias() {
         "revalidated required must be between 10 & 5 inclussive";
     const REVALIDATED_REQUIRED_VALUE_RANGE: RangeInclusive<i32> = 10..=35;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -2486,8 +2442,6 @@ async fn should_not_update_if_re_validation_fails_with_alias() {
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let data = Data {
         dependent: default_dependent_value,
@@ -2571,7 +2525,7 @@ async fn should_not_update_if_re_validation_fails_with_alias_same_as_dependent()
         "revalidated required must be between 10 & 5 inclussive";
     const REVALIDATED_REQUIRED_VALUE_RANGE: RangeInclusive<i32> = 10..=35;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -2604,8 +2558,6 @@ async fn should_not_update_if_re_validation_fails_with_alias_same_as_dependent()
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let data = Data {
         dependent: default_dependent_value,
@@ -2682,7 +2634,7 @@ async fn should_properly_use_re_validated_values() {
 
     let default_dependent_value = 1;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -2702,8 +2654,6 @@ async fn should_properly_use_re_validated_values() {
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let value = 1;
 
@@ -2770,7 +2720,7 @@ async fn should_properly_use_re_validated_values_with_alias() {
 
     let default_dependent_value = 1;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -2791,8 +2741,6 @@ async fn should_properly_use_re_validated_values_with_alias() {
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let value = 1;
 
@@ -2859,7 +2807,7 @@ async fn should_properly_use_re_validated_values_with_alias_same_as_dependent() 
 
     let default_dependent_value = 1;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -2880,8 +2828,6 @@ async fn should_properly_use_re_validated_values_with_alias_same_as_dependent() 
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let value = 1;
 
@@ -2949,7 +2895,7 @@ async fn should_properly_use_input_values_as_output_values_if_re_validator_does_
 
     let default_dependent_value = 1;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -2969,8 +2915,6 @@ async fn should_properly_use_input_values_as_output_values_if_re_validator_does_
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let value = 1;
 
@@ -3038,7 +2982,7 @@ async fn should_properly_use_input_values_as_output_values_if_re_validator_does_
 
     let default_dependent_value = 1;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -3059,8 +3003,6 @@ async fn should_properly_use_input_values_as_output_values_if_re_validator_does_
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let value = 1;
 
@@ -3128,7 +3070,7 @@ async fn should_properly_use_input_values_as_output_values_if_re_validator_does_
 
     let default_dependent_value = 1;
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -3149,8 +3091,6 @@ async fn should_properly_use_input_values_as_output_values_if_re_validator_does_
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let value = 1;
 
@@ -3232,7 +3172,7 @@ async fn should_respect_post_validation_config() {
     const VIRTUAL_FIELD_VALIDATION_FAIL: &str = "virtual_field failed post-validatrion";
     const BOTH_VALIDATION_FAIL: &str = "both failed post-validatrion";
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -3338,8 +3278,6 @@ async fn should_respect_post_validation_config() {
             })
         },
     );
-
-    let model = schema.model();
 
     let virtual_value = VIRTUAL_FIELD_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string();
     let some_value = "some value".to_string();
@@ -3655,7 +3593,7 @@ async fn should_respect_post_validation_config_with_alias() {
     const VIRTUAL_FIELD_VALIDATION_FAIL: &str = "virtual_field failed post-validatrion";
     const BOTH_VALIDATION_FAIL: &str = "both failed post-validatrion";
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -3763,8 +3701,6 @@ async fn should_respect_post_validation_config_with_alias() {
             })
         },
     );
-
-    let model = schema.model();
 
     let virtual_value = VIRTUAL_FIELD_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string();
     let some_value = "some value".to_string();
@@ -4080,7 +4016,7 @@ async fn should_respect_post_validation_config_with_alias_same_as_dependent() {
     const VIRTUAL_FIELD_VALIDATION_FAIL: &str = "virtual_field failed post-validatrion";
     const BOTH_VALIDATION_FAIL: &str = "both failed post-validatrion";
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -4186,8 +4122,6 @@ async fn should_respect_post_validation_config_with_alias_same_as_dependent() {
             })
         },
     );
-
-    let model = schema.model();
 
     let virtual_value = VIRTUAL_FIELD_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS.to_string();
     let some_value = "some value".to_string();
@@ -4499,7 +4433,7 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
     const UPDATED_VALUE_FROM_PRE_VALIDATOR: &str = "UPDATED_VALUE_FROM_PRE_VALIDATOR";
     const UPDATED_VALUE_FROM_POST_VALIDATOR: &str = "UPDATED_VALUE_FROM_POST_VALIDATOR";
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -4546,8 +4480,6 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
             })
         },
     );
-
-    let model = schema.model();
 
     let virtual_value = VIRTUAL_FIELD_PRE_VALIDATED_WITH_UPDATED_VALUES.to_string();
 
@@ -4681,7 +4613,7 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
     const UPDATED_VALUE_FROM_PRE_VALIDATOR: &str = "UPDATED_VALUE_FROM_PRE_VALIDATOR";
     const UPDATED_VALUE_FROM_POST_VALIDATOR: &str = "UPDATED_VALUE_FROM_POST_VALIDATOR";
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -4730,8 +4662,6 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
             })
         },
     );
-
-    let model = schema.model();
 
     let virtual_value = VIRTUAL_FIELD_PRE_VALIDATED_WITH_UPDATED_VALUES.to_string();
 
@@ -4865,7 +4795,7 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
     const UPDATED_VALUE_FROM_PRE_VALIDATOR: &str = "UPDATED_VALUE_FROM_PRE_VALIDATOR";
     const UPDATED_VALUE_FROM_POST_VALIDATOR: &str = "UPDATED_VALUE_FROM_POST_VALIDATOR";
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -4914,8 +4844,6 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
             })
         },
     );
-
-    let model = schema.model();
 
     let virtual_value = VIRTUAL_FIELD_PRE_VALIDATED_WITH_UPDATED_VALUES.to_string();
 
@@ -5043,7 +4971,7 @@ async fn should_respect_sanitizers_if_provided() {
         format!("sanitized-{value}")
     }
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -5063,8 +4991,6 @@ async fn should_respect_sanitizers_if_provided() {
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let virtual_value = "virtual_value".to_string();
 
@@ -5147,7 +5073,7 @@ async fn should_respect_sanitizers_if_provided_with_alias() {
         format!("sanitized-{value}")
     }
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -5168,8 +5094,6 @@ async fn should_respect_sanitizers_if_provided_with_alias() {
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let virtual_value = "virtual_value".to_string();
 
@@ -5252,7 +5176,7 @@ async fn should_respect_sanitizers_if_provided_with_alias_same_as_dependent() {
         format!("sanitized-{value}")
     }
 
-    let schema: Schema<DataInput, Data> = Schema::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -5273,8 +5197,6 @@ async fn should_respect_sanitizers_if_provided_with_alias_same_as_dependent() {
         },
         |o| o,
     );
-
-    let model = schema.model();
 
     let virtual_value = "virtual_value".to_string();
 
