@@ -445,6 +445,8 @@ impl<
         if let Some(ref configs) = options.ignore {
             let option_name = "options.ignore";
             let mut field_names = HashSet::new();
+            let field_type_not_allowed_error =
+                "only lax and virtual fields can belong to grouped ignore configs;";
 
             for IgnoreOptionConfig { fields, .. } in configs {
                 if fields.len() < 2 {
@@ -477,7 +479,7 @@ impl<
                             })
                         ) {
                             panic!(
-                        "\n{STYLE_COLOR_RED}[{option_name}]: required field \"{field_name}\" cannot belong to group ignored, but can belong to group ignore update{STYLE_RESET}\n"
+                        "\n{STYLE_COLOR_RED}[{option_name}]: {field_type_not_allowed_error} remove \"{field_name}\"{STYLE_RESET}\n"
                     );
                         }
 
@@ -488,7 +490,7 @@ impl<
 
                     if output_field_names.contains(&owned_field_name) {
                         panic!(
-                    "\n{STYLE_COLOR_RED}[{option_name}]: \"{field_name}\" cannot belong to group ignored{STYLE_RESET}\n"
+                    "\n{STYLE_COLOR_RED}[{option_name}]: {field_type_not_allowed_error} remove \"{field_name}\"{STYLE_RESET}\n"
                 );
                     } else if !field_configs.contains_key(field_name) {
                         panic!(
@@ -547,6 +549,8 @@ impl<
         if let Some(ref configs) = options.post_validate {
             let option_name = "options.post_validate";
             let mut field_names = HashSet::new();
+            let field_type_not_allowed_error =
+                "only lax, required and virtual fields can be post-validated;";
 
             for PostValidationConfig { fields, .. } in configs {
                 if fields.len() < 2 {
@@ -578,7 +582,7 @@ impl<
 
                     if output_field_names.contains(&owned_field_name) {
                         panic!(
-                        "\n{STYLE_COLOR_RED}[{option_name}]: \"{field_name}\" cannot be post_validated{STYLE_RESET}\n"
+                        "\n{STYLE_COLOR_RED}[{option_name}]: {field_type_not_allowed_error} remove \"{field_name}\"{STYLE_RESET}\n"
                     );
                     } else if !field_configs.contains_key(field_name) {
                         panic!(
@@ -592,6 +596,8 @@ impl<
         if let Some(ref configs) = options.required {
             let option_name = "options.required";
             let mut field_names = HashSet::new();
+            let field_type_not_allowed_error =
+                "only lax and virtual fields can belong to grouped required configs;";
 
             for RequiredOptionConfig { fields, .. } in configs {
                 if fields.len() < 2 {
@@ -624,7 +630,7 @@ impl<
                             })
                         ) {
                             panic!(
-                            "\n{STYLE_COLOR_RED}[{option_name}]: \"{field_name}\" is already a required field. Remove it from your grouped required config{STYLE_RESET}\n"
+                            "\n{STYLE_COLOR_RED}[{option_name}]: {field_type_not_allowed_error} remove \"{field_name}\"{STYLE_RESET}\n"
                         );
                         }
 
@@ -635,7 +641,7 @@ impl<
 
                     if output_field_names.contains(&owned_field_name) {
                         panic!(
-                        "\n{STYLE_COLOR_RED}[{option_name}]: \"{field_name}\" cannot be required{STYLE_RESET}\n"
+                        "\n{STYLE_COLOR_RED}[{option_name}]: {field_type_not_allowed_error} remove \"{field_name}\"{STYLE_RESET}\n"
                     );
                     } else if !field_configs.contains_key(field_name) {
                         panic!(

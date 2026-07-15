@@ -100,7 +100,9 @@ fn should_reject_if_the_fields_array_contains_any_string_that_is_not_a_field_on_
 }
 
 #[test]
-#[should_panic(expected = "[options.ignore]: \"id\" cannot belong to group ignored")]
+#[should_panic(
+    expected = "[options.ignore]: only lax and virtual fields can belong to grouped ignore configs; remove \"id\""
+)]
 fn should_reject_if_a_constant_is_provided_to_the_fields_array() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
@@ -126,7 +128,9 @@ fn should_reject_if_a_constant_is_provided_to_the_fields_array() {
 }
 
 #[test]
-#[should_panic(expected = "[options.ignore]: \"dependent\" cannot belong to group ignored")]
+#[should_panic(
+    expected = "[options.ignore]: only lax and virtual fields can belong to grouped ignore configs; remove \"dependent\""
+)]
 fn should_reject_if_a_dependent_field_is_provided_to_the_fields_array() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
@@ -159,7 +163,7 @@ fn should_reject_if_a_dependent_field_is_provided_to_the_fields_array() {
 
 #[test]
 #[should_panic(
-    expected = "[options.ignore]: required field \"required\" cannot belong to group ignored, but can belong to group ignore update"
+    expected = "[options.ignore]: only lax and virtual fields can belong to grouped ignore configs; remove \"required\""
 )]
 fn should_reject_if_a_required_field_is_provided_to_the_fields_array() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
@@ -270,7 +274,9 @@ fn should_reject_if_an_alias_with_foreign_name_is_provided_to_the_fields_array()
 }
 
 #[test]
-#[should_panic(expected = "[options.ignore]: \"created_at\" cannot belong to group ignored")]
+#[should_panic(
+    expected = "[options.ignore]: only lax and virtual fields can belong to grouped ignore configs; remove \"created_at\""
+)]
 fn should_reject_if_created_at_timestamp_with_default_name_is_provided_to_the_fields_array() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
@@ -296,7 +302,9 @@ fn should_reject_if_created_at_timestamp_with_default_name_is_provided_to_the_fi
 }
 
 #[test]
-#[should_panic(expected = "[options.ignore]: \"custom_created_at\" cannot belong to group ignored")]
+#[should_panic(
+    expected = "[options.ignore]: only lax and virtual fields can belong to grouped ignore configs; remove \"custom_created_at\""
+)]
 fn should_reject_if_created_at_timestamp_with_custom_name_is_provided_to_the_fields_array() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
@@ -322,7 +330,9 @@ fn should_reject_if_created_at_timestamp_with_custom_name_is_provided_to_the_fie
 }
 
 #[test]
-#[should_panic(expected = "[options.ignore]: \"updated_at\" cannot belong to group ignored")]
+#[should_panic(
+    expected = "[options.ignore]: only lax and virtual fields can belong to grouped ignore configs; remove \"updated_at\""
+)]
 fn should_reject_if_updated_at_timestamp_with_default_name_is_provided_to_the_fields_array() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
@@ -348,7 +358,9 @@ fn should_reject_if_updated_at_timestamp_with_default_name_is_provided_to_the_fi
 }
 
 #[test]
-#[should_panic(expected = "[options.ignore]: \"custom_updated_at\" cannot belong to group ignored")]
+#[should_panic(
+    expected = "[options.ignore]: only lax and virtual fields can belong to grouped ignore configs; remove \"custom_updated_at\""
+)]
 fn should_reject_if_updated_at_timestamp_with_custom_name_is_provided_to_the_fields_array() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
