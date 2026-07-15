@@ -155,8 +155,6 @@ pub fn parse_or_panic<T: FieldValue>(
     )
 }
 
-pub type DefaultCtxOptions = Option<()>;
-
 pub type ValidatorResponse<T: FieldValue, ErrorMetadata = DefaultFieldErrorMetadata> =
     Result<Option<T>, ValidatorError<ErrorMetadata>>;
 

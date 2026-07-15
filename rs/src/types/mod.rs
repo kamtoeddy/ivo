@@ -7,7 +7,6 @@ use std::{collections::HashMap, fmt::Debug, sync::Arc};
 use internal::{IvoRwLock, IvoStruct};
 
 use crate::{
-    __private_types::types::DefaultCtxOptions,
     schema::{
         fields::{base::InternalFieldConfig, TimestampConfig},
         options::base::SchemaOptions,
@@ -21,8 +20,14 @@ pub type IvoRwCtxOptions<CtxOptions> = IvoShared<IvoRwLock<CtxOptions>>;
 pub type IvoContext<I: IvoStruct, O: IvoStruct = I> = IvoShared<InternalIvoContext<I, O>>;
 pub type IvoSharedInput<I: IvoStruct> = IvoShared<I::Partial>;
 
-pub type InternalFieldConfigs<I, O, CtxOptions, ErrorTool> =
-    HashMap<&'static str, InternalFieldConfig<I, O, CtxOptions, ErrorTool>>;
+type DefaultCtxOptions = Option<()>;
+
+pub(crate) type InternalFieldConfigs<
+    I: IvoInputStruct<ErrorTool>,
+    O: IvoStruct,
+    CtxOptions,
+    ErrorTool: IvoErrorTool,
+> = HashMap<&'static str, InternalFieldConfig<I, O, CtxOptions, ErrorTool>>;
 
 pub struct Model<
     I: IvoInputStruct<ErrorTool>,

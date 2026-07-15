@@ -19,15 +19,13 @@ use crate::schema::{
     },
 };
 use crate::types::internal::{IvoErrorTool, IvoStruct};
+use crate::types::InternalFieldConfigs;
 use crate::Model;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 use std::marker::PhantomData;
 pub use types::FieldValue;
 use types::{No, Yes};
-
-type InternalFieldConfigs<I, O, CtxOptions, ErrorTool> =
-    HashMap<&'static str, InternalFieldConfig<I, O, CtxOptions, ErrorTool>>;
 
 const STYLE_COLOR_RED: &str = "\x1b[31m";
 const STYLE_FONT_BOLD: &str = "\x1b[1m";
