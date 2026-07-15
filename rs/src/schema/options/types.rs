@@ -2,7 +2,9 @@
 
 use std::future::Future;
 
-use crate::__private_types::types::{BooleanResolver, PartialErrorsMethods};
+use crate::__private_types::types::{
+    BooleanResolver, IgnoreUpdateOptionResolver, PartialErrorsMethods,
+};
 use crate::__private_types::{FieldInfo, IvoInputStruct};
 
 use crate::schema::fields::types::RequiredResolver;
@@ -10,13 +12,6 @@ use crate::types::internal::PostValidatorResponse;
 use crate::{schema::types::SuccessHandler, IvoContext, IvoRwCtxOptions, IvoStruct};
 use crate::{FieldError, IvoErrorTool};
 use futures::future::BoxFuture;
-
-pub type IgnoreUpdateOptionResolver<I: IvoStruct, O: IvoStruct, CtxOptions> = Box<
-    dyn Fn(I::Partial, O, IvoRwCtxOptions<CtxOptions>) -> BoxFuture<'static, bool>
-        + Send
-        + Sync
-        + 'static,
->;
 
 pub trait IntoShouldUpdateOptionResolver<I: IvoStruct, O: IvoStruct, CtxOptions> {
     fn into_resolver(self) -> IgnoreUpdateOptionResolver<I, O, CtxOptions>;
@@ -215,5 +210,53 @@ where
 
             Some(results)
         })
+    }
+}
+
+type UniformIgnoreResponse<'a> = BoxFuture<'a, bool>;
+
+pub trait UniformIgnoreResolver<
+    I: IvoInputStruct<ErrorTool>,
+    O: IvoStruct,
+    CtxOptions: Send + Sync,
+    ErrorTool: IvoErrorTool,
+>
+{
+    fn resolve<'a>(
+        &'a self,
+        ctx: IvoContext<I, O>,
+        o: IvoRwCtxOptions<CtxOptions>,
+    ) -> UniformIgnoreResponse<'a>;
+}
+
+impl<I, O, CtxOptions: Send + Sync, ErrorTool> UniformIgnoreResolver<I, O, CtxOptions, ErrorTool>
+    for BooleanResolver<I, O, CtxOptions>
+where
+    I: IvoInputStruct<ErrorTool>,
+    O: IvoStruct,
+    ErrorTool: IvoErrorTool,
+{
+    fn resolve<'a>(
+        &'a self,
+        ctx: IvoContext<I, O>,
+        o: IvoRwCtxOptions<CtxOptions>,
+    ) -> UniformIgnoreResponse<'a> {
+        Box::pin(self(ctx, o))
+    }
+}
+
+impl<I, O, CtxOptions: Send + Sync, ErrorTool> UniformIgnoreResolver<I, O, CtxOptions, ErrorTool>
+    for IgnoreUpdateOptionResolver<I, O, CtxOptions>
+where
+    I: IvoInputStruct<ErrorTool>,
+    O: IvoStruct,
+    ErrorTool: IvoErrorTool,
+{
+    fn resolve<'a>(
+        &'a self,
+        ctx: IvoContext<I, O>,
+        o: IvoRwCtxOptions<CtxOptions>,
+    ) -> UniformIgnoreResponse<'a> {
+        Box::pin(self(ctx.raw_input(), ctx.full_values().unwrap(), o))
     }
 }

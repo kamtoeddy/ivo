@@ -181,6 +181,13 @@ pub trait IntoIgnoreUpdateResolver<I: IvoStruct, O: IvoStruct, CtxOptions> {
     fn into_resolver(self) -> BooleanResolver<I, O, CtxOptions>;
 }
 
+pub type IgnoreUpdateOptionResolver<I: IvoStruct, O: IvoStruct, CtxOptions> = Box<
+    dyn Fn(I::Partial, O, IvoRwCtxOptions<CtxOptions>) -> BoxFuture<'static, bool>
+        + Send
+        + Sync
+        + 'static,
+>;
+
 impl<F, Fut, I: IvoStruct, O: IvoStruct, CtxOptions> IntoIgnoreUpdateResolver<I, O, CtxOptions>
     for F
 where

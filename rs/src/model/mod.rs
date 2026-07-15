@@ -7,12 +7,15 @@ use std::fmt::Debug;
 use std::future::ready;
 use std::sync::Arc;
 
+use crate::__private_types::types::{BooleanResolver, IgnoreUpdateOptionResolver};
 use crate::__private_types::{
     types::{DefaultCtxOptions, PartialErrorsMethods},
     IvoInputStruct,
 };
 use crate::model::internal::FieldInfoCollection;
-use crate::schema::options::types::IgnoreOptionConfig;
+use crate::schema::options::types::{
+    IgnoreOptionConfig, IgnoreUpdateOptionConfig, UniformIgnoreResolver,
+};
 use crate::schema::{
     fields::{
         base::{FieldType, InternalFieldConfig},
@@ -96,6 +99,7 @@ impl<
             .filter_input_fields_allowed(
                 None,
                 input,
+                FieldInfoCollection::new(self.schema),
                 Arc::clone(&ctx),
                 Arc::clone(&shared_rw_options),
             )
@@ -302,6 +306,7 @@ impl<
             .filter_input_fields_allowed(
                 Some(&old_partial_values),
                 updates,
+                FieldInfoCollection::new(self.schema),
                 Arc::clone(&ctx),
                 Arc::clone(&shared_rw_options),
             )
@@ -1120,6 +1125,7 @@ impl<
         &'a self,
         previous_values: Option<&O::Partial>,
         input_values: &I::Partial,
+        mut fields_collection: FieldInfoCollection<'a, I, O, CtxOptions, Timestamp, ErrorTool>,
         ctx: IvoContext<I, O>,
         options: IvoRwCtxOptions<CtxOptions>,
     ) -> (
@@ -1130,19 +1136,18 @@ impl<
         let is_update = previous_values.is_some();
         let previous_values = previous_values.cloned().unwrap_or_default();
 
-        let mut resolvers = vec![];
+        let mut tasks = vec![];
+        let mut entity_resolvers = vec![];
         let mut input = input_values.clone();
         let mut output = O::Partial::default();
-        let mut entity_resolves = vec![];
         let mut fields_provided = HashSet::new();
         let mut relevant_fields_provided = HashSet::new();
-        let fields_collection = FieldInfoCollection::new(self.schema);
 
         if is_update {
             if let Some(ref configs) = self.schema.options.ignore_update {
                 for config in configs.iter() {
                     if config.fields.is_empty() {
-                        entity_resolves.push(config.resolver.as_ref());
+                        entity_resolvers.push(config.resolver.as_ref());
                     }
                 }
             }
@@ -1183,8 +1188,8 @@ impl<
             }
         }
 
-        if !entity_resolves.is_empty() {
-            let tasks = entity_resolves
+        if !entity_resolvers.is_empty() {
+            let tasks = entity_resolvers
                 .iter()
                 .map(|resolver| {
                     resolver(
@@ -1202,7 +1207,7 @@ impl<
             }
         }
 
-        let fields_collection = fields_collection
+        fields_collection = fields_collection
             .new_with_fields_provided(fields_provided)
             .new_with_relevant_fields_provided(relevant_fields_provided.clone());
 
@@ -1219,7 +1224,17 @@ impl<
             }) = self.schema.field_configs.get(&field_info.config_name)
             {
                 if let Some(resolver) = ignore {
-                    resolvers.push((vec![field_info.name], resolver));
+                    tasks.push((
+                        vec![field_info.name],
+                        <BooleanResolver<I, O, CtxOptions> as UniformIgnoreResolver<
+                            I,
+                            O,
+                            CtxOptions,
+                            ErrorTool,
+                        >>::resolve(
+                            resolver, Arc::clone(&ctx), Arc::clone(&options)
+                        ),
+                    ));
 
                     continue;
                 }
@@ -1240,7 +1255,17 @@ impl<
                         }
                     }
                     Some(IsFieldProvisionEnabled::Func(resolver)) => {
-                        resolvers.push((vec![field_info.name], resolver));
+                        tasks.push((
+                            vec![field_info.name],
+                            <BooleanResolver<I, O, CtxOptions> as UniformIgnoreResolver<
+                                I,
+                                O,
+                                CtxOptions,
+                                ErrorTool,
+                            >>::resolve(
+                                resolver, Arc::clone(&ctx), Arc::clone(&options)
+                            ),
+                        ));
                     }
                     Some(IsFieldProvisionEnabled::Readonly) if is_update => {
                         if let Some(ValueResolverWithSharedInput::Static(default_value)) = default {
@@ -1273,23 +1298,56 @@ impl<
             }
         }
 
-        if let Some(ref configs) = self.schema.options.ignore {
-            let relevant_config_names = relevant_fields_provided
-                .iter()
-                .map(|field_name| fields_collection.get(field_name).config_name)
-                .collect::<HashSet<_>>();
+        let relevant_config_names = relevant_fields_provided
+            .iter()
+            .map(|field_name| fields_collection.get(field_name).config_name)
+            .collect::<HashSet<_>>();
 
+        if let Some(ref configs) = self.schema.options.ignore {
             for IgnoreOptionConfig { fields, resolver } in configs {
                 if fields
                     .iter()
                     .any(|name| relevant_config_names.contains(name))
                 {
-                    resolvers.push((fields.clone(), resolver));
+                    tasks.push((
+                        fields.clone(),
+                        <BooleanResolver<I, O, CtxOptions> as UniformIgnoreResolver<
+                            I,
+                            O,
+                            CtxOptions,
+                            ErrorTool,
+                        >>::resolve(
+                            resolver, Arc::clone(&ctx), Arc::clone(&options)
+                        ),
+                    ));
                 }
             }
         }
 
-        if resolvers.is_empty() {
+        if let Some(ref configs) = self.schema.options.ignore_update {
+            for IgnoreUpdateOptionConfig { fields, resolver } in configs {
+                if fields
+                    .iter()
+                    .any(|name| relevant_config_names.contains(name))
+                {
+                    tasks.push((
+                        fields.clone(),
+                        <IgnoreUpdateOptionResolver<I, O, CtxOptions> as UniformIgnoreResolver<
+                            I,
+                            O,
+                            CtxOptions,
+                            ErrorTool,
+                        >>::resolve(
+                            resolver, Arc::clone(&ctx), Arc::clone(&options)
+                        ),
+                    ));
+                }
+            }
+        }
+
+        if tasks.is_empty() {
+            drop(tasks);
+
             return (
                 input,
                 output,
@@ -1297,15 +1355,12 @@ impl<
             );
         }
 
-        let tasks = resolvers.into_iter().map(async |(config_names, resolver)| {
-            (
-                config_names,
-                resolver(Arc::clone(&ctx), Arc::clone(&options)).await,
-            )
-        });
+        let tasks = tasks
+            .into_iter()
+            .map(|(names, fut_ignore)| async { (names, fut_ignore.await) });
 
-        for (field_names, ignore) in join_all(tasks).await {
-            for config_name in field_names {
+        for (config_names, ignore) in join_all(tasks).await {
+            for config_name in config_names {
                 let field_info = fields_collection.get(config_name);
                 let field_name = field_info.name;
 
