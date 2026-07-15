@@ -192,7 +192,7 @@ Below are links to examples on how to properly configure schema fields.
 
 ### Ignore (Grouped)
 
-### Ignore update
+### Ignore update (Grouped)
 
 ### Required (Grouped)
 
