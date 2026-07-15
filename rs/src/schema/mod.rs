@@ -4,7 +4,7 @@ mod types;
 
 use crate::__private_types::types::DefaultCtxOptions;
 use crate::__private_types::IvoInputStruct;
-use crate::schema::options::types::IgnoreOptionConfig;
+use crate::schema::options::types::{IgnoreOptionConfig, IgnoreUpdateOptionConfig};
 use crate::schema::{
     fields::{
         base::{
@@ -483,6 +483,53 @@ impl<
                     );
                         }
 
+                        field_names.insert(field_name);
+
+                        continue;
+                    };
+
+                    if output_field_names.contains(&owned_field_name) {
+                        panic!(
+                    "\n{STYLE_COLOR_RED}[{option_name}]: {field_type_not_allowed_error} remove \"{field_name}\"{STYLE_RESET}\n"
+                );
+                    } else if !field_configs.contains_key(field_name) {
+                        panic!(
+                        "\n{STYLE_COLOR_RED}[{option_name}]: \"{field_name}\" does not exist on your schema{STYLE_RESET}\n"
+                    );
+                    };
+                }
+            }
+        }
+
+        if let Some(ref configs) = options.ignore_update {
+            let option_name = "options.ignore_update";
+            let mut field_names = HashSet::new();
+            let field_type_not_allowed_error =
+                "only lax, required and virtual fields can belong to grouped ignore update configs;";
+
+            for IgnoreUpdateOptionConfig { fields, .. } in configs {
+                if !fields.is_empty() && fields.len() < 2 {
+                    panic!(
+                    "\n{STYLE_COLOR_RED}[{option_name}]: grouped ignore update expects either zero (0) fields or at least 2 fields {STYLE_RESET}\n"
+                );
+                }
+
+                for field_name in fields {
+                    if field_names.contains(field_name) {
+                        panic!(
+                        "\n{STYLE_COLOR_RED}[{option_name}]: remove duplicates of \"{field_name}\" in your grouped ignore update config{STYLE_RESET}\n"
+                    );
+                    }
+
+                    if let Some(virtual_field) = alias_to_virtual_map.get(field_name) {
+                        panic!(
+                        "\n{STYLE_COLOR_RED}[{option_name}]: \"{field_name}\" is an alias; use \"{virtual_field}\" instead{STYLE_RESET}\n"
+                        );
+                    };
+
+                    let owned_field_name = field_name.to_string();
+
+                    if input_field_names.contains(&owned_field_name) {
                         field_names.insert(field_name);
 
                         continue;

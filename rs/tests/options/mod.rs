@@ -4,6 +4,7 @@ use crate::async_test_matrix;
 use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, Schema};
 
 mod ignore;
+mod ignore_update;
 mod post_validate;
 mod required;
 
