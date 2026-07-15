@@ -1,7 +1,7 @@
 use std::{collections::HashMap, future::ready, sync::LazyLock};
 
 use crate::async_test_matrix;
-use ivo::{IvoErrorTool, IvoField, FieldError, IvoInputStruct, IvoStruct, Model, Schema};
+use ivo::{FieldError, IvoErrorTool, IvoField, IvoInputStruct, IvoStruct, Model, Schema};
 
 async fn should_respect_custom_error_tool() {
     let r = PLACE_MODEL

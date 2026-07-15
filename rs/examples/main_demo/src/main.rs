@@ -11,15 +11,11 @@ use crate::domain::{PartialUserInput, User, UserCtxOptions, USER_MODEL};
 async fn main() {
     LazyLock::force(&USER_MODEL);
 
-    let input = PartialUserInput {
-        email: None,
-        // email: Some(Some("1@1.com".into())),
-        username: Some("user-10".into()),
-        phone_number: None,
-        // phone_number: Some(Some("123 4567 8910".into())),
-        slug_id: None,
-        // slug_id: Some("sloppy-slug-id".into()),
-    };
+    let input = PartialUserInput::new()
+        // .with_email(Some("1@1.com".into()))
+        // .with_phone_number(Some("123 4567 8910".into()))
+        // .with_slug_id("sloppy-slug-id".into())
+        .with_username("user-10".into());
 
     let timer = Instant::now();
 
@@ -61,16 +57,11 @@ async fn main() {
 
     println!("\n{:#?}", user);
 
-    let updates = PartialUserInput {
-        // email: None,
-        email: Some(user.email.clone()),
-        // phone_number: None,
-        phone_number: Some(Some("123 4567 8910".into())),
-        // username: None,
-        username: Some("new_username".into()),
-        slug_id: Some("updated-slug-id: Lol".into()),
-        // slug_id: None,
-    };
+    let updates = PartialUserInput::new()
+        .with_email(user.email.clone())
+        .with_phone_number(Some("123 4567 8910".into()))
+        .with_slug_id("updated-slug-id: Lol".into())
+        .with_username("new_username".into());
 
     let timer = Instant::now();
 
@@ -109,16 +100,11 @@ async fn main() {
         return;
     };
 
-    let updates = PartialUserInput {
-        // email: None,
-        email: Some(user.email.clone()),
-        // phone_number: None,
-        phone_number: Some(user.phone_number.clone()),
-        // username: None,
-        username: Some(user.username.clone()),
-        slug_id: Some("newly-updated-slug-id: Lol".into()),
-        // slug_id: None,
-    };
+    let updates = PartialUserInput::new()
+        .with_email(user.email.clone())
+        .with_phone_number(user.phone_number.clone())
+        .with_slug_id("newly-updated-slug-id: Lol".into())
+        .with_username(user.username.clone());
 
     let timer = Instant::now();
 

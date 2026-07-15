@@ -4,7 +4,7 @@ mod types;
 
 use crate::__private_types::types::DefaultCtxOptions;
 use crate::__private_types::IvoInputStruct;
-use crate::schema::options::types::IgnoreConfig;
+use crate::schema::options::types::IgnoreOptionConfig;
 use crate::schema::{
     fields::{
         base::{
@@ -93,6 +93,7 @@ impl<
         }
     }
 
+    #[expect(clippy::type_complexity)]
     #[track_caller]
     fn make_field_configs(
         config_tuples: Vec<(
@@ -445,7 +446,7 @@ impl<
             let option_name = "options.ignore";
             let mut field_names = HashSet::new();
 
-            for IgnoreConfig { fields, .. } in configs {
+            for IgnoreOptionConfig { fields, .. } in configs {
                 if fields.len() < 2 {
                     panic!(
                     "\n{STYLE_COLOR_RED}[{option_name}]: grouped ignore expects at least 2 fields {STYLE_RESET}\n"
@@ -789,6 +790,7 @@ pub struct FieldBuilder<
     WithTimestamps = No,
 > {
     _t: PhantomData<WithTimestamps>,
+    #[expect(clippy::type_complexity)]
     configs: Vec<(
         &'static str,
         InternalFieldConfig<I, O, CtxOptions, ErrorTool>,

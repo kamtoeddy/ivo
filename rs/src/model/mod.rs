@@ -12,7 +12,7 @@ use crate::__private_types::{
     IvoInputStruct,
 };
 use crate::model::internal::FieldInfoCollection;
-use crate::schema::options::types::IgnoreConfig;
+use crate::schema::options::types::IgnoreOptionConfig;
 use crate::schema::{
     fields::{
         base::{FieldType, InternalFieldConfig},
@@ -471,8 +471,8 @@ impl<
             }
 
             if !old_partial_values.ivo_internal_is_value_equal(
-                &field_info.name,
-                &updated_values.ivo_internal_get_erased_value(&field_info.name),
+                field_info.name,
+                &updated_values.ivo_internal_get_erased_value(field_info.name),
             ) {
                 relevant_fields_provided.insert(field_name.clone());
 
@@ -623,7 +623,7 @@ impl<
             (
                 f,
                 validator(
-                    raw_inputs.ivo_internal_get_erased_value(&f.name),
+                    raw_inputs.ivo_internal_get_erased_value(f.name),
                     Arc::clone(&ctx),
                     Arc::clone(&options),
                 )
@@ -644,11 +644,11 @@ impl<
                     has_updates = true;
 
                     if field_info.is_input {
-                        validated_inputs.ivo_internal_set(&field_name, &value);
+                        validated_inputs.ivo_internal_set(field_name, &value);
                     }
 
                     if field_info.is_output {
-                        validated_outputs.ivo_internal_set(&field_name, &value);
+                        validated_outputs.ivo_internal_set(field_name, &value);
                     }
                 }
                 Ok(None) => {
@@ -706,7 +706,7 @@ impl<
             (
                 f,
                 validator(
-                    validated_inputs.ivo_internal_get_erased_value(&f.name),
+                    validated_inputs.ivo_internal_get_erased_value(f.name),
                     Arc::clone(&ctx),
                     Arc::clone(&options),
                 )
@@ -733,11 +733,11 @@ impl<
                     has_updates = true;
 
                     if field_info.is_input {
-                        validated_inputs.ivo_internal_set(&field_name, &value);
+                        validated_inputs.ivo_internal_set(field_name, &value);
                     }
 
                     if field_info.is_output {
-                        validated_outputs.ivo_internal_set(&field_name, &value);
+                        validated_outputs.ivo_internal_set(field_name, &value);
                     }
                 }
                 _ => {}
@@ -831,11 +831,11 @@ impl<
                             has_updates = true;
 
                             if field_info.is_input {
-                                validated_inputs.ivo_internal_set(&field_info.name, &value);
+                                validated_inputs.ivo_internal_set(field_info.name, &value);
                             }
 
                             if field_info.is_output {
-                                validated_outputs.ivo_internal_set(&field_info.name, &value);
+                                validated_outputs.ivo_internal_set(field_info.name, &value);
                             }
                         }
                     }
@@ -893,11 +893,11 @@ impl<
                         has_updates = true;
 
                         if field_info.is_input {
-                            validated_inputs.ivo_internal_set(&field_info.name, &value);
+                            validated_inputs.ivo_internal_set(field_info.name, &value);
                         }
 
                         if field_info.is_output {
-                            validated_outputs.ivo_internal_set(&field_info.name, &value);
+                            validated_outputs.ivo_internal_set(field_info.name, &value);
                         }
                     }
                 }
@@ -948,7 +948,7 @@ impl<
             (
                 field_info,
                 sanitizer(
-                    input_values.ivo_internal_get_erased_value(&field_info.name),
+                    input_values.ivo_internal_get_erased_value(field_info.name),
                     Arc::clone(&ctx),
                     Arc::clone(&options),
                 )
@@ -959,7 +959,7 @@ impl<
         let mut input_values = ctx.input();
 
         for (f, value) in join_all(tasks).await {
-            input_values.ivo_internal_set(&f.name, &value);
+            input_values.ivo_internal_set(f.name, &value);
         }
 
         Some(input_values)
@@ -1133,14 +1133,18 @@ impl<
         let mut resolvers = vec![];
         let mut input = input_values.clone();
         let mut output = O::Partial::default();
-        let mut entity_resolver = None;
+        let mut entity_resolves = vec![];
         let mut fields_provided = HashSet::new();
         let mut relevant_fields_provided = HashSet::new();
         let fields_collection = FieldInfoCollection::new(self.schema);
 
         if is_update {
-            if let Some(ref resolver) = self.schema.options.ignore_update {
-                entity_resolver = Some(resolver);
+            if let Some(ref configs) = self.schema.options.ignore_update {
+                for config in configs.iter() {
+                    if config.fields.is_empty() {
+                        entity_resolves.push(config.resolver.as_ref());
+                    }
+                }
             }
 
             for (field_name, value) in input_values.ivo_internal_enumerate_fields_available() {
@@ -1179,15 +1183,22 @@ impl<
             }
         }
 
-        if let Some(resolver) = entity_resolver {
-            if resolver(
-                ctx.input(),
-                ctx.full_values().unwrap(),
-                Arc::clone(&options),
-            )
-            .await
-            {
-                return (input, output, fields_collection);
+        if !entity_resolves.is_empty() {
+            let tasks = entity_resolves
+                .iter()
+                .map(|resolver| {
+                    resolver(
+                        ctx.input(),
+                        ctx.full_values().unwrap(),
+                        Arc::clone(&options),
+                    )
+                })
+                .collect::<Vec<_>>();
+
+            for ignore in join_all(tasks).await {
+                if ignore {
+                    return (input, output, fields_collection);
+                }
             }
         }
 
@@ -1196,7 +1207,7 @@ impl<
             .new_with_relevant_fields_provided(relevant_fields_provided.clone());
 
         for field_name in fields_collection.relevant_fields_provided() {
-            let field_info = fields_collection.get(&field_name);
+            let field_info = fields_collection.get(field_name);
 
             if let Some(InternalFieldConfig {
                 field_type: FieldType::Lax | FieldType::Required | FieldType::Virtual,
@@ -1268,7 +1279,7 @@ impl<
                 .map(|field_name| fields_collection.get(field_name).config_name)
                 .collect::<HashSet<_>>();
 
-            for IgnoreConfig { fields, resolver } in configs {
+            for IgnoreOptionConfig { fields, resolver } in configs {
                 if fields
                     .iter()
                     .any(|name| relevant_config_names.contains(name))

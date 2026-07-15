@@ -190,10 +190,9 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
                     })
             },
             |o| {
-                o.ignore(["username", "v_slug"], |ctx: Ctx, _| {
-                    // o.ignore_update(["username", "v_slug"], |ctx: Ctx, _| {
-                    ready(match ctx.values().username_last_updated_at {
-                        Some(Some(dt)) => (Utc::now() - dt).num_days() < 30,
+                o.ignore_update(["username", "v_slug"], |_,values:User, _| {
+                    ready(match values.username_last_updated_at {
+                        Some(dt) => (Utc::now() - dt).num_days() < 30,
                         _ => false,
                     })
                 })

@@ -7,8 +7,8 @@ use crate::{
     schema::{
         fields::types::{IntoBooleanResolver, IntoDeleteHandler},
         options::types::{
-            IgnoreConfig, IntoRequiredOptionsResolver, IntoShouldUpdateOptionResolver,
-            RequiredOptionConfig,
+            IgnoreOptionConfig, IgnoreUpdateOptionConfig, IntoRequiredOptionsResolver,
+            IntoShouldUpdateOptionResolver, RequiredOptionConfig,
         },
         types::No,
         Yes,
@@ -112,7 +112,7 @@ impl<
     {
         let mut ignore_configs = self.ignore.unwrap_or_default();
 
-        ignore_configs.push(IgnoreConfig {
+        ignore_configs.push(IgnoreOptionConfig {
             fields: fields.into(),
             resolver: r.into_resolver(),
         });
@@ -290,9 +290,10 @@ impl<
         HasRequired,
     >
 {
-    pub fn ignore_update<R>(
+    pub fn ignore_update<const N: usize, R>(
         self,
-        handler: R,
+        fields: [&'static str; N],
+        resolver: R,
     ) -> SchemaOptionsBuilder<
         I,
         O,
@@ -308,9 +309,15 @@ impl<
     where
         R: IntoShouldUpdateOptionResolver<I, O, CtxOptions>,
     {
+        let mut ignore_update = self.ignore_update.unwrap_or_default();
+        ignore_update.push(IgnoreUpdateOptionConfig {
+            fields: fields.into(),
+            resolver: resolver.into_resolver(),
+        });
+
         SchemaOptionsBuilder::from(
             self.ignore,
-            Some(handler.into_resolver()),
+            Some(ignore_update),
             self.on_delete_fns,
             self.on_success_fns,
             self.post_validate,

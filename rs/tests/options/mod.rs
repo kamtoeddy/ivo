@@ -15,7 +15,7 @@ mod required;
 // [x] required
 
 // ignore_update
-async fn should_respect_option_to_ignore_updates() {
+async fn should_respect_option_to_ignore_updates_with_empty_fields_array() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {
         lax: String,
@@ -32,7 +32,7 @@ async fn should_respect_option_to_ignore_updates() {
     let schema = Schema::<DataInput, Data>::new(
         |f| f.field("lax", IvoField::LAX.default(default_value.to_string())),
         |o| {
-            o.ignore_update(|input: PartialDataInput, _, _| {
+            o.ignore_update([], |input: PartialDataInput, _, _| {
                 ready(input.lax.map(|v| v == IGNORE_VALUE).unwrap_or(false))
             })
         },
@@ -82,7 +82,7 @@ async fn should_respect_option_to_ignore_updates() {
     );
 }
 
-async_test_matrix!(should_respect_option_to_ignore_updates);
+async_test_matrix!(should_respect_option_to_ignore_updates_with_empty_fields_array);
 
 // on_delete
 

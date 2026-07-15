@@ -3,11 +3,13 @@
 use std::marker::PhantomData;
 
 use crate::__private_types::IvoInputStruct;
-use crate::schema::options::types::{IgnoreConfig, RequiredOptionConfig};
+use crate::schema::options::types::{
+    IgnoreOptionConfig, IgnoreUpdateOptionConfig, RequiredOptionConfig,
+};
 use crate::types::internal::IvoStruct;
 use crate::{
     schema::{
-        options::types::{IgnoreUpdateOptionResolver, OnSuccessConfig, PostValidationConfig},
+        options::types::{OnSuccessConfig, PostValidationConfig},
         types::DeleteHandler,
         No,
     },
@@ -20,8 +22,8 @@ pub struct SchemaOptions<
     CtxOptions,
     ErrorTool: IvoErrorTool,
 > {
-    pub ignore: Option<Vec<IgnoreConfig<I, O, CtxOptions>>>,
-    pub ignore_update: Option<IgnoreUpdateOptionResolver<I, O, CtxOptions>>,
+    pub ignore: Option<Vec<IgnoreOptionConfig<I, O, CtxOptions>>>,
+    pub ignore_update: Option<Vec<IgnoreUpdateOptionConfig<I, O, CtxOptions>>>,
     pub on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
     pub on_success_fns: Option<Vec<OnSuccessConfig<I, O, CtxOptions>>>,
     pub post_validate: Option<Vec<PostValidationConfig<I, O, CtxOptions, ErrorTool>>>,
@@ -55,8 +57,8 @@ pub struct SchemaOptionsBuilder<
     _ignore_update: PhantomData<HasIgnoreUpdate>,
     _required: PhantomData<HasRequired>,
     //
-    pub(crate) ignore: Option<Vec<IgnoreConfig<I, O, CtxOptions>>>,
-    pub(crate) ignore_update: Option<IgnoreUpdateOptionResolver<I, O, CtxOptions>>,
+    pub(crate) ignore: Option<Vec<IgnoreOptionConfig<I, O, CtxOptions>>>,
+    pub(crate) ignore_update: Option<Vec<IgnoreUpdateOptionConfig<I, O, CtxOptions>>>,
     pub(crate) on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
     pub(crate) on_success_fns: Option<Vec<OnSuccessConfig<I, O, CtxOptions>>>,
     pub(crate) post_validate: Option<Vec<PostValidationConfig<I, O, CtxOptions, ErrorTool>>>,
@@ -106,8 +108,8 @@ impl<
     }
 
     pub fn from(
-        ignore: Option<Vec<IgnoreConfig<I, O, CtxOptions>>>,
-        ignore_update: Option<IgnoreUpdateOptionResolver<I, O, CtxOptions>>,
+        ignore: Option<Vec<IgnoreOptionConfig<I, O, CtxOptions>>>,
+        ignore_update: Option<Vec<IgnoreUpdateOptionConfig<I, O, CtxOptions>>>,
         on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
         on_success_fns: Option<Vec<OnSuccessConfig<I, O, CtxOptions>>>,
         post_validate: Option<Vec<PostValidationConfig<I, O, CtxOptions, ErrorTool>>>,

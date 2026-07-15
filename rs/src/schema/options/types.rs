@@ -34,9 +34,14 @@ where
     }
 }
 
-pub struct IgnoreConfig<I: IvoStruct, O: IvoStruct, CtxOptions> {
+pub struct IgnoreOptionConfig<I: IvoStruct, O: IvoStruct, CtxOptions> {
     pub fields: Vec<&'static str>,
     pub resolver: BooleanResolver<I, O, CtxOptions>,
+}
+
+pub struct IgnoreUpdateOptionConfig<I: IvoStruct, O: IvoStruct, CtxOptions> {
+    pub fields: Vec<&'static str>,
+    pub resolver: IgnoreUpdateOptionResolver<I, O, CtxOptions>,
 }
 
 pub struct OnSuccessConfig<I: IvoStruct, O: IvoStruct, CtxOptions> {
