@@ -1462,7 +1462,7 @@ impl<
                     ErrorTool,
                 >>::resolve(
                     resolver,
-                    vec![field_info.clone()],
+                    HashSet::from([field_info.name]),
                     Arc::clone(&ctx),
                     Arc::clone(&options),
                 );
@@ -1481,11 +1481,11 @@ impl<
                     continue;
                 }
 
-                let field_info_vec = config
+                let field_names = config
                     .fields
                     .iter()
-                    .map(|field_name| fields_collection.get(field_name).clone())
-                    .collect::<Vec<_>>();
+                    .map(|config_name| fields_collection.get(config_name).name)
+                    .collect::<HashSet<_>>();
 
                 let r = <RequiredOptionConfig<I, O, CtxOptions, ErrorTool> as UniformRequiredResolver<
                     I,
@@ -1494,7 +1494,7 @@ impl<
                     ErrorTool,
                 >>::resolve(
                     config,
-                    field_info_vec,
+                    field_names,
                     Arc::clone(&ctx),
                     Arc::clone(&options),
                 );

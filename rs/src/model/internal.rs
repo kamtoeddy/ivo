@@ -4,7 +4,7 @@ use std::{
 };
 
 use crate::{
-    __private_types::{FieldInfo, IvoInputStruct},
+    __private_types::IvoInputStruct,
     schema::fields::base::{FieldType, InternalFieldConfig},
     IvoErrorTool, IvoStruct, Schema,
 };
@@ -212,4 +212,12 @@ impl<
             relevant_dependent_config_names: self.relevant_dependent_config_names.clone(),
         }
     }
+}
+
+#[derive(Clone, Debug)]
+pub(super) struct FieldInfo<'a> {
+    pub name: &'a str,
+    pub config_name: &'a str,
+    pub is_input: bool,
+    pub is_output: bool,
 }

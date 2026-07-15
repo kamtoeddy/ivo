@@ -1,11 +1,12 @@
 #![expect(type_alias_bounds)]
 
+use std::collections::HashSet;
 use std::future::Future;
 
 use crate::__private_types::types::{
     BooleanResolver, IgnoreUpdateOptionResolver, PartialErrorsMethods,
 };
-use crate::__private_types::{FieldInfo, IvoInputStruct};
+use crate::__private_types::IvoInputStruct;
 
 use crate::schema::fields::types::RequiredResolver;
 use crate::types::internal::PostValidatorResponse;
@@ -149,7 +150,7 @@ pub trait UniformRequiredResolver<
 {
     fn resolve<'a>(
         &'a self,
-        fields: Vec<FieldInfo<'a>>,
+        field_names: HashSet<&'a str>,
         ctx: IvoContext<I, O>,
         o: IvoRwCtxOptions<CtxOptions>,
     ) -> UniformRequiredResponse<'a, ErrorTool>;
@@ -164,14 +165,14 @@ where
 {
     fn resolve<'a>(
         &'a self,
-        fields: Vec<FieldInfo<'a>>,
+        field_names: HashSet<&'a str>,
         ctx: IvoContext<I, O>,
         o: IvoRwCtxOptions<CtxOptions>,
     ) -> UniformRequiredResponse<'a, ErrorTool> {
         Box::pin(async move {
             self(ctx, o).await.map(|reason| {
                 vec![(
-                    fields[0].name.to_string(),
+                    field_names.iter().next().unwrap().to_string(),
                     FieldError {
                         metadata: None::<ErrorTool::FieldMetadata>,
                         reason,
@@ -191,7 +192,7 @@ where
 {
     fn resolve<'a>(
         &'a self,
-        fields: Vec<FieldInfo<'a>>,
+        field_names: HashSet<&'a str>,
         ctx: IvoContext<I, O>,
         o: IvoRwCtxOptions<CtxOptions>,
     ) -> UniformRequiredResponse<'a, ErrorTool> {
@@ -203,7 +204,7 @@ where
             let mut results = vec![];
 
             for (field_name, (reason, metadata)) in errors.entries() {
-                if fields.iter().find(|info| info.name == field_name).is_some() {
+                if field_names.contains(field_name.as_str()) {
                     results.push((field_name.to_owned(), FieldError { metadata, reason }));
                 }
             }

@@ -10,11 +10,3 @@ pub use types::{
     PartialStructMethods, PostValidatorError, PostValidatorResponse, ValidatorError,
     ValidatorResponse, WithPartialStruct,
 };
-
-#[derive(Clone, Debug)]
-pub(crate) struct FieldInfo<'a> {
-    pub name: &'a str,
-    pub config_name: &'a str,
-    pub is_input: bool,
-    pub is_output: bool,
-}

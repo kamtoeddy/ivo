@@ -129,7 +129,7 @@ impl<
 
     pub fn on_delete<H>(
         self,
-        handler: H,
+        h: H,
     ) -> SchemaOptionsBuilder<
         I,
         O,
@@ -146,7 +146,7 @@ impl<
         H: IntoDeleteHandler<O, CtxOptions>,
     {
         let mut on_delete_fns = self.on_delete_fns.unwrap_or_default();
-        on_delete_fns.push(handler.into_handler());
+        on_delete_fns.push(h.into_handler());
 
         SchemaOptionsBuilder::from(
             self.ignore,
@@ -161,7 +161,7 @@ impl<
     pub fn on_success<const N: usize, Builder, Buildable>(
         self,
         fields: [&'static str; N],
-        builder: Builder,
+        b: Builder,
     ) -> SchemaOptionsBuilder<
         I,
         O,
@@ -178,7 +178,7 @@ impl<
         Builder: Fn(OnSuccessOptionBuilder<I, O, CtxOptions, Yes>) -> Buildable,
         Buildable: BuildableOnSuccess<I, O, CtxOptions>,
     {
-        let config = builder(OnSuccessOptionBuilder::<I, O, CtxOptions>::fields(fields)).build();
+        let config = b(OnSuccessOptionBuilder::<I, O, CtxOptions>::fields(fields)).build();
 
         let mut on_success_fns = self.on_success_fns.unwrap_or_default();
         on_success_fns.push(config);
@@ -196,7 +196,7 @@ impl<
     pub fn post_validate<const N: usize, Builder, Buildable>(
         self,
         fields: [&'static str; N],
-        builder: Builder,
+        b: Builder,
     ) -> SchemaOptionsBuilder<
         I,
         O,
@@ -214,8 +214,7 @@ impl<
         Buildable: BuildablePostValidator<I, O, CtxOptions, ErrorTool>,
     {
         let config =
-            builder(PostValidateOptionBuilder::<I, O, CtxOptions, ErrorTool>::fields(fields))
-                .build();
+            b(PostValidateOptionBuilder::<I, O, CtxOptions, ErrorTool>::fields(fields)).build();
 
         let mut post_validate = self.post_validate.unwrap_or_default();
         post_validate.push(config);
@@ -230,10 +229,10 @@ impl<
         )
     }
 
-    pub fn required<const N: usize, F>(
+    pub fn required<const N: usize, R>(
         self,
         fields: [&'static str; N],
-        resolver: F,
+        r: R,
     ) -> SchemaOptionsBuilder<
         I,
         O,
@@ -247,12 +246,12 @@ impl<
         Yes,
     >
     where
-        F: IntoRequiredOptionsResolver<I, O, CtxOptions, ErrorTool>,
+        R: IntoRequiredOptionsResolver<I, O, CtxOptions, ErrorTool>,
     {
         let mut required = self.required.unwrap_or_default();
         required.push(RequiredOptionConfig {
             fields: fields.into(),
-            resolver: resolver.into_resolver(),
+            resolver: r.into_resolver(),
         });
 
         SchemaOptionsBuilder::from(
@@ -293,7 +292,7 @@ impl<
     pub fn ignore_update<const N: usize, R>(
         self,
         fields: [&'static str; N],
-        resolver: R,
+        r: R,
     ) -> SchemaOptionsBuilder<
         I,
         O,
@@ -312,7 +311,7 @@ impl<
         let mut ignore_update = self.ignore_update.unwrap_or_default();
         ignore_update.push(IgnoreUpdateOptionConfig {
             fields: fields.into(),
-            resolver: resolver.into_resolver(),
+            resolver: r.into_resolver(),
         });
 
         SchemaOptionsBuilder::from(

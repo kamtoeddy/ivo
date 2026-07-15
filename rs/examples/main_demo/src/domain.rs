@@ -190,13 +190,7 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
                     })
             },
             |o| {
-                o.ignore_update(["username", "v_slug"], |_,values:User, _| {
-                    ready(match values.username_last_updated_at {
-                        Some(dt) => (Utc::now() - dt).num_days() < 30,
-                        _ => false,
-                    })
-                })
-                .required(["email", "phone_number"], |ctx: Ctx, _| {
+                o.required(["email", "phone_number"], |ctx: Ctx, _| {
                     if ctx.is_update() {
                         return ready(None);
                     }
@@ -209,71 +203,77 @@ pub static USER_SCHEMA: LazyLock<Schema<UserInput, User, UserCtxOptions, Timesta
                             .with_phone_number(error, None),
                     ))
                 })
-                .post_validate(["username", "v_slug"], |b| {
-                    b.validate(async |ctx: Ctx, o: RwCtxOptions| {
-                        let input = ctx.input();
-                        let input_slug_id = ctx.input().slug_id.clone();
-
-                        let slug_string = input_slug_id
-                            .clone()
-                            .unwrap_or_else(|| input.username.clone().unwrap());
-
-                        let slug_id = slugify(&slug_string);
-
-                        println!(
-                            "\npost validating username & v_slug: [slug_string = {}] & [slug_id = {}]",
-                            slug_string, slug_id
-                        );
-
-                        let mut options = o.write().await;
-
-                        if options.find_user_by_slug_id(&slug_id).await.is_none() {
-                            options.update_slug_id(&slug_id);
-
-                            return Ok(None);
-                        }
-
-                        drop(options);
-
-                        let (reason, metadata) = (
-                            &format!("A user with a slug id: \"{slug_id}\" already exists"),
-                            None,
-                        );
-
-                        let mut errors = UserInputErrors::new();
-
-                        if input_slug_id.is_some() {
-                            errors.set_slug_id(reason, metadata);
-                        } else if input.username.is_some() {
-                            errors.set_username(reason, metadata);
-                        }
-
-                        Err(errors)
+                    .ignore_update(["username", "v_slug"], |_, user: User, _| {
+                        ready(match user.username_last_updated_at {
+                            Some(dt) => (Utc::now() - dt).num_days() < 30,
+                            _ => false,
+                        })
                     })
-                })
-                .on_success(["email"], |b| {
-                    b.handle(|_, _| {
-                        println!("[options.on_success]: [email]");
+                    .post_validate(["username", "v_slug"], |b| {
+                        b.validate(async |ctx: Ctx, o: RwCtxOptions| {
+                            let input = ctx.input();
+                            let input_slug_id = ctx.input().slug_id.clone();
+
+                            let slug_string = input_slug_id
+                                .clone()
+                                .unwrap_or_else(|| input.username.clone().unwrap());
+
+                            let slug_id = slugify(&slug_string);
+
+                            println!(
+                                "\npost validating username & v_slug: [slug_string = {}] & [slug_id = {}]",
+                                slug_string, slug_id
+                            );
+
+                            let mut options = o.write().await;
+
+                            if options.find_user_by_slug_id(&slug_id).await.is_none() {
+                                options.update_slug_id(&slug_id);
+
+                                return Ok(None);
+                            }
+
+                            drop(options);
+
+                            let (reason, metadata) = (
+                                &format!("A user with a slug id: \"{slug_id}\" already exists"),
+                                None,
+                            );
+
+                            let mut errors = UserInputErrors::new();
+
+                            if input_slug_id.is_some() {
+                                errors.set_slug_id(reason, metadata);
+                            } else if input.username.is_some() {
+                                errors.set_username(reason, metadata);
+                            }
+
+                            Err(errors)
+                        })
+                    })
+                    .on_success(["email"], |b| {
+                        b.handle(|_, _| {
+                            println!("[options.on_success]: [email]");
+                            ready(())
+                        })
+                    })
+                    .on_success(["username", "v_slug"], |b| {
+                        b.handle(|_, _| {
+                            println!("[options.on_success]: [username, v_slug]");
+
+                            ready(())
+                        })
+                    })
+                    .on_delete(|_, _| {
+                        println!("[options.on_delete]: fn 1");
+
                         ready(())
                     })
-                })
-                .on_success(["username", "v_slug"], |b| {
-                    b.handle(|_, _| {
-                        println!("[options.on_success]: [username, v_slug]");
+                    .on_delete(|_, _| {
+                        println!("[options.on_delete]: fn 2");
 
                         ready(())
                     })
-                })
-                .on_delete(|_, _| {
-                    println!("[options.on_delete]: fn 1");
-
-                    ready(())
-                })
-                .on_delete(|_, _| {
-                    println!("[options.on_delete]: fn 2");
-
-                    ready(())
-                })
             },
         )
     });
