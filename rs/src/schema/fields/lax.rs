@@ -43,6 +43,17 @@ pub struct LaxFieldBuilder<
     HasFailure = No,
     HasSuccess = No,
 > {
+    default: Option<ValueResolverWithSharedInput<ErasedValue, I, CtxOptions>>,
+    validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
+    re_validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
+    required_fn: Option<RequiredResolver<I, O, CtxOptions>>,
+    should_ignore: Option<BooleanResolver<I, O, CtxOptions>>,
+    ignore_init: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
+    ignore_update: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
+    on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
+    on_failure_fns: Option<Vec<FailureHandler<I, O, CtxOptions>>>,
+    on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
+    // markers...
     _t: PhantomData<T>,
     _default: PhantomData<HasDefault>,
     _validator: PhantomData<HasValidator>,
@@ -54,17 +65,6 @@ pub struct LaxFieldBuilder<
     _on_delete_fns: PhantomData<HasDelete>,
     _on_failure_fns: PhantomData<HasFailure>,
     _on_success_fns: PhantomData<HasSuccess>,
-    // actual data...
-    default: Option<ValueResolverWithSharedInput<ErasedValue, I, CtxOptions>>,
-    validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
-    re_validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
-    required_fn: Option<RequiredResolver<I, O, CtxOptions>>,
-    should_ignore: Option<BooleanResolver<I, O, CtxOptions>>,
-    ignore_init: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
-    ignore_update: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
-    on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
-    on_failure_fns: Option<Vec<FailureHandler<I, O, CtxOptions>>>,
-    on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
 }
 
 impl<

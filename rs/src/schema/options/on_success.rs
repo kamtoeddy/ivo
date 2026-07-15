@@ -15,11 +15,11 @@ pub struct OnSuccessOptionBuilder<
     IvoFieldNames = No,
     HasHandlers = No,
 > {
-    _f: PhantomData<IvoFieldNames>,
-    _h: PhantomData<HasHandlers>,
-    // actual data...
     fields: Vec<&'static str>,
     handlers: Vec<SuccessHandler<I, O, CtxOptions>>,
+    // markers...
+    _f: PhantomData<IvoFieldNames>,
+    _h: PhantomData<HasHandlers>,
 }
 
 impl<IvoFieldNames, HasHandlers, I: IvoStruct, O: IvoStruct, CtxOptions> Default

@@ -31,6 +31,14 @@ pub struct RequiredFieldBuilder<
     HasFailure = No,
     HasSuccess = No,
 > {
+    required_error: Option<ComputableRequiredError<I, O, CtxOptions>>,
+    validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
+    re_validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
+    ignore_update: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
+    on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
+    on_failure_fns: Option<Vec<FailureHandler<I, O, CtxOptions>>>,
+    on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
+    // markers...
     _t: PhantomData<T>,
     _err: PhantomData<HasRequiredError>,
     _validator: PhantomData<HasValidator>,
@@ -39,14 +47,6 @@ pub struct RequiredFieldBuilder<
     _on_delete_fns: PhantomData<HasDelete>,
     _on_failure_fns: PhantomData<HasFailure>,
     _on_success_fns: PhantomData<HasSuccess>,
-    // actual data...
-    required_error: Option<ComputableRequiredError<I, O, CtxOptions>>,
-    validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
-    re_validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
-    ignore_update: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
-    on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
-    on_failure_fns: Option<Vec<FailureHandler<I, O, CtxOptions>>>,
-    on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
 }
 
 impl<

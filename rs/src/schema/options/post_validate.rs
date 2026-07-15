@@ -18,13 +18,13 @@ pub struct PostValidateOptionBuilder<
     HasValidator = No,
     HasPreValidator = No,
 > {
-    _has_fields: PhantomData<IvoFieldNames>,
-    _pre_v: PhantomData<HasPreValidator>,
-    _validator: PhantomData<HasValidator>,
-    // actual data...
     fields: Vec<&'static str>,
     pre_validator: Option<PostValidator<I, O, CtxOptions, ErrorTool>>,
     validators: Vec<PostValidator<I, O, CtxOptions, ErrorTool>>,
+    // markers...
+    _has_fields: PhantomData<IvoFieldNames>,
+    _pre_v: PhantomData<HasPreValidator>,
+    _validator: PhantomData<HasValidator>,
 }
 
 impl<

@@ -28,15 +28,15 @@ pub struct ConstantFieldBuilder<
     HasDelete = No,
     HasSuccess = No,
 > {
+    value: Option<ValueResolverWithSharedInput<ErasedValue, I, CtxOptions>>,
+    on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
+    on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
+    // markers...
     _t: PhantomData<T>,
     _err: PhantomData<ErrorTool>,
     _default: PhantomData<HasDefault>,
     _del_handlers: PhantomData<HasDelete>,
     _success_handlers: PhantomData<HasSuccess>,
-    // actual data...
-    value: Option<ValueResolverWithSharedInput<ErasedValue, I, CtxOptions>>,
-    on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
-    on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
 }
 
 impl<

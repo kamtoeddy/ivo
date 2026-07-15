@@ -95,10 +95,12 @@ impl<
         self
     }
 
+    #[inline(always)]
     pub fn fields_provided(&'a self) -> &'a HashSet<String> {
         &self.fields_provided
     }
 
+    #[inline(always)]
     pub fn relevant_fields_provided(&'a self) -> &'a HashSet<String> {
         &self.relevant_fields_provided
     }
@@ -115,12 +117,7 @@ impl<
 
     #[inline(always)]
     pub fn get(&'a self, field_name: &str) -> &'a FieldInfo<'a> {
-        self.get_optional(field_name).unwrap()
-    }
-
-    #[inline(always)]
-    fn get_optional(&'a self, field_name: &str) -> Option<&'a FieldInfo<'a>> {
-        self.fields.get(field_name)
+        self.fields.get(field_name).unwrap()
     }
 
     fn parse_fields(

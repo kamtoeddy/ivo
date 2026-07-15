@@ -36,6 +36,13 @@ pub struct DependentFieldBuilder<
     HasDelete = No,
     HasSuccess = No,
 > {
+    default: Option<ValueResolverWithSharedInput<ErasedValue, I, CtxOptions>>,
+    depends_on: Option<Vec<&'static str>>,
+    resolver: Option<Resolver<ErasedValue, I, O, CtxOptions>>,
+    ignore_update: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
+    on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
+    on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
+    // markers...
     _t: PhantomData<T>,
     _err: PhantomData<ErrorTool>,
     _default: PhantomData<HasDefault>,
@@ -44,13 +51,6 @@ pub struct DependentFieldBuilder<
     _del_handlers: PhantomData<HasDelete>,
     _readonly: PhantomData<HasReadonly>,
     _success_handlers: PhantomData<HasSuccess>,
-    // actual data...
-    default: Option<ValueResolverWithSharedInput<ErasedValue, I, CtxOptions>>,
-    depends_on: Option<Vec<&'static str>>,
-    resolver: Option<Resolver<ErasedValue, I, O, CtxOptions>>,
-    ignore_update: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
-    on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
-    on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
 }
 
 impl<

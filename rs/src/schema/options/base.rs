@@ -50,19 +50,19 @@ pub struct SchemaOptionsBuilder<
     HasIgnoreUpdate = No,
     HasRequired = No,
 > {
-    _on_delete_fns: PhantomData<HasDelete>,
-    _on_success_fns: PhantomData<HasSuccess>,
-    _post_validate: PhantomData<HasPostValidate>,
-    _ignore: PhantomData<HasIgnore>,
-    _ignore_update: PhantomData<HasIgnoreUpdate>,
-    _required: PhantomData<HasRequired>,
-    //
     pub(crate) ignore: Option<Vec<IgnoreOptionConfig<I, O, CtxOptions>>>,
     pub(crate) ignore_update: Option<Vec<IgnoreUpdateOptionConfig<I, O, CtxOptions>>>,
     pub(crate) on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
     pub(crate) on_success_fns: Option<Vec<OnSuccessConfig<I, O, CtxOptions>>>,
     pub(crate) post_validate: Option<Vec<PostValidationConfig<I, O, CtxOptions, ErrorTool>>>,
     pub(crate) required: Option<Vec<RequiredOptionConfig<I, O, CtxOptions, ErrorTool>>>,
+    // markers...
+    _on_delete_fns: PhantomData<HasDelete>,
+    _on_success_fns: PhantomData<HasSuccess>,
+    _post_validate: PhantomData<HasPostValidate>,
+    _ignore: PhantomData<HasIgnore>,
+    _ignore_update: PhantomData<HasIgnoreUpdate>,
+    _required: PhantomData<HasRequired>,
 }
 
 impl<

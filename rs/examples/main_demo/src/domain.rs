@@ -40,7 +40,7 @@ pub struct UserCtxOptions {
     pub slug_id: Option<SlugifiedString>,
 }
 
-impl<'a> UserCtxOptions {
+impl UserCtxOptions {
     pub fn new() -> Self {
         Self { slug_id: None }
     }
@@ -48,14 +48,14 @@ impl<'a> UserCtxOptions {
     fn find_user_by_username(
         &self,
         username: &str,
-    ) -> impl Future<Output = Option<User>> + use<'a> {
+    ) -> impl Future<Output = Option<User>> + use<'_> {
         ready(USERS_BY_USERNAME.get(username).cloned())
     }
 
     fn find_user_by_slug_id(
         &self,
         slug_id: &SlugifiedString,
-    ) -> impl Future<Output = Option<User>> + use<'a> {
+    ) -> impl Future<Output = Option<User>> + use<'_> {
         ready(USERS_BY_SLUG_ID.get(slug_id).cloned())
     }
 

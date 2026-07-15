@@ -40,16 +40,16 @@ impl<
     > Model<I, O, CtxOptions, Timestamp, ErrorTool>
 {
     #[track_caller]
-    pub fn new<FieldMaker, OptionsMaker, BuildableOptions, WithTimestamps>(
+    pub fn new<FieldMaker, OptionMaker, BuildableOptions, WithTimestamps>(
         f: FieldMaker,
-        o: OptionsMaker,
+        o: OptionMaker,
     ) -> Self
     where
         FieldMaker: Fn(
             FieldBuilder<I, O, CtxOptions, Timestamp, ErrorTool>,
         )
             -> FieldBuilder<I, O, CtxOptions, Timestamp, ErrorTool, WithTimestamps>,
-        OptionsMaker: Fn(SchemaOptionsBuilder<I, O, CtxOptions, ErrorTool>) -> BuildableOptions,
+        OptionMaker: Fn(SchemaOptionsBuilder<I, O, CtxOptions, ErrorTool>) -> BuildableOptions,
         BuildableOptions: BuildableSchemaOptions<I, O, CtxOptions, ErrorTool>,
     {
         let fields = f(FieldBuilder::new());
@@ -828,13 +828,13 @@ pub struct FieldBuilder<
     ErrorTool: IvoErrorTool,
     WithTimestamps = No,
 > {
-    _t: PhantomData<WithTimestamps>,
     #[expect(clippy::type_complexity)]
     configs: Vec<(
         &'static str,
         InternalFieldConfig<I, O, CtxOptions, ErrorTool>,
     )>,
     timestamp_config: Option<TimestampConfig<T>>,
+    _t: PhantomData<WithTimestamps>,
 }
 
 impl<

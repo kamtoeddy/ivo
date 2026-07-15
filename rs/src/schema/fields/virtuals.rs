@@ -36,6 +36,17 @@ pub struct VirtualFieldBuilder<
     HasFailure = No,
     HasSuccess = No,
 > {
+    alias: Option<&'static str>,
+    validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
+    re_validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
+    required_fn: Option<RequiredResolver<I, O, CtxOptions>>,
+    sanitizer: Option<VirtualSanitizer<ErasedValue, I, O, CtxOptions>>,
+    ignore: Option<BooleanResolver<I, O, CtxOptions>>,
+    ignore_init: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
+    ignore_update: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
+    on_failure_fns: Option<Vec<FailureHandler<I, O, CtxOptions>>>,
+    on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
+    // markers...
     _t: PhantomData<T>,
     _alias: PhantomData<HasAlias>,
     _validator: PhantomData<HasValidator>,
@@ -47,17 +58,6 @@ pub struct VirtualFieldBuilder<
     _ignore_update: PhantomData<HasIgnoreUpdate>,
     _on_failure_fns: PhantomData<HasFailure>,
     _on_success_fns: PhantomData<HasSuccess>,
-    // actual data...
-    alias: Option<&'static str>,
-    validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
-    re_validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
-    required_fn: Option<RequiredResolver<I, O, CtxOptions>>,
-    sanitizer: Option<VirtualSanitizer<ErasedValue, I, O, CtxOptions>>,
-    ignore: Option<BooleanResolver<I, O, CtxOptions>>,
-    ignore_init: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
-    ignore_update: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
-    on_failure_fns: Option<Vec<FailureHandler<I, O, CtxOptions>>>,
-    on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
 }
 
 impl<
