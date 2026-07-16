@@ -167,9 +167,9 @@ Below are links to examples on how to properly configure schema fields.
 - [Validators & re-validators](./examples/lax_with_validators.rs)
 - [Readonly](./examples/lax_readonly.rs)
 - [Required](./examples/lax_required.rs)
-- [⚠️ Ignore](./examples/lax_with_ignore.rs)
-- [⚠️ Ignore init](./examples/lax_with_ignore_init.rs)
-- [⚠️ Ignore update](./examples/lax_with_ignore_update.rs)
+- [Ignore](./examples/lax_with_ignore.rs)
+- [Ignore init](./examples/lax_with_ignore_init.rs)
+- [Ignore update](./examples/lax_with_ignore_update.rs)
 
 ### Required Fields
 
@@ -182,7 +182,8 @@ Below are links to examples on how to properly configure schema fields.
 ### Virtual Fields
 
 - [⚠️ Validators & re-validators](./examples/virtuals_with_validators.rs)
-- [⚠️ Alias](./examples/virtuals_with_alias.rs)
+- [⚠️ With alias name](./examples/virtuals_with_alias.rs)
+- [⚠️ With alias name same as dependent](./examples/virtuals_with_alias_same_as_dependent.rs)
 - [⚠️ Required](./examples/virtuals_with_required.rs)
 - [⚠️ Ignore](./examples/virtuals_with_ignore.rs)
 - [⚠️ Ignore init](./examples/virtuals_with_ignore_init.rs)
