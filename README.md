@@ -175,7 +175,7 @@ A lax field is both an input and output field whose value may or may not be prov
 - it may leverage the [ignore](#ignore), [ignore init](#ignore-init) and [ignore update](#ignore-update) provision rules.
 - it may leverage the [readonly](#readonly) provision rule if default value is static.
 - it may have [delete](#on-delete) and [success](#on-success) event handlers.
-- it may have [failure](#on-failure) event handlers if a validator is provided.
+- it may have [failure](#on-failure) event handlers.
 - it may also be used in [grouped success](#on-success-grouped) event handlers.
 
 ### Required Fields
@@ -187,7 +187,7 @@ A required field is both an input field and an output field whose value must be 
 - it may also be used in [post/multi-field validation](#post-validation).
 - it may leverage the [ignore update](#ignore-update) and [readonly](#readonly) provision rules to prevent further updates.
 - it may have [delete](#on-delete) and [success](#on-success) event handlers.
-- it may have [failure](#on-failure) event handlers if a validator is provided.
+- it may have [failure](#on-failure) event handlers.
 - it may also be used in [grouped success](#on-success-grouped) event handlers.
 
 ### Virtual Fields
