@@ -3,9 +3,9 @@ use std::{future::ready, sync::LazyLock};
 use ivo::{IvoContext, IvoField, IvoInputStruct, IvoShared, IvoStruct, Model};
 
 const DEFAULT_LAX_VALUE: &str = "DEFAULT_LAX_VALUE";
-const DEFAULT_USERNAME: &str = "DEFAULT_USERNAME";
+const DEFAULT_DEPENDENT_VALUE: &str = "DEFAULT_DEPENDENT_VALUE";
 const REQUIRED_TRIGGER_VALUE: &str = "REQUIRED_TRIGGER_VALUE";
-const USERNAME_REQUIRED_ERROR: &str = "username is required at this time";
+const REQUIRED_ERROR: &str = "virtual_field is required at this time";
 
 #[async_std::main]
 async fn main() {
@@ -13,7 +13,7 @@ async fn main() {
         .create(
             &PartialDataInput {
                 lax: None,
-                username: None,
+                virtual_field: None,
             },
             None,
         )
@@ -27,7 +27,7 @@ async fn main() {
         data,
         Data {
             lax: DEFAULT_LAX_VALUE.to_string(),
-            username: DEFAULT_USERNAME.to_string()
+            dependent: DEFAULT_DEPENDENT_VALUE.to_string()
         }
     );
 
@@ -35,13 +35,13 @@ async fn main() {
 
     DATA_MODEL.delete(&data, None).await;
 
-    let username = "some username".to_string();
+    let virtual_value = "some value".to_string();
 
     let (data, handle_success, _) = DATA_MODEL
         .create(
             &PartialDataInput {
                 lax: Some(REQUIRED_TRIGGER_VALUE.into()),
-                username: Some(username.clone()),
+                virtual_field: Some(virtual_value.clone()),
             },
             None,
         )
@@ -55,7 +55,7 @@ async fn main() {
         data,
         Data {
             lax: REQUIRED_TRIGGER_VALUE.to_string(),
-            username
+            dependent: virtual_value
         }
     );
 
@@ -67,7 +67,7 @@ async fn main() {
         .create(
             &PartialDataInput {
                 lax: Some(REQUIRED_TRIGGER_VALUE.into()),
-                username: None,
+                virtual_field: None,
             },
             None,
         )
@@ -78,15 +78,15 @@ async fn main() {
     println!("\nfailed to create: {:#?}", payload);
 
     assert_eq!(
-        payload.get("username").unwrap()[0].reason,
-        USERNAME_REQUIRED_ERROR
+        payload.get("virtual_field").unwrap()[0].reason,
+        REQUIRED_ERROR
     );
 
     handle_failure().await;
 
     let data = Data {
         lax: DEFAULT_LAX_VALUE.into(),
-        username: DEFAULT_USERNAME.into(),
+        dependent: DEFAULT_DEPENDENT_VALUE.into(),
     };
 
     let (payload, handle_failure, _) = DATA_MODEL
@@ -94,7 +94,7 @@ async fn main() {
             &data,
             &PartialDataInput {
                 lax: Some(REQUIRED_TRIGGER_VALUE.into()),
-                username: None,
+                virtual_field: None,
             },
             None,
         )
@@ -105,15 +105,15 @@ async fn main() {
     println!("\nfailed to update: {:#?}", payload);
 
     assert_eq!(
-        payload.unwrap().get("username").unwrap()[0].reason,
-        USERNAME_REQUIRED_ERROR
+        payload.unwrap().get("virtual_field").unwrap()[0].reason,
+        REQUIRED_ERROR
     );
 
     handle_failure().await;
 
     let data = Data {
         lax: REQUIRED_TRIGGER_VALUE.into(),
-        username: DEFAULT_USERNAME.into(),
+        dependent: DEFAULT_DEPENDENT_VALUE.into(),
     };
 
     let (payload, handle_failure, _) = DATA_MODEL
@@ -121,7 +121,7 @@ async fn main() {
             &data,
             &PartialDataInput {
                 lax: Some("updated lax value".into()),
-                username: None,
+                virtual_field: None,
             },
             None,
         )
@@ -132,25 +132,25 @@ async fn main() {
     println!("\nfailed to update: {:#?}", payload);
 
     assert_eq!(
-        payload.unwrap().get("username").unwrap()[0].reason,
-        USERNAME_REQUIRED_ERROR
+        payload.unwrap().get("virtual_field").unwrap()[0].reason,
+        REQUIRED_ERROR
     );
 
     handle_failure().await;
 
     let data = Data {
         lax: DEFAULT_LAX_VALUE.into(),
-        username: DEFAULT_USERNAME.into(),
+        dependent: DEFAULT_DEPENDENT_VALUE.into(),
     };
 
-    let updated_username = Some("james-doe".to_string());
+    let updated_virtual_value = Some("james-doe".to_string());
 
     let (updates, handle_success, _) = DATA_MODEL
         .update(
             &data,
             &PartialDataInput {
                 lax: None,
-                username: updated_username.clone(),
+                virtual_field: updated_virtual_value.clone(),
             },
             None,
         )
@@ -164,7 +164,7 @@ async fn main() {
         updates,
         PartialData {
             lax: None,
-            username: updated_username
+            dependent: updated_virtual_value
         }
     );
 
@@ -176,18 +176,18 @@ async fn main() {
 
     let data = Data {
         lax: DEFAULT_LAX_VALUE.into(),
-        username: DEFAULT_USERNAME.into(),
+        dependent: DEFAULT_DEPENDENT_VALUE.into(),
     };
 
     let updated_lax = Some(REQUIRED_TRIGGER_VALUE.to_string());
-    let updated_username = Some("james-doe".to_string());
+    let updated_virtual_value = Some("james-doe".to_string());
 
     let (updates, handle_success, _) = DATA_MODEL
         .update(
             &data,
             &PartialDataInput {
                 lax: updated_lax.clone(),
-                username: updated_username.clone(),
+                virtual_field: updated_virtual_value.clone(),
             },
             None,
         )
@@ -201,7 +201,7 @@ async fn main() {
         updates,
         PartialData {
             lax: updated_lax,
-            username: updated_username
+            dependent: updated_virtual_value
         }
     );
 
@@ -213,17 +213,17 @@ async fn main() {
 
     let data = Data {
         lax: REQUIRED_TRIGGER_VALUE.into(),
-        username: DEFAULT_USERNAME.into(),
+        dependent: DEFAULT_DEPENDENT_VALUE.into(),
     };
 
-    let updated_username = Some("james-doe".to_string());
+    let updated_virtual_value = Some("james-doe".to_string());
 
     let (updates, handle_success, _) = DATA_MODEL
         .update(
             &data,
             &PartialDataInput {
                 lax: None,
-                username: updated_username.clone(),
+                virtual_field: updated_virtual_value.clone(),
             },
             None,
         )
@@ -237,7 +237,7 @@ async fn main() {
         updates,
         PartialData {
             lax: None,
-            username: updated_username
+            dependent: updated_virtual_value
         }
     );
 
@@ -251,13 +251,13 @@ async fn main() {
 #[derive(Clone, Debug, PartialEq, IvoInputStruct)]
 pub struct DataInput {
     pub lax: String,
-    pub username: String,
+    pub virtual_field: String,
 }
 
 #[derive(Debug, Clone, PartialEq, IvoStruct)]
 pub struct Data {
     pub lax: String,
-    pub username: String,
+    pub dependent: String,
 }
 
 pub static DATA_MODEL: LazyLock<Model<DataInput, Data>> = LazyLock::new(|| {
@@ -273,7 +273,7 @@ pub static DATA_MODEL: LazyLock<Model<DataInput, Data>> = LazyLock::new(|| {
                         ready(())
                     })
                     .on_delete(|data: IvoShared<Data>, _| {
-                        println!("\n[on_delete]: lax = {}", data.username);
+                        println!("\n[on_delete]: lax = {}", data.dependent);
 
                         ready(())
                     })
@@ -288,9 +288,35 @@ pub static DATA_MODEL: LazyLock<Model<DataInput, Data>> = LazyLock::new(|| {
                     }),
             )
             .field(
-                "username",
-                IvoField::LAX
-                    .default(DEFAULT_USERNAME.to_string())
+                "dependent",
+                IvoField::DEPENDENT
+                    .default(DEFAULT_DEPENDENT_VALUE.into())
+                    .depends_on(["virtual_field"])
+                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
+                        ready(
+                            ctx.input()
+                                .virtual_field
+                                .unwrap_or_else(|| ctx.values().dependent.unwrap()),
+                        )
+                    })
+                    .on_success(|ctx: IvoContext<DataInput, Data>, _| {
+                        println!(
+                            "\n[on_success]: dependent = {}",
+                            ctx.values().dependent.unwrap()
+                        );
+
+                        ready(())
+                    })
+                    .on_delete(|data: IvoShared<Data>, _| {
+                        println!("\n[on_delete]: dependent = {}", data.dependent);
+
+                        ready(())
+                    }),
+            )
+            .field(
+                "virtual_field",
+                IvoField::VIRTUAL
+                    .validate(|_, _, _| ready(Ok(None::<String>)))
                     .required(|ctx: IvoContext<DataInput, Data>, _| {
                         let mut error = None;
 
@@ -298,33 +324,32 @@ pub static DATA_MODEL: LazyLock<Model<DataInput, Data>> = LazyLock::new(|| {
                             || ctx.previous_values().map(|d| d.lax)
                                 == Some(REQUIRED_TRIGGER_VALUE.into())
                         {
-                            error = Some(USERNAME_REQUIRED_ERROR.into());
+                            error = Some(REQUIRED_ERROR.into());
                         }
 
                         ready(error)
                     })
                     .on_success(|ctx: IvoContext<DataInput, Data>, _| {
                         println!(
-                            "\n[on_success]: username = {}",
-                            ctx.values().username.unwrap()
+                            "\n[on_failure]: raw virtual_field = {}",
+                            ctx.raw_input().virtual_field.unwrap()
                         );
-
-                        ready(())
-                    })
-                    .on_delete(|data: IvoShared<Data>, _| {
-                        println!("\n[on_delete]: username = {}", data.username);
+                        println!(
+                            "\n[on_failure]: validated virtual_field = {}",
+                            ctx.input().virtual_field.unwrap()
+                        );
 
                         ready(())
                     })
                     .on_failure(|ctx: IvoContext<DataInput, Data>, _| {
                         println!(
-                            "\n[on_failure]: raw username = {}",
-                            ctx.raw_input().username.unwrap()
+                            "\n[on_failure]: raw virtual_field = {}",
+                            ctx.raw_input().virtual_field.unwrap()
                         );
-
-                        if let Some(name) = ctx.input().username {
-                            println!("\n[on_failure]: validated username = {}", name);
-                        }
+                        println!(
+                            "\n[on_failure]: validated virtual_field = {}",
+                            ctx.input().virtual_field.unwrap()
+                        );
 
                         ready(())
                     }),

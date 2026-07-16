@@ -253,12 +253,12 @@ It contains:
 - information on whether the current operation is a creation or an update (usually a boolean flag).
 - **At creation**:
   - `raw input`: the partial input struct provided for validation (does not change during validation).
-  - `input`: a partial input struct with up to date input values (gets updated as validation proceeds).
+  - `input`: a partial input struct with relevant and up to date input values (gets updated as validation proceeds).
   - `values`: a partial output struct containing validated output values (gets updated as validation proceeds).
 - **During updates**:
   - `previous values`: an output struct representing the existing values being updated (does not change during validation).
   - `raw input`: the partial input struct provided for validation (does not change during validation).
-  - `input`: a partial input struct with up to date input values (gets updated as validation proceeds).
+  - `input`: a partial input struct with relevant and up to date input values (gets updated as validation proceeds).
   - `changes`: a partial output struct containing updated output values (gets updated as validation proceeds).
   - `values`: an output struct containing previous values + validated changes (gets updated as validation proceeds)
 

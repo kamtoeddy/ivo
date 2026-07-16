@@ -181,13 +181,13 @@ Below are links to examples on how to properly configure schema fields.
 
 ### Virtual Fields
 
-- [⚠️ Validators & re-validators](./examples/virtuals_with_validators.rs)
-- [⚠️ With alias name](./examples/virtuals_with_alias.rs)
-- [⚠️ With alias name same as dependent](./examples/virtuals_with_alias_same_as_dependent.rs)
-- [⚠️ Required](./examples/virtuals_with_required.rs)
-- [⚠️ Ignore](./examples/virtuals_with_ignore.rs)
-- [⚠️ Ignore init](./examples/virtuals_with_ignore_init.rs)
-- [⚠️ Ignore update](./examples/virtuals_with_ignore_update.rs)
+- [Validators & re-validators](./examples/virtuals.rs)
+- [With alias name](./examples/virtuals_with_alias_name.rs)
+- [With alias name same as dependent](./examples/virtuals_with_alias_name_same_as_dependent.rs)
+- [Required](./examples/virtuals_with_required.rs)
+- [Ignore](./examples/virtuals_with_ignore.rs)
+- [Ignore init](./examples/virtuals_with_ignore_init.rs)
+- [Ignore update](./examples/virtuals_with_ignore_update.rs)
 
 ### Timestamps
 
@@ -202,9 +202,9 @@ Below are links to examples on how to properly configure schema fields.
 
 ### Required (Grouped)
 
-### On success (Grouped)
+### On Success (Grouped)
 
-### On delete
+### On Delete
 
 ### Post-validate
 
