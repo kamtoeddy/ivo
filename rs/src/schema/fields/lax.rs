@@ -573,6 +573,7 @@ impl<
 // ON_FAILURE is only available if HasFailure is 'No'
 impl<
         HasDefault: IsProvided,
+        HasValidator,
         HasRevalidator,
         HasRequired,
         HasIgnore,
@@ -594,7 +595,7 @@ impl<
         CtxOptions,
         ErrorTool,
         HasDefault,
-        Yes,
+        HasValidator,
         HasRevalidator,
         HasRequired,
         HasIgnore,
@@ -615,7 +616,7 @@ impl<
         CtxOptions,
         ErrorTool,
         HasDefault,
-        Yes,
+        HasValidator,
         HasRevalidator,
         HasRequired,
         HasIgnore,
