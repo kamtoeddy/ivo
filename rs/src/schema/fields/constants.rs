@@ -23,7 +23,7 @@ pub struct ConstantFieldBuilder<
     I: IvoStruct,
     O: IvoStruct,
     CtxOptions,
-    ErrorTool: IvoErrorTool<CtxOptions>,
+    ErrorTool: IvoErrorTool,
     HasDefault = No,
     HasDelete = No,
     HasSuccess = No,
@@ -47,7 +47,7 @@ impl<
         O: IvoStruct,
         T: FieldValue,
         CtxOptions,
-        ErrorTool: IvoErrorTool<CtxOptions>,
+        ErrorTool: IvoErrorTool,
     > ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasDefault, HasDelete, HasSuccess>
 {
     pub const fn new() -> Self {
@@ -72,7 +72,7 @@ impl<
         O: IvoStruct,
         T: FieldValue,
         CtxOptions,
-        ErrorTool: IvoErrorTool<CtxOptions>,
+        ErrorTool: IvoErrorTool,
     > Default
     for ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasDefault, HasDelete, HasSuccess>
 {
@@ -88,7 +88,7 @@ impl<
         O: IvoStruct,
         T: FieldValue,
         CtxOptions,
-        ErrorTool: IvoErrorTool<CtxOptions>,
+        ErrorTool: IvoErrorTool,
     > BuildableFieldConfig<I, O, CtxOptions, ErrorTool>
     for ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, HasDelete, HasSuccess>
 {
@@ -103,13 +103,8 @@ impl<
     }
 }
 
-impl<
-        I: IvoStruct,
-        O: IvoStruct,
-        T: FieldValue,
-        CtxOptions,
-        ErrorTool: IvoErrorTool<CtxOptions>,
-    > ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool>
+impl<I: IvoStruct, O: IvoStruct, T: FieldValue, CtxOptions, ErrorTool: IvoErrorTool>
+    ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool>
 {
     pub fn value(self, value: T) -> ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes> {
         ConstantFieldBuilder {
@@ -144,7 +139,7 @@ impl<
         O: IvoStruct,
         T: FieldValue,
         CtxOptions,
-        ErrorTool: IvoErrorTool<CtxOptions>,
+        ErrorTool: IvoErrorTool,
     > ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, HasDelete, HasSuccess>
 {
     pub fn on_delete<H>(
@@ -182,7 +177,7 @@ impl<
         O: IvoStruct,
         T: FieldValue,
         CtxOptions,
-        ErrorTool: IvoErrorTool<CtxOptions>,
+        ErrorTool: IvoErrorTool,
     > ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, HasDelete, HasSuccess>
 {
     pub fn on_success<H>(

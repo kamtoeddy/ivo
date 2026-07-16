@@ -17,10 +17,10 @@ use crate::{
 };
 
 pub struct SchemaOptions<
-    I: IvoInputStruct<CtxOptions, ErrorTool>,
+    I: IvoInputStruct<ErrorTool>,
     O: IvoStruct,
     CtxOptions,
-    ErrorTool: IvoErrorTool<CtxOptions>,
+    ErrorTool: IvoErrorTool,
 > {
     pub ignore: Option<Vec<IgnoreOptionConfig<I, O, CtxOptions>>>,
     pub ignore_update: Option<Vec<IgnoreUpdateOptionConfig<I, O, CtxOptions>>>,
@@ -30,12 +30,8 @@ pub struct SchemaOptions<
     pub required: Option<Vec<RequiredOptionConfig<I, O, CtxOptions, ErrorTool>>>,
 }
 
-impl<
-        I: IvoInputStruct<CtxOptions, ErrorTool>,
-        O: IvoStruct,
-        CtxOptions,
-        ErrorTool: IvoErrorTool<CtxOptions>,
-    > SchemaOptions<I, O, CtxOptions, ErrorTool>
+impl<I: IvoInputStruct<ErrorTool>, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool>
+    SchemaOptions<I, O, CtxOptions, ErrorTool>
 {
     pub const fn new() -> SchemaOptionsBuilder<I, O, CtxOptions, ErrorTool> {
         SchemaOptionsBuilder::new()
@@ -43,10 +39,10 @@ impl<
 }
 
 pub struct SchemaOptionsBuilder<
-    I: IvoInputStruct<CtxOptions, ErrorTool>,
+    I: IvoInputStruct<ErrorTool>,
     O: IvoStruct,
     CtxOptions,
-    ErrorTool: IvoErrorTool<CtxOptions>,
+    ErrorTool: IvoErrorTool,
     HasPostValidate = No,
     HasDelete = No,
     HasSuccess = No,
@@ -76,10 +72,10 @@ impl<
         HasIgnore,
         HasIgnoreUpdate,
         HasRequired,
-        I: IvoInputStruct<CtxOptions, ErrorTool>,
+        I: IvoInputStruct<ErrorTool>,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool<CtxOptions>,
+        ErrorTool: IvoErrorTool,
     >
     SchemaOptionsBuilder<
         I,
@@ -138,10 +134,10 @@ impl<
         HasIgnore,
         HasIgnoreUpdate,
         HasRequired,
-        I: IvoInputStruct<CtxOptions, ErrorTool>,
+        I: IvoInputStruct<ErrorTool>,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool<CtxOptions>,
+        ErrorTool: IvoErrorTool,
     > Default
     for SchemaOptionsBuilder<
         I,

@@ -10,10 +10,10 @@ use crate::{
 };
 
 pub struct PostValidateOptionBuilder<
-    I: IvoInputStruct<CtxOptions, ErrorTool>,
+    I: IvoInputStruct<ErrorTool>,
     O: IvoStruct,
     CtxOptions,
-    ErrorTool: IvoErrorTool<CtxOptions>,
+    ErrorTool: IvoErrorTool,
     IvoFieldNames = No,
     HasValidator = No,
     HasPreValidator = No,
@@ -31,10 +31,10 @@ impl<
         IvoFieldNames,
         HasPreValidator,
         HasValidator,
-        I: IvoInputStruct<CtxOptions, ErrorTool>,
+        I: IvoInputStruct<ErrorTool>,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool<CtxOptions>,
+        ErrorTool: IvoErrorTool,
     > Default
     for PostValidateOptionBuilder<
         I,
@@ -59,10 +59,10 @@ impl<
 }
 
 pub trait BuildablePostValidator<
-    I: IvoInputStruct<CtxOptions, ErrorTool>,
+    I: IvoInputStruct<ErrorTool>,
     O: IvoStruct,
     CtxOptions,
-    ErrorTool: IvoErrorTool<CtxOptions>,
+    ErrorTool: IvoErrorTool,
 >
 {
     fn build(self) -> PostValidationConfig<I, O, CtxOptions, ErrorTool>;
@@ -70,10 +70,10 @@ pub trait BuildablePostValidator<
 
 impl<
         HasPreValidator,
-        I: IvoInputStruct<CtxOptions, ErrorTool>,
+        I: IvoInputStruct<ErrorTool>,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool<CtxOptions>,
+        ErrorTool: IvoErrorTool,
     > BuildablePostValidator<I, O, CtxOptions, ErrorTool>
     for PostValidateOptionBuilder<I, O, CtxOptions, ErrorTool, Yes, Yes, HasPreValidator>
 {
@@ -86,12 +86,8 @@ impl<
     }
 }
 
-impl<
-        I: IvoInputStruct<CtxOptions, ErrorTool>,
-        O: IvoStruct,
-        CtxOptions,
-        ErrorTool: IvoErrorTool<CtxOptions>,
-    > PostValidateOptionBuilder<I, O, CtxOptions, ErrorTool>
+impl<I: IvoInputStruct<ErrorTool>, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool>
+    PostValidateOptionBuilder<I, O, CtxOptions, ErrorTool>
 {
     pub fn fields<const N: usize>(
         fields: [&'static str; N],
@@ -106,10 +102,10 @@ impl<
 impl<
         HasValidator,
         HasPreValidator,
-        I: IvoInputStruct<CtxOptions, ErrorTool>,
+        I: IvoInputStruct<ErrorTool>,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool<CtxOptions>,
+        ErrorTool: IvoErrorTool,
     > PostValidateOptionBuilder<I, O, CtxOptions, ErrorTool, Yes, HasValidator, HasPreValidator>
 {
     pub fn validate<F>(
@@ -133,10 +129,10 @@ impl<
 
 impl<
         HasValidator,
-        I: IvoInputStruct<CtxOptions, ErrorTool>,
+        I: IvoInputStruct<ErrorTool>,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool<CtxOptions>,
+        ErrorTool: IvoErrorTool,
     > PostValidateOptionBuilder<I, O, CtxOptions, ErrorTool, Yes, HasValidator, No>
 {
     pub fn pre_validate<F>(

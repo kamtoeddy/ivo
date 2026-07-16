@@ -12,10 +12,10 @@ use crate::{
 
 pub(super) struct FieldInfoCollection<
     'a,
-    I: IvoInputStruct<CtxOptions, ErrorTool>,
+    I: IvoInputStruct<ErrorTool>,
     O: IvoStruct,
     CtxOptions: Clone,
-    ErrorTool: IvoErrorTool<CtxOptions>,
+    ErrorTool: IvoErrorTool,
 > {
     fields: HashMap<&'a str, FieldInfo<'a>>,
     fields_provided: HashSet<String>,
@@ -27,10 +27,10 @@ pub(super) struct FieldInfoCollection<
 
 impl<
         'a,
-        I: IvoInputStruct<CtxOptions, ErrorTool>,
+        I: IvoInputStruct<ErrorTool>,
         O: IvoStruct,
         CtxOptions: Clone,
-        ErrorTool: IvoErrorTool<CtxOptions>,
+        ErrorTool: IvoErrorTool,
     > FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool>
 {
     #[inline]
@@ -191,10 +191,10 @@ impl<
 
 impl<
         'a,
-        I: IvoInputStruct<CtxOptions, ErrorTool>,
+        I: IvoInputStruct<ErrorTool>,
         O: IvoStruct,
         CtxOptions: Clone,
-        ErrorTool: IvoErrorTool<CtxOptions>,
+        ErrorTool: IvoErrorTool,
     > Clone for FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool>
 {
     fn clone(&self) -> Self {

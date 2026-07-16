@@ -200,11 +200,11 @@ type PlacesErrorToolFieldMetadata = Vec<String>;
 
 struct PlacesErrorTool;
 
-impl IvoErrorTool<PlacesCtxOptions> for PlacesErrorTool {
+impl IvoErrorTool for PlacesErrorTool {
     type FieldMetadata = PlacesErrorToolFieldMetadata;
     type ErrorPayload = HashMap<String, Vec<String>>;
 
-    fn sanitize(
+    fn sanitize<PlacesCtxOptions>(
         payload: IvoErrorPayload<Self::FieldMetadata>,
         _: &PlacesCtxOptions,
     ) -> Self::ErrorPayload {

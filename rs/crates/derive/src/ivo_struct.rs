@@ -227,7 +227,7 @@ pub fn generate_ivo_input_struct_impls(
             }
         }
 
-        impl<CtxOptions, ErrorTool: ::ivo::__private_types::IvoErrorTool::<CtxOptions>> ::ivo::__private_types::IvoInputStruct<CtxOptions, ErrorTool> for #struct_name { }
+        impl<ErrorTool: ::ivo::__private_types::IvoErrorTool> ::ivo::__private_types::IvoInputStruct<ErrorTool> for #struct_name { }
 
         impl<FieldErrorMetadata: Send + Sync> ::ivo::__private_types::types::WithPartialErrors<FieldErrorMetadata> for #struct_name {
             type PartialErrors = #partial_errors_struct_name<FieldErrorMetadata>;

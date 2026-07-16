@@ -1,7 +1,5 @@
 use std::collections::HashMap;
 
-use crate::__private_types::types::DefaultCtxOptions;
-
 pub type DefaultFieldErrorMetadata = ();
 pub type DefaultErrorPayload = IvoErrorPayload<DefaultFieldErrorMetadata>;
 
@@ -42,13 +40,11 @@ impl<FieldMetadata: Clone> DefaultErrorTool<FieldMetadata> {
     }
 }
 
-impl<CtxOptions, FieldMetadata: Clone + Send + Sync> IvoErrorTool<CtxOptions>
-    for DefaultErrorTool<FieldMetadata>
-{
+impl<FieldMetadata: Clone + Send + Sync> IvoErrorTool for DefaultErrorTool<FieldMetadata> {
     type FieldMetadata = FieldMetadata;
     type ErrorPayload = IvoErrorPayload<Self::FieldMetadata>;
 
-    fn sanitize(
+    fn sanitize<CtxOptions>(
         payload: IvoErrorPayload<Self::FieldMetadata>,
         _: &CtxOptions,
     ) -> Self::ErrorPayload {
@@ -56,12 +52,11 @@ impl<CtxOptions, FieldMetadata: Clone + Send + Sync> IvoErrorTool<CtxOptions>
     }
 }
 
-// ErrorTool trait
-pub trait IvoErrorTool<CtxOptions = DefaultCtxOptions> {
+pub trait IvoErrorTool {
     type FieldMetadata: Clone + Send + Sync;
     type ErrorPayload;
 
-    fn sanitize(
+    fn sanitize<CtxOptions>(
         payload: IvoErrorPayload<Self::FieldMetadata>,
         ctx_options: &CtxOptions,
     ) -> Self::ErrorPayload;

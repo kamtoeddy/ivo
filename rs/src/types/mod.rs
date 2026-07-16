@@ -5,7 +5,6 @@ pub mod internal;
 use std::{collections::HashMap, fmt::Debug, sync::Arc};
 
 use crate::{
-    __private_types::types::DefaultCtxOptions,
     schema::{
         fields::{base::InternalFieldConfig, TimestampConfig},
         options::base::SchemaOptions,
@@ -21,18 +20,18 @@ pub type IvoContext<I: IvoStruct, O: IvoStruct = I> = IvoShared<InternalIvoConte
 pub type IvoSharedInput<I: IvoStruct> = IvoShared<I::Partial>;
 
 pub(crate) type InternalFieldConfigs<
-    I: IvoInputStruct<CtxOptions, ErrorTool>,
+    I: IvoInputStruct<ErrorTool>,
     O: IvoStruct,
     CtxOptions,
-    ErrorTool: IvoErrorTool<CtxOptions>,
+    ErrorTool: IvoErrorTool,
 > = HashMap<&'static str, InternalFieldConfig<I, O, CtxOptions, ErrorTool>>;
 
 pub struct Model<
-    I: IvoInputStruct<CtxOptions, ErrorTool>,
+    I: IvoInputStruct<ErrorTool>,
     O: IvoStruct = I,
-    CtxOptions: Clone + Sync + Send = DefaultCtxOptions,
+    CtxOptions: Clone + Sync + Send = Option<()>,
     Timestamp: Clone + Debug + Send + Sync + 'static = (),
-    ErrorTool: IvoErrorTool<CtxOptions> = DefaultErrorTool,
+    ErrorTool: IvoErrorTool = DefaultErrorTool,
 > {
     pub(crate) field_configs: InternalFieldConfigs<I, O, CtxOptions, ErrorTool>,
     pub(crate) options: SchemaOptions<I, O, CtxOptions, ErrorTool>,

@@ -38,11 +38,11 @@ use crate::{DefaultErrorTool, IvoContext, IvoCtxOptions, IvoRwCtxOptions, Model}
 type AsyncHandlerTrigger<'a> = Box<dyn FnOnce() -> BoxFuture<'a, ()> + Send + Sync + 'a>;
 
 impl<
-        I: IvoInputStruct<CtxOptions, ErrorTool>,
+        I: IvoInputStruct<ErrorTool>,
         O: IvoStruct,
         CtxOptions: Clone + Sync + Send,
         Timestamp: Clone + Debug + Send + Sync + 'static,
-        ErrorTool: IvoErrorTool<CtxOptions>,
+        ErrorTool: IvoErrorTool,
     > Model<I, O, CtxOptions, Timestamp, ErrorTool>
 {
     pub async fn create(

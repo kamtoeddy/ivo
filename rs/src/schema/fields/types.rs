@@ -60,14 +60,7 @@ where
     }
 }
 
-pub trait IntoFieldValidator<
-    T,
-    I: IvoStruct,
-    O: IvoStruct,
-    CtxOptions,
-    ErrorTool: IvoErrorTool<CtxOptions>,
->
-{
+pub trait IntoFieldValidator<T, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool> {
     fn into_uniform(self) -> UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>;
 }
 
@@ -76,7 +69,7 @@ impl<F, Fut, T, I, O, CtxOptions, ErrorTool> IntoFieldValidator<T, I, O, CtxOpti
 where
     I: IvoStruct,
     O: IvoStruct,
-    ErrorTool: IvoErrorTool<CtxOptions>,
+    ErrorTool: IvoErrorTool,
     T: FieldValue,
     F: Fn(T, IvoContext<I, O>, IvoRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = ValidatorResponse<T, ErrorTool::FieldMetadata>> + Send + Sync + 'static,
