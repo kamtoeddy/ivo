@@ -78,7 +78,7 @@ async fn main() {
     println!("\nfailed to create: {:#?}", payload);
 
     assert_eq!(
-        payload.get("username").unwrap()[0].reason,
+        payload.get("username").unwrap().reason,
         USERNAME_REQUIRED_ERROR
     );
 
@@ -105,7 +105,7 @@ async fn main() {
     println!("\nfailed to update: {:#?}", payload);
 
     assert_eq!(
-        payload.unwrap().get("username").unwrap()[0].reason,
+        payload.unwrap().get("username").unwrap().reason,
         USERNAME_REQUIRED_ERROR
     );
 
@@ -132,7 +132,7 @@ async fn main() {
     println!("\nfailed to update: {:#?}", payload);
 
     assert_eq!(
-        payload.unwrap().get("username").unwrap()[0].reason,
+        payload.unwrap().get("username").unwrap().reason,
         USERNAME_REQUIRED_ERROR
     );
 

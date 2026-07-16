@@ -154,7 +154,7 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
         .err()
         .unwrap();
 
-    assert_eq!(err.get("required").unwrap()[0].reason, MIN_LENGTH_ERROR);
+    assert_eq!(err.get("required").unwrap().reason, MIN_LENGTH_ERROR);
     assert_eq!(ctx_options.messages[0], MESSAGE);
 
     handle_failure().await;
@@ -229,7 +229,7 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
 
     match err {
         Some(payload) => {
-            assert_eq!(payload.get("required").unwrap()[0].reason, MIN_LENGTH_ERROR);
+            assert_eq!(payload.get("required").unwrap().reason, MIN_LENGTH_ERROR);
         }
         _ => unreachable!("expected a validation error"),
     }
@@ -306,7 +306,7 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
         .err()
         .unwrap();
 
-    assert_eq!(err.get("required").unwrap()[0].reason, MIN_LENGTH_ERROR);
+    assert_eq!(err.get("required").unwrap().reason, MIN_LENGTH_ERROR);
     assert_eq!(ctx_options.messages[0], MESSAGE);
 
     handle_failure().await;
@@ -382,7 +382,7 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
 
     match err {
         Some(payload) => {
-            assert_eq!(payload.get("required").unwrap()[0].reason, MIN_LENGTH_ERROR);
+            assert_eq!(payload.get("required").unwrap().reason, MIN_LENGTH_ERROR);
         }
         _ => unreachable!("expected a validation error"),
     }

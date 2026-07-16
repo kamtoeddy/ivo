@@ -14,5 +14,7 @@ pub use types::internal as __private_types;
 pub use ivo_derive::{IvoInputStruct, IvoStruct};
 
 pub use schema::fields::IvoField;
-pub use types::internal::{DefaultErrorTool, FieldError, IvoErrorTool, IvoInputStruct, IvoStruct};
+pub use types::internal::{
+    DefaultErrorTool, IvoErrorPayload, IvoErrorTool, IvoInputStruct, IvoStruct,
+};
 pub use types::{IvoContext, IvoCtxOptions, IvoRwCtxOptions, IvoShared, IvoSharedInput, Model};

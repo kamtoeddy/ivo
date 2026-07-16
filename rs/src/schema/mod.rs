@@ -32,11 +32,11 @@ const STYLE_FONT_BOLD: &str = "\x1b[1m";
 const STYLE_RESET: &str = "\x1b[0m";
 
 impl<
-        I: IvoInputStruct<ErrorTool>,
+        I: IvoInputStruct<CtxOptions, ErrorTool>,
         O: IvoStruct,
         CtxOptions: Clone + Sync + Send,
         Timestamp: Clone + Debug + Send + Sync + 'static,
-        ErrorTool: IvoErrorTool,
+        ErrorTool: IvoErrorTool<CtxOptions>,
     > Model<I, O, CtxOptions, Timestamp, ErrorTool>
 {
     #[track_caller]
@@ -825,7 +825,7 @@ pub struct FieldBuilder<
     O: IvoStruct,
     CtxOptions,
     T: FieldValue,
-    ErrorTool: IvoErrorTool,
+    ErrorTool: IvoErrorTool<CtxOptions>,
     WithTimestamps = No,
 > {
     #[expect(clippy::type_complexity)]
@@ -842,7 +842,7 @@ impl<
         O: IvoStruct,
         CtxOptions,
         Timestamp: Clone + Debug + Send + Sync + 'static,
-        ErrorTool: IvoErrorTool,
+        ErrorTool: IvoErrorTool<CtxOptions>,
     > FieldBuilder<I, O, CtxOptions, Timestamp, ErrorTool>
 {
     fn new() -> Self {
@@ -868,7 +868,7 @@ impl<
         O: IvoStruct,
         CtxOptions,
         Timestamp: Clone + Debug + Send + Sync + 'static,
-        ErrorTool: IvoErrorTool,
+        ErrorTool: IvoErrorTool<CtxOptions>,
     > FieldBuilder<I, O, CtxOptions, Timestamp, ErrorTool>
 {
     pub fn timestamps<BuildableConfig, R>(

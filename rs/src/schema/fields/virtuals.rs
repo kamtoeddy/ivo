@@ -24,7 +24,7 @@ pub struct VirtualFieldBuilder<
     I: IvoStruct,
     O: IvoStruct,
     CtxOptions,
-    ErrorTool: IvoErrorTool,
+    ErrorTool: IvoErrorTool<CtxOptions>,
     HasValidator = No,
     HasAlias = No,
     HasRevalidator = No,
@@ -75,7 +75,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorTool: IvoErrorTool<CtxOptions>,
     >
     VirtualFieldBuilder<
         T,
@@ -137,7 +137,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorTool: IvoErrorTool<CtxOptions>,
     > Default
     for VirtualFieldBuilder<
         T,
@@ -176,7 +176,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorTool: IvoErrorTool<CtxOptions>,
     > BuildableFieldConfig<I, O, CtxOptions, ErrorTool>
     for VirtualFieldBuilder<
         T,
@@ -221,7 +221,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorTool: IvoErrorTool<CtxOptions>,
     > VirtualFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasValidator, No, HasRevalidator>
 {
     /// this can used to mask the actual name of the virtual field from the public
@@ -247,8 +247,14 @@ impl<
     }
 }
 
-impl<HasAlias, T: FieldValue, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool>
-    VirtualFieldBuilder<T, I, O, CtxOptions, ErrorTool, No, HasAlias>
+impl<
+        HasAlias,
+        T: FieldValue,
+        I: IvoStruct,
+        O: IvoStruct,
+        CtxOptions,
+        ErrorTool: IvoErrorTool<CtxOptions>,
+    > VirtualFieldBuilder<T, I, O, CtxOptions, ErrorTool, No, HasAlias>
 {
     pub fn validate<F>(
         self,
@@ -265,8 +271,14 @@ impl<HasAlias, T: FieldValue, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool:
     }
 }
 
-impl<HasAlias, T: FieldValue, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool>
-    VirtualFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, HasAlias>
+impl<
+        HasAlias,
+        T: FieldValue,
+        I: IvoStruct,
+        O: IvoStruct,
+        CtxOptions,
+        ErrorTool: IvoErrorTool<CtxOptions>,
+    > VirtualFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, HasAlias>
 {
     pub fn re_validate<F>(
         self,
@@ -291,7 +303,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorTool: IvoErrorTool<CtxOptions>,
     > VirtualFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, HasAlias, HasRevalidator>
 {
     pub fn required<R>(
@@ -319,7 +331,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorTool: IvoErrorTool<CtxOptions>,
     >
     VirtualFieldBuilder<
         T,
@@ -372,7 +384,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorTool: IvoErrorTool<CtxOptions>,
     >
     VirtualFieldBuilder<
         T,
@@ -488,7 +500,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorTool: IvoErrorTool<CtxOptions>,
     >
     VirtualFieldBuilder<
         T,
@@ -573,7 +585,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorTool: IvoErrorTool<CtxOptions>,
     >
     VirtualFieldBuilder<
         T,

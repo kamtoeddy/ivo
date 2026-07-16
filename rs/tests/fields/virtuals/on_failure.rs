@@ -65,7 +65,7 @@ async fn should_trigger_on_failure_handlers_at_creation() {
     match r {
         Err((payload, handle_failure, _)) => {
             assert_eq!(
-                payload.get("virtual_field").unwrap()[0].reason,
+                payload.get("virtual_field").unwrap().reason,
                 "validation failed".to_string()
             );
             handle_failure().await;
@@ -142,7 +142,7 @@ async fn should_trigger_on_failure_handlers_at_creation_with_alias() {
     match r {
         Err((payload, handle_failure, _)) => {
             assert_eq!(
-                payload.get("virtual_alias").unwrap()[0].reason,
+                payload.get("virtual_alias").unwrap().reason,
                 "validation failed".to_string()
             );
             handle_failure().await;
@@ -218,7 +218,7 @@ async fn should_trigger_on_failure_handlers_at_creation_with_alias_same_as_depen
     match r {
         Err((payload, handle_failure, _)) => {
             assert_eq!(
-                payload.get("dependent").unwrap()[0].reason,
+                payload.get("dependent").unwrap().reason,
                 "validation failed".to_string()
             );
             handle_failure().await;
@@ -296,7 +296,7 @@ async fn should_trigger_on_failure_handlers_during_updates() {
     match r {
         Err((Some(payload), handle_failure, _)) => {
             assert_eq!(
-                payload.get("virtual_field").unwrap()[0].reason,
+                payload.get("virtual_field").unwrap().reason,
                 "validation failed".to_string()
             );
 
@@ -376,7 +376,7 @@ async fn should_trigger_on_failure_handlers_during_updates_with_alias() {
     match r {
         Err((Some(payload), handle_failure, _)) => {
             assert_eq!(
-                payload.get("virtual_alias").unwrap()[0].reason,
+                payload.get("virtual_alias").unwrap().reason,
                 "validation failed".to_string()
             );
 
@@ -456,7 +456,7 @@ async fn should_trigger_on_failure_handlers_during_updates_with_alias_same_as_de
     match r {
         Err((Some(payload), handle_failure, _)) => {
             assert_eq!(
-                payload.get("dependent").unwrap()[0].reason,
+                payload.get("dependent").unwrap().reason,
                 "validation failed".to_string()
             );
 
@@ -548,7 +548,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
             assert!(payload.get("virtual_field").is_none());
 
             assert_eq!(
-                payload.get("virtual_field2").unwrap()[0].reason,
+                payload.get("virtual_field2").unwrap().reason,
                 "validation failed".to_string()
             );
 
@@ -641,7 +641,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
             assert!(payload.get("virtual_alias").is_none());
 
             assert_eq!(
-                payload.get("virtual_field2").unwrap()[0].reason,
+                payload.get("virtual_field2").unwrap().reason,
                 "validation failed".to_string()
             );
 
@@ -734,7 +734,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
             assert!(payload.get("dependent").is_none());
 
             assert_eq!(
-                payload.get("virtual_field2").unwrap()[0].reason,
+                payload.get("virtual_field2").unwrap().reason,
                 "validation failed".to_string()
             );
 
@@ -829,7 +829,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
             assert!(payload.get("virtual_field").is_none());
 
             assert_eq!(
-                payload.get("virtual_field2").unwrap()[0].reason,
+                payload.get("virtual_field2").unwrap().reason,
                 "validation failed".to_string()
             );
 
@@ -925,7 +925,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
             assert!(payload.get("virtual_alias").is_none());
 
             assert_eq!(
-                payload.get("virtual_field2").unwrap()[0].reason,
+                payload.get("virtual_field2").unwrap().reason,
                 "validation failed".to_string()
             );
 
@@ -1021,7 +1021,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
             assert!(payload.get("dependent").is_none());
 
             assert_eq!(
-                payload.get("virtual_field2").unwrap()[0].reason,
+                payload.get("virtual_field2").unwrap().reason,
                 "validation failed".to_string()
             );
 
@@ -1113,7 +1113,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
             assert!(payload.get("virtual_field").is_none());
 
             assert_eq!(
-                payload.get("virtual_field2").unwrap()[0].reason,
+                payload.get("virtual_field2").unwrap().reason,
                 "validation failed".to_string()
             );
 
@@ -1206,7 +1206,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
             assert!(payload.get("virtual_alias").is_none());
 
             assert_eq!(
-                payload.get("virtual_field2").unwrap()[0].reason,
+                payload.get("virtual_field2").unwrap().reason,
                 "validation failed".to_string()
             );
 
@@ -1299,7 +1299,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
             assert!(payload.get("dependent").is_none());
 
             assert_eq!(
-                payload.get("virtual_field2").unwrap()[0].reason,
+                payload.get("virtual_field2").unwrap().reason,
                 "validation failed".to_string()
             );
 
@@ -1396,7 +1396,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
             assert!(payload.get("virtual_field").is_none());
 
             assert_eq!(
-                payload.get("virtual_field2").unwrap()[0].reason,
+                payload.get("virtual_field2").unwrap().reason,
                 "validation failed".to_string()
             );
 
@@ -1494,7 +1494,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
             assert!(payload.get("virtual_alias").is_none());
 
             assert_eq!(
-                payload.get("virtual_field2").unwrap()[0].reason,
+                payload.get("virtual_field2").unwrap().reason,
                 "validation failed".to_string()
             );
 
@@ -1592,7 +1592,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
             assert!(payload.get("dependent").is_none());
 
             assert_eq!(
-                payload.get("virtual_field2").unwrap()[0].reason,
+                payload.get("virtual_field2").unwrap().reason,
                 "validation failed".to_string()
             );
 

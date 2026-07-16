@@ -253,7 +253,7 @@ async fn should_respect_the_required_rule() {
 
     match r {
         Err((payload, _, _)) => assert_eq!(
-            payload.get("virtual_field").unwrap()[0].reason,
+            payload.get("virtual_field").unwrap().reason,
             "virtual_field is required to create at this time"
         ),
         _ => unreachable!("expected a validation error"),
@@ -294,7 +294,7 @@ async fn should_respect_the_required_rule() {
 
     match r {
         Err((Some(payload), _, _)) => assert_eq!(
-            payload.get("virtual_field").unwrap()[0].reason,
+            payload.get("virtual_field").unwrap().reason,
             "virtual_field is required for this update"
         ),
         _ => unreachable!("expected a validation error"),
@@ -380,7 +380,7 @@ async fn should_respect_the_required_rule_with_alias() {
 
     match r {
         Err((payload, _, _)) => assert_eq!(
-            payload.get("virtual_alias").unwrap()[0].reason,
+            payload.get("virtual_alias").unwrap().reason,
             "virtual_field is required to create at this time"
         ),
         _ => unreachable!("expected a validation error"),
@@ -421,7 +421,7 @@ async fn should_respect_the_required_rule_with_alias() {
 
     match r {
         Err((Some(payload), _, _)) => assert_eq!(
-            payload.get("virtual_alias").unwrap()[0].reason,
+            payload.get("virtual_alias").unwrap().reason,
             "virtual_field is required for this update"
         ),
         _ => unreachable!("expected a validation error"),
@@ -507,7 +507,7 @@ async fn should_respect_the_required_rule_with_alias_same_as_dependent() {
 
     match r {
         Err((payload, _, _)) => assert_eq!(
-            payload.get("dependent").unwrap()[0].reason,
+            payload.get("dependent").unwrap().reason,
             "virtual_field is required to create at this time"
         ),
         _ => unreachable!("expected a validation error"),
@@ -548,7 +548,7 @@ async fn should_respect_the_required_rule_with_alias_same_as_dependent() {
 
     match r {
         Err((Some(payload), _, _)) => assert_eq!(
-            payload.get("dependent").unwrap()[0].reason,
+            payload.get("dependent").unwrap().reason,
             "virtual_field is required for this update"
         ),
         _ => unreachable!("expected a validation error"),
@@ -620,7 +620,7 @@ async fn should_not_create_if_primary_validation_fails() {
 
         match r {
             Err((p, _, _)) => {
-                assert_eq!(p.get("virtual_field").unwrap()[0].reason, MIN_LENGTH_ERROR);
+                assert_eq!(p.get("virtual_field").unwrap().reason, MIN_LENGTH_ERROR);
             }
             _ => unreachable!("expected a validation error"),
         }
@@ -712,7 +712,7 @@ async fn should_not_create_if_primary_validation_fails_with_alias() {
 
         match r {
             Err((p, _, _)) => {
-                assert_eq!(p.get("virtual_alias").unwrap()[0].reason, MIN_LENGTH_ERROR);
+                assert_eq!(p.get("virtual_alias").unwrap().reason, MIN_LENGTH_ERROR);
             }
             _ => unreachable!("expected a validation error"),
         }
@@ -804,7 +804,7 @@ async fn should_not_create_if_primary_validation_fails_with_alias_same_as_depend
 
         match r {
             Err((p, _, _)) => {
-                assert_eq!(p.get("dependent").unwrap()[0].reason, MIN_LENGTH_ERROR);
+                assert_eq!(p.get("dependent").unwrap().reason, MIN_LENGTH_ERROR);
             }
             _ => unreachable!("expected a validation error"),
         }
@@ -894,7 +894,7 @@ async fn should_not_update_if_primary_validation_fails() {
         match r {
             Err((Some(payload), _, _)) => {
                 assert_eq!(
-                    payload.get("virtual_field").unwrap()[0].reason,
+                    payload.get("virtual_field").unwrap().reason,
                     OUT_OF_RANGE_ERROR
                 )
             }
@@ -996,7 +996,7 @@ async fn should_not_update_if_primary_validation_fails_with_alias() {
         match r {
             Err((Some(payload), _, _)) => {
                 assert_eq!(
-                    payload.get("virtual_alias").unwrap()[0].reason,
+                    payload.get("virtual_alias").unwrap().reason,
                     OUT_OF_RANGE_ERROR
                 )
             }
@@ -1097,10 +1097,7 @@ async fn should_not_update_if_primary_validation_fails_with_alias_same_as_depend
 
         match r {
             Err((Some(payload), _, _)) => {
-                assert_eq!(
-                    payload.get("dependent").unwrap()[0].reason,
-                    OUT_OF_RANGE_ERROR
-                )
+                assert_eq!(payload.get("dependent").unwrap().reason, OUT_OF_RANGE_ERROR)
             }
             _ => unreachable!("expected a validation error"),
         }
@@ -1473,11 +1470,11 @@ async fn should_properly_handle_grouped_required_errors() {
 
     assert!(payload.get("lax_2").is_none());
     assert_eq!(
-        payload.get("virtual_field").unwrap()[0].reason,
+        payload.get("virtual_field").unwrap().reason,
         EXPECTED_VIRTUAL_OR_LAX_1
     );
     assert_eq!(
-        payload.get("lax_1").unwrap()[0].reason,
+        payload.get("lax_1").unwrap().reason,
         EXPECTED_VIRTUAL_OR_LAX_1
     );
 
@@ -1498,10 +1495,10 @@ async fn should_properly_handle_grouped_required_errors() {
 
     assert!(payload.get("lax_2").is_none());
     assert_eq!(
-        payload.get("virtual_field").unwrap()[0].reason,
+        payload.get("virtual_field").unwrap().reason,
         VIRTUAL_IS_MISSING
     );
-    assert_eq!(payload.get("lax_1").unwrap()[0].reason, LAX_1_IS_MISSING);
+    assert_eq!(payload.get("lax_1").unwrap().reason, LAX_1_IS_MISSING);
 
     // updates
 
@@ -1531,11 +1528,11 @@ async fn should_properly_handle_grouped_required_errors() {
         Some(payload) => {
             assert!(payload.get("lax_2").is_none());
             assert_eq!(
-                payload.get("virtual_field").unwrap()[0].reason,
+                payload.get("virtual_field").unwrap().reason,
                 EXPECTED_VIRTUAL_OR_LAX_1
             );
             assert_eq!(
-                payload.get("lax_1").unwrap()[0].reason,
+                payload.get("lax_1").unwrap().reason,
                 EXPECTED_VIRTUAL_OR_LAX_1
             );
         }
@@ -1562,10 +1559,10 @@ async fn should_properly_handle_grouped_required_errors() {
         Some(payload) => {
             assert!(payload.get("lax_2").is_none());
             assert_eq!(
-                payload.get("virtual_field").unwrap()[0].reason,
+                payload.get("virtual_field").unwrap().reason,
                 VIRTUAL_IS_MISSING
             );
-            assert_eq!(payload.get("lax_1").unwrap()[0].reason, LAX_1_IS_MISSING);
+            assert_eq!(payload.get("lax_1").unwrap().reason, LAX_1_IS_MISSING);
         }
         _ => unreachable!("expected a validation error"),
     }
@@ -1667,11 +1664,11 @@ async fn should_properly_handle_grouped_required_errors_with_alias() {
 
     assert!(payload.get("lax_2").is_none());
     assert_eq!(
-        payload.get("virtual_alias").unwrap()[0].reason,
+        payload.get("virtual_alias").unwrap().reason,
         EXPECTED_VIRTUAL_OR_LAX_1
     );
     assert_eq!(
-        payload.get("lax_1").unwrap()[0].reason,
+        payload.get("lax_1").unwrap().reason,
         EXPECTED_VIRTUAL_OR_LAX_1
     );
 
@@ -1692,10 +1689,10 @@ async fn should_properly_handle_grouped_required_errors_with_alias() {
 
     assert!(payload.get("lax_2").is_none());
     assert_eq!(
-        payload.get("virtual_alias").unwrap()[0].reason,
+        payload.get("virtual_alias").unwrap().reason,
         VIRTUAL_IS_MISSING
     );
-    assert_eq!(payload.get("lax_1").unwrap()[0].reason, LAX_1_IS_MISSING);
+    assert_eq!(payload.get("lax_1").unwrap().reason, LAX_1_IS_MISSING);
 
     // updates
 
@@ -1725,11 +1722,11 @@ async fn should_properly_handle_grouped_required_errors_with_alias() {
         Some(payload) => {
             assert!(payload.get("lax_2").is_none());
             assert_eq!(
-                payload.get("virtual_alias").unwrap()[0].reason,
+                payload.get("virtual_alias").unwrap().reason,
                 EXPECTED_VIRTUAL_OR_LAX_1
             );
             assert_eq!(
-                payload.get("lax_1").unwrap()[0].reason,
+                payload.get("lax_1").unwrap().reason,
                 EXPECTED_VIRTUAL_OR_LAX_1
             );
         }
@@ -1756,10 +1753,10 @@ async fn should_properly_handle_grouped_required_errors_with_alias() {
         Some(payload) => {
             assert!(payload.get("lax_2").is_none());
             assert_eq!(
-                payload.get("virtual_alias").unwrap()[0].reason,
+                payload.get("virtual_alias").unwrap().reason,
                 VIRTUAL_IS_MISSING
             );
-            assert_eq!(payload.get("lax_1").unwrap()[0].reason, LAX_1_IS_MISSING);
+            assert_eq!(payload.get("lax_1").unwrap().reason, LAX_1_IS_MISSING);
         }
         _ => unreachable!("expected a validation error"),
     }
@@ -1861,11 +1858,11 @@ async fn should_properly_handle_grouped_required_errors_with_alias_same_as_depen
 
     assert!(payload.get("lax_2").is_none());
     assert_eq!(
-        payload.get("dependent").unwrap()[0].reason,
+        payload.get("dependent").unwrap().reason,
         EXPECTED_VIRTUAL_OR_LAX_1
     );
     assert_eq!(
-        payload.get("lax_1").unwrap()[0].reason,
+        payload.get("lax_1").unwrap().reason,
         EXPECTED_VIRTUAL_OR_LAX_1
     );
 
@@ -1885,11 +1882,8 @@ async fn should_properly_handle_grouped_required_errors_with_alias_same_as_depen
         .unwrap();
 
     assert!(payload.get("lax_2").is_none());
-    assert_eq!(
-        payload.get("dependent").unwrap()[0].reason,
-        VIRTUAL_IS_MISSING
-    );
-    assert_eq!(payload.get("lax_1").unwrap()[0].reason, LAX_1_IS_MISSING);
+    assert_eq!(payload.get("dependent").unwrap().reason, VIRTUAL_IS_MISSING);
+    assert_eq!(payload.get("lax_1").unwrap().reason, LAX_1_IS_MISSING);
 
     // updates
 
@@ -1919,11 +1913,11 @@ async fn should_properly_handle_grouped_required_errors_with_alias_same_as_depen
         Some(payload) => {
             assert!(payload.get("lax_2").is_none());
             assert_eq!(
-                payload.get("dependent").unwrap()[0].reason,
+                payload.get("dependent").unwrap().reason,
                 EXPECTED_VIRTUAL_OR_LAX_1
             );
             assert_eq!(
-                payload.get("lax_1").unwrap()[0].reason,
+                payload.get("lax_1").unwrap().reason,
                 EXPECTED_VIRTUAL_OR_LAX_1
             );
         }
@@ -1949,11 +1943,8 @@ async fn should_properly_handle_grouped_required_errors_with_alias_same_as_depen
     match error {
         Some(payload) => {
             assert!(payload.get("lax_2").is_none());
-            assert_eq!(
-                payload.get("dependent").unwrap()[0].reason,
-                VIRTUAL_IS_MISSING
-            );
-            assert_eq!(payload.get("lax_1").unwrap()[0].reason, LAX_1_IS_MISSING);
+            assert_eq!(payload.get("dependent").unwrap().reason, VIRTUAL_IS_MISSING);
+            assert_eq!(payload.get("lax_1").unwrap().reason, LAX_1_IS_MISSING);
         }
         _ => unreachable!("expected a validation error"),
     }
@@ -2035,7 +2026,7 @@ async fn should_not_create_if_re_validation_fails() {
         match r {
             Err((p, _, _)) => {
                 assert_eq!(
-                    p.get("virtual_field").unwrap()[0].reason,
+                    p.get("virtual_field").unwrap().reason,
                     MIN_REVALIDATION_LENGTH_ERROR
                 );
             }
@@ -2139,7 +2130,7 @@ async fn should_not_create_if_re_validation_fails_with_alias() {
         match r {
             Err((p, _, _)) => {
                 assert_eq!(
-                    p.get("virtual_alias").unwrap()[0].reason,
+                    p.get("virtual_alias").unwrap().reason,
                     MIN_REVALIDATION_LENGTH_ERROR
                 );
             }
@@ -2243,7 +2234,7 @@ async fn should_not_create_if_re_validation_fails_with_alias_same_as_dependent()
         match r {
             Err((p, _, _)) => {
                 assert_eq!(
-                    p.get("dependent").unwrap()[0].reason,
+                    p.get("dependent").unwrap().reason,
                     MIN_REVALIDATION_LENGTH_ERROR
                 );
             }
@@ -2350,7 +2341,7 @@ async fn should_not_update_if_re_validation_fails() {
         match r {
             Err((Some(payload), _, _)) => {
                 assert_eq!(
-                    payload.get("virtual_field").unwrap()[0].reason,
+                    payload.get("virtual_field").unwrap().reason,
                     REVALIDATED_OUT_OF_RANGE_ERROR
                 );
             }
@@ -2466,7 +2457,7 @@ async fn should_not_update_if_re_validation_fails_with_alias() {
         match r {
             Err((Some(payload), _, _)) => {
                 assert_eq!(
-                    payload.get("virtual_alias").unwrap()[0].reason,
+                    payload.get("virtual_alias").unwrap().reason,
                     REVALIDATED_OUT_OF_RANGE_ERROR
                 );
             }
@@ -2582,7 +2573,7 @@ async fn should_not_update_if_re_validation_fails_with_alias_same_as_dependent()
         match r {
             Err((Some(payload), _, _)) => {
                 assert_eq!(
-                    payload.get("dependent").unwrap()[0].reason,
+                    payload.get("dependent").unwrap().reason,
                     REVALIDATED_OUT_OF_RANGE_ERROR
                 );
             }
@@ -3298,7 +3289,7 @@ async fn should_respect_post_validation_config() {
             assert!(p.get("virtual_field_1").is_none());
             assert!(p.get("virtual_field_2").is_none());
             assert_eq!(
-                p.get("virtual_field").unwrap()[0].reason,
+                p.get("virtual_field").unwrap().reason,
                 virtual_value,
                 "should ignore unrelated errors returned from pre-validator in post-validation"
             );
@@ -3324,7 +3315,7 @@ async fn should_respect_post_validation_config() {
             assert!(p.get("virtual_field_1").is_none());
             assert!(p.get("virtual_field_2").is_none());
             assert_eq!(
-                p.get("virtual_field").unwrap()[0].reason,
+                p.get("virtual_field").unwrap().reason,
                 required,
                 "should ignore unrelated errors returned from post-validator"
             );
@@ -3350,7 +3341,7 @@ async fn should_respect_post_validation_config() {
             assert!(p.get("virtual_field").is_none());
             assert!(p.get("virtual_field_2").is_none());
             assert_eq!(
-                p.get("virtual_field_1").unwrap()[0].reason,
+                p.get("virtual_field_1").unwrap().reason,
                 virtual_field_1,
                 "should not create if one field has an error after pre-validator in post-validation"
             );
@@ -3375,12 +3366,12 @@ async fn should_respect_post_validation_config() {
         Err((p, _, _)) => {
             assert!(p.get("virtual_field_2").is_none());
             assert_eq!(
-                p.get("virtual_field").unwrap()[0].reason,
+                p.get("virtual_field").unwrap().reason,
                 virtual_value,
                 "should not create if any field has an error after pre-validator in post-validation"
             );
             assert_eq!(
-                p.get("virtual_field_1").unwrap()[0].reason,
+                p.get("virtual_field_1").unwrap().reason,
                 virtual_value,
                 "should not create if any field has an error after pre-validator in post-validation"
             );
@@ -3406,7 +3397,7 @@ async fn should_respect_post_validation_config() {
             assert!(p.get("virtual_field_1").is_none());
             assert!(p.get("virtual_field_2").is_none());
             assert_eq!(
-                p.get("virtual_field").unwrap()[0].reason,
+                p.get("virtual_field").unwrap().reason,
                 virtual_value,
                 "should not create if one field has an error after post-validation"
             );
@@ -3431,12 +3422,12 @@ async fn should_respect_post_validation_config() {
         Err((p, _, _)) => {
             assert!(p.get("virtual_field_2").is_none());
             assert_eq!(
-                p.get("virtual_field").unwrap()[0].reason,
+                p.get("virtual_field").unwrap().reason,
                 virtual_value,
                 "should not create if any field has an error after post-validation"
             );
             assert_eq!(
-                p.get("virtual_field_1").unwrap()[0].reason,
+                p.get("virtual_field_1").unwrap().reason,
                 virtual_value,
                 "should not create if any field has an error after post-validation"
             );
@@ -3468,7 +3459,7 @@ async fn should_respect_post_validation_config() {
             assert!(payload.get("virtual_field").is_none());
             assert!(payload.get("virtual_field_2").is_none());
             assert_eq!(
-                payload.get("virtual_field_1").unwrap()[0].reason,
+                payload.get("virtual_field_1").unwrap().reason,
                 virtual_field_1,
                 "should not update if one field has an error after pre-validator in post-validation"
             );
@@ -3497,12 +3488,12 @@ async fn should_respect_post_validation_config() {
         Err((Some(payload), _, _)) => {
             assert!(payload.get("virtual_field_2").is_none());
             assert_eq!(
-                payload.get("virtual_field").unwrap()[0].reason,
+                payload.get("virtual_field").unwrap().reason,
                 virtual_value,
                 "should not create if any field has an error after pre-validator in post-validation"
             );
             assert_eq!(
-                payload.get("virtual_field_1").unwrap()[0].reason,
+                payload.get("virtual_field_1").unwrap().reason,
                 virtual_value,
                 "should not create if any field has an error after pre-validator in post-validation"
             );
@@ -3529,7 +3520,7 @@ async fn should_respect_post_validation_config() {
             assert!(payload.get("virtual_field_1").is_none());
             assert!(payload.get("virtual_field_2").is_none());
             assert_eq!(
-                payload.get("virtual_field").unwrap()[0].reason,
+                payload.get("virtual_field").unwrap().reason,
                 virtual_value,
                 "should ignore unrelated errors returned from pre-validator in post-validation"
             );
@@ -3556,7 +3547,7 @@ async fn should_respect_post_validation_config() {
             assert!(payload.get("virtual_field_1").is_none());
             assert!(payload.get("virtual_field_2").is_none());
             assert_eq!(
-                payload.get("virtual_field").unwrap()[0].reason,
+                payload.get("virtual_field").unwrap().reason,
                 virtual_value,
                 "should ignore unrelated errors returned from post-validator"
             );
@@ -3721,7 +3712,7 @@ async fn should_respect_post_validation_config_with_alias() {
             assert!(p.get("virtual_field_1").is_none());
             assert!(p.get("virtual_field_2").is_none());
             assert_eq!(
-                p.get("virtual_alias").unwrap()[0].reason,
+                p.get("virtual_alias").unwrap().reason,
                 virtual_value,
                 "should ignore unrelated errors returned from pre-validator in post-validation"
             );
@@ -3747,7 +3738,7 @@ async fn should_respect_post_validation_config_with_alias() {
             assert!(p.get("virtual_field_1").is_none());
             assert!(p.get("virtual_field_2").is_none());
             assert_eq!(
-                p.get("virtual_alias").unwrap()[0].reason,
+                p.get("virtual_alias").unwrap().reason,
                 required,
                 "should ignore unrelated errors returned from post-validator"
             );
@@ -3773,7 +3764,7 @@ async fn should_respect_post_validation_config_with_alias() {
             assert!(p.get("virtual_alias").is_none());
             assert!(p.get("virtual_field_2").is_none());
             assert_eq!(
-                p.get("virtual_field_1").unwrap()[0].reason,
+                p.get("virtual_field_1").unwrap().reason,
                 virtual_field_1,
                 "should not create if one field has an error after pre-validator in post-validation"
             );
@@ -3798,12 +3789,12 @@ async fn should_respect_post_validation_config_with_alias() {
         Err((p, _, _)) => {
             assert!(p.get("virtual_field_2").is_none());
             assert_eq!(
-                p.get("virtual_alias").unwrap()[0].reason,
+                p.get("virtual_alias").unwrap().reason,
                 virtual_value,
                 "should not create if any field has an error after pre-validator in post-validation"
             );
             assert_eq!(
-                p.get("virtual_field_1").unwrap()[0].reason,
+                p.get("virtual_field_1").unwrap().reason,
                 virtual_value,
                 "should not create if any field has an error after pre-validator in post-validation"
             );
@@ -3829,7 +3820,7 @@ async fn should_respect_post_validation_config_with_alias() {
             assert!(p.get("virtual_field_1").is_none());
             assert!(p.get("virtual_field_2").is_none());
             assert_eq!(
-                p.get("virtual_alias").unwrap()[0].reason,
+                p.get("virtual_alias").unwrap().reason,
                 virtual_value,
                 "should not create if one field has an error after post-validation"
             );
@@ -3854,12 +3845,12 @@ async fn should_respect_post_validation_config_with_alias() {
         Err((p, _, _)) => {
             assert!(p.get("virtual_field_2").is_none());
             assert_eq!(
-                p.get("virtual_alias").unwrap()[0].reason,
+                p.get("virtual_alias").unwrap().reason,
                 virtual_value,
                 "should not create if any field has an error after post-validation"
             );
             assert_eq!(
-                p.get("virtual_field_1").unwrap()[0].reason,
+                p.get("virtual_field_1").unwrap().reason,
                 virtual_value,
                 "should not create if any field has an error after post-validation"
             );
@@ -3891,7 +3882,7 @@ async fn should_respect_post_validation_config_with_alias() {
             assert!(payload.get("virtual_alias").is_none());
             assert!(payload.get("virtual_field_2").is_none());
             assert_eq!(
-                payload.get("virtual_field_1").unwrap()[0].reason,
+                payload.get("virtual_field_1").unwrap().reason,
                 virtual_field_1,
                 "should not update if one field has an error after pre-validator in post-validation"
             );
@@ -3920,12 +3911,12 @@ async fn should_respect_post_validation_config_with_alias() {
         Err((Some(payload), _, _)) => {
             assert!(payload.get("virtual_field_2").is_none());
             assert_eq!(
-                payload.get("virtual_alias").unwrap()[0].reason,
+                payload.get("virtual_alias").unwrap().reason,
                 virtual_value,
                 "should not create if any field has an error after pre-validator in post-validation"
             );
             assert_eq!(
-                payload.get("virtual_field_1").unwrap()[0].reason,
+                payload.get("virtual_field_1").unwrap().reason,
                 virtual_value,
                 "should not create if any field has an error after pre-validator in post-validation"
             );
@@ -3952,7 +3943,7 @@ async fn should_respect_post_validation_config_with_alias() {
             assert!(payload.get("virtual_field_1").is_none());
             assert!(payload.get("virtual_field_2").is_none());
             assert_eq!(
-                payload.get("virtual_alias").unwrap()[0].reason,
+                payload.get("virtual_alias").unwrap().reason,
                 virtual_value,
                 "should ignore unrelated errors returned from pre-validator in post-validation"
             );
@@ -3979,7 +3970,7 @@ async fn should_respect_post_validation_config_with_alias() {
             assert!(payload.get("virtual_field_1").is_none());
             assert!(payload.get("virtual_field_2").is_none());
             assert_eq!(
-                payload.get("virtual_alias").unwrap()[0].reason,
+                payload.get("virtual_alias").unwrap().reason,
                 virtual_value,
                 "should ignore unrelated errors returned from post-validator"
             );
@@ -4142,7 +4133,7 @@ async fn should_respect_post_validation_config_with_alias_same_as_dependent() {
             assert!(p.get("virtual_field_1").is_none());
             assert!(p.get("virtual_field_2").is_none());
             assert_eq!(
-                p.get("dependent").unwrap()[0].reason,
+                p.get("dependent").unwrap().reason,
                 virtual_value,
                 "should ignore unrelated errors returned from pre-validator in post-validation"
             );
@@ -4168,7 +4159,7 @@ async fn should_respect_post_validation_config_with_alias_same_as_dependent() {
             assert!(p.get("virtual_field_1").is_none());
             assert!(p.get("virtual_field_2").is_none());
             assert_eq!(
-                p.get("dependent").unwrap()[0].reason,
+                p.get("dependent").unwrap().reason,
                 required,
                 "should ignore unrelated errors returned from post-validator"
             );
@@ -4194,7 +4185,7 @@ async fn should_respect_post_validation_config_with_alias_same_as_dependent() {
             assert!(p.get("dependent").is_none());
             assert!(p.get("virtual_field_2").is_none());
             assert_eq!(
-                p.get("virtual_field_1").unwrap()[0].reason,
+                p.get("virtual_field_1").unwrap().reason,
                 virtual_field_1,
                 "should not create if one field has an error after pre-validator in post-validation"
             );
@@ -4219,12 +4210,12 @@ async fn should_respect_post_validation_config_with_alias_same_as_dependent() {
         Err((p, _, _)) => {
             assert!(p.get("virtual_field_2").is_none());
             assert_eq!(
-                p.get("dependent").unwrap()[0].reason,
+                p.get("dependent").unwrap().reason,
                 virtual_value,
                 "should not create if any field has an error after pre-validator in post-validation"
             );
             assert_eq!(
-                p.get("virtual_field_1").unwrap()[0].reason,
+                p.get("virtual_field_1").unwrap().reason,
                 virtual_value,
                 "should not create if any field has an error after pre-validator in post-validation"
             );
@@ -4250,7 +4241,7 @@ async fn should_respect_post_validation_config_with_alias_same_as_dependent() {
             assert!(p.get("virtual_field_1").is_none());
             assert!(p.get("virtual_field_2").is_none());
             assert_eq!(
-                p.get("dependent").unwrap()[0].reason,
+                p.get("dependent").unwrap().reason,
                 virtual_value,
                 "should not create if one field has an error after post-validation"
             );
@@ -4275,12 +4266,12 @@ async fn should_respect_post_validation_config_with_alias_same_as_dependent() {
         Err((p, _, _)) => {
             assert!(p.get("virtual_field_2").is_none());
             assert_eq!(
-                p.get("dependent").unwrap()[0].reason,
+                p.get("dependent").unwrap().reason,
                 virtual_value,
                 "should not create if any field has an error after post-validation"
             );
             assert_eq!(
-                p.get("virtual_field_1").unwrap()[0].reason,
+                p.get("virtual_field_1").unwrap().reason,
                 virtual_value,
                 "should not create if any field has an error after post-validation"
             );
@@ -4312,7 +4303,7 @@ async fn should_respect_post_validation_config_with_alias_same_as_dependent() {
             assert!(payload.get("dependent").is_none());
             assert!(payload.get("virtual_field_2").is_none());
             assert_eq!(
-                payload.get("virtual_field_1").unwrap()[0].reason,
+                payload.get("virtual_field_1").unwrap().reason,
                 virtual_field_1,
                 "should not update if one field has an error after pre-validator in post-validation"
             );
@@ -4341,12 +4332,12 @@ async fn should_respect_post_validation_config_with_alias_same_as_dependent() {
         Err((Some(payload), _, _)) => {
             assert!(payload.get("virtual_field_2").is_none());
             assert_eq!(
-                payload.get("dependent").unwrap()[0].reason,
+                payload.get("dependent").unwrap().reason,
                 virtual_value,
                 "should not create if any field has an error after pre-validator in post-validation"
             );
             assert_eq!(
-                payload.get("virtual_field_1").unwrap()[0].reason,
+                payload.get("virtual_field_1").unwrap().reason,
                 virtual_value,
                 "should not create if any field has an error after pre-validator in post-validation"
             );
@@ -4373,7 +4364,7 @@ async fn should_respect_post_validation_config_with_alias_same_as_dependent() {
             assert!(payload.get("virtual_field_1").is_none());
             assert!(payload.get("virtual_field_2").is_none());
             assert_eq!(
-                payload.get("dependent").unwrap()[0].reason,
+                payload.get("dependent").unwrap().reason,
                 virtual_value,
                 "should ignore unrelated errors returned from pre-validator in post-validation"
             );
@@ -4400,7 +4391,7 @@ async fn should_respect_post_validation_config_with_alias_same_as_dependent() {
             assert!(payload.get("virtual_field_1").is_none());
             assert!(payload.get("virtual_field_2").is_none());
             assert_eq!(
-                payload.get("dependent").unwrap()[0].reason,
+                payload.get("dependent").unwrap().reason,
                 virtual_value,
                 "should ignore unrelated errors returned from post-validator"
             );

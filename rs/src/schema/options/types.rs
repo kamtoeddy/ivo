@@ -6,12 +6,13 @@ use std::future::Future;
 use crate::__private_types::types::{
     BooleanResolver, IgnoreUpdateOptionResolver, PartialErrorsMethods,
 };
-use crate::__private_types::IvoInputStruct;
+use crate::__private_types::{FieldError, IvoInputStruct};
 
 use crate::schema::fields::types::RequiredResolver;
-use crate::types::internal::PostValidatorResponse;
-use crate::{schema::types::SuccessHandler, IvoContext, IvoRwCtxOptions, IvoStruct};
-use crate::{FieldError, IvoErrorTool};
+use crate::{
+    schema::types::SuccessHandler, types::internal::PostValidatorResponse, IvoContext,
+    IvoErrorTool, IvoRwCtxOptions, IvoStruct,
+};
 use futures::future::BoxFuture;
 
 pub trait IntoShouldUpdateOptionResolver<I: IvoStruct, O: IvoStruct, CtxOptions> {
@@ -46,10 +47,10 @@ pub struct OnSuccessConfig<I: IvoStruct, O: IvoStruct, CtxOptions> {
 }
 
 pub struct PostValidationConfig<
-    I: IvoInputStruct<ErrorTool>,
+    I: IvoInputStruct<CtxOptions, ErrorTool>,
     O: IvoStruct,
     CtxOptions,
-    ErrorTool: IvoErrorTool,
+    ErrorTool: IvoErrorTool<CtxOptions>,
 > {
     pub fields: Vec<&'static str>,
     pub pre_validator: Option<PostValidator<I, O, CtxOptions, ErrorTool>>,
@@ -57,10 +58,10 @@ pub struct PostValidationConfig<
 }
 
 pub trait IntoPostValidator<
-    I: IvoInputStruct<ErrorTool>,
+    I: IvoInputStruct<CtxOptions, ErrorTool>,
     O: IvoStruct,
     CtxOptions,
-    ErrorTool: IvoErrorTool,
+    ErrorTool: IvoErrorTool<CtxOptions>,
 >
 {
     fn into_validator(self) -> PostValidator<I, O, CtxOptions, ErrorTool>;
@@ -68,11 +69,11 @@ pub trait IntoPostValidator<
 
 impl<F, Fut, I, O, CtxOptions, ErrorTool> IntoPostValidator<I, O, CtxOptions, ErrorTool> for F
 where
-    I: IvoInputStruct<ErrorTool>,
+    I: IvoInputStruct<CtxOptions, ErrorTool>,
     O: IvoStruct,
-    ErrorTool: IvoErrorTool,
+    ErrorTool: IvoErrorTool<CtxOptions>,
     F: Fn(IvoContext<I, O>, IvoRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
-    Fut: Future<Output = PostValidatorResponse<I, ErrorTool>> + Send + Sync + 'static,
+    Fut: Future<Output = PostValidatorResponse<I, CtxOptions, ErrorTool>> + Send + Sync + 'static,
 {
     fn into_validator(self) -> PostValidator<I, O, CtxOptions, ErrorTool> {
         Box::new(move |ctx, o| Box::pin(self(ctx, o)))
@@ -83,27 +84,27 @@ pub type PostValidator<I, O, CtxOptions, ErrorTool> = Box<
     dyn Fn(
             IvoContext<I, O>,
             IvoRwCtxOptions<CtxOptions>,
-        ) -> BoxFuture<'static, PostValidatorResponse<I, ErrorTool>>
+        ) -> BoxFuture<'static, PostValidatorResponse<I, CtxOptions, ErrorTool>>
         + Send
         + Sync
         + 'static,
 >;
 
 pub struct RequiredOptionConfig<
-    I: IvoInputStruct<ErrorTool>,
+    I: IvoInputStruct<CtxOptions, ErrorTool>,
     O: IvoStruct,
     CtxOptions,
-    ErrorTool: IvoErrorTool,
+    ErrorTool: IvoErrorTool<CtxOptions>,
 > {
     pub fields: Vec<&'static str>,
     pub resolver: RequiredOptionResolver<I, O, CtxOptions, ErrorTool>,
 }
 
 pub trait IntoRequiredOptionsResolver<
-    I: IvoInputStruct<ErrorTool>,
+    I: IvoInputStruct<CtxOptions, ErrorTool>,
     O: IvoStruct,
     CtxOptions,
-    ErrorTool: IvoErrorTool,
+    ErrorTool: IvoErrorTool<CtxOptions>,
 >
 {
     fn into_resolver(self) -> RequiredOptionResolver<I, O, CtxOptions, ErrorTool>;
@@ -112,9 +113,9 @@ pub trait IntoRequiredOptionsResolver<
 impl<F, Fut, I, O, CtxOptions, ErrorTool> IntoRequiredOptionsResolver<I, O, CtxOptions, ErrorTool>
     for F
 where
-    I: IvoInputStruct<ErrorTool>,
+    I: IvoInputStruct<CtxOptions, ErrorTool>,
     O: IvoStruct,
-    ErrorTool: IvoErrorTool,
+    ErrorTool: IvoErrorTool<CtxOptions>,
     F: Fn(IvoContext<I, O>, IvoRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = Option<I::PartialErrors>> + Send + Sync + 'static,
 {
@@ -124,10 +125,10 @@ where
 }
 
 pub type RequiredOptionResolver<
-    I: IvoInputStruct<ErrorTool>,
+    I: IvoInputStruct<CtxOptions, ErrorTool>,
     O: IvoStruct,
     CtxOptions,
-    ErrorTool: IvoErrorTool,
+    ErrorTool: IvoErrorTool<CtxOptions>,
 > = Box<
     dyn Fn(
             IvoContext<I, O>,
@@ -138,14 +139,14 @@ pub type RequiredOptionResolver<
         + 'static,
 >;
 
-type UniformRequiredResponse<'a, ErrorTool: IvoErrorTool> =
+type UniformRequiredResponse<'a, CtxOptions, ErrorTool: IvoErrorTool<CtxOptions>> =
     BoxFuture<'a, Option<Vec<(String, FieldError<ErrorTool::FieldMetadata>)>>>;
 
 pub trait UniformRequiredResolver<
-    I: IvoInputStruct<ErrorTool>,
+    I: IvoInputStruct<CtxOptions, ErrorTool>,
     O: IvoStruct,
     CtxOptions: Send + Sync,
-    ErrorTool: IvoErrorTool,
+    ErrorTool: IvoErrorTool<CtxOptions>,
 >
 {
     fn resolve<'a>(
@@ -153,22 +154,22 @@ pub trait UniformRequiredResolver<
         field_names: HashSet<&'a str>,
         ctx: IvoContext<I, O>,
         o: IvoRwCtxOptions<CtxOptions>,
-    ) -> UniformRequiredResponse<'a, ErrorTool>;
+    ) -> UniformRequiredResponse<'a, CtxOptions, ErrorTool>;
 }
 
 impl<I, O, CtxOptions: Send + Sync, ErrorTool> UniformRequiredResolver<I, O, CtxOptions, ErrorTool>
     for RequiredResolver<I, O, CtxOptions>
 where
-    I: IvoInputStruct<ErrorTool>,
+    I: IvoInputStruct<CtxOptions, ErrorTool>,
     O: IvoStruct,
-    ErrorTool: IvoErrorTool,
+    ErrorTool: IvoErrorTool<CtxOptions>,
 {
     fn resolve<'a>(
         &'a self,
         field_names: HashSet<&'a str>,
         ctx: IvoContext<I, O>,
         o: IvoRwCtxOptions<CtxOptions>,
-    ) -> UniformRequiredResponse<'a, ErrorTool> {
+    ) -> UniformRequiredResponse<'a, CtxOptions, ErrorTool> {
         Box::pin(async move {
             self(ctx, o).await.map(|reason| {
                 vec![(
@@ -186,16 +187,16 @@ where
 impl<I, O, CtxOptions: Send + Sync, ErrorTool> UniformRequiredResolver<I, O, CtxOptions, ErrorTool>
     for RequiredOptionConfig<I, O, CtxOptions, ErrorTool>
 where
-    I: IvoInputStruct<ErrorTool>,
+    I: IvoInputStruct<CtxOptions, ErrorTool>,
     O: IvoStruct,
-    ErrorTool: IvoErrorTool,
+    ErrorTool: IvoErrorTool<CtxOptions>,
 {
     fn resolve<'a>(
         &'a self,
         field_names: HashSet<&'a str>,
         ctx: IvoContext<I, O>,
         o: IvoRwCtxOptions<CtxOptions>,
-    ) -> UniformRequiredResponse<'a, ErrorTool> {
+    ) -> UniformRequiredResponse<'a, CtxOptions, ErrorTool> {
         let resolver = &self.resolver;
 
         Box::pin(async move {
@@ -217,10 +218,10 @@ where
 type UniformIgnoreResponse<'a> = BoxFuture<'a, bool>;
 
 pub trait UniformIgnoreResolver<
-    I: IvoInputStruct<ErrorTool>,
+    I: IvoInputStruct<CtxOptions, ErrorTool>,
     O: IvoStruct,
     CtxOptions: Send + Sync,
-    ErrorTool: IvoErrorTool,
+    ErrorTool: IvoErrorTool<CtxOptions>,
 >
 {
     fn resolve<'a>(
@@ -233,9 +234,9 @@ pub trait UniformIgnoreResolver<
 impl<I, O, CtxOptions: Send + Sync, ErrorTool> UniformIgnoreResolver<I, O, CtxOptions, ErrorTool>
     for BooleanResolver<I, O, CtxOptions>
 where
-    I: IvoInputStruct<ErrorTool>,
+    I: IvoInputStruct<CtxOptions, ErrorTool>,
     O: IvoStruct,
-    ErrorTool: IvoErrorTool,
+    ErrorTool: IvoErrorTool<CtxOptions>,
 {
     fn resolve<'a>(
         &'a self,
@@ -249,9 +250,9 @@ where
 impl<I, O, CtxOptions: Send + Sync, ErrorTool> UniformIgnoreResolver<I, O, CtxOptions, ErrorTool>
     for IgnoreUpdateOptionResolver<I, O, CtxOptions>
 where
-    I: IvoInputStruct<ErrorTool>,
+    I: IvoInputStruct<CtxOptions, ErrorTool>,
     O: IvoStruct,
-    ErrorTool: IvoErrorTool,
+    ErrorTool: IvoErrorTool<CtxOptions>,
 {
     fn resolve<'a>(
         &'a self,

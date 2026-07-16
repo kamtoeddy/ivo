@@ -22,7 +22,7 @@ pub struct RequiredFieldBuilder<
     I: IvoStruct,
     O: IvoStruct,
     CtxOptions,
-    ErrorTool: IvoErrorTool,
+    ErrorTool: IvoErrorTool<CtxOptions>,
     HasValidator = No,
     HasRevalidator = No,
     HasRequiredError = No,
@@ -61,7 +61,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorTool: IvoErrorTool<CtxOptions>,
     >
     RequiredFieldBuilder<
         T,
@@ -111,7 +111,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorTool: IvoErrorTool<CtxOptions>,
     > Default
     for RequiredFieldBuilder<
         T,
@@ -144,7 +144,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorTool: IvoErrorTool<CtxOptions>,
     > BuildableFieldConfig<I, O, CtxOptions, ErrorTool>
     for RequiredFieldBuilder<
         T,
@@ -183,7 +183,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorTool: IvoErrorTool<CtxOptions>,
     > RequiredFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasValidator, HasRevalidator>
 {
     pub fn required_error(
@@ -221,7 +221,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorTool: IvoErrorTool<CtxOptions>,
     > RequiredFieldBuilder<T, I, O, CtxOptions, ErrorTool, No, No, HasRequiredError>
 {
     pub fn validate<F>(
@@ -245,7 +245,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorTool: IvoErrorTool<CtxOptions>,
     > RequiredFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, No, HasRequiredError>
 {
     pub fn re_validate<F>(
@@ -271,7 +271,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorTool: IvoErrorTool<CtxOptions>,
     > RequiredFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, HasRevalidator, HasRequiredError>
 {
     pub fn readonly(
@@ -335,7 +335,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorTool: IvoErrorTool<CtxOptions>,
     >
     RequiredFieldBuilder<
         T,
@@ -408,7 +408,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorTool: IvoErrorTool<CtxOptions>,
     >
     RequiredFieldBuilder<
         T,
@@ -481,7 +481,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorTool: IvoErrorTool<CtxOptions>,
     >
     RequiredFieldBuilder<
         T,

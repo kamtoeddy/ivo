@@ -13,7 +13,7 @@ async fn main() {
     println!("\nfailed to create: {:#?}", payload);
 
     assert_eq!(
-        payload.get("username").unwrap()[0].reason,
+        payload.get("username").unwrap().reason,
         "\"username\" is required!"
     );
 

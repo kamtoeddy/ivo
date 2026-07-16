@@ -52,7 +52,7 @@ async fn should_trigger_on_failure_handlers_at_creation() {
     match r {
         Err((payload, handle_failure, _)) => {
             assert_eq!(
-                payload.get("lax").unwrap()[0].reason,
+                payload.get("lax").unwrap().reason,
                 "validation failed".to_string()
             );
             handle_failure().await;
@@ -126,7 +126,7 @@ async fn should_trigger_on_failure_handlers_at_creation_even_if_provided_and_ign
             assert!(payload.get("lax").is_none());
 
             assert_eq!(
-                payload.get("lax2").unwrap()[0].reason,
+                payload.get("lax2").unwrap().reason,
                 "validation failed".to_string()
             );
             handle_failure().await;
@@ -192,7 +192,7 @@ async fn should_trigger_on_failure_handlers_during_updates() {
     match r {
         Err((Some(payload), handle_failure, _)) => {
             assert_eq!(
-                payload.get("lax").unwrap()[0].reason,
+                payload.get("lax").unwrap().reason,
                 "validation failed".to_string()
             );
 
@@ -350,7 +350,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
             assert!(payload.get("lax").is_none());
 
             assert_eq!(
-                payload.get("lax2").unwrap()[0].reason,
+                payload.get("lax2").unwrap().reason,
                 "validation failed".to_string()
             );
 

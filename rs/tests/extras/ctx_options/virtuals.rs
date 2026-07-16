@@ -93,7 +93,7 @@ async fn should_properly_update_ctx_options_in_required_resolver_and_provide_tho
         .err()
         .unwrap();
 
-    assert_eq!(err.get("virtual_field").unwrap()[0].reason, REQUIRED_ERROR);
+    assert_eq!(err.get("virtual_field").unwrap().reason, REQUIRED_ERROR);
     assert_eq!(ctx_options.messages[0], MESSAGE);
 }
 
@@ -166,10 +166,7 @@ async fn should_properly_update_ctx_options_in_required_resolver_and_provide_tho
 
     match err {
         Some(payload) => {
-            assert_eq!(
-                payload.get("virtual_field").unwrap()[0].reason,
-                REQUIRED_ERROR
-            );
+            assert_eq!(payload.get("virtual_field").unwrap().reason, REQUIRED_ERROR);
         }
         _ => unreachable!("expected a validation error"),
     }
@@ -336,10 +333,7 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
         .err()
         .unwrap();
 
-    assert_eq!(
-        err.get("virtual_field").unwrap()[0].reason,
-        MIN_LENGTH_ERROR
-    );
+    assert_eq!(err.get("virtual_field").unwrap().reason, MIN_LENGTH_ERROR);
     assert_eq!(ctx_options.messages[0], MESSAGE);
 
     handle_failure().await;
@@ -424,7 +418,7 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
     match err {
         Some(payload) => {
             assert_eq!(
-                payload.get("virtual_field").unwrap()[0].reason,
+                payload.get("virtual_field").unwrap().reason,
                 MIN_LENGTH_ERROR
             );
         }
@@ -512,10 +506,7 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
         .err()
         .unwrap();
 
-    assert_eq!(
-        err.get("virtual_field").unwrap()[0].reason,
-        MIN_LENGTH_ERROR
-    );
+    assert_eq!(err.get("virtual_field").unwrap().reason, MIN_LENGTH_ERROR);
     assert_eq!(ctx_options.messages[0], MESSAGE);
 
     handle_failure().await;
@@ -601,7 +592,7 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
     match err {
         Some(payload) => {
             assert_eq!(
-                payload.get("virtual_field").unwrap()[0].reason,
+                payload.get("virtual_field").unwrap().reason,
                 MIN_LENGTH_ERROR
             );
         }

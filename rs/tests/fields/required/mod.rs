@@ -284,7 +284,7 @@ async fn should_respect_the_default_required_error_if_field_is_missing() {
         .await;
 
     match r {
-        Err((p, _, _)) => assert_eq!(p.get("required").unwrap()[0].reason, required_error),
+        Err((p, _, _)) => assert_eq!(p.get("required").unwrap().reason, required_error),
         _ => unreachable!("expected nothig to update error"),
     }
 
@@ -345,7 +345,7 @@ async fn should_respect_custom_static_required_error_if_field_is_missing() {
         .await;
 
     match r {
-        Err((p, _, _)) => assert_eq!(p.get("required").unwrap()[0].reason, required_error),
+        Err((p, _, _)) => assert_eq!(p.get("required").unwrap().reason, required_error),
         _ => unreachable!("expected nothig to update error"),
     }
 
@@ -406,7 +406,7 @@ async fn should_respect_custom_dynamic_required_error_if_field_is_missing() {
         .await;
 
     match r {
-        Err((p, _, _)) => assert_eq!(p.get("required").unwrap()[0].reason, REQUIRED_ERROR),
+        Err((p, _, _)) => assert_eq!(p.get("required").unwrap().reason, REQUIRED_ERROR),
         _ => unreachable!("expected nothig to update error"),
     }
 
@@ -489,7 +489,7 @@ async fn should_not_create_if_primary_validation_fails() {
 
         match r {
             Err((p, _, _)) => {
-                assert_eq!(p.get("required").unwrap()[0].reason, MIN_LENGTH_ERROR);
+                assert_eq!(p.get("required").unwrap().reason, MIN_LENGTH_ERROR);
             }
             _ => unreachable!(),
         }
@@ -567,10 +567,7 @@ async fn should_not_update_if_primary_validation_fails() {
 
         match r {
             Err((Some(payload), _, _)) => {
-                assert_eq!(
-                    payload.get("required").unwrap()[0].reason,
-                    OUT_OF_RANGE_ERROR
-                )
+                assert_eq!(payload.get("required").unwrap().reason, OUT_OF_RANGE_ERROR)
             }
             _ => unreachable!(),
         }
@@ -740,7 +737,7 @@ async fn should_not_create_if_re_validation_fails() {
         match r {
             Err((p, _, _)) => {
                 assert_eq!(
-                    p.get("required").unwrap()[0].reason,
+                    p.get("required").unwrap().reason,
                     MIN_REVALIDATION_LENGTH_ERROR
                 );
             }
@@ -839,7 +836,7 @@ async fn should_not_update_if_re_validation_fails() {
         match r {
             Err((Some(payload), _, _)) => {
                 assert_eq!(
-                    payload.get("required").unwrap()[0].reason,
+                    payload.get("required").unwrap().reason,
                     REVALIDATED_OUT_OF_RANGE_ERROR
                 );
             }
@@ -1171,7 +1168,7 @@ async fn should_respect_post_validation_config() {
             assert!(p.get("required_1").is_none());
             assert!(p.get("required_2").is_none());
             assert_eq!(
-                p.get("required").unwrap()[0].reason,
+                p.get("required").unwrap().reason,
                 required,
                 "should ignore unrelated errors returned from pre-validator in post-validation"
             );
@@ -1197,7 +1194,7 @@ async fn should_respect_post_validation_config() {
             assert!(p.get("required_1").is_none());
             assert!(p.get("required_2").is_none());
             assert_eq!(
-                p.get("required").unwrap()[0].reason,
+                p.get("required").unwrap().reason,
                 required,
                 "should ignore unrelated errors returned from post-validator"
             );
@@ -1223,7 +1220,7 @@ async fn should_respect_post_validation_config() {
             assert!(p.get("required").is_none());
             assert!(p.get("required_2").is_none());
             assert_eq!(
-                p.get("required_1").unwrap()[0].reason,
+                p.get("required_1").unwrap().reason,
                 required_1,
                 "should not create if one field has an error after pre-validator in post-validation"
             );
@@ -1248,12 +1245,12 @@ async fn should_respect_post_validation_config() {
         Err((p, _, _)) => {
             assert!(p.get("required_2").is_none());
             assert_eq!(
-                p.get("required").unwrap()[0].reason,
+                p.get("required").unwrap().reason,
                 required,
                 "should not create if any field has an error after pre-validator in post-validation"
             );
             assert_eq!(
-                p.get("required_1").unwrap()[0].reason,
+                p.get("required_1").unwrap().reason,
                 required,
                 "should not create if any field has an error after pre-validator in post-validation"
             );
@@ -1279,7 +1276,7 @@ async fn should_respect_post_validation_config() {
             assert!(p.get("required_1").is_none());
             assert!(p.get("required_2").is_none());
             assert_eq!(
-                p.get("required").unwrap()[0].reason,
+                p.get("required").unwrap().reason,
                 required,
                 "should not create if one field has an error after post-validation"
             );
@@ -1304,12 +1301,12 @@ async fn should_respect_post_validation_config() {
         Err((p, _, _)) => {
             assert!(p.get("required_2").is_none());
             assert_eq!(
-                p.get("required").unwrap()[0].reason,
+                p.get("required").unwrap().reason,
                 required,
                 "should not create if any field has an error after post-validation"
             );
             assert_eq!(
-                p.get("required_1").unwrap()[0].reason,
+                p.get("required_1").unwrap().reason,
                 required,
                 "should not create if any field has an error after post-validation"
             );
@@ -1348,7 +1345,7 @@ async fn should_respect_post_validation_config() {
             assert!(payload.get("required").is_none());
             assert!(payload.get("required_2").is_none());
             assert_eq!(
-                payload.get("required_1").unwrap()[0].reason,
+                payload.get("required_1").unwrap().reason,
                 required_1,
                 "should not update if one field has an error after pre-validator in post-validation"
             );
@@ -1377,12 +1374,12 @@ async fn should_respect_post_validation_config() {
         Err((Some(payload), _, _)) => {
             assert!(payload.get("required_2").is_none());
             assert_eq!(
-                payload.get("required").unwrap()[0].reason,
+                payload.get("required").unwrap().reason,
                 required,
                 "should not create if any field has an error after pre-validator in post-validation"
             );
             assert_eq!(
-                payload.get("required_1").unwrap()[0].reason,
+                payload.get("required_1").unwrap().reason,
                 required,
                 "should not create if any field has an error after pre-validator in post-validation"
             );
@@ -1409,7 +1406,7 @@ async fn should_respect_post_validation_config() {
             assert!(payload.get("required_1").is_none());
             assert!(payload.get("required_2").is_none());
             assert_eq!(
-                payload.get("required").unwrap()[0].reason,
+                payload.get("required").unwrap().reason,
                 required,
                 "should ignore unrelated errors returned from pre-validator in post-validation"
             );
@@ -1441,7 +1438,7 @@ async fn should_respect_post_validation_config() {
             assert!(payload.get("required_1").is_none());
             assert!(payload.get("required_2").is_none());
             assert_eq!(
-                payload.get("required").unwrap()[0].reason,
+                payload.get("required").unwrap().reason,
                 required,
                 "should ignore unrelated errors returned from post-validator"
             );

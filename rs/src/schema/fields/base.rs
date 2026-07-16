@@ -13,7 +13,13 @@ use crate::{
     IvoStruct,
 };
 
-pub trait BuildableFieldConfig<I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool> {
+pub trait BuildableFieldConfig<
+    I: IvoStruct,
+    O: IvoStruct,
+    CtxOptions,
+    ErrorTool: IvoErrorTool<CtxOptions>,
+>
+{
     fn build(self) -> InternalFieldConfig<I, O, CtxOptions, ErrorTool>;
 }
 
@@ -28,7 +34,13 @@ pub enum FieldType {
     Virtual,
 }
 
-pub struct FieldConfig<T, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool> {
+pub struct FieldConfig<
+    T,
+    I: IvoStruct,
+    O: IvoStruct,
+    CtxOptions,
+    ErrorTool: IvoErrorTool<CtxOptions>,
+> {
     pub field_type: FieldType,
     pub alias: Option<&'static str>,
     pub default: Option<ValueResolverWithSharedInput<T, I, CtxOptions>>,
@@ -50,7 +62,7 @@ pub struct FieldConfig<T, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: Ivo
     pub on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
 }
 
-impl<T, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool> Default
+impl<T, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool<CtxOptions>> Default
     for FieldConfig<T, I, O, CtxOptions, ErrorTool>
 {
     fn default() -> Self {

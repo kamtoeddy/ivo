@@ -425,7 +425,7 @@ async fn should_respect_the_required_rule() {
 
     match r {
         Err((payload, _, _)) => assert_eq!(
-            payload.get("lax").unwrap()[0].reason,
+            payload.get("lax").unwrap().reason,
             "lax is required to create at this time"
         ),
         _ => unreachable!(),
@@ -466,7 +466,7 @@ async fn should_respect_the_required_rule() {
 
     match r {
         Err((Some(payload), _, _)) => assert_eq!(
-            payload.get("lax").unwrap()[0].reason,
+            payload.get("lax").unwrap().reason,
             "lax is required for this update"
         ),
         _ => unreachable!(),
@@ -551,11 +551,8 @@ async fn should_properly_handle_grouped_required_errors() {
         .unwrap();
 
     assert!(payload.get("lax_2").is_none());
-    assert_eq!(payload.get("lax").unwrap()[0].reason, EXPECTED_LAX_OR_LAX_1);
-    assert_eq!(
-        payload.get("lax_1").unwrap()[0].reason,
-        EXPECTED_LAX_OR_LAX_1
-    );
+    assert_eq!(payload.get("lax").unwrap().reason, EXPECTED_LAX_OR_LAX_1);
+    assert_eq!(payload.get("lax_1").unwrap().reason, EXPECTED_LAX_OR_LAX_1);
 
     let lax = IGNORE_WITH_DIFFERENT_ERRORS.to_string();
 
@@ -573,8 +570,8 @@ async fn should_properly_handle_grouped_required_errors() {
         .unwrap();
 
     assert!(payload.get("lax_2").is_none());
-    assert_eq!(payload.get("lax").unwrap()[0].reason, LAX_IS_MISSING);
-    assert_eq!(payload.get("lax_1").unwrap()[0].reason, LAX_1_IS_MISSING);
+    assert_eq!(payload.get("lax").unwrap().reason, LAX_IS_MISSING);
+    assert_eq!(payload.get("lax_1").unwrap().reason, LAX_1_IS_MISSING);
 
     // updates
 
@@ -603,11 +600,8 @@ async fn should_properly_handle_grouped_required_errors() {
     match error {
         Some(payload) => {
             assert!(payload.get("lax_2").is_none());
-            assert_eq!(payload.get("lax").unwrap()[0].reason, EXPECTED_LAX_OR_LAX_1);
-            assert_eq!(
-                payload.get("lax_1").unwrap()[0].reason,
-                EXPECTED_LAX_OR_LAX_1
-            );
+            assert_eq!(payload.get("lax").unwrap().reason, EXPECTED_LAX_OR_LAX_1);
+            assert_eq!(payload.get("lax_1").unwrap().reason, EXPECTED_LAX_OR_LAX_1);
         }
         _ => unreachable!("expected a validation error"),
     }
@@ -631,8 +625,8 @@ async fn should_properly_handle_grouped_required_errors() {
     match error {
         Some(payload) => {
             assert!(payload.get("lax_2").is_none());
-            assert_eq!(payload.get("lax").unwrap()[0].reason, LAX_IS_MISSING);
-            assert_eq!(payload.get("lax_1").unwrap()[0].reason, LAX_1_IS_MISSING);
+            assert_eq!(payload.get("lax").unwrap().reason, LAX_IS_MISSING);
+            assert_eq!(payload.get("lax_1").unwrap().reason, LAX_1_IS_MISSING);
         }
         _ => unreachable!("expected a validation error"),
     }
@@ -694,7 +688,7 @@ async fn should_not_create_if_primary_validation_fails() {
 
         match r {
             Err((p, _, _)) => {
-                assert_eq!(p.get("lax").unwrap()[0].reason, MIN_LENGTH_ERROR);
+                assert_eq!(p.get("lax").unwrap().reason, MIN_LENGTH_ERROR);
             }
             _ => unreachable!(),
         }
@@ -772,10 +766,7 @@ async fn should_not_update_if_primary_validation_fails() {
 
         match r {
             Err((Some(payload), _, _)) => {
-                assert_eq!(
-                    payload.get("lax").unwrap()[0].reason,
-                    LAX_OUT_OF_RANGE_ERROR
-                )
+                assert_eq!(payload.get("lax").unwrap().reason, LAX_OUT_OF_RANGE_ERROR)
             }
             _ => unreachable!(),
         }
@@ -934,10 +925,7 @@ async fn should_not_create_if_re_validation_fails() {
 
         match r {
             Err((p, _, _)) => {
-                assert_eq!(
-                    p.get("lax").unwrap()[0].reason,
-                    MIN_REVALIDATION_LENGTH_ERROR
-                );
+                assert_eq!(p.get("lax").unwrap().reason, MIN_REVALIDATION_LENGTH_ERROR);
             }
             _ => unreachable!(),
         }
@@ -1035,7 +1023,7 @@ async fn should_not_update_if_re_validation_fails() {
         match r {
             Err((Some(payload), _, _)) => {
                 assert_eq!(
-                    payload.get("lax").unwrap()[0].reason,
+                    payload.get("lax").unwrap().reason,
                     REVALIDATED_LAX_OUT_OF_RANGE_ERROR
                 );
             }
@@ -1355,7 +1343,7 @@ async fn should_respect_post_validation_config() {
             assert!(p.get("lax_1").is_none());
             assert!(p.get("lax_2").is_none());
             assert_eq!(
-                p.get("lax").unwrap()[0].reason,
+                p.get("lax").unwrap().reason,
                 lax,
                 "should ignore unrelated errors returned from pre-validator in post-validation"
             );
@@ -1381,7 +1369,7 @@ async fn should_respect_post_validation_config() {
             assert!(p.get("lax_1").is_none());
             assert!(p.get("lax_2").is_none());
             assert_eq!(
-                p.get("lax").unwrap()[0].reason,
+                p.get("lax").unwrap().reason,
                 lax,
                 "should ignore unrelated errors returned from post-validator"
             );
@@ -1407,7 +1395,7 @@ async fn should_respect_post_validation_config() {
             assert!(p.get("lax").is_none());
             assert!(p.get("lax_2").is_none());
             assert_eq!(
-                p.get("lax_1").unwrap()[0].reason,
+                p.get("lax_1").unwrap().reason,
                 lax_1,
                 "should not create if one field has an error after pre-validator in post-validation"
             );
@@ -1432,12 +1420,12 @@ async fn should_respect_post_validation_config() {
         Err((p, _, _)) => {
             assert!(p.get("lax_2").is_none());
             assert_eq!(
-                p.get("lax").unwrap()[0].reason,
+                p.get("lax").unwrap().reason,
                 lax,
                 "should not create if any field has an error after pre-validator in post-validation"
             );
             assert_eq!(
-                p.get("lax_1").unwrap()[0].reason,
+                p.get("lax_1").unwrap().reason,
                 lax,
                 "should not create if any field has an error after pre-validator in post-validation"
             );
@@ -1464,7 +1452,7 @@ async fn should_respect_post_validation_config() {
             assert!(p.get("lax_1").is_none());
             assert!(p.get("lax_2").is_none());
             assert_eq!(
-                p.get("lax").unwrap()[0].reason,
+                p.get("lax").unwrap().reason,
                 lax,
                 "should not create if one field has an error after post-validation"
             );
@@ -1490,12 +1478,12 @@ async fn should_respect_post_validation_config() {
         Err((p, _, _)) => {
             assert!(p.get("lax_2").is_none());
             assert_eq!(
-                p.get("lax").unwrap()[0].reason,
+                p.get("lax").unwrap().reason,
                 lax,
                 "should not create if any field has an error after post-validation"
             );
             assert_eq!(
-                p.get("lax_1").unwrap()[0].reason,
+                p.get("lax_1").unwrap().reason,
                 lax,
                 "should not create if any field has an error after post-validation"
             );
@@ -1534,7 +1522,7 @@ async fn should_respect_post_validation_config() {
             assert!(payload.get("lax").is_none());
             assert!(payload.get("lax_2").is_none());
             assert_eq!(
-                payload.get("lax_1").unwrap()[0].reason,
+                payload.get("lax_1").unwrap().reason,
                 lax_1,
                 "should not update if one field has an error after pre-validator in post-validation"
             );
@@ -1563,12 +1551,12 @@ async fn should_respect_post_validation_config() {
         Err((Some(payload), _, _)) => {
             assert!(payload.get("lax_2").is_none());
             assert_eq!(
-                payload.get("lax").unwrap()[0].reason,
+                payload.get("lax").unwrap().reason,
                 lax,
                 "should not create if any field has an error after pre-validator in post-validation"
             );
             assert_eq!(
-                payload.get("lax_1").unwrap()[0].reason,
+                payload.get("lax_1").unwrap().reason,
                 lax,
                 "should not create if any field has an error after pre-validator in post-validation"
             );
@@ -1595,7 +1583,7 @@ async fn should_respect_post_validation_config() {
             assert!(payload.get("lax_1").is_none());
             assert!(payload.get("lax_2").is_none());
             assert_eq!(
-                payload.get("lax").unwrap()[0].reason,
+                payload.get("lax").unwrap().reason,
                 lax,
                 "should ignore unrelated errors returned from pre-validator in post-validation"
             );
@@ -1627,7 +1615,7 @@ async fn should_respect_post_validation_config() {
             assert!(payload.get("lax_1").is_none());
             assert!(payload.get("lax_2").is_none());
             assert_eq!(
-                payload.get("lax").unwrap()[0].reason,
+                payload.get("lax").unwrap().reason,
                 lax,
                 "should ignore unrelated errors returned from post-validator"
             );

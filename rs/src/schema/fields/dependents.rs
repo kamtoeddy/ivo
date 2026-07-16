@@ -28,7 +28,7 @@ pub struct DependentFieldBuilder<
     I: IvoStruct,
     O: IvoStruct,
     CtxOptions,
-    ErrorTool: IvoErrorTool = DefaultErrorTool,
+    ErrorTool: IvoErrorTool<CtxOptions> = DefaultErrorTool,
     HasDefault = No,
     HasParents = No,
     HasResolver = No,
@@ -64,7 +64,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorTool: IvoErrorTool<CtxOptions>,
     >
     DependentFieldBuilder<
         T,
@@ -111,7 +111,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorTool: IvoErrorTool<CtxOptions>,
     > Default
     for DependentFieldBuilder<
         T,
@@ -141,7 +141,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorTool: IvoErrorTool<CtxOptions>,
     > BuildableFieldConfig<I, O, CtxOptions, ErrorTool>
     for DependentFieldBuilder<
         T,
@@ -171,8 +171,13 @@ impl<
     }
 }
 
-impl<T: FieldValue, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool>
-    DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool>
+impl<
+        T: FieldValue,
+        I: IvoStruct,
+        O: IvoStruct,
+        CtxOptions,
+        ErrorTool: IvoErrorTool<CtxOptions>,
+    > DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool>
 {
     pub fn default(self, value: T) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes> {
         DependentFieldBuilder {
@@ -203,7 +208,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorTool: IvoErrorTool<CtxOptions>,
     > DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasDefault>
 {
     pub fn depends_on<const N: usize>(
@@ -224,7 +229,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorTool: IvoErrorTool<CtxOptions>,
     > DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasDefault, Yes>
 {
     pub fn resolve<R>(
@@ -251,7 +256,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorTool: IvoErrorTool<CtxOptions>,
     >
     DependentFieldBuilder<
         T,
@@ -306,7 +311,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorTool: IvoErrorTool<CtxOptions>,
     >
     DependentFieldBuilder<
         T,
@@ -374,7 +379,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorTool: IvoErrorTool<CtxOptions>,
     >
     DependentFieldBuilder<
         T,

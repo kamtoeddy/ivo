@@ -20,10 +20,10 @@ use on_success::{BuildableOnSuccess, OnSuccessOptionBuilder};
 use post_validate::{BuildablePostValidator, PostValidateOptionBuilder};
 
 pub trait BuildableSchemaOptions<
-    I: IvoInputStruct<ErrorTool>,
+    I: IvoInputStruct<CtxOptions, ErrorTool>,
     O: IvoStruct,
     CtxOptions,
-    ErrorTool: IvoErrorTool,
+    ErrorTool: IvoErrorTool<CtxOptions>,
 >
 {
     fn build(self) -> SchemaOptions<I, O, CtxOptions, ErrorTool>;
@@ -36,10 +36,10 @@ impl<
         HasIgnore,
         HasIgnoreUpdate,
         HasRequired,
-        I: IvoInputStruct<ErrorTool>,
+        I: IvoInputStruct<CtxOptions, ErrorTool>,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorTool: IvoErrorTool<CtxOptions>,
     > BuildableSchemaOptions<I, O, CtxOptions, ErrorTool>
     for SchemaOptionsBuilder<
         I,
@@ -73,10 +73,10 @@ impl<
         HasIgnore,
         HasIgnoreUpdate,
         HasRequired,
-        I: IvoInputStruct<ErrorTool>,
+        I: IvoInputStruct<CtxOptions, ErrorTool>,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorTool: IvoErrorTool<CtxOptions>,
     >
     SchemaOptionsBuilder<
         I,
@@ -271,10 +271,10 @@ impl<
         HasSuccess,
         HasIgnore,
         HasRequired,
-        I: IvoInputStruct<ErrorTool>,
+        I: IvoInputStruct<CtxOptions, ErrorTool>,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorTool: IvoErrorTool<CtxOptions>,
     >
     SchemaOptionsBuilder<
         I,

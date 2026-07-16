@@ -17,10 +17,10 @@ use crate::{
 };
 
 pub struct SchemaOptions<
-    I: IvoInputStruct<ErrorTool>,
+    I: IvoInputStruct<CtxOptions, ErrorTool>,
     O: IvoStruct,
     CtxOptions,
-    ErrorTool: IvoErrorTool,
+    ErrorTool: IvoErrorTool<CtxOptions>,
 > {
     pub ignore: Option<Vec<IgnoreOptionConfig<I, O, CtxOptions>>>,
     pub ignore_update: Option<Vec<IgnoreUpdateOptionConfig<I, O, CtxOptions>>>,
@@ -30,8 +30,12 @@ pub struct SchemaOptions<
     pub required: Option<Vec<RequiredOptionConfig<I, O, CtxOptions, ErrorTool>>>,
 }
 
-impl<I: IvoInputStruct<ErrorTool>, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool>
-    SchemaOptions<I, O, CtxOptions, ErrorTool>
+impl<
+        I: IvoInputStruct<CtxOptions, ErrorTool>,
+        O: IvoStruct,
+        CtxOptions,
+        ErrorTool: IvoErrorTool<CtxOptions>,
+    > SchemaOptions<I, O, CtxOptions, ErrorTool>
 {
     pub const fn new() -> SchemaOptionsBuilder<I, O, CtxOptions, ErrorTool> {
         SchemaOptionsBuilder::new()
@@ -39,10 +43,10 @@ impl<I: IvoInputStruct<ErrorTool>, O: IvoStruct, CtxOptions, ErrorTool: IvoError
 }
 
 pub struct SchemaOptionsBuilder<
-    I: IvoInputStruct<ErrorTool>,
+    I: IvoInputStruct<CtxOptions, ErrorTool>,
     O: IvoStruct,
     CtxOptions,
-    ErrorTool: IvoErrorTool,
+    ErrorTool: IvoErrorTool<CtxOptions>,
     HasPostValidate = No,
     HasDelete = No,
     HasSuccess = No,
@@ -72,10 +76,10 @@ impl<
         HasIgnore,
         HasIgnoreUpdate,
         HasRequired,
-        I: IvoInputStruct<ErrorTool>,
+        I: IvoInputStruct<CtxOptions, ErrorTool>,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorTool: IvoErrorTool<CtxOptions>,
     >
     SchemaOptionsBuilder<
         I,
@@ -134,10 +138,10 @@ impl<
         HasIgnore,
         HasIgnoreUpdate,
         HasRequired,
-        I: IvoInputStruct<ErrorTool>,
+        I: IvoInputStruct<CtxOptions, ErrorTool>,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorTool: IvoErrorTool<CtxOptions>,
     > Default
     for SchemaOptionsBuilder<
         I,

@@ -23,7 +23,7 @@ async fn main() {
     println!("\nfailed to create: {:#?}", payload);
 
     assert_eq!(
-        payload.get("username").unwrap()[0].reason,
+        payload.get("username").unwrap().reason,
         format!("\"username\" must be at least {MIN_USERNAME_LEN} characters long")
     );
 
@@ -54,7 +54,7 @@ async fn main() {
     println!("\nfailed to update: {:#?}", payload);
 
     assert_eq!(
-        payload.get("username").unwrap()[0].reason,
+        payload.get("username").unwrap().reason,
         format!("\"username\" must be at least {MIN_USERNAME_LEN} characters long")
     );
 

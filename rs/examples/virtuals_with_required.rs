@@ -77,10 +77,7 @@ async fn main() {
 
     println!("\nfailed to create: {:#?}", payload);
 
-    assert_eq!(
-        payload.get("virtual_field").unwrap()[0].reason,
-        REQUIRED_ERROR
-    );
+    assert_eq!(payload.get("virtual_field").unwrap().reason, REQUIRED_ERROR);
 
     handle_failure().await;
 
@@ -105,7 +102,7 @@ async fn main() {
     println!("\nfailed to update: {:#?}", payload);
 
     assert_eq!(
-        payload.unwrap().get("virtual_field").unwrap()[0].reason,
+        payload.unwrap().get("virtual_field").unwrap().reason,
         REQUIRED_ERROR
     );
 
@@ -132,7 +129,7 @@ async fn main() {
     println!("\nfailed to update: {:#?}", payload);
 
     assert_eq!(
-        payload.unwrap().get("virtual_field").unwrap()[0].reason,
+        payload.unwrap().get("virtual_field").unwrap().reason,
         REQUIRED_ERROR
     );
 

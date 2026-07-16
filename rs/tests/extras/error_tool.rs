@@ -1,7 +1,7 @@
 use std::{collections::HashMap, future::ready, sync::LazyLock};
 
 use crate::async_test_matrix;
-use ivo::{FieldError, IvoErrorTool, IvoField, IvoInputStruct, IvoStruct, Model};
+use ivo::{IvoErrorPayload, IvoErrorTool, IvoField, IvoInputStruct, IvoStruct, Model};
 
 async fn should_respect_custom_error_tool() {
     let r = PLACE_MODEL
@@ -198,51 +198,31 @@ static PLACE_MODEL: LazyLock<
 
 type PlacesErrorToolFieldMetadata = Vec<String>;
 
-struct PlacesErrorTool {
-    errors: HashMap<String, Vec<String>>,
-}
+struct PlacesErrorTool;
 
-impl IvoErrorTool for PlacesErrorTool {
+impl IvoErrorTool<PlacesCtxOptions> for PlacesErrorTool {
     type FieldMetadata = PlacesErrorToolFieldMetadata;
     type ErrorPayload = HashMap<String, Vec<String>>;
 
-    fn add(&mut self, field_name: &str, error: FieldError<Self::FieldMetadata>) -> &mut Self {
-        self.errors
-            .entry(field_name.to_owned())
-            .and_modify(|e| append_error(e, &error))
-            .or_insert_with(|| {
-                let mut errors = vec![];
+    fn sanitize(
+        payload: IvoErrorPayload<Self::FieldMetadata>,
+        _: &PlacesCtxOptions,
+    ) -> Self::ErrorPayload {
+        let mut errors = HashMap::new();
 
-                append_error(&mut errors, &error);
+        for (field_name, error) in payload {
+            let mut field_errors = vec![customized_string(&error.reason)];
 
-                errors
-            });
+            if let Some(ref metadata) = error.metadata {
+                for err in metadata {
+                    field_errors.push(customized_string(err));
+                }
+            }
 
-        self
-    }
-
-    fn has_errors(&self) -> bool {
-        !self.errors.is_empty()
-    }
-
-    fn new() -> Self {
-        Self {
-            errors: HashMap::new(),
+            errors.insert(field_name, field_errors);
         }
-    }
 
-    fn payload(self) -> Self::ErrorPayload {
-        self.errors
-    }
-}
-
-fn append_error(errors: &mut Vec<String>, error: &FieldError<PlacesErrorToolFieldMetadata>) {
-    errors.push(customized_string(&error.reason));
-
-    if let Some(ref metadata) = error.metadata {
-        for err in metadata {
-            errors.push(customized_string(err));
-        }
+        errors
     }
 }
 

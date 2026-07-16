@@ -1,61 +1,68 @@
 use std::collections::HashMap;
 
+use crate::__private_types::types::DefaultCtxOptions;
+
 pub type DefaultFieldErrorMetadata = ();
-pub type DefaultErrorPayload = HashMap<String, Vec<FieldError>>;
+pub type DefaultErrorPayload = IvoErrorPayload<DefaultFieldErrorMetadata>;
 
 #[derive(Debug, Clone)]
-pub struct FieldError<FieldMetadata = DefaultFieldErrorMetadata> {
+pub struct FieldError<FieldMetadata: Clone = DefaultFieldErrorMetadata> {
     pub reason: String,
     pub metadata: Option<FieldMetadata>,
 }
 
-// ErrorTool trait
-pub trait IvoErrorTool {
-    type FieldMetadata: Send + Sync;
-    type ErrorPayload;
-
-    fn new() -> Self;
-
-    fn add(&mut self, field_name: &str, error: FieldError<Self::FieldMetadata>) -> &mut Self;
-
-    fn has_errors(&self) -> bool;
-
-    fn payload(self) -> Self::ErrorPayload;
-}
+pub type IvoErrorPayload<FieldMetadata: Clone> = HashMap<String, FieldError<FieldMetadata>>;
 
 #[derive(Debug)]
-pub struct DefaultErrorTool {
-    payload: DefaultErrorPayload,
+pub struct DefaultErrorTool<FieldMetadata: Clone = DefaultFieldErrorMetadata> {
+    payload: IvoErrorPayload<FieldMetadata>,
 }
 
-impl IvoErrorTool for DefaultErrorTool {
-    type FieldMetadata = DefaultFieldErrorMetadata;
-    type ErrorPayload = DefaultErrorPayload;
-
-    #[inline]
-    fn new() -> Self {
+impl<FieldMetadata: Clone> DefaultErrorTool<FieldMetadata> {
+    pub(crate) fn new() -> Self {
         Self {
             payload: HashMap::new(),
         }
     }
 
-    #[inline]
-    fn add(&mut self, field_name: &str, value: FieldError) -> &mut Self {
-        self.payload
-            .entry(field_name.to_string())
-            .and_modify(|e| e.push(value.clone()))
-            .or_insert_with(|| vec![value]);
+    pub(crate) fn add(&mut self, field_name: &str, value: FieldError<FieldMetadata>) -> &mut Self {
+        self.payload.insert(field_name.to_string(), value);
 
         self
     }
 
-    #[inline(always)]
-    fn has_errors(&self) -> bool {
+    #[inline]
+    pub(crate) fn has_errors(&self) -> bool {
         !self.payload.is_empty()
     }
 
-    #[inline(always)]
-    fn payload(self) -> DefaultErrorPayload {
+    #[inline]
+    pub(crate) fn payload(self) -> IvoErrorPayload<FieldMetadata> {
         self.payload
     }
+}
+
+impl<CtxOptions, FieldMetadata: Clone + Send + Sync> IvoErrorTool<CtxOptions>
+    for DefaultErrorTool<FieldMetadata>
+{
+    type FieldMetadata = FieldMetadata;
+    type ErrorPayload = IvoErrorPayload<Self::FieldMetadata>;
+
+    fn sanitize(
+        payload: IvoErrorPayload<Self::FieldMetadata>,
+        _: &CtxOptions,
+    ) -> Self::ErrorPayload {
+        payload
+    }
+}
+
+// ErrorTool trait
+pub trait IvoErrorTool<CtxOptions = DefaultCtxOptions> {
+    type FieldMetadata: Clone + Send + Sync;
+    type ErrorPayload;
+
+    fn sanitize(
+        payload: IvoErrorPayload<Self::FieldMetadata>,
+        ctx_options: &CtxOptions,
+    ) -> Self::ErrorPayload;
 }
