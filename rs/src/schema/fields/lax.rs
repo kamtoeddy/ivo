@@ -299,33 +299,6 @@ impl<
 
 impl<
         HasDefault: IsProvided,
-        HasRevalidator,
-        T: FieldValue,
-        I: IvoStruct,
-        O: IvoStruct,
-        CtxOptions,
-        ErrorTool: IvoErrorTool,
-    > LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasDefault, Yes, HasRevalidator>
-{
-    pub fn required<R>(
-        self,
-        resolver: R,
-    ) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasDefault, Yes, HasRevalidator, Yes>
-    where
-        R: IntoRequiredResolver<I, O, CtxOptions>,
-    {
-        LaxFieldBuilder {
-            default: self.default,
-            validator: self.validator,
-            re_validator: self.re_validator,
-            required_fn: Some(resolver.into_resolver()),
-            ..Default::default()
-        }
-    }
-}
-
-impl<
-        HasDefault: IsProvided,
         HasValidator,
         HasRevalidator,
         HasRequired,
@@ -347,6 +320,32 @@ impl<
         HasRequired,
     >
 {
+    pub fn required<R>(
+        self,
+        resolver: R,
+    ) -> LaxFieldBuilder<
+        T,
+        I,
+        O,
+        CtxOptions,
+        ErrorTool,
+        HasDefault,
+        HasValidator,
+        HasRevalidator,
+        Yes,
+    >
+    where
+        R: IntoRequiredResolver<I, O, CtxOptions>,
+    {
+        LaxFieldBuilder {
+            default: self.default,
+            validator: self.validator,
+            re_validator: self.re_validator,
+            required_fn: Some(resolver.into_resolver()),
+            ..Default::default()
+        }
+    }
+
     pub fn ignore<R>(
         self,
         resolver: R,

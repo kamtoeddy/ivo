@@ -165,6 +165,11 @@ Below are links to examples on how to properly configure schema fields.
 
 - [Default values](./examples/lax_defaults.rs)
 - [Validators & re-validators](./examples/lax_with_validators.rs)
+- [Readonly](./examples/lax_readonly.rs)
+- [Required](./examples/lax_required.rs)
+- [⚠️ Ignore](./examples/lax_with_ignore.rs)
+- [⚠️ Ignore init](./examples/lax_with_ignore_init.rs)
+- [⚠️ Ignore update](./examples/lax_with_ignore_update.rs)
 
 ### Required Fields
 
@@ -176,12 +181,12 @@ Below are links to examples on how to properly configure schema fields.
 
 ### Virtual Fields
 
-- [Validators & re-validators](./examples/virtuals_with_validators.rs)
-- [Alias](./examples/virtuals_with_alias.rs)
-- [Required](./examples/virtuals_with_required.rs)
-- [Ignore](./examples/virtuals_with_ignore.rs)
-- [Ignore init](./examples/virtuals_with_ignore_init.rs)
-- [Ignore update](./examples/virtuals_with_ignore_update.rs)
+- [⚠️ Validators & re-validators](./examples/virtuals_with_validators.rs)
+- [⚠️ Alias](./examples/virtuals_with_alias.rs)
+- [⚠️ Required](./examples/virtuals_with_required.rs)
+- [⚠️ Ignore](./examples/virtuals_with_ignore.rs)
+- [⚠️ Ignore init](./examples/virtuals_with_ignore_init.rs)
+- [⚠️ Ignore update](./examples/virtuals_with_ignore_update.rs)
 
 ### Timestamps
 
