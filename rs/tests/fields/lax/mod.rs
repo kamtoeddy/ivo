@@ -1239,7 +1239,6 @@ async fn should_respect_post_validation_config() {
                     if let Some(lax) = ctx.input().lax {
                         if lax == LAX_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS {
                             errors.set_lax(LAX_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS, None);
-
                             errors.set_lax_2(LAX_PRE_VALIDATION_FAIL_WITH_UNRELATED_ERRORS, None);
 
                             return ready(Err(errors));
@@ -1247,7 +1246,6 @@ async fn should_respect_post_validation_config() {
 
                         if lax == BOTH_PRE_VALIDATION_FAIL {
                             errors.set_lax(BOTH_PRE_VALIDATION_FAIL, None);
-
                             errors.set_lax_1(BOTH_PRE_VALIDATION_FAIL, None);
                         }
                     }
