@@ -188,7 +188,7 @@ static PLACE_MODEL: LazyLock<
                         return ready(Err(("Out of range error".into(), Some(errors))));
                     }
 
-                    ready(Ok(Some(c)))
+                    ready(Ok(None))
                 }),
             )
         },
