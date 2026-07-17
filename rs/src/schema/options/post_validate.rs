@@ -10,10 +10,10 @@ use crate::{
 };
 
 pub struct PostValidateOptionBuilder<
-    I: IvoInputStruct<ErrorSanitizer>,
+    I: IvoInputStruct<CtxOptions, ErrorSanitizer>,
     O: IvoStruct,
     CtxOptions,
-    ErrorSanitizer: IvoErrorSanitizer,
+    ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     IvoFieldNames = No,
     HasValidator = No,
     HasPreValidator = No,
@@ -31,10 +31,10 @@ impl<
         IvoFieldNames,
         HasPreValidator,
         HasValidator,
-        I: IvoInputStruct<ErrorSanitizer>,
+        I: IvoInputStruct<CtxOptions, ErrorSanitizer>,
         O: IvoStruct,
         CtxOptions,
-        ErrorSanitizer: IvoErrorSanitizer,
+        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     > Default
     for PostValidateOptionBuilder<
         I,
@@ -59,10 +59,10 @@ impl<
 }
 
 pub trait BuildablePostValidator<
-    I: IvoInputStruct<ErrorSanitizer>,
+    I: IvoInputStruct<CtxOptions, ErrorSanitizer>,
     O: IvoStruct,
     CtxOptions,
-    ErrorSanitizer: IvoErrorSanitizer,
+    ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
 >
 {
     fn build(self) -> PostValidationConfig<I, O, CtxOptions, ErrorSanitizer>;
@@ -70,10 +70,10 @@ pub trait BuildablePostValidator<
 
 impl<
         HasPreValidator,
-        I: IvoInputStruct<ErrorSanitizer>,
+        I: IvoInputStruct<CtxOptions, ErrorSanitizer>,
         O: IvoStruct,
         CtxOptions,
-        ErrorSanitizer: IvoErrorSanitizer,
+        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     > BuildablePostValidator<I, O, CtxOptions, ErrorSanitizer>
     for PostValidateOptionBuilder<I, O, CtxOptions, ErrorSanitizer, Yes, Yes, HasPreValidator>
 {
@@ -87,10 +87,10 @@ impl<
 }
 
 impl<
-        I: IvoInputStruct<ErrorSanitizer>,
+        I: IvoInputStruct<CtxOptions, ErrorSanitizer>,
         O: IvoStruct,
         CtxOptions,
-        ErrorSanitizer: IvoErrorSanitizer,
+        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     > PostValidateOptionBuilder<I, O, CtxOptions, ErrorSanitizer>
 {
     pub fn fields<const N: usize>(
@@ -106,10 +106,10 @@ impl<
 impl<
         HasValidator,
         HasPreValidator,
-        I: IvoInputStruct<ErrorSanitizer>,
+        I: IvoInputStruct<CtxOptions, ErrorSanitizer>,
         O: IvoStruct,
         CtxOptions,
-        ErrorSanitizer: IvoErrorSanitizer,
+        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     >
     PostValidateOptionBuilder<I, O, CtxOptions, ErrorSanitizer, Yes, HasValidator, HasPreValidator>
 {
@@ -134,10 +134,10 @@ impl<
 
 impl<
         HasValidator,
-        I: IvoInputStruct<ErrorSanitizer>,
+        I: IvoInputStruct<CtxOptions, ErrorSanitizer>,
         O: IvoStruct,
         CtxOptions,
-        ErrorSanitizer: IvoErrorSanitizer,
+        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     > PostValidateOptionBuilder<I, O, CtxOptions, ErrorSanitizer, Yes, HasValidator, No>
 {
     pub fn pre_validate<F>(

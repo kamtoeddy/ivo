@@ -27,7 +27,7 @@ pub struct IvoField<
     I: IvoStruct,
     O: IvoStruct,
     CtxOptions,
-    ErrorSanitizer: IvoErrorSanitizer,
+    ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
 > {
     _t: PhantomData<T>,
     _i: PhantomData<I>,
@@ -36,8 +36,13 @@ pub struct IvoField<
     _err: PhantomData<ErrorSanitizer>,
 }
 
-impl<T: FieldValue, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorSanitizer: IvoErrorSanitizer>
-    IvoField<T, I, O, CtxOptions, ErrorSanitizer>
+impl<
+        T: FieldValue,
+        I: IvoStruct,
+        O: IvoStruct,
+        CtxOptions,
+        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
+    > IvoField<T, I, O, CtxOptions, ErrorSanitizer>
 {
     /// A constant field is one whose value never changes after an entity is created.
     ///

@@ -23,7 +23,7 @@ pub struct ConstantFieldBuilder<
     I: IvoStruct,
     O: IvoStruct,
     CtxOptions,
-    ErrorSanitizer: IvoErrorSanitizer,
+    ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     HasDefault = No,
     HasDelete = No,
     HasSuccess = No,
@@ -47,7 +47,7 @@ impl<
         O: IvoStruct,
         T: FieldValue,
         CtxOptions,
-        ErrorSanitizer: IvoErrorSanitizer,
+        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     > ConstantFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, HasDefault, HasDelete, HasSuccess>
 {
     pub const fn new() -> Self {
@@ -72,7 +72,7 @@ impl<
         O: IvoStruct,
         T: FieldValue,
         CtxOptions,
-        ErrorSanitizer: IvoErrorSanitizer,
+        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     > Default
     for ConstantFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, HasDefault, HasDelete, HasSuccess>
 {
@@ -88,7 +88,7 @@ impl<
         O: IvoStruct,
         T: FieldValue,
         CtxOptions,
-        ErrorSanitizer: IvoErrorSanitizer,
+        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     > BuildableFieldConfig<I, O, CtxOptions, ErrorSanitizer>
     for ConstantFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, Yes, HasDelete, HasSuccess>
 {
@@ -103,8 +103,13 @@ impl<
     }
 }
 
-impl<I: IvoStruct, O: IvoStruct, T: FieldValue, CtxOptions, ErrorSanitizer: IvoErrorSanitizer>
-    ConstantFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer>
+impl<
+        I: IvoStruct,
+        O: IvoStruct,
+        T: FieldValue,
+        CtxOptions,
+        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
+    > ConstantFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer>
 {
     pub fn value(self, value: T) -> ConstantFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, Yes> {
         ConstantFieldBuilder {
@@ -139,7 +144,7 @@ impl<
         O: IvoStruct,
         T: FieldValue,
         CtxOptions,
-        ErrorSanitizer: IvoErrorSanitizer,
+        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     > ConstantFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, Yes, HasDelete, HasSuccess>
 {
     pub fn on_delete<H>(
@@ -177,7 +182,7 @@ impl<
         O: IvoStruct,
         T: FieldValue,
         CtxOptions,
-        ErrorSanitizer: IvoErrorSanitizer,
+        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     > ConstantFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, Yes, HasDelete, HasSuccess>
 {
     pub fn on_success<H>(

@@ -20,10 +20,10 @@ use on_success::{BuildableOnSuccess, OnSuccessOptionBuilder};
 use post_validate::{BuildablePostValidator, PostValidateOptionBuilder};
 
 pub trait BuildableSchemaOptions<
-    I: IvoInputStruct<ErrorSanitizer>,
+    I: IvoInputStruct<CtxOptions, ErrorSanitizer>,
     O: IvoStruct,
     CtxOptions,
-    ErrorSanitizer: IvoErrorSanitizer,
+    ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
 >
 {
     fn build(self) -> SchemaOptions<I, O, CtxOptions, ErrorSanitizer>;
@@ -36,10 +36,10 @@ impl<
         HasIgnore,
         HasIgnoreUpdate,
         HasRequired,
-        I: IvoInputStruct<ErrorSanitizer>,
+        I: IvoInputStruct<CtxOptions, ErrorSanitizer>,
         O: IvoStruct,
         CtxOptions,
-        ErrorSanitizer: IvoErrorSanitizer,
+        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     > BuildableSchemaOptions<I, O, CtxOptions, ErrorSanitizer>
     for SchemaOptionsBuilder<
         I,
@@ -73,10 +73,10 @@ impl<
         HasIgnore,
         HasIgnoreUpdate,
         HasRequired,
-        I: IvoInputStruct<ErrorSanitizer>,
+        I: IvoInputStruct<CtxOptions, ErrorSanitizer>,
         O: IvoStruct,
         CtxOptions,
-        ErrorSanitizer: IvoErrorSanitizer,
+        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     >
     SchemaOptionsBuilder<
         I,
@@ -272,10 +272,10 @@ impl<
         HasSuccess,
         HasIgnore,
         HasRequired,
-        I: IvoInputStruct<ErrorSanitizer>,
+        I: IvoInputStruct<CtxOptions, ErrorSanitizer>,
         O: IvoStruct,
         CtxOptions,
-        ErrorSanitizer: IvoErrorSanitizer,
+        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     >
     SchemaOptionsBuilder<
         I,

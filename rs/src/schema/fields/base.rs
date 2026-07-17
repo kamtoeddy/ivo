@@ -17,7 +17,7 @@ pub trait BuildableFieldConfig<
     I: IvoStruct,
     O: IvoStruct,
     CtxOptions,
-    ErrorSanitizer: IvoErrorSanitizer,
+    ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
 >
 {
     fn build(self) -> InternalFieldConfig<I, O, CtxOptions, ErrorSanitizer>;
@@ -34,8 +34,13 @@ pub enum FieldType {
     Virtual,
 }
 
-pub struct FieldConfig<T, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorSanitizer: IvoErrorSanitizer>
-{
+pub struct FieldConfig<
+    T,
+    I: IvoStruct,
+    O: IvoStruct,
+    CtxOptions,
+    ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
+> {
     pub field_type: FieldType,
     pub alias: Option<&'static str>,
     pub default: Option<ValueResolverWithSharedInput<T, I, CtxOptions>>,
@@ -57,8 +62,8 @@ pub struct FieldConfig<T, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorSanitizer
     pub on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
 }
 
-impl<T, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorSanitizer: IvoErrorSanitizer> Default
-    for FieldConfig<T, I, O, CtxOptions, ErrorSanitizer>
+impl<T, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorSanitizer: IvoErrorSanitizer<CtxOptions>>
+    Default for FieldConfig<T, I, O, CtxOptions, ErrorSanitizer>
 {
     fn default() -> Self {
         Self {

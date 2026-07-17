@@ -17,10 +17,10 @@ use crate::{
 };
 
 pub struct SchemaOptions<
-    I: IvoInputStruct<ErrorSanitizer>,
+    I: IvoInputStruct<CtxOptions, ErrorSanitizer>,
     O: IvoStruct,
     CtxOptions,
-    ErrorSanitizer: IvoErrorSanitizer,
+    ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
 > {
     pub ignore: Option<Vec<IgnoreOptionConfig<I, O, CtxOptions>>>,
     pub ignore_update: Option<Vec<IgnoreUpdateOptionConfig<I, O, CtxOptions>>>,
@@ -31,10 +31,10 @@ pub struct SchemaOptions<
 }
 
 impl<
-        I: IvoInputStruct<ErrorSanitizer>,
+        I: IvoInputStruct<CtxOptions, ErrorSanitizer>,
         O: IvoStruct,
         CtxOptions,
-        ErrorSanitizer: IvoErrorSanitizer,
+        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     > SchemaOptions<I, O, CtxOptions, ErrorSanitizer>
 {
     pub const fn new() -> SchemaOptionsBuilder<I, O, CtxOptions, ErrorSanitizer> {
@@ -43,10 +43,10 @@ impl<
 }
 
 pub struct SchemaOptionsBuilder<
-    I: IvoInputStruct<ErrorSanitizer>,
+    I: IvoInputStruct<CtxOptions, ErrorSanitizer>,
     O: IvoStruct,
     CtxOptions,
-    ErrorSanitizer: IvoErrorSanitizer,
+    ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     HasPostValidate = No,
     HasDelete = No,
     HasSuccess = No,
@@ -76,10 +76,10 @@ impl<
         HasIgnore,
         HasIgnoreUpdate,
         HasRequired,
-        I: IvoInputStruct<ErrorSanitizer>,
+        I: IvoInputStruct<CtxOptions, ErrorSanitizer>,
         O: IvoStruct,
         CtxOptions,
-        ErrorSanitizer: IvoErrorSanitizer,
+        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     >
     SchemaOptionsBuilder<
         I,
@@ -138,10 +138,10 @@ impl<
         HasIgnore,
         HasIgnoreUpdate,
         HasRequired,
-        I: IvoInputStruct<ErrorSanitizer>,
+        I: IvoInputStruct<CtxOptions, ErrorSanitizer>,
         O: IvoStruct,
         CtxOptions,
-        ErrorSanitizer: IvoErrorSanitizer,
+        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     > Default
     for SchemaOptionsBuilder<
         I,

@@ -28,7 +28,7 @@ pub struct DependentFieldBuilder<
     I: IvoStruct,
     O: IvoStruct,
     CtxOptions,
-    ErrorSanitizer: IvoErrorSanitizer = DefaultErrorSanitizer,
+    ErrorSanitizer: IvoErrorSanitizer<CtxOptions> = DefaultErrorSanitizer,
     HasDefault = No,
     HasParents = No,
     HasResolver = No,
@@ -64,7 +64,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorSanitizer: IvoErrorSanitizer,
+        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     >
     DependentFieldBuilder<
         T,
@@ -111,7 +111,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorSanitizer: IvoErrorSanitizer,
+        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     > Default
     for DependentFieldBuilder<
         T,
@@ -141,7 +141,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorSanitizer: IvoErrorSanitizer,
+        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     > BuildableFieldConfig<I, O, CtxOptions, ErrorSanitizer>
     for DependentFieldBuilder<
         T,
@@ -171,8 +171,13 @@ impl<
     }
 }
 
-impl<T: FieldValue, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorSanitizer: IvoErrorSanitizer>
-    DependentFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer>
+impl<
+        T: FieldValue,
+        I: IvoStruct,
+        O: IvoStruct,
+        CtxOptions,
+        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
+    > DependentFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer>
 {
     pub fn default(
         self,
@@ -206,7 +211,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorSanitizer: IvoErrorSanitizer,
+        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     > DependentFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, HasDefault>
 {
     pub fn depends_on<const N: usize>(
@@ -227,7 +232,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorSanitizer: IvoErrorSanitizer,
+        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     > DependentFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, HasDefault, Yes>
 {
     pub fn resolve<R>(
@@ -254,7 +259,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorSanitizer: IvoErrorSanitizer,
+        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     >
     DependentFieldBuilder<
         T,
@@ -309,7 +314,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorSanitizer: IvoErrorSanitizer,
+        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     >
     DependentFieldBuilder<
         T,
@@ -377,7 +382,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorSanitizer: IvoErrorSanitizer,
+        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     >
     DependentFieldBuilder<
         T,

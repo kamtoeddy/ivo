@@ -159,11 +159,11 @@ struct Place {
     coordinates: Coodinates,
 }
 
-type PlacesCtxOptions = Option<()>;
+type PlacesCtxOptions = Option<(String, Coodinates)>;
 type PlacesTimestamp = ();
 
 static PLACE_MODEL: LazyLock<
-    Model<Place, Place, PlacesCtxOptions, PlacesTimestamp, PlacesErrorSanitizer>,
+    Model<Place, Place, PlacesCtxOptions, PlacesTimestamp, ErrorSanitizer>,
 > = LazyLock::new(|| {
     Model::new(
         |f| {
@@ -196,18 +196,13 @@ static PLACE_MODEL: LazyLock<
     )
 });
 
-type PlacesErrorSanitizerMetadata = Vec<String>;
+struct ErrorSanitizer;
 
-struct PlacesErrorSanitizer;
-
-impl IvoErrorSanitizer for PlacesErrorSanitizer {
-    type Metadata = PlacesErrorSanitizerMetadata;
+impl IvoErrorSanitizer<PlacesCtxOptions> for ErrorSanitizer {
+    type Metadata = Vec<String>;
     type Payload = HashMap<String, Vec<String>>;
 
-    fn sanitize<PlacesCtxOptions>(
-        payload: IvoErrorPayload<Self::Metadata>,
-        _: &PlacesCtxOptions,
-    ) -> Self::Payload {
+    fn sanitize(payload: IvoErrorPayload<Self::Metadata>, o: &PlacesCtxOptions) -> Self::Payload {
         let mut errors = HashMap::new();
 
         for (field_name, error) in payload {
@@ -220,6 +215,10 @@ impl IvoErrorSanitizer for PlacesErrorSanitizer {
             }
 
             errors.insert(field_name, field_errors);
+        }
+
+        if let Some((s, coordinates)) = o {
+            println!("{s:?} {coordinates:?}")
         }
 
         errors

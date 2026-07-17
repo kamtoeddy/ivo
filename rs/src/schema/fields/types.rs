@@ -65,7 +65,7 @@ pub trait IntoFieldValidator<
     I: IvoStruct,
     O: IvoStruct,
     CtxOptions,
-    ErrorSanitizer: IvoErrorSanitizer,
+    ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
 >
 {
     fn into_uniform(self) -> UniformValidator<I, O, CtxOptions, ErrorSanitizer::Metadata>;
@@ -76,7 +76,7 @@ impl<F, Fut, T, I, O, CtxOptions, ErrorSanitizer>
 where
     I: IvoStruct,
     O: IvoStruct,
-    ErrorSanitizer: IvoErrorSanitizer,
+    ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     T: FieldValue,
     F: Fn(T, IvoContext<I, O>, IvoRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = ValidatorResponse<T, ErrorSanitizer::Metadata>> + Send + Sync + 'static,

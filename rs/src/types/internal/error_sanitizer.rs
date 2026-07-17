@@ -16,24 +16,23 @@ pub struct DefaultErrorSanitizer<Metadata: Clone = DefaultFieldErrorMetadata> {
     _metadata: PhantomData<Metadata>,
 }
 
-impl<Metadata: Clone + Send + Sync> IvoErrorSanitizer for DefaultErrorSanitizer<Metadata> {
+impl<CtxOptions, Metadata: Clone + Send + Sync> IvoErrorSanitizer<CtxOptions>
+    for DefaultErrorSanitizer<Metadata>
+{
     type Metadata = Metadata;
     type Payload = IvoErrorPayload<Self::Metadata>;
 
     #[inline(always)]
-    fn sanitize<CtxOptions>(
-        payload: IvoErrorPayload<Self::Metadata>,
-        _: &CtxOptions,
-    ) -> Self::Payload {
+    fn sanitize(payload: IvoErrorPayload<Self::Metadata>, _: &CtxOptions) -> Self::Payload {
         payload
     }
 }
 
-pub trait IvoErrorSanitizer {
+pub trait IvoErrorSanitizer<CtxOptions> {
     type Metadata: Clone + Send + Sync;
     type Payload;
 
-    fn sanitize<CtxOptions>(
+    fn sanitize(
         payload: IvoErrorPayload<Self::Metadata>,
         ctx_options: &CtxOptions,
     ) -> Self::Payload;

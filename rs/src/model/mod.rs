@@ -42,11 +42,11 @@ use crate::{IvoContext, IvoCtxOptions, IvoRwCtxOptions, Model};
 type AsyncHandlerTrigger<'a> = Box<dyn FnOnce() -> BoxFuture<'a, ()> + Send + Sync + 'a>;
 
 impl<
-        I: IvoInputStruct<ErrorSanitizer>,
+        I: IvoInputStruct<CtxOptions, ErrorSanitizer>,
         O: IvoStruct,
         CtxOptions: Clone + Sync + Send,
         Timestamp: Clone + Debug + Send + Sync + 'static,
-        ErrorSanitizer: IvoErrorSanitizer,
+        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     > Model<I, O, CtxOptions, Timestamp, ErrorSanitizer>
 {
     pub async fn create(

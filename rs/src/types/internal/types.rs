@@ -28,7 +28,7 @@ pub trait IvoStruct:
     }
 }
 
-pub trait IvoInputStruct<ErrorSanitizer: IvoErrorSanitizer>:
+pub trait IvoInputStruct<CtxOptions, ErrorSanitizer: IvoErrorSanitizer<CtxOptions>>:
     IvoStruct + WithPartialErrors<ErrorSanitizer::Metadata>
 {
 }
@@ -164,8 +164,9 @@ pub type PostValidatorError<FieldErrorMetadata = DefaultFieldErrorMetadata> =
     HashMap<String, ValidatorError<FieldErrorMetadata>>;
 
 pub type PostValidatorResponse<
-    I: IvoInputStruct<ErrorSanitizer>,
-    ErrorSanitizer: IvoErrorSanitizer,
+    I: IvoInputStruct<CtxOptions, ErrorSanitizer>,
+    CtxOptions,
+    ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
 > = Result<Option<I::Partial>, I::PartialErrors>;
 
 pub type Resolver<T, I: IvoStruct, O: IvoStruct, CtxOptions> = Box<

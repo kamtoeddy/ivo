@@ -31,7 +31,7 @@ pub struct LaxFieldBuilder<
     I: IvoStruct,
     O: IvoStruct,
     CtxOptions,
-    ErrorSanitizer: IvoErrorSanitizer,
+    ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     HasDefault = No,
     HasValidator = No,
     HasRevalidator = No,
@@ -82,7 +82,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorSanitizer: IvoErrorSanitizer,
+        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     >
     LaxFieldBuilder<
         T,
@@ -144,7 +144,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorSanitizer: IvoErrorSanitizer,
+        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     > Default
     for LaxFieldBuilder<
         T,
@@ -184,7 +184,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorSanitizer: IvoErrorSanitizer,
+        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     > BuildableFieldConfig<I, O, CtxOptions, ErrorSanitizer>
     for LaxFieldBuilder<
         T,
@@ -222,8 +222,13 @@ impl<
     }
 }
 
-impl<T: FieldValue, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorSanitizer: IvoErrorSanitizer>
-    LaxFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer>
+impl<
+        T: FieldValue,
+        I: IvoStruct,
+        O: IvoStruct,
+        CtxOptions,
+        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
+    > LaxFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer>
 {
     pub fn default(self, value: T) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, Yes> {
         LaxFieldBuilder {
@@ -254,7 +259,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorSanitizer: IvoErrorSanitizer,
+        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     > LaxFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, HasDefault>
 {
     pub fn validate<F>(
@@ -278,7 +283,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorSanitizer: IvoErrorSanitizer,
+        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     > LaxFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, HasDefault, Yes>
 {
     pub fn re_validate<F>(
@@ -306,7 +311,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorSanitizer: IvoErrorSanitizer,
+        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     >
     LaxFieldBuilder<
         T,
@@ -437,7 +442,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorSanitizer: IvoErrorSanitizer,
+        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     >
     LaxFieldBuilder<
         T,
@@ -500,7 +505,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorSanitizer: IvoErrorSanitizer,
+        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     >
     LaxFieldBuilder<
         T,
@@ -586,7 +591,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorSanitizer: IvoErrorSanitizer,
+        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     >
     LaxFieldBuilder<
         T,
@@ -672,7 +677,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorSanitizer: IvoErrorSanitizer,
+        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     >
     LaxFieldBuilder<
         T,

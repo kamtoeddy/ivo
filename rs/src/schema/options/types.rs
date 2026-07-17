@@ -47,10 +47,10 @@ pub struct OnSuccessConfig<I: IvoStruct, O: IvoStruct, CtxOptions> {
 }
 
 pub struct PostValidationConfig<
-    I: IvoInputStruct<ErrorSanitizer>,
+    I: IvoInputStruct<CtxOptions, ErrorSanitizer>,
     O: IvoStruct,
     CtxOptions,
-    ErrorSanitizer: IvoErrorSanitizer,
+    ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
 > {
     pub fields: Vec<&'static str>,
     pub pre_validator: Option<PostValidator<I, O, CtxOptions, ErrorSanitizer>>,
@@ -58,10 +58,10 @@ pub struct PostValidationConfig<
 }
 
 pub trait IntoPostValidator<
-    I: IvoInputStruct<ErrorSanitizer>,
+    I: IvoInputStruct<CtxOptions, ErrorSanitizer>,
     O: IvoStruct,
     CtxOptions,
-    ErrorSanitizer: IvoErrorSanitizer,
+    ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
 >
 {
     fn into_validator(self) -> PostValidator<I, O, CtxOptions, ErrorSanitizer>;
@@ -70,11 +70,14 @@ pub trait IntoPostValidator<
 impl<F, Fut, I, O, CtxOptions, ErrorSanitizer> IntoPostValidator<I, O, CtxOptions, ErrorSanitizer>
     for F
 where
-    I: IvoInputStruct<ErrorSanitizer>,
+    I: IvoInputStruct<CtxOptions, ErrorSanitizer>,
     O: IvoStruct,
-    ErrorSanitizer: IvoErrorSanitizer,
+    ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     F: Fn(IvoContext<I, O>, IvoRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
-    Fut: Future<Output = PostValidatorResponse<I, ErrorSanitizer>> + Send + Sync + 'static,
+    Fut: Future<Output = PostValidatorResponse<I, CtxOptions, ErrorSanitizer>>
+        + Send
+        + Sync
+        + 'static,
 {
     fn into_validator(self) -> PostValidator<I, O, CtxOptions, ErrorSanitizer> {
         Box::new(move |ctx, o| Box::pin(self(ctx, o)))
@@ -85,27 +88,27 @@ pub type PostValidator<I, O, CtxOptions, ErrorSanitizer> = Box<
     dyn Fn(
             IvoContext<I, O>,
             IvoRwCtxOptions<CtxOptions>,
-        ) -> BoxFuture<'static, PostValidatorResponse<I, ErrorSanitizer>>
+        ) -> BoxFuture<'static, PostValidatorResponse<I, CtxOptions, ErrorSanitizer>>
         + Send
         + Sync
         + 'static,
 >;
 
 pub struct RequiredOptionConfig<
-    I: IvoInputStruct<ErrorSanitizer>,
+    I: IvoInputStruct<CtxOptions, ErrorSanitizer>,
     O: IvoStruct,
     CtxOptions,
-    ErrorSanitizer: IvoErrorSanitizer,
+    ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
 > {
     pub fields: Vec<&'static str>,
     pub resolver: RequiredOptionResolver<I, O, CtxOptions, ErrorSanitizer>,
 }
 
 pub trait IntoRequiredOptionsResolver<
-    I: IvoInputStruct<ErrorSanitizer>,
+    I: IvoInputStruct<CtxOptions, ErrorSanitizer>,
     O: IvoStruct,
     CtxOptions,
-    ErrorSanitizer: IvoErrorSanitizer,
+    ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
 >
 {
     fn into_resolver(self) -> RequiredOptionResolver<I, O, CtxOptions, ErrorSanitizer>;
@@ -114,9 +117,9 @@ pub trait IntoRequiredOptionsResolver<
 impl<F, Fut, I, O, CtxOptions, ErrorSanitizer>
     IntoRequiredOptionsResolver<I, O, CtxOptions, ErrorSanitizer> for F
 where
-    I: IvoInputStruct<ErrorSanitizer>,
+    I: IvoInputStruct<CtxOptions, ErrorSanitizer>,
     O: IvoStruct,
-    ErrorSanitizer: IvoErrorSanitizer,
+    ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     F: Fn(IvoContext<I, O>, IvoRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = Option<I::PartialErrors>> + Send + Sync + 'static,
 {
@@ -126,10 +129,10 @@ where
 }
 
 pub type RequiredOptionResolver<
-    I: IvoInputStruct<ErrorSanitizer>,
+    I: IvoInputStruct<CtxOptions, ErrorSanitizer>,
     O: IvoStruct,
     CtxOptions,
-    ErrorSanitizer: IvoErrorSanitizer,
+    ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
 > = Box<
     dyn Fn(
             IvoContext<I, O>,
@@ -140,14 +143,14 @@ pub type RequiredOptionResolver<
         + 'static,
 >;
 
-type UniformRequiredResponse<'a, ErrorSanitizer: IvoErrorSanitizer> =
+type UniformRequiredResponse<'a, CtxOptions, ErrorSanitizer: IvoErrorSanitizer<CtxOptions>> =
     BoxFuture<'a, Option<Vec<(String, FieldError<ErrorSanitizer::Metadata>)>>>;
 
 pub trait UniformRequiredResolver<
-    I: IvoInputStruct<ErrorSanitizer>,
+    I: IvoInputStruct<CtxOptions, ErrorSanitizer>,
     O: IvoStruct,
     CtxOptions: Send + Sync,
-    ErrorSanitizer: IvoErrorSanitizer,
+    ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
 >
 {
     fn resolve<'a>(
@@ -155,22 +158,22 @@ pub trait UniformRequiredResolver<
         field_names: HashSet<&'a str>,
         ctx: IvoContext<I, O>,
         o: IvoRwCtxOptions<CtxOptions>,
-    ) -> UniformRequiredResponse<'a, ErrorSanitizer>;
+    ) -> UniformRequiredResponse<'a, CtxOptions, ErrorSanitizer>;
 }
 
 impl<I, O, CtxOptions: Send + Sync, ErrorSanitizer>
     UniformRequiredResolver<I, O, CtxOptions, ErrorSanitizer> for RequiredResolver<I, O, CtxOptions>
 where
-    I: IvoInputStruct<ErrorSanitizer>,
+    I: IvoInputStruct<CtxOptions, ErrorSanitizer>,
     O: IvoStruct,
-    ErrorSanitizer: IvoErrorSanitizer,
+    ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
 {
     fn resolve<'a>(
         &'a self,
         field_names: HashSet<&'a str>,
         ctx: IvoContext<I, O>,
         o: IvoRwCtxOptions<CtxOptions>,
-    ) -> UniformRequiredResponse<'a, ErrorSanitizer> {
+    ) -> UniformRequiredResponse<'a, CtxOptions, ErrorSanitizer> {
         Box::pin(async move {
             self(ctx, o).await.map(|reason| {
                 vec![(
@@ -189,16 +192,16 @@ impl<I, O, CtxOptions: Send + Sync, ErrorSanitizer>
     UniformRequiredResolver<I, O, CtxOptions, ErrorSanitizer>
     for RequiredOptionConfig<I, O, CtxOptions, ErrorSanitizer>
 where
-    I: IvoInputStruct<ErrorSanitizer>,
+    I: IvoInputStruct<CtxOptions, ErrorSanitizer>,
     O: IvoStruct,
-    ErrorSanitizer: IvoErrorSanitizer,
+    ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
 {
     fn resolve<'a>(
         &'a self,
         field_names: HashSet<&'a str>,
         ctx: IvoContext<I, O>,
         o: IvoRwCtxOptions<CtxOptions>,
-    ) -> UniformRequiredResponse<'a, ErrorSanitizer> {
+    ) -> UniformRequiredResponse<'a, CtxOptions, ErrorSanitizer> {
         let resolver = &self.resolver;
 
         Box::pin(async move {
@@ -220,10 +223,10 @@ where
 type UniformIgnoreResponse<'a> = BoxFuture<'a, bool>;
 
 pub trait UniformIgnoreResolver<
-    I: IvoInputStruct<ErrorSanitizer>,
+    I: IvoInputStruct<CtxOptions, ErrorSanitizer>,
     O: IvoStruct,
     CtxOptions: Send + Sync,
-    ErrorSanitizer: IvoErrorSanitizer,
+    ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
 >
 {
     fn resolve<'a>(
@@ -236,9 +239,9 @@ pub trait UniformIgnoreResolver<
 impl<I, O, CtxOptions: Send + Sync, ErrorSanitizer>
     UniformIgnoreResolver<I, O, CtxOptions, ErrorSanitizer> for BooleanResolver<I, O, CtxOptions>
 where
-    I: IvoInputStruct<ErrorSanitizer>,
+    I: IvoInputStruct<CtxOptions, ErrorSanitizer>,
     O: IvoStruct,
-    ErrorSanitizer: IvoErrorSanitizer,
+    ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
 {
     fn resolve<'a>(
         &'a self,
@@ -253,9 +256,9 @@ impl<I, O, CtxOptions: Send + Sync, ErrorSanitizer>
     UniformIgnoreResolver<I, O, CtxOptions, ErrorSanitizer>
     for IgnoreUpdateOptionResolver<I, O, CtxOptions>
 where
-    I: IvoInputStruct<ErrorSanitizer>,
+    I: IvoInputStruct<CtxOptions, ErrorSanitizer>,
     O: IvoStruct,
-    ErrorSanitizer: IvoErrorSanitizer,
+    ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
 {
     fn resolve<'a>(
         &'a self,

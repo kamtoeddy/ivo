@@ -227,7 +227,7 @@ pub fn generate_ivo_input_struct_impls(
             }
         }
 
-        impl<ErrorSanitizer: ::ivo::__private_types::IvoErrorSanitizer> ::ivo::__private_types::IvoInputStruct<ErrorSanitizer> for #struct_name { }
+        impl<CtxOptions, ErrorSanitizer: ::ivo::__private_types::IvoErrorSanitizer<CtxOptions>> ::ivo::__private_types::IvoInputStruct<CtxOptions, ErrorSanitizer> for #struct_name { }
 
         impl<FieldErrorMetadata: Send + Sync> ::ivo::__private_types::types::WithPartialErrors<FieldErrorMetadata> for #struct_name {
             type PartialErrors = #partial_errors_struct_name<FieldErrorMetadata>;

@@ -20,18 +20,18 @@ pub type IvoContext<I: IvoStruct, O: IvoStruct = I> = IvoShared<InternalIvoConte
 pub type IvoSharedInput<I: IvoStruct> = IvoShared<I::Partial>;
 
 pub(crate) type InternalFieldConfigs<
-    I: IvoInputStruct<ErrorSanitizer>,
+    I: IvoInputStruct<CtxOptions, ErrorSanitizer>,
     O: IvoStruct,
     CtxOptions,
-    ErrorSanitizer: IvoErrorSanitizer,
+    ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
 > = HashMap<&'static str, InternalFieldConfig<I, O, CtxOptions, ErrorSanitizer>>;
 
 pub struct Model<
-    I: IvoInputStruct<ErrorSanitizer>,
+    I: IvoInputStruct<CtxOptions, ErrorSanitizer>,
     O: IvoStruct = I,
     CtxOptions: Clone + Sync + Send = Option<()>,
     Timestamp: Clone + Debug + Send + Sync + 'static = (),
-    ErrorSanitizer: IvoErrorSanitizer = DefaultErrorSanitizer,
+    ErrorSanitizer: IvoErrorSanitizer<CtxOptions> = DefaultErrorSanitizer,
 > {
     pub(crate) field_configs: InternalFieldConfigs<I, O, CtxOptions, ErrorSanitizer>,
     pub(crate) options: SchemaOptions<I, O, CtxOptions, ErrorSanitizer>,

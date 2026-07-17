@@ -24,7 +24,7 @@ pub struct VirtualFieldBuilder<
     I: IvoStruct,
     O: IvoStruct,
     CtxOptions,
-    ErrorSanitizer: IvoErrorSanitizer,
+    ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     HasValidator = No,
     HasAlias = No,
     HasRevalidator = No,
@@ -75,7 +75,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorSanitizer: IvoErrorSanitizer,
+        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     >
     VirtualFieldBuilder<
         T,
@@ -137,7 +137,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorSanitizer: IvoErrorSanitizer,
+        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     > Default
     for VirtualFieldBuilder<
         T,
@@ -176,7 +176,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorSanitizer: IvoErrorSanitizer,
+        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     > BuildableFieldConfig<I, O, CtxOptions, ErrorSanitizer>
     for VirtualFieldBuilder<
         T,
@@ -221,7 +221,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorSanitizer: IvoErrorSanitizer,
+        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     > VirtualFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, HasValidator, No, HasRevalidator>
 {
     /// this can used to mask the actual name of the virtual field from the public
@@ -253,7 +253,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorSanitizer: IvoErrorSanitizer,
+        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     > VirtualFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, No, HasAlias>
 {
     pub fn validate<F>(
@@ -277,7 +277,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorSanitizer: IvoErrorSanitizer,
+        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     > VirtualFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, Yes, HasAlias>
 {
     pub fn re_validate<F>(
@@ -303,7 +303,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorSanitizer: IvoErrorSanitizer,
+        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     > VirtualFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, Yes, HasAlias, HasRevalidator>
 {
     pub fn required<R>(
@@ -342,7 +342,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorSanitizer: IvoErrorSanitizer,
+        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     >
     VirtualFieldBuilder<
         T,
@@ -395,7 +395,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorSanitizer: IvoErrorSanitizer,
+        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     >
     VirtualFieldBuilder<
         T,
@@ -511,7 +511,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorSanitizer: IvoErrorSanitizer,
+        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     >
     VirtualFieldBuilder<
         T,
@@ -596,7 +596,7 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorSanitizer: IvoErrorSanitizer,
+        ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
     >
     VirtualFieldBuilder<
         T,
