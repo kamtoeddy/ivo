@@ -21,7 +21,7 @@ async fn should_respect_custom_error_tool() {
             let errors = p.get("coordinates").unwrap();
 
             assert_eq!(errors.len(), 1);
-            assert!(errors.contains(&customized_string("InvalidNumber")));
+            assert!(errors.contains(&customize("InvalidNumber")));
         }
         _ => unreachable!("expected a validation error"),
     }
@@ -43,9 +43,9 @@ async fn should_respect_custom_error_tool() {
             let errors = p.get("coordinates").unwrap();
 
             assert_eq!(errors.len(), 3);
-            assert!(errors.contains(&customized_string("Out of range error")));
-            assert!(errors.contains(&customized_string("LatitudeOutOfRange: [-90, 90]")));
-            assert!(errors.contains(&customized_string("LongitudeOutOfRange: [-180, 180]")));
+            assert!(errors.contains(&customize("Out of range error")));
+            assert!(errors.contains(&customize("LatitudeOutOfRange: [-90, 90]")));
+            assert!(errors.contains(&customize("LongitudeOutOfRange: [-180, 180]")));
         }
         _ => unreachable!("expected a validation error"),
     }
@@ -75,7 +75,7 @@ async fn should_respect_custom_error_tool() {
             let errors = payload.get("coordinates").unwrap();
 
             assert_eq!(errors.len(), 1);
-            assert!(errors.contains(&customized_string("InvalidNumber")));
+            assert!(errors.contains(&customize("InvalidNumber")));
         }
         _ => unreachable!("expected a validation error"),
     }
@@ -98,9 +98,9 @@ async fn should_respect_custom_error_tool() {
             let errors = payload.get("coordinates").unwrap();
 
             assert_eq!(errors.len(), 3);
-            assert!(errors.contains(&customized_string("Out of range error")));
-            assert!(errors.contains(&customized_string("LatitudeOutOfRange: [-90, 90]")));
-            assert!(errors.contains(&customized_string("LongitudeOutOfRange: [-180, 180]")));
+            assert!(errors.contains(&customize("Out of range error")));
+            assert!(errors.contains(&customize("LatitudeOutOfRange: [-90, 90]")));
+            assert!(errors.contains(&customize("LongitudeOutOfRange: [-180, 180]")));
         }
         _ => unreachable!("expected a validation error"),
     }
@@ -206,11 +206,11 @@ impl IvoErrorSanitizer<PlacesCtxOptions> for ErrorSanitizer {
         let mut errors = HashMap::new();
 
         for (field_name, error) in payload {
-            let mut field_errors = vec![customized_string(&error.reason)];
+            let mut field_errors = vec![customize(&error.reason)];
 
-            if let Some(ref metadata) = error.metadata {
+            if let Some(metadata) = error.metadata {
                 for err in metadata {
-                    field_errors.push(customized_string(err));
+                    field_errors.push(customize(&err));
                 }
             }
 
@@ -225,6 +225,6 @@ impl IvoErrorSanitizer<PlacesCtxOptions> for ErrorSanitizer {
     }
 }
 
-fn customized_string(s: &str) -> String {
+fn customize(s: &str) -> String {
     format!("customized: {s}")
 }
