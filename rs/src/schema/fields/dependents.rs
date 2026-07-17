@@ -18,7 +18,7 @@ use crate::{
     },
     types::internal::{
         types::{erase_value, ErasedValue},
-        DefaultErrorTool, IvoErrorTool,
+        DefaultErrorSanitizer, IvoErrorSanitizer,
     },
     IvoStruct,
 };
@@ -28,7 +28,7 @@ pub struct DependentFieldBuilder<
     I: IvoStruct,
     O: IvoStruct,
     CtxOptions,
-    ErrorTool: IvoErrorTool = DefaultErrorTool,
+    ErrorSanitizer: IvoErrorSanitizer = DefaultErrorSanitizer,
     HasDefault = No,
     HasParents = No,
     HasResolver = No,
@@ -44,7 +44,7 @@ pub struct DependentFieldBuilder<
     on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
     // markers...
     _t: PhantomData<T>,
-    _err: PhantomData<ErrorTool>,
+    _err: PhantomData<ErrorSanitizer>,
     _default: PhantomData<HasDefault>,
     _depends_on: PhantomData<HasParents>,
     _resolver: PhantomData<HasResolver>,
@@ -64,14 +64,14 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorSanitizer: IvoErrorSanitizer,
     >
     DependentFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
-        ErrorTool,
+        ErrorSanitizer,
         HasDefault,
         HasParents,
         HasResolver,
@@ -111,14 +111,14 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorSanitizer: IvoErrorSanitizer,
     > Default
     for DependentFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
-        ErrorTool,
+        ErrorSanitizer,
         HasDefault,
         HasParents,
         HasResolver,
@@ -141,14 +141,14 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
-    > BuildableFieldConfig<I, O, CtxOptions, ErrorTool>
+        ErrorSanitizer: IvoErrorSanitizer,
+    > BuildableFieldConfig<I, O, CtxOptions, ErrorSanitizer>
     for DependentFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
-        ErrorTool,
+        ErrorSanitizer,
         HasDefault,
         Yes,
         Yes,
@@ -157,7 +157,7 @@ impl<
         HasSuccess,
     >
 {
-    fn build(self) -> InternalFieldConfig<I, O, CtxOptions, ErrorTool> {
+    fn build(self) -> InternalFieldConfig<I, O, CtxOptions, ErrorSanitizer> {
         FieldConfig {
             field_type: FieldType::Dependent,
             default: self.default,
@@ -171,10 +171,13 @@ impl<
     }
 }
 
-impl<T: FieldValue, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool>
-    DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool>
+impl<T: FieldValue, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorSanitizer: IvoErrorSanitizer>
+    DependentFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer>
 {
-    pub fn default(self, value: T) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes> {
+    pub fn default(
+        self,
+        value: T,
+    ) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, Yes> {
         DependentFieldBuilder {
             default: Some(ValueResolverWithSharedInput::Static(erase_value(value))),
             ..Default::default()
@@ -184,7 +187,7 @@ impl<T: FieldValue, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorT
     pub fn default_fn<F>(
         self,
         default_fn: F,
-    ) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool, YesComputed>
+    ) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, YesComputed>
     where
         F: IntoValueResolverWithSharedInput<T, I, CtxOptions>,
     {
@@ -203,13 +206,13 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
-    > DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasDefault>
+        ErrorSanitizer: IvoErrorSanitizer,
+    > DependentFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, HasDefault>
 {
     pub fn depends_on<const N: usize>(
         self,
         fields: [&'static str; N],
-    ) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasDefault, Yes> {
+    ) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, HasDefault, Yes> {
         DependentFieldBuilder {
             default: self.default,
             depends_on: Some(Vec::from(fields)),
@@ -224,13 +227,13 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
-    > DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasDefault, Yes>
+        ErrorSanitizer: IvoErrorSanitizer,
+    > DependentFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, HasDefault, Yes>
 {
     pub fn resolve<R>(
         self,
         resolver: R,
-    ) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasDefault, Yes, Yes>
+    ) -> DependentFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, HasDefault, Yes, Yes>
     where
         R: IntoUniformResolver<T, I, O, CtxOptions>,
     {
@@ -251,14 +254,14 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorSanitizer: IvoErrorSanitizer,
     >
     DependentFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
-        ErrorTool,
+        ErrorSanitizer,
         HasDefault,
         Yes,
         Yes,
@@ -278,7 +281,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrorTool,
+        ErrorSanitizer,
         HasDefault,
         Yes,
         Yes,
@@ -306,14 +309,14 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorSanitizer: IvoErrorSanitizer,
     >
     DependentFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
-        ErrorTool,
+        ErrorSanitizer,
         HasDefault,
         Yes,
         Yes,
@@ -330,7 +333,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrorTool,
+        ErrorSanitizer,
         HasDefault,
         Yes,
         Yes,
@@ -374,14 +377,14 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorSanitizer: IvoErrorSanitizer,
     >
     DependentFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
-        ErrorTool,
+        ErrorSanitizer,
         HasDefault,
         Yes,
         Yes,
@@ -398,7 +401,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrorTool,
+        ErrorSanitizer,
         HasDefault,
         Yes,
         Yes,

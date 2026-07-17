@@ -13,7 +13,7 @@ use crate::{
     },
     types::internal::{
         types::{erase_value, ErasedValue},
-        IvoErrorTool,
+        IvoErrorSanitizer,
     },
     IvoStruct,
 };
@@ -23,7 +23,7 @@ pub struct ConstantFieldBuilder<
     I: IvoStruct,
     O: IvoStruct,
     CtxOptions,
-    ErrorTool: IvoErrorTool,
+    ErrorSanitizer: IvoErrorSanitizer,
     HasDefault = No,
     HasDelete = No,
     HasSuccess = No,
@@ -33,7 +33,7 @@ pub struct ConstantFieldBuilder<
     on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
     // markers...
     _t: PhantomData<T>,
-    _err: PhantomData<ErrorTool>,
+    _err: PhantomData<ErrorSanitizer>,
     _default: PhantomData<HasDefault>,
     _del_handlers: PhantomData<HasDelete>,
     _success_handlers: PhantomData<HasSuccess>,
@@ -47,8 +47,8 @@ impl<
         O: IvoStruct,
         T: FieldValue,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
-    > ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasDefault, HasDelete, HasSuccess>
+        ErrorSanitizer: IvoErrorSanitizer,
+    > ConstantFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, HasDefault, HasDelete, HasSuccess>
 {
     pub const fn new() -> Self {
         Self {
@@ -72,9 +72,9 @@ impl<
         O: IvoStruct,
         T: FieldValue,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorSanitizer: IvoErrorSanitizer,
     > Default
-    for ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasDefault, HasDelete, HasSuccess>
+    for ConstantFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, HasDefault, HasDelete, HasSuccess>
 {
     fn default() -> Self {
         Self::new()
@@ -88,11 +88,11 @@ impl<
         O: IvoStruct,
         T: FieldValue,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
-    > BuildableFieldConfig<I, O, CtxOptions, ErrorTool>
-    for ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, HasDelete, HasSuccess>
+        ErrorSanitizer: IvoErrorSanitizer,
+    > BuildableFieldConfig<I, O, CtxOptions, ErrorSanitizer>
+    for ConstantFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, Yes, HasDelete, HasSuccess>
 {
-    fn build(self) -> InternalFieldConfig<I, O, CtxOptions, ErrorTool> {
+    fn build(self) -> InternalFieldConfig<I, O, CtxOptions, ErrorSanitizer> {
         FieldConfig {
             field_type: FieldType::Constant,
             value: self.value,
@@ -103,10 +103,10 @@ impl<
     }
 }
 
-impl<I: IvoStruct, O: IvoStruct, T: FieldValue, CtxOptions, ErrorTool: IvoErrorTool>
-    ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool>
+impl<I: IvoStruct, O: IvoStruct, T: FieldValue, CtxOptions, ErrorSanitizer: IvoErrorSanitizer>
+    ConstantFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer>
 {
-    pub fn value(self, value: T) -> ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes> {
+    pub fn value(self, value: T) -> ConstantFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, Yes> {
         ConstantFieldBuilder {
             value: Some(ValueResolverWithSharedInput::Static(erase_value(value))),
             on_delete_fns: None,
@@ -118,7 +118,7 @@ impl<I: IvoStruct, O: IvoStruct, T: FieldValue, CtxOptions, ErrorTool: IvoErrorT
     pub fn value_fn<F>(
         self,
         resolver: F,
-    ) -> ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes>
+    ) -> ConstantFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, Yes>
     where
         F: IntoValueResolverWithSharedInput<T, I, CtxOptions>,
     {
@@ -139,13 +139,13 @@ impl<
         O: IvoStruct,
         T: FieldValue,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
-    > ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, HasDelete, HasSuccess>
+        ErrorSanitizer: IvoErrorSanitizer,
+    > ConstantFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, Yes, HasDelete, HasSuccess>
 {
     pub fn on_delete<H>(
         self,
         handler: H,
-    ) -> ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, Yes, HasSuccess>
+    ) -> ConstantFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, Yes, Yes, HasSuccess>
     where
         H: IntoDeleteHandler<O, CtxOptions>,
     {
@@ -177,13 +177,13 @@ impl<
         O: IvoStruct,
         T: FieldValue,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
-    > ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, HasDelete, HasSuccess>
+        ErrorSanitizer: IvoErrorSanitizer,
+    > ConstantFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, Yes, HasDelete, HasSuccess>
 {
     pub fn on_success<H>(
         self,
         handler: H,
-    ) -> ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, HasDelete, Yes>
+    ) -> ConstantFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, Yes, HasDelete, Yes>
     where
         H: IntoSuccessHandler<I, O, CtxOptions>,
     {

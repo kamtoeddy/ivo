@@ -21,7 +21,7 @@ use crate::{
     },
     types::internal::{
         types::{erase_value, ErasedValue},
-        IvoErrorTool,
+        IvoErrorSanitizer,
     },
     IvoStruct,
 };
@@ -31,7 +31,7 @@ pub struct LaxFieldBuilder<
     I: IvoStruct,
     O: IvoStruct,
     CtxOptions,
-    ErrorTool: IvoErrorTool,
+    ErrorSanitizer: IvoErrorSanitizer,
     HasDefault = No,
     HasValidator = No,
     HasRevalidator = No,
@@ -44,8 +44,8 @@ pub struct LaxFieldBuilder<
     HasSuccess = No,
 > {
     default: Option<ValueResolverWithSharedInput<ErasedValue, I, CtxOptions>>,
-    validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
-    re_validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
+    validator: Option<UniformValidator<I, O, CtxOptions, ErrorSanitizer::FieldMetadata>>,
+    re_validator: Option<UniformValidator<I, O, CtxOptions, ErrorSanitizer::FieldMetadata>>,
     required_fn: Option<RequiredResolver<I, O, CtxOptions>>,
     should_ignore: Option<BooleanResolver<I, O, CtxOptions>>,
     ignore_init: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
@@ -82,14 +82,14 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorSanitizer: IvoErrorSanitizer,
     >
     LaxFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
-        ErrorTool,
+        ErrorSanitizer,
         HasDefault,
         HasValidator,
         HasRevalidator,
@@ -144,14 +144,14 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorSanitizer: IvoErrorSanitizer,
     > Default
     for LaxFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
-        ErrorTool,
+        ErrorSanitizer,
         HasDefault,
         HasValidator,
         HasRevalidator,
@@ -184,14 +184,14 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
-    > BuildableFieldConfig<I, O, CtxOptions, ErrorTool>
+        ErrorSanitizer: IvoErrorSanitizer,
+    > BuildableFieldConfig<I, O, CtxOptions, ErrorSanitizer>
     for LaxFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
-        ErrorTool,
+        ErrorSanitizer,
         HasDefault,
         HasValidator,
         HasRevalidator,
@@ -204,7 +204,7 @@ impl<
         HasSuccess,
     >
 {
-    fn build(self) -> InternalFieldConfig<I, O, CtxOptions, ErrorTool> {
+    fn build(self) -> InternalFieldConfig<I, O, CtxOptions, ErrorSanitizer> {
         FieldConfig {
             field_type: FieldType::Lax,
             default: self.default,
@@ -222,10 +222,10 @@ impl<
     }
 }
 
-impl<T: FieldValue, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool>
-    LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool>
+impl<T: FieldValue, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorSanitizer: IvoErrorSanitizer>
+    LaxFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer>
 {
-    pub fn default(self, value: T) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes> {
+    pub fn default(self, value: T) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, Yes> {
         LaxFieldBuilder {
             default: Some(ValueResolverWithSharedInput::Static(erase_value(value))),
             ..Default::default()
@@ -235,7 +235,7 @@ impl<T: FieldValue, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorT
     pub fn default_fn<F>(
         self,
         default_fn: F,
-    ) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, YesComputed>
+    ) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, YesComputed>
     where
         F: IntoValueResolverWithSharedInput<T, I, CtxOptions>,
     {
@@ -254,15 +254,15 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
-    > LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasDefault>
+        ErrorSanitizer: IvoErrorSanitizer,
+    > LaxFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, HasDefault>
 {
     pub fn validate<F>(
         self,
         validator: F,
-    ) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasDefault, Yes>
+    ) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, HasDefault, Yes>
     where
-        F: IntoFieldValidator<T, I, O, CtxOptions, ErrorTool>,
+        F: IntoFieldValidator<T, I, O, CtxOptions, ErrorSanitizer>,
     {
         LaxFieldBuilder {
             default: self.default,
@@ -278,15 +278,15 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
-    > LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasDefault, Yes>
+        ErrorSanitizer: IvoErrorSanitizer,
+    > LaxFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, HasDefault, Yes>
 {
     pub fn re_validate<F>(
         self,
         re_validator: F,
-    ) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasDefault, Yes>
+    ) -> LaxFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, HasDefault, Yes>
     where
-        F: IntoFieldValidator<T, I, O, CtxOptions, ErrorTool>,
+        F: IntoFieldValidator<T, I, O, CtxOptions, ErrorSanitizer>,
     {
         LaxFieldBuilder {
             default: self.default,
@@ -306,14 +306,14 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorSanitizer: IvoErrorSanitizer,
     >
     LaxFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
-        ErrorTool,
+        ErrorSanitizer,
         HasDefault,
         HasValidator,
         HasRevalidator,
@@ -328,7 +328,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrorTool,
+        ErrorSanitizer,
         HasDefault,
         HasValidator,
         HasRevalidator,
@@ -354,7 +354,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrorTool,
+        ErrorSanitizer,
         HasDefault,
         HasValidator,
         HasRevalidator,
@@ -381,7 +381,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrorTool,
+        ErrorSanitizer,
         HasDefault,
         HasValidator,
         HasRevalidator,
@@ -406,7 +406,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrorTool,
+        ErrorSanitizer,
         HasDefault,
         HasValidator,
         HasRevalidator,
@@ -437,14 +437,14 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorSanitizer: IvoErrorSanitizer,
     >
     LaxFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
-        ErrorTool,
+        ErrorSanitizer,
         HasDefault,
         HasValidator,
         HasRevalidator,
@@ -462,7 +462,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrorTool,
+        ErrorSanitizer,
         HasDefault,
         HasValidator,
         HasRevalidator,
@@ -500,14 +500,14 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorSanitizer: IvoErrorSanitizer,
     >
     LaxFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
-        ErrorTool,
+        ErrorSanitizer,
         HasDefault,
         HasValidator,
         HasRevalidator,
@@ -528,7 +528,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrorTool,
+        ErrorSanitizer,
         HasDefault,
         HasValidator,
         HasRevalidator,
@@ -586,14 +586,14 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorSanitizer: IvoErrorSanitizer,
     >
     LaxFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
-        ErrorTool,
+        ErrorSanitizer,
         HasDefault,
         HasValidator,
         HasRevalidator,
@@ -614,7 +614,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrorTool,
+        ErrorSanitizer,
         HasDefault,
         HasValidator,
         HasRevalidator,
@@ -672,14 +672,14 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorSanitizer: IvoErrorSanitizer,
     >
     LaxFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
-        ErrorTool,
+        ErrorSanitizer,
         HasDefault,
         HasValidator,
         HasRevalidator,
@@ -700,7 +700,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrorTool,
+        ErrorSanitizer,
         HasDefault,
         HasValidator,
         HasRevalidator,

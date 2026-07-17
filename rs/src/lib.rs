@@ -15,6 +15,6 @@ pub use ivo_derive::{IvoInputStruct, IvoStruct};
 
 pub use schema::fields::IvoField;
 pub use types::internal::{
-    DefaultErrorTool, IvoErrorPayload, IvoErrorTool, IvoInputStruct, IvoStruct,
+    DefaultErrorSanitizer, IvoErrorPayload, IvoErrorSanitizer, IvoInputStruct, IvoStruct,
 };
 pub use types::{IvoContext, IvoCtxOptions, IvoRwCtxOptions, IvoShared, IvoSharedInput, Model};

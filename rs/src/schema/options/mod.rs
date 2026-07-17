@@ -13,20 +13,20 @@ use crate::{
         types::No,
         Yes,
     },
-    IvoErrorTool, IvoInputStruct, IvoStruct,
+    IvoErrorSanitizer, IvoInputStruct, IvoStruct,
 };
 use base::{SchemaOptions, SchemaOptionsBuilder};
 use on_success::{BuildableOnSuccess, OnSuccessOptionBuilder};
 use post_validate::{BuildablePostValidator, PostValidateOptionBuilder};
 
 pub trait BuildableSchemaOptions<
-    I: IvoInputStruct<ErrorTool>,
+    I: IvoInputStruct<ErrorSanitizer>,
     O: IvoStruct,
     CtxOptions,
-    ErrorTool: IvoErrorTool,
+    ErrorSanitizer: IvoErrorSanitizer,
 >
 {
-    fn build(self) -> SchemaOptions<I, O, CtxOptions, ErrorTool>;
+    fn build(self) -> SchemaOptions<I, O, CtxOptions, ErrorSanitizer>;
 }
 
 impl<
@@ -36,16 +36,16 @@ impl<
         HasIgnore,
         HasIgnoreUpdate,
         HasRequired,
-        I: IvoInputStruct<ErrorTool>,
+        I: IvoInputStruct<ErrorSanitizer>,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
-    > BuildableSchemaOptions<I, O, CtxOptions, ErrorTool>
+        ErrorSanitizer: IvoErrorSanitizer,
+    > BuildableSchemaOptions<I, O, CtxOptions, ErrorSanitizer>
     for SchemaOptionsBuilder<
         I,
         O,
         CtxOptions,
-        ErrorTool,
+        ErrorSanitizer,
         HasPostValidate,
         HasDelete,
         HasSuccess,
@@ -54,7 +54,7 @@ impl<
         HasRequired,
     >
 {
-    fn build(self) -> SchemaOptions<I, O, CtxOptions, ErrorTool> {
+    fn build(self) -> SchemaOptions<I, O, CtxOptions, ErrorSanitizer> {
         SchemaOptions {
             on_delete_fns: self.on_delete_fns,
             on_success_fns: self.on_success_fns,
@@ -73,16 +73,16 @@ impl<
         HasIgnore,
         HasIgnoreUpdate,
         HasRequired,
-        I: IvoInputStruct<ErrorTool>,
+        I: IvoInputStruct<ErrorSanitizer>,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorSanitizer: IvoErrorSanitizer,
     >
     SchemaOptionsBuilder<
         I,
         O,
         CtxOptions,
-        ErrorTool,
+        ErrorSanitizer,
         HasPostValidate,
         HasDelete,
         HasSuccess,
@@ -99,7 +99,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrorTool,
+        ErrorSanitizer,
         HasPostValidate,
         HasDelete,
         HasSuccess,
@@ -134,7 +134,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrorTool,
+        ErrorSanitizer,
         HasPostValidate,
         Yes,
         HasSuccess,
@@ -166,7 +166,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrorTool,
+        ErrorSanitizer,
         HasPostValidate,
         HasDelete,
         Yes,
@@ -201,7 +201,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrorTool,
+        ErrorSanitizer,
         Yes,
         HasDelete,
         HasSuccess,
@@ -210,11 +210,12 @@ impl<
         HasRequired,
     >
     where
-        Builder: Fn(PostValidateOptionBuilder<I, O, CtxOptions, ErrorTool, Yes>) -> Buildable,
-        Buildable: BuildablePostValidator<I, O, CtxOptions, ErrorTool>,
+        Builder: Fn(PostValidateOptionBuilder<I, O, CtxOptions, ErrorSanitizer, Yes>) -> Buildable,
+        Buildable: BuildablePostValidator<I, O, CtxOptions, ErrorSanitizer>,
     {
         let config =
-            b(PostValidateOptionBuilder::<I, O, CtxOptions, ErrorTool>::fields(fields)).build();
+            b(PostValidateOptionBuilder::<I, O, CtxOptions, ErrorSanitizer>::fields(fields))
+                .build();
 
         let mut post_validate = self.post_validate.unwrap_or_default();
         post_validate.push(config);
@@ -237,7 +238,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrorTool,
+        ErrorSanitizer,
         Yes,
         HasDelete,
         HasSuccess,
@@ -246,7 +247,7 @@ impl<
         Yes,
     >
     where
-        R: IntoRequiredOptionsResolver<I, O, CtxOptions, ErrorTool>,
+        R: IntoRequiredOptionsResolver<I, O, CtxOptions, ErrorSanitizer>,
     {
         let mut required = self.required.unwrap_or_default();
         required.push(RequiredOptionConfig {
@@ -271,16 +272,16 @@ impl<
         HasSuccess,
         HasIgnore,
         HasRequired,
-        I: IvoInputStruct<ErrorTool>,
+        I: IvoInputStruct<ErrorSanitizer>,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorSanitizer: IvoErrorSanitizer,
     >
     SchemaOptionsBuilder<
         I,
         O,
         CtxOptions,
-        ErrorTool,
+        ErrorSanitizer,
         HasPostValidate,
         HasDelete,
         HasSuccess,
@@ -297,7 +298,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrorTool,
+        ErrorSanitizer,
         HasPostValidate,
         HasDelete,
         HasSuccess,

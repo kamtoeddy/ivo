@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{DefaultErrorTool, IvoContext, IvoField, IvoInputStruct, IvoShared, IvoStruct, Model};
+use ivo::{IvoContext, IvoField, IvoInputStruct, IvoShared, IvoStruct, Model};
 
 use crate::async_test_matrix;
 
@@ -18,7 +18,7 @@ async fn should_respect_constants_with_static_values() {
 
     let constant = 1234;
 
-    let model: Model<DataInput, Data, Option<()>, (), DefaultErrorTool> = Model::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field("constant", IvoField::CONSTANT.value(constant))
                 .field("lax", IvoField::LAX.default(20))
@@ -79,7 +79,7 @@ async fn should_respect_constants_with_computed_values() {
 
     let constant = 1234;
 
-    let model: Model<DataInput, Data, Option<()>, (), DefaultErrorTool> = Model::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "constant",
@@ -143,7 +143,7 @@ async fn should_trigger_on_delete_handlers_with_static_values() {
 
     let constant = 1234;
 
-    let model: Model<DataInput, Data, Option<()>, (), DefaultErrorTool> = Model::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "constant",
@@ -187,7 +187,7 @@ async fn should_trigger_on_delete_handlers_with_computed_values() {
 
     let constant = 1234;
 
-    let model: Model<DataInput, Data, Option<()>, (), DefaultErrorTool> = Model::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "constant",
@@ -232,7 +232,7 @@ async fn should_trigger_on_success_handlers_with_static_values() {
 
     let constant = 1234;
 
-    let model: Model<DataInput, Data, Option<()>, (), DefaultErrorTool> = Model::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "constant",
@@ -286,7 +286,7 @@ async fn should_trigger_on_success_handlers_with_computed_values() {
 
     let constant = 1234;
 
-    let model: Model<DataInput, Data, Option<()>, (), DefaultErrorTool> = Model::new(
+    let model: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "constant",

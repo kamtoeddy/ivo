@@ -16,28 +16,33 @@ use crate::{
         },
         types::FieldValue,
     },
-    types::internal::IvoErrorTool,
+    types::internal::IvoErrorSanitizer,
     IvoStruct,
 };
 
 pub use base::TimestampConfig;
 
-pub struct IvoField<T: FieldValue, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool>
-{
+pub struct IvoField<
+    T: FieldValue,
+    I: IvoStruct,
+    O: IvoStruct,
+    CtxOptions,
+    ErrorSanitizer: IvoErrorSanitizer,
+> {
     _t: PhantomData<T>,
     _i: PhantomData<I>,
     _o: PhantomData<O>,
     _c: PhantomData<CtxOptions>,
-    _err: PhantomData<ErrorTool>,
+    _err: PhantomData<ErrorSanitizer>,
 }
 
-impl<T: FieldValue, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool>
-    IvoField<T, I, O, CtxOptions, ErrorTool>
+impl<T: FieldValue, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorSanitizer: IvoErrorSanitizer>
+    IvoField<T, I, O, CtxOptions, ErrorSanitizer>
 {
     /// A constant field is one whose value never changes after an entity is created.
     ///
     /// e.g.: ids
-    pub const CONSTANT: ConstantFieldBuilder<T, I, O, CtxOptions, ErrorTool> =
+    pub const CONSTANT: ConstantFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer> =
         ConstantFieldBuilder::new();
 
     /// A dependent field is one that belongs in the output struct O, but not in the input struct I.
@@ -49,14 +54,14 @@ impl<T: FieldValue, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorT
     /// - one or more parent fields to react to
     /// - a resolver (function) used to generate it's value, everytime the value of any of its parent fields
     ///   changes
-    pub const DEPENDENT: DependentFieldBuilder<T, I, O, CtxOptions, ErrorTool> =
+    pub const DEPENDENT: DependentFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer> =
         DependentFieldBuilder::new();
 
     /// Lax field
-    pub const LAX: LaxFieldBuilder<T, I, O, CtxOptions, ErrorTool> = LaxFieldBuilder::new();
+    pub const LAX: LaxFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer> = LaxFieldBuilder::new();
 
     /// Required field
-    pub const REQUIRED: RequiredFieldBuilder<T, I, O, CtxOptions, ErrorTool> =
+    pub const REQUIRED: RequiredFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer> =
         RequiredFieldBuilder::new();
 
     /// A virtual field is one that belongs in the input struct I, but not in the output struct O.
@@ -65,6 +70,6 @@ impl<T: FieldValue, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorT
     /// - be used in combination with dependent fields. i.e: a virtual field must be a parent to
     ///   one or more dependent fields
     /// - have a validator
-    pub const VIRTUAL: VirtualFieldBuilder<T, I, O, CtxOptions, ErrorTool> =
+    pub const VIRTUAL: VirtualFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer> =
         VirtualFieldBuilder::new();
 }

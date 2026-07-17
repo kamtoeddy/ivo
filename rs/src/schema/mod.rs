@@ -18,7 +18,7 @@ use crate::schema::{
         BuildableSchemaOptions,
     },
 };
-use crate::types::internal::{IvoErrorTool, IvoStruct};
+use crate::types::internal::{IvoErrorSanitizer, IvoStruct};
 use crate::types::InternalFieldConfigs;
 use crate::Model;
 use std::collections::{HashMap, HashSet};
@@ -32,12 +32,12 @@ const STYLE_FONT_BOLD: &str = "\x1b[1m";
 const STYLE_RESET: &str = "\x1b[0m";
 
 impl<
-        I: IvoInputStruct<ErrorTool>,
+        I: IvoInputStruct<ErrorSanitizer>,
         O: IvoStruct,
         CtxOptions: Clone + Sync + Send,
         Timestamp: Clone + Debug + Send + Sync + 'static,
-        ErrorTool: IvoErrorTool,
-    > Model<I, O, CtxOptions, Timestamp, ErrorTool>
+        ErrorSanitizer: IvoErrorSanitizer,
+    > Model<I, O, CtxOptions, Timestamp, ErrorSanitizer>
 {
     #[track_caller]
     pub fn new<FieldMaker, OptionMaker, BuildableOptions, WithTimestamps>(
@@ -46,11 +46,11 @@ impl<
     ) -> Self
     where
         FieldMaker: Fn(
-            FieldBuilder<I, O, CtxOptions, Timestamp, ErrorTool>,
+            FieldBuilder<I, O, CtxOptions, Timestamp, ErrorSanitizer>,
         )
-            -> FieldBuilder<I, O, CtxOptions, Timestamp, ErrorTool, WithTimestamps>,
-        OptionMaker: Fn(SchemaOptionsBuilder<I, O, CtxOptions, ErrorTool>) -> BuildableOptions,
-        BuildableOptions: BuildableSchemaOptions<I, O, CtxOptions, ErrorTool>,
+            -> FieldBuilder<I, O, CtxOptions, Timestamp, ErrorSanitizer, WithTimestamps>,
+        OptionMaker: Fn(SchemaOptionsBuilder<I, O, CtxOptions, ErrorSanitizer>) -> BuildableOptions,
+        BuildableOptions: BuildableSchemaOptions<I, O, CtxOptions, ErrorSanitizer>,
     {
         let fields = f(FieldBuilder::new());
 
@@ -84,13 +84,13 @@ impl<
     fn make_field_configs(
         config_tuples: Vec<(
             &'static str,
-            InternalFieldConfig<I, O, CtxOptions, ErrorTool>,
+            InternalFieldConfig<I, O, CtxOptions, ErrorSanitizer>,
         )>,
         timestamp_configs: &Option<TimestampConfig<Timestamp>>,
         input_field_names: &HashSet<String>,
         output_field_names: &HashSet<String>,
     ) -> (
-        InternalFieldConfigs<I, O, CtxOptions, ErrorTool>,
+        InternalFieldConfigs<I, O, CtxOptions, ErrorSanitizer>,
         HashMap<&'static str, &'static str>,
     ) {
         let input_struct_name = format!(
@@ -422,12 +422,12 @@ impl<
 
     #[track_caller]
     fn make_options(
-        options: SchemaOptions<I, O, CtxOptions, ErrorTool>,
-        field_configs: &InternalFieldConfigs<I, O, CtxOptions, ErrorTool>,
+        options: SchemaOptions<I, O, CtxOptions, ErrorSanitizer>,
+        field_configs: &InternalFieldConfigs<I, O, CtxOptions, ErrorSanitizer>,
         alias_to_virtual_map: &HashMap<&'static str, &'static str>,
         input_field_names: &HashSet<String>,
         output_field_names: &HashSet<String>,
-    ) -> SchemaOptions<I, O, CtxOptions, ErrorTool> {
+    ) -> SchemaOptions<I, O, CtxOptions, ErrorSanitizer> {
         if let Some(ref configs) = options.ignore {
             let option_name = "options.ignore";
             let mut field_names = HashSet::new();
@@ -825,13 +825,13 @@ pub struct FieldBuilder<
     O: IvoStruct,
     CtxOptions,
     T: FieldValue,
-    ErrorTool: IvoErrorTool,
+    ErrorSanitizer: IvoErrorSanitizer,
     WithTimestamps = No,
 > {
     #[expect(clippy::type_complexity)]
     configs: Vec<(
         &'static str,
-        InternalFieldConfig<I, O, CtxOptions, ErrorTool>,
+        InternalFieldConfig<I, O, CtxOptions, ErrorSanitizer>,
     )>,
     timestamp_config: Option<TimestampConfig<T>>,
     _t: PhantomData<WithTimestamps>,
@@ -842,8 +842,8 @@ impl<
         O: IvoStruct,
         CtxOptions,
         Timestamp: Clone + Debug + Send + Sync + 'static,
-        ErrorTool: IvoErrorTool,
-    > FieldBuilder<I, O, CtxOptions, Timestamp, ErrorTool>
+        ErrorSanitizer: IvoErrorSanitizer,
+    > FieldBuilder<I, O, CtxOptions, Timestamp, ErrorSanitizer>
 {
     fn new() -> Self {
         Self {
@@ -855,7 +855,7 @@ impl<
 
     pub fn field<Config>(mut self, name: &'static str, config: Config) -> Self
     where
-        Config: BuildableFieldConfig<I, O, CtxOptions, ErrorTool>,
+        Config: BuildableFieldConfig<I, O, CtxOptions, ErrorSanitizer>,
     {
         self.configs.push((name, config.build()));
 
@@ -868,13 +868,13 @@ impl<
         O: IvoStruct,
         CtxOptions,
         Timestamp: Clone + Debug + Send + Sync + 'static,
-        ErrorTool: IvoErrorTool,
-    > FieldBuilder<I, O, CtxOptions, Timestamp, ErrorTool>
+        ErrorSanitizer: IvoErrorSanitizer,
+    > FieldBuilder<I, O, CtxOptions, Timestamp, ErrorSanitizer>
 {
     pub fn timestamps<BuildableConfig, R>(
         self,
         t: R,
-    ) -> FieldBuilder<I, O, CtxOptions, Timestamp, ErrorTool, Yes>
+    ) -> FieldBuilder<I, O, CtxOptions, Timestamp, ErrorSanitizer, Yes>
     where
         BuildableConfig: BuildableTimestampConfig<Timestamp>,
         R: Fn(TimestampConfigBuilder<Timestamp>) -> BuildableConfig,

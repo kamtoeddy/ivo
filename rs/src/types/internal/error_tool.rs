@@ -12,38 +12,43 @@ pub struct FieldError<FieldMetadata: Clone = DefaultFieldErrorMetadata> {
 pub type IvoErrorPayload<FieldMetadata: Clone> = HashMap<String, FieldError<FieldMetadata>>;
 
 #[derive(Debug)]
-pub struct DefaultErrorTool<FieldMetadata: Clone = DefaultFieldErrorMetadata> {
+pub struct DefaultErrorSanitizer<FieldMetadata: Clone = DefaultFieldErrorMetadata> {
     payload: IvoErrorPayload<FieldMetadata>,
 }
 
-impl<FieldMetadata: Clone> DefaultErrorTool<FieldMetadata> {
+impl<FieldMetadata: Clone> DefaultErrorSanitizer<FieldMetadata> {
+    #[inline(always)]
     pub(crate) fn new() -> Self {
         Self {
             payload: HashMap::new(),
         }
     }
 
+    #[inline(always)]
     pub(crate) fn add(&mut self, field_name: &str, value: FieldError<FieldMetadata>) -> &mut Self {
         self.payload.insert(field_name.to_string(), value);
 
         self
     }
 
-    #[inline]
+    #[inline(always)]
     pub(crate) fn has_errors(&self) -> bool {
         !self.payload.is_empty()
     }
 
-    #[inline]
+    #[inline(always)]
     pub(crate) fn payload(self) -> IvoErrorPayload<FieldMetadata> {
         self.payload
     }
 }
 
-impl<FieldMetadata: Clone + Send + Sync> IvoErrorTool for DefaultErrorTool<FieldMetadata> {
+impl<FieldMetadata: Clone + Send + Sync> IvoErrorSanitizer
+    for DefaultErrorSanitizer<FieldMetadata>
+{
     type FieldMetadata = FieldMetadata;
     type ErrorPayload = IvoErrorPayload<Self::FieldMetadata>;
 
+    #[inline(always)]
     fn sanitize<CtxOptions>(
         payload: IvoErrorPayload<Self::FieldMetadata>,
         _: &CtxOptions,
@@ -52,7 +57,7 @@ impl<FieldMetadata: Clone + Send + Sync> IvoErrorTool for DefaultErrorTool<Field
     }
 }
 
-pub trait IvoErrorTool {
+pub trait IvoErrorSanitizer {
     type FieldMetadata: Clone + Send + Sync;
     type ErrorPayload;
 

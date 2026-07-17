@@ -1,7 +1,7 @@
 use std::{collections::HashMap, future::ready, sync::LazyLock};
 
 use crate::async_test_matrix;
-use ivo::{IvoErrorPayload, IvoErrorTool, IvoField, IvoInputStruct, IvoStruct, Model};
+use ivo::{IvoErrorPayload, IvoErrorSanitizer, IvoField, IvoInputStruct, IvoStruct, Model};
 
 async fn should_respect_custom_error_tool() {
     let r = PLACE_MODEL
@@ -163,7 +163,7 @@ type PlacesCtxOptions = Option<()>;
 type PlacesTimestamp = ();
 
 static PLACE_MODEL: LazyLock<
-    Model<Place, Place, PlacesCtxOptions, PlacesTimestamp, PlacesErrorTool>,
+    Model<Place, Place, PlacesCtxOptions, PlacesTimestamp, PlacesErrorSanitizer>,
 > = LazyLock::new(|| {
     Model::new(
         |f| {
@@ -196,12 +196,12 @@ static PLACE_MODEL: LazyLock<
     )
 });
 
-type PlacesErrorToolFieldMetadata = Vec<String>;
+type PlacesErrorSanitizerFieldMetadata = Vec<String>;
 
-struct PlacesErrorTool;
+struct PlacesErrorSanitizer;
 
-impl IvoErrorTool for PlacesErrorTool {
-    type FieldMetadata = PlacesErrorToolFieldMetadata;
+impl IvoErrorSanitizer for PlacesErrorSanitizer {
+    type FieldMetadata = PlacesErrorSanitizerFieldMetadata;
     type ErrorPayload = HashMap<String, Vec<String>>;
 
     fn sanitize<PlacesCtxOptions>(

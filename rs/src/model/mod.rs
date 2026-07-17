@@ -29,21 +29,22 @@ use crate::schema::{
 };
 use crate::types::{
     internal::{
-        types::erase_value, FieldError, IvoErrorTool, IvoRwLock, IvoStruct, PartialStructMethods,
+        types::erase_value, FieldError, IvoErrorSanitizer, IvoRwLock, IvoStruct,
+        PartialStructMethods,
     },
     InternalIvoContext,
 };
-use crate::{DefaultErrorTool, IvoContext, IvoCtxOptions, IvoRwCtxOptions, Model};
+use crate::{DefaultErrorSanitizer, IvoContext, IvoCtxOptions, IvoRwCtxOptions, Model};
 
 type AsyncHandlerTrigger<'a> = Box<dyn FnOnce() -> BoxFuture<'a, ()> + Send + Sync + 'a>;
 
 impl<
-        I: IvoInputStruct<ErrorTool>,
+        I: IvoInputStruct<ErrorSanitizer>,
         O: IvoStruct,
         CtxOptions: Clone + Sync + Send,
         Timestamp: Clone + Debug + Send + Sync + 'static,
-        ErrorTool: IvoErrorTool,
-    > Model<I, O, CtxOptions, Timestamp, ErrorTool>
+        ErrorSanitizer: IvoErrorSanitizer,
+    > Model<I, O, CtxOptions, Timestamp, ErrorSanitizer>
 {
     pub async fn create(
         &self,
@@ -51,7 +52,11 @@ impl<
         options: CtxOptions,
     ) -> Result<
         (O, AsyncHandlerTrigger<'_>, CtxOptions),
-        (ErrorTool::ErrorPayload, AsyncHandlerTrigger<'_>, CtxOptions),
+        (
+            ErrorSanitizer::ErrorPayload,
+            AsyncHandlerTrigger<'_>,
+            CtxOptions,
+        ),
     > {
         let shared_rw_options = Arc::new(IvoRwLock::new(options));
         let mut ctx = Arc::new(InternalIvoContext::<I, O>::new_create_ctx(
@@ -93,7 +98,7 @@ impl<
                 let final_ctx_options = unwrap_async_lock(shared_rw_options);
 
                 return Err((
-                    ErrorTool::sanitize(payload, &final_ctx_options),
+                    ErrorSanitizer::sanitize(payload, &final_ctx_options),
                     self.prepare_failure_handlers(
                         fields_collection,
                         ctx,
@@ -122,7 +127,7 @@ impl<
                 let final_ctx_options = unwrap_async_lock(shared_rw_options);
 
                 return Err((
-                    ErrorTool::sanitize(payload, &final_ctx_options),
+                    ErrorSanitizer::sanitize(payload, &final_ctx_options),
                     self.prepare_failure_handlers(
                         fields_collection,
                         ctx,
@@ -152,7 +157,7 @@ impl<
                 let final_ctx_options = unwrap_async_lock(shared_rw_options);
 
                 return Err((
-                    ErrorTool::sanitize(payload, &final_ctx_options),
+                    ErrorSanitizer::sanitize(payload, &final_ctx_options),
                     self.prepare_failure_handlers(
                         fields_collection,
                         ctx,
@@ -182,7 +187,7 @@ impl<
                 let final_ctx_options = unwrap_async_lock(shared_rw_options);
 
                 return Err((
-                    ErrorTool::sanitize(payload, &final_ctx_options),
+                    ErrorSanitizer::sanitize(payload, &final_ctx_options),
                     self.prepare_failure_handlers(
                         fields_collection.clone(),
                         ctx,
@@ -251,7 +256,7 @@ impl<
     ) -> Result<
         (O::Partial, AsyncHandlerTrigger<'_>, CtxOptions),
         (
-            Option<ErrorTool::ErrorPayload>,
+            Option<ErrorSanitizer::ErrorPayload>,
             AsyncHandlerTrigger<'_>,
             CtxOptions,
         ),
@@ -309,7 +314,7 @@ impl<
                 let final_ctx_options = unwrap_async_lock(shared_rw_options);
 
                 return Err((
-                    Some(ErrorTool::sanitize(payload, &final_ctx_options)),
+                    Some(ErrorSanitizer::sanitize(payload, &final_ctx_options)),
                     self.prepare_failure_handlers(
                         fields_collection,
                         ctx,
@@ -339,7 +344,7 @@ impl<
                 let final_ctx_options = unwrap_async_lock(shared_rw_options);
 
                 return Err((
-                    Some(ErrorTool::sanitize(payload, &final_ctx_options)),
+                    Some(ErrorSanitizer::sanitize(payload, &final_ctx_options)),
                     self.prepare_failure_handlers(
                         fields_collection,
                         ctx,
@@ -370,7 +375,7 @@ impl<
                 let final_ctx_options = unwrap_async_lock(shared_rw_options);
 
                 return Err((
-                    Some(ErrorTool::sanitize(payload, &final_ctx_options)),
+                    Some(ErrorSanitizer::sanitize(payload, &final_ctx_options)),
                     self.prepare_failure_handlers(
                         fields_collection,
                         ctx,
@@ -401,7 +406,7 @@ impl<
                 let final_ctx_options = unwrap_async_lock(shared_rw_options);
 
                 return Err((
-                    Some(ErrorTool::sanitize(payload, &final_ctx_options)),
+                    Some(ErrorSanitizer::sanitize(payload, &final_ctx_options)),
                     self.prepare_failure_handlers(
                         fields_collection,
                         ctx,
@@ -545,10 +550,11 @@ impl<
 
     async fn validate<'a>(
         &self,
-        fields_collection: &FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool>,
+        fields_collection: &FieldInfoCollection<'a, I, O, CtxOptions, ErrorSanitizer>,
         ctx: IvoContext<I, O>,
         options: IvoRwCtxOptions<CtxOptions>,
-    ) -> Result<Option<(I::Partial, O::Partial)>, IvoErrorPayload<ErrorTool::FieldMetadata>> {
+    ) -> Result<Option<(I::Partial, O::Partial)>, IvoErrorPayload<ErrorSanitizer::FieldMetadata>>
+    {
         let relevant_fields_provided = fields_collection.relevant_fields_provided();
         let raw_inputs = ctx.raw_input();
         let mut validators = Vec::with_capacity(relevant_fields_provided.len());
@@ -602,7 +608,7 @@ impl<
             )
         });
 
-        let mut error_tool = DefaultErrorTool::new();
+        let mut error_tool = DefaultErrorSanitizer::new();
 
         for (field_info, result) in join_all(tasks).await {
             let field_name = field_info.name;
@@ -648,10 +654,11 @@ impl<
 
     async fn re_validate<'a>(
         &self,
-        fields_collection: &FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool>,
+        fields_collection: &FieldInfoCollection<'a, I, O, CtxOptions, ErrorSanitizer>,
         ctx: IvoContext<I, O>,
         options: IvoRwCtxOptions<CtxOptions>,
-    ) -> Result<Option<(I::Partial, O::Partial)>, IvoErrorPayload<ErrorTool::FieldMetadata>> {
+    ) -> Result<Option<(I::Partial, O::Partial)>, IvoErrorPayload<ErrorSanitizer::FieldMetadata>>
+    {
         let relevant_fields_provided = fields_collection.relevant_fields_provided();
         let mut re_validators = Vec::with_capacity(relevant_fields_provided.len());
 
@@ -685,7 +692,7 @@ impl<
             )
         });
 
-        let mut error_tool = DefaultErrorTool::new();
+        let mut error_tool = DefaultErrorSanitizer::new();
         let mut validated_outputs = if ctx.is_update() {
             ctx.changes()
         } else {
@@ -728,10 +735,11 @@ impl<
 
     async fn post_validate<'a>(
         &self,
-        fields_collection: &FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool>,
+        fields_collection: &FieldInfoCollection<'a, I, O, CtxOptions, ErrorSanitizer>,
         ctx: IvoContext<I, O>,
         options: IvoRwCtxOptions<CtxOptions>,
-    ) -> Result<Option<(I::Partial, O::Partial)>, IvoErrorPayload<ErrorTool::FieldMetadata>> {
+    ) -> Result<Option<(I::Partial, O::Partial)>, IvoErrorPayload<ErrorSanitizer::FieldMetadata>>
+    {
         let mut pre_validators = vec![];
         let mut post_validators = vec![];
 
@@ -765,7 +773,7 @@ impl<
 
         let is_update = ctx.is_update();
         let mut ctx = ctx.clone();
-        let mut error_tool = DefaultErrorTool::new();
+        let mut error_tool = DefaultErrorSanitizer::new();
         let mut validated_inputs = ctx.input();
         let mut validated_outputs = if is_update {
             ctx.changes()
@@ -889,7 +897,7 @@ impl<
 
     async fn sanitize_virtuals<'a>(
         &self,
-        fields_collection: &FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool>,
+        fields_collection: &FieldInfoCollection<'a, I, O, CtxOptions, ErrorSanitizer>,
         ctx: IvoContext<I, O>,
         options: IvoRwCtxOptions<CtxOptions>,
     ) -> Option<I::Partial> {
@@ -938,7 +946,7 @@ impl<
 
     async fn resolve_dependent_values<'a>(
         &self,
-        fields_collection: &FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool>,
+        fields_collection: &FieldInfoCollection<'a, I, O, CtxOptions, ErrorSanitizer>,
         ctx: IvoContext<I, O>,
         options: IvoRwCtxOptions<CtxOptions>,
     ) -> Option<(O::Partial, HashSet<String>)> {
@@ -1091,13 +1099,13 @@ impl<
         &'a self,
         previous_values: Option<&O::Partial>,
         input_values: &I::Partial,
-        mut fields_collection: FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool>,
+        mut fields_collection: FieldInfoCollection<'a, I, O, CtxOptions, ErrorSanitizer>,
         ctx: IvoContext<I, O>,
         options: IvoRwCtxOptions<CtxOptions>,
     ) -> (
         I::Partial,
         O::Partial,
-        FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool>,
+        FieldInfoCollection<'a, I, O, CtxOptions, ErrorSanitizer>,
     ) {
         let is_update = previous_values.is_some();
         let previous_values = previous_values.cloned().unwrap_or_default();
@@ -1196,7 +1204,7 @@ impl<
                             I,
                             O,
                             CtxOptions,
-                            ErrorTool,
+                            ErrorSanitizer,
                         >>::resolve(
                             resolver, Arc::clone(&ctx), Arc::clone(&options)
                         ),
@@ -1227,7 +1235,7 @@ impl<
                                 I,
                                 O,
                                 CtxOptions,
-                                ErrorTool,
+                                ErrorSanitizer,
                             >>::resolve(
                                 resolver, Arc::clone(&ctx), Arc::clone(&options)
                             ),
@@ -1281,7 +1289,7 @@ impl<
                             I,
                             O,
                             CtxOptions,
-                            ErrorTool,
+                            ErrorSanitizer,
                         >>::resolve(
                             resolver, Arc::clone(&ctx), Arc::clone(&options)
                         ),
@@ -1303,7 +1311,7 @@ impl<
                             I,
                             O,
                             CtxOptions,
-                            ErrorTool,
+                            ErrorSanitizer,
                         >>::resolve(
                             resolver, Arc::clone(&ctx), Arc::clone(&options)
                         ),
@@ -1356,11 +1364,11 @@ impl<
 
     async fn evaluate_missing_required_fields<'a>(
         &self,
-        fields_collection: &FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool>,
+        fields_collection: &FieldInfoCollection<'a, I, O, CtxOptions, ErrorSanitizer>,
         ctx: IvoContext<I, O>,
         options: IvoRwCtxOptions<CtxOptions>,
-    ) -> Result<(), IvoErrorPayload<ErrorTool::FieldMetadata>> {
-        let mut error_tool = DefaultErrorTool::new();
+    ) -> Result<(), IvoErrorPayload<ErrorSanitizer::FieldMetadata>> {
+        let mut error_tool = DefaultErrorSanitizer::new();
         let mut resolvers = vec![];
         let is_update = ctx.is_update();
 
@@ -1425,7 +1433,7 @@ impl<
                     I,
                     O,
                     CtxOptions,
-                    ErrorTool,
+                    ErrorSanitizer,
                 >>::resolve(
                     resolver,
                     HashSet::from([field_info.name]),
@@ -1453,11 +1461,11 @@ impl<
                     .map(|config_name| fields_collection.get(config_name).name)
                     .collect::<HashSet<_>>();
 
-                let r = <RequiredOptionConfig<I, O, CtxOptions, ErrorTool> as UniformRequiredResolver<
+                let r = <RequiredOptionConfig<I, O, CtxOptions, ErrorSanitizer> as UniformRequiredResolver<
                     I,
                     O,
                     CtxOptions,
-                    ErrorTool,
+                    ErrorSanitizer,
                 >>::resolve(
                     config,
                     field_names,
@@ -1492,7 +1500,7 @@ impl<
 
     fn prepare_failure_handlers<'a>(
         &self,
-        fields_collection: FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool>,
+        fields_collection: FieldInfoCollection<'a, I, O, CtxOptions, ErrorSanitizer>,
         ctx: IvoContext<I, O>,
         options: IvoCtxOptions<CtxOptions>,
     ) -> AsyncHandlerTrigger<'_> {
@@ -1532,7 +1540,7 @@ impl<
 
     fn prepare_success_handlers<'a>(
         &self,
-        fields_collection: FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool>,
+        fields_collection: FieldInfoCollection<'a, I, O, CtxOptions, ErrorSanitizer>,
         ctx: IvoContext<I, O>,
         options: IvoCtxOptions<CtxOptions>,
     ) -> AsyncHandlerTrigger<'_> {

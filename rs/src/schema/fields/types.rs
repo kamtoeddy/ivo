@@ -8,7 +8,7 @@ use crate::{
     __private_types::{types::BooleanResolver, ValidatorResponse},
     schema::types::{DeleteHandler, FailureHandler, FieldValue, SuccessHandler},
     types::internal::types::{erase_value, parse_or_panic, ErasedValue},
-    IvoContext, IvoErrorTool, IvoRwCtxOptions, IvoShared, IvoSharedInput, IvoStruct,
+    IvoContext, IvoErrorSanitizer, IvoRwCtxOptions, IvoShared, IvoSharedInput, IvoStruct,
 };
 
 pub type TimestampResolver<T: FieldValue> = Box<dyn Fn() -> T + Send + Sync + 'static>;
@@ -60,21 +60,31 @@ where
     }
 }
 
-pub trait IntoFieldValidator<T, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool> {
-    fn into_uniform(self) -> UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>;
+pub trait IntoFieldValidator<
+    T,
+    I: IvoStruct,
+    O: IvoStruct,
+    CtxOptions,
+    ErrorSanitizer: IvoErrorSanitizer,
+>
+{
+    fn into_uniform(self) -> UniformValidator<I, O, CtxOptions, ErrorSanitizer::FieldMetadata>;
 }
 
-impl<F, Fut, T, I, O, CtxOptions, ErrorTool> IntoFieldValidator<T, I, O, CtxOptions, ErrorTool>
-    for F
+impl<F, Fut, T, I, O, CtxOptions, ErrorSanitizer>
+    IntoFieldValidator<T, I, O, CtxOptions, ErrorSanitizer> for F
 where
     I: IvoStruct,
     O: IvoStruct,
-    ErrorTool: IvoErrorTool,
+    ErrorSanitizer: IvoErrorSanitizer,
     T: FieldValue,
     F: Fn(T, IvoContext<I, O>, IvoRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
-    Fut: Future<Output = ValidatorResponse<T, ErrorTool::FieldMetadata>> + Send + Sync + 'static,
+    Fut: Future<Output = ValidatorResponse<T, ErrorSanitizer::FieldMetadata>>
+        + Send
+        + Sync
+        + 'static,
 {
-    fn into_uniform(self) -> UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata> {
+    fn into_uniform(self) -> UniformValidator<I, O, CtxOptions, ErrorSanitizer::FieldMetadata> {
         Box::new(move |v, ctx, o| {
             Box::pin(
                 self(parse_or_panic::<T>(&v, None), ctx, o)

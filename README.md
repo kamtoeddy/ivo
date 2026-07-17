@@ -419,6 +419,6 @@ This function can be used to further sanitize virtual fields just before depende
 - The sanitized value returned from this function will be updated in context values.
 - This function can also update values in context options.
 
-## ErrorTool
+## ErrorSanitizer
 
-Custom errors are a key aspect of schema validation. This trait/interface is what makes custom validation error payloads returned from unsuccessful create or update operations on domain entities.
+ivo only assigns one validation error for each input field at a time, and the final validation payload gets returned from unsuccessful create or update operations on domain entities. If the final validation payload or field errors need to be customized, it can be done via the `ErrorSanitizer` interface/trait. More on this can be found in the documentations for each language.

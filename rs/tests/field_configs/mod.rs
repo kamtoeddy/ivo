@@ -2,7 +2,7 @@ mod dependents;
 mod timestamps;
 mod virtuals;
 
-use ivo::{DefaultErrorTool, IvoField, IvoInputStruct, IvoStruct, Model};
+use ivo::{IvoField, IvoInputStruct, IvoStruct, Model};
 use std::future::ready;
 
 #[test]
@@ -55,7 +55,7 @@ fn should_reject_if_field_name_is_same_created_at_if_enabled_with_default_name()
         _c: String,
     }
 
-    let _: Model<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Model::new(
+    let _: Model<DataInput, Data, Option<()>, &'static str> = Model::new(
         |f| {
             f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
                 .field(
@@ -86,7 +86,7 @@ fn should_reject_if_field_name_is_same_created_at_if_enabled_with_custom_name() 
         _c: String,
     }
 
-    let _: Model<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Model::new(
+    let _: Model<DataInput, Data, Option<()>, &'static str> = Model::new(
         |f| {
             f.field(
                 "custom_created_at",
@@ -117,7 +117,7 @@ fn should_reject_if_field_name_is_same_updated_at_if_enabled_with_default_name()
         _c: String,
     }
 
-    let _: Model<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Model::new(
+    let _: Model<DataInput, Data, Option<()>, &'static str> = Model::new(
         |f| {
             f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
                 .field(
@@ -148,7 +148,7 @@ fn should_reject_if_field_name_is_same_updated_at_if_enabled_with_custom_name() 
         _c: String,
     }
 
-    let _: Model<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Model::new(
+    let _: Model<DataInput, Data, Option<()>, &'static str> = Model::new(
         |f| {
             f.field(
                 "custom_updated_at",

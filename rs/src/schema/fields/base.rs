@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
 use crate::__private_types::types::{BooleanResolver, Resolver};
-use crate::types::internal::{types::ErasedValue, IvoErrorTool};
+use crate::types::internal::{types::ErasedValue, IvoErrorSanitizer};
 use crate::{
     schema::{
         fields::types::{
@@ -13,12 +13,18 @@ use crate::{
     IvoStruct,
 };
 
-pub trait BuildableFieldConfig<I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool> {
-    fn build(self) -> InternalFieldConfig<I, O, CtxOptions, ErrorTool>;
+pub trait BuildableFieldConfig<
+    I: IvoStruct,
+    O: IvoStruct,
+    CtxOptions,
+    ErrorSanitizer: IvoErrorSanitizer,
+>
+{
+    fn build(self) -> InternalFieldConfig<I, O, CtxOptions, ErrorSanitizer>;
 }
 
-pub type InternalFieldConfig<I, O, CtxOptions, ErrorTool> =
-    FieldConfig<ErasedValue, I, O, CtxOptions, ErrorTool>;
+pub type InternalFieldConfig<I, O, CtxOptions, ErrorSanitizer> =
+    FieldConfig<ErasedValue, I, O, CtxOptions, ErrorSanitizer>;
 
 pub enum FieldType {
     Constant,
@@ -28,7 +34,8 @@ pub enum FieldType {
     Virtual,
 }
 
-pub struct FieldConfig<T, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool> {
+pub struct FieldConfig<T, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorSanitizer: IvoErrorSanitizer>
+{
     pub field_type: FieldType,
     pub alias: Option<&'static str>,
     pub default: Option<ValueResolverWithSharedInput<T, I, CtxOptions>>,
@@ -38,8 +45,8 @@ pub struct FieldConfig<T, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: Ivo
     pub required_error: Option<ComputableRequiredError<I, O, CtxOptions>>,
     pub resolver: Option<Resolver<T, I, O, CtxOptions>>,
     pub sanitizer: Option<VirtualSanitizer<T, I, O, CtxOptions>>,
-    pub validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
-    pub re_validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
+    pub validator: Option<UniformValidator<I, O, CtxOptions, ErrorSanitizer::FieldMetadata>>,
+    pub re_validator: Option<UniformValidator<I, O, CtxOptions, ErrorSanitizer::FieldMetadata>>,
     //
     pub ignore: Option<BooleanResolver<I, O, CtxOptions>>,
     pub ignore_init: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
@@ -50,8 +57,8 @@ pub struct FieldConfig<T, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: Ivo
     pub on_success_fns: Option<Vec<SuccessHandler<I, O, CtxOptions>>>,
 }
 
-impl<T, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool> Default
-    for FieldConfig<T, I, O, CtxOptions, ErrorTool>
+impl<T, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorSanitizer: IvoErrorSanitizer> Default
+    for FieldConfig<T, I, O, CtxOptions, ErrorSanitizer>
 {
     fn default() -> Self {
         Self {

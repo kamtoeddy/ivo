@@ -2,8 +2,8 @@ mod error_tool;
 pub mod types;
 
 pub use error_tool::{
-    DefaultErrorPayload, DefaultErrorTool, DefaultFieldErrorMetadata, FieldError, IvoErrorPayload,
-    IvoErrorTool,
+    DefaultErrorPayload, DefaultErrorSanitizer, DefaultFieldErrorMetadata, FieldError,
+    IvoErrorPayload, IvoErrorSanitizer,
 };
 
 pub use types::{

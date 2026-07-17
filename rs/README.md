@@ -132,8 +132,8 @@ Deriving `IvoInputStruct` on **UserInput** automatically implements `IvoStruct` 
     fn new() -> Self;
 
     // you also get two types of builder methods for each field
-    fn set_email(&mut self, reason: &str, metadata: Option<IvoErrorTool::FieldMetadata>) -> &mut Self;
-    fn with_email(mut self, reason: &str, metadata: Option<IvoErrorTool::FieldMetadata>) -> Self;
+    fn set_email(&mut self, reason: &str, metadata: Option<IvoErrorSanitizer::FieldMetadata>) -> &mut Self;
+    fn with_email(mut self, reason: &str, metadata: Option<IvoErrorSanitizer::FieldMetadata>) -> Self;
     // ... more builder methods for the other fields
 
     // you also get a method to unset (or set value to None) for each field
@@ -212,4 +212,16 @@ Below are links to examples on how to properly configure schema fields.
 
 - [Demo](./examples/main_demo/src/domain.rs)
 
-## Custom ErrorTool
+## Custom ErrorSanitizer
+
+**In Rust:**
+```rs
+type DefaultFieldErrorMetadata = ();
+
+struct FieldError<FieldMetadata: Clone = DefaultFieldErrorMetadata> {
+  pub reason: String,
+  pub metadata: Option<FieldMetadata>,
+}
+
+type IvoErrorPayload<FieldMetadata: Clone> = HashMap<String, FieldError<FieldMetadata>>;
+```

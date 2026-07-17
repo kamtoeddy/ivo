@@ -7,34 +7,34 @@ use crate::{
     __private_types::IvoInputStruct,
     schema::fields::base::{FieldType, InternalFieldConfig},
     types::InternalFieldConfigs,
-    IvoErrorTool, IvoStruct,
+    IvoErrorSanitizer, IvoStruct,
 };
 
 pub(super) struct FieldInfoCollection<
     'a,
-    I: IvoInputStruct<ErrorTool>,
+    I: IvoInputStruct<ErrorSanitizer>,
     O: IvoStruct,
     CtxOptions: Clone,
-    ErrorTool: IvoErrorTool,
+    ErrorSanitizer: IvoErrorSanitizer,
 > {
     fields: HashMap<&'a str, FieldInfo<'a>>,
     fields_provided: HashSet<String>,
     relevant_fields_provided: HashSet<String>,
     relevant_dependent_config_names: HashSet<String>,
     relevant_config_names: HashSet<String>,
-    field_configs: &'a InternalFieldConfigs<I, O, CtxOptions, ErrorTool>,
+    field_configs: &'a InternalFieldConfigs<I, O, CtxOptions, ErrorSanitizer>,
 }
 
 impl<
         'a,
-        I: IvoInputStruct<ErrorTool>,
+        I: IvoInputStruct<ErrorSanitizer>,
         O: IvoStruct,
         CtxOptions: Clone,
-        ErrorTool: IvoErrorTool,
-    > FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool>
+        ErrorSanitizer: IvoErrorSanitizer,
+    > FieldInfoCollection<'a, I, O, CtxOptions, ErrorSanitizer>
 {
     #[inline]
-    pub fn new(field_configs: &'a InternalFieldConfigs<I, O, CtxOptions, ErrorTool>) -> Self {
+    pub fn new(field_configs: &'a InternalFieldConfigs<I, O, CtxOptions, ErrorSanitizer>) -> Self {
         Self {
             field_configs,
             fields: Self::parse_fields(field_configs),
@@ -121,7 +121,7 @@ impl<
     }
 
     fn parse_fields(
-        field_configs: &'a InternalFieldConfigs<I, O, CtxOptions, ErrorTool>,
+        field_configs: &'a InternalFieldConfigs<I, O, CtxOptions, ErrorSanitizer>,
     ) -> HashMap<&'a str, FieldInfo<'a>> {
         let mut fields = HashMap::new();
 
@@ -191,11 +191,11 @@ impl<
 
 impl<
         'a,
-        I: IvoInputStruct<ErrorTool>,
+        I: IvoInputStruct<ErrorSanitizer>,
         O: IvoStruct,
         CtxOptions: Clone,
-        ErrorTool: IvoErrorTool,
-    > Clone for FieldInfoCollection<'a, I, O, CtxOptions, ErrorTool>
+        ErrorSanitizer: IvoErrorSanitizer,
+    > Clone for FieldInfoCollection<'a, I, O, CtxOptions, ErrorSanitizer>
 {
     fn clone(&self) -> Self {
         Self {

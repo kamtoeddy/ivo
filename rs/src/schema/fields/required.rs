@@ -13,7 +13,7 @@ use crate::{
         },
         types::{DeleteHandler, FailureHandler, FieldValue, No, SuccessHandler, Yes},
     },
-    types::internal::IvoErrorTool,
+    types::internal::IvoErrorSanitizer,
     IvoStruct,
 };
 
@@ -22,7 +22,7 @@ pub struct RequiredFieldBuilder<
     I: IvoStruct,
     O: IvoStruct,
     CtxOptions,
-    ErrorTool: IvoErrorTool,
+    ErrorSanitizer: IvoErrorSanitizer,
     HasValidator = No,
     HasRevalidator = No,
     HasRequiredError = No,
@@ -32,8 +32,8 @@ pub struct RequiredFieldBuilder<
     HasSuccess = No,
 > {
     required_error: Option<ComputableRequiredError<I, O, CtxOptions>>,
-    validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
-    re_validator: Option<UniformValidator<I, O, CtxOptions, ErrorTool::FieldMetadata>>,
+    validator: Option<UniformValidator<I, O, CtxOptions, ErrorSanitizer::FieldMetadata>>,
+    re_validator: Option<UniformValidator<I, O, CtxOptions, ErrorSanitizer::FieldMetadata>>,
     ignore_update: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
     on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
     on_failure_fns: Option<Vec<FailureHandler<I, O, CtxOptions>>>,
@@ -61,14 +61,14 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorSanitizer: IvoErrorSanitizer,
     >
     RequiredFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
-        ErrorTool,
+        ErrorSanitizer,
         HasValidator,
         HasRevalidator,
         HasRequiredError,
@@ -111,14 +111,14 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorSanitizer: IvoErrorSanitizer,
     > Default
     for RequiredFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
-        ErrorTool,
+        ErrorSanitizer,
         HasValidator,
         HasRevalidator,
         HasRequiredError,
@@ -144,14 +144,14 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
-    > BuildableFieldConfig<I, O, CtxOptions, ErrorTool>
+        ErrorSanitizer: IvoErrorSanitizer,
+    > BuildableFieldConfig<I, O, CtxOptions, ErrorSanitizer>
     for RequiredFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
-        ErrorTool,
+        ErrorSanitizer,
         Yes,
         HasRevalidator,
         HasRequiredError,
@@ -161,7 +161,7 @@ impl<
         HasSuccess,
     >
 {
-    fn build(self) -> InternalFieldConfig<I, O, CtxOptions, ErrorTool> {
+    fn build(self) -> InternalFieldConfig<I, O, CtxOptions, ErrorSanitizer> {
         FieldConfig {
             field_type: FieldType::Required,
             required_error: self.required_error,
@@ -183,13 +183,13 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
-    > RequiredFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasValidator, HasRevalidator>
+        ErrorSanitizer: IvoErrorSanitizer,
+    > RequiredFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, HasValidator, HasRevalidator>
 {
     pub fn required_error(
         self,
         error: &'static str,
-    ) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasValidator, HasRevalidator, Yes>
+    ) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, HasValidator, HasRevalidator, Yes>
     {
         RequiredFieldBuilder {
             validator: self.validator,
@@ -202,7 +202,7 @@ impl<
     pub fn required_error_fn<R>(
         self,
         resolver: R,
-    ) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrorTool, HasValidator, HasRevalidator, Yes>
+    ) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, HasValidator, HasRevalidator, Yes>
     where
         R: IntoRequiredErrorResolver<I, O, CtxOptions>,
     {
@@ -221,15 +221,15 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
-    > RequiredFieldBuilder<T, I, O, CtxOptions, ErrorTool, No, No, HasRequiredError>
+        ErrorSanitizer: IvoErrorSanitizer,
+    > RequiredFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, No, No, HasRequiredError>
 {
     pub fn validate<F>(
         self,
         validator: F,
-    ) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, No, HasRequiredError>
+    ) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, Yes, No, HasRequiredError>
     where
-        F: IntoFieldValidator<T, I, O, CtxOptions, ErrorTool>,
+        F: IntoFieldValidator<T, I, O, CtxOptions, ErrorSanitizer>,
     {
         RequiredFieldBuilder {
             validator: Some(validator.into_uniform()),
@@ -245,15 +245,15 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
-    > RequiredFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, No, HasRequiredError>
+        ErrorSanitizer: IvoErrorSanitizer,
+    > RequiredFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, Yes, No, HasRequiredError>
 {
     pub fn re_validate<F>(
         self,
         re_validator: F,
-    ) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, Yes, HasRequiredError>
+    ) -> RequiredFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, Yes, Yes, HasRequiredError>
     where
-        F: IntoFieldValidator<T, I, O, CtxOptions, ErrorTool>,
+        F: IntoFieldValidator<T, I, O, CtxOptions, ErrorSanitizer>,
     {
         RequiredFieldBuilder {
             validator: self.validator,
@@ -271,8 +271,9 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
-    > RequiredFieldBuilder<T, I, O, CtxOptions, ErrorTool, Yes, HasRevalidator, HasRequiredError>
+        ErrorSanitizer: IvoErrorSanitizer,
+    >
+    RequiredFieldBuilder<T, I, O, CtxOptions, ErrorSanitizer, Yes, HasRevalidator, HasRequiredError>
 {
     pub fn readonly(
         self,
@@ -281,7 +282,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrorTool,
+        ErrorSanitizer,
         Yes,
         HasRevalidator,
         HasRequiredError,
@@ -304,7 +305,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrorTool,
+        ErrorSanitizer,
         Yes,
         HasRevalidator,
         HasRequiredError,
@@ -335,14 +336,14 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorSanitizer: IvoErrorSanitizer,
     >
     RequiredFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
-        ErrorTool,
+        ErrorSanitizer,
         Yes,
         HasRevalidator,
         HasRequiredError,
@@ -360,7 +361,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrorTool,
+        ErrorSanitizer,
         Yes,
         HasRevalidator,
         HasRequiredError,
@@ -408,14 +409,14 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorSanitizer: IvoErrorSanitizer,
     >
     RequiredFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
-        ErrorTool,
+        ErrorSanitizer,
         Yes,
         HasRevalidator,
         HasRequiredError,
@@ -433,7 +434,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrorTool,
+        ErrorSanitizer,
         Yes,
         HasRevalidator,
         HasRequiredError,
@@ -481,14 +482,14 @@ impl<
         I: IvoStruct,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorSanitizer: IvoErrorSanitizer,
     >
     RequiredFieldBuilder<
         T,
         I,
         O,
         CtxOptions,
-        ErrorTool,
+        ErrorSanitizer,
         Yes,
         HasRevalidator,
         HasRequiredError,
@@ -506,7 +507,7 @@ impl<
         I,
         O,
         CtxOptions,
-        ErrorTool,
+        ErrorSanitizer,
         Yes,
         HasRevalidator,
         HasRequiredError,

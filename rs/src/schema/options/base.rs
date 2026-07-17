@@ -13,36 +13,40 @@ use crate::{
         types::DeleteHandler,
         No,
     },
-    IvoErrorTool,
+    IvoErrorSanitizer,
 };
 
 pub struct SchemaOptions<
-    I: IvoInputStruct<ErrorTool>,
+    I: IvoInputStruct<ErrorSanitizer>,
     O: IvoStruct,
     CtxOptions,
-    ErrorTool: IvoErrorTool,
+    ErrorSanitizer: IvoErrorSanitizer,
 > {
     pub ignore: Option<Vec<IgnoreOptionConfig<I, O, CtxOptions>>>,
     pub ignore_update: Option<Vec<IgnoreUpdateOptionConfig<I, O, CtxOptions>>>,
     pub on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
     pub on_success_fns: Option<Vec<OnSuccessConfig<I, O, CtxOptions>>>,
-    pub post_validate: Option<Vec<PostValidationConfig<I, O, CtxOptions, ErrorTool>>>,
-    pub required: Option<Vec<RequiredOptionConfig<I, O, CtxOptions, ErrorTool>>>,
+    pub post_validate: Option<Vec<PostValidationConfig<I, O, CtxOptions, ErrorSanitizer>>>,
+    pub required: Option<Vec<RequiredOptionConfig<I, O, CtxOptions, ErrorSanitizer>>>,
 }
 
-impl<I: IvoInputStruct<ErrorTool>, O: IvoStruct, CtxOptions, ErrorTool: IvoErrorTool>
-    SchemaOptions<I, O, CtxOptions, ErrorTool>
+impl<
+        I: IvoInputStruct<ErrorSanitizer>,
+        O: IvoStruct,
+        CtxOptions,
+        ErrorSanitizer: IvoErrorSanitizer,
+    > SchemaOptions<I, O, CtxOptions, ErrorSanitizer>
 {
-    pub const fn new() -> SchemaOptionsBuilder<I, O, CtxOptions, ErrorTool> {
+    pub const fn new() -> SchemaOptionsBuilder<I, O, CtxOptions, ErrorSanitizer> {
         SchemaOptionsBuilder::new()
     }
 }
 
 pub struct SchemaOptionsBuilder<
-    I: IvoInputStruct<ErrorTool>,
+    I: IvoInputStruct<ErrorSanitizer>,
     O: IvoStruct,
     CtxOptions,
-    ErrorTool: IvoErrorTool,
+    ErrorSanitizer: IvoErrorSanitizer,
     HasPostValidate = No,
     HasDelete = No,
     HasSuccess = No,
@@ -54,8 +58,8 @@ pub struct SchemaOptionsBuilder<
     pub(crate) ignore_update: Option<Vec<IgnoreUpdateOptionConfig<I, O, CtxOptions>>>,
     pub(crate) on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
     pub(crate) on_success_fns: Option<Vec<OnSuccessConfig<I, O, CtxOptions>>>,
-    pub(crate) post_validate: Option<Vec<PostValidationConfig<I, O, CtxOptions, ErrorTool>>>,
-    pub(crate) required: Option<Vec<RequiredOptionConfig<I, O, CtxOptions, ErrorTool>>>,
+    pub(crate) post_validate: Option<Vec<PostValidationConfig<I, O, CtxOptions, ErrorSanitizer>>>,
+    pub(crate) required: Option<Vec<RequiredOptionConfig<I, O, CtxOptions, ErrorSanitizer>>>,
     // markers...
     _on_delete_fns: PhantomData<HasDelete>,
     _on_success_fns: PhantomData<HasSuccess>,
@@ -72,16 +76,16 @@ impl<
         HasIgnore,
         HasIgnoreUpdate,
         HasRequired,
-        I: IvoInputStruct<ErrorTool>,
+        I: IvoInputStruct<ErrorSanitizer>,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorSanitizer: IvoErrorSanitizer,
     >
     SchemaOptionsBuilder<
         I,
         O,
         CtxOptions,
-        ErrorTool,
+        ErrorSanitizer,
         HasPostValidate,
         HasDelete,
         HasSuccess,
@@ -112,8 +116,8 @@ impl<
         ignore_update: Option<Vec<IgnoreUpdateOptionConfig<I, O, CtxOptions>>>,
         on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
         on_success_fns: Option<Vec<OnSuccessConfig<I, O, CtxOptions>>>,
-        post_validate: Option<Vec<PostValidationConfig<I, O, CtxOptions, ErrorTool>>>,
-        required: Option<Vec<RequiredOptionConfig<I, O, CtxOptions, ErrorTool>>>,
+        post_validate: Option<Vec<PostValidationConfig<I, O, CtxOptions, ErrorSanitizer>>>,
+        required: Option<Vec<RequiredOptionConfig<I, O, CtxOptions, ErrorSanitizer>>>,
     ) -> Self {
         Self {
             ignore,
@@ -134,16 +138,16 @@ impl<
         HasIgnore,
         HasIgnoreUpdate,
         HasRequired,
-        I: IvoInputStruct<ErrorTool>,
+        I: IvoInputStruct<ErrorSanitizer>,
         O: IvoStruct,
         CtxOptions,
-        ErrorTool: IvoErrorTool,
+        ErrorSanitizer: IvoErrorSanitizer,
     > Default
     for SchemaOptionsBuilder<
         I,
         O,
         CtxOptions,
-        ErrorTool,
+        ErrorSanitizer,
         HasPostValidate,
         HasDelete,
         HasSuccess,

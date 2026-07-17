@@ -11,7 +11,7 @@ use std::{
 };
 
 use crate::{
-    __private_types::DefaultFieldErrorMetadata, IvoContext, IvoErrorTool, IvoRwCtxOptions,
+    __private_types::DefaultFieldErrorMetadata, IvoContext, IvoErrorSanitizer, IvoRwCtxOptions,
 };
 
 pub trait IvoStruct:
@@ -28,8 +28,8 @@ pub trait IvoStruct:
     }
 }
 
-pub trait IvoInputStruct<ErrorTool: IvoErrorTool>:
-    IvoStruct + WithPartialErrors<ErrorTool::FieldMetadata>
+pub trait IvoInputStruct<ErrorSanitizer: IvoErrorSanitizer>:
+    IvoStruct + WithPartialErrors<ErrorSanitizer::FieldMetadata>
 {
 }
 
@@ -163,8 +163,10 @@ pub type ValidatorError<FieldErrorMetadata> = (String, Option<FieldErrorMetadata
 pub type PostValidatorError<FieldErrorMetadata = DefaultFieldErrorMetadata> =
     HashMap<String, ValidatorError<FieldErrorMetadata>>;
 
-pub type PostValidatorResponse<I: IvoInputStruct<ErrorTool>, ErrorTool: IvoErrorTool> =
-    Result<Option<I::Partial>, I::PartialErrors>;
+pub type PostValidatorResponse<
+    I: IvoInputStruct<ErrorSanitizer>,
+    ErrorSanitizer: IvoErrorSanitizer,
+> = Result<Option<I::Partial>, I::PartialErrors>;
 
 pub type Resolver<T, I: IvoStruct, O: IvoStruct, CtxOptions> = Box<
     dyn Fn(IvoContext<I, O>, IvoRwCtxOptions<CtxOptions>) -> BoxFuture<'static, T>

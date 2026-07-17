@@ -1,4 +1,4 @@
-use ivo::{DefaultErrorTool, IvoField, IvoInputStruct, IvoStruct, Model};
+use ivo::{IvoField, IvoInputStruct, IvoStruct, Model};
 use std::{future::ready, panic};
 
 #[test]
@@ -16,7 +16,7 @@ fn should_reject_if_fields_array_is_empty() {
         lax_1: i32,
     }
 
-    let _: Model<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Model::new(
+    let _: Model<DataInput, Data> = Model::new(
         |f| {
             f.field("lax", IvoField::LAX.default(1234))
                 .field("lax_1", IvoField::LAX.default(5678))
@@ -40,7 +40,7 @@ fn should_reject_if_fields_array_has_just_one_field() {
         lax_1: i32,
     }
 
-    let _: Model<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Model::new(
+    let _: Model<DataInput, Data> = Model::new(
         |f| {
             f.field("lax", IvoField::LAX.default(1234))
                 .field("lax_1", IvoField::LAX.default(5678))
@@ -66,7 +66,7 @@ fn should_reject_if_the_fields_array_contains_any_duplicates() {
         lax_1: i32,
     }
 
-    let _: Model<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Model::new(
+    let _: Model<DataInput, Data> = Model::new(
         |f| {
             f.field("lax", IvoField::LAX.default(1234))
                 .field("lax_1", IvoField::LAX.default(5678))
@@ -92,7 +92,7 @@ fn should_reject_if_the_fields_array_contains_any_string_that_is_not_a_field_on_
         lax_1: i32,
     }
 
-    let _: Model<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Model::new(
+    let _: Model<DataInput, Data> = Model::new(
         |f| {
             f.field("lax", IvoField::LAX.default(1234))
                 .field("lax_1", IvoField::LAX.default(5678))
@@ -123,7 +123,7 @@ fn should_reject_if_a_constant_is_provided_to_the_fields_array() {
         lax_1: i32,
     }
 
-    let _: Model<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Model::new(
+    let _: Model<DataInput, Data> = Model::new(
         |f| {
             f.field("id", IvoField::CONSTANT.value(1234))
                 .field("lax", IvoField::LAX.default(1234))
@@ -151,7 +151,7 @@ fn should_reject_if_a_dependent_field_is_provided_to_the_fields_array() {
         lax_1: i32,
     }
 
-    let _: Model<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Model::new(
+    let _: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -190,7 +190,7 @@ fn should_reject_if_an_alias_similar_to_a_dependent_field_is_provided_to_the_fie
         dependent: i32,
     }
 
-    let _: Model<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Model::new(
+    let _: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -235,7 +235,7 @@ fn should_reject_if_an_alias_with_foreign_name_is_provided_to_the_fields_array()
         alias: i32,
     }
 
-    let _: Model<DataInput, Data, Option<()>, &'static str, DefaultErrorTool> = Model::new(
+    let _: Model<DataInput, Data> = Model::new(
         |f| {
             f.field(
                 "dependent",
@@ -279,7 +279,7 @@ fn should_reject_if_created_at_timestamp_with_default_name_is_provided_to_the_fi
         lax_1: i32,
     }
 
-    let _: Model<DataInput, Data, Option<()>, i32, DefaultErrorTool> = Model::new(
+    let _: Model<DataInput, Data, Option<()>, i32> = Model::new(
         |f| {
             f.field("lax", IvoField::LAX.default(1234))
                 .field("lax_1", IvoField::LAX.default(5678))
@@ -311,7 +311,7 @@ fn should_reject_if_created_at_timestamp_with_custom_name_is_provided_to_the_fie
         lax_1: i32,
     }
 
-    let _: Model<DataInput, Data, Option<()>, i32, DefaultErrorTool> = Model::new(
+    let _: Model<DataInput, Data, Option<()>, i32> = Model::new(
         |f| {
             f.field("lax", IvoField::LAX.default(1234))
                 .field("lax_1", IvoField::LAX.default(5678))
@@ -343,7 +343,7 @@ fn should_reject_if_updated_at_timestamp_with_default_name_is_provided_to_the_fi
         lax_1: i32,
     }
 
-    let _: Model<DataInput, Data, Option<()>, i32, DefaultErrorTool> = Model::new(
+    let _: Model<DataInput, Data, Option<()>, i32> = Model::new(
         |f| {
             f.field("lax", IvoField::LAX.default(1234))
                 .field("lax_1", IvoField::LAX.default(5678))
@@ -375,7 +375,7 @@ fn should_reject_if_updated_at_timestamp_with_custom_name_is_provided_to_the_fie
         lax_1: i32,
     }
 
-    let _: Model<DataInput, Data, Option<()>, i32, DefaultErrorTool> = Model::new(
+    let _: Model<DataInput, Data, Option<()>, i32> = Model::new(
         |f| {
             f.field("lax", IvoField::LAX.default(1234))
                 .field("lax_1", IvoField::LAX.default(5678))

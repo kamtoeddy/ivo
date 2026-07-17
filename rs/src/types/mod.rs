@@ -9,7 +9,7 @@ use crate::{
         fields::{base::InternalFieldConfig, TimestampConfig},
         options::base::SchemaOptions,
     },
-    DefaultErrorTool, IvoErrorTool, IvoInputStruct,
+    DefaultErrorSanitizer, IvoErrorSanitizer, IvoInputStruct,
 };
 use internal::{IvoRwLock, IvoStruct};
 
@@ -20,21 +20,21 @@ pub type IvoContext<I: IvoStruct, O: IvoStruct = I> = IvoShared<InternalIvoConte
 pub type IvoSharedInput<I: IvoStruct> = IvoShared<I::Partial>;
 
 pub(crate) type InternalFieldConfigs<
-    I: IvoInputStruct<ErrorTool>,
+    I: IvoInputStruct<ErrorSanitizer>,
     O: IvoStruct,
     CtxOptions,
-    ErrorTool: IvoErrorTool,
-> = HashMap<&'static str, InternalFieldConfig<I, O, CtxOptions, ErrorTool>>;
+    ErrorSanitizer: IvoErrorSanitizer,
+> = HashMap<&'static str, InternalFieldConfig<I, O, CtxOptions, ErrorSanitizer>>;
 
 pub struct Model<
-    I: IvoInputStruct<ErrorTool>,
+    I: IvoInputStruct<ErrorSanitizer>,
     O: IvoStruct = I,
     CtxOptions: Clone + Sync + Send = Option<()>,
     Timestamp: Clone + Debug + Send + Sync + 'static = (),
-    ErrorTool: IvoErrorTool = DefaultErrorTool,
+    ErrorSanitizer: IvoErrorSanitizer = DefaultErrorSanitizer,
 > {
-    pub(crate) field_configs: InternalFieldConfigs<I, O, CtxOptions, ErrorTool>,
-    pub(crate) options: SchemaOptions<I, O, CtxOptions, ErrorTool>,
+    pub(crate) field_configs: InternalFieldConfigs<I, O, CtxOptions, ErrorSanitizer>,
+    pub(crate) options: SchemaOptions<I, O, CtxOptions, ErrorSanitizer>,
     pub(crate) timestamp_configs: Option<TimestampConfig<Timestamp>>,
 }
 
