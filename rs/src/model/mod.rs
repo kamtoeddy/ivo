@@ -52,11 +52,7 @@ impl<
         options: CtxOptions,
     ) -> Result<
         (O, AsyncHandlerTrigger<'_>, CtxOptions),
-        (
-            ErrorSanitizer::ErrorPayload,
-            AsyncHandlerTrigger<'_>,
-            CtxOptions,
-        ),
+        (ErrorSanitizer::Payload, AsyncHandlerTrigger<'_>, CtxOptions),
     > {
         let shared_rw_options = Arc::new(IvoRwLock::new(options));
         let mut ctx = Arc::new(InternalIvoContext::<I, O>::new_create_ctx(
@@ -256,7 +252,7 @@ impl<
     ) -> Result<
         (O::Partial, AsyncHandlerTrigger<'_>, CtxOptions),
         (
-            Option<ErrorSanitizer::ErrorPayload>,
+            Option<ErrorSanitizer::Payload>,
             AsyncHandlerTrigger<'_>,
             CtxOptions,
         ),
@@ -553,8 +549,7 @@ impl<
         fields_collection: &FieldInfoCollection<'a, I, O, CtxOptions, ErrorSanitizer>,
         ctx: IvoContext<I, O>,
         options: IvoRwCtxOptions<CtxOptions>,
-    ) -> Result<Option<(I::Partial, O::Partial)>, IvoErrorPayload<ErrorSanitizer::FieldMetadata>>
-    {
+    ) -> Result<Option<(I::Partial, O::Partial)>, IvoErrorPayload<ErrorSanitizer::Metadata>> {
         let relevant_fields_provided = fields_collection.relevant_fields_provided();
         let raw_inputs = ctx.raw_input();
         let mut validators = Vec::with_capacity(relevant_fields_provided.len());
@@ -657,8 +652,7 @@ impl<
         fields_collection: &FieldInfoCollection<'a, I, O, CtxOptions, ErrorSanitizer>,
         ctx: IvoContext<I, O>,
         options: IvoRwCtxOptions<CtxOptions>,
-    ) -> Result<Option<(I::Partial, O::Partial)>, IvoErrorPayload<ErrorSanitizer::FieldMetadata>>
-    {
+    ) -> Result<Option<(I::Partial, O::Partial)>, IvoErrorPayload<ErrorSanitizer::Metadata>> {
         let relevant_fields_provided = fields_collection.relevant_fields_provided();
         let mut re_validators = Vec::with_capacity(relevant_fields_provided.len());
 
@@ -738,8 +732,7 @@ impl<
         fields_collection: &FieldInfoCollection<'a, I, O, CtxOptions, ErrorSanitizer>,
         ctx: IvoContext<I, O>,
         options: IvoRwCtxOptions<CtxOptions>,
-    ) -> Result<Option<(I::Partial, O::Partial)>, IvoErrorPayload<ErrorSanitizer::FieldMetadata>>
-    {
+    ) -> Result<Option<(I::Partial, O::Partial)>, IvoErrorPayload<ErrorSanitizer::Metadata>> {
         let mut pre_validators = vec![];
         let mut post_validators = vec![];
 
@@ -1367,7 +1360,7 @@ impl<
         fields_collection: &FieldInfoCollection<'a, I, O, CtxOptions, ErrorSanitizer>,
         ctx: IvoContext<I, O>,
         options: IvoRwCtxOptions<CtxOptions>,
-    ) -> Result<(), IvoErrorPayload<ErrorSanitizer::FieldMetadata>> {
+    ) -> Result<(), IvoErrorPayload<ErrorSanitizer::Metadata>> {
         let mut error_tool = DefaultErrorSanitizer::new();
         let mut resolvers = vec![];
         let is_update = ctx.is_update();

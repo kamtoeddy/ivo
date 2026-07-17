@@ -44,8 +44,8 @@ pub struct LaxFieldBuilder<
     HasSuccess = No,
 > {
     default: Option<ValueResolverWithSharedInput<ErasedValue, I, CtxOptions>>,
-    validator: Option<UniformValidator<I, O, CtxOptions, ErrorSanitizer::FieldMetadata>>,
-    re_validator: Option<UniformValidator<I, O, CtxOptions, ErrorSanitizer::FieldMetadata>>,
+    validator: Option<UniformValidator<I, O, CtxOptions, ErrorSanitizer::Metadata>>,
+    re_validator: Option<UniformValidator<I, O, CtxOptions, ErrorSanitizer::Metadata>>,
     required_fn: Option<RequiredResolver<I, O, CtxOptions>>,
     should_ignore: Option<BooleanResolver<I, O, CtxOptions>>,
     ignore_init: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,

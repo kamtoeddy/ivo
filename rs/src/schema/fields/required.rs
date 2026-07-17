@@ -32,8 +32,8 @@ pub struct RequiredFieldBuilder<
     HasSuccess = No,
 > {
     required_error: Option<ComputableRequiredError<I, O, CtxOptions>>,
-    validator: Option<UniformValidator<I, O, CtxOptions, ErrorSanitizer::FieldMetadata>>,
-    re_validator: Option<UniformValidator<I, O, CtxOptions, ErrorSanitizer::FieldMetadata>>,
+    validator: Option<UniformValidator<I, O, CtxOptions, ErrorSanitizer::Metadata>>,
+    re_validator: Option<UniformValidator<I, O, CtxOptions, ErrorSanitizer::Metadata>>,
     ignore_update: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
     on_delete_fns: Option<Vec<DeleteHandler<O, CtxOptions>>>,
     on_failure_fns: Option<Vec<FailureHandler<I, O, CtxOptions>>>,

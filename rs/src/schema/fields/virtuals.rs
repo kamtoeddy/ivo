@@ -37,8 +37,8 @@ pub struct VirtualFieldBuilder<
     HasSuccess = No,
 > {
     alias: Option<&'static str>,
-    validator: Option<UniformValidator<I, O, CtxOptions, ErrorSanitizer::FieldMetadata>>,
-    re_validator: Option<UniformValidator<I, O, CtxOptions, ErrorSanitizer::FieldMetadata>>,
+    validator: Option<UniformValidator<I, O, CtxOptions, ErrorSanitizer::Metadata>>,
+    re_validator: Option<UniformValidator<I, O, CtxOptions, ErrorSanitizer::Metadata>>,
     required_fn: Option<RequiredResolver<I, O, CtxOptions>>,
     sanitizer: Option<VirtualSanitizer<ErasedValue, I, O, CtxOptions>>,
     ignore: Option<BooleanResolver<I, O, CtxOptions>>,

@@ -68,7 +68,7 @@ pub trait IntoFieldValidator<
     ErrorSanitizer: IvoErrorSanitizer,
 >
 {
-    fn into_uniform(self) -> UniformValidator<I, O, CtxOptions, ErrorSanitizer::FieldMetadata>;
+    fn into_uniform(self) -> UniformValidator<I, O, CtxOptions, ErrorSanitizer::Metadata>;
 }
 
 impl<F, Fut, T, I, O, CtxOptions, ErrorSanitizer>
@@ -79,12 +79,9 @@ where
     ErrorSanitizer: IvoErrorSanitizer,
     T: FieldValue,
     F: Fn(T, IvoContext<I, O>, IvoRwCtxOptions<CtxOptions>) -> Fut + Send + Sync + 'static,
-    Fut: Future<Output = ValidatorResponse<T, ErrorSanitizer::FieldMetadata>>
-        + Send
-        + Sync
-        + 'static,
+    Fut: Future<Output = ValidatorResponse<T, ErrorSanitizer::Metadata>> + Send + Sync + 'static,
 {
-    fn into_uniform(self) -> UniformValidator<I, O, CtxOptions, ErrorSanitizer::FieldMetadata> {
+    fn into_uniform(self) -> UniformValidator<I, O, CtxOptions, ErrorSanitizer::Metadata> {
         Box::new(move |v, ctx, o| {
             Box::pin(
                 self(parse_or_panic::<T>(&v, None), ctx, o)
@@ -186,12 +183,12 @@ where
     }
 }
 
-pub type UniformValidator<I, O, CtxOptions, FieldMetadata> = Box<
+pub type UniformValidator<I, O, CtxOptions, Metadata> = Box<
     dyn Fn(
             ErasedValue,
             IvoContext<I, O>,
             IvoRwCtxOptions<CtxOptions>,
-        ) -> BoxFuture<'static, ValidatorResponse<ErasedValue, FieldMetadata>>
+        ) -> BoxFuture<'static, ValidatorResponse<ErasedValue, Metadata>>
         + Send
         + Sync
         + 'static,

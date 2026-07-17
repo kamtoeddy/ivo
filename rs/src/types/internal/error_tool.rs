@@ -4,19 +4,19 @@ pub type DefaultFieldErrorMetadata = ();
 pub type DefaultErrorPayload = IvoErrorPayload<DefaultFieldErrorMetadata>;
 
 #[derive(Debug, Clone)]
-pub struct FieldError<FieldMetadata: Clone = DefaultFieldErrorMetadata> {
+pub struct FieldError<Metadata: Clone = DefaultFieldErrorMetadata> {
     pub reason: String,
-    pub metadata: Option<FieldMetadata>,
+    pub metadata: Option<Metadata>,
 }
 
-pub type IvoErrorPayload<FieldMetadata: Clone> = HashMap<String, FieldError<FieldMetadata>>;
+pub type IvoErrorPayload<Metadata: Clone> = HashMap<String, FieldError<Metadata>>;
 
 #[derive(Debug)]
-pub struct DefaultErrorSanitizer<FieldMetadata: Clone = DefaultFieldErrorMetadata> {
-    payload: IvoErrorPayload<FieldMetadata>,
+pub struct DefaultErrorSanitizer<Metadata: Clone = DefaultFieldErrorMetadata> {
+    payload: IvoErrorPayload<Metadata>,
 }
 
-impl<FieldMetadata: Clone> DefaultErrorSanitizer<FieldMetadata> {
+impl<Metadata: Clone> DefaultErrorSanitizer<Metadata> {
     #[inline(always)]
     pub(crate) fn new() -> Self {
         Self {
@@ -25,7 +25,7 @@ impl<FieldMetadata: Clone> DefaultErrorSanitizer<FieldMetadata> {
     }
 
     #[inline(always)]
-    pub(crate) fn add(&mut self, field_name: &str, value: FieldError<FieldMetadata>) -> &mut Self {
+    pub(crate) fn add(&mut self, field_name: &str, value: FieldError<Metadata>) -> &mut Self {
         self.payload.insert(field_name.to_string(), value);
 
         self
@@ -37,32 +37,30 @@ impl<FieldMetadata: Clone> DefaultErrorSanitizer<FieldMetadata> {
     }
 
     #[inline(always)]
-    pub(crate) fn payload(self) -> IvoErrorPayload<FieldMetadata> {
+    pub(crate) fn payload(self) -> IvoErrorPayload<Metadata> {
         self.payload
     }
 }
 
-impl<FieldMetadata: Clone + Send + Sync> IvoErrorSanitizer
-    for DefaultErrorSanitizer<FieldMetadata>
-{
-    type FieldMetadata = FieldMetadata;
-    type ErrorPayload = IvoErrorPayload<Self::FieldMetadata>;
+impl<Metadata: Clone + Send + Sync> IvoErrorSanitizer for DefaultErrorSanitizer<Metadata> {
+    type Metadata = Metadata;
+    type Payload = IvoErrorPayload<Self::Metadata>;
 
     #[inline(always)]
     fn sanitize<CtxOptions>(
-        payload: IvoErrorPayload<Self::FieldMetadata>,
+        payload: IvoErrorPayload<Self::Metadata>,
         _: &CtxOptions,
-    ) -> Self::ErrorPayload {
+    ) -> Self::Payload {
         payload
     }
 }
 
 pub trait IvoErrorSanitizer {
-    type FieldMetadata: Clone + Send + Sync;
-    type ErrorPayload;
+    type Metadata: Clone + Send + Sync;
+    type Payload;
 
     fn sanitize<CtxOptions>(
-        payload: IvoErrorPayload<Self::FieldMetadata>,
+        payload: IvoErrorPayload<Self::Metadata>,
         ctx_options: &CtxOptions,
-    ) -> Self::ErrorPayload;
+    ) -> Self::Payload;
 }

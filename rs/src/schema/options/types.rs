@@ -141,7 +141,7 @@ pub type RequiredOptionResolver<
 >;
 
 type UniformRequiredResponse<'a, ErrorSanitizer: IvoErrorSanitizer> =
-    BoxFuture<'a, Option<Vec<(String, FieldError<ErrorSanitizer::FieldMetadata>)>>>;
+    BoxFuture<'a, Option<Vec<(String, FieldError<ErrorSanitizer::Metadata>)>>>;
 
 pub trait UniformRequiredResolver<
     I: IvoInputStruct<ErrorSanitizer>,
@@ -176,7 +176,7 @@ where
                 vec![(
                     field_names.iter().next().unwrap().to_string(),
                     FieldError {
-                        metadata: None::<ErrorSanitizer::FieldMetadata>,
+                        metadata: None::<ErrorSanitizer::Metadata>,
                         reason,
                     },
                 )]

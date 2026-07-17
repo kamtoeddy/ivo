@@ -132,8 +132,8 @@ Deriving `IvoInputStruct` on **UserInput** automatically implements `IvoStruct` 
     fn new() -> Self;
 
     // you also get two types of builder methods for each field
-    fn set_email(&mut self, reason: &str, metadata: Option<IvoErrorSanitizer::FieldMetadata>) -> &mut Self;
-    fn with_email(mut self, reason: &str, metadata: Option<IvoErrorSanitizer::FieldMetadata>) -> Self;
+    fn set_email(&mut self, reason: &str, metadata: Option<IvoErrorSanitizer::Metadata>) -> &mut Self;
+    fn with_email(mut self, reason: &str, metadata: Option<IvoErrorSanitizer::Metadata>) -> Self;
     // ... more builder methods for the other fields
 
     // you also get a method to unset (or set value to None) for each field
@@ -218,10 +218,10 @@ Below are links to examples on how to properly configure schema fields.
 ```rs
 type DefaultFieldErrorMetadata = ();
 
-struct FieldError<FieldMetadata: Clone = DefaultFieldErrorMetadata> {
+struct FieldError<Metadata: Clone = DefaultFieldErrorMetadata> {
   pub reason: String,
-  pub metadata: Option<FieldMetadata>,
+  pub metadata: Option<Metadata>,
 }
 
-type IvoErrorPayload<FieldMetadata: Clone> = HashMap<String, FieldError<FieldMetadata>>;
+type IvoErrorPayload<Metadata: Clone> = HashMap<String, FieldError<Metadata>>;
 ```

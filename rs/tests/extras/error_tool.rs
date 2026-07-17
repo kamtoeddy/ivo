@@ -196,18 +196,18 @@ static PLACE_MODEL: LazyLock<
     )
 });
 
-type PlacesErrorSanitizerFieldMetadata = Vec<String>;
+type PlacesErrorSanitizerMetadata = Vec<String>;
 
 struct PlacesErrorSanitizer;
 
 impl IvoErrorSanitizer for PlacesErrorSanitizer {
-    type FieldMetadata = PlacesErrorSanitizerFieldMetadata;
-    type ErrorPayload = HashMap<String, Vec<String>>;
+    type Metadata = PlacesErrorSanitizerMetadata;
+    type Payload = HashMap<String, Vec<String>>;
 
     fn sanitize<PlacesCtxOptions>(
-        payload: IvoErrorPayload<Self::FieldMetadata>,
+        payload: IvoErrorPayload<Self::Metadata>,
         _: &PlacesCtxOptions,
-    ) -> Self::ErrorPayload {
+    ) -> Self::Payload {
         let mut errors = HashMap::new();
 
         for (field_name, error) in payload {

@@ -29,7 +29,7 @@ pub trait IvoStruct:
 }
 
 pub trait IvoInputStruct<ErrorSanitizer: IvoErrorSanitizer>:
-    IvoStruct + WithPartialErrors<ErrorSanitizer::FieldMetadata>
+    IvoStruct + WithPartialErrors<ErrorSanitizer::Metadata>
 {
 }
 

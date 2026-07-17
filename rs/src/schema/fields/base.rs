@@ -45,8 +45,8 @@ pub struct FieldConfig<T, I: IvoStruct, O: IvoStruct, CtxOptions, ErrorSanitizer
     pub required_error: Option<ComputableRequiredError<I, O, CtxOptions>>,
     pub resolver: Option<Resolver<T, I, O, CtxOptions>>,
     pub sanitizer: Option<VirtualSanitizer<T, I, O, CtxOptions>>,
-    pub validator: Option<UniformValidator<I, O, CtxOptions, ErrorSanitizer::FieldMetadata>>,
-    pub re_validator: Option<UniformValidator<I, O, CtxOptions, ErrorSanitizer::FieldMetadata>>,
+    pub validator: Option<UniformValidator<I, O, CtxOptions, ErrorSanitizer::Metadata>>,
+    pub re_validator: Option<UniformValidator<I, O, CtxOptions, ErrorSanitizer::Metadata>>,
     //
     pub ignore: Option<BooleanResolver<I, O, CtxOptions>>,
     pub ignore_init: Option<IsFieldProvisionEnabled<I, O, CtxOptions>>,
