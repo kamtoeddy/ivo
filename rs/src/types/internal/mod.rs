@@ -1,7 +1,7 @@
-mod error_tool;
+mod error_sanitizer;
 pub mod types;
 
-pub use error_tool::{
+pub use error_sanitizer::{
     DefaultErrorPayload, DefaultErrorSanitizer, DefaultFieldErrorMetadata, FieldError,
     IvoErrorPayload, IvoErrorSanitizer,
 };

@@ -1,4 +1,5 @@
-mod internal;
+mod error_tool;
+mod fields_collection;
 
 use futures::future::{join_all, BoxFuture};
 use futures::FutureExt;
@@ -7,10 +8,12 @@ use std::fmt::Debug;
 use std::future::ready;
 use std::sync::Arc;
 
+use error_tool::ErrorTool;
+use fields_collection::FieldInfoCollection;
+
 use crate::__private_types::types::{BooleanResolver, IgnoreUpdateOptionResolver};
 use crate::__private_types::IvoErrorPayload;
 use crate::__private_types::{types::PartialErrorsMethods, IvoInputStruct};
-use crate::model::internal::FieldInfoCollection;
 use crate::schema::options::types::{
     IgnoreOptionConfig, IgnoreUpdateOptionConfig, UniformIgnoreResolver,
 };
@@ -34,7 +37,7 @@ use crate::types::{
     },
     InternalIvoContext,
 };
-use crate::{DefaultErrorSanitizer, IvoContext, IvoCtxOptions, IvoRwCtxOptions, Model};
+use crate::{IvoContext, IvoCtxOptions, IvoRwCtxOptions, Model};
 
 type AsyncHandlerTrigger<'a> = Box<dyn FnOnce() -> BoxFuture<'a, ()> + Send + Sync + 'a>;
 
@@ -603,14 +606,14 @@ impl<
             )
         });
 
-        let mut error_tool = DefaultErrorSanitizer::new();
+        let mut error_tool = ErrorTool::new();
 
         for (field_info, result) in join_all(tasks).await {
             let field_name = field_info.name;
 
             match result {
                 Err((reason, metadata)) => {
-                    error_tool.add(field_name, FieldError { reason, metadata });
+                    error_tool.set(field_name, FieldError { reason, metadata });
                 }
                 Ok(Some(value)) => {
                     has_updates = true;
@@ -686,7 +689,7 @@ impl<
             )
         });
 
-        let mut error_tool = DefaultErrorSanitizer::new();
+        let mut error_tool = ErrorTool::new();
         let mut validated_outputs = if ctx.is_update() {
             ctx.changes()
         } else {
@@ -699,7 +702,7 @@ impl<
 
             match result {
                 Err((reason, metadata)) => {
-                    error_tool.add(field_name, FieldError { reason, metadata });
+                    error_tool.set(field_name, FieldError { reason, metadata });
                 }
                 Ok(Some(value)) => {
                     has_updates = true;
@@ -766,7 +769,7 @@ impl<
 
         let is_update = ctx.is_update();
         let mut ctx = ctx.clone();
-        let mut error_tool = DefaultErrorSanitizer::new();
+        let mut error_tool = ErrorTool::new();
         let mut validated_inputs = ctx.input();
         let mut validated_outputs = if is_update {
             ctx.changes()
@@ -787,7 +790,7 @@ impl<
                             let field_info = fields_collection.get(&field_name);
 
                             if fields.contains(&field_info.config_name) {
-                                error_tool.add(&field_name, FieldError { reason, metadata });
+                                error_tool.set(&field_name, FieldError { reason, metadata });
                             }
                         }
                     }
@@ -850,7 +853,7 @@ impl<
                         let field_info = fields_collection.get(&field_name);
 
                         if fields.contains(&field_info.config_name) {
-                            error_tool.add(&field_name, FieldError { reason, metadata });
+                            error_tool.set(&field_name, FieldError { reason, metadata });
                         }
                     }
                 }
@@ -1361,7 +1364,7 @@ impl<
         ctx: IvoContext<I, O>,
         options: IvoRwCtxOptions<CtxOptions>,
     ) -> Result<(), IvoErrorPayload<ErrorSanitizer::Metadata>> {
-        let mut error_tool = DefaultErrorSanitizer::new();
+        let mut error_tool = ErrorTool::new();
         let mut resolvers = vec![];
         let is_update = ctx.is_update();
 
@@ -1378,7 +1381,7 @@ impl<
                 } if !is_update => {
                     match required_error {
                         Some(ComputableRequiredError::Static(msg)) => {
-                            error_tool.add(
+                            error_tool.set(
                                 field_name,
                                 FieldError {
                                     reason: msg.to_string(),
@@ -1390,7 +1393,7 @@ impl<
                             resolvers.push((field_name, resolver));
                         }
                         _ => {
-                            error_tool.add(
+                            error_tool.set(
                                 field_name,
                                 FieldError {
                                     reason: format!("\"{field_name}\" is required!"),
@@ -1480,7 +1483,7 @@ impl<
 
         for values in join_all(tasks).await {
             for (field_name, error) in values.unwrap_or_default() {
-                error_tool.add(&field_name, error);
+                error_tool.set(&field_name, error);
             }
         }
 
