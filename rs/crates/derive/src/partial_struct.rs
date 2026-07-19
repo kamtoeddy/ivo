@@ -116,13 +116,13 @@ pub fn generate_partial_struct(
         quote! {
             impl #partial_struct_name {
                 #[inline(always)]
-                #[inline(always)]
                 #vis fn #set_method_name(&mut self, value: #field_type) -> &mut Self {
                     self.#field_name = Some(value);
 
                     self
                 }
 
+                #[inline(always)]
                 #vis fn #set_owned_method_name(mut self, value: #field_type) -> Self {
                     self.#field_name = Some(value);
 
@@ -151,14 +151,15 @@ pub fn generate_partial_struct(
        #( #construct_builder_methods_of_partial_struct )*
 
        impl #partial_struct_name {
+           #[inline(always)]
            #vis fn new() -> Self {
                Self::default()
            }
 
-           #[inline(always)]
            /// This is a utility method used to wrap the partial struct into an option.
            ///
            /// If every field has as value None, None is return, otherwise Some(self) is returned
+           #[inline(always)]
            #vis fn into_option(self) -> Option<Self> {
                if self.is_empty() {
                    None
