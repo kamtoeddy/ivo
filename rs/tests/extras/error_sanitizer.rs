@@ -3,7 +3,7 @@ use std::{collections::HashMap, future::ready, sync::LazyLock};
 use crate::async_test_matrix;
 use ivo::{IvoErrorPayload, IvoErrorSanitizer, IvoField, IvoInputStruct, IvoStruct, Model};
 
-async fn should_respect_custom_error_tool() {
+async fn should_respect_custom_error_sanitizer() {
     let r = PLACE_MODEL
         .create(
             &PartialPlace {
@@ -146,7 +146,7 @@ async fn should_respect_custom_error_tool() {
     assert!(err.is_none());
 }
 
-async_test_matrix!(should_respect_custom_error_tool);
+async_test_matrix!(should_respect_custom_error_sanitizer);
 
 #[derive(Debug, PartialEq, Clone)]
 struct Coodinates {

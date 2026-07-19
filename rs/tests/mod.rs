@@ -8,7 +8,7 @@ mod value_erasal;
 
 // TODO:
 // [x] ctx options
-// [x] custom error_tool
+// [x] custom error_sanitizer
 // [x] value_erasal
 // [x] ivo_derive
 // [x] fields
