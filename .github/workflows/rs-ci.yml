@@ -8,14 +8,20 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./rs
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
-      - run: cd ./rs && cargo ci
+      - run: cargo ci
 
   test-nightly:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./rs
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@nightly
-      - run: cd ./rs && cargo ci
+      - run: cargo ci

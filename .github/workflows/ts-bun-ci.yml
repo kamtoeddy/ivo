@@ -8,6 +8,9 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./ts
 
     strategy:
       matrix:
@@ -21,7 +24,7 @@ jobs:
           version: ${{ matrix.bun-version }}
 
       - name: 📦 Install dependencies
-        run: cd ./ts && bun i
+        run: bun i
 
       - name: ⚒️ Build
         run: bun run build
