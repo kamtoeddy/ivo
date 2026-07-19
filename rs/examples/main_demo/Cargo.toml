@@ -12,7 +12,7 @@ keywords.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-ivo = { path = "../..", version = "0.0.2" , features = ["validators"] }
+ivo = { path = "../.." , features = ["validators"] }
 async-std.workspace = true
 regex.workspace = true
 unicode-normalization.workspace = true

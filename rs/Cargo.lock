@@ -500,7 +500,7 @@ checksum = "8f42a60cbdf9a97f5d2305f08a87dc4e09308d1276d28c869c684d7777685682"
 
 [[package]]
 name = "ivo"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "async-std",
  "chrono",
@@ -520,7 +520,7 @@ dependencies = [
 
 [[package]]
 name = "ivo-derive"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -529,7 +529,7 @@ dependencies = [
 
 [[package]]
 name = "ivo-validators"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "regex",
 ]
@@ -577,7 +577,7 @@ dependencies = [
 
 [[package]]
 name = "main_demo"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "async-std",
  "chrono",
