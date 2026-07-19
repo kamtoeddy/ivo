@@ -475,6 +475,8 @@ async fn should_respect_the_required_rule() {
 
 async_test_matrix!(should_respect_the_required_rule);
 
+// grouped required
+
 async fn should_properly_handle_grouped_required_errors() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
     struct Data {

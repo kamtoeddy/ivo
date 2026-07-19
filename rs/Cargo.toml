@@ -116,3 +116,7 @@ path = "examples/timestamps_with_custom_names.rs"
 [[example]]
 name = "timestamps_with_default_names"
 path = "examples/timestamps_with_default_names.rs"
+
+[[example]]
+name = "option_on_success"
+path = "examples/option_on_success.rs"

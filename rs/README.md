@@ -44,16 +44,16 @@ Deriving `IvoStruct` on **User** generates a struct called **`PartialUser`** tog
 - **User** gets three helper methods with the following signatures:
 
   ```rs
-    impl IvoStruct for User {
-        fn append_updates(&mut self, updates: &Self::Partial);
+  impl IvoStruct for User {
+      fn append_updates(&mut self, updates: &Self::Partial);
 
-        // and
-        fn clone_with_updates(&self, updates: &Self::Partial) -> Self;
-    }
+      // and
+      fn clone_with_updates(&self, updates: &Self::Partial) -> Self;
+  }
 
-    impl From<User> for PartialUser {
-        fn from(value: User) -> PartialUser;
-    }
+  impl From<User> for PartialUser {
+      fn from(value: User) -> PartialUser;
+  }
   ```
 
 - **PartialUser** has the signature:
@@ -198,9 +198,19 @@ Below are links to examples on how to properly configure schema fields.
 
 ### Ignore (Grouped)
 
+- [With lax fields]: pay attention to the `should_properly_handle_grouped_ignore_rule` & `should_properly_handle_grouped_ignore_update_rule` test funtions [here](./tests/fields/lax/ignore.rs)
+- [With virtual fields]: pay attention to the `should_properly_handle_grouped_ignore_rule`, `should_properly_handle_grouped_ignore_rule_with_alias` & `should_properly_handle_grouped_ignore_rule_with_alias_same_as_dependent` test funtions [here](./tests/fields/virtuals/ignore.rs)
+
 ### Ignore update (Grouped)
 
+- [For the entire domain entity]: pay attention to the `should_respect_option_to_ignore_updates_with_empty_fields_array` test funtion [here](./tests/opions/mod.rs)
+- [With lax fields]: pay attention to the `should_properly_handle_grouped_ignore_update_rule` test funtion [here](./tests/fields/lax/ignore.rs)
+- [With required fields]: pay attention to the `should_properly_handle_grouped_ignore_update_rule` test funtion [here](./tests/fields/required/ignore.rs)
+
 ### Required (Grouped)
+
+- [With lax fields]: pay attention to the `should_properly_handle_grouped_required_errors` test funtion [here](./tests/fields/lax/mod.rs)
+- [With virtual fields]: pay attention to the `should_properly_handle_grouped_required_errors`, `should_properly_handle_grouped_required_errors_with_alias` & `should_properly_handle_grouped_required_errors_with_alias_same_as_dependent` test funtions [here](./tests/fields/virtuals/mod.rs)
 
 ### On Success (Grouped)
 
@@ -208,7 +218,18 @@ Below are links to examples on how to properly configure schema fields.
 
 ### On Delete
 
+Pay attention to the `should_properly_trigger_on_delete_handlers` & `should_properly_trigger_all_on_delete_handlers` test funtions [here](./tests/opions/mod.rs)
+
 ### Post-validate
+
+- [With lax fields]: pay attention to the `should_respect_post_validation_config` & `should_respect_updated_values_returned_from_pre_validator_in_post_validation_config` test funtions [here](./tests/fields/lax/mod.rs)
+- [With required fields]: pay attention to the `should_respect_post_validation_config` & `should_respect_updated_values_returned_from_pre_validator_in_post_validation_config` test funtions [here](./tests/fields/required/mod.rs)
+- [With virtual fields]: pay attention to the `should_respect_post_validation_config`,
+  `should_respect_post_validation_config_with_alias`,
+  `should_respect_post_validation_config_with_alias_same_as_dependent`,
+  `should_respect_updated_values_returned_from_pre_validator_in_post_validation_config`,
+  `should_respect_updated_values_returned_from_pre_validator_in_post_validation_config_with_alias` &
+  `should_respect_updated_values_returned_from_pre_validator_in_post_validation_config_with_alias_same_as_dependent` test funtions [here](./tests/fields/virtuals/mod.rs)
 
 ## Custom Context Options
 
@@ -231,4 +252,4 @@ struct FieldError<Metadata: Clone = DefaultFieldErrorMetadata> {
 type IvoErrorPayload<Metadata: Clone> = HashMap<String, FieldError<Metadata>>;
 ```
 
-In order to customize this payload, you just need to provide an implementation of the `IvoErrorSanitizer` trait that suits you like it is done [here](./tests/extras/error_sanitizer.rs).
+In order to customize this payload, you just need to provide an implementation of the `IvoErrorSanitizer` trait that suits. [Here](./tests/extras/error_sanitizer.rs) is an example of how it can be done.

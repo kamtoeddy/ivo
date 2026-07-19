@@ -557,6 +557,582 @@ async fn should_respect_the_required_rule_with_alias_same_as_dependent() {
 
 async_test_matrix!(should_respect_the_required_rule_with_alias_same_as_dependent);
 
+// grouped required
+
+async fn should_properly_handle_grouped_required_errors() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        dependent: String,
+        lax_1: String,
+        lax_2: String,
+    }
+
+    #[derive(Debug, Clone, IvoInputStruct)]
+    struct DataInput {
+        virtual_field: String,
+        lax_1: String,
+        lax_2: String,
+    }
+
+    const IGNORE_WITH_DIFFERENT_ERRORS: &str = "IGNORE_WITH_DIFFERENT_ERRORS";
+    const IGNORE_WITH_SAME_ERROR: &str = "IGNORE_WITH_SAME_ERROR";
+    const EXPECTED_VIRTUAL_OR_LAX_1: &str = "EXPECTED_VIRTUAL_OR_LAX_1";
+    const VIRTUAL_IS_MISSING: &str = "VIRTUAL_IS_MISSING";
+    const LAX_1_IS_MISSING: &str = "LAX_1_IS_MISSING";
+
+    let default_dependent_value = "default_dependent_value";
+    let default_lax_1_value = "default_lax_1_value";
+    let default_lax_2_value = "default_lax_2_value";
+
+    let model: Model<DataInput, Data> = Model::new(
+        |f| {
+            f.field(
+                "dependent",
+                IvoField::DEPENDENT
+                    .default(default_dependent_value.to_string())
+                    .depends_on(["virtual_field"])
+                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
+                        ready(ctx.input().virtual_field.unwrap())
+                    }),
+            )
+            .field(
+                "virtual_field",
+                IvoField::VIRTUAL.validate(|_: String, _, _| ready(Ok(None))),
+            )
+            .field(
+                "lax_1",
+                IvoField::LAX.default(default_lax_1_value.to_string()),
+            )
+            .field(
+                "lax_2",
+                IvoField::LAX.default(default_lax_2_value.to_string()),
+            )
+        },
+        |o| {
+            o.required(
+                ["virtual_field", "lax_1"],
+                |ctx: IvoContext<DataInput, Data>, _| {
+                    let mut errors = DataInputErrors::new();
+
+                    if let Some(lax) = ctx.input().lax_2 {
+                        if lax == IGNORE_WITH_SAME_ERROR {
+                            errors
+                                .set_virtual_field(EXPECTED_VIRTUAL_OR_LAX_1, None)
+                                .set_lax_1(EXPECTED_VIRTUAL_OR_LAX_1, None);
+
+                            return ready(Some(errors));
+                        }
+
+                        errors
+                            .set_virtual_field(VIRTUAL_IS_MISSING, None)
+                            .set_lax_1(LAX_1_IS_MISSING, None);
+                    }
+
+                    ready(errors.into_option())
+                },
+            )
+        },
+    );
+
+    let lax = IGNORE_WITH_SAME_ERROR.to_string();
+
+    let (payload, _, _) = model
+        .create(
+            &PartialDataInput {
+                virtual_field: None,
+                lax_1: None,
+                lax_2: Some(lax.clone()),
+            },
+            None,
+        )
+        .await
+        .err()
+        .unwrap();
+
+    assert!(payload.get("lax_2").is_none());
+    assert_eq!(
+        payload.get("virtual_field").unwrap().reason,
+        EXPECTED_VIRTUAL_OR_LAX_1
+    );
+    assert_eq!(
+        payload.get("lax_1").unwrap().reason,
+        EXPECTED_VIRTUAL_OR_LAX_1
+    );
+
+    let lax = IGNORE_WITH_DIFFERENT_ERRORS.to_string();
+
+    let (payload, _, _) = model
+        .create(
+            &PartialDataInput {
+                virtual_field: None,
+                lax_1: None,
+                lax_2: Some(lax.clone()),
+            },
+            None,
+        )
+        .await
+        .err()
+        .unwrap();
+
+    assert!(payload.get("lax_2").is_none());
+    assert_eq!(
+        payload.get("virtual_field").unwrap().reason,
+        VIRTUAL_IS_MISSING
+    );
+    assert_eq!(payload.get("lax_1").unwrap().reason, LAX_1_IS_MISSING);
+
+    // updates
+
+    let data = Data {
+        dependent: default_dependent_value.to_string(),
+        lax_1: default_lax_1_value.to_string(),
+        lax_2: default_lax_2_value.to_string(),
+    };
+
+    let lax = IGNORE_WITH_SAME_ERROR.to_string();
+
+    let (error, _, _) = model
+        .update(
+            &data,
+            &PartialDataInput {
+                virtual_field: None,
+                lax_1: None,
+                lax_2: Some(lax.clone()),
+            },
+            None,
+        )
+        .await
+        .err()
+        .unwrap();
+
+    match error {
+        Some(payload) => {
+            assert!(payload.get("lax_2").is_none());
+            assert_eq!(
+                payload.get("virtual_field").unwrap().reason,
+                EXPECTED_VIRTUAL_OR_LAX_1
+            );
+            assert_eq!(
+                payload.get("lax_1").unwrap().reason,
+                EXPECTED_VIRTUAL_OR_LAX_1
+            );
+        }
+        _ => unreachable!("expected a validation error"),
+    }
+
+    let lax = IGNORE_WITH_DIFFERENT_ERRORS.to_string();
+
+    let (error, _, _) = model
+        .update(
+            &data,
+            &PartialDataInput {
+                virtual_field: None,
+                lax_1: None,
+                lax_2: Some(lax.clone()),
+            },
+            None,
+        )
+        .await
+        .err()
+        .unwrap();
+
+    match error {
+        Some(payload) => {
+            assert!(payload.get("lax_2").is_none());
+            assert_eq!(
+                payload.get("virtual_field").unwrap().reason,
+                VIRTUAL_IS_MISSING
+            );
+            assert_eq!(payload.get("lax_1").unwrap().reason, LAX_1_IS_MISSING);
+        }
+        _ => unreachable!("expected a validation error"),
+    }
+}
+
+async_test_matrix!(should_properly_handle_grouped_required_errors);
+
+async fn should_properly_handle_grouped_required_errors_with_alias() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        dependent: String,
+        lax_1: String,
+        lax_2: String,
+    }
+
+    #[derive(Debug, Clone, IvoInputStruct)]
+    struct DataInput {
+        virtual_alias: String,
+        lax_1: String,
+        lax_2: String,
+    }
+
+    const IGNORE_WITH_DIFFERENT_ERRORS: &str = "IGNORE_WITH_DIFFERENT_ERRORS";
+    const IGNORE_WITH_SAME_ERROR: &str = "IGNORE_WITH_SAME_ERROR";
+    const EXPECTED_VIRTUAL_OR_LAX_1: &str = "EXPECTED_VIRTUAL_OR_LAX_1";
+    const VIRTUAL_IS_MISSING: &str = "VIRTUAL_IS_MISSING";
+    const LAX_1_IS_MISSING: &str = "LAX_1_IS_MISSING";
+
+    let default_dependent_value = "default_dependent_value";
+    let default_lax_1_value = "default_lax_1_value";
+    let default_lax_2_value = "default_lax_2_value";
+
+    let model: Model<DataInput, Data> = Model::new(
+        |f| {
+            f.field(
+                "dependent",
+                IvoField::DEPENDENT
+                    .default(default_dependent_value.to_string())
+                    .depends_on(["virtual_field"])
+                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
+                        ready(ctx.input().virtual_alias.unwrap())
+                    }),
+            )
+            .field(
+                "virtual_field",
+                IvoField::VIRTUAL
+                    .alias("virtual_alias")
+                    .validate(|_: String, _, _| ready(Ok(None))),
+            )
+            .field(
+                "lax_1",
+                IvoField::LAX.default(default_lax_1_value.to_string()),
+            )
+            .field(
+                "lax_2",
+                IvoField::LAX.default(default_lax_2_value.to_string()),
+            )
+        },
+        |o| {
+            o.required(
+                ["virtual_field", "lax_1"],
+                |ctx: IvoContext<DataInput, Data>, _| {
+                    let mut errors = DataInputErrors::new();
+
+                    if let Some(lax) = ctx.input().lax_2 {
+                        if lax == IGNORE_WITH_SAME_ERROR {
+                            errors
+                                .set_virtual_alias(EXPECTED_VIRTUAL_OR_LAX_1, None)
+                                .set_lax_1(EXPECTED_VIRTUAL_OR_LAX_1, None);
+
+                            return ready(Some(errors));
+                        }
+
+                        errors
+                            .set_virtual_alias(VIRTUAL_IS_MISSING, None)
+                            .set_lax_1(LAX_1_IS_MISSING, None);
+                    }
+
+                    ready(errors.into_option())
+                },
+            )
+        },
+    );
+
+    let lax = IGNORE_WITH_SAME_ERROR.to_string();
+
+    let (payload, _, _) = model
+        .create(
+            &PartialDataInput {
+                virtual_alias: None,
+                lax_1: None,
+                lax_2: Some(lax.clone()),
+            },
+            None,
+        )
+        .await
+        .err()
+        .unwrap();
+
+    assert!(payload.get("lax_2").is_none());
+    assert_eq!(
+        payload.get("virtual_alias").unwrap().reason,
+        EXPECTED_VIRTUAL_OR_LAX_1
+    );
+    assert_eq!(
+        payload.get("lax_1").unwrap().reason,
+        EXPECTED_VIRTUAL_OR_LAX_1
+    );
+
+    let lax = IGNORE_WITH_DIFFERENT_ERRORS.to_string();
+
+    let (payload, _, _) = model
+        .create(
+            &PartialDataInput {
+                virtual_alias: None,
+                lax_1: None,
+                lax_2: Some(lax.clone()),
+            },
+            None,
+        )
+        .await
+        .err()
+        .unwrap();
+
+    assert!(payload.get("lax_2").is_none());
+    assert_eq!(
+        payload.get("virtual_alias").unwrap().reason,
+        VIRTUAL_IS_MISSING
+    );
+    assert_eq!(payload.get("lax_1").unwrap().reason, LAX_1_IS_MISSING);
+
+    // updates
+
+    let data = Data {
+        dependent: default_dependent_value.to_string(),
+        lax_1: default_lax_1_value.to_string(),
+        lax_2: default_lax_2_value.to_string(),
+    };
+
+    let lax = IGNORE_WITH_SAME_ERROR.to_string();
+
+    let (error, _, _) = model
+        .update(
+            &data,
+            &PartialDataInput {
+                virtual_alias: None,
+                lax_1: None,
+                lax_2: Some(lax.clone()),
+            },
+            None,
+        )
+        .await
+        .err()
+        .unwrap();
+
+    match error {
+        Some(payload) => {
+            assert!(payload.get("lax_2").is_none());
+            assert_eq!(
+                payload.get("virtual_alias").unwrap().reason,
+                EXPECTED_VIRTUAL_OR_LAX_1
+            );
+            assert_eq!(
+                payload.get("lax_1").unwrap().reason,
+                EXPECTED_VIRTUAL_OR_LAX_1
+            );
+        }
+        _ => unreachable!("expected a validation error"),
+    }
+
+    let lax = IGNORE_WITH_DIFFERENT_ERRORS.to_string();
+
+    let (error, _, _) = model
+        .update(
+            &data,
+            &PartialDataInput {
+                virtual_alias: None,
+                lax_1: None,
+                lax_2: Some(lax.clone()),
+            },
+            None,
+        )
+        .await
+        .err()
+        .unwrap();
+
+    match error {
+        Some(payload) => {
+            assert!(payload.get("lax_2").is_none());
+            assert_eq!(
+                payload.get("virtual_alias").unwrap().reason,
+                VIRTUAL_IS_MISSING
+            );
+            assert_eq!(payload.get("lax_1").unwrap().reason, LAX_1_IS_MISSING);
+        }
+        _ => unreachable!("expected a validation error"),
+    }
+}
+
+async_test_matrix!(should_properly_handle_grouped_required_errors_with_alias);
+
+async fn should_properly_handle_grouped_required_errors_with_alias_same_as_dependent() {
+    #[derive(Debug, Clone, PartialEq, IvoStruct)]
+    struct Data {
+        dependent: String,
+        lax_1: String,
+        lax_2: String,
+    }
+
+    #[derive(Debug, Clone, IvoInputStruct)]
+    struct DataInput {
+        dependent: String,
+        lax_1: String,
+        lax_2: String,
+    }
+
+    const IGNORE_WITH_DIFFERENT_ERRORS: &str = "IGNORE_WITH_DIFFERENT_ERRORS";
+    const IGNORE_WITH_SAME_ERROR: &str = "IGNORE_WITH_SAME_ERROR";
+    const EXPECTED_VIRTUAL_OR_LAX_1: &str = "EXPECTED_VIRTUAL_OR_LAX_1";
+    const VIRTUAL_IS_MISSING: &str = "VIRTUAL_IS_MISSING";
+    const LAX_1_IS_MISSING: &str = "LAX_1_IS_MISSING";
+
+    let default_dependent_value = "default_dependent_value";
+    let default_lax_1_value = "default_lax_1_value";
+    let default_lax_2_value = "default_lax_2_value";
+
+    let model: Model<DataInput, Data> = Model::new(
+        |f| {
+            f.field(
+                "dependent",
+                IvoField::DEPENDENT
+                    .default(default_dependent_value.to_string())
+                    .depends_on(["virtual_field"])
+                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
+                        ready(ctx.input().dependent.unwrap())
+                    }),
+            )
+            .field(
+                "virtual_field",
+                IvoField::VIRTUAL
+                    .alias("dependent")
+                    .validate(|_: String, _, _| ready(Ok(None))),
+            )
+            .field(
+                "lax_1",
+                IvoField::LAX.default(default_lax_1_value.to_string()),
+            )
+            .field(
+                "lax_2",
+                IvoField::LAX.default(default_lax_2_value.to_string()),
+            )
+        },
+        |o| {
+            o.required(
+                ["virtual_field", "lax_1"],
+                |ctx: IvoContext<DataInput, Data>, _| {
+                    let mut errors = DataInputErrors::new();
+
+                    if let Some(lax) = ctx.input().lax_2 {
+                        if lax == IGNORE_WITH_SAME_ERROR {
+                            errors
+                                .set_dependent(EXPECTED_VIRTUAL_OR_LAX_1, None)
+                                .set_lax_1(EXPECTED_VIRTUAL_OR_LAX_1, None);
+
+                            return ready(Some(errors));
+                        }
+
+                        errors
+                            .set_dependent(VIRTUAL_IS_MISSING, None)
+                            .set_lax_1(LAX_1_IS_MISSING, None);
+                    }
+
+                    ready(errors.into_option())
+                },
+            )
+        },
+    );
+
+    let lax = IGNORE_WITH_SAME_ERROR.to_string();
+
+    let (payload, _, _) = model
+        .create(
+            &PartialDataInput {
+                dependent: None,
+                lax_1: None,
+                lax_2: Some(lax.clone()),
+            },
+            None,
+        )
+        .await
+        .err()
+        .unwrap();
+
+    assert!(payload.get("lax_2").is_none());
+    assert_eq!(
+        payload.get("dependent").unwrap().reason,
+        EXPECTED_VIRTUAL_OR_LAX_1
+    );
+    assert_eq!(
+        payload.get("lax_1").unwrap().reason,
+        EXPECTED_VIRTUAL_OR_LAX_1
+    );
+
+    let lax = IGNORE_WITH_DIFFERENT_ERRORS.to_string();
+
+    let (payload, _, _) = model
+        .create(
+            &PartialDataInput {
+                dependent: None,
+                lax_1: None,
+                lax_2: Some(lax.clone()),
+            },
+            None,
+        )
+        .await
+        .err()
+        .unwrap();
+
+    assert!(payload.get("lax_2").is_none());
+    assert_eq!(payload.get("dependent").unwrap().reason, VIRTUAL_IS_MISSING);
+    assert_eq!(payload.get("lax_1").unwrap().reason, LAX_1_IS_MISSING);
+
+    // updates
+
+    let data = Data {
+        dependent: default_dependent_value.to_string(),
+        lax_1: default_lax_1_value.to_string(),
+        lax_2: default_lax_2_value.to_string(),
+    };
+
+    let lax = IGNORE_WITH_SAME_ERROR.to_string();
+
+    let (error, _, _) = model
+        .update(
+            &data,
+            &PartialDataInput {
+                dependent: None,
+                lax_1: None,
+                lax_2: Some(lax.clone()),
+            },
+            None,
+        )
+        .await
+        .err()
+        .unwrap();
+
+    match error {
+        Some(payload) => {
+            assert!(payload.get("lax_2").is_none());
+            assert_eq!(
+                payload.get("dependent").unwrap().reason,
+                EXPECTED_VIRTUAL_OR_LAX_1
+            );
+            assert_eq!(
+                payload.get("lax_1").unwrap().reason,
+                EXPECTED_VIRTUAL_OR_LAX_1
+            );
+        }
+        _ => unreachable!("expected a validation error"),
+    }
+
+    let lax = IGNORE_WITH_DIFFERENT_ERRORS.to_string();
+
+    let (error, _, _) = model
+        .update(
+            &data,
+            &PartialDataInput {
+                dependent: None,
+                lax_1: None,
+                lax_2: Some(lax.clone()),
+            },
+            None,
+        )
+        .await
+        .err()
+        .unwrap();
+
+    match error {
+        Some(payload) => {
+            assert!(payload.get("lax_2").is_none());
+            assert_eq!(payload.get("dependent").unwrap().reason, VIRTUAL_IS_MISSING);
+            assert_eq!(payload.get("lax_1").unwrap().reason, LAX_1_IS_MISSING);
+        }
+        _ => unreachable!("expected a validation error"),
+    }
+}
+
+async_test_matrix!(should_properly_handle_grouped_required_errors_with_alias_same_as_dependent);
+
 // validators
 
 async fn should_not_create_if_primary_validation_fails() {
@@ -1377,580 +1953,6 @@ async fn should_properly_use_input_values_as_output_values_if_validator_does_not
 }
 
 async_test_matrix!(should_properly_use_input_values_as_output_values_if_validator_does_not_return_a_validated_value_with_alias_same_as_dependent);
-
-async fn should_properly_handle_grouped_required_errors() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: String,
-        lax_1: String,
-        lax_2: String,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        virtual_field: String,
-        lax_1: String,
-        lax_2: String,
-    }
-
-    const IGNORE_WITH_DIFFERENT_ERRORS: &str = "IGNORE_WITH_DIFFERENT_ERRORS";
-    const IGNORE_WITH_SAME_ERROR: &str = "IGNORE_WITH_SAME_ERROR";
-    const EXPECTED_VIRTUAL_OR_LAX_1: &str = "EXPECTED_VIRTUAL_OR_LAX_1";
-    const VIRTUAL_IS_MISSING: &str = "VIRTUAL_IS_MISSING";
-    const LAX_1_IS_MISSING: &str = "LAX_1_IS_MISSING";
-
-    let default_dependent_value = "default_dependent_value";
-    let default_lax_1_value = "default_lax_1_value";
-    let default_lax_2_value = "default_lax_2_value";
-
-    let model: Model<DataInput, Data> = Model::new(
-        |f| {
-            f.field(
-                "dependent",
-                IvoField::DEPENDENT
-                    .default(default_dependent_value.to_string())
-                    .depends_on(["virtual_field"])
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.input().virtual_field.unwrap())
-                    }),
-            )
-            .field(
-                "virtual_field",
-                IvoField::VIRTUAL.validate(|_: String, _, _| ready(Ok(None))),
-            )
-            .field(
-                "lax_1",
-                IvoField::LAX.default(default_lax_1_value.to_string()),
-            )
-            .field(
-                "lax_2",
-                IvoField::LAX.default(default_lax_2_value.to_string()),
-            )
-        },
-        |o| {
-            o.required(
-                ["virtual_field", "lax_1"],
-                |ctx: IvoContext<DataInput, Data>, _| {
-                    let mut errors = DataInputErrors::new();
-
-                    if let Some(lax) = ctx.input().lax_2 {
-                        if lax == IGNORE_WITH_SAME_ERROR {
-                            errors
-                                .set_virtual_field(EXPECTED_VIRTUAL_OR_LAX_1, None)
-                                .set_lax_1(EXPECTED_VIRTUAL_OR_LAX_1, None);
-
-                            return ready(Some(errors));
-                        }
-
-                        errors
-                            .set_virtual_field(VIRTUAL_IS_MISSING, None)
-                            .set_lax_1(LAX_1_IS_MISSING, None);
-                    }
-
-                    ready(errors.into_option())
-                },
-            )
-        },
-    );
-
-    let lax = IGNORE_WITH_SAME_ERROR.to_string();
-
-    let (payload, _, _) = model
-        .create(
-            &PartialDataInput {
-                virtual_field: None,
-                lax_1: None,
-                lax_2: Some(lax.clone()),
-            },
-            None,
-        )
-        .await
-        .err()
-        .unwrap();
-
-    assert!(payload.get("lax_2").is_none());
-    assert_eq!(
-        payload.get("virtual_field").unwrap().reason,
-        EXPECTED_VIRTUAL_OR_LAX_1
-    );
-    assert_eq!(
-        payload.get("lax_1").unwrap().reason,
-        EXPECTED_VIRTUAL_OR_LAX_1
-    );
-
-    let lax = IGNORE_WITH_DIFFERENT_ERRORS.to_string();
-
-    let (payload, _, _) = model
-        .create(
-            &PartialDataInput {
-                virtual_field: None,
-                lax_1: None,
-                lax_2: Some(lax.clone()),
-            },
-            None,
-        )
-        .await
-        .err()
-        .unwrap();
-
-    assert!(payload.get("lax_2").is_none());
-    assert_eq!(
-        payload.get("virtual_field").unwrap().reason,
-        VIRTUAL_IS_MISSING
-    );
-    assert_eq!(payload.get("lax_1").unwrap().reason, LAX_1_IS_MISSING);
-
-    // updates
-
-    let data = Data {
-        dependent: default_dependent_value.to_string(),
-        lax_1: default_lax_1_value.to_string(),
-        lax_2: default_lax_2_value.to_string(),
-    };
-
-    let lax = IGNORE_WITH_SAME_ERROR.to_string();
-
-    let (error, _, _) = model
-        .update(
-            &data,
-            &PartialDataInput {
-                virtual_field: None,
-                lax_1: None,
-                lax_2: Some(lax.clone()),
-            },
-            None,
-        )
-        .await
-        .err()
-        .unwrap();
-
-    match error {
-        Some(payload) => {
-            assert!(payload.get("lax_2").is_none());
-            assert_eq!(
-                payload.get("virtual_field").unwrap().reason,
-                EXPECTED_VIRTUAL_OR_LAX_1
-            );
-            assert_eq!(
-                payload.get("lax_1").unwrap().reason,
-                EXPECTED_VIRTUAL_OR_LAX_1
-            );
-        }
-        _ => unreachable!("expected a validation error"),
-    }
-
-    let lax = IGNORE_WITH_DIFFERENT_ERRORS.to_string();
-
-    let (error, _, _) = model
-        .update(
-            &data,
-            &PartialDataInput {
-                virtual_field: None,
-                lax_1: None,
-                lax_2: Some(lax.clone()),
-            },
-            None,
-        )
-        .await
-        .err()
-        .unwrap();
-
-    match error {
-        Some(payload) => {
-            assert!(payload.get("lax_2").is_none());
-            assert_eq!(
-                payload.get("virtual_field").unwrap().reason,
-                VIRTUAL_IS_MISSING
-            );
-            assert_eq!(payload.get("lax_1").unwrap().reason, LAX_1_IS_MISSING);
-        }
-        _ => unreachable!("expected a validation error"),
-    }
-}
-
-async_test_matrix!(should_properly_handle_grouped_required_errors);
-
-async fn should_properly_handle_grouped_required_errors_with_alias() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: String,
-        lax_1: String,
-        lax_2: String,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        virtual_alias: String,
-        lax_1: String,
-        lax_2: String,
-    }
-
-    const IGNORE_WITH_DIFFERENT_ERRORS: &str = "IGNORE_WITH_DIFFERENT_ERRORS";
-    const IGNORE_WITH_SAME_ERROR: &str = "IGNORE_WITH_SAME_ERROR";
-    const EXPECTED_VIRTUAL_OR_LAX_1: &str = "EXPECTED_VIRTUAL_OR_LAX_1";
-    const VIRTUAL_IS_MISSING: &str = "VIRTUAL_IS_MISSING";
-    const LAX_1_IS_MISSING: &str = "LAX_1_IS_MISSING";
-
-    let default_dependent_value = "default_dependent_value";
-    let default_lax_1_value = "default_lax_1_value";
-    let default_lax_2_value = "default_lax_2_value";
-
-    let model: Model<DataInput, Data> = Model::new(
-        |f| {
-            f.field(
-                "dependent",
-                IvoField::DEPENDENT
-                    .default(default_dependent_value.to_string())
-                    .depends_on(["virtual_field"])
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.input().virtual_alias.unwrap())
-                    }),
-            )
-            .field(
-                "virtual_field",
-                IvoField::VIRTUAL
-                    .alias("virtual_alias")
-                    .validate(|_: String, _, _| ready(Ok(None))),
-            )
-            .field(
-                "lax_1",
-                IvoField::LAX.default(default_lax_1_value.to_string()),
-            )
-            .field(
-                "lax_2",
-                IvoField::LAX.default(default_lax_2_value.to_string()),
-            )
-        },
-        |o| {
-            o.required(
-                ["virtual_field", "lax_1"],
-                |ctx: IvoContext<DataInput, Data>, _| {
-                    let mut errors = DataInputErrors::new();
-
-                    if let Some(lax) = ctx.input().lax_2 {
-                        if lax == IGNORE_WITH_SAME_ERROR {
-                            errors
-                                .set_virtual_alias(EXPECTED_VIRTUAL_OR_LAX_1, None)
-                                .set_lax_1(EXPECTED_VIRTUAL_OR_LAX_1, None);
-
-                            return ready(Some(errors));
-                        }
-
-                        errors
-                            .set_virtual_alias(VIRTUAL_IS_MISSING, None)
-                            .set_lax_1(LAX_1_IS_MISSING, None);
-                    }
-
-                    ready(errors.into_option())
-                },
-            )
-        },
-    );
-
-    let lax = IGNORE_WITH_SAME_ERROR.to_string();
-
-    let (payload, _, _) = model
-        .create(
-            &PartialDataInput {
-                virtual_alias: None,
-                lax_1: None,
-                lax_2: Some(lax.clone()),
-            },
-            None,
-        )
-        .await
-        .err()
-        .unwrap();
-
-    assert!(payload.get("lax_2").is_none());
-    assert_eq!(
-        payload.get("virtual_alias").unwrap().reason,
-        EXPECTED_VIRTUAL_OR_LAX_1
-    );
-    assert_eq!(
-        payload.get("lax_1").unwrap().reason,
-        EXPECTED_VIRTUAL_OR_LAX_1
-    );
-
-    let lax = IGNORE_WITH_DIFFERENT_ERRORS.to_string();
-
-    let (payload, _, _) = model
-        .create(
-            &PartialDataInput {
-                virtual_alias: None,
-                lax_1: None,
-                lax_2: Some(lax.clone()),
-            },
-            None,
-        )
-        .await
-        .err()
-        .unwrap();
-
-    assert!(payload.get("lax_2").is_none());
-    assert_eq!(
-        payload.get("virtual_alias").unwrap().reason,
-        VIRTUAL_IS_MISSING
-    );
-    assert_eq!(payload.get("lax_1").unwrap().reason, LAX_1_IS_MISSING);
-
-    // updates
-
-    let data = Data {
-        dependent: default_dependent_value.to_string(),
-        lax_1: default_lax_1_value.to_string(),
-        lax_2: default_lax_2_value.to_string(),
-    };
-
-    let lax = IGNORE_WITH_SAME_ERROR.to_string();
-
-    let (error, _, _) = model
-        .update(
-            &data,
-            &PartialDataInput {
-                virtual_alias: None,
-                lax_1: None,
-                lax_2: Some(lax.clone()),
-            },
-            None,
-        )
-        .await
-        .err()
-        .unwrap();
-
-    match error {
-        Some(payload) => {
-            assert!(payload.get("lax_2").is_none());
-            assert_eq!(
-                payload.get("virtual_alias").unwrap().reason,
-                EXPECTED_VIRTUAL_OR_LAX_1
-            );
-            assert_eq!(
-                payload.get("lax_1").unwrap().reason,
-                EXPECTED_VIRTUAL_OR_LAX_1
-            );
-        }
-        _ => unreachable!("expected a validation error"),
-    }
-
-    let lax = IGNORE_WITH_DIFFERENT_ERRORS.to_string();
-
-    let (error, _, _) = model
-        .update(
-            &data,
-            &PartialDataInput {
-                virtual_alias: None,
-                lax_1: None,
-                lax_2: Some(lax.clone()),
-            },
-            None,
-        )
-        .await
-        .err()
-        .unwrap();
-
-    match error {
-        Some(payload) => {
-            assert!(payload.get("lax_2").is_none());
-            assert_eq!(
-                payload.get("virtual_alias").unwrap().reason,
-                VIRTUAL_IS_MISSING
-            );
-            assert_eq!(payload.get("lax_1").unwrap().reason, LAX_1_IS_MISSING);
-        }
-        _ => unreachable!("expected a validation error"),
-    }
-}
-
-async_test_matrix!(should_properly_handle_grouped_required_errors_with_alias);
-
-async fn should_properly_handle_grouped_required_errors_with_alias_same_as_dependent() {
-    #[derive(Debug, Clone, PartialEq, IvoStruct)]
-    struct Data {
-        dependent: String,
-        lax_1: String,
-        lax_2: String,
-    }
-
-    #[derive(Debug, Clone, IvoInputStruct)]
-    struct DataInput {
-        dependent: String,
-        lax_1: String,
-        lax_2: String,
-    }
-
-    const IGNORE_WITH_DIFFERENT_ERRORS: &str = "IGNORE_WITH_DIFFERENT_ERRORS";
-    const IGNORE_WITH_SAME_ERROR: &str = "IGNORE_WITH_SAME_ERROR";
-    const EXPECTED_VIRTUAL_OR_LAX_1: &str = "EXPECTED_VIRTUAL_OR_LAX_1";
-    const VIRTUAL_IS_MISSING: &str = "VIRTUAL_IS_MISSING";
-    const LAX_1_IS_MISSING: &str = "LAX_1_IS_MISSING";
-
-    let default_dependent_value = "default_dependent_value";
-    let default_lax_1_value = "default_lax_1_value";
-    let default_lax_2_value = "default_lax_2_value";
-
-    let model: Model<DataInput, Data> = Model::new(
-        |f| {
-            f.field(
-                "dependent",
-                IvoField::DEPENDENT
-                    .default(default_dependent_value.to_string())
-                    .depends_on(["virtual_field"])
-                    .resolve(|ctx: IvoContext<DataInput, Data>, _| {
-                        ready(ctx.input().dependent.unwrap())
-                    }),
-            )
-            .field(
-                "virtual_field",
-                IvoField::VIRTUAL
-                    .alias("dependent")
-                    .validate(|_: String, _, _| ready(Ok(None))),
-            )
-            .field(
-                "lax_1",
-                IvoField::LAX.default(default_lax_1_value.to_string()),
-            )
-            .field(
-                "lax_2",
-                IvoField::LAX.default(default_lax_2_value.to_string()),
-            )
-        },
-        |o| {
-            o.required(
-                ["virtual_field", "lax_1"],
-                |ctx: IvoContext<DataInput, Data>, _| {
-                    let mut errors = DataInputErrors::new();
-
-                    if let Some(lax) = ctx.input().lax_2 {
-                        if lax == IGNORE_WITH_SAME_ERROR {
-                            errors
-                                .set_dependent(EXPECTED_VIRTUAL_OR_LAX_1, None)
-                                .set_lax_1(EXPECTED_VIRTUAL_OR_LAX_1, None);
-
-                            return ready(Some(errors));
-                        }
-
-                        errors
-                            .set_dependent(VIRTUAL_IS_MISSING, None)
-                            .set_lax_1(LAX_1_IS_MISSING, None);
-                    }
-
-                    ready(errors.into_option())
-                },
-            )
-        },
-    );
-
-    let lax = IGNORE_WITH_SAME_ERROR.to_string();
-
-    let (payload, _, _) = model
-        .create(
-            &PartialDataInput {
-                dependent: None,
-                lax_1: None,
-                lax_2: Some(lax.clone()),
-            },
-            None,
-        )
-        .await
-        .err()
-        .unwrap();
-
-    assert!(payload.get("lax_2").is_none());
-    assert_eq!(
-        payload.get("dependent").unwrap().reason,
-        EXPECTED_VIRTUAL_OR_LAX_1
-    );
-    assert_eq!(
-        payload.get("lax_1").unwrap().reason,
-        EXPECTED_VIRTUAL_OR_LAX_1
-    );
-
-    let lax = IGNORE_WITH_DIFFERENT_ERRORS.to_string();
-
-    let (payload, _, _) = model
-        .create(
-            &PartialDataInput {
-                dependent: None,
-                lax_1: None,
-                lax_2: Some(lax.clone()),
-            },
-            None,
-        )
-        .await
-        .err()
-        .unwrap();
-
-    assert!(payload.get("lax_2").is_none());
-    assert_eq!(payload.get("dependent").unwrap().reason, VIRTUAL_IS_MISSING);
-    assert_eq!(payload.get("lax_1").unwrap().reason, LAX_1_IS_MISSING);
-
-    // updates
-
-    let data = Data {
-        dependent: default_dependent_value.to_string(),
-        lax_1: default_lax_1_value.to_string(),
-        lax_2: default_lax_2_value.to_string(),
-    };
-
-    let lax = IGNORE_WITH_SAME_ERROR.to_string();
-
-    let (error, _, _) = model
-        .update(
-            &data,
-            &PartialDataInput {
-                dependent: None,
-                lax_1: None,
-                lax_2: Some(lax.clone()),
-            },
-            None,
-        )
-        .await
-        .err()
-        .unwrap();
-
-    match error {
-        Some(payload) => {
-            assert!(payload.get("lax_2").is_none());
-            assert_eq!(
-                payload.get("dependent").unwrap().reason,
-                EXPECTED_VIRTUAL_OR_LAX_1
-            );
-            assert_eq!(
-                payload.get("lax_1").unwrap().reason,
-                EXPECTED_VIRTUAL_OR_LAX_1
-            );
-        }
-        _ => unreachable!("expected a validation error"),
-    }
-
-    let lax = IGNORE_WITH_DIFFERENT_ERRORS.to_string();
-
-    let (error, _, _) = model
-        .update(
-            &data,
-            &PartialDataInput {
-                dependent: None,
-                lax_1: None,
-                lax_2: Some(lax.clone()),
-            },
-            None,
-        )
-        .await
-        .err()
-        .unwrap();
-
-    match error {
-        Some(payload) => {
-            assert!(payload.get("lax_2").is_none());
-            assert_eq!(payload.get("dependent").unwrap().reason, VIRTUAL_IS_MISSING);
-            assert_eq!(payload.get("lax_1").unwrap().reason, LAX_1_IS_MISSING);
-        }
-        _ => unreachable!("expected a validation error"),
-    }
-}
-
-async_test_matrix!(should_properly_handle_grouped_required_errors_with_alias_same_as_dependent);
 
 // re-validators
 
@@ -4944,6 +4946,8 @@ async fn should_respect_updated_values_returned_from_pre_validator_in_post_valid
 async_test_matrix!(
     should_respect_updated_values_returned_from_pre_validator_in_post_validation_config_with_alias_same_as_dependent
 );
+
+// sanitizer
 
 async fn should_respect_sanitizers_if_provided() {
     #[derive(Debug, Clone, PartialEq, IvoStruct)]
