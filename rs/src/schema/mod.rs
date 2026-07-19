@@ -430,7 +430,6 @@ impl<
     ) -> SchemaOptions<I, O, CtxOptions, ErrorSanitizer> {
         if let Some(ref configs) = options.ignore {
             let option_name = "options.ignore";
-            let mut field_names = HashSet::new();
             let field_type_not_allowed_error =
                 "only lax and virtual fields can belong to grouped ignore configs;";
 
@@ -440,6 +439,8 @@ impl<
                     "\n{STYLE_COLOR_RED}[{option_name}]: grouped ignore expects at least 2 fields {STYLE_RESET}\n"
                 );
                 }
+
+                let mut field_names = HashSet::new();
 
                 for field_name in fields {
                     if field_names.contains(field_name) {
@@ -489,7 +490,6 @@ impl<
 
         if let Some(ref configs) = options.ignore_update {
             let option_name = "options.ignore_update";
-            let mut field_names = HashSet::new();
             let field_type_not_allowed_error =
                 "only lax, required and virtual fields can belong to grouped ignore update configs;";
 
@@ -499,6 +499,8 @@ impl<
                     "\n{STYLE_COLOR_RED}[{option_name}]: grouped ignore update expects either zero (0) fields or at least 2 fields {STYLE_RESET}\n"
                 );
                 }
+
+                let mut field_names = HashSet::new();
 
                 for field_name in fields {
                     if field_names.contains(field_name) {
@@ -536,9 +538,10 @@ impl<
 
         if let Some(ref configs) = options.on_success_fns {
             let option_name = "options.on_success";
-            let mut field_names = HashSet::new();
 
             for OnSuccessConfig { fields, .. } in configs {
+                let mut field_names = HashSet::new();
+
                 for field_name in fields {
                     if field_names.contains(field_name) {
                         panic!(
@@ -581,7 +584,6 @@ impl<
 
         if let Some(ref configs) = options.post_validate {
             let option_name = "options.post_validate";
-            let mut field_names = HashSet::new();
             let field_type_not_allowed_error =
                 "only lax, required and virtual fields can be post-validated;";
 
@@ -591,6 +593,8 @@ impl<
                         "\n{STYLE_COLOR_RED}[{option_name}]: post-validation expects at least 2 fields {STYLE_RESET}\n"
                     );
                 }
+
+                let mut field_names = HashSet::new();
 
                 for field_name in fields {
                     if field_names.contains(field_name) {
@@ -628,7 +632,6 @@ impl<
 
         if let Some(ref configs) = options.required {
             let option_name = "options.required";
-            let mut field_names = HashSet::new();
             let field_type_not_allowed_error =
                 "only lax and virtual fields can belong to grouped required configs;";
 
@@ -638,6 +641,8 @@ impl<
                         "\n{STYLE_COLOR_RED}[{option_name}]: grouped required expects at least 2 fields {STYLE_RESET}\n"
                     );
                 }
+
+                let mut field_names = HashSet::new();
 
                 for field_name in fields {
                     if field_names.contains(field_name) {

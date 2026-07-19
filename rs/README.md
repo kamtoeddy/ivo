@@ -204,6 +204,8 @@ Below are links to examples on how to properly configure schema fields.
 
 ### On Success (Grouped)
 
+- [How to listen to success changes on an entire domain item or for a group of fields](./examples/option_on_success.rs)
+
 ### On Delete
 
 ### Post-validate
@@ -214,7 +216,10 @@ Below are links to examples on how to properly configure schema fields.
 
 ## Custom ErrorSanitizer
 
+The default payload returned for unsuccessful operations has the following signature:
+
 **In Rust:**
+
 ```rs
 type DefaultFieldErrorMetadata = ();
 
@@ -225,3 +230,5 @@ struct FieldError<Metadata: Clone = DefaultFieldErrorMetadata> {
 
 type IvoErrorPayload<Metadata: Clone> = HashMap<String, FieldError<Metadata>>;
 ```
+
+In order to customize this payload, you just need to provide an implementation of the `IvoErrorSanitizer` trait that suits you like it is done [here](./tests/extras/error_sanitizer.rs).

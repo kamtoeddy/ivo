@@ -421,4 +421,4 @@ This function can be used to further sanitize virtual fields just before depende
 
 ## ErrorSanitizer
 
-ivo only assigns one validation error for each input field at a time, and the final validation payload gets returned from unsuccessful create or update operations on domain entities. If the final validation payload or field errors need to be customized, it can be done via the `ErrorSanitizer` interface/trait. More on this can be found in the documentations for each language.
+ivo only assigns one validation error for each input field at a time, and the final validation payload gets returned from unsuccessful create or update operations on domain entities. If the final validation payload or field errors need to be customized, it can be done via the `IvoErrorSanitizer` interface/trait. More on this can be found in the documentations for each language.
