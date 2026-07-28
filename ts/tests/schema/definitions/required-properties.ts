@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'bun:test';
 
-import { ERRORS } from '../../../src';
+import type { ReadonlyIvoContext } from '../../../src';
 import { expectFailure, expectNoFailure, validator } from '../_utils';
 
 export const Test_RequiredProperties = ({ Schema, fx }: any) => {
@@ -116,7 +116,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
 
   describe('requiredBy', () => {
     describe('behaviour', () => {
-      let callsPerProp = {} as never;
+      let callsPerProp: Record<string, boolean> = {};
 
       const book = {
         bookId: 1,
@@ -126,8 +126,9 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
         priceRequiredWithoutMessage: null,
       };
 
-      function validatePrice(price: any) {
+      function validatePrice(price: unknown) {
         const validated = Number(price),
+          // @ts-expect-error isNaN takes a number
           valid = !isNaN(price) && validated;
         return { valid, validated };
       }
@@ -136,12 +137,33 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
         callsPerProp[prop] = true;
       }
 
+      type BookInput = {
+        bookId?: string;
+        isPublished?: boolean;
+        price?: number | null;
+        priceReadonly?: number | null;
+        priceRequiredWithoutMessage?: number | null;
+      };
+      type BookOutput = {
+        bookId: string;
+        isPublished: boolean;
+        price: number | null;
+        priceReadonly: number | null;
+        priceRequiredWithoutMessage: number | null;
+      };
+
       const Book = new Schema({
         bookId: { required: true, validator },
         isPublished: { default: false, validator },
         price: {
           default: null,
-          required({ ctx: { isPublished, price } }: any) {
+          required(ctx: ReadonlyIvoContext<BookInput, BookOutput, {}>) {
+            const isPublished =
+              ctx.rawInput.isPublished ??
+              ctx.input.isPublished ??
+              ctx.values.isPublished;
+            const price =
+              ctx.rawInput.price ?? ctx.input.price ?? ctx.values.price;
             const isRequired = isPublished && price == null;
             recordCalls('price');
             return [isRequired, 'A price is required to publish a book!'];
@@ -151,7 +173,13 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
         priceReadonly: {
           default: null,
           readonly: true,
-          required({ ctx: { price, priceReadonly } }: any) {
+          required(ctx: ReadonlyIvoContext<BookInput, BookOutput, {}>) {
+            const price =
+              ctx.rawInput.price ?? ctx.input.price ?? ctx.values.price;
+            const priceReadonly =
+              ctx.rawInput.priceReadonly ??
+              ctx.input.priceReadonly ??
+              ctx.values.priceReadonly;
             const isRequired = price === 101 && priceReadonly == null;
             recordCalls('priceReadonly');
             return [
@@ -164,7 +192,13 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
         priceRequiredWithoutMessage: {
           default: null,
           readonly: true,
-          required: ({ ctx: { price, priceReadonly } }: any) => {
+          required: (ctx: ReadonlyIvoContext<BookInput, BookOutput, {}>) => {
+            const price =
+              ctx.rawInput.price ?? ctx.input.price ?? ctx.values.price;
+            const priceReadonly =
+              ctx.rawInput.priceReadonly ??
+              ctx.input.priceReadonly ??
+              ctx.values.priceReadonly;
             recordCalls('priceRequiredWithoutMessage');
             return price === 101 && priceReadonly == null;
           },
@@ -222,12 +256,9 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
 
           expect(data).toBeNull();
           expect(error).toMatchObject({
-            message: ERRORS.VALIDATION_ERROR,
-            payload: {
-              price: {
-                reason: 'A price is required to publish a book!',
-                metadata: null,
-              },
+            price: {
+              reason: 'A price is required to publish a book!',
+              metadata: null,
             },
           });
 
@@ -294,12 +325,9 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
 
           expect(data).toBeNull();
           expect(error).toMatchObject({
-            message: ERRORS.VALIDATION_ERROR,
-            payload: {
-              price: {
-                reason: 'A price is required to publish a book!',
-                metadata: null,
-              },
+            price: {
+              reason: 'A price is required to publish a book!',
+              metadata: null,
             },
           });
 
@@ -311,16 +339,13 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
 
           expect(data).toBeNull();
           expect(error).toMatchObject({
-            message: ERRORS.VALIDATION_ERROR,
-            payload: {
-              priceReadonly: {
-                reason: 'A priceReadonly is required when price is 101!',
-                metadata: null,
-              },
-              priceRequiredWithoutMessage: {
-                reason: "'priceRequiredWithoutMessage' is required",
-                metadata: null,
-              },
+            priceReadonly: {
+              reason: 'A priceReadonly is required when price is 101!',
+              metadata: null,
+            },
+            priceRequiredWithoutMessage: {
+              reason: "'priceRequiredWithoutMessage' is required",
+              metadata: null,
             },
           });
 
@@ -425,8 +450,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
               expect(data).toBeNull();
 
               expect(error).toMatchObject({
-                message: ERRORS.VALIDATION_ERROR,
-                payload: { price: expect.objectContaining(expected) },
+                price: expect.objectContaining(expected),
               });
             });
 
@@ -444,8 +468,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
               expect(data).toBeNull();
 
               expect(error).toMatchObject({
-                message: ERRORS.VALIDATION_ERROR,
-                payload: { price: expect.objectContaining(expected) },
+                price: expect.objectContaining(expected),
               });
             });
           }
@@ -481,12 +504,9 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
               expect(data).toBeNull();
 
               expect(error).toMatchObject({
-                message: ERRORS.VALIDATION_ERROR,
-                payload: {
-                  price: {
-                    reason: "'price' is required",
-                    metadata: null,
-                  },
+                price: {
+                  reason: "'price' is required",
+                  metadata: null,
                 },
               });
             });
@@ -505,10 +525,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
               expect(data).toBeNull();
 
               expect(error).toMatchObject({
-                message: ERRORS.VALIDATION_ERROR,
-                payload: {
-                  price: { reason: "'price' is required", metadata: null },
-                },
+                price: { reason: "'price' is required", metadata: null },
               });
             });
           }
@@ -569,16 +586,25 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
         const book = { name: 'book name', price: 10 };
 
         describe('when value of virtual is not provided', () => {
+          type BookInput = {
+            name?: string;
+            price?: number | null;
+            _price?: number;
+          };
+          type BookOutput = { name: string; price: number | null };
+
           const Book = new Schema({
             name: { default: '' },
             price: {
               default: null,
               dependsOn: '_price',
-              resolver: ({ ctx: { _price } }: any) => _price,
+              resolver: (ctx: ReadonlyIvoContext<BookInput, BookOutput, {}>) =>
+                ctx.rawInput._price ?? ctx.input._price ?? ctx.values.price,
             },
             _price: {
               virtual: true,
-              required({ ctx: { _price } }: any) {
+              required(ctx: ReadonlyIvoContext<BookInput, BookOutput, {}>) {
+                const _price = ctx.rawInput._price ?? ctx.input._price;
                 return _price === undefined;
               },
               validator: validator,
@@ -590,12 +616,9 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
 
             expect(data).toBeNull();
             expect(error).toMatchObject({
-              message: ERRORS.VALIDATION_ERROR,
-              payload: {
-                _price: {
-                  reason: "'_price' is required",
-                  metadata: null,
-                },
+              _price: {
+                reason: "'_price' is required",
+                metadata: null,
               },
             });
           });
@@ -607,29 +630,35 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
 
             expect(data).toBeNull();
             expect(error).toMatchObject({
-              message: ERRORS.VALIDATION_ERROR,
-              payload: {
-                _price: {
-                  reason: "'_price' is required",
-                  metadata: null,
-                },
+              _price: {
+                reason: "'_price' is required",
+                metadata: null,
               },
             });
           });
         });
 
         describe('when value of virtual is not provided and required at creation only', () => {
+          type BookInput = {
+            name?: string;
+            price?: number | null;
+            _price?: number;
+          };
+          type BookOutput = { name: string; price: number | null };
+
           const Book = new Schema({
             name: { default: '' },
             price: {
               default: null,
               dependsOn: '_price',
-              resolver: ({ ctx: { _price } }: any) => _price,
+              resolver: (ctx: ReadonlyIvoContext<BookInput, BookOutput, {}>) =>
+                ctx.rawInput._price ?? ctx.input._price ?? ctx.values.price,
             },
             _price: {
               virtual: true,
-              required({ ctx: { _price }, isUpdate }: any) {
-                return _price === undefined && !isUpdate;
+              required(ctx: ReadonlyIvoContext<BookInput, BookOutput, {}>) {
+                const _price = ctx.rawInput._price ?? ctx.input._price;
+                return _price === undefined && !ctx.isUpdate;
               },
               validator: validator,
             },
@@ -640,12 +669,9 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
 
             expect(data).toBeNull();
             expect(error).toMatchObject({
-              message: ERRORS.VALIDATION_ERROR,
-              payload: {
-                _price: {
-                  reason: "'_price' is required",
-                  metadata: null,
-                },
+              _price: {
+                reason: "'_price' is required",
+                metadata: null,
               },
             });
           });
@@ -662,17 +688,26 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
         });
 
         describe('when value of virtual is not provided and required at creation and update is blocked', () => {
+          type BookInput = {
+            name?: string;
+            price?: number | null;
+            _price?: number;
+          };
+          type BookOutput = { name: string; price: number | null };
+
           const Book = new Schema({
             name: { default: '' },
             price: {
               default: null,
               dependsOn: '_price',
-              resolver: ({ ctx: { _price } }: any) => _price,
+              resolver: (ctx: ReadonlyIvoContext<BookInput, BookOutput, {}>) =>
+                ctx.rawInput._price ?? ctx.input._price ?? ctx.values.price,
             },
             _price: {
               virtual: true,
               shouldUpdate: false,
-              required({ ctx: { _price } }: any) {
+              required(ctx: ReadonlyIvoContext<BookInput, BookOutput, {}>) {
+                const _price = ctx.rawInput._price ?? ctx.input._price;
                 return _price === undefined;
               },
               validator: validator,
@@ -684,12 +719,9 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
 
             expect(data).toBeNull();
             expect(error).toMatchObject({
-              message: ERRORS.VALIDATION_ERROR,
-              payload: {
-                _price: {
-                  reason: "'_price' is required",
-                  metadata: null,
-                },
+              _price: {
+                reason: "'_price' is required",
+                metadata: null,
               },
             });
           });
@@ -708,17 +740,25 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
 
       describe('behaviour with asychronous required setters', () => {
         const book = { name: 'book name', price: 10 };
+        type BookInput = {
+          name?: string;
+          price?: number | null;
+          _price?: number;
+        };
+        type BookOutput = { name: string; price: number | null };
 
         const Book = new Schema({
           name: { default: '' },
           price: {
             default: null,
             dependsOn: '_price',
-            resolver: ({ ctx: { _price } }: any) => _price,
+            resolver: (ctx: ReadonlyIvoContext<BookInput, BookOutput, {}>) =>
+              ctx.rawInput._price ?? ctx.input._price ?? ctx.values.price,
           },
           _price: {
             virtual: true,
-            required({ ctx: { _price } }: any) {
+            required(ctx: ReadonlyIvoContext<BookInput, BookOutput, {}>) {
+              const _price = ctx.rawInput._price ?? ctx.input._price;
               return Promise.resolve(_price === undefined);
             },
             validator: validator,
@@ -731,10 +771,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
 
             expect(data).toBeNull();
             expect(error).toMatchObject({
-              message: ERRORS.VALIDATION_ERROR,
-              payload: {
-                _price: { reason: "'_price' is required", metadata: null },
-              },
+              _price: { reason: "'_price' is required", metadata: null },
             });
           });
 
@@ -752,12 +789,9 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
 
             expect(data).toBeNull();
             expect(error).toMatchObject({
-              message: ERRORS.VALIDATION_ERROR,
-              payload: {
-                _price: {
-                  reason: "'_price' is required",
-                  metadata: null,
-                },
+              _price: {
+                reason: "'_price' is required",
+                metadata: null,
               },
             });
           });

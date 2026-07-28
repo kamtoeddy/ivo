@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'bun:test';
 
-import { ERRORS } from '../../../src';
+import type { ReadonlyIvoContext } from '../../../src';
 import { expectFailure, expectNoFailure } from '../_utils';
 
 export const Test_ConstantProperties = ({ Schema, fx }: any) => {
@@ -13,7 +13,8 @@ export const Test_ConstantProperties = ({ Schema, fx }: any) => {
           asyncConstant: { constant: true, value: asyncSetter },
           id: {
             constant: true,
-            value: (ctx: any) => (ctx?.id === 'id' ? 'id-2' : 'id'),
+            value: (ctx: ReadonlyIvoContext<any, any, any>) =>
+              ctx?.input?.id === 'id' ? 'id-2' : 'id',
           },
           parentId: { constant: true, value: 'parent id' },
           laxProp: { default: 0 },

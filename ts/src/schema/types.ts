@@ -1,9 +1,9 @@
-import type { ObjectType } from "../utils";
+import type { ObjectType } from '../utils';
 import type {
   DefaultFieldErrorMetadata,
   FieldError,
   InputFieldError,
-} from "./utils";
+} from './utils';
 
 export type {
   ArrayOfMinSizeOne,
@@ -265,11 +265,7 @@ namespace NS {
     resolver: IgnoreResolver<Input, Output, CtxOptions>;
   };
 
-  export type IgnoreConfigOption<
-    Input,
-    Output,
-    CtxOptions extends ObjectType,
-  > =
+  export type IgnoreConfigOption<Input, Output, CtxOptions extends ObjectType> =
     | boolean
     | IgnoreResolver<Input, Output, CtxOptions>
     | IgnoreConfigObject<Input, Output, CtxOptions>
@@ -388,7 +384,7 @@ namespace NS {
       constant?: unknown;
       default?: unknown;
       dependsOn?: KeyOf<Input> | KeyOf<Input>[];
-      readonly?: boolean | "lax";
+      readonly?: boolean | 'lax';
       resolver?: Function;
       required?: boolean | RequiredHandler<Input, Output, {}, Metadata>;
       sanitizer?: VirtualResolver<K, Input, Output, {}>;
@@ -716,13 +712,13 @@ namespace NS {
 type ValidationResponse<T, Metadata = DefaultFieldErrorMetadata> =
   | { valid: true; validated: T }
   | {
-      metadata: FieldError<Metadata>["metadata"];
+      metadata: FieldError<Metadata>['metadata'];
       reason: string;
       valid: false;
     };
 
 type InvalidValidatorResponse<Metadata> = {
-  metadata?: FieldError<Metadata>["metadata"];
+  metadata?: FieldError<Metadata>['metadata'];
   reason?: string;
   valid: false;
   value?: unknown;
@@ -785,56 +781,56 @@ type ArrayOfMinSizeOne<T> = [T, ...T[]] | readonly [T, ...T[]];
 type ArrayOfMinSizeTwo<T> = [T, T, ...T[]] | readonly [T, T, ...T[]];
 
 const DEFINITION_RULES = [
-  "alias",
-  "allow",
-  "constant",
-  "default",
-  "dependsOn",
-  "ignore",
-  "onDelete",
-  "onFailure",
-  "onSuccess",
-  "readonly",
-  "resolver",
-  "required",
-  "sanitizer",
-  "ignoreInit",
-  "ignoreUpdate",
-  "validator",
-  "value",
-  "virtual",
+  'alias',
+  'allow',
+  'constant',
+  'default',
+  'dependsOn',
+  'ignore',
+  'onDelete',
+  'onFailure',
+  'onSuccess',
+  'readonly',
+  'resolver',
+  'required',
+  'sanitizer',
+  'ignoreInit',
+  'ignoreUpdate',
+  'validator',
+  'value',
+  'virtual',
 ] as const;
 
 type DefinitionRule = (typeof DEFINITION_RULES)[number];
 
 const ALLOWED_OPTIONS: NS.OptionsKey<unknown, unknown>[] = [
-  "equalityDepth",
-  "ignore",
-  "ignoreUpdate",
-  "onDelete",
-  "onSuccess",
-  "postValidate",
-  "required",
-  "sanitizeError",
-  "setMissingDefaultsOnUpdate",
-  "timestamps",
+  'equalityDepth',
+  'ignore',
+  'ignoreUpdate',
+  'onDelete',
+  'onSuccess',
+  'postValidate',
+  'required',
+  'sanitizeError',
+  'setMissingDefaultsOnUpdate',
+  'timestamps',
 ];
-const CONSTANT_RULES = ["constant", "onDelete", "onSuccess", "value"];
+const CONSTANT_RULES = ['constant', 'onDelete', 'onSuccess', 'value'];
 const VIRTUAL_RULES = [
-  "alias",
-  "allow",
-  "ignore",
-  "sanitizer",
-  "onFailure",
-  "onSuccess",
-  "required",
-  "ignoreInit",
-  "ignoreUpdate",
-  "validator",
-  "virtual",
+  'alias',
+  'allow',
+  'ignore',
+  'sanitizer',
+  'onFailure',
+  'onSuccess',
+  'required',
+  'ignoreInit',
+  'ignoreUpdate',
+  'validator',
+  'virtual',
 ];
 
-const LIFE_CYCLES = ["onDelete", "onFailure", "onSuccess"] as const;
+const LIFE_CYCLES = ['onDelete', 'onFailure', 'onSuccess'] as const;
 
 type IvoErrorPayload<Metadata, Keys extends string> = Record<
   Keys,

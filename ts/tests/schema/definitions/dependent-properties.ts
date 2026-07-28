@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'bun:test';
-
+import type { ReadonlyIvoContext } from '../../../src';
 import { expectFailure, expectNoFailure, validator } from '../_utils';
 
 export const Test_DependentProperties = ({ Schema, fx }: any) => {
@@ -96,23 +96,39 @@ export const Test_DependentProperties = ({ Schema, fx }: any) => {
         resolversCalledStats[prop] = previousCount + 1;
       }
 
-      function resolverOfDependentProp({ ctx: { laxProp, laxProp_1 } }: any) {
+      type SampleInput = { laxProp?: string; laxProp_1?: string };
+      type SampleOutput = {
+        laxProp: string;
+        laxProp_1: string;
+        dependentProp: number;
+        dependentProp_1: number;
+      };
+
+      function resolverOfDependentProp(
+        ctx: ReadonlyIvoContext<SampleInput, SampleOutput, {}>,
+      ) {
         incrementResolveCountOf('dependentProp');
+        const laxProp =
+          ctx.rawInput.laxProp ?? ctx.input.laxProp ?? ctx.values.laxProp;
+        const laxProp_1 =
+          ctx.rawInput.laxProp_1 ?? ctx.input.laxProp_1 ?? ctx.values.laxProp_1;
 
         return laxProp.length + laxProp_1.length;
       }
 
-      function resolverOfDependentProp_1({ ctx: { dependentProp } }: any) {
+      function resolverOfDependentProp_1(
+        ctx: ReadonlyIvoContext<SampleInput, SampleOutput, {}>,
+      ) {
         incrementResolveCountOf('dependentProp_1');
 
-        return dependentProp + 1;
+        return ctx.values.dependentProp + 1;
       }
 
       function asyncResolver(prop: string) {
-        return ({ ctx: { dependentProp } }: any) => {
+        return (ctx: ReadonlyIvoContext<SampleInput, SampleOutput, {}>) => {
           incrementResolveCountOf(prop);
 
-          return Promise.resolve(dependentProp + 2);
+          return Promise.resolve(ctx.values.dependentProp + 2);
         };
       }
 

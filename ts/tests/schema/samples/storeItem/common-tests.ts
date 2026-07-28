@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'bun:test';
 
-import { ERRORS } from '../../../../dist';
+import { ERRORS } from '../../../src/schema/utils/constants';
 
 export const commonTestData = {
   id: '1',
@@ -52,7 +52,7 @@ export const CommonInheritanceTest = (
           { data, error } = await Model.create(testData1);
 
         expect(data).toBeNull();
-        expect(error).toMatchObject({ message: ERRORS.VALIDATION_ERROR });
+        expect(error).toBeDefined();
       });
 
       it('should reject missing required field', async () => {
@@ -60,7 +60,7 @@ export const CommonInheritanceTest = (
           { data, error } = await Model.create(testData1);
 
         expect(data).toBeNull();
-        expect(error).toMatchObject({ message: ERRORS.VALIDATION_ERROR });
+        expect(error).toBeDefined();
       });
 
       it('should reject dependent properties', () => {
@@ -243,8 +243,7 @@ export const CommonInheritanceTest = (
       });
 
       expect(data).toBeNull();
-      expect(error.message).toBe(ERRORS.VALIDATION_ERROR);
-      expect(error.payload).toMatchObject({
+      expect(error).toMatchObject({
         _laxProp: { reason: 'Invalid lax prop' },
         name: expect.objectContaining({ reason: 'too_short' }),
       });
@@ -257,8 +256,7 @@ export const CommonInheritanceTest = (
       });
 
       expect(data).toBeNull();
-      expect(error.message).toBe(ERRORS.VALIDATION_ERROR);
-      expect(error.payload).toMatchObject({
+      expect(error).toMatchObject({
         _laxProp: { reason: 'Invalid lax prop' },
         name: expect.objectContaining({ reason: 'too_short' }),
       });

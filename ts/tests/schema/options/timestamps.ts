@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'bun:test';
-import type { ReadonlyIvoSummary } from '../../../src';
+import type { ReadonlyIvoContext } from '../../../src';
 import { expectFailure, expectNoFailure, getValidSchema } from '../_utils';
 
 export const Test_SchemaTimestampOption = ({ Schema, fx }: any) => {
@@ -41,7 +41,7 @@ export const Test_SchemaTimestampOption = ({ Schema, fx }: any) => {
           propertyName2: 'value2',
         };
 
-        let onSuccessValues: any = {};
+        let onSuccessValues: Record<string, unknown> = {};
 
         beforeEach(() => {
           onSuccessValues = {};
@@ -534,9 +534,11 @@ export const Test_SchemaTimestampOption = ({ Schema, fx }: any) => {
             const updatedAtKey = 'uAt';
 
             beforeEach(async () => {
-              const onSuccess = ({ ctx }: ReadonlyIvoSummary<any>) => {
-                onSuccessValues.createdAt = ctx.createdAt;
-                onSuccessValues[updatedAtKey] = ctx[updatedAtKey];
+              const onSuccess = ({
+                values,
+              }: ReadonlyIvoContext<any, any, any>) => {
+                onSuccessValues.createdAt = values.createdAt;
+                onSuccessValues.updatedAt = values[updatedAtKey];
               };
 
               Model = new Schema(getValidSchema(), {
@@ -586,9 +588,11 @@ export const Test_SchemaTimestampOption = ({ Schema, fx }: any) => {
             const updatedAtKey = 'uAt';
 
             beforeEach(async () => {
-              const onSuccess = ({ ctx }: ReadonlyIvoSummary<any>) => {
-                onSuccessValues.createdAt = ctx.createdAt;
-                onSuccessValues[updatedAtKey] = ctx[updatedAtKey];
+              const onSuccess = ({
+                values,
+              }: ReadonlyIvoContext<any, any, any>) => {
+                onSuccessValues.createdAt = values.createdAt;
+                onSuccessValues[updatedAtKey] = values[updatedAtKey];
               };
 
               Model = new Schema(getValidSchema(), {
@@ -638,9 +642,11 @@ export const Test_SchemaTimestampOption = ({ Schema, fx }: any) => {
             const updatedAtKey = 'uAt';
 
             beforeEach(async () => {
-              const onSuccess = ({ ctx }: ReadonlyIvoSummary<any>) => {
-                onSuccessValues.createdAt = ctx.createdAt;
-                onSuccessValues[updatedAtKey] = ctx[updatedAtKey];
+              const onSuccess = ({
+                values,
+              }: ReadonlyIvoContext<any, any, any>) => {
+                onSuccessValues.createdAt = values.createdAt;
+                onSuccessValues[updatedAtKey] = values[updatedAtKey];
               };
 
               Model = new Schema(getValidSchema(), {

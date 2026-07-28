@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, test } from 'bun:test';
-import type { ReadonlyIvoSummary } from '../../../src';
+import type { ReadonlyIvoContext } from '../../../src';
 import { expectFailure, expectNoFailure, validator } from '../_utils';
 
 export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
@@ -66,8 +66,8 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
     describe('life cycle readonly ctx', () => {
       const rules = ['onDelete', 'onFailure', 'onSuccess'];
 
-      let propChangeMap: any = {},
-        ctxHasUpdateMethod: any = {};
+      let propChangeMap: Record<string, Record<string, boolean>> = {},
+        ctxHasUpdateMethod: Record<string, boolean> = {};
 
       const validData = { constant: 1, prop1: '1', prop2: '2', prop3: '3' };
       const allProps = ['constant', 'prop1', 'prop2', 'prop3'],
@@ -75,18 +75,18 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
 
       const handle =
         (rule = '', prop = '') =>
-        ({ context }: any) => {
-          ctxHasUpdateMethod[rule] = !!context?.__updateOptions__;
+        (context: ReadonlyIvoContext<any, any, any>) => {
+          ctxHasUpdateMethod[rule] = !!(context as any)?.updateOptions;
 
           try {
-            context[prop] = 1;
+            (context as any)[prop] = 1;
           } catch {
             if (!propChangeMap[rule]) propChangeMap[rule] = {};
 
             propChangeMap[rule][prop] = true;
           }
         };
-      const validator = (value: any) => ({ valid: !!value });
+      const validator = (value: unknown) => ({ valid: !!value });
 
       const Model = new Schema({
         constant: {
@@ -156,6 +156,7 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
           for (const rule of rules) {
             const result = rule === 'onFailure' ? true : undefined;
 
+            // @ts-expect-error we are testing that the context is readonly
             expect(propChangeMap?.[rule]?.[prop]).toBe(result);
           }
 
@@ -175,6 +176,7 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
           for (const rule of rules) {
             const result = rule === 'onFailure' ? true : undefined;
 
+            // @ts-expect-error we are testing that the context is readonly
             expect(propChangeMap?.[rule]?.[prop]).toBe(result);
           }
 
@@ -185,11 +187,11 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
     describe('onDelete', () => {
       const contextOptions = { lang: 'en' };
 
-      let cxtOptions: any = {},
-        propChangeMap: any = {};
+      let cxtOptions: Record<string, unknown> = {},
+        propChangeMap: Record<string, boolean> = {};
 
       const onDelete = (prop = '') => {
-        return (_: any, options: any) => {
+        return (_: unknown, options: Record<string, unknown>) => {
           cxtOptions[prop] = options;
           propChangeMap[prop] = true;
         };
@@ -272,11 +274,14 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
       describe('behaviour', () => {
         const contextOptions = { lang: 'en' };
 
-        let cxtOptions: any = {},
-          onFailureCount: any = {};
+        let cxtOptions: Record<string, unknown> = {},
+          onFailureCount: Record<string, number> = {};
 
         function incrementOnFailureCountOf(prop: string) {
-          return (_: any, options: any) => {
+          return (
+            _: ReadonlyIvoContext<any, any, any>,
+            options: Record<string, unknown>,
+          ) => {
             cxtOptions[prop] = options;
             onFailureCount[prop] = (onFailureCount[prop] ?? 0) + 1;
           };
@@ -403,6 +408,7 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
 
               expect(error).toBeDefined();
               expect(cxtOptions).toEqual(ctxOpts);
+              // @ts-expect-error we are testing that the context is readonly
               expect(onFailureCount).toEqual(results);
             }
           });
@@ -435,15 +441,15 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
           readonlyLax: '',
           required: 'changed',
         },
-        onSuccessValues: any = {},
-        propChangeMap: any = {};
+        onSuccessValues: Record<string, unknown> = {},
+        propChangeMap: Record<string, boolean> = {};
 
       const onSuccess =
         (prop = '') =>
-        (summary: ReadonlyIvoSummary<any, any>) => {
-          cxtOptions[prop] = summary.options;
-          onSuccessValues[prop] = summary;
-          onSuccessValues.__ctx = summary.ctx;
+        (ctx: ReadonlyIvoContext<any, any, any>) => {
+          cxtOptions[prop] = ctx.options;
+          onSuccessValues[prop] = ctx;
+          onSuccessValues.input = ctx.input;
           propChangeMap[prop] = true;
         };
 
@@ -512,18 +518,18 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
         });
 
         const changes = null,
-          ctx = onSuccessValues.__ctx,
+          input = onSuccessValues.input,
           isUpdate = false,
           previousValues = null,
           values = data,
-          summary = { changes, ctx, isUpdate, previousValues, values };
+          ctx = { changes, input, isUpdate, previousValues, values };
 
         expect(onSuccessValues).toMatchObject({
-          dependent: summary,
-          lax: summary,
-          readonly: summary,
-          readonlyLax: summary,
-          required: summary,
+          dependent: ctx,
+          lax: ctx,
+          readonly: ctx,
+          readonlyLax: ctx,
+          required: ctx,
         });
       });
 

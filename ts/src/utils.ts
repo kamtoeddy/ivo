@@ -6,8 +6,8 @@ import type {
   TypeOf,
   ValidationResponse,
   ValidatorResponseObject,
-} from "./schema/types";
-import type { DefaultFieldErrorMetadata } from "./schema/utils";
+} from './schema/types';
+import type { DefaultFieldErrorMetadata } from './schema/utils';
 
 export type { ObjectType };
 export {
@@ -49,7 +49,7 @@ function makeResponse<T = undefined, Metadata = DefaultFieldErrorMetadata>(
     ? isRecordLike(inputReason)
       ? inputReason
       : inputReason
-    : "validation failed";
+    : 'validation failed';
 
   return {
     metadata,
@@ -80,7 +80,7 @@ function isEqual<T>(a: unknown, b: T, depth = 1): a is T {
   if (a instanceof Date && b instanceof Date)
     return a.getTime() === b.getTime();
 
-  if (!a || !b || (typeof a !== "object" && typeof b !== "object"))
+  if (!a || !b || (typeof a !== 'object' && typeof b !== 'object'))
     return a === b;
 
   let keysOfA = Object.keys(a),
@@ -105,7 +105,7 @@ function isEqual<T>(a: unknown, b: T, depth = 1): a is T {
 }
 
 function isFunctionLike<T extends Function>(value: unknown): value is T {
-  return typeof value === "function";
+  return typeof value === 'function';
 }
 
 function isNullOrUndefined(value: unknown): value is null | undefined {
@@ -122,7 +122,7 @@ function isOneOf<T>(
 function isRecordLike<T extends ObjectType>(
   value: unknown,
 ): value is ObjectType<T> {
-  return !!value && typeof value === "object" && !Array.isArray(value);
+  return !!value && typeof value === 'object' && !Array.isArray(value);
 }
 
 function isPropertyOf<T>(
@@ -172,7 +172,7 @@ function getUniqueBy<T>(list: T[], key?: string) {
 }
 
 function _getDeepValue(data: ObjectType, key: string): unknown {
-  return key.split(".").reduce((prev, next) => prev?.[next] as never, data);
+  return key.split('.').reduce((prev, next) => prev?.[next] as never, data);
 }
 
 function _serialize(dt: unknown, revert = false) {

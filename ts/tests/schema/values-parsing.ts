@@ -1,6 +1,4 @@
 import { beforeAll, describe, expect, it } from 'bun:test';
-
-import { ERRORS } from '../../src';
 import { expectNoFailure } from './_utils';
 
 export const valuesParsing_Tests = ({ Schema }: any) => {

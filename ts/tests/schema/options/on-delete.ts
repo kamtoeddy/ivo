@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'bun:test';
 
-import { ERRORS } from '../../../src';
 import {
+  ERRORS,
   expectFailure,
   expectNoFailure,
   getValidSchema,
@@ -12,7 +12,7 @@ export const Test_SchemaOnDelete = ({ Schema, fx }: any) => {
   describe('Schema.options.onDelete', () => {
     describe('behaviour', () => {
       const values = { id: 1, name: 'Book name', price: 100 };
-      let deletedValues: any = {};
+      let deletedValues: Record<string, unknown> = {};
 
       function onDelete_(prop = '') {
         return (data: any) => {

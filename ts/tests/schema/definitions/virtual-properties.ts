@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'bun:test';
 
-import { ERRORS, type ReadonlyIvoSummary } from '../../../src';
+import type { ReadonlyIvoContext } from '../../../src';
 import { DEFINITION_RULES, VIRTUAL_RULES } from '../../../src/schema/types';
 
 import { expectFailure, expectNoFailure, validator } from '../_utils';
@@ -751,11 +751,9 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
       });
 
       describe('behaviour', () => {
-        let onSuccessValues: any = {};
-
-        let onSuccessStats: any = {};
-
-        let sanitizedValues: any = {};
+        let onSuccessValues: Record<string, unknown> = {};
+        let onSuccessStats: Record<string, number> = {};
+        let sanitizedValues: Record<string, unknown> = {};
 
         const User = new Schema({
           dependentSideInit: {
@@ -827,7 +825,7 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
         }
 
         function onSuccess(prop: string) {
-          return ({ ctx }: ReadonlyIvoSummary<any>) => {
+          return ({ ctx }: ReadonlyIvoContext<any, any, any>) => {
             onSuccessValues[prop] = ctx[prop];
             incrementOnSuccessStats(prop)();
           };

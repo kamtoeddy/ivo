@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 
-import { ERRORS } from '../../../src';
-import { expectFailure } from '../_utils';
+import { ERRORS, expectFailure } from '../_utils';
 
 export const Test_BasicDefinitions = ({ fx, Schema }: any) => {
   describe('Schema definitions', () => {

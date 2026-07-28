@@ -1,15 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, test } from 'bun:test';
 
-import { ERRORS } from '../../../src';
-import {
-  type IvoSummary,
-  type ReadonlyIvoSummary,
-} from '../../../src';
+import type { IvoContext, ReadonlyIvoContext } from '../../../src';
 import {
   getInvalidConfigMessageForRepeatedProperties,
   getInvalidPostValidateConfigMessage,
 } from '../../../src/schema/schema-core';
 import {
+  ERRORS,
   expectFailure,
   expectNoFailure,
   getValidSchema,
@@ -918,8 +915,8 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
 
     describe('behaviour', () => {
       describe('should properly trigger post-validators', () => {
-        let providedPropertiesStats = {} as never;
-        let summaryStats = {} as never;
+        let providedPropertiesStats: Record<string, number> = {};
+        let summaryStats: Record<string, unknown> = {};
 
         function handlePostValidate(
           prop: string,
@@ -1371,7 +1368,24 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
         });
 
         it('should respect errors returned in post-validators(sync & async)', async () => {
-          const resolver = ({ ctx }: IvoSummary<any>) => ctx.v;
+          type Input = {
+            p1?: string;
+            p2?: string;
+            p3?: string;
+            p4?: string;
+            v?: string;
+          };
+          type Output = {
+            p1: string;
+            p2: string;
+            p3: string;
+            p4: string;
+            d1: string;
+            d2: string;
+          };
+
+          const resolver = (ctx: IvoContext<Input, Output>) =>
+            ctx.rawInput?.v ?? ctx.input?.v ?? ctx.values?.d1;
 
           const Model = new Schema(
             {
@@ -1387,7 +1401,9 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
               postValidate: [
                 {
                   properties: ['p1', 'v'],
-                  validator({ ctx: { v }, isUpdate }: IvoSummary<any>) {
+                  validator(ctx: IvoContext<Input, Output>) {
+                    const v = ctx.rawInput?.v ?? ctx.input?.v;
+                    const isUpdate = ctx.isUpdate;
                     if (v === 'allow') return;
 
                     if (v === 'throw') throw new Error('lol');
@@ -1404,7 +1420,8 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                 },
                 {
                   properties: ['p1', 'p2'],
-                  validator: ({ ctx: { v } }: IvoSummary<any>) => {
+                  validator: (ctx: IvoContext<Input, Output>) => {
+                    const v = ctx.rawInput?.v ?? ctx.input?.v;
                     if (v === 'throw') throw new Error('lol');
 
                     return Promise.resolve(
@@ -1419,7 +1436,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
           const res = await Model.create();
 
           expect(res.data).toBeNull();
-          expect(res.error.payload).toMatchObject({
+          expect(res.error).toMatchObject({
             p1: expect.objectContaining({
               reason: 'failed to validate',
             }),
@@ -1440,7 +1457,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
 
           const res2 = await Model.update({}, { p2: 'updated', v: 'updated' });
           expect(res2.data).toBeNull();
-          expect(res2.error.payload).toMatchObject({
+          expect(res2.error).toMatchObject({
             p1: expect.objectContaining({ reason: 'failed to validate' }),
             d1: expect.objectContaining({ reason: 'lolz' }),
           });
@@ -1470,8 +1487,8 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
             v: 'throw',
           });
           expect(res5.data).toBeNull();
-          expect(Object.keys(res5.error.payload).length).toBe(3);
-          expect(res5.error.payload).toMatchObject({
+          expect(Object.keys(res5.error).length).toBe(3);
+          expect(res5.error).toMatchObject({
             p1: expect.objectContaining({ reason: 'validation failed' }),
             p2: expect.objectContaining({ reason: 'validation failed' }),
             v: expect.objectContaining({ reason: 'validation failed' }),
@@ -1482,8 +1499,8 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
             { p1: 'updated', p2: 'updated', v: 'throw' },
           );
           expect(res6.data).toBeNull();
-          expect(Object.keys(res6.error.payload).length).toBe(3);
-          expect(res6.error.payload).toEqual({
+          expect(Object.keys(res6.error).length).toBe(3);
+          expect(res6.error).toEqual({
             p1: expect.objectContaining({
               reason: 'validation failed',
             }),
@@ -1497,15 +1514,15 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
 
           const res7 = await Model.create({ d1: 'throw' });
           expect(res7.data).toBeNull();
-          expect(Object.keys(res7.error.payload).length).toBe(1);
-          expect(res7.error.payload).toMatchObject({
+          expect(Object.keys(res7.error).length).toBe(1);
+          expect(res7.error).toMatchObject({
             d1: expect.objectContaining({ reason: 'validation failed' }),
           });
 
           const res8 = await Model.update({}, { d1: 'throw' });
           expect(res8.data).toBeNull();
-          expect(Object.keys(res8.error.payload).length).toBe(1);
-          expect(res8.error.payload).toEqual({
+          expect(Object.keys(res8.error).length).toBe(1);
+          expect(res8.error).toEqual({
             d1: expect.objectContaining({ reason: 'validation failed' }),
           });
         });
@@ -1519,7 +1536,9 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
             {
               postValidate: {
                 properties: ['p1', 'p2'],
-                validator: ({ isUpdate }) =>
+                validator: ({
+                  isUpdate,
+                }: IvoContext<{ p1: string; p2: string }>) =>
                   isUpdate
                     ? {
                         p1: { validated: 're updated' },
@@ -1560,7 +1579,13 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
               dependent: {
                 default: '',
                 dependsOn: ['v', 'v1'],
-                resolver: ({ ctx: { v, v1 } }) => `${v} ${v1}`,
+                resolver: (ctx: IvoContext<{ v: string; v1: string }>) => {
+                  const v =
+                    ctx.values?.v ?? ctx.rawInput?.v ?? ctx.input?.v ?? '';
+                  const v1 =
+                    ctx.values?.v1 ?? ctx.rawInput?.v1 ?? ctx.input?.v1 ?? '';
+                  return `${v} ${v1}`.trim();
+                },
               },
               v: { virtual: true, validator: () => true },
               v1: { virtual: true, validator: () => true },
@@ -1568,7 +1593,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
             {
               postValidate: {
                 properties: ['v', 'v1'],
-                validator: ({ isUpdate }) =>
+                validator: ({ isUpdate }: IvoContext<any>) =>
                   isUpdate
                     ? {
                         v: { validated: 're updated' },
@@ -1608,7 +1633,19 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
               dependent: {
                 default: '',
                 dependsOn: ['v', 'v1'],
-                resolver: ({ ctx: { v, v1 } }) => `${v} ${v1}`,
+                resolver: (summary: any) => {
+                  const v =
+                    summary.rawInput?.v ??
+                    summary.input?.v ??
+                    summary.values?.v ??
+                    '';
+                  const v1 =
+                    summary.rawInput?.v1 ??
+                    summary.input?.v1 ??
+                    summary.values?.v1 ??
+                    '';
+                  return `${v} ${v1}`.trim();
+                },
               },
               v: { virtual: true, validator: () => true },
               v1: { virtual: true, validator: () => true },
@@ -1617,7 +1654,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
               postValidate: [
                 {
                   properties: ['v', 'v1'],
-                  validator: ({ isUpdate }) =>
+                  validator: ({ isUpdate }: IvoContext<any>) =>
                     isUpdate
                       ? {
                           v: { validated: 're updated' },
@@ -1630,7 +1667,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                 },
                 {
                   properties: ['p1', 'p2', 'v'],
-                  validator: ({ isUpdate }) =>
+                  validator: ({ isUpdate }: IvoContext<any>) =>
                     isUpdate
                       ? {
                           p2: { validated: 're updated' },
@@ -1707,7 +1744,8 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
           });
 
           it('should process errors of first validator to return errors and stop validating', async () => {
-            const resolver = ({ ctx }: IvoSummary<any>) => ctx.v;
+            const resolver = (summary: any) =>
+              summary.values?.v ?? summary.rawInput?.v ?? summary.input?.v;
 
             let validatorRunCount: Record<string, number> = {};
 
@@ -1733,15 +1771,24 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                       () => {
                         incrementValidatorCount('p1-v');
                       },
-                      ({ ctx: { v } }: any) => {
+                      (summary: any) => {
+                        const v =
+                          summary.values?.v ??
+                          summary.rawInput?.v ??
+                          summary.input?.v;
                         if (v === 'return error')
                           return { d1: 'error returned' };
                       },
-                      ({ ctx: { v } }: any) => {
+                      (summary: any) => {
+                        const v =
+                          summary.values?.v ??
+                          summary.rawInput?.v ??
+                          summary.input?.v;
                         incrementValidatorCount('p1-v');
                         if (v === 'throw') throw new Error('lol');
                       },
-                      ({ isUpdate }: any) => {
+                      (summary: any) => {
+                        const isUpdate = summary.isUpdate;
                         incrementValidatorCount('p1-v');
 
                         return isUpdate
@@ -1759,11 +1806,19 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                   {
                     properties: ['p1', 'p2'],
                     validator: [
-                      ({ ctx: { v } }: any) => {
+                      (summary: any) => {
+                        const v =
+                          summary.values?.v ??
+                          summary.rawInput?.v ??
+                          summary.input?.v;
                         incrementValidatorCount('p1-p2');
                         if (v === 'throw') throw new Error('lol');
                       },
-                      ({ ctx: { v } }: any) => {
+                      (summary: any) => {
+                        const v =
+                          summary.values?.v ??
+                          summary.rawInput?.v ??
+                          summary.input?.v;
                         incrementValidatorCount('p1-p2');
                         return Promise.resolve(
                           v === 'allow' ? false : { p1: 'failed to validate' },
@@ -1778,7 +1833,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
             const createRes = await Model.create();
 
             expect(createRes.data).toBeNull();
-            expect(createRes.error.payload).toMatchObject({
+            expect(createRes.error).toMatchObject({
               p1: expect.objectContaining({ reason: 'failed to validate' }),
               // p2: expect.objectContaining({ reason: 'p2' }),
               // p3: expect.objectContaining({ reason: 'error1' }),
@@ -1799,7 +1854,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
             const createRes1 = await Model.create({ v: 'throw', p2: true });
 
             expect(createRes1.data).toBeNull();
-            expect(createRes1.error.payload).toEqual({
+            expect(createRes1.error).toEqual({
               p2: expect.objectContaining({ reason: 'validation failed' }),
               v: expect.objectContaining({ reason: 'validation failed' }),
             });
@@ -1814,7 +1869,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
             const createRes11 = await Model.create({ v: 'return error' });
 
             expect(createRes11.data).toBeNull();
-            expect(createRes11.error.payload).toMatchObject({
+            expect(createRes11.error).toMatchObject({
               d1: expect.objectContaining({ reason: 'error returned' }),
             });
 
@@ -1827,7 +1882,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
               { p2: 'updated', v: 'updated' },
             );
             expect(updateRes.data).toBeNull();
-            expect(updateRes.error.payload).toMatchObject({
+            expect(updateRes.error).toMatchObject({
               p1: expect.objectContaining({ reason: 'failed to validate' }),
               d1: expect.objectContaining({ reason: 'lolz' }),
             });
@@ -1845,7 +1900,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
             );
 
             expect(updateRes1.data).toBeNull();
-            expect(updateRes1.error.payload).toMatchObject({
+            expect(updateRes1.error).toMatchObject({
               p2: expect.objectContaining({ reason: 'validation failed' }),
               v: expect.objectContaining({ reason: 'validation failed' }),
             });
@@ -1860,7 +1915,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
             const updateRes2 = await Model.update({}, { v: 'return error' });
 
             expect(updateRes2.data).toBeNull();
-            expect(updateRes2.error.payload).toMatchObject({
+            expect(updateRes2.error).toMatchObject({
               d1: expect.objectContaining({ reason: 'error returned' }),
             });
 
@@ -1868,7 +1923,8 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
           });
 
           it('should process parallel and sequential validators accordingly', async () => {
-            const resolver = ({ ctx }: IvoSummary<{ v: any }>) => ctx.v;
+            const resolver = (summary: any) =>
+              summary.values?.v ?? summary.rawInput?.v ?? summary.input?.v;
 
             let validatorRunCount: Record<string, number> = {};
 
@@ -1891,7 +1947,11 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                   {
                     properties: ['p1', 'v'],
                     validator: [
-                      ({ ctx: { v } }: any) => {
+                      (summary: any) => {
+                        const v =
+                          summary.values?.v ??
+                          summary.rawInput?.v ??
+                          summary.input?.v;
                         incrementValidatorCount('p1-v');
 
                         if (v === 'return error')
@@ -1900,12 +1960,20 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                         if (v === 'throw') throw new Error('lol');
                       },
                       [
-                        ({ ctx: { v } }: any) => {
+                        (summary: any) => {
+                          const v =
+                            summary.values?.v ??
+                            summary.rawInput?.v ??
+                            summary.input?.v;
                           incrementValidatorCount('p1-v-parallel');
 
                           if (v === 'throw-parallel') throw new Error('lol');
                         },
-                        ({ ctx: { v } }: any) => {
+                        (summary: any) => {
+                          const v =
+                            summary.values?.v ??
+                            summary.rawInput?.v ??
+                            summary.input?.v;
                           incrementValidatorCount('p1-v-parallel');
 
                           if (v === 'return error-parallel')
@@ -1943,7 +2011,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
             const createRes1 = await Model.create({ v: 'throw', p2: true });
 
             expect(createRes1.data).toBeNull();
-            expect(createRes1.error.payload).toMatchObject({
+            expect(createRes1.error).toMatchObject({
               v: expect.objectContaining({ reason: 'validation failed' }),
             });
 
@@ -1954,7 +2022,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
             const createRes2 = await Model.create({ d1: 'return error' });
 
             expect(createRes2.data).toBeNull();
-            expect(createRes2.error.payload).toMatchObject({
+            expect(createRes2.error).toMatchObject({
               d1: expect.objectContaining({ reason: 'error returned' }),
             });
 
@@ -1968,7 +2036,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
             });
 
             expect(createRes3.data).toBeNull();
-            expect(createRes3.error.payload).toMatchObject({
+            expect(createRes3.error).toMatchObject({
               v: expect.objectContaining({ reason: 'validation failed' }),
             });
 
@@ -1985,7 +2053,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
             });
 
             expect(createRes4.data).toBeNull();
-            expect(createRes4.error.payload).toMatchObject({
+            expect(createRes4.error).toMatchObject({
               v: expect.objectContaining({ reason: 'error returned' }),
             });
 
@@ -2009,7 +2077,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
 
             const updateRes1 = await Model.update({}, { v: 'throw' });
             expect(updateRes1.data).toBeNull();
-            expect(updateRes1.error.payload).toMatchObject({
+            expect(updateRes1.error).toMatchObject({
               v: expect.objectContaining({ reason: 'validation failed' }),
             });
 
@@ -2020,7 +2088,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
             const updateRes2 = await Model.update({}, { d1: 'return error' });
 
             expect(updateRes2.data).toBeNull();
-            expect(updateRes2.error.payload).toMatchObject({
+            expect(updateRes2.error).toMatchObject({
               d1: expect.objectContaining({ reason: 'error returned' }),
             });
 
@@ -2034,7 +2102,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
             );
 
             expect(updateRes3.data).toBeNull();
-            expect(updateRes3.error.payload).toMatchObject({
+            expect(updateRes3.error).toMatchObject({
               v: expect.objectContaining({ reason: 'validation failed' }),
             });
 
@@ -2051,7 +2119,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
             );
 
             expect(updateRes4.data).toBeNull();
-            expect(updateRes4.error.payload).toMatchObject({
+            expect(updateRes4.error).toMatchObject({
               v: expect.objectContaining({ reason: 'error returned' }),
             });
 
@@ -2064,7 +2132,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
       });
 
       describe('behaviour when updating ctxOptions from within post-validators', () => {
-        let ctxValue: any = {};
+        let ctxValue: Record<string, unknown> = {};
 
         beforeEach(() => {
           ctxValue = {};
@@ -2075,13 +2143,17 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
           {
             postValidate: {
               properties: ['p1', 'p2'],
-              validator: ({ updateOptions }) => {
+              validator: ({
+                updateOptions,
+              }: IvoContext<{ p1: string; p2: string }, any>) => {
                 updateOptions({ updated: true });
 
                 return true;
               },
             },
-            onSuccess({ options }) {
+            onSuccess({
+              options,
+            }: ReadonlyIvoContext<{ p1: string; p2: string }, any, any>) {
               ctxValue = options;
             },
           },
@@ -2112,7 +2184,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
         });
 
         describe('behaviour with validator array', () => {
-          let ctxValue: any = {};
+          let ctxValue: Record<string, unknown> = {};
 
           beforeEach(() => {
             ctxValue = {};
@@ -2124,7 +2196,7 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
               postValidate: {
                 properties: ['p1', 'p2'],
                 validator: [
-                  ({ updateOptions }: IvoSummary<any>) => {
+                  ({ updateOptions }: IvoContext<any>) => {
                     updateOptions({ updated: true });
 
                     return true;
@@ -2132,14 +2204,14 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                   ({
                     updateOptions,
                     options: { updated },
-                  }: IvoSummary<any>) => {
+                  }: IvoContext<any, any, Record<string, unknown>>) => {
                     updateOptions({ v2: { updated } });
 
                     return true;
                   },
                 ],
               },
-              onSuccess({ options }: ReadonlyIvoSummary<any>) {
+              onSuccess({ options }: ReadonlyIvoContext<any, any, any>) {
                 ctxValue = options;
               },
             },

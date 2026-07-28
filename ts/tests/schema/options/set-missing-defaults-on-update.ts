@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 
-import { ERRORS } from '../../../src';
 import {
+  ERRORS,
   expectFailure,
   expectNoFailure,
   getValidSchema,

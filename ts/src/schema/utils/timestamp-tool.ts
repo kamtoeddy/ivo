@@ -26,9 +26,7 @@ class TimeStampTool {
     ) as TimestampKey[];
   }
 
-  private _makeTimestamps(
-    timestamps: NS.Options<any, any, any>['timestamps'],
-  ) {
+  private _makeTimestamps(timestamps: NS.Options<any, any, any>['timestamps']) {
     if (isEqual(timestamps, undefined)) return { createdAt: '', updatedAt: '' };
 
     let createdAt = 'createdAt',

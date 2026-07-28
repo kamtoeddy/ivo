@@ -8,7 +8,7 @@ import {
   mock,
 } from 'bun:test';
 
-import { ERRORS, type ReadonlyIvoSummary } from '../../../src';
+import type { IvoContext, ReadonlyIvoContext } from '../../../src';
 import { expectFailure, expectNoFailure, validator } from '../_utils';
 
 export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
@@ -44,7 +44,8 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
           const Model = new Schema({
             isBlocked: {
               default: false,
-              ignore: ({ inputValues: { env } }) => env === 'dev',
+              ignore: ({ input: { env } }: IvoContext<{ env: string }, any>) =>
+                env === 'dev',
             },
             env: { default: 'dev' },
             laxProp: { default: 0 },
@@ -105,7 +106,8 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
           const Model = new Schema({
             isBlocked: {
               default: false,
-              ignore: ({ inputValues: { env } }) => env === 'dev',
+              ignore: ({ input: { env } }: IvoContext<{ env: string }, any>) =>
+                env === 'dev',
               validator: mockedValidator,
             },
             env: { default: 'dev' },
@@ -173,7 +175,8 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
           const Model = new Schema({
             isBlocked: {
               default: false,
-              ignore: ({ inputValues: { env } }) => env === 'dev',
+              ignore: ({ input: { env } }: IvoContext<{ env: string }, any>) =>
+                env === 'dev',
               validator: mockedValidator,
             },
             env: { default: 'dev' },
@@ -397,11 +400,9 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
       });
 
       describe('behaviour of callable shouldInit', () => {
-        let onSuccessValues: any = {};
-
-        let onSuccessStats: any = {};
-
-        let sanitizedValues: any = {};
+        let onSuccessValues: Record<string, unknown> = {};
+        let onSuccessStats: Record<string, number> = {};
+        let sanitizedValues: Record<string, unknown> = {};
 
         let Model: any;
 
@@ -443,8 +444,8 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
           }
 
           function onSuccess(prop: string) {
-            return ({ ctx }: ReadonlyIvoSummary<any>) => {
-              onSuccessValues[prop] = ctx[prop];
+            return ({ values }: ReadonlyIvoContext<any, any, any>) => {
+              onSuccessValues[prop] = values[prop];
               incrementOnSuccessStats(prop)();
             };
           }
@@ -586,15 +587,15 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
       });
 
       describe('behaviour', () => {
-        let onSuccessValues: any = {};
-        let onSuccessStats: any = {};
+        let onSuccessValues: Record<string, unknown> = {};
+        let onSuccessStats: Record<string, number> = {};
 
         function incrementOnSuccessCountOf(prop: string) {
-          return ({ ctx }: ReadonlyIvoSummary<any>) => {
+          return ({ values }: ReadonlyIvoContext<any, any, any>) => {
             const previousCount = onSuccessStats[prop] ?? 0;
 
             onSuccessStats[prop] = previousCount + 1;
-            onSuccessValues[prop] = ctx[prop];
+            onSuccessValues[prop] = values[prop];
           };
         }
 

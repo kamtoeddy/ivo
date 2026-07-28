@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-
+import type { IvoContext } from '../../../src';
 import { expectFailure, expectNoFailure, validator } from '../_utils';
 
 export const Test_AllowedValues = ({ fx, Schema }: any) => {
@@ -621,7 +621,9 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
           dependent: {
             default: null,
             dependsOn: 'virtual',
-            resolver: ({ ctx: { virtual } }) => virtual,
+            resolver: ({
+              input: { virtual },
+            }: IvoContext<{ virtual: string }, any>) => virtual,
           },
           virtual: {
             virtual: true,
@@ -686,7 +688,9 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
           dependent: {
             default: null,
             dependsOn: 'virtual',
-            resolver: ({ ctx: { virtual } }) => virtual,
+            resolver: ({
+              input: { virtual },
+            }: IvoContext<{ virtual: string }, any>) => virtual,
           },
           virtual: {
             alias: 'dependent',
@@ -869,7 +873,9 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
             dependent: {
               default: null,
               dependsOn: 'virtual',
-              resolver: ({ ctx: { virtual } }) => virtual,
+              resolver: ({
+                input: { virtual },
+              }: IvoContext<{ virtual: string }, any>) => virtual,
             },
             virtual: {
               virtual: true,
@@ -936,7 +942,9 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
             dependent: {
               default: null,
               dependsOn: 'virtual',
-              resolver: ({ ctx: { virtual } }) => virtual,
+              resolver: ({
+                input: { virtual },
+              }: IvoContext<{ virtual: string }, any>) => virtual,
             },
             virtual: {
               alias: 'dependent',

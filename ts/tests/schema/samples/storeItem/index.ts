@@ -1,8 +1,4 @@
-import {
-  type IvoSummary,
-  type ReadonlyIvoSummary,
-  Schema,
-} from '../../../../dist';
+import { type IvoContext, Schema } from '../../../../dist';
 import type { StoreItem, StoreItemInput } from './types';
 import {
   sanitizeQuantities,
@@ -55,8 +51,8 @@ const storeItemSchema = new Schema<StoreItemInput, StoreItem>(
     quantityChangeCounter: {
       default: 0,
       dependsOn: 'quantity',
-      resolver({ ctx: { quantityChangeCounter } }) {
-        return quantityChangeCounter + 1;
+      resolver({ input: { quantityChangeCounter } }) {
+        return (quantityChangeCounter ?? 0) + 1;
       },
     },
   },
@@ -67,19 +63,13 @@ const storeItemSchema = new Schema<StoreItemInput, StoreItem>(
 );
 
 function resolveQuantity({
-  ctx: { quantity, _quantity, quantities },
-}: IvoSummary<StoreItemInput, StoreItem>) {
+  input: { quantity, _quantity, quantities },
+}: IvoContext<StoreItemInput, StoreItem>) {
   const newQty = _quantity ?? quantity;
 
   return quantities ? newQty + (quantities as number) : newQty;
 }
 
-function onSuccess({
-  ctx: { quantity, _quantity, quantities },
-}: ReadonlyIvoSummary<StoreItemInput, StoreItem>) {
-  const newQty = _quantity ?? quantity;
-
-  return quantities ? newQty + (quantities as number) : newQty;
-}
+function onSuccess() {}
 
 const StoreItemModel = storeItemSchema.getModel();

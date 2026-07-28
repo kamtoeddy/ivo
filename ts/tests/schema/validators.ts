@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'bun:test';
 
-import { ERRORS } from '../../src';
+import type { ReadonlyIvoContext } from '../../src';
 import { expectFailure, expectNoFailure, validator } from './_utils';
 
 export const Test_Validators = ({ Schema, fx }: any) => {
@@ -279,12 +279,9 @@ export const Test_Validators = ({ Schema, fx }: any) => {
 
           expect(data).toBeNull();
           expect(error).toMatchObject({
-            message: ERRORS.VALIDATION_ERROR,
-            payload: {
-              prop: {
-                reason: 'validation failed',
-                metadata: null,
-              },
+            prop: {
+              reason: 'validation failed',
+              metadata: null,
             },
           });
         });
@@ -318,10 +315,7 @@ export const Test_Validators = ({ Schema, fx }: any) => {
 
             expect(data).toBeNull();
             expect(error).toEqual({
-              message: ERRORS.VALIDATION_ERROR,
-              payload: {
-                prop: { reason: 'validation failed', metadata: null },
-              },
+              prop: { reason: 'validation failed', metadata: null },
             });
           }
         });
@@ -347,8 +341,7 @@ export const Test_Validators = ({ Schema, fx }: any) => {
 
               expect(data).toBeNull();
               expect(error).toMatchObject({
-                message: ERRORS.VALIDATION_ERROR,
-                payload: { prop2: expect.objectContaining({ metadata }) },
+                prop2: expect.objectContaining({ metadata }),
               });
             }
           });
@@ -376,17 +369,14 @@ export const Test_Validators = ({ Schema, fx }: any) => {
 
               expect(data).toBeNull();
               expect(error).toMatchObject({
-                message: ERRORS.VALIDATION_ERROR,
-                payload: {
-                  prop: expect.objectContaining({
-                    metadata: { message: 'too bad' },
-                    reason: 'lol',
-                  }),
-                  prop2: expect.objectContaining({
-                    metadata,
-                    reason: 'validation failed',
-                  }),
-                },
+                prop: expect.objectContaining({
+                  metadata: { message: 'too bad' },
+                  reason: 'lol',
+                }),
+                prop2: expect.objectContaining({
+                  metadata,
+                  reason: 'validation failed',
+                }),
               });
             }
           });
@@ -411,8 +401,7 @@ export const Test_Validators = ({ Schema, fx }: any) => {
 
               expect(data).toBeNull();
               expect(error).toMatchObject({
-                message: ERRORS.VALIDATION_ERROR,
-                payload: { prop2: expect.objectContaining({ metadata }) },
+                prop2: expect.objectContaining({ metadata }),
               });
             }
           });
@@ -434,9 +423,8 @@ export const Test_Validators = ({ Schema, fx }: any) => {
           const { data, error } = await Model.create({ prop1: '', prop2: '' });
 
           expect(data).toBeNull();
-          expect(error).toMatchObject({
-            message: ERRORS.VALIDATION_ERROR,
-            payload: expect.objectContaining({
+          expect(error).toMatchObject(
+            expect.objectContaining({
               prop1: expect.objectContaining({
                 reason: 'validation failed',
               }),
@@ -444,7 +432,7 @@ export const Test_Validators = ({ Schema, fx }: any) => {
                 reason: 'validation failed',
               }),
             }),
-          });
+          );
         });
 
         it("should return 'validation failed' during updates", async () => {
@@ -454,9 +442,8 @@ export const Test_Validators = ({ Schema, fx }: any) => {
           );
 
           expect(data).toBeNull();
-          expect(error).toMatchObject({
-            message: ERRORS.VALIDATION_ERROR,
-            payload: expect.objectContaining({
+          expect(error).toMatchObject(
+            expect.objectContaining({
               prop1: expect.objectContaining({
                 reason: 'validation failed',
               }),
@@ -464,18 +451,18 @@ export const Test_Validators = ({ Schema, fx }: any) => {
                 reason: 'validation failed',
               }),
             }),
-          });
+          );
         });
       });
 
       describe('behaviour with secondary validators (validation array)', () => {
         describe('should properly trigger secondary validators', () => {
-          let valuesProvided = {} as any;
-          let summaryStats = {} as any;
+          let valuesProvided: Record<string, unknown> = {};
+          let ctxStats: Record<string, unknown> = {};
 
           function makeSecondaryValidator(prop: string) {
-            return (value: any, summary: any) => {
-              summaryStats[prop] = summary;
+            return (value: unknown, ctx: ReadonlyIvoContext<any, any, any>) => {
+              ctxStats[prop] = ctx;
 
               valuesProvided[prop] = value;
 
@@ -484,7 +471,7 @@ export const Test_Validators = ({ Schema, fx }: any) => {
           }
 
           afterEach(() => {
-            summaryStats = {};
+            ctxStats = {};
             valuesProvided = {};
           });
 
@@ -569,7 +556,7 @@ export const Test_Validators = ({ Schema, fx }: any) => {
           });
 
           describe('should respect "shouldInit" & "shouldUpdate" rules', async () => {
-            let stats: any = {};
+            let stats: Record<string, Record<string, boolean>> = {};
 
             function makeSecondaryValidator(prop: string) {
               return [
@@ -686,12 +673,9 @@ export const Test_Validators = ({ Schema, fx }: any) => {
 
               expect(data).toBeNull();
               expect(error).toMatchObject({
-                message: ERRORS.VALIDATION_ERROR,
-                payload: {
-                  p2: expect.objectContaining({
-                    reason: 'validation failed',
-                  }),
-                },
+                p2: expect.objectContaining({
+                  reason: 'validation failed',
+                }),
               });
 
               const { data: updates, error: error2 } = await Model.update(
@@ -701,16 +685,14 @@ export const Test_Validators = ({ Schema, fx }: any) => {
 
               expect(updates).toBeNull();
               expect(error2).toMatchObject({
-                message: ERRORS.VALIDATION_ERROR,
-                payload: {
-                  p2: expect.objectContaining({ reason: 'validation failed' }),
-                },
+                p2: expect.objectContaining({ reason: 'validation failed' }),
               });
             }
           });
 
           it('should respect errors returned in secondary validators(sync & async)', async () => {
-            const resolver = ({ context }: any) => context.v;
+            const resolver = (ctx: ReadonlyIvoContext<any, any, any>) =>
+              ctx.rawInput?.v ?? ctx.input?.v ?? ctx.values?.v;
 
             const Model = new Schema({
               p1: {
@@ -742,10 +724,10 @@ export const Test_Validators = ({ Schema, fx }: any) => {
                 virtual: true,
                 validator: [
                   validator,
-                  (v: any, { isUpdate }: any) => {
+                  (v: unknown, ctx: ReadonlyIvoContext<any, any, any>) => {
                     if (v === 'throw') throw new Error('lol');
 
-                    return isUpdate
+                    return ctx.isUpdate
                       ? { reason: 'lolz' }
                       : { reason: 'error', metadata: { lol: true } };
                   },

@@ -1,24 +1,27 @@
 import { afterEach, describe, expect, it } from 'bun:test';
 
-import { Schema, type SetterFnData } from '../../../src';
-
-const contextOptions = { lang: 'en' };
+import { type IvoContext, Schema } from '../../../src';
 
 describe('Context options', () => {
   describe('RequiredBy', () => {
     const contextOptions = { lang: 'en' };
     const validator = () => true;
     function handleRequired(prop: string) {
-      return ({ options }: SetterFnData<any>) => {
+      return ({ options }: IvoContext<any>) => {
         ctxOptions[prop] = options;
 
         return false;
       };
     }
 
-    const Model = new Schema<any, any, any, typeof contextOptions>({
+    const Model = new Schema<
+      { name: string; price: number },
+      { name: string; price: number },
+      any,
+      typeof contextOptions
+    >({
       name: { default: '', required: handleRequired('name'), validator },
-      price: { default: '', required: handleRequired('price'), validator },
+      price: { default: 0, required: handleRequired('price'), validator },
     }).getModel();
 
     let ctxOptions: any = {};

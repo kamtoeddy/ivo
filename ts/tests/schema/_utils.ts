@@ -1,7 +1,9 @@
 import { expect } from 'bun:test';
+import { ERRORS } from '../../src/schema/utils/constants';
 import { isEqual, type ObjectType } from '../../src/utils';
 
 export {
+  ERRORS,
   expectFailure,
   expectNoFailure,
   findBy,
@@ -11,7 +13,7 @@ export {
   validator,
 };
 
-function expectFailure(fx: Function, message: string = 'INVALID_SCHEMA') {
+function expectFailure(fx: Function, message: string = ERRORS.INVALID_SCHEMA) {
   expect(fx).toThrow(message);
 }
 

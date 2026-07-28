@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'bun:test';
 
-import { ERRORS } from '../../../src';
-import { expectFailure, expectNoFailure, getValidSchema } from '../_utils';
+import {
+  ERRORS,
+  expectFailure,
+  expectNoFailure,
+  getValidSchema,
+} from '../_utils';
 
 export const Test_SchemaEqualityDepth = ({ Schema, fx }: any) => {
   describe('Schema.options.equalityDepth', () => {

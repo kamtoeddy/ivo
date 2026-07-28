@@ -1,11 +1,12 @@
 import { beforeEach, describe, expect, it } from 'bun:test';
 
-import { ERRORS, type ReadonlyIvoSummary } from '../../../src';
+import type { ReadonlyIvoContext } from '../../../src';
 import {
   getInvalidConfigMessageForRepeatedProperties,
   getInvalidOnSuccessConfigMessage,
 } from '../../../src/schema/schema-core';
 import {
+  ERRORS,
   expectFailure,
   expectNoFailure,
   getValidSchema,
@@ -448,10 +449,10 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
     });
 
     describe('behaviour', () => {
-      let successValues: any = {};
+      let successValues: Record<string, unknown> = {};
 
       function onSuccess_(prop = '') {
-        return (summary: ReadonlyIvoSummary<any>) => {
+        return (summary: ReadonlyIvoContext<any, any, any>) => {
           successValues[prop] = summary;
         };
       }
@@ -468,7 +469,11 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
             price: {
               default: null,
               dependsOn: '_setPrice',
-              resolver: ({ ctx }: any) => ctx._setPrice,
+              resolver: (summary: any) =>
+                summary.rawInput?._setPrice ??
+                summary.input?._setPrice ??
+                summary.values?._setPrice ??
+                summary._setPrice,
               onSuccess: onSuccess_('price'),
             },
             _setPrice: {
@@ -491,7 +496,7 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
           const values = { id: 1, name: 'Book name', price: 100 };
           const summary = {
             changes: null,
-            ctx: { ...values, _setPrice: 100 },
+            input: { name: 'Book name', _setPrice: 100 },
             isUpdate: false,
             previousValues: null,
             values: values,
@@ -520,7 +525,7 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
 
           const summary = {
             changes: data,
-            ctx: { ...values, _setPrice: 200 },
+            input: { _setPrice: 200 },
             isUpdate: true,
             previousValues: book,
             values: values,
@@ -543,7 +548,11 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
             price: {
               default: null,
               dependsOn: '_setPrice',
-              resolver: ({ ctx }: any) => ctx._setPrice,
+              resolver: (summary: any) =>
+                summary.rawInput?._setPrice ??
+                summary.input?._setPrice ??
+                summary.values?._setPrice ??
+                summary._setPrice,
             },
             _setPrice: { virtual: true, validator },
           },
@@ -561,7 +570,7 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
           const values = { id: 1, name: 'Book name', price: 100 };
           const summary = {
             changes: null,
-            ctx: { ...values, _setPrice: 100 },
+            input: { name: 'Book name', _setPrice: 100 },
             isUpdate: false,
             previousValues: null,
             values: values,
@@ -587,7 +596,7 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
 
           const summary = {
             changes: data,
-            ctx: { ...values, _setPrice: 200 },
+            input: { _setPrice: 200 },
             isUpdate: true,
             previousValues: book,
             values: values,
@@ -602,7 +611,7 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
       });
 
       describe('behaviour onSuccess config object', () => {
-        let successValuesFromOptions: any = {};
+        let successValuesFromOptions: Record<string, unknown> = {};
 
         beforeEach(() => {
           successValuesFromOptions = {};
