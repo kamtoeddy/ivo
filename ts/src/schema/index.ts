@@ -200,7 +200,6 @@ class ModelTool<
   // contexts & values
   private ctxInput: Partial<I> = {};
   private ctxRawInput: Partial<I> = {};
-  private ctxChanges: Partial<O> = {};
   private ctxValues: Partial<O> = {};
   private _ctxOptions: CtxOptions = {} as CtxOptions;
 
@@ -262,7 +261,12 @@ class ModelTool<
 
     if (isUpdate) {
       for (const config of toArray(this._options.ignoreUpdate ?? [])) {
-        if (config.fields.length === 0) entityResolvers.push(config.resolver);
+        if (config && typeof config === "object" && "fields" in config) {
+          if ((config as any).fields.length === 0)
+            entityResolvers.push((config as any).resolver);
+        } else if (typeof config === "function") {
+          entityResolvers.push(config);
+        }
       }
 
       for (const [fieldName, value] of Object.entries(rawInput)) {
@@ -386,36 +390,67 @@ class ModelTool<
       tasks.push([[fieldInfo.name], Promise.try(source, ctx)]);
     }
 
-    let relevantConfigNames = relevantFieldsProvided
-      .values()
-      .map((name) => fieldsCollection.get(name).configName);
+    const relevantConfigNames = Array.from(
+      new Set(
+        Array.from(relevantFieldsProvided.values()).map(
+          (name) => fieldsCollection.get(name).configName,
+        ),
+      ),
+    );
 
     for (const config of toArray(this._options.ignore ?? [])) {
-      if (
-        config.fields.some(
-          (name) => !!relevantConfigNames.find((n) => n === name),
-        )
-      )
+      if (typeof config === "function") {
         tasks.push([
-          config.fields,
-          Promise.try(config.resolver, ctx).catch(() => false),
+          relevantConfigNames,
+          Promise.try(config as any, ctx)
+            .then((v) => !!v)
+            .catch(() => false),
         ]);
+      } else if (config && typeof config === "object" && "fields" in config) {
+        const fields = (config as any).fields as string[];
+        const resolver = (config as any).resolver;
+
+        if (fields.some((name: string) => relevantConfigNames.includes(name))) {
+          tasks.push([
+            fields,
+            Promise.try(resolver, ctx)
+              .then((v) => !!v)
+              .catch(() => false),
+          ]);
+        }
+      }
     }
 
     if (isUpdate) {
       for (const config of toArray(this._options.ignoreUpdate ?? [])) {
-        if (
-          config.fields.some(
-            (name) => !!relevantConfigNames.find((n) => n === name),
-          )
-        )
+        if (typeof config === "function") {
           tasks.push([
-            config.fields,
-            Promise.try(config.resolver, rawInput, _previousValues as O, {
+            relevantConfigNames,
+            Promise.try(config as any, rawInput, _previousValues as O, {
               options: ctx.options,
               updateOptions: ctx.updateOptions,
-            }).catch(() => false),
+            })
+              .then((v) => !!v)
+              .catch(() => false),
           ]);
+        } else if (config && typeof config === "object" && "fields" in config) {
+          const fields = (config as any).fields as string[];
+          const resolver = (config as any).resolver;
+
+          if (
+            fields.some((name: string) => relevantConfigNames.includes(name))
+          ) {
+            tasks.push([
+              fields,
+              Promise.try(resolver, rawInput, _previousValues as O, {
+                options: ctx.options,
+                updateOptions: ctx.updateOptions,
+              })
+                .then((v) => !!v)
+                .catch(() => false),
+            ]);
+          }
+        }
       }
     }
 
@@ -530,9 +565,12 @@ class ModelTool<
     let value: any;
 
     try {
-      // value = isFunctionLike(_default)
-      //   ? await Promise.try(() => _default(this._getLegacyContext()))
-      //   : this.defaults[prop as KeyOf<O>];
+      value = isFunctionLike(_default)
+        ? await Promise.try(
+            _default as any,
+            this._getValidationSummary(false),
+          )
+        : this.defaults[prop as KeyOf<O>];
     } catch {
       value = null;
     }
@@ -580,8 +618,6 @@ class ModelTool<
     ];
   };
 
-  private _getConstantValue = (prop: string) => this._getValueBy(prop, "value");
-
   private _getValueBy = (prop: string, rule: DefinitionRule) => {
     const value = this._getDefinition(prop)?.[rule];
 
@@ -617,8 +653,15 @@ class ModelTool<
 
     await Promise.allSettled(
       getSetValuesAsProps(this.constants).map(async (prop) => {
+        const _val = this._getValueBy(prop, "value");
+
         try {
-          // data[prop] = await Promise.try(this._getConstantValue, prop);
+          data[prop] = isFunctionLike(_val)
+            ? await Promise.try(
+                _val as any,
+                this._getValidationSummary(false),
+              )
+            : (_val as never);
         } catch {
           data[prop] = null as never;
         }
@@ -658,7 +701,7 @@ class ModelTool<
       : undefined;
   };
 
-  private _isInitAllowed = (prop: string, extraCtx: ObjectType = {}) => {
+  private _isInitAllowed = (prop: string, _extraCtx: ObjectType = {}) => {
     if (isOneOf(this._getDefinition(prop).ignoreInit, [true, undefined]))
       return true;
 
@@ -680,7 +723,7 @@ class ModelTool<
     return readonly === true && isInitAllowed && !this._isRequiredBy(prop);
   };
 
-  private _ignoreUpdate = (prop: string, extraCtx: ObjectType = {}) => {
+  private _ignoreUpdate = (prop: string, _extraCtx: ObjectType = {}) => {
     if (isOneOf(this._getDefinition(prop).ignoreUpdate, [true, undefined]))
       return true;
 
@@ -1356,22 +1399,6 @@ class ModelTool<
     return [true, sanitizer];
   }
 
-  private _isGloballyUpdatable(changes: unknown) {
-    const { ignoreUpdate = defaultOptions.ignoreUpdate! } = this._options;
-
-    if (typeof ignoreUpdate === "boolean") return ignoreUpdate;
-
-    // return !ignoreUpdate(
-    //   this._getMutableSummary({
-    //     data: changes as never,
-    //     isUpdate: true,
-    //     rawInput: this.rawInput,
-    //   }) as never,
-    // );
-
-    return false;
-  }
-
   private _isUpdatable(prop: string, value: unknown = undefined) {
     if (!this._isInputOrAlias(prop)) return false;
 
@@ -1819,16 +1846,10 @@ class ModelTool<
       rawInput: this.ctxRawInput,
     });
 
-    const { fieldsCollection, ...rest } = await this._filterInputFieldsAllowed(
-      null,
-      ctx,
-    );
+    const { fieldsCollection: _fieldsCollection } =
+      await this._filterInputFieldsAllowed(null, ctx);
 
-    const {
-      data: dt,
-      error,
-      virtuals,
-    } = await Promise.try(() =>
+    const { data: dt, error } = await Promise.try(() =>
       this._handleCreationPrimaryValidations(data, _input),
     );
 
@@ -1917,9 +1938,6 @@ class ModelTool<
       await this._setMissingDefaults();
 
     const _changes = this._cleanInput(changes);
-
-    if (!(await this._isGloballyUpdatable(_changes)))
-      return this._handleError(ctx, ctxOpts, errorTool);
 
     const { error, updates: dt } =
       await this._handleUpdatePrimaryValidations(_changes);
@@ -2071,6 +2089,14 @@ class FieldInfoCollection {
 
     this._relevantConfigNames = configNames;
     this._relevantFieldsProvided = outputFieldsChanged;
+  }
+
+  get relevantDependentConfigNames() {
+    return this._relevantDependentConfigNames;
+  }
+
+  get relevantConfigNames() {
+    return this._relevantConfigNames;
   }
 }
 

@@ -270,6 +270,8 @@ namespace NS {
     Output,
     CtxOptions extends ObjectType,
   > =
+    | boolean
+    | IgnoreResolver<Input, Output, CtxOptions>
     | IgnoreConfigObject<Input, Output, CtxOptions>
     | ArrayOfMinSizeOne<IgnoreConfigObject<Input, Output, CtxOptions>>;
 
@@ -287,6 +289,8 @@ namespace NS {
     Output,
     CtxOptions extends ObjectType,
   > =
+    | boolean
+    | IgnoreUpdateResolver<Input, Output, CtxOptions>
     | IgnoreUpdateConfigObject<Input, Output, CtxOptions>
     | ArrayOfMinSizeOne<IgnoreUpdateConfigObject<Input, Output, CtxOptions>>;
 

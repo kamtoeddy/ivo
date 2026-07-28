@@ -12,7 +12,7 @@ class TimeStampTool {
   private timestamps: NS.Timestamp;
   private nullable: boolean;
 
-  constructor(timestamps: NS.Options<unknown, unknown, unknown>['timestamps']) {
+  constructor(timestamps: NS.Options<any, any, any>['timestamps']) {
     this.timestamps = this._makeTimestamps(timestamps);
     this.nullable =
       typeof timestamps === 'object' &&
@@ -27,7 +27,7 @@ class TimeStampTool {
   }
 
   private _makeTimestamps(
-    timestamps: NS.Options<unknown, unknown, unknown>['timestamps'],
+    timestamps: NS.Options<any, any, any>['timestamps'],
   ) {
     if (isEqual(timestamps, undefined)) return { createdAt: '', updatedAt: '' };
 

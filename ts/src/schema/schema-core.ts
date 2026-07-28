@@ -349,16 +349,16 @@ abstract class SchemaCore<
           .throw();
     }
 
-    if (isPropertyOf("ignoreUpdate", options)) {
-      const typeProvided = typeof options.ignoreUpdate;
+    if (isPropertyOf("ignore", options)) {
+      const isValid = this._isIgnoreOptionOk(options.ignore);
 
-      if (!["boolean", "function"].includes(typeProvided))
-        error
-          .add(
-            "ignoreUpdate",
-            "'ignoreUpdate' should either be a 'boolean' or a 'function'",
-          )
-          .throw();
+      if (!isValid.valid) error.add("ignore", isValid.reason!).throw();
+    }
+
+    if (isPropertyOf("ignoreUpdate", options)) {
+      const isValid = this._isIgnoreUpdateOptionOk(options.ignoreUpdate);
+
+      if (!isValid.valid) error.add("ignoreUpdate", isValid.reason!).throw();
     }
 
     if (isPropertyOf("postValidate", options)) {
@@ -1468,6 +1468,70 @@ abstract class SchemaCore<
           "config-handler-should-be-array-or-function",
         ),
       };
+
+    return { valid: true };
+  }
+
+  private _isIgnoreOptionOk(val: unknown) {
+    if (typeof val === "boolean" || isFunctionLike(val)) return { valid: true };
+
+    const configs = toArray(val);
+
+    if (!configs || !configs.length)
+      return {
+        valid: false,
+        reason:
+          "'ignore' option must be a boolean, function, config object, or array of config objects",
+      };
+
+    for (let i = 0; i < configs.length; i++) {
+      const c = configs[i];
+
+      if (typeof c === "boolean" || isFunctionLike(c)) continue;
+
+      if (
+        !c ||
+        typeof c !== "object" ||
+        !Array.isArray((c as any).fields) ||
+        !isFunctionLike((c as any).resolver)
+      )
+        return {
+          valid: false,
+          reason: `'ignore' config at index ${i} must have 'fields' array and 'resolver' function`,
+        };
+    }
+
+    return { valid: true };
+  }
+
+  private _isIgnoreUpdateOptionOk(val: unknown) {
+    if (typeof val === "boolean" || isFunctionLike(val)) return { valid: true };
+
+    const configs = toArray(val);
+
+    if (!configs || !configs.length)
+      return {
+        valid: false,
+        reason:
+          "'ignoreUpdate' option must be a boolean, function, config object, or array of config objects",
+      };
+
+    for (let i = 0; i < configs.length; i++) {
+      const c = configs[i];
+
+      if (typeof c === "boolean" || isFunctionLike(c)) continue;
+
+      if (
+        !c ||
+        typeof c !== "object" ||
+        !Array.isArray((c as any).fields) ||
+        !isFunctionLike((c as any).resolver)
+      )
+        return {
+          valid: false,
+          reason: `'ignoreUpdate' config at index ${i} must have 'fields' array and 'resolver' function`,
+        };
+    }
 
     return { valid: true };
   }

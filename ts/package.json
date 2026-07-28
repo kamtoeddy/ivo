@@ -5,6 +5,7 @@
   "version": "1.9.0",
   "scripts": {
     "build": "tsdown",
+    "build:dev": "tsdown",
     "build:watch": "tsdown --watch",
     "clean": "rm -rf coverage dist",
     "cleanup": "bun run typecheck && bun run lint",
