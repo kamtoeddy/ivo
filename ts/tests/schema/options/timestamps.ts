@@ -51,7 +51,7 @@ export const Test_SchemaTimestampOption = ({ Schema, fx }: any) => {
           let Model: any, entity: any;
 
           beforeEach(async () => {
-            const onSuccess = ({ ctx: { createdAt, updatedAt } }: any) => {
+            const onSuccess = ({ values: { createdAt, updatedAt } }: any) => {
               onSuccessValues.createdAt = createdAt;
               onSuccessValues.updatedAt = updatedAt;
             };
@@ -96,7 +96,7 @@ export const Test_SchemaTimestampOption = ({ Schema, fx }: any) => {
           let Model: any, entity: any;
 
           beforeEach(async () => {
-            const onSuccess = ({ ctx: { c_At, updatedAt } }: any) => {
+            const onSuccess = ({ values: { c_At, updatedAt } }: any) => {
               onSuccessValues.c_At = c_At;
               onSuccessValues.updatedAt = updatedAt;
             };
@@ -143,7 +143,7 @@ export const Test_SchemaTimestampOption = ({ Schema, fx }: any) => {
           let Model: any, entity: any;
 
           beforeEach(async () => {
-            const onSuccess = ({ ctx: { createdAt, u_At } }: any) => {
+            const onSuccess = ({ values: { createdAt, u_At } }: any) => {
               onSuccessValues.createdAt = createdAt;
               onSuccessValues.u_At = u_At;
             };
@@ -190,7 +190,7 @@ export const Test_SchemaTimestampOption = ({ Schema, fx }: any) => {
           let Model: any, entity: any;
 
           beforeEach(async () => {
-            const onSuccess = ({ ctx: { c_At, u_At } }: any) => {
+            const onSuccess = ({ values: { c_At, u_At } }: any) => {
               onSuccessValues.c_At = c_At;
               onSuccessValues.u_At = u_At;
             };
@@ -239,7 +239,7 @@ export const Test_SchemaTimestampOption = ({ Schema, fx }: any) => {
           let Model: any, entity: any;
 
           beforeEach(async () => {
-            const onSuccess = ({ ctx: { c_At, updatedAt } }: any) => {
+            const onSuccess = ({ values: { c_At, updatedAt } }: any) => {
               onSuccessValues.c_At = c_At;
               onSuccessValues.updatedAt = updatedAt;
             };
@@ -290,7 +290,7 @@ export const Test_SchemaTimestampOption = ({ Schema, fx }: any) => {
           let Model: any, entity: any;
 
           beforeEach(async () => {
-            const onSuccess = ({ ctx: { createdAt, updatedAt } }: any) => {
+            const onSuccess = ({ values: { createdAt, updatedAt } }: any) => {
               onSuccessValues.createdAt = createdAt;
               onSuccessValues.updatedAt = updatedAt;
             };
@@ -339,7 +339,7 @@ export const Test_SchemaTimestampOption = ({ Schema, fx }: any) => {
           let Model: any, entity: any;
 
           beforeEach(async () => {
-            const onSuccess = ({ ctx: { createdAt, u_At } }: any) => {
+            const onSuccess = ({ values: { createdAt, u_At } }: any) => {
               onSuccessValues.createdAt = createdAt;
               onSuccessValues.u_At = u_At;
             };
@@ -389,7 +389,7 @@ export const Test_SchemaTimestampOption = ({ Schema, fx }: any) => {
           let Model: any, entity: any;
 
           beforeEach(async () => {
-            const onSuccess = ({ ctx: { createdAt, updatedAt } }: any) => {
+            const onSuccess = ({ values: { createdAt, updatedAt } }: any) => {
               onSuccessValues.createdAt = createdAt;
               onSuccessValues.updatedAt = updatedAt;
             };
@@ -441,7 +441,7 @@ export const Test_SchemaTimestampOption = ({ Schema, fx }: any) => {
             let Model: any, entity: any;
 
             beforeEach(async () => {
-              const onSuccess = ({ ctx: { createdAt, updatedAt } }: any) => {
+              const onSuccess = ({ values: { createdAt, updatedAt } }: any) => {
                 onSuccessValues.createdAt = createdAt;
                 onSuccessValues.updatedAt = updatedAt;
               };
@@ -487,7 +487,7 @@ export const Test_SchemaTimestampOption = ({ Schema, fx }: any) => {
             let Model: any, entity: any;
 
             beforeEach(async () => {
-              const onSuccess = ({ ctx: { createdAt, updatedAt } }: any) => {
+              const onSuccess = ({ values: { createdAt, updatedAt } }: any) => {
                 onSuccessValues.createdAt = createdAt;
                 onSuccessValues.updatedAt = updatedAt;
               };

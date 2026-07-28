@@ -290,17 +290,17 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
         }
       });
 
-      it('should reject ignore + (shouldInit | shouldUpdate)', () => {
+      it('should reject ignore + (ignoreInit | ignoreUpdate)', () => {
         const values = [
-          { shouldInit: true },
-          { shouldInit: false },
-          { shouldUpdate: false },
-          { shouldUpdate: true },
-          { shouldInit: false, shouldUpdate: () => true },
-          { shouldInit: true, shouldUpdate: () => true },
-          { shouldInit: () => true, shouldUpdate: true },
-          { shouldInit: () => true, shouldUpdate: false },
-          { shouldInit: () => true, shouldUpdate: () => true },
+          { ignoreInit: true },
+          { ignoreInit: false },
+          { ignoreUpdate: false },
+          { ignoreUpdate: true },
+          { ignoreInit: false, ignoreUpdate: () => true },
+          { ignoreInit: true, ignoreUpdate: () => true },
+          { ignoreInit: () => true, ignoreUpdate: true },
+          { ignoreInit: () => true, ignoreUpdate: false },
+          { ignoreInit: () => true, ignoreUpdate: () => true },
         ];
 
         for (const config of values) {
@@ -316,7 +316,7 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
             expect(err.payload).toEqual(
               expect.objectContaining({
                 propertyName: expect.arrayContaining([
-                  '"ignore" cannot be used with "shouldInit" or "shouldUpdate"',
+                  '"ignore" cannot be used with "ignoreInit" or "ignoreUpdate"',
                 ]),
               }),
             );
@@ -326,11 +326,11 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
     });
   });
 
-  describe('shouldInit', () => {
+  describe('ignoreInit', () => {
     describe('valid', () => {
-      it('should accept shouldInit(false) + default', () => {
+      it('should accept ignoreInit(false) + default', () => {
         const fxn = fx({
-          propertyName: { shouldInit: false, default: true },
+          propertyName: { ignoreInit: false, default: true },
         });
 
         expectNoFailure(fxn);
@@ -338,12 +338,12 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
         fxn();
       });
 
-      it('should accept shouldInit: () => boolean + default', () => {
+      it('should accept ignoreInit: () => boolean + default', () => {
         const values = [() => true, () => false];
 
-        for (const shouldInit of values) {
+        for (const ignoreInit of values) {
           const fxn = fx({
-            propertyName: { shouldInit, default: true },
+            propertyName: { ignoreInit, default: true },
           });
 
           expectNoFailure(fxn);
@@ -356,7 +356,13 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
         const Model = new Schema({
           isBlocked: {
             default: false,
-            shouldInit: (ctx: any) => ctx.env === 'test',
+            ignoreInit: ({
+              input,
+            }: IvoContext<{
+              isBlocked: boolean;
+              env: string;
+              laxProp: number;
+            }>) => input?.env === 'test',
           },
           env: { default: 'dev' },
           laxProp: { default: 0 },
@@ -385,13 +391,13 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
           });
         });
 
-        describe('behaviour when shouldInit method returns nothing', () => {
+        describe('behaviour when ignoreInit method returns nothing', () => {
           const Model = new Schema({
-            isBlocked: { default: false, shouldInit: () => {} },
+            isBlocked: { default: false, ignoreInit: () => {} },
             laxProp: { default: 0 },
           }).getModel();
 
-          it('should assume initialization as falsy if shouldInit method returns nothing at creation', async () => {
+          it('should assume initialization as falsy if ignoreInit method returns nothing at creation', async () => {
             const { data } = await Model.create({ isBlocked: 'yes' });
 
             expect(data).toMatchObject({ isBlocked: false, laxProp: 0 });
@@ -399,7 +405,7 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
         });
       });
 
-      describe('behaviour of callable shouldInit', () => {
+      describe('behaviour of callable ignoreInit', () => {
         let onSuccessValues: Record<string, unknown> = {};
         let onSuccessStats: Record<string, number> = {};
         let sanitizedValues: Record<string, unknown> = {};
@@ -417,7 +423,8 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
             laxProp: { default: '' },
             virtual: {
               virtual: true,
-              shouldInit: ({ laxProp }: any) => laxProp === 'allow virtual',
+              ignoreInit: ({ input }: IvoContext<{ laxProp: string }>) =>
+                input?.laxProp === 'allow virtual',
               onSuccess: [
                 onSuccess('virtual'),
                 incrementOnSuccessStats('virtual'),
@@ -463,7 +470,7 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
           sanitizedValues = {};
         });
 
-        it("should ignore virtuals at creation when their shouldInit handler returns 'false'", async () => {
+        it("should ignore virtuals at creation when their ignoreInit handler returns 'false'", async () => {
           const { data, handleSuccess } = await Model.create({
             laxProp: 'Peter',
             virtual: true,
@@ -480,7 +487,7 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
           expect(sanitizedValues).toEqual({});
         });
 
-        it("should respect virtuals at creation when their shouldInit handler returns 'true'", async () => {
+        it("should respect virtuals at creation when their ignoreInit handler returns 'true'", async () => {
           const { data, handleSuccess } = await Model.create({
             laxProp: 'allow virtual',
             virtual: true,
@@ -506,8 +513,8 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
     });
 
     describe('invalid', () => {
-      it('should reject shouldInit(false) & no default', () => {
-        const fxn = fx({ propertyName: { shouldInit: false } });
+      it('should reject ignoreInit(false) & no default', () => {
+        const fxn = fx({ propertyName: { ignoreInit: false } });
 
         expectFailure(fxn);
 
@@ -524,11 +531,11 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
         }
       });
 
-      it('should reject shouldInit !(boolean | () => boolean)', () => {
+      it('should reject ignoreInit !(boolean | () => boolean)', () => {
         const values = [undefined, 1, {}, null, [], 'yes', 'false', 'true'];
 
-        for (const shouldInit of values) {
-          const fxn = fx({ propertyName: { shouldInit, default: true } });
+        for (const ignoreInit of values) {
+          const fxn = fx({ propertyName: { ignoreInit, default: true } });
 
           expectFailure(fxn);
 
@@ -538,7 +545,7 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
             expect(err.payload).toEqual(
               expect.objectContaining({
                 propertyName: expect.arrayContaining([
-                  "The initialization of a property can only be blocked if the 'shouldinit' rule is set to 'false' or a function that returns a boolean",
+                  "The initialization of a property can only be blocked if the 'ignoreinit' rule is set to 'false' or a function that returns a boolean",
                 ]),
               }),
             );
@@ -548,13 +555,13 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
     });
   });
 
-  describe('shouldUpdate', () => {
+  describe('ignoreUpdate', () => {
     describe('valid', () => {
-      it('should accept shouldUpdate(() => boolean)', () => {
+      it('should accept ignoreUpdate(() => boolean)', () => {
         const validValues = [() => false, () => true];
 
-        for (const shouldUpdate of validValues) {
-          const toPass = fx({ propertyName: { default: '', shouldUpdate } });
+        for (const ignoreUpdate of validValues) {
+          const toPass = fx({ propertyName: { default: '', ignoreUpdate } });
 
           expectNoFailure(toPass);
 
@@ -562,10 +569,10 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
         }
       });
 
-      it('should accept shouldInit(() => boolean) & shouldUpdate(false) for virtuals', () => {
+      it('should accept ignoreInit(() => boolean) & ignoreUpdate(false) for virtuals', () => {
         const values = [() => true, () => false];
 
-        for (const shouldInit of values) {
+        for (const ignoreInit of values) {
           const toPass = fx({
             dependentProp: {
               default: '',
@@ -574,8 +581,8 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
             },
             virtual: {
               virtual: true,
-              shouldInit,
-              shouldUpdate: false,
+              ignoreInit,
+              ignoreUpdate: false,
               validator,
             },
           });
@@ -603,31 +610,59 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
           dependentProp: {
             default: false,
             dependsOn: 'virtual',
-            resolver: ({ ctx }: any) => ctx.virtual,
+            resolver: ({
+              input,
+            }: IvoContext<{
+              virtual: boolean;
+              virtual_1: boolean;
+              laxProp: string;
+              laxProp_1: string;
+            }>) => input.virtual,
             onSuccess: incrementOnSuccessCountOf('dependentProp'),
           },
           dependentProp_1: {
             default: false,
             dependsOn: 'virtual_1',
-            resolver: ({ ctx }: any) => ctx.virtual_1,
+            resolver: ({
+              input,
+            }: IvoContext<{
+              virtual: boolean;
+              virtual_1: boolean;
+              laxProp: string;
+              laxProp_1: string;
+            }>) => input.virtual_1,
             onSuccess: incrementOnSuccessCountOf('dependentProp_1'),
           },
           laxProp: {
             default: '',
             readonly: 'lax',
-            shouldUpdate: (ctx: any) => ctx.laxProp_1 === 'test',
+            ignoreUpdate: ({
+              input,
+            }: IvoContext<{
+              virtual: boolean;
+              virtual_1: boolean;
+              laxProp: string;
+              laxProp_1: string;
+            }>) => input?.laxProp_1 === 'test',
             onSuccess: incrementOnSuccessCountOf('laxProp'),
           },
           laxProp_1: { default: 'dev' },
           virtual: {
             virtual: true,
-            shouldUpdate: false,
+            ignoreUpdate: false,
             validator: () => ({ valid: true }),
             onSuccess: incrementOnSuccessCountOf('virtual'),
           },
           virtual_1: {
             virtual: true,
-            shouldUpdate: (ctx: any) => ctx.laxProp_1 === 'test',
+            ignoreUpdate: ({
+              input,
+            }: IvoContext<{
+              virtual: boolean;
+              virtual_1: boolean;
+              laxProp: string;
+              laxProp_1: string;
+            }>) => input?.laxProp_1 === 'test',
             validator: () => ({ valid: true }),
             onSuccess: incrementOnSuccessCountOf('virtual_1'),
           },
@@ -638,7 +673,7 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
           onSuccessStats = {};
         });
 
-        it("should not update properties when 'shouldUpdate' resolved to 'false'", async () => {
+        it("should not update properties when 'ignoreUpdate' resolved to 'false'", async () => {
           const { data, error } = await Model.update(
             {
               dependentProp: 'dev',
@@ -653,7 +688,7 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
           expect(error).toBeNull();
         });
 
-        it("should update properties when 'shouldUpdate' resolved to 'true'", async () => {
+        it("should update properties when 'ignoreUpdate' resolved to 'true'", async () => {
           const { data, error, handleSuccess } = await Model.update(
             {
               dependentProp: 'dev',
@@ -682,7 +717,7 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
           });
         });
 
-        it("should not update readonly properties that have changed even when 'shouldUpdate' resolved to 'true'", async () => {
+        it("should not update readonly properties that have changed even when 'ignoreUpdate' resolved to 'true'", async () => {
           const { data, error } = await Model.update(
             {
               dependentProp: 'dev',
@@ -697,13 +732,13 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
           expect(error).toBeNull();
         });
 
-        describe('behaviour when shouldUpdate method returns nothing', () => {
+        describe('behaviour when ignoreUpdate method returns nothing', () => {
           const Model = new Schema({
-            isBlocked: { default: false, shouldUpdate: () => {} },
+            isBlocked: { default: false, ignoreUpdate: () => {} },
             laxProp: { default: 0 },
           }).getModel();
 
-          it('should assume updatability of a property as falsy if shouldInit method returns nothing', async () => {
+          it('should assume updatability of a property as falsy if ignoreInit method returns nothing', async () => {
             const { data, error } = await Model.update(
               { isBlocked: false, laxProp: 0 },
               { isBlocked: true },
@@ -717,7 +752,7 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
     });
 
     describe('invalid', () => {
-      it('should reject shouldUpdate !(false | () => boolean)', () => {
+      it('should reject ignoreUpdate !(false | () => boolean)', () => {
         const invalidValues = [
           true,
           1,
@@ -731,8 +766,8 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
           {},
         ];
 
-        for (const shouldUpdate of invalidValues) {
-          const toFail = fx({ propertyName: { default: '', shouldUpdate } });
+        for (const ignoreUpdate of invalidValues) {
+          const toFail = fx({ propertyName: { default: '', ignoreUpdate } });
 
           expectFailure(toFail);
 
@@ -742,7 +777,7 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
             expect(err.payload).toEqual(
               expect.objectContaining({
                 propertyName: expect.arrayContaining([
-                  "'shouldUpdate' only accepts false or a function that returns a boolean",
+                  "'ignoreUpdate' only accepts false or a function that returns a boolean",
                 ]),
               }),
             );
@@ -750,12 +785,12 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
         }
       });
 
-      it('should reject shouldUpdate & readonly(true) & no shouldInit', () => {
+      it('should reject ignoreUpdate & readonly(true) & no ignoreInit', () => {
         const toFail = fx({
           propertyName: {
             default: '',
             readonly: true,
-            shouldUpdate: () => {},
+            ignoreUpdate: () => {},
           },
         });
 
@@ -767,7 +802,7 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
           expect(err.payload).toEqual(
             expect.objectContaining({
               propertyName: expect.arrayContaining([
-                "Cannot block the update of 'readonly' properties that do not have initialization('shouldInit') blocked. Either add 'shouldInit' or use readonly: 'lax'",
+                "Cannot block the update of 'readonly' properties that do not have initialization('ignoreInit') blocked. Either add 'ignoreInit' or use readonly: 'lax'",
               ]),
             }),
           );
@@ -776,19 +811,19 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
     });
   });
 
-  describe('shouldInit & shouldUpdate', () => {
+  describe('ignoreInit & ignoreUpdate', () => {
     describe('valid', () => {
-      it('should accept shouldInit & shouldUpdate for lax props', () => {
-        // [shouldInit, shouldUpdate]
+      it('should accept ignoreInit & ignoreUpdate for lax props', () => {
+        // [ignoreInit, ignoreUpdate]
         const values = [
           [false, () => {}],
           [() => {}, false],
           [() => {}, () => {}],
         ];
 
-        for (const [shouldInit, shouldUpdate] of values) {
+        for (const [ignoreInit, ignoreUpdate] of values) {
           const toPass = fx({
-            propertyName: { default: '', shouldInit, shouldUpdate },
+            propertyName: { default: '', ignoreInit, ignoreUpdate },
           });
 
           expectNoFailure(toPass);
@@ -797,21 +832,21 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
         }
       });
 
-      it('should accept shouldInit(() => boolean) + shouldUpdate(false | () => boolean) + readonly(true)', () => {
-        // [shouldInit, shouldUpdate]
+      it('should accept ignoreInit(() => boolean) + ignoreUpdate(false | () => boolean) + readonly(true)', () => {
+        // [ignoreInit, ignoreUpdate]
         const readonlyTrue = [
           [false, () => {}],
           [() => {}, false],
           [() => {}, () => {}],
         ];
 
-        for (const [shouldInit, shouldUpdate] of readonlyTrue) {
+        for (const [ignoreInit, ignoreUpdate] of readonlyTrue) {
           const toPass = fx({
             dependentProp: {
               default: '',
               readonly: true,
-              shouldInit,
-              shouldUpdate,
+              ignoreInit,
+              ignoreUpdate,
               validator,
             },
           });
@@ -825,7 +860,7 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
           dependentProp: {
             default: '',
             readonly: 'lax',
-            shouldUpdate: () => {},
+            ignoreUpdate: () => {},
             validator,
           },
         });
@@ -837,12 +872,12 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
     });
 
     describe('invalid', () => {
-      it('should reject shouldUpdate == false & shouldInit == false', () => {
+      it('should reject ignoreUpdate == false & ignoreInit == false', () => {
         const toFail = fx({
           propertyName: {
             default: '',
-            shouldInit: false,
-            shouldUpdate: false,
+            ignoreInit: false,
+            ignoreUpdate: false,
           },
         });
 
@@ -854,7 +889,7 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
           expect(err.payload).toEqual(
             expect.objectContaining({
               propertyName: expect.arrayContaining([
-                "Both 'shouldInit' & 'shouldUpdate' cannot be 'false'",
+                "Both 'ignoreInit' & 'ignoreUpdate' cannot be 'false'",
               ]),
             }),
           );
@@ -862,13 +897,13 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
       });
 
       describe('Readonly lax', () => {
-        it("should reject readonly('lax') + shouldInit", () => {
-          for (const shouldInit of [false, () => {}]) {
+        it("should reject readonly('lax') + ignoreInit", () => {
+          for (const ignoreInit of [false, () => {}]) {
             const toFail = fx({
               propertyName: {
                 default: '',
                 readonly: 'lax',
-                shouldInit,
+                ignoreInit,
                 validator,
               },
             });
@@ -889,12 +924,12 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
           }
         });
 
-        it("should reject readonly('lax') + shouldUpdate(false)", () => {
+        it("should reject readonly('lax') + ignoreUpdate(false)", () => {
           const toFail = fx({
             propertyName: {
               default: '',
               readonly: 'lax',
-              shouldUpdate: false,
+              ignoreUpdate: false,
               validator,
             },
           });

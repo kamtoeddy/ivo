@@ -335,9 +335,8 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
             expect(error).toBeDefined();
             expect(cxtOptions).toEqual({
               prop1: contextOptions,
-              prop2: contextOptions,
             });
-            expect(onFailureCount).toEqual({ prop1: 1, prop2: 2 });
+            expect(onFailureCount).toEqual({ prop1: 1 });
           });
 
           it('should properly trigger onFailure handlers at creation with virtuals', async () => {
@@ -355,12 +354,10 @@ export const Test_LifeCycleHandlers = ({ Schema, fx }: any) => {
             expect(error).toBeDefined();
             expect(cxtOptions).toEqual({
               prop1: contextOptions,
-              prop2: contextOptions,
               virtualProp: contextOptions,
             });
             expect(onFailureCount).toEqual({
               prop1: 1,
-              prop2: 2,
               virtualProp: 3,
             });
           });

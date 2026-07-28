@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'bun:test';
 
-import type { ReadonlyIvoContext } from '../../../src';
+import type { IvoContext, ReadonlyIvoContext } from '../../../src';
 import { DEFINITION_RULES, VIRTUAL_RULES } from '../../../src/schema/types';
 
 import { expectFailure, expectNoFailure, validator } from '../_utils';
@@ -264,12 +264,23 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               setQuantity: {
                 alias: 'qty',
                 virtual: true,
-                shouldInit({ setQuantity }: any) {
+                ignoreInit({
+                  input: { setQuantity },
+                }: IvoContext<
+                  { setQuantity: number },
+                  { id: number; quantity: number }
+                >) {
                   contextRecord.setQuantity = setQuantity;
 
                   return setQuantity > 0;
                 },
-                shouldUpdate({ quantity, setQuantity }: any) {
+                ignoreUpdate({
+                  input: { setQuantity },
+                  values: { quantity },
+                }: IvoContext<
+                  { setQuantity: number },
+                  { id: number; quantity: number }
+                >) {
                   contextRecord.setQuantity = setQuantity;
 
                   return setQuantity > quantity;
@@ -778,7 +789,7 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
           },
           virtualNoInit: {
             virtual: true,
-            shouldInit: false,
+            ignoreInit: false,
             onSuccess: [
               onSuccess('virtualNoInit'),
               incrementOnSuccessStats('virtualNoInit'),
@@ -797,7 +808,7 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
           },
           virtualWithSanitizerNoInit: {
             virtual: true,
-            shouldInit: false,
+            ignoreInit: false,
             onSuccess: [
               onSuccess('virtualWithSanitizerNoInit'),
               incrementOnSuccessStats('virtualWithSanitizerNoInit'),
