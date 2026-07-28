@@ -1,57 +1,25 @@
-import { type FieldKey, isEqual, sortKeys } from '../../utils';
-import type {
-  ErrorPayload,
-  FieldError,
-  IErrorTool,
-  ValidationErrorMessage,
-} from './types';
+import { sortKeys } from "../../utils";
+import type { IvoErrorPayload } from "../types";
+import type { FieldError } from "./types";
 
-export { DefaultErrorTool };
+export { ErrorTool };
 
-class DefaultErrorTool<PayloadKeys extends FieldKey = FieldKey>
-  implements IErrorTool<{ payload: ErrorPayload<PayloadKeys> }>
-{
-  private _payload: ErrorPayload<PayloadKeys> = {};
+class ErrorTool<Metadata, PayloadKeys extends string = string> {
+  private _payload: IvoErrorPayload<Metadata, PayloadKeys> = {} as never;
 
-  constructor(private message: ValidationErrorMessage) {}
-
-  get data() {
-    return { message: this.message, payload: sortKeys(this._payload) };
+  set(field: PayloadKeys, value: FieldError<Metadata>) {
+    this._payload[field] = value;
   }
 
   get fields() {
     return Object.keys(this._payload);
   }
 
-  get isLoaded() {
+  get hasErrors() {
     return Object.keys(this._payload).length > 0;
   }
 
-  set(field: PayloadKeys, value: FieldError) {
-    if (!(field in this._payload)) {
-      this._payload[field] = value;
-
-      return this;
-    }
-
-    const currentValues = this._payload[field]!;
-
-    const metadata = value.metadata;
-
-    if (metadata && !isEqual(currentValues?.metadata, metadata))
-      currentValues.metadata = {
-        ...(currentValues?.metadata ?? {}),
-        ...metadata,
-      };
-
-    this._payload[field] = currentValues;
-
-    return this;
-  }
-
-  setMessage(message: ValidationErrorMessage) {
-    this.message = message;
-
-    return this;
+  get payload() {
+    return sortKeys(this._payload);
   }
 }

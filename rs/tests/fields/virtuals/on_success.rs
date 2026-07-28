@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, Model};
+use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, IvoModel};
 
 use crate::async_test_matrix;
 
@@ -20,7 +20,7 @@ async fn should_trigger_on_success_handlers_if_virtual_is_provided_at_creation()
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -101,7 +101,7 @@ async fn should_trigger_on_success_handlers_if_virtual_is_provided_at_creation_w
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -185,7 +185,7 @@ async fn should_trigger_on_success_handlers_if_virtual_is_provided_at_creation_w
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -267,7 +267,7 @@ async fn should_trigger_on_success_handlers_if_virtual_is_provided_during_update
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -354,7 +354,7 @@ async fn should_trigger_on_success_handlers_if_virtual_is_provided_during_update
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -443,7 +443,7 @@ async fn should_trigger_on_success_handlers_if_virtual_is_provided_during_update
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -531,7 +531,7 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_not_provided() {
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -658,7 +658,7 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_not_provided_with_
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -787,7 +787,7 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_not_provided_with_
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -917,7 +917,7 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -1048,7 +1048,7 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -1180,7 +1180,7 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -1312,7 +1312,7 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -1418,7 +1418,7 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -1525,7 +1525,7 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -1632,7 +1632,7 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -1720,7 +1720,7 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -1809,7 +1809,7 @@ async fn should_not_trigger_on_success_handlers_if_virtual_is_provided_but_ignor
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -1899,7 +1899,7 @@ async fn should_trigger_grouped_on_success_handlers_if_virtual_is_provided_at_cr
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -1980,7 +1980,7 @@ async fn should_trigger_grouped_on_success_handlers_if_virtual_is_provided_at_cr
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -2063,7 +2063,7 @@ async fn should_trigger_grouped_on_success_handlers_if_virtual_is_provided_at_cr
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -2145,7 +2145,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_not_provid
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -2249,7 +2249,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_not_provid
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -2355,7 +2355,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_not_provid
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -2461,7 +2461,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -2568,7 +2568,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -2676,7 +2676,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -2784,7 +2784,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -2866,7 +2866,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -2949,7 +2949,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -3031,7 +3031,7 @@ async fn should_trigger_grouped_on_success_handlers_if_virtual_is_provided_durin
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -3116,7 +3116,7 @@ async fn should_trigger_grouped_on_success_handlers_if_virtual_is_provided_durin
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -3203,7 +3203,7 @@ async fn should_trigger_grouped_on_success_handlers_if_virtual_is_provided_durin
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -3290,7 +3290,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_not_provid
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -3376,7 +3376,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_not_provid
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -3464,7 +3464,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_not_provid
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -3552,7 +3552,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -3640,7 +3640,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -3729,7 +3729,7 @@ async fn should_not_trigger_grouped_on_success_handlers_if_virtual_is_provided_b
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",

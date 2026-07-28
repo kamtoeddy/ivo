@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, Model};
+use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, IvoModel};
 
 use crate::async_test_matrix;
 
@@ -17,7 +17,7 @@ async fn should_trigger_on_success_handlers_at_creation() {
         required2: String,
     }
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "required",
@@ -96,7 +96,7 @@ async fn should_trigger_on_success_handlers_during_updates_if_provided() {
 
     let required_value_value = "required_value_value".to_string();
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "required",
@@ -185,7 +185,7 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_not_provided()
 
     let required_value_value = "required_value_value".to_string();
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "required",
@@ -271,7 +271,7 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_i
 
     let required_value_value = "required_value_value".to_string();
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "required",
@@ -360,7 +360,7 @@ async fn should_not_trigger_on_success_handlers_during_updates_if_provided_and_i
 
     let required_value_value = "required_value_value".to_string();
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "required",
@@ -453,7 +453,7 @@ async fn should_trigger_success_handlers_with_empty_fields_array_each_time_creat
     let required_value = 1234;
     let required_1_value = 5678;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "required",
@@ -521,7 +521,7 @@ async fn should_trigger_success_handlers_with_empty_fields_array_each_time_updat
     let required_value = 1234;
     let required_1_value = 5678;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "required",

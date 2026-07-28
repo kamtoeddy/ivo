@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoField, IvoInputStruct, IvoStruct, Model};
+use ivo::{IvoField, IvoInputStruct, IvoStruct, IvoModel};
 
 use crate::async_test_matrix;
 
@@ -21,7 +21,7 @@ async fn should_respect_the_ignore_update_rule() {
 
     const IGNORE_REQUIRED_FOR_UPDATE: &str = "ignore_required_for_update";
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "required",
@@ -129,7 +129,7 @@ async fn should_respect_the_readonly_rule() {
 
     const IGNORE_REQUIRED_FOR_UPDATE: &str = "ignore_required_for_update";
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "required",
@@ -230,7 +230,7 @@ async fn should_properly_handle_grouped_ignore_update_rule() {
     let default_lax_value = "default_lax_value";
     let default_lax_1_value = "default_lax_1_value";
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field("lax", IvoField::LAX.default(default_lax_value.to_string()))
                 .field(

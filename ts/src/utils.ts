@@ -6,9 +6,10 @@ import type {
   TypeOf,
   ValidationResponse,
   ValidatorResponseObject,
-} from './schema/types';
+} from "./schema/types";
+import type { DefaultFieldErrorMetadata } from "./schema/utils";
 
-export type { FieldKey, ObjectType };
+export type { ObjectType };
 export {
   getKeysAsProps,
   getSetValuesAsProps,
@@ -27,21 +28,19 @@ export {
   toArray,
 };
 
-type FieldKey = string;
-
-type ObjectType<T = Record<FieldKey, unknown>> = T extends object
+type ObjectType<T = Record<string, unknown>> = T extends object
   ? T extends unknown[]
     ? never
     : T & {}
   : never;
 
-function makeResponse<T = undefined>(
-  input: ValidatorResponseObject<T>,
-): ValidationResponse<TypeOf<T>> {
+function makeResponse<T = undefined, Metadata = DefaultFieldErrorMetadata>(
+  input: ValidatorResponseObject<T, Metadata>,
+): ValidationResponse<TypeOf<T>, Metadata> {
   if (input.valid) {
     const { valid, validated } = input;
 
-    return { valid, validated } as ValidationResponse<TypeOf<T>>;
+    return { valid, validated } as ValidationResponse<TypeOf<T>, Metadata>;
   }
 
   const { metadata = null, reason: inputReason, valid, value } = input;
@@ -50,14 +49,14 @@ function makeResponse<T = undefined>(
     ? isRecordLike(inputReason)
       ? inputReason
       : inputReason
-    : 'validation failed';
+    : "validation failed";
 
   return {
     metadata,
     reason,
     valid,
     value,
-  } as ValidationResponse<TypeOf<T>>;
+  } as ValidationResponse<TypeOf<T>, Metadata>;
 }
 
 function getKeysAsProps<T>(object: T) {
@@ -68,7 +67,7 @@ function getSetValuesAsProps<T>(set: Set<T>) {
   return Array.from(set.values()) as T[];
 }
 
-function hasAnyOf(object: unknown, props: FieldKey[]): boolean {
+function hasAnyOf(object: unknown, props: string[]): boolean {
   return toArray(props).some((prop) => isPropertyOf(prop, object));
 }
 
@@ -81,7 +80,7 @@ function isEqual<T>(a: unknown, b: T, depth = 1): a is T {
   if (a instanceof Date && b instanceof Date)
     return a.getTime() === b.getTime();
 
-  if (!a || !b || (typeof a !== 'object' && typeof b !== 'object'))
+  if (!a || !b || (typeof a !== "object" && typeof b !== "object"))
     return a === b;
 
   let keysOfA = Object.keys(a),
@@ -106,7 +105,7 @@ function isEqual<T>(a: unknown, b: T, depth = 1): a is T {
 }
 
 function isFunctionLike<T extends Function>(value: unknown): value is T {
-  return typeof value === 'function';
+  return typeof value === "function";
 }
 
 function isNullOrUndefined(value: unknown): value is null | undefined {
@@ -123,7 +122,7 @@ function isOneOf<T>(
 function isRecordLike<T extends ObjectType>(
   value: unknown,
 ): value is ObjectType<T> {
-  return !!value && typeof value === 'object' && !Array.isArray(value);
+  return !!value && typeof value === "object" && !Array.isArray(value);
 }
 
 function isPropertyOf<T>(
@@ -133,7 +132,8 @@ function isPropertyOf<T>(
   return Object.hasOwn(object as any, prop);
 }
 
-function toArray<T>(value: T | T[]): T[] {
+function toArray<T>(value: T | T[] | readonly T[]): T[] {
+  // @ts-expect-error ikr
   return Array.isArray(value) ? value : [value];
 }
 
@@ -172,7 +172,7 @@ function getUniqueBy<T>(list: T[], key?: string) {
 }
 
 function _getDeepValue(data: ObjectType, key: string): unknown {
-  return key.split('.').reduce((prev, next) => prev?.[next] as never, data);
+  return key.split(".").reduce((prev, next) => prev?.[next] as never, data);
 }
 
 function _serialize(dt: unknown, revert = false) {

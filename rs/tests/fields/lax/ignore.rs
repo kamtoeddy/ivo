@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, Model};
+use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, IvoModel};
 
 use crate::async_test_matrix;
 
@@ -21,7 +21,7 @@ async fn should_respect_the_ignore_rule() {
 
     let default_lax_value = "default_lax_value";
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "other",
@@ -143,7 +143,7 @@ async fn should_respect_the_ignore_init_rule() {
 
     let default_lax_value = "default_lax_value";
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "other",
@@ -226,7 +226,7 @@ async fn should_respect_the_ignore_update_rule() {
 
     let default_lax_value = "default_lax_value";
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "other",
@@ -318,7 +318,7 @@ async fn should_properly_handle_grouped_ignore_rule() {
     let default_lax_1_value = "default_lax_1_value";
     let default_lax_2_value = "default_lax_2_value";
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field("lax", IvoField::LAX.default(default_lax_value.to_string()))
                 .field(
@@ -463,7 +463,7 @@ async fn should_properly_handle_grouped_ignore_update_rule() {
     let default_lax_1_value = "default_lax_1_value";
     let default_lax_2_value = "default_lax_2_value";
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field("lax", IvoField::LAX.default(default_lax_value.to_string()))
                 .field(
@@ -594,7 +594,7 @@ async fn should_ignore_updates_on_readonly_fields_if_values_are_different_from_d
 
     let default_value = 1;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| f.field("lax", IvoField::LAX.default(default_value).readonly()),
         |o| o,
     );
@@ -650,7 +650,7 @@ async fn should_ignore_updates_on_readonly_fields_if_values_are_different_from_d
 
     const DEFAULT_VALUE: i32 = 1;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| f.field("lax", IvoField::LAX.default(DEFAULT_VALUE).readonly()),
         |o| o,
     );

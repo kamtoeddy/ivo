@@ -37,7 +37,7 @@ use crate::types::{
     },
     InternalIvoContext,
 };
-use crate::{IvoContext, IvoCtxOptions, IvoRwCtxOptions, Model};
+use crate::{IvoContext, IvoCtxOptions, IvoModel, IvoRwCtxOptions};
 
 type AsyncHandlerTrigger<'a> = Box<dyn FnOnce() -> BoxFuture<'a, ()> + Send + Sync + 'a>;
 
@@ -47,7 +47,7 @@ impl<
         CtxOptions: Clone + Sync + Send,
         Timestamp: Clone + Debug + Send + Sync + 'static,
         ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
-    > Model<I, O, CtxOptions, Timestamp, ErrorSanitizer>
+    > IvoModel<I, O, CtxOptions, Timestamp, ErrorSanitizer>
 {
     pub async fn create(
         &self,
@@ -1106,7 +1106,6 @@ impl<
         let is_update = previous_values.is_some();
         let previous_values = previous_values.cloned().unwrap_or_default();
 
-        let mut tasks = vec![];
         let mut entity_resolvers = vec![];
         let mut input = input_values.clone();
         let mut output = O::Partial::default();
@@ -1180,6 +1179,8 @@ impl<
         fields_collection = fields_collection
             .new_with_fields_provided(fields_provided)
             .new_with_relevant_fields_provided(relevant_fields_provided.clone());
+
+        let mut tasks = vec![];
 
         for field_name in fields_collection.relevant_fields_provided() {
             let field_info = fields_collection.get(field_name);

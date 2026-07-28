@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, Model};
+use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, IvoModel};
 
 use crate::async_test_matrix;
 
@@ -22,7 +22,7 @@ async fn should_respect_the_ignore_rule() {
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -150,7 +150,7 @@ async fn should_respect_the_ignore_rule_with_alias() {
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -279,7 +279,7 @@ async fn should_respect_the_ignore_rule_with_alias_same_as_dependent() {
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -408,7 +408,7 @@ async fn should_respect_the_ignore_init_rule() {
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -541,7 +541,7 @@ async fn should_respect_the_ignore_init_rule_with_alias() {
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -675,7 +675,7 @@ async fn should_respect_the_ignore_init_rule_with_alias_same_as_dependent() {
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -809,7 +809,7 @@ async fn should_respect_the_ignore_update_rule() {
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -959,7 +959,7 @@ async fn should_respect_the_ignore_update_rule_with_alias() {
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -1110,7 +1110,7 @@ async fn should_respect_the_ignore_update_rule_with_alias_same_as_dependent() {
     let default_dependent_value = 1;
     let default_lax_value = 10;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -1268,7 +1268,7 @@ async fn should_properly_handle_grouped_ignore_rule() {
     let default_lax_1_value = "default_lax_1_value";
     let default_dependent_value = 1;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field("lax", IvoField::LAX.default(default_lax_value.to_string()))
                 .field(
@@ -1434,7 +1434,7 @@ async fn should_properly_handle_grouped_ignore_rule_with_alias() {
     let default_lax_1_value = "default_lax_1_value";
     let default_dependent_value = 1;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field("lax", IvoField::LAX.default(default_lax_value.to_string()))
                 .field(
@@ -1602,7 +1602,7 @@ async fn should_properly_handle_grouped_ignore_rule_with_alias_same_as_dependent
     let default_lax_1_value = "default_lax_1_value";
     let default_dependent_value = 1;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field("lax", IvoField::LAX.default(default_lax_value.to_string()))
                 .field(
@@ -1772,7 +1772,7 @@ async fn should_properly_handle_grouped_ignore_update_rule() {
     let default_lax_value = "default_lax_value";
     let default_lax_1_value = "default_lax_1_value";
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -1939,7 +1939,7 @@ async fn should_properly_handle_grouped_ignore_update_rule_with_alias() {
     let default_lax_value = "default_lax_value";
     let default_lax_1_value = "default_lax_1_value";
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -2108,7 +2108,7 @@ async fn should_properly_handle_grouped_ignore_update_rule_with_alias_same_as_de
     let default_lax_value = "default_lax_value";
     let default_lax_1_value = "default_lax_1_value";
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",

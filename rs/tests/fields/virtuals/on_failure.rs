@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, Model};
+use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, IvoModel};
 
 use crate::async_test_matrix;
 
@@ -17,7 +17,7 @@ async fn should_trigger_on_failure_handlers_at_creation() {
 
     let default_dependent_value = 1;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -92,7 +92,7 @@ async fn should_trigger_on_failure_handlers_at_creation_with_alias() {
 
     let default_dependent_value = 1;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -169,7 +169,7 @@ async fn should_trigger_on_failure_handlers_at_creation_with_alias_same_as_depen
 
     let default_dependent_value = 1;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -245,7 +245,7 @@ async fn should_trigger_on_failure_handlers_during_updates() {
 
     let default_dependent_value = 1;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -324,7 +324,7 @@ async fn should_trigger_on_failure_handlers_during_updates_with_alias() {
 
     let default_dependent_value = 1;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -404,7 +404,7 @@ async fn should_trigger_on_failure_handlers_during_updates_with_alias_same_as_de
 
     let default_dependent_value = 1;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -486,7 +486,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
 
     let default_dependent_value = 1;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -578,7 +578,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
 
     let default_dependent_value = 1;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -671,7 +671,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
 
     let default_dependent_value = 1;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -764,7 +764,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
 
     let default_dependent_value = 1;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -859,7 +859,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
 
     let default_dependent_value = 1;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -955,7 +955,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
 
     let default_dependent_value = 1;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -1051,7 +1051,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
 
     let default_dependent_value = 1;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -1143,7 +1143,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
 
     let default_dependent_value = 1;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -1236,7 +1236,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
 
     let default_dependent_value = 1;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -1329,7 +1329,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
 
     let default_dependent_value = 1;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -1426,7 +1426,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
 
     let default_dependent_value = 1;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -1524,7 +1524,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
 
     let default_dependent_value = 1;
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",

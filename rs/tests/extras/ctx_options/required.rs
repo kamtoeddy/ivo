@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoCtxOptions, IvoField, IvoInputStruct, IvoRwCtxOptions, IvoStruct, Model};
+use ivo::{IvoCtxOptions, IvoField, IvoInputStruct, IvoRwCtxOptions, IvoStruct, IvoModel};
 
 use crate::async_test_matrix;
 
@@ -45,7 +45,7 @@ async fn should_properly_update_ctx_options_in_ignore_update_resolver_and_provid
     const DEFAULT_VALUE: i32 = 1;
     const MESSAGE: &str = "ctx_options updated in ignore_update resolver";
 
-    let model = Model::<DataInput, Data, CtxOptions>::new(
+    let model = IvoModel::<DataInput, Data, CtxOptions>::new(
         |f| {
             f.field(
                 "required",
@@ -113,7 +113,7 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
 
     const MIN_LENGTH_ERROR: &str = "expected required to be at least 2 characters long";
 
-    let model: Model<DataInput, Data, CtxOptions> = Model::new(
+    let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
         |f| {
             f.field(
                 "required",
@@ -183,7 +183,7 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
 
     const MIN_LENGTH_ERROR: &str = "expected required to be at least 2 characters long";
 
-    let model: Model<DataInput, Data, CtxOptions> = Model::new(
+    let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
         |f| {
             f.field(
                 "required",
@@ -264,7 +264,7 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
 
     const MIN_LENGTH_ERROR: &str = "expected required to be at least 2 characters long";
 
-    let model: Model<DataInput, Data, CtxOptions> = Model::new(
+    let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
         |f| {
             f.field(
                 "required",
@@ -335,7 +335,7 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
 
     const MIN_LENGTH_ERROR: &str = "expected required to be at least 2 characters long";
 
-    let model: Model<DataInput, Data, CtxOptions> = Model::new(
+    let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
         |f| {
             f.field(
                 "required",
@@ -419,7 +419,7 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
 
     const MIN_LENGTH_ERROR: &str = "expected required to be at least 2 characters long";
 
-    let model: Model<DataInput, Data, CtxOptions> = Model::new(
+    let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
         |f| {
             f.field(
                 "required",
@@ -503,7 +503,7 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
 
     const MIN_LENGTH_ERROR: &str = "expected required to be at least 2 characters long";
 
-    let model: Model<DataInput, Data, CtxOptions> = Model::new(
+    let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
         |f| {
             f.field(
                 "required",

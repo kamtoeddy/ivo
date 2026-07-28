@@ -2,7 +2,7 @@ mod dependents;
 mod timestamps;
 mod virtuals;
 
-use ivo::{IvoField, IvoInputStruct, IvoStruct, Model};
+use ivo::{IvoField, IvoInputStruct, IvoStruct, IvoModel};
 use std::future::ready;
 
 #[test]
@@ -19,7 +19,7 @@ fn should_reject_if_field_name_is_already_set() {
         lax: String,
     }
 
-    let _: Model<DataInput, Data> = Model::new(
+    let _: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
                 .field(
@@ -55,7 +55,7 @@ fn should_reject_if_field_name_is_same_created_at_if_enabled_with_default_name()
         _c: String,
     }
 
-    let _: Model<DataInput, Data, Option<()>, &'static str> = Model::new(
+    let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
         |f| {
             f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
                 .field(
@@ -86,7 +86,7 @@ fn should_reject_if_field_name_is_same_created_at_if_enabled_with_custom_name() 
         _c: String,
     }
 
-    let _: Model<DataInput, Data, Option<()>, &'static str> = Model::new(
+    let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
         |f| {
             f.field(
                 "custom_created_at",
@@ -117,7 +117,7 @@ fn should_reject_if_field_name_is_same_updated_at_if_enabled_with_default_name()
         _c: String,
     }
 
-    let _: Model<DataInput, Data, Option<()>, &'static str> = Model::new(
+    let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
         |f| {
             f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(1234)))
                 .field(
@@ -148,7 +148,7 @@ fn should_reject_if_field_name_is_same_updated_at_if_enabled_with_custom_name() 
         _c: String,
     }
 
-    let _: Model<DataInput, Data, Option<()>, &'static str> = Model::new(
+    let _: IvoModel<DataInput, Data, Option<()>, &'static str> = IvoModel::new(
         |f| {
             f.field(
                 "custom_updated_at",
@@ -178,7 +178,7 @@ fn should_reject_if_constant_field_does_not_exist_on_output_struct() {
         _c: String,
     }
 
-    let _: Model<DataInput, Data> = Model::new(
+    let _: IvoModel<DataInput, Data> = IvoModel::new(
         |f| f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(12))),
         |o| o,
     );
@@ -199,7 +199,7 @@ fn should_reject_if_constant_field_exists_on_input_struct() {
         id: i32,
     }
 
-    let _: Model<DataInput, Data> = Model::new(
+    let _: IvoModel<DataInput, Data> = IvoModel::new(
         |f| f.field("id", IvoField::CONSTANT.value_fn(|_, _| ready(12))),
         |o| o,
     );
@@ -219,7 +219,7 @@ fn should_reject_if_dependent_field_does_not_exist_on_output_struct() {
         virtual_field: String,
     }
 
-    let _: Model<DataInput, Data> = Model::new(
+    let _: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "dependent",
@@ -256,7 +256,7 @@ fn should_reject_if_lax_field_does_not_exist_on_input_struct() {
         _c: String,
     }
 
-    let _: Model<DataInput, Data> = Model::new(
+    let _: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "lax",
@@ -282,7 +282,7 @@ fn should_reject_if_lax_field_does_not_exist_on_output_struct() {
         lax: i32,
     }
 
-    let _: Model<DataInput, Data> = Model::new(
+    let _: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "lax",
@@ -310,7 +310,7 @@ fn should_reject_if_required_field_does_not_exist_on_input_struct() {
         _c: String,
     }
 
-    let _: Model<DataInput, Data> = Model::new(
+    let _: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "required",
@@ -334,7 +334,7 @@ fn should_reject_if_required_field_does_not_exist_on_output_struct() {
         required: i32,
     }
 
-    let _: Model<DataInput, Data> = Model::new(
+    let _: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "required",

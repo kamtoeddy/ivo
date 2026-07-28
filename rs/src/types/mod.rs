@@ -26,7 +26,7 @@ pub(crate) type InternalFieldConfigs<
     ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
 > = HashMap<&'static str, InternalFieldConfig<I, O, CtxOptions, ErrorSanitizer>>;
 
-pub struct Model<
+pub struct IvoModel<
     I: IvoInputStruct<CtxOptions, ErrorSanitizer>,
     O: IvoStruct = I,
     CtxOptions: Clone + Sync + Send = Option<()>,

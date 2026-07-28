@@ -1,38 +1,24 @@
-export { type IvoResultInfo, Schema } from './schema';
+export { type IvoResultInfo, Schema } from "./schema";
 
 export type {
   ArrayOfMinSizeOne,
   ArrayOfMinSizeTwo,
-  Context,
-  IvoSummary,
+  IvoContext,
   KeyOf,
-  Merge,
-  ReadonlyIvoSummary,
+  ReadonlyIvoContext,
   RealType,
   SetterFnData,
   ValidatorResponse,
   ValidatorResponseObject,
   XOR,
-} from './schema/types';
-export type {
-  ErrorPayload,
-  FieldError,
-  IErrorTool,
-  InputFieldError,
-  InputPayload,
-  IValidationError,
-  ValidationErrorMessage,
-} from './schema/utils';
+} from "./schema/types";
+export type { FieldError, InputFieldError, InputPayload } from "./schema/utils";
 export {
-  ERRORS,
   isFieldError,
   isInputFieldError,
   makeFieldError,
-  SCHEMA_ERRORS,
-  VALIDATION_ERRORS,
-} from './schema/utils';
+} from "./schema/utils";
 export {
-  type FieldKey,
   getKeysAsProps,
   isEqual,
   isFunctionLike,
@@ -42,5 +28,5 @@ export {
   isRecordLike,
   type ObjectType,
   toArray,
-} from './utils';
-export * from './validators';
+} from "./utils";
+export * from "./validators";

@@ -20,7 +20,7 @@ use crate::schema::{
 };
 use crate::types::internal::{IvoErrorSanitizer, IvoStruct};
 use crate::types::InternalFieldConfigs;
-use crate::Model;
+use crate::IvoModel;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 use std::marker::PhantomData;
@@ -37,7 +37,7 @@ impl<
         CtxOptions: Clone + Sync + Send,
         Timestamp: Clone + Debug + Send + Sync + 'static,
         ErrorSanitizer: IvoErrorSanitizer<CtxOptions>,
-    > Model<I, O, CtxOptions, Timestamp, ErrorSanitizer>
+    > IvoModel<I, O, CtxOptions, Timestamp, ErrorSanitizer>
 {
     #[track_caller]
     pub fn new<FieldMaker, OptionMaker, BuildableOptions, WithTimestamps>(

@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoContext, IvoCtxOptions, IvoField, IvoInputStruct, IvoRwCtxOptions, IvoStruct, Model};
+use ivo::{IvoContext, IvoCtxOptions, IvoField, IvoInputStruct, IvoRwCtxOptions, IvoStruct, IvoModel};
 
 use crate::async_test_matrix;
 
@@ -42,7 +42,7 @@ async fn should_properly_update_ctx_options_in_default_resolver_and_provide_thos
     const DEFAULT_LAX_VALUE: i32 = 1;
     const MESSAGE: &str = "ctx_options updated in default value resolver";
 
-    let model = Model::<DataInput, Data, CtxOptions>::new(
+    let model = IvoModel::<DataInput, Data, CtxOptions>::new(
         |f| {
             f.field(
                 "dependent",
@@ -119,7 +119,7 @@ async fn should_properly_update_ctx_options_in_value_resolver_and_provide_those_
     const DEFAULT_LAX_VALUE: i32 = 1;
     const MESSAGE: &str = "ctx_options updated in value resolver";
 
-    let model = Model::<DataInput, Data, CtxOptions>::new(
+    let model = IvoModel::<DataInput, Data, CtxOptions>::new(
         |f| {
             f.field(
                 "dependent",
@@ -196,7 +196,7 @@ async fn should_properly_update_ctx_options_in_value_resolver_and_provide_those_
     const DEFAULT_LAX_VALUE: i32 = 1;
     const MESSAGE: &str = "ctx_options updated in value resolver";
 
-    let model = Model::<DataInput, Data, CtxOptions>::new(
+    let model = IvoModel::<DataInput, Data, CtxOptions>::new(
         |f| {
             f.field(
                 "dependent",

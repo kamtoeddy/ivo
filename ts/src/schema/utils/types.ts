@@ -1,63 +1,23 @@
-import type { FieldKey, ObjectType } from '../../utils';
-
 export type {
-  ErrorPayload,
+  DefaultFieldErrorMetadata,
   FieldError,
-  IErrorTool,
   InputFieldError,
   InputPayload,
-  IValidationError,
-  ValidationErrorMessage,
 };
-export { ERRORS, SCHEMA_ERRORS, VALIDATION_ERRORS };
+export { INVALID_SCHEMA_ERROR };
 
-const SCHEMA_ERRORS = { INVALID_SCHEMA: 'INVALID_SCHEMA' } as const;
+const INVALID_SCHEMA_ERROR = "INVALID_SCHEMA" as const;
 
-const VALIDATION_ERRORS = {
-  NOTHING_TO_UPDATE: 'NOTHING_TO_UPDATE',
-  VALIDATION_ERROR: 'VALIDATION_ERROR',
-} as const;
+type DefaultFieldErrorMetadata = Record<string, unknown>;
 
-const ERRORS = { ...SCHEMA_ERRORS, ...VALIDATION_ERRORS } as const;
-
-type ValidationErrorMessage = keyof typeof VALIDATION_ERRORS;
-
-type FieldError = {
+type FieldError<Metadata = DefaultFieldErrorMetadata> = {
   reason: string;
-  metadata: Record<FieldKey, unknown> | null;
+  metadata: Metadata | null;
 };
 
-type InputFieldError =
-  | FieldError
-  | { reason: FieldError['reason'] }
-  | { metadata: FieldError['metadata'] };
+type InputFieldError<Metadata> =
+  | FieldError<Metadata>
+  | { reason: FieldError["reason"] }
+  | { metadata: FieldError<Metadata>["metadata"] };
 
-type ErrorPayload<Keys extends FieldKey = FieldKey> = Partial<
-  Record<Keys, FieldError>
->;
-
-type InputPayload = Record<FieldKey, string | FieldError>;
-
-type IValidationError<ExtraData extends ObjectType = never> = ({
-  message: ValidationErrorMessage;
-} & ExtraData) & {};
-
-interface IErrorTool<ExtraData extends ObjectType = never> {
-  /** return what your validation error should look like from this method */
-  get data(): IValidationError<ExtraData>;
-
-  /** array of fields that have failed validation */
-  get fields(): string[];
-
-  /** determines if validation has failed */
-  get isLoaded(): boolean;
-
-  /**
-  - Appends a field to your final validation error
-  - if validation payload already has provided field, only the metadata (if available) will be updated
-  */
-  set(field: FieldKey, error: FieldError, value?: unknown): this;
-
-  /** method to set the value of the validation error message */
-  setMessage(message: ValidationErrorMessage): this;
-}
+type InputPayload = Record<string, string | FieldError>;

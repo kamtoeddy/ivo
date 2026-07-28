@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoContext, IvoField, IvoInputStruct, IvoStruct, Model};
+use ivo::{IvoContext, IvoField, IvoInputStruct, IvoModel, IvoStruct};
 
 use crate::async_test_matrix;
 
@@ -15,7 +15,7 @@ async fn should_trigger_on_failure_handlers_at_creation() {
         required: String,
     }
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "required",
@@ -76,7 +76,7 @@ async fn should_trigger_on_failure_handlers_during_updates() {
         required: String,
     }
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "required",
@@ -142,7 +142,7 @@ async fn should_trigger_on_failure_handlers_during_updates_with_unchanged_values
         required: String,
     }
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "required",
@@ -216,7 +216,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
         required2: String,
     }
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "required",
@@ -300,7 +300,7 @@ async fn should_trigger_on_failure_handlers_during_updates_even_if_provided_and_
         required2: String,
     }
 
-    let model: Model<DataInput, Data> = Model::new(
+    let model: IvoModel<DataInput, Data> = IvoModel::new(
         |f| {
             f.field(
                 "required",

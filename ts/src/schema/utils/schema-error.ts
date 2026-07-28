@@ -1,11 +1,11 @@
-import { type FieldKey, toArray } from '../../utils';
-import { SCHEMA_ERRORS } from './types';
+import { toArray } from "../../utils";
+import { INVALID_SCHEMA_ERROR } from "./types";
 
 export { SchemaError, SchemaErrorTool };
 
 class SchemaError extends Error {
   constructor(public payload: ErrorPayload) {
-    super(SCHEMA_ERRORS.INVALID_SCHEMA);
+    super(INVALID_SCHEMA_ERROR);
   }
 }
 
@@ -16,7 +16,7 @@ class SchemaErrorTool {
     return Object.keys(this._payload).length > 0;
   }
 
-  add(field: FieldKey, value?: string | string[]) {
+  add(field: string, value?: string | string[]) {
     value = toArray(value ?? []);
 
     if (field in this._payload) {
@@ -33,7 +33,7 @@ class SchemaErrorTool {
   }
 
   throw() {
-    console.error('\nSchema errors:');
+    console.error("\nSchema errors:");
 
     for (const [prop, messages] of Object.entries(this._payload)) {
       if (messages.length === 1) {
@@ -49,4 +49,4 @@ class SchemaErrorTool {
   }
 }
 
-type ErrorPayload = Record<FieldKey, string[]>;
+type ErrorPayload = Record<string, string[]>;

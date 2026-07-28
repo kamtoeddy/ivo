@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoCtxOptions, IvoField, IvoInputStruct, IvoRwCtxOptions, IvoStruct, Model};
+use ivo::{IvoCtxOptions, IvoField, IvoInputStruct, IvoRwCtxOptions, IvoStruct, IvoModel};
 
 use crate::async_test_matrix;
 
@@ -35,7 +35,7 @@ async fn should_properly_update_ctx_options_in_constant_value_resolver_and_provi
     const CONSTANT_VALUE: i32 = 1;
     const MESSAGE: &str = "ctx_options updated in constant value resolver";
 
-    let model = Model::<DataInput, Data, CtxOptions>::new(
+    let model = IvoModel::<DataInput, Data, CtxOptions>::new(
         |f| {
             f.field(
                 "id",

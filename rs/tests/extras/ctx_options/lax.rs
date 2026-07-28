@@ -1,6 +1,6 @@
 use std::future::ready;
 
-use ivo::{IvoCtxOptions, IvoField, IvoInputStruct, IvoRwCtxOptions, IvoStruct, Model};
+use ivo::{IvoCtxOptions, IvoField, IvoInputStruct, IvoRwCtxOptions, IvoStruct, IvoModel};
 
 use crate::async_test_matrix;
 
@@ -46,7 +46,7 @@ async fn should_properly_update_ctx_options_in_default_resolver_and_provide_thos
     const DEFAULT_VALUE: i32 = 1;
     const MESSAGE: &str = "ctx_options updated in default value resolver";
 
-    let model = Model::<DataInput, Data, CtxOptions>::new(
+    let model = IvoModel::<DataInput, Data, CtxOptions>::new(
         |f| {
             f.field(
                 "lax",
@@ -106,7 +106,7 @@ async fn should_properly_update_ctx_options_in_ignore_resolver_and_provide_those
     const DEFAULT_VALUE: i32 = 1;
     const MESSAGE: &str = "ctx_options updated in ignore resolver";
 
-    let model = Model::<DataInput, Data, CtxOptions>::new(
+    let model = IvoModel::<DataInput, Data, CtxOptions>::new(
         |f| {
             f.field(
                 "lax",
@@ -167,7 +167,7 @@ async fn should_properly_update_ctx_options_in_ignore_resolver_and_provide_those
     const DEFAULT_VALUE: i32 = 1;
     const MESSAGE: &str = "ctx_options updated in ignore resolver";
 
-    let model = Model::<DataInput, Data, CtxOptions>::new(
+    let model = IvoModel::<DataInput, Data, CtxOptions>::new(
         |f| {
             f.field(
                 "lax",
@@ -232,7 +232,7 @@ async fn should_properly_update_ctx_options_in_required_resolver_and_provide_tho
     const MESSAGE: &str = "ctx_options updated in ignore resolver";
     const REQUIRED_ERROR: &str = "lax is missing!";
 
-    let model = Model::<DataInput, Data, CtxOptions>::new(
+    let model = IvoModel::<DataInput, Data, CtxOptions>::new(
         |f| {
             f.field(
                 "lax",
@@ -283,7 +283,7 @@ async fn should_properly_update_ctx_options_in_required_resolver_and_provide_tho
     const MESSAGE: &str = "ctx_options updated in ignore resolver";
     const REQUIRED_ERROR: &str = "lax is missing!";
 
-    let model = Model::<DataInput, Data, CtxOptions>::new(
+    let model = IvoModel::<DataInput, Data, CtxOptions>::new(
         |f| {
             f.field(
                 "lax",
@@ -358,7 +358,7 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
 
     const MIN_LENGTH_ERROR: &str = "expected lax to be at least 2 characters long";
 
-    let model: Model<DataInput, Data, CtxOptions> = Model::new(
+    let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
         |f| {
             f.field(
                 "lax",
@@ -429,7 +429,7 @@ async fn should_properly_update_ctx_options_in_validators_and_provide_those_upda
 
     const MIN_LENGTH_ERROR: &str = "expected lax to be at least 2 characters long";
 
-    let model: Model<DataInput, Data, CtxOptions> = Model::new(
+    let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
         |f| {
             f.field(
                 "lax",
@@ -511,7 +511,7 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
 
     const MIN_LENGTH_ERROR: &str = "expected lax to be at least 2 characters long";
 
-    let model: Model<DataInput, Data, CtxOptions> = Model::new(
+    let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
         |f| {
             f.field(
                 "lax",
@@ -583,7 +583,7 @@ async fn should_properly_update_ctx_options_in_re_validators_and_provide_those_u
 
     const MIN_LENGTH_ERROR: &str = "expected lax to be at least 2 characters long";
 
-    let model: Model<DataInput, Data, CtxOptions> = Model::new(
+    let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
         |f| {
             f.field(
                 "lax",
@@ -668,7 +668,7 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
 
     const MIN_LENGTH_ERROR: &str = "expected lax to be at least 2 characters long";
 
-    let model: Model<DataInput, Data, CtxOptions> = Model::new(
+    let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
         |f| {
             f.field(
                 "lax",
@@ -756,7 +756,7 @@ async fn should_properly_update_ctx_options_in_post_validators_and_provide_those
 
     const MIN_LENGTH_ERROR: &str = "expected lax to be at least 2 characters long";
 
-    let model: Model<DataInput, Data, CtxOptions> = Model::new(
+    let model: IvoModel<DataInput, Data, CtxOptions> = IvoModel::new(
         |f| {
             f.field(
                 "lax",
