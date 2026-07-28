@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'bun:test';
-import type { ReadonlyIvoSummary } from '../../../dist';
+import type { ReadonlyIvoSummary } from '../../../src';
 import { expectFailure, expectNoFailure, getValidSchema } from '../_utils';
 
 export const Test_SchemaTimestampOption = ({ Schema, fx }: any) => {

@@ -14,5 +14,5 @@
     "types": ["@types/bun"],
   },
   "include": ["."],
-  "exclude": ["node_modules", "dist", "**/tests/*"],
+  "exclude": ["node_modules", "dist", "**/tests/*"]
 }

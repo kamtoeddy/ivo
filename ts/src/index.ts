@@ -1,5 +1,12 @@
 export { type IvoResultInfo, Schema } from "./schema";
 
+export const ERRORS = {
+  INVALID_SCHEMA: "INVALID_SCHEMA",
+  NOTHING_TO_UPDATE: "Nothing to update",
+  VALIDATION_ERROR: "Validation Error",
+  NOT_ALLOWED: "value not allowed",
+} as const;
+
 export type {
   ArrayOfMinSizeOne,
   ArrayOfMinSizeTwo,

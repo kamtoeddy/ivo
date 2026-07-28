@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, test } from 'bun:test';
 
+import { ERRORS } from '../../../src';
 import {
-  ERRORS,
   type IvoSummary,
   type ReadonlyIvoSummary,
-} from '../../../dist';
+} from '../../../src';
 import {
   getInvalidConfigMessageForRepeatedProperties,
   getInvalidPostValidateConfigMessage,

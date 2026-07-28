@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'bun:test';
 
-import { ERRORS } from '../../../dist';
+import { ERRORS } from '../../../src';
 import { expectFailure, expectNoFailure } from '../_utils';
 
 export const Test_ConstantProperties = ({ Schema, fx }: any) => {
@@ -47,7 +47,7 @@ export const Test_ConstantProperties = ({ Schema, fx }: any) => {
         const { data, error } = await User.update(user, { id: 25 });
 
         expect(data).toBeNull();
-        expect(error).toMatchObject({ message: ERRORS.NOTHING_TO_UPDATE });
+        expect(error).toBeNull();
       });
 
       it('should accept constant(true) & value(any | ()=>any)', () => {

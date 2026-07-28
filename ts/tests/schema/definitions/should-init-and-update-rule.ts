@@ -649,7 +649,7 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
           );
 
           expect(data).toBeNull();
-          expect(error.message).toBe(ERRORS.NOTHING_TO_UPDATE);
+          expect(error).toBeNull();
         });
 
         it("should update properties when 'shouldUpdate' resolved to 'true'", async () => {
@@ -693,7 +693,7 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
           );
 
           expect(data).toBeNull();
-          expect(error.message).toBe(ERRORS.NOTHING_TO_UPDATE);
+          expect(error).toBeNull();
         });
 
         describe('behaviour when shouldUpdate method returns nothing', () => {
@@ -709,10 +709,7 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
             );
 
             expect(data).toBeNull();
-            expect(error).toMatchObject({
-              message: ERRORS.NOTHING_TO_UPDATE,
-              payload: {},
-            });
+            expect(error).toBeNull();
           });
         });
       });

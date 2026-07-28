@@ -1473,7 +1473,8 @@ abstract class SchemaCore<
   }
 
   private _isIgnoreOptionOk(val: unknown) {
-    if (typeof val === "boolean" || isFunctionLike(val)) return { valid: true };
+    if (val === undefined || typeof val === "boolean" || isFunctionLike(val))
+      return { valid: true };
 
     const configs = toArray(val);
 
@@ -1505,7 +1506,8 @@ abstract class SchemaCore<
   }
 
   private _isIgnoreUpdateOptionOk(val: unknown) {
-    if (typeof val === "boolean" || isFunctionLike(val)) return { valid: true };
+    if (val === undefined || typeof val === "boolean" || isFunctionLike(val))
+      return { valid: true };
 
     const configs = toArray(val);
 

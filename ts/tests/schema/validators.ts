@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'bun:test';
 
-import { ERRORS } from '../../dist';
+import { ERRORS } from '../../src';
 import { expectFailure, expectNoFailure, validator } from './_utils';
 
 export const Test_Validators = ({ Schema, fx }: any) => {

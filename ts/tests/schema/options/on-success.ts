@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'bun:test';
 
-import { ERRORS, type ReadonlyIvoSummary } from '../../../dist';
+import { ERRORS, type ReadonlyIvoSummary } from '../../../src';
 import {
   getInvalidConfigMessageForRepeatedProperties,
   getInvalidOnSuccessConfigMessage,

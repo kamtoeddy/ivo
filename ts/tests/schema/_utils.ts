@@ -1,5 +1,5 @@
 import { expect } from 'bun:test';
-import { ERRORS, isEqual, type ObjectType } from '../../dist';
+import { isEqual, type ObjectType } from '../../src/utils';
 
 export {
   expectFailure,
@@ -11,7 +11,7 @@ export {
   validator,
 };
 
-function expectFailure(fx: Function, message: string = ERRORS.INVALID_SCHEMA) {
+function expectFailure(fx: Function, message: string = 'INVALID_SCHEMA') {
   expect(fx).toThrow(message);
 }
 

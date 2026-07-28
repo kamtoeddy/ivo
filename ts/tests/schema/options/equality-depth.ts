@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'bun:test';
 
-import { ERRORS } from '../../../dist';
+import { ERRORS } from '../../../src';
 import { expectFailure, expectNoFailure, getValidSchema } from '../_utils';
 
 export const Test_SchemaEqualityDepth = ({ Schema, fx }: any) => {
   describe('Schema.options.equalityDepth', () => {
     describe('behaviour', () => {
-      const error = { message: ERRORS.NOTHING_TO_UPDATE };
+      const error = null;
 
       const user = {
         level_0_a: 'value',

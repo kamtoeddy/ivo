@@ -1,4 +1,4 @@
-import { Schema } from '../../dist';
+import { Schema } from '../../src';
 
 type PublicOnly = {
   dob: Date | string;

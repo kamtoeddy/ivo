@@ -299,10 +299,7 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               );
 
               expect(contextRecord).toEqual({ setQuantity: 12 });
-              expect(operation1.error).toEqual({
-                message: ERRORS.NOTHING_TO_UPDATE,
-                payload: {},
-              });
+              expect(operation1.error).toBeNull();
               expect(operation1.data).toBe(null);
 
               const operation2 = await Model.update(

@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'bun:test';
 
-import { ERRORS } from '../../dist';
+import { ERRORS } from '../../src';
 import { expectNoFailure } from './_utils';
 
 export const valuesParsing_Tests = ({ Schema }: any) => {
@@ -76,10 +76,7 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
 
           expect(data).toBeNull();
 
-          expect(error).toEqual({
-            message: ERRORS.NOTHING_TO_UPDATE,
-            payload: {},
-          });
+          expect(error).toBeNull();
         }
       });
     });

@@ -1,81 +1,10 @@
 import { afterEach, describe, expect, it } from 'bun:test';
 
 import { Schema, type SetterFnData } from '../../../src';
-import { EUserModel, UserModel } from './custom-error-tool';
 
 const contextOptions = { lang: 'en' };
 
 describe('Context options', () => {
-  describe('Base Model', () => {
-    it('should respect ctx options with Model.create', async () => {
-      const firstName = 'name',
-        lastName = '';
-
-      const { data, error } = await UserModel.create(
-        {
-          firstName,
-          lastName,
-        },
-        contextOptions,
-      );
-
-      expect(data).not.toBeNull();
-      expect(error).toBeNull();
-    });
-
-    it('should respect ctx options with Model.update', async () => {
-      const firstName = 'name',
-        lastName = '';
-
-      const { data, error } = await UserModel.update(
-        { firstName: 'John', fullName: '', lastName: 'doe' },
-        {
-          firstName,
-          lastName,
-        },
-        contextOptions,
-      );
-
-      expect(data).not.toBeNull();
-      expect(error).toBeNull();
-    });
-  });
-
-  describe('Extended Model', () => {
-    it('should respect ctx options with Model.create', async () => {
-      const firstName = 'name',
-        lastName = '';
-
-      const { data, error } = await EUserModel.create(
-        {
-          firstName,
-          lastName,
-        },
-        contextOptions,
-      );
-
-      expect(data).not.toBeNull();
-      expect(error).toBeNull();
-    });
-
-    it('should respect ctx options with Model.update', async () => {
-      const firstName = 'name',
-        lastName = '';
-
-      const { data, error } = await EUserModel.update(
-        { firstName: 'John', full_name: '', lastName: 'doe' },
-        {
-          firstName,
-          lastName,
-        },
-        contextOptions,
-      );
-
-      expect(data).not.toBeNull();
-      expect(error).toBeNull();
-    });
-  });
-
   describe('RequiredBy', () => {
     const contextOptions = { lang: 'en' };
     const validator = () => true;

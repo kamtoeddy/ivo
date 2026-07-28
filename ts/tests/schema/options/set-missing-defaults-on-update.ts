@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 
-import { ERRORS } from '../../../dist';
+import { ERRORS } from '../../../src';
 import {
   expectFailure,
   expectNoFailure,
