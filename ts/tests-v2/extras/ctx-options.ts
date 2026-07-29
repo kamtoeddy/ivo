@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import type { IvoContext, ReadonlyIvoContext } from '../../src';
+import type { IvoContext, ReadonlyIvoContext, Schema } from '../../src';
 
 /**
  * Mirrors `rs/tests/extras/ctx_options/*.rs`: a user-defined, mutable
@@ -18,7 +18,11 @@ import type { IvoContext, ReadonlyIvoContext } from '../../src';
  * "not required" rather than propagating. That gap is exercised explicitly
  * below rather than assumed.
  */
-export const Test_CtxOptions = ({ Schema }: any) => {
+export const Test_CtxOptions = ({
+  Schema: SchemaClass,
+}: {
+  Schema: typeof Schema;
+}) => {
   describe('ctx options threading', () => {
     type Input = { name?: string };
     type Output = { name: string; upper: string };
@@ -29,7 +33,7 @@ export const Test_CtxOptions = ({ Schema }: any) => {
         ctx.updateOptions({ log: [...ctx.options.log, entry] });
     }
 
-    const Model = new Schema<Input, Output, CtxOpts>(
+    const Model = new SchemaClass<Input, Output, CtxOpts>(
       {
         name: {
           default: '',
@@ -66,7 +70,7 @@ export const Test_CtxOptions = ({ Schema }: any) => {
 
       expect(data).toEqual({ name: 'bob', upper: 'BOB' });
 
-      await handleSuccess();
+      await handleSuccess?.();
 
       expect(seenLogAtSuccess).toEqual(['validator', 'resolver']);
     });
@@ -83,12 +87,12 @@ export const Test_CtxOptions = ({ Schema }: any) => {
     it('re-threads a fresh accumulation per call (no leakage across create() calls)', async () => {
       seenLogAtSuccess = [];
       const first = await Model.create({ name: 'a' }, { log: ['seed'] });
-      await first.handleSuccess();
+      await first.handleSuccess?.();
       expect(seenLogAtSuccess).toEqual(['seed', 'validator', 'resolver']);
 
       seenLogAtSuccess = [];
       const second = await Model.create({ name: 'b' }, { log: [] });
-      await second.handleSuccess();
+      await second.handleSuccess?.();
       expect(seenLogAtSuccess).toEqual(['validator', 'resolver']);
     });
 
@@ -103,7 +107,7 @@ export const Test_CtxOptions = ({ Schema }: any) => {
 
       expect(data).toEqual({ name: 'rob', upper: 'ROB' });
 
-      await handleSuccess();
+      await handleSuccess?.();
 
       expect(seenLogAtSuccess).toEqual(['validator', 'resolver']);
     });
@@ -112,7 +116,7 @@ export const Test_CtxOptions = ({ Schema }: any) => {
       type ReqInput = { a?: number };
       type ReqOutput = { a: number };
 
-      const ReqModel = new Schema<ReqInput, ReqOutput, CtxOpts>({
+      const ReqModel = new SchemaClass<ReqInput, ReqOutput, CtxOpts>({
         a: {
           default: 0,
           required: (ctx: any) => {

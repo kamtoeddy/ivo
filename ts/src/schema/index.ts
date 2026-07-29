@@ -780,9 +780,17 @@ class ModelTool<
           return;
         }
 
-        // ── Lax fields that were NOT provided in the filtered input ─────────────
+        // ── Lax (and conditionally-required, i.e. "requiredBy") fields that
+        // were NOT provided in the filtered input ────────────────────────────
+        // Mirrors Rust: `requiredBy` fields are just Lax fields with an extra
+        // `required_fn`, so they're classified as `FieldType::Lax` there and
+        // defaulted the same way. TS's `laxProps` set excludes anything with a
+        // `required` rule (see `__isLax` in schema-core.ts), so requiredBy
+        // fields must be included explicitly here (virtuals excluded: they
+        // have no Output slot to default).
         if (
-          this._isLaxProp(configName) &&
+          (this._isLaxProp(configName) ||
+            (this._isRequiredBy(configName) && !this._isVirtual(configName))) &&
           !fieldsProvidedNames.has(configName)
         ) {
           const value = await this._getDefaultValue(configName, ctx);
@@ -833,18 +841,16 @@ class ModelTool<
 
         // Read the raw value from filteredInput
         const rawValue = (ctx.input as any)[name];
-        const hasValidator = !!this._getPrimaryValidator(fieldInfo.configName);
 
         let ctxUpdate = { [name]: rawValue } as never;
         this._updateCxtInput(ctxUpdate);
 
-        // For lax fields with no validator: accept value as-is (Rust: set input+output)
-        if (this._isLaxProp(name) && !hasValidator) {
-          if (fieldInfo.isOutput) this._updateCxtValues(ctxUpdate);
-
-          return;
-        }
-
+        // Note: lax fields without a validator still go through `_validate`
+        // below (which returns `{valid: true, validated: value}` as-is when
+        // there's no validator) rather than short-circuiting here, because
+        // `_validate` is also where the `allow` (allowed-values) check lives —
+        // skipping straight past it here would let disallowed values through
+        // whenever a lax field has no explicit validator.
         const isValid = (await Promise.try(() =>
           this._validate(name as never, rawValue, ctx),
         )) as InternalValidatorResponse<O[KeyOf<O>], ErrorMetadata>;
@@ -1120,14 +1126,28 @@ class ModelTool<
   private async _evaluateMissingRequiredFields(
     fieldsCollection: FieldInfoCollection,
   ) {
-    const ctx = this._getReadonlyCtx();
+    const ctx = this._getContext();
 
     const isUpdate = ctx.isUpdate;
     const errorTool = new ErrorTool<ErrorMetadata>();
 
+    // Mirrors Rust's `evaluate_missing_required_fields`: conditionally-required
+    // (`required: fn`) fields are evaluated on both create & update; strictly
+    // required (`required: true`) fields are only ever evaluated at creation
+    // (Rust's `FieldType::Required` match arm is guarded by `if !is_update`).
+    const propsToEvaluate = new Set<KeyOf<I>>(this.propsRequiredBy);
+
+    if (!isUpdate)
+      for (const prop of this.requiredProps) propsToEvaluate.add(prop);
+
     await Promise.allSettled(
-      Array.from(this.propsRequiredBy.keys()).map(async (prop) => {
-        if (fieldsCollection.fieldsProvided.has(prop)) return;
+      Array.from(propsToEvaluate).map(async (prop) => {
+        // Mirrors Rust's `is_relevant_config_name`: a field that was provided
+        // but got ignored (or, during updates, whose value didn't actually
+        // change) should still be treated as "not provided" for required
+        // checks — unlike raw `fieldsProvided`, `relevantConfigNames` already
+        // accounts for ignore/ignoreInit/ignoreUpdate/readonly filtering.
+        if (fieldsCollection.relevantConfigNames.has(prop)) return;
 
         let isUpdatable = false;
 
@@ -1802,7 +1822,7 @@ class ModelTool<
     if (!Object.keys(updates).length) return this._handleError(emptyErrorTool);
 
     // Step 17 – attach timestamps
-    const finalData = this._useConfigProps();
+    const finalData = this._useConfigProps(true);
 
     this._updateCxtInput(finalData as never);
 
@@ -1904,12 +1924,15 @@ class FieldInfoCollection {
 
   clonedFromRelevantFieldsProvided() {
     const col = new FieldInfoCollection(this._fields);
-    const configNames = new Set<string>();
 
-    for (const field_name of this._relevantFieldsProvided)
-      configNames.add(this.get(field_name).configName);
-
-    col._relevantDependentConfigNames = configNames;
+    // Seed from `_relevantConfigNames` (not `_relevantFieldsProvided`, which
+    // the setter above deliberately narrows to output fields only). Dependent
+    // fields can depend on virtuals, which are input-only (isOutput: false),
+    // so using the output-filtered set here would make a dependent whose only
+    // parent is a virtual never see that parent as "relevant" and never
+    // resolve. `_relevantConfigNames` already carries every relevant field
+    // (lax, required, virtual) mapped to its config name.
+    col._relevantDependentConfigNames = new Set(this._relevantConfigNames);
 
     return col;
   }

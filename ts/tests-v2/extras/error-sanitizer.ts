@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test';
+import type { Schema } from '../../src';
 
 /**
  * Mirrors `rs/tests/extras/error_sanitizer.rs`. Rust plugs in a whole
@@ -7,17 +8,31 @@ import { describe, expect, it } from 'bun:test';
  * `(payload, ctxOptions) => CustomPayload` applied once the raw
  * `{ [field]: { reason, metadata } }` payload is fully built.
  */
-export const Test_ErrorSanitizer = ({ Schema }: any) => {
+export const Test_ErrorSanitizer = ({
+  Schema: SchemaClass,
+}: {
+  Schema: typeof Schema;
+}) => {
   describe('Schema.options.sanitizeError', () => {
     type Input = { lat?: number; lon?: number };
     type Output = { lat: number; lon: number };
     type CtxOpts = { prefix: string };
+    type ErrorMetadata = Record<string, unknown>;
+    type CustomErrorPayload = Record<string, string[]>;
+
+    const ctxOptions: CtxOpts = { prefix: '' };
 
     function customize(reason: string) {
       return `customized: ${reason}`;
     }
 
-    const Place = new Schema<Input, Output, CtxOpts>(
+    const Place = new SchemaClass<
+      Input,
+      Output,
+      CtxOpts,
+      ErrorMetadata,
+      CustomErrorPayload
+    >(
       {
         lat: {
           default: 0,
@@ -38,8 +53,8 @@ export const Test_ErrorSanitizer = ({ Schema }: any) => {
         lon: { default: 0, validator: (v: unknown) => typeof v === 'number' },
       },
       {
-        sanitizeError: (payload) => {
-          const customized: Record<string, string[]> = {};
+        sanitizeError: (payload): CustomErrorPayload => {
+          const customized: CustomErrorPayload = {};
 
           for (const [field, err] of Object.entries(payload)) {
             const extraReasons =
@@ -48,20 +63,26 @@ export const Test_ErrorSanitizer = ({ Schema }: any) => {
             customized[field] = [err.reason, ...extraReasons].map(customize);
           }
 
-          return customized as never;
+          return customized;
         },
       },
     ).getModel();
 
     it('sanitizes a single-error failure at creation', async () => {
-      const { data, error } = await Place.create({ lat: Number.NaN, lon: 1 });
+      const { data, error } = await Place.create(
+        { lat: Number.NaN, lon: 1 },
+        ctxOptions,
+      );
 
       expect(data).toBeNull();
       expect(error).toEqual({ lat: ['customized: invalid number'] });
     });
 
     it('sanitizes a multi-reason failure (primary reason + metadata entries), in order', async () => {
-      const { data, error } = await Place.create({ lat: 200, lon: 1 });
+      const { data, error } = await Place.create(
+        { lat: 200, lon: 1 },
+        ctxOptions,
+      );
 
       expect(data).toBeNull();
       expect(error).toEqual({
@@ -77,6 +98,7 @@ export const Test_ErrorSanitizer = ({ Schema }: any) => {
       const { data, error } = await Place.update(
         { lat: 10, lon: 1 },
         { lat: 200 },
+        ctxOptions,
       );
 
       expect(data).toBeNull();
@@ -90,7 +112,11 @@ export const Test_ErrorSanitizer = ({ Schema }: any) => {
     });
 
     it('a genuinely-changed update still succeeds normally through the sanitizer pipeline', async () => {
-      const { data, error } = await Place.update({ lat: 10, lon: 1 }, { lat: 20 });
+      const { data, error } = await Place.update(
+        { lat: 10, lon: 1 },
+        { lat: 20 },
+        ctxOptions,
+      );
 
       expect(error).toBeNull();
       expect(data).toEqual({ lat: 20 });
@@ -100,6 +126,7 @@ export const Test_ErrorSanitizer = ({ Schema }: any) => {
       const { data, error } = await Place.update(
         { lat: 10, lon: 1 },
         { lat: 10 },
+        ctxOptions,
       );
 
       expect(data).toBeNull();
