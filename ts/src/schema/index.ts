@@ -1892,9 +1892,7 @@ class FieldInfoCollection {
     const outputFieldsChanged = new Set<string>();
 
     for (const field_name of names) {
-      const info = this.getUnsafe(field_name);
-
-      if (!info) continue;
+      const info = this.get(field_name);
 
       configNames.add(info.configName);
 
