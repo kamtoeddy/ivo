@@ -55,7 +55,12 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
         describe('behaviour', () => {
           let contextRecord = {} as Record<string, number | undefined>;
 
-          function resolver({ ctx: { setQuantity, qty } }: any) {
+          type QuantityInput = { setQuantity?: number; qty?: number };
+          type QuantityOutput = { id: number; quantity: number };
+
+          function resolver({
+            input: { setQuantity, qty },
+          }: ReadonlyIvoContext<QuantityInput, QuantityOutput>) {
             if (qty !== undefined) contextRecord.qty = qty;
 
             return setQuantity;
@@ -196,7 +201,12 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               setQuantity: {
                 alias: 'qty',
                 virtual: true,
-                required({ ctx: { setQuantity } }: any) {
+                required({
+                  input: { setQuantity },
+                }: ReadonlyIvoContext<
+                  { setQuantity?: number },
+                  { id: number; quantity: number }
+                >) {
                   contextRecord.setQuantity = setQuantity;
 
                   if (setQuantity === -100) return true;
@@ -762,15 +772,29 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
       });
 
       describe('behaviour', () => {
-        let onSuccessValues: Record<string, unknown> = {};
-        let onSuccessStats: Record<string, number> = {};
-        let sanitizedValues: Record<string, unknown> = {};
+        const onSuccessValues: Record<string, unknown> = {};
+        const onSuccessStats: Record<string, number> = {};
+        const sanitizedValues: Record<string, unknown> = {};
 
         const User = new Schema({
           dependentSideInit: {
             default: '',
             dependsOn: ['virtualInit', 'virtualWithSanitizer'],
-            resolver({ ctx: { virtualInit, virtualWithSanitizer } }: any) {
+            resolver({
+              input: { virtualInit, virtualWithSanitizer },
+            }: ReadonlyIvoContext<
+              {
+                virtualInit?: boolean;
+                virtualNoInit?: boolean;
+                virtualWithSanitizer?: boolean;
+                virtualWithSanitizerNoInit?: boolean;
+              },
+              {
+                name: string;
+                dependentSideInit: string;
+                dependentSideNoInit: string;
+              }
+            >) {
               return virtualInit && virtualWithSanitizer ? 'both' : 'one';
             },
             onSuccess: onSuccess('dependentSideInit'),
@@ -835,9 +859,23 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
           };
         }
 
+        type UserInput = {
+          virtualInit?: boolean;
+          virtualNoInit?: boolean;
+          virtualWithSanitizer?: boolean;
+          virtualWithSanitizerNoInit?: boolean;
+        };
+        type UserOutput = {
+          name: string;
+          dependentSideInit: string;
+          dependentSideNoInit: string;
+        };
+
         function onSuccess(prop: string) {
-          return (context: ReadonlyIvoContext<any, any, any>) => {
-            onSuccessValues[prop] = (context.values as any)?.[prop];
+          return (context: ReadonlyIvoContext<UserInput, UserOutput>) => {
+            onSuccessValues[prop] =
+              (context.values as Record<string, unknown>)?.[prop] ??
+              (context.input as Record<string, unknown>)?.[prop];
             incrementOnSuccessStats(prop)();
           };
         }
@@ -849,9 +887,12 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
         }
 
         beforeEach(() => {
-          onSuccessStats = {};
-          onSuccessValues = {};
-          sanitizedValues = {};
+          for (const key of Object.keys(onSuccessStats))
+            delete onSuccessStats[key];
+          for (const key of Object.keys(onSuccessValues))
+            delete onSuccessValues[key];
+          for (const key of Object.keys(sanitizedValues))
+            delete sanitizedValues[key];
         });
 
         describe('creation', () => {
@@ -969,8 +1010,12 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
             dependent: {
               default: '',
               dependsOn: 'virtual',
-              resolver: (context: any) =>
-                context.input?.virtual ?? context.values?.virtual,
+              resolver: (
+                context: ReadonlyIvoContext<
+                  { virtual?: any },
+                  { dependent: string }
+                >,
+              ) => context.input?.virtual ?? context.rawInput?.virtual,
             },
             virtual: {
               virtual: true,

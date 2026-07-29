@@ -43,7 +43,7 @@ type SetterFnData<
   CtxOptions extends ObjectType = {},
 > = IvoContext<Input, Output, CtxOptions>;
 
-type ReadonlyIvoContext<Input, Output, CtxOptions extends ObjectType> = (
+type ReadonlyIvoContext<Input, Output, CtxOptions extends ObjectType = {}> = (
   | Readonly<
       WithReadonlyCtxOptions<
         {
@@ -389,8 +389,8 @@ namespace NS {
       required?: boolean | RequiredHandler<Input, Output, {}, Metadata>;
       sanitizer?: VirtualResolver<K, Input, Output, {}>;
       ignore?: SetterWithSummary<boolean, Input, Output, {}>;
-      ignoreInit?: false | Setter<boolean, Input, Output, {}>;
-      ignoreUpdate?: false | Setter<boolean, Input, Output, {}>;
+      ignoreInit?: true | Setter<boolean, Input, Output, {}>;
+      ignoreUpdate?: true | Setter<boolean, Input, Output, {}>;
       validator?: Function | [Function, Function];
       value?: unknown;
       virtual?: boolean;
@@ -490,12 +490,12 @@ namespace NS {
         },
         XOR<
           {
-            ignoreInit?: false | Setter<boolean, Input, Output, CtxOptions>;
+            ignoreInit?: true | Setter<boolean, Input, Output, CtxOptions>;
             ignoreUpdate?: Setter<boolean, Input, Output, CtxOptions>;
           },
           {
             ignoreInit?: Setter<boolean, Input, Output, CtxOptions>;
-            ignoreUpdate?: false | Setter<boolean, Input, Output, CtxOptions>;
+            ignoreUpdate?: true | Setter<boolean, Input, Output, CtxOptions>;
           }
         >
       >
@@ -530,7 +530,7 @@ namespace NS {
     Metadata,
   > = Listenable<Input, Output, CtxOptions> & {
     required: true;
-    ignoreUpdate?: false | Setter<boolean, Input, Output, CtxOptions>;
+    ignoreUpdate?: true | Setter<boolean, Input, Output, CtxOptions>;
   } & (
       | {
           validator:
@@ -587,12 +587,12 @@ namespace NS {
           },
           XOR<
             {
-              ignoreInit?: false | Setter<boolean, Input, Output, CtxOptions>;
+              ignoreInit?: true | Setter<boolean, Input, Output, CtxOptions>;
               ignoreUpdate?: Setter<boolean, Input, Output, CtxOptions>;
             },
             {
               ignoreInit?: Setter<boolean, Input, Output, CtxOptions>;
-              ignoreUpdate?: false | Setter<boolean, Input, Output, CtxOptions>;
+              ignoreUpdate?: true | Setter<boolean, Input, Output, CtxOptions>;
             }
           >
         >

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'bun:test';
 
+import type { ReadonlyIvoContext } from '../../../src';
 import {
   ERRORS,
   expectFailure,
@@ -11,11 +12,14 @@ import {
 export const Test_SchemaOnDelete = ({ Schema, fx }: any) => {
   describe('Schema.options.onDelete', () => {
     describe('behaviour', () => {
-      const values = { id: 1, name: 'Book name', price: 100 };
+      type BookInput = { _setPrice?: number; name?: string };
+      type BookOutput = { id: number; name: string; price: number | null };
+
+      const values: BookOutput = { id: 1, name: 'Book name', price: 100 };
       let deletedValues: Record<string, unknown> = {};
 
       function onDelete_(prop = '') {
-        return (data: any) => {
+        return (data: Readonly<BookOutput>) => {
           deletedValues[prop] = data;
         };
       }
@@ -32,7 +36,8 @@ export const Test_SchemaOnDelete = ({ Schema, fx }: any) => {
             price: {
               default: null,
               dependsOn: '_setPrice',
-              resolver: ({ context }: any) => context._setPrice,
+              resolver: (ctx: ReadonlyIvoContext<BookInput, BookOutput>) =>
+                ctx.input?._setPrice ?? ctx.rawInput?._setPrice,
               onDelete: onDelete_('price'),
             },
             _setPrice: { virtual: true, validator },
@@ -60,7 +65,8 @@ export const Test_SchemaOnDelete = ({ Schema, fx }: any) => {
             price: {
               default: null,
               dependsOn: '_setPrice',
-              resolver: ({ context }: any) => context._setPrice,
+              resolver: (ctx: ReadonlyIvoContext<BookInput, BookOutput>) =>
+                ctx.input?._setPrice ?? ctx.rawInput?._setPrice,
             },
             _setPrice: { virtual: true, validator },
           },

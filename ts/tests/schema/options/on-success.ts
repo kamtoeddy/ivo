@@ -451,8 +451,11 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
     describe('behaviour', () => {
       let successValues: Record<string, unknown> = {};
 
+      type BookInput = { _setPrice?: number; name?: string };
+      type BookOutput = { id: number; name: string; price: number | null };
+
       function onSuccess_(prop = '') {
-        return (summary: ReadonlyIvoContext<any, any, any>) => {
+        return (summary: ReadonlyIvoContext<BookInput, BookOutput>) => {
           successValues[prop] = summary;
         };
       }
@@ -469,11 +472,8 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
             price: {
               default: null,
               dependsOn: '_setPrice',
-              resolver: (summary: any) =>
-                summary.rawInput?._setPrice ??
-                summary.input?._setPrice ??
-                summary.values?._setPrice ??
-                summary._setPrice,
+              resolver: (summary: ReadonlyIvoContext<BookInput, BookOutput>) =>
+                summary.input?._setPrice ?? summary.rawInput?._setPrice,
               onSuccess: onSuccess_('price'),
             },
             _setPrice: {
@@ -548,11 +548,8 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
             price: {
               default: null,
               dependsOn: '_setPrice',
-              resolver: (summary: any) =>
-                summary.rawInput?._setPrice ??
-                summary.input?._setPrice ??
-                summary.values?._setPrice ??
-                summary._setPrice,
+              resolver: (summary: ReadonlyIvoContext<BookInput, BookOutput>) =>
+                summary.input?._setPrice ?? summary.rawInput?._setPrice,
             },
             _setPrice: { virtual: true, validator },
           },

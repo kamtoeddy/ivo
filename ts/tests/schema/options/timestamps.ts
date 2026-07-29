@@ -536,7 +536,15 @@ export const Test_SchemaTimestampOption = ({ Schema, fx }: any) => {
             beforeEach(async () => {
               const onSuccess = ({
                 values,
-              }: ReadonlyIvoContext<any, any, any>) => {
+              }: ReadonlyIvoContext<
+                { propertyName1?: string; propertyName2?: string },
+                {
+                  propertyName1: string;
+                  propertyName2: string;
+                  createdAt: string | number;
+                  uAt: string | number | null;
+                }
+              >) => {
                 onSuccessValues.createdAt = values.createdAt;
                 onSuccessValues.updatedAt = values[updatedAtKey];
               };
@@ -590,7 +598,15 @@ export const Test_SchemaTimestampOption = ({ Schema, fx }: any) => {
             beforeEach(async () => {
               const onSuccess = ({
                 values,
-              }: ReadonlyIvoContext<any, any, any>) => {
+              }: ReadonlyIvoContext<
+                { propertyName1?: string; propertyName2?: string },
+                {
+                  propertyName1: string;
+                  propertyName2: string;
+                  createdAt: string | number;
+                  uAt: string | number | null;
+                }
+              >) => {
                 onSuccessValues.createdAt = values.createdAt;
                 onSuccessValues[updatedAtKey] = values[updatedAtKey];
               };
@@ -644,7 +660,15 @@ export const Test_SchemaTimestampOption = ({ Schema, fx }: any) => {
             beforeEach(async () => {
               const onSuccess = ({
                 values,
-              }: ReadonlyIvoContext<any, any, any>) => {
+              }: ReadonlyIvoContext<
+                { propertyName1?: string; propertyName2?: string },
+                {
+                  propertyName1: string;
+                  propertyName2: string;
+                  createdAt: string | number;
+                  uAt: string | number;
+                }
+              >) => {
                 onSuccessValues.createdAt = values.createdAt;
                 onSuccessValues[updatedAtKey] = values[updatedAtKey];
               };

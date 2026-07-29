@@ -13,8 +13,17 @@ export const Test_ConstantProperties = ({ Schema, fx }: any) => {
           asyncConstant: { constant: true, value: asyncSetter },
           id: {
             constant: true,
-            value: (ctx: ReadonlyIvoContext<any, any, any>) =>
-              ctx?.input?.id === 'id' ? 'id-2' : 'id',
+            value: (
+              ctx: ReadonlyIvoContext<
+                { id?: string | number },
+                {
+                  asyncConstant: number;
+                  id: string;
+                  parentId: string;
+                  laxProp: number;
+                }
+              >,
+            ) => (ctx?.input?.id === 'id' ? 'id-2' : 'id'),
           },
           parentId: { constant: true, value: 'parent id' },
           laxProp: { default: 0 },

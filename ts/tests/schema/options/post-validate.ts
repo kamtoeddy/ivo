@@ -1579,11 +1579,14 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
               dependent: {
                 default: '',
                 dependsOn: ['v', 'v1'],
-                resolver: (ctx: IvoContext<{ v: string; v1: string }>) => {
-                  const v =
-                    ctx.values?.v ?? ctx.rawInput?.v ?? ctx.input?.v ?? '';
-                  const v1 =
-                    ctx.values?.v1 ?? ctx.rawInput?.v1 ?? ctx.input?.v1 ?? '';
+                resolver: (
+                  ctx: IvoContext<
+                    { v?: string; v1?: string },
+                    { p1: string; p2: string; dependent: string }
+                  >,
+                ) => {
+                  const v = ctx.input?.v ?? ctx.rawInput?.v ?? '';
+                  const v1 = ctx.input?.v1 ?? ctx.rawInput?.v1 ?? '';
                   return `${v} ${v1}`.trim();
                 },
               },
@@ -1593,7 +1596,12 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
             {
               postValidate: {
                 properties: ['v', 'v1'],
-                validator: ({ isUpdate }: IvoContext<any>) =>
+                validator: ({
+                  isUpdate,
+                }: IvoContext<
+                  { v?: unknown; v1?: unknown },
+                  { p1: string; p2: string; dependent: string }
+                >) =>
                   isUpdate
                     ? {
                         v: { validated: 're updated' },
@@ -1633,17 +1641,14 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
               dependent: {
                 default: '',
                 dependsOn: ['v', 'v1'],
-                resolver: (summary: any) => {
-                  const v =
-                    summary.rawInput?.v ??
-                    summary.input?.v ??
-                    summary.values?.v ??
-                    '';
-                  const v1 =
-                    summary.rawInput?.v1 ??
-                    summary.input?.v1 ??
-                    summary.values?.v1 ??
-                    '';
+                resolver: (
+                  summary: ReadonlyIvoContext<
+                    { v?: string; v1?: string },
+                    { p1: string; p2: string; dependent: string }
+                  >,
+                ) => {
+                  const v = summary.input?.v ?? summary.rawInput?.v ?? '';
+                  const v1 = summary.input?.v1 ?? summary.rawInput?.v1 ?? '';
                   return `${v} ${v1}`.trim();
                 },
               },
@@ -1654,7 +1659,12 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
               postValidate: [
                 {
                   properties: ['v', 'v1'],
-                  validator: ({ isUpdate }: IvoContext<any>) =>
+                  validator: ({
+                    isUpdate,
+                  }: IvoContext<
+                    { v?: unknown; v1?: unknown; p1?: string; p2?: string },
+                    { p1: string; p2: string; dependent: string }
+                  >) =>
                     isUpdate
                       ? {
                           v: { validated: 're updated' },
@@ -1667,7 +1677,12 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                 },
                 {
                   properties: ['p1', 'p2', 'v'],
-                  validator: ({ isUpdate }: IvoContext<any>) =>
+                  validator: ({
+                    isUpdate,
+                  }: IvoContext<
+                    { v?: unknown; v1?: unknown; p1?: string; p2?: string },
+                    { p1: string; p2: string; dependent: string }
+                  >) =>
                     isUpdate
                       ? {
                           p2: { validated: 're updated' },
@@ -1744,8 +1759,25 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
           });
 
           it('should process errors of first validator to return errors and stop validating', async () => {
-            const resolver = (summary: any) =>
-              summary.values?.v ?? summary.rawInput?.v ?? summary.input?.v;
+            type PVInput = {
+              v?: any;
+              p1?: string;
+              p2?: string;
+              p3?: string;
+              p4?: string;
+            };
+            type PVOutput = {
+              p1: string;
+              p2: string;
+              p3: string;
+              p4: string;
+              d1: string;
+              d2: string;
+            };
+            type PVCtx = ReadonlyIvoContext<PVInput, PVOutput>;
+
+            const resolver = (summary: PVCtx) =>
+              summary.input?.v ?? summary.rawInput?.v;
 
             let validatorRunCount: Record<string, number> = {};
 
@@ -1771,23 +1803,17 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                       () => {
                         incrementValidatorCount('p1-v');
                       },
-                      (summary: any) => {
-                        const v =
-                          summary.values?.v ??
-                          summary.rawInput?.v ??
-                          summary.input?.v;
+                      (summary: PVCtx) => {
+                        const v = summary.input?.v ?? summary.rawInput?.v;
                         if (v === 'return error')
                           return { d1: 'error returned' };
                       },
-                      (summary: any) => {
-                        const v =
-                          summary.values?.v ??
-                          summary.rawInput?.v ??
-                          summary.input?.v;
+                      (summary: PVCtx) => {
+                        const v = summary.input?.v ?? summary.rawInput?.v;
                         incrementValidatorCount('p1-v');
                         if (v === 'throw') throw new Error('lol');
                       },
-                      (summary: any) => {
+                      (summary: PVCtx) => {
                         const isUpdate = summary.isUpdate;
                         incrementValidatorCount('p1-v');
 
@@ -1806,20 +1832,13 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                   {
                     properties: ['p1', 'p2'],
                     validator: [
-                      (summary: any) => {
-                        const v =
-                          summary.values?.v ??
-                          summary.rawInput?.v ??
-                          summary.input?.v;
+                      (summary: PVCtx) => {
+                        const v = summary.input?.v ?? summary.rawInput?.v;
                         incrementValidatorCount('p1-p2');
                         if (v === 'throw') throw new Error('lol');
                       },
-                      (summary: any) => {
-                        const v =
-                          summary.values?.v ??
-                          summary.rawInput?.v ??
-                          summary.input?.v;
-                        incrementValidatorCount('p1-p2');
+                      (summary: PVCtx) => {
+                        const v = summary.input?.v ?? summary.rawInput?.v;
                         return Promise.resolve(
                           v === 'allow' ? false : { p1: 'failed to validate' },
                         );
@@ -1923,8 +1942,25 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
           });
 
           it('should process parallel and sequential validators accordingly', async () => {
-            const resolver = (summary: any) =>
-              summary.values?.v ?? summary.rawInput?.v ?? summary.input?.v;
+            type PVInput2 = {
+              v?: any;
+              p1?: string;
+              p2?: string;
+              p3?: string;
+              p4?: string;
+            };
+            type PVOutput2 = {
+              p1: string;
+              p2: string;
+              p3: string;
+              p4: string;
+              d1: string;
+              d2: string;
+            };
+            type PVCtx2 = ReadonlyIvoContext<PVInput2, PVOutput2>;
+
+            const resolver = (summary: PVCtx2) =>
+              summary.input?.v ?? summary.rawInput?.v;
 
             let validatorRunCount: Record<string, number> = {};
 
@@ -1947,11 +1983,8 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                   {
                     properties: ['p1', 'v'],
                     validator: [
-                      (summary: any) => {
-                        const v =
-                          summary.values?.v ??
-                          summary.rawInput?.v ??
-                          summary.input?.v;
+                      (summary: PVCtx2) => {
+                        const v = summary.input?.v ?? summary.rawInput?.v;
                         incrementValidatorCount('p1-v');
 
                         if (v === 'return error')
@@ -1960,20 +1993,14 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                         if (v === 'throw') throw new Error('lol');
                       },
                       [
-                        (summary: any) => {
-                          const v =
-                            summary.values?.v ??
-                            summary.rawInput?.v ??
-                            summary.input?.v;
+                        (summary: PVCtx2) => {
+                          const v = summary.input?.v ?? summary.rawInput?.v;
                           incrementValidatorCount('p1-v-parallel');
 
                           if (v === 'throw-parallel') throw new Error('lol');
                         },
-                        (summary: any) => {
-                          const v =
-                            summary.values?.v ??
-                            summary.rawInput?.v ??
-                            summary.input?.v;
+                        (summary: PVCtx2) => {
+                          const v = summary.input?.v ?? summary.rawInput?.v;
                           incrementValidatorCount('p1-v-parallel');
 
                           if (v === 'return error-parallel')
@@ -2145,7 +2172,10 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
               properties: ['p1', 'p2'],
               validator: ({
                 updateOptions,
-              }: IvoContext<{ p1: string; p2: string }, any>) => {
+              }: IvoContext<
+                { p1: string; p2: string },
+                { p1: string; p2: string }
+              >) => {
                 updateOptions({ updated: true });
 
                 return true;
@@ -2153,7 +2183,10 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
             },
             onSuccess({
               options,
-            }: ReadonlyIvoContext<{ p1: string; p2: string }, any, any>) {
+            }: ReadonlyIvoContext<
+              { p1: string; p2: string },
+              { p1: string; p2: string }
+            >) {
               ctxValue = options;
             },
           },
@@ -2196,7 +2229,12 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
               postValidate: {
                 properties: ['p1', 'p2'],
                 validator: [
-                  ({ updateOptions }: IvoContext<any>) => {
+                  ({
+                    updateOptions,
+                  }: IvoContext<
+                    { p1: string; p2: string },
+                    { p1: string; p2: string }
+                  >) => {
                     updateOptions({ updated: true });
 
                     return true;
@@ -2204,14 +2242,23 @@ export const Test_SchemaOptionPostValidate = ({ Schema, fx }: any) => {
                   ({
                     updateOptions,
                     options: { updated },
-                  }: IvoContext<any, any, Record<string, unknown>>) => {
+                  }: IvoContext<
+                    { p1: string; p2: string },
+                    { p1: string; p2: string },
+                    Record<string, unknown>
+                  >) => {
                     updateOptions({ v2: { updated } });
 
                     return true;
                   },
                 ],
               },
-              onSuccess({ options }: ReadonlyIvoContext<any, any, any>) {
+              onSuccess({
+                options,
+              }: ReadonlyIvoContext<
+                { p1: string; p2: string },
+                { p1: string; p2: string }
+              >) {
                 ctxValue = options;
               },
             },

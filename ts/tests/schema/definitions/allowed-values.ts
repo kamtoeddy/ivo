@@ -623,7 +623,8 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
             dependsOn: 'virtual',
             resolver: ({
               input: { virtual },
-            }: IvoContext<{ virtual: string }, any>) => virtual,
+            }: IvoContext<{ virtual: string }, { dependent: string | null }>) =>
+              virtual,
           },
           virtual: {
             virtual: true,
@@ -690,7 +691,8 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
             dependsOn: 'virtual',
             resolver: ({
               input: { virtual },
-            }: IvoContext<{ virtual: string }, any>) => virtual,
+            }: IvoContext<{ virtual: string }, { dependent: string | null }>) =>
+              virtual,
           },
           virtual: {
             alias: 'dependent',
@@ -875,7 +877,10 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
               dependsOn: 'virtual',
               resolver: ({
                 input: { virtual },
-              }: IvoContext<{ virtual: string }, any>) => virtual,
+              }: IvoContext<
+                { virtual: string },
+                { dependent: string | null }
+              >) => virtual,
             },
             virtual: {
               virtual: true,
@@ -944,7 +949,10 @@ export const Test_AllowedValues = ({ fx, Schema }: any) => {
               dependsOn: 'virtual',
               resolver: ({
                 input: { virtual },
-              }: IvoContext<{ virtual: string }, any>) => virtual,
+              }: IvoContext<
+                { virtual: string },
+                { dependent: string | null }
+              >) => virtual,
             },
             virtual: {
               alias: 'dependent',

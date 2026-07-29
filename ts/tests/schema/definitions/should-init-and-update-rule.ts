@@ -44,8 +44,12 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
           const Model = new Schema({
             isBlocked: {
               default: false,
-              ignore: ({ input: { env } }: IvoContext<{ env: string }, any>) =>
-                env === 'dev',
+              ignore: ({
+                input: { env },
+              }: IvoContext<
+                { env: string; isBlocked?: boolean },
+                { env: string; isBlocked: boolean; laxProp: number }
+              >) => env === 'dev',
             },
             env: { default: 'dev' },
             laxProp: { default: 0 },
@@ -106,8 +110,12 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
           const Model = new Schema({
             isBlocked: {
               default: false,
-              ignore: ({ input: { env } }: IvoContext<{ env: string }, any>) =>
-                env === 'dev',
+              ignore: ({
+                input: { env },
+              }: IvoContext<
+                { env: string; isBlocked?: boolean },
+                { env: string; isBlocked: boolean; laxProp: number }
+              >) => env === 'dev',
               validator: mockedValidator,
             },
             env: { default: 'dev' },
@@ -175,8 +183,12 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
           const Model = new Schema({
             isBlocked: {
               default: false,
-              ignore: ({ input: { env } }: IvoContext<{ env: string }, any>) =>
-                env === 'dev',
+              ignore: ({
+                input: { env },
+              }: IvoContext<
+                { env: string; isBlocked?: boolean },
+                { env: string; isBlocked: boolean; laxProp: number }
+              >) => env === 'dev',
               validator: mockedValidator,
             },
             env: { default: 'dev' },
@@ -373,7 +385,7 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
 
           expect(data).toMatchObject({
             env: 'dev',
-            isBlocked: false,
+            isBlocked: true,
             laxProp: 0,
           });
         });
@@ -381,12 +393,11 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
         it('should respect callable should init when condition passes at creation', async () => {
           const { data } = await Model.create({
             env: 'test',
-            isBlocked: 'yes',
+            isBlocked: true,
           });
 
-          expect(data).toMatchObject({
+          expect(data).toEqual({
             env: 'test',
-            isBlocked: 'yes',
             laxProp: 0,
           });
         });
@@ -400,15 +411,15 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
           it('should assume initialization as falsy if ignoreInit method returns nothing at creation', async () => {
             const { data } = await Model.create({ isBlocked: 'yes' });
 
-            expect(data).toMatchObject({ isBlocked: false, laxProp: 0 });
+            expect(data).toMatchObject({ isBlocked: 'yes', laxProp: 0 });
           });
         });
       });
 
       describe('behaviour of callable ignoreInit', () => {
-        let onSuccessValues: Record<string, unknown> = {};
-        let onSuccessStats: Record<string, number> = {};
-        let sanitizedValues: Record<string, unknown> = {};
+        const onSuccessValues: Record<string, unknown> = {};
+        const onSuccessStats: Record<string, number> = {};
+        const sanitizedValues: Record<string, unknown> = {};
 
         let Model: any;
 
@@ -450,9 +461,17 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
             };
           }
 
+          type IgnoreInitInput = { virtual?: boolean; laxProp?: string };
+          type IgnoreInitOutput = { dependent: string; laxProp: string };
+
           function onSuccess(prop: string) {
-            return ({ values }: ReadonlyIvoContext<any, any, any>) => {
-              onSuccessValues[prop] = values[prop];
+            return ({
+              input,
+              values,
+            }: ReadonlyIvoContext<IgnoreInitInput, IgnoreInitOutput>) => {
+              onSuccessValues[prop] =
+                (values as Record<string, unknown>)?.[prop] ??
+                (input as Record<string, unknown>)?.[prop];
               incrementOnSuccessStats(prop)();
             };
           }
@@ -465,12 +484,15 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
         });
 
         beforeEach(() => {
-          onSuccessStats = {};
-          onSuccessValues = {};
-          sanitizedValues = {};
+          for (const key of Object.keys(onSuccessStats))
+            delete onSuccessStats[key];
+          for (const key of Object.keys(onSuccessValues))
+            delete onSuccessValues[key];
+          for (const key of Object.keys(sanitizedValues))
+            delete sanitizedValues[key];
         });
 
-        it("should ignore virtuals at creation when their ignoreInit handler returns 'false'", async () => {
+        it("should respect virtuals at creation when their ignoreInit handler returns 'false'", async () => {
           const { data, handleSuccess } = await Model.create({
             laxProp: 'Peter',
             virtual: true,
@@ -478,16 +500,22 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
 
           await handleSuccess();
 
-          expect(data).toEqual({ dependent: '', laxProp: 'Peter' });
+          expect(data).toEqual({ dependent: 'changed', laxProp: 'Peter' });
 
-          expect(onSuccessStats).toEqual({ dependent: 1 });
+          expect(onSuccessStats).toEqual({
+            dependent: 1,
+            virtual: 3,
+          });
 
-          expect(onSuccessValues).toEqual({ dependent: '' });
+          expect(onSuccessValues).toEqual({
+            dependent: 'changed',
+            virtual: 'sanitized',
+          });
 
-          expect(sanitizedValues).toEqual({});
+          expect(sanitizedValues).toEqual({ virtual: 'sanitized' });
         });
 
-        it("should respect virtuals at creation when their ignoreInit handler returns 'true'", async () => {
+        it("should ignore virtuals at creation when their ignoreInit handler returns 'true'", async () => {
           const { data, handleSuccess } = await Model.create({
             laxProp: 'allow virtual',
             virtual: true,
@@ -496,18 +524,15 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
           await handleSuccess();
 
           expect(data).toEqual({
-            dependent: 'changed',
+            dependent: '',
             laxProp: 'allow virtual',
           });
 
-          expect(onSuccessStats).toEqual({ dependent: 1, virtual: 3 });
+          expect(onSuccessStats).toEqual({ dependent: 1 });
 
-          expect(onSuccessValues).toEqual({
-            dependent: 'changed',
-            virtual: 'sanitized',
-          });
+          expect(onSuccessValues).toEqual({ dependent: '' });
 
-          expect(sanitizedValues).toEqual({ virtual: 'sanitized' });
+          expect(sanitizedValues).toEqual({});
         });
       });
     });
@@ -597,12 +622,29 @@ export const Test_ShouldInitAndUpdateRules = ({ Schema, fx }: any) => {
         let onSuccessValues: Record<string, unknown> = {};
         let onSuccessStats: Record<string, number> = {};
 
+        type IgnoreUpdateOutput = {
+          dependentProp: boolean;
+          dependentProp_1: boolean;
+          laxProp: string;
+          laxProp_1: string;
+        };
+
         function incrementOnSuccessCountOf(prop: string) {
-          return ({ values }: ReadonlyIvoContext<any, any, any>) => {
+          return ({
+            values,
+          }: ReadonlyIvoContext<
+            {
+              virtual: boolean;
+              virtual_1: boolean;
+              laxProp: string;
+              laxProp_1: string;
+            },
+            IgnoreUpdateOutput
+          >) => {
             const previousCount = onSuccessStats[prop] ?? 0;
 
             onSuccessStats[prop] = previousCount + 1;
-            onSuccessValues[prop] = values[prop];
+            onSuccessValues[prop] = (values as Record<string, unknown>)[prop];
           };
         }
 

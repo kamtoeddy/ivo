@@ -7,7 +7,13 @@ describe('Context options', () => {
     const contextOptions = { lang: 'en' };
     const validator = () => true;
     function handleRequired(prop: string) {
-      return ({ options }: IvoContext<any>) => {
+      return ({
+        options,
+      }: IvoContext<
+        { name: string; price: number },
+        { name: string; price: number },
+        typeof contextOptions
+      >) => {
         ctxOptions[prop] = options;
 
         return false;

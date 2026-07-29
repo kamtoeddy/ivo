@@ -4,7 +4,6 @@ import {
   isEqual,
   isFunctionLike,
   isNullOrUndefined,
-  isOneOf,
   isPropertyOf,
   isRecordLike,
   makeResponse,
@@ -15,7 +14,6 @@ import {
 } from '../utils';
 import { defaultOptions, SchemaCore } from './schema-core';
 import {
-  type DefinitionRule,
   type InternalValidatorResponse,
   type InvalidValidatorResponse,
   type IvoContext,
@@ -307,19 +305,18 @@ class ModelTool<
     if (entityResolvers.length) {
       for (const task of await Promise.allSettled(
         entityResolvers.map((resolver) =>
-          Promise.try(resolver, rawInput, _previousValues as O, {
-            options: ctx.options,
-            updateOptions: ctx.updateOptions,
-          }).catch(() => false),
+          Promise.try(resolver, ctx).catch(() => false),
         ),
       )) {
         // if "task.value" is positive, it means "ignore"
-        if (task.status === 'fulfilled' && task.value)
+        if (task.status === 'fulfilled' && task.value) {
+          fieldsCollection.relevantFieldsProvided = new Set();
           return {
-            input,
-            output,
+            input: {} as Partial<I>,
+            output: {} as Partial<O>,
             fieldsCollection,
           };
+        }
       }
     }
 
@@ -328,16 +325,12 @@ class ModelTool<
 
     const tasks: [string[] | readonly string[], Promise<boolean>][] = [];
 
-    for (const fieldName of fieldsCollection.relevantFieldsProvided.values()) {
+    for (const fieldName of relevantFieldsProvided.values()) {
       const fieldInfo = fieldsCollection.get(fieldName);
 
-      const {
-        default: defaultValue,
-        ignore,
-        ignoreInit,
-        ignoreUpdate,
-        readonly,
-      } = this._getDefinition(fieldInfo.configName);
+      const { ignore, ignoreInit, ignoreUpdate } = this._getDefinition(
+        fieldInfo.configName,
+      );
 
       if (ignore) {
         tasks.push([[fieldInfo.name], Promise.try(ignore, ctx)]);
@@ -346,11 +339,8 @@ class ModelTool<
 
       const source = isUpdate ? ignoreUpdate : ignoreInit;
 
-      if (source === undefined) continue;
-
-      if (!source) {
+      if (source === true) {
         relevantFieldsProvided.delete(fieldName);
-
         // @ts-expect-error ikr
         delete input[fieldName];
 
@@ -362,32 +352,9 @@ class ModelTool<
         continue;
       }
 
-      if (readonly) {
-        if (defaultValue === undefined || typeof defaultValue === 'function') {
-          continue;
-        }
-
-        // readonly means: only allow update if value previousValue == defaultValue
-
-        // @ts-expect-error ikr
-        if (isEqual(previousValues[fieldName], defaultValue)) {
-          continue;
-        }
-
-        relevantFieldsProvided.delete(fieldName);
-
-        // @ts-expect-error ikr
-        delete input[fieldName];
-
-        if (fieldInfo.isOutput) {
-          // @ts-expect-error ikr
-          delete output[fieldName];
-        }
-
-        continue;
+      if (typeof source === 'function') {
+        tasks.push([[fieldInfo.name], Promise.try(source, ctx)]);
       }
-
-      tasks.push([[fieldInfo.name], Promise.try(source, ctx)]);
     }
 
     const relevantConfigNames = Array.from(
@@ -426,10 +393,7 @@ class ModelTool<
         if (typeof config === 'function') {
           tasks.push([
             relevantConfigNames,
-            Promise.try(config as any, rawInput, _previousValues as O, {
-              options: ctx.options,
-              updateOptions: ctx.updateOptions,
-            })
+            Promise.try(config as any, ctx)
               .then((v) => !!v)
               .catch(() => false),
           ]);
@@ -442,10 +406,7 @@ class ModelTool<
           ) {
             tasks.push([
               fields,
-              Promise.try(resolver, rawInput, _previousValues as O, {
-                options: ctx.options,
-                updateOptions: ctx.updateOptions,
-              })
+              Promise.try(resolver, ctx)
                 .then((v) => !!v)
                 .catch(() => false),
             ]);
@@ -458,7 +419,7 @@ class ModelTool<
       fieldsCollection.relevantFieldsProvided = relevantFieldsProvided;
 
       return {
-        input: rawInput,
+        input,
         output,
         fieldsCollection,
       };
@@ -473,13 +434,13 @@ class ModelTool<
 
         if (ignore) {
           // @ts-expect-error ikr
-          input[fieldName] = undefined;
+          delete input[fieldName];
 
           relevantFieldsProvided.delete(fieldName);
 
           if (fieldInfo.isOutput) {
             // @ts-expect-error ikr
-            output[fieldName] = undefined;
+            delete output[fieldName];
           }
 
           continue;
@@ -492,7 +453,7 @@ class ModelTool<
     fieldsCollection.relevantFieldsProvided = relevantFieldsProvided;
 
     return {
-      input: rawInput,
+      input,
       output,
       fieldsCollection,
     };
@@ -566,7 +527,7 @@ class ModelTool<
 
     try {
       value = isFunctionLike(_default)
-        ? await Promise.try(_default as any, this._getValidationSummary(false))
+        ? await Promise.try(_default as any, this._getValidationCtx(false))
         : this.defaults[prop as KeyOf<O>];
     } catch {
       value = null;
@@ -613,12 +574,6 @@ class ModelTool<
         ? fieldError
         : ({ reason: fieldError.reason } as never),
     ];
-  };
-
-  private _getValueBy = (prop: string, rule: DefinitionRule) => {
-    const value = this._getDefinition(prop)?.[rule];
-
-    return value;
   };
 
   private _cleanInput(input: Partial<I>) {
@@ -669,21 +624,38 @@ class ModelTool<
       : undefined;
   };
 
-  private _isInitAllowed = (prop: string, _extraCtx: ObjectType = {}) => {
-    if (isOneOf(this._getDefinition(prop).ignoreInit, [true, undefined]))
-      return true;
+  private _isInitAllowed = (
+    prop: string,
+    ctx?: IvoContext<I, O, CtxOptions>,
+  ) => {
+    const { ignoreInit } = this._getDefinition(prop);
 
-    return this._getValueBy(prop, 'ignoreInit') === true;
+    if (ignoreInit === undefined) return true;
+    if (ignoreInit === true) return false;
+    if (typeof ignoreInit === 'function') {
+      const _ctx = ctx ?? this._getValidationCtx(false);
+      return !ignoreInit(_ctx as never);
+    }
+
+    return true;
   };
 
-  private _ignoreUpdate = (prop: string, _extraCtx: ObjectType = {}) => {
-    if (isOneOf(this._getDefinition(prop).ignoreUpdate, [true, undefined]))
-      return true;
+  private _ignoreUpdate = (prop: string) => {
+    const { ignoreUpdate } = this._getDefinition(prop);
 
-    return this._getValueBy(prop, 'ignoreUpdate') === true;
+    if (ignoreUpdate === undefined) return false;
+    if (ignoreUpdate === true) return true;
+
+    if (typeof ignoreUpdate === 'function')
+      return !!ignoreUpdate(this._getValidationCtx(true));
+
+    return false;
   };
 
-  private _isVirtualInit = (prop: string, value: unknown = undefined) => {
+  private _isVirtualInit = (
+    prop: string,
+    ctx?: IvoContext<I, O, CtxOptions>,
+  ) => {
     const isAlias = this._isVirtualAlias(prop);
 
     if (!this._isVirtual(prop) && !isAlias) return false;
@@ -692,15 +664,12 @@ class ModelTool<
 
     const { ignoreInit } = this._getDefinition(definitionName);
 
-    const extraCtx = isAlias ? { [definitionName]: value } : {};
-
     return (
-      isEqual(ignoreInit, undefined) ||
-      this._isInitAllowed(definitionName, extraCtx)
+      isEqual(ignoreInit, undefined) || this._isInitAllowed(definitionName, ctx)
     );
   };
 
-  private _getValidationSummary = (isUpdate: boolean) =>
+  private _getValidationCtx = (isUpdate: boolean) =>
     this._getContext({
       data: this.ctxValues,
       isUpdate,
@@ -805,10 +774,7 @@ class ModelTool<
 
           try {
             value = isFunctionLike(_val)
-              ? await Promise.try(
-                  _val as any,
-                  this._getValidationSummary(false),
-                )
+              ? await Promise.try(_val as any, this._getValidationCtx(false))
               : _val;
           } catch {
             value = null;
@@ -1317,6 +1283,7 @@ class ModelTool<
         // @ts-expect-error
         const resolvedValue = await Promise.try(sanitizer, summary);
 
+        (this.ctxRawInput as any)[prop] = resolvedValue;
         this._updateCxtInput({ [prop]: resolvedValue } as never);
       }),
     );
@@ -1370,7 +1337,7 @@ class ModelTool<
 
     if (!sanitizer) return [false, undefined];
 
-    if (isCreation && isEqual(ignoreInit, false)) return [false, undefined];
+    if (isCreation && ignoreInit === true) return [false, undefined];
 
     return [true, sanitizer];
   }
@@ -1395,9 +1362,7 @@ class ModelTool<
       'ignoreUpdate',
     );
 
-    const extraCtx = isAlias ? { [propName]: value } : {};
-
-    const ignoreUpdate = this._ignoreUpdate(propName, extraCtx);
+    const ignoreUpdate = this._ignoreUpdate(propName);
 
     if (this._isVirtual(prop))
       return hasIgnoreUpdateRule ? !ignoreUpdate : true;
@@ -1501,6 +1466,13 @@ class ModelTool<
     let _updates = Object.assign({}, data);
     let toResolve = [] as KeyOf<O>[];
 
+    const values = isUpdate ? data : Object.assign({}, this.ctxValues, data),
+      _ctx = this._getContext({
+        data: values,
+        isUpdate,
+        rawInput: this.ctxRawInput,
+      });
+
     for (const prop of successFulChanges) {
       if (this._regeneratedProps.includes(prop) && !isPropertyOf(prop, data))
         continue;
@@ -1509,7 +1481,11 @@ class ModelTool<
 
       if (!dependencies.length) continue;
 
-      if (isCreation && this._isVirtual(prop) && !this._isVirtualInit(prop))
+      if (
+        isCreation &&
+        this._isVirtual(prop) &&
+        !this._isVirtualInit(prop, _ctx)
+      )
         continue;
 
       if (
@@ -1523,13 +1499,6 @@ class ModelTool<
     }
 
     toResolve = Array.from(new Set(toResolve));
-
-    const values = isUpdate ? data : Object.assign({}, this.ctxValues, data),
-      _ctx = this._getContext({
-        data: values,
-        isUpdate,
-        rawInput: this.ctxRawInput,
-      });
 
     await Promise.allSettled(
       toResolve.map(async (prop) => {
@@ -1793,6 +1762,11 @@ class ModelTool<
   async create(input: Partial<I>, contextOptions: CtxOptions) {
     const options = this._updateCtxOptions(contextOptions);
 
+    this.partialContext = {} as I;
+    this.ctxValues = {} as O;
+    this.ctxInput = {} as Partial<I>;
+    this.ctxRawInput = {} as Partial<I>;
+
     if (!areValuesOk(input)) input = {};
 
     // Step 1 – clean raw input (strips unknown / conflicting virtual+alias pairs)
@@ -1946,6 +1920,11 @@ class ModelTool<
   async update(values: O, changes: Partial<I>, ctxOptions: CtxOptions) {
     const ctxOpts = this._updateCtxOptions(ctxOptions);
     const emptyErrorTool = new ErrorTool<ErrorMetadata>();
+
+    this.partialContext = {} as I;
+    this.ctxValues = {} as O;
+    this.ctxInput = {} as Partial<I>;
+    this.ctxRawInput = {} as Partial<I>;
 
     // Step 1 – validate arguments
     if (!areValuesOk(values) || !areValuesOk(changes)) {

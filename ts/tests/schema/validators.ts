@@ -460,8 +460,26 @@ export const Test_Validators = ({ Schema, fx }: any) => {
           let valuesProvided: Record<string, unknown> = {};
           let ctxStats: Record<string, unknown> = {};
 
+          type ValidatorsSchemaInput = {
+            virtual?: unknown;
+            virtual2?: unknown;
+          };
+          type ValidatorsSchemaOutput = {
+            dependent: string;
+            lax: string;
+            readonly: unknown;
+            readonlyLax: string;
+            required: unknown;
+          };
+
           function makeSecondaryValidator(prop: string) {
-            return (value: unknown, ctx: ReadonlyIvoContext<any, any, any>) => {
+            return (
+              value: unknown,
+              ctx: ReadonlyIvoContext<
+                ValidatorsSchemaInput,
+                ValidatorsSchemaOutput
+              >,
+            ) => {
               ctxStats[prop] = ctx;
 
               valuesProvided[prop] = value;
@@ -691,8 +709,19 @@ export const Test_Validators = ({ Schema, fx }: any) => {
           });
 
           it('should respect errors returned in secondary validators(sync & async)', async () => {
-            const resolver = (ctx: ReadonlyIvoContext<any, any, any>) =>
-              ctx.rawInput?.v ?? ctx.input?.v ?? ctx.values?.v;
+            type VSchemaInput = { v?: unknown };
+            type VSchemaOutput = {
+              p1: string;
+              p2: string;
+              p3: string;
+              p4: string;
+              d1: string;
+              d2: string;
+            };
+
+            const resolver = (
+              ctx: ReadonlyIvoContext<VSchemaInput, VSchemaOutput>,
+            ) => ctx.input?.v ?? ctx.rawInput?.v;
 
             const Model = new Schema({
               p1: {
@@ -724,7 +753,10 @@ export const Test_Validators = ({ Schema, fx }: any) => {
                 virtual: true,
                 validator: [
                   validator,
-                  (v: unknown, ctx: ReadonlyIvoContext<any, any, any>) => {
+                  (
+                    v: unknown,
+                    ctx: ReadonlyIvoContext<VSchemaInput, VSchemaOutput>,
+                  ) => {
                     if (v === 'throw') throw new Error('lol');
 
                     return ctx.isUpdate

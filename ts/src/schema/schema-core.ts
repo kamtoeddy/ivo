@@ -912,7 +912,7 @@ abstract class SchemaCore<
       return { valid, reason: 'Readonly(lax) properties cannot be dependent' };
 
     if (
-      (readonly === 'lax' || hasDependentRule || ignoreInit === false) &&
+      (readonly === 'lax' || hasDependentRule || ignoreInit === true) &&
       isEqual(_default, undefined)
     )
       return {
@@ -1065,11 +1065,11 @@ abstract class SchemaCore<
 
     const valid = false;
 
-    if (ignoreInit !== false && !isFunctionLike(ignoreInit))
+    if (ignoreInit !== true && !isFunctionLike(ignoreInit))
       return {
         valid,
         reason:
-          "The initialization of a property can only be blocked if the 'ignoreinit' rule is set to 'false' or a function that returns a boolean",
+          "The initialization of a property can only be blocked if the 'ignoreinit' rule is set to 'true' or a function that returns a boolean",
       };
 
     if (!hasAnyOf(definition, ['default', 'virtual']))
@@ -1088,17 +1088,17 @@ abstract class SchemaCore<
     const { readonly, ignoreInit, ignoreUpdate } = definition!;
     const valid = false;
 
-    if (ignoreUpdate !== false && !isFunctionLike(ignoreUpdate))
+    if (ignoreUpdate !== true && !isFunctionLike(ignoreUpdate))
       return {
         valid,
         reason:
-          "'ignoreUpdate' only accepts false or a function that returns a boolean",
+          "'ignoreUpdate' only accepts true or a function that returns a boolean",
       };
 
-    if (ignoreInit === false && ignoreUpdate === false)
+    if (ignoreInit === true && ignoreUpdate === true)
       return {
         valid,
-        reason: "Both 'ignoreInit' & 'ignoreUpdate' cannot be 'false'",
+        reason: "Both 'ignoreInit' & 'ignoreUpdate' cannot be 'true'",
       };
 
     if (readonly === true && isEqual(ignoreInit, undefined))
