@@ -1356,24 +1356,26 @@ class ModelTool<
     const ctx = this._getContext();
 
     const isCreation = !ctx.isUpdate;
+    const toResolve = new Set<string>();
+
+    for (const configName in this._definitions) {
+      const dependsOn = this._definitions[configName]?.dependsOn;
+
+      if (!dependsOn) continue;
+
+      if (
+        toArray(dependsOn).some((parent) =>
+          fieldsCollection.relevantDependentConfigNames.has(parent),
+        )
+      )
+        toResolve.add(configName);
+    }
+
     const fieldsResolved = new Set<string>();
     const values = cloneValue<Partial<O>>(ctx.values);
 
-    let toResolve = [] as KeyOf<O>[];
-
-    for (const prop of fieldsCollection.relevantDependentConfigNames.values()) {
-      const fieldInfo = fieldsCollection.get(prop);
-
-      const dependencies = this._getDependencies(fieldInfo.configName);
-
-      if (dependencies.length)
-        toResolve = toResolve.concat(dependencies as never);
-    }
-
-    toResolve = Array.from(new Set(toResolve));
-
     await Promise.allSettled(
-      toResolve.map(async (name) => {
+      toResolve.values().map(async (name) => {
         const config = this._getDefinition(name);
 
         // readonly dependents only re-resolve while their value still
@@ -1398,6 +1400,7 @@ class ModelTool<
         try {
           value = await Promise.try(resolver, ctx);
         } catch {
+          // @ts-expect-error ikr
           value = isCreation ? null : ctx.previousValues?.[name];
         }
 
@@ -1412,7 +1415,7 @@ class ModelTool<
       }),
     );
 
-    return fieldsResolved;
+    return fieldsCollection.newWithResolvedDependentFields(fieldsResolved);
   }
 
   private _sanitizeValidationResponse<T>(
@@ -1618,12 +1621,10 @@ class ModelTool<
     await this._handleSanitizationOfVirtuals(fieldsCollection);
 
     // Step 10 – resolve dependent field values
-    let fieldsToResolve = cloneValue(fieldsCollection.fieldsProvided);
+    let collection = fieldsCollection.clonedFromRelevantFieldsProvided();
 
-    while (fieldsToResolve.size > 0)
-      fieldsToResolve = await this._resolveDependentChanges(
-        fieldsCollection.withRelevantDependentFields(fieldsToResolve),
-      );
+    while (collection.relevantDependentConfigNames.size > 0)
+      collection = await this._resolveDependentChanges(collection);
 
     // Step 11 – attach timestamps
     const finalData = this._useConfigProps(false);
@@ -1779,12 +1780,10 @@ class ModelTool<
     await this._handleSanitizationOfVirtuals(fieldsCollection);
 
     // Step 14 – resolve dependent field values
-    let fieldsToResolve = cloneValue(fieldsCollection.fieldsProvided);
+    let collection = fieldsCollection.clonedFromRelevantFieldsProvided();
 
-    while (fieldsToResolve.size > 0)
-      fieldsToResolve = await this._resolveDependentChanges(
-        fieldsCollection.withRelevantDependentFields(fieldsToResolve),
-      );
+    while (collection.relevantDependentConfigNames.size > 0)
+      collection = await this._resolveDependentChanges(collection);
 
     // Step 15 – drop fields that still equal the old value after all resolvers
     for (const prop of getKeysAsProps(updates)) {
@@ -1903,8 +1902,20 @@ class FieldInfoCollection {
     this._relevantFieldsProvided = outputFieldsChanged;
   }
 
-  withRelevantDependentFields(names: Set<string>) {
-    const col = cloneValue(this);
+  clonedFromRelevantFieldsProvided() {
+    const col = new FieldInfoCollection(this._fields);
+    const configNames = new Set<string>();
+
+    for (const field_name of this._relevantFieldsProvided)
+      configNames.add(this.get(field_name).configName);
+
+    col._relevantDependentConfigNames = configNames;
+
+    return col;
+  }
+
+  newWithResolvedDependentFields(names: Set<string>) {
+    const col = new FieldInfoCollection(this._fields);
 
     col._relevantDependentConfigNames = names;
 
