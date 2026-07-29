@@ -7,8 +7,8 @@ export { OrderItem };
 const OrderItem = storeItemSchema
   .extend<OrderItemInput, IOrderItem>(
     {
-      costPrice: { readonly: true, validator: validatePrice },
-      price: { readonly: true, validator: validatePrice },
+      costPrice: { default: 0, readonly: true, validator: validatePrice },
+      price: { default: 0, readonly: true, validator: validatePrice },
     },
     {
       timestamps: true,

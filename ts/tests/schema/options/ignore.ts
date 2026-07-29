@@ -127,10 +127,12 @@ export const Test_SchemaOptionIgnore = ({
         ).getModel();
 
         const item = { lax: 'initial_lax', lax_1: 'initial_lax_1' };
-        const res = await model.update(item, { lax: 'ignore_value' });
-        expect(res.error).toBeDefined();
+        const res = await model.update(item, { lax: 'ignore_value' }, null);
+        expect(res.data).toBeNull();
+        expect(res.error).toBeNull();
+        expect(typeof res.handleFailure).toBe('function');
 
-        const res2 = await model.update(item, { lax: 'updated_lax' });
+        const res2 = await model.update(item, { lax: 'updated_lax' }, null);
         expect(res2.data).toEqual({ lax: 'updated_lax' });
       });
     });

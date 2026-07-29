@@ -313,40 +313,40 @@ namespace NS {
         RequiredConfigObject<Input, Output, CtxOptions, Metadata>
       >;
 
+  type FieldDefinition<
+    K extends keyof Input | keyof Output,
+    Input,
+    Output,
+    CtxOptions extends ObjectType,
+    Metadata,
+  > =
+    | (K extends keyof Output & keyof Input
+        ? PublicField<K, Input, Output, CtxOptions, Metadata>
+        : never)
+    | (K extends keyof Output
+        ? PrivateField<K, Input, Output, CtxOptions>
+        : never)
+    | (K extends keyof Input
+        ? VirtualField<K, Input, Output, CtxOptions, Metadata>
+        : never);
+
   export type Definitions<
     Input,
     Output,
     CtxOptions extends ObjectType,
     Metadata,
-  > = PrettyType<
-    {
-      [K in keyof (Input | Output)]: PublicField<
-        K,
-        Input,
-        Output,
-        CtxOptions,
-        Metadata
-      >;
-    } & {
-      [K in keyof Omit<Output, keyof Input>]?: PrivateField<
-        K,
-        Input,
-        Output,
-        CtxOptions
-      >;
-    } & {
-      [K in keyof Input | string]: VirtualField<
-        K,
-        Input,
-        Output,
-        CtxOptions,
-        Metadata
-      >;
-    }
-  >;
+  > = PrettyType<{
+    [K in keyof Input | keyof Output]?: FieldDefinition<
+      K,
+      Input,
+      Output,
+      CtxOptions,
+      Metadata
+    >;
+  }>;
 
   type PublicField<
-    K extends keyof (Output | Input),
+    K extends keyof Output & keyof Input,
     Input,
     Output,
     CtxOptions extends ObjectType,
@@ -448,7 +448,7 @@ namespace NS {
   };
 
   type Dependables<K extends keyof Output, Input, Output> = Exclude<
-    KeyOf<Input | Output>,
+    KeyOf<Input> | KeyOf<Output>,
     K
   >;
 
@@ -482,7 +482,7 @@ namespace NS {
   > = XOR<
     { ignore?: SetterWithSummary<boolean, Input, Output, CtxOptions> },
     XOR<
-      { default: T; readonly?: true },
+      { default: T; readonly?: boolean | 'lax' },
       XOR<
         {
           ignoreInit?: Setter<boolean, Input, Output, CtxOptions>;
@@ -503,7 +503,7 @@ namespace NS {
   >;
 
   type LaxField<
-    K extends keyof (Output | Input),
+    K extends keyof Output & keyof Input,
     Input,
     Output,
     CtxOptions extends ObjectType,
@@ -523,7 +523,7 @@ namespace NS {
     };
 
   type Required<
-    K extends keyof (Output | Input),
+    K extends keyof Output & keyof Input,
     Input,
     Output,
     CtxOptions extends ObjectType,
@@ -703,8 +703,8 @@ namespace NS {
     ErrorPayload = IvoErrorPayload<ErrorMetadata, KeyOf<Input>>,
   > = Options<Input, Output, CtxOptions, ErrorMetadata, ErrorPayload> & {
     remove?:
-      | KeyOf<ParentInput | ParentOutput>
-      | KeyOf<ParentInput | ParentOutput>[];
+      | (KeyOf<ParentInput> | KeyOf<ParentOutput>)
+      | (KeyOf<ParentInput> | KeyOf<ParentOutput>)[];
     useParentOptions?: boolean;
   };
 }

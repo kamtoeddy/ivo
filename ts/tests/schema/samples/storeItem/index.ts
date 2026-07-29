@@ -21,11 +21,15 @@ const storeItemSchema = new Schema<StoreItemInput, StoreItem>(
       resolver: () => 1,
     },
     _laxProp: { default: '', validator: validateString('Invalid lax prop') },
-    _readOnlyLax1: { default: () => '', readonly: 'lax' },
+    _readOnlyLax1: { default: '', readonly: 'lax' },
     _readOnlyLax2: { default: '', readonly: 'lax' },
-    _readOnlyNoInit: { default: '', readonly: true, shouldInit: false },
+    _readOnlyNoInit: { default: '', readonly: true },
     _virtualForDependentReadOnly: { virtual: true, validator: () => true },
-    id: { readonly: true, validator: validateString('Invalid id') },
+    id: {
+      default: '',
+      readonly: true,
+      validator: validateString('Invalid id'),
+    },
     name: { required: true, validator: validateName },
     measureUnit: {
       required: true,
@@ -51,7 +55,7 @@ const storeItemSchema = new Schema<StoreItemInput, StoreItem>(
     quantityChangeCounter: {
       default: 0,
       dependsOn: 'quantity',
-      resolver({ input: { quantityChangeCounter } }) {
+      resolver({ values: { quantityChangeCounter } }) {
         return (quantityChangeCounter ?? 0) + 1;
       },
     },
@@ -63,7 +67,8 @@ const storeItemSchema = new Schema<StoreItemInput, StoreItem>(
 );
 
 function resolveQuantity({
-  input: { quantity, _quantity, quantities },
+  input: { _quantity, quantities },
+  values: { quantity },
 }: IvoContext<StoreItemInput, StoreItem>) {
   const newQty = _quantity ?? quantity;
 

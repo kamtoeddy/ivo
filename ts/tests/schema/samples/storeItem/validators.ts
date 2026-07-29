@@ -80,8 +80,8 @@ export const validatePrice = (value: any) =>
 export const validateQuantity = (value: any) =>
   makeNumberValidator({ min: 0 })(value);
 
-export const validateOtherQuantity = (value: any, ctx: StoreItemInput) => {
-  const mu = getMeasureUnit(ctx.otherMeasureUnits!, value?.name);
+export const validateOtherQuantity = (value: any, summary: SummaryType) => {
+  const mu = getMeasureUnit(summary.values.otherMeasureUnits!, value?.name);
 
   const isValidQty = makeNumberValidator({
     min: 0.1,
@@ -95,7 +95,7 @@ export const validateOtherQuantity = (value: any, ctx: StoreItemInput) => {
   };
 };
 
-export const validateQuantities = async (value: any, { ctx }: SummaryType) => {
+export const validateQuantities = async (value: any, summary: SummaryType) => {
   //   IOtherMeasureUnit
   // >({
   //   min: 1,
@@ -122,7 +122,7 @@ export const validateQuantities = async (value: any, { ctx }: SummaryType) => {
     min: 1,
     unique: false,
     filter: (v) => !!v,
-    modifier: (v) => validateOtherQuantity(v, ctx),
+    modifier: (v) => validateOtherQuantity(v, summary),
     postModFilter: (v) => v.valid,
     map: (v) => v.validated!,
   })(value);
@@ -136,7 +136,8 @@ const getMeasureUnit = (
 };
 
 export const sanitizeQuantities = ({
-  ctx: { quantities, otherMeasureUnits },
+  input: { quantities },
+  values: { otherMeasureUnits },
 }: SummaryType) => {
   return (quantities as IOtherQuantity[]).reduce((prev, { name, quantity }) => {
     const mu = getMeasureUnit(otherMeasureUnits!, name);

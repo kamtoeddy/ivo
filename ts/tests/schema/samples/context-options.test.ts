@@ -63,7 +63,6 @@ describe('Context options', () => {
     const Model = new Schema<
       { name: string },
       { name: string },
-      {},
       { ctxHandler: () => any }
     >({
       name: {

@@ -272,7 +272,7 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
                 >) {
                   contextRecord.setQuantity = setQuantity;
 
-                  return setQuantity > 0;
+                  return (setQuantity ?? 0) > 0;
                 },
                 ignoreUpdate({
                   input: { setQuantity },
@@ -283,7 +283,7 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
                 >) {
                   contextRecord.setQuantity = setQuantity;
 
-                  return setQuantity > quantity;
+                  return (setQuantity ?? 0) > quantity;
                 },
                 validator,
               },
@@ -836,8 +836,8 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
         }
 
         function onSuccess(prop: string) {
-          return ({ ctx }: ReadonlyIvoContext<any, any, any>) => {
-            onSuccessValues[prop] = ctx[prop];
+          return (context: ReadonlyIvoContext<any, any, any>) => {
+            onSuccessValues[prop] = (context.values as any)?.[prop];
             incrementOnSuccessStats(prop)();
           };
         }
@@ -969,7 +969,8 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
             dependent: {
               default: '',
               dependsOn: 'virtual',
-              resolver: ({ ctx }) => ctx.virtual,
+              resolver: (context: any) =>
+                context.input?.virtual ?? context.values?.virtual,
             },
             virtual: {
               virtual: true,

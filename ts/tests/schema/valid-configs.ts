@@ -10,7 +10,7 @@ const publicOnly = new Schema<PublicOnly>({
   name: { required: true, validator: () => true },
 }).getModel();
 
-publicOnly.create({ dob: '', name: '' }).then(({ data }) => {
+publicOnly.create({ dob: '', name: '' }, null as any).then(({ data }) => {
   data?.dob;
   data?.name;
 });
@@ -22,7 +22,7 @@ const outputOnly = new Schema<{}, PrivateOnly>({
   constants: { constant: true, value: '' },
 }).getModel();
 
-outputOnly.create({}).then(({ data }) => {
+outputOnly.create({}, null as any).then(({ data }) => {
   data?.constants;
 });
 
@@ -46,7 +46,7 @@ const privatesAndPublic = new Schema<PrivateAndPublicInput, PrivateAndPublic>({
   public: { required: true, validator: () => true },
 }).getModel();
 
-privatesAndPublic.create({ public: '' }).then(({ data }) => {
+privatesAndPublic.create({ public: '' }, null as any).then(({ data }) => {
   data?.constants;
   data?.dependents;
   data?.public;
@@ -72,7 +72,7 @@ const virtualsAndPrivate = new Schema<
   virtual: { virtual: true, validator: () => true },
 }).getModel();
 
-virtualsAndPrivate.create({ virtual: '' }).then(({ data }) => {
+virtualsAndPrivate.create({ virtual: '' }, null as any).then(({ data }) => {
   data?.dependents;
 });
 
@@ -96,6 +96,8 @@ const virtualsPublicAndPrivate = new Schema<
   virtual: { virtual: true, validator: () => true },
 }).getModel();
 
-virtualsPublicAndPrivate.create({ virtual: '' }).then(({ data }) => {
-  data?.dependents;
-});
+virtualsPublicAndPrivate
+  .create({ virtual: '' }, null as any)
+  .then(({ data }) => {
+    data?.dependents;
+  });

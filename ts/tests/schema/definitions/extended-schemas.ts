@@ -86,7 +86,7 @@ export const Test_ExtendedSchemas = ({ Schema }: any) => {
             .extend({ name: { default: '' } })
             .getModel();
 
-          const { data, error } = await Model.create();
+          const { data, error } = await Model.create({}, null);
 
           expect(error).toBeNull();
           expect(data).toMatchObject({ id: 1, name: '' });
@@ -102,7 +102,7 @@ export const Test_ExtendedSchemas = ({ Schema }: any) => {
             .extend({ name: { default: '' } })
             .getModel();
 
-          const { data, error } = await Model.create();
+          const { data, error } = await Model.create({}, null);
 
           expect(error).toBeNull();
           expect(data).toMatchObject({ id: 1, name: '' });
@@ -118,7 +118,7 @@ export const Test_ExtendedSchemas = ({ Schema }: any) => {
             .extend({ name: { default: '' } })
             .getModel();
 
-          const { data, error } = await Model.create();
+          const { data, error } = await Model.create({}, null);
 
           expect(error).toBeNull();
           expect(data).toMatchObject({ id: 1, name: '' });
@@ -138,7 +138,7 @@ export const Test_ExtendedSchemas = ({ Schema }: any) => {
               .extend({ name: { default: '' } }, { useParentOptions })
               .getModel();
 
-            const { data, error } = await Model.create();
+            const { data, error } = await Model.create({}, null);
 
             expect(error).toBeNull();
             expect(data).toMatchObject({ id: 1, name: '' });
@@ -155,7 +155,7 @@ export const Test_ExtendedSchemas = ({ Schema }: any) => {
             .extend({ name: { default: '' } }, { useParentOptions: false })
             .getModel();
 
-          const { data, error } = await Model.create();
+          const { data, error } = await Model.create({}, null);
 
           expect(error).toBeNull();
           expect(data).toMatchObject({ id: 1, name: '' });

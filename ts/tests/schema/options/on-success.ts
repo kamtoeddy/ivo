@@ -611,7 +611,7 @@ export const Test_SchemaOnSuccess = ({ Schema, fx }: any) => {
       });
 
       describe('behaviour onSuccess config object', () => {
-        let successValuesFromOptions: Record<string, unknown> = {};
+        let successValuesFromOptions: Record<string, number> = {};
 
         beforeEach(() => {
           successValuesFromOptions = {};

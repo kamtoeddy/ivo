@@ -92,16 +92,21 @@ export const Test_SchemaEqualityDepth = ({ Schema, fx }: any) => {
           ];
 
           for (const values of values_) {
-            const { data, error } = await Model.update(user, values.changes);
+            const { data, error, handleFailure } = await Model.update(
+              user,
+              values.changes,
+              null,
+            );
 
             if (values.data) {
               expect(error).toEqual(null);
               expect(data).toMatchObject(values.data);
             }
 
-            if (values.error) {
+            if ((values as any).error) {
               expect(data).toEqual(null);
-              expect(error).toMatchObject(values.error);
+              expect(error).toBeNull();
+              expect(typeof handleFailure).toBe('function');
             }
           }
         });
@@ -173,16 +178,21 @@ export const Test_SchemaEqualityDepth = ({ Schema, fx }: any) => {
           ];
 
           for (const values of values_) {
-            const { data, error } = await Model.update(user, values.changes);
+            const { data, error, handleFailure } = await Model.update(
+              user,
+              values.changes,
+              null,
+            );
 
             if (values.data) {
               expect(error).toEqual(null);
               expect(data).toMatchObject(values.data);
             }
 
-            if (values.error) {
+            if ((values as any).error) {
               expect(data).toEqual(null);
-              expect(error).toMatchObject(values.error);
+              expect(error).toBeNull();
+              expect(typeof handleFailure).toBe('function');
             }
           }
         });
@@ -251,7 +261,11 @@ export const Test_SchemaEqualityDepth = ({ Schema, fx }: any) => {
           ];
 
           for (const values of values_) {
-            const { data, error } = await Model.update(user, values.changes);
+            const { data, error, handleFailure } = await Model.update(
+              user,
+              values.changes,
+              null,
+            );
 
             // if (values.data) {
             //   expect(error).toEqual(null);
@@ -260,7 +274,8 @@ export const Test_SchemaEqualityDepth = ({ Schema, fx }: any) => {
 
             if (values.error) {
               expect(data).toEqual(null);
-              expect(error).toMatchObject(values.error);
+              expect(error).toBeNull();
+              expect(typeof handleFailure).toBe('function');
             }
           }
         });

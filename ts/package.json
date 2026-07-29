@@ -13,7 +13,8 @@
     "test": "bun run build && bun test",
     "test:cov": "bun run build && bun test --coverage",
     "test:watch": "bun run build && bun test --watch",
-    "typecheck": "clear; tsc --noEmit -p ./tsconfig.json"
+    "typecheck": "clear; tsc --noEmit -p ./tsconfig.json",
+    "typecheck:test": "clear; tsc --noEmit -p tests/tsconfig.json"
   },
   "license": "../LICENSE",
   "homepage": "https://github.com/kamtoeddy/ivo/ts/#readme",

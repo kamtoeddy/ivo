@@ -757,7 +757,9 @@ class ModelTool<
   ) {
     return {
       data: null,
-      error: this._options.sanitizeError(errorTool.payload, options),
+      error: errorTool.hasErrors
+        ? this._options.sanitizeError(errorTool.payload, options)
+        : null,
       handleFailure: this._makeHandleFailure(ctx, options),
       handleSuccess: null,
     };

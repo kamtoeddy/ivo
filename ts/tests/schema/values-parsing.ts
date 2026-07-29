@@ -18,7 +18,7 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
 
     describe('valid data', () => {
       it('should allow for create method of model to be empty', async () => {
-        const { data, error } = await User.create();
+        const { data, error } = await User.create({}, null);
 
         expect(error).toBeNull();
 
@@ -26,7 +26,7 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
       });
 
       it('should set values properly at creation', async () => {
-        const { data, error } = await User.create(validData);
+        const { data, error } = await User.create(validData, null);
 
         expect(error).toBeNull();
 
@@ -34,14 +34,16 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
       });
 
       it('should set values properly during deletion', async () => {
-        expectNoFailure(async () => await User.delete({ ...validData, id: 1 }));
+        expectNoFailure(
+          async () => await User.delete({ ...validData, id: 1 }, null),
+        );
       });
 
       it('should set values properly during updates', async () => {
         const user = { ...validData, id: 1 };
         const name = 'Mike';
 
-        const { data, error } = await User.update(user, { name });
+        const { data, error } = await User.update(user, { name }, null);
 
         expect(error).toBeNull();
 
@@ -52,7 +54,7 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
     describe('invalid data', () => {
       it('should ignore invalid data at creation', async () => {
         for (const val of invalidData) {
-          const operation = async () => await User.create(val);
+          const operation = async () => await User.create(val, null);
 
           expectNoFailure(operation);
 
@@ -66,7 +68,8 @@ export const valuesParsing_Tests = ({ Schema }: any) => {
 
       it('should reject invalid data during updates', async () => {
         for (const val of invalidData) {
-          const operation = async () => await User.update(val, { name: 'yoo' });
+          const operation = async () =>
+            await User.update(val, { name: 'yoo' }, null);
 
           expectNoFailure(operation);
 

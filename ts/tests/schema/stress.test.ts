@@ -39,7 +39,10 @@ describe('Stress tests — pathological input shapes', () => {
       },
     }).getModel();
 
-    const { data, error } = await Model.create({ payload: deepObj });
+    const { data, error } = await Model.create(
+      { payload: deepObj },
+      null as any,
+    );
     expect(error).toBeNull();
     expect(data).not.toBeNull();
   });
@@ -59,7 +62,10 @@ describe('Stress tests — pathological input shapes', () => {
       },
     }).getModel();
 
-    const { data, error } = await Model.create({ imgs: bigArray } as any);
+    const { data, error } = await Model.create(
+      { imgs: bigArray } as any,
+      null as any,
+    );
     expect(error).toBeNull();
     expect(data).toBeDefined();
     expect(Array.isArray(data!.imgs)).toBeTruthy();
@@ -81,7 +87,10 @@ describe('Stress tests — pathological input shapes', () => {
       },
     }).getModel();
 
-    const { data, error } = await Model.create({ text: longStr } as any);
+    const { data, error } = await Model.create(
+      { text: longStr } as any,
+      null as any,
+    );
     expect(error).toBeNull();
     expect(data).toBeDefined();
     expect(typeof data!.text).toBe('string');
@@ -107,7 +116,7 @@ describe('Stress tests — pathological input shapes', () => {
     // or fall back to JSON methods; the latter will throw for circular refs.
     // The test will therefore highlight environments or code paths that don't
     // safely handle circular inputs.
-    const { data, error } = await Model.create({ obj: circular });
+    const { data, error } = await Model.create({ obj: circular }, null as any);
     expect(error).toBeNull();
     expect(data).not.toBeNull();
   });
