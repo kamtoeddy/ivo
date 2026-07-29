@@ -26,6 +26,7 @@ export type {
   Validator,
   ValidatorResponse,
   ValidatorResponseObject,
+  VirtualResolver,
   XOR,
 };
 
@@ -81,7 +82,7 @@ type IvoContext<Input, Output = Input, CtxOptions extends ObjectType = {}> = (
           input: Partial<RealType<Input>>;
           isUpdate: false;
           previousValues: null;
-          values: Readonly<Output>;
+          values: Readonly<Partial<Output>>;
         },
         CtxOptions
       >
@@ -266,7 +267,6 @@ namespace NS {
   };
 
   export type IgnoreConfigOption<Input, Output, CtxOptions extends ObjectType> =
-    | boolean
     | IgnoreResolver<Input, Output, CtxOptions>
     | IgnoreConfigObject<Input, Output, CtxOptions>
     | ArrayOfMinSizeOne<IgnoreConfigObject<Input, Output, CtxOptions>>;
@@ -285,7 +285,6 @@ namespace NS {
     Output,
     CtxOptions extends ObjectType,
   > =
-    | boolean
     | IgnoreUpdateResolver<Input, Output, CtxOptions>
     | IgnoreUpdateConfigObject<Input, Output, CtxOptions>
     | ArrayOfMinSizeOne<IgnoreUpdateConfigObject<Input, Output, CtxOptions>>;
@@ -384,8 +383,8 @@ namespace NS {
       constant?: unknown;
       default?: unknown;
       dependsOn?: KeyOf<Input> | KeyOf<Input>[];
-      readonly?: boolean | 'lax';
-      resolver?: Function;
+      readonly?: true;
+      resolver?: SetterWithSummary<unknown, Input, Output, {}>;
       required?: boolean | RequiredHandler<Input, Output, {}, Metadata>;
       sanitizer?: VirtualResolver<K, Input, Output, {}>;
       ignore?: SetterWithSummary<boolean, Input, Output, {}>;
@@ -482,7 +481,7 @@ namespace NS {
   > = XOR<
     { ignore?: SetterWithSummary<boolean, Input, Output, CtxOptions> },
     XOR<
-      { default: T; readonly?: boolean | 'lax' },
+      { default: T; readonly?: true },
       XOR<
         {
           ignoreInit?: Setter<boolean, Input, Output, CtxOptions>;
@@ -629,7 +628,6 @@ namespace NS {
             ErrorMetadata
           >
         >;
-    setMissingDefaultsOnUpdate?: boolean;
     ignore?: IgnoreConfigOption<Input, Output, CtxOptions>;
     ignoreUpdate?: IgnoreUpdateConfigOption<Input, Output, CtxOptions>;
     required?: RequiredConfigOption<Input, Output, CtxOptions, ErrorMetadata>;
@@ -671,7 +669,6 @@ namespace NS {
             ErrorMetadata
           >
         >;
-    setMissingDefaultsOnUpdate?: boolean;
     ignore?: IgnoreConfigOption<Input, Output, CtxOptions>;
     ignoreUpdate?: IgnoreUpdateConfigOption<Input, Output, CtxOptions>;
     required?: RequiredConfigOption<Input, Output, CtxOptions, ErrorMetadata>;
@@ -812,7 +809,6 @@ const ALLOWED_OPTIONS: NS.OptionsKey<unknown, unknown>[] = [
   'postValidate',
   'required',
   'sanitizeError',
-  'setMissingDefaultsOnUpdate',
   'timestamps',
 ];
 const CONSTANT_RULES = ['constant', 'onDelete', 'onSuccess', 'value'];

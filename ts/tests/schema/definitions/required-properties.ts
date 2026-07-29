@@ -705,7 +705,7 @@ export const Test_RequiredProperties = ({ Schema, fx }: any) => {
             },
             _price: {
               virtual: true,
-              ignoreUpdate: false,
+              ignoreUpdate: true,
               required(ctx: ReadonlyIvoContext<BookInput, BookOutput, {}>) {
                 const _price = ctx.rawInput._price ?? ctx.input._price;
                 return _price === undefined;

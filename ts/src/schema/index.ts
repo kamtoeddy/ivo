@@ -3,7 +3,6 @@ import {
   getSetValuesAsProps,
   isEqual,
   isFunctionLike,
-  isNullOrUndefined,
   isPropertyOf,
   isRecordLike,
   makeResponse,
@@ -26,6 +25,7 @@ import {
   type RealType,
   type Validator,
   type ValidatorResponseObject,
+  type VirtualResolver,
 } from './types';
 import {
   cloneValue,
@@ -192,13 +192,12 @@ class ModelTool<
   ErrorMetadata = DefaultFieldErrorMetadata,
   ErrorPayload = IvoErrorPayload<ErrorMetadata, KeyOf<I>>,
 > extends SchemaCore<I, O, CtxOptions, ErrorMetadata, ErrorPayload> {
-  private _regeneratedProps: KeyOf<O>[] = [];
-  private partialContext = {} as I;
-
   // contexts & values
+  private isUpdate: boolean = false;
   private ctxInput: Partial<I> = {};
   private ctxRawInput: Partial<I> = {};
   private ctxValues: Partial<O> = {};
+  private ctxPreviousValues: O | null = null;
   private _ctxOptions: CtxOptions = {} as CtxOptions;
 
   constructor(schema: Schema<I, O, CtxOptions, ErrorMetadata, ErrorPayload>) {
@@ -215,35 +214,36 @@ class ModelTool<
 
       const isVirtual = !!config.virtual;
 
-      fields.set(configName, {
-        name: configName,
+      fields.set(
         configName,
-        isInput: true,
-        isOutput: !isVirtual,
-      });
+        new FieldInfo({
+          name: configName,
+          configName,
+          isInput: true,
+          isOutput: !isVirtual,
+        }),
+      );
 
       const aliasName = config.alias;
 
       if (aliasName)
-        fields.set(aliasName, {
-          name: aliasName,
-          configName,
-          isInput: true,
-          isOutput: !isVirtual,
-        });
+        fields.set(
+          aliasName,
+          new FieldInfo({
+            name: aliasName,
+            configName,
+            isInput: true,
+            isOutput: !isVirtual,
+          }),
+        );
     }
 
     return new FieldInfoCollection(fields);
   }
 
-  private async _filterInputFieldsAllowed(
-    _previousValues: O | null,
-    ctx: IvoContext<I, O, CtxOptions>,
-  ): Promise<{
-    input: Partial<I>;
-    output: Partial<O>;
-    fieldsCollection: FieldInfoCollection;
-  }> {
+  private async _filterInputFieldsAllowed(): Promise<FieldInfoCollection> {
+    let ctx = this._getContext();
+    const _previousValues = ctx.previousValues;
     const fieldsCollection = this._getFieldInfoCollection();
     // @ts-expect-error ikr
     const rawInput: Partial<I> = ctx.rawInput;
@@ -309,42 +309,49 @@ class ModelTool<
         ),
       )) {
         // if "task.value" is positive, it means "ignore"
-        if (task.status === 'fulfilled' && task.value) {
-          fieldsCollection.relevantFieldsProvided = new Set();
-          return {
-            input: {} as Partial<I>,
-            output: {} as Partial<O>,
-            fieldsCollection,
-          };
-        }
+        if (task.status === 'fulfilled' && task.value) return fieldsCollection;
       }
     }
 
     fieldsCollection.fieldsProvided = fieldsProvided;
     fieldsCollection.relevantFieldsProvided = relevantFieldsProvided;
 
+    this._updateCxtInput(input);
+    this._updateCxtValues(output);
+    ctx = this._getContext();
+
     const tasks: [string[] | readonly string[], Promise<boolean>][] = [];
 
-    for (const fieldName of relevantFieldsProvided.values()) {
+    for (const fieldName of fieldsProvided.values()) {
       const fieldInfo = fieldsCollection.get(fieldName);
+      const configName = fieldInfo?.configName ?? fieldName;
 
-      const { ignore, ignoreInit, ignoreUpdate } = this._getDefinition(
-        fieldInfo.configName,
-      );
+      const {
+        default: defaultValue,
+        ignore,
+        ignoreInit,
+        ignoreUpdate,
+        readonly,
+      } = this._getDefinition(configName);
 
       if (ignore) {
-        tasks.push([[fieldInfo.name], Promise.try(ignore, ctx)]);
+        tasks.push([[fieldInfo?.name ?? fieldName], Promise.try(ignore, ctx)]);
         continue;
       }
 
       const source = isUpdate ? ignoreUpdate : ignoreInit;
 
+      if (source === undefined) continue;
+
       if (source === true) {
         relevantFieldsProvided.delete(fieldName);
+
         // @ts-expect-error ikr
         delete input[fieldName];
+        delete (this.ctxInput as any)[fieldName];
+        delete (this.ctxRawInput as any)[fieldName];
 
-        if (fieldInfo.isOutput) {
+        if (fieldInfo?.isOutput) {
           // @ts-expect-error ikr
           delete output[fieldName];
         }
@@ -352,8 +359,32 @@ class ModelTool<
         continue;
       }
 
-      if (typeof source === 'function') {
-        tasks.push([[fieldInfo.name], Promise.try(source, ctx)]);
+      if (typeof source === 'function')
+        tasks.push([
+          [fieldInfo?.name ?? fieldName],
+          Promise.try(source as any, ctx),
+        ]);
+
+      if (readonly) {
+        if (defaultValue === undefined || typeof defaultValue === 'function')
+          continue;
+
+        // readonly means: only allow update if value previousValue == defaultValue
+
+        // @ts-expect-error ikr
+        if (isEqual(previousValues[fieldName], defaultValue)) {
+          continue;
+        }
+
+        relevantFieldsProvided.delete(fieldName);
+
+        // @ts-expect-error ikr
+        delete input[fieldName];
+
+        if (fieldInfo?.isOutput) {
+          // @ts-expect-error ikr
+          delete output[fieldName];
+        }
       }
     }
 
@@ -369,18 +400,17 @@ class ModelTool<
       if (typeof config === 'function') {
         tasks.push([
           relevantConfigNames,
-          Promise.try(config as any, ctx)
+          Promise.try(config, ctx)
             .then((v) => !!v)
             .catch(() => false),
         ]);
-      } else if (config && typeof config === 'object' && 'fields' in config) {
-        const fields = (config as any).fields as string[];
-        const resolver = (config as any).resolver;
+      } else if (config && typeof config === 'object') {
+        const fields = config.fields as string[];
 
         if (fields.some((name: string) => relevantConfigNames.includes(name))) {
           tasks.push([
             fields,
-            Promise.try(resolver, ctx)
+            Promise.try(config.resolver, ctx)
               .then((v) => !!v)
               .catch(() => false),
           ]);
@@ -397,16 +427,18 @@ class ModelTool<
               .then((v) => !!v)
               .catch(() => false),
           ]);
-        } else if (config && typeof config === 'object' && 'fields' in config) {
-          const fields = (config as any).fields as string[];
-          const resolver = (config as any).resolver;
+        } else if (config && typeof config === 'object') {
+          const fields = config.fields as string[];
 
           if (
             fields.some((name: string) => relevantConfigNames.includes(name))
           ) {
             tasks.push([
               fields,
-              Promise.try(resolver, ctx)
+              Promise.try(config.resolver, input, _previousValues, {
+                options: ctx.options,
+                updateOptions: ctx.updateOptions,
+              })
                 .then((v) => !!v)
                 .catch(() => false),
             ]);
@@ -418,11 +450,7 @@ class ModelTool<
     if (!tasks.length) {
       fieldsCollection.relevantFieldsProvided = relevantFieldsProvided;
 
-      return {
-        input,
-        output,
-        fieldsCollection,
-      };
+      return fieldsCollection;
     }
 
     for (const [configNames, ignore] of await Promise.all(
@@ -430,11 +458,17 @@ class ModelTool<
     )) {
       for (const configName of configNames) {
         const fieldInfo = fieldsCollection.get(configName);
-        const fieldName = fieldInfo.name;
+        const fieldName = fieldInfo?.name ?? configName;
 
         if (ignore) {
           // @ts-expect-error ikr
           delete input[fieldName];
+          // @ts-expect-error ikr
+          delete input[configName];
+          delete (this.ctxInput as any)[fieldName];
+          delete (this.ctxInput as any)[configName];
+          delete (this.ctxRawInput as any)[fieldName];
+          delete (this.ctxRawInput as any)[configName];
 
           relevantFieldsProvided.delete(fieldName);
 
@@ -450,39 +484,32 @@ class ModelTool<
       }
     }
 
+    this._updateCxtInput(input);
+    this._updateCxtValues(output);
+
     fieldsCollection.relevantFieldsProvided = relevantFieldsProvided;
 
-    return {
-      input,
-      output,
-      fieldsCollection,
-    };
+    return fieldsCollection;
   }
 
-  private _getReadonlyCtx({
-    data,
-    rawInput,
-    isUpdate,
-  }: {
-    data: Partial<O>;
-    rawInput: Partial<RealType<I>>;
-    isUpdate: boolean;
-  }) {
-    const changes = isUpdate ? cloneValue(data) : null,
-      previousValues = isUpdate ? cloneValue(this.ctxValues) : null,
-      input = this._getFrozenCopy(cloneValue(rawInput)),
+  private _getReadonlyCtx() {
+    const data = this.ctxValues;
+    const isUpdate = this.isUpdate,
+      changes = isUpdate ? cloneValue(data) : null,
+      previousValues = isUpdate ? cloneValue(this.ctxPreviousValues) : null,
+      input = this._getFrozenCopy(cloneValue(this.ctxInput)),
       values = this._getFrozenCopy(
         cloneValue(
           isUpdate
-            ? Object.assign({}, previousValues, this.ctxValues, data)
-            : Object.assign({}, this.defaults, data),
+            ? Object.assign({}, previousValues, data)
+            : Object.assign({}, data),
         ),
       );
 
     return this._getFrozenCopy({
       changes,
       input,
-      rawInput: cloneValue(rawInput),
+      rawInput: cloneValue(this.ctxRawInput),
       isUpdate,
       previousValues,
       values,
@@ -490,44 +517,52 @@ class ModelTool<
     }) as ReadonlyIvoContext<I, O, CtxOptions>;
   }
 
-  private _getContext(props: {
-    data: Partial<O>;
-    rawInput: Partial<RealType<I>>;
-    isUpdate: boolean;
-  }) {
+  private _getContext() {
     return this._getFrozenCopy(
-      Object.assign({}, this._getReadonlyCtx(props), {
+      Object.assign({}, this._getReadonlyCtx(), {
         updateOptions: this._updateCtxOptions,
       }),
     ) as never as IvoContext<I, O, CtxOptions>;
   }
 
-  private _getPartialContext = () => this._getFrozenCopy(this.partialContext);
+  private _initContext(props: {
+    rawInput: Partial<I>;
+    isUpdate: boolean;
+    previousValues: O | null;
+    options: CtxOptions;
+  }) {
+    this.ctxInput = {};
+    this.ctxValues = {};
+    this.isUpdate = props.isUpdate;
+    this.ctxRawInput = props.rawInput;
+    this.ctxPreviousValues = props.previousValues;
+    this._ctxOptions = props.options;
+  }
 
   private _updateCxtInput = (updates: Partial<I>) => {
     Object.assign(this.ctxInput, updates);
   };
 
-  private _updatePartialContext = (updates: Partial<I>) => {
-    Object.assign(this.partialContext, updates);
+  private _updateCxtValues = (updates: Partial<O>) => {
+    Object.assign(this.ctxValues, updates);
   };
 
   private _getCtxOptions = () => this._getFrozenCopy(this._ctxOptions);
 
-  private _updateCtxOptions = (options: Partial<CtxOptions>) => {
-    if (isRecordLike(options)) Object.assign(this._ctxOptions, options);
+  private _updateCtxOptions = (options: Partial<CtxOptions>) =>
+    Object.assign(this._ctxOptions, options);
 
-    return this._getCtxOptions();
-  };
-
-  private _getDefaultValue = async (prop: string) => {
+  private _getDefaultValue = async (
+    prop: string,
+    ctx: IvoContext<I, O, CtxOptions>,
+  ) => {
     const _default = this._getDefinition(prop)?.default;
 
     let value: any;
 
     try {
       value = isFunctionLike(_default)
-        ? await Promise.try(_default as any, this._getValidationCtx(false))
+        ? await Promise.try(_default as any, ctx)
         : this.defaults[prop as KeyOf<O>];
     } catch {
       value = null;
@@ -592,6 +627,10 @@ class ModelTool<
         const virtual = this._getVirtualByAlias(prop);
 
         if (virtual && values[virtual]) delete values[virtual];
+        else if (virtual) {
+          values[virtual] = input[prop] as never;
+          delete values[prop];
+        }
       }
     }
 
@@ -604,77 +643,24 @@ class ModelTool<
     return !!this._getDefinition(prop).ignore;
   };
 
-  private _shouldIgnore = ({
-    prop,
-    isUpdate = false,
-  }: {
-    prop: string;
-    isUpdate?: boolean;
-  }) => {
+  private _shouldIgnore = (prop: string) => {
     const { ignore } = this._getDefinition(prop);
 
-    return ignore
-      ? ignore(
-          this._getContext({
-            data: {},
-            rawInput: this.ctxRawInput,
-            isUpdate,
-          }),
-        )
-      : undefined;
+    return ignore ? ignore(this._getContext()) : undefined;
   };
 
-  private _isInitAllowed = (
-    prop: string,
-    ctx?: IvoContext<I, O, CtxOptions>,
-  ) => {
-    const { ignoreInit } = this._getDefinition(prop);
-
-    if (ignoreInit === undefined) return true;
-    if (ignoreInit === true) return false;
-    if (typeof ignoreInit === 'function') {
-      const _ctx = ctx ?? this._getValidationCtx(false);
-      return !ignoreInit(_ctx as never);
-    }
-
-    return true;
-  };
-
-  private _ignoreUpdate = (prop: string) => {
+  private _ignoreUpdate = (prop: string, _extraCtx?: ObjectType) => {
     const { ignoreUpdate } = this._getDefinition(prop);
 
     if (ignoreUpdate === undefined) return false;
     if (ignoreUpdate === true) return true;
-
-    if (typeof ignoreUpdate === 'function')
-      return !!ignoreUpdate(this._getValidationCtx(true));
+    if (typeof ignoreUpdate === 'function') {
+      const res = ignoreUpdate(this._getContext() as never);
+      return !!res;
+    }
 
     return false;
   };
-
-  private _isVirtualInit = (
-    prop: string,
-    ctx?: IvoContext<I, O, CtxOptions>,
-  ) => {
-    const isAlias = this._isVirtualAlias(prop);
-
-    if (!this._isVirtual(prop) && !isAlias) return false;
-
-    const definitionName = isAlias ? this._getVirtualByAlias(prop)! : prop;
-
-    const { ignoreInit } = this._getDefinition(definitionName);
-
-    return (
-      isEqual(ignoreInit, undefined) || this._isInitAllowed(definitionName, ctx)
-    );
-  };
-
-  private _getValidationCtx = (isUpdate: boolean) =>
-    this._getContext({
-      data: this.ctxValues,
-      isUpdate,
-      rawInput: this.ctxRawInput,
-    });
 
   private _getPrimaryValidator = <K extends keyof (O | I)>(prop: string) => {
     const { validator } = this._getDefinition(prop as never);
@@ -719,17 +705,16 @@ class ModelTool<
     return error || NotAllowedError;
   }
 
-  private _handleError(
-    ctx: ReadonlyIvoContext<I, O, CtxOptions>,
-    options: CtxOptions,
-    errorTool: ErrorTool<ErrorMetadata, KeyOf<I>>,
-  ) {
+  private _handleError(errorTool: ErrorTool<ErrorMetadata, KeyOf<I>>) {
     return {
       data: null,
       error: errorTool.hasErrors
-        ? this._options.sanitizeError(errorTool.payload, options)
+        ? this._options.sanitizeError(
+            errorTool.payload,
+            this._getContext().options,
+          )
         : null,
-      handleFailure: this._makeHandleFailure(ctx, options),
+      handleFailure: this._makeHandleFailure(),
       handleSuccess: null,
     };
   }
@@ -757,11 +742,11 @@ class ModelTool<
    * that are NOT present in `filteredInput`. Updates `ctxValues` / `partialContext`
    * in place and returns the accumulated output partial.
    */
-  private async _attachConstantsAndDefaults(
-    filteredInput: Partial<I>,
-  ): Promise<Partial<O>> {
+  private async _attachConstantsAndDefaults(): Promise<Partial<O>> {
     const data = {} as Partial<O>;
-    const fieldsProvidedNames = new Set(Object.keys(filteredInput));
+    const input = cloneValue(this.ctxInput);
+    const ctx = this._getContext();
+    const fieldsProvidedNames = new Set(Object.keys(input));
 
     await Promise.allSettled(
       getKeysAsProps(this._definitions).map(async (configName) => {
@@ -774,7 +759,7 @@ class ModelTool<
 
           try {
             value = isFunctionLike(_val)
-              ? await Promise.try(_val as any, this._getValidationCtx(false))
+              ? await Promise.try(_val as any, ctx)
               : _val;
           } catch {
             value = null;
@@ -782,9 +767,7 @@ class ModelTool<
 
           (data as any)[configName] = value;
 
-          const upd = { [configName]: value } as never;
-          this._updatePartialContext(upd);
-          this._updateCxtInput(upd);
+          this._updateCxtValues({ [configName]: value } as never);
 
           return;
         }
@@ -794,26 +777,22 @@ class ModelTool<
           this._isLaxProp(configName) &&
           !fieldsProvidedNames.has(configName)
         ) {
-          const value = await this._getDefaultValue(configName);
+          const value = await this._getDefaultValue(configName, ctx);
 
           (data as any)[configName] = value;
 
-          const upd = { [configName]: value } as never;
-          this._updatePartialContext(upd);
-          this._updateCxtInput(upd);
+          this._updateCxtValues({ [configName]: value } as never);
 
           return;
         }
 
         // ── Dependent fields: attach default value ──────────────────────────────
-        if (config.dependsOn !== undefined) {
-          const value = await this._getDefaultValue(configName);
+        if (config.dependsOn) {
+          const value = await this._getDefaultValue(configName, ctx);
 
           (data as any)[configName] = value;
 
-          const upd = { [configName]: value } as never;
-          this._updatePartialContext(upd);
-          this._updateCxtInput(upd);
+          this._updateCxtValues({ [configName]: value } as never);
         }
       }),
     );
@@ -832,116 +811,73 @@ class ModelTool<
    * Returns `{ data, error }` where `data` is the accumulated validated output partial.
    */
   private async _runPrimaryValidators(
-    currentData: Partial<O>,
-    filteredInput: Partial<I>,
     fieldsCollection: FieldInfoCollection,
-    ctx: IvoContext<I, O, CtxOptions>,
-  ): Promise<{ data: Partial<O>; error: ErrorTool<ErrorMetadata> }> {
+  ): Promise<ErrorTool<ErrorMetadata>> {
+    const ctx = this._getContext();
     const errorTool = new ErrorTool<ErrorMetadata>();
-    const data: Partial<O> = Object.assign({}, currentData);
 
     // relevantConfigNames includes virtuals (the setter for relevantFieldsProvided
     // only keeps output fields, so we must use configNames to include virtuals)
-    const relevantConfigNames = fieldsCollection.relevantConfigNames;
 
     await Promise.allSettled(
-      Array.from(relevantConfigNames).map(async (configName) => {
-        // Resolve the actual field name: for virtuals with an alias, use the alias
-        const alias = this._getAliasByVirtual(configName as KeyOf<I>);
-        // Use alias name if it's in filtered input, otherwise use config name
-        const fieldName =
-          alias && isPropertyOf(alias, filteredInput) ? alias : configName;
-
-        // Skip if this field wasn't provided in filtered input
-        if (
-          !isPropertyOf(fieldName, filteredInput) &&
-          !isPropertyOf(configName, filteredInput)
-        ) {
-          return;
-        }
+      Array.from(fieldsCollection.fieldsProvided).map(async (name) => {
+        const fieldInfo = fieldsCollection.get(name);
 
         // Read the raw value from filteredInput
-        const rawValue = (filteredInput as any)[fieldName];
-        const hasValidator = !!this._getPrimaryValidator(configName);
+        const rawValue = (ctx.input as any)[name];
+        const hasValidator = !!this._getPrimaryValidator(fieldInfo.configName);
+
+        let ctxUpdate = { [name]: rawValue } as never;
+        this._updateCxtInput(ctxUpdate);
 
         // For lax fields with no validator: accept value as-is (Rust: set input+output)
-        if (this._isLaxProp(configName) && !hasValidator) {
-          const fieldInfo =
-            fieldsCollection.get(fieldName) ?? fieldsCollection.get(configName);
-
-          if (fieldInfo?.isOutput) {
-            (data as any)[fieldName] = rawValue;
-          }
-
-          const upd = { [fieldName]: rawValue } as never;
-          this._updateCxtInput(upd);
-          this._updatePartialContext(upd);
+        if (this._isLaxProp(name) && !hasValidator) {
+          if (fieldInfo.isOutput) this._updateCxtValues(ctxUpdate);
 
           return;
         }
 
         const isValid = (await Promise.try(() =>
-          this._validate(fieldName as never, rawValue, ctx),
+          this._validate(name as never, rawValue, ctx),
         )) as InternalValidatorResponse<O[KeyOf<O>], ErrorMetadata>;
 
         if (!isValid.valid)
           return this._handleInvalidValue(
             errorTool,
-            fieldName as KeyOf<I & O>,
+            name as KeyOf<I & O>,
             isValid,
           );
 
         let { validated } = isValid;
+
         if (isEqual(validated, undefined)) validated = rawValue;
 
-        const isAlias = this._isVirtualAlias(fieldName);
-        const propName = (
-          isAlias ? this._getVirtualByAlias(fieldName)! : fieldName
-        ) as KeyOf<O>;
+        ctxUpdate = { [name]: validated } as never;
 
-        if (!this._isVirtual(propName)) (data as any)[propName] = validated;
+        if (fieldInfo.isOutput) this._updateCxtValues(ctxUpdate);
 
-        const upd = { [propName]: validated } as never;
-        this._updateCxtInput(upd);
-        this._updatePartialContext(upd);
+        this._updateCxtInput(ctxUpdate);
       }),
     );
 
-    return { data, error: errorTool };
+    return errorTool;
   }
 
   private async _handleSecondaryValidations(
-    data: Partial<O>,
-    isUpdate = false,
+    fieldsCollection: FieldInfoCollection,
   ) {
-    const ctx = this._getContext({
-      data,
-      isUpdate,
-      rawInput: this.ctxRawInput,
-    });
-
-    const error = new ErrorTool<ErrorMetadata>();
-
-    const props: [KeyOf<O>, string | undefined][] = [];
-
-    for (const prop of this.propsWithSecondaryValidators.values()) {
-      if (!isUpdate && !this._isInitAllowed(prop)) continue;
-
-      const alias = this._getAliasByVirtual(prop as never);
-
-      if (!this._isSuccessfulProp(prop, ctx, alias)) continue;
-
-      props.push([prop as KeyOf<O>, alias]);
-    }
+    const ctx = this._getContext();
+    const errorTool = new ErrorTool<ErrorMetadata>();
 
     await Promise.allSettled(
-      props.map(async ([prop, alias]) => {
-        const validator = this._getSecondaryValidator(prop);
+      fieldsCollection.relevantConfigNames.values().map(async (name) => {
+        const fieldInfo = fieldsCollection.get(name);
+        const validator = this._getSecondaryValidator(fieldInfo.configName);
 
         if (!validator) return;
 
         // @ts-expect-error ikr
-        const value = ctx.input?.[prop] as never as O[KeyOf<O>];
+        const value = ctx.input?.[name] as never as O[KeyOf<O>];
 
         let isValid: ValidatorResponseObject<unknown, ErrorMetadata>;
 
@@ -950,7 +886,7 @@ class ModelTool<
             (await Promise.try(
               validator,
               value,
-              ctx as never,
+              ctx,
             )) as ValidatorResponseObject<unknown, ErrorMetadata>,
             value,
           );
@@ -961,55 +897,29 @@ class ModelTool<
           });
         }
 
-        if (!isValid.valid) {
-          const _prop =
-            alias && isPropertyOf(alias, ctx.rawInput) ? alias : prop;
+        if (!isValid.valid)
+          return this._handleInvalidValue(errorTool, name as any, isValid);
 
-          return this._handleInvalidValue(error, _prop as never, isValid);
+        const { validated } = isValid;
+
+        if (
+          !isEqual(validated, undefined) &&
+          !isEqual(validated, value, this._options.equalityDepth)
+        ) {
+          const ctxUpdate = { [name]: validated } as never;
+
+          if (fieldInfo.isOutput) this._updateCxtValues(ctxUpdate);
+
+          this._updateCxtInput(ctxUpdate);
         }
-
-        let { validated } = isValid;
-
-        if (isEqual(validated, undefined)) validated = value;
-
-        // @ts-expect-error ikr
-        if (isEqual(validated, ctx.input[prop], this._options.equalityDepth))
-          return;
-
-        if (!this._isVirtual(prop)) data[prop] = validated as never;
-
-        const validCtxUpdate = { [prop]: validated } as never;
-
-        this._updateCxtInput(validCtxUpdate);
-        this._updatePartialContext(validCtxUpdate);
       }),
     );
 
-    return error;
+    return errorTool;
   }
 
-  private _isSuccessfulProp(
-    prop: string,
-    ctx: IvoContext<I, O, CtxOptions>,
-    alias_?: string,
-  ) {
-    if (this._isVirtual(prop)) {
-      if (isPropertyOf(prop, this.partialContext)) return true;
-
-      const alias = alias_ || this._getAliasByVirtual(prop as never);
-
-      return !isNullOrUndefined(alias) && isPropertyOf(alias, ctx.rawInput);
-    }
-
-    return !ctx.isUpdate || isPropertyOf(prop, ctx.changes);
-  }
-
-  private async _handlePostValidations(data: Partial<O>, isUpdate = false) {
-    const summary = this._getContext({
-      data,
-      isUpdate,
-      rawInput: this.ctxRawInput,
-    });
+  private async _handlePostValidations(fieldsCollection: FieldInfoCollection) {
+    const ctx = this._getContext();
 
     const errorTool = new ErrorTool<ErrorMetadata>();
 
@@ -1018,23 +928,21 @@ class ModelTool<
       configIDsToAllPostValidatableProps = new Map<string, Set<string>>();
 
     for (const [
-      prop,
+      configName,
       setOfConfigIDs,
     ] of this.propToPostValidationConfigIDsMap.entries()) {
-      const isSuccessfulProp = this._isSuccessfulProp(prop, summary);
+      if (!fieldsCollection.relevantConfigNames.has(configName)) continue;
 
       for (const id of setOfConfigIDs.values()) {
         {
           const set = configIDsToAllPostValidatableProps.get(id) ?? new Set();
-          configIDsToAllPostValidatableProps.set(id, set.add(prop));
+          configIDsToAllPostValidatableProps.set(id, set.add(configName));
         }
-
-        if (!isSuccessfulProp) continue;
 
         handlerIds.add(id);
 
         const set = handlerIdToProps.get(id) ?? new Set();
-        handlerIdToProps.set(id, set.add(prop));
+        handlerIdToProps.set(id, set.add(configName));
       }
     }
 
@@ -1049,15 +957,23 @@ class ModelTool<
     const handleRevalidatedData = (revalidatedData: Partial<O> | null) => {
       if (!revalidatedData) return;
 
-      for (const prop of getKeysAsProps(revalidatedData)) {
-        const validated = revalidatedData[prop];
+      for (const fieldName of getKeysAsProps(revalidatedData)) {
+        const fieldInfo = fieldsCollection.getUnsafe(fieldName);
 
-        if (!this._isVirtual(prop)) data[prop] = validated;
+        const validated = revalidatedData[fieldName];
+        if (!fieldInfo || isEqual(validated, undefined)) continue;
 
-        const validCtxUpdate = { [prop]: validated } as never;
+        if (
+          // @ts-expect-error ikr
+          isEqual(validated, ctx.input[fieldName], this._options.equalityDepth)
+        )
+          return;
 
-        this._updateCxtInput(validCtxUpdate);
-        this._updatePartialContext(validCtxUpdate);
+        const ctxUpdate = { [fieldName]: validated } as never;
+
+        this._updateCxtInput(ctxUpdate);
+
+        if (fieldInfo.isOutput) this._updateCxtValues(ctxUpdate);
       }
     };
 
@@ -1073,7 +989,7 @@ class ModelTool<
             this._handlePostValidator({
               errorTool,
               propsProvided,
-              ctx: summary,
+              ctx,
               validator: validator as any,
               postValidatableProps,
             }),
@@ -1086,11 +1002,7 @@ class ModelTool<
 
         for (const v1 of validator) {
           if (Array.isArray(v1)) {
-            const summary = this._getContext({
-              data: this.ctxValues,
-              isUpdate,
-              rawInput: this.ctxRawInput,
-            });
+            const ctx = this._getContext();
 
             const results = await Promise.all(
               v1.map(async (v2) => {
@@ -1098,7 +1010,7 @@ class ModelTool<
                   this._handlePostValidator({
                     errorTool,
                     propsProvided,
-                    ctx: summary,
+                    ctx,
                     validator: v2 as any,
                     postValidatableProps,
                   }),
@@ -1118,11 +1030,7 @@ class ModelTool<
           const { revalidatedData, success } = await this._handlePostValidator({
             errorTool,
             propsProvided,
-            ctx: this._getContext({
-              data: this.ctxValues,
-              isUpdate,
-              rawInput: this.ctxRawInput,
-            }),
+            ctx: this._getContext(),
             validator: v1 as any,
             postValidatableProps,
           });
@@ -1201,12 +1109,18 @@ class ModelTool<
     };
   }
 
-  private async _handleRequiredBy(ctx: ReadonlyIvoContext<I, O, CtxOptions>) {
+  private async _evaluateMissingRequiredFields(
+    fieldsCollection: FieldInfoCollection,
+  ) {
+    const ctx = this._getReadonlyCtx();
+
     const isUpdate = ctx.isUpdate;
     const errorTool = new ErrorTool<ErrorMetadata>();
 
     await Promise.allSettled(
       Array.from(this.propsRequiredBy.keys()).map(async (prop) => {
+        if (fieldsCollection.fieldsProvided.has(prop)) return;
+
         let isUpdatable = false;
 
         if (isUpdate && this._isReadonly(prop)) {
@@ -1255,36 +1169,27 @@ class ModelTool<
   }
 
   private async _handleSanitizationOfVirtuals(
-    data: Partial<O>,
-    isUpdate = false,
+    fieldsCollection: FieldInfoCollection,
   ) {
-    const sanitizers: [KeyOf<I>, Function][] = [];
+    const sanitizers: [KeyOf<I>, VirtualResolver<unknown, I, O, CtxOptions>][] =
+      [];
 
-    const partialCtx = this._getPartialContext();
+    const ctx = this._getContext();
 
-    const successFulVirtuals = getKeysAsProps(partialCtx).filter(
-      this._isVirtual,
-    );
+    for (const name of fieldsCollection.relevantFieldsProvided) {
+      const fieldInfo = fieldsCollection.get(name);
+      const sanitizer = this._getDefinition(fieldInfo.configName).sanitizer;
 
-    for (const prop of successFulVirtuals) {
-      const [isSanitizable, sanitizer] = this._isSanitizable(prop, !isUpdate);
-
-      if (isSanitizable) sanitizers.push([prop as KeyOf<I>, sanitizer]);
+      if (sanitizer) sanitizers.push([name as KeyOf<I>, sanitizer]);
     }
 
-    const summary = this._getContext({
-      data,
-      isUpdate,
-      rawInput: this.ctxRawInput,
-    });
-
     await Promise.allSettled(
-      sanitizers.map(async ([prop, sanitizer]) => {
-        // @ts-expect-error
-        const resolvedValue = await Promise.try(sanitizer, summary);
-
-        (this.ctxRawInput as any)[prop] = resolvedValue;
-        this._updateCxtInput({ [prop]: resolvedValue } as never);
+      sanitizers.map(async ([name, sanitizer]) => {
+        await Promise.try(sanitizer, ctx)
+          .then((resolvedValue) =>
+            this._updateCxtInput({ [name]: resolvedValue } as never),
+          )
+          .catch(() => null);
       }),
     );
   }
@@ -1329,19 +1234,6 @@ class ModelTool<
     return { errors, validatedData };
   }
 
-  private _isSanitizable(
-    prop: string,
-    isCreation: boolean,
-  ): [false, undefined] | [true, Function] {
-    const { sanitizer, ignoreInit } = this._getDefinition(prop);
-
-    if (!sanitizer) return [false, undefined];
-
-    if (isCreation && ignoreInit === true) return [false, undefined];
-
-    return [true, sanitizer];
-  }
-
   private _isUpdatable(prop: string, value: unknown = undefined) {
     if (!this._isInputOrAlias(prop)) return false;
 
@@ -1351,10 +1243,7 @@ class ModelTool<
       isAlias ? this._getVirtualByAlias(prop)! : prop
     ) as KeyOf<O>;
 
-    if (
-      this._isIngnorable(propName) &&
-      this._shouldIgnore({ prop: propName, isUpdate: true })
-    )
+    if (this._isIngnorable(propName) && this._shouldIgnore(propName))
       return false;
 
     const hasIgnoreUpdateRule = this._isRuleInDefinition(
@@ -1362,7 +1251,9 @@ class ModelTool<
       'ignoreUpdate',
     );
 
-    const ignoreUpdate = this._ignoreUpdate(propName);
+    const extraCtx = isAlias ? { [propName]: value } : {};
+
+    const ignoreUpdate = this._ignoreUpdate(propName, extraCtx);
 
     if (this._isVirtual(prop))
       return hasIgnoreUpdateRule ? !ignoreUpdate : true;
@@ -1386,10 +1277,8 @@ class ModelTool<
   private _isInputOrAlias = (prop: string) =>
     this._isVirtualAlias(prop) || this._isInputProp(prop);
 
-  private _makeHandleFailure(
-    ctx: ReadonlyIvoContext<I, O, CtxOptions>,
-    options: CtxOptions,
-  ) {
+  private _makeHandleFailure() {
+    const ctx = this._getReadonlyCtx();
     const fieldsToCleanup = getKeysAsProps(ctx.rawInput);
 
     let cleanups: NS.FailureHandler<I, O, CtxOptions>[] = [];
@@ -1409,26 +1298,23 @@ class ModelTool<
             await Promise.try(
               h,
               this._getFrozenCopy(ctx),
-              this._getFrozenCopy(options),
+              this._getFrozenCopy(ctx.options),
             ),
         ),
       );
     };
   }
 
-  private _makeHandleSuccess(data: Partial<O>, isUpdate = false) {
-    const partialCtx = this._getPartialContext(),
-      successProps = getKeysAsProps(partialCtx),
-      summary = this._getReadonlyCtx({
-        data,
-        isUpdate,
-        rawInput: this.ctxRawInput,
-      }),
+  private _makeHandleSuccess(fieldsCollection: FieldInfoCollection) {
+    const relevantFields = fieldsCollection.relevantConfigNames.union(
+      fieldsCollection.relevantDependentConfigNames,
+    );
+    const ctx = this._getReadonlyCtx(),
       setOfSuccessHandlerIDs = new Set<string>();
 
     let successListeners = [] as NS.SuccessHandler<I, O, CtxOptions>[];
 
-    for (const prop of successProps) {
+    for (const prop of relevantFields) {
       const handlers = this._getHandlers<NS.SuccessHandler<I, O>>(
         prop,
         'onSuccess',
@@ -1451,158 +1337,71 @@ class ModelTool<
 
     return async () => {
       await Promise.allSettled(
-        successListeners.map(async (h) => await Promise.try(h, summary)),
+        successListeners.map(async (h) => await Promise.try(h, ctx)),
       );
     };
   }
 
   private async _resolveDependentChanges(
-    data: Partial<O>,
-    ctx: I,
-    isUpdate = false,
+    fieldsToResolve: Set<string>,
+    fieldsCollection: FieldInfoCollection,
   ) {
-    const isCreation = !isUpdate;
-    const successFulChanges = getKeysAsProps<O>(ctx as never);
-    let _updates = Object.assign({}, data);
+    const ctx = this._getContext();
+
+    const isCreation = !ctx.isUpdate;
+    const fieldsResolved = new Set<string>();
+    const values = cloneValue<Partial<O>>(ctx.values);
+
     let toResolve = [] as KeyOf<O>[];
 
-    const values = isUpdate ? data : Object.assign({}, this.ctxValues, data),
-      _ctx = this._getContext({
-        data: values,
-        isUpdate,
-        rawInput: this.ctxRawInput,
-      });
+    for (const prop of fieldsToResolve.values()) {
+      const fieldInfo = fieldsCollection.get(prop);
 
-    for (const prop of successFulChanges) {
-      if (this._regeneratedProps.includes(prop) && !isPropertyOf(prop, data))
-        continue;
+      const dependencies = this._getDependencies(fieldInfo.configName);
 
-      const dependencies = this._getDependencies(prop);
-
-      if (!dependencies.length) continue;
-
-      if (
-        isCreation &&
-        this._isVirtual(prop) &&
-        !this._isVirtualInit(prop, _ctx)
-      )
-        continue;
-
-      if (
-        isCreation &&
-        (this._isDependentProp(prop) || this._isLaxProp(prop)) &&
-        isEqual(this.defaults[prop], data[prop], this._options.equalityDepth)
-      )
-        continue;
-
-      toResolve = toResolve.concat(dependencies as never);
+      if (dependencies.length)
+        toResolve = toResolve.concat(dependencies as never);
     }
 
     toResolve = Array.from(new Set(toResolve));
 
     await Promise.allSettled(
-      toResolve.map(async (prop) => {
+      toResolve.map(async (name) => {
+        const config = this._getDefinition(name);
+
         if (
-          this._isReadonly(prop) &&
           !isCreation &&
-          !isEqual(
-            this.ctxValues[prop],
-            this.defaults[prop],
+          config.readonly &&
+          typeof config.default !== 'function' &&
+          isEqual(
+            config.default,
+            (values as any)[name],
             this._options.equalityDepth,
           )
         )
           return;
 
-        const resolver = this._getDefinition(prop).resolver!;
+        const resolver = config.resolver!;
         let value: any;
 
         try {
-          value = await Promise.try(resolver as any, _ctx);
+          value = await Promise.try(resolver, ctx);
         } catch {
-          value = isCreation ? null : _ctx.previousValues?.[prop];
+          value = isCreation ? null : ctx.previousValues?.[name];
         }
 
         if (
           !isCreation &&
-          isEqual(
-            value,
-            // @ts-expect-error ikr
-            _ctx.input[prop as KeyOf<I>],
-            this._options.equalityDepth,
-          )
+          isEqual(value, (values as any)[name], this._options.equalityDepth)
         )
           return;
 
-        data[prop] = value;
-        const updates = { [prop]: value } as never;
-
-        this._updateCxtInput(updates);
-        this._updatePartialContext(updates);
-
-        const _data = await this._resolveDependentChanges(
-          data,
-          updates,
-          isUpdate,
-        );
-
-        _updates = Object.assign(_updates, _data);
+        fieldsResolved.add(value);
+        this._updateCxtValues({ [name]: value } as never);
       }),
     );
 
-    return _updates;
-  }
-
-  private _setValues(
-    values: Partial<I | O>,
-    {
-      allowVirtuals = true,
-      allowTimestamps = false,
-    }: {
-      allowVirtuals?: boolean;
-      allowTimestamps?: boolean;
-    } = {
-      allowVirtuals: true,
-      allowTimestamps: false,
-    },
-  ) {
-    const keys = getKeysAsProps(values).filter((key) => {
-      if (
-        allowTimestamps &&
-        this.timestampTool.withTimestamps &&
-        this.timestampTool.isTimestampKey(key)
-      )
-        return true;
-
-      if (allowVirtuals && this._isVirtual(key)) return true;
-
-      return this._isProp(key);
-    });
-
-    const _values = {} as never;
-
-    sort(keys).forEach((key) => {
-      _values[key] = values[key] as never;
-    });
-
-    this.ctxValues = _values as O;
-    this.ctxInput = Object.assign({}, this.defaults, this.ctxValues) as never;
-  }
-
-  private async _setMissingDefaults() {
-    this._regeneratedProps = getSetValuesAsProps(this.props).filter((prop) => {
-      return (
-        this._isDefaultable(prop) && isEqual(this.ctxValues[prop], undefined)
-      );
-    });
-
-    await Promise.allSettled(
-      this._regeneratedProps.map(async (prop) => {
-        const value = await Promise.try(this._getDefaultValue, prop);
-
-        this._updateCxtInput({ [prop]: value } as never);
-        this._updatePartialContext({ [prop]: value } as never);
-      }),
-    );
+    return fieldsResolved;
   }
 
   private _sanitizeValidationResponse<T>(
@@ -1654,11 +1453,13 @@ class ModelTool<
     return makeResponse(_response);
   }
 
-  private _useConfigProps(obj: Partial<O>, isUpdate = false) {
-    if (!this.timestampTool.withTimestamps) return sortKeys(obj);
+  private _useConfigProps(isUpdate = false) {
+    const values = cloneValue(this.ctxValues);
+
+    if (!this.timestampTool.withTimestamps) return sortKeys(values);
 
     const { createdAt, updatedAt } = this.timestampTool.getKeys();
-    let results = Object.assign({}, obj);
+    let results = Object.assign({}, values);
 
     const now = new Date();
 
@@ -1762,112 +1563,77 @@ class ModelTool<
   async create(input: Partial<I>, contextOptions: CtxOptions) {
     const options = this._updateCtxOptions(contextOptions);
 
-    this.partialContext = {} as I;
-    this.ctxValues = {} as O;
-    this.ctxInput = {} as Partial<I>;
-    this.ctxRawInput = {} as Partial<I>;
-
     if (!areValuesOk(input)) input = {};
 
     // Step 1 – clean raw input (strips unknown / conflicting virtual+alias pairs)
     this._cleanInput(input);
 
-    // Build an initial ctx so filter can call ignore resolvers
-    const initialCtx = this._getContext({
-      data: {} as Partial<O>,
+    // Build an initial ctx
+    this._initContext({
       isUpdate: false,
       rawInput: this.ctxRawInput,
+      previousValues: null,
+      options,
     });
 
     // Step 2 – filter which input fields are allowed for this creation
-    const {
-      input: filteredInput,
-      output: filteredOutput,
-      fieldsCollection,
-    } = await this._filterInputFieldsAllowed(null, initialCtx);
+    const fieldsCollection = await this._filterInputFieldsAllowed();
 
     // Step 3 – attach constants and defaults for non-provided fields
-    const defaults = await this._attachConstantsAndDefaults(filteredInput);
-
-    // Merge defaults + filtered output so ctxValues reflects the full initial state
-    const combinedData: Partial<O> = Object.assign(
-      {},
-      defaults,
-      filteredOutput,
-    );
-
-    // Sync ctxValues so _getValidationSummary / _getContext see the right state
-    for (const [k, v] of Object.entries(combinedData)) {
-      (this.ctxValues as any)[k] = v;
-    }
-
-    // Step 4 – rebuild ctx after filter + defaults
-    const ctx = this._getContext({
-      data: combinedData,
-      isUpdate: false,
-      rawInput: this.ctxRawInput,
-    });
-
-    const failureCtx = this._getReadonlyCtx({
-      data: combinedData,
-      isUpdate: false,
-      rawInput: this.ctxRawInput,
-    });
+    await this._attachConstantsAndDefaults();
 
     // Step 5 – evaluate missing required fields
-    const requiredError = await this._handleRequiredBy(ctx as never);
-    if (requiredError.hasErrors)
-      return this._handleError(failureCtx, options, requiredError);
+    const requiredError =
+      await this._evaluateMissingRequiredFields(fieldsCollection);
+    if (requiredError.hasErrors) return this._handleError(requiredError);
 
     // Step 6 – run primary validators over relevantConfigNames (includes virtuals)
-    const { data: validatedData, error: primaryError } =
-      await this._runPrimaryValidators(
-        combinedData,
-        filteredInput,
-        fieldsCollection,
-        ctx,
-      );
+    const primaryError = await this._runPrimaryValidators(fieldsCollection);
 
-    if (primaryError.hasErrors)
-      return this._handleError(failureCtx, options, primaryError);
-
-    let data = validatedData;
+    if (primaryError.hasErrors) return this._handleError(primaryError);
 
     // Step 7 – run secondary (re-)validators
-    const secondaryError = await this._handleSecondaryValidations(data);
-    if (secondaryError.hasErrors)
-      return this._handleError(failureCtx, options, secondaryError);
+    const secondaryError =
+      await this._handleSecondaryValidations(fieldsCollection);
+    if (secondaryError.hasErrors) return this._handleError(secondaryError);
 
     // Step 8 – run post-validators
-    const postValidationError = await this._handlePostValidations(data);
+    const postValidationError =
+      await this._handlePostValidations(fieldsCollection);
     if (postValidationError.hasErrors)
-      return this._handleError(failureCtx, options, postValidationError);
+      return this._handleError(postValidationError);
 
     // Step 9 – sanitize virtuals
-    await this._handleSanitizationOfVirtuals(data);
+    await this._handleSanitizationOfVirtuals(fieldsCollection);
 
     // Step 10 – resolve dependent field values
-    data = await this._resolveDependentChanges(data, this._getPartialContext());
+    let fieldsToResolve = cloneValue(fieldsCollection.fieldsProvided);
+
+    while (fieldsToResolve.size > 0) {
+      fieldsToResolve = await this._resolveDependentChanges(
+        fieldsToResolve,
+        fieldsCollection,
+      );
+
+      fieldsCollection.appendRelevantDependentFields = fieldsToResolve;
+    }
 
     // Step 11 – attach timestamps
-    const finalData = this._useConfigProps(data);
+    const finalData = this._useConfigProps(false);
 
     // Keep ctxValues up-to-date for handleSuccess
-    this._updateCxtInput(finalData as never);
-    this._updatePartialContext(finalData as never);
+    this._updateCxtValues(finalData as never);
 
     return {
       data: finalData as O,
       error: null,
       handleFailure: null,
-      handleSuccess: this._makeHandleSuccess(finalData),
+      handleSuccess: this._makeHandleSuccess(fieldsCollection),
     };
   }
 
   async delete(data: O, options: CtxOptions) {
     if (!areValuesOk(data)) return;
-
-    this._setValues(data, { allowVirtuals: false, allowTimestamps: true });
 
     let handlers: NS.DeleteHandler<O, CtxOptions>[] = [
       ...this.globalDeleteHandlers,
@@ -1917,92 +1683,48 @@ class ModelTool<
    * 17. Attach timestamps  (attach_timestamps)
    * 18. Build & return result
    */
-  async update(values: O, changes: Partial<I>, ctxOptions: CtxOptions) {
-    const ctxOpts = this._updateCtxOptions(ctxOptions);
+  async update(values: O, changes: Partial<I>, options: CtxOptions) {
     const emptyErrorTool = new ErrorTool<ErrorMetadata>();
 
-    this.partialContext = {} as I;
-    this.ctxValues = {} as O;
-    this.ctxInput = {} as Partial<I>;
-    this.ctxRawInput = {} as Partial<I>;
-
     // Step 1 – validate arguments
-    if (!areValuesOk(values) || !areValuesOk(changes)) {
-      const emptyCtx = this._getReadonlyCtx({
-        data: {} as Partial<O>,
-        isUpdate: true,
-        rawInput: {} as Partial<I>,
-      });
-
-      return this._handleError(emptyCtx, ctxOpts, emptyErrorTool);
-    }
-
-    // Step 2 – load previous values
-    this._setValues(values, { allowVirtuals: false, allowTimestamps: true });
-
-    if (this._options?.setMissingDefaultsOnUpdate)
-      await this._setMissingDefaults();
+    if (!areValuesOk(values) || !areValuesOk(changes))
+      return this._handleError(emptyErrorTool);
 
     // Step 3 – clean raw changes
     this._cleanInput(changes);
 
-    // Build initial ctx with previous values so filter can call ignore resolvers
-    const initialCtx = this._getContext({
-      data: this.ctxValues,
+    // Build an initial ctx
+    this._initContext({
       isUpdate: true,
-      rawInput: this.ctxRawInput,
+      rawInput: changes,
+      previousValues: values,
+      options,
     });
 
     // Step 4 – filter which change fields are allowed for this update
-    const {
-      input: filteredInput,
-      output: filteredOutput,
-      fieldsCollection,
-    } = await this._filterInputFieldsAllowed(values, initialCtx);
+    const fieldsCollection = await this._filterInputFieldsAllowed();
 
     // Capture previous values before any mutation for later comparison
     const previousPartial = cloneValue(values) as Partial<O>;
-
-    // Build a stable failure ctx (previous values, no changes)
-    const failureCtx = this._getReadonlyCtx({
-      data: this.ctxValues,
-      isUpdate: true,
-      rawInput: this.ctxRawInput,
-    });
 
     // Step 5 – early-exit if nothing relevant to update
     // Use relevantConfigNames.size (not relevantFieldsProvided.size) because the
     // relevantFieldsProvided setter strips virtuals, so virtual-only changes would
     // be incorrectly treated as empty.
-    if (!fieldsCollection.relevantConfigNames.size) {
-      return this._handleError(failureCtx, ctxOpts, emptyErrorTool);
-    }
-
-    // Step 6 – rebuild ctx with post-filter state
-    const ctx = this._getContext({
-      data: this.ctxValues,
-      isUpdate: true,
-      rawInput: this.ctxRawInput,
-    });
+    if (!fieldsCollection.relevantConfigNames.size)
+      return this._handleError(emptyErrorTool);
 
     // Step 7 – evaluate missing required fields
-    const requiredError = await this._handleRequiredBy(ctx as never);
-    if (requiredError.hasErrors)
-      return this._handleError(failureCtx, ctxOpts, requiredError);
+    const requiredError =
+      await this._evaluateMissingRequiredFields(fieldsCollection);
+    if (requiredError.hasErrors) return this._handleError(requiredError);
 
     // Step 8 – run primary validators over relevantConfigNames (includes virtuals)
-    const { data: validatedData, error: primaryError } =
-      await this._runPrimaryValidators(
-        filteredOutput,
-        filteredInput,
-        fieldsCollection,
-        ctx,
-      );
+    const primaryError = await this._runPrimaryValidators(fieldsCollection);
 
-    if (primaryError.hasErrors)
-      return this._handleError(failureCtx, ctxOpts, primaryError);
+    if (primaryError.hasErrors) return this._handleError(primaryError);
 
-    let updates: Partial<O> = validatedData;
+    const updates: Partial<O> = cloneValue(this.ctxValues);
 
     // Step 9 – re-filter: after validators, drop output fields whose validated
     // value still equals the old value. Virtual (input-only) fields are kept.
@@ -2033,35 +1755,33 @@ class ModelTool<
     fieldsCollection.relevantFieldsProvided = reFilteredRelevant;
 
     // Step 10 – second early-exit if nothing changed after validators
-    if (!reFilteredRelevant.size) {
-      return this._handleError(failureCtx, ctxOpts, emptyErrorTool);
-    }
+    if (!reFilteredRelevant.size) return this._handleError(emptyErrorTool);
 
     // Step 11 – run secondary (re-)validators
-    const secondaryError = await this._handleSecondaryValidations(
-      updates,
-      true,
-    );
-    if (secondaryError.hasErrors)
-      return this._handleError(failureCtx, ctxOpts, secondaryError);
+    const secondaryError =
+      await this._handleSecondaryValidations(fieldsCollection);
+    if (secondaryError.hasErrors) return this._handleError(secondaryError);
 
     // Step 12 – run post-validators
-    const postValidationError = await this._handlePostValidations(
-      updates,
-      true,
-    );
+    const postValidationError =
+      await this._handlePostValidations(fieldsCollection);
     if (postValidationError.hasErrors)
-      return this._handleError(failureCtx, ctxOpts, postValidationError);
+      return this._handleError(postValidationError);
 
     // Step 13 – sanitize virtuals
-    await this._handleSanitizationOfVirtuals(updates, true);
+    await this._handleSanitizationOfVirtuals(fieldsCollection);
 
     // Step 14 – resolve dependent field values
-    updates = await this._resolveDependentChanges(
-      updates,
-      this._getPartialContext(),
-      true,
-    );
+    let fieldsToResolve = fieldsCollection.relevantFieldsProvided;
+
+    while (fieldsToResolve.size) {
+      fieldsToResolve = await this._resolveDependentChanges(
+        fieldsToResolve,
+        fieldsCollection,
+      );
+
+      fieldsCollection.appendRelevantDependentFields = fieldsToResolve;
+    }
 
     // Step 15 – drop fields that still equal the old value after all resolvers
     for (const prop of getKeysAsProps(updates)) {
@@ -2077,19 +1797,10 @@ class ModelTool<
     }
 
     // Step 16 – third early-exit if no actual updates remain
-    if (!Object.keys(updates).length) {
-      return this._handleError(failureCtx, ctxOpts, emptyErrorTool);
-    }
-
-    if (this._options?.setMissingDefaultsOnUpdate)
-      this._regeneratedProps.forEach((prop) => {
-        if (isEqual((updates as any)[prop], undefined))
-          // @ts-expect-error ikr
-          (updates as any)[prop] = this.ctxInput[prop] as never;
-      });
+    if (!Object.keys(updates).length) return this._handleError(emptyErrorTool);
 
     // Step 17 – attach timestamps
-    const finalData = this._useConfigProps(updates, true);
+    const finalData = this._useConfigProps();
 
     this._updateCxtInput(finalData as never);
 
@@ -2097,7 +1808,7 @@ class ModelTool<
       data: finalData as Partial<O>,
       error: null,
       handleFailure: null,
-      handleSuccess: this._makeHandleSuccess(finalData, true),
+      handleSuccess: this._makeHandleSuccess(fieldsCollection),
     };
   }
 }
@@ -2182,13 +1893,18 @@ class FieldInfoCollection {
 
       configNames.add(info.configName);
 
-      if (info.isOutput) {
-        outputFieldsChanged.add(field_name);
-      }
+      if (info.isOutput) outputFieldsChanged.add(field_name);
     }
 
     this._relevantConfigNames = configNames;
     this._relevantFieldsProvided = outputFieldsChanged;
+  }
+
+  set appendRelevantDependentFields(value: Set<string>) {
+    this.relevantFieldsProvided = this._relevantFieldsProvided.union(value);
+
+    this._relevantDependentConfigNames =
+      this._relevantDependentConfigNames.union(value);
   }
 
   get relevantDependentConfigNames() {
@@ -2198,11 +1914,36 @@ class FieldInfoCollection {
   get relevantConfigNames() {
     return this._relevantConfigNames;
   }
+
+  set relevantConfigNames(configNames: Set<string>) {
+    this._relevantConfigNames = configNames;
+  }
 }
 
-type FieldInfo = {
+class FieldInfo {
   name: string;
   configName: string;
   isInput: boolean;
   isOutput: boolean;
-};
+
+  constructor({
+    name,
+    configName,
+    isInput,
+    isOutput,
+  }: {
+    name: string;
+    configName: string;
+    isInput: boolean;
+    isOutput: boolean;
+  }) {
+    this.name = name;
+    this.configName = configName;
+    this.isInput = isInput;
+    this.isOutput = isOutput;
+  }
+
+  get isVirtual() {
+    return this.isInput && !this.isOutput;
+  }
+}

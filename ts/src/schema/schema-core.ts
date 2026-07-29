@@ -45,7 +45,6 @@ export {
 const defaultOptions: ns.Options<unknown, unknown, never, never> = {
   equalityDepth: 1,
   sanitizeError: (p) => p,
-  setMissingDefaultsOnUpdate: false,
   ignore: undefined,
   ignoreUpdate: undefined,
   timestamps: false,
@@ -335,18 +334,6 @@ abstract class SchemaCore<
       const isValid = this._isOnSuccessOptionOk(options.onSuccess as never);
 
       if (!isValid.valid) error.add('onSuccess', isValid.reason!).throw();
-    }
-
-    if (isPropertyOf('setMissingDefaultsOnUpdate', options)) {
-      const typeProvided = typeof options.setMissingDefaultsOnUpdate;
-
-      if (!['boolean', 'undefined'].includes(typeProvided))
-        error
-          .add(
-            'setMissingDefaultsOnUpdate',
-            "'setMissingDefaultsOnUpdate' should be a 'boolean'",
-          )
-          .throw();
     }
 
     if (isPropertyOf('ignore', options)) {
@@ -663,7 +650,7 @@ abstract class SchemaCore<
       default: _default,
       dependsOn,
       ignoreInit,
-      readonly,
+
       resolver,
     } = definition!;
 
@@ -698,9 +685,6 @@ abstract class SchemaCore<
 
     if (isPropertyOf('required', definition))
       return { valid, reason: 'Dependent properties cannot be required' };
-
-    if (readonly === 'lax')
-      return { valid, reason: "Dependent properties cannot be readonly 'lax'" };
 
     if (!isEqual(ignoreInit, undefined))
       return {
@@ -817,7 +801,7 @@ abstract class SchemaCore<
     }
 
     if (isPropertyOf('ignoreUpdate', definition)) {
-      const { valid, reason } = this.__isignoreUpdateConfigOk(definition);
+      const { valid, reason } = this.__isIgnoreUpdateConfigOk(definition);
 
       if (!valid) reasons.push(reason!);
     }
@@ -883,13 +867,7 @@ abstract class SchemaCore<
   private __isReadonly = (
     definition: ns.Definitions_<Input, Output, ErrorMetadata>[KeyOf<Input>],
   ) => {
-    const {
-      default: _default,
-      readonly,
-      required,
-      ignoreInit,
-      ignoreUpdate,
-    } = definition!;
+    const { default: _default, readonly, required } = definition!;
 
     const valid = false;
 
@@ -904,33 +882,6 @@ abstract class SchemaCore<
         valid,
         reason:
           'Strictly readonly properties are required. Either use a callable required + readonly(true) or remove the required rule',
-      };
-
-    const hasDependentRule = isPropertyOf('dependsOn', definition);
-
-    if (readonly === 'lax' && hasDependentRule)
-      return { valid, reason: 'Readonly(lax) properties cannot be dependent' };
-
-    if (
-      (readonly === 'lax' || hasDependentRule || ignoreInit === true) &&
-      isEqual(_default, undefined)
-    )
-      return {
-        valid,
-        reason:
-          'readonly properties must have a default value or a default setter',
-      };
-
-    if (readonly === 'lax' && !isEqual(ignoreInit, undefined))
-      return {
-        valid,
-        reason: 'Lax properties cannot have initialization blocked',
-      };
-
-    if (readonly === 'lax' && isEqual(ignoreUpdate, false))
-      return {
-        valid,
-        reason: 'Readonly(lax) properties cannot have updates strictly blocked',
       };
 
     return { valid: true };
@@ -1082,7 +1033,7 @@ abstract class SchemaCore<
     return { valid: true };
   };
 
-  private __isignoreUpdateConfigOk = (
+  private __isIgnoreUpdateConfigOk = (
     definition: ns.Definitions_<Input, Output, ErrorMetadata>[KeyOf<Input>],
   ) => {
     const { readonly, ignoreInit, ignoreUpdate } = definition!;
@@ -1101,11 +1052,11 @@ abstract class SchemaCore<
         reason: "Both 'ignoreInit' & 'ignoreUpdate' cannot be 'true'",
       };
 
-    if (readonly === true && isEqual(ignoreInit, undefined))
+    if (readonly === true && ignoreUpdate === true)
       return {
         valid,
         reason:
-          "Cannot block the update of 'readonly' properties that do not have initialization('ignoreInit') blocked. Either add 'ignoreInit' or use readonly: 'lax'",
+          "Both 'readonly' & 'ignoreUpdate' cannot be 'true'. Use a function for 'ignoreUpdate' instead",
       };
 
     return { valid: true };
@@ -1219,8 +1170,6 @@ abstract class SchemaCore<
   private __isLax = (
     definition: ns.Definitions_<Input, Output, ErrorMetadata>[KeyOf<Input>],
   ) => {
-    const { readonly, ignoreInit } = definition!;
-
     // Lax properties must have a default value nor setter
     if (isEqual(definition?.default, undefined)) return false;
 
@@ -1232,15 +1181,6 @@ abstract class SchemaCore<
 
     // Lax properties cannot be virtual
     if (isPropertyOf('virtual', definition)) return false;
-
-    // only readonly(lax) are lax props &
-    // Lax properties cannot have initialization blocked
-    if (
-      (isPropertyOf('readonly', definition) && readonly !== 'lax') ||
-      (isPropertyOf('ignoreInit', definition) &&
-        typeof ignoreInit !== 'function')
-    )
-      return false;
 
     return true;
   };

@@ -106,7 +106,7 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
                 setQuantity: {
                   alias: 'quantity',
                   virtual: true,
-                  shouldInit: false,
+                  ignoreInit: true,
                   validator,
                 },
               }).getModel();
@@ -267,7 +267,7 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
             });
           });
 
-          describe("availability of virtuals in ctx of shouldInit & shouldUpdate methods of the virtual when it's alias is provided", () => {
+          describe("availability of virtuals in ctx of ignoreInit & ignoreUpdate methods of the virtual when it's alias is provided", () => {
             const Model = new Schema({
               id: { constant: true, value: 1, onDelete: resolver },
               quantity: { default: 0.0, dependsOn: 'setQuantity', resolver },
@@ -282,24 +282,24 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
                 >) {
                   contextRecord.setQuantity = setQuantity;
 
-                  return (setQuantity ?? 0) > 0;
+                  return (setQuantity ?? 0) <= 0;
                 },
                 ignoreUpdate({
                   input: { setQuantity },
                   values: { quantity },
-                }: IvoContext<
+                }: ReadonlyIvoContext<
                   { setQuantity: number },
                   { id: number; quantity: number }
                 >) {
                   contextRecord.setQuantity = setQuantity;
 
-                  return (setQuantity ?? 0) > quantity;
+                  return (setQuantity ?? 0) <= quantity;
                 },
                 validator,
               },
             }).getModel();
 
-            it("should respect 'shouldInit' rule of virtual property even when alias is provided at creation", async () => {
+            it("should respect 'ignoreInit' rule of virtual property even when alias is provided at creation", async () => {
               const operation1 = await Model.create({ id: 1, qty: -75 });
 
               expect(contextRecord).toEqual({ setQuantity: -75 });
@@ -313,7 +313,7 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
               expect(operation2.data).toEqual({ id: 1, quantity: 75 });
             });
 
-            it("should respect 'shouldUpdate' rule of virtual property even when alias is provided during updates", async () => {
+            it("should respect 'ignoreUpdate' rule of virtual property even when alias is provided during updates", async () => {
               const operation1 = await Model.update(
                 { id: 1, quantity: 75 },
                 { qty: 12 },
@@ -733,17 +733,17 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
         toPass();
       });
 
-      it('should allow shouldInit(false|()=>boolean) + validator', () => {
-        const values = [false, () => false, () => true];
+      it('should allow ignoreInit(true|()=>boolean) + validator', () => {
+        const values = [true, () => false, () => true];
 
-        for (const shouldInit of values) {
+        for (const ignoreInit of values) {
           const toPass = fx({
             dependentProp: {
               default: '',
               dependsOn: 'propertyName',
               resolver: () => '',
             },
-            propertyName: { virtual: true, shouldInit, validator },
+            propertyName: { virtual: true, ignoreInit, validator },
           });
 
           expectNoFailure(toPass);
@@ -813,7 +813,7 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
           },
           virtualNoInit: {
             virtual: true,
-            ignoreInit: false,
+            ignoreInit: true,
             onSuccess: [
               onSuccess('virtualNoInit'),
               incrementOnSuccessStats('virtualNoInit'),
@@ -832,7 +832,7 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
           },
           virtualWithSanitizerNoInit: {
             virtual: true,
-            ignoreInit: false,
+            ignoreInit: true,
             onSuccess: [
               onSuccess('virtualWithSanitizerNoInit'),
               incrementOnSuccessStats('virtualWithSanitizerNoInit'),
@@ -1373,7 +1373,7 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
         }
       });
 
-      it('should reject requiredBy + shouldInit', () => {
+      it('should reject requiredBy + ignoreInit', () => {
         const toFail = fx({
           dependentProp: {
             default: '',
@@ -1382,7 +1382,7 @@ export const Test_VirtualProperties = ({ Schema, fx }: any) => {
           },
           propertyName: {
             virtual: true,
-            shouldInit: false,
+            ignoreInit: true,
             required: () => true,
             validator,
           },
