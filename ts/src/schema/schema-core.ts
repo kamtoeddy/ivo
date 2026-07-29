@@ -361,6 +361,15 @@ abstract class SchemaCore<
 
       if (!isValid.valid) error.add('timestamps', isValid.reason!).throw();
     }
+
+    if (isPropertyOf('required', options)) {
+      const isValid = this._isRequiredOptionOk(
+        options.required as never,
+        options.timestamps,
+      );
+
+      if (!isValid.valid) error.add('required', isValid.reason!).throw();
+    }
   };
 
   protected _checkPropDefinitions = (
@@ -1452,6 +1461,96 @@ abstract class SchemaCore<
           valid: false,
           reason: `'ignoreUpdate' config at index ${i} must have 'fields' array and 'resolver' function`,
         };
+    }
+
+    return { valid: true };
+  }
+
+  /**
+   * Mirrors Rust's `options.required` validation in `schema/mod.rs::make_options`:
+   * each config needs at least 2 properties, no duplicates, no aliases (the
+   * virtual's real name must be used instead), and only lax/virtual fields
+   * (including conditionally-required "requiredBy" ones, which Rust classifies
+   * as plain `FieldType::Lax`) — constants, dependents, strictly-required
+   * fields, and timestamps are rejected, matching Rust's panic-on-first-violation
+   * behaviour (no accumulation).
+   */
+  private _isRequiredOptionOk(
+    val: unknown,
+    timestamps: ns.Options<Input, Output>['timestamps'],
+  ) {
+    if (val === undefined) return { valid: true };
+
+    const configs = toArray(val);
+
+    if (!configs || !configs.length)
+      return {
+        valid: false,
+        reason:
+          "'required' option must be a config object ({ properties, handler }) or an array of config objects",
+      };
+
+    // `this.timestampTool` isn't constructed yet at this point in the
+    // constructor (`_checkOptions` runs before it), so build a throwaway one
+    // from the raw (already-validated) `timestamps` option just to read keys.
+    const { createdAt, updatedAt } = new TimeStampTool(timestamps).getKeys();
+
+    for (let i = 0; i < configs.length; i++) {
+      const c = configs[i] as { properties?: unknown; handler?: unknown };
+
+      if (
+        !c ||
+        typeof c !== 'object' ||
+        !Array.isArray(c.properties) ||
+        !(isFunctionLike(c.handler) || Array.isArray(c.handler))
+      )
+        return {
+          valid: false,
+          reason: `'required' config at index ${i} must have a 'properties' array and a 'handler' function or array of functions`,
+        };
+
+      if (c.properties.length < 2)
+        return {
+          valid: false,
+          reason: 'grouped required expects at least 2 fields',
+        };
+
+      const seen = new Set<string>();
+
+      for (const field of c.properties as string[]) {
+        if (seen.has(field))
+          return {
+            valid: false,
+            reason: `remove duplicates of '${field}' in your grouped required config`,
+          };
+
+        seen.add(field);
+
+        const virtualField = this._getVirtualByAlias(field);
+
+        if (virtualField)
+          return {
+            valid: false,
+            reason: `'${field}' is an alias; use '${virtualField}' instead`,
+          };
+
+        const notAllowedReason = `only lax and virtual fields can belong to grouped required configs; remove '${field}'`;
+
+        if (this._isInputProp(field)) {
+          if (this._isRequired(field))
+            return { valid: false, reason: notAllowedReason };
+
+          continue;
+        }
+
+        if (this._isProp(field) || field === createdAt || field === updatedAt)
+          return { valid: false, reason: notAllowedReason };
+
+        return {
+          valid: false,
+          reason: `'${field}' does not exist on your schema`,
+        };
+      }
     }
 
     return { valid: true };

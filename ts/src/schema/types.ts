@@ -138,6 +138,26 @@ type RequiredHandler<Input, Output, CtxOptions extends ObjectType, Metadata> = (
   ctx: IvoContext<Input, Output, CtxOptions> & {},
 ) => RequiredHandlerRes<Metadata> | Promise<RequiredHandlerRes<Metadata>>;
 
+/**
+ * Handler for the schema-level (grouped) `required` option. Unlike the
+ * field-level `RequiredHandler` (a single boolean/tuple), this mirrors Rust's
+ * `RequiredOptionResolver`, which returns `Option<PartialErrors>`: `undefined`
+ * means the group's requirement is satisfied, while a returned map assigns a
+ * per-field error to any subset of the group's `properties` (fields outside
+ * the group are ignored).
+ */
+type RequiredOptionHandler<
+  Input,
+  Output,
+  CtxOptions extends ObjectType,
+  Metadata,
+> = (
+  ctx: IvoContext<Input, Output, CtxOptions> & {},
+) =>
+  | undefined
+  | ResponseErrorObject<Metadata, Input>
+  | Promise<undefined | ResponseErrorObject<Metadata, Input>>;
+
 type IgnoreResolver<Input, Output, CtxOptions extends ObjectType = {}> = (
   ctx: IvoContext<Input, Output, CtxOptions> & {},
 ) => boolean | Promise<boolean>;
@@ -297,8 +317,10 @@ namespace NS {
   > = {
     properties: ArrayOfMinSizeTwo<KeyOf<Input> | string>;
     handler:
-      | RequiredHandler<Input, Output, CtxOptions, Metadata>
-      | ArrayOfMinSizeOne<RequiredHandler<Input, Output, CtxOptions, Metadata>>;
+      | RequiredOptionHandler<Input, Output, CtxOptions, Metadata>
+      | ArrayOfMinSizeOne<
+          RequiredOptionHandler<Input, Output, CtxOptions, Metadata>
+        >;
   };
 
   export type RequiredConfigOption<

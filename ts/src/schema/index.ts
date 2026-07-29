@@ -1140,8 +1140,8 @@ class ModelTool<
     if (!isUpdate)
       for (const prop of this.requiredProps) propsToEvaluate.add(prop);
 
-    await Promise.allSettled(
-      Array.from(propsToEvaluate).map(async (prop) => {
+    await Promise.allSettled([
+      ...Array.from(propsToEvaluate).map(async (prop) => {
         // Mirrors Rust's `is_relevant_config_name`: a field that was provided
         // but got ignored (or, during updates, whose value didn't actually
         // change) should still be treated as "not provided" for required
@@ -1191,7 +1191,49 @@ class ModelTool<
           ),
         );
       }),
-    );
+
+      // Mirrors Rust's grouped `options.required`: a config's handler(s) only
+      // run when NONE of its fields are currently relevant/provided — the
+      // handler then decides which (if any) of the group's fields are missing.
+      // Errors for fields outside the config's own `properties` are dropped,
+      // matching Rust's `field_names.contains(...)` filter.
+      ...toArray(this._options.required ?? []).map(async (config) => {
+        const properties = config.properties as KeyOf<I>[];
+
+        if (
+          properties.some((prop) =>
+            fieldsCollection.relevantConfigNames.has(prop),
+          )
+        )
+          return;
+
+        // Resolve each declared (config-name) property to the name a handler
+        // would actually use — the alias, for aliased virtuals, since
+        // `KeyOf<Input>` reflects the alias rather than the internal name.
+        const resolvedNames = new Set(
+          properties.map((prop) => this._getAliasByVirtual(prop) ?? prop),
+        );
+
+        const results = await Promise.allSettled(
+          toArray(config.handler).map((handler) =>
+            Promise.try(handler, ctx as never),
+          ),
+        );
+
+        for (const result of results) {
+          if (result.status !== 'fulfilled' || !result.value) continue;
+
+          for (const [prop, err] of Object.entries(result.value)) {
+            if (!resolvedNames.has(prop as never)) continue;
+
+            errorTool.set(
+              prop as never,
+              makeFieldError<ErrorMetadata>(err as never),
+            );
+          }
+        }
+      }),
+    ]);
 
     return errorTool;
   }
